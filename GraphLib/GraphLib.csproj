@@ -1,0 +1,395 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{EEED39BD-6EAE-4167-B694-CB812598395D}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Djs.Common</RootNamespace>
+    <AssemblyName>GraphLib</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkProfile>
+    </TargetFrameworkProfile>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject />
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>select-rectangular.ico</ApplicationIcon>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <OutputPath>bin\Debug\</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <OutputPath>bin\Release\</OutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Deployment" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Application\App.cs" />
+    <Compile Include="Application\Plugin.cs" />
+    <Compile Include="Application\Test.cs" />
+    <Compile Include="Application\Trace.cs" />
+    <Compile Include="Application\Worker.cs" />
+    <Compile Include="Components\BaseAxis.cs" />
+    <Compile Include="Components\BitStorage.cs" />
+    <Compile Include="Components\ColorPalette.cs" />
+    <Compile Include="Components\FontInfo.cs" />
+    <Compile Include="Components\Graph.cs" />
+    <Compile Include="Components\GridPosition.cs" />
+    <Compile Include="Components\GridTable.cs" />
+    <Compile Include="Components\Layout.cs" />
+    <Compile Include="Components\Progress.cs" />
+    <Compile Include="Components\Skin.cs" />
+    <Compile Include="Components\Toolbar.cs" />
+    <Compile Include="Components\ToolTip.cs" />
+    <Compile Include="Data\TypeArray.cs" />
+    <Compile Include="Localizable\Text.cs" />
+    <Compile Include="Parser\Analyser.cs" />
+    <Compile Include="Parser\Gui.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Parser\ParserStream.cs" />
+    <Compile Include="Parser\WinMsgCode.cs" />
+    <Compile Include="Rtf\RtfDocument.cs" />
+    <Compile Include="Rtf\RtfPaint.cs" />
+    <Compile Include="Services\Interface.cs" />
+    <Compile Include="Services\TestDataSource.cs" />
+    <Compile Include="Data\DataPersist.cs" />
+    <Compile Include="Data\Extensions.cs" />
+    <Compile Include="Data\IntervalArray.cs" />
+    <Compile Include="Data\ProgressData.cs" />
+    <Compile Include="Data\Table.cs" />
+    <Compile Include="Components\InteractiveObject.cs" />
+    <Compile Include="Components\Interface.cs" />
+    <Compile Include="Data\BaseRange.cs" />
+    <Compile Include="Data\Collections.cs" />
+    <Compile Include="Components\DocumentArea.cs" />
+    <Compile Include="Components\DocumentEditor.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Components\DrawingD.cs" />
+    <Compile Include="Components\Extensions.cs" />
+    <Compile Include="Components\FormMoveSupport.cs" />
+    <Compile Include="Components\GControl.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Components\IconLib.cs" />
+    <Compile Include="Components\InteractiveContainer.cs" />
+    <Compile Include="Components\InteractiveControl.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Components\Grid.cs" />
+    <Compile Include="Components\EditableArea.cs" />
+    <Compile Include="Components\PageMargins.cs" />
+    <Compile Include="Components\Painter.cs" />
+    <Compile Include="Components\ScrollBar.cs" />
+    <Compile Include="Components\SizeAxis.cs" />
+    <Compile Include="Data\Fraction.cs" />
+    <Compile Include="Data\SizeRange.cs" />
+    <Compile Include="Components\Splitter.cs" />
+    <Compile Include="Components\TimeAxis.cs" />
+    <Compile Include="Data\TimeRange.cs" />
+    <Compile Include="Components\TrackBar.cs" />
+    <Compile Include="Components\VirtualControl.cs" />
+    <Compile Include="Data\XTime.cs" />
+    <Compile Include="Forms\EditorForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\EditorForm.Designer.cs">
+      <DependentUpon>EditorForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Parser\Parser.cs" />
+    <Compile Include="Parser\ParserSetting.cs" />
+    <Compile Include="Parser\RtfCoder.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Services\TestGlobalFunctions.cs" />
+    <EmbeddedResource Include="Forms\EditorForm.resx">
+      <DependentUpon>EditorForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+      <DesignTime>True</DesignTime>
+    </Compile>
+    <None Include="app.config" />
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Diagrams\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="pic\select-rectangular.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="pic\select-rectangular.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="pic\pic64\document-export_64.png" />
+    <None Include="pic\pic64\document-save-5_64.png" />
+    <None Include="pic\pic64\document-save-7_64.png" />
+    <None Include="pic\pic64\document-save-all_64.png" />
+    <None Include="pic\pic64\document-save-as-5_64.png" />
+    <None Include="pic\pic64\document-save-as-6_64.png" />
+    <None Include="pic\pic64\edit-copy-2_64.png" />
+    <None Include="pic\pic64\edit-copy-3_64.png" />
+    <None Include="pic\pic64\edit-copy-4_64.png" />
+    <None Include="pic\pic64\edit-copy-6_64.png" />
+    <None Include="pic\pic64\edit-copy-8_64.png" />
+    <None Include="pic\pic64\edit-copy-9_64.png" />
+    <None Include="pic\pic64\edit-copy_64.png" />
+    <None Include="pic\pic64\edit-cut-2_64.png" />
+    <None Include="pic\pic64\edit-cut-3_64.png" />
+    <None Include="pic\pic64\edit-cut-4_64.png" />
+    <None Include="pic\pic64\edit-cut-6_64.png" />
+    <None Include="pic\pic64\edit-cut-8_64.png" />
+    <None Include="pic\pic64\edit-cut-9_64.png" />
+    <None Include="pic\pic64\edit-cut_64.png" />
+    <None Include="pic\pic64\edit-delete-2_64.png" />
+    <None Include="pic\pic64\edit-delete-3_64.png" />
+    <None Include="pic\pic64\edit-delete-4_64.png" />
+    <None Include="pic\pic64\edit-delete-6_64.png" />
+    <None Include="pic\pic64\edit-delete-8_64.png" />
+    <None Include="pic\pic64\edit-delete-9_64.png" />
+    <None Include="pic\pic64\edit-delete_64.png" />
+    <None Include="pic\pic64\edit-delete-shred_64.png" />
+    <None Include="pic\pic64\edit-find-4_64.png" />
+    <None Include="pic\pic64\edit-find-5_64.png" />
+    <None Include="pic\pic64\edit-find_64.png" />
+    <None Include="pic\pic64\edit-find-replace-4_64.png" />
+    <None Include="pic\pic64\edit-paste-2_64.png" />
+    <None Include="pic\pic64\edit-paste-3_64.png" />
+    <None Include="pic\pic64\edit-paste-4_64.png" />
+    <None Include="pic\pic64\edit-paste-6_64.png" />
+    <None Include="pic\pic64\edit-paste-8_64.png" />
+    <None Include="pic\pic64\edit-paste-9_64.png" />
+    <None Include="pic\pic64\edit-paste_64.png" />
+    <None Include="pic\pic64\edit-redo-2_64.png" />
+    <None Include="pic\pic64\edit-redo-3_64.png" />
+    <None Include="pic\pic64\edit-redo-4_64.png" />
+    <None Include="pic\pic64\edit-redo-5_64.png" />
+    <None Include="pic\pic64\edit-redo-7_64.png" />
+    <None Include="pic\pic64\edit-redo-8_64.png" />
+    <None Include="pic\pic64\edit-redo_64.png" />
+    <None Include="pic\pic64\edit-rename_64.png" />
+    <None Include="pic\pic64\edit-undelete_64.png" />
+    <None Include="pic\pic64\edit-undo-2_64.png" />
+    <None Include="pic\pic64\edit-undo-3_64.png" />
+    <None Include="pic\pic64\edit-undo-4_64.png" />
+    <None Include="pic\pic64\edit-undo-5_64.png" />
+    <None Include="pic\pic64\edit-undo-7_64.png" />
+    <None Include="pic\pic64\edit-undo-8_64.png" />
+    <None Include="pic\pic64\edit-undo_64.png" />
+    <None Include="pic\pic64\filter_64.png" />
+    <None Include="pic\pic64\format-fill-color_64.png" />
+    <None Include="pic\pic64\go-bottom-3_64.png" />
+    <None Include="pic\pic64\go-bottom-4_64.png" />
+    <None Include="pic\pic64\go-bottom-6_64.png" />
+    <None Include="pic\pic64\go-bottom-8_64.png" />
+    <None Include="pic\pic64\go-down-3_64.png" />
+    <None Include="pic\pic64\go-down-4_64.png" />
+    <None Include="pic\pic64\go-down-5_64.png" />
+    <None Include="pic\pic64\go-down-7_64.png" />
+    <None Include="pic\pic64\go-down-9_64.png" />
+    <None Include="pic\pic64\go-down-10_64.png" />
+    <None Include="pic\pic64\go-down_64.png" />
+    <None Include="pic\pic64\go-down-search_64.png" />
+    <None Include="pic\pic64\go-first-2_64.png" />
+    <None Include="pic\pic64\go-first-3_64.png" />
+    <None Include="pic\pic64\go-first-5_64.png" />
+    <None Include="pic\pic64\go-first-6_64.png" />
+    <None Include="pic\pic64\go-first-view_64.png" />
+    <None Include="pic\pic64\go-first-view-page_64.png" />
+    <None Include="pic\pic64\go-last-2_64.png" />
+    <None Include="pic\pic64\go-last-3_64.png" />
+    <None Include="pic\pic64\go-last-4_64.png" />
+    <None Include="pic\pic64\go-last-5_64.png" />
+    <None Include="pic\pic64\go-last-view_64.png" />
+    <None Include="pic\pic64\go-last-view-page_64.png" />
+    <None Include="pic\pic64\go-next-3_64.png" />
+    <None Include="pic\pic64\go-next-4_64.png" />
+    <None Include="pic\pic64\go-next-5_64.png" />
+    <None Include="pic\pic64\go-next-7_64.png" />
+    <None Include="pic\pic64\go-next-8_64.png" />
+    <None Include="pic\pic64\go-next-9_64.png" />
+    <None Include="pic\pic64\go-next_64.png" />
+    <None Include="pic\pic64\go-next-view_64.png" />
+    <None Include="pic\pic64\go-next-view-page_64.png" />
+    <None Include="pic\pic64\go-previous-3_64.png" />
+    <None Include="pic\pic64\go-previous-4_64.png" />
+    <None Include="pic\pic64\go-previous-5_64.png" />
+    <None Include="pic\pic64\go-previous-7_64.png" />
+    <None Include="pic\pic64\go-previous-8_64.png" />
+    <None Include="pic\pic64\go-previous-9_64.png" />
+    <None Include="pic\pic64\go-previous_64.png" />
+    <None Include="pic\pic64\go-previous-view_64.png" />
+    <None Include="pic\pic64\go-previous-view-page_64.png" />
+    <None Include="pic\pic64\go-top-2_64.png" />
+    <None Include="pic\pic64\go-top-3_64.png" />
+    <None Include="pic\pic64\go-top-4_64.png" />
+    <None Include="pic\pic64\go-top-6_64.png" />
+    <None Include="pic\pic64\go-top-8_64.png" />
+    <None Include="pic\pic64\go-up-3_64.png" />
+    <None Include="pic\pic64\go-up-4_64.png" />
+    <None Include="pic\pic64\go-up-5_64.png" />
+    <None Include="pic\pic64\go-up-7_64.png" />
+    <None Include="pic\pic64\go-up-9_64.png" />
+    <None Include="pic\pic64\go-up-10_64.png" />
+    <None Include="pic\pic64\go-up_64.png" />
+    <None Include="pic\pic64\go-up-search_64.png" />
+    <None Include="pic\pic64\help_64.png" />
+    <None Include="pic\pic64\help-about-3_64.png" />
+    <None Include="pic\pic64\help-contents-5_64.png" />
+    <None Include="pic\pic64\help-contents_64.png" />
+    <None Include="pic\pic64\help-hint_64.png" />
+    <None Include="pic\pic64\insert-text-3_64.png" />
+    <None Include="pic\pic64\media-skip-backward-6_64.png" />
+    <None Include="pic\pic64\system-log-out-6_64.png" />
+    <None Include="pic\pic64\system-run-6_64.png" />
+    <None Include="pic\pic64\system-search-3_64.png" />
+    <None Include="pic\pic64\system-search-4_64.png" />
+    <None Include="pic\pic64\system-shutdown-6_64.png" />
+    <None Include="pic\pic64\transform-crop_64.png" />
+    <None Include="pic\pic64\transform-crop-and-resize_64.png" />
+    <None Include="pic\pic64\transform-move_64.png" />
+    <None Include="pic\pic64\transform-rotate-2_64.png" />
+    <None Include="pic\pic64\transform-scale-2_64.png" />
+    <None Include="pic\pic64\transform-scale_64.png" />
+    <None Include="pic\pic64\view-fullscreen-3_64.png" />
+    <None Include="pic\pic64\view-fullscreen-4_64.png" />
+    <None Include="pic\pic64\view-media-visualization_64.png" />
+    <None Include="pic\pic64\view-pim-tasks_64.png" />
+    <None Include="pic\pic64\view-refresh-2_64.png" />
+    <None Include="pic\pic64\view-refresh-3_64.png" />
+    <None Include="pic\pic64\view-refresh-4_64.png" />
+    <None Include="pic\pic64\view-refresh-5_64.png" />
+    <None Include="pic\pic64\view-refresh-7_64.png" />
+    <None Include="pic\pic64\view-refresh-8_64.png" />
+    <None Include="pic\pic64\view-refresh-9_64.png" />
+    <None Include="pic\pic64\view-refresh_64.png" />
+    <None Include="pic\pic64\window-close-2_64.png" />
+    <None Include="pic\pic64\window-close-3_64.png" />
+    <None Include="pic\pic64\window-close-4_64.png" />
+    <None Include="pic\pic64\window-close_64.png" />
+    <None Include="pic\pic64\zoom-2_64.png" />
+    <None Include="pic\pic64\zoom-5_64.png" />
+    <None Include="pic\pic64\zoom_64.png" />
+    <None Include="pic\pic64\zoom-fit-best-2_64.png" />
+    <None Include="pic\pic64\zoom-fit-best-4_64.png" />
+    <None Include="pic\pic64\zoom-fit-best-5_64.png" />
+    <None Include="pic\pic64\zoom-fit-best_64.png" />
+    <None Include="pic\pic64\zoom-fit-height_64.png" />
+    <None Include="pic\pic64\zoom-fit-width_64.png" />
+    <None Include="pic\pic64\zoom-in-2_64.png" />
+    <None Include="pic\pic64\zoom-in-3_64.png" />
+    <None Include="pic\pic64\zoom-in-5_64.png" />
+    <None Include="pic\pic64\zoom-in-7_64.png" />
+    <None Include="pic\pic64\zoom-in_64.png" />
+    <None Include="pic\pic64\zoom-original-2_64.png" />
+    <None Include="pic\pic64\zoom-original-4_64.png" />
+    <None Include="pic\pic64\zoom-original-5_64.png" />
+    <None Include="pic\pic64\zoom-original_64.png" />
+    <None Include="pic\pic64\zoom-out-2_64.png" />
+    <None Include="pic\pic64\zoom-out-3_64.png" />
+    <None Include="pic\pic64\zoom-out-5_64.png" />
+    <None Include="pic\pic64\zoom-out-7_64.png" />
+    <None Include="pic\pic64\zoom-out_64.png" />
+    <None Include="pic\pic16\go-down-2_16.png" />
+    <None Include="pic\pic16\go-up-2_16.png" />
+    <None Include="pic\pic16\dialog-accept_16.png" />
+    <None Include="pic\pic16\dialog-accept-2_16.png" />
+    <None Include="pic\pic16\dialog-apply_16.png" />
+    <None Include="pic\pic16\dialog-block_16.png" />
+    <None Include="pic\pic16\dialog-cancel-2_16.png" />
+    <None Include="pic\pic16\dialog-cancel-3_16.png" />
+    <None Include="pic\pic16\dialog-ok-5_16.png" />
+    <None Include="pic\pic16\dialog-ok-apply-2_16.png" />
+    <None Include="pic\pic16\dialog-ok-apply-4_16.png" />
+    <None Include="pic\pic128\Dragon_128.png" />
+    <None Include="pic\Shadow00.png" />
+    <None Include="pic\Shadow01.png" />
+    <None Include="pic\Shadow02.png" />
+    <None Include="pic\Shadow10.png" />
+    <None Include="pic\Shadow12.png" />
+    <None Include="pic\Shadow20.png" />
+    <None Include="pic\Shadow21.png" />
+    <None Include="pic\Shadow22.png" />
+    <None Include="pic\pic32\object-flip-horizontal_32.png" />
+    <None Include="pic\pic32\object-flip-vertical_32.png" />
+    <None Include="pic\pic32\view-pim-calendar_32.png" />
+    <None Include="pic\pic32\zoom-fit-best-3_32.png" />
+    <None Include="pic\pic32\help_32.png" />
+    <None Include="pic\pic32\help-about-3_32.png" />
+    <None Include="pic\pic32\help-contents_32.png" />
+    <None Include="pic\pic16\bullet-black_16.png" />
+    <None Include="pic\pic16\bullet-blue_16.png" />
+    <None Include="pic\pic16\bullet-green_16.png" />
+    <None Include="pic\pic16\bullet-orange_16.png" />
+    <None Include="pic\pic16\bullet-pink_16.png" />
+    <None Include="pic\pic16\bullet-purple_16.png" />
+    <None Include="pic\pic16\bullet-red_16.png" />
+    <None Include="pic\pic16\bullet-star_16.png" />
+    <None Include="pic\pic16\bullet-white_16.png" />
+    <None Include="pic\pic16\bullet-yellow_16.png" />
+    <Content Include="select-rectangular.ico" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>copy $(TargetDir)$(TargetName).* $(SolutionDir)bin\*.*</PostBuildEvent>
+  </PropertyGroup>
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

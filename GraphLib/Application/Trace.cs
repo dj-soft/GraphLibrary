@@ -1,0 +1,527 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using Djs.Common.Data;
+
+namespace Djs.Common.Application
+{
+    /// <summary>
+    /// Trace : class for write trace informations
+    /// </summary>
+    internal class Trace
+    {
+        #region Public: TraceInfo, Flush, End
+        public void Info(string type, string method, string result, params string[] items)
+        {
+            this._TraceWrite(null, LEVEL_INFO, "", type, method, result, false, items);
+        }
+        public void InfoNow(string type, string method, string result, params string[] items)
+        {
+            this._TraceWrite(null, LEVEL_INFO, "", type, method, result, true, items);
+        }
+        public void Warning(string type, string method, string result, params string[] items)
+        {
+            this._TraceWrite(null, LEVEL_WARNING, "", type, method, result, false, items);
+        }
+        public void WarningNow(string type, string method, string result, params string[] items)
+        {
+            this._TraceWrite(null, LEVEL_WARNING, "", type, method, result, true, items);
+        }
+        public void Error(string type, string method, string result, params string[] items)
+        {
+            this._TraceWrite(null, LEVEL_ERROR, "", type, method, result, true, items);
+        }
+        /// <summary>
+        /// Perform Flush on stream of trace file
+        /// </summary>
+        public void Flush()
+        {
+            this._TraceFlush();
+        }
+        /// <summary>
+        /// Write into trace new event for End of application, perform Flush on stream, and really close trace file.
+        /// </summary>
+        public void End()
+        {
+            this._TraceEnd();
+        }
+        #endregion
+        #region Exception
+        public void Exception(Exception exc, params string[] items)
+        {
+            if (exc == null) return;
+
+            this._TraceWrite(null, LEVEL_EXCEPTION, "", exc.GetType().NsName(), exc.Message, "Exception", true, items);
+            Exception ex = exc;
+            while (ex != null)
+            {
+                string[] stack = _ExceptionGetStack(ex.StackTrace);
+                this._TraceWrite(null, LEVEL_EXCEPTION_INFO, "", exc.GetType().NsName(), exc.Message, "StackTrace", true, stack);
+                ex = ex.InnerException;
+            }
+        }
+        private static string[] _ExceptionGetStack(string stackTrace)
+        {
+            string[] rows = stackTrace.ToLines(true, true);
+            return rows;
+        }
+        #endregion
+        #region Scope
+        public ITraceScope Scope(bool isReal, string type, string method, string result, params string[] items)
+        {
+            return TraceScope.GetScope(this, false, isReal, type, method, result, items);
+        }
+        public ITraceScope ScopeNow(bool isReal, string type, string method, string result, params string[] items)
+        {
+            return TraceScope.GetScope(this, true, isReal, type, method, result, items);
+        }
+        /// <summary>
+        /// Write Begin line into trace, set (out int) scope number and (out long) tick value on Begin line. 
+        /// This values are stored in scope object, and will be send as parameters to End line method _TraceWriteScopeEnd().
+        /// </summary>
+        /// <param name="scope"></param>
+        /// <param name="tick"></param>
+        /// <param name="type"></param>
+        /// <param name="method"></param>
+        /// <param name="result"></param>
+        /// <param name="direct"></param>
+        /// <param name="items"></param>
+        protected void _TraceWriteScopeBegin(out int scope, out long tick, string type, string method, string result, bool direct, string[] items)
+        {
+            scope = 0;
+            tick = 0L;
+            if (!this._TracePrepare()) return;
+            scope = ++this._LastScope;
+            this._TraceWrite(null, LEVEL_SCOPE_BEGIN, scope.ToString(), type, method, result, direct, items);
+            tick = this._TraceLastTick;
+        }
+        /// <summary>
+        /// Write End line into trace, from scope.
+        /// </summary>
+        /// <param name="scope"></param>
+        /// <param name="tick"></param>
+        /// <param name="type"></param>
+        /// <param name="method"></param>
+        /// <param name="result"></param>
+        /// <param name="direct"></param>
+        /// <param name="items"></param>
+        protected void _TraceWriteScopeEnd(int scope, long tick, string type, string method, string result, bool direct, string[] items)
+        {
+            this._TraceWrite(tick, LEVEL_SCOPE_END, scope.ToString(), type, method, result, direct, items);
+        }
+        #region class TraceScope : ITraceScope
+        public class TraceScope : ITraceScope, IDisposable
+        {
+            internal static TraceScope GetScope(Trace trace, bool direct, bool isReal, string type, string method, string result, params string[] items)
+            {
+                TraceScope scope = new TraceScope(trace, direct, isReal, type, method, result, items);
+                scope._WriteBegin();
+                return scope;
+            }
+            private TraceScope(Trace trace, bool direct, bool isReal, string type, string method, string result, string[] items)
+            {
+                this._Trace = trace;
+                this._Direct = direct;
+                this._IsReal = isReal;
+                this._Type = type;
+                this._Method = method;
+                this._Result = result;
+                this._ItemsBegin = items;
+                this._ItemsEnd = new List<string>();
+            }
+            private Trace _Trace;
+            private bool _Direct;
+            private bool _IsReal;
+            private int _Scope;
+            private long _Tick;
+            private string _Type;
+            private string _Method;
+            private string _Result;
+            private string[] _ItemsBegin;
+            private List<string> _ItemsEnd;
+            private void _WriteBegin()
+            {
+                if (this._IsReal)
+                {
+                    int scope;
+                    long tick;
+                    this._Trace._TraceWriteScopeBegin(out scope, out tick, this._Type, this._Method, this._Result, this._Direct, this._ItemsBegin);
+                    this._Scope = scope;
+                    this._Tick = tick;
+                }
+                this._ItemsBegin = null;
+                this._StartTime = DateTime.Now;
+            }
+            private void _WriteEnd()
+            {
+                if (this._IsReal)
+                    this._Trace._TraceWriteScopeEnd(this._Scope, this._Tick, this._Type, this._Method, this._Result, this._Direct, this._ItemsEnd.ToArray());
+            }
+            private TimeSpan _GetElapsedTime()
+            {
+                return (DateTime.Now - this._StartTime);
+            }
+            private DateTime _StartTime;
+            void ITraceScope.AddItem(string item) { this._ItemsEnd.Add(item); }
+            void ITraceScope.AddItems(IEnumerable<string> items) { this._ItemsEnd.AddRange(items); }
+            void ITraceScope.AddItems(params string[] items) { this._ItemsEnd.AddRange(items); }
+            string ITraceScope.Type { get { return this._Type; } }
+            string ITraceScope.Method { get { return this._Method; } }
+            string ITraceScope.Result { get { return this._Result; } set { this._Result = value; } }
+            TimeSpan ITraceScope.ElapsedTime { get { return this._GetElapsedTime(); } }
+            void IDisposable.Dispose() { this._WriteEnd(); }
+        }
+        #endregion
+        #endregion
+        #region Private: init, prepare, write, flush, end. Variables.
+        private void _TraceInit()
+        {
+            this._TraceFile = null;
+        }
+        /// <summary>
+        /// If trace is prepared, then write one row into this.
+        /// Can call Flush() by "direct" parameter.
+        /// Store current time into _TraceLastTick.
+        /// </summary>
+        /// <param name="lastTick">-1 = do not write to column Microsec. Null = calculate time for Microsec column from this._TraceLastTick. Any positive value = calculate time for Microsec column from this value.</param>
+        /// <param name="level">Level of information, use constants LEVEL_*</param>
+        /// <param name="scope">Scope info</param>
+        /// <param name="type"></param>
+        /// <param name="method"></param>
+        /// <param name="result"></param>
+        /// <param name="direct"></param>
+        /// <param name="items"></param>
+        private void _TraceWrite(long? lastTick, string level, string scope, string type, string method, string result, bool direct, string[] items)
+        {
+            if (!this._TracePrepare()) return;
+
+            this._TraceWriteData(lastTick, level, scope, type, method, result, items);
+            if (direct)
+                this._TraceFlush();
+            this._TraceLastTick = this._TraceStopWatch.ElapsedTicks;
+        }
+        private bool _TracePrepare()
+        {
+            if (!this._TraceIsActive && !this._TraceIsDisable)
+            {
+                try
+                {
+                    this._LastLine = 0;
+                    this._LastScope = 0;
+                    DateTime now = DateTime.Now;
+                    string path = App.GetAppLocalDataPath("Trace");
+                    string name = this._TraceSearchNewFile(path, "Trace-" + now.ToString("yyyy-MM-dd"), ".csv");
+                    string file = System.IO.Path.Combine(path, name);
+                    if (System.IO.File.Exists(file))
+                    {
+                        this._TraceAnalyse(file);
+                        this._TraceStream = new System.IO.StreamWriter(file, true, Encoding.UTF8, 4096);
+                        this._TraceStream.AutoFlush = false;
+                    }
+                    else
+                    {
+                        this._TraceStream = new System.IO.StreamWriter(file, false, Encoding.UTF8, 4096);
+                        this._TraceStream.AutoFlush = false;
+                        this._TraceStream.WriteLine(TraceTitle);
+                    }
+                    this._TraceFile = file;
+                    this._TraceStopWatch = new System.Diagnostics.Stopwatch();
+                    this._TraceStopWatch.Start();
+                    this._TraceFrequency = (decimal)System.Diagnostics.Stopwatch.Frequency;
+
+                    bool withDebugger = System.Diagnostics.Debugger.IsAttached;
+                    this._TraceWriteSys(LEVEL_RUN, (withDebugger ? "Debug" : "Run"));
+                    this._TraceLastTick = this._TraceStopWatch.ElapsedTicks;
+                }
+                catch (Exception)
+                {
+                    this._TraceEnd();
+                    this._TraceIsDisable = true;
+                }
+            }
+
+            return this._TraceIsActive;
+        }
+
+        private string _TraceSearchNewFile(string path, string name, string extension)
+        {
+            string mask = name + "_???" + extension;
+            string numb = "001";
+            List<string> files = System.IO.Directory.GetFiles(path, mask).ToList();
+            int count = files.Count;
+            if (count > 0)
+            {
+                List<string> names = files.Select(f => System.IO.Path.GetFileNameWithoutExtension(f)).ToList();
+                names.Sort((a, b) => String.Compare(b, a, true));
+                string lastName = names[0];
+                string suffix = (lastName.Length > (name.Length + 1) ? lastName.Substring(name.Length + 1) : "");
+                int value;
+                if (Int32.TryParse(suffix, out value) && (value > 0 && value < 998))
+                    numb = (value + 1).ToString("000");
+            }
+            return name + "_" + numb + extension;
+        }
+        private void _TraceEnd()
+        {
+            if (this._TraceIsActive)
+            {
+                this._TraceWriteSys(LEVEL_EXIT);
+                this._TraceFlush();
+            }
+            if (this._TraceStream != null)
+            {
+                this._TraceStream.Close();
+                this._TraceStream.Dispose();
+                this._TraceStream = null;
+            }
+
+            this._TraceStream = null;
+            this._TraceFile = null;
+            this._TraceStopWatch = null;
+            this._TraceFrequency = 0m;
+            this._TraceLastTick = 0L;
+
+            this._TraceIsDisable = false;
+        }
+        private void _TraceWriteSys(string level, params string[] items)
+        {
+            this._TraceWriteData(-1L, level, "", "----------", "----------", "----------", items);
+        }
+        /// <summary>
+        /// Write row to trace.
+        /// </summary>
+        /// <param name="lastTick">-1 = do not write to column Microsec. Null = calculate time for Microsec column from this._TraceLastTick. Any positive value = calculate time for Microsec column from this value.</param>
+        /// <param name="level">Level of information, use constants LEVEL_*</param>
+        /// <param name="scope">Scope info</param>
+        /// <param name="type"></param>
+        /// <param name="method"></param>
+        /// <param name="result"></param>
+        /// <param name="items"></param>
+        private void _TraceWriteData(long? lastTick, string level, string scope, string type, string method, string result, params string[] items)
+        {
+            DateTime now = DateTime.Now;
+            string microsec = "";
+            if (!lastTick.HasValue || (lastTick.HasValue && lastTick.Value > 0))
+            {   // When lastTick is null, then use this._TraceLastTick; else use value of lastTick:
+                long tick = this._TraceStopWatch.ElapsedTicks - ((lastTick.HasValue) ? lastTick.Value : this._TraceLastTick);
+                if (tick > 0L)
+                {
+                    decimal ms = 1000000m * (decimal)tick / this._TraceFrequency;
+                    if (ms < (decimal)(UInt64.MaxValue))
+                    {
+                        UInt64 time = (UInt64)Math.Round(ms, 0);
+                        microsec = time.ToString();
+                    }
+                }
+            }
+
+            System.Threading.Thread thread = System.Threading.Thread.CurrentThread;
+            string threadName = thread.Name;
+            string threadId = " #" + thread.ManagedThreadId.ToString("X4");
+            string threadText = (!String.IsNullOrEmpty(threadId) ? threadName + threadId : "[Thread " + threadId + "]");
+            
+            int line = ++this._LastLine;
+            string tab = "\t";
+            StringBuilder sb = new StringBuilder();
+            sb.Append(line.ToString());
+            sb.Append(tab + now.Date.ToString("yyyy-MM-dd"));
+            sb.Append(tab + now.ToString("HH:mm:ss.fff"));
+            sb.Append(tab + microsec);
+            sb.Append(tab + _TraceFormatText(threadText));
+            sb.Append(tab + _TraceFormatText(level));
+            sb.Append(tab + _TraceFormatText(scope));
+            sb.Append(tab + _TraceFormatText(type));
+            sb.Append(tab + _TraceFormatText(method));
+            sb.Append(tab + _TraceFormatText(result));
+            if (items != null)
+            {
+                foreach (string item in items)
+                    sb.Append(tab + _TraceFormatText(item));
+            }
+
+            this._TraceStream.WriteLine(sb.ToString());
+        }
+        private static string _TraceFormatText(string item)
+        {
+            if (item == null) return "";
+            return item
+                    .Replace("\t", " ")
+                    .Replace("\r", " ")
+                    .Replace("\r", " ");
+        }
+        private void _TraceFlush()
+        {
+            if (this._TraceStream != null)
+            {
+                this._TraceStream.Flush();
+                this._TraceStream.BaseStream.Flush();
+            }
+        }
+        /// <summary>
+        /// Scan existing trace file for last Line and last Pair value, store its into 
+        /// </summary>
+        /// <param name="file"></param>
+        private void _TraceAnalyse(string file)
+        {
+            using (var reader = new System.IO.StreamReader(file, true))
+            {
+                this._TraceAnalyse(reader);
+                reader.Close();
+            }
+        }
+        /// <summary>
+        /// Scan existing trace file (within Stream) for last Line and last Pair value, store its into 
+        /// </summary>
+        /// <param name="file"></param>
+        private void _TraceAnalyse(System.IO.StreamReader reader)
+        {
+            if (reader.BaseStream == null) return;
+            if (!reader.BaseStream.CanSeek) return;
+
+            long chunk = 4096L;
+            long lenght = reader.BaseStream.Length;
+            long offset = lenght - chunk;
+            if (offset < 0L) offset = 0L;
+            int? scanToLine = null;
+
+            while (true)
+            {
+                reader.DiscardBufferedData();
+                reader.BaseStream.Seek(offset, System.IO.SeekOrigin.Begin);
+                if (offset > 0L)
+                    reader.ReadLine();                               // Partial row, not readed from row.begin, discard it
+                
+                int? firstLine = null;                               // First line number, readed in this chunk
+                while (!reader.EndOfStream) // && reader.pos reader.BaseStream.Position < scanTo)
+                {   // Read lines from offset, and analyse its:
+                    int? line = this._TraceAnalyseLine(reader.ReadLine());
+                    if (line.HasValue && scanToLine.HasValue && line.Value >= scanToLine.Value)
+                        break;
+                    if (line.HasValue && !firstLine.HasValue)
+                        firstLine = line;
+                }
+                if (offset == 0L || (this._LastLine > 0L && this._LastScope > 0L))
+                    break;
+
+                // Scan previous chunk:
+                offset -= chunk;
+                if (offset < 0) offset = 0;
+                scanToLine = firstLine;
+            }
+        }
+        private int? _TraceAnalyseLine(string row)
+        {
+            int? result = null;
+            if (String.IsNullOrEmpty(row)) return result;
+            string[] items = row.Split('\t');
+            if (items.Length < 7) return result;
+            int value;
+            if (!String.IsNullOrEmpty(items[0]) && Int32.TryParse(items[0], out value))
+            {   // Max(Line):
+                if (value > this._LastLine) this._LastLine = value;
+                result = value;
+            }
+            if (!String.IsNullOrEmpty(items[6]) && Int32.TryParse(items[5], out value))
+            {   // Max(Scope):
+                if (value > this._LastScope) this._LastScope = value;
+            }
+            return result;
+        }
+        public static string TraceTitle { get { return "Line;Date;Time;Microsec;Thread;Level;Scope;Object;Method;Result;Info".Replace(";", "\t"); } }
+        private bool _TraceIsActive { get { return (!this._TraceIsDisable && this._TraceStream != null); } }
+        private bool _TraceIsDisable;
+        private string _TraceFile;
+        private System.IO.StreamWriter _TraceStream;
+        private int _LastLine;
+        private int _LastScope;
+        private System.Diagnostics.Stopwatch _TraceStopWatch;
+        private decimal _TraceFrequency;
+        private long _TraceLastTick;
+        #endregion
+        #region Constants
+        protected const string LEVEL_RUN = "Run";
+        protected const string LEVEL_EXIT = "Exit";
+        protected const string LEVEL_INFO = "Info";
+        protected const string LEVEL_WARNING = "Warn";
+        protected const string LEVEL_ERROR = "Error";
+        protected const string LEVEL_EXCEPTION = "Exception";
+        protected const string LEVEL_EXCEPTION_INFO = "ExceptionInfo";
+        protected const string LEVEL_SCOPE_BEGIN = "Begin";
+        protected const string LEVEL_SCOPE_END = "End";
+        #endregion
+    }
+    #region enum TraceValue
+    public enum TracePriority : int
+    {
+        /// <summary>
+        /// Events with this priority will never be written to a trace file.
+        /// This level is important when programming variable codes, whose writings to a trace file can be controlled, for example, by a parameter.
+        /// </summary>
+        None_0 = 0,
+        /// <summary>
+        /// Priority value for elements to be analyzed only when debugging graphical execution performance. 
+        /// Such elements can be generated at thousands of seconds.
+        /// Trace file will contain events with this priority and all higher priority levels.
+        /// </summary>
+        ElementaryTimeDebug_1 = 1,
+
+        Lowest_2 = 2,
+        BellowNormal_3 = 3,
+        /// <summary>
+        /// Standard priority for events.
+        /// Trace file will contain events with this priority and all higher priority levels.
+        /// </summary>
+        Normal_5 = 5,
+        AboveNormal_7 = 7,
+        Highest_9 = 9,
+        /// <summary>
+        /// Events with this priority are always written to the trace file, regardless to current level priority (App.TracePriority).
+        /// </summary>
+        Allways_10 = 10
+    }
+    #endregion
+    #region interface ITraceScope 
+    /// <summary>
+    /// Interface for trace scope. User can read few values of Scope, and can modify Result info an add texts into Info columns.
+    /// </summary>
+    public interface ITraceScope : IDisposable
+    {
+        /// <summary>
+        /// Add new string info to current scope. 
+        /// This info will be writed into End row for this scope.
+        /// </summary>
+        /// <param name="item"></param>
+        void AddItem(string item);
+        /// <summary>
+        /// Add new string informations (more items) to current scope. 
+        /// This info will be writed into End row for this scope.
+        /// </summary>
+        /// <param name="items"></param>
+        void AddItems(IEnumerable<string> items);
+        /// <summary>
+        /// Add new string informations (more items) to current scope. 
+        /// This info will be writed into End row for this scope.
+        /// </summary>
+        /// <param name="items"></param>
+        void AddItems(params string[] items);
+        /// <summary>
+        /// Info in column Type. Read-only.
+        /// </summary>
+        string Type { get; }
+        /// <summary>
+        /// Info in column Method. Read-only.
+        /// </summary>
+        string Method { get; }
+        /// <summary>
+        /// Can change (get and set) info in column Result.
+        /// Other columns are not editable.
+        /// </summary>
+        string Result { get; set; }
+        /// <summary>
+        /// Time elapsed from begin of scope
+        /// </summary>
+        TimeSpan ElapsedTime { get; }
+    }
+    #endregion
+}
