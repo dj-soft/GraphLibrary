@@ -50,7 +50,7 @@ namespace Djs.Common.TestGUI
 
                 this._Table1 = this._PrepareTableW(48);
                 this._Table2 = this._PrepareTableW(128);
-                this._TableZ = this._PrepareTableZ(0);
+                this._TableZ = this._PrepareTableZ(18);
 
                 using (var scope2 = Application.App.TraceScope("TestFormGrid", "InitGControl", "CreateGrid"))
                 {
@@ -213,9 +213,12 @@ namespace Djs.Common.TestGUI
                 table.AddColumn(new DColumn("profese", "Profese") { IsVisible = true, Width = 120 });
                 table.AddColumn(new DColumn("mf", "Kdo je") { IsVisible = false, Width = 50 });
 
+                Image[] images = _LoadImages();
+
                 for (int r = 0; r < rowCount; r++)
                 {
                     string mf = (Rand.NextDouble() < 0.333d) ? "F" : "M";
+                    Image image = images[Rand.Next(0, images.Length)];
                     string t1 = (mf == "M" ? arrayM1[Rand.Next(0, arrayM1.Length)] : arrayF1[Rand.Next(0, arrayF1.Length)]);
                     string t2 = (mf == "M" ? arrayM2[Rand.Next(0, arrayM2.Length)] : arrayF2[Rand.Next(0, arrayF2.Length)]);
                     string name = t1 + " " + t2;
@@ -224,7 +227,7 @@ namespace Djs.Common.TestGUI
 
                     string prof = arrayP[Rand.Next(0, arrayP.Length)];
 
-                    table.AddRow(new DRow(r, null, tc, prof, mf));
+                    table.AddRow(new DRow(r, image, tc, prof, mf));
                 }
 
             }
