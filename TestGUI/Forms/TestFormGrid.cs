@@ -280,7 +280,7 @@ namespace Djs.Common.TestGUI
                 item.Time = new TimeRange(begin, end);
                 item.Height = 5f;
                 item.ToolTip = "Ranní směna";
-                item.BackColor = Color.LightGreen;
+                item.BackColor = Color.FromArgb(240, 240, 255);
                 item.BorderColor = Color.Green;
                 graph.ItemList.Add(item);
 
@@ -291,7 +291,7 @@ namespace Djs.Common.TestGUI
                 item.Time = new TimeRange(begin, end);
                 item.Height = 0.40f;
                 item.ToolTip = "Ranní směna";
-                item.BackColor = Color.LightGreen;
+                item.BackColor = Color.FromArgb(240, 240, 255);
                 item.BorderColor = Color.Green;
                 graph.ItemList.Add(item);
 
@@ -307,7 +307,7 @@ namespace Djs.Common.TestGUI
                 item.Time = new TimeRange(begin, end);
                 item.Height = 5f;
                 item.ToolTip = "Odpolední směna";
-                item.BackColor = Color.LightBlue;
+                item.BackColor = Color.FromArgb(240, 255, 240);
                 item.BorderColor = Color.Blue;
                 graph.ItemList.Add(item);
 
@@ -318,7 +318,7 @@ namespace Djs.Common.TestGUI
                 item.Time = new TimeRange(begin, end);
                 item.Height = 0.40f;
                 item.ToolTip = "Odpolední směna";
-                item.BackColor = Color.LightBlue;
+                item.BackColor = Color.FromArgb(240, 255, 240);
                 item.BorderColor = Color.Blue;
                 graph.ItemList.Add(item);
 
