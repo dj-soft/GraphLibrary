@@ -6,7 +6,7 @@ using System.Text;
 namespace Djs.Common.Localizable
 {
     /// <summary>
-    /// One localizable text.
+    /// One localizable text. For use as String.
     /// </summary>
     public class TextLoc
     {
