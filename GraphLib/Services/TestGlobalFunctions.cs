@@ -38,9 +38,9 @@ namespace Djs.Common.Services
         private FunctionGlobalGroup _CreateGroupData()
         {
             FunctionGlobalGroup group = new FunctionGlobalGroup(this);
-            group.Title = "Data k ukládání";
+            group.Title = "Data k ukládání 2018";
             group.Order = "A1";
-            group.ToolTipTitle = "PRÁCE S DATY";
+            group.ToolTipTitle = "PRÁCE S DATY (c)2018";
 
             group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Image, Size = FunctionGlobalItemSize.Whole, Image = Components.IconStandard.Dragon, Text = "DJ soft", UserData = "Rtf" });
 
