@@ -469,7 +469,7 @@ namespace Djs.Common.Application
         /// Add a new request to process in Working queue.
         /// </summary>
         /// <typeparam name="TRequest">Type of request</typeparam>
-        /// <param name="priorityId">ID for priority. See also CurrentPriority property.</param>
+        /// <param name="priorityId">ID for priority. See also CurrentPriorityId property.</param>
         /// <param name="name">name of request. Can be null. Is defined only for debug and messages purposes.</param>
         /// <param name="workMethod">Working method. Must accept one parameter of type (TRequest). This method will be called in background thread.</param>
         /// <param name="workData">Data for Working method.</param>
@@ -483,7 +483,7 @@ namespace Djs.Common.Application
         /// Add a new request to process in Working queue.
         /// </summary>
         /// <typeparam name="TRequest">Type of request</typeparam>
-        /// <param name="priorityId">ID for priority. See also CurrentPriority property.</param>
+        /// <param name="priorityId">ID for priority. See also CurrentPriorityId property.</param>
         /// <param name="name">name of request. Can be null. Is defined only for debug and messages purposes.</param>
         /// <param name="workMethod">Working method. Must accept one parameter of type (TRequest). This method will be called in background thread.</param>
         /// <param name="workData">Data for Working method.</param>
@@ -523,7 +523,7 @@ namespace Djs.Common.Application
         /// </summary>
         /// <typeparam name="TRequest">Type of request</typeparam>
         /// <typeparam name="TResponse">Type of response</typeparam>
-        /// <param name="priorityId">ID for priority. See also CurrentPriority property.</param>
+        /// <param name="priorityId">ID for priority. See also CurrentPriorityId property.</param>
         /// <param name="name">name of request. Can be null. Is defined only for debug and messages purposes.</param>
         /// <param name="workMethod">Working method. Must accept one parameter of type (TRequest). This method will be called in background thread. Must return response of type (TResponse)</param>
         /// <param name="workData">Data for Working method.</param>
@@ -538,7 +538,7 @@ namespace Djs.Common.Application
         /// </summary>
         /// <typeparam name="TRequest">Type of request</typeparam>
         /// <typeparam name="TResponse">Type of response</typeparam>
-        /// <param name="priorityId">ID for priority. See also CurrentPriority property.</param>
+        /// <param name="priorityId">ID for priority. See also CurrentPriorityId property.</param>
         /// <param name="name">name of request. Can be null. Is defined only for debug and messages purposes.</param>
         /// <param name="workMethod">Working method. Must accept one parameter of type (TRequest). This method will be called in background thread. Must return response of type (TResponse)</param>
         /// <param name="workData">Data for Working method.</param>
@@ -548,9 +548,23 @@ namespace Djs.Common.Application
         {
             Instance._Worker.AddRequest<TRequest, TResponse>(priorityId, name, workMethod, workData, callbackMethod, exceptionMethod);
         }
+        /// <summary>
+        /// Priority ID of current active process. Background requests, which are waiting in queue to processing (added via method App.ProcessRequestOnbackground()), 
+        /// are dequeued from queue in order by its PriorityId and App.CurrentPriorityId.
+        /// When CurrentPriorityId == null (default state), then no priority sorting of Background requests is processed.
+        /// </summary>
+        public static int? CurrentPriorityId
+        {
+            get { return Instance._CurrentPriority; }
+            set { Instance._CurrentPriority = value; }
+        }
+        /// <summary>
+        /// Initialize Worker instance
+        /// </summary>
         private void _WorkerInit()
         {
             this._Worker = new Worker();
+            this._CurrentPriority = null;
         }
         /// <summary>
         /// Stop all work in this._Worker thread
@@ -561,6 +575,7 @@ namespace Djs.Common.Application
                 this._Worker.Stop();
         }
         private Worker _Worker;
+        private int? _CurrentPriority;
         #endregion
         #region NextID (create identity number for new instances of specified type)
         /// <summary>

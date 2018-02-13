@@ -398,7 +398,7 @@ namespace Djs.Common.Components
         #endregion
         
         public int GraphDefaultHeight { get; set; }
-        public int LineUnitHeight { get { return this._LineUnitHeight; } set { this._LineUnitHeight = (value < 5 ? 5 : (value > 500 ? 500 : value)); } } private int _LineUnitHeight = 16;
+        public int LineUnitHeight { get { return this._LineUnitHeight; } set { this._LineUnitHeight = (value < 5 ? 5 : (value > 500 ? 500 : value)); } } private int _LineUnitHeight = 32;
         public Int32Range GraphHeightRange { get { return this._GraphHeightRange; } set { this._GraphHeightRange = value; } } private Int32Range _GraphHeightRange;
         
 

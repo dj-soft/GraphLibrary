@@ -46,7 +46,7 @@ namespace Djs.Common.Application
             this._WorkThread.Start();
         }
         /// <summary>
-        /// Mail loop of thread on background.
+        /// Main loop of Thread-On-Background.
         /// </summary>
         protected void _WorkThreadLoop()
         {
@@ -77,11 +77,9 @@ namespace Djs.Common.Application
             {
                 lock (this._Locker)
                 {
-                    if (this._WorkRequestList.Count > 0)
-                    {
-                        workItem = this._WorkRequestList[0];
-                        this._WorkRequestList.RemoveAt(0);
-                    }
+                    List<IWorkItem> itemList = this._WorkRequestList;
+                    if (itemList != null && itemList.Count > 0)
+                        workItem = this._GetWorkItemFrom(itemList);
                 }
                 if (workItem != null || this._Stopped)
                     break;
@@ -89,6 +87,28 @@ namespace Djs.Common.Application
                 this._Semaphore.WaitOne(TimeSpan.FromSeconds(1d));
             }
             return workItem;
+        }
+        /// <summary>
+        /// Return a "first" request (workItem) to process, from this._WorkRequestList.
+        /// Accept IWorkItem.PriorityId and App.CurrentPriorityId.
+        /// </summary>
+        /// <param name="itemList">List of items. Has at least 1 item.</param>
+        /// <returns></returns>
+        private IWorkItem _GetWorkItemFrom(List<IWorkItem> itemList)
+        {
+            int? priorityId = App.CurrentPriorityId;
+            int index = -1;
+            // At first attempt: we search for IWorkItem with PriorityId equal to App.CurrentPriorityId (when App.CurrentPriorityId has value):
+            if (priorityId.HasValue)
+                index = itemList.FindIndex(w => w.PriorityId == priorityId.Value);
+            // When App.CurrentPriorityId has not value, or itemList does not contain item with this value, we grab first item from list:
+            if (index < 0)
+                index = 0;
+
+            IWorkItem item = itemList[index];
+            itemList.RemoveAt(index);
+
+            return item;
         }
         /// <summary>
         /// Add new workItem to end of this queue (Add(workItem) into this._WorkRequestList).
@@ -137,7 +157,7 @@ namespace Djs.Common.Application
         /// Add a new request to process in Working queue.
         /// </summary>
         /// <typeparam name="TRequest">Type of request</typeparam>
-        /// <param name="priorityId">ID for priority. See also CurrentPriority property.</param>
+        /// <param name="priorityId">ID for priority. See also App.CurrentPriorityId property.</param>
         /// <param name="name">name of request. Can be null. Is defined only for debug and messages purposes.</param>
         /// <param name="workMethod">Working method. Must accept one parameter of type (TRequest). This method will be called in background thread.</param>
         /// <param name="workData">Data for Working method.</param>
@@ -151,7 +171,7 @@ namespace Djs.Common.Application
         /// Add a new request to process in Working queue.
         /// </summary>
         /// <typeparam name="TRequest">Type of request</typeparam>
-        /// <param name="priorityId">ID for priority. See also CurrentPriority property.</param>
+        /// <param name="priorityId">ID for priority. See also App.CurrentPriorityId property.</param>
         /// <param name="name">name of request. Can be null. Is defined only for debug and messages purposes.</param>
         /// <param name="workMethod">Working method. Must accept one parameter of type (TRequest). This method will be called in background thread.</param>
         /// <param name="workData">Data for Working method.</param>
@@ -193,7 +213,7 @@ namespace Djs.Common.Application
         /// </summary>
         /// <typeparam name="TRequest">Type of request</typeparam>
         /// <typeparam name="TResponse">Type of response</typeparam>
-        /// <param name="priorityId">ID for priority. See also CurrentPriority property.</param>
+        /// <param name="priorityId">ID for priority. See also App.CurrentPriorityId property.</param>
         /// <param name="name">name of request. Can be null. Is defined only for debug and messages purposes.</param>
         /// <param name="workMethod">Working method. Must accept one parameter of type (TRequest). This method will be called in background thread. Must return response of type (TResponse)</param>
         /// <param name="workData">Data for Working method.</param>
@@ -208,7 +228,7 @@ namespace Djs.Common.Application
         /// </summary>
         /// <typeparam name="TRequest">Type of request</typeparam>
         /// <typeparam name="TResponse">Type of response</typeparam>
-        /// <param name="priorityId">ID for priority. See also CurrentPriority property.</param>
+        /// <param name="priorityId">ID for priority. See also App.CurrentPriorityId property.</param>
         /// <param name="name">name of request. Can be null. Is defined only for debug and messages purposes.</param>
         /// <param name="workMethod">Working method. Must accept one parameter of type (TRequest). This method will be called in background thread. Must return response of type (TResponse)</param>
         /// <param name="workData">Data for Working method.</param>
