@@ -320,7 +320,8 @@ namespace Djs.Common.Components.Grid
         #endregion
         #region TimeAxis
         /// <summary>
-        /// Refill TimeAxis value from column (columnId) into this table
+        /// Send informations about changes on one TimeAxis control for specified column (in GGrid object) to all GTables in this GGrid.
+        /// All GTables in one GGrid have synchronized TimeAxis value in same column.
         /// </summary>
         /// <param name="columnId"></param>
         internal void RefreshTimeAxis(int columnId)
@@ -329,6 +330,7 @@ namespace Djs.Common.Components.Grid
         }
         /// <summary>
         /// Return an ITimeConvertor (from TimeAxis) for specified columnId.
+        /// Is called from Drawing an TimeGraph, for accessing TimeConvertor for specified column, for conversion Time values to Pixel values.
         /// Can return null for non-existing columnId or for column, where TimeAxis is not used.
         /// </summary>
         /// <param name="columnId"></param>
@@ -363,7 +365,7 @@ namespace Djs.Common.Components.Grid
                 ((GRow)item.UserData).OrderValue = (++order);
             this.RowSet.InvalidateOrder();
 
-            // Store sortType to Column:
+            // Store current sortType to appropriate Column, to it SortType property:
             foreach (GColumn gCol in this.ColumnSet)
                 gCol.SortType = (gCol.ColumnID == gColumn.ColumnID ? sortType : DTableSortRowType.None);
 
@@ -1781,6 +1783,11 @@ namespace Djs.Common.Components.Grid
             this._RowSet = rowSet;
             this._DataRow = dataRow;
             this._IsVisible = true;
+            if (dataRow is IVisualRow)
+            {
+                IVisualRow visualRow = dataRow as IVisualRow;
+                this.SizeN = visualRow.RowHeight;
+            }
             this._RowHeaderInit();
             this._RowSplitterInit();
             this._CellsInit();
@@ -2207,6 +2214,11 @@ namespace Djs.Common.Components.Grid
             boundsClient.Width = boundsClient.Width - 2;
             this.DrawBorders(e, boundsClient, true, false);
         }
+        /// <summary>
+        /// Draw background (=fill background) for this row, in specified absolute bounds
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
         internal void DrawBackground(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
         {
             Color backColor = this.BackColorCurent;

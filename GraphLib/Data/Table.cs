@@ -584,12 +584,14 @@ namespace Djs.Common.Data
             return String.Compare(a.Name, b.Name);
         }
     }
-    public class DTypeRow<T> : DRow
+    public class DTypeRow<T> : DRow, IVisualRow
     {
         public DTypeRow(T data)
             : base()
         {
             this._Data = data;
+            if (data is IVisualRow)
+                this._DataVisual = data as IVisualRow;
         }
         /// <summary>
         /// List of items in this Row
@@ -602,7 +604,8 @@ namespace Djs.Common.Data
         /// <summary>
         /// Type data of this row
         /// </summary>
-        public T Data { get { return this._Data; } } private T _Data;
+        public T Data { get { return this._Data; } }
+        private T _Data;
         /// <summary>
         /// Refresh data in this.Items array.
         /// </summary>
@@ -657,6 +660,12 @@ namespace Djs.Common.Data
             }
             this.__ItemList = new List<object>(items);
         }
+        #region IVisualRow explicit interface
+        int? IVisualRow.RowHeight { get { return (this._DataVisual != null ? this._DataVisual.RowHeight : null); } }
+        Int32Range IVisualRow.RowHeightRange { get { return (this._DataVisual != null ? this._DataVisual.RowHeightRange : null); } }
+        Color? IVisualRow.RowBackColor { get { return (this._DataVisual != null ? this._DataVisual.RowBackColor : null); } }
+        private IVisualRow _DataVisual;
+        #endregion
     }
     #endregion
     #region ColumnInfoAttribute
@@ -712,7 +721,7 @@ namespace Djs.Common.Data
         /// <summary>
         /// Height for this Row
         /// </summary>
-        Int32 RowHeight { get; }
+        Int32? RowHeight { get; }
         /// <summary>
         /// Height Range for Row
         /// </summary>
@@ -722,6 +731,9 @@ namespace Djs.Common.Data
         /// </summary>
         Color? RowBackColor { get; }
     }
+    /// <summary>
+    /// Class for sorting DRow list by comparable value
+    /// </summary>
     public class DTableSortRowsItem
     {
         public DTableSortRowsItem(DRow row)
@@ -733,7 +745,13 @@ namespace Djs.Common.Data
             this.Row = row;
             this.UserData = userData;
         }
+        /// <summary>
+        /// Data row
+        /// </summary>
         public DRow Row { get; private set; }
+        /// <summary>
+        /// Any user data
+        /// </summary>
         public object UserData { get; private set; }
         public object Value { get; set; }
         public IComparable ValueComparable { get; set; }

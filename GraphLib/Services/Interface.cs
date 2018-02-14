@@ -175,7 +175,7 @@ namespace Djs.Common.Services
         /// </summary>
         public event FunctionItemEventHandler ItemAction;
         /// <summary>
-        /// Action called before SubItems will be enumerated
+        /// Action called before SubItems on any Item will be enumerated
         /// </summary>
         public event FunctionItemEventHandler SubItemsEnumerateBefore;
         /// <summary>
@@ -338,6 +338,9 @@ namespace Djs.Common.Services
         /// ID of this item
         /// </summary>
         public int Id { get { return this._Id; } } private int _Id;
+        /// <summary>
+        /// Provider of this function
+        /// </summary>
         protected IFunctionProvider _Provider;
         /// <summary>
         /// Provider of this function
@@ -376,6 +379,7 @@ namespace Djs.Common.Services
         /// SubItem array (for ComboBox, SplitButton, and so on)
         /// </summary>
         public EList<FunctionItem> SubItems { get { this._CheckSubItems(); return this._SubItems; } }
+        public void SubItemsInvalidate() { this._SubItemsValid = false; }
         /// <summary>
         /// Image for standard state
         /// </summary>
@@ -410,11 +414,12 @@ namespace Djs.Common.Services
         /// </summary>
         public event FunctionItemEventHandler Click;
         /// <summary>
-        /// Action called on Click on any sub-item
+        /// Action called on Click on any sub-item on this item (DropDown container, and so on)
         /// </summary>
         public event FunctionItemEventHandler SubItemsClick;
         /// <summary>
-        /// Action called before SubItems will be enumerated
+        /// Action called before SubItems will be enumerated.
+        /// SubItems are enumerated only once after , 
         /// </summary>
         public event FunctionItemEventHandler SubItemsEnumerateBefore;
         /// <summary>
@@ -428,22 +433,27 @@ namespace Djs.Common.Services
         /// <summary>
         /// Run event SubItemsClick
         /// </summary>
-        /// <param name="subItem"></param>
+        /// <param name="subItem">SubItem clicked</param>
         internal virtual void OnSubItemsClick(FunctionItem subItem)
         {
-            if (this.Click != null)
-                this.Click(this, new FunctionItemEventArgs(subItem));
+            if (this.SubItemsClick != null)
+                this.SubItemsClick(this, new FunctionItemEventArgs(subItem));
         }
         /// <summary>
         /// Run event SubItemsEnumerateBefore
         /// </summary>
         internal virtual void OnSubItemsEnumerateBefore()
         {
-            if (this.SubItemsEnumerateBefore != null)
+            if (!this._SubItemsValid && this.SubItemsEnumerateBefore != null)
                 this.SubItemsEnumerateBefore(this, new FunctionItemEventArgs(this));
+            this._SubItemsValid = true;
         }
-    	#endregion
+        #endregion
         #region SubItems
+        /// <summary>
+        /// true after Enumerate SubItems in OnSubItemsEnumerateBefore(), false after SubItemsInvalidate().
+        /// </summary>
+        protected bool _SubItemsValid { get; private set; }
         /// <summary>
         /// Check when _SubItems is not null. Create new instance and insert handler for events.
         /// </summary>

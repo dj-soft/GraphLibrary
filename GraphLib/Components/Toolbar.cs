@@ -867,7 +867,7 @@ namespace Djs.Common.Components
         /// <summary>
         /// SubItem array (for ComboBox, SplitButton, and so on)
         /// </summary>
-        public EList<FunctionItem> ItemSubItems { get { this._DataItem.OnSubItemsEnumerateBefore(); return this._DataItem.SubItems; } }
+        public EList<FunctionItem> ItemSubItems { get { this.CallSubItemsEnumerateBefore(); this._DataItem.OnSubItemsEnumerateBefore(); return this._DataItem.SubItems; } }
         /// <summary>
         /// true when item has down arrow (ComboBox, SplitButton)
         /// </summary>
@@ -1257,7 +1257,7 @@ namespace Djs.Common.Components
             Point point = new Point(bounds.X, bounds.Bottom - 1);
 
             EList<FunctionItem> subItems = this.ItemSubItems;
-            System.Windows.Forms.ToolStripDropDownMenu menu = FunctionItem.CreateDropDownMenuFrom(this.ItemSubItems);
+            System.Windows.Forms.ToolStripDropDownMenu menu = FunctionItem.CreateDropDownMenuFrom(subItems);
             menu.MinimumSize = new Size(bounds.Width, 0); // 3 * this.TItemSetting.ModulePixel);
             menu.ItemClicked += new System.Windows.Forms.ToolStripItemClickedEventHandler(_ComboMenu_ItemClicked);
             menu.Show(this.Host, point, System.Windows.Forms.ToolStripDropDownDirection.BelowRight);
@@ -1404,6 +1404,14 @@ namespace Djs.Common.Components
             int b = boundsIconAbsolute.Bottom;
             e.Graphics.DrawLine(Skin.Pen(Color.DimGray), x, y + 2, x, b - 3);
             e.Graphics.DrawLine(Skin.Pen(Color.LightGray), x + 1, y + 2, x + 1, b - 3);
+        }
+        protected virtual void CallSubItemsEnumerateBefore()
+        {
+            this.CallSubItemsEnumerateBefore(this._DataItem);
+        }
+        protected virtual void CallSubItemsEnumerateBefore(FunctionItem activeItem)
+        {
+            this._ToolbarGroup.DataGroup.OnSubItemsEnumerateBefore(activeItem);
         }
         protected virtual void CallItemAction()
         {

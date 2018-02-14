@@ -48,7 +48,7 @@ namespace Djs.Common.Services
             group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Small, Image = Components.IconStandard.DocumentSaveAs, Text = "Založit jako...", ToolTip = "Založí někam dokument tak, že nebude k nalezení", LayoutHint = LayoutHint.NextItemSkipToNextRow });
             group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Half, Image = Components.IconStandard.DocumentExport, Text = "Exportovat dokument", ToolTip = "Exportuje dokument tak, aby jej všichni viděli", LayoutHint = LayoutHint.NextItemSkipToNextRow });
 
-            group.ItemAction += new FunctionItemEventHandler(_ItemClick);
+            group.ItemAction += new FunctionItemEventHandler(_ItemInGroupClick);
             
             return group;
         }
@@ -89,10 +89,14 @@ namespace Djs.Common.Services
             
             group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Separator, Size = FunctionGlobalItemSize.Whole });
 
-            group.ItemAction += new FunctionItemEventHandler(_ItemClick);
+            FunctionGlobalItem fItem = group.Items[0];
+
+            group.SubItemsEnumerateBefore += _ItemInGroup_SubItemsEnumerateBefore;
+            group.ItemAction += _ItemInGroupClick;
 
             return group;
         }
+
 
         void _DbCombo_SubItemsEnumerateBefore(object sender, FunctionItemEventArgs e)
         {
@@ -107,22 +111,22 @@ namespace Djs.Common.Services
                 e.Item.Value = e.Item.SubItems[0];
         }
         private FunctionGlobalItem _DbCombo;
-        void _ItemClick(object sender, FunctionItemEventArgs e)
+
+
+        private void _ItemInGroup_SubItemsEnumerateBefore(object sender, FunctionItemEventArgs e)
+        {
+        }
+        void _ItemInGroupClick(object sender, FunctionItemEventArgs e)
         {
             if (e.Item.UserData is string && (string)e.Item.UserData == "Rtf")
             {
                 Rtf.RtfDocument doc = new Rtf.RtfDocument();
                 doc.RtfText = Rtf.RtfDocument.TestRtfText2;
-                
-
-
             }
             else
             {
                 System.Windows.Forms.MessageBox.Show("Clicked on: " + e.Item.ToString());
             }
-
-
         }
     }
 }
