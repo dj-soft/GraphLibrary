@@ -47,22 +47,6 @@ namespace Djs.Common.Rtf
                     this._ProcessRtfDocument(rtfSegment);
             }
         }
-        /// <summary>
-        /// Find and return parsed segment for RTF document.
-        /// </summary>
-        /// <param name="segmentList"></param>
-        /// <returns></returns>
-        private ParserSegment _GetMainRtfSegment(List<ParserSegment> segmentList)
-        {
-            if (segmentList.Count > 0 && segmentList[0].SegmentName == TextParser.ParserDefaultSetting.RTF_NONE && segmentList[0].ValueCount > 0)
-            {
-                ParserSegmentValue rtfFirstValue = segmentList[0].ValueList[0];
-                if (rtfFirstValue.HasInnerSegment && rtfFirstValue.InnerSegment.SegmentName == TextParser.ParserDefaultSetting.RTF_DOCUMENT)
-                    return rtfFirstValue.InnerSegment;
-            }
-            return null;
-        }
-
         private void _ProcessRtfDocument(TextParser.ParserSegment parserSegment)
         {
             foreach (var item in parserSegment.Values)
@@ -128,6 +112,7 @@ namespace Djs.Common.Rtf
             }
             
         }
+        #region Parse RTF inner blocks
         private void _ProcessRtfBlock(ParserSegment rtfSegment)
         {
             if (rtfSegment.ValueCount == 0) return;
@@ -145,7 +130,28 @@ namespace Djs.Common.Rtf
                     break;
             }
         }
-
+        #endregion
+        #region Common helper methods
+        /// <summary>
+        /// Find and return parsed segment for RTF document.
+        /// </summary>
+        /// <param name="segmentList"></param>
+        /// <returns></returns>
+        private ParserSegment _GetMainRtfSegment(List<ParserSegment> segmentList)
+        {
+            if (segmentList.Count > 0 && segmentList[0].SegmentName == TextParser.ParserDefaultSetting.RTF_NONE && segmentList[0].ValueCount > 0)
+            {
+                ParserSegmentValue rtfFirstValue = segmentList[0].ValueList[0];
+                if (rtfFirstValue.HasInnerSegment && rtfFirstValue.InnerSegment.SegmentName == TextParser.ParserDefaultSetting.RTF_DOCUMENT)
+                    return rtfFirstValue.InnerSegment;
+            }
+            return null;
+        }
+        /// <summary>
+        /// Split value (for example: "charset238") to name ("charset") and numeric value ("238").
+        /// </summary>
+        /// <param name="parserValue"></param>
+        /// <returns></returns>
         protected static string GetRtfEntity(ParserSegmentValue parserValue)
         {
             string rtfValue;
@@ -205,8 +211,17 @@ namespace Djs.Common.Rtf
             }
             return foundValue;
         }
+        protected struct NameValue
+        {
 
-
+            private string _Name;
+            private string _Value;
+            private int _ValueInt;
+            public string Name { get { return this._Name; } }
+            public string Value { get { return this._Value; } }
+            public int ValueInt { get { return this._ValueInt; } }
+        }
+        #endregion
         #region Setting
 
         protected class RtfSetting
