@@ -143,9 +143,6 @@ namespace Djs.Common.TestGUI
 
         private DTypeTable<TestItem> _PrepareTableW(int rowCount)
         {
-
-
-
             Image[] images = _LoadImages();
             int imgPointer = 0;
             int imgCount = images.Length;
@@ -476,7 +473,7 @@ namespace Djs.Common.TestGUI
         [ColumnInfo(columnIndex: 6, text: "Fotografie", toolTip: "Fotografie osoby", width: 65, widthMin: 45, widthMax: 95, visible: false)]
         public Image Photo { get; set; }
 
-        public Int32 RowHeight { get; set; }
+        public Int32? RowHeight { get; set; }
         public Int32Range RowHeightRange { get { return null; } }
         public Color? RowBackColor { get; set; }
     }
