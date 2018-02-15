@@ -161,7 +161,7 @@ namespace Djs.Common.TestGUI
                     row.Graf2 = "Obsah grafu 2 je neznámý";
                     row.Price1 = (decimal)(48 + ((12 - r) % 12));
                     row.Photo = images[imgPointer];
-                    row.RowHeight = 85;
+                    row.RowHeight = (r % 3 == 0 ? null : (int?)(20 + ((4 * r) % 60)));
 
                     table.AddRow(row);
 
