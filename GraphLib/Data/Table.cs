@@ -4,12 +4,16 @@ using System.Linq;
 using System.Text;
 using Djs.Common.Components;
 using System.Drawing;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Djs.Common.Data.New
 {
     // Tento soubor obsahuje datové prvky pro tabulku s daty. 
     // To jest: Tabulka, Sloupec, Řádek, Buňka. 
     // A dále interface pro vizualizaci tabulky, které datová tabulka implementuje, a podporu pro třídění.
+    // Datové prvky mají sadu datových public property, ale současně slouží jako nativní podklad pro grafické objekty (GGrid, GTable).
+    // Pro jejich požadavky jsou do datových prvků explicitně implementovány rozličné interface, 
+    //  takže grafické prvky si objekty přetypují a pracují přes interface, a tyto sady rozšiřujících prvků jsou uživateli skryté při běžné datové práci (=bez interface).
 
     #region Table
     /// <summary>
@@ -494,6 +498,8 @@ namespace Djs.Common.Data.New
         #endregion
         #region GUI properties
         public int? ColumnHeight { get; set; }
+        public Int32Range RowHeightRange { get; set; }
+        public Int32? RowHeightDefault { get; set; }
         #endregion
         #region Visual style
         /// <summary>
@@ -654,6 +660,31 @@ namespace Djs.Common.Data.New
         /// </summary>
         public bool SortingEnabled { get { return this._SortingEnabled; } set { this._SortingEnabled = value; } } private bool _SortingEnabled;
         #endregion
+        #region ISequenceLayout = pořadí, počáteční pixel, velikost, následující pixel
+        /// <summary>
+        /// Pořadí tohoto prvku v sekvenci ostatních prvků.
+        /// Nemusí to být kontinuální řada, může obsahovat díry.
+        /// Kolekce se třídí prostým Sort(podle Order ASC).
+        /// </summary>
+        int ISequenceLayout.Order { get { return _ISequenceLayoutOrder; } set { _ISequenceLayoutOrder = value; } } private int _ISequenceLayoutOrder;
+        /// <summary>
+        /// Pozice, kde prvek začíná.
+        /// Interface ISequenceLayout tuto hodnotu setuje v případě, kdy se layout těchto prvků změní (změna prvků nebo jejich velikosti).
+        /// </summary>
+        int ISequenceLayout.Begin { get { return _ISequenceLayoutBegin; } set { _ISequenceLayoutBegin = value; } } private int _ISequenceLayoutBegin;
+        /// <summary>
+        /// Velikost prvku v pixelech (šířka sloupce, výška řádku, výška tabulky). 
+        /// Lze ji setovat, protože prvky lze pomocí splitterů zvětšovat / zmenšovat.
+        /// Aplikační logika prvku musí zabránit vložení neplatné hodnoty (reálně se uloží hodnota platná).
+        /// </summary>
+        int ISequenceLayout.Size { get { return this.GetLayoutSize(); } set { this.SetLayoutSize(value); } }
+        /// <summary>
+        /// Pozice, kde za tímto prvkem začíná následující prvek. 
+        /// Velikost prvku = (End - Begin) = počet pixelů, na které se zobrazuje tento prvek.
+        /// Interface ISequenceLayout tuto hodnotu nesetuje, pouze ji čte.
+        /// </summary>
+        int ISequenceLayout.End { get { return this._ISequenceLayoutBegin + (this.Visible ? this.GetLayoutSize() : 0); } }
+        #endregion
         #region Visual style
         /// <summary>
         /// Všechny vizuální vlastnosti dat v tomto sloupci (nikoli hlavičky).
@@ -801,18 +832,62 @@ namespace Djs.Common.Data.New
         /// true pro viditelný sloupec (default), false for skrytý
         /// </summary>
         public bool Visible { get { return this._Visible; } set { this._Visible = value; } } private bool _Visible;
+        /// <summary>
+        /// Rozmezí povolené výšky řádku pro tento jeden řádek.
+        /// </summary>
         public Int32Range HeightRange { get; set; }
-        public Int32? Height { get; set; }
+        /// <summary>
+        /// Zadaná výška řádku. S touto výškou bude řádek zobrazen uživateli. Uživatel může / nemůže výšku řádku měnit (podle stylu tabulky a podle stylu řádku).
+        /// Pokud uživatel interaktivně změní výšku řádku, projeví se to zde.
+        /// Pokud kód změní výšku řádku, bude tato výška řádku zarovnána do patřičných mezí.
+        /// Pokud kód nastaví výšku řádku = null, pak se pro zobrazení převezme defaultní výška řádku dle tabulky 
+        /// Výška řádku bude vždy v rozmezí HeightRange.
+        /// </summary>
+        public Int32? Height { get { return this._Size; } set { if (value.HasValue) this.SetLayoutSize(value.Value); else this._Size = null; } } private int? _Size;
+
         #region Práce s velikostí řádků (výškou): spolupráce explicitně zadané datové hodnoty, hodnoty interaktivní a rozmezí platných hodnot
-        protected void SetLayoutHeight(int height)
+        /// <summary>
+        /// Uloží do this._Size danou hodnotu zarovnanou do platných mezí
+        /// </summary>
+        /// <param name="size"></param>
+        protected void SetLayoutSize(int size)
         {
+            this._Size = this.AlignSizeToValidRange(size);
+        }
+        /// <summary>
+        /// Vrátí výšku řádku, která se reálně použije pro layout řádku
+        /// </summary>
+        /// <param name="layoutSize"></param>
+        /// <returns></returns>
+        protected int GetLayoutSize()
+        {
+            Int32? height = this._Size;
+            if (!height.HasValue && this.HasTable) height = this.Table.RowHeightDefault;
+            if (!height.HasValue) height = Data.New.Row.RowHeightDefault;
+            return this.AlignSizeToValidRange(height.Value);
+        }
+        /// <summary>
+        /// Zarovná danou velikost do platných mezí a vráti ji
+        /// </summary>
+        /// <param name="size"></param>
+        /// <returns></returns>
+        protected int AlignSizeToValidRange(int size)
+        {
+            if (size < 0) size = 0;
             Int32Range sizeRange = this.HeightRange;
+            if (sizeRange == null && this.HasTable) sizeRange = this.Table.RowHeightRange;
+            if (sizeRange != null)
+            {
+                Int32? heightAligned = sizeRange.Align(size);
+                if (heightAligned.HasValue)
+                    size = heightAligned.Value;
+            }
+            return size;
         }
-        protected int GetHeight(Int32? layoutSize)
-        {
-
-        }
-
+        /// <summary>
+        /// Implicitní výška řádku v pixelech = 23
+        /// </summary>
+        public static int RowHeightDefault { get { return 23; } }
         #endregion
         #endregion
         #region Visual style
@@ -834,6 +909,12 @@ namespace Djs.Common.Data.New
         #endregion
         #region ISequenceLayout = pořadí, počáteční pixel, velikost, následující pixel
         /// <summary>
+        /// Pořadí tohoto prvku v sekvenci ostatních prvků.
+        /// Nemusí to být kontinuální řada, může obsahovat díry.
+        /// Kolekce se třídí prostým Sort(podle Order ASC).
+        /// </summary>
+        int ISequenceLayout.Order { get { return _ISequenceLayoutOrder; } set { _ISequenceLayoutOrder = value; } } private int _ISequenceLayoutOrder;
+        /// <summary>
         /// Pozice, kde prvek začíná.
         /// Interface ISequenceLayout tuto hodnotu setuje v případě, kdy se layout těchto prvků změní (změna prvků nebo jejich velikosti).
         /// </summary>
@@ -843,31 +924,13 @@ namespace Djs.Common.Data.New
         /// Lze ji setovat, protože prvky lze pomocí splitterů zvětšovat / zmenšovat.
         /// Aplikační logika prvku musí zabránit vložení neplatné hodnoty (reálně se uloží hodnota platná).
         /// </summary>
-        int ISequenceLayout.Size
-        {
-            get
-            {
-                return this.GetHeight(this._ISequenceLayoutSize);
-            }
-            set
-            {
-                this.SetLayoutHeight(value);
-                this._ISequenceLayoutSize = this.Height.Value;
-            }
-        }
-        private Int32? _ISequenceLayoutSize;
+        int ISequenceLayout.Size { get { return this.GetLayoutSize(); } set { this.SetLayoutSize(value); } }
         /// <summary>
         /// Pozice, kde za tímto prvkem začíná následující prvek. 
         /// Velikost prvku = (End - Begin) = počet pixelů, na které se zobrazuje tento prvek.
         /// Interface ISequenceLayout tuto hodnotu nesetuje, pouze ji čte.
         /// </summary>
-        int ISequenceLayout.End { get { return this._ISequenceLayoutBegin + (this.Visible ? this._ISequenceLayoutSize : 0); } }
-        /// <summary>
-        /// Pořadí tohoto prvku v sekvenci ostatních prvků.
-        /// Nemusí to být kontinuální řada, může obsahovat díry.
-        /// Kolekce se třídí prostým Sort(podle Order ASC).
-        /// </summary>
-        int ISequenceLayout.Order { get { return _ISequenceLayoutOrder; } set { _ISequenceLayoutOrder = value; } } private int _ISequenceLayoutOrder;
+        int ISequenceLayout.End { get { return this._ISequenceLayoutBegin + (this.Visible ? this.GetLayoutSize() : 0); } }
         #endregion
         #region IContentValidity
         bool IContentValidity.DataIsValid { get { return _RowDataIsValid; } set { _RowDataIsValid = value; } } private bool _RowDataIsValid;
@@ -1073,6 +1136,12 @@ namespace Djs.Common.Data.New
     public interface ISequenceLayout
     {
         /// <summary>
+        /// Pořadí tohoto prvku v sekvenci ostatních prvků.
+        /// Nemusí to být kontinuální řada, může obsahovat díry.
+        /// Kolekce se třídí prostým Sort(podle Order ASC).
+        /// </summary>
+        int Order { get; set; }
+        /// <summary>
         /// Pozice, kde prvek začíná.
         /// Interface ISequenceLayout tuto hodnotu setuje v případě, kdy se layout těchto prvků změní (změna prvků nebo jejich velikosti).
         /// </summary>
@@ -1089,12 +1158,6 @@ namespace Djs.Common.Data.New
         /// Interface ISequenceLayout tuto hodnotu nesetuje, pouze ji čte.
         /// </summary>
         int End { get; }
-        /// <summary>
-        /// Pořadí tohoto prvku v sekvenci ostatních prvků.
-        /// Nemusí to být kontinuální řada, může obsahovat díry.
-        /// Kolekce se třídí prostým Sort(podle Order ASC).
-        /// </summary>
-        int Order { get; set; }
     }
     #endregion
     #region Podpora třídění
@@ -1148,4 +1211,20 @@ namespace Djs.Common.Data.New
         Descending = 2
     }
     #endregion
+
+
+    [TestClass]
+    public class Test_Table
+    {
+        [TestMethod]
+        public void Test()
+        {
+            Table tbl = new Table();
+            tbl.AddRow(12, 34, 56, 78);
+            tbl.AddColumns("a", "b", "c", "d");
+            tbl.Rows[0].Height = 65;
+            Row row = new Row(1, 2, 3, 4);
+            tbl.AddRow(row);
+        }
+    }
 }
