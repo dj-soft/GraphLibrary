@@ -5,49 +5,157 @@ using System.Text;
 using Djs.Common.Components;
 using System.Drawing;
 
-namespace Djs.Common.Data
+namespace Djs.Common.Data.New
 {
-    // This file contain Data items (Non-Visual) for Graphical Grid. This classes is used in application for data collections and for link data to visual Grid
+    // Tento soubor obsahuje datové prvky pro tabulku s daty. 
+    // To jest: Tabulka, Sloupec, Řádek, Buňka. 
+    // A dále interface pro vizualizaci tabulky, které datová tabulka implementuje, a podporu pro třídění.
 
-    #region DTable
+    #region Table
     /// <summary>
-    /// DTable : container for one table (set of Columns + set of Rows)
+    /// Table : jedna tabulka s dat (sada Column + Row)
     /// </summary>
-    public class DTable
+    public class Table : IVisualMember, IContentValidity
     {
-        public DTable()
+        #region Constructor, Initialisation
+        /// <summary>
+        /// Konstructor
+        /// </summary>
+        public Table()
         {
-            this._InitTable();
+            this._TableInit();
         }
-        private void _InitTable()
+        /// <summary>
+        /// Konstructor
+        /// </summary>
+        /// <param name="tableName"></param>
+        public Table(string tableName)
         {
-            this._Columns = new EList<DColumn>();
-            this._ColumnsAttachEvents();
-            this._Rows = new EList<DRow>();
-            this._RowsAttachEvents();
+            this._TableName = tableName;
+            this._TableInit();
         }
+        /// <summary>
+        /// Inicializace
+        /// </summary>
+        private void _TableInit()
+        {
+            this._ColumnsInit();
+            this._RowsInit();
+        }
+        /// <summary>
+        /// Název tabulky, podle něj lze hledat
+        /// </summary>
+        public string TableName { get { return this._TableName; } set { this._TableName = value; } }
+        private string _TableName;
+        #endregion
+        #region GTable - Link, Invalidate Graphic data
+        /// <summary>
+        /// Reference na vizuální tabulku (GTable), může být null
+        /// </summary>
+        public Components.Grid.GTable GTable { get { return this._GTable; } internal set { this._GTableLink(value); } }
+        private Components.Grid.GTable _GTable;
+        /// <summary>
+        /// true pokud má referenci na vizuální tabulku (GTable)
+        /// </summary>
+        public bool HasGTable { get { return (this._GTable != null); } }
+        /// <summary>
+        /// Napojí se na danou vizuální tabulku (GTable)
+        /// </summary>
+        /// <param name="gTable"></param>
+        protected void _GTableLink(Components.Grid.GTable gTable)
+        {
+            if (this._GTable != null)
+            {   // Odpojit starou
+            }
 
-        #region Columns and Rows Add/Remove public methods
-        public DColumn AddColumn(string name)
+            this._GTable = gTable;
+
+            if (this._GTable != null)
+            {   // Napojit novou
+            }
+        }
+        #endregion
+        #region Columns - Add/Remove public, protected and private methods
+        /// <summary>
+        /// Inicializace dat pro sloupce
+        /// </summary>
+        private void _ColumnsInit()
         {
-            DColumn column = null;
+            this._Columns = new EList<Column>();
+            this._Columns.ItemAddAfter += this._ColumnAddAfter;
+            this._Columns.ItemRemoveAfter += this._ColumnRemoveAfter;
+            this._ColumnsId = 0;
+            this._ColumnIdDict = new Dictionary<int, Column>();
+            this._ColumnNameDict = new Dictionary<string, Column>();
+        }
+        /// <summary>
+        /// Kolekce sloupců, nový sloupec lze přidat i sem
+        /// </summary>
+        public EList<Column> Columns { get { return this._Columns; } }
+        /// <summary>
+        /// Seznam sloupců
+        /// </summary>
+        private EList<Column> _Columns;
+        /// <summary>
+        /// ID pro nové sloupce, výchozí = 0 = index pro první přidaný sloupec. Vždy se jen navyšuje. Po odebrání sloupce se jeho ID již nepoužije.
+        /// </summary>
+        private int _ColumnsId;
+        /// <summary>
+        /// Index sloupců dle ID
+        /// </summary>
+        private Dictionary<int, Column> _ColumnIdDict;
+        /// <summary>
+        /// Index sloupců dle Name
+        /// </summary>
+        private Dictionary<string, Column> _ColumnNameDict;
+        /// <summary>
+        /// Počet sloupců v tabulce
+        /// </summary>
+        public int ColumnsCount { get { return this._Columns.Count; } }
+        /// <summary>
+        /// Přidá nový sloupec daného názvu, vrátí jeho objekt
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        public Column AddColumn(string name)
+        {
+            Column column = null;
             if (!String.IsNullOrEmpty(name))
             {
-                column = new DColumn(name);
+                column = new Column(name);
                 this._Columns.Add(column);
             }
             return column;
         }
-        public DColumn AddColumn(string name, string text)
+        /// <summary>
+        /// Přidá nový sloupec daného názvu a popisku, vrátí jeho objekt
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        public Column AddColumn(string name, string text)
         {
-            DColumn column = null;
+            Column column = null;
             if (!String.IsNullOrEmpty(name))
             {
-                column = new DColumn(name, text);
+                column = new Column(name, text);
                 this._Columns.Add(column);
             }
             return column;
         }
+        /// <summary>
+        /// Přidá nový sloupec
+        /// </summary>
+        /// <param name="column"></param>
+        public void AddColumn(Column column)
+        {
+            if (column != null)
+                this._Columns.Add(column);
+        }
+        /// <summary>
+        /// Přidá nové sloupce
+        /// </summary>
+        /// <param name="columnNames"></param>
         public void AddColumns(params string[] columnNames)
         {
             if (columnNames != null)
@@ -55,139 +163,297 @@ namespace Djs.Common.Data
                 foreach (string columnName in columnNames)
                 {
                     if (!String.IsNullOrEmpty(columnName))
-                        this._Columns.Add(new DColumn(columnName));
+                        this._Columns.Add(new Column(columnName));
                 }
             }
         }
-        public void AddColumn(DColumn column)
-        {
-            if (column != null)
-                this._Columns.Add(column);
-        }
-        public void AddColumns(params DColumn[] columns)
+        /// <summary>
+        /// Přidá nové sloupce
+        /// </summary>
+        /// <param name="columns"></param>
+        public void AddColumns(params Column[] columns)
         {
             if (columns != null)
                 this._Columns.AddRange(columns.Where(c => c != null));
         }
-
         /// <summary>
-        /// Returns ColumnId value for specified Column, after this Column is added into this Table.
+        /// Handler eventu event Columns.ItemAddAfter, vyvolá se po přidání objektu do kolekce Columns
         /// </summary>
-        /// <param name="dColumn"></param>
-        /// <returns></returns>
-        internal int GetColumnIdFor(DColumn dColumn)
-        {
-            int index = this._Columns.FindIndex(c => Object.ReferenceEquals(c, dColumn));
-            return index;
-        }
-
-        public DRow AddRow()
-        {
-            DRow row = new DRow();
-            this._Rows.Add(row);
-            return row;
-        }
-        public DRow AddRow(params object[] items)
-        {
-            DRow row = null;
-            if (items != null)
-            {
-                row = new DRow(items);
-                this._Rows.Add(row);
-            }
-            return row;
-        }
-        public void AddRow(DRow row)
-        {
-            if (row != null)
-                this._Rows.Add(row);
-        }
-        public void AddRows(params DRow[] rows)
-        {
-            if (rows != null)
-                this._Rows.AddRange(rows.Where(r => r != null));
-        }
-        #endregion
-        #region Bridge from private eventhandlers (Columns.ItemAddAfter => private void _Columns_ItemAddAfter(), ...) to public events (ColumnAddAfter, ...)
-        private void _ColumnsAttachEvents()
-        {
-            this._Columns.ItemAddAfter += this._Columns_ItemAddAfter;
-            this._Columns.ItemRemoveAfter += this._Columns_ItemRemoveAfter;
-        }
-        private void _RowsAttachEvents()
-        {
-            this._Rows.ItemAddAfter += this._Rows_ItemAddAfter;
-            this._Rows.ItemRemoveAfter += this._Rows_ItemRemoveAfter;
-        }
-
-        void _Columns_ItemAddAfter(object sender, EList<DColumn>.EListAfterEventArgs args)
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        void _ColumnAddAfter(object sender, EList<Column>.EListAfterEventArgs args)
         {
             this.ColumnAdded(args);
             this.OnColumnAddAfter(args);
             if (this.ColumnAddAfter != null)
                 this.ColumnAddAfter(this, args);
         }
-        protected virtual void OnColumnAddAfter(EList<DColumn>.EListAfterEventArgs args) { }
-        public event EList<DColumn>.EListEventAfterHandler ColumnAddAfter;
-
-        void _Columns_ItemRemoveAfter(object sender, EList<DColumn>.EListAfterEventArgs args)
+        /// <summary>
+        /// Akce po přidání sloupce do tabulky: napojí sloupec na tabulku, přiřadí ID, uloží do indexů
+        /// </summary>
+        /// <param name="args"></param>
+        protected void ColumnAdded(EList<Column>.EListAfterEventArgs args)
+        {
+            Column column = args.Item;
+            int id = this._ColumnsId++;
+            ((ITableMember)column).AttachToTable(this, id);
+            if (!this._ColumnIdDict.ContainsKey(id))
+                this._ColumnIdDict.Add(id, column);
+            string name = column.Name;
+            if (!String.IsNullOrEmpty(name) && !this._ColumnNameDict.ContainsKey(name))
+                this._ColumnNameDict.Add(name, column);
+        }
+        /// <summary>
+        /// Protected virtual metoda volaná v procesu přidání sloupce, sloupec je platný, event ColumnAddAfter ještě neproběhl. V DTable je tato metoda prázdná.
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnColumnAddAfter(EList<Column>.EListAfterEventArgs args) { }
+        /// <summary>
+        /// Public event vyvolaný po přidání nového sloupce do tabulky. Sloupec je již v tabulce umístěn, sloupec je uveden v argumentu.
+        /// </summary>
+        public event EList<Column>.EListEventAfterHandler ColumnAddAfter;
+        /// <summary>
+        /// Handler eventu event Columns.ItemRemoveAfter, vyvolá se po odebrání objektu (sloupce) z kolekce Columns
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        void _ColumnRemoveAfter(object sender, EList<Column>.EListAfterEventArgs args)
         {
             this.ColumnRemoved(args);
             this.OnColumnRemoveAfter(args);
             if (this.ColumnRemoveAfter != null)
                 this.ColumnRemoveAfter(this, args);
         }
-        protected virtual void OnColumnRemoveAfter(EList<DColumn>.EListAfterEventArgs args) { }
-        public event EList<DColumn>.EListEventAfterHandler ColumnRemoveAfter;
-
-        void _Rows_ItemAddAfter(object sender, EList<DRow>.EListAfterEventArgs args)
+        /// <summary>
+        /// Akce po odebrání sloupce z tabulky: odpojí sloupec z tabulky, a odebere jej z do indexů
+        /// </summary>
+        /// <param name="args"></param>
+        protected void ColumnRemoved(EList<Column>.EListAfterEventArgs args)
+        {
+            Column column = args.Item;
+            int id = column.ColumnId;
+            ((ITableMember)column).DetachFromTable();
+            if (this._ColumnIdDict.ContainsKey(id))
+                this._ColumnIdDict.Remove(id);
+            string name = column.Name;
+            if (!String.IsNullOrEmpty(name) && this._ColumnNameDict.ContainsKey(name))
+                this._ColumnNameDict.Remove(name);
+        }
+        /// <summary>
+        /// Protected virtual metoda volaná v procesu odebrání sloupce, sloupec je platný, event ColumnRemoveAfter ještě neproběhl. V DTable je tato metoda prázdná.
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnColumnRemoveAfter(EList<Column>.EListAfterEventArgs args) { }
+        /// <summary>
+        /// Public event vyvolaný po odebrání sloupce z tabulky. Sloupec již v tabulce není umístěn, sloupec je uveden v argumentu.
+        /// </summary>
+        public event EList<Column>.EListEventAfterHandler ColumnRemoveAfter;
+        /// <summary>
+        /// Vrátí true pokud tabulka obsahuje sloupec daného názvu
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        public bool ContainsColumn(string name)
+        {
+            return (!String.IsNullOrEmpty(name) && this._ColumnNameDict.ContainsKey(name));
+        }
+        /// <summary>
+        /// Vrátí true pokud tabulka obsahuje sloupec daného ID
+        /// </summary>
+        /// <param name="columnId"></param>
+        /// <returns></returns>
+        public bool ContainsColumn(int columnId)
+        {
+            return (this._ColumnIdDict.ContainsKey(columnId));
+        }
+        /// <summary>
+        /// Vrátí sloupec daného názvu, může dojít k chybě při jeho neexistenci
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        public Column GetColumn(string name)
+        {
+            return (!String.IsNullOrEmpty(name) ? this._ColumnNameDict[name] : null);
+        }
+        /// <summary>
+        /// Vrátí sloupec daného ID, může dojít k chybě při jeho neexistenci
+        /// </summary>
+        /// <param name="columnId"></param>
+        /// <returns></returns>
+        public Column GetColumn(int columnId)
+        {
+            return this._ColumnIdDict[columnId];
+        }
+        /// <summary>
+        /// Zkusí najít sloupec daného názvu, vrací true = nalezen
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="column"></param>
+        /// <returns></returns>
+        public bool TryGetColumn(string name, out Column column)
+        {
+            column = null;
+            return (!String.IsNullOrEmpty(name) && this._ColumnNameDict.TryGetValue(name, out column));
+        }
+        /// <summary>
+        /// Zkusí najít sloupec daného ID, vrací true = nalezen
+        /// </summary>
+        /// <param name="columnId"></param>
+        /// <param name="column"></param>
+        /// <returns></returns>
+        public bool TryGetColumn(int columnId, out Column column)
+        {
+            column = null;
+            return (this._ColumnIdDict.TryGetValue(columnId, out column));
+        }
+        #endregion
+        #region Rows - Add/Remove public, protected and private methods
+        /// <summary>
+        /// Inicializace dat pro řádky
+        /// </summary>
+        private void _RowsInit()
+        {
+            this._Rows = new EList<Row>();
+            this._Rows.ItemAddAfter += this._RowAddAfter;
+            this._Rows.ItemRemoveAfter += this._RowRemoveAfter;
+            this._RowsId = 0;
+        }
+        /// <summary>
+        /// Kolekce řádků, nový řádek lze přidat i sem
+        /// </summary>
+        public EList<Row> Rows { get { return this._Rows; } }
+        /// <summary>
+        /// Seznam řádků
+        /// </summary>
+        private EList<Row> _Rows;
+        /// <summary>
+        /// ID pro nové řádky, výchozí = 0 = index pro první přidaný řádek. Vždy se jen navyšuje. Po odebrání řádku se jeho ID již nepoužije.
+        /// </summary>
+        private int _RowsId;
+        /// <summary>
+        /// Počet řádků v tabulce
+        /// </summary>
+        public int RowsCount { get { return this._Rows.Count; } }
+        /// <summary>
+        /// Přidá nový řádek, vrátí jeho objekt
+        /// </summary>
+        /// <returns></returns>
+        public Row AddRow()
+        {
+            Row row = new Row();
+            this._Rows.Add(row);
+            return row;
+        }
+        /// <summary>
+        /// Přidá nový řádek, vrátí jeho objekt.
+        /// Do řádku rovnou vepíše dodané hodnoty.
+        /// </summary>
+        /// <param name="items"></param>
+        /// <returns></returns>
+        public Row AddRow(params object[] items)
+        {
+            Row row = null;
+            if (items != null)
+            {
+                row = new Row(items);
+                this._Rows.Add(row);
+            }
+            return row;
+        }
+        /// <summary>
+        /// Přidá daný řádek.
+        /// </summary>
+        /// <param name="row"></param>
+        public void AddRow(Row row)
+        {
+            if (row != null)
+                this._Rows.Add(row);
+        }
+        /// <summary>
+        /// Přidá dané řádky do této tabulky.
+        /// </summary>
+        /// <param name="rows"></param>
+        public void AddRows(params Row[] rows)
+        {
+            if (rows != null)
+                this._Rows.AddRange(rows.Where(r => r != null));
+        }
+        /// <summary>
+        /// Handler eventu event Rows.ItemAddAfter, vyvolá se po přidání objektu do kolekce Rows
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        void _RowAddAfter(object sender, EList<Row>.EListAfterEventArgs args)
         {
             this.RowAdded(args);
             this.OnRowAddAfter(args);
             if (this.RowAddAfter != null)
                 this.RowAddAfter(this, args);
         }
-        protected virtual void OnRowAddAfter(EList<DRow>.EListAfterEventArgs args) { }
-        public event EList<DRow>.EListEventAfterHandler RowAddAfter;
-
-        void _Rows_ItemRemoveAfter(object sender, EList<DRow>.EListAfterEventArgs args)
+        /// <summary>
+        /// Akce po přidání řádku do tabulky: napojí řádek na tabulku, přiřadí ID
+        /// </summary>
+        /// <param name="args"></param>
+        protected void RowAdded(EList<Row>.EListAfterEventArgs args)
+        {
+            Row row = args.Item;
+            int id = this._RowsId++;
+            ((ITableMember)row).AttachToTable(this, id);
+        }
+        /// <summary>
+        /// Protected virtual metoda volaná v procesu přidání řádku, řádek je platný, event RowAddAfter ještě neproběhl. V DTable je tato metoda prázdná.
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnRowAddAfter(EList<Row>.EListAfterEventArgs args) { }
+        /// <summary>
+        /// Public event vyvolaný po přidání nového řádku do tabulky. Řádek je již v tabulce umístěn, řádek je uveden v argumentu.
+        /// </summary>
+        public event EList<Row>.EListEventAfterHandler RowAddAfter;
+        /// <summary>
+        /// Handler eventu event Rows.ItemRemoveAfter, vyvolá se po odebrání objektu (řádku) z kolekce Rows
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        void _RowRemoveAfter(object sender, EList<Row>.EListAfterEventArgs args)
         {
             this.RowRemoved(args);
             this.OnRowRemoveAfter(args);
             if (this.RowRemoveAfter != null)
                 this.RowRemoveAfter(this, args);
         }
-        protected virtual void OnRowRemoveAfter(EList<DRow>.EListAfterEventArgs args) { }
-        public event EList<DRow>.EListEventAfterHandler RowRemoveAfter;
-        #endregion
-        #region Columns and Rows Add/Remove internal actions, not events
-        protected void ColumnAdded(EList<DColumn>.EListAfterEventArgs args)
+        /// <summary>
+        /// Akce po odebrání řádku z tabulky: odpojí řádek z tabulky
+        /// </summary>
+        /// <param name="args"></param>
+        protected void RowRemoved(EList<Row>.EListAfterEventArgs args)
         {
-            args.Item.AttachToTable(this);         // Visual Column link to Table
-            foreach (DRow row in this._Rows)
-                row.ItemsPrepare();              // Items in Row must have equal number of Columns as Table
+            ((ITableMember)args.Item).DetachFromTable();
         }
-        protected void ColumnRemoved(EList<DColumn>.EListAfterEventArgs args)
-        {
-            args.Item.DetachFromTable();
-        }
-        protected void RowAdded(EList<DRow>.EListAfterEventArgs args)
-        {
-            args.Item.AtachToTable(this);
-        }
-        protected void RowRemoved(EList<DRow>.EListAfterEventArgs args)
-        {
-            args.Item.DetachFromTable();
-        }
+        /// <summary>
+        /// Protected virtual metoda volaná v procesu odebrání řádku, řádek je platný, event RowRemoveAfter ještě neproběhl. V DTable je tato metoda prázdná.
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnRowRemoveAfter(EList<Row>.EListAfterEventArgs args) { }
+        /// <summary>
+        /// Public event vyvolaný po odebrání řádku z tabulky. Řádek již v tabulce není umístěn, řádek je uveden v argumentu.
+        /// </summary>
+        public event EList<Row>.EListEventAfterHandler RowRemoveAfter;
         #endregion
         #region Sorting rows
-        public bool SortRows(List<DTableSortRowsItem> rowList, DColumn sortByColumn, DTableSortRowType sortType)
+        /// <summary>
+        /// Setřídí dodaný seznam řádků podle dodaného sloupce a směru
+        /// </summary>
+        /// <param name="rowList"></param>
+        /// <param name="sortByColumn"></param>
+        /// <param name="sortType"></param>
+        /// <returns></returns>
+        public bool SortRows(List<DTableSortRowsItem> rowList, Column sortByColumn, DTableSortRowType sortType)
         {
             if (sortByColumn == null) return false;
             if (!sortByColumn.SortingEnabled) return false;
 
             int index = sortByColumn.ColumnId;
-            bool hasComparator = sortByColumn.HasValueComparator;
+            bool hasComparator = (sortByColumn.ValueComparator != null);
             if (hasComparator)
                 rowList.ForEachItem(r => { r.Value = r.Row[index]; });
             else
@@ -212,7 +478,12 @@ namespace Djs.Common.Data
             }
             return false;
         }
-
+        /// <summary>
+        /// Komparátor
+        /// </summary>
+        /// <param name="valueA"></param>
+        /// <param name="valueB"></param>
+        /// <returns></returns>
         private static int SortRowsCompare(IComparable valueA, IComparable valueB)
         {
             if (valueA == null && valueB == null) return 0;
@@ -221,545 +492,587 @@ namespace Djs.Common.Data
             return valueA.CompareTo(valueB);
         }
         #endregion
-
-        private void _GridLink(GGrid grid)
+        #region GUI properties
+        public int? ColumnHeight { get; set; }
+        #endregion
+        #region Visual style
+        /// <summary>
+        /// Všechny vizuální vlastnosti dat v tomto sloupci (nikoli hlavičky).
+        /// Default hodnota je null.
+        /// </summary>
+        public VisualStyle VisualStyle { get { return _VisualStyle; } set { _VisualStyle = value; } }
+        private VisualStyle _VisualStyle;
+        VisualStyle IVisualMember.Style
         {
-            if (this._Grid != null)
-            {   // Unlink this data object from old visual this._Grid events:
-            }
-
-            this._Grid = grid;
-
-            if (this._Grid != null)
-            {   // Link this data object to new visual this._Grid events:
+            get
+            {
+                return VisualStyle.CreateFrom(this.VisualStyle);
             }
         }
-        /// <summary>
-        /// Name of table, for search it in TableSet
-        /// </summary>
-        public string TableName { get { return this._TableName; } set { this._TableName = value; } } private string _TableName;
-        /// <summary>
-        /// Visual grid, can be null
-        /// </summary>
-        public GGrid Grid { get { return this._Grid; } internal set { this._GridLink(value); } } private GGrid _Grid;
-        /// <summary>
-        /// Data collection of columns
-        /// </summary>
-        public EList<DColumn> Columns { get { return this._Columns; } } private EList<DColumn> _Columns;
-        /// <summary>
-        /// Number of columns in this Table
-        /// </summary>
-        public int ColumnsCount { get { return this._Columns.Count; } }
-
-        /// <summary>
-        /// Data collection of rows
-        /// </summary>
-        public EList<DRow> Rows { get { return this._Rows; } } private EList<DRow> _Rows;
-        /// <summary>
-        /// Number of rows in this Table
-        /// </summary>
-        public int RowsCount { get { return this._Rows.Count; } }
+        Int32? IVisualMember.Width { get { return null; } }
+        Int32? IVisualMember.Height { get { return null; } }
+        #endregion
+        #region ITableValidity
+        bool IContentValidity.DataIsValid { get { return _RowDataIsValid; } set { _RowDataIsValid = value; } } private bool _RowDataIsValid;
+        bool IContentValidity.RowLayoutIsValid { get { return _RowLayoutIsValid; } set { _RowLayoutIsValid = value; } } private bool _RowLayoutIsValid;
+        bool IContentValidity.ColumnLayoutIsValid { get { return _ColumnLayoutIsValid; } set { _ColumnLayoutIsValid = value; } } private bool _ColumnLayoutIsValid;
+        #endregion
     }
     #endregion
-    #region DColumn
+    #region Column
     /// <summary>
-    /// DColumn : one column informations
+    /// Column : informace o jednom sloupci tabulky
     /// </summary>
-    public class DColumn
+    public class Column : ITableMember, IVisualMember
     {
-        public DColumn()
+        #region Konstructor, základní data
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public Column()
         {
             this._ColumnId = -1;
-            this._IsVisible = true;
+            this._Visible = true;
             this._SortingEnabled = true;
         }
-        public DColumn(string name)
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="name"></param>
+        public Column(string name)
             : this()
         {
-            this.Name = name;
+            this._Name = name;
         }
-        public DColumn(string name, Djs.Common.Localizable.TextLoc text)
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="text"></param>
+        public Column(string name, Djs.Common.Localizable.TextLoc text)
             : this()
         {
-            this.Name = name;
+            this._Name = name;
             this._Text = text;
         }
         public override string ToString()
         {
-            return this.Name + ": " + this.Text;
+            return this.Name + ": " + this.Title;
         }
-
         /// <summary>
-        /// ColumnId = index of column in Table.
-        /// -1 = column without a table.
+        /// Jednoznačné ID tohoto sloupce. Read only.
+        /// Je přiděleno při přidání do tabulky, pak má hodnotu 0 nebo kladnou.
+        /// Hodnota se nemění ani přemístěním na jinou pozici, ani odebráním některého sloupce s menším ID.
+        /// Po odebrání z tabulky je hodnota -1.
         /// </summary>
         public int ColumnId { get { return this._ColumnId; } } private int _ColumnId = -1;
         /// <summary>
-        /// Name, for example name of DB column
+        /// Klíčový název, typicky sloupec DB tabulky nebo jiné klíčové slovo. Nejde o titulek.
         /// </summary>
         public string Name { get { return this._Name; } set { this._Name = value; } } private string _Name;
+        #endregion
+        #region Linkování na tabulku
         /// <summary>
-        /// Caption = user readable text
+        /// Reference na tabulku, kam sloupec patří.
         /// </summary>
-        public Djs.Common.Localizable.TextLoc Text { get { return (this._Text != null ? this._Text : (Djs.Common.Localizable.TextLoc)this._Name); } set { this._Text = value; } } private Djs.Common.Localizable.TextLoc _Text;
+        public Table Table { get { return this._Table; } private set { this._Table = value; } } private Table _Table;
         /// <summary>
-        /// ToolTip = user readable information text
-        /// </summary>
-        public Djs.Common.Localizable.TextLoc ToolTip { get { return this._ToolTip; } set { this._ToolTip = value; } } private Djs.Common.Localizable.TextLoc _ToolTip;
-        /// <summary>
-        /// DataType = type of data in this column. null = generic data.
-        /// </summary>
-        public Type DataType { get { return this._DataType; } set { this._DataType = value; } } private Type _DataType;
-        /// <summary>
-        /// Format string for data in this column
-        /// </summary>
-        public string FormatString { get { return this._FormatString; } set { this._FormatString = value; } } private string _FormatString;
-        /// <summary>
-        /// Use TimeAxis on Grid table
-        /// </summary>
-        public bool UseTimeAxis { get { return this._UseTimeAxis; } set { this._UseTimeAxis = value; } } private bool _UseTimeAxis;
-        /// <summary>
-        /// true for visible columns (default), false for hidden
-        /// </summary>
-        public bool IsVisible { get { return this._IsVisible; } set { this._IsVisible = value; } } private bool _IsVisible;
-        /// <summary>
-        /// Initial Width of this column, in pixels
-        /// Is used only from first Table in TableSet (MasterTable).
-        /// </summary>
-        public int? Width { get { return this._Width; } set { this._Width = value; } } private int? _Width;
-        /// <summary>
-        /// Range for Width of this column, in pixels.
-        /// Is used only from first Table in TableSet (MasterTable).
-        /// </summary>
-        public Int32Range WidthRange { get { return this._WidthRange; } set { this._WidthRange = value; } } private Int32Range _WidthRange;
-        /// <summary>
-        /// Reference to Table, where this Column is included
-        /// </summary>
-        public DTable Table { get; private set; }
-        /// <summary>
-        /// true when this Row has reference to its Table
+        /// true pokud máme referenci na tabulku
         /// </summary>
         public bool HasTable { get { return (this.Table != null); } }
-
         /// <summary>
-        /// Comparartor of two values for this column, for sorting
-        /// </summary>
-        public Func<object, object, int> ValueComparator;
-        /// <summary>
-        /// true (default) when Sort by this column is enabled.
-        /// false = disable sorting.
-        /// </summary>
-        public bool SortingEnabled { get { return this._SortingEnabled; } set { this._SortingEnabled = value; } } private bool _SortingEnabled;
-        /// <summary>
-        /// true when this column has ValueComparator
-        /// </summary>
-        internal bool HasValueComparator { get { return (this.ValueComparator != null); } }
-        /// <summary>
-        /// Attach this column into table.
-        /// An column can be attached only to one table in one time.
+        /// Napojí this sloupec do dané tabulky.
+        /// Je voláno z tabulky, v eventu ItemAdd kolekce Columns.
         /// </summary>
         /// <param name="dTable"></param>
-        internal void AttachToTable(DTable dTable)
+        void ITableMember.AttachToTable(Table dTable, int id)
         {
-            this._ColumnId = dTable.GetColumnIdFor(this);
+            this._ColumnId = id;
             this.Table = dTable;
         }
         /// <summary>
-        /// Release this column from its table
+        /// Odpojí this sloupec z dané tabulky.
+        /// Je voláno z tabulky, v eventu ItemRemove kolekce Columns.
         /// </summary>
-        internal void DetachFromTable()
+        void ITableMember.DetachFromTable()
         {
             this._ColumnId = -1;
             this.Table = null;
         }
-    }
-    #endregion
-    #region DRow
-    /// <summary>
-    /// DRow : data of one row
-    /// </summary>
-    public class DRow
-    {
-        public DRow()
+        #endregion
+        #region GUI vlastnosti sloupce
+        /// <summary>
+        /// Titulkový text, lokalizovaný
+        /// </summary>
+        public Djs.Common.Localizable.TextLoc Title { get { return (this._Text != null ? this._Text : (Djs.Common.Localizable.TextLoc)this._Name); } set { this._Text = value; } } private Djs.Common.Localizable.TextLoc _Text;
+        /// <summary>
+        /// ToolTip pro hlavičku sloupce, lokalizovaný
+        /// </summary>
+        public Djs.Common.Localizable.TextLoc ToolTip { get { return this._ToolTip; } set { this._ToolTip = value; } } private Djs.Common.Localizable.TextLoc _ToolTip;
+        /// <summary>
+        /// Datový typ obsahu sloupce. Null = obecná data
+        /// </summary>
+        public Type DataType { get { return this._DataType; } set { this._DataType = value; } } private Type _DataType;
+        /// <summary>
+        /// Formátovací string pro data zobrazovaná v tomto sloupci.
+        /// </summary>
+        public string FormatString { get { return this._FormatString; } set { this._FormatString = value; } } private string _FormatString;
+        /// <summary>
+        /// true pokud se pro sloupec má zobrazit časová osa v záhlaví
+        /// </summary>
+        public bool UseTimeAxis { get { return this._UseTimeAxis; } set { this._UseTimeAxis = value; } } private bool _UseTimeAxis;
+        /// <summary>
+        /// true pro viditelný sloupec (default), false for skrytý
+        /// </summary>
+        public bool Visible { get { return this._Visible; } set { this._Visible = value; } } private bool _Visible;
+        /// <summary>
+        /// Výchozí šířka sloupce, v pixelech. 
+        /// Má význam pouze v první tabulce použité v Gridu, další tabulky přebírají šířku z první tabulky.
+        /// </summary>
+        public int? Width { get { return this._Width; } set { this._Width = value; } } private int? _Width;
+        /// <summary>
+        /// Platné rozmezí šířky sloupce.
+        /// Má význam pouze v první tabulce použité v Gridu, další tabulky přebírají hodnotu z první tabulky.
+        /// </summary>
+        public Int32Range WidthRange { get { return this._WidthRange; } set { this._WidthRange = value; } } private Int32Range _WidthRange;
+        #endregion
+        #region Sorting
+        /// <summary>
+        /// Komparátor pro dvě hodnoty v tomto sloupci, pro třídění
+        /// </summary>
+        public Func<object, object, int> ValueComparator;
+        /// <summary>
+        /// true pokud je povoleno třídit podle tohoto sloupce.
+        /// false = nemožno.
+        /// </summary>
+        public bool SortingEnabled { get { return this._SortingEnabled; } set { this._SortingEnabled = value; } } private bool _SortingEnabled;
+        #endregion
+        #region Visual style
+        /// <summary>
+        /// Všechny vizuální vlastnosti dat v tomto sloupci (nikoli hlavičky).
+        /// Default hodnota je null.
+        /// </summary>
+        public VisualStyle VisualStyle { get { return _VisualStyle; } set { _VisualStyle = value; } }
+        private VisualStyle _VisualStyle;
+        VisualStyle IVisualMember.Style
         {
-            this.RowId = Application.App.GetNextId(typeof(DRow));
-            this.__ItemList = new List<object>();
-        }
-        public DRow(params object[] items) : this()
-        {
-            this.__ItemList = new List<object>(items);
-        }
-        /// <summary>
-        /// Unique ID of this column, constant, read-only
-        /// </summary>
-        public int RowId { get; private set; }
-        /// <summary>
-        /// Number of items in this.Items array
-        /// </summary>
-        public int ItemsCount { get { return this.ItemList.Count; } }
-        /// <summary>
-        /// Array of items in this Row
-        /// </summary>
-        public object[] Items { get { return this.ItemList.ToArray(); } set { this.__ItemList = new List<object>(value); } }
-        /// <summary>
-        /// Value from / to item by its index
-        /// </summary>
-        /// <param name="index"></param>
-        /// <returns></returns>
-        public object this[int index]
-        {
-            get { return (this._IsValidIndex(index) ? this.ItemList[index] : null); }
-            set { if (this._IsValidIndex(index)) this.ItemList[index] = value; }
-        }
-        /// <summary>
-        /// true when index is valid for current Items
-        /// </summary>
-        /// <param name="index"></param>
-        /// <returns></returns>
-        private bool _IsValidIndex(int index) { return (index >= 0 && index < this.ItemList.Count); }
-        /// <summary>
-        /// List of items in this Row
-        /// </summary>
-        protected virtual List<object> ItemList { get { if (this.__ItemList == null) this.__ItemList = new List<object>(); return this.__ItemList; } set { this.__ItemList = new List<object>(value); } } protected List<object> __ItemList;
-        /// <summary>
-        /// Refresh values in this.Items from source object (on descendants only)
-        /// </summary>
-        public virtual void Refresh() { }
-        /// <summary>
-        /// Reference to Table, where this Row is included
-        /// </summary>
-        public DTable Table { get; private set; }
-        /// <summary>
-        /// true when this Row has reference to its Table
-        /// </summary>
-        public bool HasTable { get { return (this.Table != null); } }
-        /// <summary>
-        /// Link this Row to its Table.
-        /// Store DTable to this.Table and prepare items in this row by ColumnCount
-        /// </summary>
-        /// <param name="dTable"></param>
-        internal void AtachToTable(DTable dTable)
-        {
-            this.Table = dTable;
-            this.ItemsPrepare();
-        }
-        internal void DetachFromTable()
-        {
-            this.Table = null;
-        }
-        /// <summary>
-        /// Prepare this.Items array, to ItemsCount equal to Table.ColumnsCount.
-        /// Added new (null) items to end of array Items.
-        /// </summary>
-        internal virtual void ItemsPrepare()
-        {
-            if (this.HasTable)
+            get
             {
-                while (this.ItemsCount < this.Table.ColumnsCount)
-                    this.__ItemList.Add(null);
+                return VisualStyle.CreateFrom(this.VisualStyle, (this.Table != null ? this.Table.VisualStyle : null));
             }
         }
-    }
-    #endregion
-    #region DTypeTable
-    /// <summary>
-    /// Type table, contains rows of strictly Type.
-    /// </summary>
-    /// <typeparam name="T">Type of rows. Properties of this type acts as Columns in Grid.</typeparam>
-    public class DTypeTable<T> : DTable
-    {
-        /// <summary>
-        /// Type table, contains rows of strictly Type.
-        /// </summary>
-        public DTypeTable()
-            : base()
-        {
-            this.PrepareColumns();
-        }
-        protected void PrepareColumns()
-        {
-            List<DTypeColumn> columns = new List<DTypeColumn>();
-
-            // Using Reflection of type <T> to create Columns for Table:
-            Type type = typeof(T);
-            int propertyIndex = 0;
-            foreach (System.Reflection.PropertyInfo property in type.GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.FlattenHierarchy))
-            {
-                DTypeColumn dColumn = DTypeColumn.CreateFromProperty(property, ref propertyIndex);
-                if (dColumn != null)
-                    columns.Add(dColumn);
-            }
-            columns.Sort((a, b) => DTypeColumn.CompareByColumnIndex(a, b));
-            this._TypeColumns = columns.ToArray();
-
-            // Columns to base-table:
-            this.Columns.Clear();
-            this.Columns.AddRange(columns);
-        }
-        internal DTypeColumn[] TypeColumns { get { return this._TypeColumns; } } DTypeColumn[] _TypeColumns;
-        /// <summary>
-        /// Add new row with specified data
-        /// </summary>
-        /// <param name="data"></param>
-        /// <returns></returns>
-        public DTypeRow<T> AddRow(T data)
-        {
-            DTypeRow<T> row = null;
-            if (data != null)
-            {
-                row = new DTypeRow<T>(data);
-                this.AddRow(row);
-            }
-            return row;
-        }
-    }
-    /// <summary>
-    /// DTypeColumn : One column (DColumn) in Type Table. Can read value from System.Reflection.PropertyInfo.
-    /// </summary>
-    public class DTypeColumn : DColumn
-    {
-        /// <summary>
-        /// Try create new DTypeColumn from PropertyInfo.
-        /// Property must be readable (property.CanRead == true), and must have one custom-attribute of type ColumnInfoAttribute.
-        /// In other case, returns a null.
-        /// </summary>
-        /// <param name="property"></param>
-        /// <param name="propertyIndex"></param>
-        /// <returns></returns>
-        internal static DTypeColumn CreateFromProperty(System.Reflection.PropertyInfo property, ref int propertyIndex)
-        {
-            if (!property.CanRead) return null;
-            ColumnInfoAttribute attribute = property.GetCustomAttributes(true).FirstOrDefault(a => a is ColumnInfoAttribute) as ColumnInfoAttribute;
-            if (attribute == null) return null;
-            return new DTypeColumn(property, attribute, propertyIndex++);
-        }
-        private DTypeColumn(System.Reflection.PropertyInfo property, ColumnInfoAttribute attribute, int propertyIndex)
-            : base(property.Name)
-        {
-            this._Property = property;
-            this._PropertyIndex = propertyIndex;
-            this._ColumnIndex = attribute.ColumnIndex;
-            this.Text = attribute.Text;
-            this.ToolTip = attribute.ToolTip;
-            this.IsVisible = attribute.Visible;
-            this.DataType = property.PropertyType;
-            this.UseTimeAxis = attribute.UseTimeAxis;
-            this.Width = attribute.Width;
-            this.WidthRange = (attribute.WidthMin.HasValue || attribute.WidthMax.HasValue ? new Int32Range(attribute.WidthMin, attribute.WidthMax) : null);
-        }
-        /// <summary>
-        /// Reflected PropertyInfo of data
-        /// </summary>
-        public System.Reflection.PropertyInfo Property { get { return this._Property; } } private System.Reflection.PropertyInfo _Property;
-        /// <summary>
-        /// Index from property attribute ColumnInfoAttribute.Index
-        /// </summary>
-        public int? ColumnIndex { get { return this._ColumnIndex; } } private int? _ColumnIndex;
-        /// <summary>
-        /// Ordinal index from Type reflection
-        /// </summary>
-        public int PropertyIndex { get { return this._PropertyIndex; } } private int _PropertyIndex;
-        /// <summary>
-        /// Compare two columns by ColumnIndex ASC
-        /// </summary>
-        /// <param name="a"></param>
-        /// <param name="b"></param>
-        /// <returns></returns>
-        internal static int CompareByColumnIndex(DTypeColumn a, DTypeColumn b)
-        {
-            if (a == null && b == null) return 0;
-            if (a == null) return -1;
-            if (b == null) return 1;
-
-            int? ai = a.ColumnIndex;
-            int? bi = b.ColumnIndex;
-            if (ai.HasValue && bi.HasValue) return ai.Value.CompareTo(bi.Value);
-            if (ai.HasValue) return 1;           // Compare(-1, null): +1 (null is allways smaller)
-            if (bi.HasValue) return -1;          // Compare(null, -1): -1 (null is allways smaller)
-            // Booth ColumnIndex does not have Value.
-
-            int cmp = a.PropertyIndex.CompareTo(b.PropertyIndex);
-            if (cmp != 0) return cmp;
-
-            return String.Compare(a.Name, b.Name);
-        }
-    }
-    public class DTypeRow<T> : DRow, IVisualRow
-    {
-        public DTypeRow(T data)
-            : base()
-        {
-            this._Data = data;
-            if (data is IVisualRow)
-                this._DataVisual = data as IVisualRow;
-        }
-        /// <summary>
-        /// List of items in this Row
-        /// </summary>
-        protected override List<object> ItemList
-        {
-            get { this.CheckItems(); return this.__ItemList; }
-            set { base.ItemList = value; }
-        }
-        /// <summary>
-        /// Type data of this row
-        /// </summary>
-        public T Data { get { return this._Data; } }
-        private T _Data;
-        /// <summary>
-        /// Refresh data in this.Items array.
-        /// </summary>
-        public override void Refresh()
-        {
-            base.Refresh();
-            this.__ItemList = null;                  // In fact, data does not read now, data will be reloaded just-in-time (in Items.get() method)
-        }
-        /// <summary>
-        /// Prepare this._Items
-        /// </summary>
-        internal override void ItemsPrepare()
-        {
-            // base method enlarge this._Items list to columns count.
-            // In this (DTypeRow) method will be _Items prepared in Items.get() => CheckItems() => ReloadItems()
-            this.__ItemList = null;                  // In fact, data does not read now, data will be reloaded just-in-time (in Items.get() method)
-        }
-        /// <summary>
-        /// If (this._Items == null), then reloads data from this.Data to this._Items
-        /// </summary>
-        protected void CheckItems()
-        {
-            if (this.__ItemList == null)
-                this.ReloadItems();
-        }
-        /// <summary>
-        /// Reload items from this.Data object (generic type of user data) into this._Items, using columns informations from DTypeTable.TypeColumns
-        /// </summary>
-        protected void ReloadItems()
-        {
-            DTable table = this.Table;
-            object[] items = null;
-            if (table != null)
-            {
-                items = new object[table.ColumnsCount];
-                DTypeTable<T> typeTable = (table != null ? table as DTypeTable<T> : null);
-                T data = this.Data;
-                if (typeTable != null && data != null)
-                {
-                    DTypeColumn[] columns = typeTable.TypeColumns;
-                    for (int i = 0; i < columns.Length; i++)
-                    {
-                        DTypeColumn column = columns[i];
-                        if (column.Property != null)
-                            items[i] = column.Property.GetValue(data, null);
-                    }
-                }
-            }
-            else
-            {
-                items = new object[0];
-            }
-            this.__ItemList = new List<object>(items);
-        }
-        #region IVisualRow explicit interface
-        int? IVisualRow.RowHeight { get { return (this._DataVisual != null ? this._DataVisual.RowHeight : null); } }
-        Int32Range IVisualRow.RowHeightRange { get { return (this._DataVisual != null ? this._DataVisual.RowHeightRange : null); } }
-        Color? IVisualRow.RowBackColor { get { return (this._DataVisual != null ? this._DataVisual.RowBackColor : null); } }
-        private IVisualRow _DataVisual;
+        Int32? IVisualMember.Width { get { return this.Width; } }
+        Int32? IVisualMember.Height { get { return (this.HasTable ? this.Table.ColumnHeight : null); } }
         #endregion
     }
     #endregion
-    #region ColumnInfoAttribute
+    #region Row
     /// <summary>
-    /// Desctiption for column on visual Grid
+    /// Row : informace o jednom řádku tabulky
     /// </summary>
-    [AttributeUsage(AttributeTargets.Property, Inherited = true, AllowMultiple = false)]
-    public sealed class ColumnInfoAttribute : Attribute
+    public class Row : ITableMember, IVisualMember, IContentValidity
+    {
+        #region Konstructor, základní data
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public Row()
+        {
+            this._RowId = -1;
+            this._CellDict = new Dictionary<int, Cell>();
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="values"></param>
+        public Row(params object[] values) : this()
+        {
+            this._CellInit(values);
+        }
+        /// <summary>
+        /// Jednoznačné ID tohoto řádku. Read only.
+        /// Je přiděleno při přidání do tabulky, pak má hodnotu 0 nebo kladnou.
+        /// Hodnota se nemění ani přemístěním na jinou pozici, ani odebráním některého řádku s menším ID.
+        /// Po odebrání z tabulky je hodnota -1.
+        /// </summary>
+        public int RowId { get { return this._RowId; } } private int _RowId = -1;
+        #endregion
+        #region Linkování na tabulku
+        /// <summary>
+        /// Reference na tabulku, kam řádek patří.
+        /// </summary>
+        public Table Table { get { return this._Table; } private set { this._Table = value; } } private Table _Table;
+        /// <summary>
+        /// Kolekce sloupců z tabulky, může být null pokud řádek není napojen do tabulky
+        /// </summary>
+        public EList<Column> Columns { get { return (this.HasTable ? this.Table.Columns : null); } }
+        /// <summary>
+        /// true pokud máme referenci na tabulku
+        /// </summary>
+        public bool HasTable { get { return (this.Table != null); } }
+        /// <summary>
+        ///Napojí this řádek do dané tabulky.
+        /// Je voláno z tabulky, v eventu ItemAdd kolekce Rows.
+        /// </summary>
+        /// <param name="dTable"></param>
+        void ITableMember.AttachToTable(Table dTable, int id)
+        {
+            this._RowId = id;
+            this.Table = dTable;
+        }
+        /// <summary>
+        /// Odpojí this řádek z dané tabulky.
+        /// Je voláno z tabulky, v eventu ItemRemove kolekce Rows.
+        /// </summary>
+        void ITableMember.DetachFromTable()
+        {
+            this._RowId = -1;
+            this.Table = null;
+        }
+        #endregion
+        #region Cells = jednotlivé buňky v řádku
+        /// <summary>
+        /// Obsahuje (vrátí) instanci DCell, pro dané ID sloupce. 
+        /// Nikdy nevrací null. 
+        /// Lze tedy založit a udržovat buňky i pro neexistující sloupce.
+        /// </summary>
+        /// <param name="columnId">ID sloupce</param>
+        /// <returns></returns>
+        public Cell this[int columnId]
+        {
+            get { return this._GetCell(columnId); }
+        }
+        /// <summary>
+        /// Obsahuje všechny platné buňky řádku (tj. ty, které odpovídají sloupcům tabulky). 
+        /// </summary>
+        public Cell[] Cells
+        {
+            get
+            {
+                if (!this.HasTable) return this._CellDict.Values.ToArray();              // Row with no table linked
+                List<Cell> list = new List<Cell>();
+                foreach (Column column in this.Columns)                                 // Cells for existing Columns
+                    list.Add(this._GetCell(column.ColumnId));
+                return list.ToArray();
+            }
+        }
+        /// <summary>
+        /// Uloží dané hodnoty do všech buněk, v pořadí 0 - Length
+        /// </summary>
+        /// <param name="values"></param>
+        private void _CellInit(object[] values)
+        {
+            if (this._CellDict.Count > 0)
+                this._CellDict.Clear();
+            for (int columnId = 0; columnId < values.Length; columnId++)
+                this._GetCell(columnId).Value = values[columnId];
+        }
+        /// <summary>
+        /// Vrátí buňku pro dané ColumnId.
+        /// Vždy vrátí buňku pro dané ID, i kdyby takový sloupec neexistoval v tabulce a dané ID bylo mimo rozsah.
+        /// </summary>
+        /// <param name="columnId"></param>
+        /// <returns></returns>
+        private Cell _GetCell(int columnId)
+        {
+            Cell cell;
+            if (!this._CellDict.TryGetValue(columnId, out cell))
+            {
+                cell = new Cell(this, columnId);
+                this._CellDict.Add(columnId, cell);
+            }
+            return cell;
+        }
+        /// <summary>
+        /// Soupis buněk
+        /// </summary>
+        private Dictionary<int, Cell> _CellDict;
+        #endregion
+        #region GUI vlastnosti
+        /// <summary>
+        /// true pro viditelný sloupec (default), false for skrytý
+        /// </summary>
+        public bool Visible { get { return this._Visible; } set { this._Visible = value; } } private bool _Visible;
+
+        #endregion
+        #region Visual style
+        /// <summary>
+        /// Všechny vizuální vlastnosti dat v tomto řádku (nikoli buňky ani tabulky).
+        /// Default hodnota je null.
+        /// </summary>
+        public VisualStyle VisualStyle { get { return _VisualStyle; } set { _VisualStyle = value; } }
+        private VisualStyle _VisualStyle;
+        VisualStyle IVisualMember.Style
+        {
+            get
+            {
+                return VisualStyle.CreateFrom(this.VisualStyle, (this.Table != null ? this.Table.VisualStyle : null));
+            }
+        }
+        Int32? IVisualMember.Width { get { return null; } }
+        Int32? IVisualMember.Height { get { return (this.HasTable ? this.Table.ColumnHeight : null); } }
+        #endregion
+        #region IContentValidity
+        bool IContentValidity.DataIsValid { get { return _RowDataIsValid; } set { _RowDataIsValid = value; } } private bool _RowDataIsValid;
+        bool IContentValidity.RowLayoutIsValid { get { return _RowLayoutIsValid; } set { _RowLayoutIsValid = value; } } private bool _RowLayoutIsValid;
+        bool IContentValidity.ColumnLayoutIsValid { get { return _ColumnLayoutIsValid; } set { _ColumnLayoutIsValid = value; } } private bool _ColumnLayoutIsValid;
+        #endregion
+    }
+    #endregion
+    #region Cell
+    /// <summary>
+    /// Cell : informace v jedné buňce tabulky (jeden sloupec v jednom řádku).
+    /// Obsahuje data a formátovací informace.
+    /// </summary>
+    public class Cell : IVisualMember
+    {
+        #region Constructor, parents of this Cell
+        internal Cell(Row dRow, int columnId)
+        {
+            this._ColumnId = columnId;
+            this._Row = dRow;
+        }
+        /// <summary>
+        /// Řádek, do něhož tato buňka patří
+        /// </summary>
+        public Row Row { get { return _Row; } private set { _Row = value; } } private Row _Row;
+        /// <summary>
+        /// Tabulka, do které tato buňka patří
+        /// Může být null, pokud buňka dosud není v řádku nebo řádek není v tabulce.
+        /// </summary>
+        public Table Table { get { return (this._Row != null ? this._Row.Table : null); } }
+        /// <summary>
+        /// Sloupc, do něhož tato buňka patří.
+        /// Může být null, pokud buňka dosud není v řádku nebo řádek není v tabulce.
+        /// </summary>
+        public Column Column { get { Column column = null; if (this._Row != null && this._Row.HasTable && this._Row.Table.TryGetColumn(this._ColumnId, out column)) return column; return null; } }
+        /// <summary>
+        /// ColumnID sloupce, do kterého tato buňka patří.
+        /// Tato hodnota je platná bez ohledu na to, zda buňka (resp. její řádek) již je nebo není obsažena v tabulce.
+        /// </summary>
+        public int ColumnId { get { return _ColumnId; } } private int _ColumnId;
+        #endregion
+        #region Value
+        /// <summary>
+        /// Hodnota v této buňce. Setování hodnoty provede invalidaci dat řádku a tabulky.
+        /// </summary>
+        public object Value { get { return _Value; } set { _Value = value; this.InvalidateRowData(); } } private object _Value;
+        /// <summary>
+        /// Explicitně daná výška v tomto řádku. Je daná obsahem.
+        /// Výška se uplatní při určení výšky řádku.
+        /// </summary>
+        public Int32? Height { get { return _Height; } set { _Height = value; this.InvalidateRowLayout(); } } private Int32? _Height;
+        protected void InvalidateRowLayout()
+        {
+            // 1. Tímhle donutím můj Parent řádek, aby si přepočítal (až to bude potřeba) svoji výšku:
+            IContentValidity rowValidity = this.Row as IContentValidity;
+            if (rowValidity != null && rowValidity.RowLayoutIsValid)
+                rowValidity.RowLayoutIsValid = false;
+
+            // 2. Tímhle donutím tabulku, aby si přepočítala vizuální pozice řádků:
+            IContentValidity tableValidity = this.Table as IContentValidity;
+            if (tableValidity != null && tableValidity.RowLayoutIsValid)
+                tableValidity.RowLayoutIsValid = false;
+        }
+        protected void InvalidateRowData()
+        {
+            // 1. Tímhle sdělím mému Parent řádku, že obsahuje nevalidní data:
+            IContentValidity rowValidity = this.Row as IContentValidity;
+            if (rowValidity != null && rowValidity.DataIsValid)
+                rowValidity.DataIsValid = false;
+
+            // 1. Tímhle sdělím tabulce, že obsahuje nevalidní data:
+            IContentValidity tableValidity = this.Table as IContentValidity;
+            if (tableValidity != null && tableValidity.DataIsValid)
+                tableValidity.DataIsValid = false;
+        }
+        #endregion
+        #region Visual style
+        /// <summary>
+        /// Všechny vizuální vlastnosti dat v této buňce.
+        /// Default hodnota je null.
+        /// </summary>
+        public VisualStyle VisualStyle { get { return _VisualStyle; } set { _VisualStyle = value; } }
+        private VisualStyle _VisualStyle;
+        VisualStyle IVisualMember.Style
+        {
+            get
+            {
+                Column column = this.Column;
+                return VisualStyle.CreateFrom(this.VisualStyle, this.Row.VisualStyle, (column != null ? column.VisualStyle : null), this.Table.VisualStyle);
+            }
+        }
+        Int32? IVisualMember.Width { get { return null; } }
+        Int32? IVisualMember.Height { get { return null; } }
+        #endregion
+    }
+    #endregion
+    #region Visual style for one item
+    public class VisualStyle
     {
         /// <summary>
-        /// Info on Column in Table
+        /// Vytvoří a vrátí new instanci VisualStyle, v níž budou jednotlivé property naplněny hodnotami z dodaných instancí.
+        /// Slouží k vyhodnocení řetězce od explicitních údajů (zadaných do konkrétního prvku) až po defaultní (zadané např. v konfiguraci).
+        /// Dodané instance se vyhodnocují v pořadá od první do poslední, hodnoty null se přeskočí.
+        /// Logika: hodnota do každé jednotlivé property výsledné instance se převezme z nejbližšího dodaného objektu, kde tato hodnota není null.
         /// </summary>
-        /// <param name="columnIndex">Index of column in Grid</param>
-        /// <param name="text">Name of column in Grid</param>
-        /// <param name="toolTip">Tooltip for column in Grid</param>
-        /// <param name="useTimeAxis">Use TimeAxis on Graph</param>
-        /// <param name="width">Current width in pixel, -1 = default</param>
-        /// <param name="widthMin">Minimal width in pixel, -1 = unlimited</param>
-        /// <param name="widthMax">Maximal width in pixel, -1 = unlimited</param>
-        public ColumnInfoAttribute(int columnIndex = 0, string text = null, string toolTip = null, bool useTimeAxis = false, int width = -1, int widthMin = -1, int widthMax = -1, bool visible = true)
+        /// <param name="styles"></param>
+        /// <returns></returns>
+        public static VisualStyle CreateFrom(params VisualStyle[] styles)
         {
-            this._ColumnIndex = columnIndex;
-            this._Text = text;
-            this._ToolTip = toolTip;
-            this._Visible = visible;
-            this._UseTimeAxis = useTimeAxis;
-            this._Width = (width >= 0 ? (int?)width : (int?)null);
-            this._WidthMin = (widthMin >= 0 ? (int?)widthMin : (int?)null);
-            this._WidthMax = (widthMax >= 0 ? (int?)widthMax : (int?)null);
+            VisualStyle result = new VisualStyle();
+            foreach (VisualStyle style in styles)
+                result._AddFrom(style);
+            return result;
         }
-        public int ColumnIndex { get { return this._ColumnIndex; } } readonly int _ColumnIndex;
-        public Djs.Common.Localizable.TextLoc Text { get { return this._Text; } } readonly Djs.Common.Localizable.TextLoc _Text;
-        public Djs.Common.Localizable.TextLoc ToolTip { get { return this._ToolTip; } } readonly Djs.Common.Localizable.TextLoc _ToolTip;
-        public bool Visible { get { return this._Visible; } } readonly bool _Visible;
-        public bool UseTimeAxis { get { return this._UseTimeAxis; } } readonly bool _UseTimeAxis;
-        public int? Width { get { return this._Width; } } readonly int? _Width;
-        public int? WidthMin { get { return this._WidthMin; } } readonly int? _WidthMin;
-        public int? WidthMax { get { return this._WidthMax; } } readonly int? _WidthMax;
+        /// <summary>
+        /// Do this instance vloží potřebné hodnoty z dodané instance.
+        /// Dodaná instance může být null, pak se nic neprovádí.
+        /// Plní se jen takové property v this, které obsahují null.
+        /// </summary>
+        /// <param name="style"></param>
+        private void _AddFrom(VisualStyle style)
+        {
+            if (style != null)
+            {
+                if (this.Font == null) this.Font = style.Font;
+                if (!this.ContentAlignment.HasValue) this.ContentAlignment = style.ContentAlignment;
+                if (!this.BackColor.HasValue) this.BackColor = style.BackColor;
+                if (!this.TextColor.HasValue) this.TextColor = style.TextColor;
+                if (!this.SelectedBackColor.HasValue) this.SelectedBackColor = style.SelectedBackColor;
+                if (!this.SelectedTextColor.HasValue) this.SelectedTextColor = style.SelectedTextColor;
+                if (!this.FocusBackColor.HasValue) this.FocusBackColor = style.FocusBackColor;
+                if (!this.FocusTextColor.HasValue) this.FocusTextColor = style.FocusTextColor;
+            }
+        }
+        public FontInfo Font { get; set; }
+        public ContentAlignment? ContentAlignment { get; set; }
+        public Color? BackColor { get; set; }
+        public Color? TextColor { get; set; }
+        public Color? SelectedBackColor { get; set; }
+        public Color? SelectedTextColor { get; set; }
+        public Color? FocusBackColor { get; set; }
+        public Color? FocusTextColor { get; set; }
+
     }
     #endregion
     #region Interfaces
-
-    public interface IVisualTable
+    /// <summary>
+    /// Objekt, kterému je možno nastavit stav platnosti dat, sloupce a řádku
+    /// </summary>
+    public interface IContentValidity
     {
         /// <summary>
-        /// Height Range for Column header
+        /// true pokud jsou platná data, false po jejich změně před akceptováním dat
         /// </summary>
-        Int32Range ColumnHeaderHeightRange { get; }
-    }
-
-    public interface IVisualRow
-    {
+        bool DataIsValid { get; set; }
         /// <summary>
-        /// Height for this Row
+        /// true pokud je platný layout řádků, false po jejich změně před akceptováním dat
         /// </summary>
-        Int32? RowHeight { get; }
+        bool RowLayoutIsValid { get; set; }
         /// <summary>
-        /// Height Range for Row
+        /// true pokud je platný layout sloupců, false po jejich změně před akceptováním dat
         /// </summary>
-        Int32Range RowHeightRange { get; }
-        /// <summary>
-        /// Color for row
-        /// </summary>
-        Color? RowBackColor { get; }
+        bool ColumnLayoutIsValid { get; set; }
     }
     /// <summary>
-    /// Class for sorting DRow list by comparable value
+    /// Člen tabulky DTable, u kterého je možno provést Attach a Detach
+    /// </summary>
+    public interface ITableMember
+    {
+        /// <summary>
+        /// Attach this member to table with specified ID
+        /// </summary>
+        /// <param name="dTable"></param>
+        /// <param name="id"></param>
+        void AttachToTable(Table dTable, int id);
+        /// <summary>
+        /// Detach this member from table, reset ID
+        /// </summary>
+        void DetachFromTable();
+    }
+    /// <summary>
+    /// Prvek s vizuálním stylem, šířkou a výškou
+    /// </summary>
+    public interface IVisualMember
+    {
+        /// <summary>
+        /// Visual style for this item. Can be combined with style of all parents, using method VisualStyle.CreateFrom(my style, all parent styles)
+        /// </summary>
+        VisualStyle Style { get; }
+        /// <summary>
+        /// Requested Width (for Column)
+        /// </summary>
+        int? Width { get; }
+        /// <summary>
+        /// Requested Height (for Row)
+        /// </summary>
+        int? Height { get; }
+    }
+    /// <summary>
+    /// Prvek podporující sekvenční layout (řádek, sloupec umístěný v kolekci podobných řádků).
+    /// Má svůj Begin a End. Pokud Begin = End, pak prvek nebud zobrazován.
+    /// </summary>
+    public interface ISequenceLayout
+    {
+        /// <summary>
+        /// Pozice, kde prvek začíná.
+        /// </summary>
+        int Begin { get; set; }
+        /// <summary>
+        /// Pozice, kde za tímto prvkem začíná následující prvek. Velikost prvku = (End - Begin) = počet pixelů, na které se zobrazuje tento prvek.
+        /// </summary>
+        int End { get; set; }
+    }
+    #endregion
+    #region Podpora třídění
+    /// <summary>
+    /// Třída umožňující třídění řádků podle hodnoty ValueComparable
     /// </summary>
     public class DTableSortRowsItem
     {
-        public DTableSortRowsItem(DRow row)
+        public DTableSortRowsItem(Row row)
         {
             this.Row = row;
         }
-        public DTableSortRowsItem(DRow row, object userData)
+        public DTableSortRowsItem(Row row, object userData)
         {
             this.Row = row;
             this.UserData = userData;
         }
         /// <summary>
-        /// Data row
+        /// Data řádku
         /// </summary>
-        public DRow Row { get; private set; }
+        public Row Row { get; private set; }
         /// <summary>
-        /// Any user data
+        /// Libovolná další data
         /// </summary>
         public object UserData { get; private set; }
+        /// <summary>
+        /// Hodnota
+        /// </summary>
         public object Value { get; set; }
+        /// <summary>
+        /// Hodnota pro komparaci
+        /// </summary>
         public IComparable ValueComparable { get; set; }
     }
+    /// <summary>
+    /// Typ třídění
+    /// </summary>
     public enum DTableSortRowType
     {
+        /// <summary>
+        /// Netřídit
+        /// </summary>
         None = 0,
+        /// <summary>
+        /// Vzestupně
+        /// </summary>
         Ascending = 1,
+        /// <summary>
+        /// Sestupně
+        /// </summary>
         Descending = 2
     }
     #endregion

@@ -71,13 +71,17 @@
     <Compile Include="Components\ColorPalette.cs" />
     <Compile Include="Components\FontInfo.cs" />
     <Compile Include="Components\Graph.cs" />
-    <Compile Include="Components\GridPosition.cs" />
-    <Compile Include="Components\GridTable.cs" />
+    <Compile Include="Components\Old\GridOld.cs" />
+    <Compile Include="Components\Grid\GridPosition.cs" />
+    <Compile Include="Components\Grid\GridTable.cs" />
+    <Compile Include="Components\Old\GridPositionOld.cs" />
+    <Compile Include="Components\Old\GridTableOld.cs" />
     <Compile Include="Components\Layout.cs" />
     <Compile Include="Components\Progress.cs" />
     <Compile Include="Components\Skin.cs" />
     <Compile Include="Components\Toolbar.cs" />
     <Compile Include="Components\ToolTip.cs" />
+    <Compile Include="Data\TableOld.cs" />
     <Compile Include="Data\TypeArray.cs" />
     <Compile Include="Localizable\Text.cs" />
     <Compile Include="Parser\Analyser.cs" />
@@ -114,7 +118,7 @@
     <Compile Include="Components\InteractiveControl.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="Components\Grid.cs" />
+    <Compile Include="Components\Grid\Grid.cs" />
     <Compile Include="Components\EditableArea.cs" />
     <Compile Include="Components\PageMargins.cs" />
     <Compile Include="Components\Painter.cs" />
