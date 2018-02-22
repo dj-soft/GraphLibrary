@@ -602,10 +602,10 @@ namespace Djs.Common.Components
         /// When new value is equal to current value, ends (no events is called).
         /// When there is a change of value, then events specified in (actions) parameter is raised.
         /// </summary>
-        /// <param name="oldBounds">Old bounds, before change</param>
-        /// <param name="newBounds">New bounds. Use this value rather than this.Bounds</param>
-        /// <param name="actions">Actions to do</param>
-        /// <param name="eventSource">Source of this event</param>
+        /// <param name="oldBounds">Původní umístění, před změnou</param>
+        /// <param name="newBounds">Nové umístění, po změnou. Používejme raději tuto hodnotu než this.Bounds</param>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
         protected override void SetBoundsAfterChange(Rectangle oldBounds, Rectangle newBounds, ref ProcessAction actions, EventSourceType eventSource)
         {
             this.DetectOrientation(LeaveOnlyActions(actions, ProcessAction.CallChangedEvents), eventSource);
@@ -669,8 +669,8 @@ namespace Djs.Common.Components
         /// Calculate current scale from current Value.Size and AxisSizeInPixel.
         /// Cann call methods: DetectArrangement() { DetectTicks() { CallTicksChanged(); CallDrawRequest(); } CallArrangementChanged(); } CallScaleChanged();
         /// </summary>
-        /// <param name="actions"></param>
-        /// <param name="eventSource"></param>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
         internal void DetectScale(ProcessAction actions, EventSourceType eventSource)
         {
             if (!this.IsVisualValid) return;
@@ -736,8 +736,8 @@ namespace Djs.Common.Components
         /// For current ArrangementCurrent and Value prepare all Ticks on current Axis.
         /// Can call methods: CallTicksChanged(); CallDrawRequest();
         /// </summary>
-        /// <param name="actions"></param>
-        /// <param name="eventSource"></param>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
         internal void DetectTicks(ProcessAction actions, EventSourceType eventSource)
         {
             ArrangementOne arrangementCurrent = this.ArrangementCurrent;

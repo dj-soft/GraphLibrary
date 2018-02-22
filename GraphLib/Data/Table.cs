@@ -43,7 +43,7 @@ namespace Djs.Common.Data.New
             this._RowsInit();
         }
         /// <summary>
-        /// Název tabulky, podle něj lze hledat
+        /// Název tabulky, podle něj lze hledat. jde o klíčové slovo, nikoli popisek (Caption)
         /// </summary>
         public string TableName { get { return this._TableName; } set { this._TableName = value; } }
         private string _TableName;
@@ -316,7 +316,7 @@ namespace Djs.Common.Data.New
             this._Rows = new EList<Row>();
             this._Rows.ItemAddAfter += this._RowAddAfter;
             this._Rows.ItemRemoveAfter += this._RowRemoveAfter;
-            this._RowsId = 0;
+            this._RowId = 0;
         }
         /// <summary>
         /// Kolekce řádků, nový řádek lze přidat i sem
@@ -329,7 +329,7 @@ namespace Djs.Common.Data.New
         /// <summary>
         /// ID pro nové řádky, výchozí = 0 = index pro první přidaný řádek. Vždy se jen navyšuje. Po odebrání řádku se jeho ID již nepoužije.
         /// </summary>
-        private int _RowsId;
+        private int _RowId;
         /// <summary>
         /// Počet řádků v tabulce
         /// </summary>
@@ -383,7 +383,7 @@ namespace Djs.Common.Data.New
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="args"></param>
-        void _RowAddAfter(object sender, EList<Row>.EListAfterEventArgs args)
+        private void _RowAddAfter(object sender, EList<Row>.EListAfterEventArgs args)
         {
             this.RowAdded(args);
             this.OnRowAddAfter(args);
@@ -397,7 +397,7 @@ namespace Djs.Common.Data.New
         protected void RowAdded(EList<Row>.EListAfterEventArgs args)
         {
             Row row = args.Item;
-            int id = this._RowsId++;
+            int id = this._RowId++;
             ((ITableMember)row).AttachToTable(this, id);
         }
         /// <summary>
@@ -414,7 +414,7 @@ namespace Djs.Common.Data.New
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="args"></param>
-        void _RowRemoveAfter(object sender, EList<Row>.EListAfterEventArgs args)
+        private void _RowRemoveAfter(object sender, EList<Row>.EListAfterEventArgs args)
         {
             this.RowRemoved(args);
             this.OnRowRemoveAfter(args);
@@ -447,7 +447,7 @@ namespace Djs.Common.Data.New
         /// <param name="sortByColumn"></param>
         /// <param name="sortType"></param>
         /// <returns></returns>
-        public bool SortRows(List<DTableSortRowsItem> rowList, Column sortByColumn, DTableSortRowType sortType)
+        public bool SortRows(List<TableSortRowsItem> rowList, Column sortByColumn, TableSortRowType sortType)
         {
             if (sortByColumn == null) return false;
             if (!sortByColumn.SortingEnabled) return false;
@@ -461,14 +461,14 @@ namespace Djs.Common.Data.New
 
             switch (sortType)
             {
-                case DTableSortRowType.Ascending:
+                case TableSortRowType.Ascending:
                     if (hasComparator)
                         rowList.Sort((a, b) => sortByColumn.ValueComparator(a.Value, b.Value));
                     else
                         rowList.Sort((a, b) => SortRowsCompare(a.ValueComparable, b.ValueComparable));
                     return true;
 
-                case DTableSortRowType.Descending:
+                case TableSortRowType.Descending:
                     if (hasComparator)
                         rowList.Sort((a, b) => sortByColumn.ValueComparator(b.Value, a.Value));
                     else
@@ -523,7 +523,7 @@ namespace Djs.Common.Data.New
     /// <summary>
     /// Column : informace o jednom sloupci tabulky
     /// </summary>
-    public class Column : ITableMember, IVisualMember
+    public class Column : ITableMember, IVisualMember, ISequenceLayout
     {
         #region Konstructor, základní data
         /// <summary>
@@ -588,6 +588,7 @@ namespace Djs.Common.Data.New
         void ITableMember.AttachToTable(Table dTable, int id)
         {
             this._ColumnId = id;
+            this._ColumnOrder = id;
             this.Table = dTable;
         }
         /// <summary>
@@ -609,6 +610,12 @@ namespace Djs.Common.Data.New
         /// ToolTip pro hlavičku sloupce, lokalizovaný
         /// </summary>
         public Djs.Common.Localizable.TextLoc ToolTip { get { return this._ToolTip; } set { this._ToolTip = value; } } private Djs.Common.Localizable.TextLoc _ToolTip;
+        /// <summary>
+        /// Pořadí tohoto sloupce při zobrazování.
+        /// Jednotlivé sloupce nemusí mít hodnoty ColumnOrder v nepřerušovaném pořadí.
+        /// Po napojení sloupce do tabulky je do ColumnOrder vepsána hodnota = ColumnID, takže nový sloupec se zařadí vždy na konec.
+        /// </summary>
+        public int ColumnOrder { get { return this._ColumnOrder; } set { this._ColumnOrder = value; } } private int _ColumnOrder;
         /// <summary>
         /// Datový typ obsahu sloupce. Null = obecná data
         /// </summary>
@@ -670,9 +677,9 @@ namespace Djs.Common.Data.New
     /// <summary>
     /// Row : informace o jednom řádku tabulky
     /// </summary>
-    public class Row : ITableMember, IVisualMember, IContentValidity
+    public class Row : ITableMember, IVisualMember, ISequenceLayout, IContentValidity
     {
-        #region Konstructor, základní data
+        #region Konstruktor, základní data
         /// <summary>
         /// Konstruktor
         /// </summary>
@@ -680,6 +687,7 @@ namespace Djs.Common.Data.New
         {
             this._RowId = -1;
             this._CellDict = new Dictionary<int, Cell>();
+            this._Visible = true;
         }
         /// <summary>
         /// Konstruktor
@@ -793,7 +801,19 @@ namespace Djs.Common.Data.New
         /// true pro viditelný sloupec (default), false for skrytý
         /// </summary>
         public bool Visible { get { return this._Visible; } set { this._Visible = value; } } private bool _Visible;
+        public Int32Range HeightRange { get; set; }
+        public Int32? Height { get; set; }
+        #region Práce s velikostí řádků (výškou): spolupráce explicitně zadané datové hodnoty, hodnoty interaktivní a rozmezí platných hodnot
+        protected void SetLayoutHeight(int height)
+        {
+            Int32Range sizeRange = this.HeightRange;
+        }
+        protected int GetHeight(Int32? layoutSize)
+        {
 
+        }
+
+        #endregion
         #endregion
         #region Visual style
         /// <summary>
@@ -811,6 +831,43 @@ namespace Djs.Common.Data.New
         }
         Int32? IVisualMember.Width { get { return null; } }
         Int32? IVisualMember.Height { get { return (this.HasTable ? this.Table.ColumnHeight : null); } }
+        #endregion
+        #region ISequenceLayout = pořadí, počáteční pixel, velikost, následující pixel
+        /// <summary>
+        /// Pozice, kde prvek začíná.
+        /// Interface ISequenceLayout tuto hodnotu setuje v případě, kdy se layout těchto prvků změní (změna prvků nebo jejich velikosti).
+        /// </summary>
+        int ISequenceLayout.Begin { get { return _ISequenceLayoutBegin; } set { _ISequenceLayoutBegin = value; } } private int _ISequenceLayoutBegin;
+        /// <summary>
+        /// Velikost prvku v pixelech (šířka sloupce, výška řádku, výška tabulky). 
+        /// Lze ji setovat, protože prvky lze pomocí splitterů zvětšovat / zmenšovat.
+        /// Aplikační logika prvku musí zabránit vložení neplatné hodnoty (reálně se uloží hodnota platná).
+        /// </summary>
+        int ISequenceLayout.Size
+        {
+            get
+            {
+                return this.GetHeight(this._ISequenceLayoutSize);
+            }
+            set
+            {
+                this.SetLayoutHeight(value);
+                this._ISequenceLayoutSize = this.Height.Value;
+            }
+        }
+        private Int32? _ISequenceLayoutSize;
+        /// <summary>
+        /// Pozice, kde za tímto prvkem začíná následující prvek. 
+        /// Velikost prvku = (End - Begin) = počet pixelů, na které se zobrazuje tento prvek.
+        /// Interface ISequenceLayout tuto hodnotu nesetuje, pouze ji čte.
+        /// </summary>
+        int ISequenceLayout.End { get { return this._ISequenceLayoutBegin + (this.Visible ? this._ISequenceLayoutSize : 0); } }
+        /// <summary>
+        /// Pořadí tohoto prvku v sekvenci ostatních prvků.
+        /// Nemusí to být kontinuální řada, může obsahovat díry.
+        /// Kolekce se třídí prostým Sort(podle Order ASC).
+        /// </summary>
+        int ISequenceLayout.Order { get { return _ISequenceLayoutOrder; } set { _ISequenceLayoutOrder = value; } } private int _ISequenceLayoutOrder;
         #endregion
         #region IContentValidity
         bool IContentValidity.DataIsValid { get { return _RowDataIsValid; } set { _RowDataIsValid = value; } } private bool _RowDataIsValid;
@@ -976,18 +1033,18 @@ namespace Djs.Common.Data.New
         bool ColumnLayoutIsValid { get; set; }
     }
     /// <summary>
-    /// Člen tabulky DTable, u kterého je možno provést Attach a Detach
+    /// Člen tabulky Table, u kterého je možno provést Attach a Detach
     /// </summary>
     public interface ITableMember
     {
         /// <summary>
-        /// Attach this member to table with specified ID
+        /// Napojí this objekt do dodané tabulky a uloží do sebe dané ID
         /// </summary>
-        /// <param name="dTable"></param>
+        /// <param name="table"></param>
         /// <param name="id"></param>
-        void AttachToTable(Table dTable, int id);
+        void AttachToTable(Table table, int id);
         /// <summary>
-        /// Detach this member from table, reset ID
+        /// Odpojí this objekt od navázané tabulky, resetuje svoje ID
         /// </summary>
         void DetachFromTable();
     }
@@ -1017,25 +1074,40 @@ namespace Djs.Common.Data.New
     {
         /// <summary>
         /// Pozice, kde prvek začíná.
+        /// Interface ISequenceLayout tuto hodnotu setuje v případě, kdy se layout těchto prvků změní (změna prvků nebo jejich velikosti).
         /// </summary>
         int Begin { get; set; }
         /// <summary>
-        /// Pozice, kde za tímto prvkem začíná následující prvek. Velikost prvku = (End - Begin) = počet pixelů, na které se zobrazuje tento prvek.
+        /// Velikost prvku v pixelech (šířka sloupce, výška řádku, výška tabulky). 
+        /// Lze ji setovat, protože prvky lze pomocí splitterů zvětšovat / zmenšovat.
+        /// Aplikační logika prvku musí zabránit vložení neplatné hodnoty (reálně se uloží hodnota platná).
         /// </summary>
-        int End { get; set; }
+        int Size { get; set; }
+        /// <summary>
+        /// Pozice, kde za tímto prvkem začíná následující prvek. 
+        /// Velikost prvku = (End - Begin) = počet pixelů, na které se zobrazuje tento prvek.
+        /// Interface ISequenceLayout tuto hodnotu nesetuje, pouze ji čte.
+        /// </summary>
+        int End { get; }
+        /// <summary>
+        /// Pořadí tohoto prvku v sekvenci ostatních prvků.
+        /// Nemusí to být kontinuální řada, může obsahovat díry.
+        /// Kolekce se třídí prostým Sort(podle Order ASC).
+        /// </summary>
+        int Order { get; set; }
     }
     #endregion
     #region Podpora třídění
     /// <summary>
     /// Třída umožňující třídění řádků podle hodnoty ValueComparable
     /// </summary>
-    public class DTableSortRowsItem
+    public class TableSortRowsItem
     {
-        public DTableSortRowsItem(Row row)
+        public TableSortRowsItem(Row row)
         {
             this.Row = row;
         }
-        public DTableSortRowsItem(Row row, object userData)
+        public TableSortRowsItem(Row row, object userData)
         {
             this.Row = row;
             this.UserData = userData;
@@ -1060,7 +1132,7 @@ namespace Djs.Common.Data.New
     /// <summary>
     /// Typ třídění
     /// </summary>
-    public enum DTableSortRowType
+    public enum TableSortRowType
     {
         /// <summary>
         /// Netřídit

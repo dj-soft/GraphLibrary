@@ -10,42 +10,40 @@ using Djs.Common.Components.Grid;
 namespace Djs.Common.Components
 {
     /// <summary>
-    /// GGrid : Visual container for show one or more GTable, with synchronized ColumnsWidths
+    /// GGrid : Vizuální objekt, kontejner na jednu nebo více tabulek pod sebou. Tyto tabulky mají společný layout sloupců (šířka) i společný vodorovný (dolní) posuvník.
     /// </summary>
     public class GGrid : InteractiveContainer, IInteractiveItem
     {
+        #region Inicializace
         public GGrid()
         {
             this._InitialiseGrid();
         }
         private void _InitialiseGrid()
         {
-            this.InitColors();
             this.InitProperties();
             this.InitPositions();
             this.InitTables();
             this.InitColumns();
             this.InitScrollBars();
         }
-        protected void InitColors()
-        {
-            
-        }
-        #region BoundsChange
+        #endregion
+        #region Rozmístění vnitřních prvků, jejich přepočty, layout Gridu
         /// <summary>
-        /// Is called after Bounds change, from SetBound() method, only when action PrepareInnerItems is specified.
-        /// Recalculate SubItems bounds after change this.Bounds.
+        /// Je voláno po změně Bounds, z metody SetBound(), pokud je vyžadována akce PrepareInnerItems.
+        /// Přepočte umístění vnitřních prvků objektu, podle rozměrů this.BoundsClient.Size
         /// </summary>
-        /// <param name="oldBounds">Old bounds, before change</param>
-        /// <param name="newBounds">New bounds. Use this value rather than this.Bounds</param>
-        /// <param name="actions">Actions to do</param>
-        /// <param name="eventSource">Source of this event</param>
+        /// <param name="oldBounds">Původní umístění, před změnou</param>
+        /// <param name="newBounds">Nové umístění, po změnou. Používejme raději tuto hodnotu než this.Bounds</param>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
         protected override void SetBoundsPrepareInnerItems(Rectangle oldBounds, Rectangle newBounds, ref ProcessAction actions, EventSourceType eventSource)
         {   // After change of Bounds, when action ProcessAction.PrepareInnerItems is requested:
             this.RecalcGrid(ref actions, eventSource);
         }
         /// <summary>
-        /// Recalculate position of all columns, tables and scrollbar.
+        /// Přepočítá pozice všech prvků Gridu (ClientAreas, Tables, ScrollBars).
+        /// Jako action vezme None, jako eventSource = ApplicationCode.
         /// </summary>
         internal void RecalcGrid()
         {
@@ -54,10 +52,10 @@ namespace Djs.Common.Components
             this.RecalcGrid(ref actions, eventSource);
         }
         /// <summary>
-        /// Recalculate position of all columns, tables and scrollbar.
+        /// Přepočítá pozice všech prvků Gridu (ClientAreas, Tables, ScrollBars).
         /// </summary>
-        /// <param name="actions"></param>
-        /// <param name="eventSource"></param>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
         internal void RecalcGrid(ref ProcessAction actions, EventSourceType eventSource)
         {
             this.RecalcClientAreas(ref actions, eventSource);
@@ -65,10 +63,10 @@ namespace Djs.Common.Components
             this.RecalcScrollBars(ref actions, eventSource);
         }
         /// <summary>
-        /// Recalculate position of inner areas = for Tables and for Scrollbar
+        /// Přepočítá pozice ClientAreas = prostor tabulek a ScrollBarů.
         /// </summary>
-        /// <param name="actions"></param>
-        /// <param name="eventSource"></param>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
         private void RecalcClientAreas(ref ProcessAction actions, EventSourceType eventSource)
         {
             Size clientSize = this.BoundsClient.Size;
@@ -91,49 +89,318 @@ namespace Djs.Common.Components
             this._GridHorizontalScrollBarVisible = hscV;
             this._GridHorizontalScrollBarBounds = new Rectangle(x, y, tblW, (hscV ? GScrollBar.DefaultSystemBarHeight : 0));
             this.ScrollBarX.IsVisible = hscV;
+
+            this._GridLayoutValid = true;
         }
         private bool _GridVerticalScrollBarVisible;
+        /// <summary>
+        /// Prostor pro svislý scrollbar (vpravo)
+        /// </summary>
         private Rectangle _GridVerticalScrollBarBounds;
         private bool _GridHorizontalScrollBarVisible;
-        private Rectangle _GridHorizontalScrollBarBounds;
-        private Rectangle _GridTablesBounds;
-        #endregion
-        #region Public events and virtual methods
-
-        #endregion
-        #region Public properties
-        protected void InitProperties()
-        {
-            this.ScrollBarVerticalWidth = GScrollBar.DefaultSystemBarWidth;
-            this.ScrollBarHorizontalHeight = GScrollBar.DefaultSystemBarHeight;
-        }
-        public int ScrollBarVerticalWidth { get { return this._ScrollBarVerticalWidth; } set { this._ScrollBarVerticalWidth = (value < 0 ? 0 : value); } } private int _ScrollBarVerticalWidth;
-        public int ScrollBarHorizontalHeight { get { return this._ScrollBarHorizontalHeight; } set { this._ScrollBarHorizontalHeight = (value < 0 ? 0 : value); } } private int _ScrollBarHorizontalHeight;
-
-        #endregion
-        #region Tables
         /// <summary>
-        /// Initialise GTables subsystem
+        /// Prostor pro dolní scrollbar (horizontální)
+        /// </summary>
+        private Rectangle _GridHorizontalScrollBarBounds;
+        /// <summary>
+        /// Prostor pro tabulky (vlevo a nahoře), neobsahuje pozice scrollbarů X a Y
+        /// </summary>
+        private Rectangle _GridTablesBounds;
+        private bool _GridLayoutValid;
+        #endregion
+        #region Tabulky - soupis GTable
+        #region Veřejné rozhraní
+        /// <summary>
+        /// Přidá danou datovou tabulku do tohoto gridu.
+        /// Vrací grafický objekt právě přidané tabulky.
+        /// </summary>
+        /// <param name="dTable"></param>
+        /// <returns></returns>
+        public GTable AddTable(DTable dTable)
+        {
+            return this._AddTable(dTable);
+        }
+        /// <summary>
+        /// Danou datovou tabulku odebere z this gridu.
+        /// </summary>
+        /// <param name="dTable"></param>
+        public void RemoveTable(DTable dTable)
+        {
+            this._RemoveTable(dTable);
+        }
+        /// <summary>
+        /// Soupis všech datových tabulek v gridu
+        /// </summary>
+        public IEnumerable<DTable> DataTables { get { return this._Tables.Select(t => t.DataTable); } }
+        /// <summary>
+        /// Soupis všech grafických tabulek v gridu
+        /// </summary>
+        internal IEnumerable<GTable> Tables { get { return this._Tables; } }
+        /// <summary>
+        /// Public event vyvolaný po přidání nové tabulky do gridu. Grid je již v tabulce umístěn, grid je uveden v argumentu.
+        /// </summary>
+        public event EList<GTable>.EListEventAfterHandler TableAddAfter;
+        /// <summary>
+        /// Public event vyvolaný po odebrání řádku z tabulky. Řádek již v tabulce není umístěn, řádek je uveden v argumentu.
+        /// </summary>
+        public event EList<GTable>.EListEventAfterHandler TableRemoveAfter;
+        /// <summary>
+        /// Počet tabulek v gridu
+        /// </summary>
+        public int TablesCount { get { return this._Tables.Count; } }
+        #endregion
+        #region Privátní obsluha
+        /// <summary>
+        /// Inicializuje pole tabulek
         /// </summary>
         protected void InitTables()
         {
             this._Tables = new EList<GTable>();
-            this._Tables.ItemAddAfter += new EList<GTable>.EListEventAfterHandler(_TableAddAfter);
-            this._Tables.ItemRemoveAfter += new EList<GTable>.EListEventAfterHandler(_TableRemoveAfter);
+            this._Tables.ItemAddAfter += _TableAddAfter;
+            this._Tables.ItemRemoveAfter += _TableRemoveAfter;
+            this._TableID = 0;
         }
         /// <summary>
-        /// Recalculate values and bounds for all GTables.
+        /// Přidá danou datovou tabulku do tohoto gridu
         /// </summary>
-        /// <param name="actions"></param>
-        /// <param name="eventSource"></param>
-        protected void RecalcTables(ref ProcessAction actions, EventSourceType eventSource)
+        /// <param name="dTable"></param>
+        /// <returns></returns>
+        protected GTable _AddTable(DTable dTable)
         {
-            Rectangle tablesBounds = this._GridTablesBounds;
-            foreach (GTable gTable in this._Tables)
-                gTable.RecalcTable(tablesBounds, ref actions, eventSource);
+            if (dTable == null) return null;
+            GTable gTable = new GTable(this, dTable);
+            this._Tables.Add(gTable);                      // Instance EList zajistí vyvolání eventhandleru this._TableAddAfter(), tam se GTable napojí na this GGrid a dostane svoje ID.
+            return gTable;
         }
         /// <summary>
-        /// Refill TimeAxis value from column (columnId) into all tables
+        /// Odebere danou datovou tabulku z tohoto gridu
+        /// </summary>
+        /// <param name="dTable"></param>
+        /// <returns></returns>
+        protected void _RemoveTable(DTable dTable)
+        {
+            if (dTable == null) return;
+            this._Tables.RemoveAll(g => Object.ReferenceEquals(g.DataTable, dTable));
+        }
+        /// <summary>
+        /// Handler události, kdy byla přidána další tabulka do tohoto gridu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _TableAddAfter(object sender, EList<GTable>.EListAfterEventArgs args)
+        {
+            this.TableAdded(args);
+            this.OnTableAddAfter(args);
+            if (this.TableAddAfter != null)
+                this.TableAddAfter(this, args);
+        }
+        /// <summary>
+        /// Akce po přidání GTable do GGridu: napojí tabulku na Grid, přiřadí ID
+        /// </summary>
+        /// <param name="args"></param>
+        protected void TableAdded(EList<GTable>.EListAfterEventArgs args)
+        {
+            GTable table = args.Item;
+            int id = this._TableID++;
+            ((IGridMember)table).AttachToGrid(this, id);
+            this.ColumnLayoutIsValid = false;
+        }
+        /// <summary>
+        /// Protected virtual metoda volaná v procesu přidání tabulky, tabulka je platná, event TableAddAfter ještě neproběhl. V GGrid je tato metoda prázdná.
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnTableAddAfter(EList<GTable>.EListAfterEventArgs args) { }
+        /// <summary>
+        /// Handler eventu event Tables.ItemRemoveAfter, vyvolá se po odebrání objektu (řádku) z kolekce Rows
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _TableRemoveAfter(object sender, EList<GTable>.EListAfterEventArgs args)
+        {
+            this.TableRemoved(args);
+            this.OnTableRemoveAfter(args);
+            if (this.TableRemoveAfter != null)
+                this.TableRemoveAfter(this, args);
+        }
+        /// <summary>
+        /// Akce po odebrání tabulky z gridu: odpojí tabulku od gridu
+        /// </summary>
+        /// <param name="args"></param>
+        protected void TableRemoved(EList<GTable>.EListAfterEventArgs args)
+        {
+            ((IGridMember)args.Item).DetachFromGrid();
+            this.ColumnLayoutIsValid = false;
+        }
+        /// <summary>
+        /// Protected virtual metoda volaná v procesu odebrání řádku, řádek je platný, event RowRemoveAfter ještě neproběhl. V DTable je tato metoda prázdná.
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnTableRemoveAfter(EList<GTable>.EListAfterEventArgs args) { }
+        /// <summary>
+        /// ID pro příští vkládanou GTable
+        /// </summary>
+        private int _TableID = 0;
+        /// <summary>
+        /// Fyzické úložiště tabulek GTable
+        /// </summary>
+        private EList<GTable> _Tables;
+        #endregion
+        #endregion
+        #region ScrollBarX, ScrollBarY
+        /// <summary>
+        /// Inicializace Scrollbarů X a Y. Volat až po inicializaci Positions.
+        /// </summary>
+        protected void InitScrollBars()
+        {
+            this.ScrollBarX = new GScrollBar() { Orientation = System.Windows.Forms.Orientation.Horizontal };
+            this.ScrollBarY = new GScrollBar() { Orientation = System.Windows.Forms.Orientation.Vertical };
+            ProcessAction actions = ProcessAction.None;
+            this.RecalcScrollBars(ref actions, EventSourceType.ApplicationCode);
+            this.ScrollBarX.ValueChanging += new GPropertyChanged<SizeRange>(ScrollBarX_ValueChange);
+            this.ScrollBarX.ValueChanged += new GPropertyChanged<SizeRange>(ScrollBarX_ValueChange);
+            this.ScrollBarY.ValueChanging += new GPropertyChanged<SizeRange>(ScrollBarY_ValueChange);
+            this.ScrollBarY.ValueChanged += new GPropertyChanged<SizeRange>(ScrollBarY_ValueChange);
+        }
+        /// <summary>
+        /// Recalculate values and bounds for Horizontal and Vertical Scrollbar.
+        /// </summary>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
+        protected void RecalcScrollBars(ref ProcessAction actions, EventSourceType eventSource)
+        {
+            this.RecalcScrollBarX(ref actions, eventSource);
+            this.RecalcScrollBarY(ref actions, eventSource);
+        }
+        /// <summary>
+        /// Recalculate values and bounds for Horizontal Scrollbar ("Column" scrollbar).
+        /// </summary>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
+        protected void RecalcScrollBarX(ref ProcessAction actions, EventSourceType eventSource)
+        {
+            if (this._GridHorizontalScrollBarVisible)
+            {
+                Rectangle bounds = this._GridHorizontalScrollBarBounds;
+                int total = this.Positions.ColumnsTotalSizeVisible + 45;
+                int offset = this.Positions.ColumnsVisualOffset;
+                int visual = bounds.Width;
+                using (this.ScrollBarX.SuppressEvents())
+                {
+                    this.ScrollBarX.Bounds = bounds;
+                    this.ScrollBarX.ValueTotal = new SizeRange(0, total);
+                    this.ScrollBarX.Value = new SizeRange(offset, offset + visual);
+                    this.ScrollBarX.IsEnabled = (total > visual);
+                }
+            }
+        }
+        /// <summary>
+        /// Recalculate values and bounds for Vertical Scrollbar ("Tables" scrollbar).
+        /// </summary>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
+        protected void RecalcScrollBarY(ref ProcessAction actions, EventSourceType eventSource)
+        {
+            if (this._GridVerticalScrollBarVisible)
+            {
+                Rectangle bounds = this._GridVerticalScrollBarBounds;
+                int total = this.Positions.TablesTotalSizeVisible + 5;
+                int offset = this.Positions.TableVisualOffset;
+                int visual = bounds.Height;
+                using (this.ScrollBarY.SuppressEvents())
+                {
+                    this.ScrollBarY.Bounds = bounds;
+                    this.ScrollBarY.ValueTotal = new SizeRange(0, total);
+                    this.ScrollBarY.Value = new SizeRange(offset, offset + visual);
+                    this.ScrollBarY.IsEnabled = (total > visual);
+                }
+            }
+        }
+        /// <summary>
+        /// Eventhandler for Horizontal splitter value changed event
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ScrollBarX_ValueChange(object sender, GPropertyChangeArgs<SizeRange> e)
+        {
+            int offset = (int)this.ScrollBarX.Value.Begin.Value;
+            if (offset == this.Positions.ColumnsVisualOffset) return;
+            this.Positions.ColumnsVisualOffset = offset;
+            this.RecalcGrid();
+            this.RepaintAllItems = true;
+        }
+        /// <summary>
+        /// Eventhandler for Vertical splitter value changed event
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ScrollBarY_ValueChange(object sender, GPropertyChangeArgs<SizeRange> e)
+        {
+            int offset = (int)this.ScrollBarY.Value.Begin.Value;
+            if (offset == this.Positions.TableVisualOffset) return;
+            this.Positions.TableVisualOffset = offset;
+            this.RecalcGrid();
+            this.RepaintToLayers = GInteractiveDrawLayer.Standard;
+            //        this.RepaintAllItems = true;
+        }
+        /// <summary>
+        /// Horizontal Scrollbar for Columns shift
+        /// </summary>
+        protected GScrollBar ScrollBarX;
+        /// <summary>
+        /// Vertical Scrollbar for Tables (no its Rows!) shift
+        /// </summary>
+        protected GScrollBar ScrollBarY;
+        #endregion
+        #region Childs items
+        /// <summary>
+        /// An array of sub-items in this item.
+        /// </summary>
+        protected override IEnumerable<IInteractiveItem> Childs { get { this.ChildArrayCheck(); return this.ChildList; } }
+        /// <summary>
+        /// Invalidate Child array, call after any change on Tables or Columns in this grid.
+        /// </summary>
+        protected void ChildArrayInvalidate()
+        {
+            this._ChildArrayValid = false;
+        }
+        /// <summary>
+        /// Check this.GridItems: when is null, then call this.GridItemsReload()
+        /// </summary>
+        protected void ChildArrayCheck()
+        {
+            if (!this._ChildArrayValid)
+                this.ChildArrayReload();
+        }
+        /// <summary>
+        /// Reload all current items for this Grid into .
+        /// Add this items: this._Tables, 
+        /// </summary>
+        protected void ChildArrayReload()
+        {
+            this.ChildList.Clear();
+
+            // First (on bottom in hierarchy) is Tables:
+            this.ChildList.AddRange(this._Tables);
+
+            // Next (=in hierarchy: above Tables) is Table-Splitters, for all except last GTable:
+            for (int t = 0; t < (this._Tables.Count - 1); t++)
+                this.ChildList.Add(this._Tables[t].TableSplitter);
+
+            // And top-most (in hierarchy) is HorizontalScrollBar (only when exists any Columns) and VerticalScrollBar:
+
+            if (this.Positions.TableCount > 0)
+                this.ChildList.Add(this.ScrollBarY);
+            if (this.Positions.ColumnsCount > 0)
+                this.ChildList.Add(this.ScrollBarX);
+
+            this._ChildArrayValid = true;
+        }
+        private bool _ChildArrayValid;
+        #endregion
+        #region Podpora pro časové osy v synchronizovaných sloupcích
+        /// <summary>
+        /// Vyvolá RefreshTimeAxis pro všechny GTable, předá jim ID sloupce pro refresh.
+        /// Metoda se volá po jakékoli změně hodnot na časové ose daného sloupce (je volána z handleru Column._TimeAxis_ValueChange)
         /// </summary>
         /// <param name="columnId"></param>
         internal void RefreshTimeAxis(int columnId)
@@ -141,151 +408,171 @@ namespace Djs.Common.Components
             foreach (GTable gTable in this._Tables)
                 gTable.RefreshTimeAxis(columnId);
         }
+        #endregion
+        #region Rozložení prvků Gridu = pozice sloupců (sloupce v Gridu řídí Master tabulka, jsou synchronizované do všech tabulek) a pozice jednotlivých tabulek
         /// <summary>
-        /// Collection of Tables in this Grids
+        /// Soupis sloupců master tabulky, vždy setříděný v pořadí podle ColumnOrder, se správně napočtenou hodnotou ISequenceLayout.Begin a End.
+        /// Tento seznam se ukládá do místní cache, jeho generování se provádí jen jedenkrát po jeho invalidaci.
+        /// Invalidace seznamu se provádí metodou LayoutXMasterColumnsReset(), ta se má volat po těchto akcích:
+        /// Změna šířky sloupce, Změna pořadí sloupců, Změna počtu sloupců.
+        /// Nemusí se volat při posunech vodorovného scrollbaru ani při resize gridu.
+        /// Tato property nikdy nevrací null, ale může vrátit kolekci s počtem = 0 prvků (pokud neexistují tabulky nebo Master tabulka nemá žádné sloupce).
         /// </summary>
-        public IEnumerable<DTable> DataTables { get { return this._Tables.Select(t => t.DataTable); } }
+        protected List<Data.New.ISequenceLayout> LayoutXMasterColumns
+        {
+            get
+            {
+                if (this._LayoutXMasterColumns == null)
+                {
+                    List<Data.New.ISequenceLayout> list = new List<Data.New.ISequenceLayout>();
+                    if (this._Tables != null && this._Tables.Count > 0)
+                        list.AddRange(this._Tables[0].DataTable.Columns.Cast<Data.New.ISequenceLayout>());
+                    if (list.Count > 1)
+                        list.Sort((a, b) => a.Order.CompareTo(b.Order));
+                    SequenceLayoutCalculate(list);
+                    this._LayoutXMasterColumns = list;
+                }
+                return this._LayoutXMasterColumns;
+            }
+        }
         /// <summary>
-        /// true when exists at least one Table
+        /// Resetuje kolekci LayoutXMasterColumns (=donutí ji znovu se načíst).
+        /// Má se volat po těchto akcích:
+        /// Změna šířky sloupce, Změna pořadí sloupců, Změna počtu sloupců.
+        /// Nemusí se volat při posunech vodorovného scrollbaru ani při resize gridu.
         /// </summary>
-        public bool HasTables { get { return (this._Tables.Count > 0); } }
+        protected void LayoutXMasterColumnsReset() { this._LayoutXMasterColumns = null; }
+        /// <summary>
+        /// Cache kolekce LayoutXMasterColumns
+        /// </summary>
+        private List<Data.New.ISequenceLayout> _LayoutXMasterColumns;
+        /// <summary>
+        /// Šířka sloupce RowHeader = fyzická pozice prvního pixelu, kde se začínají zobrazovat vlastní sloupce z tabulek.
+        /// Tuto hodnotu typicky setuje splitter za záhlavím RowHeader sloupce.
+        /// </summary>
+        protected int LayoutXRowHeaderWidth { get { return this._LayoutXRowHeaderWidth; } set { this._LayoutXRowHeaderWidth = value; this._LayoutXIsValid = false;} } private int _LayoutXRowHeaderWidth;
+        /// <summary>
+        /// Číslo prvního zobrazovaného (=logického, nikoli vizuálního) pixelu v ose X v prostoru datových sloupců.
+        /// Souvisí s posouváním oblasti sloupců doprava/doleva pomocí dolního vodorovného scrollbaru.
+        /// </summary>
+        protected int LayoutXColumnOffset { get { return this._LayoutXColumnOffset; } set { this._LayoutXColumnOffset = value; this._LayoutXIsValid = false; } } private int _LayoutXColumnOffset;
+        /// <summary>
+        /// Celková šířka všech zobrazitelných sloupců = hodnota ISequenceLayout.End z posledního sloupce ze seznamu LayoutXMasterColumns.
+        /// Jde o logickou hodnotu, která odpovídá celkové velikosti vodorovného (dolního) scrollbaru.
+        /// </summary>
+        protected int LayoutXAllColumnsWidth { get { List<Data.New.ISequenceLayout> list = this.LayoutXMasterColumns; int cnt = list.Count; return (cnt > 0 ? list[cnt - 1].End : 0); } }
 
-        public GTable AddTable(DTable dTable)
-        {
-            return this.AddTable(dTable, null, null, null);
-        }
-        public GTable AddTable(DTable dTable, string text, Int32Range sizeRange)
-        {
-            return this.AddTable(dTable, text, sizeRange, null);
-        }
-        public GTable AddTable(DTable dTable, string text, Int32Range sizeRange, int? size)
-        {
-            if (dTable == null) return null;
-            int tableId = this._TableID++;
-            GTable gTable = new GTable(this, dTable, tableId, text, sizeRange, size);
-            this._Tables.Add(gTable);                      // In handler (EList => this._TableAddAfter()) will be called this._AttachGTable(gTable), and linked this handlers to DTable events ColumnAddAfter, ColumnRemoveAfter, RowAddAfter, RowRemoveAfter
-            this.Refresh();
-            return gTable;
-        }
-        public void RemoveTable(int index)
-        {
-            this.RemoveTable(this.GetTable(index));
-        }
-        public void RemoveTable(string tableName)
-        {
-            this.RemoveTable(this.GetTable(tableName));
-        }
-        public void RemoveTable(DTable dTable)
-        {
-            if (dTable == null) return;
-            int index = this._Tables.FindIndex(t => Object.ReferenceEquals(t, dTable));
-            if (index < 0) return;
-            GTable gTable = this._Tables[index];
-            this._Tables.RemoveAt(index);        // In handler this._TableRemoveAfter() will be called this._DetachGTable(gTable)
-            this.Refresh();
-        }
-        /// <summary>
-        /// Returns a table on index (index), or return null.
-        /// </summary>
-        /// <param name="index"></param>
-        /// <returns></returns>
-        public DTable GetTable(int index)
-        {
-            GTable table = (index >= 0 && index < this._Tables.Count ? this._Tables[index] : null);
-            return (table == null ? null : table.DataTable);
-        }
-        /// <summary>
-        /// Returns a table with name (tableName), or return null.
-        /// </summary>
-        /// <param name="tableName"></param>
-        /// <returns></returns>
-        public DTable GetTable(string tableName)
-        {
-            GTable table = (!String.IsNullOrEmpty(tableName) ? this._Tables.FirstOrDefault(t => !String.IsNullOrEmpty(t.TableName) && String.Equals(t.TableName, tableName)) : null);
-            return (table == null ? null : table.DataTable);
-        }
+        private bool _LayoutXIsValid;
 
-        private void _AttachGTableEventHandlers(GTable gTable)
+        /// <summary>
+        /// Soupis jednotlivých tabulek, vždy setříděný v pořadí podle TableId, se správně napočtenou hodnotou ISequenceLayout.Begin a End.
+        /// Tento seznam se ukládá do místní cache, jeho generování se provádí jen jedenkrát po jeho invalidaci.
+        /// Invalidace seznamu se provádí metodou LayoutYTablesReset(), ta se má volat po těchto akcích:
+        /// Změna výšky tabulky, Změna pořadí tabulek (???), Změna počtu tabulek.
+        /// Nemusí se volat při posunech svislého scrollbaru, ani při resize gridu.
+        /// Tato property nikdy nevrací null, ale může vrátit kolekci s počtem = 0 prvků (pokud neexistují tabulky).
+        /// </summary>
+        protected List<Data.New.ISequenceLayout> LayoutYTables
         {
-            gTable.ColumnAddAfter += this._TableColumnAddAfter;
-            gTable.ColumnRemoveAfter += this._TableColumnRemoveAfter;
-            gTable.RowAddAfter += this._TableRowAddAfter;
-            gTable.RowRemoveAfter += this._TableRowRemoveAfter;
-        }
-        private void _DetachGTableEventHandlers(GTable gTable)
-        {
-            gTable.ColumnAddAfter -= this._TableColumnAddAfter;
-            gTable.ColumnRemoveAfter -= this._TableColumnRemoveAfter;
-            gTable.RowAddAfter -= this._TableRowAddAfter;
-            gTable.RowRemoveAfter -= this._TableRowRemoveAfter;
-        }
-        private void _TableAddAfter(object sender, EList<GTable>.EListAfterEventArgs args)
-        {
-            GTable gTable = args.Item;
-            this._AttachGTableEventHandlers(gTable);       // Attach handler for GTable.Events => this.Handlers
-            gTable.TablePosition = this.Positions.GetTable(gTable.TableId);
-            gTable.TablePosition.SizeRange = gTable.SizeRange;
-            gTable.TablePosition.SizeN = gTable.Size;
-            this.ReloadColumns(gTable.DataTable, false);
-        }
-        private void _TableRemoveAfter(object sender, EList<GTable>.EListAfterEventArgs args)
-        {
-            GTable gTable = args.Item;
-            this._DetachGTableEventHandlers(args.Item);       // Remove handler for GTable.Events => this.Handlers
-            args.Item.TablePosition = null;
-            this.Positions.RemoveTable(gTable.TableId);
-            this.ChildArrayInvalidate();
-        }
-        private void _TableColumnAddAfter(object sender, EList<DColumn>.EListEventArgs args)
-        {
-            this.ReloadColumns(args.Item.Table, false);
-        }
-        private void _TableColumnRemoveAfter(object sender, EList<DColumn>.EListEventArgs args)
-        {
-            this.ReloadColumns(true);
-        }
-        private void _TableRowAddAfter(object sender, EList<DRow>.EListEventArgs args)
-        {
-            // One DataTable was added new DataRow, linked GTable added new GRow. Now GGrid will invalidate its ...:
-        }
-        private void _TableRowRemoveAfter(object sender, EList<DRow>.EListEventArgs args)
-        {
-            // One DataTable was removed a DataRow, linked GTable removed appropriate GRow. Now GGrid will invalidate its ...:
+            get
+            {
+                if (this._LayoutYTables == null)
+                {
+                    List<Data.New.ISequenceLayout> list = new List<Data.New.ISequenceLayout>();
+                    if (this._Tables != null)
+                        list.AddRange(this._Tables.Select(t => t.DataTable).Cast<Data.New.ISequenceLayout>());
+                    if (list.Count > 1)
+                        list.Sort((a, b) => a.Order.CompareTo(b.Order));
+                    SequenceLayoutCalculate(list);
+                    this._LayoutYTables = list;
+                }
+                return this._LayoutYTables;
+            }
         }
         /// <summary>
-        /// ID for next added table
+        /// Resetuje kolekci LayoutYTables (=donutí ji znovu se načíst).
+        /// Má se volat po těchto akcích:
+        /// Změna výšky tabulky, Změna pořadí tabulek (???), Změna počtu tabulek.
+        /// Nemusí se volat při posunech svislého scrollbaru, ani při resize gridu.
         /// </summary>
-        private int _TableID = 0;
+        protected void LayoutYTablesReset() { this._LayoutYTables = null; }
         /// <summary>
-        /// Returns a Table from index shifted from specified column.
-        /// Returns Tables[IndexOf(gTable) + shift], or return null.
+        /// Cache kolekce LayoutXMasterColumns
         /// </summary>
-        /// <param name="gTable"></param>
-        /// <param name="shift"></param>
-        /// <returns></returns>
-        internal GTable GetOtherTable(GTable gTable, int shift)
+        private List<Data.New.ISequenceLayout> _LayoutYTables;
+        /// <summary>
+        /// Číslo prvního zobrazovaného (=logického, nikoli vizuálního) pixelu v ose Y v prostoru tabulek.
+        /// Souvisí s posouváním celého bloku tabulek nahoru/dolu pomocí svislého scrollbaru.
+        /// </summary>
+        protected int LayoutYTableOffset { get { return this._LayoutYTableOffset; } set { this._LayoutYTableOffset = value; this._LayoutYIsValid = false; } }
+        private int _LayoutYTableOffset;
+        /// <summary>
+        /// Celková výška všech zobrazitelných tabulek = hodnota ISequenceLayout.End z poslední tabulky ze seznamu LayoutYTables.
+        /// Jde o logickou hodnotu, která odpovídá celkové velikosti svislého (vpravo) scrollbaru.
+        /// </summary>
+        protected int LayoutXAllTablesWidth { get { List<Data.New.ISequenceLayout> list = this.LayoutYTables; int cnt = list.Count; return (cnt > 0 ? list[cnt - 1].End : 0); } }
+
+        private bool _LayoutYIsValid;
+
+        /// <summary>
+        /// Do všech položek ISequenceLayout dodané kolekce vepíše Begin vepíše Begin = position.
+        /// K hodnotě position přičte item.Size (pouze pokud je hodnota větší než 0), tato upravená position se vrací v ref parametru, a slouží jako Begin pro další položky v kolekci.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="position"></param>
+        protected static void SequenceLayoutCalculate(IEnumerable<Data.New.ISequenceLayout> items)
         {
-            int index = this.GetTableIndex(gTable);
-            int otherIndex = (index < 0 ? -1 : index + shift);
-            return ((otherIndex >= 0 && otherIndex < this.TableCount) ? this._Tables[otherIndex] : null);
+            int position = 0;
+            foreach (Data.New.ISequenceLayout item in items)
+                SequenceLayoutCalculate(item, ref position);
         }
         /// <summary>
-        /// Returns a index of specified object in this._Tables list.
+        /// Do položky ISequenceLayout vepíše Begin = position.
+        /// K hodnotě position přičte item.Size (pouze pokud je hodnota větší než 0), tato upravená position se vrací v ref parametru, a slouží jako Begin pro další položky v kolekci.
         /// </summary>
-        /// <param name="gTable"></param>
-        /// <returns></returns>
-        internal int GetTableIndex(GTable gTable)
+        /// <param name="item"></param>
+        /// <param name="position"></param>
+        protected static void SequenceLayoutCalculate(Data.New.ISequenceLayout item, ref int position)
         {
-            return (gTable != null ? this._Tables.FindIndex(tbl => Object.ReferenceEquals(tbl, gTable)) : -1);
+            item.Begin = position;
+            int size = item.Size;
+            if (size > 0) position += size;
+        }
+        #endregion
+
+
+        #region Public properties
+        protected void InitProperties()
+        {
+            this.ScrollBarVerticalWidth = GScrollBar.DefaultSystemBarWidth;
+            this.ScrollBarHorizontalHeight = GScrollBar.DefaultSystemBarHeight;
         }
         /// <summary>
-        /// Contain a number of tables in this Grid
+        /// Šířka svislého Scrollbaru (ten voravo, co posouvá tabulky - když je potřeba).
         /// </summary>
-        internal int TableCount { get { return this._Tables.Count; } }
+        public int ScrollBarVerticalWidth { get { return this._ScrollBarVerticalWidth; } set { this._ScrollBarVerticalWidth = (value < 0 ? 0 : value); this._GridLayoutValid = false; } } private int _ScrollBarVerticalWidth;
         /// <summary>
-        /// Collection of Tables
+        /// Výška vodorovného Scrollbaru (ten dole, co posouvá sloupce).
         /// </summary>
-        internal IEnumerable<GTable> Tables { get { return this._Tables; } } private EList<GTable> _Tables;
+        public int ScrollBarHorizontalHeight { get { return this._ScrollBarHorizontalHeight; } set { this._ScrollBarHorizontalHeight = (value < 0 ? 0 : value); this._GridLayoutValid = false; } } private int _ScrollBarHorizontalHeight;
+        #endregion
+
+
+
+
+        #region Tables
+        /// <summary>
+        /// Recalculate values and bounds for all GTables.
+        /// </summary>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
+        protected void RecalcTables(ref ProcessAction actions, EventSourceType eventSource)
+        {
+            Rectangle tablesBounds = this._GridTablesBounds;
+            foreach (GTable gTable in this._Tables)
+                gTable.RecalcTable(tablesBounds, ref actions, eventSource);
+        }
+        
         #endregion
         #region Columns and Positions
         /// <summary>
@@ -350,157 +637,7 @@ namespace Djs.Common.Components
         /// </summary>
         public static int DefaultRowHeaderWidth { get { return 20; } }
         #endregion
-        #region ScrollBarX, ScrollBarY
-        /// <summary>
-        /// Initialise scroll bars
-        /// </summary>
-        protected void InitScrollBars()
-        {
-            this.ScrollBarX = new GScrollBar() { Orientation = System.Windows.Forms.Orientation.Horizontal };
-            this.ScrollBarY = new GScrollBar() { Orientation = System.Windows.Forms.Orientation.Vertical };
-            ProcessAction actions = ProcessAction.None;
-            this.RecalcScrollBars(ref actions, EventSourceType.ApplicationCode);
-            this.ScrollBarX.ValueChanging += new GPropertyChanged<SizeRange>(ScrollBarX_ValueChange);
-            this.ScrollBarX.ValueChanged += new GPropertyChanged<SizeRange>(ScrollBarX_ValueChange);
-            this.ScrollBarY.ValueChanging += new GPropertyChanged<SizeRange>(ScrollBarY_ValueChange);
-            this.ScrollBarY.ValueChanged += new GPropertyChanged<SizeRange>(ScrollBarY_ValueChange);
-        }
-        /// <summary>
-        /// Recalculate values and bounds for Horizontal and Vertical Scrollbar.
-        /// </summary>
-        /// <param name="actions"></param>
-        /// <param name="eventSource"></param>
-        protected void RecalcScrollBars(ref ProcessAction actions, EventSourceType eventSource)
-        {
-            this.RecalcScrollBarX(ref actions, eventSource);
-            this.RecalcScrollBarY(ref actions, eventSource);
-        }
-        /// <summary>
-        /// Recalculate values and bounds for Horizontal Scrollbar ("Column" scrollbar).
-        /// </summary>
-        /// <param name="actions"></param>
-        /// <param name="eventSource"></param>
-        protected void RecalcScrollBarX(ref ProcessAction actions, EventSourceType eventSource)
-        {
-            if (this._GridHorizontalScrollBarVisible)
-            {
-                Rectangle bounds = this._GridHorizontalScrollBarBounds;
-                int total = this.Positions.ColumnsTotalSizeVisible + 45;
-                int offset = this.Positions.ColumnsVisualOffset;
-                int visual = bounds.Width;
-                using (this.ScrollBarX.SuppressEvents())
-                {
-                    this.ScrollBarX.Bounds = bounds;
-                    this.ScrollBarX.ValueTotal = new SizeRange(0, total);
-                    this.ScrollBarX.Value = new SizeRange(offset, offset + visual);
-                    this.ScrollBarX.IsEnabled = (total > visual);
-                }
-            }
-        }
-        /// <summary>
-        /// Recalculate values and bounds for Vertical Scrollbar ("Tables" scrollbar).
-        /// </summary>
-        /// <param name="actions"></param>
-        /// <param name="eventSource"></param>
-        protected void RecalcScrollBarY(ref ProcessAction actions, EventSourceType eventSource)
-        {
-            if (this._GridVerticalScrollBarVisible)
-            {
-                Rectangle bounds = this._GridVerticalScrollBarBounds;
-                int total = this.Positions.TablesTotalSizeVisible + 5;
-                int offset = this.Positions.TableVisualOffset;
-                int visual = bounds.Height;
-                using (this.ScrollBarY.SuppressEvents())
-                {
-                    this.ScrollBarY.Bounds = bounds;
-                    this.ScrollBarY.ValueTotal = new SizeRange(0, total);
-                    this.ScrollBarY.Value = new SizeRange(offset, offset + visual);
-                    this.ScrollBarY.IsEnabled = (total > visual);
-                }
-            }
-        }
-        /// <summary>
-        /// Eventhandler for Horizontal splitter value changed event
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void ScrollBarX_ValueChange(object sender, GPropertyChangeArgs<SizeRange> e)
-        {
-            int offset = (int)this.ScrollBarX.Value.Begin.Value;
-            if (offset == this.Positions.ColumnsVisualOffset) return;
-            this.Positions.ColumnsVisualOffset = offset;
-            this.RecalcGrid();
-            this.RepaintAllItems = true;
-        }
-        /// <summary>
-        /// Eventhandler for Vertical splitter value changed event
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void ScrollBarY_ValueChange(object sender, GPropertyChangeArgs<SizeRange> e)
-        {
-            int offset = (int)this.ScrollBarY.Value.Begin.Value;
-            if (offset == this.Positions.TableVisualOffset) return;
-            this.Positions.TableVisualOffset = offset;
-            this.RecalcGrid();
-            this.RepaintToLayers = GInteractiveDrawLayer.Standard;
-    //        this.RepaintAllItems = true;
-        }
-        /// <summary>
-        /// Horizontal Scrollbar for Columns shift
-        /// </summary>
-        protected GScrollBar ScrollBarX;
-        /// <summary>
-        /// Vertical Scrollbar for Tables (no its Rows!) shift
-        /// </summary>
-        protected GScrollBar ScrollBarY;
-        #endregion
-        #region Childs items
-        /// <summary>
-        /// An array of sub-items in this item.
-        /// </summary>
-        protected override IEnumerable<IInteractiveItem> Childs { get { this.ChildArrayCheck(); return this.ChildList; } }
-        /// <summary>
-        /// Invalidate Child array, call after any change on Tables or Columns in this grid.
-        /// </summary>
-        protected void ChildArrayInvalidate()
-        {
-            this._ChildArrayValid = false;
-        }
-        /// <summary>
-        /// Check this.GridItems: when is null, then call this.GridItemsReload()
-        /// </summary>
-        protected void ChildArrayCheck()
-        {
-            if (!this._ChildArrayValid)
-                this.ChildArrayReload();
-        }
-        /// <summary>
-        /// Reload all current items for this Grid into .
-        /// Add this items: this._Tables, 
-        /// </summary>
-        protected void ChildArrayReload()
-        {
-            this.ChildList.Clear();
-
-            // First (on bottom in hierarchy) is Tables:
-            this.ChildList.AddRange(this._Tables);
-
-            // Next (=in hierarchy: above Tables) is Table-Splitters, for all except last GTable:
-            for (int t = 0; t < (this._Tables.Count - 1); t++)
-                this.ChildList.Add(this._Tables[t].TableSplitter);
-            
-            // And top-most (in hierarchy) is HorizontalScrollBar (only when exists any Columns) and VerticalScrollBar:
-
-            if (this.Positions.TableCount > 0)
-                this.ChildList.Add(this.ScrollBarY);
-            if (this.Positions.ColumnsCount > 0)
-                this.ChildList.Add(this.ScrollBarX);
-
-            this._ChildArrayValid = true;
-        }
-        private bool _ChildArrayValid;
-        #endregion
+        
         #region Refresh
         public override void Refresh()
         {
@@ -557,231 +694,5 @@ namespace Djs.Common.Components
         /// </summary>
         internal GInteractiveDrawLayer RepaintThisToLayers { get { return this.RepaintToLayers; } set { this.RepaintToLayers = value; } }
         #endregion
-        #region Architecture comments
-        /*   Vizuální grid se skládá z:
-
-     - Colums = Jedna kolekce sloupců, řídí pozice sloupců v gridu (počet, šířka), vizuálně se projevuje pouze přes splittery za sloupci jednotlivých tabulek
-     - Svislé splittery za každým sloupcem, včetně sloupce RowHeader = řídí šířku sloupce, jsou přes celou výšku Gridu
-     - Jedna kolekce tabulek, vizuálně umístěných pod sebou
-      - Každá tabulka se skládá z:
-       - Prostor ColumnHeader
-          - RowColumnHeader
-          - ColumnsHeader
-       - Prostor RowsArea, skládá se z:
-          - Řádků, kde každý řádek má:
-            - RowHeader
-            - RowArea = buňky dle pozic sloupců Gridu
-          - Prostor bez řádků pod ním
-          - Svislý ScrollBar vpravo, určuje vodorovný offset (Y) pro řádky
-       - Vodorovný Splitter pod prostorem řádků, pouze u tabulek které NEJSOU poslední (=pod splitterem začíná další tabulka)
-     - Vodorovný ScrollBar dole, určuje vodorovný offset (Y) pro sloupce, nachází se dole v gridu, začíná za sloupcem RowHeader, končí před svislými scrollbary
-    
-    */
-        #endregion
-        #region GGridColumnSet + GGridColumn                  comment out !!!
-        /*
-        /// <summary>
-        /// GGridColumnSet : set of synchronized columns on Grid, for all Tables and its appropriate Column.
-        /// </summary>
-        internal class GGridColumnSet : List<GGridColumn>
-        {
-            public GGridColumnSet(GGrid grid)
-            {
-                this._Grid = grid;
-            }
-            /// <summary>
-            /// Owner GGrid
-            /// </summary>
-            public GGrid Grid { get { return this._Grid; } } private GGrid _Grid;
-        }
-        /// <summary>
-        /// GGridColumn : one synchronized column on Grid, for all Tables and its appropriate Column.
-        /// GGridColumn itself is not drawed and is not interactive, his role is to control GTable.Columns Widths and its Splitters.
-        /// </summary>
-        internal class GGridColumn
-        {
-            public GGridColumn(GGrid grid, int index, DColumn dColumn, GGridColumn gColumn)
-            {
-                this._Grid = grid;
-                this._ColumnIndex = index;
-                this._Visible = true;
-                this.Width = 125;
-                this._FillFrom(dColumn, gColumn);
-                this._CreateSplitter();
-            }
-            /// <summary>
-            /// Owner GGrid
-            /// </summary>
-            public GGrid Grid { get { return this._Grid; } } private GGrid _Grid;
-            /// <summary>
-            /// Index of data column. 
-            /// Contain -1 for RowHeader Column!
-            /// </summary>
-            public int ColumnIndex { get { return this._ColumnIndex; } } private int _ColumnIndex;
-            /// <summary>
-            /// true for RowHeader column (has ColumnIndex == -1, and has no data from table)
-            /// </summary>
-            public bool IsRowHeader { get { return (this._ColumnIndex < 0); } }
-            /// <summary>
-            /// Is column visible?
-            /// </summary>
-            public bool Visible { get { return this._Visible; } } private bool _Visible;
-            /// <summary>
-            /// Current Width of this column, in pixel. 
-            /// Is not aligned to WidthRange. 
-            /// Has positive value even for Visible = false.
-            /// You can use CurrentWidth for accept (Visible == false) and align to range..
-            /// </summary>
-            public int Width { get; set; }
-            /// <summary>
-            /// Range for Width of this column, in pixels. Can be null.
-            /// Is used only from first Table in TableSet (MasterTable).
-            /// </summary>
-            public Int32Range WidthRange { get; set; }
-            /// <summary>
-            /// Current real Logical Width of this column, in pixel.
-            /// For IsRowHeader returns 0 (RowHeader does not have logical width!).
-            /// For other columns return VisualWidth (=Accept this.Visible, Width and WidthRange). Does not return a negative value.
-            /// </summary>
-            public int LogicalWidth { get { return (this.IsRowHeader ? 0 : this.VisualWidth); } }
-            /// <summary>
-            /// Current real Visual Width of this column, in pixel. Accept this.Visible, Width and WidthRange. Does not return a negative value.
-            /// </summary>
-            public int VisualWidth { get { return this.GetCurrentWidth(); } }
-            #region Coordinates of column (CurrentBounds, AbsoluteBounds)
-            /// <summary>
-            /// Logical bounds of column = coordinates on X axis (Left, Width, Right as: Begin, Size, End), with shift of columns on X-axis.
-            /// </summary>
-            public Int32Range LogicalBounds { get { return this._LogicalBounds; } set { this._LogicalBounds = value; } } private Int32Range _LogicalBounds;
-            /// <summary>
-            /// Visual bounds of column = coordinates on X axis (Left, Width, Right as: Begin, Size, End), in real coordinates on current Grid.
-            /// Bounds of whole column, by its VisualWidth, from its begin to End, is not cropped to real area (see CurrentBounds)
-            /// </summary>
-            public Int32Range VisualBounds { get { return this._VisualBounds; } set { this._VisualBounds = value; } } private Int32Range _VisualBounds;
-            /// <summary>
-            /// Current Visual bounds of column = coordinates on X axis (Left, Width, Right as: Begin, Size, End), in real coordinates on current Grid, cropped to Visible Area.
-            /// </summary>
-            public Int32Range CurrentBounds { get { return this._CurrentBounds; } set { this._CurrentBounds = value; } } private Int32Range _CurrentBounds;
-            /// <summary>
-            /// 
-            /// </summary>
-            /// <param name="logical"></param>
-            /// <param name="visual"></param>
-            /// <param name="current"></param>
-            /// <param name="currentRange"></param>
-            internal void StoreBounds(ref int logical, ref int visual, Int32Range currentRange, Int32Range currentHeight)
-            {
-                this._LogicalBounds = new Int32Range(logical, logical + this.LogicalWidth); logical += this.LogicalWidth;
-                this._VisualBounds = new Int32Range(visual, visual + this.VisualWidth); visual += this.VisualWidth;
-                this._CurrentBounds = (currentRange != null ? this._VisualBounds * currentRange : this._VisualBounds);
-
-                // Position for Splitter:
-                if (this.Splitter != null)
-                {
-                    int location = visual;
-                    bool active = (currentRange == null || (currentRange != null && currentRange.Contains(visual)));
-                    if (this.Splitter.Value != location && active)
-                        this.Splitter.Value = location;
-                    if (this.Splitter.IsVisible != active)
-                        this.Splitter.IsVisible = active;
-                    if (currentHeight != null && this.Splitter.BoundsNonActive != currentHeight)
-                        this.Splitter.BoundsNonActive = currentHeight;
-                }
-            }
-            /// <summary>
-            /// Returns correct Width value, from Visible, Width and WidthRange. Does not return a negative value.
-            /// </summary>
-            /// <returns></returns>
-            protected int GetCurrentWidth()
-            {
-                int width = 0;
-                if (this.Visible)
-                {
-                    width = this.Width;
-                    if (this.WidthRange != null && this.WidthRange.IsReal)
-                        width = this.WidthRange.Align(width).Value;
-                    if (width < 0) width = 0;
-                }
-                return width;
-            }
-            #endregion
-            #region Fill properties from Data Column and old GGridColumn
-            /// <summary>
-            /// Fill this properties from DataColumn
-            /// </summary>
-            /// <param name="dColumn"></param>
-            internal void FillFrom(DColumn dColumn)
-            {
-                int width = this.Width;
-                if (dColumn != null)
-                {
-                    this.WidthRange = dColumn.WidthRange;
-                    if (dColumn.Width.HasValue && this.WidthRange != null && !this.WidthRange.Contains(this.Width))
-                        width = dColumn.Width.Value;
-                }
-                this.Width = width;
-            }
-            /// <summary>
-            /// Fill this properties from DataColumn and from GridColumn
-            /// </summary>
-            /// <param name="dColumn"></param>
-            /// <param name="gColumn"></param>
-            private void _FillFrom(DColumn dColumn, GGridColumn gColumn)
-            {
-                int width = this.Width;
-                if (dColumn != null)
-                {
-                    this.WidthRange = dColumn.WidthRange;
-                    if (dColumn.Width.HasValue) width = dColumn.Width.Value;
-                }
-                if (gColumn != null)
-                {
-                    width = gColumn.Width;
-                }
-                this.Width = width;
-            }
-            #endregion
-            #region Spliter (creation, handlers, events)
-            private void _CreateSplitter()
-            {
-                this._Splitter = new GSplitter() { Orientation = System.Windows.Forms.Orientation.Vertical, SplitterActiveOverlap = 2, SplitterVisibleWidth = 3 };
-                this._Splitter.LocationChanged += new GPropertyChanged<int>(_Splitter_LocationChanged);
-            }
-            /// <summary>
-            /// Handler for event LocationChanged on Column-Splitter.
-            /// </summary>
-            /// <param name="sender"></param>
-            /// <param name="e"></param>
-            private void _Splitter_LocationChanged(object sender, GPropertyChangeArgs<int> e)
-            {
-                this._Grid.ColumnSplitterLocationChanged(this, e);
-            }
-            /// <summary>
-            /// Graphical Splitter, after this column (on right-edge)
-            /// </summary>
-            public GSplitter Splitter { get { return this._Splitter; } } private GSplitter _Splitter;
-            #endregion
-            #region PrevItem, NextItem, IsFirst, IsLast
-            /// <summary>
-            /// GGridColumn before this column
-            /// </summary>
-            public GGridColumn PrevItem { get { return this._Grid.GetOtherColumn(this, -1); } }
-            /// <summary>
-            /// true when this GGridColumn is first in collection (PrevItem is null)
-            /// </summary>
-            public bool IsFirst { get { return (this.PrevItem == null); } }
-            /// <summary>
-            /// GGridColumn after this column
-            /// </summary>
-            public GGridColumn NextItem { get { return this._Grid.GetOtherColumn(this, 1); } }
-            /// <summary>
-            /// true when this GGridColumn is last in collection (NextItem is null)
-            /// </summary>
-            public bool IsLast { get { return (this.NextItem == null); } }
-            #endregion
-        }
-        */
-        #endregion
     }
-    
 }

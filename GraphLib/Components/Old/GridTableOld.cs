@@ -4,8 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Drawing;
 using Djs.Common.Data;
+using Djs.Common.Components;
+using Djs.Common.ComponentsOld;
 
-namespace Djs.Common.Components.Grid.Old
+namespace Djs.Common.ComponentsOld.Grid
 {
     /// <summary>
     /// One visual table with reference to visual grid and data table,
@@ -258,8 +260,8 @@ namespace Djs.Common.Components.Grid.Old
         /// Recalculate values and bounds for one GTable
         /// </summary>
         /// <param name="tablesBounds"></param>
-        /// <param name="actions"></param>
-        /// <param name="eventSource"></param>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
         internal void RecalcTable(Rectangle tablesBounds, ref ProcessAction actions, EventSourceType eventSource)
         {
             GridPositionItem position = this.TablePosition;
@@ -277,10 +279,10 @@ namespace Djs.Common.Components.Grid.Old
         /// Is called after Bounds change, from SetBound() method, only when action PrepareInnerItems is specified.
         /// Recalculate SubItems bounds after change this.Bounds.
         /// </summary>
-        /// <param name="oldBounds">Old bounds, before change</param>
-        /// <param name="newBounds">New bounds. Use this value rather than this.Bounds</param>
-        /// <param name="actions">Actions to do</param>
-        /// <param name="eventSource">Source of this event</param>
+        /// <param name="oldBounds">Původní umístění, před změnou</param>
+        /// <param name="newBounds">Nové umístění, po změnou. Používejme raději tuto hodnotu než this.Bounds</param>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
         protected override void SetBoundsPrepareInnerItems(Rectangle oldBounds, Rectangle newBounds, ref ProcessAction actions, EventSourceType eventSource)
         {
             base.SetBoundsPrepareInnerItems(oldBounds, newBounds, ref actions, eventSource);
@@ -297,8 +299,8 @@ namespace Djs.Common.Components.Grid.Old
         /// Set Bounds (by newBounds and this.TablePosition.SplitVisual) to _ColumnSet, _RowSet and TableSplitter
         /// </summary>
         /// <param name="newBounds"></param>
-        /// <param name="actions"></param>
-        /// <param name="eventSource"></param>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
         /// <param name="withSplitterValue"></param>
         protected void SetTablePositions(Rectangle newBounds, ProcessAction actions, EventSourceType eventSource, bool withSplitterValue)
         {
@@ -762,8 +764,8 @@ namespace Djs.Common.Components.Grid.Old
         /// Calculate Bounds for this column (header, splitter), from ColumnSet bounds and this ColumnPosition
         /// </summary>
         /// <param name="bounds"></param>
-        /// <param name="actions"></param>
-        /// <param name="eventSource"></param>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
         internal void SetPosition(Rectangle bounds, ProcessAction actions, EventSourceType eventSource)
         {
             GridPositionColumnItem columnPosition = this.ColumnPosition;

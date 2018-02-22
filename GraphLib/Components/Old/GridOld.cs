@@ -4,10 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Drawing;
 using Djs.Common.Data;
-using Djs.Common.Components.Grid.Old;
+using Djs.Common.Components;
+using Djs.Common.ComponentsOld.Grid;
 
 // This file contain Visual items for Graphical Grid (all classes are InteractiveObject, is used in GGrid class for visualisation of Grid data
-namespace Djs.Common.Components.Old
+namespace Djs.Common.ComponentsOld
 {
     /// <summary>
     /// GGrid : Visual container for show one or more GTable, with synchronized ColumnsWidths
@@ -36,10 +37,10 @@ namespace Djs.Common.Components.Old
         /// Is called after Bounds change, from SetBound() method, only when action PrepareInnerItems is specified.
         /// Recalculate SubItems bounds after change this.Bounds.
         /// </summary>
-        /// <param name="oldBounds">Old bounds, before change</param>
-        /// <param name="newBounds">New bounds. Use this value rather than this.Bounds</param>
-        /// <param name="actions">Actions to do</param>
-        /// <param name="eventSource">Source of this event</param>
+        /// <param name="oldBounds">Původní umístění, před změnou</param>
+        /// <param name="newBounds">Nové umístění, po změnou. Používejme raději tuto hodnotu než this.Bounds</param>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
         protected override void SetBoundsPrepareInnerItems(Rectangle oldBounds, Rectangle newBounds, ref ProcessAction actions, EventSourceType eventSource)
         {   // After change of Bounds, when action ProcessAction.PrepareInnerItems is requested:
             this.RecalcGrid(ref actions, eventSource);
@@ -56,8 +57,8 @@ namespace Djs.Common.Components.Old
         /// <summary>
         /// Recalculate position of all columns, tables and scrollbar.
         /// </summary>
-        /// <param name="actions"></param>
-        /// <param name="eventSource"></param>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
         internal void RecalcGrid(ref ProcessAction actions, EventSourceType eventSource)
         {
             this.RecalcClientAreas(ref actions, eventSource);
@@ -67,8 +68,8 @@ namespace Djs.Common.Components.Old
         /// <summary>
         /// Recalculate position of inner areas = for Tables and for Scrollbar
         /// </summary>
-        /// <param name="actions"></param>
-        /// <param name="eventSource"></param>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
         private void RecalcClientAreas(ref ProcessAction actions, EventSourceType eventSource)
         {
             Size clientSize = this.BoundsClient.Size;
@@ -126,8 +127,8 @@ namespace Djs.Common.Components.Old
         /// <summary>
         /// Recalculate values and bounds for all GTables.
         /// </summary>
-        /// <param name="actions"></param>
-        /// <param name="eventSource"></param>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
         protected void RecalcTables(ref ProcessAction actions, EventSourceType eventSource)
         {
             Rectangle tablesBounds = this._GridTablesBounds;
@@ -371,8 +372,8 @@ namespace Djs.Common.Components.Old
         /// <summary>
         /// Recalculate values and bounds for Horizontal and Vertical Scrollbar.
         /// </summary>
-        /// <param name="actions"></param>
-        /// <param name="eventSource"></param>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
         protected void RecalcScrollBars(ref ProcessAction actions, EventSourceType eventSource)
         {
             this.RecalcScrollBarX(ref actions, eventSource);
@@ -381,8 +382,8 @@ namespace Djs.Common.Components.Old
         /// <summary>
         /// Recalculate values and bounds for Horizontal Scrollbar ("Column" scrollbar).
         /// </summary>
-        /// <param name="actions"></param>
-        /// <param name="eventSource"></param>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
         protected void RecalcScrollBarX(ref ProcessAction actions, EventSourceType eventSource)
         {
             if (this._GridHorizontalScrollBarVisible)
@@ -403,8 +404,8 @@ namespace Djs.Common.Components.Old
         /// <summary>
         /// Recalculate values and bounds for Vertical Scrollbar ("Tables" scrollbar).
         /// </summary>
-        /// <param name="actions"></param>
-        /// <param name="eventSource"></param>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
         protected void RecalcScrollBarY(ref ProcessAction actions, EventSourceType eventSource)
         {
             if (this._GridVerticalScrollBarVisible)

@@ -4,30 +4,23 @@ using System.Linq;
 using System.Text;
 using System.Drawing;
 using Djs.Common.Data;
+using Djs.Common.Data.New;
 
 namespace Djs.Common.Components.Grid
 {
     /// <summary>
-    /// One visual table with reference to visual grid and data table,
-    /// contains collection of visual Columns and Rows
+    /// GTable : vizuální třída pro zobrazení obsahu jedné datové tabulky v jednom Gridu.
+    /// Grid může zobrazovat data z více tabulek pomocí více instancí GTable, ale jedna GTable může zobrazit data jen z jedné datové tabulky.
     /// </summary>
-    public class GTable : InteractiveContainer, IInteractiveItem, IDisposable
+    public class GTable : InteractiveContainer, IInteractiveItem, IGridMember, IDisposable
     {
-        #region Constructor, public properties
-        internal GTable(GGrid grid, DTable table, int tableId, string text, Int32Range sizeRange, int? size)
+        #region Konstruktor, Dispose
+        internal GTable(GGrid grid, Table table)
         {
             this._Grid = grid;
             this._Table = table;
-            this._TableId = tableId;
-            this._ColumnSet = new GColumnSet(this, table);   // { Bounds = new Rectangle(0, 0, 500, 40) };   // ColumnSet will be pre-filled with all DTable columns.
             this._RowSet = new GRowSet(this, table);         // { Bounds = new Rectangle(0, 40, 500, 300) };       // RowSet will be pre-filled with all DTable rows.
             this._PrepareTableSplitter();
-            this.Text = text;
-            this.SizeRange = sizeRange;
-            this.Size = size;
-
-            this.AttachDTable();               // Attach handler for DTable.Events => this GTable.Handlers. Handler are removed during IDispose.
-            // from now, all Columns and Rows added or removed to Table will be synchronized into this GTable!
         }
         void IDisposable.Dispose()
         {
@@ -35,48 +28,93 @@ namespace Djs.Common.Components.Grid
             this._Table = null;
         }
         #endregion
-        #region Properties: Grid, Table, ColumnSet and RowSet and so on
+        #region Linkování na grid
         /// <summary>
-        /// Owner Grid of this table
+        /// Reference na grid, kam tato tabulka patří.
         /// </summary>
-        public GGrid GGrid { get { return this._Grid; } } private GGrid _Grid;
+        public GGrid Grid { get { return this._Grid; } private set { this._Grid = value; } }
+        private GGrid _Grid;
         /// <summary>
-        /// Data table
+        /// true pokud máme referenci na grid
         /// </summary>
-        public DTable DataTable { get { return this._Table; } } private DTable _Table;
+        public bool HasGrid { get { return (this._Grid != null); } }
         /// <summary>
-        /// ID of table in GGrid
+        /// Napojí this tabulku do daného gridu.
+        /// Je voláno z gridu, v eventu ItemAdd kolekce Tables.
+        /// </summary>
+        /// <param name="dTable"></param>
+        void IGridMember.AttachToGrid(GGrid grid, int id)
+        {
+            this._TableId = id;
+            this._TableOrder = id;
+            this._Grid = grid;
+        }
+        /// <summary>
+        /// Odpojí this tabulku z gridu.
+        /// Je voláno z gridu, v eventu ItemRemove kolekce Tables.
+        /// </summary>
+        void IGridMember.DetachFromGrid()
+        {
+            this._TableId = -1;
+            this._TableOrder = -1;
+            this._Grid = null;
+        }
+        #endregion
+        #region Public data
+        /// <summary>
+        /// Datová tabulka
+        /// </summary>
+        public Table DataTable { get { return this._Table; } } private Table _Table;
+        /// <summary>
+        /// Jednoznačné ID této tabulky v rámci Gridu. Read only.
+        /// Je přiděleno při přidání do gridu, pak má hodnotu 0 nebo kladnou.
+        /// Hodnota se nemění ani přemístěním na jinou pozici, ani odebráním některé tabulky s menším ID.
+        /// Po odebrání z gridu je hodnota -1.
         /// </summary>
         public int TableId { get { return this._TableId; } } private int _TableId;
         /// <summary>
-        /// Table position
+        /// Pořadí této tabulky při zobrazování v Gridu.
+        /// Jednotlivé tabulky nemusí mít hodnoty TableOrder v nepřerušovaném pořadí.
+        /// Po napojení sloupce do tabulky je do TableOrder vepsána hodnota = TableId, takže nová tabulka se zařadí vždy na konec.
         /// </summary>
-        internal GridPositionItem TablePosition { get { return this._TablePosition; } set { this._TablePosition = value; } } private GridPositionItem _TablePosition;
-        /// <summary>
-        /// Columns in GTable
-        /// </summary>
-        internal GColumnSet ColumnSet { get { return this._ColumnSet; } } private GColumnSet _ColumnSet;
+        public int TableOrder { get { return this._TableOrder; } set { this._TableOrder = value; } } private int _TableOrder;
+
+
         /// <summary>
         /// Rows in GTable
         /// </summary>
         internal GRowSet RowSet { get { return this._RowSet; } } private GRowSet _RowSet;
         /// <summary>
-        /// User text to table header
-        /// </summary>
-        public string Text { get; set; }
-        /// <summary>
-        /// Range for Size (Height in pixels) for this table, in multi-table grid
-        /// </summary>
-        public Int32Range SizeRange { get; set; }
-        /// <summary>
-        /// Requested initial size (Height in pixels) for this grid
-        /// </summary>
-        public int? Size { get; set; }
-        /// <summary>
-        /// Name of table, for search it in TableSet
+        /// Název tabulky, podle něj lze hledat. jde o klíčové slovo, nikoli popisek (Caption)
         /// </summary>
         public string TableName { get { return this.DataTable.TableName; } }
         #endregion
+        #region Řádky tabulky - zde jsou uložena dvě oddělená pole řádků: a) všechny aktuálně dostupné řádky - pro práci s kolekcí řádků, b) pouze viditelné řádky - pro kreslení
+        /// <summary>
+        /// Všechny aktuální řádky tabulky.
+        /// Profiltrované, setříděné, vyhodnocené hodnoty 
+        /// </summary>
+        protected List<Row> RowListAll
+        {
+            get
+            {
+
+            }
+        }
+
+        protected void RowListAllReset() { this._RowListAll = null; this._RowListVisible = null; }
+        private List<Row> _RowListAll;
+
+        protected void RowListVisibleReset() { this._RowListVisible = null; }
+        private List<Row> _RowListVisible;
+        #endregion
+
+
+
+
+
+
+
         #region Events
         /// <summary>
         /// Is called after ColumnHeader is clicked
@@ -252,8 +290,8 @@ namespace Djs.Common.Components.Grid
         /// Recalculate values and bounds for one GTable
         /// </summary>
         /// <param name="tablesBounds"></param>
-        /// <param name="actions"></param>
-        /// <param name="eventSource"></param>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
         internal void RecalcTable(Rectangle tablesBounds, ref ProcessAction actions, EventSourceType eventSource)
         {
             GridPositionItem position = this.TablePosition;
@@ -271,10 +309,10 @@ namespace Djs.Common.Components.Grid
         /// Is called after Bounds change, from SetBound() method, only when action PrepareInnerItems is specified.
         /// Recalculate SubItems bounds after change this.Bounds.
         /// </summary>
-        /// <param name="oldBounds">Old bounds, before change</param>
-        /// <param name="newBounds">New bounds. Use this value rather than this.Bounds</param>
-        /// <param name="actions">Actions to do</param>
-        /// <param name="eventSource">Source of this event</param>
+        /// <param name="oldBounds">Původní umístění, před změnou</param>
+        /// <param name="newBounds">Nové umístění, po změnou. Používejme raději tuto hodnotu než this.Bounds</param>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
         protected override void SetBoundsPrepareInnerItems(Rectangle oldBounds, Rectangle newBounds, ref ProcessAction actions, EventSourceType eventSource)
         {
             base.SetBoundsPrepareInnerItems(oldBounds, newBounds, ref actions, eventSource);
@@ -291,8 +329,8 @@ namespace Djs.Common.Components.Grid
         /// Set Bounds (by newBounds and this.TablePosition.SplitVisual) to _ColumnSet, _RowSet and TableSplitter
         /// </summary>
         /// <param name="newBounds"></param>
-        /// <param name="actions"></param>
-        /// <param name="eventSource"></param>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
         /// <param name="withSplitterValue"></param>
         protected void SetTablePositions(Rectangle newBounds, ProcessAction actions, EventSourceType eventSource, bool withSplitterValue)
         {
@@ -750,8 +788,8 @@ namespace Djs.Common.Components.Grid
         /// Calculate Bounds for this column (header, splitter), from ColumnSet bounds and this ColumnPosition
         /// </summary>
         /// <param name="bounds"></param>
-        /// <param name="actions"></param>
-        /// <param name="eventSource"></param>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
         internal void SetPosition(Rectangle bounds, ProcessAction actions, EventSourceType eventSource)
         {
             GridPositionColumnItem columnPosition = this.ColumnPosition;
@@ -2540,5 +2578,21 @@ namespace Djs.Common.Components.Grid
         /// </summary>
         internal GInteractiveDrawLayer RepaintThisToLayers { get { return this.RepaintToLayers; } set { this.RepaintToLayers = value; } }
         #endregion
+    }
+    /// <summary>
+    /// Člen gridu GGrid, u kterého je možno provést Attach a Detach
+    /// </summary>
+    public interface IGridMember
+    {
+        /// <summary>
+        /// Napojí this objekt do dodaného Gridu a uloží do sebe dané ID
+        /// </summary>
+        /// <param name="grid"></param>
+        /// <param name="id"></param>
+        void AttachToGrid(GGrid grid, int id);
+        /// <summary>
+        /// Odpojí this objekt od navázaného Gridu, resetuje svoje ID
+        /// </summary>
+        void DetachFromGrid();
     }
 }

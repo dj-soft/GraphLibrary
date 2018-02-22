@@ -144,8 +144,8 @@ namespace Djs.Common.Components
         /// return true = was change, false = not change (bounds == this._Bounds).
         /// </summary>
         /// <param name="bounds">New bounds</param>
-        /// <param name="actions">Actions to do</param>
-        /// <param name="eventSource">Source of this event</param>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
         public virtual bool SetBounds(Rectangle bounds, ProcessAction actions, EventSourceType eventSource)
         {
             Rectangle oldBounds = this._Bounds;
@@ -162,8 +162,8 @@ namespace Djs.Common.Components
         /// </summary>
         /// <param name="oldBounds"></param>
         /// <param name="newBounds"></param>
-        /// <param name="actions"></param>
-        /// <param name="eventSource"></param>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
         protected virtual void CallActionsAfterBoundsChanged(Rectangle oldBounds, Rectangle newBounds, ref ProcessAction actions, EventSourceType eventSource)
         {
             this.SetBoundsAfterChange(oldBounds, newBounds, ref actions, eventSource);
@@ -179,30 +179,30 @@ namespace Djs.Common.Components
         /// <summary>
         /// Is called after Bounds change, from SetBound() method, without any conditions (even if action is None).
         /// </summary>
-        /// <param name="oldBounds">Old bounds, before change</param>
-        /// <param name="newBounds">New bounds. Use this value rather than this.Bounds</param>
-        /// <param name="actions">Actions to do</param>
-        /// <param name="eventSource">Source of this event</param>
+        /// <param name="oldBounds">Původní umístění, před změnou</param>
+        /// <param name="newBounds">Nové umístění, po změnou. Používejme raději tuto hodnotu než this.Bounds</param>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
         protected virtual void SetBoundsAfterChange(Rectangle oldBounds, Rectangle newBounds, ref ProcessAction actions, EventSourceType eventSource)
         { }
         /// <summary>
         /// Is called after Bounds change, from SetBound() method, only when action RecalcInnerData is specified.
         /// Recalculate SubItems bounds after change this.Bounds.
         /// </summary>
-        /// <param name="oldBounds">Old bounds, before change</param>
-        /// <param name="newBounds">New bounds. Use this value rather than this.Bounds</param>
-        /// <param name="actions">Actions to do</param>
-        /// <param name="eventSource">Source of this event</param>
+        /// <param name="oldBounds">Původní umístění, před změnou</param>
+        /// <param name="newBounds">Nové umístění, po změnou. Používejme raději tuto hodnotu než this.Bounds</param>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
         protected virtual void SetBoundsRecalcInnerData(Rectangle oldBounds, Rectangle newBounds, ref ProcessAction actions, EventSourceType eventSource)
         { }
         /// <summary>
         /// Is called after Bounds change, from SetBound() method, only when action PrepareInnerItems is specified.
         /// Recalculate SubItems bounds after change this.Bounds.
         /// </summary>
-        /// <param name="oldBounds">Old bounds, before change</param>
-        /// <param name="newBounds">New bounds. Use this value rather than this.Bounds</param>
-        /// <param name="actions">Actions to do</param>
-        /// <param name="eventSource">Source of this event</param>
+        /// <param name="oldBounds">Původní umístění, před změnou</param>
+        /// <param name="newBounds">Nové umístění, po změnou. Používejme raději tuto hodnotu než this.Bounds</param>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
         protected virtual void SetBoundsPrepareInnerItems(Rectangle oldBounds, Rectangle newBounds, ref ProcessAction actions, EventSourceType eventSource)
         { }
         /// <summary>
@@ -489,7 +489,7 @@ namespace Djs.Common.Components
         /// Returns actions, to which is added specified values.
         /// Returns: (actions OR (add[0] OR add[1] OR add[2] OR ...)).
         /// </summary>
-        /// <param name="actions"></param>
+        /// <param name="actions">Akce k provedení</param>
         /// <param name="add"></param>
         /// <returns></returns>
         protected static ProcessAction AddActions(ProcessAction actions, params ProcessAction[] add)
@@ -503,7 +503,7 @@ namespace Djs.Common.Components
         /// Returns actions, from which is removed specified values.
         /// Returns: (actions AND (Action.All NOR (remove[0] OR remove[1] OR remove[2] OR ...))).
         /// </summary>
-        /// <param name="actions"></param>
+        /// <param name="actions">Akce k provedení</param>
         /// <param name="remove"></param>
         /// <returns></returns>
         protected static ProcessAction RemoveActions(ProcessAction actions, params ProcessAction[] remove)
@@ -517,7 +517,7 @@ namespace Djs.Common.Components
         /// Returns actions, in which is leaved only specified values (when they was present in input actions).
         /// Returns: (actions AND (leave[0] OR leave[1] OR leave[2] OR ...)).
         /// </summary>
-        /// <param name="actions"></param>
+        /// <param name="actions">Akce k provedení</param>
         /// <param name="leave"></param>
         /// <returns></returns>
         protected static ProcessAction LeaveOnlyActions(ProcessAction actions, params ProcessAction[] leave)
@@ -859,8 +859,8 @@ namespace Djs.Common.Components
         /// return true = was change, false = not change (bounds == this._Bounds).
         /// </summary>
         /// <param name="value">New value</param>
-        /// <param name="actions">Actions to do</param>
-        /// <param name="eventSource">Source of this event</param>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
         public virtual bool SetValue(TValue value, ProcessAction actions, EventSourceType eventSource)
         {
             TValue oldValue = this._Value;
@@ -877,8 +877,8 @@ namespace Djs.Common.Components
         /// </summary>
         /// <param name="oldValue"></param>
         /// <param name="newValue"></param>
-        /// <param name="actions"></param>
-        /// <param name="eventSource"></param>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
         protected virtual void CallActionsAfterValueChanged(TValue oldValue, TValue newValue, ref ProcessAction actions, EventSourceType eventSource)
         {
             this.SetValueAfterChange(oldValue, newValue, ref actions, eventSource);
@@ -896,8 +896,8 @@ namespace Djs.Common.Components
         /// </summary>
         /// <param name="oldValue">Old value, before change</param>
         /// <param name="newValue">New value. Use this value rather than this.Value</param>
-        /// <param name="actions">Actions to do</param>
-        /// <param name="eventSource">Source of this event</param>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
         protected virtual void SetValueAfterChange(TValue oldValue, TValue newValue, ref ProcessAction actions, EventSourceType eventSource)
         { }
         /// <summary>
@@ -906,8 +906,8 @@ namespace Djs.Common.Components
         /// </summary>
         /// <param name="oldValue">Old value, before change</param>
         /// <param name="newValue">New value. Use this value rather than this.Value</param>
-        /// <param name="actions">Actions to do</param>
-        /// <param name="eventSource">Source of this event</param>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
         protected virtual void SetValueRecalcInnerData(TValue oldValue, TValue newValue, ref ProcessAction actions, EventSourceType eventSource)
         { }
         /// <summary>
@@ -916,8 +916,8 @@ namespace Djs.Common.Components
         /// </summary>
         /// <param name="oldValue">Old value, before change</param>
         /// <param name="newValue">New value. Use this value rather than this.Value</param>
-        /// <param name="actions">Actions to do</param>
-        /// <param name="eventSource">Source of this event</param>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
         protected virtual void SetValuePrepareInnerItems(TValue oldValue, TValue newValue, ref ProcessAction actions, EventSourceType eventSource)
         { }
         /// <summary>
@@ -940,8 +940,8 @@ namespace Djs.Common.Components
         /// return true = was change, false = not change (bounds == this._Bounds).
         /// </summary>
         /// <param name="valueRange">New value range</param>
-        /// <param name="actions">Actions to do</param>
-        /// <param name="eventSource">Source of this event</param>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
         public virtual bool SetValueRange(TRange valueRange, ProcessAction actions, EventSourceType eventSource)
         {
             TRange oldValueRange = this._ValueRange;
@@ -970,8 +970,8 @@ namespace Djs.Common.Components
         /// </summary>
         /// <param name="oldValueRange">Old value range</param>
         /// <param name="newValueRange">New value range</param>
-        /// <param name="actions">Actions to do</param>
-        /// <param name="eventSource">Source of this event</param>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
         protected virtual void CallActionsAfterValueRangeChanged(TRange oldValueRange, TRange newValueRange, ref ProcessAction actions, EventSourceType eventSource)
         {
             this.SetValueRangeAfterChange(oldValueRange, newValueRange, ref actions, eventSource);
@@ -985,8 +985,8 @@ namespace Djs.Common.Components
         /// </summary>
         /// <param name="oldValue">Old value range, before change</param>
         /// <param name="newValue">New value range. Use this value rather than this.Value</param>
-        /// <param name="actions">Actions to do</param>
-        /// <param name="eventSource">Source of this event</param>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
         protected virtual void SetValueRangeAfterChange(TRange oldValueRange, TRange newValueRange, ref ProcessAction actions, EventSourceType eventSource)
         { }
         protected TRange _ValueRange;

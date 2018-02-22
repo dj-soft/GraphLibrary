@@ -5,7 +5,7 @@ using System.Text;
 using System.Drawing;
 using Djs.Common.Data;
 
-namespace Djs.Common.Components.Grid.Old
+namespace Djs.Common.ComponentsOld.Grid
 {
     #region GridPositions, GridPositionSet, GridPositionItem : position of all columns, tables, rows in GGrid
     /// <summary>

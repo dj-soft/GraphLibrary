@@ -112,8 +112,8 @@ namespace Djs.Common.Components
         /// return true = was change, false = not change (bounds == this._Bounds).
         /// </summary>
         /// <param name="bounds">New bounds</param>
-        /// <param name="actions">Actions to do</param>
-        /// <param name="eventSource">Source of this event</param>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
         public override bool SetBounds(Rectangle bounds, ProcessAction actions, EventSourceType eventSource)
         {
             return this.SetSplitter(bounds, null, null, null, null, null, null, DragResponseType.AfterDragEnd, actions, eventSource);
@@ -296,8 +296,8 @@ namespace Djs.Common.Components
         /// Returns true, when any change occured.
         /// </summary>
         /// <param name="moveType"></param>
-        /// <param name="actions"></param>
-        /// <param name="eventSource"></param>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
         /// <returns></returns>
         internal bool SetSplitter(DragResponseType moveType, ProcessAction actions, EventSourceType eventSource)
         {
@@ -315,8 +315,8 @@ namespace Djs.Common.Components
         /// <param name="splitterActiveOverlap"></param>
         /// <param name="locationLimit"></param>
         /// <param name="moveType"></param>
-        /// <param name="actions"></param>
-        /// <param name="eventSource"></param>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
         internal bool SetSplitter(Rectangle? bounds, Int32? location, Orientation? orientation, Int32? splitterVisibleWidth, Int32? splitterActiveOverlap, Int32Range locationLimit, int? locationOriginal, 
             DragResponseType moveType)
         {
@@ -341,8 +341,8 @@ namespace Djs.Common.Components
         /// <param name="splitterActiveOverlap"></param>
         /// <param name="locationLimit"></param>
         /// <param name="moveType"></param>
-        /// <param name="actions"></param>
-        /// <param name="eventSource"></param>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
         internal bool SetSplitter(Rectangle? bounds, Int32? location, Orientation? orientation, Int32? splitterVisibleWidth, Int32? splitterActiveOverlap, Int32Range locationLimit, int? locationOriginal, 
             DragResponseType moveType, ProcessAction actions, EventSourceType eventSource)
         {
