@@ -5,7 +5,7 @@ using System.Text;
 using Djs.Common.Components;
 using System.Drawing;
 
-namespace Djs.Common.Data
+namespace Djs.Common.Data.Old
 {
     // This file contain Data items (Non-Visual) for Graphical Grid. This classes is used in application for data collections and for link data to visual Grid
 

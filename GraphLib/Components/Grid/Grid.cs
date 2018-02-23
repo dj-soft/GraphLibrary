@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Drawing;
 using Djs.Common.Data;
+using Djs.Common.Data.New;
 using Djs.Common.Components.Grid;
 
 // This file contain Visual items for Graphical Grid (all classes are InteractiveObject, is used in GGrid class for visualisation of Grid data
@@ -116,7 +117,7 @@ namespace Djs.Common.Components
         /// </summary>
         /// <param name="dTable"></param>
         /// <returns></returns>
-        public GTable AddTable(DTable dTable)
+        public GTable AddTable(Table dTable)
         {
             return this._AddTable(dTable);
         }
@@ -124,14 +125,14 @@ namespace Djs.Common.Components
         /// Danou datovou tabulku odebere z this gridu.
         /// </summary>
         /// <param name="dTable"></param>
-        public void RemoveTable(DTable dTable)
+        public void RemoveTable(Table dTable)
         {
             this._RemoveTable(dTable);
         }
         /// <summary>
         /// Soupis všech datových tabulek v gridu
         /// </summary>
-        public IEnumerable<DTable> DataTables { get { return this._Tables.Select(t => t.DataTable); } }
+        public IEnumerable<Table> DataTables { get { return this._Tables.Select(t => t.DataTable); } }
         /// <summary>
         /// Soupis všech grafických tabulek v gridu
         /// </summary>
@@ -165,7 +166,7 @@ namespace Djs.Common.Components
         /// </summary>
         /// <param name="dTable"></param>
         /// <returns></returns>
-        protected GTable _AddTable(DTable dTable)
+        protected GTable _AddTable(Table dTable)
         {
             if (dTable == null) return null;
             GTable gTable = new GTable(this, dTable);
@@ -177,7 +178,7 @@ namespace Djs.Common.Components
         /// </summary>
         /// <param name="dTable"></param>
         /// <returns></returns>
-        protected void _RemoveTable(DTable dTable)
+        protected void _RemoveTable(Table dTable)
         {
             if (dTable == null) return;
             this._Tables.RemoveAll(g => Object.ReferenceEquals(g.DataTable, dTable));
@@ -232,7 +233,7 @@ namespace Djs.Common.Components
             this.ColumnLayoutIsValid = false;
         }
         /// <summary>
-        /// Protected virtual metoda volaná v procesu odebrání řádku, řádek je platný, event RowRemoveAfter ještě neproběhl. V DTable je tato metoda prázdná.
+        /// Protected virtual metoda volaná v procesu odebrání řádku, řádek je platný, event RowRemoveAfter ještě neproběhl. V Table je tato metoda prázdná.
         /// </summary>
         /// <param name="args"></param>
         protected virtual void OnTableRemoveAfter(EList<GTable>.EListAfterEventArgs args) { }
@@ -627,7 +628,7 @@ namespace Djs.Common.Components
         /// </summary>
         /// <param name="dataTable">Source table</param>
         /// <param name="force">true = overwrite values into existing columns, false = preserve values in existing columns.</param>
-        protected void ReloadColumns(DTable dataTable, bool force)
+        protected void ReloadColumns(Table dataTable, bool force)
         {
             this.Positions.ReloadColumns(dataTable, force);
             this.ChildArrayInvalidate();
@@ -643,11 +644,11 @@ namespace Djs.Common.Components
         {
             this.Refresh(GridRefreshStyle.All, null);
         }
-        public void Refresh(DTable table)
+        public void Refresh(Table table)
         {
             this.Refresh(GridRefreshStyle.All, table);
         }
-        protected void Refresh(GridRefreshStyle refreshStyle, DTable dTable)
+        protected void Refresh(GridRefreshStyle refreshStyle, Table dTable)
         {
             if ((refreshStyle & GridRefreshStyle.ReloadColumns) != 0)
                 this.ReloadColumns(false);
@@ -656,7 +657,7 @@ namespace Djs.Common.Components
             base.Refresh();
         }
 
-        private void RefreshRows(DTable dTable)
+        private void RefreshRows(Table dTable)
         {
             
         }
