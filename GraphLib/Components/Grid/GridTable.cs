@@ -19,12 +19,12 @@ namespace Djs.Common.Components.Grid
         {
             this._Grid = grid;
             this._Table = table;
-            this._RowSet = new GRowSet(this, table);         // { Bounds = new Rectangle(0, 40, 500, 300) };       // RowSet will be pre-filled with all DTable rows.
-            this._PrepareTableSplitter();
+            this.RowListAllReset();
+            this._TableSplitterInit();
         }
         void IDisposable.Dispose()
         {
-            this.DetachDTable();
+            ((IGridMember)this).DetachFromGrid();
             this._Table = null;
         }
         #endregion
@@ -60,263 +60,41 @@ namespace Djs.Common.Components.Grid
             this._Grid = null;
         }
         #endregion
-        #region Public data
+        #region Rozmístění vnitřních prvků, jejich přepočty, layout Tabulky
         /// <summary>
-        /// Datová tabulka
-        /// </summary>
-        public Table DataTable { get { return this._Table; } } private Table _Table;
-        /// <summary>
-        /// Jednoznačné ID této tabulky v rámci Gridu. Read only.
-        /// Je přiděleno při přidání do gridu, pak má hodnotu 0 nebo kladnou.
-        /// Hodnota se nemění ani přemístěním na jinou pozici, ani odebráním některé tabulky s menším ID.
-        /// Po odebrání z gridu je hodnota -1.
-        /// </summary>
-        public int TableId { get { return this._TableId; } } private int _TableId;
-        /// <summary>
-        /// Pořadí této tabulky při zobrazování v Gridu.
-        /// Jednotlivé tabulky nemusí mít hodnoty TableOrder v nepřerušovaném pořadí.
-        /// Po napojení sloupce do tabulky je do TableOrder vepsána hodnota = TableId, takže nová tabulka se zařadí vždy na konec.
-        /// </summary>
-        public int TableOrder { get { return this._TableOrder; } set { this._TableOrder = value; } } private int _TableOrder;
-
-
-        /// <summary>
-        /// Rows in GTable
-        /// </summary>
-        internal GRowSet RowSet { get { return this._RowSet; } } private GRowSet _RowSet;
-        /// <summary>
-        /// Název tabulky, podle něj lze hledat. jde o klíčové slovo, nikoli popisek (Caption)
-        /// </summary>
-        public string TableName { get { return this.DataTable.TableName; } }
-        #endregion
-        #region Řádky tabulky - zde jsou uložena dvě oddělená pole řádků: a) všechny aktuálně dostupné řádky - pro práci s kolekcí řádků, b) pouze viditelné řádky - pro kreslení
-        /// <summary>
-        /// Všechny aktuální řádky tabulky.
-        /// Profiltrované, setříděné, vyhodnocené hodnoty 
-        /// </summary>
-        protected List<Row> RowListAll
-        {
-            get
-            {
-
-            }
-        }
-
-        protected void RowListAllReset() { this._RowListAll = null; this._RowListVisible = null; }
-        private List<Row> _RowListAll;
-
-        protected void RowListVisibleReset() { this._RowListVisible = null; }
-        private List<Row> _RowListVisible;
-        #endregion
-
-
-
-
-
-
-
-        #region Events
-        /// <summary>
-        /// Is called after ColumnHeader is clicked
-        /// </summary>
-        /// <param name="gColumn"></param>
-        internal void ColumnHeaderClicked(GColumn gColumn)
-        {
-            this.SortRows(gColumn);
-        }
-        #endregion
-        #region PrevItem, NextItem, IsFirst, IsLast
-        /// <summary>
-        /// GTable before this table
-        /// </summary>
-        public GTable PrevItem { get { return this._Grid.GetOtherTable(this, -1); } }
-        /// <summary>
-        /// true when this GTable is first in collection (PrevItem is null)
-        /// </summary>
-        public bool IsFirst { get { return (this.PrevItem == null); } }
-        /// <summary>
-        /// GTable after this table
-        /// </summary>
-        public GTable NextItem { get { return this._Grid.GetOtherTable(this, 1); } }
-        /// <summary>
-        /// true when this GTable is last in collection (NextItem is null)
-        /// </summary>
-        public bool IsLast { get { return (this.NextItem == null); } }
-        #endregion
-        #region Synchronize Colums and Rows from DTable (data) to GTable (Graphics)
-        #region Bridge : private eventhandlers for events from DTable, public events.
-        /// <summary>
-        /// Attach this instance to events from data table (class DTable)
-        /// </summary>
-        protected void AttachDTable()
-        {
-            DTable dTable = this.DataTable;
-            if (dTable != null)
-            {
-                dTable.ColumnAddAfter += this._TableColumnAddAfter;
-                dTable.ColumnRemoveAfter += this._TableColumnRemoveAfter;
-                dTable.RowAddAfter += this._TableRowAddAfter;
-                dTable.RowRemoveAfter += this._TableRowRemoveAfter;
-            }
-        }
-        /// <summary>
-        /// Detach this instance from events from data table (class DTable)
-        /// </summary>
-        protected void DetachDTable()
-        {
-            DTable dTable = this.DataTable;
-            if (dTable != null)
-            {
-                dTable.ColumnAddAfter -= this._TableColumnAddAfter;
-                dTable.ColumnRemoveAfter -= this._TableColumnRemoveAfter;
-                dTable.RowAddAfter -= this._TableRowAddAfter;
-                dTable.RowRemoveAfter -= this._TableRowRemoveAfter;
-            }
-        }
-        void _TableColumnAddAfter(object sender, EList<DColumn>.EListAfterEventArgs args)
-        {
-            this.OnColumnAdd(args);
-            this.OnColumnAddAfter(args);
-            if (!this.IsSupressedEvent && this.ColumnAddAfter != null)
-                this.ColumnAddAfter(this, args);
-        }
-        protected virtual void OnColumnAddAfter(EList<DColumn>.EListAfterEventArgs args) { }
-        public event EList<DColumn>.EListEventAfterHandler ColumnAddAfter;
-
-        void _TableColumnRemoveAfter(object sender, EList<DColumn>.EListAfterEventArgs args)
-        {
-            this.OnColumnRemove(args);
-            this.OnColumnRemoveAfter(args);
-            if (!this.IsSupressedEvent && this.ColumnRemoveAfter != null)
-                this.ColumnRemoveAfter(this, args);
-        }
-        protected virtual void OnColumnRemoveAfter(EList<DColumn>.EListAfterEventArgs args) { }
-        public event EList<DColumn>.EListEventAfterHandler ColumnRemoveAfter;
-
-        void _TableRowAddAfter(object sender, EList<DRow>.EListAfterEventArgs args)
-        {
-            this.OnRowAdd(args);
-            this.OnRowAddAfter(args);
-            if (!this.IsSupressedEvent && this.RowAddAfter != null)
-                this.RowAddAfter(this, args);
-        }
-        protected virtual void OnRowAddAfter(EList<DRow>.EListAfterEventArgs args) { }
-        public event EList<DRow>.EListEventAfterHandler RowAddAfter;
-
-        void _TableRowRemoveAfter(object sender, EList<DRow>.EListAfterEventArgs args)
-        {
-            this.OnRowRemove(args);
-            this.OnRowRemoveAfter(args);
-            if (!this.IsSupressedEvent && this.RowRemoveAfter != null)
-                this.RowRemoveAfter(this, args);
-        }
-        protected virtual void OnRowRemoveAfter(EList<DRow>.EListAfterEventArgs args) { }
-        public event EList<DRow>.EListEventAfterHandler RowRemoveAfter;
-
-        #endregion
-        /// <summary>
-        /// Is called after any application code add new Data column into Data table, which is data source for this Graphics (visual) table.
-        /// We add new Graphics column for this Data column.
-        /// </summary>
-        /// <param name="args"></param>
-        protected virtual void OnColumnAdd(EList<DColumn>.EListAfterEventArgs args)
-        {
-            this._ColumnSet.AddColumn(args.Item, args.Index);
-        }
-        /// <summary>
-        /// Is called after any application code remove an Data column from Data table, which is data source for this Graphics (visual) table.
-        /// We search and remove appropriate Graphics column from this Graphics table.
-        /// </summary>
-        /// <param name="args"></param>
-        protected virtual void OnColumnRemove(EList<DColumn>.EListAfterEventArgs args)
-        {
-            this._ColumnSet.RemoveColumn(args.Item, args.Index);
-        }
-        /// <summary>
-        /// Is called after any application code add new Data row into Data table, which is data source for this Graphics (visual) table.
-        /// We add new Graphics row for this Data row.
-        /// </summary>
-        /// <param name="args"></param>
-        protected virtual void OnRowAdd(EList<DRow>.EListAfterEventArgs args)
-        {
-            this._RowSet.AddRow(args.Item, args.Index);
-        }
-        /// <summary>
-        /// Is called after any application code remove an Data row from Data table, which is data source for this Graphics (visual) table.
-        /// We search and remove appropriate Graphics row from this Graphics table.
-        /// </summary>
-        /// <param name="args"></param>
-        protected virtual void OnRowRemove(EList<DRow>.EListAfterEventArgs args)
-        {
-            this._RowSet.RemoveRow(args.Item, args.Index);
-        }
-        #endregion
-        #region TableSplitter
-        /// <summary>
-        /// TableSplitter = GSplitter at bottom end of this GTable.
-        /// Is not part of this.Childs, but is one of GGrid items (on same level as this Grid).
-        /// Its LinkedItemPrev object is this GTable, but LinkedItemNext must be set in GTable object (LinkedItemNext is Next GTable).
-        /// </summary>
-        internal GSplitter TableSplitter { get { return this._TableSplitter; } }
-        /// <summary>
-        /// Prepare new _TableSplitter.
-        /// </summary>
-        protected void _PrepareTableSplitter()
-        {
-            this._TableSplitter = new GSplitter() { Orientation = System.Windows.Forms.Orientation.Horizontal, SplitterVisibleWidth = 0, SplitterActiveOverlap = 4, LinkedItemPrevMinSize = 50, LinkedItemNextMinSize = 50, IsResizeToLinkItems = true };
-            this._TableSplitter.ValueSilent = this.Bounds.Bottom;
-            this._TableSplitter.ValueChanging += new GPropertyChanged<int>(_TableSplitter_LocationChange);
-            this._TableSplitter.ValueChanged += new GPropertyChanged<int>(_TableSplitter_LocationChange);
-        }
-        /// <summary>
-        /// Eventhandler for _TableSplitter.LocationChanged event
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _TableSplitter_LocationChange(object sender, GPropertyChangeArgs<int> e)
-        {
-            this.TablePosition.EndVisual = this._TableSplitter.Value;
-            this.GGrid.RecalcGrid();
-            this.GGrid.RepaintThisToLayers = GInteractiveDrawLayer.Standard;
-            // this.RepaintAllItems = true;
-        }
-        /// <summary>
-        /// TableSplitter
-        /// </summary>
-        protected GSplitter _TableSplitter;
-        #endregion
-        #region BoundsChange
-        /// <summary>
-        /// Recalculate values and bounds for one GTable
-        /// </summary>
-        /// <param name="tablesBounds"></param>
-        /// <param name="actions">Akce k provedení</param>
-        /// <param name="eventSource">Zdroj této události</param>
-        internal void RecalcTable(Rectangle tablesBounds, ref ProcessAction actions, EventSourceType eventSource)
-        {
-            GridPositionItem position = this.TablePosition;
-            int y = tablesBounds.Y + position.BeginVisual;
-            int height = position.SizeVisible;
-            if (y + height > tablesBounds.Height)
-                height = tablesBounds.Height - y;
-            Rectangle bounds = new Rectangle(tablesBounds.X, y, tablesBounds.Width, height);
-            if (bounds != this.Bounds)
-                this.SetBounds(bounds, ProcessAction.PrepareInnerItems, eventSource);
-            else
-                this.SetTablePositions(bounds, ProcessAction.PrepareInnerItems, eventSource, true);
-        }
-        /// <summary>
-        /// Is called after Bounds change, from SetBound() method, only when action PrepareInnerItems is specified.
-        /// Recalculate SubItems bounds after change this.Bounds.
+        /// Je voláno po změně Bounds, z metody SetBound(), pokud je vyžadována akce PrepareInnerItems.
+        /// Přepočte umístění vnitřních prvků objektu, podle rozměrů this.BoundsClient.Size
         /// </summary>
         /// <param name="oldBounds">Původní umístění, před změnou</param>
-        /// <param name="newBounds">Nové umístění, po změnou. Používejme raději tuto hodnotu než this.Bounds</param>
+        /// <param name="newBounds">Nové umístění, po změně. Používejme raději tuto hodnotu než this.Bounds</param>
         /// <param name="actions">Akce k provedení</param>
         /// <param name="eventSource">Zdroj této události</param>
         protected override void SetBoundsPrepareInnerItems(Rectangle oldBounds, Rectangle newBounds, ref ProcessAction actions, EventSourceType eventSource)
         {
             base.SetBoundsPrepareInnerItems(oldBounds, newBounds, ref actions, eventSource);
-            this.SetTablePositions(newBounds, actions, eventSource, true);
+            this.RecalcTable(ref actions, eventSource);
+        }
+        /// <summary>
+        /// Určí pozice a rozměry pro jednotlivé vnitřní členy tabulky: ColumnHeader, RowArea, Scrollbar.
+        /// </summary>
+        /// <param name="tablesBounds"></param>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
+        internal void RecalcTable(ref ProcessAction actions, EventSourceType eventSource)
+        {
+            Size clientSize = this.BoundsClient.Size;
+
+            int headerHeight = this.DataTable.ColumnHeaderHeight;
+            this._ColumnHeaderBounds = new Rectangle(0, 0, clientSize.Width, headerHeight);
+
+            int rowAreaHeight = clientSize.Height - headerHeight;
+            bool scrollBarVisible = (rowAreaHeight < ((ISequenceLayout)this.RowListAll[0]).End);
+            int scrollBarWidth = (scrollBarVisible ? 18 : 0);
+
+            int rowAreaWidth = (scrollBarVisible ? (clientSize.Width - scrollBarWidth) : clientSize.Width);
+            this._RowAreaBounds = new Rectangle(0, headerHeight, rowAreaWidth, rowAreaHeight);
+
+            this._ScrollBarBounds = new Rectangle(rowAreaWidth, headerHeight, scrollBarWidth, rowAreaHeight);
         }
         /// <summary>
         /// Recalculate inner item bounds (_ColumnSet, _RowSet and TableSplitter) by this.Bounds and this.TablePosition
@@ -355,7 +133,147 @@ namespace Djs.Common.Components.Grid
             if (withSplitterValue)
                 this.TableSplitter.ValueSilent = newBounds.Bottom;
         }
+        private Rectangle _ColumnHeaderBounds;
+        private Rectangle _RowAreaBounds;
+        private Rectangle _ScrollBarBounds;
         #endregion
+
+        #region Public data
+        /// <summary>
+        /// Datová tabulka
+        /// </summary>
+        public Table DataTable { get { return this._Table; } } private Table _Table;
+        /// <summary>
+        /// Jednoznačné ID této tabulky v rámci Gridu. Read only.
+        /// Je přiděleno při přidání do gridu, pak má hodnotu 0 nebo kladnou.
+        /// Hodnota se nemění ani přemístěním na jinou pozici, ani odebráním některé tabulky s menším ID.
+        /// Po odebrání z gridu je hodnota -1.
+        /// </summary>
+        public int TableId { get { return this._TableId; } } private int _TableId;
+        /// <summary>
+        /// Pořadí této tabulky při zobrazování v Gridu.
+        /// Jednotlivé tabulky nemusí mít hodnoty TableOrder v nepřerušovaném pořadí.
+        /// Po napojení sloupce do tabulky je do TableOrder vepsána hodnota = TableId, takže nová tabulka se zařadí vždy na konec.
+        /// </summary>
+        public int TableOrder { get { return this._TableOrder; } set { this._TableOrder = value; } } private int _TableOrder;
+        /// <summary>
+        /// Název tabulky, podle něj lze hledat. jde o klíčové slovo, nikoli popisek (Caption)
+        /// </summary>
+        public string TableName { get { return this.DataTable.TableName; } }
+        #endregion
+        #region Řádky tabulky - zde jsou uložena dvě oddělená pole řádků: a) všechny aktuálně dostupné řádky - pro práci s kolekcí řádků, b) pouze viditelné řádky - pro kreslení
+        /// <summary>
+        /// Všechny aktuální řádky tabulky.
+        /// Profiltrované, setříděné.
+        /// Řádky mají správně nastavené hodnoty ISequenceLayout.Begin a End.
+        /// </summary>
+        protected List<Row> RowListAll
+        {
+            get
+            {
+                List<Row> listAll = this._RowListAll;
+                if (listAll == null)
+                {   // Tvorba kompletního seznamu řádků (filtr, třídění) - to zajistí DataTable (v property RowsSorted):
+                    this._RowListAll = this.DataTable.RowsSorted;
+                    listAll = this._RowListAll;
+                    // Zajistím provedení nípočtu ISequenceLayout:
+                    this._RowListHeightValid = false;
+                }
+                if (!this._RowListHeightValid)
+                {   // Přepočet hodnot ISequenceLayout:
+                    Table.SequenceLayoutCalculate(listAll.Cast<Data.New.ISequenceLayout>());
+                    // Zajistím provedení tvorby soupisu viditelných řádků:
+                    this._RowListVisible = null;
+                }
+                return listAll;
+            }
+        }
+
+
+
+        /// <summary>
+        /// Zajistí kompletní reset paměti řádků.
+        /// Volá se po: přidání řádku, aplikaci filtru a/nebo třídění řádků.
+        /// Nevolá se po: změně výšky řádku (to se volá RowListHeightReset()), po změně viditelné pozice řádků (scrollbary, posuny řádků) a/nebo velikosti GTable - to se volá RowListVisibleReset().
+        /// </summary>
+        protected void RowListAllReset() { this._RowListAll = null; this._RowListVisible = null; }
+        /// <summary>
+        /// Zajistí reset odpovídajících dat řádků po změně výšky některého z řádků.
+        /// Není třeba volat po posunu obsahu tabulky nebo po změně rozměrů tabulky, to se volá RowListVisibleReset().
+        /// </summary>
+        protected void RowListHeightReset() { this._RowListHeightValid = false; this._RowListVisible = null; }
+        /// <summary>
+        /// Zajistí reset odpovídajících dat řádků po posunu obsahu tabulky nebo po změně rozměrů tabulky.
+        /// </summary>
+        protected void RowListVisibleReset() { this._RowListVisible = null; }
+        /// <summary>
+        /// Soupis aktuálně dostupných řádků, setříděný a vyfiltrovaný, datové objekty
+        /// </summary>
+        private List<Row> _RowListAll;
+        /// <summary>
+        /// true = hodnoty ISequenceLayout.Begin a End v řádcíh jsou platné
+        /// </summary>
+        private bool _RowListHeightValid;
+        /// <summary>
+        /// Soupis aktuálně zobrazovaných řádků, vizuální objekty
+        /// </summary>
+        private List<GRow> _RowListVisible;
+        #endregion
+        #region TableSplitter
+        /// <summary>
+        /// TableSplitter = Splitter dole pod tabulkou.
+        /// Tento Splitter není součástí this.Childs (protože pak by byl omezen do this.Bounds), je součástí Childs nadřízeného prvku (GGrid), protože pak se může pohybovat v jeho prostoru.
+        /// </summary>
+        internal GSplitter TableSplitter { get { return this._TableSplitter; } }
+        /// <summary>
+        /// Inicializuje objekt _TableSplitter.
+        /// </summary>
+        protected void _TableSplitterInit()
+        {
+            this._TableSplitter = new GSplitter() { Orientation = System.Windows.Forms.Orientation.Horizontal, SplitterVisibleWidth = 0, SplitterActiveOverlap = 4, LinkedItemPrevMinSize = 50, LinkedItemNextMinSize = 50, IsResizeToLinkItems = true };
+            this._TableSplitter.ValueSilent = this.Bounds.Bottom;
+            this._TableSplitter.ValueChanging += new GPropertyChanged<int>(_TableSplitter_LocationChange);
+            this._TableSplitter.ValueChanged += new GPropertyChanged<int>(_TableSplitter_LocationChange);
+        }
+        /// <summary>
+        /// Eventhandler události _TableSplitter.LocationChanged (došlo nebo stále dochází ke změně pozice splitteru od tabulkou)
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _TableSplitter_LocationChange(object sender, GPropertyChangeArgs<int> e)
+        {
+            int begin = this.Bounds.Top;
+            int end = this._TableSplitter.Value;
+            this.DataTable.Height = end - begin;
+            this.Grid.RecalcGrid();
+            this.Grid.RepaintThisToLayers = GInteractiveDrawLayer.Standard;
+        }
+        /// <summary>
+        /// TableSplitter
+        /// </summary>
+        protected GSplitter _TableSplitter;
+        #endregion
+        #region Reakce na GUI eventy
+        /// <summary>
+        /// Is called after ColumnHeader is clicked
+        /// </summary>
+        /// <param name="columnId"></param>
+        internal void ColumnHeaderClicked(int columnId)
+        {
+            Column column;
+            if (this.DataTable.TryGetColumn(columnId, out column))
+            {
+                if (column.SortChange())
+                    this.RowListAllReset();
+            }
+        }
+        #endregion
+
+
+
+
+
+
         #region TimeAxis
         /// <summary>
         /// Send informations about changes on one TimeAxis control for specified column (in GGrid object) to all GTables in this GGrid.
@@ -378,38 +296,7 @@ namespace Djs.Common.Components.Grid
             return this._ColumnSet.GetTimeConvertor(columnId);
         }
         #endregion
-        #region Sort Rows
-        /// <summary>
-        /// Perform Sort by specified Column.
-        /// </summary>
-        /// <param name="gColumn"></param>
-        protected void SortRows(GColumn gColumn)
-        {
-            // All current rows, sort by their position (=by current sorting), create List for sorting:
-            List<GRow> rowList = this.RowSet.ToList();
-            rowList.Sort((a, b) => a.BeginLogical.CompareTo(b.BeginLogical));
-            List<DTableSortRowsItem> sortRowList = rowList.Select(r => new DTableSortRowsItem(r.DataRow, r)).ToList();
-
-            // Sorting type:
-            DTableSortRowType sortType = ((gColumn.SortType == DTableSortRowType.Ascending) ? DTableSortRowType.Descending : DTableSortRowType.Ascending);
-
-            // Sort in DataTable:
-            bool isSorted = this.DataTable.SortRows(sortRowList, gColumn.DataColumn, sortType);
-            if (!isSorted) return;
-
-            // Write back order, from native order in sortRowList into GRow.Order:
-            int order = 0;
-            foreach (DTableSortRowsItem item in sortRowList)
-                ((GRow)item.UserData).OrderValue = (++order);
-            this.RowSet.InvalidateOrder();
-
-            // Store current sortType to appropriate Column, to it SortType property:
-            foreach (GColumn gCol in this.ColumnSet)
-                gCol.SortType = (gCol.ColumnID == gColumn.ColumnID ? sortType : DTableSortRowType.None);
-
-            this.RepaintToLayers = GInteractiveDrawLayer.Standard;
-        }
-        #endregion
+        
         #region Childs items
         /// <summary>
         /// An array of sub-items in this item.
@@ -464,6 +351,11 @@ namespace Djs.Common.Components.Grid
         internal GInteractiveDrawLayer RepaintThisToLayers { get { return this.RepaintToLayers; } set { this.RepaintToLayers = value; } }
         #endregion
     }
+    internal class GRow : InteractiveContainer
+    { }
+
+
+
     /// <summary>
     /// Set of all columns in one GTable
     /// </summary>
@@ -1812,7 +1704,7 @@ namespace Djs.Common.Components.Grid
     /// <summary>
     /// One row in GTable
     /// </summary>
-    public class GRow : InteractiveContainer
+    public class oldGRow : InteractiveContainer
     {
         #region Constructor, public properties
         public GRow(GRowSet rowSet, DRow dataRow)

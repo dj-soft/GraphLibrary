@@ -19,18 +19,18 @@ namespace Djs.Common.Data.New
     /// <summary>
     /// Table : jedna tabulka s dat (sada Column + Row)
     /// </summary>
-    public class Table : IVisualMember, IContentValidity
+    public class Table : IVisualMember, IContentValidity, ISequenceLayout
     {
-        #region Constructor, Initialisation
+        #region Konstruktor, Inicializace
         /// <summary>
-        /// Konstructor
+        /// Konstruktor
         /// </summary>
         public Table()
         {
             this._TableInit();
         }
         /// <summary>
-        /// Konstructor
+        /// Konstruktor
         /// </summary>
         /// <param name="tableName"></param>
         public Table(string tableName)
@@ -52,7 +52,7 @@ namespace Djs.Common.Data.New
         public string TableName { get { return this._TableName; } set { this._TableName = value; } }
         private string _TableName;
         #endregion
-        #region GTable - Link, Invalidate Graphic data
+        #region GTable - Linkování datové tabulky do grafické tabulky
         /// <summary>
         /// Reference na vizuální tabulku (GTable), může být null
         /// </summary>
@@ -79,7 +79,7 @@ namespace Djs.Common.Data.New
             }
         }
         #endregion
-        #region Columns - Add/Remove public, protected and private methods
+        #region Columns - soupis sloupců tabulky, přidávání, odebírání
         /// <summary>
         /// Inicializace dat pro sloupce
         /// </summary>
@@ -311,7 +311,7 @@ namespace Djs.Common.Data.New
             return (this._ColumnIdDict.TryGetValue(columnId, out column));
         }
         #endregion
-        #region Rows - Add/Remove public, protected and private methods
+        #region Rows - soupis řádků tabulky, přidávání, odebírání
         /// <summary>
         /// Inicializace dat pro řádky
         /// </summary>
@@ -443,47 +443,65 @@ namespace Djs.Common.Data.New
         /// </summary>
         public event EList<Row>.EListEventAfterHandler RowRemoveAfter;
         #endregion
-        #region Sorting rows
+        #region Třídění a filtrování řádků
         /// <summary>
-        /// Setřídí dodaný seznam řádků podle dodaného sloupce a směru
+        /// Tato property vrací soupis všech aktuálně viditelných řádků, setříděný podle pvního ze sloupců, který má nastaven režim třídění jiný než None.
+        /// Tato property vždy kompletně vyhodnotí data a vrátí nový objekt, nepoužívá se žádná úroveň cachování. Pozor na výkon, užívejme tuto property střídmě.
         /// </summary>
-        /// <param name="rowList"></param>
-        /// <param name="sortByColumn"></param>
-        /// <param name="sortType"></param>
-        /// <returns></returns>
-        public bool SortRows(List<TableSortRowsItem> rowList, Column sortByColumn, TableSortRowType sortType)
+        public List<Row> RowsSorted
         {
-            if (sortByColumn == null) return false;
-            if (!sortByColumn.SortingEnabled) return false;
-
-            int index = sortByColumn.ColumnId;
-            bool hasComparator = (sortByColumn.ValueComparator != null);
-            if (hasComparator)
-                rowList.ForEachItem(r => { r.Value = r.Row[index]; });
-            else
-                rowList.ForEachItem(r => { r.ValueComparable = r.Row[index] as IComparable; });
-
-            switch (sortType)
+            get
             {
-                case TableSortRowType.Ascending:
-                    if (hasComparator)
-                        rowList.Sort((a, b) => sortByColumn.ValueComparator(a.Value, b.Value));
-                    else
-                        rowList.Sort((a, b) => SortRowsCompare(a.ValueComparable, b.ValueComparable));
-                    return true;
+                // Základní viditelnost řádku daná kódem (Row.Visible) a řádkovým filtrem (RowFilterApply):
+                bool hasRowFilter = this.HasRowFilter;
+                List<Row> list = this.Rows.Where(r => (r.Visible && (hasRowFilter ? this.RowFilterApply(r) : true))).ToList();
 
-                case TableSortRowType.Descending:
-                    if (hasComparator)
-                        rowList.Sort((a, b) => sortByColumn.ValueComparator(b.Value, a.Value));
-                    else
-                        rowList.Sort((a, b) => SortRowsCompare(b.ValueComparable, a.ValueComparable));
-                    return true;
+                // Třídění podle sloupce:
+                if (list.Count > 1)
+                {
+                    Column sortColumn = this.Columns.FirstOrDefault(c => (c.SortCurrent == TableSortRowType.Ascending || c.SortCurrent == TableSortRowType.Descending));
+                    if (sortColumn != null)
+                        // Bude to tříděné...
+                        _RowsSort(list, sortColumn);
+                }
 
+                return list;
             }
-            return false;
         }
         /// <summary>
-        /// Komparátor
+        /// Metoda zajistí setřídění seznamu řádků podle dodaného sloupce.
+        /// Metoda sama detekuje směr třídění, sloupec, jeho komparátor, přípravu komparační hodnoty (IComparableItem.Value) a konečně i provedení odpovídajícího třídění seznamu.
+        /// </summary>
+        /// <param name="list"></param>
+        /// <param name="sortColumn"></param>
+        private void _RowsSort(List<Row> list, Column sortColumn)
+        {
+            // Pokud třídící sloupec obsahuje komparátor (funkce sortColumn.ValueComparator je zadaná), 
+            //   pak metoda PrepareValue() dostává parametr "valueIsComparable" = false, metoda PrepareValue() tedy naplní Value, 
+            //   a komparátor (sortColumn.ValueComparator) dostane k porovnání hodnotu object IComparableItem.Value :
+            bool columnHasComparator = (sortColumn.ValueComparator != null);
+            list.ForEach(r => (r as IComparableItem).PrepareValue(sortColumn.ColumnId, !columnHasComparator));
+
+            switch (sortColumn.SortCurrent)
+            {
+                case TableSortRowType.Ascending:
+                    if (columnHasComparator)
+                        list.Sort((a, b) => sortColumn.ValueComparator((a as IComparableItem).Value, (b as IComparableItem).Value));
+                    else
+                        list.Sort((a, b) => SortRowsCompare((a as IComparableItem).ValueComparable, (b as IComparableItem).ValueComparable));
+                    break;
+
+                case TableSortRowType.Descending:
+                    if (columnHasComparator)
+                        list.Sort((a, b) => sortColumn.ValueComparator((b as IComparableItem).Value, (a as IComparableItem).Value));
+                    else
+                        list.Sort((a, b) => SortRowsCompare((b as IComparableItem).ValueComparable, (a as IComparableItem).ValueComparable));
+                    break;
+
+            }
+        }
+        /// <summary>
+        /// Komparátor dvou hodnot typu IComparable, z nichž kterákoli smí být null
         /// </summary>
         /// <param name="valueA"></param>
         /// <param name="valueB"></param>
@@ -495,12 +513,120 @@ namespace Djs.Common.Data.New
             if (valueB == null) return 1;
             return valueA.CompareTo(valueB);
         }
+        /// <summary>
+        /// true pokud tabulka má řádkový filtr
+        /// </summary>
+        protected bool HasRowFilter { get { return false; } }
+        /// <summary>
+        /// aplikuje řádkový filtr na daný řádek, vrátí true = řádek má být viditelný / false = skrýt, nevyhovuje filtru
+        /// </summary>
+        /// <param name="row"></param>
+        /// <returns></returns>
+        protected bool RowFilterApply(Row row) { return true; }
         #endregion
-        #region GUI properties
-        public int? ColumnHeight { get; set; }
+
+        #region GUI vlastnosti
+        public Int32 ColumnHeaderHeight { get; set; }
+        public Int32Range ColumnHeaderHeightRange { get; set; }
+        public Int32? ColumnWidthDefault { get; set; }
+        public Int32Range ColumnWidthRange { get; set; }
         public Int32Range RowHeightRange { get; set; }
         public Int32? RowHeightDefault { get; set; }
         #endregion
+        #region Výška tabulky (v pixelech, v Gridu), rozmezí výšky tabulky, spolupráce mezi datovou a GUI vrstvou
+        /// <summary>
+        /// Zadaná výška tabulky. S touto výškou bude tabulka zobrazena uživateli. Uživatel může / nemůže výšku tabulky měnit (podle situace v gridu).
+        /// Pokud uživatel interaktivně změní výšku tabulky, projeví se to zde.
+        /// Pokud kód změní výšku tabulky, bude tato výška tabulky zarovnána do patřičných mezí.
+        /// Pokud kód nastaví výšku tabulky = null, pak se pro zobrazení převezme defaultní výška dle Gridu.
+        /// Výška tabulky bude vždy v rozmezí HeightRange.
+        /// </summary>
+        public Int32? Height { get { return this._Height; } set { if (value.HasValue) this.SetLayoutSize(value.Value); else this._Height = null; } }
+        /// <summary>
+        /// Rozmezí povolené výšky tabulky.
+        /// </summary>
+        public Int32Range HeightRange { get; set; }
+        /// <summary>
+        /// true pro viditelnou tabulku (default), false for skrytou
+        /// </summary>
+        public bool Visible { get { return this._Visible; } set { this._Visible = value; } } private bool _Visible = true;
+        /// <summary>
+        /// Implicitní výška tabulky v pixelech = 350; uplatní se pouze pokud nebude zadaná konkrétní, a v Gridu který hostuje více tabulek nad sebou. Jinak výška tabulky vyplní celý Grid.
+        /// </summary>
+        protected static int TableHeightDefault { get { return 350; } }
+        /// <summary>
+        /// Minimální výška tabulky v pixelech = 60
+        /// </summary>
+        protected static int TableHeightMinimum { get { return 60; } }
+        /// <summary>
+        /// Výška tabulky.
+        /// Lze setovat hodnotu buď z dat, nebo z GUI.
+        /// </summary>
+        private int? _Height;
+        /// <summary>
+        /// Uloží do this._Size danou hodnotu zarovnanou do platných mezí
+        /// </summary>
+        /// <param name="size"></param>
+        protected void SetLayoutSize(int size)
+        {
+            this._Height = this.AlignSizeToValidRange(size);
+        }
+        /// <summary>
+        /// Vrátí výšku řádku, která se reálně použije pro layout řádku
+        /// </summary>
+        /// <param name="layoutSize"></param>
+        /// <returns></returns>
+        protected int GetLayoutSize()
+        {
+            Int32? size = this._Height;
+            if (!size.HasValue) size = Data.New.Table.TableHeightDefault;
+            return this.AlignSizeToValidRange(size.Value);
+        }
+        /// <summary>
+        /// Zarovná danou velikost do platných mezí a vráti ji
+        /// </summary>
+        /// <param name="size"></param>
+        /// <returns></returns>
+        protected int AlignSizeToValidRange(int size)
+        {
+            if (size < TableHeightMinimum) size = TableHeightMinimum;
+            Int32Range sizeRange = this.HeightRange;
+            if (sizeRange != null)
+            {
+                Int32? sizeAligned = sizeRange.Align(size);
+                if (sizeAligned.HasValue)
+                    size = sizeAligned.Value;
+            }
+            return size;
+        }
+        #endregion
+        #region ISequenceLayout = pořadí, počáteční pixel, velikost, následující pixel. Podpůrné metody GetLayoutSize() a SetLayoutSize().
+        /// <summary>
+        /// Pořadí tohoto prvku v sekvenci ostatních prvků.
+        /// Nemusí to být kontinuální řada, může obsahovat díry.
+        /// Kolekce se třídí prostým Sort(podle Order ASC).
+        /// </summary>
+        int ISequenceLayout.Order { get { return _ISequenceLayoutOrder; } set { _ISequenceLayoutOrder = value; } } private int _ISequenceLayoutOrder;
+        /// <summary>
+        /// Pozice, kde prvek začíná.
+        /// Interface ISequenceLayout tuto hodnotu setuje v případě, kdy se layout těchto prvků změní (změna prvků nebo jejich velikosti).
+        /// </summary>
+        int ISequenceLayout.Begin { get { return _ISequenceLayoutBegin; } set { _ISequenceLayoutBegin = value; } } private int _ISequenceLayoutBegin;
+        /// <summary>
+        /// Velikost prvku v pixelech (šířka sloupce, výška řádku, výška tabulky). 
+        /// Lze ji setovat, protože prvky lze pomocí splitterů zvětšovat / zmenšovat.
+        /// Aplikační logika prvku musí zabránit vložení neplatné hodnoty (reálně se uloží hodnota platná).
+        /// </summary>
+        int ISequenceLayout.Size { get { return this.GetLayoutSize(); } set { this.SetLayoutSize(value); } }
+        /// <summary>
+        /// Pozice, kde za tímto prvkem začíná následující prvek. 
+        /// Velikost prvku = (End - Begin) = počet pixelů, na které se zobrazuje tento prvek.
+        /// Interface ISequenceLayout tuto hodnotu nesetuje, pouze ji čte.
+        /// </summary>
+        int ISequenceLayout.End { get { return this._ISequenceLayoutBegin + (this.Visible ? this.GetLayoutSize() : 0); } }
+        #endregion
+
+
         #region Visual style
         /// <summary>
         /// Všechny vizuální vlastnosti dat v tomto sloupci (nikoli hlavičky).
@@ -523,6 +649,32 @@ namespace Djs.Common.Data.New
         bool IContentValidity.RowLayoutIsValid { get { return _RowLayoutIsValid; } set { _RowLayoutIsValid = value; } } private bool _RowLayoutIsValid;
         bool IContentValidity.ColumnLayoutIsValid { get { return _ColumnLayoutIsValid; } set { _ColumnLayoutIsValid = value; } } private bool _ColumnLayoutIsValid;
         #endregion
+        #region ISequenceLayout podpora = nápočet hodnot ISequenceLayout.Begin do prvků pole, a do jednotlivého prvku
+        /// <summary>
+        /// Do všech položek ISequenceLayout dodané kolekce vepíše hodnotu Begin postupně od 0.
+        /// K hodnotě position přičte item.Size (pouze pokud je hodnota větší než 0), tato upravená position se vrací v ref parametru, a slouží jako Begin pro další položky v kolekci.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="position"></param>
+        public static void SequenceLayoutCalculate(IEnumerable<ISequenceLayout> items)
+        {
+            int position = 0;
+            foreach (ISequenceLayout item in items)
+                SequenceLayoutCalculate(item, ref position);
+        }
+        /// <summary>
+        /// Do položky ISequenceLayout vepíše Begin = position.
+        /// K hodnotě position přičte item.Size (pouze pokud je hodnota větší než 0), tato upravená position se vrací v ref parametru, a slouží jako Begin pro další položky v kolekci.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="position"></param>
+        public static void SequenceLayoutCalculate(ISequenceLayout item, ref int position)
+        {
+            item.Begin = position;
+            int size = item.Size;
+            if (size > 0) position += size;
+        }
+        #endregion
     }
     #endregion
     #region Column
@@ -531,15 +683,13 @@ namespace Djs.Common.Data.New
     /// </summary>
     public class Column : ITableMember, IVisualMember, ISequenceLayout
     {
-        #region Konstructor, základní data
+        #region Konstruktor, základní data
         /// <summary>
         /// Konstruktor
         /// </summary>
         public Column()
         {
             this._ColumnId = -1;
-            this._Visible = true;
-            this._SortingEnabled = true;
         }
         /// <summary>
         /// Konstruktor
@@ -634,31 +784,117 @@ namespace Djs.Common.Data.New
         /// true pokud se pro sloupec má zobrazit časová osa v záhlaví
         /// </summary>
         public bool UseTimeAxis { get { return this._UseTimeAxis; } set { this._UseTimeAxis = value; } } private bool _UseTimeAxis;
-        /// <summary>
-        /// true pro viditelný sloupec (default), false for skrytý
-        /// </summary>
-        public bool Visible { get { return this._Visible; } set { this._Visible = value; } } private bool _Visible;
-        /// <summary>
-        /// Výchozí šířka sloupce, v pixelech. 
-        /// Má význam pouze v první tabulce použité v Gridu, další tabulky přebírají šířku z první tabulky.
-        /// </summary>
-        public int? Width { get { return this._Width; } set { this._Width = value; } } private int? _Width;
-        /// <summary>
-        /// Platné rozmezí šířky sloupce.
-        /// Má význam pouze v první tabulce použité v Gridu, další tabulky přebírají hodnotu z první tabulky.
-        /// </summary>
-        public Int32Range WidthRange { get { return this._WidthRange; } set { this._WidthRange = value; } } private Int32Range _WidthRange;
         #endregion
-        #region Sorting
+        #region Třídění podle sloupce
         /// <summary>
-        /// Komparátor pro dvě hodnoty v tomto sloupci, pro třídění
+        /// Režim třídění v tomto sloupci
         /// </summary>
-        public Func<object, object, int> ValueComparator;
+        public TableSortRowType SortCurrent { get { return this._SortCurrent; } set { this._SortCurrent = value; } } private TableSortRowType _SortCurrent = TableSortRowType.None;
+        /// <summary>
+        /// Změní třídění tohoto sloupce, volá se po kliknutí na jeho záhlaví.
+        /// Pokud je třídění povoleno, změní SortCurrent v pořadí None - Asc - Desc - None; a vrátí true.
+        /// Pokud třídění není povoleno, vrátí false.
+        /// </summary>
+        /// <returns></returns>
+        public bool SortChange()
+        {
+            if (!this.SortingEnabled) return false;
+            switch (this.SortCurrent)
+            {
+                case TableSortRowType.None:
+                    this.SortCurrent = TableSortRowType.Ascending;
+                    break;
+                case TableSortRowType.Ascending:
+                    this.SortCurrent = TableSortRowType.Descending;
+                    break;
+                case TableSortRowType.Descending:
+                    this.SortCurrent = TableSortRowType.None;
+                    break;
+            }
+            return true;
+        }
         /// <summary>
         /// true pokud je povoleno třídit podle tohoto sloupce.
         /// false = nemožno.
         /// </summary>
-        public bool SortingEnabled { get { return this._SortingEnabled; } set { this._SortingEnabled = value; } } private bool _SortingEnabled;
+        public bool SortingEnabled { get { return this._SortingEnabled; } set { this._SortingEnabled = value; } } private bool _SortingEnabled = true;
+        /// <summary>
+        /// Komparátor pro dvě hodnoty v tomto sloupci, pro třídění
+        /// </summary>
+        public Func<object, object, int> ValueComparator;
+        #endregion
+        #region Šířka sloupce, rozmezí šířky sloupce, spolupráce mezi datovou a GUI vrstvou
+        /// <summary>
+        /// Aktuální šířka sloupce, v pixelech. 
+        /// Má význam pouze v první tabulce použité v Gridu, další tabulky přebírají šířku z první tabulky.
+        /// Pokud uživatel interaktivně změní šířku sloupce, projeví se to zde.
+        /// Pokud kód změní šířku sloupce, bude tato šířku sloupce zarovnána do patřičných mezí.
+        /// Pokud kód nastaví šířku sloupce = null, pak se pro zobrazení převezme defaultní šířka sloupce dle tabulky .
+        /// Šířka sloupce bude vždy v rozmezí WidthRange.
+        /// </summary>
+        public Int32? Width { get { return this._Width; } set { if (value.HasValue) this.SetLayoutSize(value.Value); else this._Width = null; } }
+        /// <summary>
+        /// Platné rozmezí šířky sloupce.
+        /// Má význam pouze v první tabulce použité v Gridu, další tabulky přebírají hodnotu z první tabulky.
+        /// </summary>
+        public Int32Range WidthRange { get; set; }
+        /// <summary>
+        /// true pro viditelný sloupec (default), false for skrytý
+        /// </summary>
+        public bool Visible { get { return this._Visible; } set { this._Visible = value; } } private bool _Visible = true;
+        /// <summary>
+        /// Šířka sloupce.
+        /// Pokud je null, pak se přebírá z tabulky (Table.ColumnWidthDefault) = společná šířka sloupců v tabulce.
+        /// Pokud tam je null, vezme se default z Data.New.Column.ColumnWidthDefault.
+        /// Lze setovat hodnotu buď z dat, nebo z GUI.
+        /// </summary>
+        private Int32? _Width;
+        /// <summary>
+        /// Implicitní šířka sloupce v pixelech = 160
+        /// </summary>
+        protected static int ColumnWidthDefault { get { return 160; } }
+        /// <summary>
+        /// Minimální šířka sloupce v pixelech = 8
+        /// </summary>
+        protected static int ColumnWidthMinimum { get { return 8; } }
+        /// <summary>
+        /// Uloží do this._Size danou hodnotu zarovnanou do platných mezí
+        /// </summary>
+        /// <param name="size"></param>
+        protected void SetLayoutSize(int size)
+        {
+            this._Width = this.AlignSizeToValidRange(size);
+        }
+        /// <summary>
+        /// Vrátí šířku sloupce, která se reálně použije pro layout řádku
+        /// </summary>
+        /// <param name="layoutSize"></param>
+        /// <returns></returns>
+        protected int GetLayoutSize()
+        {
+            Int32? size = this._Width;
+            if (!size.HasValue && this.HasTable) size = this.Table.ColumnWidthDefault;
+            if (!size.HasValue) size = Data.New.Column.ColumnWidthDefault;
+            return this.AlignSizeToValidRange(size.Value);
+        }
+        /// <summary>
+        /// Zarovná danou velikost do platných mezí a vráti ji
+        /// </summary>
+        /// <param name="size"></param>
+        /// <returns></returns>
+        protected int AlignSizeToValidRange(int size)
+        {
+            if (size < ColumnWidthMinimum) size = ColumnWidthMinimum;
+            Int32Range sizeRange = this.WidthRange;
+            if (sizeRange == null && this.HasTable) sizeRange = this.Table.ColumnWidthRange;
+            if (sizeRange != null)
+            {
+                Int32? sizeAligned = sizeRange.Align(size);
+                if (sizeAligned.HasValue)
+                    size = sizeAligned.Value;
+            }
+            return size;
+        }
         #endregion
         #region ISequenceLayout = pořadí, počáteční pixel, velikost, následující pixel
         /// <summary>
@@ -700,7 +936,7 @@ namespace Djs.Common.Data.New
             }
         }
         Int32? IVisualMember.Width { get { return this.Width; } }
-        Int32? IVisualMember.Height { get { return (this.HasTable ? this.Table.ColumnHeight : null); } }
+        Int32? IVisualMember.Height { get { return (this.HasTable ? this.Table.ColumnHeaderHeight : null); } }
         #endregion
     }
     #endregion
@@ -708,7 +944,7 @@ namespace Djs.Common.Data.New
     /// <summary>
     /// Row : informace o jednom řádku tabulky
     /// </summary>
-    public class Row : ITableMember, IVisualMember, ISequenceLayout, IContentValidity
+    public class Row : ITableMember, IVisualMember, ISequenceLayout, IContentValidity, IComparableItem
     {
         #region Konstruktor, základní data
         /// <summary>
@@ -718,7 +954,6 @@ namespace Djs.Common.Data.New
         {
             this._RowId = -1;
             this._CellDict = new Dictionary<int, Cell>();
-            this._Visible = true;
         }
         /// <summary>
         /// Konstruktor
@@ -831,64 +1066,7 @@ namespace Djs.Common.Data.New
         /// <summary>
         /// true pro viditelný sloupec (default), false for skrytý
         /// </summary>
-        public bool Visible { get { return this._Visible; } set { this._Visible = value; } } private bool _Visible;
-        /// <summary>
-        /// Rozmezí povolené výšky řádku pro tento jeden řádek.
-        /// </summary>
-        public Int32Range HeightRange { get; set; }
-        /// <summary>
-        /// Zadaná výška řádku. S touto výškou bude řádek zobrazen uživateli. Uživatel může / nemůže výšku řádku měnit (podle stylu tabulky a podle stylu řádku).
-        /// Pokud uživatel interaktivně změní výšku řádku, projeví se to zde.
-        /// Pokud kód změní výšku řádku, bude tato výška řádku zarovnána do patřičných mezí.
-        /// Pokud kód nastaví výšku řádku = null, pak se pro zobrazení převezme defaultní výška řádku dle tabulky 
-        /// Výška řádku bude vždy v rozmezí HeightRange.
-        /// </summary>
-        public Int32? Height { get { return this._Size; } set { if (value.HasValue) this.SetLayoutSize(value.Value); else this._Size = null; } } private int? _Size;
-
-        #region Práce s velikostí řádků (výškou): spolupráce explicitně zadané datové hodnoty, hodnoty interaktivní a rozmezí platných hodnot
-        /// <summary>
-        /// Uloží do this._Size danou hodnotu zarovnanou do platných mezí
-        /// </summary>
-        /// <param name="size"></param>
-        protected void SetLayoutSize(int size)
-        {
-            this._Size = this.AlignSizeToValidRange(size);
-        }
-        /// <summary>
-        /// Vrátí výšku řádku, která se reálně použije pro layout řádku
-        /// </summary>
-        /// <param name="layoutSize"></param>
-        /// <returns></returns>
-        protected int GetLayoutSize()
-        {
-            Int32? height = this._Size;
-            if (!height.HasValue && this.HasTable) height = this.Table.RowHeightDefault;
-            if (!height.HasValue) height = Data.New.Row.RowHeightDefault;
-            return this.AlignSizeToValidRange(height.Value);
-        }
-        /// <summary>
-        /// Zarovná danou velikost do platných mezí a vráti ji
-        /// </summary>
-        /// <param name="size"></param>
-        /// <returns></returns>
-        protected int AlignSizeToValidRange(int size)
-        {
-            if (size < 0) size = 0;
-            Int32Range sizeRange = this.HeightRange;
-            if (sizeRange == null && this.HasTable) sizeRange = this.Table.RowHeightRange;
-            if (sizeRange != null)
-            {
-                Int32? heightAligned = sizeRange.Align(size);
-                if (heightAligned.HasValue)
-                    size = heightAligned.Value;
-            }
-            return size;
-        }
-        /// <summary>
-        /// Implicitní výška řádku v pixelech = 23
-        /// </summary>
-        public static int RowHeightDefault { get { return 23; } }
-        #endregion
+        public bool Visible { get { return this._Visible; } set { this._Visible = value; } } private bool _Visible = true;
         #endregion
         #region Visual style
         /// <summary>
@@ -905,9 +1083,76 @@ namespace Djs.Common.Data.New
             }
         }
         Int32? IVisualMember.Width { get { return null; } }
-        Int32? IVisualMember.Height { get { return (this.HasTable ? this.Table.ColumnHeight : null); } }
+        Int32? IVisualMember.Height { get { return (this.HasTable ? this.Table.ColumnHeaderHeight : null); } }
         #endregion
-        #region ISequenceLayout = pořadí, počáteční pixel, velikost, následující pixel
+        #region Výška řádku, rozmezí výšky řádku, spolupráce mezi datovou a GUI vrstvou
+        /// <summary>
+        /// Zadaná výška řádku. S touto výškou bude řádek zobrazen uživateli. Uživatel může / nemůže výšku řádku měnit (podle stylu tabulky a podle stylu řádku).
+        /// Pokud uživatel interaktivně změní výšku řádku, projeví se to zde.
+        /// Pokud kód změní výšku řádku, bude tato výška řádku zarovnána do patřičných mezí.
+        /// Pokud kód nastaví výšku řádku = null, pak se pro zobrazení převezme defaultní výška řádku dle tabulky 
+        /// Výška řádku bude vždy v rozmezí HeightRange.
+        /// </summary>
+        public Int32? Height { get { return this._Height; } set { if (value.HasValue) this.SetLayoutSize(value.Value); else this._Height = null; } }
+        /// <summary>
+        /// Rozmezí povolené výšky řádku pro tento jeden řádek.
+        /// </summary>
+        public Int32Range HeightRange { get; set; }
+        /// <summary>
+        /// Implicitní výška řádku v pixelech = 23
+        /// </summary>
+        protected static int RowHeightDefault { get { return 23; } }
+        /// <summary>
+        /// Minimální výška řádku v pixelech = 6
+        /// </summary>
+        protected static int RowHeightMinimum { get { return 6; } }
+        /// <summary>
+        /// Výška řádku.
+        /// Pokud je null, pak se přebírá z tabulky (Table.RowHeightDefault) = společná výška řádků v tabulce.
+        /// Pokud tam je null, vezme se default z Data.New.Row.RowHeightDefault.
+        /// Lze setovat hodnotu buď z dat, nebo z GUI.
+        /// </summary>
+        private int? _Height;
+        /// <summary>
+        /// Uloží do this._Size danou hodnotu zarovnanou do platných mezí
+        /// </summary>
+        /// <param name="size"></param>
+        protected void SetLayoutSize(int size)
+        {
+            this._Height = this.AlignSizeToValidRange(size);
+        }
+        /// <summary>
+        /// Vrátí výšku řádku, která se reálně použije pro layout řádku
+        /// </summary>
+        /// <param name="layoutSize"></param>
+        /// <returns></returns>
+        protected int GetLayoutSize()
+        {
+            Int32? size = this._Height;
+            if (!size.HasValue && this.HasTable) size = this.Table.RowHeightDefault;
+            if (!size.HasValue) size = Data.New.Row.RowHeightDefault;
+            return this.AlignSizeToValidRange(size.Value);
+        }
+        /// <summary>
+        /// Zarovná danou velikost do platných mezí a vráti ji
+        /// </summary>
+        /// <param name="size"></param>
+        /// <returns></returns>
+        protected int AlignSizeToValidRange(int size)
+        {
+            if (size < RowHeightMinimum) size = RowHeightMinimum;
+            Int32Range sizeRange = this.HeightRange;
+            if (sizeRange == null && this.HasTable) sizeRange = this.Table.RowHeightRange;
+            if (sizeRange != null)
+            {
+                Int32? sizeAligned = sizeRange.Align(size);
+                if (sizeAligned.HasValue)
+                    size = sizeAligned.Value;
+            }
+            return size;
+        }
+        #endregion
+        #region ISequenceLayout = pořadí, počáteční pixel, velikost, následující pixel. Podpůrné metody GetLayoutSize() a SetLayoutSize().
         /// <summary>
         /// Pořadí tohoto prvku v sekvenci ostatních prvků.
         /// Nemusí to být kontinuální řada, může obsahovat díry.
@@ -936,6 +1181,18 @@ namespace Djs.Common.Data.New
         bool IContentValidity.DataIsValid { get { return _RowDataIsValid; } set { _RowDataIsValid = value; } } private bool _RowDataIsValid;
         bool IContentValidity.RowLayoutIsValid { get { return _RowLayoutIsValid; } set { _RowLayoutIsValid = value; } } private bool _RowLayoutIsValid;
         bool IContentValidity.ColumnLayoutIsValid { get { return _ColumnLayoutIsValid; } set { _ColumnLayoutIsValid = value; } } private bool _ColumnLayoutIsValid;
+        #endregion
+        #region IComparableItem
+        void IComparableItem.PrepareValue(int valueId, bool valueIsComparable)
+        {
+            var cell = this._GetCell(valueId);
+            if (valueIsComparable)
+                this._IComparableItemValue = cell.Value;
+            else
+                this._IComparableItemValueComparable = cell.Value as IComparable;
+        }
+        object IComparableItem.Value { get { return _IComparableItemValue; } } private object _IComparableItemValue;
+        IComparable IComparableItem.ValueComparable { get { return _IComparableItemValueComparable; } } private IComparable _IComparableItemValueComparable;
         #endregion
     }
     #endregion
@@ -1130,6 +1387,29 @@ namespace Djs.Common.Data.New
         int? Height { get; }
     }
     /// <summary>
+    /// Prvky umožňující třídění
+    /// </summary>
+    public interface IComparableItem
+    {
+        /// <summary>
+        /// Metoda připraví hodnotu pro budoucí porovnání.
+        /// Hodnota má pocházet z uvedeného prvku (valueId, typicky ColumnId), 
+        /// a má být naplněna do Value (pokud valueIsComparable je false) nebo do ValueComparable (pokud valueIsComparable je true).
+        /// Po této přípravě bude následovat třídění seznamu položek právě na základě jedné z uvedených hodnot.
+        /// </summary>
+        /// <param name="valueId">ID hodnoty, typicky ColumnId pro datový řádek</param>
+        /// <param name="valueIsComparable">true pokud máme naplnit ValueComparable, false pokud máme naplnit Value</param>
+        void PrepareValue(int valueId, bool valueIsComparable);
+        /// <summary>
+        /// Obecná hodnota
+        /// </summary>
+        object Value { get; }
+        /// <summary>
+        /// Hodnota přímo tříditelná
+        /// </summary>
+        IComparable ValueComparable { get; }
+    }
+    /// <summary>
     /// Prvek podporující sekvenční layout (řádek, sloupec umístěný v kolekci podobných řádků).
     /// Má svůj Begin a End. Pokud Begin = End, pak prvek nebud zobrazován.
     /// </summary>
@@ -1160,38 +1440,7 @@ namespace Djs.Common.Data.New
         int End { get; }
     }
     #endregion
-    #region Podpora třídění
-    /// <summary>
-    /// Třída umožňující třídění řádků podle hodnoty ValueComparable
-    /// </summary>
-    public class TableSortRowsItem
-    {
-        public TableSortRowsItem(Row row)
-        {
-            this.Row = row;
-        }
-        public TableSortRowsItem(Row row, object userData)
-        {
-            this.Row = row;
-            this.UserData = userData;
-        }
-        /// <summary>
-        /// Data řádku
-        /// </summary>
-        public Row Row { get; private set; }
-        /// <summary>
-        /// Libovolná další data
-        /// </summary>
-        public object UserData { get; private set; }
-        /// <summary>
-        /// Hodnota
-        /// </summary>
-        public object Value { get; set; }
-        /// <summary>
-        /// Hodnota pro komparaci
-        /// </summary>
-        public IComparable ValueComparable { get; set; }
-    }
+    #region Enums
     /// <summary>
     /// Typ třídění
     /// </summary>

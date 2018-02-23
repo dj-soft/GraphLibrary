@@ -53,7 +53,7 @@ namespace Djs.Common.Data
         #endregion
         #region IEnumerable
         /// <summary>
-        /// Perform action for all items in collection
+        /// Provede danou akci pro každý prvek kolekce
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="collection"></param>
@@ -64,7 +64,7 @@ namespace Djs.Common.Data
                 action(item);
         }
         /// <summary>
-        /// Returns new collection from this collection with appended new items
+        /// Vrátí novou kolekci vzniklou z dodané kolekce, a přidáním dodaných prvků
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="collection"></param>

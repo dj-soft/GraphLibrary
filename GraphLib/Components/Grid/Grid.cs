@@ -35,11 +35,11 @@ namespace Djs.Common.Components
         /// Přepočte umístění vnitřních prvků objektu, podle rozměrů this.BoundsClient.Size
         /// </summary>
         /// <param name="oldBounds">Původní umístění, před změnou</param>
-        /// <param name="newBounds">Nové umístění, po změnou. Používejme raději tuto hodnotu než this.Bounds</param>
+        /// <param name="newBounds">Nové umístění, po změně. Používejme raději tuto hodnotu než this.Bounds</param>
         /// <param name="actions">Akce k provedení</param>
         /// <param name="eventSource">Zdroj této události</param>
         protected override void SetBoundsPrepareInnerItems(Rectangle oldBounds, Rectangle newBounds, ref ProcessAction actions, EventSourceType eventSource)
-        {   // After change of Bounds, when action ProcessAction.PrepareInnerItems is requested:
+        {
             this.RecalcGrid(ref actions, eventSource);
         }
         /// <summary>
@@ -430,7 +430,7 @@ namespace Djs.Common.Components
                         list.AddRange(this._Tables[0].DataTable.Columns.Cast<Data.New.ISequenceLayout>());
                     if (list.Count > 1)
                         list.Sort((a, b) => a.Order.CompareTo(b.Order));
-                    SequenceLayoutCalculate(list);
+                    Table.SequenceLayoutCalculate(list);
                     this._LayoutXMasterColumns = list;
                 }
                 return this._LayoutXMasterColumns;
@@ -484,7 +484,7 @@ namespace Djs.Common.Components
                         list.AddRange(this._Tables.Select(t => t.DataTable).Cast<Data.New.ISequenceLayout>());
                     if (list.Count > 1)
                         list.Sort((a, b) => a.Order.CompareTo(b.Order));
-                    SequenceLayoutCalculate(list);
+                    Table.SequenceLayoutCalculate(list);
                     this._LayoutYTables = list;
                 }
                 return this._LayoutYTables;
@@ -515,30 +515,6 @@ namespace Djs.Common.Components
 
         private bool _LayoutYIsValid;
 
-        /// <summary>
-        /// Do všech položek ISequenceLayout dodané kolekce vepíše Begin vepíše Begin = position.
-        /// K hodnotě position přičte item.Size (pouze pokud je hodnota větší než 0), tato upravená position se vrací v ref parametru, a slouží jako Begin pro další položky v kolekci.
-        /// </summary>
-        /// <param name="item"></param>
-        /// <param name="position"></param>
-        protected static void SequenceLayoutCalculate(IEnumerable<Data.New.ISequenceLayout> items)
-        {
-            int position = 0;
-            foreach (Data.New.ISequenceLayout item in items)
-                SequenceLayoutCalculate(item, ref position);
-        }
-        /// <summary>
-        /// Do položky ISequenceLayout vepíše Begin = position.
-        /// K hodnotě position přičte item.Size (pouze pokud je hodnota větší než 0), tato upravená position se vrací v ref parametru, a slouží jako Begin pro další položky v kolekci.
-        /// </summary>
-        /// <param name="item"></param>
-        /// <param name="position"></param>
-        protected static void SequenceLayoutCalculate(Data.New.ISequenceLayout item, ref int position)
-        {
-            item.Begin = position;
-            int size = item.Size;
-            if (size > 0) position += size;
-        }
         #endregion
 
 
@@ -586,7 +562,7 @@ namespace Djs.Common.Components
         /// <summary>
         /// Positions of all visual items (Columns and Tables)
         /// </summary>
-        internal GridPositions Positions
+        internal GridPositions xxxPositions
         {
             get
             {
