@@ -765,20 +765,72 @@ namespace Djs.Common.Components
             this._GetVisualSizeMethod = getVisualSizeMethod;
             this._GetDataSizeMethod = getDataSizeMethod;
         }
+        /// <summary>
+        /// Funkce, která vrátí velikost prostoru = počet pixelů, které jsou nyní viditelné (celkově = header + prostor pro data = ClientBounds.Width nebo Height)
+        /// </summary>
         private Func<int> _GetVisualSizeMethod;
+        /// <summary>
+        /// Funkce, která vrátí velikost dat = počet pixelů, které by obsadila data zobrazená najednou
+        /// </summary>
         private Func<int> _GetDataSizeMethod;
+        /// <summary>
+        /// Číslo vizuálního pixelu, na kterém začíná zobrazení dat. Pixely před tímto jsou obsazeny něčím jiným (typicky Header)
+        /// </summary>
+        public int VisualFirstPixel { get; set; }
         /// <summary>
         /// Celková velikost viditelná (=prostor v controlu = ClientBounds.Width nebo Height)
         /// </summary>
         public int VisualTotalSize { get { return this._GetVisualSizeMethod(); } }
         /// <summary>
-        /// Velikost záhlaví (výška u záhlaví nahoře, šířka u záhlaví vlevo)
+        /// Číslo prvního datového pixelu, který je zobrazen na prvním vizuálním pixelu (VisualFirstPixel).
+        /// Datové pixely před tímto pixelem nejsou vidět, protože jsou odscrollované nad nebo vlevo.
         /// </summary>
-        public int HeaderSize { get; set; }
+        public int DataFirstPixel { get; set; }
         /// <summary>
         /// Celková velikost zobrazovaných dat (=např. součet výšky všech zobrazitelných řádků)
         /// </summary>
         public int DataTotalSize { get { return this._GetDataSizeMethod(); } }
-
+        /// <summary>
+        /// Vrátí true, pokud daný prvek (item) se svojí pozicí (Begin, End) bude viditelný v aktuálním datovém prostoru
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        public bool FilterVisibleItem(ISequenceLayout item)
+        {
+            int dataBegin = this.DataFirstPixel;
+            int dataEnd = this.DataEndPixel;
+            return this._FilterVisibleItem(item, dataBegin, dataEnd);
+        }
+        /// <summary>
+        /// Vrátí danou kolekci, zafiltrovanou na pouze viditelné prvky
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="items"></param>
+        /// <returns></returns>
+        public IEnumerable<T> FilterVisibleItems<T>(IEnumerable<T> items) where T : ISequenceLayout
+        {
+            int dataBegin = this.DataFirstPixel;
+            int dataEnd = this.DataEndPixel;
+            return items.Where(i => this._FilterVisibleItem(i, dataBegin, dataEnd));
+        }
+        /// <summary>
+        /// Vrátí true, pokud daná položka je alespoň částečně viditelná v daném rozsahu
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="dataBegin"></param>
+        /// <param name="dataEnd"></param>
+        /// <returns></returns>
+        private bool _FilterVisibleItem(ISequenceLayout item, int dataBegin, int dataEnd)
+        {
+            return (item.Begin > item.End && item.Begin < dataEnd && item.End > dataBegin);
+        }
+        /// <summary>
+        /// Číslo datového pixelu, který je při současném zobrazení End = první za viditelným prostorem (= DataFirstPixel + DataVisibleSize)
+        /// </summary>
+        protected int DataEndPixel { get { return (this.DataFirstPixel + this.DataVisibleSize); } }
+        /// <summary>
+        /// Počet pixelů, na kterých jsou aktuálně zobrazena data = celková vizuální velikost zmenšená o záhlaví (= VisualTotalSize - VisualFirstPixel)
+        /// </summary>
+        protected int DataVisibleSize { get { return (this.VisualTotalSize - this.VisualFirstPixel); } }
     }
 }

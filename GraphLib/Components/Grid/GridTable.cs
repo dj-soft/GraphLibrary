@@ -242,7 +242,7 @@ namespace Djs.Common.Components.Grid
             }
         }
         /// <summary>
-        /// Aktuálně zobrazované řádky, grafické prvky, pouze ty které jsou zčásti nebo plně viditelné.
+        /// Aktuálně zobrazované řádky - grafické prvky (pouze ty které jsou zčásti nebo plně viditelné)
         /// </summary>
         protected List<GRow> GRowList
         {
@@ -251,13 +251,15 @@ namespace Djs.Common.Components.Grid
                 List<GRow> list = this._GRowList;
                 if (list == null)
                 {
-
+                    // Ze seznamu všech dostupných řádků (RowListAll) si vyberu (funkcí RowsPositions.FilterVisibleItems) je ty, které jsou nyní viditelné:
+                    IEnumerable<Row> dataList = this.RowsPositions.FilterVisibleItems(this.RowListAll);
+                    // Z těchto viditelných řádků vygeneruji pole vizuálních prvků:
+                    list = dataList.Select(r => new GRow(this, r)).ToList();
+                    this._GRowList = list;
                 }
+                return list;
             }
         }
-
-
-
         /// <summary>
         /// Zajistí kompletní reset paměti řádků.
         /// Volá se po: přidání řádku, aplikaci filtru a/nebo třídění řádků.
@@ -438,10 +440,10 @@ namespace Djs.Common.Components.Grid
         protected void ChildArrayReload()
         {
             this.ChildList.Clear();
-            this.ChildList.Add(this.ColumnSet);
-            this.ChildList.Add(this.RowSet);
+            this.ChildList.Add(this.ColumnHeader);                   // Záhlaví sloupců
+            this.ChildList.AddRange(this.GRowList);                  // Všechny řádky (možná se právě teď vytvoří nové pole)
             this.ChildList.Add(this.ScrollBar);
-            this.ChildList.Add(this.HeaderSplitter);              // Jako poslední přidám splitter mezi ColumnHeader a RowArea
+            this.ChildList.Add(this.HeaderSplitter);                 // Jako poslední přidám splitter mezi ColumnHeader a RowArea (ten je součástí GTable, na rozdíl od TableSplitter)
             this._ChildArrayValid = true;
         }
         private bool _ChildArrayValid;
@@ -468,14 +470,40 @@ namespace Djs.Common.Components.Grid
     }
     public class GRow : InteractiveContainer
     {
-        public GRow(GTable table, Row row)
-        { }
+        public GRow(GTable gTable, Row row)
+        {
+            this._GTable = gTable;
+            this._Row = row;
+        }
+        private GTable _GTable;
+        private Row _Row;
     }
-    internal class GCell : InteractiveContainer
-    { }
+    public class GCell : InteractiveContainer
+    {
+        public GCell(GRow gRow)
+        {
+            this._GRow = gRow;
+        }
+        private GRow _GRow;
+    }
 
 
-
+    /// <summary>
+    /// Člen gridu GGrid, u kterého je možno provést Attach a Detach
+    /// </summary>
+    public interface IGridMember
+    {
+        /// <summary>
+        /// Napojí this objekt do dodaného Gridu a uloží do sebe dané ID
+        /// </summary>
+        /// <param name="grid"></param>
+        /// <param name="id"></param>
+        void AttachToGrid(GGrid grid, int id);
+        /// <summary>
+        /// Odpojí this objekt od navázaného Gridu, resetuje svoje ID
+        /// </summary>
+        void DetachFromGrid();
+    }
 
 
 
@@ -2606,20 +2634,7 @@ namespace Djs.Common.Components.Grid
         internal GInteractiveDrawLayer RepaintThisToLayers { get { return this.RepaintToLayers; } set { this.RepaintToLayers = value; } }
         #endregion
     }
-    /// <summary>
-    /// Člen gridu GGrid, u kterého je možno provést Attach a Detach
-    /// </summary>
-    public interface IGridMember
-    {
-        /// <summary>
-        /// Napojí this objekt do dodaného Gridu a uloží do sebe dané ID
-        /// </summary>
-        /// <param name="grid"></param>
-        /// <param name="id"></param>
-        void AttachToGrid(GGrid grid, int id);
-        /// <summary>
-        /// Odpojí this objekt od navázaného Gridu, resetuje svoje ID
-        /// </summary>
-        void DetachFromGrid();
-    }
+
+
+
 }
