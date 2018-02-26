@@ -127,8 +127,9 @@ namespace Djs.Common.Components
             set { this.SetSplitter(null, value, null, null, null, null, null, DragResponseType.AfterDragEnd); }
         }
         /// <summary>
-        /// Logical location of splitter. In coordinates of Parent object (or Host control, when Parent is null). Represent a center of Bounds on axis by Orientation.
-        /// Setting value to this property does not call any event.
+        /// Pozice splitteru - logická = ve směru jeho aktivního pohybu, v souřadnicích jeho Parenta.
+        /// Reprezentuje střed vizuální pozice.
+        /// Nastavení hodnoty do této property nespouští žádné návazné eventy, takže nedojde k případnému zacyklení událostí v komplexnějším scénáři.
         /// </summary>
         public int ValueSilent
         {
@@ -419,21 +420,29 @@ namespace Djs.Common.Components
                     this._SplitterActiveOverlap = splitterActiveOverlapNew.Value;
                     this.ActiveOverhead = activeOverheadNew;
 
-                    // Actions on change process:
+                    // Akce v době provádění změny = posunu:
                     if (IsAction(actions, ProcessAction.CallChangingEvents))
                     {
                         if (locationChanged)
-                            this.CallValueChanging(locationOld, locationNew.Value, eventSource);
+                        {
+                            locationNew = this.CallValueChanging(locationOld, locationNew.Value, eventSource);
+                            locationChanged = (locationNew.Value != locationOld);
+                            this._Location = locationNew.Value;
+                        }
                     }
 
-                    // Actions after changes:
+                    // Akce po dokončení změny:
                     if (IsAction(actions, ProcessAction.CallChangedEvents))
                     {
                         if (boundsChange)
                             this.CallActionsAfterBoundsChanged(boundsOld, boundsNew.Value, ref actionsNoDraw, eventSource);
 
                         if (locationChanged)
+                        {
                             this.CallValueChanged(locationOld, locationNew.Value, eventSource);
+                            locationChanged = (locationNew.Value != locationOld);
+                            this._Location = locationNew.Value;
+                        }
 
                         if (orientationChanged)
                             this.CallOrientationChanged(orientationOld, orientationNew.Value, eventSource);
@@ -618,17 +627,19 @@ namespace Djs.Common.Components
         #endregion
         #region Public events and virtual methods
         /// <summary>
+        /// Zavolá metody OnValueChanging a eventhandler ValueChanging
         /// Call method OnValueChanging() and event ValueChanging
         /// </summary>
-        protected void CallValueChanging(int oldValue, int newValue, EventSourceType eventSource)
+        protected int CallValueChanging(int oldValue, int newValue, EventSourceType eventSource)
         {
             GPropertyChangeArgs<int> args = new GPropertyChangeArgs<int>(eventSource, oldValue, newValue);
             this.OnValueChanging(args);
             if (!this.IsSupressedEvent && this.ValueChanging != null)
                 this.ValueChanging(this, args);
+            return args.ResultValue;
         }
         /// <summary>
-        /// Occured during interactive changing Value value
+        /// Metoda prováděná při změně hodnoty, před voláním eventhandleru
         /// </summary>
         protected virtual void OnValueChanging(GPropertyChangeArgs<int> args) { }
         /// <summary>
@@ -639,12 +650,13 @@ namespace Djs.Common.Components
         /// <summary>
         /// Call method OnLocationChanged() and event LocationChanged
         /// </summary>
-        protected void CallValueChanged(int oldValue, int newValue, EventSourceType eventSource)
+        protected int CallValueChanged(int oldValue, int newValue, EventSourceType eventSource)
         {
             GPropertyChangeArgs<int> args = new GPropertyChangeArgs<int>(eventSource, oldValue, newValue);
             this.OnValueChanged(args);
             if (!this.IsSupressedEvent && this.ValueChanged != null)
                 this.ValueChanged(this, args);
+            return args.ResultValue;
         }
         /// <summary>
         /// Occured after change Location value

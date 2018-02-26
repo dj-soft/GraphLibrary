@@ -18,9 +18,9 @@ namespace Djs.Common.Components
         #region Inicializace
         public GGrid()
         {
-            this._InitialiseGrid();
+            this.Init();
         }
-        private void _InitialiseGrid()
+        private void Init()
         {
             this.InitProperties();
             this.InitPositions();
@@ -412,58 +412,140 @@ namespace Djs.Common.Components
         #endregion
         #region Rozložení prvků Gridu = pozice sloupců (sloupce v Gridu řídí Master tabulka, jsou synchronizované do všech tabulek) a pozice jednotlivých tabulek
         /// <summary>
+        /// Inicializace všech řídících prvků pro pozicování obsahu
+        /// </summary>
+        private void InitPositions()
+        {
+            this._ColumnsPositions = new GPosition(this._ColumnPositionGetVisualSize, this._ColumnPositionGetDataSize);
+            this._TablesPositions = new GPosition(this._TablePositionGetVisualSize, this._TablePositionGetDataSize);
+        }
+        /// <summary>
+        /// Řídíci prvek pro Pozice sloupců
+        /// </summary>
+        protected GPosition ColumnsPositions { get { return this._ColumnsPositions; } } private GPosition _ColumnsPositions;
+        /// <summary>
+        /// Vrací šířku prostoru pro sloupce (=this.ClientSize.Width)
+        /// </summary>
+        /// <returns></returns>
+        private int _ColumnPositionGetVisualSize()
+        {
+            return this.ClientSize.Width;
+        }
+        /// <summary>
+        /// Vrací šířku všech zobrazitelných datových sloupců, vyjma sloupec RowHeader (to není datový sloupec).
+        /// </summary>
+        /// <returns></returns>
+        private int _ColumnPositionGetDataSize()
+        {
+            List<ISequenceLayout> list = this.ColumnsSequence;
+            int count = list.Count;
+            return (count > 0 ? list[count - 1].End : 0);
+        }
+        /// <summary>
         /// Soupis sloupců master tabulky, vždy setříděný v pořadí podle ColumnOrder, se správně napočtenou hodnotou ISequenceLayout.Begin a End.
         /// Tento seznam se ukládá do místní cache, jeho generování se provádí jen jedenkrát po jeho invalidaci.
-        /// Invalidace seznamu se provádí metodou LayoutXMasterColumnsReset(), ta se má volat po těchto akcích:
-        /// Změna šířky sloupce, Změna pořadí sloupců, Změna počtu sloupců.
-        /// Nemusí se volat při posunech vodorovného scrollbaru ani při resize gridu.
+        /// Invalidace seznamu se provádí metodou ColumnsSequenceReset(), ta se má volat po těchto akcích:
+        /// Změna pořadí sloupců, Změna počtu sloupců.
+        /// Nemusí se volat při posunech vodorovného scrollbaru ani při resize gridu, ani při změně šířky sloupců!
         /// Tato property nikdy nevrací null, ale může vrátit kolekci s počtem = 0 prvků (pokud neexistují tabulky nebo Master tabulka nemá žádné sloupce).
         /// </summary>
-        protected List<Data.New.ISequenceLayout> LayoutXMasterColumns
+        protected List<ISequenceLayout> ColumnsSequence
         {
             get
             {
-                if (this._LayoutXMasterColumns == null)
+                if (this._ColumnsSequence == null)
                 {
-                    List<Data.New.ISequenceLayout> list = new List<Data.New.ISequenceLayout>();
+                    List<Column> columns = new List<Column>();
                     if (this._Tables != null && this._Tables.Count > 0)
-                        list.AddRange(this._Tables[0].DataTable.Columns.Cast<Data.New.ISequenceLayout>());
-                    if (list.Count > 1)
-                        list.Sort((a, b) => a.Order.CompareTo(b.Order));
+                        columns.AddRange(this._Tables[0].DataTable.Columns);
+                    if (columns.Count > 1)
+                        columns.Sort(Column.CompareOrder);
+
+                    List<Data.New.ISequenceLayout> list = new List<ISequenceLayout>(columns.Cast<ISequenceLayout>());
                     Table.SequenceLayoutCalculate(list);
-                    this._LayoutXMasterColumns = list;
+                    this._ColumnsSequence = list;
                 }
-                return this._LayoutXMasterColumns;
+                return this._ColumnsSequence;
             }
         }
         /// <summary>
-        /// Resetuje kolekci LayoutXMasterColumns (=donutí ji znovu se načíst).
+        /// Resetuje kolekci ColumnsSequence (=donutí ji znovu se načíst).
         /// Má se volat po těchto akcích:
-        /// Změna šířky sloupce, Změna pořadí sloupců, Změna počtu sloupců.
-        /// Nemusí se volat při posunech vodorovného scrollbaru ani při resize gridu.
+        /// Změna pořadí sloupců, Změna počtu sloupců.
+        /// Nemusí se volat při posunech vodorovného scrollbaru ani při resize gridu, ani při změně šířky sloupců!
         /// </summary>
-        protected void LayoutXMasterColumnsReset() { this._LayoutXMasterColumns = null; }
+        protected void ColumnsSequenceReset() { this._ColumnsSequence = null; }
         /// <summary>
-        /// Cache kolekce LayoutXMasterColumns
+        /// Cache kolekce ColumnsSequence
         /// </summary>
-        private List<Data.New.ISequenceLayout> _LayoutXMasterColumns;
-        /// <summary>
-        /// Šířka sloupce RowHeader = fyzická pozice prvního pixelu, kde se začínají zobrazovat vlastní sloupce z tabulek.
-        /// Tuto hodnotu typicky setuje splitter za záhlavím RowHeader sloupce.
-        /// </summary>
-        protected int LayoutXRowHeaderWidth { get { return this._LayoutXRowHeaderWidth; } set { this._LayoutXRowHeaderWidth = value; this._LayoutXIsValid = false;} } private int _LayoutXRowHeaderWidth;
-        /// <summary>
-        /// Číslo prvního zobrazovaného (=logického, nikoli vizuálního) pixelu v ose X v prostoru datových sloupců.
-        /// Souvisí s posouváním oblasti sloupců doprava/doleva pomocí dolního vodorovného scrollbaru.
-        /// </summary>
-        protected int LayoutXColumnOffset { get { return this._LayoutXColumnOffset; } set { this._LayoutXColumnOffset = value; this._LayoutXIsValid = false; } } private int _LayoutXColumnOffset;
-        /// <summary>
-        /// Celková šířka všech zobrazitelných sloupců = hodnota ISequenceLayout.End z posledního sloupce ze seznamu LayoutXMasterColumns.
-        /// Jde o logickou hodnotu, která odpovídá celkové velikosti vodorovného (dolního) scrollbaru.
-        /// </summary>
-        protected int LayoutXAllColumnsWidth { get { List<Data.New.ISequenceLayout> list = this.LayoutXMasterColumns; int cnt = list.Count; return (cnt > 0 ? list[cnt - 1].End : 0); } }
+        private List<ISequenceLayout> _ColumnsSequence;
 
-        private bool _LayoutXIsValid;
+        /// <summary>
+        /// Řídíci prvek pro Pozice sloupců
+        /// </summary>
+        protected GPosition TablesPositions { get { return this._TablesPositions; } } private GPosition _TablesPositions;
+        /// <summary>
+        /// Vrací výšku prostoru pro tabulky (=this.ClientSize.Height)
+        /// </summary>
+        /// <returns></returns>
+        private int _TablePositionGetVisualSize()
+        {
+            return this.ClientSize.Height;
+        }
+        /// <summary>
+        /// Vrací výšku všech zobrazitelných tabulek
+        /// </summary>
+        /// <returns></returns>
+        private int _TablePositionGetDataSize()
+        {
+            List<ISequenceLayout> list = this.TableSequence;
+            int count = list.Count;
+            return (count > 0 ? list[count - 1].End : 0);
+        }
+        /// <summary>
+        /// Soupis sloupců master tabulky, vždy setříděný v pořadí podle ColumnOrder, se správně napočtenou hodnotou ISequenceLayout.Begin a End.
+        /// Tento seznam se ukládá do místní cache, jeho generování se provádí jen jedenkrát po jeho invalidaci.
+        /// Invalidace seznamu se provádí metodou ColumnsSequenceReset(), ta se má volat po těchto akcích:
+        /// Změna pořadí sloupců, Změna počtu sloupců.
+        /// Nemusí se volat při posunech vodorovného scrollbaru ani při resize gridu, ani při změně šířky sloupců!
+        /// Tato property nikdy nevrací null, ale může vrátit kolekci s počtem = 0 prvků (pokud neexistují tabulky nebo Master tabulka nemá žádné sloupce).
+        /// </summary>
+        protected List<ISequenceLayout> TableSequence
+        {
+            get
+            {
+                if (this._TableSequence == null)
+                {
+                    List<Table> tables = new List<Table>();
+                    if (this._Tables != null && this._Tables.Count > 0)
+                        tables.AddRange(this._Tables.Select(g => g.DataTable));
+                    if (tables.Count > 1)
+                        tables.Sort(Table.CompareOrder);
+
+                    List<Data.New.ISequenceLayout> list = new List<ISequenceLayout>(columns.Cast<ISequenceLayout>());
+                    Table.SequenceLayoutCalculate(list);
+                    this._TableSequence = list;
+                }
+                return this._TableSequence;
+            }
+        }
+        /// <summary>
+        /// Resetuje kolekci ColumnsSequence (=donutí ji znovu se načíst).
+        /// Má se volat po těchto akcích:
+        /// Změna pořadí sloupců, Změna počtu sloupců.
+        /// Nemusí se volat při posunech vodorovného scrollbaru ani při resize gridu, ani při změně šířky sloupců!
+        /// </summary>
+        protected void ColumnsSequenceReset() { this._ColumnsSequence = null; }
+        /// <summary>
+        /// Cache kolekce ColumnsSequence
+        /// </summary>
+        private List<ISequenceLayout> _ColumnsSequence;
+
+
+
+
+
+
 
         /// <summary>
         /// Soupis jednotlivých tabulek, vždy setříděný v pořadí podle TableId, se správně napočtenou hodnotou ISequenceLayout.Begin a End.
@@ -555,10 +637,7 @@ namespace Djs.Common.Components
         /// <summary>
         /// Initialise positions
         /// </summary>
-        private void InitPositions()
-        {
-            this._Positions = new GridPositions();
-        }
+       
         /// <summary>
         /// Positions of all visual items (Columns and Tables)
         /// </summary>
@@ -671,5 +750,35 @@ namespace Djs.Common.Components
         /// </summary>
         internal GInteractiveDrawLayer RepaintThisToLayers { get { return this.RepaintToLayers; } set { this.RepaintToLayers = value; } }
         #endregion
+    }
+    /// <summary>
+    /// Třída, která řeší zobrazení obsahu prvku typicky v Gridu.
+    /// Daná oblast má záhlaví určité velikosti, jehož umístění se pohybem Scrollbaru nemění,
+    /// a za tímto záhlavím má obsah, spojený se Scrollbarem, kde tento obsah je promítán do disponibilního prostoru.
+    /// Tato třída eviduje: pozici (velikost) záhlaví, velikost prostoru pro data, počáteční logickou pozici dat (od kterého pixelu jsou data viditelná),
+    /// a provádí převody viditelných pixelů na pixely virtuální = datové.
+    /// </summary>
+    public class GPosition
+    {
+        internal GPosition(Func<int> getVisualSizeMethod, Func<int> getDataSizeMethod)
+        {
+            this._GetVisualSizeMethod = getVisualSizeMethod;
+            this._GetDataSizeMethod = getDataSizeMethod;
+        }
+        private Func<int> _GetVisualSizeMethod;
+        private Func<int> _GetDataSizeMethod;
+        /// <summary>
+        /// Celková velikost viditelná (=prostor v controlu = ClientBounds.Width nebo Height)
+        /// </summary>
+        public int VisualTotalSize { get { return this._GetVisualSizeMethod(); } }
+        /// <summary>
+        /// Velikost záhlaví (výška u záhlaví nahoře, šířka u záhlaví vlevo)
+        /// </summary>
+        public int HeaderSize { get; set; }
+        /// <summary>
+        /// Celková velikost zobrazovaných dat (=např. součet výšky všech zobrazitelných řádků)
+        /// </summary>
+        public int DataTotalSize { get { return this._GetDataSizeMethod(); } }
+
     }
 }

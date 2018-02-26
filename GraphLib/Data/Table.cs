@@ -19,7 +19,7 @@ namespace Djs.Common.Data.New
     /// <summary>
     /// Table : jedna tabulka s dat (sada Column + Row)
     /// </summary>
-    public class Table : IVisualMember, IContentValidity, ISequenceLayout
+    public class Table : IVisualMember, ISequenceLayout, IContentValidity
     {
         #region Konstruktor, Inicializace
         /// <summary>
@@ -45,6 +45,7 @@ namespace Djs.Common.Data.New
         {
             this._ColumnsInit();
             this._RowsInit();
+            this._LayoutInit();
         }
         /// <summary>
         /// Název tabulky, podle něj lze hledat. jde o klíčové slovo, nikoli popisek (Caption)
@@ -526,14 +527,6 @@ namespace Djs.Common.Data.New
         #endregion
 
         #region GUI vlastnosti
-        public Int32 ColumnHeaderHeight { get; set; }
-        public Int32Range ColumnHeaderHeightRange { get; set; }
-        public Int32? ColumnWidthDefault { get; set; }
-        public Int32Range ColumnWidthRange { get; set; }
-        public Int32Range RowHeightRange { get; set; }
-        public Int32? RowHeightDefault { get; set; }
-        #endregion
-        #region Výška tabulky (v pixelech, v Gridu), rozmezí výšky tabulky, spolupráce mezi datovou a GUI vrstvou
         /// <summary>
         /// Zadaná výška tabulky. S touto výškou bude tabulka zobrazena uživateli. Uživatel může / nemůže výšku tabulky měnit (podle situace v gridu).
         /// Pokud uživatel interaktivně změní výšku tabulky, projeví se to zde.
@@ -541,89 +534,51 @@ namespace Djs.Common.Data.New
         /// Pokud kód nastaví výšku tabulky = null, pak se pro zobrazení převezme defaultní výška dle Gridu.
         /// Výška tabulky bude vždy v rozmezí HeightRange.
         /// </summary>
-        public Int32? Height { get { return this._Height; } set { if (value.HasValue) this.SetLayoutSize(value.Value); else this._Height = null; } }
+        public Int32 Height { get { return this.TableHeightLayout.CurrentSize; } set { this.TableHeightLayout.Size = value; } }
         /// <summary>
-        /// Rozmezí povolené výšky tabulky.
+        /// true pro viditelnou tabulku (default), false pro skrytou
         /// </summary>
-        public Int32Range HeightRange { get; set; }
+        public bool Visible { get { return this.TableHeightLayout.Visible; } set { this.TableHeightLayout.Visible = value; } }
         /// <summary>
-        /// true pro viditelnou tabulku (default), false for skrytou
+        /// Výška oblasti ColumnHeader
         /// </summary>
-        public bool Visible { get { return this._Visible; } set { this._Visible = value; } } private bool _Visible = true;
+        public Int32 ColumnHeaderHeight { get { return this.ColumnHeaderHeightLayout.CurrentSize; } set { this.ColumnHeaderHeightLayout.Size = value; } }
         /// <summary>
-        /// Implicitní výška tabulky v pixelech = 350; uplatní se pouze pokud nebude zadaná konkrétní, a v Gridu který hostuje více tabulek nad sebou. Jinak výška tabulky vyplní celý Grid.
+        /// Pořadí této tabulky v Gridu při zobrazování.
+        /// Výchozí je -1, pak bude tabulka zařazena na konec soupisu tabulek v jednom gridu.
+        /// Datová vrstva může vložit jinou hodnotu (nula a kladnou), a tím explicitně určit pozici tabulky v gridu.
+        /// Jednotlivé tabulky nemusí mít hodnoty TableOrder v nepřerušovaném pořadí.
+        /// Po napojení tabulky do gridu je do TableOrder vepsána pořadová hodnota, pokud aktuální hodnota je záporná (což je default).
+        /// Po odpojení tabuky z Gridu je vepsána hodnota -1.
         /// </summary>
-        protected static int TableHeightDefault { get { return 350; } }
+        public int TableOrder { get { return this._TableOrder; } set { this._TableOrder = value; } } private int _TableOrder = -1;
         /// <summary>
-        /// Minimální výška tabulky v pixelech = 60
+        /// Výška celé tabulky
         /// </summary>
-        protected static int TableHeightMinimum { get { return 60; } }
+        public SequenceLayout TableHeightLayout { get { return this._TableHeightLayout; } } private SequenceLayout _TableHeightLayout;
         /// <summary>
-        /// Výška tabulky.
-        /// Lze setovat hodnotu buď z dat, nebo z GUI.
+        /// Výška prostoru ColumnHeader
         /// </summary>
-        private int? _Height;
+        public SequenceLayout ColumnHeaderHeightLayout { get { return this._ColumnHeaderHeightLayout; } } private SequenceLayout _ColumnHeaderHeightLayout;
         /// <summary>
-        /// Uloží do this._Size danou hodnotu zarovnanou do platných mezí
+        /// Výchozí hodnota šířky sloupce a povolené rozmezí šířky
         /// </summary>
-        /// <param name="size"></param>
-        protected void SetLayoutSize(int size)
+        public SequenceLayout ColumnWidthLayout { get { return this._ColumnWidthLayout; } } private SequenceLayout _ColumnWidthLayout;
+        /// <summary>
+        /// Výchozí hodnota výšky řádku a povolené rozmezí výšky
+        /// </summary>
+        public SequenceLayout RowHeightLayout { get { return this._RowHeightLayout; } } private SequenceLayout _RowHeightLayout;
+        private void _LayoutInit()
         {
-            this._Height = this.AlignSizeToValidRange(size);
+            this._TableHeightLayout = new SequenceLayout(60, 250);
+            this._ColumnHeaderHeightLayout = new SequenceLayout(20, 45);
+            this._ColumnWidthLayout = new SequenceLayout(20, 160);
+            this._RowHeightLayout = new SequenceLayout(8, 24);
         }
-        /// <summary>
-        /// Vrátí výšku řádku, která se reálně použije pro layout řádku
-        /// </summary>
-        /// <param name="layoutSize"></param>
-        /// <returns></returns>
-        protected int GetLayoutSize()
-        {
-            Int32? size = this._Height;
-            if (!size.HasValue) size = Data.New.Table.TableHeightDefault;
-            return this.AlignSizeToValidRange(size.Value);
-        }
-        /// <summary>
-        /// Zarovná danou velikost do platných mezí a vráti ji
-        /// </summary>
-        /// <param name="size"></param>
-        /// <returns></returns>
-        protected int AlignSizeToValidRange(int size)
-        {
-            if (size < TableHeightMinimum) size = TableHeightMinimum;
-            Int32Range sizeRange = this.HeightRange;
-            if (sizeRange != null)
-            {
-                Int32? sizeAligned = sizeRange.Align(size);
-                if (sizeAligned.HasValue)
-                    size = sizeAligned.Value;
-            }
-            return size;
-        }
-        #endregion
-        #region ISequenceLayout = pořadí, počáteční pixel, velikost, následující pixel. Podpůrné metody GetLayoutSize() a SetLayoutSize().
-        /// <summary>
-        /// Pořadí tohoto prvku v sekvenci ostatních prvků.
-        /// Nemusí to být kontinuální řada, může obsahovat díry.
-        /// Kolekce se třídí prostým Sort(podle Order ASC).
-        /// </summary>
-        int ISequenceLayout.Order { get { return _ISequenceLayoutOrder; } set { _ISequenceLayoutOrder = value; } } private int _ISequenceLayoutOrder;
-        /// <summary>
-        /// Pozice, kde prvek začíná.
-        /// Interface ISequenceLayout tuto hodnotu setuje v případě, kdy se layout těchto prvků změní (změna prvků nebo jejich velikosti).
-        /// </summary>
-        int ISequenceLayout.Begin { get { return _ISequenceLayoutBegin; } set { _ISequenceLayoutBegin = value; } } private int _ISequenceLayoutBegin;
-        /// <summary>
-        /// Velikost prvku v pixelech (šířka sloupce, výška řádku, výška tabulky). 
-        /// Lze ji setovat, protože prvky lze pomocí splitterů zvětšovat / zmenšovat.
-        /// Aplikační logika prvku musí zabránit vložení neplatné hodnoty (reálně se uloží hodnota platná).
-        /// </summary>
-        int ISequenceLayout.Size { get { return this.GetLayoutSize(); } set { this.SetLayoutSize(value); } }
-        /// <summary>
-        /// Pozice, kde za tímto prvkem začíná následující prvek. 
-        /// Velikost prvku = (End - Begin) = počet pixelů, na které se zobrazuje tento prvek.
-        /// Interface ISequenceLayout tuto hodnotu nesetuje, pouze ji čte.
-        /// </summary>
-        int ISequenceLayout.End { get { return this._ISequenceLayoutBegin + (this.Visible ? this.GetLayoutSize() : 0); } }
+        private ISequenceLayout _SequenceLayout { get { return (ISequenceLayout)this._TableHeightLayout; } }
+        int ISequenceLayout.Begin { get { return this._SequenceLayout.Begin; } set { this._SequenceLayout.Begin = value; } }
+        int ISequenceLayout.Size { get { return this._SequenceLayout.Size; } set { this._SequenceLayout.Size = value; } }
+        int ISequenceLayout.End { get { return this._SequenceLayout.End; } }
         #endregion
 
 
@@ -690,6 +645,7 @@ namespace Djs.Common.Data.New
         public Column()
         {
             this._ColumnId = -1;
+            this._SizeLayout = new SequenceLayout(8, 160);
         }
         /// <summary>
         /// Konstruktor
@@ -740,12 +696,14 @@ namespace Djs.Common.Data.New
         /// Napojí this sloupec do dané tabulky.
         /// Je voláno z tabulky, v eventu ItemAdd kolekce Columns.
         /// </summary>
-        /// <param name="dTable"></param>
-        void ITableMember.AttachToTable(Table dTable, int id)
+        /// <param name="table"></param>
+        void ITableMember.AttachToTable(Table table, int id)
         {
             this._ColumnId = id;
-            this._ColumnOrder = id;
-            this.Table = dTable;
+            if (this._ColumnOrder < 0)
+                this._ColumnOrder = id;
+            this.Table = table;
+            this.WidthLayout.ParentLayout = table.ColumnWidthLayout;
         }
         /// <summary>
         /// Odpojí this sloupec z dané tabulky.
@@ -755,6 +713,7 @@ namespace Djs.Common.Data.New
         {
             this._ColumnId = -1;
             this.Table = null;
+            this.WidthLayout.ParentLayout = null;
         }
         #endregion
         #region GUI vlastnosti sloupce
@@ -768,10 +727,12 @@ namespace Djs.Common.Data.New
         public Djs.Common.Localizable.TextLoc ToolTip { get { return this._ToolTip; } set { this._ToolTip = value; } } private Djs.Common.Localizable.TextLoc _ToolTip;
         /// <summary>
         /// Pořadí tohoto sloupce při zobrazování.
+        /// Výchozí je -1, takový sloupec je při přidání do tabulky zařazen na její konec.
+        /// Pokud je vytvořen sloupec s ColumnOrder nula a kladným, pak při přidání do tabulky se jeho ColumnOrder nezmění.
         /// Jednotlivé sloupce nemusí mít hodnoty ColumnOrder v nepřerušovaném pořadí.
         /// Po napojení sloupce do tabulky je do ColumnOrder vepsána hodnota = ColumnID, takže nový sloupec se zařadí vždy na konec.
         /// </summary>
-        public int ColumnOrder { get { return this._ColumnOrder; } set { this._ColumnOrder = value; } } private int _ColumnOrder;
+        public int ColumnOrder { get { return this._ColumnOrder; } set { this._ColumnOrder = value; } } private int _ColumnOrder = -1;
         /// <summary>
         /// Datový typ obsahu sloupce. Null = obecná data
         /// </summary>
@@ -784,6 +745,19 @@ namespace Djs.Common.Data.New
         /// true pokud se pro sloupec má zobrazit časová osa v záhlaví
         /// </summary>
         public bool UseTimeAxis { get { return this._UseTimeAxis; } set { this._UseTimeAxis = value; } } private bool _UseTimeAxis;
+        /// <summary>
+        /// Komparátor ColumnOrder ASC
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static int CompareOrder(Column a, Column b)
+        {
+            if (a == null && b == null) return 0;
+            if (a == null) return -1;
+            if (b == null) return 1;
+            return a.ColumnOrder.CompareTo(b.ColumnOrder);
+        }
         #endregion
         #region Třídění podle sloupce
         /// <summary>
@@ -823,103 +797,26 @@ namespace Djs.Common.Data.New
         /// </summary>
         public Func<object, object, int> ValueComparator;
         #endregion
-        #region Šířka sloupce, rozmezí šířky sloupce, spolupráce mezi datovou a GUI vrstvou
+        #region Šířka sloupce, kompletní layout okolo šířky sloupce
         /// <summary>
-        /// Aktuální šířka sloupce, v pixelech. 
-        /// Má význam pouze v první tabulce použité v Gridu, další tabulky přebírají šířku z první tabulky.
-        /// Pokud uživatel interaktivně změní šířku sloupce, projeví se to zde.
-        /// Pokud kód změní šířku sloupce, bude tato šířku sloupce zarovnána do patřičných mezí.
-        /// Pokud kód nastaví šířku sloupce = null, pak se pro zobrazení převezme defaultní šířka sloupce dle tabulky .
-        /// Šířka sloupce bude vždy v rozmezí WidthRange.
+        /// Zadaná šířka sloupce.
+        /// Hodnotu může vložit aplikační kód, hodnota se projeví v GUI.
+        /// Uživatel může interaktivně měnit velikost objektu, změna se projeví v této hodnotě.
+        /// Veškerá další nastavení jsou v property WidthLayout.
         /// </summary>
-        public Int32? Width { get { return this._Width; } set { if (value.HasValue) this.SetLayoutSize(value.Value); else this._Width = null; } }
-        /// <summary>
-        /// Platné rozmezí šířky sloupce.
-        /// Má význam pouze v první tabulce použité v Gridu, další tabulky přebírají hodnotu z první tabulky.
-        /// </summary>
-        public Int32Range WidthRange { get; set; }
+        public Int32? Width { get { return this.WidthLayout.Size; } set { this.WidthLayout.Size = value; } }
         /// <summary>
         /// true pro viditelný sloupec (default), false for skrytý
         /// </summary>
-        public bool Visible { get { return this._Visible; } set { this._Visible = value; } } private bool _Visible = true;
+        public bool Visible { get { return this.WidthLayout.Visible; } set { this.WidthLayout.Visible = value; } }
         /// <summary>
-        /// Šířka sloupce.
-        /// Pokud je null, pak se přebírá z tabulky (Table.ColumnWidthDefault) = společná šířka sloupců v tabulce.
-        /// Pokud tam je null, vezme se default z Data.New.Column.ColumnWidthDefault.
-        /// Lze setovat hodnotu buď z dat, nebo z GUI.
+        /// Veškeré hodnoty související s výškou řádku (rozsah hodnot, povolení Resize)
         /// </summary>
-        private Int32? _Width;
-        /// <summary>
-        /// Implicitní šířka sloupce v pixelech = 160
-        /// </summary>
-        protected static int ColumnWidthDefault { get { return 160; } }
-        /// <summary>
-        /// Minimální šířka sloupce v pixelech = 8
-        /// </summary>
-        protected static int ColumnWidthMinimum { get { return 8; } }
-        /// <summary>
-        /// Uloží do this._Size danou hodnotu zarovnanou do platných mezí
-        /// </summary>
-        /// <param name="size"></param>
-        protected void SetLayoutSize(int size)
-        {
-            this._Width = this.AlignSizeToValidRange(size);
-        }
-        /// <summary>
-        /// Vrátí šířku sloupce, která se reálně použije pro layout řádku
-        /// </summary>
-        /// <param name="layoutSize"></param>
-        /// <returns></returns>
-        protected int GetLayoutSize()
-        {
-            Int32? size = this._Width;
-            if (!size.HasValue && this.HasTable) size = this.Table.ColumnWidthDefault;
-            if (!size.HasValue) size = Data.New.Column.ColumnWidthDefault;
-            return this.AlignSizeToValidRange(size.Value);
-        }
-        /// <summary>
-        /// Zarovná danou velikost do platných mezí a vráti ji
-        /// </summary>
-        /// <param name="size"></param>
-        /// <returns></returns>
-        protected int AlignSizeToValidRange(int size)
-        {
-            if (size < ColumnWidthMinimum) size = ColumnWidthMinimum;
-            Int32Range sizeRange = this.WidthRange;
-            if (sizeRange == null && this.HasTable) sizeRange = this.Table.ColumnWidthRange;
-            if (sizeRange != null)
-            {
-                Int32? sizeAligned = sizeRange.Align(size);
-                if (sizeAligned.HasValue)
-                    size = sizeAligned.Value;
-            }
-            return size;
-        }
-        #endregion
-        #region ISequenceLayout = pořadí, počáteční pixel, velikost, následující pixel
-        /// <summary>
-        /// Pořadí tohoto prvku v sekvenci ostatních prvků.
-        /// Nemusí to být kontinuální řada, může obsahovat díry.
-        /// Kolekce se třídí prostým Sort(podle Order ASC).
-        /// </summary>
-        int ISequenceLayout.Order { get { return _ISequenceLayoutOrder; } set { _ISequenceLayoutOrder = value; } } private int _ISequenceLayoutOrder;
-        /// <summary>
-        /// Pozice, kde prvek začíná.
-        /// Interface ISequenceLayout tuto hodnotu setuje v případě, kdy se layout těchto prvků změní (změna prvků nebo jejich velikosti).
-        /// </summary>
-        int ISequenceLayout.Begin { get { return _ISequenceLayoutBegin; } set { _ISequenceLayoutBegin = value; } } private int _ISequenceLayoutBegin;
-        /// <summary>
-        /// Velikost prvku v pixelech (šířka sloupce, výška řádku, výška tabulky). 
-        /// Lze ji setovat, protože prvky lze pomocí splitterů zvětšovat / zmenšovat.
-        /// Aplikační logika prvku musí zabránit vložení neplatné hodnoty (reálně se uloží hodnota platná).
-        /// </summary>
-        int ISequenceLayout.Size { get { return this.GetLayoutSize(); } set { this.SetLayoutSize(value); } }
-        /// <summary>
-        /// Pozice, kde za tímto prvkem začíná následující prvek. 
-        /// Velikost prvku = (End - Begin) = počet pixelů, na které se zobrazuje tento prvek.
-        /// Interface ISequenceLayout tuto hodnotu nesetuje, pouze ji čte.
-        /// </summary>
-        int ISequenceLayout.End { get { return this._ISequenceLayoutBegin + (this.Visible ? this.GetLayoutSize() : 0); } }
+        public SequenceLayout WidthLayout { get { return this._SizeLayout; } } private SequenceLayout _SizeLayout;
+        private ISequenceLayout _SequenceLayout { get { return (ISequenceLayout)this._SizeLayout; } }
+        int ISequenceLayout.Begin { get { return this._SequenceLayout.Begin; } set { this._SequenceLayout.Begin = value; } }
+        int ISequenceLayout.Size { get { return this._SequenceLayout.Size; } set { this._SequenceLayout.Size = value; } }
+        int ISequenceLayout.End { get { return this._SequenceLayout.End; } }
         #endregion
         #region Visual style
         /// <summary>
@@ -936,7 +833,7 @@ namespace Djs.Common.Data.New
             }
         }
         Int32? IVisualMember.Width { get { return this.Width; } }
-        Int32? IVisualMember.Height { get { return (this.HasTable ? this.Table.ColumnHeaderHeight : null); } }
+        Int32? IVisualMember.Height { get { return (this.HasTable ? this.Table.ColumnHeaderHeightLayout.Size : null); } }
         #endregion
     }
     #endregion
@@ -954,6 +851,7 @@ namespace Djs.Common.Data.New
         {
             this._RowId = -1;
             this._CellDict = new Dictionary<int, Cell>();
+            this._HeightLayout = new SequenceLayout(6, 24);
         }
         /// <summary>
         /// Konstruktor
@@ -988,11 +886,12 @@ namespace Djs.Common.Data.New
         ///Napojí this řádek do dané tabulky.
         /// Je voláno z tabulky, v eventu ItemAdd kolekce Rows.
         /// </summary>
-        /// <param name="dTable"></param>
-        void ITableMember.AttachToTable(Table dTable, int id)
+        /// <param name="table"></param>
+        void ITableMember.AttachToTable(Table table, int id)
         {
             this._RowId = id;
-            this.Table = dTable;
+            this.Table = table;
+            this.HeightLayout.ParentLayout = (table != null ? table.RowHeightLayout : null);
         }
         /// <summary>
         /// Odpojí this řádek z dané tabulky.
@@ -1002,6 +901,7 @@ namespace Djs.Common.Data.New
         {
             this._RowId = -1;
             this.Table = null;
+            this.HeightLayout.ParentLayout = null;
         }
         #endregion
         #region Cells = jednotlivé buňky v řádku
@@ -1063,18 +963,13 @@ namespace Djs.Common.Data.New
         private Dictionary<int, Cell> _CellDict;
         #endregion
         #region GUI vlastnosti
-        /// <summary>
-        /// true pro viditelný sloupec (default), false for skrytý
-        /// </summary>
-        public bool Visible { get { return this._Visible; } set { this._Visible = value; } } private bool _Visible = true;
         #endregion
         #region Visual style
         /// <summary>
         /// Všechny vizuální vlastnosti dat v tomto řádku (nikoli buňky ani tabulky).
         /// Default hodnota je null.
         /// </summary>
-        public VisualStyle VisualStyle { get { return _VisualStyle; } set { _VisualStyle = value; } }
-        private VisualStyle _VisualStyle;
+        public VisualStyle VisualStyle { get { return _VisualStyle; } set { _VisualStyle = value; } } private VisualStyle _VisualStyle;
         VisualStyle IVisualMember.Style
         {
             get
@@ -1083,99 +978,28 @@ namespace Djs.Common.Data.New
             }
         }
         Int32? IVisualMember.Width { get { return null; } }
-        Int32? IVisualMember.Height { get { return (this.HasTable ? this.Table.ColumnHeaderHeight : null); } }
+        Int32? IVisualMember.Height { get { return this.Height; } }
         #endregion
-        #region Výška řádku, rozmezí výšky řádku, spolupráce mezi datovou a GUI vrstvou
+        #region Výška řádku, kompletní layout okolo výšky řádku
         /// <summary>
-        /// Zadaná výška řádku. S touto výškou bude řádek zobrazen uživateli. Uživatel může / nemůže výšku řádku měnit (podle stylu tabulky a podle stylu řádku).
-        /// Pokud uživatel interaktivně změní výšku řádku, projeví se to zde.
-        /// Pokud kód změní výšku řádku, bude tato výška řádku zarovnána do patřičných mezí.
-        /// Pokud kód nastaví výšku řádku = null, pak se pro zobrazení převezme defaultní výška řádku dle tabulky 
-        /// Výška řádku bude vždy v rozmezí HeightRange.
+        /// Zadaná výška řádku.
+        /// Hodnotu může vložit aplikační kód, hodnota se projeví v GUI.
+        /// Uživatel může interaktivně měnit velikost objektu, změna se projeví v této hodnotě.
+        /// Veškerá další nastavení jsou v property HeightLayout.
         /// </summary>
-        public Int32? Height { get { return this._Height; } set { if (value.HasValue) this.SetLayoutSize(value.Value); else this._Height = null; } }
+        public Int32? Height { get { return this.HeightLayout.Size; } set { this.HeightLayout.Size = value; } }
         /// <summary>
-        /// Rozmezí povolené výšky řádku pro tento jeden řádek.
+        /// true pro viditelný sloupec (default), false for skrytý
         /// </summary>
-        public Int32Range HeightRange { get; set; }
+        public bool Visible { get { return this.HeightLayout.Visible; } set { this.HeightLayout.Visible = value; } }
         /// <summary>
-        /// Implicitní výška řádku v pixelech = 23
+        /// Veškeré hodnoty související s výškou řádku (rozsah hodnot, povolení Resize)
         /// </summary>
-        protected static int RowHeightDefault { get { return 23; } }
-        /// <summary>
-        /// Minimální výška řádku v pixelech = 6
-        /// </summary>
-        protected static int RowHeightMinimum { get { return 6; } }
-        /// <summary>
-        /// Výška řádku.
-        /// Pokud je null, pak se přebírá z tabulky (Table.RowHeightDefault) = společná výška řádků v tabulce.
-        /// Pokud tam je null, vezme se default z Data.New.Row.RowHeightDefault.
-        /// Lze setovat hodnotu buď z dat, nebo z GUI.
-        /// </summary>
-        private int? _Height;
-        /// <summary>
-        /// Uloží do this._Size danou hodnotu zarovnanou do platných mezí
-        /// </summary>
-        /// <param name="size"></param>
-        protected void SetLayoutSize(int size)
-        {
-            this._Height = this.AlignSizeToValidRange(size);
-        }
-        /// <summary>
-        /// Vrátí výšku řádku, která se reálně použije pro layout řádku
-        /// </summary>
-        /// <param name="layoutSize"></param>
-        /// <returns></returns>
-        protected int GetLayoutSize()
-        {
-            Int32? size = this._Height;
-            if (!size.HasValue && this.HasTable) size = this.Table.RowHeightDefault;
-            if (!size.HasValue) size = Data.New.Row.RowHeightDefault;
-            return this.AlignSizeToValidRange(size.Value);
-        }
-        /// <summary>
-        /// Zarovná danou velikost do platných mezí a vráti ji
-        /// </summary>
-        /// <param name="size"></param>
-        /// <returns></returns>
-        protected int AlignSizeToValidRange(int size)
-        {
-            if (size < RowHeightMinimum) size = RowHeightMinimum;
-            Int32Range sizeRange = this.HeightRange;
-            if (sizeRange == null && this.HasTable) sizeRange = this.Table.RowHeightRange;
-            if (sizeRange != null)
-            {
-                Int32? sizeAligned = sizeRange.Align(size);
-                if (sizeAligned.HasValue)
-                    size = sizeAligned.Value;
-            }
-            return size;
-        }
-        #endregion
-        #region ISequenceLayout = pořadí, počáteční pixel, velikost, následující pixel. Podpůrné metody GetLayoutSize() a SetLayoutSize().
-        /// <summary>
-        /// Pořadí tohoto prvku v sekvenci ostatních prvků.
-        /// Nemusí to být kontinuální řada, může obsahovat díry.
-        /// Kolekce se třídí prostým Sort(podle Order ASC).
-        /// </summary>
-        int ISequenceLayout.Order { get { return _ISequenceLayoutOrder; } set { _ISequenceLayoutOrder = value; } } private int _ISequenceLayoutOrder;
-        /// <summary>
-        /// Pozice, kde prvek začíná.
-        /// Interface ISequenceLayout tuto hodnotu setuje v případě, kdy se layout těchto prvků změní (změna prvků nebo jejich velikosti).
-        /// </summary>
-        int ISequenceLayout.Begin { get { return _ISequenceLayoutBegin; } set { _ISequenceLayoutBegin = value; } } private int _ISequenceLayoutBegin;
-        /// <summary>
-        /// Velikost prvku v pixelech (šířka sloupce, výška řádku, výška tabulky). 
-        /// Lze ji setovat, protože prvky lze pomocí splitterů zvětšovat / zmenšovat.
-        /// Aplikační logika prvku musí zabránit vložení neplatné hodnoty (reálně se uloží hodnota platná).
-        /// </summary>
-        int ISequenceLayout.Size { get { return this.GetLayoutSize(); } set { this.SetLayoutSize(value); } }
-        /// <summary>
-        /// Pozice, kde za tímto prvkem začíná následující prvek. 
-        /// Velikost prvku = (End - Begin) = počet pixelů, na které se zobrazuje tento prvek.
-        /// Interface ISequenceLayout tuto hodnotu nesetuje, pouze ji čte.
-        /// </summary>
-        int ISequenceLayout.End { get { return this._ISequenceLayoutBegin + (this.Visible ? this.GetLayoutSize() : 0); } }
+        public SequenceLayout HeightLayout { get { return this._HeightLayout; } } private SequenceLayout _HeightLayout;
+        private ISequenceLayout _SequenceLayout { get { return (ISequenceLayout)this._HeightLayout; } }
+        int ISequenceLayout.Begin { get { return this._SequenceLayout.Begin; } set { this._SequenceLayout.Begin = value; } }
+        int ISequenceLayout.Size { get { return this._SequenceLayout.Size; } set { this._SequenceLayout.Size = value; } }
+        int ISequenceLayout.End { get { return this._SequenceLayout.End; } }
         #endregion
         #region IContentValidity
         bool IContentValidity.DataIsValid { get { return _RowDataIsValid; } set { _RowDataIsValid = value; } } private bool _RowDataIsValid;
@@ -1416,12 +1240,6 @@ namespace Djs.Common.Data.New
     public interface ISequenceLayout
     {
         /// <summary>
-        /// Pořadí tohoto prvku v sekvenci ostatních prvků.
-        /// Nemusí to být kontinuální řada, může obsahovat díry.
-        /// Kolekce se třídí prostým Sort(podle Order ASC).
-        /// </summary>
-        int Order { get; set; }
-        /// <summary>
         /// Pozice, kde prvek začíná.
         /// Interface ISequenceLayout tuto hodnotu setuje v případě, kdy se layout těchto prvků změní (změna prvků nebo jejich velikosti).
         /// </summary>
@@ -1438,6 +1256,125 @@ namespace Djs.Common.Data.New
         /// Interface ISequenceLayout tuto hodnotu nesetuje, pouze ji čte.
         /// </summary>
         int End { get; }
+    }
+    #endregion
+    #region class SequenceLayout
+    /// <summary>
+    /// Třída, která v sobě uchovává velikost elementu v jednom směru (šířka sloupce, nebo výška tabulky, nebo výška řádku...), 
+    /// současně dokáže tuto hodnotu akceptovat z datové i vizuální vrstvy, dokáže hlídat minimální hodnotu a zadaný rozsah hodnot, a obsahuje i defaultní hodnotu.
+    /// Navíc podporuje interface ISequenceLayout, které se používá pro sekvenční řazené prvků za sebe.
+    /// </summary>
+    public class SequenceLayout : ISequenceLayout
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="sizeMinimum"></param>
+        /// <param name="sizeDefault"></param>
+        public SequenceLayout(int sizeMinimum, int sizeDefault)
+        {
+            this.SizeMinimum = sizeMinimum;
+            this.SizeDefault = sizeDefault;
+        }
+        /// <summary>
+        /// Aktuální velikost, vyhodnocená podle všech pravidel a velikosti předků, vždy Int32, tato hodnota není null.
+        /// </summary>
+        public int CurrentSize { get { return this.GetLayoutSize(); } }
+        /// <summary>
+        /// Velikost. Lze vložit hodnotu null, a hodnota null může být vrácena z property. Pak není velikost tohoto prvku dána explicitně.
+        /// Pokud bylo vloženo null, pak příští get čte hodnotu z ParentLayout (i rekurzivně).
+        /// </summary>
+        public Int32? Size { get { return (this._Size.HasValue ? this._Size : (this.HasParent ? this.ParentLayout.Size : null)); } set { this.SetLayoutSize(value); } } private Int32? _Size;
+        /// <summary>
+        /// Minimální velikost prvku
+        /// </summary>
+        protected int SizeMinimum { get; set; }
+        /// <summary>
+        /// Implicitní velikost prvku
+        /// </summary>
+        protected int SizeDefault { get; set; }
+        /// <summary>
+        /// Rozmezí povolené velikosti prvku. Lze vložit null.
+        /// Pokud bylo vloženo null, pak příští get čte hodnotu z ParentLayout (i rekurzivně).
+        /// </summary>
+        public Int32Range SizeRange { get { return (this._SizeRange != null ? this._SizeRange : (this.HasParent ? this.ParentLayout.SizeRange : null)); } set { this._SizeRange = value; } } private Int32Range _SizeRange;
+        /// <summary>
+        /// true pokud prvek je viditelný (dáno kódem, nikoli fitry atd). Default = true
+        /// </summary>
+        public bool Visible { get { return this._Visible; } set { this._Visible = value; } } private bool _Visible = true;
+        /// <summary>
+        /// true pokud uživatel může změnit velikost tohoto prvku. Default = true
+        /// </summary>
+        public bool ResizeEnabled { get { return this._ResizeEnabled; } set { this._ResizeEnabled = value; } } private bool _ResizeEnabled = true;
+        /// <summary>
+        /// Parent definice velikosti, z něj se čtou hodnoty které v this prvku nejsou určeny.
+        /// Výchozí je null.
+        /// </summary>
+        public SequenceLayout ParentLayout { get; set; }
+        /// <summary>
+        /// true pokud má parenta
+        /// </summary>
+        protected bool HasParent { get { return (this.ParentLayout != null); } }
+        /// <summary>
+        /// Uloží do this._Size danou hodnotu zarovnanou do platných mezí.
+        /// Pokud je na vstupu null, pak uloží null.
+        /// </summary>
+        /// <param name="size"></param>
+        protected void SetLayoutSize(Int32? size)
+        {
+            if (size.HasValue)
+                this._Size = this.AlignSizeToValidRange(size.Value);
+            else
+                this._Size = null;
+        }
+        /// <summary>
+        /// Vrátí velikost prvku, která se reálně použije pro layout prvku.
+        /// Vyhodnocuje Size, SizeRange, ParentLayout, SizeMinimum a SizeDefault.
+        /// </summary>
+        /// <returns></returns>
+        protected int GetLayoutSize()
+        {
+            Int32? size = this.Size;                       // Automaticky vyhodnocuje ParentLayout
+            if (!size.HasValue) size = this.SizeDefault;
+            return this.AlignSizeToValidRange(size.Value);
+        }
+        /// <summary>
+        /// Zarovná danou velikost do platných mezí a vráti ji
+        /// </summary>
+        /// <param name="size"></param>
+        /// <returns></returns>
+        protected int AlignSizeToValidRange(int size)
+        {
+            if (size < this.SizeMinimum) size = this.SizeMinimum;
+            Int32Range sizeRange = this.SizeRange;         // Automaticky vyhodnocuje ParentLayout
+            if (sizeRange != null)
+            {
+                Int32? sizeAligned = sizeRange.Align(size);
+                if (sizeAligned.HasValue)
+                    size = sizeAligned.Value;
+            }
+            return size;
+        }
+        #region ISequenceLayout = pořadí, počáteční pixel, velikost, následující pixel. Podpůrné metody GetLayoutSize() a SetLayoutSize().
+        /// <summary>
+        /// Pozice, kde prvek začíná.
+        /// Interface ISequenceLayout tuto hodnotu setuje v případě, kdy se layout těchto prvků změní (změna prvků nebo jejich velikosti).
+        /// </summary>
+        int ISequenceLayout.Begin { get { return _ISequenceLayoutBegin; } set { _ISequenceLayoutBegin = value; } } private int _ISequenceLayoutBegin;
+        /// <summary>
+        /// Velikost prvku v pixelech (šířka sloupce, výška řádku, výška tabulky). 
+        /// Lze ji setovat, protože prvky lze pomocí splitterů zvětšovat / zmenšovat.
+        /// Pokud ale prvek nemá povoleno Resize (ResizeEnabled je false), pak setování hodnoty je ignorováno.
+        /// Aplikační logika prvku musí zabránit vložení neplatné hodnoty (reálně se uloží hodnota platná).
+        /// </summary>
+        int ISequenceLayout.Size { get { return this.GetLayoutSize(); } set { if (this.ResizeEnabled) this.SetLayoutSize(value); } }
+        /// <summary>
+        /// Pozice, kde za tímto prvkem začíná následující prvek. 
+        /// Velikost prvku = (End - Begin) = počet pixelů, na které se zobrazuje tento prvek.
+        /// Interface ISequenceLayout tuto hodnotu nesetuje, pouze ji čte.
+        /// </summary>
+        int ISequenceLayout.End { get { return this._ISequenceLayoutBegin + (this.Visible ? this.GetLayoutSize() : 0); } }
+        #endregion
     }
     #endregion
     #region Enums

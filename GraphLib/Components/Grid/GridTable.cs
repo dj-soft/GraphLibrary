@@ -19,8 +19,17 @@ namespace Djs.Common.Components.Grid
         {
             this._Grid = grid;
             this._Table = table;
+            this.Init();
+        }
+        private void Init()
+        {
+            this.InitPositions();
+            this.InitColumnHeader();
             this.RowListAllReset();
+            this._HeaderSplitterInit();
             this._TableSplitterInit();
+
+            this.RecalcInnerLayout();
         }
         void IDisposable.Dispose()
         {
@@ -46,7 +55,8 @@ namespace Djs.Common.Components.Grid
         void IGridMember.AttachToGrid(GGrid grid, int id)
         {
             this._TableId = id;
-            this._TableOrder = id;
+            if (this.DataTable.TableOrder < 0)
+                this.DataTable.TableOrder = id;
             this._Grid = grid;
         }
         /// <summary>
@@ -56,11 +66,41 @@ namespace Djs.Common.Components.Grid
         void IGridMember.DetachFromGrid()
         {
             this._TableId = -1;
-            this._TableOrder = -1;
+            this.DataTable.TableOrder = -1;
             this._Grid = null;
         }
         #endregion
-        #region Rozmístění vnitřních prvků, jejich přepočty, layout Tabulky
+        #region Rozložení prvků GTable = pozice ColumnHeader, RowArea, ScrollBar; pozice řádků RowsPositions (=podpora pro data na ScrollBar)
+        /// <summary>
+        /// Inicializace všech řídících prvků pro pozicování obsahu
+        /// </summary>
+        private void InitPositions()
+        {
+            this._RowsPositions = new GPosition(this._RowsPositionGetVisualSize, this._RowsPositionGetDataSize);
+        }
+        /// <summary>
+        /// Řídíci prvek pro Pozice řádků
+        /// </summary>
+        protected GPosition RowsPositions { get { return this._RowsPositions; } }
+        private GPosition _RowsPositions;
+        /// <summary>
+        /// Vrací výšku prostoru pro sloupce (=this.ClientSize.Width)
+        /// </summary>
+        /// <returns></returns>
+        private int _RowsPositionGetVisualSize()
+        {
+            return this._RowAreaBounds.Height;
+        }
+        /// <summary>
+        /// Vrací výšku všech zobrazitelných datových řádků, vyjma řádek ColumnHeader (to není datový řádek).
+        /// </summary>
+        /// <returns></returns>
+        private int _RowsPositionGetDataSize()
+        {
+            List<Row> list = this.RowListAll;
+            int count = list.Count;
+            return (count > 0 ? ((ISequenceLayout)list[count - 1]).End : 0);
+        }
         /// <summary>
         /// Je voláno po změně Bounds, z metody SetBound(), pokud je vyžadována akce PrepareInnerItems.
         /// Přepočte umístění vnitřních prvků objektu, podle rozměrů this.BoundsClient.Size
@@ -72,17 +112,32 @@ namespace Djs.Common.Components.Grid
         protected override void SetBoundsPrepareInnerItems(Rectangle oldBounds, Rectangle newBounds, ref ProcessAction actions, EventSourceType eventSource)
         {
             base.SetBoundsPrepareInnerItems(oldBounds, newBounds, ref actions, eventSource);
-            this.RecalcTable(ref actions, eventSource);
+            this.RecalcInnerLayout(ref actions, eventSource);
         }
         /// <summary>
         /// Určí pozice a rozměry pro jednotlivé vnitřní členy tabulky: ColumnHeader, RowArea, Scrollbar.
+        /// Vychází přitom pouze z vnitřních prostorů tabulky this.ClientSize.
         /// </summary>
         /// <param name="tablesBounds"></param>
         /// <param name="actions">Akce k provedení</param>
         /// <param name="eventSource">Zdroj této události</param>
-        internal void RecalcTable(ref ProcessAction actions, EventSourceType eventSource)
+        internal void RecalcInnerLayout()
         {
-            Size clientSize = this.BoundsClient.Size;
+            ProcessAction actions = ProcessAction.PrepareInnerItems;
+            EventSourceType eventSource = EventSourceType.ApplicationCode;
+            this.RecalcInnerLayout(ref actions, eventSource);
+        }
+        /// <summary>
+        /// Určí pozice a rozměry pro jednotlivé vnitřní členy tabulky: ColumnHeader, HeaderSplitter, RowArea, Scrollbar.
+        /// Vychází přitom pouze z vnitřních prostorů tabulky this.ClientSize.
+        /// </summary>
+        /// <param name="tablesBounds"></param>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
+        internal void RecalcInnerLayout(ref ProcessAction actions, EventSourceType eventSource)
+        {
+            Size clientSize = this.ClientSize;
+            if (this._ClientSizeLast == clientSize) return;
 
             int headerHeight = this.DataTable.ColumnHeaderHeight;
             this._ColumnHeaderBounds = new Rectangle(0, 0, clientSize.Width, headerHeight);
@@ -95,49 +150,40 @@ namespace Djs.Common.Components.Grid
             this._RowAreaBounds = new Rectangle(0, headerHeight, rowAreaWidth, rowAreaHeight);
 
             this._ScrollBarBounds = new Rectangle(rowAreaWidth, headerHeight, scrollBarWidth, rowAreaHeight);
+
+            // HeadSplitter = splitter pod ColumnHeader a RowArea:
+            this.HeaderSplitter.BoundsNonActive = new Int32Range(0, clientSize.Width);
+            if (this.TableSplitter.ValueSilent != headerHeight)
+                this.TableSplitter.ValueSilent = headerHeight;
+
+            // TableSplitter = splitter dole pod tabulkou (jeho Parent není this tabulka ale Grid):
+            Rectangle bounds = this.Bounds;
+            int value = bounds.Bottom;
+            this.TableSplitter.BoundsNonActive = new Int32Range(0, bounds.Width);
+            if (this.TableSplitter.ValueSilent != value)
+                this.TableSplitter.ValueSilent = value;
+
+            // Zapamatovat clientSize, abychom příští aktivitu prováděli jen po změně:
+            this._ClientSizeLast = clientSize;
         }
         /// <summary>
-        /// Recalculate inner item bounds (_ColumnSet, _RowSet and TableSplitter) by this.Bounds and this.TablePosition
+        /// Hodnota ClientSize, pro kterou byly naposledy přepočteny pozice vnitřních objektů (_ColumnHeaderBounds, _RowAreaBounds, _ScrollBarBounds).
+        /// Další přepočet se provede jen po změně.
         /// </summary>
-        internal void RefreshPositions()
-        {
-            this.SetTablePositions(this.Bounds, ProcessAction.PrepareInnerItems, EventSourceType.BoundsChange | EventSourceType.ApplicationCode, false);
-        }
+        private Size _ClientSizeLast;
         /// <summary>
-        /// Set Bounds (by newBounds and this.TablePosition.SplitVisual) to _ColumnSet, _RowSet and TableSplitter
+        /// Souřadnice prostoru záhlaví (ColumnHeaders)
         /// </summary>
-        /// <param name="newBounds"></param>
-        /// <param name="actions">Akce k provedení</param>
-        /// <param name="eventSource">Zdroj této události</param>
-        /// <param name="withSplitterValue"></param>
-        protected void SetTablePositions(Rectangle newBounds, ProcessAction actions, EventSourceType eventSource, bool withSplitterValue)
-        {
-            GridPositionItem position = this.TablePosition;
-            // All bounds (for _ColumnSet and _RowSet) are relative to this = GTable, because they are Child items od GTable (Sets are not Child items of GGrid!  Because the GTable is Child item of GGrid)
-            int split = position.Split;
-
-            Rectangle columnsBounds = new Rectangle(0, 0, newBounds.Width, split);
-            if (columnsBounds != this._ColumnSet.Bounds)
-                this._ColumnSet.SetBounds(columnsBounds, actions, eventSource);
-            else
-                this._ColumnSet.RefreshPositions();
-
-            Rectangle rowsBounds = new Rectangle(0, split, newBounds.Width, newBounds.Height - split);
-            if (rowsBounds != this._RowSet.Bounds)
-                this._RowSet.SetBounds(rowsBounds, actions, eventSource);
-            else
-                this._RowSet.RefreshPositions();
-
-            // TableSplitter = splitter at end (=Bottom) of this GTable:
-            this.TableSplitter.BoundsNonActive = new Int32Range(0, newBounds.Width);
-            if (withSplitterValue)
-                this.TableSplitter.ValueSilent = newBounds.Bottom;
-        }
         private Rectangle _ColumnHeaderBounds;
+        /// <summary>
+        /// Souřadnice prostoru řádků (RowArea)
+        /// </summary>
         private Rectangle _RowAreaBounds;
+        /// <summary>
+        /// Souřadnice svislého scrollbaru pro řádky
+        /// </summary>
         private Rectangle _ScrollBarBounds;
         #endregion
-
         #region Public data
         /// <summary>
         /// Datová tabulka
@@ -151,20 +197,27 @@ namespace Djs.Common.Components.Grid
         /// </summary>
         public int TableId { get { return this._TableId; } } private int _TableId;
         /// <summary>
-        /// Pořadí této tabulky při zobrazování v Gridu.
-        /// Jednotlivé tabulky nemusí mít hodnoty TableOrder v nepřerušovaném pořadí.
-        /// Po napojení sloupce do tabulky je do TableOrder vepsána hodnota = TableId, takže nová tabulka se zařadí vždy na konec.
-        /// </summary>
-        public int TableOrder { get { return this._TableOrder; } set { this._TableOrder = value; } } private int _TableOrder;
-        /// <summary>
         /// Název tabulky, podle něj lze hledat. jde o klíčové slovo, nikoli popisek (Caption)
         /// </summary>
         public string TableName { get { return this.DataTable.TableName; } }
         #endregion
-        #region Řádky tabulky - zde jsou uložena dvě oddělená pole řádků: a) všechny aktuálně dostupné řádky - pro práci s kolekcí řádků, b) pouze viditelné řádky - pro kreslení
+        #region Řádek obsahující ColumnHeaders
         /// <summary>
-        /// Všechny aktuální řádky tabulky.
-        /// Profiltrované, setříděné.
+        /// Inicializuje objekt ColumnHeader
+        /// </summary>
+        private void InitColumnHeader()
+        {
+            this._ColumnHeader = new GRow(this, null);
+        }
+        /// <summary>
+        /// Objekt reprezentující záhlaví tabulky
+        /// </summary>
+        protected GRow ColumnHeader { get { return this._ColumnHeader; } } private GRow _ColumnHeader;
+
+        #endregion
+        #region Řádky tabulky - zde jsou uložena dvě oddělená pole řádků: a) všechny aktuálně dostupné datové řádky - pro práci s kolekcí řádků, b) pouze viditelné grafické řádky - pro kreslení
+        /// <summary>
+        /// Všechny aktuální řádky datové tabulky, profiltrované, setříděné.
         /// Řádky mají správně nastavené hodnoty ISequenceLayout.Begin a End.
         /// </summary>
         protected List<Row> RowListAll
@@ -183,9 +236,23 @@ namespace Djs.Common.Components.Grid
                 {   // Přepočet hodnot ISequenceLayout:
                     Table.SequenceLayoutCalculate(listAll.Cast<Data.New.ISequenceLayout>());
                     // Zajistím provedení tvorby soupisu viditelných řádků:
-                    this._RowListVisible = null;
+                    this._GRowList = null;
                 }
                 return listAll;
+            }
+        }
+        /// <summary>
+        /// Aktuálně zobrazované řádky, grafické prvky, pouze ty které jsou zčásti nebo plně viditelné.
+        /// </summary>
+        protected List<GRow> GRowList
+        {
+            get
+            {
+                List<GRow> list = this._GRowList;
+                if (list == null)
+                {
+
+                }
             }
         }
 
@@ -196,16 +263,16 @@ namespace Djs.Common.Components.Grid
         /// Volá se po: přidání řádku, aplikaci filtru a/nebo třídění řádků.
         /// Nevolá se po: změně výšky řádku (to se volá RowListHeightReset()), po změně viditelné pozice řádků (scrollbary, posuny řádků) a/nebo velikosti GTable - to se volá RowListVisibleReset().
         /// </summary>
-        protected void RowListAllReset() { this._RowListAll = null; this._RowListVisible = null; }
+        protected void RowListAllReset() { this._RowListAll = null; this._GRowList = null; }
         /// <summary>
         /// Zajistí reset odpovídajících dat řádků po změně výšky některého z řádků.
         /// Není třeba volat po posunu obsahu tabulky nebo po změně rozměrů tabulky, to se volá RowListVisibleReset().
         /// </summary>
-        protected void RowListHeightReset() { this._RowListHeightValid = false; this._RowListVisible = null; }
+        protected void RowListHeightReset() { this._RowListHeightValid = false; this._GRowList = null; }
         /// <summary>
         /// Zajistí reset odpovídajících dat řádků po posunu obsahu tabulky nebo po změně rozměrů tabulky.
         /// </summary>
-        protected void RowListVisibleReset() { this._RowListVisible = null; }
+        protected void RowListVisibleReset() { this._GRowList = null; }
         /// <summary>
         /// Soupis aktuálně dostupných řádků, setříděný a vyfiltrovaný, datové objekty
         /// </summary>
@@ -217,9 +284,52 @@ namespace Djs.Common.Components.Grid
         /// <summary>
         /// Soupis aktuálně zobrazovaných řádků, vizuální objekty
         /// </summary>
-        private List<GRow> _RowListVisible;
+        private List<GRow> _GRowList;
         #endregion
-        #region TableSplitter
+        #region ScrollBar : svislý posuvník vpravo od řádků
+        /// <summary>
+        /// ScrollBar : svislý posuvník vpravo od řádků
+        /// </summary>
+        protected GScrollBar _ScrollBar;
+        #endregion
+        #region HeaderSplitter : splitter umístěný pod hlavičkou sloupců, je součástí GTable.Items
+        /// <summary>
+        /// TableSplitter = Splitter mezo ColumnHeader a RowArea
+        /// Tento Splitter je součástí this.Childs, protože by neměl odcházet mimo this.GTable (na rozdíl od TableSplitter).
+        /// </summary>
+        internal GSplitter HeaderSplitter { get { return this._HeaderSplitter; } }
+        /// <summary>
+        /// Inicializuje objekt _HeaderSplitter.
+        /// </summary>
+        protected void _HeaderSplitterInit()
+        {
+            this._HeaderSplitter = new GSplitter() { Orientation = System.Windows.Forms.Orientation.Horizontal, SplitterVisibleWidth = 0, SplitterActiveOverlap = 4, LinkedItemPrevMinSize = 50, LinkedItemNextMinSize = 50, IsResizeToLinkItems = true };
+            this._HeaderSplitter.ValueSilent = this.Bounds.Bottom;
+            this._HeaderSplitter.ValueChanging += new GPropertyChanged<int>(_HeaderSplitter_LocationChange);
+            this._HeaderSplitter.ValueChanged += new GPropertyChanged<int>(_HeaderSplitter_LocationChange);
+        }
+        /// <summary>
+        /// Eventhandler události _TableSplitter.LocationChanged (došlo nebo stále dochází ke změně pozice splitteru od tabulkou)
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _HeaderSplitter_LocationChange(object sender, GPropertyChangeArgs<int> e)
+        {
+            int value = this._HeaderSplitter.Value;
+            this.DataTable.ColumnHeaderHeight = value;               // Tady dojde ke kompletnímu vyhodnocení pravidel pro výšku ColumnHeader (Minimum, Default, Range)
+            e.CorrectValue = this.DataTable.ColumnHeaderHeight;      // Pokud požadovaná hodnota (value) nebyla akceptovatelná, pak correctValue je hodnota přípustná
+            if (e.IsChangeValue)
+            {
+                this.RowListVisibleReset();
+                this.Repaint();
+            }
+        }
+        /// <summary>
+        /// HeaderSplitter = Splitter mezi ColumnHeader a RowArea
+        /// </summary>
+        protected GSplitter _HeaderSplitter;
+        #endregion
+        #region TableSplitter :  splitter umístěný dole pod tabulkou, je součástí Parenta
         /// <summary>
         /// TableSplitter = Splitter dole pod tabulkou.
         /// Tento Splitter není součástí this.Childs (protože pak by byl omezen do this.Bounds), je součástí Childs nadřízeného prvku (GGrid), protože pak se může pohybovat v jeho prostoru.
@@ -242,11 +352,15 @@ namespace Djs.Common.Components.Grid
         /// <param name="e"></param>
         private void _TableSplitter_LocationChange(object sender, GPropertyChangeArgs<int> e)
         {
-            int begin = this.Bounds.Top;
-            int end = this._TableSplitter.Value;
-            this.DataTable.Height = end - begin;
-            this.Grid.RecalcGrid();
-            this.Grid.RepaintThisToLayers = GInteractiveDrawLayer.Standard;
+            // Vypočteme výšku tabulky:
+            int value = this._TableSplitter.Value - this.Bounds.Top;
+            this.DataTable.Height = value;                           // Tady dojde ke kompletnímu vyhodnocení pravidel pro výšku Table (Minimum, Default, Range)
+            e.CorrectValue = this.DataTable.Height;                  // Pokud požadovaná hodnota (value) nebyla akceptovatelná, pak correctValue je hodnota přípustná
+            if (e.IsChangeValue)
+            {
+                this.Grid.RecalcGrid();
+                this.Grid.RepaintThisToLayers = GInteractiveDrawLayer.Standard;
+            }
         }
         /// <summary>
         /// TableSplitter
@@ -326,7 +440,8 @@ namespace Djs.Common.Components.Grid
             this.ChildList.Clear();
             this.ChildList.Add(this.ColumnSet);
             this.ChildList.Add(this.RowSet);
-            this.ChildList.Add(this.ColumnSet.ColumnSetSplitter);              // Add as last item => HorizontalSplitter between ColumnSet and RowSet
+            this.ChildList.Add(this.ScrollBar);
+            this.ChildList.Add(this.HeaderSplitter);              // Jako poslední přidám splitter mezi ColumnHeader a RowArea
             this._ChildArrayValid = true;
         }
         private bool _ChildArrayValid;
@@ -351,8 +466,28 @@ namespace Djs.Common.Components.Grid
         internal GInteractiveDrawLayer RepaintThisToLayers { get { return this.RepaintToLayers; } set { this.RepaintToLayers = value; } }
         #endregion
     }
-    internal class GRow : InteractiveContainer
+    public class GRow : InteractiveContainer
+    {
+        public GRow(GTable table, Row row)
+        { }
+    }
+    internal class GCell : InteractiveContainer
     { }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -550,7 +685,7 @@ namespace Djs.Common.Components.Grid
             GridPositionItem tablePosition = this.TablePosition;
             int location = this._ColumnSetSplitter.Value;
             tablePosition.Split = location;
-            this.GTable.RefreshPositions();
+            this.GTable.RecalcInnerLayout();
             this.GTable.RepaintThisToLayers = GInteractiveDrawLayer.Standard;
             // this.RepaintAllItems = true;
         }

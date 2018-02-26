@@ -431,19 +431,50 @@ namespace Djs.Common.Components
             this.SourceType = sourceType;
             this.OldValue = oldvalue;
             this.NewValue = newValue;
+            this.CorrectValue = newValue;
+            this.Cancel = false;
         }
         /// <summary>
         /// Specifies the source that caused this change
         /// </summary>
         public EventSourceType SourceType { get; private set; }
         /// <summary>
-        /// Value before change
+        /// Hodnota platná před změnou
         /// </summary>
         public T OldValue { get; private set; }
         /// <summary>
-        /// Value after change
+        /// Hodnota platná po změně
         /// </summary>
         public T NewValue { get; private set; }
+        /// <summary>
+        /// Hodnota odpovídající aplikační logice, hodnotu nastavuje eventhandler.
+        /// Výchozí hodnota je NewValue.
+        /// Komponenta by na tuto korigovanou hodnotu měla reagovat.
+        /// </summary>
+        public T CorrectValue { get; set; }
+        /// <summary>
+        /// Požadavek aplikačního kódu na zrušení této změny = ponechat OldValue.
+        /// Výchozí hodnota je false.
+        /// </summary>
+        public bool Cancel { get; set; }
+        /// <summary>
+        /// true pokud hodnota CorrectValue je odlišná od OldValue, false pokud jsou shodné.
+        /// Pokud typ hodnoty není IComparable, pak se vrací true vždy.
+        /// </summary>
+        public bool IsChangeValue
+        {
+            get
+            {
+                IComparable a = this.OldValue as IComparable;
+                IComparable b = this.CorrectValue as IComparable;
+                if (a == null || b == null) return true;
+                return (a.CompareTo(b) != 0);
+            }
+        }
+        /// <summary>
+        /// Výsledná hodnota (pokud je Cancel == true, pak OldValue, jinak CorrectValue).
+        /// </summary>
+        public T ResultValue { get { return (this.Cancel ? this.OldValue : this.CorrectValue); } }
     }
     /// <summary>
     /// Data for handlers of interactive event in GInteractiveControl
