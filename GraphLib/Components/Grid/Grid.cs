@@ -822,7 +822,7 @@ namespace Djs.Common.Components
         /// <returns></returns>
         private bool _FilterVisibleItem(ISequenceLayout item, int dataBegin, int dataEnd)
         {
-            return (item.Begin > item.End && item.Begin < dataEnd && item.End > dataBegin);
+            return (item.Size > 0 && item.Begin < dataEnd && item.End > dataBegin);
         }
         /// <summary>
         /// Číslo datového pixelu, který je při současném zobrazení End = první za viditelným prostorem (= DataFirstPixel + DataVisibleSize)
