@@ -134,6 +134,54 @@ namespace Djs.Common.Components
             return step;
         }
         #endregion
+        #region FillFrom
+        /// <summary>
+        /// Do this scrollbaru naplní hodnoty do ValueTotal, Value, IsEnabled a Bounds
+        /// </summary>
+        /// <param name="data">Data pro Scrollbar</param>
+        /// <param name="bounds">Souřadnice scrollbaru</param>
+        /// <param name="silent">true = bez volání eventhandlerů</param>
+        public void LoadFrom(IScrollBarData data, Rectangle? bounds, bool silent)
+        {
+            if (silent)
+            {
+                using (this.SuppressEvents())
+                {
+                    this._LoadFrom(data, bounds);
+                }
+            }
+            else
+            {
+                this._LoadFrom(data, bounds);
+            }
+        }
+        /// <summary>
+        /// Do this scrollbaru naplní hodnoty do ValueTotal, Value, IsEnabled a Bounds
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="bounds"></param>
+        private void _LoadFrom(IScrollBarData data, Rectangle? bounds)
+        {
+            if (bounds.HasValue)
+                this.Bounds = bounds.Value;
+
+            if (data != null)
+            {
+                int dataSize = data.DataSize;
+                int dataBegin = data.DataBegin;
+                int visualSize = data.VisualSize;
+
+                int addSpace = data.DataSizeAddSpace;
+                if (addSpace < 0) addSpace = 0;
+                if (addSpace > visualSize) addSpace = visualSize;
+                dataSize += addSpace;
+
+                this.ValueTotal = new SizeRange(0, dataSize);
+                this.Value = new SizeRange(dataBegin, dataBegin + visualSize);
+                this.IsEnabled = (dataSize > visualSize);
+            }
+        }
+        #endregion
         #region Set*() methods, Detect*() methods
         /// <summary>
         /// Is called after change of this.Bounds, without another conditions
@@ -308,6 +356,7 @@ namespace Djs.Common.Components
         /// Occured during interactive changing Value value
         /// </summary>
         protected virtual void OnValueChanging(GPropertyChangeArgs<SizeRange> args) { }
+
         /// <summary>
         /// Event on this.Value interactive changing
         /// </summary>
@@ -1102,5 +1151,28 @@ namespace Djs.Common.Components
             }
         }
         #endregion
+    }
+    /// <summary>
+    /// Podklady pro nastavení ScrollBaru
+    /// </summary>
+    public interface IScrollBarData
+    {
+        /// <summary>
+        /// První pixel v datech, který je aktuálně zobrazován na začátku viditelné výseče (=první čitelný řádek dokumentu)
+        /// </summary>
+        int DataBegin { get; }
+        /// <summary>
+        /// Počet pixelů celkem v datech přítomných (=délka celého dokumentu)
+        /// </summary>
+        int DataSize { get; }
+        /// <summary>
+        /// Počet pixelů reálně zobrazených v aktuální velikosti (=viditelná výseč dokumentu)
+        /// </summary>
+        int VisualSize { get; }
+        /// <summary>
+        /// Počet přidaných pixelů za datovou oblastí, které se zobrazí pod / za daty, když ScrollBar dojede na konec rozsahu.
+        /// Je to prázdné místo, které uživateli signalizuje "že dál nic není".
+        /// </summary>
+        int DataSizeAddSpace { get; }
     }
 }

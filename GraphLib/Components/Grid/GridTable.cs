@@ -71,7 +71,7 @@ namespace Djs.Common.Components.Grid
             this._Grid = null;
         }
         #endregion
-        #region Rozložení prvků GTable = pozice ColumnHeader, RowArea, ScrollBar; pozice řádků RowsPositions (=podpora pro data na ScrollBar)
+        #region Rozmístění vnitřních prvků tabulky = souřadnice pro prostor záhlaví, řádků a scrollbaru
         /// <summary>
         /// Inicializace všech řídících prvků pro pozicování obsahu
         /// </summary>
@@ -324,7 +324,7 @@ namespace Djs.Common.Components.Grid
         /// </summary>
         private void ScrollBarRecalc()
         {
-            this.RowsPositions.ApplyToScrollBar(this._ScrollBar, this._ScrollBarBounds);
+            this._ScrollBar.LoadFrom(this.RowsPositions, this._ScrollBarBounds, true);
         }
         /// <summary>
         /// ScrollBar : svislý posuvník vpravo od řádků
