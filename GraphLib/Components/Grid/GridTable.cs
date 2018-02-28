@@ -397,7 +397,7 @@ namespace Djs.Common.Components.Grid
             e.CorrectValue = this.DataTable.Height;                  // Pokud požadovaná hodnota (value) nebyla akceptovatelná, pak correctValue je hodnota přípustná
             if (e.IsChangeValue)
             {
-                this.Grid.RecalcGrid();
+                this.Grid.RecalculateGrid();
                 this.Grid.RepaintThisToLayers = GInteractiveDrawLayer.Standard;
             }
         }
@@ -1047,7 +1047,7 @@ namespace Djs.Common.Components.Grid
             GridPositionItem columnPosition = this.ColumnPosition;
             int location = this._ColumnSplitter.Value;
             columnPosition.EndVisual = location;
-            this.GGrid.RecalcGrid();
+            this.GGrid.RecalculateGrid();
             this.GGrid.RepaintThisToLayers = GInteractiveDrawLayer.Standard;
             // this.RepaintAllItems = true;
         }
@@ -1206,7 +1206,7 @@ namespace Djs.Common.Components.Grid
             if (this._DragToOrder.HasValue)
             {
                 this.GColumn.ColumnPosition.Order = this._DragToOrder.Value;
-                this.GGrid.RecalcGrid();
+                this.GGrid.RecalculateGrid();
                 this.GGrid.RepaintThisToLayers = GInteractiveDrawLayer.Standard;
                 // this.RepaintAllItems = true;
             }
