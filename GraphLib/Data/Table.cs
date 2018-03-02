@@ -579,6 +579,19 @@ namespace Djs.Common.Data.New
         int ISequenceLayout.Begin { get { return this._SequenceLayout.Begin; } set { this._SequenceLayout.Begin = value; } }
         int ISequenceLayout.Size { get { return this._SequenceLayout.Size; } set { this._SequenceLayout.Size = value; } }
         int ISequenceLayout.End { get { return this._SequenceLayout.End; } }
+        /// <summary>
+        /// Komparátor TableOrder ASC
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static int CompareOrder(Table a, Table b)
+        {
+            if (a == null && b == null) return 0;
+            if (a == null) return -1;
+            if (b == null) return 1;
+            return a.TableOrder.CompareTo(b.TableOrder);
+        }
         #endregion
 
 

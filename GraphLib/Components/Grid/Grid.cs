@@ -23,9 +23,9 @@ namespace Djs.Common.Components
         private void Init()
         {
             this.InitProperties();
-            this.InitPositions();
-            this.InitTables();
-            this.InitColumns();
+            this.InitTablesData();
+            this.InitTablesPositions();
+            this.InitColumnsPositions();
             this.InitScrollBars();
         }
         #endregion
@@ -111,9 +111,9 @@ namespace Djs.Common.Components
         private bool _GridLayoutValid;
         #endregion
         #region Pozicování vodorovné = sloupce tabulek a dolní vodorovný scrollbar
-        private void InitColumns()
+        private void InitColumnsPositions()
         {
-            this._ColumnsPositions = new GPosition(this._ColumnPositionGetVisualSize, this._ColumnPositionGetDataSize);
+            this._ColumnsPositions = new GPosition(26, this._ColumnPositionGetVisualSize, this._ColumnPositionGetDataSize);
 
             this.ColumnsScrollBar = new GScrollBar() { Orientation = System.Windows.Forms.Orientation.Horizontal };
             this.ColumnsScrollBar.ValueChanging += new GPropertyChanged<SizeRange>(ColumnsScrollBar_ValueChange);
@@ -181,16 +181,16 @@ namespace Djs.Common.Components
         /// </summary>
         private List<ISequenceLayout> _ColumnsSequence;
         /// <summary>
-        /// Eventhandler for Horizontal splitter value changed event
+        /// Eventhandler volaný při/po změně hodnoty na vodorovném scrollbaru = posuny sloupců
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void ColumnsScrollBar_ValueChange(object sender, GPropertyChangeArgs<SizeRange> e)
         {
             int offset = (int)this.ColumnsScrollBar.Value.Begin.Value;
-            if (offset == this.Positions.ColumnsVisualOffset) return;
-            this.Positions.ColumnsVisualOffset = offset;
-            this.RecalculateGrid();
+            if (offset == this._ColumnsPositions.DataFirstPixel) return;
+            this._ColumnsPositions.DataFirstPixel = offset;
+            this.RecalcTables();
             this.RepaintAllItems = true;
         }
         /// <summary>
@@ -199,14 +199,13 @@ namespace Djs.Common.Components
         protected GScrollBar ColumnsScrollBar;
         #endregion
         #region Pozicování svislé = tabulky a vpravo svislý scrollbar
-        private void InitTables()
+        private void InitTablesPositions()
         {
-            this._TablesPositions = new GPosition(this._TablePositionGetVisualSize, this._TablePositionGetDataSize);
+            this._TablesPositions = new GPosition(0, this._TablePositionGetVisualSize, this._TablePositionGetDataSize);
 
             this.TablesScrollBar = new GScrollBar() { Orientation = System.Windows.Forms.Orientation.Vertical };
             this.TablesScrollBar.ValueChanging += new GPropertyChanged<SizeRange>(TablesScrollBar_ValueChange);
             this.TablesScrollBar.ValueChanged += new GPropertyChanged<SizeRange>(TablesScrollBar_ValueChange);
-
         }
         /// <summary>
         /// Řídíci prvek pro Pozice sloupců
@@ -214,7 +213,7 @@ namespace Djs.Common.Components
         protected GPosition TablesPositions { get { return this._TablesPositions; } }
         private GPosition _TablesPositions;
         /// <summary>
-        /// Vrací výšku prostoru pro tabulky (=this.ClientSize.Height)
+        /// Vrací výšku prostoru pro tabulky (=celý prostor this.ClientSize.Height)
         /// </summary>
         /// <returns></returns>
         private int _TablePositionGetVisualSize()
@@ -277,11 +276,10 @@ namespace Djs.Common.Components
         private void TablesScrollBar_ValueChange(object sender, GPropertyChangeArgs<SizeRange> e)
         {
             int offset = (int)this.TablesScrollBar.Value.Begin.Value;
-            if (offset == this.Positions.TableVisualOffset) return;
-            this.Positions.TableVisualOffset = offset;
-            this.RecalculateGrid();
+            if (offset == this._TablesPositions.DataFirstPixel) return;
+            this._TablesPositions.DataFirstPixel = offset;
+            this.RecalcTables();
             this.RepaintToLayers = GInteractiveDrawLayer.Standard;
-            //        this.RepaintAllItems = true;
         }
         /// <summary>
         /// Vertical Scrollbar for Tables (no its Rows!) shift
@@ -333,7 +331,7 @@ namespace Djs.Common.Components
         /// <summary>
         /// Inicializuje pole tabulek
         /// </summary>
-        protected void InitTables()
+        protected void InitTablesData()
         {
             this._Tables = new EList<GTable>();
             this._Tables.ItemAddAfter += _TableAddAfter;
@@ -341,7 +339,18 @@ namespace Djs.Common.Components
             this._TableID = 0;
         }
         /// <summary>
-        /// Recalculate values and bounds for all GTables.
+        /// Přepočítá souřadnice pro umístění jednotlivých tabulek, na základě souřadnic prostoru tabulek _GridTablesBounds
+        /// </summary>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
+        protected void RecalcTables()
+        {
+            ProcessAction actions = ProcessAction.None;
+            EventSourceType eventSource = EventSourceType.ApplicationCode;
+            this.RecalcTables(ref actions, eventSource);
+        }
+        /// <summary>
+        /// Přepočítá souřadnice pro umístění jednotlivých tabulek, na základě souřadnic prostoru tabulek _GridTablesBounds
         /// </summary>
         /// <param name="actions">Akce k provedení</param>
         /// <param name="eventSource">Zdroj této události</param>
@@ -394,7 +403,8 @@ namespace Djs.Common.Components
             GTable table = args.Item;
             int id = this._TableID++;
             ((IGridMember)table).AttachToGrid(this, id);
-            this.ColumnLayoutIsValid = false;
+            this.ColumnsSequenceReset();
+            this.TableSequenceReset();
         }
         /// <summary>
         /// Protected virtual metoda volaná v procesu přidání tabulky, tabulka je platná, event TableAddAfter ještě neproběhl. V GGrid je tato metoda prázdná.
@@ -420,7 +430,8 @@ namespace Djs.Common.Components
         protected void TableRemoved(EList<GTable>.EListAfterEventArgs args)
         {
             ((IGridMember)args.Item).DetachFromGrid();
-            this.ColumnLayoutIsValid = false;
+            this.ColumnsSequenceReset();
+            this.TableSequenceReset();
         }
         /// <summary>
         /// Protected virtual metoda volaná v procesu odebrání řádku, řádek je platný, event RowRemoveAfter ještě neproběhl. V Table je tato metoda prázdná.
@@ -656,8 +667,9 @@ namespace Djs.Common.Components
         /// </summary>
         /// <param name="getVisualSizeMethod"></param>
         /// <param name="getDataSizeMethod"></param>
-        internal GPosition(Func<int> getVisualSizeMethod, Func<int> getDataSizeMethod)
+        internal GPosition(int firstPixel, Func<int> getVisualSizeMethod, Func<int> getDataSizeMethod)
         {
+            this.VisualFirstPixel = firstPixel;
             this._GetVisualSizeMethod = getVisualSizeMethod;
             this._GetDataSizeMethod = getDataSizeMethod;
             this._DataSizeAddSpace = 26;
