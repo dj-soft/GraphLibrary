@@ -12,7 +12,7 @@ namespace Djs.Common.Components.Grid
     /// GTable : vizuální třída pro zobrazení obsahu jedné datové tabulky v jednom Gridu.
     /// Grid může zobrazovat data z více tabulek pomocí více instancí GTable, ale jedna GTable může zobrazit data jen z jedné datové tabulky.
     /// </summary>
-    public class GTable : InteractiveContainer, IInteractiveItem, IGridMember, IDisposable
+    public class GTable : InteractiveContainer, IInteractiveItem, IGridMember, ISequenceLayout, IDisposable
     {
         #region Konstruktor, Dispose
         internal GTable(GGrid grid, Table table)
@@ -38,7 +38,7 @@ namespace Djs.Common.Components.Grid
             this._Table = null;
         }
         #endregion
-        #region Linkování na grid
+        #region IGridMember - Linkování na grid
         /// <summary>
         /// Reference na grid, kam tato tabulka patří.
         /// </summary>
@@ -71,13 +71,19 @@ namespace Djs.Common.Components.Grid
             this._Grid = null;
         }
         #endregion
-        #region Rozmístění vnitřních prvků tabulky = souřadnice pro prostor záhlaví, řádků a scrollbaru
+        #region ISequenceLayout - adapter na DataTable jako implementační objekt
+        int ISequenceLayout.Begin { get { return this._SequenceLayout.Begin; } set { this._SequenceLayout.Begin = value; } }
+        int ISequenceLayout.Size { get { return this._SequenceLayout.Size; } set { this._SequenceLayout.Size = value; } }
+        int ISequenceLayout.End { get { return this._SequenceLayout.End; } }
+        private ISequenceLayout _SequenceLayout { get { return (ISequenceLayout)this.DataTable; } }
+        #endregion
+        #region Rozmístění vnitřních prvků tabulky - souřadnice pro prostor záhlaví, řádků a scrollbaru
         /// <summary>
         /// Inicializace všech řídících prvků pro pozicování obsahu
         /// </summary>
         private void InitPositions()
         {
-            this._RowsPositions = new GPosition(this._RowsPositionGetVisualSize, this._RowsPositionGetDataSize);
+            this._RowsPositions = new GPosition(DefaultColumnHeaderHeight, this._RowsPositionGetVisualSize, this._RowsPositionGetDataSize);
         }
         /// <summary>
         /// Řídíci prvek pro Pozice řádků
@@ -201,6 +207,28 @@ namespace Djs.Common.Components.Grid
         /// Název tabulky, podle něj lze hledat. jde o klíčové slovo, nikoli popisek (Caption)
         /// </summary>
         public string TableName { get { return this.DataTable.TableName; } }
+        /// <summary>
+        /// Pořadí této tabulky v Gridu při zobrazování.
+        /// Výchozí je -1, pak bude tabulka zařazena na konec soupisu tabulek v jednom gridu.
+        /// Datová vrstva může vložit jinou hodnotu (nula a kladnou), a tím explicitně určit pozici tabulky v gridu.
+        /// Jednotlivé tabulky nemusí mít hodnoty TableOrder v nepřerušovaném pořadí.
+        /// Po napojení tabulky do gridu je do TableOrder vepsána pořadová hodnota, pokud aktuální hodnota je záporná (což je default).
+        /// Po odpojení tabuky z Gridu je vepsána hodnota -1.
+        /// </summary>
+        public int TableOrder { get { return this.DataTable.TableOrder; } }
+        /// <summary>
+        /// Komparátor podle hodnoty TableOrder ASC
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static int CompareOrder(GTable a, GTable b)
+        {
+            if (a == null && b == null) return 0;
+            if (a == null) return -1;
+            if (b == null) return 1;
+            return a.TableOrder.CompareTo(b.TableOrder);
+        }
         #endregion
         #region Řádek obsahující ColumnHeaders
         /// <summary>
@@ -505,6 +533,16 @@ namespace Djs.Common.Components.Grid
         /// </summary>
         internal GInteractiveDrawLayer RepaintThisToLayers { get { return this.RepaintToLayers; } set { this.RepaintToLayers = value; } }
         #endregion
+        #region Defaultní hodnoty
+        /// <summary>
+        /// Výchozí výška oblasti ColumnHeader
+        /// </summary>
+        public int DefaultColumnHeaderHeight { get { return 35; } }
+        /// <summary>
+        /// Výchozí šířka sloupce RowHeader
+        /// </summary>
+        public int DefaultRowHeaderWidth { get { return 25; } }
+        #endregion
     }
     public class GRow : InteractiveContainer
     {
@@ -526,22 +564,6 @@ namespace Djs.Common.Components.Grid
     }
 
 
-    /// <summary>
-    /// Člen gridu GGrid, u kterého je možno provést Attach a Detach
-    /// </summary>
-    public interface IGridMember
-    {
-        /// <summary>
-        /// Napojí this objekt do dodaného Gridu a uloží do sebe dané ID
-        /// </summary>
-        /// <param name="grid"></param>
-        /// <param name="id"></param>
-        void AttachToGrid(GGrid grid, int id);
-        /// <summary>
-        /// Odpojí this objekt od navázaného Gridu, resetuje svoje ID
-        /// </summary>
-        void DetachFromGrid();
-    }
 
 
 

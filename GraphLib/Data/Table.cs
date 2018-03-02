@@ -580,7 +580,7 @@ namespace Djs.Common.Data.New
         int ISequenceLayout.Size { get { return this._SequenceLayout.Size; } set { this._SequenceLayout.Size = value; } }
         int ISequenceLayout.End { get { return this._SequenceLayout.End; } }
         /// <summary>
-        /// Komparátor TableOrder ASC
+        /// Komparátor podle hodnoty TableOrder ASC
         /// </summary>
         /// <param name="a"></param>
         /// <param name="b"></param>

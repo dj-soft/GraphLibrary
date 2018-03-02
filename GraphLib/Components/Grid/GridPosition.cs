@@ -4,8 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Drawing;
 using Djs.Common.Data;
+using Djs.Common.Data.Old;
 
-namespace Djs.Common.Components.Grid
+namespace Djs.Common.Components.Grid.Out
 {
     #region GridPositions, GridPositionSet, GridPositionItem : position of all columns, tables, rows in GGrid
     /// <summary>

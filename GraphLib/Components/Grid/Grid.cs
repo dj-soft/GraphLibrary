@@ -7,7 +7,6 @@ using Djs.Common.Data;
 using Djs.Common.Data.New;
 using Djs.Common.Components.Grid;
 
-// This file contain Visual items for Graphical Grid (all classes are InteractiveObject, is used in GGrid class for visualisation of Grid data
 namespace Djs.Common.Components
 {
     /// <summary>
@@ -22,7 +21,6 @@ namespace Djs.Common.Components
         }
         private void Init()
         {
-            this.InitProperties();
             this.InitTablesData();
             this.InitTablesPositions();
             this.InitColumnsPositions();
@@ -71,6 +69,21 @@ namespace Djs.Common.Components
         private void RecalcClientAreas(ref ProcessAction actions, EventSourceType eventSource)
         {
             Size clientSize = this.BoundsClient.Size;
+
+            // Určíme, zda bude zobrazen scrollbar vpravo (to je tehdy, když výška tabulek je větší než výška prostoru pro tabulky = (ClientSize.Height - ColumnsScrollBar.Bounds.Height)):
+            bool isTablesScrollBarActive = this.TablesPositions.IsScrollBarActive;
+
+            // Prostor pro dolní scrollbar (sloupce) budeme rezervovat vždy:
+            bool isColumnsScrollBarActive = true;
+
+            // Určíme souřadnice jednotlivých elementů:
+            this
+
+
+            this.TablesScrollBar
+            // Zjistíme výšku prostoru pro tabulky, a výšku tabulek celkem, a vepí
+
+
             this.ColumnsPositions.
             int x = 0;
             int y = 0;
@@ -138,9 +151,9 @@ namespace Djs.Common.Components
         /// <returns></returns>
         private int _ColumnPositionGetDataSize()
         {
-            List<ISequenceLayout> list = this.ColumnsSequence;
-            int count = list.Count;
-            return (count > 0 ? list[count - 1].End : 0);
+            ISequenceLayout[] array = this.ColumnsSequence;
+            int count = array.Length;
+            return (count > 0 ? array[count - 1].End : 0);
         }
         /// <summary>
         /// Soupis sloupců master tabulky, vždy setříděný v pořadí podle ColumnOrder, se správně napočtenou hodnotou ISequenceLayout.Begin a End.
@@ -150,7 +163,7 @@ namespace Djs.Common.Components
         /// Nemusí se volat při posunech vodorovného scrollbaru ani při resize gridu, ani při změně šířky sloupců!
         /// Tato property nikdy nevrací null, ale může vrátit kolekci s počtem = 0 prvků (pokud neexistují tabulky nebo Master tabulka nemá žádné sloupce).
         /// </summary>
-        protected List<ISequenceLayout> ColumnsSequence
+        protected ISequenceLayout[] ColumnsSequence
         {
             get
             {
@@ -162,13 +175,17 @@ namespace Djs.Common.Components
                     if (columns.Count > 1)
                         columns.Sort(Column.CompareOrder);
 
-                    List<Data.New.ISequenceLayout> list = new List<ISequenceLayout>(columns.Cast<ISequenceLayout>());
-                    Table.SequenceLayoutCalculate(list);
-                    this._ColumnsSequence = list;
+                    ISequenceLayout[] array = columns.Cast<ISequenceLayout>().ToArray();
+                    Table.SequenceLayoutCalculate(array);
+                    this._ColumnsSequence = array;
                 }
                 return this._ColumnsSequence;
             }
         }
+        /// <summary>
+        /// Cache kolekce ColumnsSequence
+        /// </summary>
+        private ISequenceLayout[] _ColumnsSequence;
         /// <summary>
         /// Resetuje kolekci ColumnsSequence (=donutí ji znovu se načíst).
         /// Má se volat po těchto akcích:
@@ -176,10 +193,6 @@ namespace Djs.Common.Components
         /// Nemusí se volat při posunech vodorovného scrollbaru ani při resize gridu, ani při změně šířky sloupců!
         /// </summary>
         protected void ColumnsSequenceReset() { this._ColumnsSequence = null; }
-        /// <summary>
-        /// Cache kolekce ColumnsSequence
-        /// </summary>
-        private List<ISequenceLayout> _ColumnsSequence;
         /// <summary>
         /// Eventhandler volaný při/po změně hodnoty na vodorovném scrollbaru = posuny sloupců
         /// </summary>
@@ -194,82 +207,85 @@ namespace Djs.Common.Components
             this.RepaintAllItems = true;
         }
         /// <summary>
-        /// Horizontal Scrollbar for Columns shift
+        /// Dolní vodorovný Scrollbar, pro posuny sloupců doleva/doprava
         /// </summary>
         protected GScrollBar ColumnsScrollBar;
         #endregion
         #region Pozicování svislé = tabulky a vpravo svislý scrollbar
+        /// <summary>
+        /// Inicializace objektů pro pozicování sloupců: TablesPositions, TablesScrollBar
+        /// </summary>
         private void InitTablesPositions()
         {
-            this._TablesPositions = new GPosition(0, this._TablePositionGetVisualSize, this._TablePositionGetDataSize);
+            this._TablesPositions = new GPosition(0, this._TablesPositionGetVisualSize, this._TablesPositionGetDataSize);
 
             this.TablesScrollBar = new GScrollBar() { Orientation = System.Windows.Forms.Orientation.Vertical };
             this.TablesScrollBar.ValueChanging += new GPropertyChanged<SizeRange>(TablesScrollBar_ValueChange);
             this.TablesScrollBar.ValueChanged += new GPropertyChanged<SizeRange>(TablesScrollBar_ValueChange);
         }
         /// <summary>
-        /// Řídíci prvek pro Pozice sloupců
+        /// Řídíci prvek pro Pozice tabulek
         /// </summary>
         protected GPosition TablesPositions { get { return this._TablesPositions; } }
         private GPosition _TablesPositions;
         /// <summary>
-        /// Vrací výšku prostoru pro tabulky (=celý prostor this.ClientSize.Height)
+        /// Vrací výšku prostoru pro tabulky (=prostor this.ClientSize.Height mínus dole prostor pro vodorovný scrollbar sloupců)
         /// </summary>
         /// <returns></returns>
-        private int _TablePositionGetVisualSize()
+        private int _TablesPositionGetVisualSize()
         {
-            return this.ClientSize.Height;
+            return this.ClientSize.Height - this.ColumnsScrollBar.Bounds.Height;
         }
         /// <summary>
-        /// Vrací výšku všech zobrazitelných tabulek
+        /// Vrací výšku všech zobrazitelných tabulek (z this.TableSequence, z jejího posledního prvku, z jeho property End)
         /// </summary>
         /// <returns></returns>
-        private int _TablePositionGetDataSize()
+        private int _TablesPositionGetDataSize()
         {
-            List<ISequenceLayout> list = this.TableSequence;
-            int count = list.Count;
+            ISequenceLayout[] list = this.TablesSequence;
+            int count = list.Length;
             return (count > 0 ? list[count - 1].End : 0);
         }
         /// <summary>
-        /// Soupis sloupců master tabulky, vždy setříděný v pořadí podle ColumnOrder, se správně napočtenou hodnotou ISequenceLayout.Begin a End.
+        /// Soupis všech grafických objektů tabulek, setříděný podle TableOrder, se správně napočtenou hodnotou ISequenceLayout.Begin a End.
         /// Tento seznam se ukládá do místní cache, jeho generování se provádí jen jedenkrát po jeho invalidaci.
-        /// Invalidace seznamu se provádí metodou ColumnsSequenceReset(), ta se má volat po těchto akcích:
-        /// Změna pořadí sloupců, Změna počtu sloupců.
-        /// Nemusí se volat při posunech vodorovného scrollbaru ani při resize gridu, ani při změně šířky sloupců!
-        /// Tato property nikdy nevrací null, ale může vrátit kolekci s počtem = 0 prvků (pokud neexistují tabulky nebo Master tabulka nemá žádné sloupce).
+        /// Invalidace seznamu se provádí metodou TableSequenceReset(), ta se má volat po těchto akcích:
+        /// Změna pořadí tabulek, Změna počtu tabulek.
+        /// Nemusí se volat při posunech svislého scrollbaru ani při resize gridu, ani při změně výšky tabulek!
+        /// Tato property nikdy nevrací null, ale může vrátit kolekci s počtem = 0 prvků (pokud neexistují tabulky).
         /// </summary>
-        protected List<ISequenceLayout> TableSequence
+        protected ISequenceLayout[] TablesSequence
         {
             get
             {
-                if (this._TableSequence == null)
+                if (this._TablesSequence == null)
                 {
-                    List<Table> tables = new List<Table>();
+                    List<GTable> tables = new List<GTable>();
                     if (this._Tables != null && this._Tables.Count > 0)
-                        tables.AddRange(this._Tables.Select(g => g.DataTable));
+                        tables.AddRange(this._Tables);
                     if (tables.Count > 1)
-                        tables.Sort(Table.CompareOrder);
+                        tables.Sort(GTable.CompareOrder);
 
-                    List<Data.New.ISequenceLayout> list = new List<ISequenceLayout>(tables.Cast<ISequenceLayout>());
-                    Table.SequenceLayoutCalculate(list);
-                    this._TableSequence = list;
+                    ISequenceLayout[] array = tables.Cast<ISequenceLayout>().ToArray();
+                    Table.SequenceLayoutCalculate(array);
+                    this._TablesSequence = array;
                 }
-                return this._TableSequence;
+                return this._TablesSequence;
             }
         }
+        /// <summary>
+        /// Cache kolekce TableSequence
+        /// </summary>
+        private ISequenceLayout[] _TablesSequence;
         /// <summary>
         /// Resetuje kolekci ColumnsSequence (=donutí ji znovu se načíst).
         /// Má se volat po těchto akcích:
         /// Změna pořadí sloupců, Změna počtu sloupců.
         /// Nemusí se volat při posunech vodorovného scrollbaru ani při resize gridu, ani při změně šířky sloupců!
         /// </summary>
-        protected void TableSequenceReset() { this._TableSequence = null; }
+        protected void TableSequenceReset() { this._TablesSequence = null; }
         /// <summary>
-        /// Cache kolekce ColumnsSequence
-        /// </summary>
-        private List<ISequenceLayout> _TableSequence;
-        /// <summary>
-        /// Eventhandler for Vertical splitter value changed event
+        /// Eventhandler pro událost změny pozice svislého scrollbaru = posun pole tabulek nahoru/dolů
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -282,7 +298,7 @@ namespace Djs.Common.Components
             this.RepaintToLayers = GInteractiveDrawLayer.Standard;
         }
         /// <summary>
-        /// Vertical Scrollbar for Tables (no its Rows!) shift
+        /// Svislý Scrollbar pro posouvání pole tabulek nahoru/dolů (nikoli jejich řádků, na to má každá tabulka svůj vlastní Scrollbar).
         /// </summary>
         protected GScrollBar TablesScrollBar;
         #endregion
@@ -405,6 +421,7 @@ namespace Djs.Common.Components
             ((IGridMember)table).AttachToGrid(this, id);
             this.ColumnsSequenceReset();
             this.TableSequenceReset();
+            this.ChildsReset();
         }
         /// <summary>
         /// Protected virtual metoda volaná v procesu přidání tabulky, tabulka je platná, event TableAddAfter ještě neproběhl. V GGrid je tato metoda prázdná.
@@ -432,6 +449,7 @@ namespace Djs.Common.Components
             ((IGridMember)args.Item).DetachFromGrid();
             this.ColumnsSequenceReset();
             this.TableSequenceReset();
+            this.ChildsReset();
         }
         /// <summary>
         /// Protected virtual metoda volaná v procesu odebrání řádku, řádek je platný, event RowRemoveAfter ještě neproběhl. V Table je tato metoda prázdná.
@@ -512,24 +530,25 @@ namespace Djs.Common.Components
             }
         }
         #endregion
-        #region Childs items
+        #region Pole grafických prvků Childs : obsahuje všechny tabulky, jejich vzájemné oddělovače (Splitter), a scrollbary (sloupce vždy, tabulky podle potřeby)
         /// <summary>
         /// An array of sub-items in this item.
         /// </summary>
         protected override IEnumerable<IInteractiveItem> Childs { get { this.ChildArrayCheck(); return this.ChildList; } }
         /// <summary>
-        /// Invalidate Child array, call after any change on Tables or Columns in this grid.
+        /// Invaliduje pole Child.
+        /// Je nutno zavolat, po každé změně počtu tabulek.
         /// </summary>
-        protected void ChildArrayInvalidate()
+        protected void ChildsReset()
         {
-            this._ChildArrayValid = false;
+            this._ChildsIsValid = false;
         }
         /// <summary>
         /// Check this.GridItems: when is null, then call this.GridItemsReload()
         /// </summary>
         protected void ChildArrayCheck()
         {
-            if (!this._ChildArrayValid)
+            if (!this._ChildsIsValid)
                 this.ChildArrayReload();
         }
         /// <summary>
@@ -539,6 +558,9 @@ namespace Djs.Common.Components
         protected void ChildArrayReload()
         {
             this.ChildList.Clear();
+
+            // Nejprve přidáme tabulky, a to jen ty které jsou viditelné:
+            this.TablesSequence
 
             // First (on bottom in hierarchy) is Tables:
             this.ChildList.AddRange(this._Tables);
@@ -554,9 +576,9 @@ namespace Djs.Common.Components
             if (this.Positions.ColumnsCount > 0)
                 this.ChildList.Add(this.ColumnsScrollBar);
 
-            this._ChildArrayValid = true;
+            this._ChildsIsValid = true;
         }
-        private bool _ChildArrayValid;
+        private bool _ChildsIsValid;
         #endregion
         #region Podpora pro časové osy v synchronizovaných sloupcích
         /// <summary>
@@ -572,33 +594,8 @@ namespace Djs.Common.Components
         #endregion
 
 
-        #region Public properties
-        protected void InitProperties()
-        {
-            this.ScrollBarVerticalWidth = GScrollBar.DefaultSystemBarWidth;
-            this.ScrollBarHorizontalHeight = GScrollBar.DefaultSystemBarHeight;
-        }
-        /// <summary>
-        /// Šířka svislého Scrollbaru (ten voravo, co posouvá tabulky - když je potřeba).
-        /// </summary>
-        public int ScrollBarVerticalWidth { get { return this._ScrollBarVerticalWidth; } set { this._ScrollBarVerticalWidth = (value < 0 ? 0 : value); this._GridLayoutValid = false; } } private int _ScrollBarVerticalWidth;
-        /// <summary>
-        /// Výška vodorovného Scrollbaru (ten dole, co posouvá sloupce).
-        /// </summary>
-        public int ScrollBarHorizontalHeight { get { return this._ScrollBarHorizontalHeight; } set { this._ScrollBarHorizontalHeight = (value < 0 ? 0 : value); this._GridLayoutValid = false; } } private int _ScrollBarHorizontalHeight;
-        #endregion
 
-
-
-        
-        #region Columns and Positions
-     
-     
-        /// <summary>
-        /// Default width for RowHeader column
-        /// </summary>
-        public static int DefaultRowHeaderWidth { get { return 20; } }
-        #endregion
+       
         
         #region Refresh
         public override void Refresh()
@@ -652,6 +649,7 @@ namespace Djs.Common.Components
         internal GInteractiveDrawLayer RepaintThisToLayers { get { return this.RepaintToLayers; } set { this.RepaintToLayers = value; } }
         #endregion
     }
+    #region class GPosition : Třída, která řeší zobrazení obsahu prvku typicky v Gridu
     /// <summary>
     /// Třída, která řeší zobrazení obsahu prvku typicky v Gridu.
     /// Daná oblast má záhlaví určité velikosti, jehož umístění se pohybem Scrollbaru nemění,
@@ -758,4 +756,23 @@ namespace Djs.Common.Components
         int IScrollBarData.DataSizeAddSpace { get { return this.DataSizeAddSpace; } }
         #endregion
     }
+    #endregion
+    #region interface IGridMember : Člen gridu GGrid, u kterého je možno provést Attach a Detach
+    /// <summary>
+    /// Člen gridu GGrid, u kterého je možno provést Attach a Detach
+    /// </summary>
+    public interface IGridMember
+    {
+        /// <summary>
+        /// Napojí this objekt do dodaného Gridu a uloží do sebe dané ID
+        /// </summary>
+        /// <param name="grid"></param>
+        /// <param name="id"></param>
+        void AttachToGrid(GGrid grid, int id);
+        /// <summary>
+        /// Odpojí this objekt od navázaného Gridu, resetuje svoje ID
+        /// </summary>
+        void DetachFromGrid();
+    }
+    #endregion
 }
