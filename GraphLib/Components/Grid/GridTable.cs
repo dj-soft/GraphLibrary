@@ -14,7 +14,7 @@ namespace Djs.Common.Components.Grid
     /// </summary>
     public class GTable : InteractiveContainer, IInteractiveItem, IGridMember, ISequenceLayout, IDisposable
     {
-        #region Konstruktor, Dispose
+        #region Inicializace
         internal GTable(GGrid grid, Table table)
         {
             this._Grid = grid;
@@ -23,14 +23,18 @@ namespace Djs.Common.Components.Grid
         }
         private void Init()
         {
+            this.InitRowsData();
+            this.InitRowsPositions();
+
+
             this.InitPositions();
             this.InitColumnHeader();
-            this.InitRowLists();
+            
             this.InitScrollBar();
             this.InitHeaderSplitter();
             this.InitTableSplitter();
 
-            this.RecalcInnerLayout();
+            this.RecalculateTable();
         }
         void IDisposable.Dispose()
         {
@@ -71,43 +75,7 @@ namespace Djs.Common.Components.Grid
             this._Grid = null;
         }
         #endregion
-        #region ISequenceLayout - adapter na DataTable jako implementační objekt
-        int ISequenceLayout.Begin { get { return this._SequenceLayout.Begin; } set { this._SequenceLayout.Begin = value; } }
-        int ISequenceLayout.Size { get { return this._SequenceLayout.Size; } set { this._SequenceLayout.Size = value; } }
-        int ISequenceLayout.End { get { return this._SequenceLayout.End; } }
-        private ISequenceLayout _SequenceLayout { get { return (ISequenceLayout)this.DataTable; } }
-        #endregion
         #region Rozmístění vnitřních prvků tabulky - souřadnice pro prostor záhlaví, řádků a scrollbaru
-        /// <summary>
-        /// Inicializace všech řídících prvků pro pozicování obsahu
-        /// </summary>
-        private void InitPositions()
-        {
-            this._RowsPositions = new GPosition(DefaultColumnHeaderHeight, this._RowsPositionGetVisualSize, this._RowsPositionGetDataSize);
-        }
-        /// <summary>
-        /// Řídíci prvek pro Pozice řádků
-        /// </summary>
-        protected GPosition RowsPositions { get { return this._RowsPositions; } }
-        private GPosition _RowsPositions;
-        /// <summary>
-        /// Vrací výšku prostoru pro sloupce (=this.ClientSize.Width)
-        /// </summary>
-        /// <returns></returns>
-        private int _RowsPositionGetVisualSize()
-        {
-            return this._RowAreaBounds.Height;
-        }
-        /// <summary>
-        /// Vrací výšku všech zobrazitelných datových řádků, vyjma řádek ColumnHeader (to není datový řádek).
-        /// </summary>
-        /// <returns></returns>
-        private int _RowsPositionGetDataSize()
-        {
-            List<Row> list = this.RowListAll;
-            int count = list.Count;
-            return (count > 0 ? ((ISequenceLayout)list[count - 1]).End : 0);
-        }
         /// <summary>
         /// Je voláno po změně Bounds, z metody SetBound(), pokud je vyžadována akce PrepareInnerItems.
         /// Přepočte umístění vnitřních prvků objektu, podle rozměrů this.BoundsClient.Size
@@ -119,7 +87,7 @@ namespace Djs.Common.Components.Grid
         protected override void SetBoundsPrepareInnerItems(Rectangle oldBounds, Rectangle newBounds, ref ProcessAction actions, EventSourceType eventSource)
         {
             base.SetBoundsPrepareInnerItems(oldBounds, newBounds, ref actions, eventSource);
-            this.RecalcInnerLayout(ref actions, eventSource);
+            this.RecalculateTable(ref actions, eventSource);
         }
         /// <summary>
         /// Určí pozice a rozměry pro jednotlivé vnitřní členy tabulky: ColumnHeader, RowArea, Scrollbar.
@@ -128,11 +96,11 @@ namespace Djs.Common.Components.Grid
         /// <param name="tablesBounds"></param>
         /// <param name="actions">Akce k provedení</param>
         /// <param name="eventSource">Zdroj této události</param>
-        internal void RecalcInnerLayout()
+        internal void RecalculateTable()
         {
             ProcessAction actions = ProcessAction.PrepareInnerItems;
             EventSourceType eventSource = EventSourceType.ApplicationCode;
-            this.RecalcInnerLayout(ref actions, eventSource);
+            this.RecalculateTable(ref actions, eventSource);
         }
         /// <summary>
         /// Určí pozice a rozměry pro jednotlivé vnitřní členy tabulky: ColumnHeader, HeaderSplitter, RowArea, Scrollbar.
@@ -141,10 +109,18 @@ namespace Djs.Common.Components.Grid
         /// <param name="tablesBounds"></param>
         /// <param name="actions">Akce k provedení</param>
         /// <param name="eventSource">Zdroj této události</param>
-        internal void RecalcInnerLayout(ref ProcessAction actions, EventSourceType eventSource)
+        internal void RecalculateTable(ref ProcessAction actions, EventSourceType eventSource)
         {
             Size clientSize = this.ClientSize;
-            if (this._ClientSizeLast == clientSize) return;
+            if (this.ClientSizeLast == clientSize) return;
+
+            this.TableLayoutValid = false;
+            if (clientSize.Width <= 0 || clientSize.Height <= 0) return;
+
+            // Bude viditelný scrollbar řádků?
+            this.RowsScrollBarVisible = this.RowssPositions.IsScrollBarActive;
+
+
 
             int headerHeight = this.DataTable.ColumnHeaderHeight;
             this._ColumnHeaderBounds = new Rectangle(0, 0, clientSize.Width, headerHeight);
@@ -171,25 +147,96 @@ namespace Djs.Common.Components.Grid
                 this.TableSplitter.ValueSilent = value;
 
             // Zapamatovat clientSize, abychom příští aktivitu prováděli jen po změně:
-            this._ClientSizeLast = clientSize;
+            this.ClientSizeLast = clientSize;
+            this.TableLayoutValid = true;
         }
+
+
+
+        /// <summary>
+        /// Inicializace všech řídících prvků pro pozicování obsahu
+        /// </summary>
+        private void InitPositions()
+        {
+            this.RowsPositions = new GPosition(DefaultColumnHeaderHeight, this._RowsPositionGetVisualSize, this._RowsPositionGetDataSize);
+        }
+
+
         /// <summary>
         /// Hodnota ClientSize, pro kterou byly naposledy přepočteny pozice vnitřních objektů (_ColumnHeaderBounds, _RowAreaBounds, _ScrollBarBounds).
         /// Další přepočet se provede jen po změně.
         /// </summary>
-        private Size _ClientSizeLast;
+        protected Size ClientSizeLast;
         /// <summary>
         /// Souřadnice prostoru záhlaví (ColumnHeaders)
         /// </summary>
-        private Rectangle _ColumnHeaderBounds;
+        protected Rectangle _ColumnHeaderBounds;
         /// <summary>
         /// Souřadnice prostoru řádků (RowArea)
         /// </summary>
-        private Rectangle _RowAreaBounds;
+        protected Rectangle _RowAreaBounds;
+        /// <summary>
+        /// Viditelnost scrollbaru řádků
+        /// </summary>
+        protected bool RowsScrollBarVisible;
         /// <summary>
         /// Souřadnice svislého scrollbaru pro řádky
         /// </summary>
-        private Rectangle _ScrollBarBounds;
+        protected Rectangle RowsScrollBarBounds;
+        /// <summary>
+        /// true pokud je layout vnitřních prostor tabulky korektně spočítán
+        /// </summary>
+        protected bool TableLayoutValid;
+
+        #endregion
+
+        #region Pozicování svislé - řádky a vpravo svislý scrollbar
+        /// <summary>
+        /// Inicializace objektů pro pozicování tabulek: TablesPositions, TablesScrollBar
+        /// </summary>
+        private void InitRowsPositions()
+        {
+            this.RowsPositions = new GPosition(0, this._RowsPositionGetVisualSize, this._RowsPositionGetDataSize);
+
+            this.TablesScrollBar = new GScrollBar() { Orientation = System.Windows.Forms.Orientation.Vertical };
+            this.TablesScrollBar.ValueChanging += new GPropertyChanged<SizeRange>(TablesScrollBar_ValueChange);
+            this.TablesScrollBar.ValueChanged += new GPropertyChanged<SizeRange>(TablesScrollBar_ValueChange);
+        }
+        /// <summary>
+        /// Řídící prvek pro Pozice tabulek
+        /// </summary>
+        protected GPosition RowsPositions;
+        /// <summary>
+        /// Vrací výšku prostoru pro řádky (=this.ClientSize.Width)
+        /// </summary>
+        /// <returns></returns>
+        private int _RowsPositionGetVisualSize()
+        {
+            return this._RowAreaBounds.Height;
+        }
+        /// <summary>
+        /// Vrací výšku všech zobrazitelných datových řádků, vyjma řádek ColumnHeader (to není datový řádek).
+        /// </summary>
+        /// <returns></returns>
+        private int _RowsPositionGetDataSize()
+        {
+            List<Row> list = this.RowListAll;
+            int count = list.Count;
+            return (count > 0 ? ((ISequenceLayout)list[count - 1]).End : 0);
+        }
+
+
+
+
+
+        #endregion
+
+
+        #region ISequenceLayout - adapter na DataTable jako implementační objekt
+        int ISequenceLayout.Begin { get { return this._SequenceLayout.Begin; } set { this._SequenceLayout.Begin = value; } }
+        int ISequenceLayout.Size { get { return this._SequenceLayout.Size; } set { this._SequenceLayout.Size = value; } }
+        int ISequenceLayout.End { get { return this._SequenceLayout.End; } }
+        private ISequenceLayout _SequenceLayout { get { return (ISequenceLayout)this.DataTable; } }
         #endregion
         #region Public data
         /// <summary>
@@ -248,7 +295,7 @@ namespace Djs.Common.Components.Grid
         /// <summary>
         /// Inicializace objektů pro řádky tabulky
         /// </summary>
-        private void InitRowLists()
+        private void InitRowsData()
         {
             this.RowListAllReset();
         }
@@ -270,9 +317,9 @@ namespace Djs.Common.Components.Grid
                 }
                 if (!this._RowListHeightValid)
                 {   // Přepočet hodnot ISequenceLayout:
-                    Table.SequenceLayoutCalculate(listAll.Cast<Data.New.ISequenceLayout>());
+                    SequenceLayout.SequenceLayoutCalculate(listAll.Cast<Data.New.ISequenceLayout>());
                     this._RowListHeightValid = true;
-                    // Zajistím provedení tvorby soupisu viditelných řádků:
+                    // Zajistím, že v případě potřeby bude provedena tvorba soupisu viditelných řádků:
                     this._GRowList = null;
                 }
                 return listAll;
@@ -289,7 +336,7 @@ namespace Djs.Common.Components.Grid
                 if (list == null)
                 {
                     // Ze seznamu všech dostupných řádků (RowListAll) si vyberu (funkcí RowsPositions.FilterVisibleItems) je ty, které jsou nyní viditelné:
-                    IEnumerable<Row> dataList = this.RowsPositions.FilterVisibleItems(this.RowListAll);
+                    IEnumerable<Row> dataList = SequenceLayout.FilterVisibleItems(this.RowListAll, this.RowsPositions.DataRange);
                     // Z těchto viditelných řádků vygeneruji pole nových vizuálních prvků:
                     list = dataList.Select(r => new GRow(this, r)).ToList();
                     this._GRowList = list;
@@ -426,7 +473,7 @@ namespace Djs.Common.Components.Grid
             if (e.IsChangeValue)
             {
                 this.Grid.RecalculateGrid();
-                this.Grid.RepaintThisToLayers = GInteractiveDrawLayer.Standard;
+                this.Grid.Repaint();
             }
         }
         /// <summary>
@@ -512,8 +559,6 @@ namespace Djs.Common.Components.Grid
             return this._ColumnSet.GetTimeConvertor(columnId);
         }
         #endregion
-        
-        
         #region Interactivity
         protected override void AfterStateChanged(GInteractiveChangeStateArgs e)
         {
@@ -522,16 +567,11 @@ namespace Djs.Common.Components.Grid
         #endregion
         #region Draw
         protected override void Draw(GInteractiveDrawArgs e)
-        {   // GTable draw only background:
-
+        {
+            // GTable kreslí pouze svoje vlastní pozadí (a to by si ještě měla rozmyslet, kolik ho bude, než začne malovat úplně celou plochu :-) ):
             base.Draw(e);
-            // All other (Columns area (=Headers + Splitter), Rows area (=Rows + Scrollbar), ColumnSetSplitter) has own Draw method.
+            // Všechno ostatní (záhlaví sloupců, řádky, scrollbary, splittery) si malují Childs samy.
         }
-        /// <summary>
-        /// internal access to this.RepaintToLayers value.
-        /// Set this value to Standard layer after interactive (!) change of any of visual properties.
-        /// </summary>
-        internal GInteractiveDrawLayer RepaintThisToLayers { get { return this.RepaintToLayers; } set { this.RepaintToLayers = value; } }
         #endregion
         #region Defaultní hodnoty
         /// <summary>
@@ -773,8 +813,8 @@ namespace Djs.Common.Components.Grid
             GridPositionItem tablePosition = this.TablePosition;
             int location = this._ColumnSetSplitter.Value;
             tablePosition.Split = location;
-            this.GTable.RecalcInnerLayout();
-            this.GTable.RepaintThisToLayers = GInteractiveDrawLayer.Standard;
+            this.GTable.RecalculateTable();
+            this.GTable.Repaint();
             // this.RepaintAllItems = true;
         }
         /// <summary>
@@ -1036,7 +1076,7 @@ namespace Djs.Common.Components.Grid
         {
             this.ColumnPosition.TimeRange = this._TimeAxis.Value;
             this.GGrid.RefreshTimeAxis(this.ColumnID);
-            this.GGrid.RepaintThisToLayers = GInteractiveDrawLayer.Standard;
+            this.GGrid.Repaint();
             // this.RepaintAllItems = true;
         }
         /// <summary>
@@ -1070,7 +1110,7 @@ namespace Djs.Common.Components.Grid
             int location = this._ColumnSplitter.Value;
             columnPosition.EndVisual = location;
             this.GGrid.RecalculateGrid();
-            this.GGrid.RepaintThisToLayers = GInteractiveDrawLayer.Standard;
+            this.GGrid.Repaint();
             // this.RepaintAllItems = true;
         }
         /// <summary>
@@ -1229,8 +1269,7 @@ namespace Djs.Common.Components.Grid
             {
                 this.GColumn.ColumnPosition.Order = this._DragToOrder.Value;
                 this.GGrid.RecalculateGrid();
-                this.GGrid.RepaintThisToLayers = GInteractiveDrawLayer.Standard;
-                // this.RepaintAllItems = true;
+                this.GGrid.Repaint();
             }
         }
         /// <summary>

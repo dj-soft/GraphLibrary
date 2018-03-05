@@ -17,7 +17,7 @@ namespace Djs.Common.Data.New
 
     #region Table
     /// <summary>
-    /// Table : jedna tabulka s dat (sada Column + Row)
+    /// Table : jedna tabulka s daty (sada Column + Row)
     /// </summary>
     public class Table : IVisualMember, ISequenceLayout, IContentValidity
     {
@@ -617,32 +617,7 @@ namespace Djs.Common.Data.New
         bool IContentValidity.RowLayoutIsValid { get { return _RowLayoutIsValid; } set { _RowLayoutIsValid = value; } } private bool _RowLayoutIsValid;
         bool IContentValidity.ColumnLayoutIsValid { get { return _ColumnLayoutIsValid; } set { _ColumnLayoutIsValid = value; } } private bool _ColumnLayoutIsValid;
         #endregion
-        #region ISequenceLayout podpora = nápočet hodnot ISequenceLayout.Begin do prvků pole, a do jednotlivého prvku
-        /// <summary>
-        /// Do všech položek ISequenceLayout dodané kolekce vepíše hodnotu Begin postupně od 0.
-        /// K hodnotě position přičte item.Size (pouze pokud je hodnota větší než 0), tato upravená position se vrací v ref parametru, a slouží jako Begin pro další položky v kolekci.
-        /// </summary>
-        /// <param name="item"></param>
-        /// <param name="position"></param>
-        public static void SequenceLayoutCalculate(IEnumerable<ISequenceLayout> items)
-        {
-            int position = 0;
-            foreach (ISequenceLayout item in items)
-                SequenceLayoutCalculate(item, ref position);
-        }
-        /// <summary>
-        /// Do položky ISequenceLayout vepíše Begin = position.
-        /// K hodnotě position přičte item.Size (pouze pokud je hodnota větší než 0), tato upravená position se vrací v ref parametru, a slouží jako Begin pro další položky v kolekci.
-        /// </summary>
-        /// <param name="item"></param>
-        /// <param name="position"></param>
-        public static void SequenceLayoutCalculate(ISequenceLayout item, ref int position)
-        {
-            item.Begin = position;
-            int size = item.Size;
-            if (size > 0) position += size;
-        }
-        #endregion
+      
     }
     #endregion
     #region Column
@@ -1279,6 +1254,7 @@ namespace Djs.Common.Data.New
     /// </summary>
     public class SequenceLayout : ISequenceLayout
     {
+        #region Konstruktor a základní property
         /// <summary>
         /// Konstruktor
         /// </summary>
@@ -1368,7 +1344,105 @@ namespace Djs.Common.Data.New
             }
             return size;
         }
-        #region ISequenceLayout = pořadí, počáteční pixel, velikost, následující pixel. Podpůrné metody GetLayoutSize() a SetLayoutSize().
+        #endregion
+        #region ISequenceLayout podpora - nápočet hodnot ISequenceLayout.Begin do prvků pole, a do jednotlivého prvku
+        /// <summary>
+        /// Do všech položek ISequenceLayout dodané kolekce vepíše hodnotu Begin postupně od 0.
+        /// K hodnotě position přičte item.Size (pouze pokud je hodnota větší než 0), tato upravená position se vrací v ref parametru, a slouží jako Begin pro další položky v kolekci.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="position"></param>
+        public static void SequenceLayoutCalculate(IEnumerable<ISequenceLayout> items)
+        {
+            int position = 0;
+            foreach (ISequenceLayout item in items)
+                SequenceLayoutCalculate(item, ref position);
+        }
+        /// <summary>
+        /// Do položky ISequenceLayout vepíše Begin = position.
+        /// K hodnotě position přičte item.Size (pouze pokud je hodnota větší než 0), tato upravená position se vrací v ref parametru, a slouží jako Begin pro další položky v kolekci.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="position"></param>
+        public static void SequenceLayoutCalculate(ISequenceLayout item, ref int position)
+        {
+            item.Begin = position;
+            int size = item.Size;
+            if (size > 0) position += size;
+        }
+        #endregion
+        #region ISequenceLayout podpora - filtrování prvků typu ISequenceLayout podle viditelné oblasti
+        /// <summary>
+        /// Vrátí true, pokud daný prvek (item) se svojí pozicí (Begin, End) bude viditelný v aktuálním datovém prostoru
+        /// </summary>
+        /// <param name="item">Datová položka</param>
+        /// <param name="dataBegin">První viditelný datový pixel</param>
+        /// <param name="dataEnd">První datový pixel za viditelnou oblastí</param>
+        /// <returns></returns>
+        public static bool IsItemVisible(ISequenceLayout item, int dataBegin, int dataEnd)
+        {
+            return _FilterVisibleItem(item, dataBegin, dataEnd);
+        }
+        /// <summary>
+        /// Vrátí true, pokud daný prvek (item) se svojí pozicí (Begin, End) bude viditelný v aktuálním datovém prostoru
+        /// </summary>
+        /// <param name="item">Datová položka</param>
+        /// <param name="dataRange">Rozsah viditelných dat</param>
+        /// <returns></returns>
+        public static bool IsItemVisible(ISequenceLayout item, Int32Range dataRange)
+        {
+            return _FilterVisibleItem(item, dataRange);
+        }
+        /// <summary>
+        /// Vrátí danou kolekci, zafiltrovanou na pouze viditelné prvky
+        /// </summary>
+        /// <typeparam name="T">Typ datových položek</typeparam>
+        /// <param name="items">Kolekce datových položek</param>
+        /// <param name="dataBegin">První viditelný datový pixel</param>
+        /// <param name="dataEnd">První datový pixel za viditelnou oblastí</param>
+        /// <returns></returns>
+        public static IEnumerable<T> FilterVisibleItems<T>(IEnumerable<T> items, int dataBegin, int dataEnd) where T : ISequenceLayout
+        {
+            return items.Where(i => _FilterVisibleItem(i, dataBegin, dataEnd));
+        }
+        /// <summary>
+        /// Vrátí danou kolekci, zafiltrovanou na pouze viditelné prvky
+        /// </summary>
+        /// <typeparam name="T">Typ datových položek</typeparam>
+        /// <param name="items">Kolekce datových položek</param>
+        /// <param name="dataRange">Rozsah viditelných dat</param>
+        /// <returns></returns>
+        public static IEnumerable<T> FilterVisibleItems<T>(IEnumerable<T> items, Int32Range dataRange) where T : ISequenceLayout
+        {
+            return items.Where(i => _FilterVisibleItem(i, dataRange));
+        }
+        /// <summary>
+        /// Vrátí true, pokud daná položka je alespoň částečně viditelná v daném rozsahu
+        /// </summary>
+        /// <param name="item">Datová položka</param>
+        /// <param name="begin">První viditelný datový pixel</param>
+        /// <param name="end">První datový pixel za viditelnou oblastí</param>
+        /// <returns></returns>
+        private static bool _FilterVisibleItem(ISequenceLayout item, int dataBegin, int dataEnd)
+        {
+            return (item.Size > 0 
+                && item.Begin < dataEnd 
+                && item.End > dataBegin);
+        }
+        /// <summary>
+        /// Vrátí true, pokud daná položka je alespoň částečně viditelná v daném rozsahu
+        /// </summary>
+        /// <param name="item">Datová položka</param>
+        /// <param name="dataRange">Rozsah viditelných dat</param>
+        /// <returns></returns>
+        private static bool _FilterVisibleItem(ISequenceLayout item, Int32Range dataRange)
+        {
+            return (item.Size > 0 
+                && (!dataRange.HasEnd || item.Begin < dataRange.End.Value) 
+                && (!dataRange.HasBegin || item.End > dataRange.Begin.Value));
+        }
+        #endregion
+        #region implementace ISequenceLayout = pořadí, počáteční pixel, velikost, následující pixel. Podpůrné metody GetLayoutSize() a SetLayoutSize().
         /// <summary>
         /// Pozice, kde prvek začíná.
         /// Interface ISequenceLayout tuto hodnotu setuje v případě, kdy se layout těchto prvků změní (změna prvků nebo jejich velikosti).

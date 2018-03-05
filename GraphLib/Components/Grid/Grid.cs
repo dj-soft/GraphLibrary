@@ -26,7 +26,7 @@ namespace Djs.Common.Components
             this.InitColumnsPositions();
         }
         #endregion
-        #region Rozmístění vnitřních prvků gridu = souřadnice pro prostor tabulek a scrollbarů
+        #region Rozmístění vnitřních prvků gridu - souřadnice pro prostor tabulek a scrollbarů
         /// <summary>
         /// Je voláno po změně Bounds, z metody SetBound(), pokud je vyžadována akce PrepareInnerItems.
         /// Přepočte umístění vnitřních prvků objektu, podle rozměrů this.BoundsClient.Size
@@ -68,9 +68,10 @@ namespace Djs.Common.Components
         /// <param name="eventSource">Zdroj této události</param>
         private void RecalcClientAreas(ref ProcessAction actions, EventSourceType eventSource)
         {
-            this.GridLayoutValid = false;
+            Size clientSize = this.ClientSize;
+            if (this.ClientSizeLast == clientSize) return;
 
-            Size clientSize = this.BoundsClient.Size;
+            this.GridLayoutValid = false;
             if (clientSize.Width <= 0 || clientSize.Height <= 0) return;
 
             // Určíme, zda bude zobrazen scrollbar vpravo (to je tehdy, když výška tabulek je větší než výška prostoru pro tabulky = (ClientSize.Height - ColumnsScrollBar.Bounds.Height)):
@@ -107,8 +108,15 @@ namespace Djs.Common.Components
 
             this.GridTablesBounds = new Rectangle(x, y, w, h);
 
+            // Zapamatovat clientSize, abychom příští aktivitu prováděli jen po změně:
+            this.ClientSizeLast = clientSize;
             this.GridLayoutValid = true;
         }
+        /// <summary>
+        /// Hodnota ClientSize, pro kterou byly naposledy přepočteny pozice vnitřních objektů (GridTablesBounds, ColumnsScrollBarBounds, TablesScrollBarBounds).
+        /// Další přepočet se provede jen po změně.
+        /// </summary>
+        protected Size ClientSizeLast;
         /// <summary>
         /// true pokud se má zobrazovat svislý scrollbar (pro tabulky, vpravo)
         /// </summary>
@@ -134,9 +142,9 @@ namespace Djs.Common.Components
         /// </summary>
         protected bool GridLayoutValid;
         #endregion
-        #region Pozicování svislé = tabulky a vpravo svislý scrollbar
+        #region Pozicování svislé - tabulky a vpravo svislý scrollbar
         /// <summary>
-        /// Inicializace objektů pro pozicování sloupců: TablesPositions, TablesScrollBar
+        /// Inicializace objektů pro pozicování tabulek: TablesPositions, TablesScrollBar
         /// </summary>
         private void InitTablesPositions()
         {
@@ -189,7 +197,7 @@ namespace Djs.Common.Components
                         tables.Sort(GTable.CompareOrder);
 
                     ISequenceLayout[] array = tables.Cast<ISequenceLayout>().ToArray();
-                    Table.SequenceLayoutCalculate(array);
+                    SequenceLayout.SequenceLayoutCalculate(array);
                     this._TablesSequence = array;
                 }
                 return this._TablesSequence;
@@ -237,7 +245,7 @@ namespace Djs.Common.Components
         /// </summary>
         protected GScrollBar TablesScrollBar;
         #endregion
-        #region Pozicování vodorovné = sloupce tabulek a dolní vodorovný scrollbar
+        #region Pozicování vodorovné - sloupce tabulek a dolní vodorovný scrollbar
         private void InitColumnsPositions()
         {
             this.ColumnsPositions = new GPosition(GGrid.DefaultRowHeaderWidth, 28, this._ColumnPositionGetVisualSize, this._ColumnPositionGetDataSize);
@@ -284,12 +292,12 @@ namespace Djs.Common.Components
                 {
                     List<Column> columns = new List<Column>();
                     if (this._Tables != null && this._Tables.Count > 0)
-                        columns.AddRange(this._Tables[0].DataTable.Columns);
+                        columns.AddRange(this._Tables[0].DataTable.Columns.Where(c => c.Visible));
                     if (columns.Count > 1)
                         columns.Sort(Column.CompareOrder);
 
                     ISequenceLayout[] array = columns.Cast<ISequenceLayout>().ToArray();
-                    Table.SequenceLayoutCalculate(array);
+                    SequenceLayout.SequenceLayoutCalculate(array);
                     this._ColumnsSequence = array;
                 }
                 return this._ColumnsSequence;
@@ -305,7 +313,7 @@ namespace Djs.Common.Components
         /// Změna pořadí sloupců, Změna počtu sloupců.
         /// Nemusí se volat při posunech vodorovného scrollbaru ani při resize gridu, ani při změně šířky sloupců!
         /// </summary>
-        protected void ColumnsSequenceReset() { this._ColumnsSequence = null; }
+        protected void ColumnsSequenceReset() { this._ColumnsSequence = null; this._MainTimeAxisReset(); }
         /// <summary>
         /// Eventhandler volaný při/po změně hodnoty na vodorovném scrollbaru = posuny sloupců
         /// </summary>
@@ -335,10 +343,6 @@ namespace Djs.Common.Components
         /// Dolní vodorovný Scrollbar, pro posuny sloupců doleva/doprava
         /// </summary>
         protected GScrollBar ColumnsScrollBar;
-        /// <summary>
-        /// Výchozí šířka sloupce RowHeader
-        /// </summary>
-        public static int DefaultRowHeaderWidth { get { return 32; } }
         #endregion
         #region Tabulky - soupis GTable
         #region Veřejné rozhraní
@@ -510,9 +514,9 @@ namespace Djs.Common.Components
         private EList<GTable> _Tables;
         #endregion
         #endregion
-        #region Pole grafických prvků Childs : obsahuje všechny tabulky, jejich vzájemné oddělovače (Splitter), a scrollbary (sloupce vždy, tabulky podle potřeby)
+        #region Pole grafických prvků Childs - obsahuje všechny tabulky, jejich vzájemné oddělovače (Splitter), a scrollbary (sloupce vždy, tabulky podle potřeby)
         /// <summary>
-        /// An array of sub-items in this item.
+        /// Pole grafických prvků v tomto gridu: tabulky, splittery (mezi tabulkami), scrollbary (svislý, vodorovný)
         /// </summary>
         protected override IEnumerable<IInteractiveItem> Childs { get { this.ChildArrayCheck(); return this.ChildList; } }
         /// <summary>
@@ -538,29 +542,72 @@ namespace Djs.Common.Components
         protected void ChildArrayReload()
         {
             this.ChildList.Clear();
+            if (!this.GridLayoutValid) return;
+
+            Rectangle bounds = this.GridTablesBounds;
 
             // Nejprve přidáme tabulky, a to jen ty které jsou viditelné:
-            this.TablesSequence
+            // Současně si nastřádáme jejich splittery:
+            List<IInteractiveItem> splitterList = new List<IInteractiveItem>();
+            foreach (ISequenceLayout isl in this.TablesSequence)
+            {   // Procházím tabulky ze seznamu ISequenceLayout, a pokud tabulka je viditelná, pak ji zpracuji:
+                GTable table = isl as GTable;
+                bool isVisible = (Rectangle.Intersect(bounds, table.Bounds).Height > 0);
+                if (isVisible)
+                {
+                    this.ChildList.Add(isl as IInteractiveItem);
+                    splitterList.Add((isl as GTable).TableSplitter);
+                }
+            }
+            // Pokud máme nastřádán více než 1 table-splitter, pak přidáme splitery krom posledního:
+            if (splitterList.Count > 1)
+                this.ChildList.AddRange(splitterList.GetRange(0, splitterList.Count - 1));
 
-            // First (on bottom in hierarchy) is Tables:
-            this.ChildList.AddRange(this._Tables);
-
-            // Next (=in hierarchy: above Tables) is Table-Splitters, for all except last GTable:
-            for (int t = 0; t < (this._Tables.Count - 1); t++)
-                this.ChildList.Add(this._Tables[t].TableSplitter);
-
-            // And top-most (in hierarchy) is HorizontalScrollBar (only when exists any Columns) and VerticalScrollBar:
-
-            if (this.Positions.TableCount > 0)
-                this.ChildList.Add(this.TablesScrollBar);
-            if (this.Positions.ColumnsCount > 0)
+            // Pokud jsou viditelné scrollbary, přidáme je:
+            if (this.ColumnsScrollBarVisible)
                 this.ChildList.Add(this.ColumnsScrollBar);
+            if (this.TablesScrollBarVisible)
+                this.ChildList.Add(this.TablesScrollBar);
 
             this._ChildsIsValid = true;
         }
         private bool _ChildsIsValid;
         #endregion
-        #region Podpora pro časové osy v synchronizovaných sloupcích
+        #region Hlavní časová osa, podpora pro časové osy v synchronizovaných sloupcích
+        internal ITimeConvertor MainTimeAxis
+        {
+            get
+            {
+                if (!this._MainTimeAxisValid)
+                {
+                    Column timeAxisColumn = this.ColumnsSequence.Cast<Column>().FirstOrDefault(c => c.UseTimeAxis);
+                    if (timeAxisColumn != null)
+                    {
+                        this._MainTimeAxis = timeAxisColumn.TimeAxis;
+                        this._MainTimeAxisValid = true;
+                    }
+                }
+                return this._MainTimeAxis;
+            }
+        }
+        /// <summary>
+        /// true pokud existuje hlavní časová osa = objekt v this.MainTimeAxis.
+        /// Hlavní časová osa je časová osa z prvního sloupce, který zobrazuje časovou osu.
+        /// </summary>
+        internal bool MainTimeAxisExists { get; private set; }
+        private void _MainTimeAxisReset()
+        {
+            this._MainTimeAxis = null;
+            this._MainTimeAxisValid = false;
+        }
+        /// <summary>
+        /// Úložiště pro hlavní časovou osu
+        /// </summary>
+        private ITimeConvertor _MainTimeAxis;
+        /// <summary>
+        /// true pokud hlavní časová osa byla vyhledána (může být i nenalezena == null, ale i to je platný výsledek, hlavní časová osa není povinná)
+        /// </summary>
+        private bool _MainTimeAxisValid;
         /// <summary>
         /// Vyvolá RefreshTimeAxis pro všechny GTable, předá jim ID sloupce pro refresh.
         /// Metoda se volá po jakékoli změně hodnot na časové ose daného sloupce (je volána z handleru Column._TimeAxis_ValueChange)
@@ -572,61 +619,25 @@ namespace Djs.Common.Components
                 gTable.RefreshTimeAxis(columnId);
         }
         #endregion
-
-
-
-       
-        
-        #region Refresh
-        public override void Refresh()
-        {
-            this.Refresh(GridRefreshStyle.All, null);
-        }
-        public void Refresh(Table table)
-        {
-            this.Refresh(GridRefreshStyle.All, table);
-        }
-        protected void Refresh(GridRefreshStyle refreshStyle, Table dTable)
-        {
-            if ((refreshStyle & GridRefreshStyle.ReloadColumns) != 0)
-                this.ReloadColumns(false);
-            if ((refreshStyle & GridRefreshStyle.ReloadRows) != 0)
-                this.RefreshRows(dTable);
-            base.Refresh();
-        }
-
-        [Flags]
-        protected enum GridRefreshStyle
-        {
-            None = 0,
-            ReloadColumns = 0x0001,
-            ReloadRows = 0x0010,
-
-            All = 0xFFFF
-        }
-        #endregion
         #region Interactivity
         protected override void AfterStateChanged(GInteractiveChangeStateArgs e)
         {
-            // GGrid (this is other areas, without any Child object) is inactive.
-            // This is only in situation, when GGrid has no GTable (=no Columns, no Splitters, and HorizontalScrollbar is hidden)
+            // GGrid sám o sobě není interaktivní. Interaktivní jsou jeho Childs.
         }
         #endregion
         #region Draw
         protected override void Draw(GInteractiveDrawArgs e)
         {
-            // Rectangle bounds = this.BoundsAbsolute;
-            // e.Graphics.FillRectangle(Brushes.LightYellow, bounds);
-            /*
-            foreach (IInteractiveItem item in this.Childs)
-                item.Draw(e);
-            */
+            // GGrid sám o sobě se nevykresluje, leda v situaci kdy nemá žádnou tabulku:
+            if (this.TablesCount == 0)
+                base.Draw(e);
         }
+        #endregion
+        #region Defaultní hodnoty
         /// <summary>
-        /// internal access to this.RepaintToLayers value.
-        /// Set this value to Standard layer after interactive (!) change of any of visual properties.
+        /// Výchozí šířka sloupce RowHeader
         /// </summary>
-        internal GInteractiveDrawLayer RepaintThisToLayers { get { return this.RepaintToLayers; } set { this.RepaintToLayers = value; } }
+        public static int DefaultRowHeaderWidth { get { return 32; } }
         #endregion
     }
     #region class GPosition : Třída, která řeší zobrazení obsahu prvku typicky v Gridu
@@ -707,6 +718,16 @@ namespace Djs.Common.Components
         /// </summary>
         public int DataSize { get { return this._GetDataSizeMethod(); } }
         /// <summary>
+        /// Číslo datového pixelu, který je při současném zobrazení End = první za viditelným prostorem (= DataFirstPixel + DataVisibleSize)
+        /// </summary>
+        protected int DataEndPixel { get { return (this.DataFirstPixel + this.VisualSize); } }
+        /// <summary>
+        /// Rozmezí datových pixelů, které spadají do viditelné oblasti.
+        /// Vrácená hodnota má Begin i End naplněné (HasValue).
+        /// Begin = DataFirstPixel, End = DataFirstPixel + VisualSize.
+        /// </summary>
+        public Int32Range DataRange { get { return new Int32Range(this.DataFirstPixel, this.DataEndPixel); } }
+        /// <summary>
         /// true pokud má být zobrazen ScrollBar (respektive má být Enabled) : pokud DataSize je větší než VisualSize
         /// </summary>
         public bool IsScrollBarActive { get { return (this.DataSize > this.VisualSize); } }
@@ -726,52 +747,14 @@ namespace Djs.Common.Components
         #endregion
         /// <summary>
         /// Vrátí vizuální pozici (odpovídající aktuálnímu controlu) pro danou logickou (datovou) pozici.
-        /// Vrací tedy danou pozici (dataPosition + DataFirstPixel - DataFirstPixel)
+        /// Vrací tedy danou pozici (dataPosition + VisualFirstPixel - DataFirstPixel).
         /// </summary>
         /// <param name="dataPosition"></param>
         /// <returns></returns>
         public int GetVisualPosition(int dataPosition)
-        { }
-        #region Filtrování datových prvků podle aktuální viditelné oblasti a podle umístění datových prvků (ISequenceLayout)
-        /// <summary>
-        /// Vrátí true, pokud daný prvek (item) se svojí pozicí (Begin, End) bude viditelný v aktuálním datovém prostoru
-        /// </summary>
-        /// <param name="item"></param>
-        /// <returns></returns>
-        public bool FilterVisibleItem(ISequenceLayout item)
         {
-            int dataBegin = this.DataFirstPixel;
-            int dataEnd = this.DataEndPixel;
-            return this._FilterVisibleItem(item, dataBegin, dataEnd);
+            return (dataPosition + this.VisualFirstPixel - this.DataFirstPixel);
         }
-        /// <summary>
-        /// Vrátí danou kolekci, zafiltrovanou na pouze viditelné prvky
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="items"></param>
-        /// <returns></returns>
-        public IEnumerable<T> FilterVisibleItems<T>(IEnumerable<T> items) where T : ISequenceLayout
-        {
-            int dataBegin = this.DataFirstPixel;
-            int dataEnd = this.DataEndPixel;
-            return items.Where(i => this._FilterVisibleItem(i, dataBegin, dataEnd));
-        }
-        /// <summary>
-        /// Vrátí true, pokud daná položka je alespoň částečně viditelná v daném rozsahu
-        /// </summary>
-        /// <param name="item"></param>
-        /// <param name="dataBegin"></param>
-        /// <param name="dataEnd"></param>
-        /// <returns></returns>
-        private bool _FilterVisibleItem(ISequenceLayout item, int dataBegin, int dataEnd)
-        {
-            return (item.Size > 0 && item.Begin < dataEnd && item.End > dataBegin);
-        }
-        /// <summary>
-        /// Číslo datového pixelu, který je při současném zobrazení End = první za viditelným prostorem (= DataFirstPixel + DataVisibleSize)
-        /// </summary>
-        protected int DataEndPixel { get { return (this.DataFirstPixel + this.VisualSize); } }
-        #endregion
         #region IScrollBarData
         int IScrollBarData.DataBegin { get { return this.DataFirstPixel; } }
         int IScrollBarData.DataSize { get { return this.DataSize; } }
