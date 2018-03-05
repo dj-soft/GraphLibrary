@@ -413,7 +413,8 @@ namespace Djs.Common.Components
             Rectangle tablesBounds = this.GridTablesBounds;
             foreach (ISequenceLayout isl in this.TablesSequence)
             {   // Procházím tabulky jako ISequenceLayout, určím jejich souřadnice podle ISequenceLayout.Begin a Size (=svislá pozice) + pozice prostoru tabulek (X a Width):
-                Rectangle bound = new Rectangle(tablesBounds.X, isl.Begin, tablesBounds.Width, isl.Size);
+                int y = this.TablesPositions.GetVisualPosition(isl.Begin);
+                Rectangle bound = new Rectangle(tablesBounds.X, y, tablesBounds.Width, isl.Size);
                 GTable gTable = isl as GTable;
                 if (gTable != null)
                     gTable.SetBounds(bound, actions, eventSource);
@@ -723,6 +724,14 @@ namespace Djs.Common.Components
         /// </summary>
         public int DataSizeAddSpace { get { return this._DataSizeAddSpace; } set { this._DataSizeAddSpace = value; } } private int _DataSizeAddSpace;
         #endregion
+        /// <summary>
+        /// Vrátí vizuální pozici (odpovídající aktuálnímu controlu) pro danou logickou (datovou) pozici.
+        /// Vrací tedy danou pozici (dataPosition + DataFirstPixel - DataFirstPixel)
+        /// </summary>
+        /// <param name="dataPosition"></param>
+        /// <returns></returns>
+        public int GetVisualPosition(int dataPosition)
+        { }
         #region Filtrování datových prvků podle aktuální viditelné oblasti a podle umístění datových prvků (ISequenceLayout)
         /// <summary>
         /// Vrátí true, pokud daný prvek (item) se svojí pozicí (Begin, End) bude viditelný v aktuálním datovém prostoru
