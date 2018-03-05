@@ -14,16 +14,16 @@ namespace Djs.Common.Components
     /// </summary>
     public class GScrollBar : InteractiveObject, IInteractiveItem
     {
-        #region Constructor
+        #region Konstruktor
         /// <summary>
-        /// Constructor
+        /// Konstruktor
         /// </summary>
         public GScrollBar()
         {
             this.ChildItemsInit();
         }
         /// <summary>
-        /// ToString()
+        /// Viszualizace
         /// </summary>
         /// <returns></returns>
         public override string ToString()
@@ -31,10 +31,10 @@ namespace Djs.Common.Components
             return this.Orientation.ToString() + " " + base.ToString();
         }
         #endregion
-        #region Bounds, Value and ValueTotal: properties, call Set methods
+        #region Bounds, Orientation, Value a ValueTotal: data, volání Set metod
         #region Bounds, Orientation
         /// <summary>
-        /// Oriantation of scrollbar
+        /// Oriantace scrollbaru
         /// </summary>
         public Orientation Orientation
         {
@@ -172,8 +172,14 @@ namespace Djs.Common.Components
                 int visualSize = data.VisualSize;
 
                 int addSpace = data.DataSizeAddSpace;
-                if (addSpace < 0) addSpace = 0;
-                if (addSpace > visualSize) addSpace = visualSize;
+                if (addSpace < 0)
+                {   // Tady se realizuje definice: "záporné číslo v DataSizeAddSpace značí počet pixelů v datové oblasti, kde budou zobrazena poslední datové pixely"
+                    addSpace = visualSize + addSpace;      // Pokud addSpace = -50 a visualSize = 200, značí to že chci na poslední stránce vidět 50px dat nahoře a pod tím 150px prázdného prostoru
+                    if (addSpace < 10)                     // Pokud to ale přeženu, zobrazím alespoň 10px dat
+                        addSpace = 10;
+                }
+                if (addSpace < 0) addSpace = 0;            // Jistota
+                if (addSpace > (visualSize - 10)) addSpace = visualSize - 10;
                 dataSize += addSpace;
 
                 this.ValueTotal = new SizeRange(0, dataSize);
@@ -1170,8 +1176,15 @@ namespace Djs.Common.Components
         /// </summary>
         int VisualSize { get; }
         /// <summary>
-        /// Počet přidaných pixelů za datovou oblastí, které se zobrazí pod / za daty, když ScrollBar dojede na konec rozsahu.
-        /// Je to prázdné místo, které uživateli signalizuje "že dál nic není".
+        /// Přídavek k hodnotě DataSize (=celková velikost dat) v pixelech, který bude předáván do ScrollBaru.
+        /// Důvod tohoto přídavku: při čistých výpočtech (bez přídavku) bude datový obsah scrollován zcela přesně do vizuálního prostoru, 
+        /// a když Scrollbar dojede na konec prostoru (dolů/doprava), pak obsah bude zobrazen zcela přesně (dole/vpravo bude poslední pixel obsahu).
+        /// To je sice matematicky správně, ale vizuálně (ergonomicky) není zřejmé, že "dál už nic není".
+        /// Proto se běžně scrollbar chová tak, že při odscrollování na konec se "za koncem dat" zobrazí několik pixelů prázdného prostoru.
+        /// Defaultně se zobrazuje 45 pixelů.
+        /// Hodnota 0 pak zobrazuje "matematicky správně".
+        /// Záporná hodnota v DataSizeOverhead zařídí, že daný bude zobrazen počet pixelů dat nahoře/vlevo:
+        /// např. -40 zajistí, že při posunu scrollbaru na konec dráhy se zobrazí nahoře 40 pixelů dat, a celý zbytek bude prázdný.
         /// </summary>
         int DataSizeAddSpace { get; }
     }
