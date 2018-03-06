@@ -16,7 +16,7 @@ namespace Djs.Common.Components
             this._ItemList.ItemRemoveAfter += new EList<ITimeGraphItem>.EListEventAfterHandler(_ItemList_ItemRemoveAfter);
 
             this.LineUnitHeight = 6;
-            this.GraphHeightRange = new Int32Range(16, 125);
+            this.GraphHeightRange = new Int32NRange(16, 125);
             
         }
         #region Items
@@ -358,7 +358,7 @@ namespace Djs.Common.Components
             if (logSize < 1f) logSize = 1f;
 
             int pixelHeight = (int)(Math.Ceiling(logSize * this.LineUnitHeight));
-            Int32Range range = this.GraphHeightRange;
+            Int32NRange range = this.GraphHeightRange;
             if (range != null && range.IsReal)
                 pixelHeight = range.Align(pixelHeight).Value;
             this._GraphPixelHeight = pixelHeight;
@@ -399,7 +399,7 @@ namespace Djs.Common.Components
         
         public int GraphDefaultHeight { get; set; }
         public int LineUnitHeight { get { return this._LineUnitHeight; } set { this._LineUnitHeight = (value < 5 ? 5 : (value > 500 ? 500 : value)); } } private int _LineUnitHeight = 32;
-        public Int32Range GraphHeightRange { get { return this._GraphHeightRange; } set { this._GraphHeightRange = value; } } private Int32Range _GraphHeightRange;
+        public Int32NRange GraphHeightRange { get { return this._GraphHeightRange; } set { this._GraphHeightRange = value; } } private Int32NRange _GraphHeightRange;
         
 
         #region Draw

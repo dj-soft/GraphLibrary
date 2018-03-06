@@ -1288,7 +1288,7 @@ namespace Djs.Common.Data.New
         /// Rozmezí povolené velikosti prvku. Lze vložit null.
         /// Pokud bylo vloženo null, pak příští get čte hodnotu z ParentLayout (i rekurzivně).
         /// </summary>
-        public Int32Range SizeRange { get { return (this._SizeRange != null ? this._SizeRange : (this.HasParent ? this.ParentLayout.SizeRange : null)); } set { this._SizeRange = value; } } private Int32Range _SizeRange;
+        public Int32NRange SizeRange { get { return (this._SizeRange != null ? this._SizeRange : (this.HasParent ? this.ParentLayout.SizeRange : null)); } set { this._SizeRange = value; } } private Int32NRange _SizeRange;
         /// <summary>
         /// true pokud prvek je viditelný (dáno kódem, nikoli fitry atd). Default = true
         /// </summary>
@@ -1337,7 +1337,7 @@ namespace Djs.Common.Data.New
         protected int AlignSizeToValidRange(int size)
         {
             if (size < this.SizeMinimum) size = this.SizeMinimum;
-            Int32Range sizeRange = this.SizeRange;         // Automaticky vyhodnocuje ParentLayout
+            Int32NRange sizeRange = this.SizeRange;         // Automaticky vyhodnocuje ParentLayout
             if (sizeRange != null)
             {
                 Int32? sizeAligned = sizeRange.Align(size);
@@ -1391,6 +1391,16 @@ namespace Djs.Common.Data.New
         /// <param name="item">Datová položka</param>
         /// <param name="dataRange">Rozsah viditelných dat</param>
         /// <returns></returns>
+        public static bool IsItemVisible(ISequenceLayout item, Int32NRange dataRange)
+        {
+            return _FilterVisibleItem(item, dataRange);
+        }
+        /// <summary>
+        /// Vrátí true, pokud daný prvek (item) se svojí pozicí (Begin, End) bude viditelný v aktuálním datovém prostoru
+        /// </summary>
+        /// <param name="item">Datová položka</param>
+        /// <param name="dataRange">Rozsah viditelných dat</param>
+        /// <returns></returns>
         public static bool IsItemVisible(ISequenceLayout item, Int32Range dataRange)
         {
             return _FilterVisibleItem(item, dataRange);
@@ -1406,6 +1416,17 @@ namespace Djs.Common.Data.New
         public static IEnumerable<T> FilterVisibleItems<T>(IEnumerable<T> items, int dataBegin, int dataEnd) where T : ISequenceLayout
         {
             return items.Where(i => _FilterVisibleItem(i, dataBegin, dataEnd));
+        }
+        /// <summary>
+        /// Vrátí danou kolekci, zafiltrovanou na pouze viditelné prvky
+        /// </summary>
+        /// <typeparam name="T">Typ datových položek</typeparam>
+        /// <param name="items">Kolekce datových položek</param>
+        /// <param name="dataRange">Rozsah viditelných dat</param>
+        /// <returns></returns>
+        public static IEnumerable<T> FilterVisibleItems<T>(IEnumerable<T> items, Int32NRange dataRange) where T : ISequenceLayout
+        {
+            return items.Where(i => _FilterVisibleItem(i, dataRange));
         }
         /// <summary>
         /// Vrátí danou kolekci, zafiltrovanou na pouze viditelné prvky
@@ -1437,11 +1458,23 @@ namespace Djs.Common.Data.New
         /// <param name="item">Datová položka</param>
         /// <param name="dataRange">Rozsah viditelných dat</param>
         /// <returns></returns>
-        private static bool _FilterVisibleItem(ISequenceLayout item, Int32Range dataRange)
+        private static bool _FilterVisibleItem(ISequenceLayout item, Int32NRange dataRange)
         {
             return (item.Size > 0 
                 && (!dataRange.HasEnd || item.Begin < dataRange.End.Value) 
                 && (!dataRange.HasBegin || item.End > dataRange.Begin.Value));
+        }
+        /// <summary>
+        /// Vrátí true, pokud daná položka je alespoň částečně viditelná v daném rozsahu
+        /// </summary>
+        /// <param name="item">Datová položka</param>
+        /// <param name="dataRange">Rozsah viditelných dat</param>
+        /// <returns></returns>
+        private static bool _FilterVisibleItem(ISequenceLayout item, Int32Range dataRange)
+        {
+            return (item.Size > 0
+                && item.Begin < dataRange.End
+                && item.End > dataRange.Begin);
         }
         #endregion
         #region implementace ISequenceLayout = pořadí, počáteční pixel, velikost, následující pixel. Podpůrné metody GetLayoutSize() a SetLayoutSize().

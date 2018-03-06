@@ -252,43 +252,43 @@ namespace Djs.Common.Data
         #endregion
     }
     #endregion
-    #region Int32Range = BaseRange<Int32?, Int32?>
+    #region Int32NRange = BaseRange<Int32?, Int32?>
     /// <summary>
-    /// Int32Range range (Begin, End), with Int32? Ticks and Int32? Size
+    /// Int32NRange = rozmezí hodnot, kde Begin, End a Size jsou Int32?
     /// </summary>
-    public class Int32Range : BaseRange<Int32?, Int32?>
+    public class Int32NRange : BaseRange<Int32?, Int32?>
     {
-        #region Constructors, Visualiser, Helper
-        public Int32Range() : base() { }
-        public Int32Range(Int32? begin, Int32? end) : base(begin, end) { }
+        #region Konstruktory, vizualizace, Helper objekt
+        public Int32NRange() : base() { }
+        public Int32NRange(Int32? begin, Int32? end) : base(begin, end) { }
         /// <summary>
-        /// Allways returns a new instance of Int32Range, containing empty values
+        /// Vrací new instanci obsahující prázdné hodnoty
         /// </summary>
-        public static Int32Range Empty { get { return new Int32Range(); } }
+        public static Int32NRange Empty { get { return new Int32NRange(); } }
         /// <summary>
-        /// Allways returns a new instance of Int32Range, containing current values from this instance
+        /// Vrací new instanci obsahující kopii aktuálních hodnot z this instance
         /// </summary>
-        public Int32Range Clone { get { return new Int32Range(this.Begin, this.End); } }
+        public Int32NRange Clone { get { return new Int32NRange(this.Begin, this.End); } }
         /// <summary>
-        /// Create interval from begin and time (size). Booth must be defined.
+        /// Vrací new instanci z daného počátku a délky
         /// </summary>
         /// <param name="begin"></param>
         /// <param name="size"></param>
-        public static Int32Range CreateFromBeginSize(Int32 begin, Int32 size)
+        public static Int32NRange CreateFromBeginSize(Int32 begin, Int32 size)
         {
-            return new Int32Range(begin, begin + (Int32)size);
+            return new Int32NRange(begin, begin + (Int32)size);
         }
         /// <summary>
-        /// Create interval from time (duration) and end. Booth must be defined.
+        /// Vrací new instanci z dané délky a konce
         /// </summary>
         /// <param name="size"></param>
         /// <param name="end"></param>
-        public static Int32Range CreateFromSizeEnd(Int32 size, Int32 end)
+        public static Int32NRange CreateFromSizeEnd(Int32 size, Int32 end)
         {
-            return new Int32Range(end - (Int32)size, end);
+            return new Int32NRange(end - (Int32)size, end);
         }
         /// <summary>
-        /// Contains a textual form of this interval
+        /// Obsahuje textovou podobu this intervalu
         /// </summary>
         public string Text
         {
@@ -309,7 +309,7 @@ namespace Djs.Common.Data
         }
         public override bool Equals(object obj)
         {
-            return Helper.IsEqual(this, (obj as Int32Range));
+            return Helper.IsEqual(this, (obj as Int32NRange));
         }
         public override string ToString()
         {
@@ -318,26 +318,26 @@ namespace Djs.Common.Data
         /// <summary>
         /// Help object: singleton empty instance, for access to base instantial methods
         /// </summary>
-        protected static Int32Range Helper { get { if (((object)_Helper) == null) _Helper = new Int32Range(); return _Helper; } } private static Int32Range _Helper;
+        protected static Int32NRange Helper { get { if (((object)_Helper) == null) _Helper = new Int32NRange(); return _Helper; } } private static Int32NRange _Helper;
         #endregion
         #region Operators
-        public static Int32Range operator *(Int32Range a, Int32Range b)
+        public static Int32NRange operator *(Int32NRange a, Int32NRange b)
         {
             Int32? begin, end;
             Helper.PrepareIntersect(a, b, out begin, out end);
-            return new Int32Range(begin, end);
+            return new Int32NRange(begin, end);
         }
-        public static Int32Range operator +(Int32Range a, Int32Range b)
+        public static Int32NRange operator +(Int32NRange a, Int32NRange b)
         {
             Int32? begin, end;
             Helper.PrepareUnion(a, b, out begin, out end);
-            return new Int32Range(begin, end);
+            return new Int32NRange(begin, end);
         }
-        public static bool operator ==(Int32Range a, Int32Range b)
+        public static bool operator ==(Int32NRange a, Int32NRange b)
         {
             return Helper.IsEqual(a, b);
         }
-        public static bool operator !=(Int32Range a, Int32Range b)
+        public static bool operator !=(Int32NRange a, Int32NRange b)
         {
             return !Helper.IsEqual(a, b);
         }
@@ -349,11 +349,11 @@ namespace Djs.Common.Data
         /// <param name="center"></param>
         /// <param name="ratio"></param>
         /// <returns></returns>
-        public Int32Range ZoomToRatio(Int32 center, double ratio)
+        public Int32NRange ZoomToRatio(Int32 center, double ratio)
         {
             Int32? begin, end;
             this.PrepareZoomToRatio(center, (decimal)ratio, out begin, out end);
-            return new Int32Range(begin, end);
+            return new Int32NRange(begin, end);
         }
         /// <summary>
         /// Returns a new instance created from current instance, which Time is (ratio * this.Time) and center of zooming is on specified date.
@@ -361,11 +361,11 @@ namespace Djs.Common.Data
         /// <param name="center"></param>
         /// <param name="ratio"></param>
         /// <returns></returns>
-        public Int32Range ZoomToRatio(Int32 center, decimal ratio)
+        public Int32NRange ZoomToRatio(Int32 center, decimal ratio)
         {
             Int32? begin, end;
             this.PrepareZoomToRatio(center, ratio, out begin, out end);
-            return new Int32Range(begin, end);
+            return new Int32NRange(begin, end);
         }
         /// <summary>
         /// Returns a new instance created from current instance, which Time is specified and center of zooming is on specified date.
@@ -373,11 +373,11 @@ namespace Djs.Common.Data
         /// <param name="center"></param>
         /// <param name="time"></param>
         /// <returns></returns>
-        public Int32Range ZoomToSize(Int32 center, Int32 size)
+        public Int32NRange ZoomToSize(Int32 center, Int32 size)
         {
             Int32? begin, end;
             this.PrepareZoomToSizeOnCenterPoint(center, size, out begin, out end);
-            return new Int32Range(begin, end);
+            return new Int32NRange(begin, end);
         }
         /// <summary>
         /// Returns a new instance created from current instance, which Time is (ratio * this.Time) and center of zooming is on specified relative position.
@@ -385,11 +385,11 @@ namespace Djs.Common.Data
         /// <param name="relativePivot"></param>
         /// <param name="ratio"></param>
         /// <returns></returns>
-        public Int32Range ZoomToSize(double relativePivot, Int32? size)
+        public Int32NRange ZoomToSize(double relativePivot, Int32? size)
         {
             Int32? begin, end;
             this.PrepareZoomToSizeOnRelativePivot((decimal)relativePivot, size, out begin, out end);
-            return new Int32Range(begin, end);
+            return new Int32NRange(begin, end);
         }
         /// <summary>
         /// Returns a date on relative position (where 0 = Begin, 1 = End). Center of interval is on position 0.5d.
@@ -439,7 +439,7 @@ namespace Djs.Common.Data
         /// <param name="a"></param>
         /// <param name="b"></param>
         /// <returns></returns>
-        public static bool Equal(Int32Range a, Int32Range b)
+        public static bool Equal(Int32NRange a, Int32NRange b)
         {
             return Helper.IsEqual(a, b);
         }
@@ -555,6 +555,172 @@ namespace Djs.Common.Data
         {
             return (size.HasValue ? size.Value.ToString() : "");
         }
+        #endregion
+    }
+    #endregion
+    #region Int32Range = BaseRange<Int32, Int32>
+    /// <summary>
+    /// Int32Range = rozmezí hodnot, kde Begin, End a Size jsou Int32
+    /// </summary>
+    public class Int32Range : BaseRange<Int32, Int32>
+    {
+        #region Konstruktory, vizualizace, Helper objekt
+        /// <summary>
+        /// Vytvoří new instanci, prázdnou
+        /// </summary>
+        public Int32Range() : base() { }
+        /// <summary>
+        /// Vytvoří new instanci, s danými hodnotami
+        /// </summary>
+        /// <param name="begin"></param>
+        /// <param name="end"></param>
+        public Int32Range(int begin, int end) : base(begin, end) { }
+        /// <summary>
+        /// Vrací new instanci obsahující prázdné hodnoty
+        /// </summary>
+        public static Int32Range Empty { get { return new Int32Range(); } }
+        /// <summary>
+        /// Vrací new instanci obsahující kopii aktuálních hodnot z this instance
+        /// </summary>
+        public Int32Range Clone { get { return new Int32Range(this.Begin, this.End); } }
+        /// <summary>
+        /// Vrací new instanci z daného počátku a délky
+        /// </summary>
+        /// <param name="begin"></param>
+        /// <param name="size"></param>
+        public static Int32Range CreateFromBeginSize(Int32 begin, Int32 size)
+        {
+            return new Int32Range(begin, begin + (Int32)size);
+        }
+        /// <summary>
+        /// Vrací new instanci z dané délky a konce
+        /// </summary>
+        /// <param name="size"></param>
+        /// <param name="end"></param>
+        public static Int32Range CreateFromSizeEnd(Int32 size, Int32 end)
+        {
+            return new Int32Range(end - (Int32)size, end);
+        }
+        /// <summary>
+        /// Obsahuje textovou podobu this intervalu
+        /// </summary>
+        public string Text
+        {
+            get
+            {
+                return this.Begin.ToString() + " ÷ " + this.End.ToString();
+            }
+        }
+        public override int GetHashCode()
+        {
+            return this.HashCode;
+        }
+        public override bool Equals(object obj)
+        {
+            return Helper.IsEqual(this, (obj as Int32Range));
+        }
+        public override string ToString()
+        {
+            return this.Text;
+        }
+        /// <summary>
+        /// Help object: singleton empty instance, for access to base instantial methods
+        /// </summary>
+        protected static Int32Range Helper { get { if (((object)_Helper) == null) _Helper = new Int32Range(); return _Helper; } } private static Int32Range _Helper;
+        #endregion
+        #region Operators
+        public static Int32Range operator *(Int32Range a, Int32Range b)
+        {
+            Int32 begin, end;
+            Helper.PrepareIntersect(a, b, out begin, out end);
+            return new Int32Range(begin, end);
+        }
+        public static Int32Range operator +(Int32Range a, Int32Range b)
+        {
+            Int32 begin, end;
+            Helper.PrepareUnion(a, b, out begin, out end);
+            return new Int32Range(begin, end);
+        }
+        public static bool operator ==(Int32Range a, Int32Range b)
+        {
+            return Helper.IsEqual(a, b);
+        }
+        public static bool operator !=(Int32Range a, Int32Range b)
+        {
+            return !Helper.IsEqual(a, b);
+        }
+        #endregion
+        #region Static services - Round, Equal, HasIntersect, Compare
+        /// <summary>
+        /// Round specified Decimal value to nearest whole value in specified interval.
+        /// In example, origin = 16518.354 round = 5.00, mode = Floor; result = 16515.000
+        /// </summary>
+        /// <param name="origin">Original Decimal</param>
+        /// <param name="round">Round divisor (amount, to which will be original Decimal rounded)</param>
+        /// <param name="mode">Round mode</param>
+        /// <returns>Rounded Decimal</returns>
+        public static Int32 RoundValue(Int32 origin, Int32 round, RoundMode mode)
+        {
+            Int32 result = origin;
+            if (round > 0m)
+            {
+                Decimal count = (Decimal)origin / (Decimal)round;
+                switch (mode)
+                {
+                    case RoundMode.Floor:
+                        count = Math.Floor(count);
+                        break;
+                    case RoundMode.Math:
+                        count = Math.Round(count, 0, MidpointRounding.AwayFromZero);
+                        break;
+                    case RoundMode.Ceiling:
+                        count = Math.Ceiling(count);
+                        break;
+                }
+                result = (Int32)(Math.Round(count * (Decimal)round, 0));
+            }
+            return result;
+        }
+        /// <summary>
+        /// Return true, when two instance has equal values
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static bool Equal(Int32Range a, Int32Range b)
+        {
+            return Helper.IsEqual(a, b);
+        }
+        /// <summary>
+        /// Returns true, when two intervals have any positive intersection.
+        /// Return false when one or booth intervals are negative, or when one interval is outside other.
+        /// </summary>
+        /// <param name="range1Begin"></param>
+        /// <param name="range1End"></param>
+        /// <param name="range2Begin"></param>
+        /// <param name="range2End"></param>
+        /// <returns></returns>
+        public static bool HasIntersect(Int32 range1Begin, Int32 range1End, Int32 range2Begin, Int32 range2End)
+        {
+            if (range1End < range1Begin) return false;             // range1 has end < begin, there can not be any intersect
+            if (range2End < range2Begin) return false;             // range2 has end < begin, there can not be any intersect
+            if (range2End <= range1Begin) return false;            // range2.end is before or at range1.begin : range 2 is whole before range 1, no intersect
+            if (range1End <= range2Begin) return false;            // range2.begin is after or at range1.end  : range 2 is whole after range 1, no intersect
+            return true;
+        }
+        #endregion
+        #region Implementace abstraktní třídy
+        public override int Add(int begin, int size) { return begin + size; }
+        public override int CompareEdge(int a, int b) { return a.CompareTo(b); }
+        public override int CompareSize(int a, int b) { return a.CompareTo(b); }
+        public override decimal Divide(int a, int b) { return a / b; }
+        public override bool IsEmptyEdge(int value) { return false; }
+        public override bool IsEmptySize(int value) { return false; }
+        public override int Multiply(int size, decimal ratio) { return (int)(Math.Round((decimal)size* ratio, 0); }
+        public override int SubEdge(int end, int size) { return end - size; }
+        public override int SubSize(int a, int b) { return a - b; }
+        protected override string TSizeToText(int size) { return size.ToString(); }
+        protected override string TTickToText(int tick) { return tick.ToString(); }
         #endregion
     }
     #endregion

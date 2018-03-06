@@ -756,7 +756,6 @@ namespace Djs.Common.Components
         protected int DataEndPixel { get { return (this.DataFirstPixel + this.VisualSize); } }
         /// <summary>
         /// Rozmezí datových pixelů, které spadají do viditelné oblasti.
-        /// Vrácená hodnota má Begin i End naplněné (HasValue).
         /// Begin = DataFirstPixel, End = DataFirstPixel + VisualSize.
         /// </summary>
         public Int32Range DataRange { get { return new Int32Range(this.DataFirstPixel, this.DataEndPixel); } }

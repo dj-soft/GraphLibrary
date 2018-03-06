@@ -34,7 +34,6 @@ namespace Djs.Common.Components
         /// This is: where this.ActiveBounds.Location is {200, 100} and child.ActiveBounds.Location is {10, 40}, then child is on Point {210, 140}.
         /// </summary>
         IEnumerable<IInteractiveItem> Childs { get; }
-
         /// <summary>
         /// Coordinates of this item in their Parent client area, where is Item basically VISIBLE.
         /// This is relative bounds within my Parent.
@@ -53,19 +52,6 @@ namespace Djs.Common.Components
         /// Appropriate absolute bounds can be calculated via (extension) method IInteractiveItem.GetAbsoluteVisibleBounds(), 
         /// </summary>
         Rectangle BoundsClient { get; }
-        /*
-        /// <summary>
-        /// Inner border between this Bounds and Childs area.
-        /// Client area is (Bounds.Left + ClientBorder.Left, Bounds.Top + ClientBorder.Top, Bounds.Width - ClientBorder.Horizontal, Bounds.Height - ClientBorder.Vertical)
-        /// </summary>
-        Padding ClientBorder { get; }
-        /// <summary>
-        /// Outer margin around this Bounds, where this item is interactive.
-        /// Active area is (Bounds.Left - ClientBorder.Left, Bounds.Top - ClientBorder.Top, Bounds.Width + ClientBorder.Horizontal, Bounds.Height + ClientBorder.Vertical)
-        /// </summary>
-        Padding ActiveOverhead { get; }
-        */
-
         /// <summary>
         /// Interactive style
         /// </summary>
@@ -114,7 +100,6 @@ namespace Djs.Common.Components
         /// This value is directly writed to Host control
         /// </summary>
         Boolean RepaintAllItems { get; set; }
-
         /// <summary>
         /// Return true, when item is active at specified point.
         /// Point is in absolute coordinates (on Control), as in property ActiveBounds.

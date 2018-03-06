@@ -547,7 +547,7 @@ namespace Djs.Common.Components.Grid.Out
         /// <summary>
         /// SizeRange : range for Size value.
         /// </summary>
-        public Int32Range SizeRange { get { return this._SizeRange; } set { this.Invalidate(); this._SizeRange = value; } } private Int32Range _SizeRange;
+        public Int32NRange SizeRange { get { return this._SizeRange; } set { this.Invalidate(); this._SizeRange = value; } } private Int32NRange _SizeRange;
         /// <summary>
         /// SizeVisible: Width for Column item, or Height for Table item. Contain zero for Invisible item.
         /// </summary>
@@ -563,7 +563,7 @@ namespace Djs.Common.Components.Grid.Out
         /// <summary>
         /// SplitRange : range for Split value.
         /// </summary>
-        public Int32Range SplitRange { get { return this._SplitRange; } set { this.Invalidate(); this._SplitRange = value; } } private Int32Range _SplitRange;
+        public Int32NRange SplitRange { get { return this._SplitRange; } set { this.Invalidate(); this._SplitRange = value; } } private Int32NRange _SplitRange;
         /// <summary>
         /// Begin in logical values. First item has Begin = 0, second item has Begin = Prev.EndLogical, and so on.
         /// </summary>

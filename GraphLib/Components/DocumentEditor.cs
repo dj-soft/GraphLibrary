@@ -26,10 +26,10 @@ namespace Djs.Common.Components
         {
             this.DocumentArea = new GDocumentArea() { DocumentSize = new SizeD(149, 210) };
             this.AxisH = new GSizeAxis() { Orientation = AxisOrientation.Top };
-            this.SplitterH = new GSplitter() { Orientation = Orientation.Horizontal, SplitterActiveOverlap = 2, ValueRange = new Int32Range(18, 60) };
+            this.SplitterH = new GSplitter() { Orientation = Orientation.Horizontal, SplitterActiveOverlap = 2, ValueRange = new Int32NRange(18, 60) };
             this.ScrollH = new GScrollBar() { Orientation = Orientation.Horizontal, ValueTotal = new SizeRange(-25m, 235m), Value = new SizeRange(50, 200) };
             this.AxisV = new GSizeAxis() { Orientation = AxisOrientation.LeftDown };
-            this.SplitterV = new GSplitter() { Orientation = Orientation.Vertical, SplitterActiveOverlap = 2, ValueRange = new Int32Range(30, 90) };
+            this.SplitterV = new GSplitter() { Orientation = Orientation.Vertical, SplitterActiveOverlap = 2, ValueRange = new Int32NRange(30, 90) };
             this.ScrollV = new GScrollBar() { Orientation = Orientation.Vertical, ValueTotal = new SizeRange(-25m, 315m), Value = new SizeRange(50, 250) };
 
             this.SplitterHPos = 30;
@@ -68,11 +68,11 @@ namespace Djs.Common.Components
 
             int sw = 14;
             this.AxisH.Bounds = new Rectangle(sx, ea.Y, ew - sw, sy - ea.Y - 2);
-            this.SplitterH.BoundsNonActive = new Int32Range(sx, er);
+            this.SplitterH.BoundsNonActive = new Int32NRange(sx, er);
             this.ScrollH.Bounds = new Rectangle(sx, ea.Bottom - sw, ew - sw, sw);
 
             this.AxisV.Bounds = new Rectangle(ea.X, sy, sx - ea.X - 2, eh - sw);
-            this.SplitterV.BoundsNonActive = new Int32Range(sy, eb);
+            this.SplitterV.BoundsNonActive = new Int32NRange(sy, eb);
             this.ScrollV.Bounds = new Rectangle(ea.Right - sw, sy, sw, eh - sw);
 
             this.DocumentArea.Bounds = new Rectangle(sx, sy, ew - sw - 1, eh - sw - 1);

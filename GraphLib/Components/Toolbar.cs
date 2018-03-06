@@ -87,7 +87,7 @@ namespace Djs.Common.Components
             this._Splitter = new GSplitter() { Orientation = System.Windows.Forms.Orientation.Horizontal };
             int heightMin = this._SettingDict[ComponentSize.Small].ToolbarBounds.Height;
             int heightMax = this._SettingDict[ComponentSize.Large].ToolbarBounds.Height;
-            this._Splitter.ValueRange = new Int32Range(heightMin, heightMax);
+            this._Splitter.ValueRange = new Int32NRange(heightMin, heightMax);
             this._Splitter.SplitterVisibleWidth = 2;
             this._Splitter.SplitterActiveOverlap = 2;
             this._Splitter.ValueChanging += new GPropertyChanged<int>(_Splitter_ValueChanging);
@@ -129,7 +129,7 @@ namespace Djs.Common.Components
         }
         private void _SplitterSetPosition(Rectangle bounds, bool withSplitterValue)
         {
-            this._Splitter.BoundsNonActive = new Int32Range(bounds.Left, bounds.Right);
+            this._Splitter.BoundsNonActive = new Int32NRange(bounds.Left, bounds.Right);
             if (withSplitterValue)
                 this._SplitterCheckValue();
         }

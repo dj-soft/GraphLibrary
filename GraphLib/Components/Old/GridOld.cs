@@ -157,11 +157,11 @@ namespace Djs.Common.ComponentsOld
         {
             return this.AddTable(dTable, null, null, null);
         }
-        public GTable AddTable(DTable dTable, string text, Int32Range sizeRange)
+        public GTable AddTable(DTable dTable, string text, Int32NRange sizeRange)
         {
             return this.AddTable(dTable, text, sizeRange, null);
         }
-        public GTable AddTable(DTable dTable, string text, Int32Range sizeRange, int? size)
+        public GTable AddTable(DTable dTable, string text, Int32NRange sizeRange, int? size)
         {
             if (dTable == null) return null;
             int tableId = this._TableID++;

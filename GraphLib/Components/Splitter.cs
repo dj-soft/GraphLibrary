@@ -37,7 +37,7 @@ namespace Djs.Common.Components
         private Orientation _Orientation = Orientation.Horizontal;
         private int _Location;
         private int? _LocationOriginal;
-        private Int32Range __LocationLimit;
+        private Int32NRange __LocationLimit;
         private int _SplitterVisibleWidth;
         private int _SplitterActiveOverlap;
         private bool _IsResizeToLinkItems;
@@ -69,17 +69,17 @@ namespace Djs.Common.Components
         /// Setting a new value is correct only when IsResizeToLinkItems is false. 
         /// Otherwise will be BoundsNonActive still depend on Linked items (LinkedItemPrev, LinkedItemNext) and its Bounds.
         /// </summary>
-        public Int32Range BoundsNonActive
+        public Int32NRange BoundsNonActive
         {
             get
             {
                 Rectangle rb = base.Bounds;
                 switch (this.Orientation)
                 {
-                    case System.Windows.Forms.Orientation.Horizontal: return new Int32Range(rb.Left, rb.Right);
-                    case System.Windows.Forms.Orientation.Vertical: return new Int32Range(rb.Top, rb.Bottom);
+                    case System.Windows.Forms.Orientation.Horizontal: return new Int32NRange(rb.Left, rb.Right);
+                    case System.Windows.Forms.Orientation.Vertical: return new Int32NRange(rb.Top, rb.Bottom);
                 }
-                return Int32Range.Empty;
+                return Int32NRange.Empty;
             }
             set
             {
@@ -152,7 +152,7 @@ namespace Djs.Common.Components
         /// <para/>
         /// Default value = null (no limit);
         /// </summary>
-        public Int32Range ValueRange
+        public Int32NRange ValueRange
         {
             get { return this.__LocationLimit; }
             set { this.SetSplitter(null, null, null, null, null, value, null, DragResponseType.AfterDragEnd); }
@@ -318,7 +318,7 @@ namespace Djs.Common.Components
         /// <param name="moveType"></param>
         /// <param name="actions">Akce k provedení</param>
         /// <param name="eventSource">Zdroj této události</param>
-        internal bool SetSplitter(Rectangle? bounds, Int32? location, Orientation? orientation, Int32? splitterVisibleWidth, Int32? splitterActiveOverlap, Int32Range locationLimit, int? locationOriginal, 
+        internal bool SetSplitter(Rectangle? bounds, Int32? location, Orientation? orientation, Int32? splitterVisibleWidth, Int32? splitterActiveOverlap, Int32NRange locationLimit, int? locationOriginal, 
             DragResponseType moveType)
         {
             ProcessAction action = ProcessAction.All;            // Contains actions CallChangedEvents and CallChangingEvents. We will now "reset" unappropriated bit:
@@ -344,7 +344,7 @@ namespace Djs.Common.Components
         /// <param name="moveType"></param>
         /// <param name="actions">Akce k provedení</param>
         /// <param name="eventSource">Zdroj této události</param>
-        internal bool SetSplitter(Rectangle? bounds, Int32? location, Orientation? orientation, Int32? splitterVisibleWidth, Int32? splitterActiveOverlap, Int32Range locationLimit, int? locationOriginal, 
+        internal bool SetSplitter(Rectangle? bounds, Int32? location, Orientation? orientation, Int32? splitterVisibleWidth, Int32? splitterActiveOverlap, Int32NRange locationLimit, int? locationOriginal, 
             DragResponseType moveType, ProcessAction actions, EventSourceType eventSource)
         {
             bool anyChange = false;
@@ -370,13 +370,13 @@ namespace Djs.Common.Components
                     Int32 splitterActiveOverlapOld = this.SplitterActiveOverlap;
                     Int32? splitterActiveOverlapNew = splitterActiveOverlap;
 
-                    Int32Range locationLimitOld = this.ValueRange;
-                    Int32Range locationLimitNew = locationLimit;
+                    Int32NRange locationLimitOld = this.ValueRange;
+                    Int32NRange locationLimitNew = locationLimit;
 
                     ProcessAction actionsNoDraw = RemoveActions(actions, ProcessAction.CallDraw);     // Do not call Draw action (will be called on end)
 
                     // Change of Limits can cause subsequent change on Bounds:
-                    bool locationLimitChange = !Int32Range.Equal(locationLimitOld, locationLimitNew);
+                    bool locationLimitChange = !Int32NRange.Equal(locationLimitOld, locationLimitNew);
                     if (locationLimitChange)
                     {
                         this.__LocationLimit = locationLimitNew;
@@ -526,14 +526,14 @@ namespace Djs.Common.Components
                     (this._LinkedItemPrev != null ? (Rectangle?)this._LinkedItemPrev.Bounds : (Rectangle?)null),
                     (this._LinkedItemNext != null ? (Rectangle?)this._LinkedItemNext.Bounds : (Rectangle?)null))
                 : (Rectangle?)null);
-            Int32Range active = new Int32Range(location - (width / 2), width);
+            Int32NRange active = new Int32NRange(location - (width / 2), width);
             switch (orientation)
             {
                 case System.Windows.Forms.Orientation.Horizontal:
-                    Int32Range inactiveX = (linkedSum.HasValue ? new Int32Range(linkedSum.Value.X, linkedSum.Value.Width) : new Int32Range(boundsOld.X, boundsOld.Width));
+                    Int32NRange inactiveX = (linkedSum.HasValue ? new Int32NRange(linkedSum.Value.X, linkedSum.Value.Width) : new Int32NRange(boundsOld.X, boundsOld.Width));
                     return new Rectangle(inactiveX.Begin.Value, active.Begin.Value, inactiveX.End.Value, active.End.Value);
                 case System.Windows.Forms.Orientation.Vertical:
-                    Int32Range inactiveY = (linkedSum.HasValue ? new Int32Range(linkedSum.Value.Y, linkedSum.Value.Height) : new Int32Range(boundsOld.Y, boundsOld.Height));
+                    Int32NRange inactiveY = (linkedSum.HasValue ? new Int32NRange(linkedSum.Value.Y, linkedSum.Value.Height) : new Int32NRange(boundsOld.Y, boundsOld.Height));
                     return new Rectangle(active.Begin.Value, inactiveY.Begin.Value, active.End.Value, inactiveY.End.Value);
             }
             return boundsOld;
@@ -689,9 +689,9 @@ namespace Djs.Common.Components
         /// <summary>
         /// Call method OnLocationRangeChanged() and event LocationRangeChanged
         /// </summary>
-        protected void CallLocationLimitChanged(Int32Range oldValue, Int32Range newValue, EventSourceType eventSource)
+        protected void CallLocationLimitChanged(Int32NRange oldValue, Int32NRange newValue, EventSourceType eventSource)
         {
-            GPropertyChangeArgs<Int32Range> args = new GPropertyChangeArgs<Int32Range>(eventSource, oldValue, newValue);
+            GPropertyChangeArgs<Int32NRange> args = new GPropertyChangeArgs<Int32NRange>(eventSource, oldValue, newValue);
             this.OnLocationLimitChanged(args);
             if (!this.IsSupressedEvent && this.LocationLimitChanged != null)
                 this.LocationLimitChanged(this, args);
@@ -699,11 +699,11 @@ namespace Djs.Common.Components
         /// <summary>
         /// Occured after change LocationRange value
         /// </summary>
-        protected virtual void OnLocationLimitChanged(GPropertyChangeArgs<Int32Range> args) { }
+        protected virtual void OnLocationLimitChanged(GPropertyChangeArgs<Int32NRange> args) { }
         /// <summary>
         /// Event on this.LocationRange changes
         /// </summary>
-        public event GPropertyChanged<Int32Range> LocationLimitChanged;
+        public event GPropertyChanged<Int32NRange> LocationLimitChanged;
 
         /// <summary>
         /// Call method OnVisibleWideChanged() and event VisibleWideChanged

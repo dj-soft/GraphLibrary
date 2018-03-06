@@ -344,8 +344,8 @@ namespace Djs.Common.Data.Old
         /// Range for Width of this column, in pixels.
         /// Is used only from first Table in TableSet (MasterTable).
         /// </summary>
-        public Int32Range WidthRange { get { return this._WidthRange; } set { this._WidthRange = value; } }
-        private Int32Range _WidthRange;
+        public Int32NRange WidthRange { get { return this._WidthRange; } set { this._WidthRange = value; } }
+        private Int32NRange _WidthRange;
         /// <summary>
         /// Reference to Table, where this Column is included
         /// </summary>
@@ -562,7 +562,7 @@ namespace Djs.Common.Data.Old
             this.DataType = property.PropertyType;
             this.UseTimeAxis = attribute.UseTimeAxis;
             this.Width = attribute.Width;
-            this.WidthRange = (attribute.WidthMin.HasValue || attribute.WidthMax.HasValue ? new Int32Range(attribute.WidthMin, attribute.WidthMax) : null);
+            this.WidthRange = (attribute.WidthMin.HasValue || attribute.WidthMax.HasValue ? new Int32NRange(attribute.WidthMin, attribute.WidthMax) : null);
         }
         /// <summary>
         /// Reflected PropertyInfo of data
@@ -682,7 +682,7 @@ namespace Djs.Common.Data.Old
         }
         #region IVisualRow explicit interface
         int? IVisualRow.RowHeight { get { return (this._DataVisual != null ? this._DataVisual.RowHeight : null); } }
-        Int32Range IVisualRow.RowHeightRange { get { return (this._DataVisual != null ? this._DataVisual.RowHeightRange : null); } }
+        Int32NRange IVisualRow.RowHeightRange { get { return (this._DataVisual != null ? this._DataVisual.RowHeightRange : null); } }
         Color? IVisualRow.RowBackColor { get { return (this._DataVisual != null ? this._DataVisual.RowBackColor : null); } }
         private IVisualRow _DataVisual;
         #endregion
@@ -741,7 +741,7 @@ namespace Djs.Common.Data.Old
         /// <summary>
         /// Height Range for Column header
         /// </summary>
-        Int32Range ColumnHeaderHeightRange { get; }
+        Int32NRange ColumnHeaderHeightRange { get; }
     }
 
     public interface IVisualRow
@@ -753,7 +753,7 @@ namespace Djs.Common.Data.Old
         /// <summary>
         /// Height Range for Row
         /// </summary>
-        Int32Range RowHeightRange { get; }
+        Int32NRange RowHeightRange { get; }
         /// <summary>
         /// Color for row
         /// </summary>

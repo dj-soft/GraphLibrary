@@ -92,6 +92,11 @@ namespace Djs.Common.Components.Grid
         internal void RecalculateTable(ref ProcessAction actions, EventSourceType eventSource)
         {
             this.RecalcClientAreas(ref actions, eventSource);
+            this.RecalcRowsScrollBar(ref actions, eventSource);
+
+
+            this.RowListVisibleReset();
+
         }
         /// <summary>
         /// Určí pozice a rozměry pro jednotlivé vnitřní členy tabulky: ColumnHeader, HeaderSplitter, RowArea, Scrollbar.
@@ -121,27 +126,13 @@ namespace Djs.Common.Components.Grid
             int y0 = 0;                                                        // y0: úplně nahoře
             int y1 = this.RowsPositions.VisualFirstPixel;                      // y1: zde začíná prostor pro řádky, hned pod prostorem ColumnHeader (hodnota se fyzicky načte z this.DataTable.ColumnHeaderHeight)
             int y3 = clientSize.Height;                                        // y3: úplně dole
+            int y5 = this.Bounds.Bottom;                                       // y5: this.Bottom v souřadném systému mého parenta, pro TableSplitterBounds
 
             this.ColumnHeaderBounds = new Rectangle(x0, y0, x3 - x0, y1 - y0);
-
             this.RowAreaBounds = new Rectangle(x0, y1, x2r - x0, y3 - y1);
-
             this.RowsScrollBarBounds = new Rectangle(x2t, y1, x3 - x2t, y3 - y1);
-
-
-
-
-            // HeadSplitter = splitter pod ColumnHeader a RowArea:
-            this.HeaderSplitter.BoundsNonActive = new Int32Range(0, clientSize.Width);
-            if (this.TableSplitter.ValueSilent != headerHeight)
-                this.TableSplitter.ValueSilent = headerHeight;
-
-            // TableSplitter = splitter dole pod tabulkou (jeho Parent není this tabulka ale Grid):
-            Rectangle bounds = this.Bounds;
-            int value = bounds.Bottom;
-            this.TableSplitter.BoundsNonActive = new Int32Range(0, bounds.Width);
-            if (this.TableSplitter.ValueSilent != value)
-                this.TableSplitter.ValueSilent = value;
+            this.HeaderSplitterBounds = new Rectangle(x0, y1, x3 - x0, 0);
+            this.TableSplitterBounds = new Rectangle(x0, y5, x3 - x0, 0);
 
             this.TableLayoutValid = true;
         }
@@ -161,6 +152,18 @@ namespace Djs.Common.Components.Grid
         /// Souřadnice svislého scrollbaru pro řádky
         /// </summary>
         protected Rectangle RowsScrollBarBounds { get; set; }
+        /// <summary>
+        /// Souřadnice pro splitter pod ColumnHeaderem, tento splitter je vizuální součástí this.Childs,
+        /// souřadnice jsou tedy relativní k this.
+        /// Souřadnice X a Width se vkládají do ValueSilent, souřadnice Y do ValueSilent. Výška = 0.
+        /// </summary>
+        protected Rectangle HeaderSplitterBounds { get; set; }
+        /// <summary>
+        /// Souřadnice pro splitter pod this tabulkou, tento splitter je vizuální součástí mého parenta = GGrid.Childs,
+        /// souřadnice jsou tedy relativní k jeho koordinátům.
+        /// Souřadnice X a Width se vkládají do ValueSilent, souřadnice Y do ValueSilent. Výška = 0.
+        /// </summary>
+        protected Rectangle TableSplitterBounds { get; set; }
         /// <summary>
         /// true pokud je layout vnitřních prostor tabulky korektně spočítán
         /// </summary>
@@ -229,7 +232,7 @@ namespace Djs.Common.Components.Grid
             int offset = (int)this.RowsScrollBar.Value.Begin.Value;
             if (offset == this.RowsPositions.DataFirstPixel) return;
             this.RowsPositions.DataFirstPixel = offset;
-            this.RecalcRows();
+            this.RowListVisibleReset();
             this.Repaint();
         }
         /// <summary>
@@ -319,9 +322,12 @@ namespace Djs.Common.Components.Grid
         /// <summary>
         /// Inicializace objektů pro řádky tabulky
         /// </summary>
-        private void InitRowsData()
+        protected void InitRowsData()
         {
             this.RowListAllReset();
+        }
+        protected void RecalcRows(ref ProcessAction actions, EventSourceType eventSource)
+        {
         }
         /// <summary>
         /// Všechny aktuální řádky datové tabulky, profiltrované, setříděné.
@@ -350,7 +356,8 @@ namespace Djs.Common.Components.Grid
             }
         }
         /// <summary>
-        /// Aktuálně zobrazované řádky - grafické prvky (pouze ty které jsou zčásti nebo plně viditelné)
+        /// Aktuálně zobrazované řádky - grafické prvky (pouze ty které jsou zčásti nebo plně viditelné).
+        /// Vždy obsahuje platné řádky s ohledem na rozměry tabulky, na pozici ColumnHeader a na pozici scrollbaru řádků.
         /// </summary>
         protected List<GRow> GRowList
         {
@@ -660,7 +667,7 @@ namespace Djs.Common.Components.Grid
 
             int maxVisiblePixel = gridPositions.ColumnsMaxVisiblePixel;
             if (maxVisiblePixel > bounds.Right) maxVisiblePixel = bounds.Right;
-            this.ColumnSetSplitter.BoundsNonActive = new Int32Range(0, maxVisiblePixel - 1);
+            this.ColumnSetSplitter.BoundsNonActive = new Int32NRange(0, maxVisiblePixel - 1);
             this.ColumnSetSplitter.ValueSilent = bounds.Bottom;
 
             int dataColumnsLeft = this._HeaderColumn.Bounds.Right;
@@ -941,7 +948,7 @@ namespace Djs.Common.Components.Grid
             using (this._ColumnSplitter.SuppressEvents())
             {
                 this._ColumnSplitter.Value = columnPosition.EndVisual;
-                this._ColumnSplitter.BoundsNonActive = new Int32Range(bounds.Y, bounds.Height);
+                this._ColumnSplitter.BoundsNonActive = new Int32NRange(bounds.Y, bounds.Height);
             }
         }
         protected override void SetBoundsPrepareInnerItems(Rectangle oldBounds, Rectangle newBounds, ref ProcessAction actions, EventSourceType eventSource)
@@ -1775,7 +1782,7 @@ namespace Djs.Common.Components.Grid
         /// <summary>
         /// RowSizeRange : range for Rows.Size value.
         /// </summary>
-        public Int32Range RowSizeRange { get { return this._SizeRange; } set { this._SizeRange = value; this.InvalidatePositions(); } } private Int32Range _SizeRange;
+        public Int32NRange RowSizeRange { get { return this._SizeRange; } set { this._SizeRange = value; this.InvalidatePositions(); } } private Int32NRange _SizeRange;
         /// <summary>
         /// Offset for Visual values.
         /// Contain positive value of first visible data pixel.
@@ -2042,7 +2049,7 @@ namespace Djs.Common.Components.Grid
         /// <summary>
         /// SizeRange : range for Size value.
         /// </summary>
-        public Int32Range SizeRange { get { return this.GRowSet.RowSizeRange; } }
+        public Int32NRange SizeRange { get { return this.GRowSet.RowSizeRange; } }
         /// <summary>
         /// SizeVisible: Width for Column item, or Height for Table item. Contain zero for Invisible item.
         /// </summary>
@@ -2227,7 +2234,7 @@ namespace Djs.Common.Components.Grid
         {
             using (this._RowSplitter.SuppressEvents())
             {
-                this._RowSplitter.BoundsNonActive = new Int32Range(1, rowHeaderWidth + 3);
+                this._RowSplitter.BoundsNonActive = new Int32NRange(1, rowHeaderWidth + 3);
                 this._RowSplitter.Value = this._EndVisual;
             }
         }

@@ -16,7 +16,7 @@ namespace Djs.Common.ComponentsOld.Grid
     public class GTable : InteractiveContainer, IInteractiveItem, IDisposable
     {
         #region Constructor, public properties
-        internal GTable(GGrid grid, DTable table, int tableId, string text, Int32Range sizeRange, int? size)
+        internal GTable(GGrid grid, DTable table, int tableId, string text, Int32NRange sizeRange, int? size)
         {
             this._Grid = grid;
             this._Table = table;
@@ -75,7 +75,7 @@ namespace Djs.Common.ComponentsOld.Grid
         /// <summary>
         /// Range for Size (Height in pixels) for this table, in multi-table grid
         /// </summary>
-        public Int32Range SizeRange { get; set; }
+        public Int32NRange SizeRange { get; set; }
         /// <summary>
         /// Requested initial size (Height in pixels) for this grid
         /// </summary>
@@ -321,7 +321,7 @@ namespace Djs.Common.ComponentsOld.Grid
                 this._RowSet.RefreshPositions();
 
             // TableSplitter = splitter at end (=Bottom) of this GTable:
-            this.TableSplitter.BoundsNonActive = new Int32Range(0, newBounds.Width);
+            this.TableSplitter.BoundsNonActive = new Int32NRange(0, newBounds.Width);
             if (withSplitterValue)
                 this.TableSplitter.ValueSilent = newBounds.Bottom;
         }
@@ -490,7 +490,7 @@ namespace Djs.Common.ComponentsOld.Grid
 
             int maxVisiblePixel = gridPositions.ColumnsMaxVisiblePixel;
             if (maxVisiblePixel > bounds.Right) maxVisiblePixel = bounds.Right;
-            this.ColumnSetSplitter.BoundsNonActive = new Int32Range(0, maxVisiblePixel - 1);
+            this.ColumnSetSplitter.BoundsNonActive = new Int32NRange(0, maxVisiblePixel - 1);
             this.ColumnSetSplitter.ValueSilent = bounds.Bottom;
 
             int dataColumnsLeft = this._HeaderColumn.Bounds.Right;
@@ -776,7 +776,7 @@ namespace Djs.Common.ComponentsOld.Grid
             using (this._ColumnSplitter.SuppressEvents())
             {
                 this._ColumnSplitter.Value = columnPosition.EndVisual;
-                this._ColumnSplitter.BoundsNonActive = new Int32Range(bounds.Y, bounds.Height);
+                this._ColumnSplitter.BoundsNonActive = new Int32NRange(bounds.Y, bounds.Height);
             }
         }
         protected override void SetBoundsPrepareInnerItems(Rectangle oldBounds, Rectangle newBounds, ref ProcessAction actions, EventSourceType eventSource)
@@ -1615,8 +1615,8 @@ namespace Djs.Common.ComponentsOld.Grid
         /// <summary>
         /// RowSizeRange : range for Rows.Size value.
         /// </summary>
-        public Int32Range RowSizeRange { get { return this._SizeRange; } set { this._SizeRange = value; this.InvalidatePositions(); } }
-        private Int32Range _SizeRange;
+        public Int32NRange RowSizeRange { get { return this._SizeRange; } set { this._SizeRange = value; this.InvalidatePositions(); } }
+        private Int32NRange _SizeRange;
         /// <summary>
         /// Offset for Visual values.
         /// Contain positive value of first visible data pixel.
@@ -1892,7 +1892,7 @@ namespace Djs.Common.ComponentsOld.Grid
         /// <summary>
         /// SizeRange : range for Size value.
         /// </summary>
-        public Int32Range SizeRange { get { return this.GRowSet.RowSizeRange; } }
+        public Int32NRange SizeRange { get { return this.GRowSet.RowSizeRange; } }
         /// <summary>
         /// SizeVisible: Width for Column item, or Height for Table item. Contain zero for Invisible item.
         /// </summary>
@@ -2081,7 +2081,7 @@ namespace Djs.Common.ComponentsOld.Grid
         {
             using (this._RowSplitter.SuppressEvents())
             {
-                this._RowSplitter.BoundsNonActive = new Int32Range(1, rowHeaderWidth + 3);
+                this._RowSplitter.BoundsNonActive = new Int32NRange(1, rowHeaderWidth + 3);
                 this._RowSplitter.Value = this._EndVisual;
             }
         }
