@@ -540,7 +540,9 @@ namespace Djs.Common.Data.New
         /// </summary>
         public bool Visible { get { return this.TableHeightLayout.Visible; } set { this.TableHeightLayout.Visible = value; } }
         /// <summary>
-        /// Výška oblasti ColumnHeader
+        /// Výška oblasti ColumnHeader. 
+        /// Při nasetování hodnoty dojde k její kontrole a případně úpravě tak, aby uložená hodnota odpovídala pravidlům.
+        /// To znamená, že po vložení hodnoty X může být okamžitě čtena hodnota ColumnHeaderHeight jiná, než byla vložena.
         /// </summary>
         public Int32 ColumnHeaderHeight { get { return this.ColumnHeaderHeightLayout.CurrentSize; } set { this.ColumnHeaderHeightLayout.Size = value; } }
         /// <summary>

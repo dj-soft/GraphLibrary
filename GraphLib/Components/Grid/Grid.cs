@@ -68,10 +68,9 @@ namespace Djs.Common.Components
         /// <param name="eventSource">Zdroj této události</param>
         private void RecalcClientAreas(ref ProcessAction actions, EventSourceType eventSource)
         {
-            Size clientSize = this.ClientSize;
-            if (this.ClientSizeLast == clientSize) return;
-
             this.GridLayoutValid = false;
+
+            Size clientSize = this.ClientSize;
             if (clientSize.Width <= 0 || clientSize.Height <= 0) return;
 
             // Určíme, zda bude zobrazen scrollbar vpravo (to je tehdy, když výška tabulek je větší než výška prostoru pro tabulky = (ClientSize.Height - ColumnsScrollBar.Bounds.Height)):
@@ -85,62 +84,64 @@ namespace Djs.Common.Components
             this.ColumnsScrollBarVisible = this.ColumnsPositions.IsScrollBarActive;
 
             // Určíme souřadnice jednotlivých elementů:
-            int x = 0;
-            int y = 0;
-            int w = clientSize.Width;
-            int h = clientSize.Height;
+            int x0 = 0;                                                        // x0: úplně vlevo
+            int x1 = this.ColumnsPositions.VisualFirstPixel;                   // x1: zde začíná ColumnsScrollBar (hned za koncem RowHeaderColumn)
+            int x3 = clientSize.Width;                                         // x3: úplně vpravo
+            int x2t = x3 - GScrollBar.DefaultSystemBarWidth;                   // x2t: zde začíná TablesScrollBar (vpravo, hned za koncem ColumnsScrollBar), tedy pokud by byl zobrazen
+            int x2r = (this.TablesScrollBarVisible ? x2t : x3);                // x2r: zde reálně končí oblast prostoru pro tabulky a končí zde i ColumnsScrollBar, se zohledněním aktuální viditelnosti TablesScrollBaru
+            int y0 = 0;                                                        // y0: úplně nahoře
+            int y1 = y0;                                                       // y1: zde začíná prostor pro tabulky i TablesScrollBar 
+            int y3 = clientSize.Height;                                        // y3: úplně dole
+            int y2 = y3 - GScrollBar.DefaultSystemBarHeight;                   // y2: zde začíná ColumnsScrollBar (dole, hned za koncem prostoru pro tabulky)
 
-            int rhw = this.ColumnsPositions.VisualFirstPixel;
-            int sbw = GScrollBar.DefaultSystemBarWidth;
-            int sbh = GScrollBar.DefaultSystemBarHeight;
+            this.GridTablesBounds = new Rectangle(x0, y0, x2r - x0, y2 - y0);
 
             if (this.TablesScrollBarVisible)
-            {
-                this.TablesScrollBarBounds = new Rectangle(w - sbw, y, sbw, h - sbh);
-                w -= sbw;
-            }
+                this.TablesScrollBarBounds = new Rectangle(x2t, y1, x3 - x2t, y2 - y1);
 
             if (this.ColumnsScrollBarVisible)
-            {
-                this.ColumnsScrollBarBounds = new Rectangle(rhw, h - sbh, w - rhw, sbh);
-                h -= sbh;
-            }
+                this.ColumnsScrollBarBounds = new Rectangle(x1, y2, x2r - x1, y3 - y2);
 
-            this.GridTablesBounds = new Rectangle(x, y, w, h);
+            this.GridVoidBounds1 = new Rectangle(x0, y2, x1 - x0, y3 - y2);
 
-            // Zapamatovat clientSize, abychom příští aktivitu prováděli jen po změně:
-            this.ClientSizeLast = clientSize;
+            this.GridVoidBounds2 = new Rectangle(x2r, y2, x3 - x2r, y3 - y2);
+
             this.GridLayoutValid = true;
         }
         /// <summary>
-        /// Hodnota ClientSize, pro kterou byly naposledy přepočteny pozice vnitřních objektů (GridTablesBounds, ColumnsScrollBarBounds, TablesScrollBarBounds).
-        /// Další přepočet se provede jen po změně.
-        /// </summary>
-        protected Size ClientSizeLast;
-        /// <summary>
         /// true pokud se má zobrazovat svislý scrollbar (pro tabulky, vpravo)
         /// </summary>
-        private bool TablesScrollBarVisible;
+        protected bool TablesScrollBarVisible { get; set; }
         /// <summary>
         /// Prostor pro svislý scrollbar (pro tabulky, vpravo)
         /// </summary>
-        protected Rectangle TablesScrollBarBounds;
+        protected Rectangle TablesScrollBarBounds { get; set; }
         /// <summary>
         /// true pokud se má zobrazovat vodorovný scrollbar (pro sloupce, dole)
         /// </summary>
-        protected bool ColumnsScrollBarVisible;
+        protected bool ColumnsScrollBarVisible { get; set; }
         /// <summary>
         /// Prostor pro vodorovný scrollbar (pro sloupce, dole)
         /// </summary>
-        protected Rectangle ColumnsScrollBarBounds;
+        protected Rectangle ColumnsScrollBarBounds { get; set; }
         /// <summary>
         /// Prostor pro tabulky (hlavní prostor), neobsahuje pozice scrollbarů X a Y
         /// </summary>
-        protected Rectangle GridTablesBounds;
+        protected Rectangle GridTablesBounds { get; set; }
+        /// <summary>
+        /// Prázdný prostor 1 = pod sloupcem RowHeaderColumn, kam nezasahuje ColumnsScrollBar - ten je jen pod prostorem datových sloupců.
+        /// Tento prostor není interaktvní, ale měl by být vyplněn barvou pozadí.
+        /// </summary>
+        protected Rectangle GridVoidBounds1 { get; set; }
+        /// <summary>
+        /// Prázdný prostor 2 = pod prostorem TablesScrollBar, kam nezasahuje ColumnsScrollBar - ten je jen pod prostorem datových sloupců.
+        /// Tento prostor není interaktvní, ale měl by být vyplněn barvou pozadí.
+        /// </summary>
+        protected Rectangle GridVoidBounds2 { get; set; }
         /// <summary>
         /// true pokud je layout vnitřních prostor gridu korektně spočítán
         /// </summary>
-        protected bool GridLayoutValid;
+        protected bool GridLayoutValid { get; set; }
         #endregion
         #region Pozicování svislé - tabulky a vpravo svislý scrollbar
         /// <summary>
@@ -157,7 +158,7 @@ namespace Djs.Common.Components
         /// <summary>
         /// Řídíci prvek pro Pozice tabulek
         /// </summary>
-        protected GPosition TablesPositions;
+        protected GPosition TablesPositions { get; set; }
         /// <summary>
         /// Vrací výšku prostoru pro tabulky (=prostor this.ClientSize.Height mínus dole prostor pro vodorovný scrollbar sloupců)
         /// </summary>
@@ -206,7 +207,7 @@ namespace Djs.Common.Components
         /// <summary>
         /// Cache kolekce TableSequence
         /// </summary>
-        private ISequenceLayout[] _TablesSequence;
+        private ISequenceLayout[] _TablesSequence { get; set; }
         /// <summary>
         /// Resetuje kolekci ColumnsSequence (=donutí ji znovu se načíst).
         /// Má se volat po těchto akcích:
@@ -242,7 +243,7 @@ namespace Djs.Common.Components
         /// <summary>
         /// Svislý Scrollbar pro posouvání pole tabulek nahoru/dolů (nikoli jejich řádků, na to má každá tabulka svůj vlastní Scrollbar).
         /// </summary>
-        protected GScrollBar TablesScrollBar;
+        protected GScrollBar TablesScrollBar { get; set; }
         #endregion
         #region Pozicování vodorovné - sloupce tabulek a dolní vodorovný scrollbar
         private void InitColumnsPositions()
@@ -256,7 +257,7 @@ namespace Djs.Common.Components
         /// <summary>
         /// Řídící prvek pro Pozice sloupců
         /// </summary>
-        protected GPosition ColumnsPositions;
+        protected GPosition ColumnsPositions { get; set; }
         /// <summary>
         /// Vrací šířku vizuálního prostoru pro datové sloupce (= ClientSize.Width - ColumnsPositions.VisualFirstPixel - [šířka TablesScrollBar, pokud je viditelný])
         /// </summary>
@@ -305,7 +306,7 @@ namespace Djs.Common.Components
         /// <summary>
         /// Cache kolekce ColumnsSequence
         /// </summary>
-        private ISequenceLayout[] _ColumnsSequence;
+        private ISequenceLayout[] _ColumnsSequence { get; set; }
         /// <summary>
         /// Resetuje kolekci ColumnsSequence (=donutí ji znovu se načíst).
         /// Má se volat po těchto akcích:
@@ -341,7 +342,7 @@ namespace Djs.Common.Components
         /// <summary>
         /// Dolní vodorovný Scrollbar, pro posuny sloupců doleva/doprava
         /// </summary>
-        protected GScrollBar ColumnsScrollBar;
+        protected GScrollBar ColumnsScrollBar { get; set; }
         #endregion
         #region Tabulky - soupis GTable
         #region Veřejné rozhraní
@@ -656,12 +657,8 @@ namespace Djs.Common.Components
         /// <param name="getVisualSizeMethod">Metoda, která vrátí počet vizuálních pixelů, na nichž se zobrazují data. Jde o čistý prostor pro data, nezahrnuje žádný Header ani Footer nebo Scrollbar.</param>
         /// <param name="getDataSizeMethod">Metoda, která vrátí velikost dat = počet pixelů, které by obsadila data zobrazená najednou. Bez rezervy, bez přídavku.</param>
         internal GPosition(Func<int> getVisualSizeMethod, Func<int> getDataSizeMethod)
-        {
-            this.VisualFirstPixel = 0;
-            this._GetVisualSizeMethod = getVisualSizeMethod;
-            this._GetDataSizeMethod = getDataSizeMethod;
-            this._DataSizeAddSpace = 26;
-        }
+            : this(0, DefaultDataSizeAddSpace, getVisualSizeMethod, getDataSizeMethod, null, null)
+        { }
         /// <summary>
         /// Vytvoří pozicioner pro obsah.
         /// </summary>
@@ -669,12 +666,17 @@ namespace Djs.Common.Components
         /// <param name="getVisualSizeMethod">Metoda, která vrátí počet vizuálních pixelů, na nichž se zobrazují data. Jde o čistý prostor pro data, nezahrnuje žádný Header ani Footer nebo Scrollbar.</param>
         /// <param name="getDataSizeMethod">Metoda, která vrátí velikost dat = počet pixelů, které by obsadila data zobrazená najednou. Bez rezervy, bez přídavku.</param>
         internal GPosition(int firstPixel, Func<int> getVisualSizeMethod, Func<int> getDataSizeMethod)
-        {
-            this.VisualFirstPixel = firstPixel;
-            this._GetVisualSizeMethod = getVisualSizeMethod;
-            this._GetDataSizeMethod = getDataSizeMethod;
-            this._DataSizeAddSpace = 26;
-        }
+            : this(firstPixel, DefaultDataSizeAddSpace, getVisualSizeMethod, getDataSizeMethod, null, null)
+        { }
+        /// <summary>
+        /// Vytvoří pozicioner pro obsah.
+        /// </summary>
+        /// <param name="firstPixel">Pozice prvního vizuálního pixelu, kde se začínají zobrazovat data</param>
+        /// <param name="getVisualSizeMethod">Metoda, která vrátí počet vizuálních pixelů, na nichž se zobrazují data. Jde o čistý prostor pro data, nezahrnuje žádný Header ani Footer nebo Scrollbar.</param>
+        /// <param name="getDataSizeMethod">Metoda, která vrátí velikost dat = počet pixelů, které by obsadila data zobrazená najednou. Bez rezervy, bez přídavku.</param>
+        internal GPosition(int firstPixel, Func<int> getVisualSizeMethod, Func<int> getDataSizeMethod, Func<int> getVisualFirstPixel, Action<int> setVisualFirstPixel)
+            : this(firstPixel, DefaultDataSizeAddSpace, getVisualSizeMethod, getDataSizeMethod, getVisualFirstPixel, setVisualFirstPixel)
+        { }
         /// <summary>
         /// Vytvoří pozicioner pro obsah.
         /// </summary>
@@ -683,10 +685,22 @@ namespace Djs.Common.Components
         /// <param name="getVisualSizeMethod">Metoda, která vrátí počet vizuálních pixelů, na nichž se zobrazují data. Jde o čistý prostor pro data, nezahrnuje žádný Header ani Footer nebo Scrollbar.</param>
         /// <param name="getDataSizeMethod">Metoda, která vrátí velikost dat = počet pixelů, které by obsadila data zobrazená najednou. Bez rezervy, bez přídavku.</param>
         internal GPosition(int firstPixel, int dataSizeAddSpace, Func<int> getVisualSizeMethod, Func<int> getDataSizeMethod)
+            : this(firstPixel, dataSizeAddSpace, getVisualSizeMethod, getDataSizeMethod, null, null)
+        {
+        }
+        /// <summary>
+        /// Vytvoří pozicioner pro obsah.
+        /// </summary>
+        /// <param name="firstPixel">Pozice prvního vizuálního pixelu, kde se začínají zobrazovat data</param>
+        /// <param name="getVisualSizeMethod">Metoda, která vrátí počet vizuálních pixelů, na nichž se zobrazují data. Jde o čistý prostor pro data, nezahrnuje žádný Header ani Footer nebo Scrollbar.</param>
+        /// <param name="getDataSizeMethod">Metoda, která vrátí velikost dat = počet pixelů, které by obsadila data zobrazená najednou. Bez rezervy, bez přídavku.</param>
+        internal GPosition(int firstPixel, int dataSizeAddSpace, Func<int> getVisualSizeMethod, Func<int> getDataSizeMethod, Func<int> getVisualFirstPixel, Action<int> setVisualFirstPixel)
         {
             this.VisualFirstPixel = firstPixel;
             this._GetVisualSizeMethod = getVisualSizeMethod;
             this._GetDataSizeMethod = getDataSizeMethod;
+            this._GetVisualFirstPixel = getVisualFirstPixel;
+            this._SetVisualFirstPixel = setVisualFirstPixel;
             this._DataSizeAddSpace = dataSizeAddSpace;
         }
         /// <summary>
@@ -699,9 +713,29 @@ namespace Djs.Common.Components
         /// </summary>
         private Func<int> _GetDataSizeMethod;
         /// <summary>
-        /// Číslo vizuálního pixelu, na kterém začíná zobrazení dat. Pixely před tímto jsou obsazeny něčím jiným (typicky Header)
+        /// Číslo vizuálního pixelu, na kterém začíná zobrazení dat. Pixely před tímto jsou obsazeny něčím jiným (typicky Header).
+        /// Tato hodnota je buď uložená v this instanci, anebo může být napojená na externí funkcionalitu 
+        /// (k tomu je třeba vytvořit instanci této třídy pomocí konstruktoru s parametry getVisualFirstPixel, setVisualFirstPixel).
         /// </summary>
-        public int VisualFirstPixel { get; set; }
+        public int VisualFirstPixel
+        {
+            get
+            {
+                if (this._GetVisualFirstPixel != null)
+                    return this._GetVisualFirstPixel();
+                return this._VisualFirstPixelValue;
+            }
+            set
+            {
+                if (this._SetVisualFirstPixel != null)
+                    this._SetVisualFirstPixel(value);
+                else
+                    this._VisualFirstPixelValue = value;
+            }
+        }
+        private Func<int> _GetVisualFirstPixel;
+        private Action<int> _SetVisualFirstPixel;
+        private int _VisualFirstPixelValue;
         /// <summary>
         /// Celková velikost viditelná (=prostor v controlu = ClientBounds.Width nebo Height, v němž je zobrazován obsah).
         /// jde o čistou velikost prostoru, v němž se zobrazují data.
@@ -743,6 +777,10 @@ namespace Djs.Common.Components
         /// </summary>
         /// </summary>
         public int DataSizeAddSpace { get { return this._DataSizeAddSpace; } set { this._DataSizeAddSpace = value; } } private int _DataSizeAddSpace;
+        /// <summary>
+        /// Defaultní přídavek k hodnotě DataSize
+        /// </summary>
+        public static int DefaultDataSizeAddSpace { get { return 26; } }
         #endregion
         /// <summary>
         /// Vrátí vizuální pozici (odpovídající aktuálnímu controlu) pro danou logickou (datovou) pozici.

@@ -24,15 +24,10 @@ namespace Djs.Common.Components.Grid
         private void Init()
         {
             this.InitRowsData();
-            this.InitRowsPositions();
-
-
             this.InitColumnHeader();
-            
+            this.InitRowsPositions();
             this.InitHeaderSplitter();
             this.InitTableSplitter();
-
-            this.RecalculateTable();
         }
         void IDisposable.Dispose()
         {
@@ -88,19 +83,6 @@ namespace Djs.Common.Components.Grid
             this.RecalculateTable(ref actions, eventSource);
         }
         /// <summary>
-        /// Určí pozice a rozměry pro jednotlivé vnitřní členy tabulky: ColumnHeader, RowArea, Scrollbar.
-        /// Vychází přitom pouze z vnitřních prostorů tabulky this.ClientSize.
-        /// </summary>
-        /// <param name="tablesBounds"></param>
-        /// <param name="actions">Akce k provedení</param>
-        /// <param name="eventSource">Zdroj této události</param>
-        internal void RecalculateTable()
-        {
-            ProcessAction actions = ProcessAction.PrepareInnerItems;
-            EventSourceType eventSource = EventSourceType.ApplicationCode;
-            this.RecalculateTable(ref actions, eventSource);
-        }
-        /// <summary>
         /// Určí pozice a rozměry pro jednotlivé vnitřní členy tabulky: ColumnHeader, HeaderSplitter, RowArea, Scrollbar.
         /// Vychází přitom pouze z vnitřních prostorů tabulky this.ClientSize.
         /// </summary>
@@ -109,28 +91,45 @@ namespace Djs.Common.Components.Grid
         /// <param name="eventSource">Zdroj této události</param>
         internal void RecalculateTable(ref ProcessAction actions, EventSourceType eventSource)
         {
-            Size clientSize = this.ClientSize;
-            if (this.ClientSizeLast == clientSize) return;
-
+            this.RecalcClientAreas(ref actions, eventSource);
+        }
+        /// <summary>
+        /// Určí pozice a rozměry pro jednotlivé vnitřní členy tabulky: ColumnHeader, HeaderSplitter, RowArea, Scrollbar.
+        /// Vychází přitom pouze z vnitřních prostorů tabulky this.ClientSize.
+        /// </summary>
+        /// <param name="tablesBounds"></param>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
+        internal void RecalcClientAreas(ref ProcessAction actions, EventSourceType eventSource)
+        {
             this.TableLayoutValid = false;
+            Size clientSize = this.ClientSize;
+
             if (clientSize.Width <= 0 || clientSize.Height <= 0) return;
 
-            // Bude viditelný scrollbar řádků?
-            this.RowsScrollBarVisible = this.RowssPositions.IsScrollBarActive;
+            // Bude viditelný scrollbar řádků? (to je tehdy, když výška zobrazitelných řádků je větší než výška prostoru pro řádky):
+            //  Objekt RowsPositions tady provede dotaz na velikost dat (metoda _RowsPositionGetDataSize()) a velikost viditelného prostoru (metoda _RowsPositionGetVisualSize()).
+            //  Velikost dat je dána pozicí End posledního řádku z this.RowListAll,
+            //  velikost viditelného prostoru pro tabulky je dána výškou tabulky mínus výška hlavičky (ClientSize.Height - RowsPositions.VisualFirstPixel).
+            this.RowsScrollBarVisible = this.RowsPositions.IsScrollBarActive;
+
+            // Určíme souřadnice jednotlivých elementů:
+            int x0 = 0;                                                        // x0: úplně vlevo
+            int x3 = clientSize.Width;                                         // x3: úplně vpravo
+            int x2t = x3 - GScrollBar.DefaultSystemBarWidth;                   // x2t: zde začíná RowsScrollBar (vpravo, hned za koncem prostoru pro řádky), tedy pokud by byl zobrazen
+            int x2r = (this.RowsScrollBarVisible ? x2t : x3);                  // x2r: zde reálně končí oblast prostoru pro řádky, se zohledněním aktuální viditelnosti RowsScrollBaru
+            int y0 = 0;                                                        // y0: úplně nahoře
+            int y1 = this.RowsPositions.VisualFirstPixel;                      // y1: zde začíná prostor pro řádky, hned pod prostorem ColumnHeader (hodnota se fyzicky načte z this.DataTable.ColumnHeaderHeight)
+            int y3 = clientSize.Height;                                        // y3: úplně dole
+
+            this.ColumnHeaderBounds = new Rectangle(x0, y0, x3 - x0, y1 - y0);
+
+            this.RowAreaBounds = new Rectangle(x0, y1, x2r - x0, y3 - y1);
+
+            this.RowsScrollBarBounds = new Rectangle(x2t, y1, x3 - x2t, y3 - y1);
 
 
 
-            int headerHeight = this.DataTable.ColumnHeaderHeight;
-            this._ColumnHeaderBounds = new Rectangle(0, 0, clientSize.Width, headerHeight);
-
-            int rowAreaHeight = clientSize.Height - headerHeight;
-            bool scrollBarVisible = (rowAreaHeight < ((ISequenceLayout)this.RowListAll[0]).End);
-            int scrollBarWidth = (scrollBarVisible ? 18 : 0);
-
-            int rowAreaWidth = (scrollBarVisible ? (clientSize.Width - scrollBarWidth) : clientSize.Width);
-            this._RowAreaBounds = new Rectangle(0, headerHeight, rowAreaWidth, rowAreaHeight);
-
-            this._ScrollBarBounds = new Rectangle(rowAreaWidth, headerHeight, scrollBarWidth, rowAreaHeight);
 
             // HeadSplitter = splitter pod ColumnHeader a RowArea:
             this.HeaderSplitter.BoundsNonActive = new Int32Range(0, clientSize.Width);
@@ -144,35 +143,28 @@ namespace Djs.Common.Components.Grid
             if (this.TableSplitter.ValueSilent != value)
                 this.TableSplitter.ValueSilent = value;
 
-            // Zapamatovat clientSize, abychom příští aktivitu prováděli jen po změně:
-            this.ClientSizeLast = clientSize;
             this.TableLayoutValid = true;
         }
         /// <summary>
-        /// Hodnota ClientSize, pro kterou byly naposledy přepočteny pozice vnitřních objektů (_ColumnHeaderBounds, _RowAreaBounds, _ScrollBarBounds).
-        /// Další přepočet se provede jen po změně.
-        /// </summary>
-        protected Size ClientSizeLast;
-        /// <summary>
         /// Souřadnice prostoru záhlaví (ColumnHeaders)
         /// </summary>
-        protected Rectangle _ColumnHeaderBounds;
+        protected Rectangle ColumnHeaderBounds { get; set; }
         /// <summary>
         /// Souřadnice prostoru řádků (RowArea)
         /// </summary>
-        protected Rectangle _RowAreaBounds;
+        protected Rectangle RowAreaBounds { get; set; }
         /// <summary>
         /// Viditelnost scrollbaru řádků
         /// </summary>
-        protected bool RowsScrollBarVisible;
+        protected bool RowsScrollBarVisible { get; set; }
         /// <summary>
         /// Souřadnice svislého scrollbaru pro řádky
         /// </summary>
-        protected Rectangle RowsScrollBarBounds;
+        protected Rectangle RowsScrollBarBounds { get; set; }
         /// <summary>
         /// true pokud je layout vnitřních prostor tabulky korektně spočítán
         /// </summary>
-        protected bool TableLayoutValid;
+        protected bool TableLayoutValid { get; set; }
         #endregion
         #region Pozicování svislé - řádky a vpravo svislý scrollbar
         /// <summary>
@@ -180,7 +172,7 @@ namespace Djs.Common.Components.Grid
         /// </summary>
         private void InitRowsPositions()
         {
-            this.RowsPositions = new GPosition(DefaultColumnHeaderHeight, 50, this._RowsPositionGetVisualSize, this._RowsPositionGetDataSize);
+            this.RowsPositions = new GPosition(DefaultColumnHeaderHeight, 50, this._RowsPositionGetVisualSize, this._RowsPositionGetDataSize, this._GetVisualFirstPixel, this._SetVisualFirstPixel);
 
             this.RowsScrollBar = new GScrollBar() { Orientation = System.Windows.Forms.Orientation.Vertical };
             this.RowsScrollBar.ValueChanging += new GPropertyChanged<SizeRange>(RowsScrollBar_ValueChange);
@@ -191,15 +183,15 @@ namespace Djs.Common.Components.Grid
         /// </summary>
         protected GPosition RowsPositions;
         /// <summary>
-        /// Vrací výšku prostoru pro řádky (=this.ClientSize.Height - RowsPositions.VisualFirstPixel (=výška ColumnHeaders))
+        /// Vrací výšku prostoru pro řádky (=this.ClientSize.Height - RowsPositions.VisualFirstPixel (=výška this.DataTable.ColumnHeaderHeight))
         /// </summary>
         /// <returns></returns>
         private int _RowsPositionGetVisualSize()
         {
-            return this._RowAreaBounds.Height - this.RowsPositions.VisualFirstPixel;
+            return this.ClientSize.Height - this.RowsPositions.VisualFirstPixel;
         }
         /// <summary>
-        /// Vrací výšku všech zobrazitelných datových řádků, vyjma řádek ColumnHeader (to není datový řádek).
+        /// Vrací výšku všech zobrazitelných datových řádků (samosebou, vyjma řádek ColumnHeader - to není datový řádek).
         /// </summary>
         /// <returns></returns>
         private int _RowsPositionGetDataSize()
@@ -207,6 +199,25 @@ namespace Djs.Common.Components.Grid
             List<Row> list = this.RowListAll;
             int count = list.Count;
             return (count > 0 ? ((ISequenceLayout)list[count - 1]).End : 0);
+        }
+        /// <summary>
+        /// Vrací hodnotu prvního vizuálního pixelu, kde jsou zobrazována data.
+        /// Jde o hodnotu this.DataTable.ColumnHeaderHeight = výška oblasti ColumnHeader
+        /// </summary>
+        /// <returns></returns>
+        private int _GetVisualFirstPixel()
+        {
+            return this.DataTable.ColumnHeaderHeight;
+        }
+        /// <summary>
+        /// Zapíše danou hodnotu jako pozici prvního vizuálního pixelu, kde jsou zobrazována data.
+        /// Daná hodnota se vepisuje do this.DataTable.ColumnHeaderHeight = výška oblasti ColumnHeader.
+        /// Po vepsání hodnoty může dojít k úpravě vložené hodnoty podle pravidel.
+        /// </summary>
+        /// <param name="value"></param>
+        private void _SetVisualFirstPixel(int value)
+        {
+            this.DataTable.ColumnHeaderHeight = value;
         }
         /// <summary>
         /// Eventhandler pro událost změny pozice svislého scrollbaru = posun pole tabulek nahoru/dolů
