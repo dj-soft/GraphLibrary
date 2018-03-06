@@ -27,10 +27,8 @@ namespace Djs.Common.Components.Grid
             this.InitRowsPositions();
 
 
-            this.InitPositions();
             this.InitColumnHeader();
             
-            this.InitScrollBar();
             this.InitHeaderSplitter();
             this.InitTableSplitter();
 
@@ -150,18 +148,6 @@ namespace Djs.Common.Components.Grid
             this.ClientSizeLast = clientSize;
             this.TableLayoutValid = true;
         }
-
-
-
-        /// <summary>
-        /// Inicializace všech řídících prvků pro pozicování obsahu
-        /// </summary>
-        private void InitPositions()
-        {
-            this.RowsPositions = new GPosition(DefaultColumnHeaderHeight, this._RowsPositionGetVisualSize, this._RowsPositionGetDataSize);
-        }
-
-
         /// <summary>
         /// Hodnota ClientSize, pro kterou byly naposledy přepočteny pozice vnitřních objektů (_ColumnHeaderBounds, _RowAreaBounds, _ScrollBarBounds).
         /// Další přepočet se provede jen po změně.
@@ -187,32 +173,30 @@ namespace Djs.Common.Components.Grid
         /// true pokud je layout vnitřních prostor tabulky korektně spočítán
         /// </summary>
         protected bool TableLayoutValid;
-
         #endregion
-
         #region Pozicování svislé - řádky a vpravo svislý scrollbar
         /// <summary>
         /// Inicializace objektů pro pozicování tabulek: TablesPositions, TablesScrollBar
         /// </summary>
         private void InitRowsPositions()
         {
-            this.RowsPositions = new GPosition(0, this._RowsPositionGetVisualSize, this._RowsPositionGetDataSize);
+            this.RowsPositions = new GPosition(DefaultColumnHeaderHeight, 50, this._RowsPositionGetVisualSize, this._RowsPositionGetDataSize);
 
-            this.TablesScrollBar = new GScrollBar() { Orientation = System.Windows.Forms.Orientation.Vertical };
-            this.TablesScrollBar.ValueChanging += new GPropertyChanged<SizeRange>(TablesScrollBar_ValueChange);
-            this.TablesScrollBar.ValueChanged += new GPropertyChanged<SizeRange>(TablesScrollBar_ValueChange);
+            this.RowsScrollBar = new GScrollBar() { Orientation = System.Windows.Forms.Orientation.Vertical };
+            this.RowsScrollBar.ValueChanging += new GPropertyChanged<SizeRange>(RowsScrollBar_ValueChange);
+            this.RowsScrollBar.ValueChanged += new GPropertyChanged<SizeRange>(RowsScrollBar_ValueChange);
         }
         /// <summary>
-        /// Řídící prvek pro Pozice tabulek
+        /// Řídící prvek pro Pozice řádků
         /// </summary>
         protected GPosition RowsPositions;
         /// <summary>
-        /// Vrací výšku prostoru pro řádky (=this.ClientSize.Width)
+        /// Vrací výšku prostoru pro řádky (=this.ClientSize.Height - RowsPositions.VisualFirstPixel (=výška ColumnHeaders))
         /// </summary>
         /// <returns></returns>
         private int _RowsPositionGetVisualSize()
         {
-            return this._RowAreaBounds.Height;
+            return this._RowAreaBounds.Height - this.RowsPositions.VisualFirstPixel;
         }
         /// <summary>
         /// Vrací výšku všech zobrazitelných datových řádků, vyjma řádek ColumnHeader (to není datový řádek).
@@ -224,12 +208,41 @@ namespace Djs.Common.Components.Grid
             int count = list.Count;
             return (count > 0 ? ((ISequenceLayout)list[count - 1]).End : 0);
         }
-
-
-
-
-
+        /// <summary>
+        /// Eventhandler pro událost změny pozice svislého scrollbaru = posun pole tabulek nahoru/dolů
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        protected void RowsScrollBar_ValueChange(object sender, GPropertyChangeArgs<SizeRange> e)
+        {
+            int offset = (int)this.RowsScrollBar.Value.Begin.Value;
+            if (offset == this.RowsPositions.DataFirstPixel) return;
+            this.RowsPositions.DataFirstPixel = offset;
+            this.RecalcRows();
+            this.Repaint();
+        }
+        /// <summary>
+        /// Zajistí vložení všech patřičných hodnot do scrollbaru řádků.
+        /// Tato akce nevyvolá žádný event.
+        /// Aktualizují se hodnoty RowsScrollBar: Bounds, ValueTotal, Value, IsEnabled
+        /// </summary>
+        /// <param name="actions">Akce k provedení</param>
+        /// <param name="eventSource">Zdroj této události</param>
+        protected void RecalcRowsScrollBar(ref ProcessAction actions, EventSourceType eventSource)
+        {
+            if (this.RowsScrollBarVisible)
+                this.RowsScrollBar.LoadFrom(this.RowsPositions, this.RowsScrollBarBounds, true);
+        }
+        /// <summary>
+        /// RowsScrollBar : svislý posuvník vpravo od řádků
+        /// </summary>
+        protected GScrollBar RowsScrollBar;
         #endregion
+
+
+
+
+
 
 
         #region ISequenceLayout - adapter na DataTable jako implementační objekt
@@ -372,55 +385,16 @@ namespace Djs.Common.Components.Grid
         /// </summary>
         private List<GRow> _GRowList;
         #endregion
-        #region ScrollBar : svislý posuvník vpravo od řádků
-        private void InitScrollBar()
-        {
-            this._ScrollBar = new GScrollBar() { Orientation = System.Windows.Forms.Orientation.Vertical };
-            this._ScrollBar.ValueChanging += new GPropertyChanged<SizeRange>(ScrollBar_ValueChange);
-            this._ScrollBar.ValueChanged += new GPropertyChanged<SizeRange>(ScrollBar_ValueChange);
-
-        }
-        /// <summary>
-        /// Eventhandler pro událost změny hodnoty na scrollbaru = posun řádků
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void ScrollBar_ValueChange(object sender, GPropertyChangeArgs<SizeRange> e)
-        {
-            int offset = (int)this.ScrollBarX.Value.Begin.Value;
-            if (offset == this.Positions.ColumnsVisualOffset) return;
-            this.Positions.ColumnsVisualOffset = offset;
-            this.RecalcGrid();
-            this.RepaintAllItems = true;
-        }
-        /// <summary>
-        /// Provede (v jednom kroku) nastavení Bounds, Value a ValueTotal a IsEnabled pro ScrollBar 
-        /// podle aktuální vizuální pozice a podle datových údajů (this.RowsPositions).
-        /// </summary>
-        private void ScrollBarRecalc()
-        {
-            this._ScrollBar.LoadFrom(this.RowsPositions, this._ScrollBarBounds, true);
-        }
-        /// <summary>
-        /// ScrollBar : svislý posuvník vpravo od řádků
-        /// </summary>
-        private GScrollBar _ScrollBar;
-        #endregion
         #region HeaderSplitter : splitter umístěný pod hlavičkou sloupců, je součástí GTable.Items
-        /// <summary>
-        /// TableSplitter = Splitter mezo ColumnHeader a RowArea
-        /// Tento Splitter je součástí this.Childs, protože by neměl odcházet mimo this.GTable (na rozdíl od TableSplitter).
-        /// </summary>
-        internal GSplitter HeaderSplitter { get { return this._HeaderSplitter; } }
         /// <summary>
         /// Inicializuje objekt _HeaderSplitter.
         /// </summary>
         protected void InitHeaderSplitter()
         {
-            this._HeaderSplitter = new GSplitter() { Orientation = System.Windows.Forms.Orientation.Horizontal, SplitterVisibleWidth = 0, SplitterActiveOverlap = 4, LinkedItemPrevMinSize = 50, LinkedItemNextMinSize = 50, IsResizeToLinkItems = true };
-            this._HeaderSplitter.ValueSilent = this.Bounds.Bottom;
-            this._HeaderSplitter.ValueChanging += new GPropertyChanged<int>(_HeaderSplitter_LocationChange);
-            this._HeaderSplitter.ValueChanged += new GPropertyChanged<int>(_HeaderSplitter_LocationChange);
+            this.HeaderSplitter = new GSplitter() { Orientation = System.Windows.Forms.Orientation.Horizontal, SplitterVisibleWidth = 0, SplitterActiveOverlap = 4, LinkedItemPrevMinSize = 50, LinkedItemNextMinSize = 50, IsResizeToLinkItems = true };
+            this.HeaderSplitter.ValueSilent = this.Bounds.Bottom;
+            this.HeaderSplitter.ValueChanging += new GPropertyChanged<int>(_HeaderSplitter_LocationChange);
+            this.HeaderSplitter.ValueChanged += new GPropertyChanged<int>(_HeaderSplitter_LocationChange);
         }
         /// <summary>
         /// Eventhandler události _TableSplitter.LocationChanged (došlo nebo stále dochází ke změně pozice splitteru od tabulkou)
@@ -429,7 +403,7 @@ namespace Djs.Common.Components.Grid
         /// <param name="e"></param>
         private void _HeaderSplitter_LocationChange(object sender, GPropertyChangeArgs<int> e)
         {
-            int value = this._HeaderSplitter.Value;
+            int value = this.HeaderSplitter.Value;
             this.DataTable.ColumnHeaderHeight = value;               // Tady dojde ke kompletnímu vyhodnocení pravidel pro výšku ColumnHeader (Minimum, Default, Range)
             e.CorrectValue = this.DataTable.ColumnHeaderHeight;      // Pokud požadovaná hodnota (value) nebyla akceptovatelná, pak correctValue je hodnota přípustná
             if (e.IsChangeValue)
@@ -439,9 +413,10 @@ namespace Djs.Common.Components.Grid
             }
         }
         /// <summary>
-        /// HeaderSplitter = Splitter mezi ColumnHeader a RowArea
+        /// TableSplitter = Splitter mezo ColumnHeader a RowArea
+        /// Tento Splitter je součástí this.Childs, protože by neměl odcházet mimo this.GTable (na rozdíl od TableSplitter).
         /// </summary>
-        protected GSplitter _HeaderSplitter;
+        protected GSplitter HeaderSplitter;
         #endregion
         #region TableSplitter :  splitter umístěný dole pod tabulkou, je součástí Parenta
         /// <summary>

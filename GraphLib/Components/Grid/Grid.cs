@@ -227,7 +227,6 @@ namespace Djs.Common.Components
             this.RecalcTables();
             this.RepaintToLayers = GInteractiveDrawLayer.Standard;
         }
-
         /// <summary>
         /// Zajistí vložení všech patřičných hodnot do scrollbaru tabulek.
         /// Tato akce nevyvolá žádný event.

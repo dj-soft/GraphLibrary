@@ -140,37 +140,6 @@ namespace Djs.Common.Components
         /// </summary>
         /// <param name="e"></param>
         void Draw(GInteractiveDrawArgs e);
-
-
-        // ke zrušení:
-
-        /*
-        /// <summary>
-        /// Bounds, where item is drawed, in coordinates relative to this.Parent object (IInteractiveItem), or to Host control (GInteractiveControl).
-        /// </summary>
-        Rectangle VisibleRelativeBounds { get; set; }
-        /// <summary>
-        /// Summary coordinates, where item can be mouse-interactive.
-        /// Coordinates are relative to Parent object, or relative to Host.
-        /// When mouse coordinates are in this ActiveBounds, then system call method IsActiveAtPoint() for obtaining real information for real pixel.
-        /// For example: if Item is "Ellipse shape", then ActiveBounds according to surrounding Rectangle, therefore method IsActiveAtPoint() will be called for pixels on edge of rectangle,
-        /// but method IsActiveAtPoint() will returns false for this edge-pixels (real active shape is ellipse).
-        /// This algorithm will reduce time for search active objects among many other inactive objects.
-        /// </summary>
-        Rectangle ActiveRelativeBounds { get; }
-        /// <summary>
-        /// Bounds, where item is drawed, in coordinates absolute to Host control (GInteractiveControl).
-        /// </summary>
-        Rectangle VisibleAbsoluteBounds { get; set; }
-        /// <summary>
-        /// Bounds, where item is mouse-interactive, in coordinates absolute to Host control (GInteractiveControl).
-        /// </summary>
-        Rectangle ActiveAbsoluteBounds { get; }
-        */
-
-
-
-
     }
     #endregion
     #region InteractiveProperties : Bit storage for Interactive Properties of IInteractiveItem objects.
