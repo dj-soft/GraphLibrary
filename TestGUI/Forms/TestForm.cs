@@ -120,7 +120,7 @@ namespace Djs.Common.TestGUI
             int splitY = this._Splitter.Value;
             Rectangle tax = new Rectangle(gic.Left + 60, 10, gic.Width - 80, splitY - 12);
             this._TimeAxis.Bounds = tax;           // set value to Bounds ensure RepaintAll items
-            this._Splitter.BoundsNonActive = new Int32Range(tax.Left, tax.Right);
+            this._Splitter.BoundsNonActive = new Int32NRange(tax.Left, tax.Right);
 //                 Rectangle(tax.Left, tax.Bottom + 25, tax.Width, 5);
         }
         void _SizeAxisPos()

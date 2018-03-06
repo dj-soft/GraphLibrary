@@ -62,7 +62,7 @@ namespace Djs.Common.TestGUI
 
                     object[] items = this._Table1.Rows[2].Items;
 
-                    this._SplitterWZ = new GSplitter() { SplitterVisibleWidth = 4, SplitterActiveOverlap = 2, Orientation = Orientation.Vertical, Value = 400, BoundsNonActive = new Int32Range(0, 200) };
+                    this._SplitterWZ = new GSplitter() { SplitterVisibleWidth = 4, SplitterActiveOverlap = 2, Orientation = Orientation.Vertical, Value = 400, BoundsNonActive = new Int32NRange(0, 200) };
                     this._SplitterWZ.ValueChanged += new GPropertyChanged<int>(_SplitterWZ_ValueChanged);
                     this._SplitterWZ.ValueChanging += new GPropertyChanged<int>(_SplitterWZ_ValueChanging);
                     this._GridZ = new GGrid();
@@ -256,7 +256,7 @@ namespace Djs.Common.TestGUI
 
             graph.GraphDefaultHeight = 120;
             graph.LineUnitHeight = 18;
-            graph.GraphHeightRange = new Int32Range(35, 480);
+            graph.GraphHeightRange = new Int32NRange(35, 480);
 
             DateTime begin, end;
             GTimeGraphItem item;
@@ -405,7 +405,7 @@ namespace Djs.Common.TestGUI
                         this._GridZ.Bounds = new Rectangle(split + 2, y, size.Width - 5 - split - 2, h);
                         this._GridW.Refresh();
                     }
-                    this._SplitterWZ.BoundsNonActive = new Int32Range(y, y + h);
+                    this._SplitterWZ.BoundsNonActive = new Int32NRange(y, y + h);
                     this._SplitterWZ.Refresh();
                     // this.Refresh();
                 }
@@ -474,7 +474,7 @@ namespace Djs.Common.TestGUI
         public Image Photo { get; set; }
 
         public Int32? RowHeight { get; set; }
-        public Int32Range RowHeightRange { get { return null; } }
+        public Int32NRange RowHeightRange { get { return null; } }
         public Color? RowBackColor { get; set; }
     }
 }
