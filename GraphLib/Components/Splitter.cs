@@ -252,7 +252,7 @@ namespace Djs.Common.Components
         /// <summary>
         /// ItemNext minimal size (for Horizontal layout = Width, for Vertical layout = Height). Null = default = 10px (when ItemNext is not null).
         /// </summary>
-        public int? LinkedItemNextMinSize 
+        public int? LinkedItemNextMinSize
         {
             get { return this._LinkedItemNextMinSize; }
             set { this._LinkedItemNextMinSize = value; this.SetSplitter(DragResponseType.AfterDragEnd); }
@@ -279,6 +279,36 @@ namespace Djs.Common.Components
         {
             this.SetSplitter(DragResponseType.AfterDragEnd);
             base.Refresh();
+        }
+        #endregion
+        #region LoadFrom
+        /// <summary>
+        /// Vloží do sebe dodané hodnoty jedním voláním, umožní potlačit eventy změn
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="bounds"></param>
+        /// <param name="silent"></param>
+        public void LoadFrom(int value, Rectangle bounds, bool silent)
+        {
+            this._LoadFrom(value, this._Orientation, this.SplitterVisibleWidth, this.SplitterActiveOverlap, bounds, silent);
+        }
+        private void _LoadFrom(int? value, Orientation? orientation, int? splitterVisibleWidth, int? splitterActiveOverlap, Rectangle? bounds, bool silent)
+        {
+            if (silent)
+            {
+                using (this.SuppressEvents())
+                {
+                    this._LoadFromRun(value, orientation, splitterVisibleWidth, splitterActiveOverlap, bounds, silent);
+                }
+            }
+            else
+            {
+                this._LoadFromRun(value, orientation, splitterVisibleWidth, splitterActiveOverlap, bounds, silent);
+            }
+        }
+        private void _LoadFromRun(int? value, Orientation? orientation, int? splitterVisibleWidth, int? splitterActiveOverlap, Rectangle? bounds, bool silent)
+        {
+            this.SetSplitter(bounds, value, orientation, splitterVisibleWidth, splitterActiveOverlap, null, null, DragResponseType.None, ProcessAction.All, EventSourceType.ApplicationCode);
         }
         #endregion
         #region SetSplitter() and support

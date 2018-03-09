@@ -113,7 +113,7 @@ namespace Djs.Common.Components.Grid
             int x1 = (this.HasGrid ? this.Grid.ColumnsDataVisualRange.Begin : 0);   // x1: tady začíná prostor pro datové sloupce
             int x3 = clientSize.Width;                                              // x3: úplně vpravo
             int x2t = x3 - GScrollBar.DefaultSystemBarWidth;                        // x2t: zde začíná RowsScrollBar (vpravo, hned za koncem prostoru pro řádky), tedy pokud by byl zobrazen
-            int x2r = (this._RowsScrollBarVisible ? x2t : x3);                       // x2r: zde reálně končí oblast prostoru pro řádky, se zohledněním aktuální viditelnosti RowsScrollBaru
+            int x2r = (this._RowsScrollBarVisible ? x2t : x3);                      // x2r: zde reálně končí oblast prostoru pro řádky, se zohledněním aktuální viditelnosti RowsScrollBaru
             int y0 = 0;                                                             // y0: úplně nahoře
             int y1 = this.RowsPositions.VisualFirstPixel;                           // y1: zde začíná prostor pro řádky, hned pod prostorem ColumnHeader (hodnota se fyzicky načte z this.DataTable.ColumnHeaderHeight)
             int y3 = clientSize.Height;                                             // y3: úplně dole
@@ -130,6 +130,8 @@ namespace Djs.Common.Components.Grid
             this._VisibleColumns = null;
             this._VisibleRows = null;
             this._RowsScrollBarValid = false;
+            this._HeaderSplitterValid = false;
+            this._TableSplitterValid = false;
             this._ChildArrayValid = false;
         }
         /// <summary>
@@ -268,7 +270,7 @@ namespace Djs.Common.Components.Grid
         }
         /// <summary>
         /// Ověří a zajistí připravenost pole VisibleColumns.
-        /// Viditelné sloupce mají korektně nastaveny aktuální souřadnice.
+        /// Viditelné sloupce mají korektně nastaveny aktuální souřadnice do column.ColumnHeader.VisualRange, neviditelné mají VisualRange = null.
         /// </summary>
         private void _VisibleColumnsCheck()
         {
@@ -288,7 +290,15 @@ namespace Djs.Common.Components.Grid
             this._VisibleColumns = visibleColumns.ToArray();
             this._ChildArrayValid = false;
         }
+        /// <summary>
+        /// Pole všech sloupců této tabulky, v pořadí dle jejich ColumnOrder.
+        /// Viditelné sloupce mají nastavenu hodnotu column.ColumnHeader.VisualRange na vizuální pixely, neviditelné sloupce mají VisualRange = null.
+        /// </summary>
         private Column[] _Columns;
+        /// <summary>
+        /// Pole těch sloupců této tabulky, které jsou alespoň částečně viditelné.
+        /// Viditelné sloupce mají nastavenu hodnotu column.ColumnHeader.VisualRange na vizuální pixely, neviditelné sloupce mají VisualRange = null.
+        /// </summary>
         private Column[] _VisibleColumns;
         #endregion
         #region Pozicování řádků = svislé : pozicioner pro řádky, svislý scrollbar vpravo
@@ -349,13 +359,12 @@ namespace Djs.Common.Components.Grid
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        protected void RowsScrollBar_ValueChange(object sender, GPropertyChangeArgs<SizeRange> e)
+        private void RowsScrollBar_ValueChange(object sender, GPropertyChangeArgs<SizeRange> e)
         {
             int offset = (int)this.RowsScrollBar.Value.Begin.Value;
             if (offset == this.RowsPositions.DataFirstPixel) return;
             this.RowsPositions.DataFirstPixel = offset;
-            this.RowListVisibleReset();
-            this.Repaint();
+            this.Invalidate(InvalidateItem.RowScroll);
         }
         /// <summary>
         /// RowsScrollBar : svislý posuvník vpravo od řádků
@@ -392,9 +401,6 @@ namespace Djs.Common.Components.Grid
         private bool _RowsScrollBarValid;
         #endregion
         #region Řádky tabulky - zde jsou uložena dvě oddělená pole řádků: a) všechny aktuálně dostupné datové řádky - pro práci s kolekcí řádků, b) pouze viditelné grafické řádky - pro kreslení
-        protected void RecalcRows(ref ProcessAction actions, EventSourceType eventSource)
-        {
-        }
         /// <summary>
         /// Pole všech řádků této tabulky, které mohou být zobrazeny, v tom pořadí, v jakém jsou zobrazovány.
         /// </summary>
@@ -426,7 +432,7 @@ namespace Djs.Common.Components.Grid
         }
         /// <summary>
         /// Ověří a zajistí připravenost pole VisibleRows.
-        /// Viditelné řádky mají korektně nastaveny aktuální souřadnice.
+        /// Viditelné řádky mají korektně nastaveny aktuální souřadnice do row.RowHeader.VisualRange, neviditelné mají RowHeader.VisualRange == null.
         /// </summary>
         private void _VisibleRowsCheck()
         {
@@ -445,10 +451,6 @@ namespace Djs.Common.Components.Grid
             }
             this._VisibleRows = visibleRows.ToArray();
         }
-        /// <summary>
-        /// Zajistí reset odpovídajících dat řádků po posunu obsahu tabulky nebo po změně rozměrů tabulky.
-        /// </summary>
-        protected void RowListVisibleReset() { this._VisibleRows = null; }
         /// <summary>
         /// Metoda zajistí změnu výšky daného řádku, a návazné změny v interních strukturách plus překreslení
         /// </summary>
@@ -505,7 +507,34 @@ namespace Djs.Common.Components.Grid
             if (items.HasFlag(InvalidateItem.OnlyForGrid)) return;
 
             bool callGrid = false;
-            if ((items & (InvalidateItem.TableBounds | InvalidateItem.RowHeader | InvalidateItem.ColumnHeader)) != 0)
+
+            if ((items & (InvalidateItem.TableBounds)) != 0)
+            {   // Po změně rozměrů tabulky invalidujeme všechny viditelné prvky:
+                this._TableLayoutValid = false;
+                this._VisibleColumns = null;
+                this._VisibleRows = null;
+                this._RowsScrollBarValid = false;
+                this._HeaderSplitterValid = false;
+                this._ChildArrayValid = false;
+            }
+
+            if ((items & (InvalidateItem.TableHeight)) != 0)
+            {   // Po změně výšky tabulky:
+                this._TableLayoutValid = false;
+                this._VisibleColumns = null;
+                this._VisibleRows = null;
+                this._ChildArrayValid = false;
+            }
+
+            if ((items & (InvalidateItem.RowHeader)) != 0)
+            {   // Po změně šířky RowHeader pozice Rovnitřního uspořádání (vlivem změny rozměrů, nebo vlivem posunu vnitřních splitterů (RowHeader, ColumnHeader):
+                this._TableLayoutValid = false;
+                this._VisibleColumns = null;
+                this._ChildArrayValid = false;
+                callGrid = true;
+            }
+
+            if ((items & (InvalidateItem.ColumnHeader)) != 0)
             {   // Po změně vnitřního uspořádání (vlivem změny rozměrů, nebo vlivem posunu vnitřních splitterů (RowHeader, ColumnHeader):
                 this._TableLayoutValid = false;
                 this._VisibleColumns = null;
@@ -554,11 +583,8 @@ namespace Djs.Common.Components.Grid
                 this._ChildArrayValid = false;
             }
 
-
-
-
-            // Předáme to šéfovi, pokud to pro něj může být zajímavé:
-            if (this.HasGrid && callGrid)
+            // Předáme to šéfovi, pokud ho máme, a pokud to pro něj může být zajímavé, a pokud událost není určena jen pro naše (OnlyForTable) potřeby:
+            if (this.HasGrid && callGrid && !items.HasFlag(InvalidateItem.OnlyForTable))
                 this.Grid.Invalidate(items);
         }
         #endregion
@@ -603,10 +629,10 @@ namespace Djs.Common.Components.Grid
         /// </summary>
         protected void InitHeaderSplitter()
         {
-            this.HeaderSplitter = new GSplitter() { Orientation = System.Windows.Forms.Orientation.Horizontal, SplitterVisibleWidth = 0, SplitterActiveOverlap = 4, LinkedItemPrevMinSize = 50, LinkedItemNextMinSize = 50, IsResizeToLinkItems = true };
-            this.HeaderSplitter.ValueSilent = this.Bounds.Bottom;
-            this.HeaderSplitter.ValueChanging += new GPropertyChanged<int>(_HeaderSplitter_LocationChange);
-            this.HeaderSplitter.ValueChanged += new GPropertyChanged<int>(_HeaderSplitter_LocationChange);
+            this._HeaderSplitter = new GSplitter() { Orientation = System.Windows.Forms.Orientation.Horizontal, SplitterVisibleWidth = 0, SplitterActiveOverlap = 4, LinkedItemPrevMinSize = 50, LinkedItemNextMinSize = 50, IsResizeToLinkItems = true };
+            this._HeaderSplitter.ValueSilent = this.Bounds.Bottom;
+            this._HeaderSplitter.ValueChanging += new GPropertyChanged<int>(_HeaderSplitter_LocationChange);
+            this._HeaderSplitter.ValueChanged += new GPropertyChanged<int>(_HeaderSplitter_LocationChange);
         }
         /// <summary>
         /// Eventhandler události _TableSplitter.LocationChanged (došlo nebo stále dochází ke změně pozice splitteru od tabulkou)
@@ -615,27 +641,39 @@ namespace Djs.Common.Components.Grid
         /// <param name="e"></param>
         private void _HeaderSplitter_LocationChange(object sender, GPropertyChangeArgs<int> e)
         {
-            int value = this.HeaderSplitter.Value;
+            int value = this._HeaderSplitter.Value;
             this.DataTable.ColumnHeaderHeight = value;               // Tady dojde ke kompletnímu vyhodnocení pravidel pro výšku ColumnHeader (Minimum, Default, Range)
             e.CorrectValue = this.DataTable.ColumnHeaderHeight;      // Pokud požadovaná hodnota (value) nebyla akceptovatelná, pak correctValue je hodnota přípustná
             if (e.IsChangeValue)
             {
-                this.RowListVisibleReset();
-                this.Repaint();
+                this.Invalidate(InvalidateItem.RowScroll);
             }
         }
         /// <summary>
-        /// TableSplitter = Splitter mezo ColumnHeader a RowArea
+        /// TableSplitter = Splitter mezi ColumnHeader a RowArea
         /// Tento Splitter je součástí this.Childs, protože by neměl odcházet mimo this.GTable (na rozdíl od TableSplitter).
         /// </summary>
-        protected GSplitter HeaderSplitter;
+        protected GSplitter HeaderSplitter { get { this._HeaderSplitterCheck(); return this._HeaderSplitter; } }
+        /// <summary>
+        /// Zajistí platnost dat v HeaderSplitter
+        /// </summary>
+        private void _HeaderSplitterCheck()
+        {
+            if (this._HeaderSplitterValid) return;
+            Rectangle bounds = this.HeaderSplitterBounds;
+            this._HeaderSplitter.LoadFrom(bounds.Y, bounds, true);
+            this._HeaderSplitterValid = true;
+        }
+        /// <summary>
+        /// Platnost dat v HeaderSplitter
+        /// </summary>
+        private bool _HeaderSplitterValid;
+        /// <summary>
+        /// HeaderSplitter
+        /// </summary>
+        private GSplitter _HeaderSplitter;
         #endregion
         #region TableSplitter :  splitter umístěný dole pod tabulkou, je součástí Parenta
-        /// <summary>
-        /// TableSplitter = Splitter dole pod tabulkou.
-        /// Tento Splitter není součástí this.Childs (protože pak by byl omezen do this.Bounds), je součástí Childs nadřízeného prvku (GGrid), protože pak se může pohybovat v jeho prostoru.
-        /// </summary>
-        internal GSplitter TableSplitter { get { return this._TableSplitter; } }
         /// <summary>
         /// Inicializuje objekt _TableSplitter.
         /// </summary>
@@ -664,9 +702,28 @@ namespace Djs.Common.Components.Grid
             }
         }
         /// <summary>
+        /// TableSplitter = Splitter dole pod tabulkou.
+        /// Tento Splitter není součástí this.Childs (protože pak by byl omezen do this.Bounds), je součástí Childs nadřízeného prvku (GGrid), protože pak se může pohybovat v jeho prostoru.
+        /// </summary>
+        internal GSplitter TableSplitter { get { this._TableSplitterCheck(); return this._TableSplitter; } }
+        /// <summary>
+        /// Zajistí platnost dat v TableSplitter
+        /// </summary>
+        private void _TableSplitterCheck()
+        {
+            if (this._TableSplitterValid) return;
+            Rectangle bounds = this.TableSplitterBounds;
+            this._TableSplitter.LoadFrom(bounds.Y, bounds, true);
+            this._TableSplitterValid = true;
+        }
+        /// <summary>
+        /// Platnost dat v TableSplitter
+        /// </summary>
+        private bool _TableSplitterValid;
+        /// <summary>
         /// TableSplitter
         /// </summary>
-        protected GSplitter _TableSplitter;
+        private GSplitter _TableSplitter;
         #endregion
         #region Childs items : pole všech prvků v tabulce (jednotlivé headery, jednotlivé buňky, jednotlivé spittery, a scrollbar řádků)
         /// <summary>
@@ -674,14 +731,7 @@ namespace Djs.Common.Components.Grid
         /// Tabulka obsahuje: hlavičku tabulky, hlavičky viditelných sloupců, hlavičky viditelných řádků, buňky viditelných řádků a sloupců, 
         /// splitery hlaviček sloupců a hlaviček řádků (pokud je povoleno jejich resize), a scrollbar řádků (pokud je viditelný).
         /// </summary>
-        protected override IEnumerable<IInteractiveItem> Childs { get { this.ChildArrayCheck(); return this.ChildList; } }
-        /// <summary>
-        /// Invaliduje pole sub-item, provádí se po jakékoli změně (rozměry, sloupce, řádky: posuny, resize).
-        /// </summary>
-        protected void ChildArrayInvalidate()
-        {
-            this._ChildArrayValid = false;
-        }
+        protected override IEnumerable<IInteractiveItem> Childs { get { this._ChildArrayCheck(); return this.ChildList; } }
         /// <summary>
         /// Validita prvků v poli ChildItems
         /// </summary>
@@ -690,36 +740,34 @@ namespace Djs.Common.Components.Grid
         /// Zajistí platnost pole sub-itemů.
         /// Pokud je neplatné, zavolá this.GridItemsReload()
         /// </summary>
-        protected void ChildArrayCheck()
+        private void _ChildArrayCheck()
         {
-            if (!this._ChildArrayValid)
-                this.ChildArrayReload();
-        }
-        /// <summary>
-        /// Naplní pole this.ChildList všemi patřičnými prvky.
-        /// Tabulka obsahuje: hlavičku tabulky, hlavičky viditelných sloupců, hlavičky viditelných řádků, buňky viditelných řádků a sloupců, 
-        /// splitery hlaviček sloupců a hlaviček řádků (pokud je povoleno jejich resize), a scrollbar řádků (pokud je viditelný).
-        /// Součástí plnění je určení souřadnic (Bounds) pro grafické objekty.
-        /// </summary>
-        protected void ChildArrayReload()
-        {
+            if (this._ChildArrayValid) return;
             this.ChildList.Clear();
-            this.ChildItemsAddColumnHeaders();                       // Záhlaví sloupců, včetně TableHeader
-            this.ChildItemsAddColumnSplitters();                     // Oddělovače sloupců, které to mají povoleno
-            this.ChildItemsAddRowsContent();                         // Řádky: záhlaví plus buňky, ale ne oddělovače
-            this.ChildItemsAddHeaderSplitter();                      // Oddělovač pod hlavičkami sloupců (řídí výšku záhlaví)
-            this.ChildItemsAddRowsSplitters();                       // Řádky: oddělovače řádků, pokud je povoleno
-            this.ChildItemsAddRowsScrollBar();                       // Scrollbar řádků, pokud je viditelný
+            this._ChildItemsAddColumnHeaders();                      // Záhlaví sloupců (TableHeader + ColumnHeaders)
+            this._ChildItemsAddColumnSplitters();                    // Oddělovače sloupců, které to mají povoleno
+            this._ChildItemsAddRowsContent();                        // Řádky: záhlaví plus buňky, ale ne oddělovače
+            this._ChildItemsAddHeaderSplitter();                     // Oddělovač pod hlavičkami sloupců (řídí výšku záhlaví)
+            this._ChildItemsAddRowsSplitters();                      // Řádky: oddělovače řádků, pokud je povoleno
+            this._ChildItemsAddRowsScrollBar();                      // Scrollbar řádků, pokud je viditelný
             this._ChildArrayValid = true;
         }
-        protected void ChildItemsAddColumnHeaders()
+        protected void _ChildItemsAddColumnHeaders()
         {
             GTableHeader tableHeader = this.DataTable.TableHeader;
             tableHeader.Bounds = this.TableHeaderBounds;
             this.ChildList.Add(tableHeader);
 
+            Rectangle headerBounds = this.ColumnHeaderBounds;
+            foreach (Column column in this.VisibleColumns)
+            {
+                GColumnHeader columnHeader = column.ColumnHeader;
+                Int32Range visualRange = columnHeader.VisualRange;
+                columnHeader.Bounds = new Rectangle(visualRange.Begin, headerBounds.Y, visualRange.Size, headerBounds.Height);
+                this.ChildList.Add(columnHeader);
+            }
         }
-        protected void ChildItemsAddColumnSplitters()
+        protected void _ChildItemsAddColumnSplitters()
         {
             GTableHeader header = this.DataTable.TableHeader;
             if (header.ColumnSplitterVisible)
@@ -727,7 +775,7 @@ namespace Djs.Common.Components.Grid
 
 
         }
-        protected void ChildItemsAddRowsContent()
+        protected void _ChildItemsAddRowsContent()
         {
             foreach (Row row in this.VisibleRows)
                 this.ChildItemsAddRowContent(row);
@@ -739,9 +787,9 @@ namespace Djs.Common.Components.Grid
             rowHeader.Bounds = ;
             this.ChildList.Add(rowHeader);
         }
-        protected void ChildItemsAddHeaderSplitter()
+        protected void _ChildItemsAddHeaderSplitter()
         { }
-        protected void ChildItemsAddRowsSplitters()
+        protected void _ChildItemsAddRowsSplitters()
         {
             if (!this.datat
             foreach (Row row in this.VisibleRows)
@@ -752,7 +800,7 @@ namespace Djs.Common.Components.Grid
         {
             
         }
-        protected void ChildItemsAddRowsScrollBar()
+        protected void _ChildItemsAddRowsScrollBar()
         {
             if (this.RowsScrollBarVisible)
             {
