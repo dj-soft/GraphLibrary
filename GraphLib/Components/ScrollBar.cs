@@ -1158,6 +1158,7 @@ namespace Djs.Common.Components
         }
         #endregion
     }
+    #region interface IScrollBarData : Podklady pro nastavení ScrollBaru
     /// <summary>
     /// Podklady pro nastavení ScrollBaru
     /// </summary>
@@ -1188,4 +1189,5 @@ namespace Djs.Common.Components
         /// </summary>
         int DataSizeAddSpace { get; }
     }
+    #endregion
 }

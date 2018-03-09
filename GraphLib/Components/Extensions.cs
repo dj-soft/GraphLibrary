@@ -1591,6 +1591,104 @@ namespace Djs.Common.Components
             return new RectangleF(r.Location.Sub(point), r.Size);
         }
         #endregion
+        #region Rectangle: FitInto()
+        /// <summary>
+        /// Zajistí, že this souřadnice budou umístěny do daného prostoru (disponibleBounds).
+        /// Pokud daný prostor je menší, než velikost this, pak velikost this může být zmenšena, anebo this může přesahovat doprava/dolů, podle parametru shrinkToFit
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <param name="disponibleBounds">Souřadnice prostoru, do něhož má být this souřadnice posunuta</param>
+        /// <param name="shrinkToFit">true = pokud this má větší velikost než disponibleBounds, pak this bude zmenšeno / false = pak this bude přečnívat doprava / dolů.</param>
+        /// <returns></returns>
+        public static Rectangle FitInto(this Rectangle bounds, Rectangle disponibleBounds, bool shrinkToFit)
+        {
+            int dx = disponibleBounds.X;
+            int dy = disponibleBounds.Y;
+            int dw = disponibleBounds.Width;
+            int dh = disponibleBounds.Height;
+            int dr = dx + dw;
+            int db = dy + dh;
+
+            int x = bounds.X;
+            int y = bounds.Y;
+            int w = bounds.Width;
+            int h = bounds.Height;
+
+            if (x < dx) x = dx;
+            if ((x + w) > dr)
+            {
+                x = dr - w;
+                if (x < dx)
+                {
+                    x = dx;
+                    if (shrinkToFit)
+                        w = dw;
+                }
+            }
+
+            if (y < dy) y = dy;
+            if ((y + h) > db)
+            {
+                y = db - h;
+                if (y < dy)
+                {
+                    y = dy;
+                    if (shrinkToFit)
+                        h = dh;
+                }
+            }
+
+            return new Rectangle(x, y, w, h);
+        }
+        /// <summary>
+        /// Zajistí, že this souřadnice budou umístěny do daného prostoru (disponibleBounds).
+        /// Pokud daný prostor je menší, než velikost this, pak velikost this může být zmenšena, anebo this může přesahovat doprava/dolů, podle parametru shrinkToFit
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <param name="disponibleBounds">Souřadnice prostoru, do něhož má být this souřadnice posunuta</param>
+        /// <param name="shrinkToFit">true = pokud this má větší velikost než disponibleBounds, pak this bude zmenšeno / false = pak this bude přečnívat doprava / dolů.</param>
+        /// <returns></returns>
+        public static RectangleF FitInto(this RectangleF bounds, RectangleF disponibleBounds, bool shrinkToFit)
+        {
+            float dx = disponibleBounds.X;
+            float dy = disponibleBounds.Y;
+            float dw = disponibleBounds.Width;
+            float dh = disponibleBounds.Height;
+            float dr = dx + dw;
+            float db = dy + dh;
+
+            float x = bounds.X;
+            float y = bounds.Y;
+            float w = bounds.Width;
+            float h = bounds.Height;
+
+            if (x < dx) x = dx;
+            if ((x + w) > dr)
+            {
+                x = dr - w;
+                if (x < dx)
+                {
+                    x = dx;
+                    if (shrinkToFit)
+                        w = dw;
+                }
+            }
+
+            if (y < dy) y = dy;
+            if ((y + h) > db)
+            {
+                y = db - h;
+                if (y < dy)
+                {
+                    y = dy;
+                    if (shrinkToFit)
+                        h = dh;
+                }
+            }
+
+            return new RectangleF(x, y, w, h);
+        }
+        #endregion
         #region Padding
         /// <summary>
         /// Returns true, when this Padding all values are Zero.

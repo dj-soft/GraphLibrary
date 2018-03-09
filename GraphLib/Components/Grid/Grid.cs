@@ -95,19 +95,28 @@ namespace Djs.Common.Components
             int y2 = y3 - GScrollBar.DefaultSystemBarHeight;                   // y2: zde začíná ColumnsScrollBar (dole, hned za koncem prostoru pro tabulky)
 
             this.GridTablesBounds = new Rectangle(x0, y0, x2r - x0, y2 - y0);
-
+            this.ColumnRowHeaderVisualRange = new Int32Range(x0, x1);
+            this.ColumnsDataVisualRange = new Int32Range(x1, x2r);
             if (this.TablesScrollBarVisible)
                 this.TablesScrollBarBounds = new Rectangle(x2t, y1, x3 - x2t, y2 - y1);
-
-            if (this.ColumnsScrollBarVisible)
-                this.ColumnsScrollBarBounds = new Rectangle(x1, y2, x2r - x1, y3 - y2);
-
+            this.ColumnsScrollBarBounds = new Rectangle(x1, y2, x2r - x1, y3 - y2);
             this.GridVoidBounds1 = new Rectangle(x0, y2, x1 - x0, y3 - y2);
-
             this.GridVoidBounds2 = new Rectangle(x2r, y2, x3 - x2r, y3 - y2);
 
             this.GridLayoutValid = true;
         }
+        /// <summary>
+        /// Prostor pro tabulky (hlavní prostor), neobsahuje pozice scrollbarů X a Y
+        /// </summary>
+        protected Rectangle GridTablesBounds { get; set; }
+        /// <summary>
+        /// Vizuální rozmezí prostoru pro sloupec RowHeader v ose X = začíná na pozici 0 a končí tam, kde začíná prostor pro datové sloupce
+        /// </summary>
+        public Int32Range ColumnRowHeaderVisualRange { get; protected set; }
+        /// <summary>
+        /// Vizuální rozmezí prostoru pro datové sloupce v ose X = začíná za RowHeader columnem, a končí na začátku svislého scrollbaru tabulek
+        /// </summary>
+        public Int32Range ColumnsDataVisualRange { get; protected set; }
         /// <summary>
         /// true pokud se má zobrazovat svislý scrollbar (pro tabulky, vpravo)
         /// </summary>
@@ -124,10 +133,6 @@ namespace Djs.Common.Components
         /// Prostor pro vodorovný scrollbar (pro sloupce, dole)
         /// </summary>
         protected Rectangle ColumnsScrollBarBounds { get; set; }
-        /// <summary>
-        /// Prostor pro tabulky (hlavní prostor), neobsahuje pozice scrollbarů X a Y
-        /// </summary>
-        protected Rectangle GridTablesBounds { get; set; }
         /// <summary>
         /// Prázdný prostor 1 = pod sloupcem RowHeaderColumn, kam nezasahuje ColumnsScrollBar - ten je jen pod prostorem datových sloupců.
         /// Tento prostor není interaktvní, ale měl by být vyplněn barvou pozadí.
@@ -246,6 +251,218 @@ namespace Djs.Common.Components
         protected GScrollBar TablesScrollBar { get; set; }
         #endregion
         #region Pozicování vodorovné - sloupce tabulek a dolní vodorovný scrollbar
+        /// <summary>
+        /// Obsahuje všechny viditelné sloupce ze všech viditelných tabulek celého gridu.
+        /// Pole je v tom pořadí, v jakém se sloupce mají zobrazovat.
+        /// Sloupce vycházejí primárně z první tabulky gridu. Toto pole (this.Columns) reprezentuje synchronizované pole sloupců ze všech tabulek Gridu.
+        /// Změna šířky sloupce nebo jeho přemístění na jinou pozici v kterékoli tabulce v Gridu se prostřednictvím Gridu promítá do všech tabulek Gridu.
+        /// Jednotlivé tabulky mají svoji kolekci Columns, ale jejich šířka a pořadí jsou řízeny centrálně z této kolekce.
+        /// Rovněž i TimeAxis je synchronizována díky této kolekci.
+        /// </summary>
+        public GridColumn[] Columns { get { this._ColumnsCheck(); return this._Columns; } }
+        /// <summary>
+        /// Zajistí, že pole sloupců budou obsahovat platné hodnoty
+        /// </summary>
+        private void _ColumnsCheck()
+        {
+            bool needContent = (this._ColumnDict == null || this._Columns == null);
+            bool needRecalc = !this._ColumnsLayoutValid;
+            if (needContent || needRecalc)
+            {
+                Dictionary<int, GridColumn> columnDict = this._ColumnDict;
+                if (needContent)
+                {    // Je nutné vygenerovat obsah těchto polí:
+                     // Vytvořím index, kde klíčem je ColumnId, a hodnotou je instance GridColumn.
+                     // každá jedna instance GridColumn bude obsahovat souhrn všech viditelných sloupců shodného ColumnId, ze všech viditelných tabulek.
+                    columnDict = new Dictionary<int, GridColumn>();
+                    foreach (GTable table in this._Tables)
+                    {
+                        if (table.DataTable == null || !table.DataTable.IsVisible) continue;
+                        foreach (Column column in table.DataTable.Columns.Where(c => c.IsVisible))
+                        {
+                            int columnId = column.ColumnId;
+                            GridColumn gridColumn;
+                            if (columnDict.TryGetValue(columnId, out gridColumn))
+                                gridColumn.AddColumn(column);
+                            else
+                                columnDict.Add(columnId, new GridColumn(column));
+                        }
+                    }
+                }
+
+                // Nyní vytvořím lineární soupis GridColumn, a setřídím jej podle pořadí dle sloupce Master (z první tabulky):
+                List<GridColumn> columnList = columnDict.Values.ToList();
+                columnList.Sort(GridColumn.CompareOrder);
+
+                // Dále zajistím, že hodnoty ColumnOrder ve sloupcích budou číslovány po 2
+
+                // Zajistím provedení nápočtu pozic:
+                SequenceLayout.SequenceLayoutCalculate(columnList);
+
+                // Na každý pád je nutno uložit vypočtená data:
+                this._ColumnDict = columnDict;
+                this._Columns = columnList.ToArray();
+                this._ColumnsLayoutValid = true;
+            }
+        }
+        /// <summary>
+        /// Metoda zkusí najít a vrátit data o sloupci Gridu pro dané ID.
+        /// Sloupec Gridu (instance třídy GridColumn) reprezentuje jeden svislý sloupec stejného ColumnId, přes všechny tabulky.
+        /// Sloupec obsahuje MasterColumn = sloupec tohoto ColumnId z první tabulky, ve které se vyskytl. Ten pak hraje roli Mastera.
+        /// </summary>
+        /// <param name="columnId"></param>
+        /// <param name="gridColumn"></param>
+        /// <returns></returns>
+        public bool TryGetGridColumn(int columnId, out GridColumn gridColumn)
+        {
+            this._ColumnsCheck();
+            return this._ColumnDict.TryGetValue(columnId, out gridColumn);
+        }
+        /// <summary>
+        /// Index sloupců podle ColumnId
+        /// </summary>
+        private Dictionary<int, GridColumn> _ColumnDict;
+        /// <summary>
+        /// Seznam sloupců podle jejich pořadí
+        /// </summary>
+        private GridColumn[] _Columns;
+        /// <summary>
+        /// true pokud obsah pole _Columns má správné souřadnice, false pokud ne
+        /// </summary>
+        private bool _ColumnsLayoutValid = false;
+        /// <summary>
+        /// Řídící prvek pro Pozice sloupců
+        /// </summary>
+        public GPosition ColumnsPositions { get; protected set; }
+        /// <summary>
+        /// Metoda vrátí vizuální souřadnice daného sloupce v aktuálním prostoru Gridu, podle 
+        /// </summary>
+        /// <param name="column"></param>
+        /// <returns></returns>
+        public Int32Range GetColumnVisualPosition(ISequenceLayout column)
+        {
+            if (!SequenceLayout.IsItemVisible(column as ISequenceLayout, this.ColumnsPositions.DataVisibleRange)) return null;
+            return this.ColumnsPositions.GetVisualPosition(column);
+        }
+        /// <summary>
+        /// Metoda zajistí změnu šířky sloupce RowHeader, a návazné změny v interních strukturách plus překreslení
+        /// </summary>
+        /// <param name="width"></param>
+        /// <returns></returns>
+        public bool ColumnRowHeaderResizeTo(ref int width)
+        {
+            Table masterTable = (this._Tables.Count > 0 ? this._Tables[0].DataTable : null);
+            if (masterTable == null) return false;
+
+            int widthOld = masterTable.RowHeaderWidth;
+            masterTable.RowHeaderWidth = width;
+            int widthNew = masterTable.RowHeaderWidth;
+
+            bool isChanged = (widthNew != widthOld);
+            if (isChanged)
+            {
+                width = widthNew;
+                // Zajistit invalidaci a překresení:
+                this.ColumnsLayoutReset();
+                this.Repaint();
+            }
+            return isChanged;
+        }
+        /// <summary>
+        /// Metoda zajistí přesun sloupce na jiné místo: tak, aby daný sloupec (column) byl zobrazen na daném pořadí.
+        /// Provede to tak, že změní hodnoty ColumnOrder vhodných sloupců, a zajistí přepočty polí sloupců a zajistí i překreslení.
+        /// </summary>
+        /// <param name="column">Sloupec, který chceme přesunout. Důležité je jen jeho ColumnId</param>
+        /// <param name="targetOrder">Cíl přesunu = ColumnOrder jiného sloupce, na jehož místo chci dát daný column. Tento jiný sloupec bude až za aktuálním sloupcem. Cíl přesunu může být i vyšší, než je nejvyšší ID, pak aktuální sloupec bude zařazen za poslední prvek.</param>
+        public bool ColumnMoveTo(Column column, int targetOrder)
+        {
+            if (column == null) return false;
+            return this.ColumnMoveTo(column.ColumnId, targetOrder);
+        }
+        /// <summary>
+        /// Metoda zajistí přesun sloupce na jiné místo: tak, aby daný sloupec (column) byl zobrazen na daném pořadí.
+        /// Provede to tak, že změní hodnoty ColumnOrder vhodných sloupců, a zajistí přepočty polí sloupců a zajistí i překreslení.
+        /// </summary>
+        /// <param name="columnId">Id sloupce, který chceme přesunout.</param>
+        /// <param name="targetOrder">Cíl přesunu = ColumnOrder jiného sloupce, na jehož místo chci dát daný column. Tento jiný sloupec bude až za aktuálním sloupcem. Cíl přesunu může být i vyšší, než je nejvyšší ID, pak aktuální sloupec bude zařazen za poslední prvek.</param>
+        public bool ColumnMoveTo(int columnId, int targetOrder)
+        {
+            GridColumn sourceColumn;
+            if (!this.TryGetGridColumn(columnId, out sourceColumn)) return false;        // Daný sloupec neznáme
+            int sourceOrder = sourceColumn.ColumnOrder;
+            if (sourceOrder == targetOrder) return false;                                // Není co dělat
+
+            GridColumn[] columns = this.Columns;
+            int length = columns.Length;
+            bool isSourceAdded = false;
+
+            // Do pole reorderedColumns přidám prvky fyzicky v požadovaném pořadí, a ve vhodnou chvíli do něj vložím požadovaný sloupec sourceColumn:
+            List<GridColumn> reorderedColumns = new List<GridColumn>();
+            for (int i = 0; i < length; i++)
+            {
+                GridColumn current = columns[i];
+                if (current.ColumnId == sourceColumn.ColumnId) continue;                 // Přemisťovaný sloupec = v tuto chvíli jej přeskočím, dostane se do pole jinak!
+                int currentOrder = current.ColumnOrder;
+                // Nyní řeším sloupec (current), jehož pořadí je menší než požadované cílové = přidám ho do seznamu reorderedColumns:
+                if (currentOrder < targetOrder) { reorderedColumns.Add(current); }
+                // Nynější sloupec (current) má být za přemisťovaným sloupcem, a ten jsme ještě do seznamu reorderedColumns nezařadili - zařadíme tam sourceColumn, a za ním current:
+                else if (!isSourceAdded) { reorderedColumns.Add(sourceColumn); isSourceAdded = true; reorderedColumns.Add(current); }
+                // Sloupec current má být za sloupcem sourceColumn, a ten (sourceColumn) už byl do seznamu reorderedColumns přidán dříve:
+                else { reorderedColumns.Add(current); }
+            }
+            // Pokud jsem až dosdu nepřidal sourceColumn, přidám jej na konec:
+            if (!isSourceAdded) { reorderedColumns.Add(sourceColumn); isSourceAdded = true; }
+
+            // Dosud jsme nezměnili žádné ColumnOrder, ale máme korektně seřazenou kolekci = takže do ní vepíšeme novou hodnotu ColumnOrder:
+            int columnOrder = 0;
+            foreach (GridColumn gc in reorderedColumns)
+                gc.ColumnOrder = columnOrder++;
+
+            // Zajistit invalidaci a překresení:
+            this.ColumnsSequenceReset();
+            this.Repaint();
+
+            return true;
+        }
+        /// <summary>
+        /// Metoda zajistí změnu šířky daného sloupce, a návazné změny v interních strukturách plus překreslení
+        /// </summary>
+        /// <param name="column"></param>
+        /// <param name="width">Požadovaná šířka, může se změnit</param>
+        /// <returns></returns>
+        public bool ColumnResizeTo(Column column, ref int width)
+        {
+            if (column == null) return false;
+            return this.ColumnResizeTo(column.ColumnId, ref width);
+        }
+        /// <summary>
+        /// Metoda zajistí změnu šířky daného sloupce, a návazné změny v interních strukturách plus překreslení
+        /// </summary>
+        /// <param name="columnId"></param>
+        /// <param name="width"></param>
+        /// <returns></returns>
+        public bool ColumnResizeTo(int columnId, ref int width)
+        {
+            GridColumn sourceColumn;
+            if (!this.TryGetGridColumn(columnId, out sourceColumn)) return false;        // Daný sloupec neznáme
+
+            int widthOld = sourceColumn.ColumnWidth;
+            sourceColumn.ColumnWidth = width;
+            int widthNew = sourceColumn.ColumnWidth;
+
+            bool isChanged = (widthNew != widthOld);
+            if (isChanged)
+            {
+                width = widthNew;
+                // Zajistit invalidaci a překresení:
+                this.ColumnsLayoutReset();
+                this.Repaint();
+            }
+            return isChanged;
+        }
+        /// <summary>
+        /// Inicializace pozic sloupců
+        /// </summary>
         private void InitColumnsPositions()
         {
             this.ColumnsPositions = new GPosition(GGrid.DefaultRowHeaderWidth, 28, this._ColumnPositionGetVisualSize, this._ColumnPositionGetDataSize);
@@ -254,10 +471,6 @@ namespace Djs.Common.Components
             this.ColumnsScrollBar.ValueChanging += new GPropertyChanged<SizeRange>(ColumnsScrollBar_ValueChange);
             this.ColumnsScrollBar.ValueChanged += new GPropertyChanged<SizeRange>(ColumnsScrollBar_ValueChange);
         }
-        /// <summary>
-        /// Řídící prvek pro Pozice sloupců
-        /// </summary>
-        protected GPosition ColumnsPositions { get; set; }
         /// <summary>
         /// Vrací šířku vizuálního prostoru pro datové sloupce (= ClientSize.Width - ColumnsPositions.VisualFirstPixel - [šířka TablesScrollBar, pokud je viditelný])
         /// </summary>
@@ -272,48 +485,25 @@ namespace Djs.Common.Components
         /// <returns></returns>
         private int _ColumnPositionGetDataSize()
         {
-            ISequenceLayout[] array = this.ColumnsSequence;
+            ISequenceLayout[] array = this.Columns;
             int count = array.Length;
             return (count > 0 ? array[count - 1].End : 0);
         }
         /// <summary>
-        /// Soupis sloupců master tabulky, vždy setříděný v pořadí podle ColumnOrder, se správně napočtenou hodnotou ISequenceLayout.Begin a End.
-        /// Tento seznam se ukládá do místní cache, jeho generování se provádí jen jedenkrát po jeho invalidaci.
-        /// Invalidace seznamu se provádí metodou ColumnsSequenceReset(), ta se má volat po těchto akcích:
-        /// Změna pořadí sloupců, Změna počtu sloupců.
-        /// Nemusí se volat při posunech vodorovného scrollbaru ani při resize gridu, ani při změně šířky sloupců!
-        /// Tato property nikdy nevrací null, ale může vrátit kolekci s počtem = 0 prvků (pokud neexistují tabulky nebo Master tabulka nemá žádné sloupce).
+        /// Resetuje kolekci Columns (=donutí ji znovu se načíst).
+        /// Má se volat po těchto akcích: Změna počtu sloupců; Změna pořadí sloupců.
+        /// Nemá se volat po změně: Změna šířky sloupce (při této změně se nemění počet a pořadí sloupců).
+        /// Nemusí se volat po změnách: Posun scrollbaru sloupců, změna rozměrů gridu (při této změně se nemění ani datové souřadnice sloupců).
         /// </summary>
-        protected ISequenceLayout[] ColumnsSequence
-        {
-            get
-            {
-                if (this._ColumnsSequence == null)
-                {
-                    List<Column> columns = new List<Column>();
-                    if (this._Tables != null && this._Tables.Count > 0)
-                        columns.AddRange(this._Tables[0].DataTable.Columns.Where(c => c.Visible));
-                    if (columns.Count > 1)
-                        columns.Sort(Column.CompareOrder);
-
-                    ISequenceLayout[] array = columns.Cast<ISequenceLayout>().ToArray();
-                    SequenceLayout.SequenceLayoutCalculate(array);
-                    this._ColumnsSequence = array;
-                }
-                return this._ColumnsSequence;
-            }
-        }
+        protected void ColumnsSequenceReset() { this._Columns = null; this._MainTimeAxisReset(); }
         /// <summary>
-        /// Cache kolekce ColumnsSequence
+        /// Resetuje platnost datových souřadnic sloupců (jejich hodnoty v ISequenceLayout).
+        /// Vynutí si přepočet datových hodnot Begin a End.
+        /// Je nedostatečné po změnách: Změna počtu sloupců; Změna pořadí sloupců.
+        /// Má se volat pouze po akci: Změna šířky sloupce.
+        /// Nemusí se volat po změnách: Posun scrollbaru sloupců, změna rozměrů gridu (při této změně se nemění ani datové souřadnice sloupců).
         /// </summary>
-        private ISequenceLayout[] _ColumnsSequence { get; set; }
-        /// <summary>
-        /// Resetuje kolekci ColumnsSequence (=donutí ji znovu se načíst).
-        /// Má se volat po těchto akcích:
-        /// Změna pořadí sloupců, Změna počtu sloupců.
-        /// Nemusí se volat při posunech vodorovného scrollbaru ani při resize gridu, ani při změně šířky sloupců!
-        /// </summary>
-        protected void ColumnsSequenceReset() { this._ColumnsSequence = null; this._MainTimeAxisReset(); }
+        protected void ColumnsLayoutReset() { this._ColumnsLayoutValid = false; }
         /// <summary>
         /// Eventhandler volaný při/po změně hodnoty na vodorovném scrollbaru = posuny sloupců
         /// </summary>
@@ -580,10 +770,10 @@ namespace Djs.Common.Components
             {
                 if (!this._MainTimeAxisValid)
                 {
-                    Column timeAxisColumn = this.ColumnsSequence.Cast<Column>().FirstOrDefault(c => c.UseTimeAxis);
+                    GridColumn timeAxisColumn = this.Columns.FirstOrDefault(c => c.UseTimeAxis);
                     if (timeAxisColumn != null)
                     {
-                        this._MainTimeAxis = timeAxisColumn.TimeAxis;
+                        this._MainTimeAxis = timeAxisColumn.MasterColumn.TimeAxis;
                         this._MainTimeAxisValid = true;
                     }
                 }
@@ -640,12 +830,139 @@ namespace Djs.Common.Components
         public static int DefaultRowHeaderWidth { get { return 32; } }
         #endregion
     }
-    #region class GPosition : Třída, která řeší zobrazení obsahu prvku typicky v Gridu
+    #region class GridColumn : Třída popisující jeden sloupec Gridu
     /// <summary>
-    /// Třída, která řeší zobrazení obsahu prvku typicky v Gridu.
-    /// Daná oblast má záhlaví určité velikosti, jehož umístění se pohybem Scrollbaru nemění,
-    /// a za tímto záhlavím má obsah, spojený se Scrollbarem, kde tento obsah je promítán do disponibilního prostoru.
-    /// Tato třída eviduje: pozici (velikost) záhlaví, velikost prostoru pro data, počáteční logickou pozici dat (od kterého pixelu jsou data viditelná),
+    /// GridColumn : Třída popisující jeden sloupec Gridu.
+    /// Jeden sloupec Gridu reprezentuje svislý sloupec přes všechny tabulky jednoho Gridu, a obsahuje v sobě synchronizované sloupce stejného ColumnId ze všech tabulek Gridu.
+    /// </summary>
+    public class GridColumn : ISequenceLayout
+    {
+        #region Konstrukce, proměnné
+        /// <summary>
+        /// Vytvoří novou instanci pro daný Master column
+        /// </summary>
+        /// <param name="column"></param>
+        public GridColumn(Column column)
+        {
+            this._ColumnList = new List<Column>();
+            this.AddColumn(column);
+        }
+        /// <summary>
+        /// Soupis datových sloupců stejného ColumnId ze všech tabulek jednoho Gridu = "svislé pole" obsahující všechny synchronizované sloupce = pod sebou
+        /// </summary>
+        private List<Column> _ColumnList;
+        /// <summary>
+        /// Master column, nikdy není null
+        /// </summary>
+        private Column _MasterColumn;
+        /// <summary>
+        /// Aktuální pořadí
+        /// </summary>
+        private int _SortOrder;
+        #endregion
+        #region Public rozhraní: Master, properties, AddColumn(), CompareOrder()
+        /// <summary>
+        /// Hlavní sloupec = první sloupec nalezený s tímto ID
+        /// </summary>
+        public Column MasterColumn { get { return this._MasterColumn; } }
+        /// <summary>
+        /// ColumnId, synchronizační klíč všech sloupců v této tabulce
+        /// </summary>
+        public int ColumnId { get { return this._MasterColumn.ColumnId; } }
+        /// <summary>
+        /// Pořadí tohoto sloupce při zobrazování. 
+        /// Načítá se z MasterColumn.ColumnOrder.
+        /// Hodnotu lze i vložit, pak se vkládá do všech sloupců!
+        /// </summary>
+        public int ColumnOrder
+        {
+            get { return this._MasterColumn.ColumnOrder; }
+            set
+            {
+                foreach (Column column in this._ColumnList)
+                    column.ColumnOrder = value;
+            }
+        }
+        /// <summary>
+        /// Šířka tohoto sloupce při zobrazování. 
+        /// Načítá se z MasterColumn.Size.
+        /// Hodnotu lze i vložit, pak se vkládá do všech sloupců!
+        /// </summary>
+        public int ColumnWidth
+        {
+            get { return ((ISequenceLayout)this).Size; }
+            set { ((ISequenceLayout)this).Size = value; }
+        }
+        /// <summary>
+        /// true pokud se pro sloupec má zobrazit časová osa v záhlaví
+        /// </summary>
+        public bool UseTimeAxis { get { return this._MasterColumn.UseTimeAxis; } }
+        /// <summary>
+        /// Přidá další sloupec do this GridColumnu
+        /// </summary>
+        /// <param name="column"></param>
+        public void AddColumn(Column column)
+        {
+            if (column == null) return;
+            if (this._ColumnList.Count == 0)
+                this._MasterColumn = column;
+            this._ColumnList.Add(column);
+        }
+        /// <summary>
+        /// Komparátor ColumnOrder ASC
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static int CompareOrder(GridColumn a, GridColumn b)
+        {
+            if (a == null && b == null) return 0;
+            if (a == null) return -1;
+            if (b == null) return 1;
+            return a.ColumnOrder.CompareTo(b.ColumnOrder);
+        }
+        #endregion
+        #region ISequenceLayout - adapter: get čte data z Master sloupce, set ukládá data do všech sloupců
+        int ISequenceLayout.Begin
+        {
+            get
+            {
+                return ((ISequenceLayout)this.MasterColumn).Begin;
+            }
+            set
+            {
+                foreach (Column column in this._ColumnList)
+                    ((ISequenceLayout)column).Begin = value;
+            }
+        }
+        int ISequenceLayout.Size
+        {
+            get
+            {
+                return ((ISequenceLayout)this.MasterColumn).Size;
+            }
+            set
+            {
+                foreach (Column column in this._ColumnList)
+                    ((ISequenceLayout)column).Size = value;
+            }
+        }
+        int ISequenceLayout.End
+        {
+            get
+            {
+                return ((ISequenceLayout)this.MasterColumn).End;
+            }
+        }
+        #endregion
+    }
+    #endregion
+    #region class GPosition : Třída, která řídí zobrazení většího obsahu dat (typicky sada řádků) v omezeném prostoru Controlu (typicky Grid, Tabulka)
+    /// <summary>
+    /// Třída, která řídí zobrazení většího obsahu dat (typicky sada řádků) v omezeném prostoru Controlu (typicky Grid, Tabulka),
+    /// kde část prostoru je vyhrazena pro záhlaví, další část pro data a další část pro zápatí.
+    /// Prostor pro data je typicky spojen se Scrollbarem, do kterého se promítá poměr viditelné části ku celkovému množství dat, a aktuální pozice dat.
+    /// Tato třída eviduje: velikost záhlaví (=vizuální začátek dat), velikost prostoru pro data, počáteční logickou pozici dat (od kterého pixelu jsou data viditelná),
     /// a provádí převody viditelných pixelů na pixely virtuální = datové.
     /// </summary>
     public class GPosition : IScrollBarData
@@ -758,7 +1075,7 @@ namespace Djs.Common.Components
         /// Rozmezí datových pixelů, které spadají do viditelné oblasti.
         /// Begin = DataFirstPixel, End = DataFirstPixel + VisualSize.
         /// </summary>
-        public Int32Range DataRange { get { return new Int32Range(this.DataFirstPixel, this.DataEndPixel); } }
+        public Int32Range DataVisibleRange { get { return new Int32Range(this.DataFirstPixel, this.DataEndPixel); } }
         /// <summary>
         /// true pokud má být zobrazen ScrollBar (respektive má být Enabled) : pokud DataSize je větší než VisualSize
         /// </summary>
@@ -790,6 +1107,19 @@ namespace Djs.Common.Components
         public int GetVisualPosition(int dataPosition)
         {
             return (dataPosition + this.VisualFirstPixel - this.DataFirstPixel);
+        }
+        /// <summary>
+        /// Vrátí vizuální pozici (odpovídající aktuálnímu controlu) pro daný prvek.
+        /// Vrací tedy danou pozici, kde Begin = (dataPosition + VisualFirstPixel - DataFirstPixel).
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        public Int32Range GetVisualPosition(ISequenceLayout item)
+        {
+            if (item == null) return null;
+            int begin = this.GetVisualPosition(item.Begin);
+            int end = begin + item.Size;
+            return new Int32Range(begin, end);
         }
         #region IScrollBarData
         int IScrollBarData.DataBegin { get { return this.DataFirstPixel; } }

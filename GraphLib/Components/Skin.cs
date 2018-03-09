@@ -73,6 +73,7 @@ namespace Djs.Common.Components
         private Skin()
         {
             this._Palette = new Dictionary<string, Color>();
+            this._Images = new Dictionary<string, Image>();
 
             var methods = this.GetType().GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             foreach (var method in methods)
@@ -116,8 +117,9 @@ namespace Djs.Common.Components
         private SkinAxisSet _Axis;
         private SkinGridSet _Grid;
         private Dictionary<string, Color> _Palette;
+        private Dictionary<string, Image> _Images;
         #endregion
-        #region Get and Set colors
+        #region Get and Set Colors
         /// <summary>
         /// Get color from palette for SkinKey and ColorKey.
         /// </summary>
@@ -150,6 +152,41 @@ namespace Djs.Common.Components
                 this._Palette.Add(key, color);
             else
                 this._Palette[key] = color;
+        }
+        #endregion
+        #region Get and Set Images
+        /// <summary>
+        /// Get color from palette for SkinKey and ColorKey.
+        /// </summary>
+        /// <param name="skinSetKey"></param>
+        /// <param name="imageKey"></param>
+        /// <param name="defaultImage"></param>
+        /// <returns></returns>
+        internal Image GetImage(string skinSetKey, string imageKey, Image defaultImage)
+        {
+            string key = skinSetKey + "." + imageKey;
+            Image value;
+            if (!this._Images.TryGetValue(key, out value))
+            {
+                value = defaultImage;
+                this._Images.Add(key, value);
+            }
+            return value;
+        }
+        /// <summary>
+        /// Set color to palette for SkinKey and ColorKey.
+        /// </summary>
+        /// <param name="skinSetKey"></param>
+        /// <param name="imageKey"></param>
+        /// <param name="image"></param>
+        /// <returns></returns>
+        internal void SetImage(string skinSetKey, string imageKey, Image image)
+        {
+            string key = skinSetKey + "." + imageKey;
+            if (!this._Palette.ContainsKey(key))
+                this._Images.Add(key, image);
+            else
+                this._Images[key] = image;
         }
         #endregion
         #region Get modified color by InteraciveState
@@ -899,6 +936,9 @@ namespace Djs.Common.Components
         public Color FocusRowTextColor { get { return this._Owner.GetColor(this._SkinSetKey, "FocusRowTextColor", DefaultFocusRowTextColor); } set { this._Owner.SetColor(this._SkinSetKey, "TextColorLabelBig", value); } }
         public Color HorizontalLineColor { get { return this._Owner.GetColor(this._SkinSetKey, "HorizontalLineColor", DefaultHorizontalLineColor); } set { this._Owner.SetColor(this._SkinSetKey, "HorizontalLineColor", value); } }
         public Color VerticalLineColor { get { return this._Owner.GetColor(this._SkinSetKey, "VerticalLineColor", DefaultVerticalLineColor); } set { this._Owner.SetColor(this._SkinSetKey, "VerticalLineColor", value); } }
+        public Image SortAscendingImage { get { return this._Owner.GetImage(this._SkinSetKey, "SortAscendingImage", DefaultSortAscendingImage); } set { this._Owner.SetImage(this._SkinSetKey, "SortAscendingImage", value); } }
+        public Image SortDescendingImage { get { return this._Owner.GetImage(this._SkinSetKey, "SortDescendingImage", DefaultSortDescendingImage); } set { this._Owner.SetImage(this._SkinSetKey, "SortDescendingImage", value); } }
+        public Image RowSelectedImage { get { return this._Owner.GetImage(this._SkinSetKey, "RowSelectedImage", DefaultRowSelectedImage); } set { this._Owner.SetImage(this._SkinSetKey, "RowSelectedImage", value); } }
         #endregion
         #region Default colors
         protected virtual Color DefaultHeaderBackColor { get { return Color.LightSkyBlue; } }
@@ -915,6 +955,9 @@ namespace Djs.Common.Components
         protected virtual Color DefaultFocusRowTextColor { get { return Color.White; } }
         protected virtual Color DefaultHorizontalLineColor { get { return Color.Gray; } }
         protected virtual Color DefaultVerticalLineColor { get { return Color.Gray; } }
+        protected virtual Image DefaultSortAscendingImage { get { return IconStandard.SortAsc; } }
+        protected virtual Image DefaultSortDescendingImage { get { return IconStandard.SortDesc; } }
+        protected virtual Image DefaultRowSelectedImage { get { return IconStandard.RowSelected; } }
         #endregion
     }
     /// <summary>
@@ -959,9 +1002,17 @@ namespace Djs.Common.Components
         #endregion
     }
     #region class InitialiserAttribute
+    /// <summary>
+    /// Attribut Initialiser označuje metodu, která se má provést v rámci inicializace this objektu.
+    /// Je vhodno používat v partial třídách.
+    /// </summary>
     [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = true)]
     public sealed class InitialiserAttribute : Attribute
     {
+        /// <summary>
+        /// Attribut Initialiser označuje metodu, která se má provést v rámci inicializace this objektu.
+        /// Je vhodno používat v partial třídách.
+        /// </summary>
         public InitialiserAttribute()
         {
 

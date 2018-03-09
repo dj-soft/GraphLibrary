@@ -57,7 +57,11 @@ namespace Djs.Common.Data.New
         /// <summary>
         /// Reference na vizuální tabulku (GTable), může být null
         /// </summary>
-        public Components.Grid.GTable GTable { get { return this._GTable; } internal set { this._GTableLink(value); } }
+        public Components.Grid.GTable GTable
+        {
+            get { return this._GTable; }
+            internal set { this._GTableLink(value); }
+        }
         private Components.Grid.GTable _GTable;
         /// <summary>
         /// true pokud má referenci na vizuální tabulku (GTable)
@@ -449,7 +453,7 @@ namespace Djs.Common.Data.New
         /// Tato property vrací soupis všech aktuálně viditelných řádků, setříděný podle pvního ze sloupců, který má nastaven režim třídění jiný než None.
         /// Tato property vždy kompletně vyhodnotí data a vrátí nový objekt, nepoužívá se žádná úroveň cachování. Pozor na výkon, užívejme tuto property střídmě.
         /// </summary>
-        public List<Row> RowsSorted
+        public Row[] RowsSorted
         {
             get
             {
@@ -466,7 +470,7 @@ namespace Djs.Common.Data.New
                         _RowsSort(list, sortColumn);
                 }
 
-                return list;
+                return list.ToArray();
             }
         }
         /// <summary>
@@ -538,13 +542,17 @@ namespace Djs.Common.Data.New
         /// <summary>
         /// true pro viditelnou tabulku (default), false pro skrytou
         /// </summary>
-        public bool Visible { get { return this.TableHeightLayout.Visible; } set { this.TableHeightLayout.Visible = value; } }
+        public bool IsVisible { get { return this.TableHeightLayout.Visible; } set { this.TableHeightLayout.Visible = value; } }
         /// <summary>
         /// Výška oblasti ColumnHeader. 
         /// Při nasetování hodnoty dojde k její kontrole a případně úpravě tak, aby uložená hodnota odpovídala pravidlům.
         /// To znamená, že po vložení hodnoty X může být okamžitě čtena hodnota ColumnHeaderHeight jiná, než byla vložena.
         /// </summary>
         public Int32 ColumnHeaderHeight { get { return this.ColumnHeaderHeightLayout.CurrentSize; } set { this.ColumnHeaderHeightLayout.Size = value; } }
+        /// <summary>
+        /// Šířka sloupce obsahujícího RowHeader
+        /// </summary>
+        public Int32 RowHeaderWidth { get { return this.RowHeaderWidthLayout.CurrentSize; } set { this.RowHeaderWidthLayout.Size = value; } }
         /// <summary>
         /// Pořadí této tabulky v Gridu při zobrazování.
         /// Výchozí je -1, pak bude tabulka zařazena na konec soupisu tabulek v jednom gridu.
@@ -555,25 +563,101 @@ namespace Djs.Common.Data.New
         /// </summary>
         public int TableOrder { get { return this._TableOrder; } set { this._TableOrder = value; } } private int _TableOrder = -1;
         /// <summary>
-        /// Výška celé tabulky
+        /// true pokud je povoleno interaktivně změnit výšku tabulky (myší). Default = true;
+        /// </summary>
+        public bool AllowTableResize { get { return this._AllowTableResize; } set { this._AllowTableResize = value; } } private bool _AllowTableResize = true;
+        /// <summary>
+        /// true pokud je povoleno interaktivně změnit šířku sloupce, který obsahuje záhlaví řádku (myší). Default = true;
+        /// </summary>
+        public bool AllowRowHeaderWidthResize { get { return this._AllowRowHeaderWidthResize; } set { this._AllowRowHeaderWidthResize = value; } } private bool _AllowRowHeaderWidthResize = true;
+        /// <summary>
+        /// true pokud je povoleno interaktivně přemisťovat sloupce (přetahovat je myší). Default = true;
+        /// </summary>
+        public bool AllowColumnReorder { get { return this._AllowColumnReorder; } set { this._AllowColumnReorder = value; } } private bool _AllowColumnReorder = true;
+        /// <summary>
+        /// true pokud je povoleno interaktivně změnit šířku sloupce (myší). Default = true;
+        /// </summary>
+        public bool AllowColumnResize { get { return this._AllowColumnResize; } set { this._AllowColumnResize = value; } } private bool _AllowColumnResize = true;
+        /// <summary>
+        /// true pokud je povoleno interaktivně přemisťovat řádky (přetahovat je myší). Default = false;
+        /// </summary>
+        public bool AllowRowReorder { get { return this._AllowRowReorder; } set { this._AllowRowReorder = value; } } private bool _AllowRowReorder = false;
+        /// <summary>
+        /// true pokud je povoleno interaktivně změnit výšku řádku (myší). Default = true;
+        /// </summary>
+        public bool AllowRowResize { get { return this._AllowRowResize; } set { this._AllowRowResize = value; } } private bool _AllowRowResize = true;
+        /// <summary>
+        /// true pokud je povoleno třídit řádky kliknutím na záhlaví sloupce. Default = true;
+        /// </summary>
+        public bool AllowColumnSortByClick { get { return this._AllowColumnSortByClick; } set { this._AllowColumnSortByClick = value; } } private bool _AllowColumnSortByClick = true;
+        /// <summary>
+        /// true pokud je povoleno označovat řádky (Selected) kliknutím na záhlaví řádku. Default = true;
+        /// </summary>
+        public bool AllowRowSelectByClick { get { return this._AllowRowSelectByClick; } set { this._AllowRowSelectByClick = value; } } private bool _AllowRowSelectByClick = true;
+        /// <summary>
+        /// Image použitý pro zobrazení Selected řádku v prostoru RowHeader. Default = IconStandard.RowSelected;
+        /// </summary>
+        public Image SelectedRowImage { get { return this._SelectedRowImage; } set { this._SelectedRowImage = value; } } private Image _SelectedRowImage = IconStandard.RowSelected;
+        /// <summary>
+        /// Provede se poté, kdy uživatel klikne na záhlaví tabulky = buňka v křížení ColumnHeader * RowHeader.
+        /// </summary>
+        public void TableHeaderClick()
+        { }
+        /// <summary>
+        /// Provede se poté, kdy uživatel klikne na záhlaví sloupce.
+        /// Účelem této metody není změna třídění, to zavolá Grid hned poté, pokud je to povoleno.
+        /// </summary>
+        /// <param name="column"></param>
+        public void ColumnHeaderClick(Column column)
+        { }
+        /// <summary>
+        /// Provede se poté, kdy uživatel klikne na záhlaví řádku.
+        /// Účelem této metody není změna hodnoty Selected na řádku, to zavolá Grid hned poté, pokud je to povoleno.
+        /// </summary>
+        /// <param name="row">řádek</param>
+        public void RowHeaderClick(Row row)
+        { }
+        /// <summary>
+        /// Záhlaví této tabulky, grafický prvek, auitoinicializační
+        /// </summary>
+        public Components.Grid.GTableHeader TableHeader
+        {
+            get
+            {
+                if (this._TableHeader == null)
+                    this._TableHeader = new Components.Grid.GTableHeader(this);
+                return this._TableHeader;
+            }
+            set { this._TableHeader = value; }
+        }
+        private Components.Grid.GTableHeader _TableHeader;
+        #endregion
+        #region Layouty (výšky, šířky, rozmezí) : kořenové hodnoty uložené na tabulce
+        /// <summary>
+        /// Výška celé tabulky: default, rozmezí, aktuální hodnota
         /// </summary>
         public SequenceLayout TableHeightLayout { get { return this._TableHeightLayout; } } private SequenceLayout _TableHeightLayout;
         /// <summary>
-        /// Výška prostoru ColumnHeader
+        /// Výška prostoru ColumnHeader: default, rozmezí, aktuální hodnota
         /// </summary>
         public SequenceLayout ColumnHeaderHeightLayout { get { return this._ColumnHeaderHeightLayout; } } private SequenceLayout _ColumnHeaderHeightLayout;
         /// <summary>
-        /// Výchozí hodnota šířky sloupce a povolené rozmezí šířky
+        /// Šířka sloupce obsahujícího RowHeader: default, rozmezí, aktuální hodnota
+        /// </summary>
+        public SequenceLayout RowHeaderWidthLayout { get { return this._RowHeaderWidthLayout; } } private SequenceLayout _RowHeaderWidthLayout;
+        /// <summary>
+        /// Výchozí hodnota šířky sloupce a povolené rozmezí šířky: default, rozmezí, aktuální hodnota
         /// </summary>
         public SequenceLayout ColumnWidthLayout { get { return this._ColumnWidthLayout; } } private SequenceLayout _ColumnWidthLayout;
         /// <summary>
-        /// Výchozí hodnota výšky řádku a povolené rozmezí výšky
+        /// Výchozí hodnota výšky řádku a povolené rozmezí výšky: default, rozmezí, aktuální hodnota
         /// </summary>
         public SequenceLayout RowHeightLayout { get { return this._RowHeightLayout; } } private SequenceLayout _RowHeightLayout;
         private void _LayoutInit()
         {
             this._TableHeightLayout = new SequenceLayout(60, 250);
             this._ColumnHeaderHeightLayout = new SequenceLayout(20, 45);
+            this._RowHeaderWidthLayout = new SequenceLayout(20, 35);
             this._ColumnWidthLayout = new SequenceLayout(20, 160);
             this._RowHeightLayout = new SequenceLayout(8, 24);
         }
@@ -602,8 +686,7 @@ namespace Djs.Common.Data.New
         /// Všechny vizuální vlastnosti dat v tomto sloupci (nikoli hlavičky).
         /// Default hodnota je null.
         /// </summary>
-        public VisualStyle VisualStyle { get { return _VisualStyle; } set { _VisualStyle = value; } }
-        private VisualStyle _VisualStyle;
+        public VisualStyle VisualStyle { get { return _VisualStyle; } set { _VisualStyle = value; } } private VisualStyle _VisualStyle = null;
         VisualStyle IVisualMember.Style
         {
             get
@@ -732,6 +815,14 @@ namespace Djs.Common.Data.New
         /// </summary>
         public string FormatString { get { return this._FormatString; } set { this._FormatString = value; } } private string _FormatString;
         /// <summary>
+        /// true pokud je povoleno třídit řádky kliknutím na záhlaví tohoto sloupce. Default = true;
+        /// </summary>
+        public bool AllowColumnSortByClick { get { return this._AllowColumnSortByClick; } set { this._AllowColumnSortByClick = value; } } private bool _AllowColumnSortByClick = true;
+        /// <summary>
+        /// true pokud je měnit šířku tohoto sloupce pomocí myši. Default = true;
+        /// </summary>
+        public bool AllowColumnResize { get { return this._AllowColumnResize; } set { this._AllowColumnResize = value; } } private bool _AllowColumnResize = true;
+        /// <summary>
         /// true pokud se pro sloupec má zobrazit časová osa v záhlaví
         /// </summary>
         public bool UseTimeAxis { get { return this._UseTimeAxis; } set { this._UseTimeAxis = value; } } private bool _UseTimeAxis;
@@ -748,6 +839,20 @@ namespace Djs.Common.Data.New
             if (b == null) return 1;
             return a.ColumnOrder.CompareTo(b.ColumnOrder);
         }
+        /// <summary>
+        /// Záhlaví tohoto sloupce, grafický prvek, auitoinicializační
+        /// </summary>
+        public Components.Grid.GColumnHeader ColumnHeader
+        {
+            get
+            {
+                if (this._ColumnHeader == null)
+                    this._ColumnHeader = new Components.Grid.GColumnHeader(this);
+                return this._ColumnHeader;
+            }
+            set { this._ColumnHeader = value; }
+        }
+        private Components.Grid.GColumnHeader _ColumnHeader;
         #endregion
         #region Třídění podle sloupce
         /// <summary>
@@ -798,7 +903,7 @@ namespace Djs.Common.Data.New
         /// <summary>
         /// true pro viditelný sloupec (default), false for skrytý
         /// </summary>
-        public bool Visible { get { return this.WidthLayout.Visible; } set { this.WidthLayout.Visible = value; } }
+        public bool IsVisible { get { return this.WidthLayout.Visible; } set { this.WidthLayout.Visible = value; } }
         /// <summary>
         /// Veškeré hodnoty související s výškou řádku (rozsah hodnot, povolení Resize)
         /// </summary>
@@ -953,6 +1058,35 @@ namespace Djs.Common.Data.New
         private Dictionary<int, Cell> _CellDict;
         #endregion
         #region GUI vlastnosti
+        /// <summary>
+        /// true pokud this řádek je vybrán k další práci. Default = false
+        /// </summary>
+        public bool IsSelected { get { return this._IsSelected; } set { this._IsSelected = value; } } private bool _IsSelected = false;
+        /// <summary>
+        /// Změní hodnotu IsSelected v tomto řádku
+        /// </summary>
+        public void SelectedChange()
+        {
+            this.IsSelected = !this.IsSelected;
+        }
+        /// <summary>
+        /// Image použitý pro zobrazení Selected řádku v prostoru RowHeader. Default = null, v tom případě se použije image this.Table.SelectedRowImage.
+        /// </summary>
+        public Image SelectedRowImage { get { return this._SelectedRowImage ?? this.Table.SelectedRowImage; } set { this._SelectedRowImage = value; } } private Image _SelectedRowImage = null;
+        /// <summary>
+        /// Záhlaví tohoto sloupce, grafický prvek, auitoinicializační
+        /// </summary>
+        public Components.Grid.GRowHeader RowHeader
+        {
+            get
+            {
+                if (this._RowHeader == null)
+                    this._RowHeader = new Components.Grid.GRowHeader(this);
+                return this._RowHeader;
+            }
+            set { this._RowHeader = value; }
+        }
+        private Components.Grid.GRowHeader _RowHeader;
         #endregion
         #region Visual style
         /// <summary>

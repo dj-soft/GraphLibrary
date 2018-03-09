@@ -729,14 +729,14 @@ namespace Djs.Common.Components
         /// </summary>
         protected virtual bool CanDrag { get { return true; } }
         /// <summary>
-        /// Call during DragMove process for dragged (=active) object.
-        /// Base class InteractiveDragObject set specified (boundsTarget) into this.BoundsDragTarget
+        /// Volá se v procesu přesouvání, pro aktivní objekt.
+        /// Bázová třída ulož předané souřadnice do this.BoundsDragTarget
         /// </summary>
         /// <param name="e"></param>
-        /// <param name="boundsTarget"></param>
-        protected virtual void DragThisOverBounds(GDragActionArgs e, Rectangle boundsTarget)
+        /// <param name="targetRelativeBounds"></param>
+        protected virtual void DragThisOverBounds(GDragActionArgs e, Rectangle targetRelativeBounds)
         {
-            this.BoundsDragTarget = boundsTarget;
+            this.BoundsDragTarget = targetRelativeBounds;
         }
         /// <summary>
         /// Is called on DragDrop process for dragged (=active) object.
@@ -749,8 +749,9 @@ namespace Djs.Common.Components
             this.SetBounds(boundsTarget, ProcessAction.DragValueActions, EventSourceType.InteractiveChanged | EventSourceType.BoundsChange);
         }
         /// <summary>
-        /// Is called on end DragMove process (drop or cancel) for dragged (=active) object.
-        /// Base class InteractiveDragObject do nothing.
+        /// Je voláno po skončení přetahování, ať už skončilo OK (=Drop) nebo Escape (=Cancel).
+        /// Účelem je provést úklid po skončení přetahování.
+        /// Bázová třída InteractiveDragObject nedělá nic.
         /// </summary>
         /// <param name="e"></param>
         protected virtual void DragThisOverEnd(GDragActionArgs e)

@@ -23,8 +23,6 @@ namespace Djs.Common.Components.Grid
         }
         private void Init()
         {
-            this.InitRowsData();
-            this.InitColumnHeader();
             this.InitRowsPositions();
             this.InitHeaderSplitter();
             this.InitTableSplitter();
@@ -119,17 +117,20 @@ namespace Djs.Common.Components.Grid
             this.RowsScrollBarVisible = this.RowsPositions.IsScrollBarActive;
 
             // Určíme souřadnice jednotlivých elementů:
-            int x0 = 0;                                                        // x0: úplně vlevo
-            int x3 = clientSize.Width;                                         // x3: úplně vpravo
-            int x2t = x3 - GScrollBar.DefaultSystemBarWidth;                   // x2t: zde začíná RowsScrollBar (vpravo, hned za koncem prostoru pro řádky), tedy pokud by byl zobrazen
-            int x2r = (this.RowsScrollBarVisible ? x2t : x3);                  // x2r: zde reálně končí oblast prostoru pro řádky, se zohledněním aktuální viditelnosti RowsScrollBaru
-            int y0 = 0;                                                        // y0: úplně nahoře
-            int y1 = this.RowsPositions.VisualFirstPixel;                      // y1: zde začíná prostor pro řádky, hned pod prostorem ColumnHeader (hodnota se fyzicky načte z this.DataTable.ColumnHeaderHeight)
-            int y3 = clientSize.Height;                                        // y3: úplně dole
-            int y5 = this.Bounds.Bottom;                                       // y5: this.Bottom v souřadném systému mého parenta, pro TableSplitterBounds
+            int x0 = 0;                                                             // x0: úplně vlevo
+            int x1 = (this.HasGrid ? this.Grid.ColumnsDataVisualRange.Begin : 0);   // x1: tady začíná prostor pro datové sloupce
+            int x3 = clientSize.Width;                                              // x3: úplně vpravo
+            int x2t = x3 - GScrollBar.DefaultSystemBarWidth;                        // x2t: zde začíná RowsScrollBar (vpravo, hned za koncem prostoru pro řádky), tedy pokud by byl zobrazen
+            int x2r = (this.RowsScrollBarVisible ? x2t : x3);                       // x2r: zde reálně končí oblast prostoru pro řádky, se zohledněním aktuální viditelnosti RowsScrollBaru
+            int y0 = 0;                                                             // y0: úplně nahoře
+            int y1 = this.RowsPositions.VisualFirstPixel;                           // y1: zde začíná prostor pro řádky, hned pod prostorem ColumnHeader (hodnota se fyzicky načte z this.DataTable.ColumnHeaderHeight)
+            int y3 = clientSize.Height;                                             // y3: úplně dole
+            int y5 = this.Bounds.Bottom;                                            // y5: this.Bottom v souřadném systému mého parenta, pro TableSplitterBounds
 
-            this.ColumnHeaderBounds = new Rectangle(x0, y0, x3 - x0, y1 - y0);
-            this.RowAreaBounds = new Rectangle(x0, y1, x2r - x0, y3 - y1);
+            this.TableHeaderBounds = new Rectangle(x0, y0, x1 - x0, y1 - y0);
+            this.ColumnHeaderBounds = new Rectangle(x1, y0, x3 - x1, y1 - y0);
+            this.RowHeaderBounds = new Rectangle(x0, y1, x1 - x0, y3 - y1);
+            this.RowAreaBounds = new Rectangle(x1, y1, x2r - x1, y3 - y1);
             this.RowsScrollBarBounds = new Rectangle(x2t, y1, x3 - x2t, y3 - y1);
             this.HeaderSplitterBounds = new Rectangle(x0, y1, x3 - x0, 0);
             this.TableSplitterBounds = new Rectangle(x0, y5, x3 - x0, 0);
@@ -137,11 +138,19 @@ namespace Djs.Common.Components.Grid
             this.TableLayoutValid = true;
         }
         /// <summary>
-        /// Souřadnice prostoru záhlaví (ColumnHeaders)
+        /// Vizuální souřadnice prostoru TableHeader (TableHeader vlevo nahoře)
+        /// </summary>
+        protected Rectangle TableHeaderBounds { get; set; }
+        /// <summary>
+        /// Vizuální souřadnice prostoru záhlaví sloupců (datové ColumnHeaders)
         /// </summary>
         protected Rectangle ColumnHeaderBounds { get; set; }
         /// <summary>
-        /// Souřadnice prostoru řádků (RowArea)
+        /// Vizuální souřadnice prostoru záhlaví řádků (RowHeader)
+        /// </summary>
+        protected Rectangle RowHeaderBounds { get; set; }
+        /// <summary>
+        /// Vizuální souřadnice prostoru řádků (RowArea) = vlastní obsah dat, nikoli záhlaví
         /// </summary>
         protected Rectangle RowAreaBounds { get; set; }
         /// <summary>
@@ -149,17 +158,17 @@ namespace Djs.Common.Components.Grid
         /// </summary>
         protected bool RowsScrollBarVisible { get; set; }
         /// <summary>
-        /// Souřadnice svislého scrollbaru pro řádky
+        /// Vizuální souřadnice svislého scrollbaru pro řádky (vpravo od prostoru řádků), nemusí být zobrazován (podle RowsScrollBarVisible)
         /// </summary>
         protected Rectangle RowsScrollBarBounds { get; set; }
         /// <summary>
-        /// Souřadnice pro splitter pod ColumnHeaderem, tento splitter je vizuální součástí this.Childs,
+        /// Vizuální souřadnice pro splitter pod ColumnHeaderem, tento splitter je vizuální součástí this.Childs,
         /// souřadnice jsou tedy relativní k this.
         /// Souřadnice X a Width se vkládají do ValueSilent, souřadnice Y do ValueSilent. Výška = 0.
         /// </summary>
         protected Rectangle HeaderSplitterBounds { get; set; }
         /// <summary>
-        /// Souřadnice pro splitter pod this tabulkou, tento splitter je vizuální součástí mého parenta = GGrid.Childs,
+        /// Vizuální souřadnice pro splitter pod this tabulkou, tento splitter je vizuální součástí mého parenta = GGrid.Childs,
         /// souřadnice jsou tedy relativní k jeho koordinátům.
         /// Souřadnice X a Width se vkládají do ValueSilent, souřadnice Y do ValueSilent. Výška = 0.
         /// </summary>
@@ -168,8 +177,38 @@ namespace Djs.Common.Components.Grid
         /// true pokud je layout vnitřních prostor tabulky korektně spočítán
         /// </summary>
         protected bool TableLayoutValid { get; set; }
+        /// <summary>
+        /// Metoda vrátí absolutní souřadnice požadovaného prostoru.
+        /// Souřadnice slouží k provedení Graphics.Clip() před vykreslením obsahu.
+        /// </summary>
+        /// <param name="areaType"></param>
+        /// <returns></returns>
+        public Rectangle GetAbsoluteBoundsForArea(TableAreaType areaType)
+        {
+            Rectangle relativeBounds = this.GetRelativeBoundsForArea(areaType);
+            Point absoluteOrigin = this.GetAbsoluteOriginPoint();
+            return relativeBounds.Add(absoluteOrigin);
+        }
+        /// <summary>
+        /// Metoda vrátí absolutní souřadnice požadovaného prostoru.
+        /// Souřadnice slouží k provedení Graphics.Clip() před vykreslením obsahu.
+        /// </summary>
+        /// <param name="areaType"></param>
+        /// <returns></returns>
+        public Rectangle GetRelativeBoundsForArea(TableAreaType areaType)
+        {
+            switch (areaType)
+            {
+                case TableAreaType.TableHeader: return this.TableHeaderBounds;
+                case TableAreaType.ColumnHeader: return this.ColumnHeaderBounds;
+                case TableAreaType.RowHeader: return this.RowHeaderBounds;
+                case TableAreaType.Data: return this.RowAreaBounds;
+                case TableAreaType.VerticalScrollBar: return this.RowsScrollBarBounds;
+            }
+            return Rectangle.Empty;
+        }
         #endregion
-        #region Pozicování svislé - řádky a vpravo svislý scrollbar
+        #region Pozicování svislé - pozicioner pro řádky, svislý scrollbar vpravo
         /// <summary>
         /// Inicializace objektů pro pozicování tabulek: TablesPositions, TablesScrollBar
         /// </summary>
@@ -199,9 +238,9 @@ namespace Djs.Common.Components.Grid
         /// <returns></returns>
         private int _RowsPositionGetDataSize()
         {
-            List<Row> list = this.RowListAll;
-            int count = list.Count;
-            return (count > 0 ? ((ISequenceLayout)list[count - 1]).End : 0);
+            Row[] rows = this.Rows;
+            int count = rows.Length;
+            return (count > 0 ? ((ISequenceLayout)rows[count - 1]).End : 0);
         }
         /// <summary>
         /// Vrací hodnotu prvního vizuálního pixelu, kde jsou zobrazována data.
@@ -252,20 +291,7 @@ namespace Djs.Common.Components.Grid
         /// </summary>
         protected GScrollBar RowsScrollBar;
         #endregion
-
-
-
-
-
-
-
-        #region ISequenceLayout - adapter na DataTable jako implementační objekt
-        int ISequenceLayout.Begin { get { return this._SequenceLayout.Begin; } set { this._SequenceLayout.Begin = value; } }
-        int ISequenceLayout.Size { get { return this._SequenceLayout.Size; } set { this._SequenceLayout.Size = value; } }
-        int ISequenceLayout.End { get { return this._SequenceLayout.End; } }
-        private ISequenceLayout _SequenceLayout { get { return (ISequenceLayout)this.DataTable; } }
-        #endregion
-        #region Public data
+        #region Public data o tabulce
         /// <summary>
         /// Datová tabulka
         /// </summary>
@@ -304,83 +330,129 @@ namespace Djs.Common.Components.Grid
             return a.TableOrder.CompareTo(b.TableOrder);
         }
         #endregion
-        #region Řádek obsahující ColumnHeaders
+        #region Sloupce tabulky
         /// <summary>
-        /// Inicializuje objekt ColumnHeader
+        /// Pole všech sloupců této tabulky, které mohou být zobrazeny, v tom pořadí, v jakém jsou zobrazovány.
         /// </summary>
-        private void InitColumnHeader()
+        public Column[] Columns { get { this._ColumnsCheck(); return this._Columns; } }
+        /// <summary>
+        /// Pole viditelných sloupců této tabulky, které jsou nyní zčásti nebo plně viditelné, v tom pořadí, v jakém jsou zobrazovány.
+        /// </summary>
+        public Column[] VisibleColumns { get { this._VisibleColumnsCheck(); return this._VisibleColumns; } }
+        /// <summary>
+        /// Ověří a zajistí připravenost pole Columns
+        /// </summary>
+        private void _ColumnsCheck()
         {
-            this._ColumnHeader = new GRow(this, null);
+            if (this._Columns != null) return;
+            List<Column> columnsList = this.DataTable.Columns.Where(c => c.IsVisible).ToList();      // Vybrat viditelné sloupce
+            columnsList.Sort(Column.CompareOrder);                                                 // Setřídit podle pořadí
+            SequenceLayout.SequenceLayoutCalculate(columnsList);                                   // Napočítat jejich ISequenceLayout.Begin a .End
+            this._Columns = columnsList.ToArray();                                                 // Uložit
+            this._VisibleColumns = null;                                                           // Invalidovat viditelné sloupce
         }
         /// <summary>
-        /// Objekt reprezentující záhlaví tabulky
+        /// Ověří a zajistí připravenost pole VisibleColumns.
+        /// Viditelné sloupce mají korektně nastaveny aktuální souřadnice.
         /// </summary>
-        protected GRow ColumnHeader { get { return this._ColumnHeader; } } private GRow _ColumnHeader;
+        private void _VisibleColumnsCheck()
+        {
+            if (this._VisibleColumns != null) return;
 
+            List<Column> visibleColumns = new List<Column>();
+            GPosition columnsPositions = this.Grid.ColumnsPositions;
+            Int32Range dataVisibleRange = columnsPositions.DataVisibleRange;                       // Rozmezí datových pixelů, které jsou viditelné
+            foreach (Column column in this.Columns)
+            {
+                ISequenceLayout isl = column as ISequenceLayout;
+                bool isColumnVisible = SequenceLayout.IsItemVisible(isl, dataVisibleRange);        // Tento sloupec je vidět?
+                column.ColumnHeader.VisualRange = (isColumnVisible ? columnsPositions.GetVisualPosition(isl) : null);
+                if (isColumnVisible)
+                    visibleColumns.Add(column);
+            }
+            this._VisibleColumns = visibleColumns.ToArray();
+        }
+        /// <summary>
+        /// Invaliduje pole Columns.
+        /// Je nutno volat po změně viditelnosti sloupců nebo jejich pořadí, i po změně jejich šířky.
+        /// Není nutno volat po posunu sloupců pomocí vodorovného scrollbaru.
+        /// </summary>
+        internal void ColumnsReset()
+        {
+            this._Columns = null;
+        }
+        /// <summary>
+        /// Invaliduje pole VisibleColumns.
+        /// Není nutno volat po změně viditelnosti sloupců nebo jejich pořadí (to se zajišťuje interně).
+        /// Je nutno volat po změně šířky sloupců nebo po posunu sloupců pomocí scrollbaru.
+        /// </summary>
+        internal void VisibleColumnsReset()
+        {
+            this._VisibleColumns = null;
+        }
+        private Column[] _Columns;
+        private Column[] _VisibleColumns;
         #endregion
         #region Řádky tabulky - zde jsou uložena dvě oddělená pole řádků: a) všechny aktuálně dostupné datové řádky - pro práci s kolekcí řádků, b) pouze viditelné grafické řádky - pro kreslení
-        /// <summary>
-        /// Inicializace objektů pro řádky tabulky
-        /// </summary>
-        protected void InitRowsData()
-        {
-            this.RowListAllReset();
-        }
         protected void RecalcRows(ref ProcessAction actions, EventSourceType eventSource)
         {
         }
         /// <summary>
-        /// Všechny aktuální řádky datové tabulky, profiltrované, setříděné.
-        /// Řádky mají správně nastavené hodnoty ISequenceLayout.Begin a End.
+        /// Pole všech řádků této tabulky, které mohou být zobrazeny, v tom pořadí, v jakém jsou zobrazovány.
         /// </summary>
-        protected List<Row> RowListAll
+        public Row[] Rows { get { this._RowsCheck(); return this._Rows; } }
+        /// <summary>
+        /// Pole viditelných řádků této tabulky, které jsou nyní zčásti nebo plně viditelné, v tom pořadí, v jakém jsou zobrazovány.
+        /// </summary>
+        public Row[] VisibleRows { get { this._VisibleRowsCheck(); return this._VisibleRows; } }
+        /// <summary>
+        /// Ověří a zajistí připravenost pole Rows
+        /// </summary>
+        private void _RowsCheck()
         {
-            get
+            Row[] rows = this._Rows;
+            bool heightValid = this._RowListHeightValid;
+            if (rows == null)
             {
-                List<Row> listAll = this._RowListAll;
-                if (listAll == null)
-                {   // Tvorba kompletního seznamu řádků (filtr, třídění) - to zajistí DataTable (v property RowsSorted):
-                    this._RowListAll = this.DataTable.RowsSorted;
-                    listAll = this._RowListAll;
-                    // Zajistím provedení nápočtu ISequenceLayout:
-                    this._RowListHeightValid = false;
-                }
-                if (!this._RowListHeightValid)
-                {   // Přepočet hodnot ISequenceLayout:
-                    SequenceLayout.SequenceLayoutCalculate(listAll.Cast<Data.New.ISequenceLayout>());
-                    this._RowListHeightValid = true;
-                    // Zajistím, že v případě potřeby bude provedena tvorba soupisu viditelných řádků:
-                    this._GRowList = null;
-                }
-                return listAll;
+                rows = this.DataTable.RowsSorted;                                                  // Získat viditelné řádky, setříděné
+                heightValid = false;
             }
+            if (!heightValid)
+            {
+                SequenceLayout.SequenceLayoutCalculate(rows);                                      // Napočítat jejich ISequenceLayout.Begin a .End
+                this._RowListHeightValid = true;
+                this._VisibleRows = null;
+            }
+            if (this._Rows == null)
+                this._Rows = rows;
         }
         /// <summary>
-        /// Aktuálně zobrazované řádky - grafické prvky (pouze ty které jsou zčásti nebo plně viditelné).
-        /// Vždy obsahuje platné řádky s ohledem na rozměry tabulky, na pozici ColumnHeader a na pozici scrollbaru řádků.
+        /// Ověří a zajistí připravenost pole VisibleRows.
+        /// Viditelné řádky mají korektně nastaveny aktuální souřadnice.
         /// </summary>
-        protected List<GRow> GRowList
+        private void _VisibleRowsCheck()
         {
-            get
+            if (this._VisibleRows != null) return;
+
+            List<Row> visibleRows = new List<Row>();
+            GPosition rowsPositions = this.RowsPositions;
+            Int32Range dataVisibleRange = rowsPositions.DataVisibleRange;                          // Rozmezí datových pixelů, které jsou viditelné
+            foreach (Row row in this.Rows)
             {
-                List<GRow> list = this._GRowList;
-                if (list == null)
-                {
-                    // Ze seznamu všech dostupných řádků (RowListAll) si vyberu (funkcí RowsPositions.FilterVisibleItems) je ty, které jsou nyní viditelné:
-                    IEnumerable<Row> dataList = SequenceLayout.FilterVisibleItems(this.RowListAll, this.RowsPositions.DataRange);
-                    // Z těchto viditelných řádků vygeneruji pole nových vizuálních prvků:
-                    list = dataList.Select(r => new GRow(this, r)).ToList();
-                    this._GRowList = list;
-                }
-                return list;
+                ISequenceLayout isl = row as ISequenceLayout;
+                bool isRowVisible = SequenceLayout.IsItemVisible(isl, dataVisibleRange);           // Tento řádek je vidět?
+                row.RowHeader.VisualRange = (isRowVisible ? rowsPositions.GetVisualPosition(isl) : null);
+                if (isRowVisible)
+                    visibleRows.Add(row);
             }
+            this._VisibleRows = visibleRows.ToArray();
         }
         /// <summary>
         /// Zajistí kompletní reset paměti řádků.
         /// Volá se po: přidání řádku, aplikaci filtru a/nebo třídění řádků.
         /// Nevolá se po: změně výšky řádku (to se volá RowListHeightReset()), po změně viditelné pozice řádků (scrollbary, posuny řádků) a/nebo velikosti GTable - to se volá RowListVisibleReset().
         /// </summary>
-        protected void RowListAllReset() { this._RowListAll = null; this.RowListHeightReset(); }
+        protected void RowListAllReset() { this._Rows = null; this.RowListHeightReset(); }
         /// <summary>
         /// Zajistí reset odpovídajících dat řádků po změně výšky některého z řádků.
         /// Není třeba volat po posunu obsahu tabulky nebo po změně rozměrů tabulky, to se volá RowListVisibleReset().
@@ -389,19 +461,86 @@ namespace Djs.Common.Components.Grid
         /// <summary>
         /// Zajistí reset odpovídajících dat řádků po posunu obsahu tabulky nebo po změně rozměrů tabulky.
         /// </summary>
-        protected void RowListVisibleReset() { this._GRowList = null; }
+        protected void RowListVisibleReset() { this._VisibleRows = null; }
         /// <summary>
-        /// Soupis aktuálně dostupných řádků, setříděný a vyfiltrovaný, datové objekty
+        /// Metoda zajistí změnu výšky daného řádku, a návazné změny v interních strukturách plus překreslení
         /// </summary>
-        private List<Row> _RowListAll;
+        /// <param name="row"></param>
+        /// <param name="height">Požadovaná šířka, může se změnit</param>
+        /// <returns></returns>
+        public bool RowResizeTo(Row row, ref int height)
+        {
+            ISequenceLayout isl = row as ISequenceLayout;
+
+            int heightOld = isl.Size;
+            isl.Size = height;
+            int heightNew = isl.Size;
+
+            bool isChanged = (heightNew != heightOld);
+            if (isChanged)
+            {
+                height = heightNew;
+                // Zajistit invalidaci a překresení:
+                this.RowListHeightReset();
+                this.Repaint();
+            }
+            return isChanged;
+        }
         /// <summary>
-        /// true = hodnoty ISequenceLayout.Begin a End v řádcíh jsou platné
+        /// true = hodnoty ISequenceLayout.Begin a End v řádcích jsou platné
         /// </summary>
         private bool _RowListHeightValid;
         /// <summary>
+        /// Soupis všech aktuálně dostupných řádků, setříděný a vyfiltrovaný.
+        /// </summary>
+        private Row[] _Rows;
+        /// <summary>
         /// Soupis aktuálně zobrazovaných řádků, vizuální objekty
         /// </summary>
-        private List<GRow> _GRowList;
+        private Row[] _VisibleRows;
+        #endregion
+        #region Řádky tabulky - posuny, aktivní řádek atd
+        /// <summary>
+        /// Posune oblast řádků tabulky podle dané akce
+        /// </summary>
+        /// <param name="action"></param>
+        internal void ProcessRowAction(InteractivePositionAction action)
+        { }
+        #endregion
+        #region Interaktivita objektů tabulky do tabulky a dále
+        /// <summary>
+        /// Provede se poté, kdy uživatel klikne na záhlaví sloupce.
+        /// </summary>
+        /// <param name="column"></param>
+        public void ColumnHeaderClick(Column column)
+        {
+            if (column != null)
+            {
+                column.Table.ColumnHeaderClick(column);
+                if (column.AllowColumnSortByClick && column.Table.AllowColumnSortByClick)
+                {
+                    column.SortChange();
+                    this.Repaint();
+                }
+            }
+        }
+        /// <summary>
+        /// Provede se poté, kdy uživatel klikne na záhlaví řádku.
+        /// </summary>
+        /// <param name="row">řádek</param>
+        public void RowHeaderClick(GInteractiveChangeStateArgs e, Row row)
+        {
+            if (row != null && row.Table.AllowRowSelectByClick)
+            {
+                row.Table.RowHeaderClick(row);
+                if (row.Table.AllowRowSelectByClick)
+                {
+                    row.SelectedChange();
+                    this.Repaint();
+                }
+            }
+        }
+
         #endregion
         #region HeaderSplitter : splitter umístěný pod hlavičkou sloupců, je součástí GTable.Items
         /// <summary>
@@ -474,20 +613,27 @@ namespace Djs.Common.Components.Grid
         /// </summary>
         protected GSplitter _TableSplitter;
         #endregion
-        #region Childs items
+        #region Childs items : pole všech prvků v tabulce (jednotlivé headery, jednotlivé buňky, jednotlivé spittery, a scrollbar řádků)
         /// <summary>
-        /// An array of sub-items in this item.
+        /// Pole sub-itemů v tabulce.
+        /// Tabulka obsahuje: hlavičku tabulky, hlavičky viditelných sloupců, hlavičky viditelných řádků, buňky viditelných řádků a sloupců, 
+        /// splitery hlaviček sloupců a hlaviček řádků (pokud je povoleno jejich resize), a scrollbar řádků (pokud je viditelný).
         /// </summary>
         protected override IEnumerable<IInteractiveItem> Childs { get { this.ChildArrayCheck(); return this.ChildList; } }
         /// <summary>
-        /// Invalidate Child array, call after any change on Tables or Columns in this grid.
+        /// Invaliduje pole sub-item, provádí se po jakékoli změně (rozměry, sloupce, řádky: posuny, resize).
         /// </summary>
         protected void ChildArrayInvalidate()
         {
             this._ChildArrayValid = false;
         }
         /// <summary>
-        /// Check this.GridItems: when is null, then call this.GridItemsReload()
+        /// Validita prvků v poli ChildItems
+        /// </summary>
+        private bool _ChildArrayValid;
+        /// <summary>
+        /// Zajistí platnost pole sub-itemů.
+        /// Pokud je neplatné, zavolá this.GridItemsReload()
         /// </summary>
         protected void ChildArrayCheck()
         {
@@ -495,19 +641,71 @@ namespace Djs.Common.Components.Grid
                 this.ChildArrayReload();
         }
         /// <summary>
-        /// Reload all current items for this Grid into.
-        /// Add this items: this._Tables, 
+        /// Naplní pole this.ChildList všemi patřičnými prvky.
+        /// Tabulka obsahuje: hlavičku tabulky, hlavičky viditelných sloupců, hlavičky viditelných řádků, buňky viditelných řádků a sloupců, 
+        /// splitery hlaviček sloupců a hlaviček řádků (pokud je povoleno jejich resize), a scrollbar řádků (pokud je viditelný).
+        /// Součástí plnění je určení souřadnic (Bounds) pro grafické objekty.
         /// </summary>
         protected void ChildArrayReload()
         {
             this.ChildList.Clear();
-            this.ChildList.Add(this.ColumnHeader);                   // Záhlaví sloupců
-            this.ChildList.AddRange(this.GRowList);                  // Všechny řádky (možná se právě teď vytvoří nové pole)
-            this.ChildList.Add(this.ScrollBar);
-            this.ChildList.Add(this.HeaderSplitter);                 // Jako poslední přidám splitter mezi ColumnHeader a RowArea (ten je součástí GTable, na rozdíl od TableSplitter)
+            this.ChildItemsAddColumnHeaders();                       // Záhlaví sloupců, včetně TableHeader
+            this.ChildItemsAddColumnSplitters();                     // Oddělovače sloupců, které to mají povoleno
+            this.ChildItemsAddRowsContent();                         // Řádky: záhlaví plus buňky, ale ne oddělovače
+            this.ChildItemsAddHeaderSplitter();                      // Oddělovač pod hlavičkami sloupců (řídí výšku záhlaví)
+            this.ChildItemsAddRowsSplitters();                       // Řádky: oddělovače řádků, pokud je povoleno
+            this.ChildItemsAddRowsScrollBar();                       // Scrollbar řádků, pokud je viditelný
             this._ChildArrayValid = true;
         }
-        private bool _ChildArrayValid;
+        protected void ChildItemsAddColumnHeaders()
+        {
+            GTableHeader tableHeader = this.DataTable.TableHeader;
+            tableHeader.Bounds = this.TableHeaderBounds;
+            this.ChildList.Add(tableHeader);
+
+        }
+        protected void ChildItemsAddColumnSplitters()
+        {
+            GTableHeader header = this.DataTable.TableHeader;
+            if (header.ColumnSplitterVisible)
+                this.ChildList.Add(header.ColumnSplitter);
+
+
+        }
+        protected void ChildItemsAddRowsContent()
+        {
+            foreach (Row row in this.VisibleRows)
+                this.ChildItemsAddRowContent(row);
+        }
+        protected void ChildItemsAddRowContent(Row row)
+        {
+            Rectangle rowBounds = ;
+            GRowHeader rowHeader = row.RowHeader;
+            rowHeader.Bounds = ;
+            this.ChildList.Add(rowHeader);
+        }
+        protected void ChildItemsAddHeaderSplitter()
+        { }
+        protected void ChildItemsAddRowsSplitters()
+        {
+            if (!this.datat
+            foreach (Row row in this.VisibleRows)
+                this.ChildItemsAddRowSplitters(row);
+
+        }
+        protected void ChildItemsAddRowSplitters(Row row)
+        {
+            
+        }
+        protected void ChildItemsAddRowsScrollBar()
+        {
+            if (this.RowsScrollBarVisible)
+            {
+                this.RowsScrollBar.Bounds = this.RowsScrollBarBounds;
+                this.ChildList.Add(this.RowsScrollBar);
+            }
+        }
+
         #endregion
         #region Reakce na GUI eventy
         /// <summary>
@@ -524,8 +722,12 @@ namespace Djs.Common.Components.Grid
             }
         }
         #endregion
-
-
+        #region ISequenceLayout - adapter na DataTable jako implementační objekt
+        int ISequenceLayout.Begin { get { return this._SequenceLayout.Begin; } set { this._SequenceLayout.Begin = value; } }
+        int ISequenceLayout.Size { get { return this._SequenceLayout.Size; } set { this._SequenceLayout.Size = value; } }
+        int ISequenceLayout.End { get { return this._SequenceLayout.End; } }
+        private ISequenceLayout _SequenceLayout { get { return (ISequenceLayout)this.DataTable; } }
+        #endregion
 
 
 
@@ -562,7 +764,9 @@ namespace Djs.Common.Components.Grid
         protected override void Draw(GInteractiveDrawArgs e)
         {
             // GTable kreslí pouze svoje vlastní pozadí (a to by si ještě měla rozmyslet, kolik ho bude, než začne malovat úplně celou plochu :-) ):
-            base.Draw(e);
+            if (this.DataTable == null || this.DataTable.ColumnsCount == 0)
+                base.Draw(e);
+
             // Všechno ostatní (záhlaví sloupců, řádky, scrollbary, splittery) si malují Childs samy.
         }
         #endregion
@@ -577,24 +781,705 @@ namespace Djs.Common.Components.Grid
         public int DefaultRowHeaderWidth { get { return 25; } }
         #endregion
     }
-    public class GRow : InteractiveContainer
+    #region Třídy GHeader, GColumnHeader, GRowHeader
+    /// <summary>
+    /// GHeader : vizuální třída pro zobrazování záhlaví tabulky, a předek pro třídy zobrazující záhlaví sloupce a řádku.
+    /// </summary>
+    public abstract class GHeader : InteractiveDragObject, IInteractiveItem
     {
-        public GRow(GTable gTable, Row row)
+        #region Konstruktor, data
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        protected GHeader()
+        { }
+        #endregion
+        #region Reference na objekty Owner
+        /// <summary>
+        /// Grid (grafický), do kterého patří zdejší tabulka
+        /// </summary>
+        protected GGrid OwnerGGrid { get { return (this.OwnerTable != null ? this.OwnerTable.GTable.Grid : null); } }
+        /// <summary>
+        /// Tabulka (grafická), do které patří toto záhlaví
+        /// </summary>
+        protected GTable OwnerGTable { get { return (this.OwnerTable != null ? this.OwnerTable.GTable : null); } }
+        /// <summary>
+        /// Datová tabulka, do které this záhlaví patří.
+        /// Je k dispozici pro všechny tři typy záhlaví (Table, Column, Row).
+        /// </summary>
+        protected abstract Table OwnerTable { get; }
+        /// <summary>
+        /// Typ záhlaví. Potomek musí přepsat na správnou hodnotu.
+        /// </summary>
+        protected abstract TableAreaType HeaderType { get; }
+        #endregion
+        #region Interaktivita, kreslení
+        protected override void AfterStateChangedLeftClick(GInteractiveChangeStateArgs e)
         {
-            this._GTable = gTable;
-            this._Row = row;
+            this.OwnerTable.TableHeaderClick();
         }
-        private GTable _GTable;
-        private Row _Row;
+        protected override bool CanDrag { get { return false; } }
+        protected override void DrawStandard(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
+        {
+            // Clip() mi zajistí, že při pixelovém posunu záhlaví (sloupce, řádky) bude záhlaví vykresleno jen do příslušné části vymezeného prostoru pro danou oblast.
+            // Grafická organizace GTable není členěna nijak výrazně strukturovaně => GTable obsahuje jako Child jednotlivé prvky (GHeader, GColumn),
+            //  které mají svoje souřadnice relativní k GTable, ale mají se zobrazovat "oříznuté" do patřičných oblastí v GTable.
+            if (e.DrawLayer == GInteractiveDrawLayer.Standard)
+                // Clip() ale provedeme jen pro Standard vrstvu; protože v ostatních vrstvách se provádí Dragging, a ten má být neomezený:
+                e.GraphicsClipWith(this.OwnerGTable.GetAbsoluteBoundsForArea(this.HeaderType));
+
+            int? opacity = (e.DrawLayer == GInteractiveDrawLayer.Standard ? (int?)null : (int?)128);
+            this.DrawHeader(e, boundsAbsolute, opacity);
+        }
+        protected override void DrawAsGhost(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
+        {
+            // Clip() mi zajistí, že při pixelovém posunu záhlaví (sloupce, řádky) bude záhlaví vykresleno jen do příslušné části vymezeného prostoru pro danou oblast.
+            // Grafická organizace GTable není členěna nijak výrazně strukturovaně => GTable obsahuje jako Child jednotlivé prvky (GHeader, GColumn),
+            //  které mají svoje souřadnice relativní k GTable, ale mají se zobrazovat "oříznuté" do patřičných oblastí v GTable.
+            if (e.DrawLayer == GInteractiveDrawLayer.Standard)
+                // Clip() ale provedeme jen pro Standard vrstvu; protože v ostatních vrstvách se provádí Dragging, a ten má být neomezený:
+                e.GraphicsClipWith(this.OwnerGTable.GetAbsoluteBoundsForArea(this.HeaderType));
+
+            if (e.DrawLayer == GInteractiveDrawLayer.Standard)
+                e.Graphics.FillRectangle(Brushes.DarkGray, boundsAbsolute);
+            this.DrawHeader(e, boundsAbsolute, 128);
+        }
+        /// <summary>
+        /// Vykreslí podklad prostoru pro záhlaví.
+        /// Bázová třída GHeader vykreslí pouze pozadí, pomocí metody GPainter.DrawColumnHeader()
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="opacity"></param>
+        protected virtual void DrawHeader(GInteractiveDrawArgs e, Rectangle boundsAbsolute, int? opacity)
+        {
+            GPainter.DrawColumnHeader(e.Graphics, boundsAbsolute, ColorPalette.ButtonBackEnableColor, this.CurrentState, System.Windows.Forms.Orientation.Horizontal, null, opacity);
+        }
+        #endregion
+        #region Drag - podpora pro přesunutí this headeru na jinou pozici
+        /// <summary>
+        /// Procento zvýraznění začátku tohoto sloupce v procesu přetahování jiného sloupce.
+        /// Pokud je větší než 0, zvýrazní se část počátku, protože se před tento sloupec přetáhne nějaký jiný.
+        /// </summary>
+        protected int DrawInsertMarkAtBegin { get; set; }
+        /// <summary>
+        /// Procento zvýraznění konce tohoto sloupce v procesu přetahování jiného sloupce.
+        /// Pokud je větší než 0, zvýrazní se část konce, protože se za tento sloupec přetáhne nějaký jiný.
+        /// </summary>
+        protected int DrawInsertMarkAtEnd { get; set; }
+        #endregion
     }
+    public class GTableHeader : GHeader
+    {
+        #region Konstruktor, data
+        /// <summary>
+        /// Konstruktor pro záhlaví, s odkazem na tabulku
+        /// </summary>
+        /// <param name="table"></param>
+        public GTableHeader(Table table)
+        {
+            this._OwnerTable = table;
+            this._ColumnSplitterInit();
+        }
+        private Table _OwnerTable;
+        #endregion
+        #region Reference na objekty Owner
+        /// <summary>
+        /// Tabulka, do které patří toto záhlaví
+        /// </summary>
+        protected override Table OwnerTable { get { return this._OwnerTable; } }
+        /// <summary>
+        /// Typ záhlaví.
+        /// </summary>
+        protected override TableAreaType HeaderType { get { return TableAreaType.TableHeader; } }
+        #endregion
+        #region Public rozhraní
+        /// <summary>
+        /// Souřadnice na ose X, v pixelech, v koordinátech GTable, kde je tento sloupec právě zobrazen.
+        /// </summary>
+        public Int32Range VisualRangeX { get; set; }
+        /// <summary>
+        /// Souřadnice na ose Y, v pixelech, v koordinátech GTable, kde je tento sloupec právě zobrazen.
+        /// </summary>
+        public Int32Range VisualRangeY { get; set; }
+        #endregion
+        #region ColumnSplitter
+        /// <summary>
+        /// Svislý Splitter za tímto sloupcem (který představuje táhlaví řádků), řídí šířku tohoto sloupce (a tím všech sloupců shodného ColumnId v celém Gridu)
+        /// </summary>
+        public GSplitter ColumnSplitter { get { return this._ColumnSplitter; } }
+        /// <summary>
+        /// true pokud má být zobrazen splitter za tímto sloupcem, závisí na (OwnerTable.AllowRowHeaderWidthResize)
+        /// </summary>
+        public bool ColumnSplitterVisible { get { return (this.OwnerTable.AllowRowHeaderWidthResize); } }
+        /// <summary>
+        /// Připraví ColumnSplitter.
+        /// Splitter je připraven vždy, i když se aktuálně nepoužívá.
+        /// To proto, že uživatel (tj. aplikační kód) může změnit názor, a pak bude pozdě provádět inicializaci.
+        /// </summary>
+        protected void _ColumnSplitterInit()
+        {
+            this._ColumnSplitter = new GSplitter() { Orientation = System.Windows.Forms.Orientation.Vertical, SplitterVisibleWidth = 0, SplitterActiveOverlap = 4 };
+            this._ColumnSplitter.ValueSilent = this.Bounds.Right;
+            this._ColumnSplitter.ValueChanging += new GPropertyChanged<int>(_ColumnSplitter_LocationChange);
+            this._ColumnSplitter.ValueChanged += new GPropertyChanged<int>(_ColumnSplitter_LocationChange);
+        }
+        /// <summary>
+        /// Eventhandler pro událost _ColumnSplitter.ValueChanging a ValueChanged
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ColumnSplitter_LocationChange(object sender, GPropertyChangeArgs<int> e)
+        {
+            int left = this.Bounds.Left;
+            int location = this._ColumnSplitter.Value;
+            int width = location - left;
+            this.OwnerGGrid.ColumnRowHeaderResizeTo(ref width);
+            e.CorrectValue = left + width;
+        }
+        /// <summary>
+        /// ColumnSplitter
+        /// </summary>
+        protected GSplitter _ColumnSplitter;
+        #endregion
+    }
+    /// <summary>
+    /// GColumnHeader : vizuální třída pro zobrazování záhlaví sloupce
+    /// </summary>
+    public class GColumnHeader : GHeader
+    {
+        #region Konstruktor, data
+        public GColumnHeader(Column column)
+            : base()
+        {
+            this._OwnerColumn = column;
+            this._ColumnSplitterInit();
+        }
+        private Column _OwnerColumn;
+        #endregion
+        #region Reference na objekty Owner
+        /// <summary>
+        /// Sloupec, do kterého patří toto záhlaví
+        /// </summary>
+        protected virtual Column OwnerColumn { get { return this._OwnerColumn; } }
+        /// <summary>
+        /// Tabulka (datová), do které patří toto záhlaví
+        /// </summary>
+        protected override Table OwnerTable { get { return this._OwnerColumn.Table; } }
+        /// <summary>
+        /// Typ záhlaví.
+        /// </summary>
+        protected override TableAreaType HeaderType { get { return TableAreaType.ColumnHeader; } }
+        #endregion
+        #region Public rozhraní
+        /// <summary>
+        /// Souřadnice na ose X, v pixelech, v koordinátech GTable, kde je tento sloupec právě zobrazen.
+        /// Může být null pro sloupce mimo zobrazovaný prostor.
+        /// </summary>
+        public Int32Range VisualRange { get; set; }
+        #endregion
+        #region ColumnSplitter
+        /// <summary>
+        /// Svislý Splitter za tímto sloupcem, řídí šířku tohoto sloupce (a tím všech sloupců shodného ColumnId v celém Gridu)
+        /// </summary>
+        public GSplitter ColumnSplitter { get { return this._ColumnSplitter; } }
+        /// <summary>
+        /// true pokud má být zobrazen splitter za tímto sloupcem, závisí na (OwnerTable.AllowColumnResize && OwnerColumn.AllowColumnResize)
+        /// </summary>
+        public bool ColumnSplitterVisible { get { return (this.OwnerTable.AllowColumnResize && this.OwnerColumn.AllowColumnResize); } }
+        /// <summary>
+        /// Připraví ColumnSplitter.
+        /// Splitter je připraven vždy, i když se aktuálně nepoužívá.
+        /// To proto, že uživatel (tj. aplikační kód) může změnit názor, a pak bude pozdě provádět inicializaci.
+        /// </summary>
+        protected void _ColumnSplitterInit()
+        {
+            this._ColumnSplitter = new GSplitter() { Orientation = System.Windows.Forms.Orientation.Vertical, SplitterVisibleWidth = 0, SplitterActiveOverlap = 4 };
+            this._ColumnSplitter.ValueSilent = this.Bounds.Right;
+            this._ColumnSplitter.ValueChanging += new GPropertyChanged<int>(_ColumnSplitter_LocationChange);
+            this._ColumnSplitter.ValueChanged += new GPropertyChanged<int>(_ColumnSplitter_LocationChange);
+        }
+        /// <summary>
+        /// Eventhandler pro událost _ColumnSplitter.ValueChanging a ValueChanged
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ColumnSplitter_LocationChange(object sender, GPropertyChangeArgs<int> e)
+        {
+            int left = this.Bounds.Left;
+            int location = this._ColumnSplitter.Value;
+            int width = location - left;
+            this.OwnerGGrid.ColumnResizeTo(this.OwnerColumn, ref width);
+            e.CorrectValue = left + width;
+        }
+        /// <summary>
+        /// ColumnSplitter
+        /// </summary>
+        protected GSplitter _ColumnSplitter;
+        #endregion
+        #region Interaktivita
+        protected override void AfterStateChangedMouseEnter(GInteractiveChangeStateArgs e)
+        {
+            Djs.Common.Localizable.TextLoc toolTip = this.OwnerColumn.ToolTip;
+            if (toolTip != null && !String.IsNullOrEmpty(toolTip.Text))
+            {
+                e.ToolTipData.InfoText = toolTip.Text;
+                e.ToolTipData.TitleText = "Column info";
+                e.ToolTipData.ShapeType = TooltipShapeType.Rectangle;
+                e.ToolTipData.Opacity = 240;
+            }
+        }
+        protected override void AfterStateChangedLeftClick(GInteractiveChangeStateArgs e)
+        {
+            this.OwnerGTable.ColumnHeaderClick(this.OwnerColumn);
+        }
+        #endregion
+        #region Drag - Proces přesouvání sloupce
+        /// <summary>
+        /// Můžeme tento sloupec přemístit jinam? Závisí na OwnerTable.AllowColumnReorder
+        /// </summary>
+        protected override bool CanDrag { get { return this.OwnerTable.AllowColumnReorder; } }
+        /// <summary>
+        /// Volá se v procesu přesouvání. Zarovná souřadnice do povoleného rozmezí a najde sloupce, kam by se měl přesun provést.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="targetRelativeBounds"></param>
+        protected override void DragThisOverBounds(GDragActionArgs e, Rectangle targetRelativeBounds)
+        {
+            // base třída je ochotná přesunout this objekt do libovolného místa (to je ostatně její velké pozitivum).
+            // Ale ColumnHeader má mít prostor pro posun omezen jen na vhodná místa mezi ostatními sloupci:
+            Rectangle allowedBounds = this.OwnerGTable.GetRelativeBoundsForArea(TableAreaType.ColumnHeader);    // Souřadnice prostoru ColumnHeader, relativně k Table
+            allowedBounds.Y = allowedBounds.Y + 5;                   // Prostor ColumnHeader omezím: dolů o 5px,
+            allowedBounds.Height = 2 * allowedBounds.Height - 5;     //  a dolní okraj tak, aby byl o něco menší než 2x výšky.
+            Rectangle modifiedBounds = targetRelativeBounds.FitInto(allowedBounds, false);         // Souřadnice "Drag" musí být uvnitř vymezeného prostoru
+
+            // V této chvíli si base třída zapracuje "upravené" souřadnice (bounds) do this objektu,
+            //  takže this záhlaví se bude vykreslovat "jako duch" v tomto omezeném prostoru:
+            base.DragThisOverBounds(e, modifiedBounds);
+
+            // Vyhledáme okolní sloupce, mezi které bychom rádi vložili this sloupec:
+            Column prevColumn, nextColumn;
+            int prevMark, nextMark;
+            this._DragThisSearchHeaders(e, modifiedBounds, out prevColumn, out prevMark, out nextColumn, out nextMark);
+            this._DragThisMarkHeaders(prevColumn, prevMark, nextColumn, nextMark);
+        }
+        /// <summary>
+        /// Je vyvoláno po skončení přetahování (=při uvolnění myši nad cílovým prostorem). Je voláno na objektu, který je přetahován, nikoli na objektu kam bylo přetaženo.
+        /// Bázová třída (InteractiveDragObject) vložila dané souřadnice do this.Bounds (přičemž ProcessAction = DragValueActions; a EventSourceType = (InteractiveChanged | BoundsChange).
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsTarget"></param>
+        protected override void DragThisDropToBounds(GDragActionArgs e, Rectangle boundsTarget)
+        {
+            if (this.DragThisToColumnOrder.HasValue)
+                this.OwnerGGrid.ColumnMoveTo(this.OwnerColumn, this.DragThisToColumnOrder.Value);
+        }
+        /// <summary>
+        /// Je voláno po skončení přetahování, ať už skončilo OK (=Drop) nebo Escape (=Cancel).
+        /// Účelem je provést úklid po skončení přetahování.
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void DragThisOverEnd(GDragActionArgs e)
+        {
+            base.DragThisOverEnd(e);
+            this.OwnerGTable.Columns.ForEachItem(c => c.ColumnHeader.ResetInsertMark());
+            this.DragThisToColumnOrder = null;
+        }
+        /// <summary>
+        /// Nuluje proměnné, které byly použity při přetahování nějakého jiného ColumnHeader přes this ColumnHeader.
+        /// Zhasíná se tím prosvícení Drag-Target označení.
+        /// </summary>
+        protected void ResetInsertMark()
+        { }
+        /// <summary>
+        /// Najde sloupce ležící před a za místem, kam bychom rádi vložili this sloupec v procesu přetahování.
+        /// </summary>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="prevColumn"></param>
+        /// <param name="nextColumn"></param>
+        private void _DragThisSearchHeaders(GDragActionArgs e, Rectangle boundsAbsolute, out Column prevColumn, out int prevMark, out Column nextColumn, out int nextMark)
+        {
+            prevColumn = null;
+            prevMark = 0;
+            nextColumn = null;
+            nextMark = 0;
+
+            // Získám soupis sloupců, které jsou viditelné, vyjma this sloupec (podle ColumnId),
+            //  tyto sloupce mají korektně vyplněny souřadnice 
+            List<Column> columns = this.OwnerGTable.VisibleColumns
+                .Where(c => (c.ColumnId != this.OwnerColumn.ColumnId))
+                .ToList();
+            int count = columns.Count;
+            if (count == 0) return;
+
+            // Určím souřadnici myši ve směru X, relativně k tabulce (protože relativně k tabulce jsou určeny souřadnice sloupců):
+            int mouseX = this.OwnerGTable.GetRelativePoint(e.MouseCurrentAbsolutePoint).Value.X;
+
+            // Najdu sloupec, nad kterým se aktuálně pohybuje myš v ose X:
+            int index = -1;
+            int lastIndex = count - 1;
+            bool setDragToOrder = true;
+            if (mouseX < columns[0].ColumnHeader.Bounds.X)
+            {   // Myš je PŘED PRVNÍM ze sloupců:
+                index = 0;
+                nextColumn = columns[0];
+                nextMark = 100;
+            }
+            else if (mouseX >= columns[lastIndex].ColumnHeader.Bounds.Right)
+            {   // Myš je ZA POSLEDNÍM ze sloupců:
+                index = lastIndex;
+                prevColumn = columns[lastIndex];
+                prevMark = 100;
+            }
+            else
+            {   // Bude to složitější: myš je někde uvnitř, nad nějakým sloupcem:
+                // Zkusím najít sloupec, nad kterým se nachází myš (na souřadnici X):
+                index = columns.FindIndex(c => (mouseX >= c.ColumnHeader.Bounds.X && mouseX < c.ColumnHeader.Bounds.Right));
+                // Může být, že sloupec nenajdu, protože v poli "columns" není obsažen prvek this, a nad ním může stále být myš umístěna!
+                if (index >= 0)
+                {   // Myš je nad nějakým sloupcem [index], zjistíme zda náš sloupec (this) budeme dávet před něj nebo za něj:
+                    Rectangle targetBounds = columns[index].ColumnHeader.Bounds;
+                    int targetCenterX = targetBounds.Center().X;
+                    if (mouseX < targetCenterX)
+                    {   // Myš je v levé polovině sloupce => přetáhneme nás PŘED ten sloupec:
+                        nextColumn = columns[index];
+                        nextMark = _DragThisGetMark(mouseX - targetBounds.X, targetBounds.Width);
+                        prevColumn = (index > 0 ? columns[index - 1] : null);
+                        prevMark = (index > 0 ? nextMark : 0);
+                    }
+                    else
+                    {   // Myš je v pravé polovině sloupce => přetáhneme nás ZA ten sloupec:
+                        prevColumn = columns[index];
+                        prevMark = _DragThisGetMark(targetBounds.Right - mouseX, targetBounds.Width);
+                        nextColumn = (index < lastIndex ? columns[index + 1] : null);
+                        nextMark = (index < lastIndex ? prevMark : 0);
+                    }
+                }
+                else
+                {   // Myš je stále nad naším sloupcem, najdeme sloupce před a za námi:
+                    int prevIndex = columns.FindLastIndex(c => (c.ColumnHeader.Bounds.Right < mouseX));
+                    prevColumn = (prevIndex >= 0 ? columns[prevIndex] : null);
+                    prevMark = (prevIndex >= 0 ? 100 : 0);
+                    int nextIndex = columns.FindIndex(c => (c.ColumnHeader.Bounds.X >= mouseX));
+                    nextColumn = (nextIndex >= 0 ? columns[nextIndex] : null);
+                    nextMark = (nextIndex >= 0 ? 100 : 0);
+                    this.DragThisToColumnOrder = null;
+                    // V tomto případě nebudeme nastavovat _DragThisToColumnOrder:
+                    setDragToOrder = false;
+                }
+            }
+
+            if (setDragToOrder)
+            {   // Nastavíme _DragThisToColumnOrder na hodnotu toho sloupce, před kterým chceme být umístěni:
+                if (nextColumn != null)
+                    this.DragThisToColumnOrder = nextColumn.ColumnOrder;
+                else
+                    // Pokud máme být umístěni za poslední sloupec, dáme hodnotu posledního sloupce + 1:
+                    this.DragThisToColumnOrder = columns[lastIndex].ColumnOrder + 1;
+            }
+        }
+        /// <summary>
+        /// Vrací procentuální hodnotu (15 - 100), která reprezentuje vizuální přesnost zacílení při přesouvání sloupce myší.
+        /// 15 = slabé, myš je někde uprostřed; 100 = přesné, myš je přesně na hraně cílového prvku.
+        /// </summary>
+        /// <param name="distance"></param>
+        /// <param name="width"></param>
+        /// <returns></returns>
+        private int _DragThisGetMark(int distance, int width)
+        {
+            int half = width / 2;
+            if (distance < 0) return 100;
+            if (distance >= half) return 15;
+            return (int)(Math.Round(15f + 85f * (float)(half - distance) / (float)half, 0));
+        }
+        /// <summary>
+        /// Mark specified columns as "Drag into after" and "Drag into before".
+        /// All other columns mark as "no drag".
+        /// Where is change, there will set DrawToLayer...
+        /// </summary>
+        /// <param name="prevColumn"></param>
+        /// <param name="nextColumn"></param>
+        private void _DragThisMarkHeaders(Column prevColumn, int prevMark, Column nextColumn, int nextMark)
+        {
+            int prevId = (prevColumn != null ? prevColumn.ColumnId : -1);
+            int nextId = (nextColumn != null ? nextColumn.ColumnId : -1);
+            foreach (Column column in this.OwnerTable.Columns)
+            {
+                var header = column.ColumnHeader;
+                int markBegin = ((column.ColumnId == nextId) ? nextMark : 0);
+                if (header.DrawInsertMarkAtBegin != markBegin)
+                {
+                    header.DrawInsertMarkAtBegin = markBegin;
+                    header.Repaint();
+                }
+
+                int markEnd = ((column.ColumnId == prevId) ? prevMark : 0);
+                if (header.DrawInsertMarkAtEnd != markEnd)
+                {
+                    header.DrawInsertMarkAtEnd = markEnd;
+                    header.Repaint();
+                }
+            }
+        }
+        /// <summary>
+        /// Cílové pořadí pro this sloupec v procesu přetahování tohoto sloupce na jiné místo.
+        /// </summary>
+        protected Int32? DragThisToColumnOrder { get; set; }
+
+        #endregion
+        #region Draw - kreslení záhlaví sloupce : ikona, text, značky při procesu Drag
+        protected override void DrawHeader(GInteractiveDrawArgs e, Rectangle boundsAbsolute, int? opacity)
+        {
+            base.DrawHeader(e, boundsAbsolute, opacity);
+            this.DrawInsertMarks(e, boundsAbsolute, opacity);
+            this.DrawColumnHeader(e, boundsAbsolute, opacity);
+        }
+        /// <summary>
+        /// Do this záhlaví vykreslí ikonu třídění a titulkový text
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="opacity"></param>
+        protected void DrawColumnHeader(GInteractiveDrawArgs e, Rectangle boundsAbsolute, int? opacity)
+        {
+            Column column = this.OwnerColumn;
+            string text = column.Title;
+            Rectangle textArea = Rectangle.Empty;
+            if (!String.IsNullOrEmpty(text) && !column.UseTimeAxis)
+            {   // Sloupec má zadaný titulek, a nepoužívá časovou osu (pak nebudeme kreslit titulek, bude tam jen osa):
+                FontInfo fontInfo = FontInfo.Caption;
+                fontInfo.Bold = (column.SortCurrent == TableSortRowType.Ascending || column.SortCurrent == TableSortRowType.Descending);
+                Color textColor = Skin.Grid.HeaderTextColor.SetOpacity(opacity);
+                GPainter.DrawString(e.Graphics, boundsAbsolute, text, textColor, fontInfo, ContentAlignment.MiddleCenter, out textArea);
+
+                // Obrázek odpovídající aktuálnímu třídění sloupce:
+                Image sortImage = this.SortCurrentImage;
+                if (sortImage != null)
+                {
+                    int x = textArea.X - sortImage.Width - 2;
+                    int y = textArea.Center().Y - sortImage.Height / 2;
+                    Rectangle sortBounds = new Rectangle(x, y, sortImage.Width, sortImage.Height);
+                    e.Graphics.DrawImage(sortImage, sortBounds);
+                }
+            }
+        }
+        /// <summary>
+        /// Do this záhlaví vykreslí značky, označující cíl při procesu Drag. Kreslí značky Begin i End, podle jejich hodnoty.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="opacity"></param>
+        protected void DrawInsertMarks(GInteractiveDrawArgs e, Rectangle boundsAbsolute, int? opacity)
+        {
+            int mark;
+
+            mark = this.DrawInsertMarkAtBegin;
+            if (mark > 0)
+            {
+                int m = (mark <= 100 ? mark : 100);
+                int w = boundsAbsolute.Width * m / 300;
+                Rectangle boundsMark = new Rectangle(boundsAbsolute.X + 1, boundsAbsolute.Y, w, boundsAbsolute.Height);
+                GPainter.DrawInsertMark(e.Graphics, boundsMark, Skin.Modifiers.MouseDragTracking, System.Drawing.ContentAlignment.MiddleLeft);
+            }
+
+            mark = this.DrawInsertMarkAtEnd;
+            if (mark > 0)
+            {
+                int m = (mark <= 100 ? mark : 100);
+                int w = boundsAbsolute.Width * m / 300;
+                Rectangle boundsMark = new Rectangle(boundsAbsolute.Right - w - 1, boundsAbsolute.Y, w, boundsAbsolute.Height);
+                GPainter.DrawInsertMark(e.Graphics, boundsMark, Skin.Modifiers.MouseDragTracking, System.Drawing.ContentAlignment.MiddleRight);
+            }
+        }
+        /// <summary>
+        /// Image odvozený podle this.OwnerColumn.SortCurrent
+        /// </summary>
+        protected Image SortCurrentImage
+        {
+            get
+            {
+                switch (this.OwnerColumn.SortCurrent)
+                {
+                    case TableSortRowType.Ascending: return Skin.Grid.SortAscendingImage;
+                    case TableSortRowType.Descending: return Skin.Grid.SortDescendingImage;
+                }
+                return null;
+            }
+        }
+        #endregion
+    }
+    /// <summary>
+    /// GRowHeader : vizuální třída pro zobrazování záhlaví řádku
+    /// </summary>
+    public class GRowHeader : GHeader
+    {
+        #region Konstruktor, data
+        public GRowHeader(Row row)
+            : base(row.Table)
+        {
+            this._OwnerRow = row;
+            this._RowSplitterInit();
+        }
+        private Row _OwnerRow;
+        #endregion
+        #region Reference na objekty Owner
+        /// <summary>
+        /// Tabulka (datová), do které patří toto záhlaví
+        /// </summary>
+        protected override Table OwnerTable { get { return this._OwnerRow.Table; } }
+        /// <summary>
+        /// Řádek, do kterého patří toto záhlaví
+        /// </summary>
+        protected virtual Row OwnerRow { get { return this._OwnerRow; } }
+        /// <summary>
+        /// Typ záhlaví.
+        /// </summary>
+        protected override TableAreaType HeaderType { get { return TableAreaType.RowHeader; } }
+        #endregion
+        #region Public rozhraní
+        /// <summary>
+        /// Souřadnice na ose Y, v pixelech, v koordinátech GTable, kde je tento řádek právě zobrazen.
+        /// Může být null pro řádky mimo zobrazovaný prostor.
+        /// </summary>
+        public Int32Range VisualRange { get; set; }
+        #endregion
+        #region RowSplitter
+        /// <summary>
+        /// Vodorovný Splitter pod tímto řádkem, řídí výšku tohoto řádku
+        /// </summary>
+        public GSplitter RowSplitter { get { return this._RowSplitter; } }
+        /// <summary>
+        /// true pokud má být zobrazen splitter za tímto řádkem, závisí na (OwnerTable.AllowRowResize)
+        /// </summary>
+        public bool ColumnSplitterVisible { get { return (this.OwnerTable.AllowRowResize); } }
+        /// <summary>
+        /// Připraví ColumnSplitter.
+        /// Splitter je připraven vždy, i když se aktuálně nepoužívá.
+        /// To proto, že uživatel (tj. aplikační kód) může změnit názor, a pak bude pozdě provádět inicializaci.
+        /// </summary>
+        protected void _RowSplitterInit()
+        {
+            this._RowSplitter = new GSplitter() { Orientation = System.Windows.Forms.Orientation.Horizontal, SplitterVisibleWidth = 0, SplitterActiveOverlap = 4 };
+            this._RowSplitter.ValueSilent = this.Bounds.Right;
+            this._RowSplitter.ValueChanging += new GPropertyChanged<int>(_RowSplitter_LocationChange);
+            this._RowSplitter.ValueChanged += new GPropertyChanged<int>(_RowSplitter_LocationChange);
+        }
+        /// <summary>
+        /// Eventhandler pro událost _RowSplitter.ValueChanging a ValueChanged
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _RowSplitter_LocationChange(object sender, GPropertyChangeArgs<int> e)
+        {
+            int top = this.Bounds.Top;
+            int value = this._RowSplitter.Value;
+            int height = value - top;
+            this.OwnerGTable.RowResizeTo(this.OwnerRow, ref height);
+            e.CorrectValue = top + height;
+        }
+        /// <summary>
+        /// RowSplitter
+        /// </summary>
+        protected GSplitter _RowSplitter;
+        #endregion
+        #region Interaktivita
+        protected override void AfterStateChangedLeftClick(GInteractiveChangeStateArgs e)
+        {
+            this.OwnerGTable.RowHeaderClick(e, this.OwnerRow);
+        }
+        protected override bool CanDrag { get { return this.OwnerTable.AllowColumnReorder; } }
+
+        #endregion
+        #region Draw - kreslení záhlaví řádku
+        protected override void DrawHeader(GInteractiveDrawArgs e, Rectangle boundsAbsolute, int? opacity)
+        {
+            base.DrawHeader(e, boundsAbsolute, opacity);
+            this.DrawSelectedRow(e, boundsAbsolute, opacity);
+        }
+        /// <summary>
+        /// Do this záhlaví vykreslí ikonu pro RowHeaderImage (typicky pro SelectedRow).
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="opacity"></param>
+        protected void DrawSelectedRow(GInteractiveDrawArgs e, Rectangle boundsAbsolute, int? opacity)
+        {
+            Image image = this.RowHeaderImage;
+            if (image == null) return;
+
+            Rectangle bounds = boundsAbsolute.Enlarge(-1, -1, -1, -1);
+            bounds = image.Size.AlignTo(bounds, ContentAlignment.MiddleCenter, true);
+            e.Graphics.DrawImage(image, bounds);
+        }
+        /// <summary>
+        /// Image vhodný do záhlaví this řádku
+        /// </summary>
+        protected Image RowHeaderImage
+        {
+            get
+            {
+                Row row = this.OwnerRow;
+                if (row.IsSelected) return Skin.Grid.RowSelectedImage;
+                // Případné další ikonky mohou být zde...
+                return null;
+            }
+        }
+        #endregion
+    }
+    #endregion
+    #region Třída GCell : vizuální třída pro zobrazení obsahu sloupce
+    /// <summary>
+    /// GCell : vizuální třída pro zobrazení obsahu sloupce
+    /// </summary>
     public class GCell : InteractiveContainer
     {
-        public GCell(GRow gRow)
+        public GCell(Row row, Column column)
         {
-            this._GRow = gRow;
+            this._Row = row;
+            this._Column = column;
         }
-        private GRow _GRow;
+        private Row _Row;
+        private Column _Column;
     }
+    #endregion
+    #region enum TableAreaType
+    /// <summary>
+    /// Typ prostoru v tabulce
+    /// </summary>
+    public enum TableAreaType
+    {
+        None,
+        /// <summary>
+        /// Záhlaví tabulky (pak jde o header vlevo nahoře, v křížení sloupce RowHeader a řádku ColumnHeader)
+        /// </summary>
+        TableHeader,
+        /// <summary>
+        /// Záhlaví sloupce
+        /// </summary>
+        ColumnHeader,
+        /// <summary>
+        /// Záhlaví řádku
+        /// </summary>
+        RowHeader,
+        /// <summary>
+        /// Data tabulky
+        /// </summary>
+        Data,
+        /// <summary>
+        /// Svislý scrollbar vpravo
+        /// </summary>
+        VerticalScrollBar,
+        /// <summary>
+        /// Vodorovný scrollbar dole
+        /// </summary>
+        HorizontalScrollBar
+    }
+    #endregion
+
+
+
+    
+    
 
 
 
@@ -873,7 +1758,7 @@ namespace Djs.Common.Components.Grid
     /// <summary>
     /// GColumn : Container for one ColumnHeader objects, for one Table. Contain items: Header, TimeAxis, Splitter.
     /// </summary>
-    public class GColumn : InteractiveContainer
+    public class xxxGColumn : InteractiveContainer
     {
         #region Constructor, public properties
         public GColumn(GColumnSet columnSet, DColumn dataColumn, int columnID)
@@ -1163,7 +2048,7 @@ namespace Djs.Common.Components.Grid
     /// <summary>
     /// GColumnHeader : class for visual representing one ColumnHeader.
     /// </summary>
-    public class GColumnHeader : InteractiveDragObject, IInteractiveItem
+    public class xColumnHeader : InteractiveDragObject, IInteractiveItem
     {
         #region Constructor, public properties
         public GColumnHeader(GColumn column)
@@ -2461,7 +3346,7 @@ namespace Djs.Common.Components.Grid
         }
         #endregion
     }
-    public class GRowHeader : InteractiveDragObject, IInteractiveItem
+    public class xRowHeader : InteractiveDragObject, IInteractiveItem
     {
         #region Constructor and owner properties
         public GRowHeader(GRow gRow)
@@ -2554,7 +3439,7 @@ namespace Djs.Common.Components.Grid
         internal GInteractiveDrawLayer RepaintThisToLayers { get { return this.RepaintToLayers; } set { this.RepaintToLayers = value; } }
         #endregion
     }
-    public class GCell : InteractiveContainer
+    public class xCell : InteractiveContainer
     {
         #region Constructor and owner properties
         public GCell(GRow gRow, int columnId)
