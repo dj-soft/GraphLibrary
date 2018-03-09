@@ -9,6 +9,15 @@ using Djs.Common.Components.Grid;
 
 namespace Djs.Common.Components
 {
+    // Filosofický základ pro obsluhu různých událostí: Grid je línej jako veš! 
+    // Ten je tak línej, že když se dojde ke změně něčeho (třeba výšky některé tabulky), tak ta změna (v property Table.Height) zavolá "nahoru" že došlo k dané změně,
+    //  to volání se dostane do GTable jako invalidace výšky tabulky, to vyvolá obdobné volání do Gridu, a Grid si jen líně poznamená: "Rozložení tabulek na výšku už neplatí".
+    //  Současně s tím si poznamená: "Neplatí ani moje ChildItem prvky (protože některá další tabulka může/nemusí být vidět, protože se odsunula dolů).
+    // Podobně se chová i GTable: poznamená si: moje vnitřní souřadnice ani moje ChildItem prvky nejsou platné.
+    // Teprve až bude někdo chtít pracovat s něčím v Gridu nebo v jeho GTable (typicky: zjištění interaktivity prvků, vykreslení tabulky), tak si požádá o ChildItems,
+    //  tam se zjistí že jsou neplatné, a Grid nebo GTable začne shánět platné údaje. 
+    // Při tom zjistí, že je jich většina neplatných, a začne je přepočítávat z aktuálních reálných hodnot (fyzické rozměry, počet a velikost tabulek, pozice řádků, atd).
+
     /// <summary>
     /// GGrid : Vizuální objekt, kontejner na jednu nebo více tabulek pod sebou. Tyto tabulky mají společný layout sloupců (šířka) i společný vodorovný (dolní) posuvník.
     /// </summary>
@@ -37,7 +46,8 @@ namespace Djs.Common.Components
         /// <param name="eventSource">Zdroj této události</param>
         protected override void SetBoundsPrepareInnerItems(Rectangle oldBounds, Rectangle newBounds, ref ProcessAction actions, EventSourceType eventSource)
         {
-            this.RecalculateGrid(ref actions, eventSource);
+            base.SetBoundsPrepareInnerItems(oldBounds, newBounds, ref actions, eventSource);
+            this.Invalidate(InvalidateItem.GridBounds);
         }
         /// <summary>
         /// Přepočítá pozice všech prvků Gridu (ClientAreas, Tables, ScrollBars).
@@ -704,6 +714,28 @@ namespace Djs.Common.Components
         private EList<GTable> _Tables;
         #endregion
         #endregion
+        #region Invalidace, resety, refreshe
+        /// <summary>
+        /// Zajistí invalidaci položek po určité akci, která právě skončila
+        /// </summary>
+        /// <param name="items"></param>
+        public void Invalidate(InvalidateItem items)
+        {
+            // Pokud bude nastaven tento bit OnlyForTable, znamená to, že tuto invalidaci rozeslal Grid do podřízených tabulek, a některá podřízená tabulka ji poslala zase do Gridu.
+            if (items.HasFlag(InvalidateItem.OnlyForTable)) return;
+
+            bool callTables = false;
+
+
+
+            if (!items.HasFlag(InvalidateItem.OnlyForGrid) && callTables)                // Invalidaci tabulke volám jen tehdy, když aktuální invalidace není "Jen pro grid", a podle významu se má týkat i tabulek...
+            {
+                InvalidateItem itemsTable = items | InvalidateItem.OnlyForTable;         // Nastavím bit, že navazující invalidace se má provést už jen v tabulkách, ale nemá se volat do Gridu!   Viz začátek zdejší metody.
+                foreach (GTable table in this._Tables.Where(t => t.IsVisible))
+                    table.Invalidate(itemsTable);
+            }
+        }
+        #endregion
         #region Pole grafických prvků Childs - obsahuje všechny tabulky, jejich vzájemné oddělovače (Splitter), a scrollbary (sloupce vždy, tabulky podle potřeby)
         /// <summary>
         /// Pole grafických prvků v tomto gridu: tabulky, splittery (mezi tabulkami), scrollbary (svislý, vodorovný)
@@ -1145,6 +1177,76 @@ namespace Djs.Common.Components
         /// Odpojí this objekt od navázaného Gridu, resetuje svoje ID
         /// </summary>
         void DetachFromGrid();
+    }
+    #endregion
+    #region enum InvalidateItem
+    /// <summary>
+    /// Identifikace prvků, které se mají invalidovat
+    /// </summary>
+    [Flags]
+    public enum InvalidateItem : ulong
+    {
+        /// <summary>Nic</summary>
+        None = 0,
+        /// <summary>Rozměry Gridu</summary>
+        GridBounds = 1,
+        /// <summary>Změna ve viditelnosti některého splitteru mezi tabulkami (po změně Table.AllowResize*): nejde o přepočty souřadnic ani invalidaci polí, pouze o žádost o invalidaci Child prvků gridu</summary>
+        GridItems = GridBounds << 1,
+        /// <summary>Rozměry Tabulky</summary>
+        TableBounds = GridItems << 1,
+        /// <summary>Změna ve viditelnosti některého splitteru mezi sloupci nebo mezi řádky (po změně Table.AllowResize*): nejde o přepočty souřadnic ani invalidaci polí, pouze o žádost o invalidaci Child prvků tabulky</summary>
+        TableItems = TableBounds << 1,
+        /// <summary>Počet tabulek v Gridu</summary>
+        TablesCount = TableItems << 1,
+        /// <summary>Pořadí tabulek v Gridu</summary>
+        TableOrder = TablesCount << 1,
+        /// <summary>Výška některé tabulky v Gridu</summary>
+        TableHeight = TableOrder << 1,
+        /// <summary>Posun tabulek</summary>
+        TableScroll = TableHeight << 1,
+        /// <summary>Počet sloupců</summary>
+        ColumnsCount = TableScroll << 1,
+        /// <summary>Pořadí sloupců</summary>
+        ColumnOrder = ColumnsCount << 1,
+        /// <summary>Šířka sloupců</summary>
+        ColumnWidth = ColumnOrder << 1,
+        /// <summary>Posun sloupců</summary>
+        ColumnScroll = ColumnWidth << 1,
+        /// <summary>Výška záhlaví sloupců</summary>
+        ColumnHeader = ColumnScroll << 1,
+        /// <summary>Počet řádků v tabulce</summary>
+        RowsCount = ColumnHeader << 1,
+        /// <summary>Pořadí řádků (po setřídění)</summary>
+        RowOrder = RowsCount << 1,
+        /// <summary>Výška řádku</summary>
+        RowHeight = RowOrder << 1,
+        /// <summary>Posun řádků nahoru/dolů</summary>
+        RowScroll = RowHeight << 1,
+        /// <summary>Šířka hlavičky řádku</summary>
+        RowHeader = RowScroll << 1,
+
+        /// <summary>Pokud je nastaven tento bit, pak aktuální akce je určena pouze k provádění v Gridu, a Grid už nemá volat invalidaci do tabulek GTable. A pokud by ji Grid zavolal, pak ji GTable bude ignorovat.</summary>
+        OnlyForGrid = RowHeader << 1,
+        /// <summary>Pokud je nastaven tento bit, pak aktuální akce je určena pouze k provádění v GTable, a GTable už nemá volat invalidaci do Gridu. A pokud by ji zavolala, pak ji Grid bude ignorovat.</summary>
+        OnlyForTable = OnlyForGrid << 1,
+
+        /// <summary>Změna v obsahu některého pole tabulky: nejde o přepočty souřadnic ani invalidaci polí, pouze o žádost o nové vykreslení Gridu</summary>
+        Paint = OnlyForTable << 1,
+
+        /// <summary>Změna typu Grid</summary>
+        AnyGrid = GridBounds | GridItems,
+        /// <summary>Změna typu Table</summary>
+        AnyTable = TableBounds | TableItems | TablesCount | TableOrder | TableHeight | TableScroll,
+        /// <summary>Změna typu Column</summary>
+        AnyColumn = ColumnsCount | ColumnOrder | ColumnWidth | ColumnScroll | ColumnHeader,
+        /// <summary>Změna typu Row</summary>
+        AnyRow = RowsCount | RowOrder | RowHeight | RowScroll | RowHeader,
+
+        /// <summary>Invalidovat všechny prvky, ale neprovádět nové vykreslení (to se provede po dokončení aktuální aktivity automaticky)</summary>
+        AnyInvalidate = AnyGrid| AnyTable | AnyColumn | AnyRow,
+
+        /// <summary>Invalidovat všechny prvky, a na závěr vyžádat nové vykreslení (změna byla provedena z jiné části kódu, která neprovádí automatické vykreslení)</summary>
+        All = 0x0FFFFF,
     }
     #endregion
 }

@@ -538,21 +538,64 @@ namespace Djs.Common.Data.New
         /// Pokud kód nastaví výšku tabulky = null, pak se pro zobrazení převezme defaultní výška dle Gridu.
         /// Výška tabulky bude vždy v rozmezí HeightRange.
         /// </summary>
-        public Int32 Height { get { return this.TableHeightLayout.CurrentSize; } set { this.TableHeightLayout.Size = value; } }
+        public Int32 Height
+        {
+            get
+            { return this.TableHeightLayout.CurrentSize; }
+            set
+            {
+                int oldValue = this.TableHeightLayout.CurrentSize;
+                this.TableHeightLayout.Size = value;
+                if ((this.TableHeightLayout.CurrentSize != oldValue) && this.HasGTable)
+                    this.GTable.Invalidate(InvalidateItem.TableHeight);
+            }
+        }
         /// <summary>
         /// true pro viditelnou tabulku (default), false pro skrytou
         /// </summary>
-        public bool IsVisible { get { return this.TableHeightLayout.Visible; } set { this.TableHeightLayout.Visible = value; } }
+        public bool IsVisible
+        {
+            get
+            { return this.TableHeightLayout.Visible; }
+            set
+            {
+                bool oldValue = this.TableHeightLayout.Visible;
+                this.TableHeightLayout.Visible = value;
+                if ((this.TableHeightLayout.Visible != oldValue) && this.HasGTable)
+                    this.GTable.Invalidate(InvalidateItem.TableHeight);
+            }
+        }
         /// <summary>
         /// Výška oblasti ColumnHeader. 
         /// Při nasetování hodnoty dojde k její kontrole a případně úpravě tak, aby uložená hodnota odpovídala pravidlům.
         /// To znamená, že po vložení hodnoty X může být okamžitě čtena hodnota ColumnHeaderHeight jiná, než byla vložena.
         /// </summary>
-        public Int32 ColumnHeaderHeight { get { return this.ColumnHeaderHeightLayout.CurrentSize; } set { this.ColumnHeaderHeightLayout.Size = value; } }
+        public Int32 ColumnHeaderHeight
+        {
+            get
+            { return this.ColumnHeaderHeightLayout.CurrentSize; }
+            set
+            {
+                int oldValue = this.ColumnHeaderHeightLayout.CurrentSize;
+                this.ColumnHeaderHeightLayout.Size = value;
+                if ((this.ColumnHeaderHeightLayout.CurrentSize != oldValue) && this.HasGTable)
+                    this.GTable.Invalidate(InvalidateItem.ColumnHeader);
+            }
+        }
         /// <summary>
         /// Šířka sloupce obsahujícího RowHeader
         /// </summary>
-        public Int32 RowHeaderWidth { get { return this.RowHeaderWidthLayout.CurrentSize; } set { this.RowHeaderWidthLayout.Size = value; } }
+        public Int32 RowHeaderWidth
+        {
+            get { return this.RowHeaderWidthLayout.CurrentSize; }
+            set
+            {
+                int oldValue = this.RowHeaderWidthLayout.CurrentSize;
+                this.RowHeaderWidthLayout.Size = value;
+                if ((this.RowHeaderWidthLayout.CurrentSize != oldValue) && this.HasGTable)
+                    this.GTable.Invalidate(InvalidateItem.ColumnHeader);
+            }
+        }
         /// <summary>
         /// Pořadí této tabulky v Gridu při zobrazování.
         /// Výchozí je -1, pak bude tabulka zařazena na konec soupisu tabulek v jednom gridu.
@@ -561,31 +604,102 @@ namespace Djs.Common.Data.New
         /// Po napojení tabulky do gridu je do TableOrder vepsána pořadová hodnota, pokud aktuální hodnota je záporná (což je default).
         /// Po odpojení tabuky z Gridu je vepsána hodnota -1.
         /// </summary>
-        public int TableOrder { get { return this._TableOrder; } set { this._TableOrder = value; } } private int _TableOrder = -1;
+        public int TableOrder
+        {
+            get
+            { return this._TableOrder; }
+            set
+            {
+                int oldValue = this._TableOrder;
+                this._TableOrder = value;
+                if ((this._TableOrder != oldValue) && this.HasGTable)
+                    this.GTable.Invalidate(InvalidateItem.ColumnHeader);
+            }
+        } private int _TableOrder = -1;
         /// <summary>
         /// true pokud je povoleno interaktivně změnit výšku tabulky (myší). Default = true;
         /// </summary>
-        public bool AllowTableResize { get { return this._AllowTableResize; } set { this._AllowTableResize = value; } } private bool _AllowTableResize = true;
+        public bool AllowTableResize
+        {
+            get { return this._AllowTableResize; }
+            set
+            {
+                bool oldValue = this._AllowTableResize;
+                this._AllowTableResize = value;
+                if ((this._AllowTableResize != oldValue) && this.HasGTable)
+                    this.GTable.Invalidate(InvalidateItem.GridItems);
+            }
+        } private bool _AllowTableResize = true;
         /// <summary>
         /// true pokud je povoleno interaktivně změnit šířku sloupce, který obsahuje záhlaví řádku (myší). Default = true;
         /// </summary>
-        public bool AllowRowHeaderWidthResize { get { return this._AllowRowHeaderWidthResize; } set { this._AllowRowHeaderWidthResize = value; } } private bool _AllowRowHeaderWidthResize = true;
+        public bool AllowRowHeaderWidthResize
+        {
+            get { return this._AllowRowHeaderWidthResize; }
+            set
+            {
+                bool oldValue = this._AllowRowHeaderWidthResize;
+                this._AllowRowHeaderWidthResize = value;
+                if ((this._AllowRowHeaderWidthResize != oldValue) && this.HasGTable)
+                    this.GTable.Invalidate(InvalidateItem.TableItems);
+            }
+        } private bool _AllowRowHeaderWidthResize = true;
         /// <summary>
         /// true pokud je povoleno interaktivně přemisťovat sloupce (přetahovat je myší). Default = true;
         /// </summary>
-        public bool AllowColumnReorder { get { return this._AllowColumnReorder; } set { this._AllowColumnReorder = value; } } private bool _AllowColumnReorder = true;
+        public bool AllowColumnReorder
+        {
+            get { return this._AllowColumnReorder; }
+            set
+            {
+                bool oldValue = this._AllowColumnReorder;
+                this._AllowColumnReorder = value;
+                if ((this._AllowColumnReorder != oldValue) && this.HasGTable)
+                    this.GTable.Invalidate(InvalidateItem.TableItems);
+            }
+        } private bool _AllowColumnReorder = true;
         /// <summary>
         /// true pokud je povoleno interaktivně změnit šířku sloupce (myší). Default = true;
         /// </summary>
-        public bool AllowColumnResize { get { return this._AllowColumnResize; } set { this._AllowColumnResize = value; } } private bool _AllowColumnResize = true;
+        public bool AllowColumnResize
+        {
+            get { return this._AllowColumnResize; }
+            set
+            {
+                bool oldValue = this._AllowColumnResize;
+                this._AllowColumnResize = value;
+                if ((this._AllowColumnResize != oldValue) && this.HasGTable)
+                    this.GTable.Invalidate(InvalidateItem.TableItems);
+            }
+        } private bool _AllowColumnResize = true;
         /// <summary>
         /// true pokud je povoleno interaktivně přemisťovat řádky (přetahovat je myší). Default = false;
         /// </summary>
-        public bool AllowRowReorder { get { return this._AllowRowReorder; } set { this._AllowRowReorder = value; } } private bool _AllowRowReorder = false;
+        public bool AllowRowReorder
+        {
+            get { return this._AllowRowReorder; }
+            set
+            {
+                bool oldValue = this._AllowRowReorder;
+                this._AllowRowReorder = value;
+                if ((this._AllowRowReorder != oldValue) && this.HasGTable)
+                    this.GTable.Invalidate(InvalidateItem.TableItems);
+            }
+        } private bool _AllowRowReorder = false;
         /// <summary>
         /// true pokud je povoleno interaktivně změnit výšku řádku (myší). Default = true;
         /// </summary>
-        public bool AllowRowResize { get { return this._AllowRowResize; } set { this._AllowRowResize = value; } } private bool _AllowRowResize = true;
+        public bool AllowRowResize
+        {
+            get { return this._AllowRowResize; }
+            set
+            {
+                bool oldValue = this._AllowRowResize;
+                this._AllowRowResize = value;
+                if ((this._AllowRowResize != oldValue) && this.HasGTable)
+                    this.GTable.Invalidate(InvalidateItem.TableItems);
+            }
+        } private bool _AllowRowResize = true;
         /// <summary>
         /// true pokud je povoleno třídit řádky kliknutím na záhlaví sloupce. Default = true;
         /// </summary>
@@ -679,8 +793,6 @@ namespace Djs.Common.Data.New
             return a.TableOrder.CompareTo(b.TableOrder);
         }
         #endregion
-
-
         #region Visual style
         /// <summary>
         /// Všechny vizuální vlastnosti dat v tomto sloupci (nikoli hlavičky).
