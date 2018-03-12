@@ -281,16 +281,31 @@ namespace Djs.Common.Components
             base.Refresh();
         }
         #endregion
-        #region LoadFrom
+        #region LoadFrom : načtení klíčových dat = neaktivní souřadnice (=X pro vodorovný splitter, Y pro svislý) + aktivní hodnota (=Y pro vodorovný splitter, X pro svislý) 
         /// <summary>
+        /// LoadFrom : načtení klíčových dat = neaktivní souřadnice (=X pro vodorovný splitter, Y pro svislý) + aktivní hodnota (=Y pro vodorovný splitter, X pro svislý).
         /// Vloží do sebe dodané hodnoty jedním voláním, umožní potlačit eventy změn
         /// </summary>
-        /// <param name="value"></param>
-        /// <param name="bounds"></param>
-        /// <param name="silent"></param>
-        public void LoadFrom(int value, Rectangle bounds, bool silent)
+        /// <param name="bounds">Souřadnice, typicky objektu který je tímto splitterem řízen, převezmou se z nich souřadnice v neaktivním směru</param>
+        /// <param name="value">Hodnota splitteru</param>
+        /// <param name="silent">true = nevyvolávat eventy</param>
+        public void LoadFrom(Rectangle bounds, int value, bool silent)
         {
-            this._LoadFrom(value, this._Orientation, this.SplitterVisibleWidth, this.SplitterActiveOverlap, bounds, silent);
+            this._LoadFrom(value, null, null, null, bounds, silent);
+        }
+        /// <summary>
+        /// LoadFrom : načtení klíčových dat = neaktivní souřadnice (=X pro vodorovný splitter, Y pro svislý) + aktivní hodnota (=Y pro vodorovný splitter, X pro svislý).
+        /// Vloží do sebe dodané hodnoty jedním voláním, umožní potlačit eventy změn.
+        /// Tato varianta si hodnotu Value odvodí z dodaných souřadnic (bounds), z jejich odpovídající strany (side).
+        /// Jako side lze zadat pouze hodnoty: Top, Right, Bottom, Left. Pokud bude zadaná kombinace, nebude určena hodnota Value, a nastaví se pouze 
+        /// </summary>
+        /// <param name="bounds">Souřadnice, typicky objektu který je tímto splitterem řízen</param>
+        /// <param name="side">Strana souřadnic (bounds), na které je this splitter přilepený</param>
+        /// <param name="silent">true = nevyvolávat eventy</param>
+        public void LoadFrom(Rectangle bounds, RectangleSide side, bool silent)
+        {
+            Int32? value = bounds.GetSide(side);
+            this._LoadFrom(value, null, null, null, bounds, silent);
         }
         private void _LoadFrom(int? value, Orientation? orientation, int? splitterVisibleWidth, int? splitterActiveOverlap, Rectangle? bounds, bool silent)
         {

@@ -787,7 +787,8 @@ namespace Djs.Common.Components
     public interface ITimeGraph
     {
         /// <summary>
-        /// Host control store reference to ITimeConvertor into this property.
+        /// Reference na objekt, který provádí časové konverze pro tento graf.
+        /// Instanci do této property plní ten, kdo ji zná.
         /// </summary>
         ITimeConvertor Convertor { get; set; }
         /// <summary>

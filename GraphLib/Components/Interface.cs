@@ -127,7 +127,16 @@ namespace Djs.Common.Components
         void Draw(GInteractiveDrawArgs e);
     }
     #endregion
-    #region InteractiveProperties : Bit storage for Interactive Properties of IInteractiveItem objects.
+    #region interface IDrawItem
+    /// <summary>
+    /// Interface, definující přítomnost metody, která zajistí vykreslení obsahu libovolného prvku.
+    /// </summary>
+    public interface IDrawItem
+    {
+        void Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute);
+    }
+    #endregion
+    #region class InteractiveProperties : Bit storage for Interactive Properties of IInteractiveItem objects.
     /// <summary>
     /// InteractiveProperties : Bit storage for Interactive Properties of IInteractiveItem objects.
     /// </summary>
@@ -172,7 +181,7 @@ namespace Djs.Common.Components
         public const UInt32 BitSuppressEvents = 0x0040;
     }
     #endregion
-    #region InteractiveItemExtensions : Extensions for IInteractiveItem
+    #region class InteractiveItemExtensions : Extensions for IInteractiveItem
     /// <summary>
     /// InteractiveItemExtensions : Extensions for IInteractiveItem
     /// </summary>

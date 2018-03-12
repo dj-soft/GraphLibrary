@@ -659,6 +659,20 @@ namespace Djs.Common.Data.New
             }
         } private bool _AllowColumnReorder = true;
         /// <summary>
+        /// true pokud je povoleno interaktivně změnit výšku záhlaví sloupců (myší). Default = true;
+        /// </summary>
+        public bool AllowColumnHeaderResize
+        {
+            get { return this._AllowColumnHeaderResize; }
+            set
+            {
+                bool oldValue = this._AllowColumnHeaderResize;
+                this._AllowColumnHeaderResize = value;
+                if ((this._AllowColumnHeaderResize != oldValue) && this.HasGTable)
+                    this.GTable.Invalidate(InvalidateItem.TableItems);
+            }
+        } private bool _AllowColumnHeaderResize = true;
+        /// <summary>
         /// true pokud je povoleno interaktivně změnit šířku sloupce (myší). Default = true;
         /// </summary>
         public bool AllowColumnResize
@@ -1113,7 +1127,7 @@ namespace Djs.Common.Data.New
         #endregion
         #region Cells = jednotlivé buňky v řádku
         /// <summary>
-        /// Obsahuje (vrátí) instanci DCell, pro dané ID sloupce. 
+        /// Obsahuje (vrátí) instanci Cell, pro dané ID sloupce. 
         /// Nikdy nevrací null. 
         /// Lze tedy založit a udržovat buňky i pro neexistující sloupce.
         /// </summary>
@@ -1151,6 +1165,7 @@ namespace Djs.Common.Data.New
         /// <summary>
         /// Vrátí buňku pro dané ColumnId.
         /// Vždy vrátí buňku pro dané ID, i kdyby takový sloupec neexistoval v tabulce a dané ID bylo mimo rozsah.
+        /// Lze tak v tabulce mít i "skryté" sloupce.
         /// </summary>
         /// <param name="columnId"></param>
         /// <returns></returns>
@@ -1186,7 +1201,7 @@ namespace Djs.Common.Data.New
         /// </summary>
         public Image SelectedRowImage { get { return this._SelectedRowImage ?? this.Table.SelectedRowImage; } set { this._SelectedRowImage = value; } } private Image _SelectedRowImage = null;
         /// <summary>
-        /// Záhlaví tohoto sloupce, grafický prvek, auitoinicializační
+        /// Záhlaví tohoto řádku, grafický prvek, auitoinicializační
         /// </summary>
         public Components.Grid.GRowHeader RowHeader
         {
@@ -1279,7 +1294,7 @@ namespace Djs.Common.Data.New
         /// </summary>
         public Table Table { get { return (this._Row != null ? this._Row.Table : null); } }
         /// <summary>
-        /// Sloupc, do něhož tato buňka patří.
+        /// Sloupec, do něhož tato buňka patří.
         /// Může být null, pokud buňka dosud není v řádku nebo řádek není v tabulce.
         /// </summary>
         public Column Column { get { Column column = null; if (this._Row != null && this._Row.HasTable && this._Row.Table.TryGetColumn(this._ColumnId, out column)) return column; return null; } }
@@ -1291,7 +1306,8 @@ namespace Djs.Common.Data.New
         #endregion
         #region Value
         /// <summary>
-        /// Hodnota v této buňce. Setování hodnoty provede invalidaci dat řádku a tabulky.
+        /// Hodnota v této buňce. 
+        /// Vložení hodnoty provede invalidaci dat řádku a tabulky, protože může dojít ke změně výšky a k požadavku na nové vykreslení obsahu.
         /// </summary>
         public object Value { get { return _Value; } set { _Value = value; this.InvalidateRowData(); } } private object _Value;
         /// <summary>
@@ -1323,6 +1339,23 @@ namespace Djs.Common.Data.New
             if (tableValidity != null && tableValidity.DataIsValid)
                 tableValidity.DataIsValid = false;
         }
+        #endregion
+        #region GUI vlastnosti
+        /// <summary>
+        /// Grafická instance reprezentující tuto buňku, grafický prvek, auitoinicializační
+        /// </summary>
+        public Components.Grid.GCell Control
+        {
+            get
+            {
+                if (this._Control == null)
+                    this._Control = new Components.Grid.GCell(this);
+                return this._Control;
+            }
+            set { this._Control = value; }
+        }
+        private Components.Grid.GCell _Control;
+
         #endregion
         #region Visual style
         /// <summary>

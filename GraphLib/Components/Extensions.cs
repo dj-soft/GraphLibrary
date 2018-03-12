@@ -615,7 +615,7 @@ namespace Djs.Common.Components
             return new Size((one.Width < min.Width ? min.Width : (one.Width > max.Width ? max.Width : one.Width)),
                              (one.Height < min.Height ? min.Height : (one.Height > max.Height ? max.Height : one.Height)));
         }
-        
+
         /// <summary>
         /// Vrátí SizeF, jejíž Width i Height jsou ta menší hodnota z this a max
         /// </summary>
@@ -635,7 +635,7 @@ namespace Djs.Common.Components
         /// <returns></returns>
         public static SizeF Max(this SizeF one, SizeF other)
         {
-            return new SizeF((one.Width > other.Width ? one.Width : other.Width), 
+            return new SizeF((one.Width > other.Width ? one.Width : other.Width),
                              (one.Height > other.Height ? one.Height : other.Height));
         }
         /// <summary>
@@ -1064,6 +1064,29 @@ namespace Djs.Common.Components
         {
             return new Point(rectangle.X + rectangle.Width - 1, rectangle.Y + rectangle.Height - 1);
         }
+        /// <summary>
+        /// Vrátí souřadnici z this rectangle dle požadované strany.
+        /// Pokud je zadána hodnota Top, Right, Bottom nebo Left, pak vrací příslušnou souřadnici.
+        /// Pokud je zadána hodnota None nebo nějaký součet stran, pak vrací null.
+        /// </summary>
+        /// <param name="rectangle"></param>
+        /// <param name="side"></param>
+        /// <returns></returns>
+        public static Int32? GetSide(this Rectangle rectangle, RectangleSide edge)
+        {
+            switch (edge)
+            {
+                case RectangleSide.Top:
+                    return rectangle.Top;
+                case RectangleSide.Right:
+                    return rectangle.Right;
+                case RectangleSide.Bottom:
+                    return rectangle.Bottom;
+                case RectangleSide.Left:
+                    return rectangle.Left;
+            }
+            return null;
+        }
         #endregion
         #region RectangleF: FromPoints, FromDim, FromCenter
         /// <summary>
@@ -1258,24 +1281,24 @@ namespace Djs.Common.Components
         /// Vrátí RectangleF, který vytvoří z this RectangleF, když jeho hranu (edge) posune na novou souřadnici
         /// </summary>
         /// <param name="rectangleF"></param>
-        /// <param name="edge"></param>
+        /// <param name="side"></param>
         /// <param name="dimension"></param>
         /// <returns></returns>
-        public static RectangleF MoveEdge(this RectangleF rectangleF, RectangleEdge edge, float dimension)
+        public static RectangleF MoveEdge(this RectangleF rectangleF, RectangleSide side, float dimension)
         {
             float x1 = rectangleF.X;
             float x2 = rectangleF.Right;
             float y1 = rectangleF.Y;
             float y2 = rectangleF.Bottom;
-            switch (edge)
+            switch (side)
             {
-                case RectangleEdge.Top:
+                case RectangleSide.Top:
                     return FromDim(x1, x2, dimension, y2);
-                case RectangleEdge.Right:
+                case RectangleSide.Right:
                     return FromDim(x1, dimension, y1, y2);
-                case RectangleEdge.Bottom:
+                case RectangleSide.Bottom:
                     return FromDim(x1, x2, y1, dimension);
-                case RectangleEdge.Left:
+                case RectangleSide.Left:
                     return FromDim(dimension, x2, y1, y2);
             }
             return rectangleF;
@@ -1865,22 +1888,24 @@ namespace Djs.Common.Components
         }
         #endregion
     }
-    #region enum RectangleEdge, RectangleCorner, InteractivePositionAction
+    #region enum RectangleSide, RectangleCorner, InteractivePositionAction
     /// <summary>
-    /// Vyjádření názvu hrany na objektu Rectangle (Horní, Vpravo, Dolní, Vlevo)
+    /// Vyjádření názvu hrany na objektu Rectangle (Horní, Vpravo, Dolní, Vlevo).
+    /// Enum povoluje sčítání hodnot, ale různé funkce nemusejí sečtené hodnoty akceptovat (z důvodu jejich logiky).
     /// </summary>
-    public enum RectangleEdge
+    [Flags]
+    public enum RectangleSide
     {
         /// <summary>Neurčeno</summary>
         None = 0,
         /// <summary>Horní</summary>
-        Top,
+        Top = 1,
         /// <summary>Vpravo</summary>
-        Right,
+        Right = 2,
         /// <summary>Dolní</summary>
-        Bottom,
+        Bottom = 4,
         /// <summary>Vlevo</summary>
-        Left
+        Left = 8
     }
     /// <summary>
     /// Vyjádření názvu rohu na objektu Rectangle (Vlevo nahoře, Vpravo nahoře, ...)

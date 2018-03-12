@@ -505,7 +505,7 @@ namespace Djs.Common.Components
         /// Nemá se volat po změně: Změna šířky sloupce (při této změně se nemění počet a pořadí sloupců).
         /// Nemusí se volat po změnách: Posun scrollbaru sloupců, změna rozměrů gridu (při této změně se nemění ani datové souřadnice sloupců).
         /// </summary>
-        protected void ColumnsSequenceReset() { this._Columns = null; this._MainTimeAxisReset(); }
+        protected void ColumnsSequenceReset() { this._Columns = null; }
         /// <summary>
         /// Resetuje platnost datových souřadnic sloupců (jejich hodnoty v ISequenceLayout).
         /// Vynutí si přepočet datových hodnot Begin a End.
@@ -795,50 +795,55 @@ namespace Djs.Common.Components
         }
         private bool _ChildsIsValid;
         #endregion
-        #region Hlavní časová osa, podpora pro časové osy v synchronizovaných sloupcích
+        #region Obecná práce s časovými osami, hlavní časová osa, podpora pro časové osy v synchronizovaných sloupcích
+        /// <summary>
+        /// Vyvolá RefreshTimeAxis pro všechny GTable, předá jim ID sloupce pro refresh.
+        /// Metoda se volá po jakékoli změně hodnot na časové ose daného sloupce.
+        /// </summary>
+        /// <param name="columnId">Identifikace sloupce</param>
+        /// <param name="e">Data o změně</param>
+        internal void OnChangeTimeAxis(int columnId, GPropertyChangeArgs<TimeRange> e)
+        { }
+        /// <summary>
+        /// Vyvolá RefreshTimeAxis pro všechny GTable, vyjma tabulky s daným TableId (ta se považuje za zdroj události, a řeší si svůj event jinak), a předá jim ID sloupce pro refresh.
+        /// Metoda se volá po jakékoli změně hodnot na časové ose daného sloupce.
+        /// </summary>
+        /// <param name="tableId">identifikace tabulky, kde došlo ke změně</param>
+        /// <param name="columnId">Identifikace sloupce</param>
+        /// <param name="e">Data o změně</param>
+        internal void OnChangeTimeAxis(int? tableId, int columnId, GPropertyChangeArgs<TimeRange> e)
+        {
+            foreach (GTable gTable in this._Tables)
+            {
+                if (!tableId.HasValue || (tableId.HasValue && tableId.Value != gTable.TableId))
+                    gTable.RefreshTimeAxis(columnId, e);
+            }
+        }
+        /// <summary>
+        /// Vrací ITimeConvertor pro daný sloupec.
+        /// Pokud daný sloupec nepoužívá časovou osu (nebo sloupec pro columnId neexistuje), vrací null.
+        /// De facto jde o TimeAxis z první tabulky z daného sloupce.
+        /// </summary>
+        /// <param name="columnId"></param>
+        /// <returns></returns>
+        internal ITimeConvertor GetTimeConvertor(int columnId)
+        {
+            GridColumn gridColumn;
+            if (!this.TryGetGridColumn(columnId, out gridColumn)) return null;
+            if (!gridColumn.UseTimeAxis) return null;
+            return gridColumn.TimeConvertor;
+        }
+        /// <summary>
+        /// Obsahuje hlavní časovou osu celého Gridu.
+        /// Je to ITimeConvertor z prvního sloupce, který používá časovou osu (má UseTimeAxis == true).
+        /// </summary>
         internal ITimeConvertor MainTimeAxis
         {
             get
             {
-                if (!this._MainTimeAxisValid)
-                {
-                    GridColumn timeAxisColumn = this.Columns.FirstOrDefault(c => c.UseTimeAxis);
-                    if (timeAxisColumn != null)
-                    {
-                        this._MainTimeAxis = timeAxisColumn.MasterColumn.TimeAxis;
-                        this._MainTimeAxisValid = true;
-                    }
-                }
-                return this._MainTimeAxis;
+                GridColumn timeAxisColumn = this.Columns.FirstOrDefault(c => c.UseTimeAxis);
+                return (timeAxisColumn != null ? timeAxisColumn.TimeConvertor : null);
             }
-        }
-        /// <summary>
-        /// true pokud existuje hlavní časová osa = objekt v this.MainTimeAxis.
-        /// Hlavní časová osa je časová osa z prvního sloupce, který zobrazuje časovou osu.
-        /// </summary>
-        internal bool MainTimeAxisExists { get; private set; }
-        private void _MainTimeAxisReset()
-        {
-            this._MainTimeAxis = null;
-            this._MainTimeAxisValid = false;
-        }
-        /// <summary>
-        /// Úložiště pro hlavní časovou osu
-        /// </summary>
-        private ITimeConvertor _MainTimeAxis;
-        /// <summary>
-        /// true pokud hlavní časová osa byla vyhledána (může být i nenalezena == null, ale i to je platný výsledek, hlavní časová osa není povinná)
-        /// </summary>
-        private bool _MainTimeAxisValid;
-        /// <summary>
-        /// Vyvolá RefreshTimeAxis pro všechny GTable, předá jim ID sloupce pro refresh.
-        /// Metoda se volá po jakékoli změně hodnot na časové ose daného sloupce (je volána z handleru Column._TimeAxis_ValueChange)
-        /// </summary>
-        /// <param name="columnId"></param>
-        internal void RefreshTimeAxis(int columnId)
-        {
-            foreach (GTable gTable in this._Tables)
-                gTable.RefreshTimeAxis(columnId);
         }
         #endregion
         #region Interactivity
@@ -929,6 +934,10 @@ namespace Djs.Common.Components
         /// true pokud se pro sloupec má zobrazit časová osa v záhlaví
         /// </summary>
         public bool UseTimeAxis { get { return this._MasterColumn.UseTimeAxis; } }
+        /// <summary>
+        /// Objekt, který provádí konverze časových údajů a pixelů, jde o vizuální časovou osu
+        /// </summary>
+        public ITimeConvertor TimeConvertor { get { return this._MasterColumn.ColumnHeader.TimeConvertor; } }
         /// <summary>
         /// Přidá další sloupec do this GridColumnu
         /// </summary>
@@ -1192,10 +1201,12 @@ namespace Djs.Common.Components
         GridBounds = 1,
         /// <summary>Změna ve viditelnosti některého splitteru mezi tabulkami (po změně Table.AllowResize*): nejde o přepočty souřadnic ani invalidaci polí, pouze o žádost o invalidaci Child prvků gridu</summary>
         GridItems = GridBounds << 1,
-        /// <summary>Rozměry Tabulky</summary>
-        TableBounds = GridItems << 1,
+        /// <summary>Souřadnice Tabulky (pouze její umístění, ale ne velikost = bez vlivu na vnitřní prvky)</summary>
+        TablePosition = GridItems << 1,
+        /// <summary>Velikost vnitřního prostoru Tabulky (má vlivu na vnitřní prvky)</summary>
+        TableSize = TablePosition << 1,
         /// <summary>Změna ve viditelnosti některého splitteru mezi sloupci nebo mezi řádky (po změně Table.AllowResize*): nejde o přepočty souřadnic ani invalidaci polí, pouze o žádost o invalidaci Child prvků tabulky</summary>
-        TableItems = TableBounds << 1,
+        TableItems = TableSize << 1,
         /// <summary>Počet tabulek v Gridu</summary>
         TablesCount = TableItems << 1,
         /// <summary>Pořadí tabulek v Gridu</summary>
@@ -1236,7 +1247,7 @@ namespace Djs.Common.Components
         /// <summary>Změna typu Grid</summary>
         AnyGrid = GridBounds | GridItems,
         /// <summary>Změna typu Table</summary>
-        AnyTable = TableBounds | TableItems | TablesCount | TableOrder | TableHeight | TableScroll,
+        AnyTable = TablePosition | TableSize | TableItems | TablesCount | TableOrder | TableHeight | TableScroll,
         /// <summary>Změna typu Column</summary>
         AnyColumn = ColumnsCount | ColumnOrder | ColumnWidth | ColumnScroll | ColumnHeader,
         /// <summary>Změna typu Row</summary>

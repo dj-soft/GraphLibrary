@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Djs.Common.Data;
+using System.Drawing;
 
 namespace Djs.Common.Data
 {
@@ -707,6 +708,38 @@ namespace Djs.Common.Data
             if (range2End <= range1Begin) return false;            // range2.end is before or at range1.begin : range 2 is whole before range 1, no intersect
             if (range1End <= range2Begin) return false;            // range2.begin is after or at range1.end  : range 2 is whole after range 1, no intersect
             return true;
+        }
+        #endregion
+        #region GetRectangle
+        /// <summary>
+        /// Vrací rectangle pro rozmezí hodnot X a Y
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <returns></returns>
+        public static Rectangle GetRectangle(Int32Range x, Int32Range y)
+        {
+            return new Rectangle(x.Begin, y.Begin, x.Size, y.Size);
+        }
+        /// <summary>
+        /// Vrací rectangle pro rozmezí hodnot X a Y
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <returns></returns>
+        public static Rectangle GetRectangle(Int32Range x, Rectangle y)
+        {
+            return new Rectangle(x.Begin, y.Y, x.Size, y.Height);
+        }
+        /// <summary>
+        /// Vrací rectangle pro rozmezí hodnot X a Y
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <returns></returns>
+        public static Rectangle GetRectangle(Rectangle x, Int32Range y)
+        {
+            return new Rectangle(x.X, y.Begin, x.Width, y.Size);
         }
         #endregion
         #region Implementace abstraktní třídy
