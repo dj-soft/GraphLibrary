@@ -752,6 +752,10 @@ namespace Djs.Common.Components.Grid
             this._ChildItemsAddRowsScrollBar();                      // Scrollbar řádků, pokud je viditelný
             this._ChildArrayValid = true;
         }
+        /// <summary>
+        /// Do pole this.ChildList přidá všechna záhlaví sloupců (tedy TableHeader + VisibleColumns.ColumnHeader).
+        /// Nepřidává splitetry: ani mezi sloupci, ani pod Headers.
+        /// </summary>
         protected void _ChildItemsAddColumnHeaders()
         {
             GTableHeader tableHeader = this.DataTable.TableHeader;
@@ -767,25 +771,51 @@ namespace Djs.Common.Components.Grid
                 this.ChildList.Add(columnHeader);
             }
         }
+        /// <summary>
+        /// Do pole this.ChildList přidá splittery za sloupci. Přidává i splitter za posledním sloupcem.
+        /// Přidává je tehdy, když header má svůj splitter viditelný (ColumnSplitterVisible), tzn. pokud daný sloupec je možno resizovat.
+        /// </summary>
         protected void _ChildItemsAddColumnSplitters()
         {
-            GTableHeader header = this.DataTable.TableHeader;
-            if (header.ColumnSplitterVisible)
-                this.ChildList.Add(header.ColumnSplitter);
+            GTableHeader tableHeader = this.DataTable.TableHeader;
+            if (tableHeader.ColumnSplitterVisible)
+                this.ChildList.Add(tableHeader.ColumnSplitter);
 
-
+            foreach (Column column in this.VisibleColumns)
+            {
+                GColumnHeader columnHeader = column.ColumnHeader;
+                if (columnHeader.ColumnSplitterVisible)
+                    this.ChildList.Add(columnHeader.ColumnSplitter);
+            }
         }
+        /// <summary>
+        /// Do pole this.ChildList přidá obsah za všechny viditelné řádky (VisibleRows).
+        /// Obsah = RowHeader + Cells.
+        /// Nepřidává vodorovný Splitter pod RowHeader.
+        /// </summary>
         protected void _ChildItemsAddRowsContent()
         {
             foreach (Row row in this.VisibleRows)
                 this.ChildItemsAddRowContent(row);
         }
+        /// <summary>
+        /// Do pole this.ChildList přidá obsah jednoho daného řádku.
+        /// </summary>
+        /// <param name="row"></param>
         protected void ChildItemsAddRowContent(Row row)
         {
-            Rectangle rowBounds = ;
+            Rectangle rowHeaderBounds = this.RowHeaderBounds;
+            Rectangle rowAreaBounds = this.RowAreaBounds;
+
             GRowHeader rowHeader = row.RowHeader;
-            rowHeader.Bounds = ;
+            Int32Range rowVisualRange = rowHeader.VisualRange;
+            rowHeader.Bounds = new Rectangle(rowHeaderBounds.X, rowVisualRange.Begin, rowHeaderBounds.Width, rowVisualRange.Size);
             this.ChildList.Add(rowHeader);
+
+            foreach (Cell cell in row.Cells)
+            {
+                cell.g
+            }
         }
         protected void _ChildItemsAddHeaderSplitter()
         { }
