@@ -48,25 +48,25 @@ namespace Djs.Common.TestGUI
 
                 this.Rand = new Random((int)DateTime.Now.Ticks % 0x0FFFFFFF);
 
-                this._Table1 = this._PrepareTableW(48);
-                this._Table2 = this._PrepareTableW(128);
-                this._TableZ = this._PrepareTableZ(18);
+                this._Table1 = this._PrepareTableW("stroje", 48);
+                this._Table2 = this._PrepareTableW("směny", 128);
+                this._TableZ = this._PrepareTableZ("lidi", 18);
 
                 using (var scope2 = Application.App.TraceScope("TestFormGrid", "InitGControl", "CreateGrid"))
                 {
                     this._GridW = new GGrid() { Bounds = new Rectangle(10, 10, 750, 550) };
-                    this._GridW.AddTable(this._Table1, "", null, 200);
-                    this._GridW.AddTable(this._Table2, "", null, 150);
+                    this._GridW.AddTable(this._Table1);
+                    this._GridW.AddTable(this._Table2);
 
-                    this._Table1.AddRow(new TestItem() { Klic = 60, DatumOd = DateTime.Now.Add(TimeSpan.FromMinutes(50)), DatumDo = DateTime.Now.Add(TimeSpan.FromMinutes(55)) });
+                    // this._Table1.AddRow(new TestItem() { Klic = 60, DatumOd = DateTime.Now.Add(TimeSpan.FromMinutes(50)), DatumDo = DateTime.Now.Add(TimeSpan.FromMinutes(55)) });
 
-                    object[] items = this._Table1.Rows[2].Items;
+                    Cell[] items = this._Table1.Rows[2].Cells;
 
                     this._SplitterWZ = new GSplitter() { SplitterVisibleWidth = 4, SplitterActiveOverlap = 2, Orientation = Orientation.Vertical, Value = 400, BoundsNonActive = new Int32NRange(0, 200) };
                     this._SplitterWZ.ValueChanged += new GPropertyChanged<int>(_SplitterWZ_ValueChanged);
                     this._SplitterWZ.ValueChanging += new GPropertyChanged<int>(_SplitterWZ_ValueChanging);
                     this._GridZ = new GGrid();
-                    this._GridZ.AddTable(this._TableZ, "", null, 850);
+                    this._GridZ.AddTable(this._TableZ);
                 }
 
                 using (var scope3 = Application.App.TraceScope("TestFormGrid", "InitGControl", "GControl.AddItem(Grid)"))
@@ -79,7 +79,7 @@ namespace Djs.Common.TestGUI
 
                 this.ControlsPosition();
 
-                this._Table1.AddRow(new TestItem() { Klic = 70, DatumOd = DateTime.Now.Add(TimeSpan.FromMinutes(60)), DatumDo = DateTime.Now.Add(TimeSpan.FromMinutes(80)) });
+                // this._Table1.AddRow(new TestItem() { Klic = 70, DatumOd = DateTime.Now.Add(TimeSpan.FromMinutes(60)), DatumDo = DateTime.Now.Add(TimeSpan.FromMinutes(80)) });
                 Application.App.TraceInfo("TestFormGrid", "InitGControl", "AddRow done");
 
                 scope.Result = "OK";
@@ -141,27 +141,39 @@ namespace Djs.Common.TestGUI
             this.ControlsPosition();
         }
 
-        private DTypeTable<TestItem> _PrepareTableW(int rowCount)
+        private Table _PrepareTableW(string name, int rowCount)
         {
             Image[] images = _LoadImages();
             int imgPointer = 0;
             int imgCount = images.Length;
 
-            DTypeTable<TestItem> table = new DTypeTable<TestItem>();
+            Table table = new Table(name);
             using (Application.App.TraceScope("TestFormGrid", "_PrepareTable", "Start", "RowCount: " + rowCount.ToString()))
             {
+                table.AddColumns
+                    (
+                        new Column() { Title = "Klíč", ToolTip = "Klíč záznamu v tomto sloupci", Name = "key", FormatString = "0000000", Width = 60 },
+                        new Column() { Title = "Datum OD", ToolTip = "Počáteční datum směny", Name = "date_from", FormatString = "yyyy-MM-dd", Width = 80 },
+                        new Column() { Title = "Datum DO", ToolTip = "Koncové datum směny", Name = "date_to", FormatString = "yyyy-MM-dd", Width = 80 },
+                        new Column() { Title = "graf", ToolTip = "Graf vytížení", Name = "graph1", UseTimeAxis = true, Width = 180, AutoWidth = true },
+                        new Column() { Title = "Cena jednotky", ToolTip = "Jednotková cena.\r\nJe zde jen pro informaci.", Name = "price1", FormatString = "### ##0.00", Width = 80 },
+                        new Column() { Title = "Fotografie", ToolTip = "Zobrazení", Name = "image", Width = 60 }
+                    );
+
                 DateTime now = DateTime.Now.Date.AddHours(8);
                 for (int r = 0; r < rowCount; r++)
                 {
-                    TestItem row = new TestItem();
-                    row.Klic = 10 * (r + 1);
-                    row.DatumOd = now.AddMinutes(15 * r);
-                    row.DatumDo = now.AddMinutes((15 * r) + 5);
-                    row.Graf1 = this._PrepareGraph(now);
-                    row.Graf2 = "Obsah grafu 2 je neznámý";
-                    row.Price1 = (decimal)(48 + ((12 - r) % 12));
-                    row.Photo = images[imgPointer];
-                    row.RowHeight = (r % 3 == 0 ? null : (int?)(20 + ((4 * r) % 60)));
+                    int klic = 10 * (r + 1);
+                    DateTime datumOd = now.AddMinutes(15 * r);
+                    DateTime datumDo = now.AddMinutes((15 * r) + 5);
+                    GTimeGraph graph1 = this._PrepareGraph(now);
+                    double price = Math.Round((this.Rand.NextDouble() * 100000d), 2);
+                    Image image = images[imgPointer];
+                    int height = ((this.Rand.Next(0, 100) > 80) ? 65 : 25);
+
+                    Row row = new Row(klic, datumOd, datumDo, graph1, price, image);
+                    if (this.Rand.Next(0, 100) > 80)
+                        row.Height = 65;
 
                     table.AddRow(row);
 
@@ -170,9 +182,9 @@ namespace Djs.Common.TestGUI
             }
             return table;
         }
-        private DTable _PrepareTableZ(int rowCount)
+        private Table _PrepareTableZ(string name, int rowCount)
         {
-            DTable table = new DTable();
+            Table table = new Table(name);
             using (Application.App.TraceScope("TestFormGrid", "_PrepareTable", "Start", "RowCount: " + rowCount.ToString()))
             {
 
@@ -204,11 +216,14 @@ namespace Djs.Common.TestGUI
 
                 #endregion
 
-                table.AddColumn(new DColumn("GID", "Ident") { IsVisible = false, SortingEnabled = false });
-                table.AddColumn(new DColumn("image", "Foto") { IsVisible = true, SortingEnabled = false, Width = 70 });
-                table.AddColumn(new DColumn("name", "Jméno") { IsVisible = true, Width = 200, ToolTip = "Jméno pracovníka" });
-                table.AddColumn(new DColumn("profese", "Profese") { IsVisible = true, Width = 120 });
-                table.AddColumn(new DColumn("mf", "Kdo je") { IsVisible = false, Width = 50 });
+                table.AddColumns
+                    (
+                        new Column() { Name = "id", Title = "ID", IsVisible = false },
+                        new Column() { Name = "photo", Title = "Fotografie", SortingEnabled = false, Width = 45 },
+                        new Column() { Name = "nazev", Title = "Jméno", SortingEnabled = true, Width = 200 },
+                        new Column() { Name = "prof", Title = "Profese", SortingEnabled = true, Width = 150 },
+                        new Column() { Name = "gender", Title = "Rod", SortingEnabled = false, Width = 35 }
+                    );
 
                 Image[] images = _LoadImages();
 
@@ -218,13 +233,14 @@ namespace Djs.Common.TestGUI
                     Image image = images[Rand.Next(0, images.Length)];
                     string t1 = (mf == "M" ? arrayM1[Rand.Next(0, arrayM1.Length)] : arrayF1[Rand.Next(0, arrayF1.Length)]);
                     string t2 = (mf == "M" ? arrayM2[Rand.Next(0, arrayM2.Length)] : arrayF2[Rand.Next(0, arrayF2.Length)]);
-                    string name = t1 + " " + t2;
+                    string nazev = t1 + " " + t2;
                     string value = t2 + " " + t1;
-                    TextComparable tc = new TextComparable(name, value);
+                    TextComparable tc = new TextComparable(nazev, value);
 
                     string prof = arrayP[Rand.Next(0, arrayP.Length)];
 
-                    table.AddRow(new DRow(r, image, tc, prof, mf));
+                    Row row = new Row(r, image, nazev, prof, mf);
+                    table.AddRow(row);
                 }
 
             }
@@ -369,9 +385,9 @@ namespace Djs.Common.TestGUI
             return graph;
         }
         private Random Rand;
-        private DTypeTable<TestItem> _Table1;
-        private DTypeTable<TestItem> _Table2;
-        private DTable _TableZ;
+        private Table _Table1;
+        private Table _Table2;
+        private Table _TableZ;
         private GToolbar _Toolbar;
         private GGrid _GridW;
         private GGrid _GridZ;
@@ -428,53 +444,12 @@ namespace Djs.Common.TestGUI
         }
         public string Text { get; set; }
         public IComparable Value { get; set; }
-
         
-        // Summary:
-        //     Compares the current instance with another object of the same type and returns
-        //     an integer that indicates whether the current instance precedes, follows,
-        //     or occurs in the same position in the sort order as the other object.
-        //
-        // Parameters:
-        //   obj:
-        //     An object to compare with this instance.
-        //
-        // Returns:
-        //     A value that indicates the relative order of the objects being compared.
-        //     The return value has these meanings: Value Meaning Less than zero This instance
-        //     precedes obj in the sort order. Zero This instance occurs in the same position
-        //     in the sort order as obj. Greater than zero This instance follows obj in
-        //     the sort order.
-        //
-        // Exceptions:
-        //   System.ArgumentException:
-        //     obj is not the same type as this instance.
         int IComparable.CompareTo(object obj)
         {
             TextComparable other = obj as TextComparable;
             if (other == null) return 1;
             return this.Value.CompareTo(other.Value);
         }
-    }
-    public class TestItem : IVisualRow
-    {
-        [ColumnInfo(columnIndex: 0, text: "Klíč záznamu", toolTip: "Klíč popisuje klíčovou vlastnost.", width: 75, widthMin: 60, widthMax: 120, visible: false)]
-        public int Klic { get; set; }
-        [ColumnInfo(columnIndex: 1, text: "Datum OD", toolTip: "Počátek události.", width: 110)]
-        public DateTime DatumOd { get; set; }
-        [ColumnInfo(columnIndex: 2, text: "Datum DO", toolTip: "Konec události.", width: 110)]
-        public DateTime DatumDo { get; set; }
-        [ColumnInfo(columnIndex: 3, text: "Graf1", toolTip: "Graf 1", useTimeAxis: true, width: 850)]
-        public GTimeGraph Graf1 { get; set; }
-        [ColumnInfo(columnIndex: 4, text: "Graf2", toolTip: "Graf 2", width: 250, visible: false)]
-        public string Graf2 { get; set; }
-        [ColumnInfo(columnIndex: 5, text: "Cena", toolTip: "Cena 1 položky", width: 65, widthMin: 45, widthMax: 95, visible: false)]
-        public decimal Price1 { get; set; }
-        [ColumnInfo(columnIndex: 6, text: "Fotografie", toolTip: "Fotografie osoby", width: 65, widthMin: 45, widthMax: 95, visible: false)]
-        public Image Photo { get; set; }
-
-        public Int32? RowHeight { get; set; }
-        public Int32NRange RowHeightRange { get { return null; } }
-        public Color? RowBackColor { get; set; }
     }
 }
