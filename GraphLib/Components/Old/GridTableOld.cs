@@ -9,6 +9,7 @@ using Djs.Common.ComponentsOld;
 
 namespace Djs.Common.ComponentsOld.Grid
 {
+    /*
     /// <summary>
     /// One visual table with reference to visual grid and data table,
     /// contains collection of visual Columns and Rows
@@ -1851,7 +1852,7 @@ namespace Djs.Common.ComponentsOld.Grid
         /// Bounds (relative) of this GRow.
         /// Setting a value has not effect.
         /// </summary>
-        public override Rectangle Bounds { get { this.CheckRowValid(); return base.Bounds; } set { /* no effect */ } }
+        public override Rectangle Bounds { get { this.CheckRowValid(); return base.Bounds; } set { /* no effect * / } }
         /// <summary>
         /// Bounds (relative) of this GRow.
         /// Setting a value will set base.Bounds value.
@@ -2219,7 +2220,7 @@ namespace Djs.Common.ComponentsOld.Grid
             
             e.ToolTipData.TitleText = "KeyboardPreviewKeyDown";
             e.ToolTipData.InfoText = "KeyCode: " + code.ToString() + "; KeyData: " + data.ToString() + "; Action = " + action.ToString();
-            */
+            * /
         }
         protected override void AfterStateChangedKeyPress(GInteractiveChangeStateArgs e)
         {
@@ -2362,7 +2363,7 @@ namespace Djs.Common.ComponentsOld.Grid
         }
         #endregion
         #region Drag
-        protected override bool CanDrag { get { return false; /* ToDo ... */ } }
+        protected override bool CanDrag { get { return false; /* ToDo ... * / } }
         #endregion
         #region Draw
         protected override void DrawStandard(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
@@ -2577,4 +2578,5 @@ namespace Djs.Common.ComponentsOld.Grid
         internal GInteractiveDrawLayer RepaintThisToLayers { get { return this.RepaintToLayers; } set { this.RepaintToLayers = value; } }
         #endregion
     }
+    */
 }

@@ -9,16 +9,17 @@ using Djs.Common.Data;
 namespace Djs.Common.Components
 {
     /// <summary>
-    /// Base class for Axis (Time, Size).
+    /// Základní třída pro grafické prvky reprezentující osu: velikost, čas
     /// </summary>
-    /// <typeparam name="TTick">Type of Tick position (DateTime, Decimal)</typeparam>
-    /// <typeparam name="TSize">Type of Distance on Axis (TimeSpan, Decimal)</typeparam>
+    /// <typeparam name="TTick">Datový typ údaje Pozice na ose (DateTime, Decimal, Int32)</typeparam>
+    /// <typeparam name="TSize">Datový typ údaje Vzdálenost mezi dvěma pozicemi na ose (TimeSpan, Decimal, Int32)</typeparam>
+    /// <typeparam name="TValue">Datový typ intervalu, který zahrnuje oba typy TTick, TSize</typeparam>
     public abstract class GBaseAxis<TTick, TSize, TValue> : InteractiveObject, IInteractiveItem
         where TValue : BaseRange<TTick, TSize>
     {
-        #region Constructors
+        #region Konstruktory
         /// <summary>
-        /// Constructor
+        /// Konstruktor
         /// </summary>
         public GBaseAxis()
         {
@@ -28,7 +29,7 @@ namespace Djs.Common.Components
             this.PrepareAfter();
         }
         /// <summary>
-        /// ToString()
+        /// Vizualizace
         /// </summary>
         /// <returns></returns>
         public override string ToString()
@@ -36,31 +37,32 @@ namespace Djs.Common.Components
             return this.Orientation.ToString() + " " + base.ToString();
         }
         /// <summary>
-        /// Prepare a new empty value to this._Value and this._ValueHelper
+        /// Připraví výchozí data do this._Value, _ValueHelper, _ScaleHelper
         /// </summary>
         private void PrepareInitialValues()
         {
-            // Create a new empty instance for Value.
-            this._Value = this.InitialValue;                // not: GetValue(default(TTick), default(TTick));
+            this._Value = this.InitialValue;                // nebudeme dávat : GetValue(default(TTick), default(TTick)), potomek může mít jiný názor
             this._ValueHelper = this.GetValue(default(TTick), default(TTick));
             this._ScaleHelper = new SizeRange();
         }
         /// <summary>
-        /// Helper instance of BaseRange class, for calculations on axis
+        /// Pomocná instance pro interval hodnot (typicky TimeRange nebo SizeRange), pro provádění výpočtů na ose
         /// </summary>
         private TValue _ValueHelper;
         /// <summary>
-        /// Helper instance of SizeRange class, for calculations on axis
+        /// Pomocná instance pro interval SizeRange class, pro přepočty měřítka na ose
         /// </summary>
         private SizeRange _ScaleHelper;
         /// <summary>
-        /// Called at end of constructor, where all properties of BaseAxis are prepared.
-        /// Descendant can prepare its own properties. Calling method: base:PrepareAfter() is not liable.
+        /// Metoda volaná na konci konstruktoru, kdy jsou již všechny údaje v BaseAxis připravené.
+        /// Potomek si připraví svoje data nad rámec BaseRange. Volání bázové metody není nutné.
         /// </summary>
         protected virtual void PrepareAfter() { }
         /// <summary>
-        /// Prepare layout for Tooltip in situation, when ToolTip will be showed.
-        /// Is called after e.ToolTipData.InfoText is prepared (=InfoText contain valid text).
+        /// Připraví vzhled pro ToolTip, volá se před zobrazením Tooltipu.
+        /// Je voláno poté, kdy v e.ToolTipData.InfoText jsou připravena data.
+        /// Bázová metoda nastavuje: ShapeType = TooltipShapeType.Rectangle; AnimationType = TooltipAnimationType.Instant.
+        /// Potomek může mít jiný názor.
         /// </summary>
         /// <param name="e"></param>
         protected virtual void PrepareToolTip(GInteractiveChangeStateArgs e)
@@ -2699,12 +2701,12 @@ namespace Djs.Common.Components
         public T Value { get; private set; }
     }
     /// <summary>
-    /// One real tick on any Axis (without a tick value, only Type and Relative pixel)
+    /// Data popisující jeden konkrétní tick na ose, bez hodnoty Ticku, pouze jeho typ, text, relativn pixel)
     /// </summary>
     public class VisualTick
     {
         /// <summary>
-        /// Create new instance of Tick
+        /// Vytvoří instanci Ticku
         /// </summary>
         /// <param name="tickType">Type of this tick</param>
         /// <param name="value">Logical value of tick (DateTime for TimeAxis, Decimal for SizeAxis...)</param>
@@ -2748,55 +2750,101 @@ namespace Djs.Common.Components
         public AxisTickAlignment Alignment { get; private set; }
     }
     /// <summary>
-    /// Type of tick
+    /// Typ ticku, tick je čárka (nebo místo) na ose, symbolizující konkrétní hodnotu.
+    /// Podobně jako na plastovém pravítku jsou graficky odlišeny ticky pro 1mm, pro 5mm, pro 1cm, pro 10cm.
     /// </summary>
     public enum AxisTickType
     {
+        /// <summary>
+        /// Neurčeno. Symbolizuje volný pohyb po ose.
+        /// </summary>
         None = 0,
+        /// <summary>
+        /// Pixel. Nezobrazuje se, slouží k zaokrouhlování hodnoty na konkrétní pixely.
+        /// </summary>
         Pixel,
+        /// <summary>
+        /// Standardní nejmenší zobrazovaný tick, bez popisku, obdoba 1mm čárky na pravítku
+        /// </summary>
         StdTick,
+        /// <summary>
+        /// Větší zobrazovaný tick, bez popisku, obdoba 5mm čárky na pravítku
+        /// </summary>
         BigTick,
+        /// <summary>
+        /// Standardní tick s popiskem, obdoba 1cm čárky na pravítku
+        /// </summary>
         StdLabel,
+        /// <summary>
+        /// Velký tick s popiskem, obdoba 10cm čárky na pravítku
+        /// </summary>
         BigLabel,
+        /// <summary>
+        /// Okraj osy
+        /// </summary>
         OuterLabel
     }
     /// <summary>
-    /// Type of alignment of tick
+    /// Typ zarovnání ticku na ose
     /// </summary>
     public enum AxisTickAlignment
     {
+        /// <summary>
+        /// Neurčeno
+        /// </summary>
         None = 0,
+        /// <summary>
+        /// K počátku
+        /// </summary>
         Begin,
+        /// <summary>
+        /// Na střed
+        /// </summary>
         Center,
+        /// <summary>
+        /// Ke konci
+        /// </summary>
         End
     }
     /// <summary>
-    /// Axis orientation relative to data area
+    /// Orientace a umístění osy
     /// </summary>
     public enum AxisOrientation
     {
         /// <summary>
-        /// Axis is above data, on top: horizontal; smaller values on the left side, greater values on the right side; ticks are on bottom edge of axis.
+        /// Osa je vodorovná, na straně Top oblasti, kde jsou data. 
+        /// Směr osy je zleva (od menších hodnot) doprava (k větším hodnotám).
+        /// Ticky jsou zobrazeny na dolním okraji osy.
         /// </summary>
         Top = 0,
         /// <summary>
-        /// Axis is on left from data: vertical; values from bottom to top: smaller values on the bottom side, greater values on the top side; ticks are on right edge of axis.
+        /// Osa je svislá, nahoru, na straně Left oblasti, kde jsou data. 
+        /// Směr osy je zdola (od menších hodnot) nahoru (k větším hodnotám).
+        /// Ticky jsou zobrazeny na pravém okraji osy.
         /// </summary>
         LeftUp,
         /// <summary>
-        /// Axis is on left from data: vertical; values from top to bottom: smaller values on the top side, greater values on the bottom side; ticks are on right edge of axis.
+        /// Osa je svislá, dolů, na straně Left oblasti, kde jsou data. 
+        /// Směr osy je zeshora (od menších hodnot) dolů (k větším hodnotám).
+        /// Ticky jsou zobrazeny na pravém okraji osy.
         /// </summary>
         LeftDown,
         /// <summary>
-        /// Axis is on right from data: vertical; values from bottom to top: smaller values on the bottom side, greater values on the top side; ticks are on left edge of axis.
+        /// Osa je svislá, nahoru, na straně Right oblasti, kde jsou data. 
+        /// Směr osy je zdola (od menších hodnot) nahoru (k větším hodnotám).
+        /// Ticky jsou zobrazeny na levém okraji osy.
         /// </summary>
         RightUp,
         /// <summary>
-        /// Axis is on right from data: vertical; values from top to bottom: smaller values on the top side, greater values on the bottom side; ticks are on left edge of axis.
+        /// Osa je svislá, dolů, na straně Right oblasti, kde jsou data. 
+        /// Směr osy je zeshora (od menších hodnot) dolů (k větším hodnotám).
+        /// Ticky jsou zobrazeny na levém okraji osy.
         /// </summary>
         RightDown,
         /// <summary>
-        /// Axis is down from data, on bottom: horizontal; smaller values on the left side, greater values on the right side; ticks are on top edge of axis.
+        /// Osa je vodorovná, na straně Bottom oblasti, kde jsou data. 
+        /// Směr osy je zleva (od menších hodnot) doprava (k větším hodnotám).
+        /// Ticky jsou zobrazeny na horním okraji osy.
         /// </summary>
         Bottom
     }
@@ -2819,24 +2867,24 @@ namespace Djs.Common.Components
         Range
     }
     /// <summary>
-    /// Interactive state of axis
+    /// Stav interaktivity na ose
     /// </summary>
     public enum AxisInteractiveState
     {
         /// <summary>
-        /// No interactivity
+        /// Nic
         /// </summary>
         None,
         /// <summary>
-        /// Mouse over axis, no move
+        /// Myš je nad osou, osa se nijak nepohybuje
         /// </summary>
         MouseOver,
         /// <summary>
-        /// Mouse drag axis for move values
+        /// Myš táhne osu na novou pozici (Shift)
         /// </summary>
         DragMove,
         /// <summary>
-        /// Mouse zoom axis for change scale
+        /// Myš mění měřítko na novou hodnotu (Zoomování)
         /// </summary>
         DragZoom
     }

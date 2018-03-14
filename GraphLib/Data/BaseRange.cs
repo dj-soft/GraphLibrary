@@ -7,16 +7,16 @@ namespace Djs.Common.Data
 {
     #region class BaseRange : base class for all interval classes
     /// <summary>
-    /// Base class for Range (=Interval).
-    /// Has basically two properties: Begin and End; plus Size = distance from Begin to End.
-    /// Basic abstract class has two Type-parameters: TEdge is type of Edge values (Begin and End), 
-    /// and TSize is type of value of distance between Begin and End.
+    /// Základní třída pro Range (=Interval).
+    /// V zásadě má dva údaje = Begin a End, typu Edge (=hrana).
+    /// Z nich je odvozený údaj Size (=velikost), což je rozdíl End - Begin.
+    /// Může to být shodný datový typ jako Begin a End (u číslic), nebo rozdílný typ (TEdge je DateTime a TSize = TimeSpan).
     /// </summary>
-    /// <typeparam name="TEdge">TEdge is type of Edge values (Begin and End)</typeparam>
-    /// <typeparam name="TSize">TSize is type of Size value (distance between Begin and End)</typeparam>
+    /// <typeparam name="TEdge">TEdge je typ hodnot Begin a End = pozice na ose</typeparam>
+    /// <typeparam name="TSize">TSize je typ vzdálenosti mezi Begin a End = vzdálenost na ose</typeparam>
     public abstract class BaseRange<TEdge, TSize>
     {
-        #region Constructors, public properties
+        #region Konstruktory, public proměnné
         public BaseRange()
         {
             this.Begin = default(TEdge);
@@ -28,7 +28,7 @@ namespace Djs.Common.Data
             this.End = end;
         }
         /// <summary>
-        /// Hashcode from Begin and End
+        /// Hashcode pro Begin and End
         /// </summary>
         protected int HashCode
         {
@@ -40,7 +40,7 @@ namespace Djs.Common.Data
             }
         }
         /// <summary>
-        /// Visualisation
+        /// Vizualizace
         /// </summary>
         /// <returns></returns>
         public override string ToString()
@@ -48,54 +48,53 @@ namespace Djs.Common.Data
             return this.TTickToText(this.Begin) + " ÷ " + this.TTickToText(this.End);
         }
         /// <summary>
-        /// Begin of interval
+        /// Počátek intervalu
         /// </summary>
         public TEdge Begin { get; protected set; }
         /// <summary>
-        /// End of interval
+        /// Konec intervalu
         /// </summary>
         public TEdge End { get; protected set; }
         /// <summary>
-        /// Contain center point between Begin and End.
+        /// Středový bod intervalu
         /// </summary>
         public TEdge Center { get { return Add(Begin, Multiply(Size, 0.5m)); } }
         /// <summary>
-        /// Contains distance from Begin to End. Positive distance is where End is bigger than Begin.
+        /// Velikost intervalu = rozdíl End - Begin
         /// </summary>
         public TSize Size { get { return this.SubSize(this.End, this.Begin); } }
         /// <summary>
-        /// true, when Begin has value. Value of End is not tested.
+        /// true, pokud Begin má hodnotu (není Empty)
         /// </summary>
         public bool HasBegin { get { return (!this.IsEmptyEdge(this.Begin)); } }
         /// <summary>
-        /// true, when End has value. Value of Begin is not tested.
+        /// true, pokud End má hodnotu (není Empty)
         /// </summary>
         public bool HasEnd { get { return (!this.IsEmptyEdge(this.End)); } }
         /// <summary>
-        /// true when Begin and End has not values (booth is empty)
+        /// true, pokud Begin ani End nemají hodnotu (oba jsou Empty)
         /// </summary>
         public bool IsEmpty { get { return (!this.HasBegin && !this.HasEnd); } }
         /// <summary>
-        /// true when Begin and End has values (booth is filled)
+        /// true, pokud Begin i End mají hodnotu (žádný není Empty)
         /// </summary>
         public bool IsFilled { get { return (this.HasBegin && this.HasEnd); } }
         /// <summary>
-        /// true, when Begin has value ane End has not value
+        /// true, pokud pouze Begin má hodnotu, kdežto End hodnotu nemá
         /// </summary>
         public bool HasOnlyBegin { get { return (this.HasBegin && !this.HasEnd); } }
         /// <summary>
-        /// true, when End has value ane Begin has not value
+        /// true, pokud pouze End má hodnotu, kdežto begin hodnotu nemá
         /// </summary>
         public bool HasOnlyEnd { get { return (!this.HasBegin && this.HasEnd); } }
         /// <summary>
-        /// Contains true, when this is filled, and Begin is smaller or equal to End.<para/>
-        /// Contains true, when this is empty, or half-filled (has only begin or end).<para/>
-        /// Contains false, when this is filled, but Begin is greater than End.
+        /// Obsahuje true, pokud Begin je menší než End (v případě, že jsou oba naplněny).
+        /// Obsahuje true, pokud jeden nebo oba údaje (Begin, End) jsou prázdné = pak je interval neomezený.
+        /// Obsahuje false pouze v případě, že oba údaje (Begin, End) jsou naplněny, a přitom Begin je větší než End = nereálný rozsah intervalu.
         /// </summary>
         public bool IsReal { get { return (this.IsFilled ? (this.CompareEdge(this.Begin, this.End) <= 0) : true); } }
         /// <summary>
-        /// Contains true, only when this is filled, and Begin is equal to End.<para/>
-        /// Contains false, when this is empty, or half-filled, or (this is filled and Begin is not equal to End).
+        /// Obsahuje true, pouze pokud Begin i End mají hodnotu a obě hodnoty jsou shodné.
         /// </summary>
         public bool IsPoint { get { return (this.IsFilled ? (this.CompareEdge(this.Begin, this.End) == 0) : false); } }
         #endregion
@@ -867,10 +866,10 @@ namespace Djs.Common.Data
     #endregion
     #region class Vector
     /// <summary>
-    /// Base class for Vector.
-    /// Has basically two properties: Point and Direction.
+    /// Základní třída pro Vektor na ose.
+    /// Má základn dvě proměnné: Point (generický) a směr = Direction (enum s hodnotami Positive, None, Negative).
     /// </summary>
-    /// <typeparam name="TPoint">TPoint is type of Point value</typeparam>
+    /// <typeparam name="TPoint">TPoint je typ bodu na hodnotové ose</typeparam>
     public abstract class BaseVector<TPoint>
     {
         #region Constructors, public properties

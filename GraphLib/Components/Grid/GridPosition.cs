@@ -4,10 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Drawing;
 using Djs.Common.Data;
-using Djs.Common.Data.Old;
 
 namespace Djs.Common.Components.Grid.Out
 {
+    /*
     #region GridPositions, GridPositionSet, GridPositionItem : position of all columns, tables, rows in GGrid
     /// <summary>
     /// GridPositions : position of all columns and tables in GGrid
@@ -397,7 +397,7 @@ namespace Djs.Common.Components.Grid.Out
         public int ItemHeaderSize
         {
             get { return (this.WithHeader ? this._ItemHeader.Size : 0); }
-            set { if (this.WithHeader) this._ItemHeader.Size = value /* causing Invalidate() through Item.Size_set() */ ; }
+            set { if (this.WithHeader) this._ItemHeader.Size = value /* causing Invalidate() through Item.Size_set() * / ; }
         }
         /// <summary>
         /// Offset for Visual values.
@@ -705,4 +705,5 @@ namespace Djs.Common.Components.Grid.Out
     }
     #endregion
     #endregion
+    */
 }

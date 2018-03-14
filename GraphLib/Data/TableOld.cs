@@ -5,10 +5,10 @@ using System.Text;
 using Djs.Common.Components;
 using System.Drawing;
 
-namespace Djs.Common.Data.Old
+namespace Djs.Common.Data
 {
     // This file contain Data items (Non-Visual) for Graphical Grid. This classes is used in application for data collections and for link data to visual Grid
-
+    /*
     #region DTable
     /// <summary>
     /// DTable : container for one table (set of Columns + set of Rows)
@@ -791,4 +791,5 @@ namespace Djs.Common.Data.Old
         Descending = 2
     }
     #endregion
+    */
 }

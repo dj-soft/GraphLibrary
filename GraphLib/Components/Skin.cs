@@ -63,17 +63,15 @@ namespace Djs.Common.Components
         /// Color items for Grid (BackColor, TextColorLabelBig, TextColorLabelStandard, LineColorTickBig, LineColorTickStandard, ...)
         /// </summary>
         public static SkinGridSet Grid { get { return Instance._Grid; } }
-
         /// <summary>
-        /// All colors, for configuration
+        /// All items, for configuration
         /// </summary>
-        public static IEnumerable<KeyValuePair<string, Color>> AllColorValues { get { return Instance._Palette; } }
+        public static IEnumerable<KeyValuePair<string, object>> AllSkinItems { get { return Instance._ValueDict.ToArray(); } }
         #endregion
         #region Create Skin and SkinSets
         private Skin()
         {
-            this._Palette = new Dictionary<string, Color>();
-            this._Images = new Dictionary<string, Image>();
+            this._ValueDict = new Dictionary<string, object>();
 
             var methods = this.GetType().GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             foreach (var method in methods)
@@ -116,77 +114,41 @@ namespace Djs.Common.Components
         private SkinProgressSet _Progress;
         private SkinAxisSet _Axis;
         private SkinGridSet _Grid;
-        private Dictionary<string, Color> _Palette;
-        private Dictionary<string, Image> _Images;
+        private Dictionary<string, object> _ValueDict;
         #endregion
-        #region Get and Set Colors
+        #region Get and Set Values
         /// <summary>
-        /// Get color from palette for SkinKey and ColorKey.
+        /// Vrátí objekt typu T z úschovny
         /// </summary>
         /// <param name="skinSetKey"></param>
-        /// <param name="colorKey"></param>
-        /// <param name="defaultColor"></param>
+        /// <param name="valueKey"></param>
+        /// <param name="defaultValue"></param>
         /// <returns></returns>
-        internal Color GetColor(string skinSetKey, string colorKey, Color defaultColor)
+        internal T GetValue<T>(string skinSetKey, string valueKey, T defaultValue)
         {
-            string key = skinSetKey + "." + colorKey;
-            Color value;
-            if (!this._Palette.TryGetValue(key, out value))
+            string key = skinSetKey + "." + valueKey;
+            object value;
+            if (!this._ValueDict.TryGetValue(key, out value))
             {
-                value = defaultColor;
-                this._Palette.Add(key, value);
+                value = defaultValue;
+                this._ValueDict.Add(key, value);
             }
-            return value;
+            return (value is T ? (T)value : defaultValue);
         }
         /// <summary>
-        /// Set color to palette for SkinKey and ColorKey.
+        /// Vloží objekt typu T do úschovny
         /// </summary>
         /// <param name="skinSetKey"></param>
-        /// <param name="colorKey"></param>
-        /// <param name="color"></param>
+        /// <param name="valueKey"></param>
+        /// <param name="value"></param>
         /// <returns></returns>
-        internal void SetColor(string skinSetKey, string colorKey, Color color)
+        internal void SetValue<T>(string skinSetKey, string valueKey, T value)
         {
-            string key = skinSetKey + "." + colorKey;
-            if (!this._Palette.ContainsKey(key))
-                this._Palette.Add(key, color);
+            string key = skinSetKey + "." + valueKey;
+            if (!this._ValueDict.ContainsKey(key))
+                this._ValueDict.Add(key, value);
             else
-                this._Palette[key] = color;
-        }
-        #endregion
-        #region Get and Set Images
-        /// <summary>
-        /// Get color from palette for SkinKey and ColorKey.
-        /// </summary>
-        /// <param name="skinSetKey"></param>
-        /// <param name="imageKey"></param>
-        /// <param name="defaultImage"></param>
-        /// <returns></returns>
-        internal Image GetImage(string skinSetKey, string imageKey, Image defaultImage)
-        {
-            string key = skinSetKey + "." + imageKey;
-            Image value;
-            if (!this._Images.TryGetValue(key, out value))
-            {
-                value = defaultImage;
-                this._Images.Add(key, value);
-            }
-            return value;
-        }
-        /// <summary>
-        /// Set color to palette for SkinKey and ColorKey.
-        /// </summary>
-        /// <param name="skinSetKey"></param>
-        /// <param name="imageKey"></param>
-        /// <param name="image"></param>
-        /// <returns></returns>
-        internal void SetImage(string skinSetKey, string imageKey, Image image)
-        {
-            string key = skinSetKey + "." + imageKey;
-            if (!this._Palette.ContainsKey(key))
-                this._Images.Add(key, image);
-            else
-                this._Images[key] = image;
+                this._ValueDict[key] = value;
         }
         #endregion
         #region Get modified color by InteraciveState
@@ -678,22 +640,22 @@ namespace Djs.Common.Components
         { }
         #endregion
         #region Public colors
-        public Color MouseMoveTracking { get { return this._Owner.GetColor(this._SkinSetKey, "MouseMoveTracking", DefaultMouseMoveTracking); } set { this._Owner.SetColor(this._SkinSetKey, "MouseMoveTracking", value); } }
-        public Color MouseDragTracking { get { return this._Owner.GetColor(this._SkinSetKey, "MouseDragTracking", DefaultMouseDragTracking); } set { this._Owner.SetColor(this._SkinSetKey, "MouseDragTracking", value); } }
-        public Color BackColorBegin { get { return this._Owner.GetColor(this._SkinSetKey, "BackColorBegin", DefaultBackColorBegin); } set { this._Owner.SetColor(this._SkinSetKey, "BackColorBegin", value); } }
-        public Color BackColorEnd { get { return this._Owner.GetColor(this._SkinSetKey, "BackColorEnd", DefaultBackColorEnd); } set { this._Owner.SetColor(this._SkinSetKey, "BackColorEnd", value); } }
-        public Color BackColorHotBegin { get { return this._Owner.GetColor(this._SkinSetKey, "BackColorHotBegin", DefaultBackColorHotBegin); } set { this._Owner.SetColor(this._SkinSetKey, "BackColorHotBegin", value); } }
-        public Color BackColorHotEnd { get { return this._Owner.GetColor(this._SkinSetKey, "BackColorHotEnd", DefaultBackColorHotEnd); } set { this._Owner.SetColor(this._SkinSetKey, "BackColorHotEnd", value); } }
-        public Color BackColorDownBegin { get { return this._Owner.GetColor(this._SkinSetKey, "BackColorDownBegin", DefaultBackColorDownBegin); } set { this._Owner.SetColor(this._SkinSetKey, "BackColorDownBegin", value); } }
-        public Color BackColorDownEnd { get { return this._Owner.GetColor(this._SkinSetKey, "BackColorDownEnd", DefaultBackColorDownEnd); } set { this._Owner.SetColor(this._SkinSetKey, "BackColorDownEnd", value); } }
-        public Color BackColorDragBegin { get { return this._Owner.GetColor(this._SkinSetKey, "BackColorDragBegin", DefaultBackColorDragBegin); } set { this._Owner.SetColor(this._SkinSetKey, "BackColorDragBegin", value); } }
-        public Color BackColorDragEnd { get { return this._Owner.GetColor(this._SkinSetKey, "BackColorDragEnd", DefaultBackColorDragEnd); } set { this._Owner.SetColor(this._SkinSetKey, "BackColorDragEnd", value); } }
-        public Color BackColorDisable { get { return this._Owner.GetColor(this._SkinSetKey, "BackColorDisable", DefaultBackColorDisable); } set { this._Owner.SetColor(this._SkinSetKey, "BackColorDisable", value); } }
-        public Color BackColorShadow { get { return this._Owner.GetColor(this._SkinSetKey, "BackColorShadow", DefaultBackColorShadow); } set { this._Owner.SetColor(this._SkinSetKey, "BackColorShadow", value); } }
-        public Color TextColorHot { get { return this._Owner.GetColor(this._SkinSetKey, "TextColorHot", DefaultTextColorHot); } set { this._Owner.SetColor(this._SkinSetKey, "TextColorHot", value); } }
-        public Color TextColorDown { get { return this._Owner.GetColor(this._SkinSetKey, "TextColorDown", DefaultTextColorDown); } set { this._Owner.SetColor(this._SkinSetKey, "TextColorDown", value); } }
-        public Color TextColorDrag { get { return this._Owner.GetColor(this._SkinSetKey, "TextColorDrag", DefaultTextColorDrag); } set { this._Owner.SetColor(this._SkinSetKey, "TextColorDrag", value); } }
-        public Color TextColorDisable { get { return this._Owner.GetColor(this._SkinSetKey, "TextColorDisable", DefaultTextColorDisable); } set { this._Owner.SetColor(this._SkinSetKey, "TextColorDisable", value); } }
+        public Color MouseMoveTracking { get { return this._Owner.GetValue(this._SkinSetKey, "MouseMoveTracking", DefaultMouseMoveTracking); } set { this._Owner.SetValue(this._SkinSetKey, "MouseMoveTracking", value); } }
+        public Color MouseDragTracking { get { return this._Owner.GetValue(this._SkinSetKey, "MouseDragTracking", DefaultMouseDragTracking); } set { this._Owner.SetValue(this._SkinSetKey, "MouseDragTracking", value); } }
+        public Color BackColorBegin { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorBegin", DefaultBackColorBegin); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorBegin", value); } }
+        public Color BackColorEnd { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorEnd", DefaultBackColorEnd); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorEnd", value); } }
+        public Color BackColorHotBegin { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorHotBegin", DefaultBackColorHotBegin); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorHotBegin", value); } }
+        public Color BackColorHotEnd { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorHotEnd", DefaultBackColorHotEnd); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorHotEnd", value); } }
+        public Color BackColorDownBegin { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorDownBegin", DefaultBackColorDownBegin); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorDownBegin", value); } }
+        public Color BackColorDownEnd { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorDownEnd", DefaultBackColorDownEnd); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorDownEnd", value); } }
+        public Color BackColorDragBegin { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorDragBegin", DefaultBackColorDragBegin); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorDragBegin", value); } }
+        public Color BackColorDragEnd { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorDragEnd", DefaultBackColorDragEnd); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorDragEnd", value); } }
+        public Color BackColorDisable { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorDisable", DefaultBackColorDisable); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorDisable", value); } }
+        public Color BackColorShadow { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorShadow", DefaultBackColorShadow); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorShadow", value); } }
+        public Color TextColorHot { get { return this._Owner.GetValue(this._SkinSetKey, "TextColorHot", DefaultTextColorHot); } set { this._Owner.SetValue(this._SkinSetKey, "TextColorHot", value); } }
+        public Color TextColorDown { get { return this._Owner.GetValue(this._SkinSetKey, "TextColorDown", DefaultTextColorDown); } set { this._Owner.SetValue(this._SkinSetKey, "TextColorDown", value); } }
+        public Color TextColorDrag { get { return this._Owner.GetValue(this._SkinSetKey, "TextColorDrag", DefaultTextColorDrag); } set { this._Owner.SetValue(this._SkinSetKey, "TextColorDrag", value); } }
+        public Color TextColorDisable { get { return this._Owner.GetValue(this._SkinSetKey, "TextColorDisable", DefaultTextColorDisable); } set { this._Owner.SetValue(this._SkinSetKey, "TextColorDisable", value); } }
         #endregion
         #region Default colors
         protected virtual Color DefaultMouseMoveTracking { get { return Color.FromArgb(96, Color.LightYellow); } }
@@ -727,8 +689,8 @@ namespace Djs.Common.Components
         { }
         #endregion
         #region Public colors
-        public Color OuterColor { get { return this._Owner.GetColor(this._SkinSetKey, "OuterColor", DefaultOuterColor); } set { this._Owner.SetColor(this._SkinSetKey, "OuterColor", value); } }
-        public Color InnerColor { get { return this._Owner.GetColor(this._SkinSetKey, "InnerColor", DefaultInnerColor); } set { this._Owner.SetColor(this._SkinSetKey, "InnerColor", value); } }
+        public Color OuterColor { get { return this._Owner.GetValue(this._SkinSetKey, "OuterColor", DefaultOuterColor); } set { this._Owner.SetValue(this._SkinSetKey, "OuterColor", value); } }
+        public Color InnerColor { get { return this._Owner.GetValue(this._SkinSetKey, "InnerColor", DefaultInnerColor); } set { this._Owner.SetValue(this._SkinSetKey, "InnerColor", value); } }
         #endregion
         #region Default colors
         protected virtual Color DefaultOuterColor { get { return Color.FromArgb(8, 192, 192, 192); } }
@@ -747,12 +709,18 @@ namespace Djs.Common.Components
         { }
         #endregion
         #region Public colors
-        public Color BackColor { get { return this._Owner.GetColor(this._SkinSetKey, "BackColor", DefaultBackColor); } set { this._Owner.SetColor(this._SkinSetKey, "BackColor", value); } }
-        public Color TextColor { get { return this._Owner.GetColor(this._SkinSetKey, "TextColor", DefaultTextColor); } set { this._Owner.SetColor(this._SkinSetKey, "TextColor", value); } }
+        public Color BackColor { get { return this._Owner.GetValue(this._SkinSetKey, "BackColor", DefaultBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "BackColor", value); } }
+        public Color TextColor { get { return this._Owner.GetValue(this._SkinSetKey, "TextColor", DefaultTextColor); } set { this._Owner.SetValue(this._SkinSetKey, "TextColor", value); } }
+        public Color Effect3DDark { get { return this._Owner.GetValue(this._SkinSetKey, "Effect3DDark", DefaultEffect3DDark); } set { this._Owner.SetValue(this._SkinSetKey, "Effect3DDark", value); } }
+        public Color Effect3DLight { get { return this._Owner.GetValue(this._SkinSetKey, "Effect3DLight", DefaultEffect3DLight); } set { this._Owner.SetValue(this._SkinSetKey, "Effect3DLight", value); } }
+        public float Effect3DRatio { get { return this._Owner.GetValue(this._SkinSetKey, "Effect3DRatio", DefaultEffect3DRatio); } set { this._Owner.SetValue(this._SkinSetKey, "Effect3DRatio", value); } }
         #endregion
         #region Default colors
         protected virtual Color DefaultBackColor { get { return Color.LightGray; } }
         protected virtual Color DefaultTextColor { get { return Color.Black; } }
+        protected virtual Color DefaultEffect3DDark { get { return Color.DarkGray; } }
+        protected virtual Color DefaultEffect3DLight { get { return Color.White; } }
+        protected virtual float DefaultEffect3DRatio { get { return 0.25f; } }
         #endregion
     }
     /// <summary>
@@ -767,10 +735,10 @@ namespace Djs.Common.Components
         { }
         #endregion
         #region Public colors
-        public Color BorderColor { get { return this._Owner.GetColor(this._SkinSetKey, "BorderColor", DefaultBorderColor); } set { this._Owner.SetColor(this._SkinSetKey, "BorderColor", value); } }
-        public Color BackColor { get { return this._Owner.GetColor(this._SkinSetKey, "BackColor", DefaultBackColor); } set { this._Owner.SetColor(this._SkinSetKey, "BackColor", value); } }
-        public Color TitleColor { get { return this._Owner.GetColor(this._SkinSetKey, "TitleColor", DefaultTitleColor); } set { this._Owner.SetColor(this._SkinSetKey, "TitleColor", value); } }
-        public Color InfoColor { get { return this._Owner.GetColor(this._SkinSetKey, "InfoColor", DefaultInfoColor); } set { this._Owner.SetColor(this._SkinSetKey, "InfoColor", value); } }
+        public Color BorderColor { get { return this._Owner.GetValue(this._SkinSetKey, "BorderColor", DefaultBorderColor); } set { this._Owner.SetValue(this._SkinSetKey, "BorderColor", value); } }
+        public Color BackColor { get { return this._Owner.GetValue(this._SkinSetKey, "BackColor", DefaultBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "BackColor", value); } }
+        public Color TitleColor { get { return this._Owner.GetValue(this._SkinSetKey, "TitleColor", DefaultTitleColor); } set { this._Owner.SetValue(this._SkinSetKey, "TitleColor", value); } }
+        public Color InfoColor { get { return this._Owner.GetValue(this._SkinSetKey, "InfoColor", DefaultInfoColor); } set { this._Owner.SetValue(this._SkinSetKey, "InfoColor", value); } }
         #endregion
         #region Default colors
         protected virtual Color DefaultBorderColor { get { return Color.DimGray; } }
@@ -791,14 +759,14 @@ namespace Djs.Common.Components
         { }
         #endregion
         #region Public colors
-        public Color BorderColor { get { return this._Owner.GetColor(this._SkinSetKey, "BorderColor", DefaultBorderColor); } set { this._Owner.SetColor(this._SkinSetKey, "BorderColor", value); } }
-        public Color BackColor { get { return this._Owner.GetColor(this._SkinSetKey, "BackColor", DefaultBackColor); } set { this._Owner.SetColor(this._SkinSetKey, "BackColor", value); } }
-        public Color TextColor { get { return this._Owner.GetColor(this._SkinSetKey, "TextColor", DefaultTextColor); } set { this._Owner.SetColor(this._SkinSetKey, "TextColor", value); } }
-        public Color ItemBackColor { get { return this._Owner.GetColor(this._SkinSetKey, "ItemBackColor", DefaultItemBackColor); } set { this._Owner.SetColor(this._SkinSetKey, "ItemBackColor", value); } }
-        public Color ItemBorderColor { get { return this._Owner.GetColor(this._SkinSetKey, "ItemBorderColor", DefaultItemBorderColor); } set { this._Owner.SetColor(this._SkinSetKey, "ItemBorderColor", value); } }
-        public Color TitleBackColor { get { return this._Owner.GetColor(this._SkinSetKey, "TitleBackColor", DefaultTitleBackColor); } set { this._Owner.SetColor(this._SkinSetKey, "TitleBackColor", value); } }
-        public Color SeparatorLightColor { get { return this._Owner.GetColor(this._SkinSetKey, "SeparatorLightColor", DefaultSeparatorLightColor); } set { this._Owner.SetColor(this._SkinSetKey, "SeparatorLightColor", value); } }
-        public Color SeparatorDarkColor { get { return this._Owner.GetColor(this._SkinSetKey, "SeparatorDarkColor", DefaultSeparatorDarkColor); } set { this._Owner.SetColor(this._SkinSetKey, "SeparatorDarkColor", value); } }
+        public Color BorderColor { get { return this._Owner.GetValue(this._SkinSetKey, "BorderColor", DefaultBorderColor); } set { this._Owner.SetValue(this._SkinSetKey, "BorderColor", value); } }
+        public Color BackColor { get { return this._Owner.GetValue(this._SkinSetKey, "BackColor", DefaultBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "BackColor", value); } }
+        public Color TextColor { get { return this._Owner.GetValue(this._SkinSetKey, "TextColor", DefaultTextColor); } set { this._Owner.SetValue(this._SkinSetKey, "TextColor", value); } }
+        public Color ItemBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "ItemBackColor", DefaultItemBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "ItemBackColor", value); } }
+        public Color ItemBorderColor { get { return this._Owner.GetValue(this._SkinSetKey, "ItemBorderColor", DefaultItemBorderColor); } set { this._Owner.SetValue(this._SkinSetKey, "ItemBorderColor", value); } }
+        public Color TitleBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "TitleBackColor", DefaultTitleBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "TitleBackColor", value); } }
+        public Color SeparatorLightColor { get { return this._Owner.GetValue(this._SkinSetKey, "SeparatorLightColor", DefaultSeparatorLightColor); } set { this._Owner.SetValue(this._SkinSetKey, "SeparatorLightColor", value); } }
+        public Color SeparatorDarkColor { get { return this._Owner.GetValue(this._SkinSetKey, "SeparatorDarkColor", DefaultSeparatorDarkColor); } set { this._Owner.SetValue(this._SkinSetKey, "SeparatorDarkColor", value); } }
         #endregion
         #region Default colors
         protected virtual Color DefaultBorderColor { get { return Color.DimGray; } }
@@ -823,9 +791,9 @@ namespace Djs.Common.Components
         { }
         #endregion
         #region Public colors
-        public Color BorderColor { get { return this._Owner.GetColor(this._SkinSetKey, "BorderColor", DefaultBorderColor); } set { this._Owner.SetColor(this._SkinSetKey, "BorderColor", value); } }
-        public Color BackColor { get { return this._Owner.GetColor(this._SkinSetKey, "BackColor", DefaultBackColor); } set { this._Owner.SetColor(this._SkinSetKey, "BackColor", value); } }
-        public Color TextColor { get { return this._Owner.GetColor(this._SkinSetKey, "TextColor", DefaultTextColor); } set { this._Owner.SetColor(this._SkinSetKey, "TextColor", value); } }
+        public Color BorderColor { get { return this._Owner.GetValue(this._SkinSetKey, "BorderColor", DefaultBorderColor); } set { this._Owner.SetValue(this._SkinSetKey, "BorderColor", value); } }
+        public Color BackColor { get { return this._Owner.GetValue(this._SkinSetKey, "BackColor", DefaultBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "BackColor", value); } }
+        public Color TextColor { get { return this._Owner.GetValue(this._SkinSetKey, "TextColor", DefaultTextColor); } set { this._Owner.SetValue(this._SkinSetKey, "TextColor", value); } }
         #endregion
         #region Default colors
         protected virtual Color DefaultBorderColor { get { return Color.DimGray; } }
@@ -845,9 +813,9 @@ namespace Djs.Common.Components
         { }
         #endregion
         #region Public colors
-        public Color BackColorArea { get { return this._Owner.GetColor(this._SkinSetKey, "BackColorArea", DefaultBackColorArea); } set { this._Owner.SetColor(this._SkinSetKey, "BackColorArea", value); } }
-        public Color BackColorButton { get { return this._Owner.GetColor(this._SkinSetKey, "BackColorButton", DefaultBackColorButton); } set { this._Owner.SetColor(this._SkinSetKey, "BackColorButton", value); } }
-        public Color TextColorButton { get { return this._Owner.GetColor(this._SkinSetKey, "TextColorButton", DefaultTextColor); } set { this._Owner.SetColor(this._SkinSetKey, "TextColorButton", value); } }
+        public Color BackColorArea { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorArea", DefaultBackColorArea); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorArea", value); } }
+        public Color BackColorButton { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorButton", DefaultBackColorButton); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorButton", value); } }
+        public Color TextColorButton { get { return this._Owner.GetValue(this._SkinSetKey, "TextColorButton", DefaultTextColor); } set { this._Owner.SetValue(this._SkinSetKey, "TextColorButton", value); } }
         #endregion
         #region Default colors
         protected virtual Color DefaultBackColorArea { get { return Color.FromArgb(255, 160, 160, 160); } }
@@ -867,11 +835,11 @@ namespace Djs.Common.Components
         { }
         #endregion
         #region Public colors
-        public Color BackColorWindow { get { return this._Owner.GetColor(this._SkinSetKey, "BackColorWindow", DefaultBackColorWindow); } set { this._Owner.SetColor(this._SkinSetKey, "BackColorWindow", value); } }
-        public Color TextColorWindow { get { return this._Owner.GetColor(this._SkinSetKey, "TextColorWindow", DefaultTextColorWindow); } set { this._Owner.SetColor(this._SkinSetKey, "TextColorWindow", value); } }
-        public Color BackColorProgress { get { return this._Owner.GetColor(this._SkinSetKey, "BackColorProgress", DefaultBackColorProgress); } set { this._Owner.SetColor(this._SkinSetKey, "BackColorProgress", value); } }
-        public Color DataColorProgress { get { return this._Owner.GetColor(this._SkinSetKey, "DataColorProgress", DefaultDataColorProgress); } set { this._Owner.SetColor(this._SkinSetKey, "DataColorProgress", value); } }
-        public Color TextColorProgress { get { return this._Owner.GetColor(this._SkinSetKey, "TextColorProgress", DefaultTextColorProgress); } set { this._Owner.SetColor(this._SkinSetKey, "TextColorProgress", value); } }
+        public Color BackColorWindow { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorWindow", DefaultBackColorWindow); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorWindow", value); } }
+        public Color TextColorWindow { get { return this._Owner.GetValue(this._SkinSetKey, "TextColorWindow", DefaultTextColorWindow); } set { this._Owner.SetValue(this._SkinSetKey, "TextColorWindow", value); } }
+        public Color BackColorProgress { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorProgress", DefaultBackColorProgress); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorProgress", value); } }
+        public Color DataColorProgress { get { return this._Owner.GetValue(this._SkinSetKey, "DataColorProgress", DefaultDataColorProgress); } set { this._Owner.SetValue(this._SkinSetKey, "DataColorProgress", value); } }
+        public Color TextColorProgress { get { return this._Owner.GetValue(this._SkinSetKey, "TextColorProgress", DefaultTextColorProgress); } set { this._Owner.SetValue(this._SkinSetKey, "TextColorProgress", value); } }
         #endregion
         #region Default colors
         protected virtual Color DefaultBackColorWindow { get { return Color.FromArgb(255, 64, 128, 128); } }
@@ -893,12 +861,12 @@ namespace Djs.Common.Components
         { }
         #endregion
         #region Public colors
-        public Color BackColor { get { return this._Owner.GetColor(this._SkinSetKey, "BackColor", DefaultBackColor); } set { this._Owner.SetColor(this._SkinSetKey, "BackColor", value); } }
-        public Color TextColorLabelBig { get { return this._Owner.GetColor(this._SkinSetKey, "TextColorLabelBig", DefaultTextColorLabelBig); } set { this._Owner.SetColor(this._SkinSetKey, "TextColorLabelBig", value); } }
-        public Color TextColorLabelStandard { get { return this._Owner.GetColor(this._SkinSetKey, "TextColorLabelStandard", DefaultTextColorLabelStandard); } set { this._Owner.SetColor(this._SkinSetKey, "TextColorLabelStandard", value); } }
-        public Color LineColorTickBig { get { return this._Owner.GetColor(this._SkinSetKey, "LineColorTickBig", DefaultLineColorTickBig); } set { this._Owner.SetColor(this._SkinSetKey, "LineColorTickBig", value); } }
-        public Color LineColorTickStandard { get { return this._Owner.GetColor(this._SkinSetKey, "LineColorTickStandard", DefaultLineColorTickStandard); } set { this._Owner.SetColor(this._SkinSetKey, "LineColorTickStandard", value); } }
-        public Color TextColorArrangement { get { return this._Owner.GetColor(this._SkinSetKey, "TextColorArrangement", DefaultTextColorArrangement); } set { this._Owner.SetColor(this._SkinSetKey, "TextColorArrangement", value); } }
+        public Color BackColor { get { return this._Owner.GetValue(this._SkinSetKey, "BackColor", DefaultBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "BackColor", value); } }
+        public Color TextColorLabelBig { get { return this._Owner.GetValue(this._SkinSetKey, "TextColorLabelBig", DefaultTextColorLabelBig); } set { this._Owner.SetValue(this._SkinSetKey, "TextColorLabelBig", value); } }
+        public Color TextColorLabelStandard { get { return this._Owner.GetValue(this._SkinSetKey, "TextColorLabelStandard", DefaultTextColorLabelStandard); } set { this._Owner.SetValue(this._SkinSetKey, "TextColorLabelStandard", value); } }
+        public Color LineColorTickBig { get { return this._Owner.GetValue(this._SkinSetKey, "LineColorTickBig", DefaultLineColorTickBig); } set { this._Owner.SetValue(this._SkinSetKey, "LineColorTickBig", value); } }
+        public Color LineColorTickStandard { get { return this._Owner.GetValue(this._SkinSetKey, "LineColorTickStandard", DefaultLineColorTickStandard); } set { this._Owner.SetValue(this._SkinSetKey, "LineColorTickStandard", value); } }
+        public Color TextColorArrangement { get { return this._Owner.GetValue(this._SkinSetKey, "TextColorArrangement", DefaultTextColorArrangement); } set { this._Owner.SetValue(this._SkinSetKey, "TextColorArrangement", value); } }
         
         #endregion
         #region Default colors
@@ -922,23 +890,23 @@ namespace Djs.Common.Components
         { }
         #endregion
         #region Public colors
-        public Color HeaderBackColor { get { return this._Owner.GetColor(this._SkinSetKey, "HeaderBackColor", DefaultHeaderBackColor); } set { this._Owner.SetColor(this._SkinSetKey, "HeaderBackColor", value); } }
-        public Color HeaderTextColor { get { return this._Owner.GetColor(this._SkinSetKey, "HeaderTextColor", DefaultHeaderTextColor); } set { this._Owner.SetColor(this._SkinSetKey, "HeaderTextColor", value); } }
-        public Color HeaderLineLeftVerticalColor { get { return this._Owner.GetColor(this._SkinSetKey, "HeaderLineLeftVerticalColor", DefaultHeaderLineLeftVerticalColor); } set { this._Owner.SetColor(this._SkinSetKey, "HeaderLineLeftVerticalColor", value); } }
-        public Color HeaderLineRightVerticalColor { get { return this._Owner.GetColor(this._SkinSetKey, "HeaderLineRightVerticalColor", DefaultHeaderLineRightVerticalColor); } set { this._Owner.SetColor(this._SkinSetKey, "HeaderLineRightVerticalColor", value); } }
-        public Color HeaderLineHorizontalColor { get { return this._Owner.GetColor(this._SkinSetKey, "HeaderLineHorizontalColor", DefaultHeaderLineHorizontalColor); } set { this._Owner.SetColor(this._SkinSetKey, "HeaderLineHorizontalColor", value); } }
-        public Color TableBackColor { get { return this._Owner.GetColor(this._SkinSetKey, "TableBackColor", DefaultTableBackColor); } set { this._Owner.SetColor(this._SkinSetKey, "TableBackColor", value); } }
-        public Color RowBackColor { get { return this._Owner.GetColor(this._SkinSetKey, "RowBackColor", DefaultRowBackColor); } set { this._Owner.SetColor(this._SkinSetKey, "RowBackColor", value); } }
-        public Color RowTextColor { get { return this._Owner.GetColor(this._SkinSetKey, "RowTextColor", DefaultRowTextColor); } set { this._Owner.SetColor(this._SkinSetKey, "RowTextColor", value); } }
-        public Color SelectedRowBackColor { get { return this._Owner.GetColor(this._SkinSetKey, "SelectedRowBackColor", DefaultSelectedRowBackColor); } set { this._Owner.SetColor(this._SkinSetKey, "SelectedRowBackColor", value); } }
-        public Color SelectedRowTextColor { get { return this._Owner.GetColor(this._SkinSetKey, "SelectedRowTextColor", DefaultSelectedRowTextColor); } set { this._Owner.SetColor(this._SkinSetKey, "SelectedRowTextColor", value); } }
-        public Color FocusRowBackColor { get { return this._Owner.GetColor(this._SkinSetKey, "FocusRowBackColor", DefaultFocusRowBackColor); } set { this._Owner.SetColor(this._SkinSetKey, "FocusRowTextColor", value); } }
-        public Color FocusRowTextColor { get { return this._Owner.GetColor(this._SkinSetKey, "FocusRowTextColor", DefaultFocusRowTextColor); } set { this._Owner.SetColor(this._SkinSetKey, "TextColorLabelBig", value); } }
-        public Color HorizontalLineColor { get { return this._Owner.GetColor(this._SkinSetKey, "HorizontalLineColor", DefaultHorizontalLineColor); } set { this._Owner.SetColor(this._SkinSetKey, "HorizontalLineColor", value); } }
-        public Color VerticalLineColor { get { return this._Owner.GetColor(this._SkinSetKey, "VerticalLineColor", DefaultVerticalLineColor); } set { this._Owner.SetColor(this._SkinSetKey, "VerticalLineColor", value); } }
-        public Image SortAscendingImage { get { return this._Owner.GetImage(this._SkinSetKey, "SortAscendingImage", DefaultSortAscendingImage); } set { this._Owner.SetImage(this._SkinSetKey, "SortAscendingImage", value); } }
-        public Image SortDescendingImage { get { return this._Owner.GetImage(this._SkinSetKey, "SortDescendingImage", DefaultSortDescendingImage); } set { this._Owner.SetImage(this._SkinSetKey, "SortDescendingImage", value); } }
-        public Image RowSelectedImage { get { return this._Owner.GetImage(this._SkinSetKey, "RowSelectedImage", DefaultRowSelectedImage); } set { this._Owner.SetImage(this._SkinSetKey, "RowSelectedImage", value); } }
+        public Color HeaderBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "HeaderBackColor", DefaultHeaderBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "HeaderBackColor", value); } }
+        public Color HeaderTextColor { get { return this._Owner.GetValue(this._SkinSetKey, "HeaderTextColor", DefaultHeaderTextColor); } set { this._Owner.SetValue(this._SkinSetKey, "HeaderTextColor", value); } }
+        public Color HeaderLineLeftVerticalColor { get { return this._Owner.GetValue(this._SkinSetKey, "HeaderLineLeftVerticalColor", DefaultHeaderLineLeftVerticalColor); } set { this._Owner.SetValue(this._SkinSetKey, "HeaderLineLeftVerticalColor", value); } }
+        public Color HeaderLineRightVerticalColor { get { return this._Owner.GetValue(this._SkinSetKey, "HeaderLineRightVerticalColor", DefaultHeaderLineRightVerticalColor); } set { this._Owner.SetValue(this._SkinSetKey, "HeaderLineRightVerticalColor", value); } }
+        public Color HeaderLineHorizontalColor { get { return this._Owner.GetValue(this._SkinSetKey, "HeaderLineHorizontalColor", DefaultHeaderLineHorizontalColor); } set { this._Owner.SetValue(this._SkinSetKey, "HeaderLineHorizontalColor", value); } }
+        public Color TableBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "TableBackColor", DefaultTableBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "TableBackColor", value); } }
+        public Color RowBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "RowBackColor", DefaultRowBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "RowBackColor", value); } }
+        public Color RowTextColor { get { return this._Owner.GetValue(this._SkinSetKey, "RowTextColor", DefaultRowTextColor); } set { this._Owner.SetValue(this._SkinSetKey, "RowTextColor", value); } }
+        public Color SelectedRowBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "SelectedRowBackColor", DefaultSelectedRowBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "SelectedRowBackColor", value); } }
+        public Color SelectedRowTextColor { get { return this._Owner.GetValue(this._SkinSetKey, "SelectedRowTextColor", DefaultSelectedRowTextColor); } set { this._Owner.SetValue(this._SkinSetKey, "SelectedRowTextColor", value); } }
+        public Color ActiveCellBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "ActiveCellBackColor;", DefaultActiveCellBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "ActiveCellBackColor;", value); } }
+        public Color ActiveCellTextColor { get { return this._Owner.GetValue(this._SkinSetKey, "ActiveCellTextColor ", DefaultActiveCellTextColor); } set { this._Owner.SetValue(this._SkinSetKey, "ActiveCellTextColor ", value); } }
+        public Color BorderLineColor { get { return this._Owner.GetValue(this._SkinSetKey, "BorderLineColor", DefaultBorderLineColor); } set { this._Owner.SetValue(this._SkinSetKey, "BorderLineColor", value); } }
+        public BorderLinesType BorderLineType { get { return this._Owner.GetValue(this._SkinSetKey, "BorderLineType", DefaultBorderLineType); } set { this._Owner.SetValue(this._SkinSetKey, "BorderLineType", value); } }
+        public Image SortAscendingImage { get { return this._Owner.GetValue(this._SkinSetKey, "SortAscendingImage", DefaultSortAscendingImage); } set { this._Owner.SetValue(this._SkinSetKey, "SortAscendingImage", value); } }
+        public Image SortDescendingImage { get { return this._Owner.GetValue(this._SkinSetKey, "SortDescendingImage", DefaultSortDescendingImage); } set { this._Owner.SetValue(this._SkinSetKey, "SortDescendingImage", value); } }
+        public Image RowSelectedImage { get { return this._Owner.GetValue(this._SkinSetKey, "RowSelectedImage", DefaultRowSelectedImage); } set { this._Owner.SetValue(this._SkinSetKey, "RowSelectedImage", value); } }
         #endregion
         #region Default colors
         protected virtual Color DefaultHeaderBackColor { get { return Color.LightSkyBlue; } }
@@ -951,10 +919,10 @@ namespace Djs.Common.Components
         protected virtual Color DefaultRowTextColor { get { return Color.Black; } }
         protected virtual Color DefaultSelectedRowBackColor { get { return Color.White.Morph(Color.LightBlue, 0.65f); } }
         protected virtual Color DefaultSelectedRowTextColor { get { return Color.Black; } }
-        protected virtual Color DefaultFocusRowBackColor { get { return Color.White.Morph(Color.CadetBlue, 0.95f); } }
-        protected virtual Color DefaultFocusRowTextColor { get { return Color.White; } }
-        protected virtual Color DefaultHorizontalLineColor { get { return Color.Gray; } }
-        protected virtual Color DefaultVerticalLineColor { get { return Color.Gray; } }
+        protected virtual Color DefaultActiveCellBackColor { get { return Color.White.Morph(Color.CadetBlue, 0.95f); } }
+        protected virtual Color DefaultActiveCellTextColor { get { return Color.White; } }
+        protected virtual Color DefaultBorderLineColor { get { return Color.Gray; } }
+        protected virtual BorderLinesType DefaultBorderLineType { get { return BorderLinesType.Horizontal3DSunken | BorderLinesType.VerticalSolid; } }
         protected virtual Image DefaultSortAscendingImage { get { return IconStandard.SortAsc; } }
         protected virtual Image DefaultSortDescendingImage { get { return IconStandard.SortDesc; } }
         protected virtual Image DefaultRowSelectedImage { get { return IconStandard.RowSelected; } }

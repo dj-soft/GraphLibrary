@@ -8,7 +8,7 @@ using System.Windows.Forms;
 namespace Djs.Common.Components
 {
     /// <summary>
-    /// Extensions for Component classes
+    /// Extensions metody pro grafické třídy (z namespace System.Drawing)
     /// </summary>
     public static class DrawingExtensions
     {
@@ -1924,93 +1924,51 @@ namespace Djs.Common.Components
         BottomLeft
     }
     /// <summary>
-    /// Interactive change of position
+    /// Interaktivní změna pozice v controlu, daná klávesami (nikoli myší)
     /// </summary>
     public enum InteractivePositionAction
     {
-        /// <summary>
-        /// No action
-        /// </summary>
+        /// <summary>Není změna</summary>
         None,
-        /// <summary>
-        /// Ctrl + Home = go to first row
-        /// </summary>
+        /// <summary>Ctrl + Home = Jdi na úplně první řádek, na první sloupec</summary>
         FirstRow,
-        /// <summary>
-        /// Ctrl + PageUp = go to first currently whole visible row, no scroll
-        /// </summary>
+        /// <summary>Ctrl + PageUp = Jdi na první viditelný řádek, a pokud jsi na něm nechoď nikam jinam, nescrolluj</summary>
         TopOfPage,
-        /// <summary>
-        /// PageUp = scroll up by one page, but new row with focus is on same relative position on visible page as current row
-        /// </summary>
+        /// <summary>PageUp = jdi o stránku výše, ale v rámci stránky zůstaň na relativně podobné pozici jaká byla výchozí</summary>
         PageUp,
-        /// <summary>
-        /// Ctrl + Cursor Up = scroll up by one row, does not change row with focus (can be scrolled out of visible area)
-        /// </summary>
+        /// <summary>Ctrl + Cursor Up = posuň obsah o jeden řádek dolů (tzn. zobrazí se více toho, co je nahoře), ale neměň aktivní řádek, dokud je ve viditelné oblasti. Teprve až by se aktivní řádek dostal mimo viditelnou oblast, pak aktivuj řádek o jedna nižší = úplně dole.</summary>
         ScrollRowUp,
-        /// <summary>
-        /// Cursor Up = go to previous row, scroll if neccessary
-        /// </summary>
+        /// <summary>Cursor Up = jdi na předchozí řádek (-1), scrolluj pokud je potřeba</summary>
         RowUp,
-        /// <summary>
-        /// Cursor Down = go to next row, scroll if neccessary
-        /// </summary>
+        /// <summary>Cursor Down = jdi na následující řádek (+1), scrolluj pokud je potřeba</summary>
         RowDown,
-        /// <summary>
-        /// Ctrl + Cursor Down = scroll down by one row, does not change row with focus (can be scrolled out of visible area)
-        /// </summary>
+        /// <summary>Ctrl + Cursor Down = posuň obsah o jeden řádek nahoru (tzn. zobrazí se více toho, co je dole), ale neměň aktivní řádek, dokud je ve viditelné oblasti. Teprve až by se aktivní řádek dostal mimo viditelnou oblast, pak aktivuj řádek o jedna vyšší = úplně nahoře.</summary>
         ScrollRowDown,
-        /// <summary>
-        /// PageDown = scroll down by one page, but new row with focus is on same relative position on visible page as current row
-        /// </summary>
+        /// <summary>PageDown = jdi o stránku níže, ale v rámci stránky zůstaň na relativně podobné pozici jaká byla výchozí</summary>
         PageDown,
-        /// <summary>
-        /// Ctrl + PageDown = go to last currently whole visible row, no scroll
-        /// </summary>
+        /// <summary>Ctrl + PageDown = Jdi na poslední viditelný řádek, a pokud jsi na něm nechoď nikam jinam, nescrolluj</summary>
         EndOfPage,
-        /// <summary>
-        /// Ctrl + End = go to last row
-        /// </summary>
+        /// <summary>Ctrl + End = Jdi na úplně poslední řádek, na poslední sloupec</summary>
         LastRow,
-        /// <summary>
-        /// Mouse wheel Up = scroll up (to first row) by default row numbers
-        /// </summary>
+        /// <summary>Mouse wheel Up = scrolluj nahoru = zobraz na první pozici řádek -NN, ale neměň aktivní řádek, ten může klidně vyjet mimo viditelnou oblast.</summary>
         WheelUp,
-        /// <summary>
-        /// Mouse wheel Down = scroll down (to last row) by default row numbers
-        /// </summary>
+        /// <summary>Mouse wheel Down = scrolluj dolů = zobraz na první pozici řádek +NN, ale neměň aktivní řádek, ten může klidně vyjet mimo viditelnou oblast.</summary>
         WheelDown,
-        /// <summary>
-        /// Home = go to first column
-        /// </summary>
+        /// <summary>Home = Jdi na první sloupec</summary>
         Home,
-        /// <summary>
-        /// Ctrl+Left = go to previous group column (skip by word in text)
-        /// </summary>
+        /// <summary>Ctrl+Left = Jdi na předchozí slovo, doleva</summary>
         GroupLeft,
-        /// <summary>
-        /// Left = go to previous column
-        /// </summary>
+        /// <summary>Left = Jdi na předchozí buňku / písmeno doleva</summary>
         Left,
-        /// <summary>
-        /// Right = go to next column
-        /// </summary>
+        /// <summary>Right = Jdi na následující buňku / písmeno doprava</summary>
         Right,
-        /// <summary>
-        /// Ctrl+Right = go to next group column (skip by word in text)
-        /// </summary>
+        /// <summary>Ctrl+Right = Jdi na následující slovo, doprava</summary>
         GroupRight,
-        /// <summary>
-        /// End = go to/after last column
-        /// </summary>
+        /// <summary>End = Jdi na poslední sloupec, doprava</summary>
         End,
-        /// <summary>
-        /// Shift + Tab = go to previous keyboard control
-        /// </summary>
+        /// <summary>Shift + Tab = Jdi na předchozí Control (doleva)</summary>
         PrevControl,
-        /// <summary>
-        /// Tab = go to next keyboard control
-        /// </summary>
+        /// <summary>Tab = Jdi na následující Control (doprava)</summary>
         NextControl
     }
     #endregion

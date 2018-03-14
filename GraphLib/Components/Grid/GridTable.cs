@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Drawing;
 using Djs.Common.Data;
-using Djs.Common.Data.New;
 
 namespace Djs.Common.Components.Grid
 {
@@ -307,7 +306,7 @@ namespace Djs.Common.Components.Grid
             return a.TableOrder.CompareTo(b.TableOrder);
         }
         #endregion
-        #region Sloupce tabulky
+        #region Sloupce tabulky - dvě oddělená pole sloupců: a) všechny aktuálně dostupné sloupce - pro práci s kolekcí sloupců, b) pouze viditelné sloupce - pro kreslení
         /// <summary>
         /// Pole všech sloupců této tabulky, které mohou být zobrazeny, v tom pořadí, v jakém jsou zobrazovány.
         /// </summary>
@@ -338,7 +337,7 @@ namespace Djs.Common.Components.Grid
             if (this._VisibleColumns != null) return;
 
             List<Column> visibleColumns = new List<Column>();
-            GPosition columnsPositions = this.Grid.ColumnsPositions;
+            GridPosition columnsPositions = this.Grid.ColumnsPositions;
             Int32Range dataVisibleRange = columnsPositions.DataVisibleRange;                       // Rozmezí datových pixelů, které jsou viditelné
             foreach (Column column in this.Columns)
             {
@@ -362,13 +361,99 @@ namespace Djs.Common.Components.Grid
         /// </summary>
         private Column[] _VisibleColumns;
         #endregion
+        #region Řádky tabulky - dvě oddělená pole řádků: a) všechny aktuálně dostupné řádky - pro práci s kolekcí řádků, b) pouze viditelné řádky - pro kreslení
+        /// <summary>
+        /// Pole všech řádků této tabulky, které mohou být zobrazeny, v tom pořadí, v jakém jsou zobrazovány.
+        /// </summary>
+        public Row[] Rows { get { this._RowsCheck(); return this._Rows; } }
+        /// <summary>
+        /// Pole viditelných řádků této tabulky, které jsou nyní zčásti nebo plně viditelné, v tom pořadí, v jakém jsou zobrazovány.
+        /// </summary>
+        public Row[] VisibleRows { get { this._VisibleRowsCheck(); return this._VisibleRows; } }
+        /// <summary>
+        /// Ověří a zajistí připravenost pole Rows
+        /// </summary>
+        private void _RowsCheck()
+        {
+            Row[] rows = this._Rows;
+            bool heightValid = this._RowListHeightValid;
+            if (rows == null)
+            {
+                rows = this.DataTable.RowsSorted;                                                  // Získat viditelné řádky, setříděné
+                heightValid = false;
+            }
+            if (!heightValid)
+            {
+                SequenceLayout.SequenceLayoutCalculate(rows);                                      // Napočítat jejich ISequenceLayout.Begin a .End
+                this._RowListHeightValid = true;
+                this._VisibleRows = null;
+            }
+            if (this._Rows == null)
+                this._Rows = rows;
+        }
+        /// <summary>
+        /// Ověří a zajistí připravenost pole VisibleRows.
+        /// Viditelné řádky mají korektně nastaveny aktuální souřadnice do row.RowHeader.VisualRange, neviditelné mají RowHeader.VisualRange == null.
+        /// </summary>
+        private void _VisibleRowsCheck()
+        {
+            if (this._VisibleRows != null) return;
+
+            List<Row> visibleRows = new List<Row>();
+            GridPosition rowsPositions = this.RowsPositions;
+            Int32Range dataVisibleRange = rowsPositions.DataVisibleRange;                          // Rozmezí datových pixelů, které jsou viditelné
+            foreach (Row row in this.Rows)
+            {
+                ISequenceLayout isl = row as ISequenceLayout;
+                bool isRowVisible = SequenceLayout.IsItemVisible(isl, dataVisibleRange);           // Tento řádek je vidět?
+                row.RowHeader.VisualRange = (isRowVisible ? rowsPositions.GetVisualPosition(isl) : null);
+                if (isRowVisible)
+                    visibleRows.Add(row);
+            }
+            this._VisibleRows = visibleRows.ToArray();
+        }
+        /// <summary>
+        /// Metoda zajistí změnu výšky daného řádku, a návazné změny v interních strukturách plus překreslení
+        /// </summary>
+        /// <param name="row"></param>
+        /// <param name="height">Požadovaná šířka, může se změnit</param>
+        /// <returns></returns>
+        public bool RowResizeTo(Row row, ref int height)
+        {
+            ISequenceLayout isl = row as ISequenceLayout;
+
+            int heightOld = isl.Size;
+            isl.Size = height;
+            int heightNew = isl.Size;
+
+            bool isChanged = (heightNew != heightOld);
+            if (isChanged)
+            {
+                height = heightNew;
+                this.Invalidate(InvalidateItem.RowHeight | InvalidateItem.Paint);
+            }
+            return isChanged;
+        }
+        /// <summary>
+        /// true = hodnoty ISequenceLayout.Begin a End v řádcích jsou platné
+        /// </summary>
+        private bool _RowListHeightValid;
+        /// <summary>
+        /// Soupis všech aktuálně dostupných řádků, setříděný a vyfiltrovaný.
+        /// </summary>
+        private Row[] _Rows;
+        /// <summary>
+        /// Soupis aktuálně zobrazovaných řádků, vizuální objekty
+        /// </summary>
+        private Row[] _VisibleRows;
+        #endregion
         #region Pozicování řádků = svislé : pozicioner pro řádky, svislý scrollbar vpravo
         /// <summary>
         /// Inicializace objektů pro pozicování tabulek: TablesPositions, TablesScrollBar
         /// </summary>
         private void InitRowsPositions()
         {
-            this._RowsPositions = new GPosition(DefaultColumnHeaderHeight, 50, this._RowsPositionGetVisualSize, this._RowsPositionGetDataSize, this._GetVisualFirstPixel, this._SetVisualFirstPixel);
+            this._RowsPositions = new GridPosition(DefaultColumnHeaderHeight, 50, this._RowsPositionGetVisualSize, this._RowsPositionGetDataSize, this._GetVisualFirstPixel, this._SetVisualFirstPixel);
 
             this._RowsScrollBar = new GScrollBar() { Orientation = System.Windows.Forms.Orientation.Vertical };
             this._RowsScrollBar.ValueChanging += new GPropertyChanged<SizeRange>(RowsScrollBar_ValueChange);
@@ -377,7 +462,7 @@ namespace Djs.Common.Components.Grid
         /// <summary>
         /// Řídící prvek pro Pozice řádků
         /// </summary>
-        protected GPosition RowsPositions { get { return this._RowsPositions; } }
+        protected GridPosition RowsPositions { get { return this._RowsPositions; } }
         /// <summary>
         /// Vrací výšku prostoru pro řádky (=this.ClientSize.Height - RowsPositions.VisualFirstPixel (=výška this.DataTable.ColumnHeaderHeight))
         /// </summary>
@@ -451,7 +536,7 @@ namespace Djs.Common.Components.Grid
         /// <summary>
         /// Datový pozicioner pro řádky
         /// </summary>
-        private GPosition _RowsPositions;
+        private GridPosition _RowsPositions;
         /// <summary>
         /// Scrollbar pro řádky
         /// </summary>
@@ -461,93 +546,7 @@ namespace Djs.Common.Components.Grid
         /// </summary>
         private bool _RowsScrollBarDataValid;
         #endregion
-        #region Řádky tabulky - zde jsou uložena dvě oddělená pole řádků: a) všechny aktuálně dostupné datové řádky - pro práci s kolekcí řádků, b) pouze viditelné grafické řádky - pro kreslení
-        /// <summary>
-        /// Pole všech řádků této tabulky, které mohou být zobrazeny, v tom pořadí, v jakém jsou zobrazovány.
-        /// </summary>
-        public Row[] Rows { get { this._RowsCheck(); return this._Rows; } }
-        /// <summary>
-        /// Pole viditelných řádků této tabulky, které jsou nyní zčásti nebo plně viditelné, v tom pořadí, v jakém jsou zobrazovány.
-        /// </summary>
-        public Row[] VisibleRows { get { this._VisibleRowsCheck(); return this._VisibleRows; } }
-        /// <summary>
-        /// Ověří a zajistí připravenost pole Rows
-        /// </summary>
-        private void _RowsCheck()
-        {
-            Row[] rows = this._Rows;
-            bool heightValid = this._RowListHeightValid;
-            if (rows == null)
-            {
-                rows = this.DataTable.RowsSorted;                                                  // Získat viditelné řádky, setříděné
-                heightValid = false;
-            }
-            if (!heightValid)
-            {
-                SequenceLayout.SequenceLayoutCalculate(rows);                                      // Napočítat jejich ISequenceLayout.Begin a .End
-                this._RowListHeightValid = true;
-                this._VisibleRows = null;
-            }
-            if (this._Rows == null)
-                this._Rows = rows;
-        }
-        /// <summary>
-        /// Ověří a zajistí připravenost pole VisibleRows.
-        /// Viditelné řádky mají korektně nastaveny aktuální souřadnice do row.RowHeader.VisualRange, neviditelné mají RowHeader.VisualRange == null.
-        /// </summary>
-        private void _VisibleRowsCheck()
-        {
-            if (this._VisibleRows != null) return;
-
-            List<Row> visibleRows = new List<Row>();
-            GPosition rowsPositions = this.RowsPositions;
-            Int32Range dataVisibleRange = rowsPositions.DataVisibleRange;                          // Rozmezí datových pixelů, které jsou viditelné
-            foreach (Row row in this.Rows)
-            {
-                ISequenceLayout isl = row as ISequenceLayout;
-                bool isRowVisible = SequenceLayout.IsItemVisible(isl, dataVisibleRange);           // Tento řádek je vidět?
-                row.RowHeader.VisualRange = (isRowVisible ? rowsPositions.GetVisualPosition(isl) : null);
-                if (isRowVisible)
-                    visibleRows.Add(row);
-            }
-            this._VisibleRows = visibleRows.ToArray();
-        }
-        /// <summary>
-        /// Metoda zajistí změnu výšky daného řádku, a návazné změny v interních strukturách plus překreslení
-        /// </summary>
-        /// <param name="row"></param>
-        /// <param name="height">Požadovaná šířka, může se změnit</param>
-        /// <returns></returns>
-        public bool RowResizeTo(Row row, ref int height)
-        {
-            ISequenceLayout isl = row as ISequenceLayout;
-
-            int heightOld = isl.Size;
-            isl.Size = height;
-            int heightNew = isl.Size;
-
-            bool isChanged = (heightNew != heightOld);
-            if (isChanged)
-            {
-                height = heightNew;
-                this.Invalidate(InvalidateItem.RowHeight | InvalidateItem.Paint);
-            }
-            return isChanged;
-        }
-        /// <summary>
-        /// true = hodnoty ISequenceLayout.Begin a End v řádcích jsou platné
-        /// </summary>
-        private bool _RowListHeightValid;
-        /// <summary>
-        /// Soupis všech aktuálně dostupných řádků, setříděný a vyfiltrovaný.
-        /// </summary>
-        private Row[] _Rows;
-        /// <summary>
-        /// Soupis aktuálně zobrazovaných řádků, vizuální objekty
-        /// </summary>
-        private Row[] _VisibleRows;
-        #endregion
-        #region Řádky tabulky - posuny, aktivní řádek atd
+        #region Řádky tabulky - posuny, aktivní řádek, aktivní buňka, atd
         /// <summary>
         /// Posune oblast řádků tabulky podle dané akce.
         /// Vrací true = požadovaná akce byla provedena (tzn. akce byla vhodná pro seznam řádků) / false = akce se nás netýkala.
@@ -555,10 +554,152 @@ namespace Djs.Common.Components.Grid
         /// <param name="action"></param>
         internal bool ProcessRowAction(InteractivePositionAction action)
         {
+            bool isProcessed = false;
+            switch (action)
+            {
+                case InteractivePositionAction.FirstRow:
 
+                    isProcessed = true;
+                    break;
 
-            return false;
+            }
+
+            return isProcessed;
         }
+        /// <summary>
+        /// Aktuální aktivní řádek = ten, který by měl focus, když by focus (this.HasFocus) měla aktuální tabulka.
+        /// </summary>
+        public Row ActiveRow
+        {
+            get { return this._ActiveRow; }
+            set { this.SetActiveRow(value, EventSourceType.ApplicationCode, true); }
+        }
+        /// <summary>
+        /// Aktivní řádek
+        /// </summary>
+        private Row _ActiveRow;
+        /// <summary>
+        /// Aktivní buňka, obsahuje referenci na buňku pouze tehdy, pokud tabulka povoluje vybírat buňky (AllowSelectSingleCell). Jinak obsahuje null.
+        /// </summary>
+        public Cell ActiveCell
+        {
+            get { return (this.AllowSelectSingleCell ? this._ActiveCell : null); }
+            set { this.SetActiveCell(value, EventSourceType.ApplicationCode, true); }
+        }
+        /// <summary>
+        /// Aktivní buňka, pouze pokud tabulka povoluje vybírat buňky
+        /// </summary>
+        private Cell _ActiveCell;
+        /// <summary>
+        /// Nastaví daný řádek jako aktivní, vyvolá event ActiveRowChanged, nastaví daný řádek tak aby byl vidět
+        /// </summary>
+        /// <param name="newActiveRow"></param>
+        /// <param name="eventSource"></param>
+        /// <param name="scrollToVisible"></param>
+        protected void SetActiveRow(Row newActiveRow, EventSourceType eventSource, bool scrollToVisible)
+        {
+            // Nelze jako aktivní řádek vložit řádek z cizí tabulky:
+            if (newActiveRow != null && !Object.ReferenceEquals(newActiveRow.Table, this.DataTable)) return;
+
+            Row oldActiveRow = this._ActiveRow;
+
+            // Změna z null na null není změnou:
+            if (newActiveRow == null && oldActiveRow == null) return;
+
+            // Pokud jeden údaj je null a druhý není, je to změna:
+            bool isChange = ((newActiveRow == null) != (oldActiveRow == null));
+            if ((newActiveRow != null) && (oldActiveRow != null))
+                isChange = !Object.ReferenceEquals(newActiveRow, oldActiveRow);
+
+            if (!isChange) return;
+
+            // Je tu změna:
+            this._ActiveRow = newActiveRow;
+            this.CallActiveRowChanged(oldActiveRow, newActiveRow, eventSource);
+
+            if (scrollToVisible)
+                this.ScrollRowToVisibleArea(newActiveRow);
+        }
+        /// <summary>
+        /// Nastaví danou buňku jako aktivní, případně vyvolá event ActiveRowChanged, nastaví daný řádek tak aby byl vidět
+        /// </summary>
+        /// <param name="newActiveRow"></param>
+        /// <param name="eventSource"></param>
+        /// <param name="scrollToVisible"></param>
+        protected void SetActiveCell(Cell newActiveCell, EventSourceType eventSource, bool scrollToVisible)
+        {
+            // Nelze jako aktivní buňku vložit buňku z cizí tabulky:
+            if (newActiveCell != null && !Object.ReferenceEquals(newActiveCell.Table, this.DataTable)) return;
+
+            Cell oldActiveCell = this._ActiveCell;
+
+            // Změna z null na null není změnou:
+            if (newActiveCell == null && oldActiveCell == null) return;
+
+            // Pokud jeden údaj je null a druhý není, je to změna:
+            bool isChange = ((newActiveCell == null) != (oldActiveCell == null));
+            if ((newActiveCell != null) && (oldActiveCell != null))
+                isChange = !Object.ReferenceEquals(newActiveCell, oldActiveCell);
+
+            // Aktivovat řádek nově zadané buňky:
+            Row newActiveRow = (newActiveCell != null ? newActiveCell.Row : null);
+            this.SetActiveRow(newActiveRow, eventSource, scrollToVisible);
+
+            // Pokud tabulka nepovoluje práci s jednotlivými buňkami, pak můžeme skončit:
+            if (!this.AllowSelectSingleCell) return;
+
+            // Je tu změna:
+            this._ActiveCell = newActiveCell;
+            this.CallActiveCellChanged(oldActiveCell, newActiveCell, eventSource);
+
+            if (scrollToVisible)
+                this.ScrollColumnToVisibleArea(newActiveCell.Column);
+        }
+        /// <summary>
+        /// Nastaví daný řádek tak, aby byl viditelný = tj. zcela, ne jen zčásti (pokud to jen trochu jde).
+        /// </summary>
+        /// <param name="row"></param>
+        protected void ScrollRowToVisibleArea(Row row)
+        {
+            ISequenceLayout isl = row as ISequenceLayout;
+            bool isChange = this.RowsPositions.ScrollDataToVisible(isl);
+            if (isChange)
+                this.Invalidate(InvalidateItem.RowScroll);
+        }
+        /// <summary>
+        /// Nastaví daný sloupec tak, aby byl viditelný = tj. zcela, ne jen zčásti (pokud to jen trochu jde).
+        /// </summary>
+        /// <param name="column"></param>
+        protected void ScrollColumnToVisibleArea(Column column)
+        {
+            ISequenceLayout isl = column as ISequenceLayout;
+            bool isChange = this.Grid.ColumnsPositions.ScrollDataToVisible(isl);
+            if (isChange)
+                this.Invalidate(InvalidateItem.RowScroll);
+        }
+        /// <summary>
+        /// Vrátí true, pokud daný řádek je aktivním řádkem v této tabulce
+        /// </summary>
+        /// <param name="row"></param>
+        /// <returns></returns>
+        protected bool IsActiveRow(Row row)
+        {
+            return (row != null && this._ActiveRow != null && Object.ReferenceEquals(row, this._ActiveRow));
+        }
+        /// <summary>
+        /// Vrátí true, pokud daná buňka je aktivní buňkou v této tabulce
+        /// </summary>
+        /// <param name="cell"></param>
+        /// <returns></returns>
+        protected bool IsActiveCell(Cell cell)
+        {
+            if (!this.AllowSelectSingleCell) return false;
+            return (cell != null && this._ActiveCell != null && Object.ReferenceEquals(cell, this._ActiveCell));
+        }
+        /// <summary>
+        /// true pokud je povoleno vybírat jednotlivé buňky tabulky, false pokud celý řádek.
+        /// </summary>
+        protected bool AllowSelectSingleCell { get { return this.DataTable.AllowSelectSingleCell; } }
         #endregion
         #region Invalidace, resety, refreshe
         /// <summary>
@@ -660,7 +801,7 @@ namespace Djs.Common.Components.Grid
                 this.Grid.Invalidate(items);
         }
         #endregion
-        #region Interaktivita objektů tabulky do tabulky a dále
+        #region Interaktivita z jednotlivých objektů tabulky do grafické tabulky, a dále
         /// <summary>
         /// Provede se poté, kdy uživatel klikne na záhlaví tabulky.
         /// </summary>
@@ -677,8 +818,8 @@ namespace Djs.Common.Components.Grid
                 column.Table.ColumnHeaderClick(column);
                 if (column.AllowColumnSortByClick && column.Table.AllowColumnSortByClick)
                 {
-                    column.SortChange();
-                    this.Repaint();
+                    if (column.SortChange())
+                        this.Repaint();
                 }
             }
         }
@@ -698,7 +839,18 @@ namespace Djs.Common.Components.Grid
                 }
             }
         }
-
+        /// <summary>
+        /// Provede se poté, kdy uživatel klikne na datovou buňku.
+        /// Pokud řádek buňky není aktivní, měl by být aktivován.
+        /// Pokud buňka není aktivní, a tabulka podporuje výběr buněk, měla by být aktivována.
+        /// Po změně aktivní buňky se vyžádá překreslení tabulky.
+        /// </summary>
+        /// <param name="row">řádek</param>
+        public void CellClick(GInteractiveChangeStateArgs e, Cell cell)
+        {
+            this.SetActiveCell(cell, EventSourceType.InteractiveChanged, true);
+            this.CallActiveCellClick(cell, EventSourceType.InteractiveChanged);
+        }
         #endregion
         #region HeaderSplitter : splitter umístěný pod hlavičkou sloupců, je součástí GTable.Items
         /// <summary>
@@ -712,7 +864,7 @@ namespace Djs.Common.Components.Grid
             this._HeaderSplitter.ValueChanged += new GPropertyChanged<int>(_HeaderSplitter_LocationChange);
         }
         /// <summary>
-        /// Eventhandler události _TableSplitter.LocationChanged (došlo nebo stále dochází ke změně pozice splitteru od tabulkou)
+        /// Eventhandler události _TableSplitter.LocationChanged (došlo nebo stále dochází ke změně pozice splitteru pod tabulkou)
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -770,12 +922,11 @@ namespace Djs.Common.Components.Grid
         {
             // Vypočteme výšku tabulky:
             int value = this._TableSplitter.Value - this.Bounds.Top;
-            this.DataTable.Height = value;                           // Tady dojde ke kompletnímu vyhodnocení pravidel pro výšku Table (Minimum, Default, Range)
-            e.CorrectValue = this.DataTable.Height;                  // Pokud požadovaná hodnota (value) nebyla akceptovatelná, pak correctValue je hodnota přípustná
+            this.DataTable.Height = value;                 // Tady dojde ke kompletnímu vyhodnocení pravidel pro výšku Table (Minimum, Default, Range)
+            e.CorrectValue = this.DataTable.Height;        // Pokud požadovaná hodnota (value) nebyla akceptovatelná, pak correctValue je hodnota přípustná
             if (e.IsChangeValue)
             {
-                this.Grid.RecalculateGrid();
-                this.Grid.Repaint();
+                this.Grid.Invalidate(InvalidateItem.TableHeight);
             }
         }
         /// <summary>
@@ -815,7 +966,6 @@ namespace Djs.Common.Components.Grid
         private bool _ChildArrayValid;
         /// <summary>
         /// Zajistí platnost pole sub-itemů.
-        /// Pokud je neplatné, zavolá this.GridItemsReload()
         /// </summary>
         private void _ChildArrayCheck()
         {
@@ -934,21 +1084,6 @@ namespace Djs.Common.Components.Grid
             }
         }
         #endregion
-        #region Reakce na GUI eventy
-        /// <summary>
-        /// Is called after ColumnHeader is clicked
-        /// </summary>
-        /// <param name="columnId"></param>
-        internal void ColumnHeaderClicked(int columnId)
-        {
-            Column column;
-            if (this.DataTable.TryGetColumn(columnId, out column))
-            {
-                if (column.SortChange())
-                    this.Invalidate(InvalidateItem.RowOrder);
-            }
-        }
-        #endregion
         #region ISequenceLayout - adapter na DataTable jako implementační objekt
         int ISequenceLayout.Begin { get { return this._SequenceLayout.Begin; } set { this._SequenceLayout.Begin = value; } }
         int ISequenceLayout.Size { get { return this._SequenceLayout.Size; } set { this._SequenceLayout.Size = value; } }
@@ -969,7 +1104,7 @@ namespace Djs.Common.Components.Grid
                 this.Grid.OnChangeTimeAxis(this.TableId, columnId, e);
         }
         /// <summary>
-        /// Je voláno z GGrid, po změně hodnoty Value na některé TimeAxis na sloupci columnId (v this.Columns), ale na jiné tabulce než je this tabulka.
+        /// Není voláno z GGrid (ale bývalo), po změně hodnoty Value na některé TimeAxis na sloupci columnId (v this.Columns), ale na jiné tabulce než je this tabulka.
         /// Tato tabulka je tedy Slave, a má si změnit svoji hodnotu bez toho, aby vyvolala další event o změně hodnoty.
         /// Metoda se volá po jakékoli změně hodnot na časové ose daného sloupce v JINÉ tabulce.
         /// </summary>
@@ -999,7 +1134,7 @@ namespace Djs.Common.Components.Grid
 
         }
         #endregion
-        #region Draw
+        #region Draw : kreslení vlastní tabulky
         protected override void Draw(GInteractiveDrawArgs e)
         {
             // GTable kreslí pouze svoje vlastní pozadí (a to by si ještě měla rozmyslet, kolik ho bude, než začne malovat úplně celou plochu :-) ):
@@ -1008,28 +1143,178 @@ namespace Djs.Common.Components.Grid
 
             // Všechno ostatní (záhlaví sloupců, řádky, scrollbary, splittery) si malují Childs samy.
         }
+        #endregion
+        #region Podpora pro kreslení obsahu řádků (pozadí, gridlines)
         /// <summary>
         /// Metoda vykreslí pozadí (background) pro danou buňku jednoho řádku.
+        /// Metoda nkreslí GridLines.
         /// </summary>
         /// <param name="e"></param>
         /// <param name="cell"></param>
         /// <param name="boundsAbsolute"></param>
-        internal void DrawRowBackground(GInteractiveDrawArgs e, GCell cell, Rectangle boundsAbsolute)
+        internal void DrawRowBackground(GInteractiveDrawArgs e, Cell cell, Rectangle boundsAbsolute)
         {
-            
+            Color backColor = this.GetBackColorForCell(cell);
+            this.Host.FillRectangle(e.Graphics, boundsAbsolute, backColor);
         }
         /// <summary>
         /// Metoda vykreslí linky ohraničující danou buňku jednoho řádku.
+        /// Vykresluje se v podstatě jen dolní linka (jako Horizontal) a linka vpravo (Vertical).
+        /// Horní a levá linka se nekreslí, protože u prvního řádku / sloupce postačí Header, a u dalších řádků / sloupců je vykreslená linka z předešlého řádku.
         /// </summary>
         /// <param name="e"></param>
         /// <param name="cell"></param>
         /// <param name="boundsAbsolute"></param>
-        internal void DrawRowGridLines(GInteractiveDrawArgs e, GCell cell, Rectangle boundsAbsolute)
+        internal void DrawRowGridLines(GInteractiveDrawArgs e, Cell cell, Rectangle boundsAbsolute)
         {
+            VisualStyle style = ((IVisualMember)this.DataTable).Style;
+            Color color = style.BorderColor ?? Skin.Grid.BorderLineColor;
+            BorderLinesType linesType = style.BorderLines ?? Skin.Grid.BorderLineType;
 
+            this.Host.DrawBorder(e.Graphics, boundsAbsolute, color, linesType, true);
         }
+        /// <summary>
+        /// Vrací barvu pro vykreslení pozadí daného řádku.
+        /// Akceptuje: aktivní řádek, focus, selected.
+        /// Dále vyhodnotí VisualStyle řádku.
+        /// </summary>
+        /// <param name="row"></param>
+        /// <returns></returns>
+        public Color GetBackColorForRow(Row row)
+        {
+            if (row == null) return Skin.Grid.RowBackColor;
+            
+            // Aktivní řádek / buňka:
+            //  Pokud tabulka dovoluje aktivovat jednotlivé buňky (AllowSelectSingleCell = true), 
+            //    pak tato metoda pro aktivní řádek vrací barvu jeho neaktivních buněk.
+            //  Pokud ale tabulka aktivuje celý řádek, 
+            //    pak tato metoda pro aktivní řádek vrací barvu jeho aktivní buňky.
+            bool allowActiveCell = this.DataTable.AllowSelectSingleCell;
+            bool isActiveRow = this.IsActiveRow(row);
+            bool isActiveItem = isActiveRow && (allowActiveCell ? false : true);    // Aktivní prvek? Pokud je aktivní řádek, pak true pokud se neprovádí aktivace jednotlivých buněk (pak je celý řádek aktivní)
+            VisualStyle style = ((IVisualMember)row).Style;
+            return GetBackColor(style, row.IsSelected, isActiveRow, isActiveItem);
+        }
+        /// <summary>
+        /// Vrací barvu pro vykreslení pozadí dané buňky.
+        /// Akceptuje: aktivní řádek, buňku, focus, selected.
+        /// Dále vyhodnotí VisualStyle řádku.
+        /// </summary>
+        /// <param name="row"></param>
+        /// <returns></returns>
+        public Color GetBackColorForCell(Cell cell)
+        {
+            if (cell == null) return Skin.Grid.RowBackColor;
 
+            // Aktivní řádek / buňka:
+            //  Pokud tabulka dovoluje aktivovat jednotlivé buňky (AllowSelectSingleCell = true), 
+            //    pak tato metoda pro aktivní řádek vrací barvu jeho neaktivních buněk.
+            //  Pokud ale tabulka aktivuje celý řádek, 
+            //    pak tato metoda pro aktivní řádek vrací barvu jeho aktivní buňky.
+            Row row = cell.Row;
+            bool allowActiveCell = this.DataTable.AllowSelectSingleCell;
+            bool isActiveRow = this.IsActiveRow(row);
+            bool isActiveCell = this.IsActiveCell(cell);
+            bool isActiveItem = isActiveRow && (allowActiveCell ? isActiveCell : true); ;    // Aktivní prvek? Pokud je aktivní řádek, pak true pokud se provádí aktivace jednotlivých buněk a daná buňka je aktivní
+            VisualStyle style = ((IVisualMember)cell).Style;
+            return GetBackColor(style, row.IsSelected, isActiveRow, isActiveItem);
+        }
+        /// <summary>
+        /// Vrátí barvu pozadí pro danou definici a vizuální styl
+        /// </summary>
+        /// <param name="style"></param>
+        /// <param name="isSelected"></param>
+        /// <param name="isActiveRow"></param>
+        /// <param name="isActiveItem"></param>
+        /// <returns></returns>
+        public Color GetBackColor(VisualStyle style, bool isSelected, bool isActiveRow, bool isActiveItem)
+        {
+            // Základní barva prvku je podle jeho stavu isSelected, primárně ze stylu prvku, při nezadání barvy pak z odpovídající položky Skinu pro Grid:
+            Color baseColor = (isSelected ? (style.SelectedBackColor ?? Skin.Grid.SelectedRowBackColor) : (style.BackColor ?? Skin.Grid.RowBackColor));
 
+            // Pokud prvek není aktivní (aktivní řádek ani aktivní buňka), pak má základní barvu - bez ohledu na focus:
+            if (!isActiveRow && !isActiveItem) return baseColor;
+
+            // Pokud je aktuální prvek v aktivním řádku, nebo jde přímo o aktivní buňku, pak jeho barva je dána barvou Active:
+            Color activeColor = style.ActiveBackColor ?? Skin.Grid.ActiveCellBackColor;
+
+            // Morfování barvy aktivního prvku do barvy základní: 
+            //  pokud prvek není sám aktivní, pak jdeme jen na 67% aktivní barvy (je to aktivní řádek, ale jeho neaktivní buňky),
+            //  pokud tabulka nemá focus, pak jdeme na 50% až 33% aktivní barvy (50%=aktivní buňka, 33%=neaktivní buňky řádku)
+            float morph = (this.HasFocus ? (isActiveItem ? 1.0f : 0.6667f) : (isActiveItem ? 0.5f : 0.3333f));
+            return baseColor.Morph(activeColor, morph);
+        }
+        /// <summary>
+        /// Vrací barvu pro vykreslení textu daného řádku.
+        /// Akceptuje: aktivní řádek, focus, selected.
+        /// Dále vyhodnotí VisualStyle řádku.
+        /// </summary>
+        /// <param name="row"></param>
+        /// <returns></returns>
+        public Color GetTextColorForRow(Row row)
+        {
+            if (row == null) return Skin.Grid.RowTextColor;
+
+            // Aktivní řádek / buňka:
+            //  Pokud tabulka dovoluje aktivovat jednotlivé buňky (AllowSelectSingleCell = true), 
+            //    pak tato metoda pro aktivní řádek vrací barvu jeho neaktivních buněk.
+            //  Pokud ale tabulka aktivuje celý řádek, 
+            //    pak tato metoda pro aktivní řádek vrací barvu jeho aktivní buňky.
+            bool allowActiveCell = this.DataTable.AllowSelectSingleCell;
+            bool isActiveRow = this.IsActiveRow(row);
+            bool isActiveItem = isActiveRow && (allowActiveCell ? false : true);    // Aktivní prvek? Pokud je aktivní řádek, pak true pokud se neprovádí aktivace jednotlivých buněk (pak je celý řádek aktivní)
+            VisualStyle style = ((IVisualMember)row).Style;
+            return GetTextColor(style, row.IsSelected, isActiveRow, isActiveItem);
+        }
+        /// <summary>
+        /// Vrací barvu pro vykreslení textu dané buňky.
+        /// Akceptuje: aktivní řádek, buňku, focus, selected.
+        /// Dále vyhodnotí VisualStyle řádku.
+        /// </summary>
+        /// <param name="row"></param>
+        /// <returns></returns>
+        public Color GetTextColorForCell(Cell cell)
+        {
+            if (cell == null) return Skin.Grid.RowTextColor;
+
+            // Aktivní řádek / buňka:
+            //  Pokud tabulka dovoluje aktivovat jednotlivé buňky (AllowSelectSingleCell = true), 
+            //    pak tato metoda pro aktivní řádek vrací barvu jeho neaktivních buněk.
+            //  Pokud ale tabulka aktivuje celý řádek, 
+            //    pak tato metoda pro aktivní řádek vrací barvu jeho aktivní buňky.
+            Row row = cell.Row;
+            bool allowActiveCell = this.DataTable.AllowSelectSingleCell;
+            bool isActiveRow = this.IsActiveRow(row);
+            bool isActiveCell = this.IsActiveCell(cell);
+            bool isActiveItem = isActiveRow && (allowActiveCell ? isActiveCell : true); ;    // Aktivní prvek? Pokud je aktivní řádek, pak true pokud se provádí aktivace jednotlivých buněk a daná buňka je aktivní
+            VisualStyle style = ((IVisualMember)cell).Style;
+            return GetTextColor(style, row.IsSelected, isActiveRow, isActiveItem);
+        }
+        /// <summary>
+        /// Vrátí barvu pozadí pro danou definici a vizuální styl
+        /// </summary>
+        /// <param name="style"></param>
+        /// <param name="isSelected"></param>
+        /// <param name="isActiveRow"></param>
+        /// <param name="isActiveItem"></param>
+        /// <returns></returns>
+        public Color GetTextColor(VisualStyle style, bool isSelected, bool isActiveRow, bool isActiveItem)
+        {
+            // Základní barva prvku je podle jeho stavu isSelected, primárně ze stylu prvku, při nezadání barvy pak z odpovídající položky Skinu pro Grid:
+            Color baseColor = (isSelected ? (style.SelectedTextColor ?? Skin.Grid.SelectedRowTextColor) : (style.TextColor ?? Skin.Grid.RowTextColor));
+
+            // Pokud prvek není aktivní (aktivní řádek ani aktivní buňka), pak má základní barvu - bez ohledu na focus:
+            if (!isActiveRow && !isActiveItem) return baseColor;
+
+            // Pokud je aktuální prvek v aktivním řádku, nebo jde přímo o aktivní buňku, pak jeho barva je dána barvou Active:
+            Color activeColor = style.ActiveTextColor ?? Skin.Grid.ActiveCellTextColor;
+
+            // Morfování barvy aktivního prvku do barvy základní: 
+            //  pokud prvek není sám aktivní, pak jdeme jen na 67% aktivní barvy (je to aktivní řádek, ale jeho neaktivní buňky),
+            //  pokud tabulka nemá focus, pak jdeme na 50% až 33% aktivní barvy (50%=aktivní buňka, 33%=neaktivní buňky řádku)
+            float morph = (this.HasFocus ? (isActiveItem ? 1.0f : 0.6667f) : (isActiveItem ? 0.5f : 0.3333f));
+            return baseColor.Morph(activeColor, morph);
+        }
         #endregion
         #region Defaultní hodnoty
         /// <summary>
@@ -1041,8 +1326,28 @@ namespace Djs.Common.Components.Grid
         /// </summary>
         public int DefaultRowHeaderWidth { get { return 25; } }
         #endregion
+        #region Převolávač událostí z GTable do DataTable
+        protected void CallActiveRowChanged(Row oldActiveRow, Row newActiveRow, EventSourceType eventSource)
+        {
+            ITableEventTarget target = (this.DataTable as ITableEventTarget);
+            if (target != null)
+                target.CallActiveRowChanged(oldActiveRow, newActiveRow, eventSource, !this.IsSupressedEvent);
+        }
+        protected void CallActiveCellChanged(Cell oldActiveCell, Cell newActiveCell, EventSourceType eventSource)
+        {
+            ITableEventTarget target = (this.DataTable as ITableEventTarget);
+            if (target != null)
+                target.CallActiveCellChanged(oldActiveCell, oldActiveCell, eventSource, !this.IsSupressedEvent);
+        }
+        protected void CallActiveCellClick(Cell cell, EventSourceType eventSource)
+        {
+            ITableEventTarget target = (this.DataTable as ITableEventTarget);
+            if (target != null)
+                target.CallActiveCellClick(cell, eventSource, !this.IsSupressedEvent);
+        }
+        #endregion
     }
-    #region Třídy GHeader, GColumnHeader, GRowHeader
+    #region Třídy GHeader : GTableHeader, GColumnHeader, GRowHeader
     /// <summary>
     /// GHeader : vizuální třída pro zobrazování záhlaví tabulky, a předek pro třídy zobrazující záhlaví sloupce a řádku.
     /// </summary>
@@ -1884,7 +2189,7 @@ namespace Djs.Common.Components.Grid
         /// </summary>
         protected TableAreaType HeaderType { get { return TableAreaType.Data; } }
         #endregion
-        #region Interactivity
+        #region Interaktivita
         protected override void AfterStateChanged(GInteractiveChangeStateArgs e)
         {
             base.AfterStateChanged(e);
@@ -1925,6 +2230,15 @@ namespace Djs.Common.Components.Grid
             e.ToolTipData.InfoText = "KeyCode: " + code.ToString() + "; KeyData: " + data.ToString() + "; Action = " + action.ToString();
             */
         }
+        /// <summary>
+        /// Uživatel klikl do této buňky
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void AfterStateChangedLeftClick(GInteractiveChangeStateArgs e)
+        {
+            base.AfterStateChangedLeftClick(e);
+            this.OwnerGTable.CellClick(e, this.OwnerCell);
+        }
         #endregion
         #region Draw
         protected override void Draw(GInteractiveDrawArgs e)
@@ -1935,7 +2249,7 @@ namespace Djs.Common.Components.Grid
             this.DrawContent(e, boundsAbsolute);
 
             // GridLines:
-            this.OwnerGTable.DrawRowGridLines(e, this, boundsAbsolute);
+            this.OwnerGTable.DrawRowGridLines(e, this.OwnerCell, boundsAbsolute);
         }
         /// <summary>
         /// Vykreslí obsah této buňky podle jejího druhu, jako text nebo jako graf nebo jako obrázek.
@@ -1966,7 +2280,7 @@ namespace Djs.Common.Components.Grid
         private void DrawNull(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
         {
             // Pozadí řádku:
-            this.OwnerGTable.DrawRowBackground(e, this, boundsAbsolute);
+            this.OwnerGTable.DrawRowBackground(e, this.OwnerCell, boundsAbsolute);
         }
         /// <summary>
         /// Vykreslí obsah this buňky pomocí její vlastní metody IDrawItem.Draw()
@@ -2021,7 +2335,7 @@ namespace Djs.Common.Components.Grid
         private void DrawContentImage(GInteractiveDrawArgs e, Rectangle boundsAbsolute, Image image)
         {
             // Pozadí řádku:
-            this.OwnerGTable.DrawRowBackground(e, this, boundsAbsolute);
+            this.OwnerGTable.DrawRowBackground(e, this.OwnerCell, boundsAbsolute);
 
             if (image == null) return;
             Size size = image.Size;
@@ -2038,26 +2352,30 @@ namespace Djs.Common.Components.Grid
         private void DrawContentText(GInteractiveDrawArgs e, Rectangle boundsAbsolute, object value)
         {
             // Pozadí řádku:
-            this.OwnerGTable.DrawRowBackground(e, this, boundsAbsolute);
+            this.OwnerGTable.DrawRowBackground(e, this.OwnerCell, boundsAbsolute);
 
             // Obsah řádku:
             string formatString = this.OwnerColumn.FormatString;
+            ContentAlignment textAlignment;
+            string text = GetText(value, formatString, out textAlignment);
 
             VisualStyle style = ((IVisualMember)this.OwnerCell).Style;
-            ContentAlignment alignment = style.ContentAlignment ?? ContentAlignment.MiddleLeft;
+            ContentAlignment alignment = style.ContentAlignment ?? textAlignment;
+            FontInfo font = style.Font ?? FontInfo.Default;
+            Color textColor = this.OwnerGTable.GetTextColorForCell(this.OwnerCell);
 
-            string text = GetText(value, formatString, ref alignment);
-            GPainter.DrawString(e.Graphics, boundsAbsolute, text, Color.Black, FontInfo.Default, alignment);
+            GPainter.DrawString(e.Graphics, boundsAbsolute, text, textColor, font, alignment);
         }
         /// <summary>
-        /// Evaluate specified object to string, detect alignment by type
+        /// Převede danou hodnotu (obsah buňky) na string s využitím formátovacího řetězce, a podle konkrétního datového typu určí výchozí zarovnání.
         /// </summary>
         /// <param name="value"></param>
         /// <param name="formatString"></param>
         /// <param name="alignment"></param>
         /// <returns></returns>
-        private static string GetText(object value, string formatString, ref ContentAlignment alignment)
+        private static string GetText(object value, string formatString, out ContentAlignment alignment)
         {
+            alignment = ContentAlignment.MiddleLeft;
             if (value == null) return "";
 
             bool hasFormatString = (!String.IsNullOrEmpty(formatString));
@@ -2089,11 +2407,6 @@ namespace Djs.Common.Components.Grid
 
             return value.ToString();
         }
-        /// <summary>
-        /// internal access to this.RepaintToLayers value.
-        /// Set this value to Standard layer after interactive (!) change of any of visual properties.
-        /// </summary>
-        internal GInteractiveDrawLayer RepaintThisToLayers { get { return this.RepaintToLayers; } set { this.RepaintToLayers = value; } }
         #endregion
     }
     #endregion
@@ -2130,101 +2443,4 @@ namespace Djs.Common.Components.Grid
         HorizontalScrollBar
     }
     #endregion
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    class xxxx
-    { 
-
-
-        
-        #region Draw, support for draw for GCell
-        protected override void DrawStandard(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
-        {
-            Rectangle bounds = boundsAbsolute; //.Enlarge(-1, -1, -1, -1);
-
-            this.DrawBackground(e, bounds);
-
-            Rectangle boundsClient = this.GetAbsoluteClientArea(); // .BoundsClient;
-            boundsClient.Width = boundsClient.Width - 2;
-            this.DrawBorders(e, boundsClient, true, false);
-        }
-        /// <summary>
-        /// Draw background (=fill background) for this row, in specified absolute bounds
-        /// </summary>
-        /// <param name="e"></param>
-        /// <param name="boundsAbsolute"></param>
-        internal void DrawBackground(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
-        {
-            Color backColor = this.BackColorCurent;
-            this.Host.FillRectangle(e.Graphics, boundsAbsolute, this.BackColorCurent);
-            // e.Graphics.FillRectangle(Brushes.White, boundsAbsolute);
-            // GPainter.DrawAreaBase(e.Graphics, boundsAbsolute, backColor, System.Windows.Forms.Orientation.Horizontal, null, null);
-        }
-        internal void DrawBorders(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawHorizontal, bool drawVertical)
-        {
-            if (drawVertical)
-            {
-                e.Graphics.DrawLine(Pens.DarkGray, boundsAbsolute.Right - 1, boundsAbsolute.Y, boundsAbsolute.Right - 1, boundsAbsolute.Bottom - 1);   // Right line
-            }
-            if (drawHorizontal)
-            {
-                Pen pen = (this.HasFocus ? Pens.LightGoldenrodYellow : Pens.DarkBlue);
-                e.Graphics.DrawLine(pen, boundsAbsolute.X, boundsAbsolute.Bottom - 1, boundsAbsolute.Right - 1, boundsAbsolute.Bottom - 1);  // Bottom line
-                if (this.HasFocus)
-                    e.Graphics.DrawLine(pen, boundsAbsolute.X, boundsAbsolute.Y + 1, boundsAbsolute.Right - 1, boundsAbsolute.Y + 1);        // Top line
-            }
-        }
-        /// <summary>
-        /// internal access to this.RepaintToLayers value.
-        /// Set this value to Standard layer after interactive (!) change of any of visual properties.
-        /// </summary>
-        internal GInteractiveDrawLayer RepaintThisToLayers { get { return this.RepaintToLayers; } set { this.RepaintToLayers = value; } }
-        /// <summary>
-        /// Row has focus
-        /// </summary>
-        internal bool RowHasFocus { get { return this.HasFocus; } }
-        internal bool RowIsSelected { get { return this._RowIsSelected; } } private bool _RowIsSelected;
-        /// <summary>
-        /// BackColor for this Row, by its State (Focus, Selected, etc)
-        /// </summary>
-        internal Color ForeColorCurent
-        {
-            get
-            {
-                if (this.RowHasFocus) return Skin.Grid.FocusRowTextColor;
-                if (this.RowIsSelected) return Skin.Grid.SelectedRowTextColor;
-                return Skin.Grid.RowTextColor;
-            }
-        }
-        /// <summary>
-        /// BackColor for this Row, by its State (Focus, Selected, etc)
-        /// </summary>
-        internal Color BackColorCurent
-        {
-            get
-            {
-                if (this.RowHasFocus) return Skin.Grid.FocusRowBackColor;
-                if (this.RowIsSelected) return Skin.Grid.SelectedRowBackColor;
-                return Skin.Grid.RowBackColor;
-            }
-        }
-        #endregion
-    }
-   
-
 }

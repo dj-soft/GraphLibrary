@@ -629,7 +629,7 @@ namespace Djs.Common.Data
         /// </summary>
         protected static Int32Range Helper { get { if (((object)_Helper) == null) _Helper = new Int32Range(); return _Helper; } } private static Int32Range _Helper;
         #endregion
-        #region Operators
+        #region Operátory *   +   ==   !=
         public static Int32Range operator *(Int32Range a, Int32Range b)
         {
             Int32 begin, end;
@@ -649,6 +649,33 @@ namespace Djs.Common.Data
         public static bool operator !=(Int32Range a, Int32Range b)
         {
             return !Helper.IsEqual(a, b);
+        }
+        #endregion
+        #region Komparátory nad rámec BaseRange
+        /// <summary>
+        /// Vrátí true, pokud this interval je umístěn zcela v daném rozmezí (parametr range).
+        /// Tedy this je menší nebo nanejvýš stejně veliký jak range, a jeho Begin i End jsou v daném rozmezí.
+        /// Pokud velikost (Size) intervalu this nebo intervalu range je menší než 0, pak vrací false.
+        /// </summary>
+        /// <param name="range">Rozsah, do něhož se má this interval vejít</param>
+        /// <returns></returns>
+        public bool IsAllWithin(Int32Range range)
+        {
+            if (this.Size < 0 || range == null || range.Size < 0) return false;
+            return (range.Begin >= this.Begin && range.End <= this.End);
+        }
+        /// <summary>
+        /// Vrátí true, pokud this interval je umístěn částečně v daném rozmezí (parametr range).
+        /// Tedy když průnik obou intervalů má velikost větší než 0.
+        /// Pokud velikost (Size) intervalu this nebo intervalu range je menší než 0, pak vrací false.
+        /// </summary>
+        /// <param name="range">Rozsah, se kterým se má this interval překrývat</param>
+        /// <returns></returns>
+        public bool IsPartlyWithin(Int32Range range)
+        {
+            if (this.Size < 0 || range == null || range.Size < 0) return false;
+            Int32Range result = this * range;
+            return (result.Size > 0);
         }
         #endregion
         #region Static services - Round, Equal, HasIntersect, Compare
@@ -749,7 +776,7 @@ namespace Djs.Common.Data
         public override decimal Divide(int a, int b) { return a / b; }
         public override bool IsEmptyEdge(int value) { return false; }
         public override bool IsEmptySize(int value) { return false; }
-        public override int Multiply(int size, decimal ratio) { return (int)(Math.Round((decimal)size* ratio, 0); }
+        public override int Multiply(int size, decimal ratio) { return (int)(Math.Round((decimal)size * ratio, 0)); }
         public override int SubEdge(int end, int size) { return end - size; }
         public override int SubSize(int a, int b) { return a - b; }
         protected override string TSizeToText(int size) { return size.ToString(); }

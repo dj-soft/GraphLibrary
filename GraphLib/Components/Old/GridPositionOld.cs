@@ -7,6 +7,7 @@ using Djs.Common.Data;
 
 namespace Djs.Common.ComponentsOld.Grid
 {
+    /*
     #region GridPositions, GridPositionSet, GridPositionItem : position of all columns, tables, rows in GGrid
     /// <summary>
     /// GridPositions : position of all columns and tables in GGrid
@@ -398,7 +399,7 @@ namespace Djs.Common.ComponentsOld.Grid
         public int ItemHeaderSize
         {
             get { return (this.WithHeader ? this._ItemHeader.Size : 0); }
-            set { if (this.WithHeader) this._ItemHeader.Size = value /* causing Invalidate() through Item.Size_set() */ ; }
+            set { if (this.WithHeader) this._ItemHeader.Size = value /* causing Invalidate() through Item.Size_set() * / ; }
         }
         /// <summary>
         /// Offset for Visual values.
@@ -725,4 +726,5 @@ namespace Djs.Common.ComponentsOld.Grid
     }
     #endregion
     #endregion
+    */
 }

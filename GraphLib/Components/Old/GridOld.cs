@@ -10,6 +10,8 @@ using Djs.Common.ComponentsOld.Grid;
 // This file contain Visual items for Graphical Grid (all classes are InteractiveObject, is used in GGrid class for visualisation of Grid data
 namespace Djs.Common.ComponentsOld
 {
+    /*
+
     /// <summary>
     /// GGrid : Visual container for show one or more GTable, with synchronized ColumnsWidths
     /// </summary>
@@ -553,7 +555,7 @@ namespace Djs.Common.ComponentsOld
             /*
             foreach (IInteractiveItem item in this.Childs)
                 item.Draw(e);
-            */
+            * /
         }
         /// <summary>
         /// internal access to this.RepaintToLayers value.
@@ -580,7 +582,7 @@ namespace Djs.Common.ComponentsOld
        - Vodorovný Splitter pod prostorem řádků, pouze u tabulek které NEJSOU poslední (=pod splitterem začíná další tabulka)
      - Vodorovný ScrollBar dole, určuje vodorovný offset (Y) pro sloupce, nachází se dole v gridu, začíná za sloupcem RowHeader, končí před svislými scrollbary
     
-    */
+    * /
         #endregion
         #region GGridColumnSet + GGridColumn                  comment out !!!
         /*
@@ -784,8 +786,8 @@ namespace Djs.Common.ComponentsOld
             public bool IsLast { get { return (this.NextItem == null); } }
             #endregion
         }
-        */
+        * /
         #endregion
     }
-
+    */
 }

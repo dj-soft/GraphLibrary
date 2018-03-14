@@ -373,7 +373,13 @@ namespace Djs.Common.Components
     /// <param name="e"></param>
     public delegate void GInteractiveDrawHandler(object sender, GInteractiveDrawArgs e);
     /// <summary>
-    /// Delegate for handlers of property value changed event in GInteractiveControl
+    /// Delegát pro handlery události, kdy došlo k nějaké akci na určitém objektu v GInteractiveControl
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
+    public delegate void GPropertyEvent<T>(object sender, GPropertyEventArgs<T> e);
+    /// <summary>
+    /// Delegát pro handlery události, kdy došlo ke změně hodnoty na GInteractiveControl
     /// </summary>
     /// <param name="sender"></param>
     /// <param name="e"></param>
@@ -385,22 +391,47 @@ namespace Djs.Common.Components
     /// <param name="e"></param>
     public delegate void GUserDrawHandler(object sender, GUserDrawArgs e);
     /// <summary>
-    /// Data for handlers of event of change value on any property in GInteractiveControl
+    /// Data pro eventhandler navázaný na událost na určitém objektu v GInteractiveControl
+    /// </summary>
+    public class GPropertyEventArgs<T> : EventArgs
+    {
+        public GPropertyEventArgs(EventSourceType eventSource, T value)
+        {
+            this.EventSource = eventSource;
+            this.Value = value;
+            this.Cancel = false;
+        }
+        /// <summary>
+        /// Zdroj události
+        /// </summary>
+        public EventSourceType EventSource { get; private set; }
+        /// <summary>
+        /// Objekt, kde došlo k události
+        /// </summary>
+        public T Value { get; private set; }
+        /// <summary>
+        /// Požadavek aplikačního kódu na zrušení návazností této akce
+        /// Výchozí hodnota je false.
+        /// </summary>
+        public bool Cancel { get; set; }
+    }
+    /// <summary>
+    /// Data pro eventhandler navázaný na změnu nějaké hodnoty v GInteractiveControl
     /// </summary>
     public class GPropertyChangeArgs<T> : EventArgs
     {
-        public GPropertyChangeArgs(EventSourceType sourceType, T oldvalue, T newValue)
+        public GPropertyChangeArgs(EventSourceType eventSource, T oldvalue, T newValue)
         {
-            this.SourceType = sourceType;
+            this.EventSource = eventSource;
             this.OldValue = oldvalue;
             this.NewValue = newValue;
             this.CorrectValue = newValue;
             this.Cancel = false;
         }
         /// <summary>
-        /// Specifies the source that caused this change
+        /// Zdroj události
         /// </summary>
-        public EventSourceType SourceType { get; private set; }
+        public EventSourceType EventSource { get; private set; }
         /// <summary>
         /// Hodnota platná před změnou
         /// </summary>
@@ -1241,4 +1272,145 @@ namespace Djs.Common.Components
         InteractiveChanged = 0x2000
     }
     #endregion
+    #region Vizuální styly : interface IVisualMember, class VisualStyle, enum BorderLinesType
+    /// <summary>
+    /// Prvek s vizuálním stylem, šířkou a výškou
+    /// </summary>
+    public interface IVisualMember
+    {
+        /// <summary>
+        /// Aktuální vizuální styl pro tento prvek. Nesmí být null.
+        /// Prvek sám ve své implementaci může kombinovat svůj vlastní styl se styly svých parentů, ve vhodném pořadí.
+        /// Prvek by měl pro získání aktuálního stylu využívat metodu:
+        /// VisualStyle.CreateFrom(this.VisualStyle, this.Parent.VisualStyle, this.Parent.Parent.VisualStyle, ...);
+        /// Tato metoda nikdy nevrací null, vždy vrátí new instanci, v níž jsou sečtené první NotNull hodnoty z dodané sekvence stylů 
+        /// = tím je zajištěna "dědičnost" hodnoty z prapředka, v kombinaci s možností zadání detailního stylu v detailním prvku.
+        /// </summary>
+        VisualStyle Style { get; }
+    }
+    /// <summary>
+    /// Vizuální styl: shrnuje sadu vizuálních údajů pro vykreslení prvku, a umožňuje je kombinovat v řetězci parentů
+    /// </summary>
+    public class VisualStyle
+    {
+        /// <summary>
+        /// Vytvoří a vrátí new instanci VisualStyle, v níž budou jednotlivé property naplněny hodnotami z dodaných instancí.
+        /// Slouží k vyhodnocení řetězce od explicitních údajů (zadaných do konkrétního prvku) až po defaultní (zadané např. v konfiguraci).
+        /// Dodané instance se vyhodnocují v pořadá od první do poslední, hodnoty null se přeskočí.
+        /// Logika: hodnota do každé jednotlivé property výsledné instance se převezme z nejbližšího dodaného objektu, kde tato hodnota není null.
+        /// </summary>
+        /// <param name="styles"></param>
+        /// <returns></returns>
+        public static VisualStyle CreateFrom(params VisualStyle[] styles)
+        {
+            VisualStyle result = new VisualStyle();
+            foreach (VisualStyle style in styles)
+                result._AddFrom(style);
+            return result;
+        }
+        /// <summary>
+        /// Do this instance vloží potřebné hodnoty z dodané instance.
+        /// Dodaná instance může být null, pak se nic neprovádí.
+        /// Plní se jen takové property v this, které obsahují null.
+        /// </summary>
+        /// <param name="style"></param>
+        private void _AddFrom(VisualStyle style)
+        {
+            if (style != null)
+            {
+                if (this.Font == null) this.Font = style.Font;
+                if (!this.ContentAlignment.HasValue) this.ContentAlignment = style.ContentAlignment;
+                if (!this.BackColor.HasValue) this.BackColor = style.BackColor;
+                if (!this.TextColor.HasValue) this.TextColor = style.TextColor;
+                if (!this.SelectedBackColor.HasValue) this.SelectedBackColor = style.SelectedBackColor;
+                if (!this.SelectedTextColor.HasValue) this.SelectedTextColor = style.SelectedTextColor;
+                if (!this.ActiveBackColor.HasValue) this.ActiveBackColor = style.ActiveBackColor;
+                if (!this.ActiveTextColor.HasValue) this.ActiveTextColor = style.ActiveTextColor;
+                if (!this.BorderColor.HasValue) this.BorderColor = style.BorderColor;
+                if (!this.BorderLines.HasValue) this.BorderLines = style.BorderLines;
+
+            }
+        }
+        /// <summary>
+        /// Informace o fontu
+        /// </summary>
+        public FontInfo Font { get; set; }
+        /// <summary>
+        /// Zarovnání obsahu
+        /// </summary>
+        public ContentAlignment? ContentAlignment { get; set; }
+        /// <summary>
+        /// Barva pozadí v prvku (řádek, buňka) pokud není Selected, a není to aktivní položka (řádek tabulky), prostě běžný prvek (řádek)
+        /// </summary>
+        public Color? BackColor { get; set; }
+        /// <summary>
+        /// Barva textu v prvku (řádek, buňka) pokud není Selected, a není to aktivní položka (řádek tabulky), prostě běžný prvek (řádek)
+        /// </summary>
+        public Color? TextColor { get; set; }
+        /// <summary>
+        /// Barva pozadí v prvku (řádek, buňka) pokud je Selected, a není to aktivní položka (řádek tabulky)
+        /// </summary>
+        public Color? SelectedBackColor { get; set; }
+        /// <summary>
+        /// Barva textu v prvku (řádek, buňka) pokud je Selected, a není to aktivní položka (řádek tabulky)
+        /// </summary>
+        public Color? SelectedTextColor { get; set; }
+        /// <summary>
+        /// Barva pozadí v prvku (řádek, buňka) pokud je tento prvek aktivní (řádek je vybraný) a v jeho controlu je focus.
+        /// Po odchodu focusu z tohoto prvku je barva prvku změněna na 50% směrem k barvě BackColor nebo SelectedBackColor.
+        /// </summary>
+        public Color? ActiveBackColor { get; set; }
+        /// <summary>
+        /// Barva písma v prvku (řádek, buňka) pokud je tento prvek aktivní (řádek je vybraný) a v jeho controlu je focus.
+        /// Po odchodu focusu z tohoto prvku je barva prvku změněna na 50% směrem k barvě TextColor nebo SelectedTextColor.
+        /// </summary>
+        public Color? ActiveTextColor { get; set; }
+        /// <summary>
+        /// Barva okrajů prvku.
+        /// </summary>
+        public Color? BorderColor { get; set; }
+        /// <summary>
+        /// Styl linek okrajů prvku
+        /// </summary>
+        public BorderLinesType? BorderLines { get; set; }
+
+    }
+    /// <summary>
+    /// Typ čáry při kreslení Borders, hodnoty lze sčítat
+    /// </summary>
+    [Flags]
+    public enum BorderLinesType
+    {
+        /// <summary>Žádné</summary>
+        None = 0,
+
+        /// <summary>Vodorovné = tečkovaná čára</summary>
+        HorizontalDotted = 1,
+        /// <summary>Vodorovné = plná čára</summary>
+        HorizontalSolid = HorizontalDotted << 1,
+        /// <summary>Vodorovné = plná čára s barevným 3D efektem Sunken (jakoby potopený dolů)</summary>
+        Horizontal3DSunken = HorizontalSolid << 1,
+        /// <summary>Vodorovné = plná čára s barevným 3D efektem Risen (jakoby vystupující nahoru)</summary>
+        Horizontal3DRisen = Horizontal3DSunken << 1,
+
+        /// <summary>Svislé = tečkovaná čára</summary>
+        VerticalDotted = Horizontal3DRisen << 1,
+        /// <summary>Svislé = plná čára</summary>
+        VerticalSolid = VerticalDotted << 1,
+        /// <summary>Svislé = plná čára s barevným 3D efektem Sunken (jakoby potopený dolů)</summary>
+        Vertical3DSunken = VerticalSolid << 1,
+        /// <summary>Svislé = plná čára s barevným 3D efektem Risen (jakoby vystupující nahoru)</summary>
+        Vertical3DRisen = Vertical3DSunken << 1,
+
+        /// <summary>Obě čáry tečkované, bez 3D efektu</summary>
+        AllDotted = HorizontalDotted | VerticalDotted,
+        /// <summary>Obě čáry plné, bez 3D efektu</summary>
+        AllSolid = HorizontalSolid | VerticalSolid,
+        /// <summary>Obě čáry s barevným 3D efektem Sunken (jakoby potopený dolů)</summary>
+        All3DSunken = Horizontal3DSunken | Vertical3DSunken,
+        /// <summary>Obě čáry s barevným 3D efektem Risen (jakoby vystupující nahoru)</summary>
+        All3DRisen = Horizontal3DRisen | Vertical3DRisen
+    }
+    #endregion
+
 }

@@ -6,7 +6,7 @@ using Djs.Common.Components;
 using System.Drawing;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace Djs.Common.Data.New
+namespace Djs.Common.Data
 {
     // Tento soubor obsahuje datové prvky pro tabulku s daty. 
     // To jest: Tabulka, Sloupec, Řádek, Buňka. 
@@ -19,7 +19,7 @@ namespace Djs.Common.Data.New
     /// <summary>
     /// Table : jedna tabulka s daty (sada Column + Row)
     /// </summary>
-    public class Table : IVisualMember, ISequenceLayout, IContentValidity
+    public class Table : IVisualMember, ISequenceLayout, IContentValidity, ITableEventTarget
     {
         #region Konstruktor, Inicializace
         /// <summary>
@@ -529,7 +529,6 @@ namespace Djs.Common.Data.New
         /// <returns></returns>
         protected bool RowFilterApply(Row row) { return true; }
         #endregion
-
         #region GUI vlastnosti
         /// <summary>
         /// Zadaná výška tabulky. S touto výškou bude tabulka zobrazena uživateli. Uživatel může / nemůže výšku tabulky měnit (podle situace v gridu).
@@ -723,6 +722,10 @@ namespace Djs.Common.Data.New
         /// </summary>
         public bool AllowRowSelectByClick { get { return this._AllowRowSelectByClick; } set { this._AllowRowSelectByClick = value; } } private bool _AllowRowSelectByClick = true;
         /// <summary>
+        /// true pokud je povoleno vybírat jednotlivé buňky tabulky, false pokud celý řádek. Default = false;
+        /// </summary>
+        public bool AllowSelectSingleCell { get { return this._AllowSelectSingleCell; } set { this._AllowSelectSingleCell = value; } } private bool _AllowSelectSingleCell = false;
+        /// <summary>
         /// Image použitý pro zobrazení Selected řádku v prostoru RowHeader. Default = IconStandard.RowSelected;
         /// </summary>
         public Image SelectedRowImage { get { return this._SelectedRowImage; } set { this._SelectedRowImage = value; } } private Image _SelectedRowImage = IconStandard.RowSelected;
@@ -820,15 +823,62 @@ namespace Djs.Common.Data.New
                 return VisualStyle.CreateFrom(this.VisualStyle);
             }
         }
-        Int32? IVisualMember.Width { get { return null; } }
-        Int32? IVisualMember.Height { get { return null; } }
         #endregion
         #region ITableValidity
         bool IContentValidity.DataIsValid { get { return _RowDataIsValid; } set { _RowDataIsValid = value; } } private bool _RowDataIsValid;
         bool IContentValidity.RowLayoutIsValid { get { return _RowLayoutIsValid; } set { _RowLayoutIsValid = value; } } private bool _RowLayoutIsValid;
         bool IContentValidity.ColumnLayoutIsValid { get { return _ColumnLayoutIsValid; } set { _ColumnLayoutIsValid = value; } } private bool _ColumnLayoutIsValid;
         #endregion
-      
+        #region Eventy vyvolávané z grafické vrstvy
+        /// <summary>
+        /// Obsluha události Změna aktivního řádku
+        /// </summary>
+        /// <param name="oldActiveRow"></param>
+        /// <param name="newActiveRow"></param>
+        /// <param name="eventSource"></param>
+        /// <param name="callEvents"></param>
+        void ITableEventTarget.CallActiveRowChanged(Row oldActiveRow, Row newActiveRow, EventSourceType eventSource, bool callEvents)
+        {
+            GPropertyChangeArgs<Row> args = new GPropertyChangeArgs<Row>(eventSource, oldActiveRow, newActiveRow);
+            this.OnActiveRowChanged(args);
+            if (callEvents && this.ActiveRowChanged != null)
+                this.ActiveRowChanged(this, args);
+        }
+        protected virtual void OnActiveRowChanged(GPropertyChangeArgs<Row> args) { }
+        public event GPropertyChanged<Row> ActiveRowChanged;
+        /// <summary>
+        /// Obsluha události Změna aktivní buňky
+        /// </summary>
+        /// <param name="oldActiveCell"></param>
+        /// <param name="newActiveCell"></param>
+        /// <param name="eventSource"></param>
+        /// <param name="callEvents"></param>
+        void ITableEventTarget.CallActiveCellChanged(Cell oldActiveCell, Cell newActiveCell, EventSourceType eventSource, bool callEvents)
+        {
+            GPropertyChangeArgs<Cell> args = new GPropertyChangeArgs<Cell>(eventSource, oldActiveCell, newActiveCell);
+            this.OnActiveCellChanged(args);
+            if (callEvents && this.ActiveCellChanged != null)
+                this.ActiveCellChanged(this, args);
+        }
+        protected virtual void OnActiveCellChanged(GPropertyChangeArgs<Cell> args) { }
+        public event GPropertyChanged<Cell> ActiveCellChanged;
+        /// <summary>
+        /// Obsluha události Click na buňku tabulky
+        /// </summary>
+        /// <param name="cell"></param>
+        /// <param name="eventSource"></param>
+        /// <param name="callEvents"></param>
+        void ITableEventTarget.CallActiveCellClick(Cell cell, EventSourceType eventSource, bool callEvents)
+        {
+            GPropertyEventArgs<Cell> args = new GPropertyEventArgs<Cell>(eventSource, cell);
+            this.OnActiveCellClick(args);
+            if (callEvents && this.ActiveCellClick != null)
+                this.ActiveCellClick(this, args);
+        }
+        protected virtual void OnActiveCellClick(GPropertyEventArgs<Cell> args) { }
+        public event GPropertyEvent<Cell> ActiveCellClick;
+
+        #endregion
     }
     #endregion
     #region Column
@@ -888,9 +938,17 @@ namespace Djs.Common.Data.New
         /// </summary>
         public Table Table { get { return this._Table; } private set { this._Table = value; } } private Table _Table;
         /// <summary>
-        /// true pokud máme referenci na tabulku
+        /// true pokud máme referenci na datovou tabulku
         /// </summary>
-        public bool HasTable { get { return (this.Table != null); } }
+        public bool HasTable { get { return (this._Table != null); } }
+        /// <summary>
+        /// true pokud má referenci na vizuální tabulku (GTable)
+        /// </summary>
+        public bool HasGTable { get { return (this._Table != null && this._Table.HasGTable); } }
+        /// <summary>
+        /// Reference na vizuální tabulku (GTable), může být null
+        /// </summary>
+        public Components.Grid.GTable GTable { get { return (this.HasGTable ? this._Table.GTable : null); } }
         /// <summary>
         /// Napojí this sloupec do dané tabulky.
         /// Je voláno z tabulky, v eventu ItemAdd kolekce Columns.
@@ -901,6 +959,10 @@ namespace Djs.Common.Data.New
             this._ColumnId = id;
             if (this._ColumnOrder < 0)
                 this._ColumnOrder = id;
+            if ((this.IsSortingColumn) && (table.Columns.Any(c => (c.ColumnId != this._ColumnOrder && c.IsSortingColumn))))
+                // Pokud do tabulky přidávám další sloupec, který už má v sobě nastavené třídění, 
+                //  a přitom v tabulce existuje jiný sloupec, který je třídícím sloupcem, pak pro aktuální sloupec třídění zruším:
+                this._SortCurrent = TableSortRowType.None;
             this.Table = table;
             this.WidthLayout.ParentLayout = table.ColumnWidthLayout;
         }
@@ -982,13 +1044,45 @@ namespace Djs.Common.Data.New
         #endregion
         #region Třídění podle sloupce
         /// <summary>
-        /// Režim třídění v tomto sloupci
+        /// Režim třídění v tomto sloupci.
+        /// Změna hodnoty vyvolá invalidaci tabulky typu RowOrder.
         /// </summary>
-        public TableSortRowType SortCurrent { get { return this._SortCurrent; } set { this._SortCurrent = value; } } private TableSortRowType _SortCurrent = TableSortRowType.None;
+        public TableSortRowType SortCurrent
+        {
+            get { return this._SortCurrent; }
+            set
+            {
+                TableSortRowType oldValue = this._SortCurrent;
+                if (value != oldValue)
+                {
+                    if (this.HasTable)
+                    {   // Pokud this sloupec je součástí datové tabulky (on nemusí být), 
+                        //  a pokud aktuální třídění je jiné než None,
+                        //  pak zajistím, že pouze this sloupec bude mít nastavené třídění, a ostatní budou mít None:
+                        if (value != TableSortRowType.None)
+                            this.Table.Columns.ForEachItem(c => c._SortCurrent = TableSortRowType.None);
+                        this._SortCurrent = value;
+                        // Pokud this sloupec je součástí vizuální tabulky (on nemusí být), 
+                        //  pak provedu invalidaci RowOrder:
+                        if (this.HasGTable)
+                            this.GTable.Invalidate(InvalidateItem.RowOrder);
+                    }
+                    else
+                    {   // Zcela samostatně existující sloupec: nastaví si dané třídění a víc neřeší:
+                        this._SortCurrent = value;
+                    }
+                }
+            }
+        } private TableSortRowType _SortCurrent = TableSortRowType.None;
+        /// <summary>
+        /// true pokud this sloupec je třídící (tzn. má SortCurrent : Ascending nebo Descending)
+        /// </summary>
+        protected bool IsSortingColumn { get { return (this._SortCurrent == TableSortRowType.Ascending || this._SortCurrent == TableSortRowType.Descending); } }
         /// <summary>
         /// Změní třídění tohoto sloupce, volá se po kliknutí na jeho záhlaví.
         /// Pokud je třídění povoleno, změní SortCurrent v pořadí None - Asc - Desc - None; a vrátí true.
         /// Pokud třídění není povoleno, vrátí false.
+        /// Změna třídění se vepíše do this.SortCurrent, což vyvolá invalidaci tabulky typu RowOrder.
         /// </summary>
         /// <returns></returns>
         public bool SortChange()
@@ -1031,6 +1125,12 @@ namespace Djs.Common.Data.New
         /// </summary>
         public bool IsVisible { get { return this.WidthLayout.Visible; } set { this.WidthLayout.Visible = value; } }
         /// <summary>
+        /// true pokud tento prvek má být použit jako "guma" při změně šířky tabulky tak, aby kolekce sloupců vyplnila celý prostor.
+        /// Na true se nastavuje typicky u "hlavního" sloupce grafové tabulky.
+        /// Je vhodné přitom nastavit minimální šířku sloupce (WidthLayout.SizeMinimum) tak, aby při zmenšení prostoru z daného sloupce něco zbylo.
+        /// </summary>
+        public bool AutoWidth { get { return this.WidthLayout.AutoSize; } set { this.WidthLayout.AutoSize = value; } }
+        /// <summary>
         /// Veškeré hodnoty související s výškou řádku (rozsah hodnot, povolení Resize)
         /// </summary>
         public SequenceLayout WidthLayout { get { return this._SizeLayout; } } private SequenceLayout _SizeLayout;
@@ -1053,8 +1153,6 @@ namespace Djs.Common.Data.New
                 return VisualStyle.CreateFrom(this.VisualStyle, (this.Table != null ? this.Table.VisualStyle : null));
             }
         }
-        Int32? IVisualMember.Width { get { return this.Width; } }
-        Int32? IVisualMember.Height { get { return (this.HasTable ? this.Table.ColumnHeaderHeightLayout.Size : null); } }
         #endregion
     }
     #endregion
@@ -1228,8 +1326,6 @@ namespace Djs.Common.Data.New
                 return VisualStyle.CreateFrom(this.VisualStyle, (this.Table != null ? this.Table.VisualStyle : null));
             }
         }
-        Int32? IVisualMember.Width { get { return null; } }
-        Int32? IVisualMember.Height { get { return this.Height; } }
         #endregion
         #region Výška řádku, kompletní layout okolo výšky řádku
         /// <summary>
@@ -1278,26 +1374,38 @@ namespace Djs.Common.Data.New
     /// </summary>
     public class Cell : IVisualMember
     {
-        #region Constructor, parents of this Cell
+        #region Konstruktor, reference na parenty této buňky
         internal Cell(Row dRow, int columnId)
         {
             this._ColumnId = columnId;
             this._Row = dRow;
         }
         /// <summary>
+        /// true pokud mám svůj řádek
+        /// </summary>
+        protected bool HasRow { get { return (this._Row != null); } }
+        /// <summary>
         /// Řádek, do něhož tato buňka patří
         /// </summary>
-        public Row Row { get { return _Row; } private set { _Row = value; } } private Row _Row;
+        public Row Row { get { return _Row; } } private Row _Row;
+        /// <summary>
+        /// true pokud mám svojí tabulku
+        /// </summary>
+        protected bool HasTable { get { return (this.HasRow ? this._Row.HasTable : false); } }
         /// <summary>
         /// Tabulka, do které tato buňka patří
         /// Může být null, pokud buňka dosud není v řádku nebo řádek není v tabulce.
         /// </summary>
         public Table Table { get { return (this._Row != null ? this._Row.Table : null); } }
         /// <summary>
+        /// true pokud mám svůj sloupec
+        /// </summary>
+        protected bool HasColumn { get { return (this.HasTable ? this.Table.ContainsColumn(this._ColumnId) : false); } }
+        /// <summary>
         /// Sloupec, do něhož tato buňka patří.
         /// Může být null, pokud buňka dosud není v řádku nebo řádek není v tabulce.
         /// </summary>
-        public Column Column { get { Column column = null; if (this._Row != null && this._Row.HasTable && this._Row.Table.TryGetColumn(this._ColumnId, out column)) return column; return null; } }
+        public Column Column { get { Column column = null; if (this.HasTable && this.Table.TryGetColumn(this._ColumnId, out column)) return column; return null; } }
         /// <summary>
         /// ColumnID sloupce, do kterého tato buňka patří.
         /// Tato hodnota je platná bez ohledu na to, zda buňka (resp. její řádek) již je nebo není obsažena v tabulce.
@@ -1369,64 +1477,23 @@ namespace Djs.Common.Data.New
             get
             {
                 Column column = this.Column;
-                return VisualStyle.CreateFrom(this.VisualStyle, this.Row.VisualStyle, (column != null ? column.VisualStyle : null), this.Table.VisualStyle);
+                return VisualStyle.CreateFrom(
+                    this.VisualStyle,
+                    (this.HasRow ? this.Row.VisualStyle : null),
+                    (this.HasColumn ? this.Column.VisualStyle : null),
+                    (this.HasTable ? this.Table.VisualStyle : null));
             }
         }
-        Int32? IVisualMember.Width { get { return null; } }
-        Int32? IVisualMember.Height { get { return null; } }
         #endregion
     }
     #endregion
-    #region Visual style for one item
-    public class VisualStyle
-    {
-        /// <summary>
-        /// Vytvoří a vrátí new instanci VisualStyle, v níž budou jednotlivé property naplněny hodnotami z dodaných instancí.
-        /// Slouží k vyhodnocení řetězce od explicitních údajů (zadaných do konkrétního prvku) až po defaultní (zadané např. v konfiguraci).
-        /// Dodané instance se vyhodnocují v pořadá od první do poslední, hodnoty null se přeskočí.
-        /// Logika: hodnota do každé jednotlivé property výsledné instance se převezme z nejbližšího dodaného objektu, kde tato hodnota není null.
-        /// </summary>
-        /// <param name="styles"></param>
-        /// <returns></returns>
-        public static VisualStyle CreateFrom(params VisualStyle[] styles)
-        {
-            VisualStyle result = new VisualStyle();
-            foreach (VisualStyle style in styles)
-                result._AddFrom(style);
-            return result;
-        }
-        /// <summary>
-        /// Do this instance vloží potřebné hodnoty z dodané instance.
-        /// Dodaná instance může být null, pak se nic neprovádí.
-        /// Plní se jen takové property v this, které obsahují null.
-        /// </summary>
-        /// <param name="style"></param>
-        private void _AddFrom(VisualStyle style)
-        {
-            if (style != null)
-            {
-                if (this.Font == null) this.Font = style.Font;
-                if (!this.ContentAlignment.HasValue) this.ContentAlignment = style.ContentAlignment;
-                if (!this.BackColor.HasValue) this.BackColor = style.BackColor;
-                if (!this.TextColor.HasValue) this.TextColor = style.TextColor;
-                if (!this.SelectedBackColor.HasValue) this.SelectedBackColor = style.SelectedBackColor;
-                if (!this.SelectedTextColor.HasValue) this.SelectedTextColor = style.SelectedTextColor;
-                if (!this.FocusBackColor.HasValue) this.FocusBackColor = style.FocusBackColor;
-                if (!this.FocusTextColor.HasValue) this.FocusTextColor = style.FocusTextColor;
-            }
-        }
-        public FontInfo Font { get; set; }
-        public ContentAlignment? ContentAlignment { get; set; }
-        public Color? BackColor { get; set; }
-        public Color? TextColor { get; set; }
-        public Color? SelectedBackColor { get; set; }
-        public Color? SelectedTextColor { get; set; }
-        public Color? FocusBackColor { get; set; }
-        public Color? FocusTextColor { get; set; }
-
-    }
-    #endregion
     #region Interfaces
+    public interface ITableEventTarget
+    {
+        void CallActiveRowChanged(Row oldActiveRow, Row newActiveRow, EventSourceType eventSource, bool callEvents);
+        void CallActiveCellChanged(Cell oldActiveCell, Cell newActiveCell, EventSourceType eventSource, bool callEvents);
+        void CallActiveCellClick(Cell cell, EventSourceType eventSource, bool callEvents);
+    }
     /// <summary>
     /// Objekt, kterému je možno nastavit stav platnosti dat, sloupce a řádku
     /// </summary>
@@ -1460,24 +1527,6 @@ namespace Djs.Common.Data.New
         /// Odpojí this objekt od navázané tabulky, resetuje svoje ID
         /// </summary>
         void DetachFromTable();
-    }
-    /// <summary>
-    /// Prvek s vizuálním stylem, šířkou a výškou
-    /// </summary>
-    public interface IVisualMember
-    {
-        /// <summary>
-        /// Visual style for this item. Can be combined with style of all parents, using method VisualStyle.CreateFrom(my style, all parent styles)
-        /// </summary>
-        VisualStyle Style { get; }
-        /// <summary>
-        /// Requested Width (for Column)
-        /// </summary>
-        int? Width { get; }
-        /// <summary>
-        /// Requested Height (for Row)
-        /// </summary>
-        int? Height { get; }
     }
     /// <summary>
     /// Prvky umožňující třídění
@@ -1517,6 +1566,7 @@ namespace Djs.Common.Data.New
         /// Velikost prvku v pixelech (šířka sloupce, výška řádku, výška tabulky). 
         /// Lze ji setovat, protože prvky lze pomocí splitterů zvětšovat / zmenšovat.
         /// Aplikační logika prvku musí zabránit vložení neplatné hodnoty (reálně se uloží hodnota platná).
+        /// Setování této hodnoty nesmí vyvolat event SizeChanged, protože by mohlo dojít k zacyklení eventů.
         /// </summary>
         int Size { get; set; }
         /// <summary>
@@ -1572,6 +1622,11 @@ namespace Djs.Common.Data.New
         /// true pokud prvek je viditelný (dáno kódem, nikoli fitry atd). Default = true
         /// </summary>
         public bool Visible { get { return this._Visible; } set { this._Visible = value; } } private bool _Visible = true;
+        /// <summary>
+        /// true pokud tento prvek má být použit jako "guma" při změně rozměru hostitelského prvku tak, aby kolekce prvků obsadila celý prostor.
+        /// Na true se nastavuje typicky u "hlavního" sloupce grafové tabulky.
+        /// </summary>
+        public bool AutoSize { get { return this._AutoSize; } set { this._AutoSize = value; } } private bool _AutoSize = false;
         /// <summary>
         /// true pokud uživatel může změnit velikost tohoto prvku. Default = true
         /// </summary>
