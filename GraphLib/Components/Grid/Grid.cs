@@ -142,24 +142,160 @@ namespace Djs.Common.Components
         /// </summary>
         private Size? _LastClientSize;
         #endregion
+        #region Tabulky uložené v Gridu
+        /// <summary>
+        /// Přidá danou datovou tabulku do tohoto gridu.
+        /// Vrací grafický objekt právě přidané tabulky.
+        /// </summary>
+        /// <param name="dTable"></param>
+        /// <returns></returns>
+        public GTable AddTable(Table dTable)
+        {
+            return this._AddTable(dTable);
+        }
+        /// <summary>
+        /// Danou datovou tabulku odebere z this gridu.
+        /// </summary>
+        /// <param name="dTable"></param>
+        public void RemoveTable(Table dTable)
+        {
+            this._RemoveTable(dTable);
+        }
+        /// <summary>
+        /// Soupis všech datových tabulek v gridu
+        /// </summary>
+        public IEnumerable<Table> DataTables { get { return this._Tables.Select(t => t.DataTable); } }
+        /// <summary>
+        /// Soupis všech grafických tabulek v gridu
+        /// </summary>
+        internal IEnumerable<GTable> Tables { get { return this._Tables; } }
+        /// <summary>
+        /// Public event vyvolaný po přidání nové tabulky do gridu. Grid je již v tabulce umístěn, grid je uveden v argumentu.
+        /// </summary>
+        public event EList<GTable>.EListEventAfterHandler TableAddAfter;
+        /// <summary>
+        /// Public event vyvolaný po odebrání řádku z tabulky. Řádek již v tabulce není umístěn, řádek je uveden v argumentu.
+        /// </summary>
+        public event EList<GTable>.EListEventAfterHandler TableRemoveAfter;
+        /// <summary>
+        /// Počet tabulek v gridu
+        /// </summary>
+        public int TablesCount { get { return this._Tables.Count; } }
+        /// <summary>
+        /// Inicializuje pole tabulek (this.Tables), určené pro práci s daty. Nic dalšího neřeší (žádné pozicování).
+        /// </summary>
+        protected void InitTablesData()
+        {
+            this._Tables = new EList<GTable>();
+            this._Tables.ItemAddAfter += _TableAddAfter;
+            this._Tables.ItemRemoveAfter += _TableRemoveAfter;
+            this._TableID = 0;
+        }
+        /// <summary>
+        /// Přidá danou datovou tabulku do tohoto gridu
+        /// </summary>
+        /// <param name="dTable"></param>
+        /// <returns></returns>
+        protected GTable _AddTable(Table dTable)
+        {
+            if (dTable == null) return null;
+            GTable gTable = new GTable(this, dTable);
+            this._Tables.Add(gTable);                      // Instance EList zajistí vyvolání eventhandleru this._TableAddAfter(), tam se GTable napojí na this GGrid a dostane svoje ID.
+            return gTable;
+        }
+        /// <summary>
+        /// Odebere danou datovou tabulku z tohoto gridu
+        /// </summary>
+        /// <param name="dTable"></param>
+        /// <returns></returns>
+        protected void _RemoveTable(Table dTable)
+        {
+            if (dTable == null) return;
+            this._Tables.RemoveAll(g => Object.ReferenceEquals(g.DataTable, dTable));
+        }
+        /// <summary>
+        /// Handler události, kdy byla přidána další tabulka do tohoto gridu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _TableAddAfter(object sender, EList<GTable>.EListAfterEventArgs args)
+        {
+            this.TableAdded(args);
+            this.OnTableAddAfter(args);
+            if (this.TableAddAfter != null)
+                this.TableAddAfter(this, args);
+        }
+        /// <summary>
+        /// Akce po přidání GTable do GGridu: napojí tabulku na Grid, přiřadí ID
+        /// </summary>
+        /// <param name="args"></param>
+        protected void TableAdded(EList<GTable>.EListAfterEventArgs args)
+        {
+            GTable table = args.Item;
+            int id = this._TableID++;
+            ((IGridMember)table).AttachToGrid(this, id);
+            this.Invalidate(InvalidateItem.GridTablesChange | InvalidateItem.GridColumnsChange | InvalidateItem.GridItems);
+        }
+        /// <summary>
+        /// Protected virtual metoda volaná v procesu přidání tabulky, tabulka je platná, event TableAddAfter ještě neproběhl. V GGrid je tato metoda prázdná.
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnTableAddAfter(EList<GTable>.EListAfterEventArgs args) { }
+        /// <summary>
+        /// Handler eventu event Tables.ItemRemoveAfter, vyvolá se po odebrání objektu (řádku) z kolekce Rows
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _TableRemoveAfter(object sender, EList<GTable>.EListAfterEventArgs args)
+        {
+            this.TableRemoved(args);
+            this.OnTableRemoveAfter(args);
+            if (this.TableRemoveAfter != null)
+                this.TableRemoveAfter(this, args);
+        }
+        /// <summary>
+        /// Akce po odebrání tabulky z gridu: odpojí tabulku od gridu
+        /// </summary>
+        /// <param name="args"></param>
+        protected void TableRemoved(EList<GTable>.EListAfterEventArgs args)
+        {
+            ((IGridMember)args.Item).DetachFromGrid();
+            this.Invalidate(InvalidateItem.GridTablesChange | InvalidateItem.GridColumnsChange | InvalidateItem.GridItems);
+        }
+        /// <summary>
+        /// Protected virtual metoda volaná v procesu odebrání řádku, řádek je platný, event RowRemoveAfter ještě neproběhl. V Table je tato metoda prázdná.
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnTableRemoveAfter(EList<GTable>.EListAfterEventArgs args) { }
+        /// <summary>
+        /// ID pro příští vkládanou GTable
+        /// </summary>
+        private int _TableID = 0;
+        /// <summary>
+        /// Fyzické úložiště tabulek GTable
+        /// </summary>
+        private EList<GTable> _Tables;
+        #endregion
+
         #region Pozicování svislé - tabulky a vpravo svislý scrollbar
         /// <summary>
         /// Inicializace objektů pro pozicování tabulek: TablesPositions, TablesScrollBar
         /// </summary>
         private void InitTablesPositions()
         {
-            this.TablesPositions = new GridPosition(0, this._TablesPositionGetVisualSize, this._TablesPositionGetDataSize);
+            this._TablesPositions = new GridPosition(0, this._TablesPositionGetVisualSize, this._TablesPositionGetDataSize);
 
             this.TablesScrollBar = new GScrollBar() { Orientation = System.Windows.Forms.Orientation.Vertical };
             this.TablesScrollBar.ValueChanging += new GPropertyChanged<SizeRange>(TablesScrollBar_ValueChange);
             this.TablesScrollBar.ValueChanged += new GPropertyChanged<SizeRange>(TablesScrollBar_ValueChange);
         }
         /// <summary>
-        /// Řídíci prvek pro Pozice tabulek
+        /// Řídící prvek pro Pozice tabulek
         /// </summary>
-        protected GridPosition TablesPositions { get; set; }
+        protected GridPosition TablesPositions { get { return this._TablesPositions; } } private GridPosition _TablesPositions;
         /// <summary>
-        /// Vrací výšku prostoru pro tabulky (=prostor this.ClientSize.Height mínus dole prostor pro vodorovný scrollbar sloupců)
+        /// Vrací výšku prostoru pro tabulky (=prostor this.ClientSize.Height mínus dole prostor pro vodorovný scrollbar sloupců).
+        /// Prostor pro dolní scrollbar odečítá vždy, bez ohledu na jeho viditelnost.
         /// </summary>
         /// <returns></returns>
         private int _TablesPositionGetVisualSize()
@@ -172,48 +308,92 @@ namespace Djs.Common.Components
         /// <returns></returns>
         private int _TablesPositionGetDataSize()
         {
-            ISequenceLayout[] list = this.TablesSequence;
+            ISequenceLayout[] list = this.TablesAll;
             int count = list.Length;
             return (count > 0 ? list[count - 1].End : 0);
         }
         /// <summary>
         /// Soupis všech grafických objektů tabulek, setříděný podle TableOrder, se správně napočtenou hodnotou ISequenceLayout.Begin a End.
         /// Tento seznam se ukládá do místní cache, jeho generování se provádí jen jedenkrát po jeho invalidaci.
-        /// Invalidace seznamu se provádí metodou TableSequenceReset(), ta se má volat po těchto akcích:
+        /// Invalidace seznamu se provádí metodou Invalidate(), ta se má volat po těchto akcích:
         /// Změna pořadí tabulek, Změna počtu tabulek.
         /// Nemusí se volat při posunech svislého scrollbaru ani při resize gridu, ani při změně výšky tabulek!
         /// Tato property nikdy nevrací null, ale může vrátit kolekci s počtem = 0 prvků (pokud neexistují tabulky).
         /// </summary>
-        protected ISequenceLayout[] TablesSequence
+        protected GTable[] TablesAll { get { this._TablesAllCheck(); return this._TablesAll; } }
+        /// <summary>
+        /// Soupis viditelných grafických objektů tabulek, setříděný podle TableOrder, se správně napočtenou hodnotou ISequenceLayout.Begin a End.
+        /// Tento seznam se ukládá do místní cache, jeho generování se provádí jen jedenkrát po jeho invalidaci.
+        /// Invalidace seznamu se provádí metodou Invalidate(), ta se má volat po těchto akcích:
+        /// Změna pořadí tabulek, Změna počtu tabulek.
+        /// Nemusí se volat při posunech svislého scrollbaru ani při resize gridu, ani při změně výšky tabulek!
+        /// Tato property nikdy nevrací null, ale může vrátit kolekci s počtem = 0 prvků (pokud neexistují tabulky).
+        /// </summary>
+        protected GTable[] TablesVisible { get { this._TablesVisibleCheck(); return this._TablesVisible; } }
+        /// <summary>
+        /// Ověří a zajistí připravenost pole TablesAll
+        /// </summary>
+        private void _TablesAllCheck()
         {
-            get
+            GTable[] tables = this._TablesAll;
+            bool heightValid = this._TableListHeightValid;
+            if (tables == null)
             {
-                if (this._TablesSequence == null)
-                {
-                    List<GTable> tables = new List<GTable>();
-                    if (this._Tables != null && this._Tables.Count > 0)
-                        tables.AddRange(this._Tables);
-                    if (tables.Count > 1)
-                        tables.Sort(GTable.CompareOrder);
-
-                    ISequenceLayout[] array = tables.Cast<ISequenceLayout>().ToArray();
-                    SequenceLayout.SequenceLayoutCalculate(array);
-                    this._TablesSequence = array;
-                }
-                return this._TablesSequence;
+                List<GTable> tableList = this._Tables.ToList();
+                if (tableList.Count > 1)
+                    tableList.Sort(GTable.CompareOrder);
+                tables = tableList.ToArray();
+                this._TablesAll = tables;
+                heightValid = false;
+            }
+            if (!heightValid)
+            {
+                SequenceLayout.SequenceLayoutCalculate(tables);
+                this._TableListHeightValid = true;
+                this._TablesVisible = null;
             }
         }
         /// <summary>
-        /// Cache kolekce TableSequence
+        /// Ověří a zajistí připravenost pole TablesVisible
         /// </summary>
-        private ISequenceLayout[] _TablesSequence { get; set; }
+        private void _TablesVisibleCheck()
+        {
+            if (this._TablesVisible != null) return;
+
+            List<GTable> visibleTables = new List<GTable>();
+            GridPosition tablesPositions = this.TablesPositions;
+            Int32Range dataVisibleRange = tablesPositions.DataVisibleRange;                          // Rozmezí datových pixelů, které jsou viditelné
+            foreach (GTable table in this.TablesAll)
+            {
+                ISequenceLayout isl = table as ISequenceLayout;
+                bool isTableVisible = SequenceLayout.IsItemVisible(isl, dataVisibleRange);           // Tato tablka je vidět?
+                table.VisualRange = (isTableVisible ? tablesPositions.GetVisualPosition(isl) : null);
+                if (isTableVisible)
+                    visibleTables.Add(table);
+            }
+            this._TablesVisible = visibleTables.ToArray();
+        }
+        /// <summary>
+        /// Cache kolekce TablesAll
+        /// </summary>
+        private GTable[] _TablesAll;
+        /// <summary>
+        /// Cache kolekce TablesVisible
+        /// </summary>
+        private GTable[] _TablesVisible;
+        /// <summary>
+        /// Platnost údajů ISequenceLayout pro GTable
+        /// </summary>
+        private bool _TableListHeightValid;
+
+
         /// <summary>
         /// Resetuje kolekci ColumnsSequence (=donutí ji znovu se načíst).
         /// Má se volat po těchto akcích:
         /// Změna pořadí sloupců, Změna počtu sloupců.
         /// Nemusí se volat při posunech vodorovného scrollbaru ani při resize gridu, ani při změně šířky sloupců!
         /// </summary>
-        protected void TableSequenceReset() { this._TablesSequence = null; }
+        protected void TableSequenceReset() { this._TablesAll = null; }
         /// <summary>
         /// Eventhandler pro událost změny pozice svislého scrollbaru = posun pole tabulek nahoru/dolů
         /// </summary>
@@ -508,144 +688,7 @@ namespace Djs.Common.Components
         /// </summary>
         protected GScrollBar ColumnsScrollBar { get; set; }
         #endregion
-        #region Tabulky - soupis GTable
-        #region Veřejné rozhraní
-        /// <summary>
-        /// Přidá danou datovou tabulku do tohoto gridu.
-        /// Vrací grafický objekt právě přidané tabulky.
-        /// </summary>
-        /// <param name="dTable"></param>
-        /// <returns></returns>
-        public GTable AddTable(Table dTable)
-        {
-            return this._AddTable(dTable);
-        }
-        /// <summary>
-        /// Danou datovou tabulku odebere z this gridu.
-        /// </summary>
-        /// <param name="dTable"></param>
-        public void RemoveTable(Table dTable)
-        {
-            this._RemoveTable(dTable);
-        }
-        /// <summary>
-        /// Soupis všech datových tabulek v gridu
-        /// </summary>
-        public IEnumerable<Table> DataTables { get { return this._Tables.Select(t => t.DataTable); } }
-        /// <summary>
-        /// Soupis všech grafických tabulek v gridu
-        /// </summary>
-        internal IEnumerable<GTable> Tables { get { return this._Tables; } }
-        /// <summary>
-        /// Public event vyvolaný po přidání nové tabulky do gridu. Grid je již v tabulce umístěn, grid je uveden v argumentu.
-        /// </summary>
-        public event EList<GTable>.EListEventAfterHandler TableAddAfter;
-        /// <summary>
-        /// Public event vyvolaný po odebrání řádku z tabulky. Řádek již v tabulce není umístěn, řádek je uveden v argumentu.
-        /// </summary>
-        public event EList<GTable>.EListEventAfterHandler TableRemoveAfter;
-        /// <summary>
-        /// Počet tabulek v gridu
-        /// </summary>
-        public int TablesCount { get { return this._Tables.Count; } }
-        #endregion
-        #region Privátní obsluha
-        /// <summary>
-        /// Inicializuje pole tabulek (this.Tables), určené pro práci s daty. Nic dalšího neřeší (žádné pozicování).
-        /// </summary>
-        protected void InitTablesData()
-        {
-            this._Tables = new EList<GTable>();
-            this._Tables.ItemAddAfter += _TableAddAfter;
-            this._Tables.ItemRemoveAfter += _TableRemoveAfter;
-            this._TableID = 0;
-        }
-        /// <summary>
-        /// Přidá danou datovou tabulku do tohoto gridu
-        /// </summary>
-        /// <param name="dTable"></param>
-        /// <returns></returns>
-        protected GTable _AddTable(Table dTable)
-        {
-            if (dTable == null) return null;
-            GTable gTable = new GTable(this, dTable);
-            this._Tables.Add(gTable);                      // Instance EList zajistí vyvolání eventhandleru this._TableAddAfter(), tam se GTable napojí na this GGrid a dostane svoje ID.
-            return gTable;
-        }
-        /// <summary>
-        /// Odebere danou datovou tabulku z tohoto gridu
-        /// </summary>
-        /// <param name="dTable"></param>
-        /// <returns></returns>
-        protected void _RemoveTable(Table dTable)
-        {
-            if (dTable == null) return;
-            this._Tables.RemoveAll(g => Object.ReferenceEquals(g.DataTable, dTable));
-        }
-        /// <summary>
-        /// Handler události, kdy byla přidána další tabulka do tohoto gridu
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="args"></param>
-        private void _TableAddAfter(object sender, EList<GTable>.EListAfterEventArgs args)
-        {
-            this.TableAdded(args);
-            this.OnTableAddAfter(args);
-            if (this.TableAddAfter != null)
-                this.TableAddAfter(this, args);
-        }
-        /// <summary>
-        /// Akce po přidání GTable do GGridu: napojí tabulku na Grid, přiřadí ID
-        /// </summary>
-        /// <param name="args"></param>
-        protected void TableAdded(EList<GTable>.EListAfterEventArgs args)
-        {
-            GTable table = args.Item;
-            int id = this._TableID++;
-            ((IGridMember)table).AttachToGrid(this, id);
-            this.Invalidate(InvalidateItem.GridTablesChange | InvalidateItem.GridColumnsChange | InvalidateItem.GridItems);
-        }
-        /// <summary>
-        /// Protected virtual metoda volaná v procesu přidání tabulky, tabulka je platná, event TableAddAfter ještě neproběhl. V GGrid je tato metoda prázdná.
-        /// </summary>
-        /// <param name="args"></param>
-        protected virtual void OnTableAddAfter(EList<GTable>.EListAfterEventArgs args) { }
-        /// <summary>
-        /// Handler eventu event Tables.ItemRemoveAfter, vyvolá se po odebrání objektu (řádku) z kolekce Rows
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="args"></param>
-        private void _TableRemoveAfter(object sender, EList<GTable>.EListAfterEventArgs args)
-        {
-            this.TableRemoved(args);
-            this.OnTableRemoveAfter(args);
-            if (this.TableRemoveAfter != null)
-                this.TableRemoveAfter(this, args);
-        }
-        /// <summary>
-        /// Akce po odebrání tabulky z gridu: odpojí tabulku od gridu
-        /// </summary>
-        /// <param name="args"></param>
-        protected void TableRemoved(EList<GTable>.EListAfterEventArgs args)
-        {
-            ((IGridMember)args.Item).DetachFromGrid();
-            this.Invalidate(InvalidateItem.GridTablesChange | InvalidateItem.GridColumnsChange | InvalidateItem.GridItems);
-        }
-        /// <summary>
-        /// Protected virtual metoda volaná v procesu odebrání řádku, řádek je platný, event RowRemoveAfter ještě neproběhl. V Table je tato metoda prázdná.
-        /// </summary>
-        /// <param name="args"></param>
-        protected virtual void OnTableRemoveAfter(EList<GTable>.EListAfterEventArgs args) { }
-        /// <summary>
-        /// ID pro příští vkládanou GTable
-        /// </summary>
-        private int _TableID = 0;
-        /// <summary>
-        /// Fyzické úložiště tabulek GTable
-        /// </summary>
-        private EList<GTable> _Tables;
-        #endregion
-        #endregion
+       
         #region Invalidace, resety, refreshe
         /// <summary>
         /// Zajistí invalidaci položek po určité akci, která právě skončila
@@ -664,7 +707,7 @@ namespace Djs.Common.Components
             }
             if (items.HasFlag(InvalidateItem.GridTablesChange))
             {
-                this._TablesSequence = null;
+                this._TablesAll = null;
                 this._ChildArrayValid = false;
             }
             if (items.HasFlag(InvalidateItem.GridTablesScroll))
@@ -733,7 +776,7 @@ namespace Djs.Common.Components
         protected void RecalcTables(ref ProcessAction actions, EventSourceType eventSource)
         {
             Rectangle tablesBounds = this.GridTablesBounds;
-            foreach (ISequenceLayout isl in this.TablesSequence)
+            foreach (ISequenceLayout isl in this.TablesAll)
             {   // Procházím tabulky jako ISequenceLayout, určím jejich souřadnice podle ISequenceLayout.Begin a Size (=svislá pozice) + pozice prostoru tabulek (X a Width):
                 int y = this.TablesPositions.GetVisualPosition(isl.Begin);
                 Rectangle bound = new Rectangle(tablesBounds.X, y, tablesBounds.Width, isl.Size);
@@ -756,7 +799,7 @@ namespace Djs.Common.Components
             // Nejprve přidáme tabulky, a to jen ty které jsou viditelné:
             // Současně si nastřádáme jejich splittery:
             List<IInteractiveItem> splitterList = new List<IInteractiveItem>();
-            foreach (ISequenceLayout isl in this.TablesSequence)
+            foreach (ISequenceLayout isl in this.TablesAll)
             {   // Procházím tabulky ze seznamu ISequenceLayout, a pokud tabulka je viditelná, pak ji zpracuji:
                 GTable table = isl as GTable;
                 bool isVisible = (Rectangle.Intersect(bounds, table.Bounds).Height > 0);

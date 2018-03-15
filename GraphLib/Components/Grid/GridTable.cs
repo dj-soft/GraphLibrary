@@ -380,6 +380,7 @@ namespace Djs.Common.Components.Grid
             if (rows == null)
             {
                 rows = this.DataTable.RowsSorted;                                                  // Získat viditelné řádky, setříděné
+                this._Rows = rows;
                 heightValid = false;
             }
             if (!heightValid)
@@ -388,8 +389,6 @@ namespace Djs.Common.Components.Grid
                 this._RowListHeightValid = true;
                 this._VisibleRows = null;
             }
-            if (this._Rows == null)
-                this._Rows = rows;
         }
         /// <summary>
         /// Ověří a zajistí připravenost pole VisibleRows.
