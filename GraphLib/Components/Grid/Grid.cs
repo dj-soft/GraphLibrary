@@ -366,7 +366,7 @@ namespace Djs.Common.Components
             foreach (GTable table in this.TablesAll)
             {
                 ISequenceLayout isl = table as ISequenceLayout;
-                bool isTableVisible = SequenceLayout.IsItemVisible(isl, dataVisibleRange);           // Tato tablka je vidět?
+                bool isTableVisible = SequenceLayout.IsItemVisible(isl, dataVisibleRange);           // Tato tabulka je vidět?
                 table.VisualRange = (isTableVisible ? tablesPositions.GetVisualPosition(isl) : null);
                 if (isTableVisible)
                     visibleTables.Add(table);
