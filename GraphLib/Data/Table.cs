@@ -2,9 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Djs.Common.Components;
 using System.Drawing;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Djs.Common.Components;
+using Djs.Common.Components.Grid;
 
 namespace Djs.Common.Data
 {
@@ -19,7 +20,7 @@ namespace Djs.Common.Data
     /// <summary>
     /// Table : jedna tabulka s daty (sada Column + Row)
     /// </summary>
-    public class Table : IVisualMember, ISequenceLayout, IContentValidity, ITableEventTarget
+    public class Table : IGTableMember, IVisualMember, ISequenceLayout, IContentValidity, ITableEventTarget
     {
         #region Konstruktor, Inicializace
         /// <summary>
@@ -57,12 +58,15 @@ namespace Djs.Common.Data
         /// <summary>
         /// Reference na vizuální tabulku (GTable), může být null
         /// </summary>
-        public Components.Grid.GTable GTable
-        {
-            get { return this._GTable; }
-            internal set { this._GTableLink(value); }
-        }
-        private Components.Grid.GTable _GTable;
+        public GTable GTable { get { return this._GTable; } }
+        /// <summary>
+        /// IGTableMember: Vizuální tabulka s možností setování
+        /// </summary>
+        GTable IGTableMember.GTable { get { return this._GTable; } set { this._GTable = value; } }
+        /// <summary>
+        /// Vizuální tabulka (GTable)
+        /// </summary>
+        private GTable _GTable;
         /// <summary>
         /// true pokud má referenci na vizuální tabulku (GTable)
         /// </summary>
@@ -71,7 +75,7 @@ namespace Djs.Common.Data
         /// Napojí se na danou vizuální tabulku (GTable)
         /// </summary>
         /// <param name="gTable"></param>
-        protected void _GTableLink(Components.Grid.GTable gTable)
+        protected void _GTableLink(GTable gTable)
         {
             if (this._GTable != null)
             {   // Odpojit starou
@@ -205,7 +209,14 @@ namespace Djs.Common.Data
         {
             Column column = args.Item;
             int id = this._ColumnsId++;
-            ((ITableMember)column).AttachToTable(this, id);
+
+            ITableMember itm = column as ITableMember;
+            if (itm != null)
+            {
+                itm.Table = this;
+                itm.Id = id;
+            }
+
             if (!this._ColumnIdDict.ContainsKey(id))
                 this._ColumnIdDict.Add(id, column);
             string name = column.Name;
@@ -241,7 +252,14 @@ namespace Djs.Common.Data
         {
             Column column = args.Item;
             int id = column.ColumnId;
-            ((ITableMember)column).DetachFromTable();
+
+            ITableMember itm = column as ITableMember;
+            if (itm != null)
+            {
+                itm.Table = null;
+                itm.Id = -1;
+            }
+
             if (this._ColumnIdDict.ContainsKey(id))
                 this._ColumnIdDict.Remove(id);
             string name = column.Name;
@@ -407,7 +425,13 @@ namespace Djs.Common.Data
         {
             Row row = args.Item;
             int id = this._RowId++;
-            ((ITableMember)row).AttachToTable(this, id);
+
+            ITableMember itm = row as ITableMember;
+            if (itm != null)
+            {
+                itm.Table = this;
+                itm.Id = id;
+            }
         }
         /// <summary>
         /// Protected virtual metoda volaná v procesu přidání řádku, řádek je platný, event RowAddAfter ještě neproběhl. V DTable je tato metoda prázdná.
@@ -436,7 +460,13 @@ namespace Djs.Common.Data
         /// <param name="args"></param>
         protected void RowRemoved(EList<Row>.EListAfterEventArgs args)
         {
-            ((ITableMember)args.Item).DetachFromTable();
+            Row row = args.Item;
+            ITableMember itm = row as ITableMember;
+            if (itm != null)
+            {
+                itm.Table = null;
+                itm.Id = -1;
+            }
         }
         /// <summary>
         /// Protected virtual metoda volaná v procesu odebrání řádku, řádek je platný, event RowRemoveAfter ještě neproběhl. V DTable je tato metoda prázdná.
@@ -751,17 +781,17 @@ namespace Djs.Common.Data
         /// <summary>
         /// Záhlaví této tabulky, grafický prvek, auitoinicializační
         /// </summary>
-        public Components.Grid.GTableHeader TableHeader
+        public GTableHeader TableHeader
         {
             get
             {
                 if (this._TableHeader == null)
-                    this._TableHeader = new Components.Grid.GTableHeader(this);
+                    this._TableHeader = new GTableHeader(this);
                 return this._TableHeader;
             }
             set { this._TableHeader = value; }
         }
-        private Components.Grid.GTableHeader _TableHeader;
+        private GTableHeader _TableHeader;
         #endregion
         #region Layouty (výšky, šířky, rozmezí) : kořenové hodnoty uložené na tabulce
         /// <summary>
@@ -936,7 +966,7 @@ namespace Djs.Common.Data
         /// <summary>
         /// Reference na tabulku, kam sloupec patří.
         /// </summary>
-        public Table Table { get { return this._Table; } private set { this._Table = value; } } private Table _Table;
+        public Table Table { get { return this._Table; } } private Table _Table;
         /// <summary>
         /// true pokud máme referenci na datovou tabulku
         /// </summary>
@@ -948,33 +978,35 @@ namespace Djs.Common.Data
         /// <summary>
         /// Reference na vizuální tabulku (GTable), může být null
         /// </summary>
-        public Components.Grid.GTable GTable { get { return (this.HasGTable ? this._Table.GTable : null); } }
+        public GTable GTable { get { return (this.HasGTable ? this._Table.GTable : null); } }
         /// <summary>
-        /// Napojí this sloupec do dané tabulky.
-        /// Je voláno z tabulky, v eventu ItemAdd kolekce Columns.
+        /// ITableMember.Table : Reference na tabulku, která je vlastníkem this objektu
         /// </summary>
-        /// <param name="table"></param>
-        void ITableMember.AttachToTable(Table table, int id)
+        Table ITableMember.Table { get { return this._Table; } set { this._Table = value; this.WidthLayout.ParentLayout = (value != null ? value.ColumnWidthLayout : null); } }
+        /// <summary>
+        /// ITableMember.Id : Přidělené ID
+        /// </summary>
+        int ITableMember.Id { get { return this._ColumnId; } set { this._ColumnId = value; this._SetColumnOrder(); } }
+        /// <summary>
+        /// Nastaví this._ColumnOrder na hodnotu odpovídající this._ColumnId.
+        /// </summary>
+        private void _SetColumnOrder()
         {
-            this._ColumnId = id;
-            if (this._ColumnOrder < 0)
+            int id = this._ColumnId;
+            if (id < 0)
+            {   // this sloupec byl z tabulky odebrán:
                 this._ColumnOrder = id;
-            if ((this.IsSortingColumn) && (table.Columns.Any(c => (c.ColumnId != this._ColumnOrder && c.IsSortingColumn))))
-                // Pokud do tabulky přidávám další sloupec, který už má v sobě nastavené třídění, 
-                //  a přitom v tabulce existuje jiný sloupec, který je třídícím sloupcem, pak pro aktuální sloupec třídění zruším:
-                this._SortCurrent = TableSortRowType.None;
-            this.Table = table;
-            this.WidthLayout.ParentLayout = table.ColumnWidthLayout;
-        }
-        /// <summary>
-        /// Odpojí this sloupec z dané tabulky.
-        /// Je voláno z tabulky, v eventu ItemRemove kolekce Columns.
-        /// </summary>
-        void ITableMember.DetachFromTable()
-        {
-            this._ColumnId = -1;
-            this.Table = null;
-            this.WidthLayout.ParentLayout = null;
+            }
+            else
+            {   // this sloupec byl do tabulky přidán:
+                if (this._ColumnOrder < 0)
+                    this._ColumnOrder = id;
+                Table table = this._Table;
+                if (this.IsSortingColumn && table != null && table.Columns.Any(c => c.ColumnId != id && c.IsSortingColumn))
+                    // Pokud do tabulky přidávám další (tj. this) sloupec, který už má v sobě nastavené třídění, 
+                    //  a přitom v tabulce existuje nějaký jiný sloupec, který již je třídícím sloupcem, pak pro this sloupec třídění zruším:
+                    this._SortCurrent = TableSortRowType.None;
+            }
         }
         #endregion
         #region GUI vlastnosti sloupce
@@ -1030,17 +1062,17 @@ namespace Djs.Common.Data
         /// <summary>
         /// Záhlaví tohoto sloupce, grafický prvek, auitoinicializační
         /// </summary>
-        public Components.Grid.GColumnHeader ColumnHeader
+        public GColumnHeader ColumnHeader
         {
             get
             {
                 if (this._ColumnHeader == null)
-                    this._ColumnHeader = new Components.Grid.GColumnHeader(this);
+                    this._ColumnHeader = new GColumnHeader(this);
                 return this._ColumnHeader;
             }
             set { this._ColumnHeader = value; }
         }
-        private Components.Grid.GColumnHeader _ColumnHeader;
+        private GColumnHeader _ColumnHeader;
         #endregion
         #region Třídění podle sloupce
         /// <summary>
@@ -1192,7 +1224,7 @@ namespace Djs.Common.Data
         /// <summary>
         /// Reference na tabulku, kam řádek patří.
         /// </summary>
-        public Table Table { get { return this._Table; } private set { this._Table = value; } } private Table _Table;
+        public Table Table { get { return this._Table; } } private Table _Table;
         /// <summary>
         /// Kolekce sloupců z tabulky, může být null pokud řádek není napojen do tabulky
         /// </summary>
@@ -1202,26 +1234,13 @@ namespace Djs.Common.Data
         /// </summary>
         public bool HasTable { get { return (this.Table != null); } }
         /// <summary>
-        ///Napojí this řádek do dané tabulky.
-        /// Je voláno z tabulky, v eventu ItemAdd kolekce Rows.
+        /// ITableMember.Table : Reference na tabulku, která je vlastníkem this objektu
         /// </summary>
-        /// <param name="table"></param>
-        void ITableMember.AttachToTable(Table table, int id)
-        {
-            this._RowId = id;
-            this.Table = table;
-            this.HeightLayout.ParentLayout = (table != null ? table.RowHeightLayout : null);
-        }
+        Table ITableMember.Table { get { return this._Table; } set { this._Table = value; this.HeightLayout.ParentLayout = (value != null ? value.RowHeightLayout : null); } }
         /// <summary>
-        /// Odpojí this řádek z dané tabulky.
-        /// Je voláno z tabulky, v eventu ItemRemove kolekce Rows.
+        /// ITableMember.Id : Přidělené ID
         /// </summary>
-        void ITableMember.DetachFromTable()
-        {
-            this._RowId = -1;
-            this.Table = null;
-            this.HeightLayout.ParentLayout = null;
-        }
+        int ITableMember.Id { get { return this._RowId; } set { this._RowId = value; } }
         #endregion
         #region Cells = jednotlivé buňky v řádku
         /// <summary>
@@ -1301,17 +1320,17 @@ namespace Djs.Common.Data
         /// <summary>
         /// Záhlaví tohoto řádku, grafický prvek, auitoinicializační
         /// </summary>
-        public Components.Grid.GRowHeader RowHeader
+        public GRowHeader RowHeader
         {
             get
             {
                 if (this._RowHeader == null)
-                    this._RowHeader = new Components.Grid.GRowHeader(this);
+                    this._RowHeader = new GRowHeader(this);
                 return this._RowHeader;
             }
             set { this._RowHeader = value; }
         }
-        private Components.Grid.GRowHeader _RowHeader;
+        private GRowHeader _RowHeader;
         #endregion
         #region Visual style
         /// <summary>
@@ -1452,18 +1471,17 @@ namespace Djs.Common.Data
         /// <summary>
         /// Grafická instance reprezentující tuto buňku, grafický prvek, auitoinicializační
         /// </summary>
-        public Components.Grid.GCell Control
+        public GCell Control
         {
             get
             {
                 if (this._Control == null)
-                    this._Control = new Components.Grid.GCell(this);
+                    this._Control = new GCell(this);
                 return this._Control;
             }
             set { this._Control = value; }
         }
-        private Components.Grid.GCell _Control;
-
+        private GCell _Control;
         #endregion
         #region Visual style
         /// <summary>
@@ -1518,15 +1536,13 @@ namespace Djs.Common.Data
     public interface ITableMember
     {
         /// <summary>
-        /// Napojí this objekt do dodané tabulky a uloží do sebe dané ID
+        /// Reference na tabulku, která je vlastníkem this objektu
         /// </summary>
-        /// <param name="table"></param>
-        /// <param name="id"></param>
-        void AttachToTable(Table table, int id);
+        Table Table { get; set; }
         /// <summary>
-        /// Odpojí this objekt od navázané tabulky, resetuje svoje ID
+        /// Přidělené ID
         /// </summary>
-        void DetachFromTable();
+        int Id { get; set; }
     }
     /// <summary>
     /// Prvky umožňující třídění

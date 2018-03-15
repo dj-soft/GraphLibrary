@@ -144,6 +144,14 @@ namespace Djs.Common.Components
         #endregion
         #region Tabulky uložené v Gridu
         /// <summary>
+        /// Soupis všech grafických tabulek v gridu
+        /// </summary>
+        internal IEnumerable<GTable> Tables { get { return this._Tables; } }
+        /// <summary>
+        /// Soupis všech datových tabulek v gridu
+        /// </summary>
+        public IEnumerable<Table> DataTables { get { return this._Tables.Select(t => t.DataTable); } }
+        /// <summary>
         /// Přidá danou datovou tabulku do tohoto gridu.
         /// Vrací grafický objekt právě přidané tabulky.
         /// </summary>
@@ -161,22 +169,6 @@ namespace Djs.Common.Components
         {
             this._RemoveTable(dTable);
         }
-        /// <summary>
-        /// Soupis všech datových tabulek v gridu
-        /// </summary>
-        public IEnumerable<Table> DataTables { get { return this._Tables.Select(t => t.DataTable); } }
-        /// <summary>
-        /// Soupis všech grafických tabulek v gridu
-        /// </summary>
-        internal IEnumerable<GTable> Tables { get { return this._Tables; } }
-        /// <summary>
-        /// Public event vyvolaný po přidání nové tabulky do gridu. Grid je již v tabulce umístěn, grid je uveden v argumentu.
-        /// </summary>
-        public event EList<GTable>.EListEventAfterHandler TableAddAfter;
-        /// <summary>
-        /// Public event vyvolaný po odebrání řádku z tabulky. Řádek již v tabulce není umístěn, řádek je uveden v argumentu.
-        /// </summary>
-        public event EList<GTable>.EListEventAfterHandler TableRemoveAfter;
         /// <summary>
         /// Počet tabulek v gridu
         /// </summary>
@@ -231,9 +223,13 @@ namespace Djs.Common.Components
         /// <param name="args"></param>
         protected void TableAdded(EList<GTable>.EListAfterEventArgs args)
         {
-            GTable table = args.Item;
+            IGridMember igm = args.Item as IGridMember;
             int id = this._TableID++;
-            ((IGridMember)table).AttachToGrid(this, id);
+            if (igm != null)
+            {
+                igm.GGrid = this;
+                igm.Id = id;
+            }
             this.Invalidate(InvalidateItem.GridTablesChange | InvalidateItem.GridColumnsChange | InvalidateItem.GridItems);
         }
         /// <summary>
@@ -241,6 +237,10 @@ namespace Djs.Common.Components
         /// </summary>
         /// <param name="args"></param>
         protected virtual void OnTableAddAfter(EList<GTable>.EListAfterEventArgs args) { }
+        /// <summary>
+        /// Public event vyvolaný po přidání nové tabulky do gridu. Grid je již v tabulce umístěn, grid je uveden v argumentu.
+        /// </summary>
+        public event EList<GTable>.EListEventAfterHandler TableAddAfter;
         /// <summary>
         /// Handler eventu event Tables.ItemRemoveAfter, vyvolá se po odebrání objektu (řádku) z kolekce Rows
         /// </summary>
@@ -259,7 +259,12 @@ namespace Djs.Common.Components
         /// <param name="args"></param>
         protected void TableRemoved(EList<GTable>.EListAfterEventArgs args)
         {
-            ((IGridMember)args.Item).DetachFromGrid();
+            IGridMember igm = args.Item as IGridMember;
+            if (igm != null)
+            {
+                igm.GGrid = null;
+                igm.Id = -1;
+            }
             this.Invalidate(InvalidateItem.GridTablesChange | InvalidateItem.GridColumnsChange | InvalidateItem.GridItems);
         }
         /// <summary>
@@ -267,6 +272,10 @@ namespace Djs.Common.Components
         /// </summary>
         /// <param name="args"></param>
         protected virtual void OnTableRemoveAfter(EList<GTable>.EListAfterEventArgs args) { }
+        /// <summary>
+        /// Public event vyvolaný po odebrání řádku z tabulky. Řádek již v tabulce není umístěn, řádek je uveden v argumentu.
+        /// </summary>
+        public event EList<GTable>.EListEventAfterHandler TableRemoveAfter;
         /// <summary>
         /// ID pro příští vkládanou GTable
         /// </summary>
@@ -276,7 +285,210 @@ namespace Djs.Common.Components
         /// </summary>
         private EList<GTable> _Tables;
         #endregion
+        #region Sloupce Gridu
+        /// <summary>
+        /// Obsahuje všechny viditelné sloupce ze všech viditelných tabulek celého gridu.
+        /// Pole je v tom pořadí, v jakém se sloupce mají zobrazovat.
+        /// Sloupce vycházejí primárně z první tabulky gridu. Toto pole (this.Columns) reprezentuje synchronizované pole sloupců ze všech tabulek Gridu.
+        /// Změna šířky sloupce nebo jeho přemístění na jinou pozici v kterékoli tabulce v Gridu se prostřednictvím Gridu promítá do všech tabulek Gridu.
+        /// Jednotlivé tabulky mají svoji kolekci Columns, ale jejich šířka a pořadí jsou řízeny centrálně z této kolekce.
+        /// Rovněž i TimeAxis je synchronizována díky této kolekci.
+        /// </summary>
+        public GridColumn[] Columns { get { this._ColumnsCheck(); return this._Columns; } }
+        /// <summary>
+        /// Zajistí, že pole sloupců budou obsahovat platné hodnoty
+        /// </summary>
+        private void _ColumnsCheck()
+        {
+            bool needContent = (this._ColumnDict == null || this._Columns == null);
+            bool needRecalc = !this._ColumnsLayoutValid;
+            if (needContent || needRecalc)
+            {
+                Dictionary<int, GridColumn> columnDict = this._ColumnDict;
+                if (needContent)
+                {    // Je nutné vygenerovat obsah těchto polí:
+                     // Vytvořím index, kde klíčem je ColumnId, a hodnotou je instance GridColumn.
+                     // každá jedna instance GridColumn bude obsahovat souhrn všech viditelných sloupců shodného ColumnId, ze všech viditelných tabulek.
+                    columnDict = new Dictionary<int, GridColumn>();
+                    foreach (GTable table in this._Tables)
+                    {
+                        if (table.DataTable == null || !table.DataTable.IsVisible) continue;
+                        foreach (Column column in table.DataTable.Columns.Where(c => c.IsVisible))
+                        {
+                            int columnId = column.ColumnId;
+                            GridColumn gridColumn;
+                            if (columnDict.TryGetValue(columnId, out gridColumn))
+                                gridColumn.AddColumn(column);
+                            else
+                                columnDict.Add(columnId, new GridColumn(column));
+                        }
+                    }
+                }
 
+                // Nyní vytvořím lineární soupis GridColumn, a setřídím jej podle pořadí dle sloupce Master (z první tabulky):
+                List<GridColumn> columnList = columnDict.Values.ToList();
+                columnList.Sort(GridColumn.CompareOrder);
+
+                // Zajistím provedení nápočtu pozic (ISequenceLayout.Begin, End):
+                SequenceLayout.SequenceLayoutCalculate(columnList);
+
+                // Na závěr je nutno uložit vypočtená data:
+                this._ColumnDict = columnDict;
+                this._Columns = columnList.ToArray();
+                this._ColumnsLayoutValid = true;
+            }
+        }
+        /// <summary>
+        /// Metoda zkusí najít a vrátit data o sloupci Gridu pro dané ID.
+        /// Sloupec Gridu (instance třídy GridColumn) reprezentuje jeden svislý sloupec stejného ColumnId, přes všechny tabulky.
+        /// Sloupec obsahuje MasterColumn = sloupec tohoto ColumnId z první tabulky, ve které se vyskytl. Ten pak hraje roli Mastera.
+        /// </summary>
+        /// <param name="columnId"></param>
+        /// <param name="gridColumn"></param>
+        /// <returns></returns>
+        public bool TryGetGridColumn(int columnId, out GridColumn gridColumn)
+        {
+            this._ColumnsCheck();
+            return this._ColumnDict.TryGetValue(columnId, out gridColumn);
+        }
+        /// <summary>
+        /// Index sloupců podle ColumnId
+        /// </summary>
+        private Dictionary<int, GridColumn> _ColumnDict;
+        /// <summary>
+        /// Seznam sloupců podle jejich pořadí
+        /// </summary>
+        private GridColumn[] _Columns;
+        /// <summary>
+        /// true pokud obsah pole _Columns má správné souřadnice, false pokud ne
+        /// </summary>
+        private bool _ColumnsLayoutValid = false;
+        /// <summary>
+        /// Metoda vrátí vizuální souřadnice daného sloupce v aktuálním prostoru Gridu, podle 
+        /// </summary>
+        /// <param name="column"></param>
+        /// <returns></returns>
+        public Int32Range GetColumnVisualPosition(ISequenceLayout column)
+        {
+            if (!SequenceLayout.IsItemVisible(column as ISequenceLayout, this.ColumnsPositions.DataVisibleRange)) return null;
+            return this.ColumnsPositions.GetVisualPosition(column);
+        }
+        /// <summary>
+        /// Metoda zajistí změnu šířky sloupce RowHeader, a návazné změny v interních strukturách plus překreslení
+        /// </summary>
+        /// <param name="width"></param>
+        /// <returns></returns>
+        public bool ColumnRowHeaderResizeTo(ref int width)
+        {
+            Table masterTable = (this._Tables.Count > 0 ? this._Tables[0].DataTable : null);
+            if (masterTable == null) return false;
+
+            int widthOld = masterTable.RowHeaderWidth;
+            masterTable.RowHeaderWidth = width;
+            int widthNew = masterTable.RowHeaderWidth;
+
+            bool isChanged = (widthNew != widthOld);
+            if (isChanged)
+            {
+                width = widthNew;
+                // Zajistit invalidaci a překresení:
+                this.Invalidate(InvalidateItem.GridColumnsScroll);
+            }
+            return isChanged;
+        }
+        /// <summary>
+        /// Metoda zajistí přesun sloupce na jiné místo: tak, aby daný sloupec (column) byl zobrazen na daném pořadí (hodnota ColumnOrder).
+        /// Pokud na dané pozici je jiný sloupec (jeho hodnota ColumnOrder == targetOrder), pak tento jiný sloupec bude umístěn za daný sloupec.
+        /// Pokud targetOrder je větší než ColumnOrder posledního sloupce, pak daný sloupec (parametr column) bude umístěn na konec.
+        /// Provede to tak, že změní hodnoty ColumnOrder vhodných sloupců, a zajistí přepočty polí sloupců a zajistí i překreslení.
+        /// </summary>
+        /// <param name="column">Sloupec, který chceme přesunout. Důležité je jen jeho ColumnId</param>
+        /// <param name="targetOrder">Cíl přesunu = ColumnOrder jiného sloupce, na jehož místo chci dát daný column. Tento jiný sloupec bude až za aktuálním sloupcem. Cíl přesunu může být i vyšší, než je nejvyšší ID, pak aktuální sloupec bude zařazen za poslední prvek.</param>
+        public bool ColumnMoveTo(Column column, int targetOrder)
+        {
+            if (column == null) return false;
+            return this.ColumnMoveTo(column.ColumnId, targetOrder);
+        }
+        /// <summary>
+        /// Metoda zajistí přesun sloupce na jiné místo: tak, aby daný sloupec (column) byl zobrazen na daném pořadí.
+        /// Provede to tak, že změní hodnoty ColumnOrder vhodných sloupců, a zajistí přepočty polí sloupců a zajistí i překreslení.
+        /// </summary>
+        /// <param name="columnId">Id sloupce, který chceme přesunout.</param>
+        /// <param name="targetOrder">Cíl přesunu = ColumnOrder jiného sloupce, na jehož místo chci dát daný column. Tento jiný sloupec bude až za aktuálním sloupcem. Cíl přesunu může být i vyšší, než je nejvyšší ID, pak aktuální sloupec bude zařazen za poslední prvek.</param>
+        public bool ColumnMoveTo(int columnId, int targetOrder)
+        {
+            GridColumn sourceColumn;
+            if (!this.TryGetGridColumn(columnId, out sourceColumn)) return false;        // Daný sloupec neznáme
+            int sourceOrder = sourceColumn.ColumnOrder;
+            if (sourceOrder == targetOrder) return false;                                // Není co dělat
+
+            GridColumn[] columns = this.Columns;
+            int length = columns.Length;
+            bool isSourceAdded = false;
+
+            // Do pole reorderedColumns přidám prvky fyzicky v požadovaném pořadí, a ve vhodnou chvíli do něj vložím požadovaný sloupec sourceColumn:
+            List<GridColumn> reorderedColumns = new List<GridColumn>();
+            for (int i = 0; i < length; i++)
+            {
+                GridColumn current = columns[i];
+                if (current.ColumnId == sourceColumn.ColumnId) continue;                 // Přemisťovaný sloupec = v tuto chvíli jej přeskočím, dostane se do pole jinak!
+                int currentOrder = current.ColumnOrder;
+                // Nyní řeším sloupec (current), jehož pořadí je menší než požadované cílové = přidám ho do seznamu reorderedColumns:
+                if (currentOrder < targetOrder) { reorderedColumns.Add(current); }
+                // Nynější sloupec (current) má být za přemisťovaným sloupcem, a ten jsme ještě do seznamu reorderedColumns nezařadili - zařadíme tam sourceColumn, a za ním current:
+                else if (!isSourceAdded) { reorderedColumns.Add(sourceColumn); isSourceAdded = true; reorderedColumns.Add(current); }
+                // Sloupec current má být za sloupcem sourceColumn, a ten (sourceColumn) už byl do seznamu reorderedColumns přidán dříve:
+                else { reorderedColumns.Add(current); }
+            }
+            // Pokud jsem až dosdu nepřidal sourceColumn, přidám jej na konec:
+            if (!isSourceAdded) { reorderedColumns.Add(sourceColumn); isSourceAdded = true; }
+
+            // Dosud jsme nezměnili žádné ColumnOrder, ale máme korektně seřazenou kolekci = takže do ní vepíšeme novou hodnotu ColumnOrder:
+            int columnOrder = 0;
+            foreach (GridColumn gc in reorderedColumns)
+                gc.ColumnOrder = columnOrder++;
+
+            // Zajistit invalidaci a překresení:
+            this.Invalidate(InvalidateItem.GridColumnsChange);
+
+            return true;
+        }
+        /// <summary>
+        /// Metoda zajistí změnu šířky daného sloupce, a návazné změny v interních strukturách plus překreslení
+        /// </summary>
+        /// <param name="column"></param>
+        /// <param name="width">Požadovaná šířka, může se změnit</param>
+        /// <returns></returns>
+        public bool ColumnResizeTo(Column column, ref int width)
+        {
+            if (column == null) return false;
+            return this.ColumnResizeTo(column.ColumnId, ref width);
+        }
+        /// <summary>
+        /// Metoda zajistí změnu šířky daného sloupce, a návazné změny v interních strukturách plus překreslení
+        /// </summary>
+        /// <param name="columnId"></param>
+        /// <param name="width"></param>
+        /// <returns></returns>
+        public bool ColumnResizeTo(int columnId, ref int width)
+        {
+            GridColumn sourceColumn;
+            if (!this.TryGetGridColumn(columnId, out sourceColumn)) return false;        // Daný sloupec neznáme
+
+            int widthOld = sourceColumn.ColumnWidth;
+            sourceColumn.ColumnWidth = width;
+            int widthNew = sourceColumn.ColumnWidth;
+
+            bool isChanged = (widthNew != widthOld);
+            if (isChanged)
+            {
+                width = widthNew;
+                // Zajistit invalidaci a překresení:
+                this.Invalidate(InvalidateItem.GridColumnsScroll);
+            }
+            return isChanged;
+        }
+        #endregion
         #region Pozicování svislé - tabulky a vpravo svislý scrollbar
         /// <summary>
         /// Inicializace objektů pro pozicování tabulek: TablesPositions, TablesScrollBar
@@ -285,14 +497,14 @@ namespace Djs.Common.Components
         {
             this._TablesPositions = new GridPosition(0, this._TablesPositionGetVisualSize, this._TablesPositionGetDataSize);
 
-            this.TablesScrollBar = new GScrollBar() { Orientation = System.Windows.Forms.Orientation.Vertical };
-            this.TablesScrollBar.ValueChanging += new GPropertyChanged<SizeRange>(TablesScrollBar_ValueChange);
-            this.TablesScrollBar.ValueChanged += new GPropertyChanged<SizeRange>(TablesScrollBar_ValueChange);
+            this._TablesScrollBar = new GScrollBar() { Orientation = System.Windows.Forms.Orientation.Vertical };
+            this._TablesScrollBar.ValueChanging += new GPropertyChanged<SizeRange>(TablesScrollBar_ValueChange);
+            this._TablesScrollBar.ValueChanged += new GPropertyChanged<SizeRange>(TablesScrollBar_ValueChange);
         }
         /// <summary>
         /// Řídící prvek pro Pozice tabulek
         /// </summary>
-        protected GridPosition TablesPositions { get { return this._TablesPositions; } } private GridPosition _TablesPositions;
+        protected GridPosition TablesPositions { get { return this._TablesPositions; } }
         /// <summary>
         /// Vrací výšku prostoru pro tabulky (=prostor this.ClientSize.Height mínus dole prostor pro vodorovný scrollbar sloupců).
         /// Prostor pro dolní scrollbar odečítá vždy, bez ohledu na jeho viditelnost.
@@ -313,6 +525,18 @@ namespace Djs.Common.Components
             return (count > 0 ? list[count - 1].End : 0);
         }
         /// <summary>
+        /// Eventhandler pro událost změny pozice svislého scrollbaru = posun pole tabulek nahoru/dolů
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void TablesScrollBar_ValueChange(object sender, GPropertyChangeArgs<SizeRange> e)
+        {
+            int offset = (int)this.TablesScrollBar.Value.Begin.Value;
+            if (offset == this.TablesPositions.DataFirstPixel) return;
+            this.TablesPositions.DataFirstPixel = offset;
+            this.Invalidate(InvalidateItem.GridTablesScroll);
+        }
+        /// <summary>
         /// Soupis všech grafických objektů tabulek, setříděný podle TableOrder, se správně napočtenou hodnotou ISequenceLayout.Begin a End.
         /// Tento seznam se ukládá do místní cache, jeho generování se provádí jen jedenkrát po jeho invalidaci.
         /// Invalidace seznamu se provádí metodou Invalidate(), ta se má volat po těchto akcích:
@@ -322,11 +546,11 @@ namespace Djs.Common.Components
         /// </summary>
         protected GTable[] TablesAll { get { this._TablesAllCheck(); return this._TablesAll; } }
         /// <summary>
-        /// Soupis viditelných grafických objektů tabulek, setříděný podle TableOrder, se správně napočtenou hodnotou ISequenceLayout.Begin a End.
+        /// Soupis viditelných grafických objektů tabulek, setříděný podle TableOrder, se správně napočtenou hodnotou ISequenceLayout.Begin a End (=datová oblast).
         /// Tento seznam se ukládá do místní cache, jeho generování se provádí jen jedenkrát po jeho invalidaci.
+        /// Tabulky mají korektně napočtenou hodnotu VisualRange = vizuální pozice na ose Y v rámci Gridu.
         /// Invalidace seznamu se provádí metodou Invalidate(), ta se má volat po těchto akcích:
-        /// Změna pořadí tabulek, Změna počtu tabulek.
-        /// Nemusí se volat při posunech svislého scrollbaru ani při resize gridu, ani při změně výšky tabulek!
+        /// Invalidace Scroll nebo Resize tabulek.
         /// Tato property nikdy nevrací null, ale může vrátit kolekci s počtem = 0 prvků (pokud neexistují tabulky).
         /// </summary>
         protected GTable[] TablesVisible { get { this._TablesVisibleCheck(); return this._TablesVisible; } }
@@ -385,262 +609,54 @@ namespace Djs.Common.Components
         /// Platnost údajů ISequenceLayout pro GTable
         /// </summary>
         private bool _TableListHeightValid;
-
-
-        /// <summary>
-        /// Resetuje kolekci ColumnsSequence (=donutí ji znovu se načíst).
-        /// Má se volat po těchto akcích:
-        /// Změna pořadí sloupců, Změna počtu sloupců.
-        /// Nemusí se volat při posunech vodorovného scrollbaru ani při resize gridu, ani při změně šířky sloupců!
-        /// </summary>
-        protected void TableSequenceReset() { this._TablesAll = null; }
-        /// <summary>
-        /// Eventhandler pro událost změny pozice svislého scrollbaru = posun pole tabulek nahoru/dolů
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        protected void TablesScrollBar_ValueChange(object sender, GPropertyChangeArgs<SizeRange> e)
-        {
-            int offset = (int)this.TablesScrollBar.Value.Begin.Value;
-            if (offset == this.TablesPositions.DataFirstPixel) return;
-            this.TablesPositions.DataFirstPixel = offset;
-            this.Invalidate(InvalidateItem.GridTablesScroll);
-        }
-        /// <summary>
-        /// Zajistí vložení všech patřičných hodnot do scrollbaru tabulek.
-        /// Tato akce nevyvolá žádný event.
-        /// Aktualizují se hodnoty ColumnsScrollBar: Bounds, ValueTotal, Value, IsEnabled
-        /// </summary>
-        /// <param name="actions">Akce k provedení</param>
-        /// <param name="eventSource">Zdroj této události</param>
-        protected void RecalcTableScrollBar(ref ProcessAction actions, EventSourceType eventSource)
-        {
-            if (this.TablesScrollBarVisible)
-                this.TablesScrollBar.LoadFrom(this.TablesPositions, this.TablesScrollBarBounds, true);
-        }
         /// <summary>
         /// Svislý Scrollbar pro posouvání pole tabulek nahoru/dolů (nikoli jejich řádků, na to má každá tabulka svůj vlastní Scrollbar).
         /// </summary>
-        protected GScrollBar TablesScrollBar { get; set; }
+        protected GScrollBar TablesScrollBar { get { this._TablesScrollBarCheck(); return this._TablesScrollBar; } }
+        /// <summary>
+        /// Ověří a zajistí připravenost dat v objektu TablesScrollBar.
+        /// Pokud je nastavena jeho neplatnost (_TablesScrollBarDataValid je false), pak provede načtení dat z pozicioneru.
+        /// Tato akce nevyvolá žádný event.
+        /// Aktualizují se hodnoty TablesScrollBar: Bounds, ValueTotal, Value, IsEnabled
+        /// </summary>
+        private void _TablesScrollBarCheck()
+        {
+            if (this._TablesScrollBarDataValid) return;
+
+            if (this.TablesScrollBarVisible)
+                this._TablesScrollBar.LoadFrom(this.TablesPositions, this.TablesScrollBarBounds, true);
+
+            this._TablesScrollBarDataValid = true;
+        }
+        /// <summary>
+        /// Pozicování tabulek
+        /// </summary>
+        private GridPosition _TablesPositions;
+        /// <summary>
+        /// Scrollbar pro tabulky
+        /// </summary>
+        private GScrollBar _TablesScrollBar;
+        /// <summary>
+        /// true po naplnění RowsScrollBar platnými daty, false po invalidaci
+        /// </summary>
+        private bool _TablesScrollBarDataValid;
         #endregion
         #region Pozicování vodorovné - sloupce tabulek a dolní vodorovný scrollbar
-        /// <summary>
-        /// Obsahuje všechny viditelné sloupce ze všech viditelných tabulek celého gridu.
-        /// Pole je v tom pořadí, v jakém se sloupce mají zobrazovat.
-        /// Sloupce vycházejí primárně z první tabulky gridu. Toto pole (this.Columns) reprezentuje synchronizované pole sloupců ze všech tabulek Gridu.
-        /// Změna šířky sloupce nebo jeho přemístění na jinou pozici v kterékoli tabulce v Gridu se prostřednictvím Gridu promítá do všech tabulek Gridu.
-        /// Jednotlivé tabulky mají svoji kolekci Columns, ale jejich šířka a pořadí jsou řízeny centrálně z této kolekce.
-        /// Rovněž i TimeAxis je synchronizována díky této kolekci.
-        /// </summary>
-        public GridColumn[] Columns { get { this._ColumnsCheck(); return this._Columns; } }
-        /// <summary>
-        /// Zajistí, že pole sloupců budou obsahovat platné hodnoty
-        /// </summary>
-        private void _ColumnsCheck()
-        {
-            bool needContent = (this._ColumnDict == null || this._Columns == null);
-            bool needRecalc = !this._ColumnsLayoutValid;
-            if (needContent || needRecalc)
-            {
-                Dictionary<int, GridColumn> columnDict = this._ColumnDict;
-                if (needContent)
-                {    // Je nutné vygenerovat obsah těchto polí:
-                     // Vytvořím index, kde klíčem je ColumnId, a hodnotou je instance GridColumn.
-                     // každá jedna instance GridColumn bude obsahovat souhrn všech viditelných sloupců shodného ColumnId, ze všech viditelných tabulek.
-                    columnDict = new Dictionary<int, GridColumn>();
-                    foreach (GTable table in this._Tables)
-                    {
-                        if (table.DataTable == null || !table.DataTable.IsVisible) continue;
-                        foreach (Column column in table.DataTable.Columns.Where(c => c.IsVisible))
-                        {
-                            int columnId = column.ColumnId;
-                            GridColumn gridColumn;
-                            if (columnDict.TryGetValue(columnId, out gridColumn))
-                                gridColumn.AddColumn(column);
-                            else
-                                columnDict.Add(columnId, new GridColumn(column));
-                        }
-                    }
-                }
-
-                // Nyní vytvořím lineární soupis GridColumn, a setřídím jej podle pořadí dle sloupce Master (z první tabulky):
-                List<GridColumn> columnList = columnDict.Values.ToList();
-                columnList.Sort(GridColumn.CompareOrder);
-
-                // Dále zajistím, že hodnoty ColumnOrder ve sloupcích budou číslovány po 2
-
-                // Zajistím provedení nápočtu pozic:
-                SequenceLayout.SequenceLayoutCalculate(columnList);
-
-                // Na každý pád je nutno uložit vypočtená data:
-                this._ColumnDict = columnDict;
-                this._Columns = columnList.ToArray();
-                this._ColumnsLayoutValid = true;
-            }
-        }
-        /// <summary>
-        /// Metoda zkusí najít a vrátit data o sloupci Gridu pro dané ID.
-        /// Sloupec Gridu (instance třídy GridColumn) reprezentuje jeden svislý sloupec stejného ColumnId, přes všechny tabulky.
-        /// Sloupec obsahuje MasterColumn = sloupec tohoto ColumnId z první tabulky, ve které se vyskytl. Ten pak hraje roli Mastera.
-        /// </summary>
-        /// <param name="columnId"></param>
-        /// <param name="gridColumn"></param>
-        /// <returns></returns>
-        public bool TryGetGridColumn(int columnId, out GridColumn gridColumn)
-        {
-            this._ColumnsCheck();
-            return this._ColumnDict.TryGetValue(columnId, out gridColumn);
-        }
-        /// <summary>
-        /// Index sloupců podle ColumnId
-        /// </summary>
-        private Dictionary<int, GridColumn> _ColumnDict;
-        /// <summary>
-        /// Seznam sloupců podle jejich pořadí
-        /// </summary>
-        private GridColumn[] _Columns;
-        /// <summary>
-        /// true pokud obsah pole _Columns má správné souřadnice, false pokud ne
-        /// </summary>
-        private bool _ColumnsLayoutValid = false;
-        /// <summary>
-        /// Řídící prvek pro Pozice sloupců
-        /// </summary>
-        public GridPosition ColumnsPositions { get; protected set; }
-        /// <summary>
-        /// Metoda vrátí vizuální souřadnice daného sloupce v aktuálním prostoru Gridu, podle 
-        /// </summary>
-        /// <param name="column"></param>
-        /// <returns></returns>
-        public Int32Range GetColumnVisualPosition(ISequenceLayout column)
-        {
-            if (!SequenceLayout.IsItemVisible(column as ISequenceLayout, this.ColumnsPositions.DataVisibleRange)) return null;
-            return this.ColumnsPositions.GetVisualPosition(column);
-        }
-        /// <summary>
-        /// Metoda zajistí změnu šířky sloupce RowHeader, a návazné změny v interních strukturách plus překreslení
-        /// </summary>
-        /// <param name="width"></param>
-        /// <returns></returns>
-        public bool ColumnRowHeaderResizeTo(ref int width)
-        {
-            Table masterTable = (this._Tables.Count > 0 ? this._Tables[0].DataTable : null);
-            if (masterTable == null) return false;
-
-            int widthOld = masterTable.RowHeaderWidth;
-            masterTable.RowHeaderWidth = width;
-            int widthNew = masterTable.RowHeaderWidth;
-
-            bool isChanged = (widthNew != widthOld);
-            if (isChanged)
-            {
-                width = widthNew;
-                // Zajistit invalidaci a překresení:
-                this.Invalidate(InvalidateItem.GridColumnsScroll);
-            }
-            return isChanged;
-        }
-        /// <summary>
-        /// Metoda zajistí přesun sloupce na jiné místo: tak, aby daný sloupec (column) byl zobrazen na daném pořadí.
-        /// Provede to tak, že změní hodnoty ColumnOrder vhodných sloupců, a zajistí přepočty polí sloupců a zajistí i překreslení.
-        /// </summary>
-        /// <param name="column">Sloupec, který chceme přesunout. Důležité je jen jeho ColumnId</param>
-        /// <param name="targetOrder">Cíl přesunu = ColumnOrder jiného sloupce, na jehož místo chci dát daný column. Tento jiný sloupec bude až za aktuálním sloupcem. Cíl přesunu může být i vyšší, než je nejvyšší ID, pak aktuální sloupec bude zařazen za poslední prvek.</param>
-        public bool ColumnMoveTo(Column column, int targetOrder)
-        {
-            if (column == null) return false;
-            return this.ColumnMoveTo(column.ColumnId, targetOrder);
-        }
-        /// <summary>
-        /// Metoda zajistí přesun sloupce na jiné místo: tak, aby daný sloupec (column) byl zobrazen na daném pořadí.
-        /// Provede to tak, že změní hodnoty ColumnOrder vhodných sloupců, a zajistí přepočty polí sloupců a zajistí i překreslení.
-        /// </summary>
-        /// <param name="columnId">Id sloupce, který chceme přesunout.</param>
-        /// <param name="targetOrder">Cíl přesunu = ColumnOrder jiného sloupce, na jehož místo chci dát daný column. Tento jiný sloupec bude až za aktuálním sloupcem. Cíl přesunu může být i vyšší, než je nejvyšší ID, pak aktuální sloupec bude zařazen za poslední prvek.</param>
-        public bool ColumnMoveTo(int columnId, int targetOrder)
-        {
-            GridColumn sourceColumn;
-            if (!this.TryGetGridColumn(columnId, out sourceColumn)) return false;        // Daný sloupec neznáme
-            int sourceOrder = sourceColumn.ColumnOrder;
-            if (sourceOrder == targetOrder) return false;                                // Není co dělat
-
-            GridColumn[] columns = this.Columns;
-            int length = columns.Length;
-            bool isSourceAdded = false;
-
-            // Do pole reorderedColumns přidám prvky fyzicky v požadovaném pořadí, a ve vhodnou chvíli do něj vložím požadovaný sloupec sourceColumn:
-            List<GridColumn> reorderedColumns = new List<GridColumn>();
-            for (int i = 0; i < length; i++)
-            {
-                GridColumn current = columns[i];
-                if (current.ColumnId == sourceColumn.ColumnId) continue;                 // Přemisťovaný sloupec = v tuto chvíli jej přeskočím, dostane se do pole jinak!
-                int currentOrder = current.ColumnOrder;
-                // Nyní řeším sloupec (current), jehož pořadí je menší než požadované cílové = přidám ho do seznamu reorderedColumns:
-                if (currentOrder < targetOrder) { reorderedColumns.Add(current); }
-                // Nynější sloupec (current) má být za přemisťovaným sloupcem, a ten jsme ještě do seznamu reorderedColumns nezařadili - zařadíme tam sourceColumn, a za ním current:
-                else if (!isSourceAdded) { reorderedColumns.Add(sourceColumn); isSourceAdded = true; reorderedColumns.Add(current); }
-                // Sloupec current má být za sloupcem sourceColumn, a ten (sourceColumn) už byl do seznamu reorderedColumns přidán dříve:
-                else { reorderedColumns.Add(current); }
-            }
-            // Pokud jsem až dosdu nepřidal sourceColumn, přidám jej na konec:
-            if (!isSourceAdded) { reorderedColumns.Add(sourceColumn); isSourceAdded = true; }
-
-            // Dosud jsme nezměnili žádné ColumnOrder, ale máme korektně seřazenou kolekci = takže do ní vepíšeme novou hodnotu ColumnOrder:
-            int columnOrder = 0;
-            foreach (GridColumn gc in reorderedColumns)
-                gc.ColumnOrder = columnOrder++;
-
-            // Zajistit invalidaci a překresení:
-            this.Invalidate(InvalidateItem.GridColumnsChange);
-            
-            return true;
-        }
-        /// <summary>
-        /// Metoda zajistí změnu šířky daného sloupce, a návazné změny v interních strukturách plus překreslení
-        /// </summary>
-        /// <param name="column"></param>
-        /// <param name="width">Požadovaná šířka, může se změnit</param>
-        /// <returns></returns>
-        public bool ColumnResizeTo(Column column, ref int width)
-        {
-            if (column == null) return false;
-            return this.ColumnResizeTo(column.ColumnId, ref width);
-        }
-        /// <summary>
-        /// Metoda zajistí změnu šířky daného sloupce, a návazné změny v interních strukturách plus překreslení
-        /// </summary>
-        /// <param name="columnId"></param>
-        /// <param name="width"></param>
-        /// <returns></returns>
-        public bool ColumnResizeTo(int columnId, ref int width)
-        {
-            GridColumn sourceColumn;
-            if (!this.TryGetGridColumn(columnId, out sourceColumn)) return false;        // Daný sloupec neznáme
-
-            int widthOld = sourceColumn.ColumnWidth;
-            sourceColumn.ColumnWidth = width;
-            int widthNew = sourceColumn.ColumnWidth;
-
-            bool isChanged = (widthNew != widthOld);
-            if (isChanged)
-            {
-                width = widthNew;
-                // Zajistit invalidaci a překresení:
-                this.Invalidate(InvalidateItem.GridColumnsScroll);
-            }
-            return isChanged;
-        }
         /// <summary>
         /// Inicializace pozic sloupců
         /// </summary>
         private void InitColumnsPositions()
         {
-            this.ColumnsPositions = new GridPosition(GGrid.DefaultRowHeaderWidth, 28, this._ColumnPositionGetVisualSize, this._ColumnPositionGetDataSize);
+            this._ColumnsPositions = new GridPosition(GGrid.DefaultRowHeaderWidth, 28, this._ColumnPositionGetVisualSize, this._ColumnPositionGetDataSize);
 
-            this.ColumnsScrollBar = new GScrollBar() { Orientation = System.Windows.Forms.Orientation.Horizontal };
-            this.ColumnsScrollBar.ValueChanging += new GPropertyChanged<SizeRange>(ColumnsScrollBar_ValueChange);
-            this.ColumnsScrollBar.ValueChanged += new GPropertyChanged<SizeRange>(ColumnsScrollBar_ValueChange);
+            this._ColumnsScrollBar = new GScrollBar() { Orientation = System.Windows.Forms.Orientation.Horizontal };
+            this._ColumnsScrollBar.ValueChanging += new GPropertyChanged<SizeRange>(ColumnsScrollBar_ValueChange);
+            this._ColumnsScrollBar.ValueChanged += new GPropertyChanged<SizeRange>(ColumnsScrollBar_ValueChange);
         }
+        /// <summary>
+        /// Řídící prvek pro Pozice sloupců
+        /// </summary>
+        public GridPosition ColumnsPositions { get { return this._ColumnsPositions; } }
         /// <summary>
         /// Vrací šířku vizuálního prostoru pro datové sloupce (= ClientSize.Width - ColumnsPositions.VisualFirstPixel - [šířka TablesScrollBar, pokud je viditelný])
         /// </summary>
@@ -664,7 +680,7 @@ namespace Djs.Common.Components
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        protected void ColumnsScrollBar_ValueChange(object sender, GPropertyChangeArgs<SizeRange> e)
+        private void ColumnsScrollBar_ValueChange(object sender, GPropertyChangeArgs<SizeRange> e)
         {
             int offset = (int)this.ColumnsScrollBar.Value.Begin.Value;
             if (offset == this.ColumnsPositions.DataFirstPixel) return;
@@ -672,156 +688,36 @@ namespace Djs.Common.Components
             this.Invalidate(InvalidateItem.GridColumnsScroll);
         }
         /// <summary>
-        /// Zajistí vložení všech patřičných hodnot do scrollbaru sloupců.
+        /// Dolní vodorovný Scrollbar, pro posuny sloupců doleva/doprava
+        /// </summary>
+        protected GScrollBar ColumnsScrollBar { get { this._ColumnsScrollBarCheck(); return this._ColumnsScrollBar; } }
+        /// <summary>
+        /// Ověří a zajistí připravenost dat v objektu ColumnsScrollBar.
+        /// Pokud je nastavena jeho neplatnost, pak provede načtení dat z pozicioneru.
         /// Tato akce nevyvolá žádný event.
         /// Aktualizují se hodnoty ColumnsScrollBar: Bounds, ValueTotal, Value, IsEnabled
         /// </summary>
-        /// <param name="actions">Akce k provedení</param>
-        /// <param name="eventSource">Zdroj této události</param>
-        protected void RecalcColumnScrollBar(ref ProcessAction actions, EventSourceType eventSource)
+        private void _ColumnsScrollBarCheck()
         {
+            if (this._ColumnsScrollBarDataValid) return;
+
             if (this.ColumnsScrollBarVisible)
-                this.ColumnsScrollBar.LoadFrom(this.ColumnsPositions, this.ColumnsScrollBarBounds, true);
+                this._ColumnsScrollBar.LoadFrom(this.ColumnsPositions, this.ColumnsScrollBarBounds, true);
+
+            this._ColumnsScrollBarDataValid = true;
         }
         /// <summary>
-        /// Dolní vodorovný Scrollbar, pro posuny sloupců doleva/doprava
+        /// Pozicování sloupců
         /// </summary>
-        protected GScrollBar ColumnsScrollBar { get; set; }
-        #endregion
-       
-        #region Invalidace, resety, refreshe
+        private GridPosition _ColumnsPositions;
         /// <summary>
-        /// Zajistí invalidaci položek po určité akci, která právě skončila
+        /// ScrollBar sloupců
         /// </summary>
-        /// <param name="items"></param>
-        public void Invalidate(InvalidateItem items)
-        {
-            // Pokud bude nastaven tento bit OnlyForTable, znamená to, že tuto invalidaci rozeslal Grid do podřízených tabulek, a některá podřízená tabulka ji poslala zase do Gridu.
-            if (items.HasFlag(InvalidateItem.OnlyForTable)) return;
-
-            bool callTables = false;
-
-            if (items.HasFlag(InvalidateItem.GridBounds))
-            {
-                this._TableInnerLayoutValid = false;
-            }
-            if (items.HasFlag(InvalidateItem.GridTablesChange))
-            {
-                this._TablesAll = null;
-                this._ChildArrayValid = false;
-            }
-            if (items.HasFlag(InvalidateItem.GridTablesScroll))
-            {
-                this._TablesLayoutValid = false;
-                this._ChildArrayValid = false;
-            }
-            if (items.HasFlag(InvalidateItem.GridColumnsChange))
-            {
-                this._Columns = null;
-                this._ChildArrayValid = false;
-                items |= InvalidateItem.ColumnsCount;
-                callTables = true;
-            }
-            if (items.HasFlag(InvalidateItem.GridColumnsScroll))
-            {
-                this._ColumnsLayoutValid = false;
-                this._ChildArrayValid = false;
-                items |= (InvalidateItem.ColumnScroll | InvalidateItem.ColumnWidth);
-                callTables = true;
-            }
-            if (items.HasFlag(InvalidateItem.GridItems))
-            {
-                this._ChildArrayValid = false;
-            }
-
-            if (!items.HasFlag(InvalidateItem.OnlyForGrid) && callTables)                // Invalidaci tabulek volám jen tehdy, když aktuální invalidace není "Jen pro grid", a podle významu se má týkat i tabulek...
-            {
-                InvalidateItem itemsTable = items | InvalidateItem.OnlyForTable;         // Nastavím bit, že navazující invalidace se má provést už jen v tabulkách, ale nemá se volat do Gridu!   Viz začátek zdejší metody.
-                foreach (GTable table in this._Tables.Where(t => t.IsVisible))
-                    table.Invalidate(itemsTable);
-            }
-        }
-        #endregion
-        #region Pole grafických prvků Childs - obsahuje všechny tabulky, jejich vzájemné oddělovače (Splitter), a scrollbary (sloupce vždy, tabulky podle potřeby)
+        private GScrollBar _ColumnsScrollBar;
         /// <summary>
-        /// Pole grafických prvků v tomto gridu: tabulky, splittery (mezi tabulkami), scrollbary (svislý, vodorovný)
+        /// true po naplnění ColumnsScrollBar platnými daty, false po invalidaci
         /// </summary>
-        protected override IEnumerable<IInteractiveItem> Childs { get { this.ChildArrayCheck(); return this.ChildList; } }
-        /// <summary>
-        /// Zajistí platnost pole sub-itemů.
-        /// </summary>
-        protected void ChildArrayCheck()
-        {
-            if (this._ChildArrayValid) return;
-            this.ChildList.Clear();
-            this._ChildItemsAddTables();                             // Tabulky
-            this._ChildItemsAddTableSplitters();                     // Splittery mezi tabulkami
-            this._ChildItemsAddColumnScrollBar();                    // ScrollBar vodorovný, pro sloupce
-            this._ChildItemsAddTablesScrollBar();                    // ScrollBar svislý, pro tabulky
-            this._ChildArrayValid = true;
-            this.TablesBounds;
-            this.ColumnsScrollBarBounds;
-        }
-
-        // doplnit sadu metod _ChildItemsAdd*():
-        // do každého prvku nejprve setovat jeho Bounds, z property this.TablesBounds; this.ColumnsScrollBarBounds; atd
-        // každá tato property si sama hlídá svoji validitu
-        qqq;
-
-        /// <summary>
-        /// Přepočítá souřadnice pro umístění jednotlivých tabulek (=jejich Bound), na základě souřadnic prostoru tabulek GridTablesBounds
-        /// </summary>
-        /// <param name="actions">Akce k provedení</param>
-        /// <param name="eventSource">Zdroj této události</param>
-        protected void RecalcTables(ref ProcessAction actions, EventSourceType eventSource)
-        {
-            Rectangle tablesBounds = this.GridTablesBounds;
-            foreach (ISequenceLayout isl in this.TablesAll)
-            {   // Procházím tabulky jako ISequenceLayout, určím jejich souřadnice podle ISequenceLayout.Begin a Size (=svislá pozice) + pozice prostoru tabulek (X a Width):
-                int y = this.TablesPositions.GetVisualPosition(isl.Begin);
-                Rectangle bound = new Rectangle(tablesBounds.X, y, tablesBounds.Width, isl.Size);
-                GTable gTable = isl as GTable;
-                if (gTable != null)
-                    gTable.SetBounds(bound, actions, eventSource);
-            }
-        }
-
-        /// <summary>
-        /// Reload all current items for this Grid into .
-        /// Add this items: this._Tables, 
-        /// </summary>
-        protected void ChildArrayReload()
-        {
-            this.ChildList.Clear();
-
-            Rectangle bounds = this.TablesBounds;
-
-            // Nejprve přidáme tabulky, a to jen ty které jsou viditelné:
-            // Současně si nastřádáme jejich splittery:
-            List<IInteractiveItem> splitterList = new List<IInteractiveItem>();
-            foreach (ISequenceLayout isl in this.TablesAll)
-            {   // Procházím tabulky ze seznamu ISequenceLayout, a pokud tabulka je viditelná, pak ji zpracuji:
-                GTable table = isl as GTable;
-                bool isVisible = (Rectangle.Intersect(bounds, table.Bounds).Height > 0);
-                if (isVisible)
-                {
-                    this.ChildList.Add(isl as IInteractiveItem);
-                    splitterList.Add((isl as GTable).TableSplitter);
-                }
-            }
-            // Pokud máme nastřádán více než 1 table-splitter, pak přidáme splitery krom posledního:
-            if (splitterList.Count > 1)
-                this.ChildList.AddRange(splitterList.GetRange(0, splitterList.Count - 1));
-
-            // Pokud jsou viditelné scrollbary, přidáme je:
-            if (this.ColumnsScrollBarVisible)
-                this.ChildList.Add(this.ColumnsScrollBar);
-            if (this.TablesScrollBarVisible)
-                this.ChildList.Add(this.TablesScrollBar);
-
-            this._ChildArrayValid = true;
-        }
-        private bool _ChildArrayValid;
+        private bool _ColumnsScrollBarDataValid;
         #endregion
         #region Obecná práce s časovými osami, hlavní časová osa, podpora pro časové osy v synchronizovaných sloupcích
         /// <summary>
@@ -874,7 +770,129 @@ namespace Djs.Common.Components
             }
         }
         #endregion
-        #region Interactivity
+        #region Invalidace, resety, refreshe
+        /// <summary>
+        /// Zajistí invalidaci položek po určité akci, která právě skončila
+        /// </summary>
+        /// <param name="items"></param>
+        public void Invalidate(InvalidateItem items)
+        {
+            // Pokud bude nastaven tento bit OnlyForTable, znamená to, že tuto invalidaci rozeslal Grid do podřízených tabulek, a některá podřízená tabulka ji poslala zase do Gridu.
+            if (items.HasFlag(InvalidateItem.OnlyForTable)) return;
+
+            bool callTables = false;
+
+            if (items.HasFlag(InvalidateItem.GridBounds))
+            {
+                this._TableInnerLayoutValid = false;
+            }
+            if (items.HasFlag(InvalidateItem.GridTablesChange))
+            {
+                this._TablesAll = null;
+                this._ChildArrayValid = false;
+            }
+            if (items.HasFlag(InvalidateItem.GridTablesScroll))
+            {
+                this._TablesVisible = null;
+                this._ChildArrayValid = false;
+            }
+            if (items.HasFlag(InvalidateItem.GridColumnsChange))
+            {
+                this._Columns = null;
+                this._ChildArrayValid = false;
+                items |= InvalidateItem.ColumnsCount;
+                callTables = true;
+            }
+            if (items.HasFlag(InvalidateItem.GridColumnsScroll))
+            {
+                this._ColumnsLayoutValid = false;
+                this._ChildArrayValid = false;
+                items |= (InvalidateItem.ColumnScroll | InvalidateItem.ColumnWidth);
+                callTables = true;
+            }
+            if (items.HasFlag(InvalidateItem.GridItems))
+            {
+                this._ChildArrayValid = false;
+            }
+
+            if (!items.HasFlag(InvalidateItem.OnlyForGrid) && callTables)                // Invalidaci tabulek volám jen tehdy, když aktuální invalidace není "Jen pro grid", a podle významu se má týkat i tabulek...
+            {
+                InvalidateItem itemsTable = items | InvalidateItem.OnlyForTable;         // Nastavím bit, že navazující invalidace se má provést už jen v tabulkách, ale nemá se volat do Gridu!   Viz začátek zdejší metody.
+                foreach (GTable table in this._Tables.Where(t => t.IsVisible))
+                    table.Invalidate(itemsTable);
+            }
+        }
+        #endregion
+        #region Pole grafických prvků Childs - obsahuje všechny tabulky, jejich vzájemné oddělovače (Splitter), a scrollbary (sloupce vždy, tabulky podle potřeby)
+        /// <summary>
+        /// Pole grafických prvků v tomto gridu: tabulky, splittery (mezi tabulkami), scrollbary (svislý, vodorovný)
+        /// </summary>
+        protected override IEnumerable<IInteractiveItem> Childs { get { this.ChildArrayCheck(); return this.ChildList; } }
+        /// <summary>
+        /// Zajistí platnost pole sub-itemů.
+        /// </summary>
+        protected void ChildArrayCheck()
+        {
+            if (this._ChildArrayValid) return;
+            this.ChildList.Clear();
+            this._ChildItemsAddTables();                             // Tabulky
+            this._ChildItemsAddTableSplitters();                     // Splittery mezi tabulkami
+            this._ChildItemsAddColumnScrollBar();                    // ScrollBar vodorovný, pro sloupce
+            this._ChildItemsAddTablesScrollBar();                    // ScrollBar svislý, pro tabulky
+            this._ChildArrayValid = true;
+        }
+        /// <summary>
+        /// Do pole this.ChildList přidá všechny viditelné tabulky.
+        /// Nepřidává splittery, ale naplní jejich souřadnice.
+        /// </summary>
+        protected void _ChildItemsAddTables()
+        {
+            Rectangle tablesBounds = this.TablesBounds;
+            foreach (GTable table in this.TablesVisible)
+            {
+                Rectangle tableBounds = Int32Range.GetRectangle(tablesBounds, table.VisualRange);
+                table.Bounds = tableBounds;
+                table.TableSplitter.LoadFrom(tableBounds, RectangleSide.Bottom, true);
+                this.ChildList.Add(table);
+            }
+        }
+        /// <summary>
+        /// Do pole this.ChildList přidá všechny potřebné splittery.
+        /// Souřadnice splitterů jsou již připraveny, to řešila metoda this._ChildItemsAddTables()
+        /// </summary>
+        protected void _ChildItemsAddTableSplitters()
+        {
+            Rectangle tablesBounds = this.TablesBounds;
+            GTable [] tables = this.TablesVisible;
+            int count = tables.Length;
+            for (int i = 0; i < count; i++)
+            {
+                GTable table = tables[i];
+                this.ChildList.Add(table.TableSplitter);
+            }
+        }
+        /// <summary>
+        /// Do pole this.ChildList přidá ColumnScrollBar, pokud je viditelný.
+        /// </summary>
+        protected void _ChildItemsAddColumnScrollBar()
+        {
+            if (this.ColumnsScrollBarVisible)
+                this.ChildList.Add(this.ColumnsScrollBar);
+        }
+        /// <summary>
+        /// Do pole this.ChildList přidá TablesScrollBar, pokud je viditelný.
+        /// </summary>
+        protected void _ChildItemsAddTablesScrollBar()
+        {
+            if (this.TablesScrollBarVisible)
+                this.ChildList.Add(this.TablesScrollBar);
+        }
+        /// <summary>
+        /// Platnost dat v poli ChildItems
+        /// </summary>
+        private bool _ChildArrayValid;
+        #endregion
+        #region Interaktivita vlastního Gridu
         protected override void AfterStateChanged(GInteractiveChangeStateArgs e)
         {
             // GGrid sám o sobě není interaktivní. Interaktivní jsou jeho Childs.
@@ -886,6 +904,22 @@ namespace Djs.Common.Components
             // GGrid sám o sobě se nevykresluje, leda v situaci kdy nemá žádnou tabulku:
             if (this.TablesCount == 0)
                 base.Draw(e);
+            else
+                this.DrawVoidAreas(e);
+        }
+        /// <summary>
+        /// Metoda vykreslí barvu pozadí do míst, kam moji ChildItems nekreslí nic svého.
+        /// </summary>
+        /// <param name="e"></param>
+        protected void DrawVoidAreas(GInteractiveDrawArgs e)
+        {
+            Rectangle bounds1 = this.GridVoidBounds1;
+            if (bounds1.HasPixels())
+                this.Host.FillRectangle(e.Graphics, this.GetAbsoluteBounds(bounds1), this.BackColor);
+
+            Rectangle bounds2 = this.GridVoidBounds2;
+            if (bounds2.HasPixels())
+                this.Host.FillRectangle(e.Graphics, this.GetAbsoluteBounds(bounds2), this.BackColor);
         }
         #endregion
         #region Defaultní hodnoty
@@ -1328,20 +1362,18 @@ namespace Djs.Common.Components
     #endregion
     #region interface IGridMember : Člen gridu GGrid, u kterého je možno provést Attach a Detach
     /// <summary>
-    /// Člen gridu GGrid, u kterého je možno provést Attach a Detach
+    /// Člen gridu GGrid, u kterého je možno vložit referenci na GGrid
     /// </summary>
     public interface IGridMember
     {
         /// <summary>
-        /// Napojí this objekt do dodaného Gridu a uloží do sebe dané ID
+        /// Reference na garfický grid
         /// </summary>
-        /// <param name="grid"></param>
-        /// <param name="id"></param>
-        void AttachToGrid(GGrid grid, int id);
+        GGrid GGrid { get; set; }
         /// <summary>
-        /// Odpojí this objekt od navázaného Gridu, resetuje svoje ID
+        /// ID tohoto prvku v rámci nadřízeného systému
         /// </summary>
-        void DetachFromGrid();
+        int Id { get; set; }
     }
     #endregion
     #region enum InvalidateItem

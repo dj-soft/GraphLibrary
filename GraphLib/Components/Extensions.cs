@@ -1353,6 +1353,15 @@ namespace Djs.Common.Components
         #endregion
         #region Rectangle, RectangleF: GetArea(), SummaryRectangle(), ShiftBy()
         /// <summary>
+        /// Vrací true, pokud this Rectangle má obě velikosti (Width i Height) kladné, a tedy obsahuje nějaký reálný pixel ke kreslení.
+        /// </summary>
+        /// <param name="r"></param>
+        /// <returns></returns>
+        public static bool HasPixels(this Rectangle r)
+        {
+            return (r.Width > 0 && r.Height > 0);
+        }
+        /// <summary>
         /// Vrací plochu daného Rectangle
         /// </summary>
         /// <param name="r"></param>

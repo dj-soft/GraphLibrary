@@ -797,6 +797,9 @@ namespace Djs.Common.Components
         /// </summary>
         public GInteractiveDrawLayer DrawLayer { get; private set; }
         /// <summary>
+        /// Prostor, do kterého je oříznut výstup grafiky (Clip) pro kreslení aktuálního prvku.
+        /// Jedná se o absolutní souřadnice v rámci Host.
+        /// Jde o prostor, který je průnikem prostorů všech Parentů daného prvku
         /// Bounds, to which is Graphics clipped.
         /// Is equal to all Parent AbsoluteBounds intersection.
         /// </summary>
@@ -832,8 +835,8 @@ namespace Djs.Common.Components
         {
             if (this.DrawLayer == onlyForLayer)
             {
-            Rectangle clip = this.GetClip(absoluteBounds);
-            this.Graphics.SetClip(clip);
+                Rectangle clip = this.GetClip(absoluteBounds);
+                this.Graphics.SetClip(clip);
             }
         }
     }

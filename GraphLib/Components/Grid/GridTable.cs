@@ -22,11 +22,13 @@ namespace Djs.Common.Components.Grid
     /// </summary>
     public class GTable : InteractiveContainer, IInteractiveItem, IGridMember, ISequenceLayout, IDisposable
     {
-        #region Inicializace
+        #region Inicializace, reference na GGrid, IGridMember
         internal GTable(GGrid grid, Table table)
         {
             this._Grid = grid;
             this._Table = table;
+            IGTableMember igtm = table as IGTableMember;
+            if (igtm != null) igtm.GTable = this;
             this.Init();
         }
         private void Init()
@@ -37,42 +39,48 @@ namespace Djs.Common.Components.Grid
         }
         void IDisposable.Dispose()
         {
-            ((IGridMember)this).DetachFromGrid();
+            IGTableMember igtm = this._Table as IGTableMember;
+            if (igtm != null) igtm.GTable = null;
+
+            this._Grid = null;
+            this._TableId = -1;
+            this._SetTableOrder();
             this._Table = null;
         }
-        #endregion
-        #region IGridMember - Linkování na grid
         /// <summary>
         /// Reference na grid, kam tato tabulka patří.
         /// </summary>
-        public GGrid Grid { get { return this._Grid; } private set { this._Grid = value; } }
-        private GGrid _Grid;
+        public GGrid Grid { get { return this._Grid; } }
         /// <summary>
         /// true pokud máme referenci na grid
         /// </summary>
         public bool HasGrid { get { return (this._Grid != null); } }
         /// <summary>
-        /// Napojí this tabulku do daného gridu.
-        /// Je voláno z gridu, v eventu ItemAdd kolekce Tables.
+        /// IGridMember.GGrid = _Grid
         /// </summary>
-        /// <param name="dTable"></param>
-        void IGridMember.AttachToGrid(GGrid grid, int id)
+        GGrid IGridMember.GGrid { get { return this._Grid; } set { this._Grid = value; } }
+        /// <summary>
+        /// IGridMember.Id = _TableId
+        /// </summary>
+        int IGridMember.Id { get { return this._TableId; } set { this._TableId = value; this._SetTableOrder(); } }
+        /// <summary>
+        /// Nastaví this.DataTable.TableOrder na hodnotu odpovídající this._TableId.
+        /// </summary>
+        private void _SetTableOrder()
         {
-            this._TableId = id;
-            if (this.DataTable.TableOrder < 0)
-                this.DataTable.TableOrder = id;
-            this._Grid = grid;
+            Table table = this._Table;
+            if (table != null)
+            {
+                if (this._TableId < 0)
+                    table.TableOrder = -1;
+                else if (this._TableId >= 0 && table.TableOrder < 0)
+                    table.TableOrder = this._TableId;
+            }
         }
         /// <summary>
-        /// Odpojí this tabulku z gridu.
-        /// Je voláno z gridu, v eventu ItemRemove kolekce Tables.
+        /// Reference na GGrid
         /// </summary>
-        void IGridMember.DetachFromGrid()
-        {
-            this._TableId = -1;
-            this.DataTable.TableOrder = -1;
-            this._Grid = null;
-        }
+        private GGrid _Grid;
         #endregion
         #region Rozmístění vnitřních prvků tabulky - souřadnice pro prostor záhlaví, řádků a scrollbaru
         /// <summary>
@@ -293,6 +301,12 @@ namespace Djs.Common.Components.Grid
         /// </summary>
         public int TableOrder { get { return this.DataTable.TableOrder; } }
         /// <summary>
+        /// Úložiště pro souřadnice na ose Y v koordinátech Parent controlu (=Grid), kde má být tato tabulka zobrazena.
+        /// Jde o hodnoty ISequenceLayout.Begin a .End převedené z datových koordinátů do vizuálních, reprezentují tedy this.Bounds.Y a this.Bounds.Bottom.
+        /// Nicméně setování této property nemá provádět změnu this.Bounds, zde je hodnota jen uložena v procesu výpočtů svislého layoutu v Gridu, a odsud je vyzvednuta v potřebnou chvíli zase v Gridu.
+        /// </summary>
+        public Int32Range VisualRange { get; set; }
+        /// <summary>
         /// Komparátor podle hodnoty TableOrder ASC
         /// </summary>
         /// <param name="a"></param>
@@ -446,7 +460,7 @@ namespace Djs.Common.Components.Grid
         /// </summary>
         private Row[] _VisibleRows;
         #endregion
-        #region Pozicování řádků = svislé : pozicioner pro řádky, svislý scrollbar vpravo
+        #region Pozicování řádků svislé - pozicioner pro řádky, svislý scrollbar vpravo
         /// <summary>
         /// Inicializace objektů pro pozicování tabulek: TablesPositions, TablesScrollBar
         /// </summary>
@@ -521,8 +535,6 @@ namespace Djs.Common.Components.Grid
         /// Tato akce nevyvolá žádný event.
         /// Aktualizují se hodnoty RowsScrollBar: Bounds, ValueTotal, Value, IsEnabled
         /// </summary>
-        /// <param name="actions">Akce k provedení</param>
-        /// <param name="eventSource">Zdroj této události</param>
         private void _RowsScrollBarCheck()
         {
             if (this._RowsScrollBarDataValid) return;
@@ -980,7 +992,7 @@ namespace Djs.Common.Components.Grid
         }
         /// <summary>
         /// Do pole this.ChildList přidá všechna záhlaví sloupců (tedy TableHeader + VisibleColumns.ColumnHeader).
-        /// Nepřidává splitetry: ani mezi sloupci, ani pod Headers.
+        /// Nepřidává splittery: ani mezi sloupci, ani pod Headers.
         /// </summary>
         protected void _ChildItemsAddColumnHeaders()
         {
@@ -1022,13 +1034,13 @@ namespace Djs.Common.Components.Grid
         protected void _ChildItemsAddRowsContent()
         {
             foreach (Row row in this.VisibleRows)
-                this.ChildItemsAddRowContent(row);
+                this._ChildItemsAddRowContent(row);
         }
         /// <summary>
         /// Do pole this.ChildList přidá obsah jednoho daného řádku, obsah je: RowHeader + za každý viditelný sloupec (VisibleColumns) pak obsah vizuální buňky (row[column.ColumnId].Control).
         /// </summary>
         /// <param name="row"></param>
-        protected void ChildItemsAddRowContent(Row row)
+        protected void _ChildItemsAddRowContent(Row row)
         {
             Rectangle rowHeaderBounds = this.RowHeaderBounds;
             Rectangle rowAreaBounds = this.RowAreaBounds;
@@ -1060,12 +1072,12 @@ namespace Djs.Common.Components.Grid
         protected void _ChildItemsAddRowsSplitters()
         {
             foreach (Row row in this.VisibleRows)
-                this.ChildItemsAddRowSplitters(row);
+                this._ChildItemsAddRowSplitters(row);
         }
         /// <summary>
         /// Do pole this.ChildList přidá RowSplitter pro daný řádek
         /// </summary>
-        protected void ChildItemsAddRowSplitters(Row row)
+        protected void _ChildItemsAddRowSplitters(Row row)
         {
             GRowHeader rowHeader = row.RowHeader;
             if (rowHeader.RowSplitterVisible)
@@ -1378,11 +1390,11 @@ namespace Djs.Common.Components.Grid
         /// <summary>
         /// Grid (grafický), do kterého patří zdejší tabulka
         /// </summary>
-        protected GGrid OwnerGGrid { get { return (this.OwnerTable != null ? this.OwnerTable.GTable.Grid : null); } }
+        protected GGrid OwnerGGrid { get { return ((this.OwnerTable != null && this.OwnerTable.HasGTable) ? this.OwnerTable.GTable.Grid : null); } }
         /// <summary>
         /// Tabulka (grafická), do které patří toto záhlaví
         /// </summary>
-        protected GTable OwnerGTable { get { return (this.OwnerTable != null ? this.OwnerTable.GTable : null); } }
+        protected GTable OwnerGTable { get { return ((this.OwnerTable != null && this.OwnerTable.HasGTable) ? this.OwnerTable.GTable : null); } }
         /// <summary>
         /// Datová tabulka, do které this záhlaví patří.
         /// Je k dispozici pro všechny tři typy záhlaví (Table, Column, Row).
@@ -2442,4 +2454,15 @@ namespace Djs.Common.Components.Grid
         HorizontalScrollBar
     }
     #endregion
+    /// <summary>
+    /// Člen grafické tabulky GTable, do kterého je možno vložit i odebrat referenci na danou GTable
+    /// </summary>
+    public interface IGTableMember
+    {
+        /// <summary>
+        /// Reference na GTable, umístěná v datovém prvku
+        /// </summary>
+        GTable GTable { get; set; }
+    }
+
 }
