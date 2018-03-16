@@ -153,8 +153,8 @@ namespace Djs.Common.TestGUI
                 table.AddColumns
                     (
                         new Column() { Title = "Klíč", ToolTip = "Klíč záznamu v tomto sloupci", Name = "key", FormatString = "0000000", Width = 60 },
-                        new Column() { Title = "Datum OD", ToolTip = "Počáteční datum směny", Name = "date_from", FormatString = "yyyy-MM-dd", Width = 80 },
-                        new Column() { Title = "Datum DO", ToolTip = "Koncové datum směny", Name = "date_to", FormatString = "yyyy-MM-dd", Width = 80 },
+                        new Column() { Title = "Datum OD", ToolTip = "Počáteční datum směny", Name = "date_from", FormatString = "yyyy-MM-dd HH:mm", Width = 80 },
+                        new Column() { Title = "Datum DO", ToolTip = "Koncové datum směny", Name = "date_to", FormatString = "yyyy-MM-dd HH:mm:ss", Width = 80 },
                         new Column() { Title = "graf", ToolTip = "Graf vytížení", Name = "graph1", UseTimeAxis = true, Width = 180, AutoWidth = true },
                         new Column() { Title = "Cena jednotky", ToolTip = "Jednotková cena.\r\nJe zde jen pro informaci.", Name = "price1", FormatString = "### ##0.00", Width = 80 },
                         new Column() { Title = "Fotografie", ToolTip = "Zobrazení", Name = "image", Width = 60 }
@@ -407,18 +407,20 @@ namespace Djs.Common.TestGUI
                     this._Toolbar.Bounds = new Rectangle(0, 0, size.Width, 110);
                     y = this._Toolbar.Bounds.Bottom + 1;
                 }
-                int h = size.Height - y - 5;
+
+                y += 3;
+                int h = size.Height - y - 6;
                 if (this._SplitterWZ != null)
                 {
                     int split = this._SplitterWZ.Value;
                     if (this._GridW != null)
                     {
-                        this._GridW.Bounds = new Rectangle(5, y, split - 7, h);
+                        this._GridW.Bounds = new Rectangle(5, y, split - 8, h);
                         this._GridW.Refresh();
                     }
                     if (this._GridZ != null)
                     {
-                        this._GridZ.Bounds = new Rectangle(split + 2, y, size.Width - 5 - split - 2, h);
+                        this._GridZ.Bounds = new Rectangle(split + 3, y, size.Width - 5 - split - 6, h);
                         this._GridW.Refresh();
                     }
                     this._SplitterWZ.BoundsNonActive = new Int32NRange(y, y + h);
