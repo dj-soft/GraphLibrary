@@ -806,6 +806,10 @@ namespace Djs.Common.Components.Grid
                 this._VisibleRows = null;
                 this._ChildArrayValid = false;
             }
+            if ((items & (InvalidateItem.Paint)) != 0)
+            {   // Požadavek na kreslení tabulky:
+                this.Repaint();
+            }
 
             // Předáme to šéfovi, pokud ho máme, a pokud to pro něj může být zajímavé, a pokud událost není určena jen pro naše (OnlyForTable) potřeby:
             if (this.HasGrid && callGrid && !items.HasFlag(InvalidateItem.OnlyForTable))
@@ -901,7 +905,7 @@ namespace Djs.Common.Components.Grid
         {
             if (this._HeaderSplitterDataValid) return;
             Rectangle bounds = this.HeaderSplitterBounds;
-            this._HeaderSplitter.LoadFrom(bounds, bounds.Y, true);
+            this._HeaderSplitter.LoadFrom(bounds, RectangleSide.Bottom, true);
             this._HeaderSplitterDataValid = true;
         }
         /// <summary>
@@ -952,7 +956,7 @@ namespace Djs.Common.Components.Grid
         {
             if (this._TableSplitterDataValid) return;
             Rectangle bounds = this.TableSplitterBounds;
-            this._TableSplitter.LoadFrom(bounds, bounds.Y, true);
+            this._TableSplitter.LoadFrom(bounds, RectangleSide.Bottom, true);
             this._TableSplitterDataValid = true;
         }
         /// <summary>
@@ -1414,7 +1418,7 @@ namespace Djs.Common.Components.Grid
             //  které mají svoje souřadnice relativní k GTable, ale mají se zobrazovat "oříznuté" do patřičných oblastí v GTable.
             if (e.DrawLayer == GInteractiveDrawLayer.Standard)
                 // Clip() ale provedeme jen pro Standard vrstvu; protože v ostatních vrstvách se provádí Dragging, a ten má být neomezený:
-                e.GraphicsClipWith(this.OwnerGTable.GetAbsoluteBoundsForArea(this.HeaderType));
+                e.GraphicsClipWith(this.OwnerGTable.GetAbsoluteBoundsForArea(this.HeaderType), true);
 
             int? opacity = (e.DrawLayer == GInteractiveDrawLayer.Standard ? (int?)null : (int?)128);
             this.DrawHeader(e, boundsAbsolute, opacity);
@@ -1426,7 +1430,7 @@ namespace Djs.Common.Components.Grid
             //  které mají svoje souřadnice relativní k GTable, ale mají se zobrazovat "oříznuté" do patřičných oblastí v GTable.
             if (e.DrawLayer == GInteractiveDrawLayer.Standard)
                 // Clip() ale provedeme jen pro Standard vrstvu; protože v ostatních vrstvách se provádí Dragging, a ten má být neomezený:
-                e.GraphicsClipWith(this.OwnerGTable.GetAbsoluteBoundsForArea(this.HeaderType));
+                e.GraphicsClipWith(this.OwnerGTable.GetAbsoluteBoundsForArea(this.HeaderType), true);
 
             if (e.DrawLayer == GInteractiveDrawLayer.Standard)
                 e.Graphics.FillRectangle(Brushes.DarkGray, boundsAbsolute);
@@ -2198,7 +2202,7 @@ namespace Djs.Common.Components.Grid
         /// <summary>
         /// Typ prvku = Data
         /// </summary>
-        protected TableAreaType HeaderType { get { return TableAreaType.Data; } }
+        protected TableAreaType AreaType { get { return TableAreaType.Data; } }
         #endregion
         #region Interaktivita
         protected override void AfterStateChanged(GInteractiveChangeStateArgs e)
@@ -2255,6 +2259,13 @@ namespace Djs.Common.Components.Grid
         protected override void Draw(GInteractiveDrawArgs e)
         {
             Rectangle boundsAbsolute = this.BoundsAbsolute;
+
+            // Clip() mi zajistí, že při pixelovém posunu buňky bude buňka vykreslena jen do příslušné části vymezeného prostoru pro danou oblast.
+            // Grafická organizace GTable není členěna nijak výrazně strukturovaně => GTable obsahuje jako Child jednotlivé prvky (GTableHeader, GColumnHeader, GowHeader, GCell),
+            //  které mají svoje souřadnice relativní k GTable, ale mají se zobrazovat "oříznuté" jen do patřičných oblastí v GTable.
+            if (e.DrawLayer == GInteractiveDrawLayer.Standard)
+                // Clip() ale provedeme jen pro Standard vrstvu; protože v ostatních vrstvách se provádí Dragging, a ten má být neomezený:
+                e.GraphicsClipWith(this.OwnerGTable.GetAbsoluteBoundsForArea(this.AreaType), true);
 
             // Background + obsah:
             this.DrawContent(e, boundsAbsolute);

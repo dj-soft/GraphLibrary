@@ -46,7 +46,38 @@ namespace Djs.Common.Components
         protected override void SetBoundsPrepareInnerItems(Rectangle oldBounds, Rectangle newBounds, ref ProcessAction actions, EventSourceType eventSource)
         {
             base.SetBoundsPrepareInnerItems(oldBounds, newBounds, ref actions, eventSource);
-            this.Invalidate(InvalidateItem.GridBounds);
+            InvalidateByBoundsChanges(newBounds);
+        }
+        /// <summary>
+        /// Metoda invaliduje patřičné údaje na základě aktuální změny Bounds.
+        /// Pokud se nemění vnitřní prostor tabulky (ClientSize), pak není nutno přepočítávat všechna data.
+        /// K tomu dochází při standardním přesouvání sady tabulek nahoru/dolů: mění se hodnota Top, ale nemění se Width ani Height tabulky, 
+        /// pak je zbytečné invalidovat vnitřní data a znovu je napočítávat, protože vnitřní objekty (Childs) jsou stále tytéž, na stále stejných souřadnicích (jejich souřadnice jsou relativní k GridTable).
+        /// </summary>
+        /// <param name="newBounds"></param>
+        protected void InvalidateByBoundsChanges(Rectangle newBounds)
+        {
+            InvalidateItem items = InvalidateItem.None;
+
+            // Změna umístění gridu:
+            Rectangle? lastBounds = this._LastBounds;
+            bool isSamePosition = (lastBounds.HasValue && lastBounds.Value.Location == newBounds.Location);
+            if (!isSamePosition)
+                items |= InvalidateItem.Paint;
+
+            // Vnitřní prostor - to je výška a šířka:
+            Size? lastClientSize = this._LastClientSize;
+            Size currentClientSize = this.ClientSize;
+            bool isSameHeight = (lastClientSize.HasValue && lastClientSize.Value.Height == currentClientSize.Height);
+            if (!isSameHeight)
+                items |= InvalidateItem.GridTablesScroll | InvalidateItem.GridInnerBounds;
+            bool isSameWidth = (lastClientSize.HasValue && lastClientSize.Value.Width == currentClientSize.Width);
+            if (!isSameWidth)
+                items |= InvalidateItem.ColumnScroll | InvalidateItem.GridInnerBounds;
+
+            this.Invalidate(items);
+
+            this._LastBounds = newBounds;
         }
         /// <summary>
         /// Metoda zajistí, že souřadnice vnitřních objektů budou platné a budou odpovídat aktuální velikosti Tabulky a poloze splitterů a rozsahu dat.
@@ -77,7 +108,7 @@ namespace Djs.Common.Components
             int x1 = this.ColumnsPositions.VisualFirstPixel;                   // x1: zde začíná ColumnsScrollBar (hned za koncem RowHeaderColumn)
             int x3 = clientSize.Width;                                         // x3: úplně vpravo
             int x2t = x3 - GScrollBar.DefaultSystemBarWidth;                   // x2t: zde začíná TablesScrollBar (vpravo, hned za koncem ColumnsScrollBar), tedy pokud by byl zobrazen
-            int x2r = (this.TablesScrollBarVisible ? x2t : x3);                // x2r: zde reálně končí oblast prostoru pro tabulky a končí zde i ColumnsScrollBar, se zohledněním aktuální viditelnosti TablesScrollBaru
+            int x2r = (this._TablesScrollBarVisible ? x2t : x3);               // x2r: zde reálně končí oblast prostoru pro tabulky a končí zde i ColumnsScrollBar, se zohledněním aktuální viditelnosti TablesScrollBaru
             int y0 = 0;                                                        // y0: úplně nahoře
             int y1 = y0;                                                       // y1: zde začíná prostor pro tabulky i TablesScrollBar 
             int y3 = clientSize.Height;                                        // y3: úplně dole
@@ -90,6 +121,12 @@ namespace Djs.Common.Components
             this._ColumnsScrollBarBounds = new Rectangle(x1, y2, x2r - x1, y3 - y2);
             this._GridVoidBounds1 = new Rectangle(x0, y2, x1 - x0, y3 - y2);
             this._GridVoidBounds2 = new Rectangle(x2r, y2, x3 - x2r, y3 - y2);
+
+            // Invalidace závislých prvků:
+            this._TablesVisible = null;
+            this._TablesScrollBarDataValid = false;
+            this._ColumnsScrollBarDataValid = false;
+            this._ChildArrayValid = false;
 
             this._LastClientSize = clientSize;
         }
@@ -137,6 +174,10 @@ namespace Djs.Common.Components
         /// _GridVoidBounds1, _GridVoidBounds2, _ColumnRowHeaderVisualRange, _ColumnsDataVisualRange)
         /// </summary>
         private bool _TableInnerLayoutValid;
+        /// <summary>
+        /// Souřadnice Gridu, pro které byly naposledy validovány Outer souřadnice
+        /// </summary>
+        private Rectangle? _LastBounds;
         /// <summary>
         /// Vnitřní rozměry tabulky, pro které byly naposledy validovány Inner souřadnice
         /// </summary>
@@ -782,9 +823,11 @@ namespace Djs.Common.Components
 
             bool callTables = false;
 
-            if (items.HasFlag(InvalidateItem.GridBounds))
+            if ((items & (InvalidateItem.GridBounds | InvalidateItem.GridInnerBounds)) != 0)
             {
                 this._TableInnerLayoutValid = false;
+                this._ChildArrayValid = false;
+                callTables = true;
             }
             if (items.HasFlag(InvalidateItem.GridTablesChange))
             {
@@ -813,6 +856,10 @@ namespace Djs.Common.Components
             if (items.HasFlag(InvalidateItem.GridItems))
             {
                 this._ChildArrayValid = false;
+            }
+            if (items.HasFlag(InvalidateItem.Paint))
+            {
+                callTables = true;
             }
 
             if (!items.HasFlag(InvalidateItem.OnlyForGrid) && callTables)                // Invalidaci tabulek volám jen tehdy, když aktuální invalidace není "Jen pro grid", a podle významu se má týkat i tabulek...
@@ -1387,8 +1434,10 @@ namespace Djs.Common.Components
         None = 0,
         /// <summary>Rozměry Gridu</summary>
         GridBounds = 1,
+        /// <summary>Změna vnitřních rozměrů Gridu</summary>
+        GridInnerBounds = GridBounds << 1,
         /// <summary>Změna v počtu tabulek nebo jejich pořadí v Gridu (volat po akcích: přidat / odebrat sloupec, přemístit sloupec)</summary>
-        GridTablesChange = GridBounds << 1,
+        GridTablesChange = GridInnerBounds << 1,
         /// <summary>Změna v pozici tabulek v Gridu (volat po akcích: resize tabulky, scroll tabulek)</summary>
         GridTablesScroll = GridTablesChange << 1,
         /// <summary>Změna v počtu sloupců nebo jejich pořadí v Gridu (volat po akcích: přidat / odebrat sloupec, přemístit sloupec)</summary>
