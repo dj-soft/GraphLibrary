@@ -870,6 +870,11 @@ namespace Djs.Common.Components
                 this._GraphicsClipWith(absoluteBounds, permanent);
         }
         /// <summary>
+        /// Obsahuje true, pokud aktuální ClipBounds obsahuje prázdný prostor (jeho Width nebo Height == 0).
+        /// Pokud tedy IsClipEmpty je true, pak nemá smysl provádět jakékoli kreslení pomocí grafiky, protože nebude nic vidět.
+        /// </summary>
+        public bool IsClipEmpty { get { Rectangle c = this.ClipBounds; return (c.Width == 0 || c.Height == 0); } }
+        /// <summary>
         /// Ořízne plochu, do které bude kreslit aktuální Graphics, jen na průsečík aktuálního this.ClipBounds s danými souřadnicemi.
         /// Parametr permanent říká, zda toto oříznutí má být bráno jako trvalé pro aktuální kreslený prvek, tím se ovlivní chování po nějakém následujícím volání téže metody.
         /// </summary>

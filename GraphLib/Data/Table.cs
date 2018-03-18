@@ -49,6 +49,18 @@ namespace Djs.Common.Data
             this._LayoutInit();
         }
         /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            string text = "Table";
+            if (!String.IsNullOrEmpty(this.TableName)) text += " Name: " + this.TableName;
+            text += "; Columns: " + this.ColumnsCount.ToString();
+            text += "; Rows: " + this.RowsCount.ToString();
+            return text;
+        }
+        /// <summary>
         /// Název tabulky, podle něj lze hledat. jde o klíčové slovo, nikoli popisek (Caption)
         /// </summary>
         public string TableName { get { return this._TableName; } set { this._TableName = value; } }
@@ -946,9 +958,15 @@ namespace Djs.Common.Data
             this._Name = name;
             this._Text = text;
         }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
-            return this.Name + ": " + this.Title;
+            return "Column " + this.ColumnId.ToString() + ": " 
+                + this.Name + ": " + this.Title 
+                + " in " + (this.HasTable ? this.Table.ToString() : "NULL");
         }
         /// <summary>
         /// Jednoznačné ID tohoto sloupce. Read only.
@@ -1213,6 +1231,15 @@ namespace Djs.Common.Data
             this._CellInit(values);
         }
         /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return "Row " + this.RowId.ToString() + ": "
+                + " in " + (this.HasTable ? this.Table.ToString() : "NULL");
+        }
+        /// <summary>
         /// Jednoznačné ID tohoto řádku. Read only.
         /// Je přiděleno při přidání do tabulky, pak má hodnotu 0 nebo kladnou.
         /// Hodnota se nemění ani přemístěním na jinou pozici, ani odebráním některého řádku s menším ID.
@@ -1398,6 +1425,17 @@ namespace Djs.Common.Data
         {
             this._ColumnId = columnId;
             this._Row = dRow;
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            string row = (this._Row != null ? this._Row.RowId.ToString() : "??");
+            string col = (this._ColumnId >= 0 ? this._ColumnId.ToString() : "??");
+            return "Cell[" + row + "," + col + "] "
+                + " in " + (this.HasTable ? this.Table.ToString() : "NULL");
         }
         /// <summary>
         /// true pokud mám svůj řádek

@@ -47,6 +47,10 @@ namespace Djs.Common.Components.Grid
             this._SetTableOrder();
             this._Table = null;
         }
+        public override string ToString()
+        {
+            return "GTable for " + this.DataTable.ToString();
+        }
         /// <summary>
         /// Reference na grid, kam tato tabulka patří.
         /// </summary>
@@ -252,9 +256,9 @@ namespace Djs.Common.Components.Grid
         /// <returns></returns>
         public Rectangle GetAbsoluteBoundsForArea(TableAreaType areaType)
         {
-            Point absoluteOrigin = this.GetAbsoluteOriginPoint();
+            Rectangle tableAbsoluteBounds = this.BoundsAbsolute;
             Rectangle relativeBounds = this.GetRelativeBoundsForArea(areaType);
-            return relativeBounds.Add(absoluteOrigin);
+            return relativeBounds.Add(tableAbsoluteBounds.Location);
         }
         /// <summary>
         /// Platnosti souřadnic vnitřních objektů (_TableHeaderBounds, _ColumnHeaderBounds, _RowHeaderBounds, _RowAreaBounds, _RowsScrollBarVisible, _RowsScrollBarBounds, _HeaderSplitterBounds)
@@ -625,6 +629,11 @@ namespace Djs.Common.Components.Grid
             if (!isChange) return;
 
             // Je tu změna:
+
+            // Zajistíme překreslení starého i nového řádku (kvůli abrevnosti):
+            this.RepaintRow(this._ActiveRow);
+            this.RepaintRow(newActiveRow);
+
             this._ActiveRow = newActiveRow;
             this.CallActiveRowChanged(oldActiveRow, newActiveRow, eventSource);
 
@@ -665,6 +674,17 @@ namespace Djs.Common.Components.Grid
 
             if (scrollToVisible)
                 this.ScrollColumnToVisibleArea(newActiveCell.Column);
+        }
+        /// <summary>
+        /// Zajistí vyvolání metody Repaint pro RowHeader i pro všechny Cell.Control v daném řádku.
+        /// </summary>
+        /// <param name="row"></param>
+        protected void RepaintRow(Row row)
+        {
+            if (row == null) return;
+            row.RowHeader.Repaint();
+            foreach (Cell cell in row.Cells)
+                cell.Control.Repaint();
         }
         /// <summary>
         /// Nastaví daný řádek tak, aby byl viditelný = tj. zcela, ne jen zčásti (pokud to jen trochu jde).
@@ -986,9 +1006,10 @@ namespace Djs.Common.Components.Grid
         {
             if (this._ChildArrayValid) return;
             this.ChildList.Clear();
+            // Něco k pořadí vkládání prvků do Items: dospodu dáme to, co by mělo být "vespodu" = obsah buněk. Nad ně dáme Headers a na ně Splitters:
+            this._ChildItemsAddRowsContent();                        // Řádky: buňky plus záhlaví, ale ne oddělovače
             this._ChildItemsAddColumnHeaders();                      // Záhlaví sloupců (TableHeader + ColumnHeaders)
             this._ChildItemsAddColumnSplitters();                    // Oddělovače sloupců, které to mají povoleno
-            this._ChildItemsAddRowsContent();                        // Řádky: záhlaví plus buňky, ale ne oddělovače
             this._ChildItemsAddHeaderSplitter();                     // Oddělovač pod hlavičkami sloupců (řídí výšku záhlaví)
             this._ChildItemsAddRowsSplitters();                      // Řádky: oddělovače řádků, pokud je povoleno
             this._ChildItemsAddRowsScrollBar();                      // Scrollbar řádků, pokud je viditelný
@@ -1048,12 +1069,10 @@ namespace Djs.Common.Components.Grid
         {
             Rectangle rowHeaderBounds = this.RowHeaderBounds;
             Rectangle rowAreaBounds = this.RowAreaBounds;
-
             GRowHeader rowHeader = row.RowHeader;
             Int32Range rowVisualRange = rowHeader.VisualRange;
-            rowHeader.Bounds = Int32Range.GetRectangle(rowHeaderBounds, rowVisualRange);
-            this.ChildList.Add(rowHeader);
 
+            // Něco k pořadí vkládání prvků do Items: dospodu dáme to, co by mělo být "vespodu" = obsah buněk. Nad ně dáme Headers a na ně Splitters:
             foreach (Column column in this.VisibleColumns)
             {
                 Int32Range columnVisualRange = column.ColumnHeader.VisualRange;
@@ -1061,6 +1080,9 @@ namespace Djs.Common.Components.Grid
                 cell.Bounds = Int32Range.GetRectangle(columnVisualRange, rowVisualRange);
                 this.ChildList.Add(cell);
             }
+
+            rowHeader.Bounds = Int32Range.GetRectangle(rowHeaderBounds, rowVisualRange);
+            this.ChildList.Add(rowHeader);
         }
         /// <summary>
         /// Do pole this.ChildList přidá HeaderSplitter, pokud tabulka povoluje změnu výšky záhlaví (DataTable.AllowColumnHeaderResize)
@@ -1413,12 +1435,18 @@ namespace Djs.Common.Components.Grid
         protected override bool CanDrag { get { return false; } }
         protected override void DrawStandard(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
         {
+            if (this.OwnerTable.TableName == "směny")
+            { }
+
             // Clip() mi zajistí, že při pixelovém posunu záhlaví (sloupce, řádky) bude záhlaví vykresleno jen do příslušné části vymezeného prostoru pro danou oblast.
             // Grafická organizace GTable není členěna nijak výrazně strukturovaně => GTable obsahuje jako Child jednotlivé prvky (GHeader, GColumn),
             //  které mají svoje souřadnice relativní k GTable, ale mají se zobrazovat "oříznuté" do patřičných oblastí v GTable.
             if (e.DrawLayer == GInteractiveDrawLayer.Standard)
+            {
                 // Clip() ale provedeme jen pro Standard vrstvu; protože v ostatních vrstvách se provádí Dragging, a ten má být neomezený:
-                e.GraphicsClipWith(this.OwnerGTable.GetAbsoluteBoundsForArea(this.HeaderType), true);
+                Rectangle areaAbsoluteBounds = this.OwnerGTable.GetAbsoluteBoundsForArea(this.HeaderType);
+                e.GraphicsClipWith(areaAbsoluteBounds, true);
+            }
 
             int? opacity = (e.DrawLayer == GInteractiveDrawLayer.Standard ? (int?)null : (int?)128);
             this.DrawHeader(e, boundsAbsolute, opacity);
@@ -1477,6 +1505,14 @@ namespace Djs.Common.Components.Grid
         protected override void SetChildBounds(Rectangle newBounds)
         {
             this.SetSplitterBounds(newBounds);
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return "TableHeader in " + this._OwnerTable.ToString();
         }
         #endregion
         #region Reference na objekty Owner
@@ -1572,6 +1608,14 @@ namespace Djs.Common.Components.Grid
         {
             this.SetSplitterBounds(newBounds);
             this.SetTimeAxisBounds(newBounds);
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return "ColumnHeader in " + this._OwnerColumn.ToString();
         }
         #endregion
         #region Reference na objekty Owner
@@ -2025,6 +2069,14 @@ namespace Djs.Common.Components.Grid
         {
             this.SetSplitterBounds(newBounds);
         }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return "RowHeader in " + this._OwnerRow.ToString();
+        }
         #endregion
         #region Reference na objekty Owner
         /// <summary>
@@ -2165,6 +2217,14 @@ namespace Djs.Common.Components.Grid
             this._Cell = cell;
         }
         private Cell _Cell;
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return "Cell in " + this._Cell.ToString();
+        }
         #endregion
         #region Reference na objekty Owner
         /// <summary>
