@@ -873,6 +873,44 @@ namespace Djs.Common.Data
         #endregion
         #region Eventy vyvolávané z grafické vrstvy
         /// <summary>
+        /// Obsluha události Změna Hot řádku (pod myší)
+        /// </summary>
+        /// <param name="oldActiveRow"></param>
+        /// <param name="newHotRow"></param>
+        /// <param name="eventSource"></param>
+        /// <param name="callEvents"></param>
+        void ITableEventTarget.CallHotRowChanged(Row oldActiveRow, Row newHotRow, EventSourceType eventSource, bool callEvents)
+        {
+            GPropertyChangeArgs<Row> args = new GPropertyChangeArgs<Row>(eventSource, oldActiveRow, newHotRow);
+            this.OnHotRowChanged(args);
+            if (callEvents && this.HotRowChanged != null)
+                this.HotRowChanged(this, args);
+        }
+        protected virtual void OnHotRowChanged(GPropertyChangeArgs<Row> args) { }
+        /// <summary>
+        /// Událost se vyvolá pokud uživatel posune myš (jen pohyb, bez drag/drop, bez click) na nový řádek
+        /// </summary>
+        public event GPropertyChanged<Row> HotRowChanged;
+        /// <summary>
+        /// Obsluha události Změna Hot buňky (pod myší)
+        /// </summary>
+        /// <param name="oldHotCell"></param>
+        /// <param name="newHotCell"></param>
+        /// <param name="eventSource"></param>
+        /// <param name="callEvents"></param>
+        void ITableEventTarget.CallHotCellChanged(Cell oldHotCell, Cell newHotCell, EventSourceType eventSource, bool callEvents)
+        {
+            GPropertyChangeArgs<Cell> args = new GPropertyChangeArgs<Cell>(eventSource, oldHotCell, newHotCell);
+            this.OnHotCellChanged(args);
+            if (callEvents && this.HotCellChanged != null)
+                this.HotCellChanged(this, args);
+        }
+        protected virtual void OnHotCellChanged(GPropertyChangeArgs<Cell> args) { }
+        /// <summary>
+        /// Událost se vyvolá pokud uživatel posune myš (jen pohyb, bez drag/drop, bez click) na novou buňku (v témže řádku, v jiném řádku)
+        /// </summary>
+        public event GPropertyChanged<Cell> HotCellChanged;
+        /// <summary>
         /// Obsluha události Změna aktivního řádku
         /// </summary>
         /// <param name="oldActiveRow"></param>
@@ -905,6 +943,42 @@ namespace Djs.Common.Data
         protected virtual void OnActiveCellChanged(GPropertyChangeArgs<Cell> args) { }
         public event GPropertyChanged<Cell> ActiveCellChanged;
         /// <summary>
+        /// Obsluha události MouseEnter na buňce tabulky
+        /// </summary>
+        /// <param name="cell"></param>
+        /// <param name="eventSource"></param>
+        /// <param name="callEvents"></param>
+        void ITableEventTarget.CallCellMouseEnter(Cell cell, EventSourceType eventSource, bool callEvents)
+        {
+            GPropertyEventArgs<Cell> args = new GPropertyEventArgs<Cell>(eventSource, cell);
+            this.OnCellMouseEnter(args);
+            if (callEvents && this.CellMouseEnter != null)
+                this.CellMouseEnter(this, args);
+        }
+        protected virtual void OnCellMouseEnter(GPropertyEventArgs<Cell> args) { }
+        /// <summary>
+        /// Událost se vyvolá při vstupu myši nad danou buňku, bez Drag, bez Click
+        /// </summary>
+        public event GPropertyEvent<Cell> CellMouseEnter;
+        /// <summary>
+        /// Obsluha události MouseLeave z buňky tabulky
+        /// </summary>
+        /// <param name="cell"></param>
+        /// <param name="eventSource"></param>
+        /// <param name="callEvents"></param>
+        void ITableEventTarget.CallCellMouseLeave(Cell cell, EventSourceType eventSource, bool callEvents)
+        {
+            GPropertyEventArgs<Cell> args = new GPropertyEventArgs<Cell>(eventSource, cell);
+            this.OnCellMouseLeave(args);
+            if (callEvents && this.CellMouseLeave != null)
+                this.CellMouseLeave(this, args);
+        }
+        protected virtual void OnCellMouseLeave(GPropertyEventArgs<Cell> args) { }
+        /// <summary>
+        /// Událost se vyvolá při opuštění myši z dané buňku, bez Drag, bez Click
+        /// </summary>
+        public event GPropertyEvent<Cell> CellMouseLeave;
+        /// <summary>
         /// Obsluha události Click na buňku tabulky
         /// </summary>
         /// <param name="cell"></param>
@@ -918,6 +992,9 @@ namespace Djs.Common.Data
                 this.ActiveCellClick(this, args);
         }
         protected virtual void OnActiveCellClick(GPropertyEventArgs<Cell> args) { }
+        /// <summary>
+        /// Událost se vyvolá Click na dané buňce tabulky
+        /// </summary>
         public event GPropertyEvent<Cell> ActiveCellClick;
 
         #endregion
@@ -1259,11 +1336,19 @@ namespace Djs.Common.Data
         /// <summary>
         /// true pokud máme referenci na tabulku
         /// </summary>
-        public bool HasTable { get { return (this.Table != null); } }
+        public bool HasTable { get { return (this._Table != null); } }
         /// <summary>
         /// ITableMember.Table : Reference na tabulku, která je vlastníkem this objektu
         /// </summary>
         Table ITableMember.Table { get { return this._Table; } set { this._Table = value; this.HeightLayout.ParentLayout = (value != null ? value.RowHeightLayout : null); } }
+        /// <summary>
+        /// true pokud tento řádek má svou tabulku, a tabulka má svoji grafickou vrstvu
+        /// </summary>
+        public bool HasGTable { get { return (this._Table != null && this._Table.HasGTable); ; } }
+        /// <summary>
+        /// Reference na grafickou vrstvu tabulky
+        /// </summary>
+        public GTable GTable { get { return (this.HasGTable ? this._Table.GTable : null); } }
         /// <summary>
         /// ITableMember.Id : Přidělené ID
         /// </summary>
@@ -1333,6 +1418,14 @@ namespace Djs.Common.Data
         /// true pokud this řádek je vybrán k další práci. Default = false
         /// </summary>
         public bool IsSelected { get { return this._IsSelected; } set { this._IsSelected = value; } } private bool _IsSelected = false;
+        /// <summary>
+        /// true pokud this řádek je aktivní (=vybraný kurzorem)
+        /// </summary>
+        public bool IsActive { get { return (this.HasGTable ? this.GTable.IsActiveRow(this) : false); } }
+        /// <summary>
+        /// true pokud this řádek je nyní pod myší (=myš se pohybuje nad ním)
+        /// </summary>
+        public bool IsMouseHot { get { return (this.HasGTable ? this.GTable.IsHotRow(this) : false); } }
         /// <summary>
         /// Změní hodnotu IsSelected v tomto řádku
         /// </summary>
@@ -1464,6 +1557,14 @@ namespace Djs.Common.Data
         /// </summary>
         public Column Column { get { Column column = null; if (this.HasTable && this.Table.TryGetColumn(this._ColumnId, out column)) return column; return null; } }
         /// <summary>
+        /// true pokud tato buňka má svou tabulku, a tabulka má svoji grafickou vrstvu
+        /// </summary>
+        public bool HasGTable { get { return (this.HasTable && this.Table.HasGTable); ; } }
+        /// <summary>
+        /// Reference na grafickou vrstvu tabulky
+        /// </summary>
+        public GTable GTable { get { return (this.HasGTable ? this.Table.GTable : null); } }
+        /// <summary>
         /// ColumnID sloupce, do kterého tato buňka patří.
         /// Tato hodnota je platná bez ohledu na to, zda buňka (resp. její řádek) již je nebo není obsažena v tabulce.
         /// </summary>
@@ -1507,6 +1608,14 @@ namespace Djs.Common.Data
         #endregion
         #region GUI vlastnosti
         /// <summary>
+        /// true pokud this buňka je aktivní (=vybraná kurzorem)
+        /// </summary>
+        public bool IsActive { get { return (this.HasGTable ? this.GTable.IsActiveCell(this) : false); } }
+        /// <summary>
+        /// true pokud this buňka je nyní pod myší (=myš se pohybuje nad ní)
+        /// </summary>
+        public bool IsMouseHot { get { return (this.HasGTable ? this.GTable.IsHotCell(this) : false); } }
+        /// <summary>
         /// Grafická instance reprezentující tuto buňku, grafický prvek, auitoinicializační
         /// </summary>
         public GCell Control
@@ -1546,9 +1655,13 @@ namespace Djs.Common.Data
     #region Interfaces
     public interface ITableEventTarget
     {
-        void CallActiveRowChanged(Row oldActiveRow, Row newActiveRow, EventSourceType eventSource, bool callEvents);
         void CallHotRowChanged(Row oldHotRow, Row newHotRow, EventSourceType eventSource, bool callEvents);
+        void CallHotCellChanged(Cell oldHotCell, Cell newHotCell, EventSourceType eventSource, bool callEvents);
+        void CallActiveRowChanged(Row oldActiveRow, Row newActiveRow, EventSourceType eventSource, bool callEvents);
         void CallActiveCellChanged(Cell oldActiveCell, Cell newActiveCell, EventSourceType eventSource, bool callEvents);
+
+        void CallCellMouseEnter(Cell cell, EventSourceType eventSource, bool callEvents);
+        void CallCellMouseLeave(Cell cell, EventSourceType eventSource, bool callEvents);
         void CallActiveCellClick(Cell cell, EventSourceType eventSource, bool callEvents);
     }
     /// <summary>

@@ -178,6 +178,92 @@ namespace Djs.Common.Components
             }
         }
         #endregion
+        #region DrawEffect3D
+        /// <summary>
+        /// Vykreslí rectangle danou barvou, s 3D efektem v dané intenzitě a orientaci
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="color"></param>
+        /// <param name="orientation"></param>
+        /// <param name="effect3D"></param>
+        /// <param name="opacity"></param>
+        public static void DrawEffect3D(Graphics graphics, Rectangle bounds, Color color, Orientation orientation, float? effect3D)
+        {
+            _DrawEffect3D(graphics, bounds, color, orientation, effect3D, null);
+        }
+        /// <summary>
+        /// Vykreslí rectangle danou barvou, s 3D efektem v dané intenzitě a orientaci
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="color"></param>
+        /// <param name="orientation"></param>
+        /// <param name="effect3D"></param>
+        /// <param name="opacity"></param>
+        public static void DrawEffect3D(Graphics graphics, Rectangle bounds, Color color, Orientation orientation, float? effect3D, Int32? opacity)
+        {
+            _DrawEffect3D(graphics, bounds, color, orientation, effect3D, opacity);
+        }
+        /// <summary>
+        /// Vykreslí rectangle danou barvou, s 3D efektem v dané intenzitě a orientaci
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="color"></param>
+        /// <param name="orientation"></param>
+        /// <param name="effect3D"></param>
+        /// <param name="opacity"></param>
+        private static void _DrawEffect3D(Graphics graphics, Rectangle bounds, Color color, Orientation orientation, float? effect3D, Int32? opacity)
+        {
+            Color color1, color2;
+            if (CreateEffect3DColors(color, effect3D, out color1, out color2))
+            {   // 3D efekt:
+                using (Brush brush = Skin.CreateBrushForBackgroundGradient(bounds, orientation, color1, color2))
+                {
+                    graphics.FillRectangle(Skin.Brush(color), bounds);
+                }
+            }
+            else
+            {   // Plná plochá barva:
+                graphics.FillRectangle(Skin.Brush(color), bounds);
+            }
+        }
+        /// <summary>
+        /// Metoda vygeneruje pár barev out color1 a color2 pro danou barvu výchozí a daný 3D efekt.
+        /// Metoda vrací true = barvy pro 3D efekt jsou vytvořeny / false = daná hodnota efektu není 3D, prostor se má vybarvit plnou barvou.
+        /// Barvy světla a stínu se přebírají z hodnot Skin.Control.Effect3DLight a Skin.Control.Effect3DDark.
+        /// </summary>
+        /// <param name="color"></param>
+        /// <param name="effect3D">Hodnota 3D efektu: 
+        /// kladná vytváří "nahoru zvednutý povrch" (tj. color1 = nahoře/vlevo je světlejší, color2 = dole/vpravo je tmavší),
+        /// kdežto záporná hodnota vytváří "dolů promáčknutý povrch".
+        /// Hodnota 1.00 vytvoří bílou a černou barvu, hodnota 0.10f vytvoří lehký 3D efekt, 0.50f poměrně silný efekt.
+        /// </param>
+        /// <param name="color1">Barva nahoře/vlevo</param>
+        /// <param name="color2">Barva dole/vpravo</param>
+        /// <returns></returns>
+        public static bool CreateEffect3DColors(Color color, float? effect3D, out Color color1, out Color color2)
+        {
+            color1 = color;
+            color2 = color;
+            if (!effect3D.HasValue || effect3D.Value == 0f) return false;
+
+            float ratio = effect3D.Value;
+            if (ratio > 0f)
+            {   // Nahoru = barva 1 je světlejší, barva 2 je tmavší:
+                color1 = color.Morph(Skin.Control.Effect3DLight, ratio);
+                color2 = color.Morph(Skin.Control.Effect3DDark, ratio);
+            }
+            else
+            {   // Dolů = barva 1 je tmavší, barva 2 je světlejší:
+                ratio = -ratio;
+                color1 = color.Morph(Skin.Control.Effect3DDark, ratio);
+                color2 = color.Morph(Skin.Control.Effect3DLight, ratio);
+            }
+            return true;
+        }
+        #endregion
         #region DrawButton
         /// <summary>
         /// Draw button base (background and border, by state)

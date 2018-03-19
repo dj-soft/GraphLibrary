@@ -213,18 +213,20 @@ namespace Djs.Common.Application
                     string path = App.GetAppLocalDataPath("Trace");
                     string name = this._TraceSearchNewFile(path, "Trace-" + now.ToString("yyyy-MM-dd"), ".csv");
                     string file = System.IO.Path.Combine(path, name);
+                    System.IO.StreamWriter stream = null;
                     if (System.IO.File.Exists(file))
                     {
                         this._TraceAnalyse(file);
-                        this._TraceStream = new System.IO.StreamWriter(file, true, Encoding.UTF8, 4096);
-                        this._TraceStream.AutoFlush = false;
+                        stream = new System.IO.StreamWriter(file, true, Encoding.UTF8, 4096);
+                        stream.AutoFlush = false;
                     }
                     else
                     {
-                        this._TraceStream = new System.IO.StreamWriter(file, false, Encoding.UTF8, 4096);
-                        this._TraceStream.AutoFlush = false;
-                        this._TraceStream.WriteLine(TraceTitle);
+                        stream = new System.IO.StreamWriter(file, false, Encoding.UTF8, 4096);
+                        stream.AutoFlush = false;
+                        stream.WriteLine(TraceTitle);
                     }
+                    this._TraceStream = stream;
                     this._TraceFile = file;
                     this._TraceStopWatch = new System.Diagnostics.Stopwatch();
                     this._TraceStopWatch.Start();
@@ -271,8 +273,8 @@ namespace Djs.Common.Application
             }
             if (this._TraceStream != null)
             {
-                this._TraceStream.Close();
-                this._TraceStream.Dispose();
+                this._SynchronizedTraceStream.Close();
+                this._SynchronizedTraceStream.Dispose();
                 this._TraceStream = null;
             }
 
@@ -340,7 +342,7 @@ namespace Djs.Common.Application
                     sb.Append(tab + _TraceFormatText(item));
             }
 
-            this._TraceStream.WriteLine(sb.ToString());
+            this._SynchronizedTraceStream.WriteLine(sb.ToString());
         }
         private static string _TraceFormatText(string item)
         {
@@ -354,8 +356,7 @@ namespace Djs.Common.Application
         {
             if (this._TraceStream != null)
             {
-                this._TraceStream.Flush();
-                this._TraceStream.BaseStream.Flush();
+                this._SynchronizedTraceStream.Flush();
             }
         }
         /// <summary>
@@ -432,7 +433,16 @@ namespace Djs.Common.Application
         private bool _TraceIsActive { get { return (!this._TraceIsDisable && this._TraceStream != null); } }
         private bool _TraceIsDisable;
         private string _TraceFile;
+        /// <summary>
+        /// Stream do trace souboru.
+        /// Kód nesmí pracovat s tímto streamem, musí si vyžádat multi-threadově synchronizovaný objekt pomocí metody _GetSynchronizedTraceStream().
+        /// </summary>
         private System.IO.StreamWriter _TraceStream;
+        /// <summary>
+        /// Obsahuje thread-safe obálku nad _TraceStream. Pro práci se streamem se má používat tato obálka, nehrozí u ní konflikt multi-threading pokusu o zápisy.
+        /// Nepoužívat v Dispose bloku.
+        /// </summary>
+        private System.IO.TextWriter _SynchronizedTraceStream { get { return System.IO.StreamWriter.Synchronized(this._TraceStream); } }
         private int _LastLine;
         private int _LastScope;
         private System.Diagnostics.Stopwatch _TraceStopWatch;

@@ -581,18 +581,7 @@ namespace Djs.Common.Components.Grid
 
             return isProcessed;
         }
-        /// <summary>
-        /// Aktuální aktivní řádek = ten, který by měl focus, když by focus (this.HasFocus) měla aktuální tabulka.
-        /// </summary>
-        public Row ActiveRow
-        {
-            get { return this._ActiveRow; }
-            set { this.SetActiveRow(value, EventSourceType.ApplicationCode, true); }
-        }
-        /// <summary>
-        /// Aktivní řádek
-        /// </summary>
-        private Row _ActiveRow;
+        #region Hot Row, Cell = řádek a buňka pod myší
         /// <summary>
         /// Aktuální Hot řádek = ten, nad kterým se nachází myš.
         /// </summary>
@@ -608,6 +597,114 @@ namespace Djs.Common.Components.Grid
         /// <summary>
         /// Aktivní buňka, obsahuje referenci na buňku pouze tehdy, pokud tabulka povoluje vybírat buňky (AllowSelectSingleCell). Jinak obsahuje null.
         /// </summary>
+        public Cell HotCell
+        {
+            get { return (this.AllowSelectSingleCell ? this._HotCell : null); }
+            set { this.SetHotCell(value, EventSourceType.ApplicationCode); }
+        }
+        /// <summary>
+        /// Aktivní buňka, pouze pokud tabulka povoluje vybírat buňky
+        /// </summary>
+        private Cell _HotCell;
+        /// <summary>
+        /// Vrátí true, pokud daný řádek je Hot řádkem (pod myší) v této tabulce
+        /// </summary>
+        /// <param name="row"></param>
+        /// <returns></returns>
+        public bool IsHotRow(Row row)
+        {
+            return (row != null && this._HotRow != null && Object.ReferenceEquals(row, this._HotRow));
+        }
+        /// <summary>
+        /// Vrátí true, pokud daná buňka je Hot buňkou (pod myší) v této tabulce
+        /// </summary>
+        /// <param name="cell"></param>
+        /// <returns></returns>
+        public bool IsHotCell(Cell cell)
+        {
+            if (!this.AllowSelectSingleCell) return false;
+            return (cell != null && this._ActiveCell != null && Object.ReferenceEquals(cell, this._ActiveCell));
+        }
+        /// <summary>
+        /// Nastaví daný řádek jako Hot = ten pod myší, když myš jezdí nad tabulkou, vyvolá event HotRowChanged.
+        /// Zajistí překreslení řádku.
+        /// </summary>
+        /// <param name="newHotRow"></param>
+        /// <param name="eventSource"></param>
+        protected void SetHotRow(Row newHotRow, EventSourceType eventSource)
+        {
+            // Nelze jako aktivní řádek vložit řádek z cizí tabulky:
+            if (newHotRow != null && !Object.ReferenceEquals(newHotRow.Table, this.DataTable)) return;
+
+            Row oldHotRow = this._HotRow;
+
+            // Změna z null na null není změnou:
+            if (newHotRow == null && oldHotRow == null) return;
+
+            // Pokud jeden údaj je null a druhý není, je to změna:
+            bool isChange = ((newHotRow == null) != (oldHotRow == null));
+            if ((newHotRow != null) && (oldHotRow != null))
+                isChange = !Object.ReferenceEquals(newHotRow, oldHotRow);
+
+            if (!isChange) return;
+
+            // Je tu změna:
+
+            // Zajistíme překreslení starého i nového řádku (kvůli barevnosti):
+            this.RepaintRow(this._HotRow);
+            this.RepaintRow(newHotRow);
+
+            this._HotRow = newHotRow;
+            this.CallHotRowChanged(oldHotRow, newHotRow, eventSource);
+        }
+        /// <summary>
+        /// Nastaví danou buňku jako Hot = ta pod myší, když myš jezdí nad tabulkou, vyvolá event HotCellChanged.
+        /// </summary>
+        /// <param name="newHotCell"></param>
+        /// <param name="eventSource"></param>
+        protected void SetHotCell(Cell newHotCell, EventSourceType eventSource)
+        {
+            // Nelze jako aktivní buňku vložit buňku z cizí tabulky:
+            if (newHotCell != null && !Object.ReferenceEquals(newHotCell.Table, this.DataTable)) return;
+
+            Cell oldHotCell = this._HotCell;
+
+            // Změna z null na null není změnou:
+            if (newHotCell == null && oldHotCell == null) return;
+
+            // Pokud jeden údaj je null a druhý není, je to změna:
+            bool isChange = ((newHotCell == null) != (oldHotCell == null));
+            if ((newHotCell != null) && (oldHotCell != null))
+                isChange = !Object.ReferenceEquals(newHotCell, oldHotCell);
+
+            // Aktivovat řádek nově zadané buňky:
+            Row newActiveRow = (newHotCell != null ? newHotCell.Row : null);
+            this.SetHotRow(newActiveRow, eventSource);
+
+            // Pokud tabulka nepovoluje práci s jednotlivými buňkami, pak můžeme skončit:
+            if (!this.AllowSelectSingleCell) return;
+
+            // Je tu změna:
+            this._HotCell = newHotCell;
+            this.CallHotCellChanged(oldHotCell, newHotCell, eventSource);
+        }
+        #endregion
+        #region Active Row, Cell = řádek a buňka aktivní (po kliknutí, s kurzorem)
+        /// <summary>
+        /// Aktuální aktivní řádek = ten, který by měl focus, když by focus (this.HasFocus) měla aktuální tabulka.
+        /// </summary>
+        public Row ActiveRow
+        {
+            get { return this._ActiveRow; }
+            set { this.SetActiveRow(value, EventSourceType.ApplicationCode, true); }
+        }
+        /// <summary>
+        /// Aktivní řádek
+        /// </summary>
+        private Row _ActiveRow;
+        /// <summary>
+        /// Aktivní buňka, obsahuje referenci na buňku pouze tehdy, pokud tabulka povoluje vybírat buňky (AllowSelectSingleCell). Jinak obsahuje null.
+        /// </summary>
         public Cell ActiveCell
         {
             get { return (this.AllowSelectSingleCell ? this._ActiveCell : null); }
@@ -617,6 +714,25 @@ namespace Djs.Common.Components.Grid
         /// Aktivní buňka, pouze pokud tabulka povoluje vybírat buňky
         /// </summary>
         private Cell _ActiveCell;
+        /// <summary>
+        /// Vrátí true, pokud daný řádek je aktivním řádkem v této tabulce
+        /// </summary>
+        /// <param name="row"></param>
+        /// <returns></returns>
+        public bool IsActiveRow(Row row)
+        {
+            return (row != null && this._ActiveRow != null && Object.ReferenceEquals(row, this._ActiveRow));
+        }
+        /// <summary>
+        /// Vrátí true, pokud daná buňka je aktivní buňkou v této tabulce
+        /// </summary>
+        /// <param name="cell"></param>
+        /// <returns></returns>
+        public bool IsActiveCell(Cell cell)
+        {
+            if (!this.AllowSelectSingleCell) return false;
+            return (cell != null && this._ActiveCell != null && Object.ReferenceEquals(cell, this._ActiveCell));
+        }
         /// <summary>
         /// Nastaví daný řádek jako aktivní, vyvolá event ActiveRowChanged, nastaví daný řádek tak aby byl vidět.
         /// Zajistí překreslení řádku.
@@ -652,38 +768,6 @@ namespace Djs.Common.Components.Grid
 
             if (scrollToVisible)
                 this.ScrollRowToVisibleArea(newActiveRow);
-        }
-        /// <summary>
-        /// Nastaví daný řádek jako Hot = ten pod myší, když myš jezdí nad tablkou, vyvolá event HotRowChanged.
-        /// Zajistí překreslení řádku.
-        /// </summary>
-        /// <param name="newHotRow"></param>
-        /// <param name="eventSource"></param>
-        protected void SetHotRow(Row newHotRow, EventSourceType eventSource)
-        {
-            // Nelze jako aktivní řádek vložit řádek z cizí tabulky:
-            if (newHotRow != null && !Object.ReferenceEquals(newHotRow.Table, this.DataTable)) return;
-
-            Row oldHotRow = this._HotRow;
-
-            // Změna z null na null není změnou:
-            if (newHotRow == null && oldHotRow == null) return;
-
-            // Pokud jeden údaj je null a druhý není, je to změna:
-            bool isChange = ((newHotRow == null) != (oldHotRow == null));
-            if ((newHotRow != null) && (oldHotRow != null))
-                isChange = !Object.ReferenceEquals(newHotRow, oldHotRow);
-
-            if (!isChange) return;
-
-            // Je tu změna:
-
-            // Zajistíme překreslení starého i nového řádku (kvůli barevnosti):
-            this.RepaintRow(this._HotRow);
-            this.RepaintRow(newHotRow);
-
-            this._HotRow = newHotRow;
-            this.CallHotRowChanged(oldHotRow, newHotRow, eventSource);
         }
         /// <summary>
         /// Nastaví danou buňku jako aktivní, případně vyvolá event ActiveRowChanged, nastaví daný řádek tak aby byl vidět
@@ -755,28 +839,10 @@ namespace Djs.Common.Components.Grid
                 this.Invalidate(InvalidateItem.RowScroll);
         }
         /// <summary>
-        /// Vrátí true, pokud daný řádek je aktivním řádkem v této tabulce
-        /// </summary>
-        /// <param name="row"></param>
-        /// <returns></returns>
-        protected bool IsActiveRow(Row row)
-        {
-            return (row != null && this._ActiveRow != null && Object.ReferenceEquals(row, this._ActiveRow));
-        }
-        /// <summary>
-        /// Vrátí true, pokud daná buňka je aktivní buňkou v této tabulce
-        /// </summary>
-        /// <param name="cell"></param>
-        /// <returns></returns>
-        protected bool IsActiveCell(Cell cell)
-        {
-            if (!this.AllowSelectSingleCell) return false;
-            return (cell != null && this._ActiveCell != null && Object.ReferenceEquals(cell, this._ActiveCell));
-        }
-        /// <summary>
         /// true pokud je povoleno vybírat jednotlivé buňky tabulky, false pokud celý řádek.
         /// </summary>
         protected bool AllowSelectSingleCell { get { return this.DataTable.AllowSelectSingleCell; } }
+        #endregion
         #endregion
         #region Invalidace, resety, refreshe
         /// <summary>
@@ -886,13 +952,15 @@ namespace Djs.Common.Components.Grid
         /// <summary>
         /// Provede se poté, kdy uživatel klikne na záhlaví tabulky.
         /// </summary>
-        public void TableHeaderClick()
+        /// <param name="e"></param>
+        public void TableHeaderClick(GInteractiveChangeStateArgs e)
         { }
         /// <summary>
         /// Provede se poté, kdy uživatel klikne na záhlaví sloupce.
         /// </summary>
+        /// <param name="e"></param>
         /// <param name="column"></param>
-        public void ColumnHeaderClick(Column column)
+        public void ColumnHeaderClick(GInteractiveChangeStateArgs e, Column column)
         {
             if (column != null)
             {
@@ -907,6 +975,7 @@ namespace Djs.Common.Components.Grid
         /// <summary>
         /// Provede se poté, kdy uživatel klikne na záhlaví řádku.
         /// </summary>
+        /// <param name="e"></param>
         /// <param name="row">řádek</param>
         public void RowHeaderClick(GInteractiveChangeStateArgs e, Row row)
         {
@@ -921,12 +990,33 @@ namespace Djs.Common.Components.Grid
             }
         }
         /// <summary>
+        /// Provede se poté, kdy uživatel vstoupí s myší nad určitou buňkou.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="cell">řádek</param>
+        public void CellMouseEnter(GInteractiveChangeStateArgs e, Cell cell)
+        {
+            this.SetHotCell(cell, EventSourceType.InteractiveChanged);
+            this.CallCellMouseEnter(cell, EventSourceType.InteractiveChanged);
+        }
+        /// <summary>
+        /// Provede se poté, kdy uživatel vystoupí myší z určité buňky jinam.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="cell">řádek</param>
+        public void CellMouseLeave(GInteractiveChangeStateArgs e, Cell cell)
+        {
+            this.SetHotCell(null, EventSourceType.InteractiveChanged);
+            this.CallCellMouseLeave(cell, EventSourceType.InteractiveChanged);
+        }
+        /// <summary>
         /// Provede se poté, kdy uživatel klikne na datovou buňku.
         /// Pokud řádek buňky není aktivní, měl by být aktivován.
         /// Pokud buňka není aktivní, a tabulka podporuje výběr buněk, měla by být aktivována.
         /// Po změně aktivní buňky se vyžádá překreslení tabulky.
         /// </summary>
-        /// <param name="row">řádek</param>
+        /// <param name="e"></param>
+        /// <param name="cell">řádek</param>
         public void CellClick(GInteractiveChangeStateArgs e, Cell cell)
         {
             this.SetActiveCell(cell, EventSourceType.InteractiveChanged, true);
@@ -1237,8 +1327,10 @@ namespace Djs.Common.Components.Grid
         /// <param name="boundsAbsolute"></param>
         internal void DrawRowBackground(GInteractiveDrawArgs e, Cell cell, Rectangle boundsAbsolute)
         {
-            Color backColor = this.GetBackColorForCell(cell);
-            this.Host.FillRectangle(e.Graphics, boundsAbsolute, backColor);
+            float? effect3d = null;
+            Color backColor = this.GetBackColorForCell(cell, ref effect3d);
+            GPainter.DrawEffect3D(e.Graphics, boundsAbsolute, backColor, System.Windows.Forms.Orientation.Horizontal, effect3d);
+            // this.Host.FillRectangle(e.Graphics, boundsAbsolute, backColor);
         }
         /// <summary>
         /// Metoda vykreslí linky ohraničující danou buňku jednoho řádku.
@@ -1263,20 +1355,10 @@ namespace Djs.Common.Components.Grid
         /// </summary>
         /// <param name="row"></param>
         /// <returns></returns>
-        public Color GetBackColorForRow(Row row)
+        public Color GetBackColorForRow(Row row, ref float? effect3D)
         {
             if (row == null) return Skin.Grid.RowBackColor;
-            
-            // Aktivní řádek / buňka:
-            //  Pokud tabulka dovoluje aktivovat jednotlivé buňky (AllowSelectSingleCell = true), 
-            //    pak tato metoda pro aktivní řádek vrací barvu jeho neaktivních buněk.
-            //  Pokud ale tabulka aktivuje celý řádek, 
-            //    pak tato metoda pro aktivní řádek vrací barvu jeho aktivní buňky.
-            bool allowActiveCell = this.DataTable.AllowSelectSingleCell;
-            bool isActiveRow = this.IsActiveRow(row);
-            bool isActiveItem = isActiveRow && (allowActiveCell ? false : true);    // Aktivní prvek? Pokud je aktivní řádek, pak true pokud se neprovádí aktivace jednotlivých buněk (pak je celý řádek aktivní)
-            VisualStyle style = ((IVisualMember)row).Style;
-            return GetBackColor(style, row.IsSelected, isActiveRow, isActiveItem);
+            return GetBackColor(((IVisualMember)row).Style, row, null, ref effect3D);
         }
         /// <summary>
         /// Vrací barvu pro vykreslení pozadí dané buňky.
@@ -1285,47 +1367,33 @@ namespace Djs.Common.Components.Grid
         /// </summary>
         /// <param name="row"></param>
         /// <returns></returns>
-        public Color GetBackColorForCell(Cell cell)
+        public Color GetBackColorForCell(Cell cell, ref float? effect3D)
         {
             if (cell == null) return Skin.Grid.RowBackColor;
-
-            // Aktivní řádek / buňka:
-            //  Pokud tabulka dovoluje aktivovat jednotlivé buňky (AllowSelectSingleCell = true), 
-            //    pak tato metoda pro aktivní řádek vrací barvu jeho neaktivních buněk.
-            //  Pokud ale tabulka aktivuje celý řádek, 
-            //    pak tato metoda pro aktivní řádek vrací barvu jeho aktivní buňky.
-            Row row = cell.Row;
-            bool allowActiveCell = this.DataTable.AllowSelectSingleCell;
-            bool isActiveRow = this.IsActiveRow(row);
-            bool isActiveCell = this.IsActiveCell(cell);
-            bool isActiveItem = isActiveRow && (allowActiveCell ? isActiveCell : true); ;    // Aktivní prvek? Pokud je aktivní řádek, pak true pokud se provádí aktivace jednotlivých buněk a daná buňka je aktivní
-            VisualStyle style = ((IVisualMember)cell).Style;
-            return GetBackColor(style, row.IsSelected, isActiveRow, isActiveItem);
+            return GetBackColor(((IVisualMember)cell).Style, cell.Row, cell, ref effect3D);
         }
         /// <summary>
         /// Vrátí barvu pozadí pro danou definici a vizuální styl
         /// </summary>
-        /// <param name="style"></param>
-        /// <param name="isSelected"></param>
-        /// <param name="isActiveRow"></param>
-        /// <param name="isActiveItem"></param>
+        /// <param name="style">Vizuální styl, obsahuje mj. barvy</param>
+        /// <param name="row">Řádek</param>
+        /// <param name="cell">Buňka</param>
+        /// <param name="effect3D">Určení 3D stylu</param>
         /// <returns></returns>
-        public Color GetBackColor(VisualStyle style, bool isSelected, bool isActiveRow, bool isActiveItem)
+        public Color GetBackColor(VisualStyle style, Row row, Cell cell, ref float? effect3D)
         {
-            // Základní barva prvku je podle jeho stavu isSelected, primárně ze stylu prvku, při nezadání barvy pak z odpovídající položky Skinu pro Grid:
-            Color baseColor = (isSelected ? (style.SelectedBackColor ?? Skin.Grid.SelectedRowBackColor) : (style.BackColor ?? Skin.Grid.RowBackColor));
+            // Základní barva pozadí prvku vychází z barvy standardní, nebo Selected, podle stavu row.IsSelected; primárně z dodaného vizuálního stylu, sekundárně z palety:
+            Color baseColor = (row.IsSelected ? (style.SelectedBackColor ?? Skin.Grid.SelectedRowBackColor) : (style.BackColor ?? Skin.Grid.RowBackColor));
 
-            // Pokud prvek není aktivní (aktivní řádek ani aktivní buňka), pak má základní barvu - bez ohledu na focus:
-            if (!isActiveRow && !isActiveItem) return baseColor;
+            // Základní barva je poté morfována do barvy Active v poměru, který vyjadřuje aktivitu řádku, buňky, a focus tabulky, a stav HotMouse:
+            float ratio = this.GetMorphRatio(row, cell, ref effect3D);
 
-            // Pokud je aktuální prvek v aktivním řádku, nebo jde přímo o aktivní buňku, pak jeho barva je dána barvou Active:
+            // Pokud prvek není aktivní (aktivní řádek ani aktivní buňka), pak má základní barvu - bez morphování:
+            if (ratio == 0f) return baseColor;
+
+            // Pokud je aktuální prvek v nějakém aktivním stavu (má kladné ratio pro morfing barvy):
             Color activeColor = style.ActiveBackColor ?? Skin.Grid.ActiveCellBackColor;
-
-            // Morfování barvy aktivního prvku do barvy základní: 
-            //  pokud prvek není sám aktivní, pak jdeme jen na 67% aktivní barvy (je to aktivní řádek, ale jeho neaktivní buňky),
-            //  pokud tabulka nemá focus, pak jdeme na 50% až 33% aktivní barvy (50%=aktivní buňka, 33%=neaktivní buňky řádku)
-            float morph = (this.HasFocus ? (isActiveItem ? 1.0f : 0.6667f) : (isActiveItem ? 0.5f : 0.3333f));
-            return baseColor.Morph(activeColor, morph);
+            return baseColor.Morph(activeColor, ratio);
         }
         /// <summary>
         /// Vrací barvu pro vykreslení textu daného řádku.
@@ -1337,17 +1405,7 @@ namespace Djs.Common.Components.Grid
         public Color GetTextColorForRow(Row row)
         {
             if (row == null) return Skin.Grid.RowTextColor;
-
-            // Aktivní řádek / buňka:
-            //  Pokud tabulka dovoluje aktivovat jednotlivé buňky (AllowSelectSingleCell = true), 
-            //    pak tato metoda pro aktivní řádek vrací barvu jeho neaktivních buněk.
-            //  Pokud ale tabulka aktivuje celý řádek, 
-            //    pak tato metoda pro aktivní řádek vrací barvu jeho aktivní buňky.
-            bool allowActiveCell = this.DataTable.AllowSelectSingleCell;
-            bool isActiveRow = this.IsActiveRow(row);
-            bool isActiveItem = isActiveRow && (allowActiveCell ? false : true);    // Aktivní prvek? Pokud je aktivní řádek, pak true pokud se neprovádí aktivace jednotlivých buněk (pak je celý řádek aktivní)
-            VisualStyle style = ((IVisualMember)row).Style;
-            return GetTextColor(style, row.IsSelected, isActiveRow, isActiveItem);
+            return GetTextColor(((IVisualMember)row).Style, row, null);
         }
         /// <summary>
         /// Vrací barvu pro vykreslení textu dané buňky.
@@ -1359,45 +1417,108 @@ namespace Djs.Common.Components.Grid
         public Color GetTextColorForCell(Cell cell)
         {
             if (cell == null) return Skin.Grid.RowTextColor;
-
-            // Aktivní řádek / buňka:
-            //  Pokud tabulka dovoluje aktivovat jednotlivé buňky (AllowSelectSingleCell = true), 
-            //    pak tato metoda pro aktivní řádek vrací barvu jeho neaktivních buněk.
-            //  Pokud ale tabulka aktivuje celý řádek, 
-            //    pak tato metoda pro aktivní řádek vrací barvu jeho aktivní buňky.
-            Row row = cell.Row;
-            bool allowActiveCell = this.DataTable.AllowSelectSingleCell;
-            bool isActiveRow = this.IsActiveRow(row);
-            bool isActiveCell = this.IsActiveCell(cell);
-            bool isActiveItem = isActiveRow && (allowActiveCell ? isActiveCell : true); ;    // Aktivní prvek? Pokud je aktivní řádek, pak true pokud se provádí aktivace jednotlivých buněk a daná buňka je aktivní
-            VisualStyle style = ((IVisualMember)cell).Style;
-            return GetTextColor(style, row.IsSelected, isActiveRow, isActiveItem);
+            return GetTextColor(((IVisualMember)cell).Style, cell.Row, cell);
         }
         /// <summary>
         /// Vrátí barvu pozadí pro danou definici a vizuální styl
         /// </summary>
-        /// <param name="style"></param>
-        /// <param name="isSelected"></param>
-        /// <param name="isActiveRow"></param>
-        /// <param name="isActiveItem"></param>
+        /// <param name="style">Vizuální styl, obsahuje mj. barvy</param>
+        /// <param name="row">Řádek</param>
+        /// <param name="cell">Buňka</param>
         /// <returns></returns>
-        public Color GetTextColor(VisualStyle style, bool isSelected, bool isActiveRow, bool isActiveItem)
+        public Color GetTextColor(VisualStyle style, Row row, Cell cell)
         {
             // Základní barva prvku je podle jeho stavu isSelected, primárně ze stylu prvku, při nezadání barvy pak z odpovídající položky Skinu pro Grid:
-            Color baseColor = (isSelected ? (style.SelectedTextColor ?? Skin.Grid.SelectedRowTextColor) : (style.TextColor ?? Skin.Grid.RowTextColor));
+            Color baseColor = (row.IsSelected ? (style.SelectedTextColor ?? Skin.Grid.SelectedRowTextColor) : (style.TextColor ?? Skin.Grid.RowTextColor));
 
-            // Pokud prvek není aktivní (aktivní řádek ani aktivní buňka), pak má základní barvu - bez ohledu na focus:
-            if (!isActiveRow && !isActiveItem) return baseColor;
+            // Základní barva je poté morfována do barvy Active v poměru, který vyjadřuje aktivitu řádku, buňky, a focus tabulky, a stav HotMouse:
+            float ratio = this.GetMorphRatio(row, cell);
 
-            // Pokud je aktuální prvek v aktivním řádku, nebo jde přímo o aktivní buňku, pak jeho barva je dána barvou Active:
-            Color activeColor = style.ActiveTextColor ?? Skin.Grid.ActiveCellTextColor;
+            // Pokud prvek není aktivní (aktivní řádek ani aktivní buňka), pak má základní barvu - bez morphování:
+            if (ratio == 0f) return baseColor;
 
-            // Morfování barvy aktivního prvku do barvy základní: 
-            //  pokud prvek není sám aktivní, pak jdeme jen na 67% aktivní barvy (je to aktivní řádek, ale jeho neaktivní buňky),
-            //  pokud tabulka nemá focus, pak jdeme na 50% až 33% aktivní barvy (50%=aktivní buňka, 33%=neaktivní buňky řádku)
-            float morph = (this.HasFocus ? (isActiveItem ? 1.0f : 0.6667f) : (isActiveItem ? 0.5f : 0.3333f));
-            return baseColor.Morph(activeColor, morph);
+            // Pokud je aktuální prvek v nějakém aktivním stavu (má kladné ratio pro morfing barvy):
+            Color activeColor = style.ActiveBackColor ?? Skin.Grid.ActiveCellBackColor;
+            return baseColor.Morph(activeColor, ratio);
         }
+        /// <summary>
+        /// Vrátí ratio pro morphing základní barvy (BackColor, TextColor) pro daný řádek a buňku, v závislosti na jejich stavu Hot, Active a Focus.
+        /// Akceptuje i hodnotu AllowSelectSingleCell. Pokud je true, pak se více preferuje zvýraznění buňky, pokud je false pak je barva stejná pro celý řádek.
+        /// Pokud je AllowSelectSingleCell = true, a předaná buňka je null, pak se vrací ratio pro barvu oslabenou pro neaktivní buňky aktivního řádku.
+        /// Vstupy: řádek musí být zadán, buňka může být null. Pokud řádek není zadán, vrací se 0.00f.
+        /// </summary>
+        /// <param name="row"></param>
+        /// <param name="cell"></param>
+        /// <returns></returns>
+        protected float GetMorphRatio(Row row, Cell cell)
+        {
+            float? effect3D = null;
+            return this.GetMorphRatio(row, cell, ref effect3D);
+        }
+        /// <summary>
+        /// Vrátí ratio pro morphing základní barvy (BackColor, TextColor) pro daný řádek a buňku, v závislosti na jejich stavu Hot, Active a Focus.
+        /// Akceptuje i hodnotu AllowSelectSingleCell. Pokud je true, pak se více preferuje zvýraznění buňky, pokud je false pak je barva stejná pro celý řádek.
+        /// Pokud je AllowSelectSingleCell = true, a předaná buňka je null, pak se vrací ratio pro barvu oslabenou pro neaktivní buňky aktivního řádku.
+        /// Vstupy: řádek musí být zadán, buňka může být null. Pokud řádek není zadán, vrací se 0.00f.
+        /// </summary>
+        /// <param name="row"></param>
+        /// <param name="cell"></param>
+        /// <param name="effect3D"></param>
+        /// <returns></returns>
+        protected float GetMorphRatio(Row row, Cell cell, ref float? effect3D)
+        {
+            float ratio = 0;
+            if (row == null) return ratio;
+
+            // Pokud řádek není Hot ani Active, pak vracíme ratio = 0, barva bude normální bez nějaké aktivity:
+            bool rowIsMouseHot = row.IsMouseHot;
+            bool rowIsActive = row.IsActive;
+            if (!rowIsMouseHot && !rowIsActive) return ratio;
+
+            // Řádek je buď aktivní, nebo alespoň MouseHot, bude mít ratio > 0 a bude mít vhodný 3D efekt:
+            //  aktivní řádek (s kurzorem) má 3D efekt mírně dospodu, kdežto MouseHot řádek má 3D efekt jen lehce nahoru:
+            effect3D = (rowIsActive ? EFFECT_3D_ACTIVE_ROW : EFFECT_3D_MOUSEHOT_ROW);
+            
+            // Barva řádku vychází z mnoha faktorů, z nichž HasFocus je první k řešení:
+            if (this.HasFocus)
+            {   // Tabulka s Focusem má větší reakce na aktivitu:
+                // Pokud tabulka umožňuje vybírat jednotlivé buňky, ale buňka do této metody není předána (nebo není v tom stavu, v jakém je řádek), pak barva jde na 75%:
+                if (this.AllowSelectSingleCell)
+                {   // Tabulka umožňuje práci s jednotlivými buňkami:
+                    if (cell != null)
+                    {   // Je zadaná konkrétní buňka => tak zjistíme, zda buňka sama je MouseHot nebo Active, nebo zda je Active nebo Hot její řádek:
+                        bool cellIsMouseHot = row.IsMouseHot;
+                        bool cellIsActive = row.IsActive;
+                        ratio = (cellIsActive ? MORPH_RATIO_ACTIVE_CELL : 
+                                (rowIsActive ? MORPH_RATIO_ACTIVE_ROW : 
+                                (cellIsMouseHot ? MORPH_RATIO_MOUSEHOT_CELL : 
+                                (rowIsMouseHot ? MORPH_RATIO_MOUSEHOT_ROW : 0f))));
+                    }
+                    else
+                    {   // Buňka není předaná, ale tabulka podporuje práci s buňkami => v tom případě generujeme barvu pro neaktivní buňky řádku, jejichž barva je 75% plné barvy:
+                        ratio = (rowIsActive ? MORPH_RATIO_ACTIVE_ROW :
+                                (rowIsMouseHot ? MORPH_RATIO_MOUSEHOT_CELL : 0f));
+                    }
+                }
+                else
+                {   // Tabulka nepodporuje práci s jednotlivými buňkami => generujeme barvu pro plnobarevný řádek (jakoby všechny buňky řádku byly aktivní nebo hotmouse):
+                    ratio = (rowIsActive ? MORPH_RATIO_ACTIVE_CELL : MORPH_RATIO_MOUSEHOT_CELL);
+                }
+            }
+            else
+            {   // Pokud tabulka nemá focus, pak aktivní barva má 50% plné barvy, a neřešíme aktivní buňky:
+                ratio = MORPH_RATIO_ACTIVE_NOFOCUS;
+            }
+
+            return ratio;
+        }
+        protected const float MORPH_RATIO_ACTIVE_CELL = 1.00f;
+        protected const float MORPH_RATIO_ACTIVE_ROW = 0.75f;
+        protected const float MORPH_RATIO_MOUSEHOT_CELL = 0.25f;
+        protected const float MORPH_RATIO_MOUSEHOT_ROW = 0.10f;
+        protected const float MORPH_RATIO_ACTIVE_NOFOCUS = 0.50f;
+        protected const float EFFECT_3D_ACTIVE_ROW = -0.25f;
+        protected const float EFFECT_3D_MOUSEHOT_ROW = 0.10f;
         #endregion
         #region Defaultní hodnoty
         /// <summary>
@@ -1422,11 +1543,29 @@ namespace Djs.Common.Components.Grid
             if (target != null)
                 target.CallHotRowChanged(oldHotRow, newHotRow, eventSource, !this.IsSupressedEvent);
         }
+        protected void CallHotCellChanged(Cell oldHotCell, Cell newHotCell, EventSourceType eventSource)
+        {
+            ITableEventTarget target = (this.DataTable as ITableEventTarget);
+            if (target != null)
+                target.CallHotCellChanged(oldHotCell, newHotCell, eventSource, !this.IsSupressedEvent);
+        }
         protected void CallActiveCellChanged(Cell oldActiveCell, Cell newActiveCell, EventSourceType eventSource)
         {
             ITableEventTarget target = (this.DataTable as ITableEventTarget);
             if (target != null)
                 target.CallActiveCellChanged(oldActiveCell, oldActiveCell, eventSource, !this.IsSupressedEvent);
+        }
+        protected void CallCellMouseEnter(Cell cell, EventSourceType eventSource)
+        {
+            ITableEventTarget target = (this.DataTable as ITableEventTarget);
+            if (target != null)
+                target.CallCellMouseEnter(cell, eventSource, !this.IsSupressedEvent);
+        }
+        protected void CallCellMouseLeave(Cell cell, EventSourceType eventSource)
+        {
+            ITableEventTarget target = (this.DataTable as ITableEventTarget);
+            if (target != null)
+                target.CallCellMouseLeave(cell, eventSource, !this.IsSupressedEvent);
         }
         protected void CallActiveCellClick(Cell cell, EventSourceType eventSource)
         {
@@ -1580,7 +1719,7 @@ namespace Djs.Common.Components.Grid
         #region Interaktivita
         protected override void AfterStateChangedLeftClick(GInteractiveChangeStateArgs e)
         {
-            this.OwnerGTable.TableHeaderClick();
+            this.OwnerGTable.TableHeaderClick(e);
         }
         #endregion
         #region Public rozhraní
@@ -1827,7 +1966,7 @@ namespace Djs.Common.Components.Grid
         }
         protected override void AfterStateChangedLeftClick(GInteractiveChangeStateArgs e)
         {
-            this.OwnerGTable.ColumnHeaderClick(this.OwnerColumn);
+            this.OwnerGTable.ColumnHeaderClick(e, this.OwnerColumn);
         }
         #endregion
         #region Drag - Proces přesouvání sloupce
@@ -2356,6 +2495,24 @@ namespace Djs.Common.Components.Grid
             e.ToolTipData.TitleText = "KeyboardPreviewKeyDown";
             e.ToolTipData.InfoText = "KeyCode: " + code.ToString() + "; KeyData: " + data.ToString() + "; Action = " + action.ToString();
             */
+        }
+        /// <summary>
+        /// Myš vstoupila nad tuto buňku
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void AfterStateChangedMouseEnter(GInteractiveChangeStateArgs e)
+        {
+            base.AfterStateChangedMouseEnter(e);
+            this.OwnerGTable.CellMouseEnter(e, this.OwnerCell);
+        }
+        /// <summary>
+        /// Myš odešla z této buňky
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void AfterStateChangedMouseLeave(GInteractiveChangeStateArgs e)
+        {
+            base.AfterStateChangedMouseLeave(e);
+            this.OwnerGTable.CellMouseLeave(e, this.OwnerCell);
         }
         /// <summary>
         /// Uživatel klikl do této buňky

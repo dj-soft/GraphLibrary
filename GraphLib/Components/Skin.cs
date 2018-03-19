@@ -345,7 +345,7 @@ namespace Djs.Common.Components
             if (relativePoint.HasValue && (state == GInteractiveState.MouseOver || state == GInteractiveState.LeftDown || state == GInteractiveState.LeftDrag || state == GInteractiveState.RightDown || state == GInteractiveState.RightDrag))
                 return _CreateBrushForBackgroundPoint(bounds, orientation, color1, color2, relativePoint.Value);
             else
-                return _CreateBrushForBackgroundGradient(bounds, orientation, color1, color2);
+                return CreateBrushForBackgroundGradient(bounds, orientation, color1, color2);
         }
         /// <summary>
         /// Create and return LinearGradientBrush for Background 
@@ -356,7 +356,7 @@ namespace Djs.Common.Components
         /// <param name="color1"></param>
         /// <param name="color2"></param>
         /// <returns></returns>
-        private static Brush _CreateBrushForBackgroundGradient(Rectangle bounds, Orientation orientation, Color color1, Color color2)
+        public static Brush CreateBrushForBackgroundGradient(Rectangle bounds, Orientation orientation, Color color1, Color color2)
         {
             float angle = (orientation == Orientation.Horizontal ? 90f : 0f);
             return new LinearGradientBrush(bounds, color1, color2, angle);
