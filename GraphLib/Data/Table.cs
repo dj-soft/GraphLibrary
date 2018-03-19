@@ -1547,6 +1547,7 @@ namespace Djs.Common.Data
     public interface ITableEventTarget
     {
         void CallActiveRowChanged(Row oldActiveRow, Row newActiveRow, EventSourceType eventSource, bool callEvents);
+        void CallHotRowChanged(Row oldHotRow, Row newHotRow, EventSourceType eventSource, bool callEvents);
         void CallActiveCellChanged(Cell oldActiveCell, Cell newActiveCell, EventSourceType eventSource, bool callEvents);
         void CallActiveCellClick(Cell cell, EventSourceType eventSource, bool callEvents);
     }

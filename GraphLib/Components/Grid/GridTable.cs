@@ -594,6 +594,18 @@ namespace Djs.Common.Components.Grid
         /// </summary>
         private Row _ActiveRow;
         /// <summary>
+        /// Aktuální Hot řádek = ten, nad kterým se nachází myš.
+        /// </summary>
+        public Row HotRow
+        {
+            get { return this._HotRow; }
+            set { this.SetHotRow(value, EventSourceType.ApplicationCode); }
+        }
+        /// <summary>
+        /// Aktivní řádek
+        /// </summary>
+        private Row _HotRow;
+        /// <summary>
         /// Aktivní buňka, obsahuje referenci na buňku pouze tehdy, pokud tabulka povoluje vybírat buňky (AllowSelectSingleCell). Jinak obsahuje null.
         /// </summary>
         public Cell ActiveCell
@@ -606,7 +618,8 @@ namespace Djs.Common.Components.Grid
         /// </summary>
         private Cell _ActiveCell;
         /// <summary>
-        /// Nastaví daný řádek jako aktivní, vyvolá event ActiveRowChanged, nastaví daný řádek tak aby byl vidět
+        /// Nastaví daný řádek jako aktivní, vyvolá event ActiveRowChanged, nastaví daný řádek tak aby byl vidět.
+        /// Zajistí překreslení řádku.
         /// </summary>
         /// <param name="newActiveRow"></param>
         /// <param name="eventSource"></param>
@@ -630,7 +643,7 @@ namespace Djs.Common.Components.Grid
 
             // Je tu změna:
 
-            // Zajistíme překreslení starého i nového řádku (kvůli abrevnosti):
+            // Zajistíme překreslení starého i nového řádku (kvůli barevnosti):
             this.RepaintRow(this._ActiveRow);
             this.RepaintRow(newActiveRow);
 
@@ -639,6 +652,38 @@ namespace Djs.Common.Components.Grid
 
             if (scrollToVisible)
                 this.ScrollRowToVisibleArea(newActiveRow);
+        }
+        /// <summary>
+        /// Nastaví daný řádek jako Hot = ten pod myší, když myš jezdí nad tablkou, vyvolá event HotRowChanged.
+        /// Zajistí překreslení řádku.
+        /// </summary>
+        /// <param name="newHotRow"></param>
+        /// <param name="eventSource"></param>
+        protected void SetHotRow(Row newHotRow, EventSourceType eventSource)
+        {
+            // Nelze jako aktivní řádek vložit řádek z cizí tabulky:
+            if (newHotRow != null && !Object.ReferenceEquals(newHotRow.Table, this.DataTable)) return;
+
+            Row oldHotRow = this._HotRow;
+
+            // Změna z null na null není změnou:
+            if (newHotRow == null && oldHotRow == null) return;
+
+            // Pokud jeden údaj je null a druhý není, je to změna:
+            bool isChange = ((newHotRow == null) != (oldHotRow == null));
+            if ((newHotRow != null) && (oldHotRow != null))
+                isChange = !Object.ReferenceEquals(newHotRow, oldHotRow);
+
+            if (!isChange) return;
+
+            // Je tu změna:
+
+            // Zajistíme překreslení starého i nového řádku (kvůli barevnosti):
+            this.RepaintRow(this._HotRow);
+            this.RepaintRow(newHotRow);
+
+            this._HotRow = newHotRow;
+            this.CallHotRowChanged(oldHotRow, newHotRow, eventSource);
         }
         /// <summary>
         /// Nastaví danou buňku jako aktivní, případně vyvolá event ActiveRowChanged, nastaví daný řádek tak aby byl vidět
@@ -677,6 +722,7 @@ namespace Djs.Common.Components.Grid
         }
         /// <summary>
         /// Zajistí vyvolání metody Repaint pro RowHeader i pro všechny Cell.Control v daném řádku.
+        /// Je vhodné volat po změně aktivního řádku (pro starý i nový aktivní řádek), a stejně i po změně Hot řádku (=ten pod myší).
         /// </summary>
         /// <param name="row"></param>
         protected void RepaintRow(Row row)
@@ -1369,6 +1415,12 @@ namespace Djs.Common.Components.Grid
             ITableEventTarget target = (this.DataTable as ITableEventTarget);
             if (target != null)
                 target.CallActiveRowChanged(oldActiveRow, newActiveRow, eventSource, !this.IsSupressedEvent);
+        }
+        protected void CallHotRowChanged(Row oldHotRow, Row newHotRow, EventSourceType eventSource)
+        {
+            ITableEventTarget target = (this.DataTable as ITableEventTarget);
+            if (target != null)
+                target.CallHotRowChanged(oldHotRow, newHotRow, eventSource, !this.IsSupressedEvent);
         }
         protected void CallActiveCellChanged(Cell oldActiveCell, Cell newActiveCell, EventSourceType eventSource)
         {
