@@ -33,9 +33,14 @@ namespace Djs.Common.Components.Grid
         }
         private void Init()
         {
+            this.InitInteractive();
             this.InitRowsPositions();
             this.InitHeaderSplitter();
             this.InitTableSplitter();
+        }
+        protected void InitInteractive()
+        {
+            this.Style = GInteractiveStyles.AllMouseInteractivity | GInteractiveStyles.KeyboardInput;
         }
         void IDisposable.Dispose()
         {
@@ -948,81 +953,6 @@ namespace Djs.Common.Components.Grid
                 this.Grid.Invalidate(items);
         }
         #endregion
-        #region Interaktivita z jednotlivých objektů tabulky do grafické tabulky, a dále
-        /// <summary>
-        /// Provede se poté, kdy uživatel klikne na záhlaví tabulky.
-        /// </summary>
-        /// <param name="e"></param>
-        public void TableHeaderClick(GInteractiveChangeStateArgs e)
-        { }
-        /// <summary>
-        /// Provede se poté, kdy uživatel klikne na záhlaví sloupce.
-        /// </summary>
-        /// <param name="e"></param>
-        /// <param name="column"></param>
-        public void ColumnHeaderClick(GInteractiveChangeStateArgs e, Column column)
-        {
-            if (column != null)
-            {
-                column.Table.ColumnHeaderClick(column);
-                if (column.AllowColumnSortByClick && column.Table.AllowColumnSortByClick)
-                {
-                    if (column.SortChange())
-                        this.Repaint();
-                }
-            }
-        }
-        /// <summary>
-        /// Provede se poté, kdy uživatel klikne na záhlaví řádku.
-        /// </summary>
-        /// <param name="e"></param>
-        /// <param name="row">řádek</param>
-        public void RowHeaderClick(GInteractiveChangeStateArgs e, Row row)
-        {
-            if (row != null && row.Table.AllowRowSelectByClick)
-            {
-                row.Table.RowHeaderClick(row);
-                if (row.Table.AllowRowSelectByClick)
-                {
-                    row.SelectedChange();
-                    this.Repaint();
-                }
-            }
-        }
-        /// <summary>
-        /// Provede se poté, kdy uživatel vstoupí s myší nad určitou buňkou.
-        /// </summary>
-        /// <param name="e"></param>
-        /// <param name="cell">řádek</param>
-        public void CellMouseEnter(GInteractiveChangeStateArgs e, Cell cell)
-        {
-            this.SetHotCell(cell, EventSourceType.InteractiveChanged);
-            this.CallCellMouseEnter(cell, EventSourceType.InteractiveChanged);
-        }
-        /// <summary>
-        /// Provede se poté, kdy uživatel vystoupí myší z určité buňky jinam.
-        /// </summary>
-        /// <param name="e"></param>
-        /// <param name="cell">řádek</param>
-        public void CellMouseLeave(GInteractiveChangeStateArgs e, Cell cell)
-        {
-            this.SetHotCell(null, EventSourceType.InteractiveChanged);
-            this.CallCellMouseLeave(cell, EventSourceType.InteractiveChanged);
-        }
-        /// <summary>
-        /// Provede se poté, kdy uživatel klikne na datovou buňku.
-        /// Pokud řádek buňky není aktivní, měl by být aktivován.
-        /// Pokud buňka není aktivní, a tabulka podporuje výběr buněk, měla by být aktivována.
-        /// Po změně aktivní buňky se vyžádá překreslení tabulky.
-        /// </summary>
-        /// <param name="e"></param>
-        /// <param name="cell">řádek</param>
-        public void CellClick(GInteractiveChangeStateArgs e, Cell cell)
-        {
-            this.SetActiveCell(cell, EventSourceType.InteractiveChanged, true);
-            this.CallActiveCellClick(cell, EventSourceType.InteractiveChanged);
-        }
-        #endregion
         #region HeaderSplitter : splitter umístěný pod hlavičkou sloupců, je součástí GTable.Items
         /// <summary>
         /// Inicializuje objekt _HeaderSplitter.
@@ -1301,10 +1231,97 @@ namespace Djs.Common.Components.Grid
             return column.ColumnHeader.TimeConvertor;
         }
         #endregion
-        #region Interactivity
+        #region Interaktivita vlastní GTable
         protected override void AfterStateChanged(GInteractiveChangeStateArgs e)
         {
-
+            base.AfterStateChanged(e);
+        }
+        protected override void AfterStateChangedMouseLeave(GInteractiveChangeStateArgs e)
+        {
+            base.AfterStateChangedMouseLeave(e);
+            if (this._HotCell != null)
+                this.CellMouseLeave(e, null);
+            if (this._HotRow != null)
+                this.SetHotRow(null, EventSourceType.InteractiveChanged);
+        }
+        protected override void AfterStateChangedFocusLeave(GInteractiveChangeStateArgs e)
+        {
+            base.AfterStateChangedFocusLeave(e);
+        }
+        #endregion
+        #region Interaktivita z jednotlivých objektů tabulky do grafické tabulky, a dále
+        /// <summary>
+        /// Provede se poté, kdy uživatel klikne na záhlaví tabulky.
+        /// </summary>
+        /// <param name="e"></param>
+        public void TableHeaderClick(GInteractiveChangeStateArgs e)
+        { }
+        /// <summary>
+        /// Provede se poté, kdy uživatel klikne na záhlaví sloupce.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="column"></param>
+        public void ColumnHeaderClick(GInteractiveChangeStateArgs e, Column column)
+        {
+            if (column != null)
+            {
+                column.Table.ColumnHeaderClick(column);
+                if (column.AllowColumnSortByClick && column.Table.AllowColumnSortByClick)
+                {
+                    if (column.SortChange())
+                        this.Repaint();
+                }
+            }
+        }
+        /// <summary>
+        /// Provede se poté, kdy uživatel klikne na záhlaví řádku.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="row">řádek</param>
+        public void RowHeaderClick(GInteractiveChangeStateArgs e, Row row)
+        {
+            if (row != null && row.Table.AllowRowSelectByClick)
+            {
+                row.Table.RowHeaderClick(row);
+                if (row.Table.AllowRowSelectByClick)
+                {
+                    row.SelectedChange();
+                    this.Repaint();
+                }
+            }
+        }
+        /// <summary>
+        /// Provede se poté, kdy uživatel vstoupí s myší nad určitou buňkou.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="cell">řádek</param>
+        public void CellMouseEnter(GInteractiveChangeStateArgs e, Cell cell)
+        {
+            this.SetHotCell(cell, EventSourceType.InteractiveChanged);
+            this.CallCellMouseEnter(cell, EventSourceType.InteractiveChanged);
+        }
+        /// <summary>
+        /// Provede se poté, kdy uživatel vystoupí myší z určité buňky jinam.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="cell">řádek</param>
+        public void CellMouseLeave(GInteractiveChangeStateArgs e, Cell cell)
+        {
+            this.SetHotCell(null, EventSourceType.InteractiveChanged);
+            this.CallCellMouseLeave(cell, EventSourceType.InteractiveChanged);
+        }
+        /// <summary>
+        /// Provede se poté, kdy uživatel klikne na datovou buňku.
+        /// Pokud řádek buňky není aktivní, měl by být aktivován.
+        /// Pokud buňka není aktivní, a tabulka podporuje výběr buněk, měla by být aktivována.
+        /// Po změně aktivní buňky se vyžádá překreslení tabulky.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="cell">řádek</param>
+        public void CellClick(GInteractiveChangeStateArgs e, Cell cell)
+        {
+            this.SetActiveCell(cell, EventSourceType.InteractiveChanged, true);
+            this.CallActiveCellClick(cell, EventSourceType.InteractiveChanged);
         }
         #endregion
         #region Draw : kreslení vlastní tabulky
@@ -1438,7 +1455,7 @@ namespace Djs.Common.Components.Grid
             if (ratio == 0f) return baseColor;
 
             // Pokud je aktuální prvek v nějakém aktivním stavu (má kladné ratio pro morfing barvy):
-            Color activeColor = style.ActiveBackColor ?? Skin.Grid.ActiveCellBackColor;
+            Color activeColor = style.ActiveTextColor ?? Skin.Grid.ActiveCellTextColor;
             return baseColor.Morph(activeColor, ratio);
         }
         /// <summary>
@@ -1506,8 +1523,8 @@ namespace Djs.Common.Components.Grid
                 }
             }
             else
-            {   // Pokud tabulka nemá focus, pak aktivní barva má 50% plné barvy, a neřešíme aktivní buňky:
-                ratio = MORPH_RATIO_ACTIVE_NOFOCUS;
+            {   // Pokud tabulka nemá focus, pak aktivní řádek má 25% plné barvy, řádek MouseHot má 5% a neřešíme aktivní buňky:
+                ratio = (rowIsActive ? MORPH_RATIO_ACTIVE_NOFOCUS : MORPH_RATIO_MOUSEHOT_NOFOCUS);
             }
 
             return ratio;
@@ -1516,9 +1533,10 @@ namespace Djs.Common.Components.Grid
         protected const float MORPH_RATIO_ACTIVE_ROW = 0.75f;
         protected const float MORPH_RATIO_MOUSEHOT_CELL = 0.25f;
         protected const float MORPH_RATIO_MOUSEHOT_ROW = 0.10f;
-        protected const float MORPH_RATIO_ACTIVE_NOFOCUS = 0.50f;
-        protected const float EFFECT_3D_ACTIVE_ROW = -0.25f;
-        protected const float EFFECT_3D_MOUSEHOT_ROW = 0.10f;
+        protected const float MORPH_RATIO_ACTIVE_NOFOCUS = 0.25f;
+        protected const float MORPH_RATIO_MOUSEHOT_NOFOCUS = 0.05f;
+        protected const float EFFECT_3D_ACTIVE_ROW = -0.45f;
+        protected const float EFFECT_3D_MOUSEHOT_ROW = 0.30f;
         #endregion
         #region Defaultní hodnoty
         /// <summary>

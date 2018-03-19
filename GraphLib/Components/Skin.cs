@@ -919,7 +919,7 @@ namespace Djs.Common.Components
         protected virtual Color DefaultRowTextColor { get { return Color.Black; } }
         protected virtual Color DefaultSelectedRowBackColor { get { return Color.White.Morph(Color.LightBlue, 0.65f); } }
         protected virtual Color DefaultSelectedRowTextColor { get { return Color.Black; } }
-        protected virtual Color DefaultActiveCellBackColor { get { return Color.White.Morph(Color.CadetBlue, 0.95f); } }
+        protected virtual Color DefaultActiveCellBackColor { get { return Color.White.Morph(Color.Blue, 0.75f); } }
         protected virtual Color DefaultActiveCellTextColor { get { return Color.White; } }
         protected virtual Color DefaultBorderLineColor { get { return Color.Gray; } }
         protected virtual BorderLinesType DefaultBorderLineType { get { return BorderLinesType.Horizontal3DSunken | BorderLinesType.VerticalSolid; } }

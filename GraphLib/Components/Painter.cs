@@ -221,7 +221,7 @@ namespace Djs.Common.Components
             {   // 3D efekt:
                 using (Brush brush = Skin.CreateBrushForBackgroundGradient(bounds, orientation, color1, color2))
                 {
-                    graphics.FillRectangle(Skin.Brush(color), bounds);
+                    graphics.FillRectangle(brush, bounds);
                 }
             }
             else
