@@ -16,7 +16,8 @@ namespace Djs.Common.TestGUI
     {
         public TestFormGrid()
         {
-            using (var scope = Application.App.TraceScope(Application.TracePriority.Lowest_2, "TestFormGrid", "Constructor", "Start"))
+            Application.App.TracePriority = Application.TracePriority.Priority1_ElementaryTimeDebug;
+            using (var scope = Application.App.TraceScope(Application.TracePriority.Priority2_Lowest, "TestFormGrid", "Constructor", "Start"))
             {
                 using (Application.App.TraceScope("TestFormGrid", "InitializeComponent", ""))
                 {
@@ -106,7 +107,7 @@ namespace Djs.Common.TestGUI
             Services.IDataSource source = this._DataSourceList.FirstOrDefault();
             if (source == null) return;
 
-            using (Application.App.TraceScope(Application.TracePriority.ElementaryTimeDebug_1, "TestFormGrid", "LoadDataFromSource", "WorkerThread"))
+            using (Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "TestFormGrid", "LoadDataFromSource", "WorkerThread"))
             {
 
                 Services.DataSourceGetDataRequest request = new Services.DataSourceGetDataRequest(null);
@@ -118,12 +119,12 @@ namespace Djs.Common.TestGUI
         {
             if (this.InvokeRequired)
             {
-                Application.App.TraceInfo(Application.TracePriority.ElementaryTimeDebug_1, "TestFormGrid", "ProcessResponseData", "WorkerThread", "InvokeGUI");
+                Application.App.TraceInfo(Application.TracePriority.Priority1_ElementaryTimeDebug, "TestFormGrid", "ProcessResponseData", "WorkerThread", "InvokeGUI");
                 this.BeginInvoke(new Action<Services.DataSourceGetDataRequest, Services.DataSourceResponse>(this._ProcessResponseData), request, response);
             }
             else
             {
-                Application.App.TraceInfo(Application.TracePriority.ElementaryTimeDebug_1, "TestFormGrid", "ProcessResponseData", "WorkerThread", "Native in GUI");
+                Application.App.TraceInfo(Application.TracePriority.Priority1_ElementaryTimeDebug, "TestFormGrid", "ProcessResponseData", "WorkerThread", "Native in GUI");
             }
         }
         private List<Services.IDataSource> _DataSourceList;
