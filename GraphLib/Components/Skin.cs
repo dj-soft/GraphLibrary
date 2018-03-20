@@ -711,6 +711,7 @@ namespace Djs.Common.Components
         #region Public colors
         public Color BackColor { get { return this._Owner.GetValue(this._SkinSetKey, "BackColor", DefaultBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "BackColor", value); } }
         public Color TextColor { get { return this._Owner.GetValue(this._SkinSetKey, "TextColor", DefaultTextColor); } set { this._Owner.SetValue(this._SkinSetKey, "TextColor", value); } }
+        public Color GlowColor { get { return this._Owner.GetValue(this._SkinSetKey, "GlowColor", DefaultGlowColor); } set { this._Owner.SetValue(this._SkinSetKey, "GlowColor", value); } }
         public Color Effect3DDark { get { return this._Owner.GetValue(this._SkinSetKey, "Effect3DDark", DefaultEffect3DDark); } set { this._Owner.SetValue(this._SkinSetKey, "Effect3DDark", value); } }
         public Color Effect3DLight { get { return this._Owner.GetValue(this._SkinSetKey, "Effect3DLight", DefaultEffect3DLight); } set { this._Owner.SetValue(this._SkinSetKey, "Effect3DLight", value); } }
         public float Effect3DRatio { get { return this._Owner.GetValue(this._SkinSetKey, "Effect3DRatio", DefaultEffect3DRatio); } set { this._Owner.SetValue(this._SkinSetKey, "Effect3DRatio", value); } }
@@ -718,6 +719,7 @@ namespace Djs.Common.Components
         #region Default colors
         protected virtual Color DefaultBackColor { get { return Color.LightGray; } }
         protected virtual Color DefaultTextColor { get { return Color.Black; } }
+        protected virtual Color DefaultGlowColor { get { return Color.PaleVioletRed; } }
         protected virtual Color DefaultEffect3DDark { get { return Color.DarkGray; } }
         protected virtual Color DefaultEffect3DLight { get { return Color.White; } }
         protected virtual float DefaultEffect3DRatio { get { return 0.25f; } }

@@ -634,11 +634,26 @@ namespace Djs.Common.Components
         }
         #endregion
         #region DrawInsertMark
-
+        /// <summary>
+        /// Vykreslí prosvícení v dané části prostoru, které signalizuje aktivní část prostoru - například při Drag and Drop, nebo MouseHot stav
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="color"></param>
+        /// <param name="contentAlignment"></param>
         internal static void DrawInsertMark(Graphics graphics, Rectangle bounds, Color color, ContentAlignment contentAlignment)
         {
             DrawInsertMark(graphics, bounds, color, contentAlignment, false, null);
         }
+        /// <summary>
+        /// Vykreslí prosvícení v dané části prostoru, které signalizuje aktivní část prostoru - například při Drag and Drop, nebo MouseHot stav
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="color"></param>
+        /// <param name="contentAlignment"></param>
+        /// <param name="asArc"></param>
+        /// <param name="opacity"></param>
         internal static void DrawInsertMark(Graphics graphics, Rectangle bounds, Color color, ContentAlignment contentAlignment, bool asArc, int? opacity)
         {
             Color color1 = Color.FromArgb((opacity.HasValue ? opacity.Value : 160), color);

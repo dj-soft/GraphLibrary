@@ -1233,9 +1233,13 @@ namespace Djs.Common.Components.Grid
         #endregion
         #region Interaktivita vlastní GTable
         protected override void AfterStateChanged(GInteractiveChangeStateArgs e)
-        {
+        {   // Když už tady musí být override AfterStateChanged() (to kdyby to někoho napadlo), tak MUSÍ volat base metodu!
             base.AfterStateChanged(e);
         }
+        /// <summary>
+        /// Jakmile myš opouští tabulku, pak resetuje informaci o HotRow a HotCell:
+        /// </summary>
+        /// <param name="e"></param>
         protected override void AfterStateChangedMouseLeave(GInteractiveChangeStateArgs e)
         {
             base.AfterStateChangedMouseLeave(e);
@@ -1255,14 +1259,16 @@ namespace Djs.Common.Components.Grid
         /// </summary>
         /// <param name="e"></param>
         public void TableHeaderClick(GInteractiveChangeStateArgs e)
-        { }
+        {
+            // Tady by se asi mohl resetovat filtr, nebo nabídnout reset Rows[].IsSelected, atd...
+        }
         /// <summary>
         /// Provede se poté, kdy uživatel klikne na záhlaví sloupce.
         /// </summary>
         /// <param name="e"></param>
         /// <param name="column"></param>
         public void ColumnHeaderClick(GInteractiveChangeStateArgs e, Column column)
-        {
+        {   // Třídění podle sloupce, pokud ten to dovoluje:
             if (column != null)
             {
                 column.Table.ColumnHeaderClick(column);
@@ -2381,7 +2387,21 @@ namespace Djs.Common.Components.Grid
         protected override void DrawHeader(GInteractiveDrawArgs e, Rectangle boundsAbsolute, int? opacity)
         {
             base.DrawHeader(e, boundsAbsolute, opacity);
+            this.DrawMouseHot(e, boundsAbsolute, opacity);
             this.DrawSelectedRow(e, boundsAbsolute, opacity);
+        }
+        /// <summary>
+        /// Do this záhlaví podbarvení v situaci, kdy tento řádek je MouseHot
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="opacity"></param>
+        protected void DrawMouseHot(GInteractiveDrawArgs e, Rectangle boundsAbsolute, int? opacity)
+        {
+            if (!this.OwnerRow.IsMouseHot) return;
+
+            Rectangle bounds = new Rectangle(boundsAbsolute.Right - 6, boundsAbsolute.Y + 1, 6, boundsAbsolute.Height - 2);
+            GPainter.DrawInsertMark(e.Graphics, bounds, Skin.Control.GlowColor, ContentAlignment.MiddleRight, false, 192);
         }
         /// <summary>
         /// Do this záhlaví vykreslí ikonu pro RowHeaderImage (typicky pro SelectedRow).
