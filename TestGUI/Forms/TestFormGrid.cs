@@ -29,7 +29,6 @@ namespace Djs.Common.TestGUI
                 scope.Result = "OK";
             }
         }
-
         void TestFormGrid_FormClosed(object sender, FormClosedEventArgs e)
         {
             Application.App.End();
@@ -87,12 +86,10 @@ namespace Djs.Common.TestGUI
 
             this._LoadDataFromSource();
         }
-
         void _Toolbar_ToolbarSizeChanged(object sender, GPropertyChangeArgs<Services.ComponentSize> e)
         {
             this.ControlsPosition();
         }
-
         private void _PrepareSources()
         {
             this._DataSourceList = new List<Services.IDataSource>();
@@ -130,17 +127,14 @@ namespace Djs.Common.TestGUI
             }
         }
         private List<Services.IDataSource> _DataSourceList;
-
         void _SplitterWZ_ValueChanging(object sender, GPropertyChangeArgs<int> e)
         {
             // this.ControlsPosition();
         }
-
         void _SplitterWZ_ValueChanged(object sender, GPropertyChangeArgs<int> e)
         {
             this.ControlsPosition();
         }
-
         private Table _PrepareTableW(string name, int rowCount)
         {
             Image[] images = _LoadImages();
@@ -155,9 +149,9 @@ namespace Djs.Common.TestGUI
                         new Column() { Title = "Klíč", ToolTip = "Klíč záznamu v tomto sloupci", Name = "key", FormatString = "0000000", Width = 60 },
                         new Column() { Title = "Datum OD", ToolTip = "Počáteční datum směny", Name = "date_from", FormatString = "yyyy-MM-dd HH:mm", Width = 80 },
                         new Column() { Title = "Datum DO", ToolTip = "Koncové datum směny", Name = "date_to", FormatString = "yyyy-MM-dd HH:mm:ss", Width = 80 },
-                        new Column() { Title = "graf", ToolTip = "Graf vytížení", Name = "graph1", UseTimeAxis = true, Width = 180, AutoWidth = true },
+                        new Column() { Title = "graf", ToolTip = "Graf vytížení", Name = "graph1", UseTimeAxis = true, Width = 180, AutoWidth = true, SortingEnabled = false },
                         new Column() { Title = "Cena jednotky", ToolTip = "Jednotková cena.\r\nJe zde jen pro informaci.", Name = "price1", FormatString = "### ##0.00", Width = 80 },
-                        new Column() { Title = "Fotografie", ToolTip = "Zobrazení", Name = "image", Width = 60 }
+                        new Column() { Title = "Fotografie", ToolTip = "Zobrazení", Name = "image", Width = 60, SortingEnabled = false }
                     );
 
                 DateTime now = DateTime.Now.Date.AddHours(8);
@@ -439,14 +433,12 @@ namespace Djs.Common.TestGUI
         public TextComparable() { }
         public TextComparable(string text) { this.Text = text; this.Value = text; }
         public TextComparable(string text, IComparable value) { this.Text = text; this.Value = value; }
-
         public override string ToString()
         {
             return (this.Text == null ? "" : this.Text);
         }
         public string Text { get; set; }
         public IComparable Value { get; set; }
-        
         int IComparable.CompareTo(object obj)
         {
             TextComparable other = obj as TextComparable;
