@@ -462,33 +462,43 @@ namespace Djs.Common.Application
         #endregion
     }
     #region enum TraceValue
+    /// <summary>
+    /// Priorita zápisu do trace.
+    /// Pokud není uvedena, bere se hodnota Normal.
+    /// </summary>
     public enum TracePriority : int
     {
         /// <summary>
-        /// Events with this priority will never be written to a trace file.
-        /// This level is important when programming variable codes, whose writings to a trace file can be controlled, for example, by a parameter.
+        /// Tyto události se nikdy do trace nezapíšou.
+        /// To není konina, volat zápis do trace s prioritou "None", to může být klidně hodnota nějaké vyhodnocené proměnné...
+        /// Nezáleží na tom, jaké bude nastavení App.TracePriority.
         /// </summary>
-        None_0 = 0,
+        Priority0_None = 0,
         /// <summary>
-        /// Priority value for elements to be analyzed only when debugging graphical execution performance. 
-        /// Such elements can be generated at thousands of seconds.
-        /// Trace file will contain events with this priority and all higher priority levels.
+        /// Zapíše se jen v režimu "TimeDebug", když ladíme výkon grafiky.
+        /// Takových událostí může být tisíce za jednu sekundu!!!
         /// </summary>
-        ElementaryTimeDebug_1 = 1,
-
-        Lowest_2 = 2,
-        BellowNormal_3 = 3,
+        Priority1_ElementaryTimeDebug = 1,
         /// <summary>
-        /// Standard priority for events.
-        /// Trace file will contain events with this priority and all higher priority levels.
+        /// Priorita těsně nad TimeDebug, trace obsahuje poměrně dost zápisů.
         /// </summary>
-        Normal_5 = 5,
-        AboveNormal_7 = 7,
-        Highest_9 = 9,
+        Priority2_Lowest = 2,
         /// <summary>
-        /// Events with this priority are always written to the trace file, regardless to current level priority (App.TracePriority).
+        /// Priorita události lehce pod normální, trace bude obsahovat o něco více zápisů než normálně.
         /// </summary>
-        Allways_10 = 10
+        Priority3_BellowNormal = 3,
+        /// <summary>
+        /// Standardní priorita pro události.
+        /// </summary>
+        Priority5_Normal = 5,
+        /// <summary>
+        /// Událost s touto prioritou se do trace dostane i když se do trace nebudou dostávat normální zápisy.
+        /// </summary>
+        Priority7_AboveNormal = 7,
+        /// <summary>
+        /// Událost s touto prioritou se do trace dostane vždy, nejde ji vypnout jakýmkoliv nastavením App.TracePriority.
+        /// </summary>
+        Priority9_Allways = 10
     }
     #endregion
     #region interface ITraceScope 

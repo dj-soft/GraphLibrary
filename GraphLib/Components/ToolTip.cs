@@ -202,9 +202,9 @@ namespace Djs.Common.Components
                 data = this._Data;
 
                 if (data == null)
-                    Application.App.TraceInfo(Application.TracePriority.Lowest_2, "ToolTipItem", "AnimationRefresh", "Test", "Data: NULL");
+                    Application.App.TraceInfo(Application.TracePriority.Priority2_Lowest, "ToolTipItem", "AnimationRefresh", "Test", "Data: NULL");
                 else
-                    Application.App.TraceInfo(Application.TracePriority.Lowest_2, "ToolTipItem", "AnimationRefresh", "Test", "Data: Exists", "Text: " + data.InfoText, "AnimationExists: " + (data.AnimationExists ? "True" : "False"));
+                    Application.App.TraceInfo(Application.TracePriority.Priority2_Lowest, "ToolTipItem", "AnimationRefresh", "Test", "Data: Exists", "Text: " + data.InfoText, "AnimationExists: " + (data.AnimationExists ? "True" : "False"));
 
 
                 if (data == null || !data.AnimationExists)
@@ -219,7 +219,7 @@ namespace Djs.Common.Components
                 this.AnimationCurrentPhase = AnimationPhase.Wait;
             }
 
-            Application.App.TraceInfo(Application.TracePriority.Lowest_2, "ToolTipItem", "AnimationRefresh", "Result", "Text: " + data.InfoText, "AnimationCurrentPhase: " + (this.AnimationCurrentPhase.ToString()));
+            Application.App.TraceInfo(Application.TracePriority.Priority2_Lowest, "ToolTipItem", "AnimationRefresh", "Result", "Text: " + data.InfoText, "AnimationCurrentPhase: " + (this.AnimationCurrentPhase.ToString()));
         }
         /// <summary>
         /// This is called after each MouseMove.
@@ -276,7 +276,7 @@ namespace Djs.Common.Components
                 text = (this._Data != null ? this._Data.InfoText : "null");
                 if (!this.AnimationActive)
                 {
-                    Application.App.TraceInfo(Application.TracePriority.Lowest_2, "ToolTipItem", "AnimateStep", "Skip", "Text: " + text, "AnimationActive: False");
+                    Application.App.TraceInfo(Application.TracePriority.Priority2_Lowest, "ToolTipItem", "AnimateStep", "Skip", "Text: " + text, "AnimationActive: False");
                     return false;
                 }
 
@@ -293,7 +293,7 @@ namespace Djs.Common.Components
                 resultDraw = (alphaNew != alphaOld);
             }
 
-            Application.App.TraceInfo(Application.TracePriority.Lowest_2, "ToolTipItem", "AnimateStep", "Tick", "Text: " + text, 
+            Application.App.TraceInfo(Application.TracePriority.Priority2_Lowest, "ToolTipItem", "AnimateStep", "Tick", "Text: " + text, 
                 "AlphaOld: " + alphaOld.ToString(),
                 "PhaseOld: " + phaseOld.ToString(),
                 "AlphaNew: " + alphaNew.ToString(),
@@ -568,7 +568,7 @@ namespace Djs.Common.Components
             float alpha = this.AnimationAlpha;
             
             string text = (this._Data != null ? this._Data.InfoText : "null");
-            Application.App.TraceInfo(Application.TracePriority.Lowest_2, "ToolTipItem", "Draw", "Run", "Text: " + text, "AnimationAlpha: " + alpha.ToString());
+            Application.App.TraceInfo(Application.TracePriority.Priority2_Lowest, "ToolTipItem", "Draw", "Run", "Text: " + text, "AnimationAlpha: " + alpha.ToString());
 
             if (this._Image != null && this._TargetBounds.HasValue && alpha > 0f)
             {

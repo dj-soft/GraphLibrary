@@ -777,36 +777,50 @@ namespace Djs.Common.Components
             }
             else
             {
-                bool ghostInOriginalBounds = ((this.Style & GInteractiveStyles.DragDrawGhostOriginal) != 0);
-                bool ghostInDraggedBounds = ((this.Style & GInteractiveStyles.DragDrawGhostInteractive) != 0);
-                GInteractiveDrawLayer currentLayer = e.DrawLayer;
+                this.DrawOnDragging(e);
+            }
+        }
+        /// <summary>
+        /// Tato metoda zajistí vykreslení this objektu v době, kdy probíhá jeho Dragging.
+        /// Bázová třída InteractiveDragObject v této metodě reaguje na styl (this.Style), 
+        /// a podle vlastností stylu DragDrawGhostOriginal a DragDrawGhostInteractive 
+        /// řídí vykreslení do souřadnic výchozích (BoundsDragOrigin) a do souřadnic Dragging (BoundsDragTarget), 
+        /// do vrstev Standard a Interactive, pomocí volání metod DrawStandard() a DrawAsGhost().
+        /// Pokud chce potomek kreslit prvek v době přetahování jinak, může přepsat tuto metodu.
+        /// Pokud potomek chce jen specificky kreslit objekt v době přetahování, má naplnit metody DrawStandard() a DrawAsGhost().
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void DrawOnDragging(GInteractiveDrawArgs e)
+        {
+            bool ghostInOriginalBounds = ((this.Style & GInteractiveStyles.DragDrawGhostOriginal) != 0);
+            bool ghostInDraggedBounds = ((this.Style & GInteractiveStyles.DragDrawGhostInteractive) != 0);
+            GInteractiveDrawLayer currentLayer = e.DrawLayer;
 
-                // We are now in Drag process:
-                Rectangle bounds;
-                if (currentLayer == GInteractiveDrawLayer.Standard)
-                {   // Into Standard layer will be drawed item allways in its Original bounds:
-                    bounds = this.GetAbsoluteBounds(this.BoundsDragOrigin.Value);
-                    if (ghostInOriginalBounds)
-                    {   // Draw ghost on original bounds (in Standard layer):
-                        this.DrawAsGhost(e, bounds);
-                    }
-                    else if (ghostInDraggedBounds)
-                    {   // Draw ghost to Interactive layer => into Standard layer we draw Standard image:
-                        this.DrawStandard(e, bounds);
-                    }
-                    // else: Draw standard image to Interactive layer only, with no image in standard layer.
+            // We are now in Drag process:
+            Rectangle bounds;
+            if (currentLayer == GInteractiveDrawLayer.Standard)
+            {   // Into Standard layer will be drawed item allways in its Original bounds:
+                bounds = this.GetAbsoluteBounds(this.BoundsDragOrigin.Value);
+                if (ghostInOriginalBounds)
+                {   // Draw ghost on original bounds (in Standard layer):
+                    this.DrawAsGhost(e, bounds);
                 }
-                else if (currentLayer == GInteractiveDrawLayer.Interactive)
-                {   // Into Interactive layer will be drawed image (ghost or standard type) in current Bounds:
-                    bounds = this.GetAbsoluteBounds(this.BoundsDragTarget.Value);
-                    if (ghostInDraggedBounds)
-                    {   // Draw ghost to Interactive layer:
-                        this.DrawAsGhost(e, bounds);
-                    }
-                    else
-                    {   // Draw ghost on original bounds, or draw no ghost => draw Standard image into Iteractive layer:
-                        this.DrawStandard(e, bounds);
-                    }
+                else if (ghostInDraggedBounds)
+                {   // Draw ghost to Interactive layer => into Standard layer we draw Standard image:
+                    this.DrawStandard(e, bounds);
+                }
+                // else: Draw standard image to Interactive layer only, with no image in standard layer.
+            }
+            else if (currentLayer == GInteractiveDrawLayer.Interactive)
+            {   // Into Interactive layer will be drawed image (ghost or standard type) in current Bounds:
+                bounds = this.GetAbsoluteBounds(this.BoundsDragTarget.Value);
+                if (ghostInDraggedBounds)
+                {   // Draw ghost to Interactive layer:
+                    this.DrawAsGhost(e, bounds);
+                }
+                else
+                {   // Draw ghost on original bounds, or draw no ghost => draw Standard image into Iteractive layer:
+                    this.DrawStandard(e, bounds);
                 }
             }
         }

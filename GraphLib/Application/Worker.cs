@@ -287,14 +287,14 @@ namespace Djs.Common.Application
             try
             {
                 this._State = WorkState.Processing;
-                using (var scopeW = App.TraceScope(TracePriority.ElementaryTimeDebug_1, "Worker", "Run", "WorkMethod"))
+                using (var scopeW = App.TraceScope(TracePriority.Priority1_ElementaryTimeDebug, "Worker", "Run", "WorkMethod"))
                 {
                     this._WorkMethod(this._WorkData);
                     if (!this._IsStopped)
                     {
                         if (this._CallbackMethod != null)
                         {
-                            using (var scopeC = App.TraceScope(TracePriority.ElementaryTimeDebug_1, "Worker", "Run", "CallbackMethod"))
+                            using (var scopeC = App.TraceScope(TracePriority.Priority1_ElementaryTimeDebug, "Worker", "Run", "CallbackMethod"))
                             {
                                 this._CallbackMethod(this._WorkData);
                             }
@@ -311,7 +311,7 @@ namespace Djs.Common.Application
                 {
                     if (this._ExceptionMethod != null)
                     {
-                        using (var scopeE = App.TraceScope(TracePriority.ElementaryTimeDebug_1, "Worker", "Run", "ExceptionMethod"))
+                        using (var scopeE = App.TraceScope(TracePriority.Priority1_ElementaryTimeDebug, "Worker", "Run", "ExceptionMethod"))
                         {
                             this._ExceptionMethod(this._WorkData, exc);
                         }
@@ -361,14 +361,14 @@ namespace Djs.Common.Application
             try
             {
                 this._State = WorkState.Processing;
-                using (var scopeW = App.TraceScope(TracePriority.ElementaryTimeDebug_1, "Worker", "Run", "WorkMethod"))
+                using (var scopeW = App.TraceScope(TracePriority.Priority1_ElementaryTimeDebug, "Worker", "Run", "WorkMethod"))
                 {
                     TResponse response = this._WorkMethod(this._WorkData);
                     if (!this._IsStopped)
                     {
                         if (this._CallbackMethod != null)
                         {
-                            using (var scopeC = App.TraceScope(TracePriority.ElementaryTimeDebug_1, "Worker", "Run", "CallbackMethod"))
+                            using (var scopeC = App.TraceScope(TracePriority.Priority1_ElementaryTimeDebug, "Worker", "Run", "CallbackMethod"))
                             {
                                 this._CallbackMethod(this._WorkData, response);
                             }
@@ -385,7 +385,7 @@ namespace Djs.Common.Application
                 {
                     if (this._ExceptionMethod != null)
                     {
-                        using (var scopeE = App.TraceScope(TracePriority.ElementaryTimeDebug_1, "Worker", "Run", "ExceptionMethod"))
+                        using (var scopeE = App.TraceScope(TracePriority.Priority1_ElementaryTimeDebug, "Worker", "Run", "ExceptionMethod"))
                         {
                             this._ExceptionMethod(this._WorkData, exc);
                         }

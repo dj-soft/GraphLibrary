@@ -35,7 +35,7 @@ namespace Djs.Common.Components
         #region CheckValid, recalculate validity
         protected void CheckValid()
         {
-            using (var scope = Application.App.TraceScope(Application.TracePriority.ElementaryTimeDebug_1, "GTimeGraph", "CheckValid", ""))
+            using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "CheckValid", ""))
             {
                 this.CheckValidTimeAxis();
                 this.CheckValidLogicalY();
@@ -108,7 +108,7 @@ namespace Djs.Common.Components
         /// </summary>
         protected void ItemsRecalculateLogicalY()
         {
-            using (var scope = Application.App.TraceScope(Application.TracePriority.ElementaryTimeDebug_1, "GTimeGraph", "ItemsRecalculateLogY", ""))
+            using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "ItemsRecalculateLogY", ""))
             {
                 int layers = 0;
                 int levels = 0;
@@ -277,7 +277,7 @@ namespace Djs.Common.Components
         /// </summary>
         protected void ItemsRecalculateVisibleList()
         {
-            using (var scope = Application.App.TraceScope(Application.TracePriority.ElementaryTimeDebug_1, "GTimeGraph", "ItemsRecalculateVisibleList", ""))
+            using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "ItemsRecalculateVisibleList", ""))
             {
                 int layers = 0;
                 int groups = 0;
@@ -406,7 +406,7 @@ namespace Djs.Common.Components
         protected virtual void DrawContentTimeGraph(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
         {
             this.DrawContentPrepareArgs(e, boundsAbsolute);
-            using (var scope = Application.App.TraceScope(Application.TracePriority.ElementaryTimeDebug_1, "GTimeGraph", "DrawContent", ""))
+            using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "DrawContent", ""))
             {
                 this.Bounds = new Rectangle(0, 0, boundsAbsolute.Width, boundsAbsolute.Height);
                 this.CheckValid();
@@ -431,7 +431,7 @@ namespace Djs.Common.Components
         /// </summary>
         protected void DrawTicks()
         {
-            using (var scope = Application.App.TraceScope(Application.TracePriority.ElementaryTimeDebug_1, "GTimeGraph", "PaintGrid", ""))
+            using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "PaintGrid", ""))
             {
                 int x;
                 int x0 = this.ItemDrawArgs.GraphBoundsAbsolute.X + this.TimeAxisBegin;
@@ -460,7 +460,7 @@ namespace Djs.Common.Components
         }
         protected void DrawItems()
         {
-            using (var scope = Application.App.TraceScope(Application.TracePriority.ElementaryTimeDebug_1, "GTimeGraph", "PaintItems", ""))
+            using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "PaintItems", ""))
             {
                 int layers = 0;
                 int groups = 0;

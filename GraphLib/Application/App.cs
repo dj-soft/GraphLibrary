@@ -160,7 +160,7 @@ namespace Djs.Common.Application
         /// <param name="items"></param>
         public static void TraceInfo(string type, string method, string result, params string[] items)
         {
-            if (TraceForPriority(TracePriority.Normal_5))
+            if (TraceForPriority(TracePriority.Priority5_Normal))
                 Instance._Trace.Info(type, method, result, items);
         }
         /// <summary>
@@ -186,7 +186,7 @@ namespace Djs.Common.Application
         /// <param name="items"></param>
         public static void TraceInfoNow(string type, string method, string result, params string[] items)
         {
-            if (TraceForPriority(TracePriority.Normal_5))
+            if (TraceForPriority(TracePriority.Priority5_Normal))
                 Instance._Trace.InfoNow(type, method, result, items);
         }
         /// <summary>
@@ -213,7 +213,7 @@ namespace Djs.Common.Application
         /// <param name="items"></param>
         public static void TraceWarning(string type, string method, string result, params string[] items)
         {
-            if (TraceForPriority(TracePriority.Normal_5))
+            if (TraceForPriority(TracePriority.Priority5_Normal))
                 Instance._Trace.Warning(type, method, result, items);
         }
         /// <summary>
@@ -239,7 +239,7 @@ namespace Djs.Common.Application
         /// <param name="items"></param>
         public static void TraceWarningNow(string type, string method, string result, params string[] items)
         {
-            if (TraceForPriority(TracePriority.Normal_5))
+            if (TraceForPriority(TracePriority.Priority5_Normal))
                 Instance._Trace.WarningNow(type, method, result, items);
         }
         /// <summary>
@@ -296,7 +296,7 @@ namespace Djs.Common.Application
         /// <returns></returns>
         public static ITraceScope TraceScope(string type, string method, string result, params string[] items)
         {
-            return Instance._Trace.Scope(TraceForPriority(TracePriority.Normal_5), type, method, result, items);
+            return Instance._Trace.Scope(TraceForPriority(TracePriority.Priority5_Normal), type, method, result, items);
         }
         /// <summary>
         /// Returns an ITraceScope object: this object write Begin line into trace when is created, and write End line on Dispose this scope instance.
@@ -330,7 +330,7 @@ namespace Djs.Common.Application
         /// <returns></returns>
         public static ITraceScope TraceScopeNow(string type, string method, string result, params string[] items)
         {
-            return Instance._Trace.ScopeNow(TraceForPriority(TracePriority.Normal_5), type, method, result, items);
+            return Instance._Trace.ScopeNow(TraceForPriority(TracePriority.Priority5_Normal), type, method, result, items);
         }
         /// <summary>
         /// Returns an ITraceScope object: this object write Begin line into trace when is created, and write End line on Dispose this scope instance.
@@ -357,8 +357,8 @@ namespace Djs.Common.Application
         /// <returns></returns>
         public static bool TraceForPriority(TracePriority priority)
         {
-            if (priority == Application.TracePriority.None_0) return false;
-            if (priority == Application.TracePriority.Allways_10) return true;
+            if (priority == Application.TracePriority.Priority0_None) return false;
+            if (priority == Application.TracePriority.Priority9_Allways) return true;
             return ((int)priority >= Instance.__TracePriorityInt);
         }
         /// <summary>
@@ -390,7 +390,7 @@ namespace Djs.Common.Application
         {
             this._Trace = new Trace();
             this._IsDebugMode = System.Diagnostics.Debugger.IsAttached;
-            this._TracePriority = Application.TracePriority.ElementaryTimeDebug_1; // .Lowest_2;
+            this._TracePriority = Application.TracePriority.Priority1_ElementaryTimeDebug; // .Lowest_2;
         }
         /// <summary>
         /// Instance property, can be set a value, its int value will be stored to this.__TracePriorityInt.

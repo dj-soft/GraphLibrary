@@ -34,9 +34,9 @@ namespace Djs.Common.Services
         {
             DataSourceGetDataResponse response = new DataSourceGetDataResponse(request);
 
-            Application.App.TraceInfo(Application.TracePriority.ElementaryTimeDebug_1, "TestDataSource", "ProcessRequestGetData", "Start");
+            Application.App.TraceInfo(Application.TracePriority.Priority1_ElementaryTimeDebug, "TestDataSource", "ProcessRequestGetData", "Start");
             System.Threading.Thread.Sleep(2000);
-            Application.App.TraceInfo(Application.TracePriority.ElementaryTimeDebug_1, "TestDataSource", "ProcessRequestGetData", "Done");
+            Application.App.TraceInfo(Application.TracePriority.Priority1_ElementaryTimeDebug, "TestDataSource", "ProcessRequestGetData", "Done");
 
             return response;
         }

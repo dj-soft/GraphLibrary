@@ -74,7 +74,7 @@ namespace Djs.Common.Components
         {
             if (this._KeyboardCurrentItemCanKeyboard)
             {
-                using (var scope = Application.App.TraceScope(Application.TracePriority.ElementaryTimeDebug_1, "GInteractiveControl", "PreviewKeyDown", "")) 
+                using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "PreviewKeyDown", "")) 
                 {
                     try
                     {
@@ -92,7 +92,7 @@ namespace Djs.Common.Components
         {
             if (this._MouseDraggedItem != null && e.KeyCode == Keys.Escape)
             {   // When we have Dragged Item, and Escape is pressed, then perform Cancel for current Drag operation:
-                using (var scope = Application.App.TraceScope(Application.TracePriority.ElementaryTimeDebug_1, "GInteractiveControl", "KeyDown_DragCancel", ""))
+                using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "KeyDown_DragCancel", ""))
                 {
                     this._MouseDragCancel();
                     this._InteractiveDrawRun();
@@ -100,7 +100,7 @@ namespace Djs.Common.Components
             }
             else if (this._KeyboardCurrentItemCanKeyboard)
             {
-                using (var scope = Application.App.TraceScope(Application.TracePriority.ElementaryTimeDebug_1, "GInteractiveControl", "KeyDown", ""))
+                using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "KeyDown", ""))
                 {
                     try
                     {
@@ -118,7 +118,7 @@ namespace Djs.Common.Components
         {
             if (this._KeyboardCurrentItemCanKeyboard)
             {
-                using (var scope = Application.App.TraceScope(Application.TracePriority.ElementaryTimeDebug_1, "GInteractiveControl", "KeyUp", ""))
+                using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "KeyUp", ""))
                 {
                     try
                     {
@@ -136,7 +136,7 @@ namespace Djs.Common.Components
         {
             if (this._KeyboardCurrentItemCanKeyboard)
             {
-                using (var scope = Application.App.TraceScope(Application.TracePriority.ElementaryTimeDebug_1, "GInteractiveControl", "KeyPress", ""))
+                using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "KeyPress", ""))
                 {
                     try
                     {
@@ -154,7 +154,7 @@ namespace Djs.Common.Components
         {
             if (this._KeyboardLeavedItem != null)
             {
-                using (var scope = Application.App.TraceScope(Application.TracePriority.ElementaryTimeDebug_1, "GInteractiveControl", "Enter", ""))
+                using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "Enter", ""))
                 {
                     try
                     {
@@ -171,7 +171,7 @@ namespace Djs.Common.Components
         void _Leave(object sender, EventArgs e)
         {
             this._KeyboardLeavedItem = this._KeyboardCurrentItem;
-            using (var scope = Application.App.TraceScope(Application.TracePriority.ElementaryTimeDebug_1, "GInteractiveControl", "Leave", ""))
+            using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "Leave", ""))
             {
                 try
                 {
@@ -295,7 +295,7 @@ namespace Djs.Common.Components
         #region Mouse primary event handlers (called from Win32).
         void _MouseEnter(object sender, EventArgs e)
         {
-            using (var scope = Application.App.TraceScope(Application.TracePriority.ElementaryTimeDebug_1, "GInteractiveControl", "MouseEnter", ""))
+            using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "MouseEnter", ""))
             {
                 try
                 {
@@ -310,7 +310,7 @@ namespace Djs.Common.Components
         }
         void _MouseMove(object sender, MouseEventArgs e)
         {
-            using (var scope = Application.App.TraceScope(Application.TracePriority.ElementaryTimeDebug_1, "GInteractiveControl", "MouseMove", ""))
+            using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "MouseMove", ""))
             {
                 try
                 {
@@ -354,7 +354,7 @@ namespace Djs.Common.Components
         }
         void _MouseDown(object sender, MouseEventArgs e)
         {
-            using (var scope = Application.App.TraceScope(Application.TracePriority.ElementaryTimeDebug_1, "GInteractiveControl", "MouseDown", ""))
+            using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "MouseDown", ""))
             {
                 try
                 {
@@ -369,7 +369,7 @@ namespace Djs.Common.Components
         }
         void _MouseUp(object sender, MouseEventArgs e)
         {
-            using (var scope = Application.App.TraceScope(Application.TracePriority.ElementaryTimeDebug_1, "GInteractiveControl", "MouseUp", ""))
+            using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "MouseUp", ""))
             {
                 try
                 {
@@ -389,7 +389,7 @@ namespace Djs.Common.Components
         }
         void _MouseWheel(object sender, MouseEventArgs e)
         {
-            using (var scope = Application.App.TraceScope(Application.TracePriority.ElementaryTimeDebug_1, "GInteractiveControl", "MouseWheel", ""))
+            using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "MouseWheel", ""))
             {
                 try
                 {
@@ -404,7 +404,7 @@ namespace Djs.Common.Components
         }
         void _MouseLeave(object sender, EventArgs e)
         {
-            using (var scope = Application.App.TraceScope(Application.TracePriority.ElementaryTimeDebug_1, "GInteractiveControl", "MouseLeave", ""))
+            using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "MouseLeave", ""))
             {
                 try
                 {
@@ -972,7 +972,7 @@ namespace Djs.Common.Components
             request.Fill(new Point(0, 0), this.ClientRectangle, this.ItemsList, this.PendingFullDraw, true);
             if (request.NeedAnyDraw)
             {
-                using (var scope = Application.App.TraceScope(Application.TracePriority.ElementaryTimeDebug_1, "GInteractiveControl", "InteractiveDrawRun", ""))
+                using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "InteractiveDrawRun", ""))
                 {
                     try
                     {
@@ -1086,7 +1086,7 @@ namespace Djs.Common.Components
             DrawRequest request = new DrawRequest(false, this._ToolTip, this._ProgressItem);
             if (request.NeedAnyDraw)
             {
-                using (var scope = Application.App.TraceScope(Application.TracePriority.ElementaryTimeDebug_1, "GInteractiveControl", "ProgressDrawRun", ""))
+                using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "ProgressDrawRun", ""))
                 {
                     try
                     {
@@ -1117,7 +1117,7 @@ namespace Djs.Common.Components
         /// <param name="e"></param>
         protected override void OnPaintLayers(LayeredPaintEventArgs e)
         {
-            using (var scope = Application.App.TraceScope(Application.TracePriority.ElementaryTimeDebug_1, "GInteractiveControl", "OnPaintLayers", ""))
+            using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "OnPaintLayers", ""))
             {
                 DrawRequest request = e.UserData as DrawRequest;
                 scope.AddItem("e.UserData: " + ((request == null) ? "null => Draw " : "Explicit request"));
@@ -1275,7 +1275,7 @@ namespace Djs.Common.Components
             /// <param name="interactive"></param>
             internal void Fill(Point offset, Rectangle bounds, IEnumerable<IInteractiveItem> items, bool drawAllItems, bool interactive)
             {
-                using (var scope = Application.App.TraceScope(Application.TracePriority.ElementaryTimeDebug_1, "DrawRequest", "Fill", ""))
+                using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "DrawRequest", "Fill", ""))
                 {
                     this.InteractiveMode = interactive;
                     this.FillFromItems(offset, bounds, items, GInteractiveDrawLayer.None);

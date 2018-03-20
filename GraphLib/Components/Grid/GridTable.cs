@@ -1599,17 +1599,17 @@ namespace Djs.Common.Components.Grid
         }
         #endregion
     }
-    #region Třídy GHeader : GTableHeader, GColumnHeader, GRowHeader
+    #region Třída GControl : abstraktní předek pro vizuální třídy zobrazující záhlaví i buňku
     /// <summary>
-    /// GHeader : vizuální třída pro zobrazování záhlaví tabulky, a předek pro třídy zobrazující záhlaví sloupce a řádku.
+    /// GControl : abstraktní předek pro vizuální třídy zobrazující záhlaví i buňku
     /// </summary>
-    public abstract class GHeader : InteractiveDragObject, IInteractiveItem
+    public abstract class GComponent : InteractiveDragObject, IInteractiveItem
     {
         #region Konstruktor, data
         /// <summary>
         /// Konstruktor
         /// </summary>
-        protected GHeader()
+        protected GComponent()
         { }
         /// <summary>
         /// Souřadnice headeru.
@@ -1644,40 +1644,42 @@ namespace Djs.Common.Components.Grid
         /// <summary>
         /// Typ záhlaví. Potomek musí přepsat na správnou hodnotu.
         /// </summary>
-        protected abstract TableAreaType HeaderType { get; }
+        protected abstract TableAreaType ComponentType { get; }
         #endregion
         #region Podpora kreslení
+        /// <summary>
+        /// true pokud tento prvek může být přetahován myší jinam
+        /// </summary>
         protected override bool CanDrag { get { return false; } }
+        protected virtual bool NeedDebug { get { return false; } }
+        /// <summary>
+        /// Kreslí prvek standardně (včetně kompletního obsahu).
+        /// Může to být do vrstvy Standard i do jiné vrstvy, záleží na nastavení režimu Drag.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
         protected override void DrawStandard(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
         {
-            if (this.OwnerTable.TableName == "směny")
+            if (this.NeedDebug)
             { }
+            Application.App.TraceInfo(Application.TracePriority.Priority1_ElementaryTimeDebug, this.GetType().Name, "Draw", "Component", this.ToString(), "BoundsAbsolute: " + boundsAbsolute.ToString());
 
-            // Clip() mi zajistí, že při pixelovém posunu záhlaví (sloupce, řádky) bude záhlaví vykresleno jen do příslušné části vymezeného prostoru pro danou oblast.
-            // Grafická organizace GTable není členěna nijak výrazně strukturovaně => GTable obsahuje jako Child jednotlivé prvky (GHeader, GColumn),
-            //  které mají svoje souřadnice relativní k GTable, ale mají se zobrazovat "oříznuté" do patřičných oblastí v GTable.
-            if (e.DrawLayer == GInteractiveDrawLayer.Standard)
-            {
-                // Clip() ale provedeme jen pro Standard vrstvu; protože v ostatních vrstvách se provádí Dragging, a ten má být neomezený:
-                Rectangle areaAbsoluteBounds = this.OwnerGTable.GetAbsoluteBoundsForArea(this.HeaderType);
-                e.GraphicsClipWith(areaAbsoluteBounds, true);
-            }
+            if (!this.GraphicClip(e, boundsAbsolute)) return;                  // Není kam kreslit (oříznutí souřadnic vrátílo nulu)
 
             int? opacity = (e.DrawLayer == GInteractiveDrawLayer.Standard ? (int?)null : (int?)128);
-            this.DrawHeader(e, boundsAbsolute, opacity);
+            this.DrawContent(e, boundsAbsolute, false, opacity);
         }
+        /// <summary>
+        /// Kreslí prvek jako ducha (může být jen naznačený obsah), při přetahování myší.
+        /// Může to být do vrstvy Standard i do jiné vrstvy, záleží na nastavení režimu Drag.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
         protected override void DrawAsGhost(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
         {
-            // Clip() mi zajistí, že při pixelovém posunu záhlaví (sloupce, řádky) bude záhlaví vykresleno jen do příslušné části vymezeného prostoru pro danou oblast.
-            // Grafická organizace GTable není členěna nijak výrazně strukturovaně => GTable obsahuje jako Child jednotlivé prvky (GHeader, GColumn),
-            //  které mají svoje souřadnice relativní k GTable, ale mají se zobrazovat "oříznuté" do patřičných oblastí v GTable.
-            if (e.DrawLayer == GInteractiveDrawLayer.Standard)
-                // Clip() ale provedeme jen pro Standard vrstvu; protože v ostatních vrstvách se provádí Dragging, a ten má být neomezený:
-                e.GraphicsClipWith(this.OwnerGTable.GetAbsoluteBoundsForArea(this.HeaderType), true);
+            if (!this.GraphicClip(e, boundsAbsolute)) return;                  // Není kam kreslit (oříznutí souřadnic vrátilo nulu)
 
-            if (e.DrawLayer == GInteractiveDrawLayer.Standard)
-                e.Graphics.FillRectangle(Brushes.DarkGray, boundsAbsolute);
-            this.DrawHeader(e, boundsAbsolute, 128);
+            this.DrawContent(e, boundsAbsolute, true, 128);
         }
         /// <summary>
         /// Vykreslí podklad prostoru pro záhlaví.
@@ -1685,10 +1687,37 @@ namespace Djs.Common.Components.Grid
         /// </summary>
         /// <param name="e"></param>
         /// <param name="boundsAbsolute"></param>
+        /// <param name="drawAsGhost"></param>
         /// <param name="opacity"></param>
-        protected virtual void DrawHeader(GInteractiveDrawArgs e, Rectangle boundsAbsolute, int? opacity)
+        protected virtual void DrawContent(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
         {
+            if (drawAsGhost && e.DrawLayer == GInteractiveDrawLayer.Standard)
+                e.Graphics.FillRectangle(Brushes.DarkGray, boundsAbsolute);
             GPainter.DrawColumnHeader(e.Graphics, boundsAbsolute, ColorPalette.ButtonBackEnableColor, this.CurrentState, System.Windows.Forms.Orientation.Horizontal, null, opacity);
+        }
+        /// <summary>
+        /// Metoda zajistí oříznutí aktuální grafiky tak, aby prvek kreslil jen do přiměřeného prostoru.
+        /// Oříznutí se provádí jen pro vrstvu Standard (protože v jiných vrstvách se provádí přetahování myší, a to je bez ořezávání).
+        /// Oříznutí se provádí jako Permanent = až do následujícího resetu clipu, což prvek běžně nedělá.
+        /// Clip() mi zajistí, že při pixelovém posunu záhlaví (sloupce, řádky, buňka) bude obsah vykreslena jen do příslušné části vymezeného prostoru pro danou oblast.
+        /// Grafická organizace GTable není členěna nijak výrazně strukturovaně = GTable obsahuje jako Child jednotlivé prvky (GHeader, GColumn),
+        ///  které mají svoje souřadnice relativní k GTable, ale mají se zobrazovat "oříznuté" do patřičných oblastí v GTable.
+        /// Metoda vrací true = po oříznutí je nějaký důvod kreslit / false = neá význam něco kreslit, souřadnice prvku jsou mimo rozsah viditelných pixelů
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        protected bool GraphicClip(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
+        {
+            // Ořezáváme jen při kreslení do vrstvy Standard:
+            if (e.DrawLayer != GInteractiveDrawLayer.Standard) return true;
+
+            Rectangle areaAbsoluteBounds = this.OwnerGTable.GetAbsoluteBoundsForArea(this.ComponentType);    // Prostor pro oblast (ColumnHeaders, RowHeaders, atd)
+            Rectangle controlBounds = Rectangle.Intersect(areaAbsoluteBounds, boundsAbsolute);               // Prostor pro aktuální prvek = intersect se souřadnicemi prvku
+            if (!controlBounds.HasPixels()) return false;
+
+            Rectangle clipBounds = Rectangle.Intersect(controlBounds, e.ClipBounds);                         // Prostor po oříznutí s aktuálním Clipem v grafice
+            e.GraphicsClipWith(clipBounds, true);
+            return !e.IsClipEmpty;
         }
         #endregion
         #region Drag - podpora pro přesunutí this headeru na jinou pozici
@@ -1704,7 +1733,12 @@ namespace Djs.Common.Components.Grid
         protected int DrawInsertMarkAtEnd { get; set; }
         #endregion
     }
-    public class GTableHeader : GHeader
+    #endregion
+    #region Třída GTableHeader : třída zobrazující záhlaví tabulky (vlevo nahoře, vpravo nahoře)
+    /// <summary>
+    /// GTableHeader : třída zobrazující záhlaví tabulky (vlevo nahoře, vpravo nahoře)
+    /// </summary>
+    public class GTableHeader : GComponent
     {
         #region Konstruktor, data
         /// <summary>
@@ -1738,13 +1772,7 @@ namespace Djs.Common.Components.Grid
         /// <summary>
         /// Typ záhlaví.
         /// </summary>
-        protected override TableAreaType HeaderType { get { return TableAreaType.TableHeader; } }
-        #endregion
-        #region Interaktivita
-        protected override void AfterStateChangedLeftClick(GInteractiveChangeStateArgs e)
-        {
-            this.OwnerGTable.TableHeaderClick(e);
-        }
+        protected override TableAreaType ComponentType { get { return TableAreaType.TableHeader; } }
         #endregion
         #region Public rozhraní
         /// <summary>
@@ -1804,11 +1832,46 @@ namespace Djs.Common.Components.Grid
         /// </summary>
         protected GSplitter _ColumnSplitter;
         #endregion
+        #region Interaktivita
+        protected override void AfterStateChangedLeftClick(GInteractiveChangeStateArgs e)
+        {
+            this.OwnerGTable.TableHeaderClick(e);
+        }
+        #endregion
+        #region Draw - kreslení záhlaví tabulky
+        /// <summary>
+        /// Vykreslí podklad prostoru pro záhlaví.
+        /// Bázová třída GHeader vykreslí pouze pozadí, pomocí metody GPainter.DrawColumnHeader()
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="drawAsGhost"></param>
+        /// <param name="opacity"></param>
+        protected override void DrawContent(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
+        {
+            this.DrawBackground(e, boundsAbsolute, drawAsGhost, opacity);
+        }
+        /// <summary>
+        /// Vykreslí jen pozadí
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="drawAsGhost"></param>
+        /// <param name="opacity"></param>
+        protected void DrawBackground(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
+        {
+            if (drawAsGhost && e.DrawLayer == GInteractiveDrawLayer.Standard)
+                e.Graphics.FillRectangle(Brushes.DarkGray, boundsAbsolute);
+            GPainter.DrawColumnHeader(e.Graphics, boundsAbsolute, ColorPalette.ButtonBackEnableColor, this.CurrentState, System.Windows.Forms.Orientation.Horizontal, null, opacity);
+        }
+        #endregion
     }
+    #endregion
+    #region Třída GColumnHeader : vizuální třída pro zobrazování záhlaví sloupce
     /// <summary>
     /// GColumnHeader : vizuální třída pro zobrazování záhlaví sloupce
     /// </summary>
-    public class GColumnHeader : GHeader
+    public class GColumnHeader : GComponent
     {
         #region Konstruktor, data
         public GColumnHeader(Column column)
@@ -1835,17 +1898,17 @@ namespace Djs.Common.Components.Grid
         #endregion
         #region Reference na objekty Owner
         /// <summary>
-        /// Sloupec, do kterého patří toto záhlaví
-        /// </summary>
-        protected virtual Column OwnerColumn { get { return this._OwnerColumn; } }
-        /// <summary>
         /// Tabulka (datová), do které patří toto záhlaví
         /// </summary>
         protected override Table OwnerTable { get { return this._OwnerColumn.Table; } }
         /// <summary>
+        /// Sloupec, do kterého patří toto záhlaví
+        /// </summary>
+        protected virtual Column OwnerColumn { get { return this._OwnerColumn; } }
+        /// <summary>
         /// Typ záhlaví.
         /// </summary>
-        protected override TableAreaType HeaderType { get { return TableAreaType.ColumnHeader; } }
+        protected override TableAreaType ComponentType { get { return TableAreaType.ColumnHeader; } }
         #endregion
         #region Public rozhraní
         /// <summary>
@@ -2049,7 +2112,10 @@ namespace Djs.Common.Components.Grid
         /// Zhasíná se tím prosvícení Drag-Target označení.
         /// </summary>
         protected void ResetInsertMark()
-        { }
+        {
+            this.DrawInsertMarkAtBegin = 0;
+            this.DrawInsertMarkAtEnd = 0;
+        }
         /// <summary>
         /// Najde sloupce ležící před a za místem, kam bychom rádi vložili this sloupec v procesu přetahování.
         /// </summary>
@@ -2187,11 +2253,24 @@ namespace Djs.Common.Components.Grid
 
         #endregion
         #region Draw - kreslení záhlaví sloupce : ikona, text, značky při procesu Drag
-        protected override void DrawHeader(GInteractiveDrawArgs e, Rectangle boundsAbsolute, int? opacity)
+        protected override void DrawContent(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
         {
-            base.DrawHeader(e, boundsAbsolute, opacity);
+            this.DrawBackground(e, boundsAbsolute, drawAsGhost, opacity);
             this.DrawInsertMarks(e, boundsAbsolute, opacity);
             this.DrawColumnHeader(e, boundsAbsolute, opacity);
+        }
+        /// <summary>
+        /// Vykreslí jen pozadí
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="drawAsGhost"></param>
+        /// <param name="opacity"></param>
+        protected void DrawBackground(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
+        {
+            if (drawAsGhost && e.DrawLayer == GInteractiveDrawLayer.Standard)
+                e.Graphics.FillRectangle(Brushes.DarkGray, boundsAbsolute);
+            GPainter.DrawColumnHeader(e.Graphics, boundsAbsolute, ColorPalette.ButtonBackEnableColor, this.CurrentState, System.Windows.Forms.Orientation.Horizontal, null, opacity);
         }
         /// <summary>
         /// Do this záhlaví vykreslí ikonu třídění a titulkový text
@@ -2267,10 +2346,12 @@ namespace Djs.Common.Components.Grid
         }
         #endregion
     }
+    #endregion
+    #region Třída GRowHeader : vizuální třída pro zobrazování záhlaví řádku
     /// <summary>
     /// GRowHeader : vizuální třída pro zobrazování záhlaví řádku
     /// </summary>
-    public class GRowHeader : GHeader
+    public class GRowHeader : GComponent
     {
         #region Konstruktor, data
         public GRowHeader(Row row)
@@ -2305,7 +2386,7 @@ namespace Djs.Common.Components.Grid
         /// <summary>
         /// Typ záhlaví.
         /// </summary>
-        protected override TableAreaType HeaderType { get { return TableAreaType.RowHeader; } }
+        protected override TableAreaType ComponentType { get { return TableAreaType.RowHeader; } }
         #endregion
         #region Public rozhraní
         /// <summary>
@@ -2384,11 +2465,24 @@ namespace Djs.Common.Components.Grid
         protected override bool CanDrag { get { return this.OwnerTable.AllowColumnReorder; } }
         #endregion
         #region Draw - kreslení záhlaví řádku
-        protected override void DrawHeader(GInteractiveDrawArgs e, Rectangle boundsAbsolute, int? opacity)
+        protected override void DrawContent(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
         {
-            base.DrawHeader(e, boundsAbsolute, opacity);
+            this.DrawBackground(e, boundsAbsolute, drawAsGhost, opacity);
             this.DrawMouseHot(e, boundsAbsolute, opacity);
             this.DrawSelectedRow(e, boundsAbsolute, opacity);
+        }
+        /// <summary>
+        /// Vykreslí jen pozadí
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="drawAsGhost"></param>
+        /// <param name="opacity"></param>
+        protected void DrawBackground(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
+        {
+            if (drawAsGhost && e.DrawLayer == GInteractiveDrawLayer.Standard)
+                e.Graphics.FillRectangle(Brushes.DarkGray, boundsAbsolute);
+            GPainter.DrawColumnHeader(e.Graphics, boundsAbsolute, ColorPalette.ButtonBackEnableColor, this.CurrentState, System.Windows.Forms.Orientation.Horizontal, null, opacity);
         }
         /// <summary>
         /// Do this záhlaví podbarvení v situaci, kdy tento řádek je MouseHot
@@ -2438,14 +2532,18 @@ namespace Djs.Common.Components.Grid
     /// <summary>
     /// GCell : vizuální třída pro zobrazení obsahu sloupce
     /// </summary>
-    public class GCell : InteractiveContainer
+    public class GCell : GComponent
     {
-        #region Konstrukce
+        #region Konstruktor, data
         public GCell(Cell cell)
         {
             this._Cell = cell;
         }
         private Cell _Cell;
+        protected override void SetChildBounds(Rectangle newBounds)
+        {
+            // Pokud bych měl (já jako GCell) nějaké ChildItems, tak tady jim můžu nastavit Bounds, podle mých rozměrů.
+        }
         /// <summary>
         /// Vizualizace
         /// </summary>
@@ -2457,17 +2555,9 @@ namespace Djs.Common.Components.Grid
         #endregion
         #region Reference na objekty Owner
         /// <summary>
-        /// Grid (grafický), do kterého patří tato vizuální buňka
+        /// Tabulka (datová), do které patří tato buňka
         /// </summary>
-        protected GGrid OwnerGGrid { get { return (this.OwnerTable != null ? this.OwnerTable.GTable.Grid : null); } }
-        /// <summary>
-        /// Tabulka (grafická), do které patří tato vizuální buňka
-        /// </summary>
-        protected GTable OwnerGTable { get { return (this.OwnerTable != null ? this.OwnerTable.GTable : null); } }
-        /// <summary>
-        /// Tabulka (datová), do které patří tato vizuální buňka
-        /// </summary>
-        protected Table OwnerTable { get { return this._Cell.Table; } }
+        protected override Table OwnerTable { get { return this._Cell.Table; } }
         /// <summary>
         /// Řádek, do kterého patří tato vizuální buňka
         /// </summary>
@@ -2489,9 +2579,9 @@ namespace Djs.Common.Components.Grid
         /// </summary>
         protected Cell OwnerCell { get { return this._Cell; } }
         /// <summary>
-        /// Typ prvku = Data
+        /// Typ oblasti tabulky.
         /// </summary>
-        protected TableAreaType AreaType { get { return TableAreaType.Data; } }
+        protected override TableAreaType ComponentType { get { return TableAreaType.Data; } }
         #endregion
         #region Interaktivita
         protected override void AfterStateChanged(GInteractiveChangeStateArgs e)
@@ -2563,29 +2653,25 @@ namespace Djs.Common.Components.Grid
         }
         #endregion
         #region Draw
-        protected override void Draw(GInteractiveDrawArgs e)
+        protected override void DrawContent(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
         {
-            Rectangle boundsAbsolute = this.BoundsAbsolute;
-
-            // Clip() mi zajistí, že při pixelovém posunu buňky bude buňka vykreslena jen do příslušné části vymezeného prostoru pro danou oblast.
-            // Grafická organizace GTable není členěna nijak výrazně strukturovaně => GTable obsahuje jako Child jednotlivé prvky (GTableHeader, GColumnHeader, GowHeader, GCell),
-            //  které mají svoje souřadnice relativní k GTable, ale mají se zobrazovat "oříznuté" jen do patřičných oblastí v GTable.
-            if (e.DrawLayer == GInteractiveDrawLayer.Standard)
-                // Clip() ale provedeme jen pro Standard vrstvu; protože v ostatních vrstvách se provádí Dragging, a ten má být neomezený:
-                e.GraphicsClipWith(this.OwnerGTable.GetAbsoluteBoundsForArea(this.AreaType), true);
-
-            // Background + obsah:
-            this.DrawContent(e, boundsAbsolute);
-
-            // GridLines:
+            this.DrawCellContent(e, boundsAbsolute);
             this.OwnerGTable.DrawRowGridLines(e, this.OwnerCell, boundsAbsolute);
+        }
+        protected override bool NeedDebug
+        {
+            get
+            {
+                object value = this.OwnerCell.Value;
+                return (value is int && ((int)value) == 260);
+            }
         }
         /// <summary>
         /// Vykreslí obsah této buňky podle jejího druhu, jako text nebo jako graf nebo jako obrázek.
         /// </summary>
         /// <param name="e"></param>
         /// <param name="boundsAbsolute"></param>
-        private void DrawContent(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
+        private void DrawCellContent(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
         {
             object value = this.OwnerCell.Value;
             if (value == null)
@@ -2772,6 +2858,7 @@ namespace Djs.Common.Components.Grid
         HorizontalScrollBar
     }
     #endregion
+    #region interfaces pro podporu grafické tabulky : IGTableMember
     /// <summary>
     /// Člen grafické tabulky GTable, do kterého je možno vložit i odebrat referenci na danou GTable
     /// </summary>
@@ -2782,5 +2869,5 @@ namespace Djs.Common.Components.Grid
         /// </summary>
         GTable GTable { get; set; }
     }
-
+    #endregion
 }

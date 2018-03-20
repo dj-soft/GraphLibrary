@@ -1250,10 +1250,10 @@ namespace Djs.Common.Components
         /// </summary>
         protected int DataEndPixel { get { return (this.DataFirstPixel + this.VisualSize); } }
         /// <summary>
-        /// Rozmezí datových pixelů, které spadají do viditelné oblasti.
+        /// Rozmezí DATOVÝCH pixelů, které spadají do viditelné oblasti.
         /// Begin = DataFirstPixel, End = DataFirstPixel + VisualSize.
         /// </summary>
-        public Int32Range DataVisibleRange { get { return new Int32Range(this.DataFirstPixel, this.DataEndPixel); } }
+        public Int32Range DataVisibleRange { get { int dfp = this.DataFirstPixel; int size = this.VisualSize; return new Int32Range(dfp, dfp + size); } }
         /// <summary>
         /// true pokud má být zobrazen ScrollBar (respektive má být Enabled) : pokud DataSize je větší než VisualSize
         /// </summary>
