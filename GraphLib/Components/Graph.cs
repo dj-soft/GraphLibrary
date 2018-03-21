@@ -410,7 +410,7 @@ namespace Djs.Common.Components
             {
                 this.Bounds = new Rectangle(0, 0, boundsAbsolute.Width, boundsAbsolute.Height);
                 this.CheckValid();
-                e.GraphicsClipWith(boundsAbsolute, GInteractiveDrawLayer.Standard);
+                e.GraphicsClipWith(boundsAbsolute);
                 this.DrawTicks();
                 this.DrawItems();
             }

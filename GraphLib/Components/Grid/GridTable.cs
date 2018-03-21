@@ -1715,9 +1715,9 @@ namespace Djs.Common.Components.Grid
             Rectangle controlBounds = Rectangle.Intersect(areaAbsoluteBounds, boundsAbsolute);               // Prostor pro aktuální prvek = intersect se souřadnicemi prvku
             if (!controlBounds.HasPixels()) return false;
 
-            Rectangle clipBounds = Rectangle.Intersect(controlBounds, e.ClipBounds);                         // Prostor po oříznutí s aktuálním Clipem v grafice
+            Rectangle clipBounds = Rectangle.Intersect(controlBounds, e.AbsoluteVisibleClip);                         // Prostor po oříznutí s aktuálním Clipem v grafice
             e.GraphicsClipWith(clipBounds, true);
-            return !e.IsClipEmpty;
+            return !e.IsVisibleClipEmpty;
         }
         #endregion
         #region Drag - podpora pro přesunutí this headeru na jinou pozici

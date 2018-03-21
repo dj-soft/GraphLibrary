@@ -9,13 +9,13 @@ using System.Drawing.Drawing2D;
 
 namespace Djs.Common.Components
 {
-    #region class GInteractiveControl : Physical control (only one used WinForm Control), with mouse event support and active area (and with buffered graphic too)
+    #region class GInteractiveControl : Jediný používaný interaktivní WinForm control, který se používá pro zobrazení interaktivních dat
     /// <summary>
-    /// GInteractiveControl : Physical control (only one used WinForm Control), with mouse event support and active area (and with buffered graphic too)
+    /// GInteractiveControl : Jediný používaný interaktivní WinForm control, který se používá pro zobrazení interaktivních dat
     /// </summary>
     public partial class GInteractiveControl : GControlLayered
     {
-        #region Constructor
+        #region Konstruktor
         public GInteractiveControl()
         {
             this.Init();
@@ -56,25 +56,80 @@ namespace Djs.Common.Components
         }
         private List<IInteractiveItem> _ItemsList;
         #endregion
-        #region Keyboard handlers: primary (WinForm) and secondary (InteractiveControl) handlers
+        #region Focus (Enter, GotFocus, LostFocus, Leave) a Keyboard (PreviewKeyDown, KeyDown, KeyUp, KeyPress)
         private void _KeyboardEventsInit()
         {
             this._KeyboardCurrentItem = null;
-            this.Enter += new EventHandler(_Enter);
-            this.GotFocus += new EventHandler(_GotFocus);
-            this.LostFocus += new EventHandler(_LostFocus);
-            this.PreviewKeyDown += new PreviewKeyDownEventHandler(_PreviewKeyDown);
-            this.KeyDown += new KeyEventHandler(_KeyDown);
-            this.KeyUp += new KeyEventHandler(_KeyUp);
-            this.KeyPress += new KeyPressEventHandler(_KeyPress);
-            this.Leave += new EventHandler(_Leave);
         }
-        #region Keyboard primary event handlers (called from Win32).
-        void _PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
+        #region Obsluha override metod (z WinForm.Control) pro Focus a Keyboard
+        protected override void OnEnter(EventArgs e)
+        {
+            this._OnEnter(e);
+            base.OnEnter(e);
+        }
+        private void _OnEnter(EventArgs e)
+        {
+            if (this._KeyboardLeavedItem != null)
+            {
+                using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "Enter", ""))
+                {
+                    try
+                    {
+                        this._InteractiveDrawInit(null);
+                        this._ItemKeyboardExchange(null, this._KeyboardLeavedItem, false);
+                    }
+                    finally
+                    {
+                        this._InteractiveDrawRun();
+                    }
+                }
+            }
+        }
+        protected override void OnGotFocus(EventArgs e)
+        {
+            this._OnGotFocus(e);
+            base.OnGotFocus(e);
+        }
+        private void _OnGotFocus(EventArgs e)
+        { }
+        protected override void OnLostFocus(EventArgs e)
+        {
+            this._OnLostFocus(e);
+            base.OnLostFocus(e);
+        }
+        private void _OnLostFocus(EventArgs e)
+        { }
+        protected override void OnLeave(EventArgs e)
+        {
+            this._OnLeave(e);
+            base.OnLeave(e);
+        }
+        private void _OnLeave(EventArgs e)
+        {
+            this._KeyboardLeavedItem = this._KeyboardCurrentItem;
+            using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "Leave", ""))
+            {
+                try
+                {
+                    this._InteractiveDrawInit(null);
+                    this._ItemKeyboardExchange(this._KeyboardCurrentItem, null, true);
+                }
+                finally
+                {
+                    this._InteractiveDrawRun();
+                }
+            }
+        }
+        protected override void OnPreviewKeyDown(PreviewKeyDownEventArgs e)
+        {
+            this._OnPreviewKeyDown(e);
+            base.OnPreviewKeyDown(e);
+        }
+        private void _OnPreviewKeyDown(PreviewKeyDownEventArgs e)
         {
             if (this._KeyboardCurrentItemCanKeyboard)
             {
-                using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "PreviewKeyDown", "")) 
+                using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "PreviewKeyDown", ""))
                 {
                     try
                     {
@@ -88,7 +143,12 @@ namespace Djs.Common.Components
                 }
             }
         }
-        void _KeyDown(object sender, KeyEventArgs e)
+        protected override void OnKeyDown(KeyEventArgs e)
+        {
+            this._OnKeyDown(e);
+            base.OnKeyDown(e);
+        }
+        private void _OnKeyDown(KeyEventArgs e)
         {
             if (this._MouseDraggedItem != null && e.KeyCode == Keys.Escape)
             {   // When we have Dragged Item, and Escape is pressed, then perform Cancel for current Drag operation:
@@ -114,7 +174,12 @@ namespace Djs.Common.Components
                 }
             }
         }
-        void _KeyUp(object sender, KeyEventArgs e)
+        protected override void OnKeyUp(KeyEventArgs e)
+        {
+            this._OnKeyUp(e);
+            base.OnKeyUp(e);
+        }
+        private void _OnKeyUp(KeyEventArgs e)
         {
             if (this._KeyboardCurrentItemCanKeyboard)
             {
@@ -132,7 +197,12 @@ namespace Djs.Common.Components
                 }
             }
         }
-        void _KeyPress(object sender, KeyPressEventArgs e)
+        protected override void OnKeyPress(KeyPressEventArgs e)
+        {
+            this._OnKeyPress(e);
+            base.OnKeyPress(e);
+        }
+        private void _OnKeyPress(KeyPressEventArgs e)
         {
             if (this._KeyboardCurrentItemCanKeyboard)
             {
@@ -150,46 +220,8 @@ namespace Djs.Common.Components
                 }
             }
         }
-        void _Enter(object sender, EventArgs e)
-        {
-            if (this._KeyboardLeavedItem != null)
-            {
-                using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "Enter", ""))
-                {
-                    try
-                    {
-                        this._InteractiveDrawInit(null);
-                        this._ItemKeyboardExchange(null, this._KeyboardLeavedItem, false);
-                    }
-                    finally
-                    {
-                        this._InteractiveDrawRun();
-                    }
-                }
-            }
-        }
-        void _Leave(object sender, EventArgs e)
-        {
-            this._KeyboardLeavedItem = this._KeyboardCurrentItem;
-            using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "Leave", ""))
-            {
-                try
-                {
-                    this._InteractiveDrawInit(null);
-                    this._ItemKeyboardExchange(this._KeyboardCurrentItem, null, true);
-                }
-                finally
-                {
-                    this._InteractiveDrawRun();
-                }
-            }
-        }
-        void _LostFocus(object sender, EventArgs e)
-        { }
-        void _GotFocus(object sender, EventArgs e)
-        { }
         #endregion
-        #region Keyboard support methods
+        #region Privátní výkonné metody pro podporu Focus a Keyboard
         /// <summary>
         /// Call events KeyboardFocusLeave and KeyboardFocusEnter when neccessary.
         /// Set _KeyboardCurrentItem = gcItemPrev, when CanKeyboard.
@@ -279,21 +311,20 @@ namespace Djs.Common.Components
         private IInteractiveItem _KeyboardLeavedItem;
         #endregion
         #endregion
-        #region Mouse handlers: primary interactive (WinForm) and secondary (InteractiveControl) handlers
+        #region Myš (události z WinForm Controlu, jejich řešení v GInteractiveControl)
         private void _MouseEventsInit()
         {
             this._MouseCurrentItem = null;
             this._MouseDraggedItem = null;
-            this.MouseEnter += new EventHandler(_MouseEnter);
-            this.MouseMove += new MouseEventHandler(_MouseMove);
-            this.MouseDown += new MouseEventHandler(_MouseDown);
-            this.MouseUp += new MouseEventHandler(_MouseUp);
-            this.MouseWheel += new MouseEventHandler(_MouseWheel);
-            this.MouseLeave += new EventHandler(_MouseLeave);
             this._DragStartSize = SystemInformation.DragSize;
         }
-        #region Mouse primary event handlers (called from Win32).
-        void _MouseEnter(object sender, EventArgs e)
+        #region Obsluha override metod (z WinForm.Control) pro myš
+        protected override void OnMouseEnter(EventArgs e)
+        {
+            this._OnMouseEnter(e);
+            base.OnMouseEnter(e);
+        }
+        private void _OnMouseEnter(EventArgs e)
         {
             using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "MouseEnter", ""))
             {
@@ -308,7 +339,12 @@ namespace Djs.Common.Components
                 }
             }
         }
-        void _MouseMove(object sender, MouseEventArgs e)
+        protected override void OnMouseMove(MouseEventArgs e)
+        {
+            this._OnMouseMove(e);
+            base.OnMouseMove(e);
+        }
+        private void _OnMouseMove(MouseEventArgs e)
         {
             using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "MouseMove", ""))
             {
@@ -352,7 +388,12 @@ namespace Djs.Common.Components
                 }
             }
         }
-        void _MouseDown(object sender, MouseEventArgs e)
+        protected override void OnMouseDown(MouseEventArgs e)
+        {
+            this._OnMouseDown(e);
+            base.OnMouseDown(e);
+        }
+        private void _OnMouseDown(MouseEventArgs e)
         {
             using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "MouseDown", ""))
             {
@@ -367,7 +408,12 @@ namespace Djs.Common.Components
                 }
             }
         }
-        void _MouseUp(object sender, MouseEventArgs e)
+        protected override void OnMouseUp(MouseEventArgs e)
+        {
+            this._OnMouseUp(e);
+            base.OnMouseUp(e);
+        }
+        private void _OnMouseUp(MouseEventArgs e)
         {
             using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "MouseUp", ""))
             {
@@ -387,7 +433,12 @@ namespace Djs.Common.Components
                 }
             }
         }
-        void _MouseWheel(object sender, MouseEventArgs e)
+        protected override void OnMouseWheel(MouseEventArgs e)
+        {
+            this._OnMouseWheel(e);
+            base.OnMouseWheel(e);
+        }
+        private void _OnMouseWheel(MouseEventArgs e)
         {
             using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "MouseWheel", ""))
             {
@@ -402,7 +453,12 @@ namespace Djs.Common.Components
                 }
             }
         }
-        void _MouseLeave(object sender, EventArgs e)
+        protected override void OnMouseLeave(EventArgs e)
+        {
+            this._OnMouseLeave(e);
+            base.OnMouseLeave(e);
+        }
+        private void _OnMouseLeave(EventArgs e)
         {
             using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "MouseLeave", ""))
             {
@@ -420,7 +476,7 @@ namespace Djs.Common.Components
             }
         }
         #endregion
-        #region Mouse interactive item handlers: secondary (disaggregated for drag-support) handlers, bridge to item interactive methods
+        #region Řízení konkrétních aktivit myši, již rozčleněné s podporou Drag & Drop, volání základních interaktivních metod
         private void _MouseOver(MouseEventArgs e)
         {
             if (e != null)
@@ -539,7 +595,7 @@ namespace Djs.Common.Components
             this._ItemMouseCallStateChangedEvent(this._MouseCurrentItem, change, this._MouseCurrentRelativePoint, null);
         }
         #endregion
-        #region Mouse support methods
+        #region Podpůrné metody pro akce myši
         /// <summary>
         /// Return change state for current mousebutton (_CurrentMouseDownButtons), for change specified for left button.
         /// When no button pressed, or state is not button-dependent, then unchanged state is returned.
@@ -855,7 +911,7 @@ namespace Djs.Common.Components
             return (gCurrentItem == null ? (Point?)null : (Point?)gCurrentItem.GetRelativePointToCurrentItem(point));
         }
         #endregion
-        #region Mouse variables
+        #region Myší proměnné
         /// <summary>
         /// Coordinates of mouse, in control coordinates (=Absolute), current coordinates (in current event).
         /// </summary>
@@ -969,7 +1025,7 @@ namespace Djs.Common.Components
         private void _InteractiveDrawRun()
         {
             DrawRequest request = new DrawRequest(this._RepaintAllItems, this._ToolTip, this._ProgressItem);
-            request.Fill(new Point(0, 0), this.ClientRectangle, this.ItemsList, this.PendingFullDraw, true);
+            request.Fill(this.ClientRectangle, this.ItemsList, this.PendingFullDraw, true);
             if (request.NeedAnyDraw)
             {
                 using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "InteractiveDrawRun", ""))
@@ -1124,7 +1180,7 @@ namespace Djs.Common.Components
                 if (request == null)
                 {   // Explicit request not specified, we will draw all items:
                     request = new DrawRequest(true, this._ToolTip, this._ProgressItem);
-                    request.Fill(new Point(0, 0), this.ClientRectangle, this.ItemsList, true, false);
+                    request.Fill(this.ClientRectangle, this.ItemsList, true, false);
                 }
 
                 if (request.NeedStdDraw || request.DrawAllItems)
@@ -1164,6 +1220,7 @@ namespace Djs.Common.Components
             }
         }
         /// <summary>
+        /// Vykreslí prvky (items) do dané grafiky (graphics), která reprezentuje danou vrstvu (drawLayer).
         /// Paint all items to specified Graphics.
         /// </summary>
         /// <param name="graphics"></param>
@@ -1173,17 +1230,15 @@ namespace Djs.Common.Components
         {
             if (items != null)
             {
-                bool clipGraphics = (drawLayer == GInteractiveDrawLayer.Standard);       // Other layers than Standard have no Clip, due Drag and Draw an item on whole control area. Only Standard layer have Clip...
                 graphics.ResetTransform();
                 graphics.ResetClip();
                 GInteractiveDrawArgs e = new GInteractiveDrawArgs(graphics, drawLayer);
                 foreach (DrawRequestItem item in items)
                 {
-                    e.ClipBounds = item.OwnerBounds;
-                    if (clipGraphics) graphics.SetClip(item.OwnerBounds);
-                    item.Item.Draw(e);
-                    item.Item.RepaintToLayers = (GInteractiveDrawLayer)((int)item.Item.RepaintToLayers & ((int)drawLayer ^ 0xFFFF));
-                    if (clipGraphics) graphics.ResetClip();
+                    e.AbsoluteVisibleClip = item.AbsoluteVisibleClip;
+                    if (e.IsStandardLayer) graphics.SetClip(item.AbsoluteVisibleClip);
+                    item.Draw(e);
+                    if (e.IsStandardLayer) graphics.ResetClip();
                 }
             }
         }
@@ -1228,19 +1283,19 @@ namespace Djs.Common.Components
             }
             
             /// <summary>
-            /// Items already processed
+            /// Prvky, které jsme již zařadili
             /// </summary>
             protected Dictionary<UInt32, IInteractiveItem> ProcessedItems;
             /// <summary>
-            /// Items drawed to Standard layer
+            /// Prvky vykreslované do vrstvy Standard
             /// </summary>
             internal List<DrawRequestItem> StandardItems { get; private set; }
             /// <summary>
-            /// Items drawed to Interactive layer
+            /// Prvky vykreslované do vrstvy Interactive
             /// </summary>
             internal List<DrawRequestItem> InteractiveItems { get; private set; }
             /// <summary>
-            /// Items drawed to Dynamic layer
+            /// Prvky vykreslované do vrstvy Dynamic
             /// </summary>
             internal List<DrawRequestItem> DynamicItems { get; private set; }
             /// <summary>
@@ -1267,70 +1322,93 @@ namespace Djs.Common.Components
             /// </summary>
             public bool NeedAnyDraw { get { return (this.NeedStdDraw || this.NeedIntDraw || this.NeedDynDraw || this.DrawToolTip || this.DrawProgress); } }
             /// <summary>
-            /// Fill this lists (this.ItemStdList, ItemIntList, ItemDynList) with items to draw by their state.
-            /// Scan specified list of items, and where item is container, then recursively their items too.
+            /// Do this objektu naplní prvky k vykreslení (prvky typu IInteractiveItem) z dodaného seznamu, 
+            /// prvky zatřídí do soupisů dle vrstev (this.StandardItems, InteractiveItems, DynamicItems).
+            /// Pokud daný prvek obsahuje nějaké Childs, pak rekurzivně vyvolá tutéž metodu i pro Childs tohoto prvku.
             /// </summary>
-            /// <param name="items"></param>
-            /// <param name="drawAllItems"></param>
-            /// <param name="interactive"></param>
-            internal void Fill(Point offset, Rectangle bounds, IEnumerable<IInteractiveItem> items, bool drawAllItems, bool interactive)
+            /// <param name="absoluteVisibleClip">Absolutní souřadnice prostoru (absolutní = v koordinátech Controlu), v nichž může být item viditelný = prostor pro Clip grafiky</param>
+            /// <param name="items">Prvky k vykreslení</param>
+            /// <param name="drawAllItems">true = vykreslit všechny prvky</param>
+            /// <param name="interactive">true = provádí se interaktivní vykreslení</param>
+            internal void Fill(Rectangle absoluteVisibleClip, IEnumerable<IInteractiveItem> items, bool drawAllItems, bool interactive)
             {
                 using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "DrawRequest", "Fill", ""))
                 {
                     this.InteractiveMode = interactive;
-                    this.FillFromItems(offset, bounds, items, GInteractiveDrawLayer.None);
-                    scope.AddItem("ItemsTotal.Count: " + (this.StandardItems.Count + this.InteractiveItems.Count + this.DynamicItems.Count).ToString());
+                    this.FillFromItems(new Point(0, 0), absoluteVisibleClip, items, GInteractiveDrawLayer.None);
+                    scope.AddItem("StandardItems.Count: " + this.StandardItems.Count.ToString());
+                    scope.AddItem("InteractiveItems.Count: " + this.InteractiveItems.Count.ToString());
+                    scope.AddItem("DynamicItems.Count: " + this.DynamicItems.Count.ToString());
                 }
             }
             /// <summary>
-            /// Fill items for drawing from specified list
+            /// Do this objektu naplní prvky k vykreslení (prvky typu IInteractiveItem) z dodaného seznamu, 
+            /// prvky zatřídí do soupisů dle vrstev (this.StandardItems, InteractiveItems, DynamicItems).
+            /// Pokud daný prvek obsahuje nějaké Childs, pak rekurzivně vyvolá tutéž metodu i pro Childs tohoto prvku.
             /// </summary>
-            /// <param name="bounds"></param>
-            /// <param name="items"></param>
-            /// <param name="interactive"></param>
-            private void FillFromItems(Point offset, Rectangle bounds, IEnumerable<IInteractiveItem> items, GInteractiveDrawLayer parentLayers)
+            /// <param name="absoluteItemOffset">Absolutní souřadnice počátku (absolutní = v koordinátech Controlu), k nimž se vztahují souřadnice item.Bounds</param>
+            /// <param name="absoluteVisibleClip">Absolutní souřadnice prostoru (absolutní = v koordinátech Controlu), v nichž může být item viditelný = prostor pro Clip grafiky</param>
+            /// <param name="items">Prvky k vykreslení</param>
+            /// <param name="parentLayers">Vrstvy k vykreslení</param>
+            private void FillFromItems(Point absoluteItemOffset, Rectangle absoluteVisibleClip, IEnumerable<IInteractiveItem> items, GInteractiveDrawLayer parentLayers)
             {
                 foreach (IInteractiveItem item in items)
                 {
                     if (!item.IsVisible) continue;
+
+                    // Abychom se nezacyklili = jeden prvek smí být vidět jen jedenkrát:
                     if (this.ProcessedItems.ContainsKey(item.Id)) continue;
+                    this.ProcessedItems.Add(item.Id, item);
 
-                    this.ProcessedItems.Add(item.Id, item);                    // Suppress cycling in recrsion
-
+                    // Přidat prvek do seznamů pro patřičné vrstvy:
                     GInteractiveDrawLayer itemLayers = this.GetLayersToDrawItem(item, parentLayers);
                     if (itemLayers.HasFlag(GInteractiveDrawLayer.Standard))
-                        this.StandardItems.Add(new DrawRequestItem(offset, bounds, item));
+                        this.StandardItems.Add(new DrawRequestItem(absoluteItemOffset, absoluteVisibleClip, item));
                     if (itemLayers.HasFlag(GInteractiveDrawLayer.Interactive))
-                        this.InteractiveItems.Add(new DrawRequestItem(offset, bounds, item));
+                        this.InteractiveItems.Add(new DrawRequestItem(absoluteItemOffset, absoluteVisibleClip, item));
                     if (itemLayers.HasFlag(GInteractiveDrawLayer.Dynamic))
-                        this.DynamicItems.Add(new DrawRequestItem(offset, bounds, item));
+                        this.DynamicItems.Add(new DrawRequestItem(absoluteItemOffset, absoluteVisibleClip, item));
 
-                    // Child items will be recursively scanned even if item is not drawed, this is basic principle of Layered Control
+                    // Pokud má prvek potomstvo, vyřešíme i to:
+                    //  Child items budou zkontrolovány i tehdy, když jejich Parent prvek není kreslen, to je základní princip Layered Control!
                     IEnumerable<IInteractiveItem> childs = item.Childs;        // get_Childs() method we call only once during Draw.
                     if (childs != null)
-                        this.FillFromChilds(offset, bounds, item, childs, itemLayers);
+                    {
+                        IInteractiveItem[] childItems = childs.ToArray();
+                        if (childItems.Length > 0)
+                            this.FillFromChilds(absoluteItemOffset, absoluteVisibleClip, item, childItems, itemLayers);
+                    }
                 }
             }
             /// <summary>
-            /// Fill child items from specified container
+            /// Zajistí přidání Child items (od daného parenta, z daného soupisu) do this seznamů
             /// </summary>
-            /// <param name="offset"></param>
-            /// <param name="bounds"></param>
-            /// <param name="item">One item</param>
-            /// <param name="childs">Childs of item</param>
-            private void FillFromChilds(Point offset, Rectangle bounds, IInteractiveItem item, IEnumerable<IInteractiveItem> childs, GInteractiveDrawLayer itemLayers)
+            /// <param name="absoluteItemOffset">Absolutní souřadnice počátku, k nimž se vztahují souřadnice this itemu</param>
+            /// <param name="absoluteVisibleClip">Souřadnice prostoru (absolutní = v koordinátech Controlu), v nichž může být item viditelný = prostor pro Clip grafiky</param>
+            /// <param name="parent">Prvek, který je Parentem daných Childs</param>
+            /// <param name="childs">prvky, které mají být vykresleny v rámci tohoto parenta</param>
+            private void FillFromChilds(Point absoluteItemOffset, Rectangle absoluteVisibleClip, IInteractiveItem parent, IInteractiveItem[] childs, GInteractiveDrawLayer itemLayers)
             {
-                if (item == null || childs == null) return;
+                if (parent == null || childs == null) return;
 
-                Rectangle cb = item.BoundsClient;
-                Point itemAbsoluteOffset = offset.Add(cb.Location);                                // Absolute position of item (here as Parent) location, on root Control
-                Rectangle itemAbsoluteBounds = new Rectangle(itemAbsoluteOffset, cb.Size);         // Container absolute bounds
-                Rectangle itemVisibleBounds = Rectangle.Intersect(bounds, itemAbsoluteBounds);     // Absolute bounds of visible part of container
+                // Relativní souřadnice (v rámci prvku item, který je parentem daných Childs), v nichž se tyto Child items vykreslují:
+                Rectangle relativeBoundsClient = parent.BoundsClient;
 
-                this.FillFromItems(itemAbsoluteOffset, itemVisibleBounds, childs, itemLayers);     // Pure recursive loop for all my childs
+                // Absolutní souřadnice bodu, který je výchozím bodem pro souřadnice Childs.Bounds:
+                Point absoluteChildsOffset = absoluteItemOffset.Add(relativeBoundsClient.Location);
+
+                // Absolutní souřadnice prostoru BoundsClient = v tomto absolutním prostoru by byly Child items zobrazovány, když by nebyly nijak omezeny:
+                Rectangle itemAbsoluteBounds = new Rectangle(absoluteChildsOffset, relativeBoundsClient.Size);
+
+                // Absolutní souřadnice zobrazitelného prostoru = Intersect viditelných prostorů všech parentů * aktuální item:
+                Rectangle absoluteChildsVisibleClip = Rectangle.Intersect(absoluteVisibleClip, itemAbsoluteBounds);
+
+                // Čistokrevná rekurze:
+                this.FillFromItems(absoluteChildsOffset, absoluteChildsVisibleClip, childs, itemLayers);
             }
             /// <summary>
-            /// Returns a layers, to which has be drawed item, when its parent is drawed to (parentLayers) layers.
+            /// Vrací vrstvy, do kterých má být vykreslen daný prvek, s přihlédnutím k tomu, do jakých vrstev se kreslí jeho parent,
+            /// a s ohledem na this.InteractiveMode a this.DrawAllItems
             /// </summary>
             /// <param name="item"></param>
             /// <param name="parentLayers"></param>
@@ -1347,14 +1425,14 @@ namespace Djs.Common.Components
             }
         }
         /// <summary>
-        /// Data for drawing one item
+        /// Data pro vykreslení jednoho interaktivního prvku
         /// </summary>
         protected class DrawRequestItem
         {
-            public DrawRequestItem(Point offset, Rectangle ownerBounds, IInteractiveItem item)
+            public DrawRequestItem(Point absoluteItemOffset, Rectangle absoluteVisibleClip, IInteractiveItem item)
             {
-                this.Offset = offset;
-                this.OwnerBounds = ownerBounds;
+                this.AbsoluteItemOffset = absoluteItemOffset;
+                this.AbsoluteVisibleClip = absoluteVisibleClip;
                 this.Item = item;
             }
             public override string ToString()
@@ -1362,17 +1440,40 @@ namespace Djs.Common.Components
                 return "Item: " + this.Item.ToString() + "; BoundsAbsolute: " + this.Item.GetAbsoluteVisibleBounds().ToString();
             }
             /// <summary>
-            /// Offset
+            /// Absolutní souřadnice počátku, k nimž se vztahují relativní souřadnice (Bounds) this itemu
             /// </summary>
-            public Point Offset { get; set; }
+            public Point AbsoluteItemOffset { get; set; }
             /// <summary>
-            /// Owner bounds = 
+            /// Souřadnice prostoru (absolutní = v koordinátech Controlu), v nichž může být tento item viditelný = prostor pro Clip grafiky.
+            /// Jde o Intersect hodnot AbsoluteClientBounds ze všech Parentů, tedy "viditelný průnik", do něhož se má tento prvek zobrazit.
+            /// Zde není zohledněna hodnota Item.Bounds: prvek Item se může vykreslit i mimo svoje souřadnice, když chce, ale vždy jen v prostoru daném jeho Parenty.
+            /// Tedy: Může se pohybovat ve svém parentu (i mimo svoje Bounds), ale nesmí vyběhnout z parenta.
             /// </summary>
-            public Rectangle OwnerBounds { get; set; }
+            public Rectangle AbsoluteVisibleClip { get; set; }
             /// <summary>
-            /// Current IInteractiveItem Item, contained in this DrawRequestItem
+            /// Prvek, který se bude vykreslovat
             /// </summary>
             public IInteractiveItem Item { get; set; }
+            /// <summary>
+            /// Zajistí vykreslení prvku a návazné operace s prvkem
+            /// </summary>
+            /// <param name="e"></param>
+            public void Draw(GInteractiveDrawArgs e)
+            {
+                // Do prvku nastavíme absolutní souřadnice, kde je vykreslen - včetně oříznutí, jakožto jeho interaktivní souřadnice (kde je prvek interaktivní):
+                if (this.Item.IsInteractive)
+                {
+                    Rectangle absoluteBounds = this.Item.Bounds.Add(this.AbsoluteItemOffset);
+                    Rectangle absoluteBounds2 = this.Item.GetAbsoluteVisibleBounds();
+                    Rectangle absoluteVisibleBounds = Rectangle.Intersect(absoluteBounds, this.AbsoluteVisibleClip);
+                }
+
+                // Prvek vykreslíme:
+                this.Item.Draw(e);
+
+                // V prvku resetujeme požadavek na kreslení do aktuální vrstvy:
+                e.ResetLayerFlagForItem(this.Item);
+            }
         }
         #endregion
         #endregion

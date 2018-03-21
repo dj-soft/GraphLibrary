@@ -774,48 +774,74 @@ namespace Djs.Common.Components
         #endregion
     }
     /// <summary>
-    /// Data for handlers of drawing event in GInteractiveControl
+    /// Data pro obsluhu kreslení prvků ve třídě GInteractiveControl
     /// </summary>
     public class GInteractiveDrawArgs : EventArgs
     {
         /// <summary>
-        /// Constructor
+        /// Konstruktor
         /// </summary>
-        /// <param name="graphics">An Graphics object to draw on</param>
-        /// <param name="drawLayer">Layer, currently drawed.</param>
+        /// <param name="graphics">Instance třídy Graphics pro kreslení</param>
+        /// <param name="drawLayer">Vrstva, která se bude kreslit do této vrstvy</param>
         public GInteractiveDrawArgs(Graphics graphics, GInteractiveDrawLayer drawLayer)
         {
             this.Graphics = graphics;
             this.DrawLayer = drawLayer;
+            this.IsStandardLayer = (drawLayer == GInteractiveDrawLayer.Standard);
+            this._ResetLayerFlag = ((int)drawLayer ^ 0xFFFF);
         }
         /// <summary>
-        /// An Graphics object to draw on
+        /// Instance třídy Graphics pro kreslení
         /// </summary>
         public Graphics Graphics { get; private set; }
         /// <summary>
-        /// Layer, currently drawed.
+        /// Vrstva, která se bude kreslit do této vrstvy
         /// </summary>
         public GInteractiveDrawLayer DrawLayer { get; private set; }
         /// <summary>
-        /// Prostor, do kterého je oříznut výstup grafiky (Clip) pro kreslení aktuálního prvku.
-        /// Jedná se o absolutní souřadnice v rámci Host.
-        /// Jde o prostor, který je průnikem prostorů všech Parentů daného prvku = tady do tohoto prostoru se prvek smí vykreslit, aniž by "utekl ze svého parenta" někam mimo.
+        /// true pokud se pro tuto vrstvu má používat Clip = jde o Standard vrstvu.
+        /// Pro ostatní vrstvy se bude jakýkoli pokus Clip grafiky ignorovat.
         /// </summary>
-        public Rectangle ClipBounds { get; set; }
+        public bool IsStandardLayer { get; private set; }
         /// <summary>
-        /// Vrátí průsečík aktuálního this.ClipBounds (jde o absolutní souřadnice parenta aktuálně kresleného prvku) s daným prostorem (absoluteBounds).
+        /// Prostor, do kterého je oříznut výstup grafiky (Clip) pro kreslení aktuálního prvku.
+        /// Jedná se o absolutní souřadnice v rámci Controlu Host.
+        /// Jde o prostor, který je průnikem prostorů všech Parentů daného prvku = tady do tohoto prostoru se prvek smí vykreslit, aniž by "utekl ze svého parenta" někam mimo.
+        /// Tento prostor tedy typicky neobsahuje Clip na souřadnice kresleného prvku (Item.Bounds).
+        /// </summary>
+        public Rectangle AbsoluteVisibleClip { get; set; }
+        /// <summary>
+        /// Obsahuje true, pokud aktuální AbsoluteVisibleClip obsahuje prázdný prostor (jeho Width nebo Height == 0).
+        /// Pokud tedy IsVisibleClipEmpty je true, pak nemá smysl provádět jakékoli kreslení pomocí grafiky, protože nebude nic vidět.
+        /// </summary>
+        public bool IsVisibleClipEmpty { get { Rectangle c = this.AbsoluteVisibleClip; return (c.Width == 0 || c.Height == 0); } }
+        /// <summary>
+        /// Pro daný prvek v jeho RepaintToLayers zruší požadavek na kreslení do vrstvy, která se právě zde kreslí.
+        /// Volá se typicky po dokončení Draw().
+        /// </summary>
+        /// <param name="item"></param>
+        public void ResetLayerFlagForItem(IInteractiveItem item)
+        {
+            item.RepaintToLayers = (GInteractiveDrawLayer)((int)item.RepaintToLayers & this._ResetLayerFlag);
+        }
+        private int _ResetLayerFlag;
+        /// <summary>
+        /// Vrátí průsečík aktuálního this.AbsoluteVisibleClip (jde o absolutní souřadnice viditelného prostoru pro kreslení aktuálního prvku)
+        /// s daným prostorem (absoluteBounds).
+        /// Tato metoda vrací průsečík i pro jiné než Standard layers.
         /// </summary>
         /// <param name="absoluteBounds"></param>
         /// <returns></returns>
         public Rectangle GetClip(Rectangle absoluteBounds)
         {
-            Rectangle clip = this.ClipBounds;
+            Rectangle clip = this.AbsoluteVisibleClip;
             clip.Intersect(absoluteBounds);
             return clip;
         }
         /// <summary>
         /// Ořízne plochu, do které bude kreslit aktuální Graphics, jen na průsečík aktuálního this.ClipBounds s danými souřadnicemi.
-        /// Bez zadání parametru permanent bude toto oříznuté platné jen do dalšího volání této metody, pak se oříznutí může změnit.
+        /// Bez zadání parametru permanent bude toto oříznuté platné jen do dalšího zavolání této metody, pak se oříznutí může změnit.
+        /// Tato metoda provádí Clip pouze tehdy, když se kreslí do Standard layer (když this.IsStandardLayer je true).
         /// </summary>
         /// <param name="absoluteBounds">Absolutní souřadnice výřezu.</param>
         public void GraphicsClipWith(Rectangle absoluteBounds)
@@ -824,6 +850,7 @@ namespace Djs.Common.Components
         }
         /// <summary>
         /// Ořízne plochu, do které bude kreslit aktuální Graphics, jen na průsečík aktuálního this.ClipBounds s danými souřadnicemi.
+        /// Tato metoda provádí Clip pouze tehdy, když se kreslí do Standard layer (když this.IsStandardLayer je true).
         /// Parametr permanent říká, zda toto oříznutí má být bráno jako trvalé pro aktuální kreslený prvek, tím se ovlivní chování po nějakém následujícím volání téže metody.
         /// Příklad (pro jednoduchost v 1D hodnotách):
         /// Mějme souřadnice hosta { 0 - 100 }, pro aktuální control je systémem nastaven ClipBounds { 50 - 80 }, což je pozice jeho Parenta.
@@ -839,52 +866,20 @@ namespace Djs.Common.Components
             this._GraphicsClipWith(absoluteBounds, permanent);
         }
         /// <summary>
-        /// Ořízne plochu, do které bude kreslit aktuální Graphics, jen na průsečík aktuálního this.ClipBounds s danými souřadnicemi (absoluteBounds).
-        /// Provede se ale pouze tehdy, když se nyní vykresluje daná vrstva (onlyForLayer), pokud se kreslí jiná pak se nic neprovede.
-        /// Bez zadání parametru permanent bude toto oříznuté platné jen do dalšího volání této metody, pak se oříznutí může změnit.
-        /// </summary>
-        /// <param name="absoluteBounds">Absolutní souřadnice clipu</param>
-        /// <param name="onlyForLayer">Provést jen tehdy, když se právě kreslí daná vrstva, jinak ignorovat</param>
-        public void GraphicsClipWith(Rectangle absoluteBounds, GInteractiveDrawLayer onlyForLayer)
-        {
-            if (this.DrawLayer == onlyForLayer)
-                this._GraphicsClipWith(absoluteBounds, false);
-        }
-        /// <summary>
-        /// Ořízne plochu, do které bude kreslit aktuální Graphics, jen na průsečík aktuálního this.ClipBounds s danými souřadnicemi (absoluteBounds).
-        /// Provede se ale pouze tehdy, když se nyní vykresluje daná vrstva (onlyForLayer), pokud se kreslí jiná pak se nic neprovede.
-        /// Parametr permanent říká, zda toto oříznutí má být bráno jako trvalé pro aktuální kreslený prvek, tím se ovlivní chování po nějakém následujícím volání téže metody.
-        /// Příklad (pro jednoduchost v 1D hodnotách):
-        /// Mějme souřadnice hosta { 0 - 100 }, pro aktuální control je systémem nastaven ClipBounds { 50 - 80 }, což je pozice jeho Parenta.
-        /// Následně voláme GraphicsClipWith() pro oblast { 60 - 70 } s parametrem permanent = false, následné kreslení se provede jen do oblasti { 60 - 70 }.
-        /// Pokud poté voláme GraphicsClipWith() pro oblast { 50 - 65 } s parametrem permanent = false, pak se následné kreslení provede do oblasti { 50 - 65 }.
-        /// Jiná situace je, pokud první volání GraphicsClipWith() pro oblast { 60 - 70 } provedeme s parametrem permanent = true. Následné kreslení proběhne do oblasti { 60 - 70 }, to je logické.
-        /// Pokud ale po tomto prvním Clipu s permanent = true voláme druhý Clip pro oblast { 50 - 65 }, provede se druhý clip proti výsledku prvního clipu (neboť ten je permanentní), a výsledek bude { 60 - 65 }.
-        /// </summary>
-        /// <param name="absoluteBounds">Absolutní souřadnice clipu</param>
-        /// <param name="permanent">Toto oříznutí je trvalé pro aktuální prvek</param>
-        /// <param name="onlyForLayer">Provést jen tehdy, když se právě kreslí daná vrstva, jinak ignorovat</param>
-        public void GraphicsClipWith(Rectangle absoluteBounds, bool permanent, GInteractiveDrawLayer onlyForLayer)
-        {
-            if (this.DrawLayer == onlyForLayer)
-                this._GraphicsClipWith(absoluteBounds, permanent);
-        }
-        /// <summary>
-        /// Obsahuje true, pokud aktuální ClipBounds obsahuje prázdný prostor (jeho Width nebo Height == 0).
-        /// Pokud tedy IsClipEmpty je true, pak nemá smysl provádět jakékoli kreslení pomocí grafiky, protože nebude nic vidět.
-        /// </summary>
-        public bool IsClipEmpty { get { Rectangle c = this.ClipBounds; return (c.Width == 0 || c.Height == 0); } }
-        /// <summary>
         /// Ořízne plochu, do které bude kreslit aktuální Graphics, jen na průsečík aktuálního this.ClipBounds s danými souřadnicemi.
-        /// Parametr permanent říká, zda toto oříznutí má být bráno jako trvalé pro aktuální kreslený prvek, tím se ovlivní chování po nějakém následujícím volání téže metody.
+        /// Tato metoda provádí Clip pouze tehdy, když se kreslí do Standard layer (když this.IsStandardLayer je true).
+        /// Parametr permanent říká, zda toto oříznutí má být bráno jako trvalé pro aktuální kreslený prvek (=uloží výsledek do AbsoluteVisibleClip),
+        /// tím se ovlivní chování při jakémkoli následujícím volání téže metody.
         /// </summary>
         /// <param name="absoluteBounds">Absolutní souřadnice clipu</param>
         /// <param name="permanent">Toto oříznutí je trvalé pro aktuální prvek</param>
         private void _GraphicsClipWith(Rectangle absoluteBounds, bool permanent)
         {
+            if (!this.IsStandardLayer) return;
+
             Rectangle clip = this.GetClip(absoluteBounds);
             if (permanent)
-                this.ClipBounds = clip;
+                this.AbsoluteVisibleClip = clip;
             this.Graphics.SetClip(clip);
         }
     }
