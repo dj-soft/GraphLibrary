@@ -50,13 +50,13 @@ namespace Djs.Common.Components
         }
         private RectangleD _VirtualBounds;
         /// <summary>
-        /// Store value to this._VirtualBounds from base.ActiveBounds (via this._VirtualConvertor).
+        /// Store value to this._VirtualBounds from base.Bounds (via this._VirtualConvertor).
         /// Set this._LastIdentity (from this._VirtualConvertor.Identity).
         /// </summary>
         private void _CalcVirtualBounds()
         {
             if (this._VirtualConvertor == null || !this._VirtualConvertor.ConvertIsReady) return;
-            this._VirtualBounds = this._VirtualConvertor.ConvertToLogicalFromPixel(base.BoundsActive).Value;
+            this._VirtualBounds = this._VirtualConvertor.ConvertToLogicalFromPixel(base.Bounds).Value;
             this._LastIdentity = this._VirtualConvertor.Identity;
         }
         /// <summary>

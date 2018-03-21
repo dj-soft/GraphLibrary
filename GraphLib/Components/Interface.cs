@@ -9,43 +9,50 @@ namespace Djs.Common.Components
 {
     #region interface IInteractiveItem
     /// <summary>
-    /// Define properties and methods for an object, which is interactive on InteractiveControl.
+    /// Definuje vlastnosti třídy, která může být interaktivní a vykreslovaná v InteractiveControlu
     /// </summary>
     public interface IInteractiveItem
     {
         /// <summary>
-        /// Unique ID of object. Is assigned in constructor and is unchanged for whole life of instance.
+        /// Jednoznačné ID of object. je přiřazeno v konstruktoru a nemění se po celý život instance.
         /// </summary>
         UInt32 Id { get; }
         /// <summary>
-        /// Host control, which is GrandParent of all items.
-        /// Only one real WinForm control.
+        /// Reference na Hosta, což je GrandParent všech prvků.
         /// </summary>
         GInteractiveControl Host { get; set; }
         /// <summary>
-        /// Parent of this item (its host). Can be null.
-        /// Parent is typically an IInteractiveContainer.
-        /// Item hosted directly on InteractiveControl has Parent = null.
+        /// Parent tohoto prvku. Může být null, pokud this je hostován přímo v controlu GInteractiveControl.
+        /// Parent je typicky typu IInteractiveContainer.
         /// </summary>
         IInteractiveItem Parent { get; set; }
         /// <summary>
-        /// An array of child items of this item. 
-        /// Child items are collection of another IInteractiveItem, which coordinates are based in this item. 
-        /// This is: where this.ActiveBounds.Location is {200, 100} and child.ActiveBounds.Location is {10, 40}, then child is on Point {210, 140}.
-        /// </summary>
-        IEnumerable<IInteractiveItem> Childs { get; }
-        /// <summary>
-        /// Coordinates of this item in their Parent client area, where is Item basically VISIBLE.
-        /// This is relative bounds within my Parent.
-        /// Appropriate absolute bounds can be calculated via (extension) method IInteractiveItem.GetAbsoluteVisibleBounds(), 
+        /// Relativní souřadnice this prvku v rámci parenta.
+        /// Absolutní souřadnice mohou být určeny pomocí extension metody IInteractiveItem.GetAbsoluteVisibleBounds().
         /// </summary>
         Rectangle Bounds { get; set; }
         /// <summary>
-        /// Coordinates of this item in their Parent client area, where is Item basically ACTIVE.
-        /// This is relative bounds within my Parent.
-        /// Appropriate absolute bounds can be calculated via (extension) method IInteractiveItem.GetAbsoluteVisibleBounds(), 
+        /// Přídavek k this.Bounds, který určuje přesah aktivity tohoto prvku do jeho okolí.
+        /// Kladné hodnoty v Padding zvětšují aktivní plochu nad rámec this.Bounds, záporné aktivní plochu zmenšují.
+        /// Aktivní souřadnice prvku tedy jsou this.Bounds.Add(this.ActivePadding), kde Add() je extension metoda.
         /// </summary>
-        Rectangle BoundsActive { get; }
+        Padding? ActivePadding { get; set; }
+        /// <summary>
+        /// Absolutní souřadnice (vzhledem k Controlu Host), na kterých je tento prvek aktivní.
+        /// Souřadnice ve výchozím stavu určuje proces vykreslování, kdy jsou určeny jak offset souřadnic (absolutní počátek parenta),
+        /// tak je určen Intersect viditelných oblastí ze všech parentů = tím je dán vizuální Clip, do něhož se prvek promítá.
+        /// Tato hodnota je při vykreslování uložena do this.AbsoluteInteractiveBounds.
+        /// Následně při testech interaktivity (hledání prvku pod myší) je tato souřadnice využívána.
+        /// Prvek sám může ve své metodě Draw() nastavit hodnotu AbsoluteInteractiveBounds jinak, nebo může nastavit null = prvek není aktivní.
+        /// Tyto souřadnice by neměly být dopočítávány, prostě jsou uloženy a testovány.
+        /// </summary>
+        Rectangle? AbsoluteInteractiveBounds { get; set; }
+        /// <summary>
+        /// Pole mých vlastních potomků. Jejich Parentem je this.
+        /// Jejich souřadnice jsou relativní ke zdejšímu souřadnému systému.
+        /// This is: where this.ActiveBounds.Location is {200, 100} and child.ActiveBounds.Location is {10, 40}, then child is on Point {210, 140}.
+        /// </summary>
+        IEnumerable<IInteractiveItem> Childs { get; }
         /// <summary>
         /// Coordinates of area, where CHILD ITEMS of this item have their origin.
         /// This is relative bounds within my Parent, where this item is visible.
@@ -95,20 +102,13 @@ namespace Djs.Common.Components
         /// </summary>
         GInteractiveDrawLayer RepaintToLayers { get; set; }
         /// <summary>
-        /// Any Interactive method or any items need repaint all items, after current (interactive) event.
-        /// This value can be only set to true. Set to false does not change value of this property.
-        /// This value is directly writed to Host control
+        /// Vrátí true, pokud daný prvek je aktivní na dané souřadnici.
+        /// Souřadnice je v koordinátech Controlu, tedy z hlediska prvku jde o souřadnici srovnatelnou s AbsoluteInteractiveBounds.
+        /// Pokud prvek má nepravidelný tvar, musí testovat tento tvar v této své metodě explicitně.
         /// </summary>
-        Boolean RepaintAllItems { get; set; }
-        /// <summary>
-        /// Return true, when item is active at specified point.
-        /// Point is in absolute coordinates (on Control), as in property ActiveBounds.
-        /// Item can be interactive on standard rectangle (ActiveBounds), and when "can be active", then algorithm will be call this method IsActiveAtPoint(), as test for activity for specific pixel.
-        /// Item can be really active on multiple rectangles, or on inner ellipse, or any GraphicsPath...
-        /// </summary>
-        /// <param name="point">Point in Control (=this.Host) coordinates, for which are test performed (typically MousePoint)</param>
+        /// <param name="absolutePoint">Point v Controlu (=this.Host), v jeho souřadném systému</param>
         /// <returns></returns>
-        Boolean IsActiveAtRelativePoint(Point point);
+        Boolean IsActiveAtAbsolutePoint(Point absolutePoint);
         /// <summary>
         /// This method is called after any interactive change
         /// </summary>
@@ -293,20 +293,6 @@ namespace Djs.Common.Components
             Point location = item.GetAbsoluteOriginPoint();
             Rectangle boundsClient = item.BoundsClient;
             return boundsClient.Add(location);
-        }
-        /// <summary>
-        /// Returns absolute coordinates of area (in this.Host), in which this item is active.
-        /// If this item has no parent, then return { 0, 0, Host.Width, Host.Height }.
-        /// Otherwise return absolute coordinates of this.Parent client area.
-        /// When item.Bounds has Location { 0, 0 }, then its absolute location (on Host area) will be on result.Location.
-        /// </summary>
-        /// <param name="item">current IInteractiveItem item</param>
-        /// <returns></returns>
-        public static Rectangle GetAbsoluteInteractiveArea(this IInteractiveItem item)
-        {
-            Point location = item.GetAbsoluteOriginPoint();
-            Rectangle boundsActive = item.BoundsActive;
-            return boundsActive.Add(location);
         }
         /// <summary>
         /// Returns absolute coordinates of area, in which this item is contained.
@@ -1458,5 +1444,4 @@ namespace Djs.Common.Components
         All3DRisen = Horizontal3DRisen | Vertical3DRisen
     }
     #endregion
-
 }

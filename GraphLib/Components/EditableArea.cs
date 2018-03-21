@@ -323,7 +323,7 @@ namespace Djs.Common.Components
                 this.ItemType = itemType;
                 this.OverCursorType = overCursorType;
                 this.DragCursorType = dragCursorType;
-                this.ActiveOverhead = new Padding(activeOverhead);
+                this.ActivePadding = new Padding(activeOverhead);
             }
             public override string ToString()
             {

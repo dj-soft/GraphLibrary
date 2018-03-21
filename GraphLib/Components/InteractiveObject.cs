@@ -54,6 +54,34 @@ namespace Djs.Common.Components
             set { this.SetBounds(value, ProcessAction.SilentBoundActions, EventSourceType.BoundsChange | EventSourceType.ApplicationCode); }
         }
         /// <summary>
+        /// Přídavek k this.Bounds, který určuje přesah aktivity tohoto prvku do jeho okolí.
+        /// Kladné hodnoty v Padding zvětšují aktivní plochu nad rámec this.Bounds, záporné aktivní plochu zmenšují.
+        /// Aktivní souřadnice prvku tedy jsou this.Bounds.Add(this.ActivePadding), kde Add() je extension metoda.
+        /// </summary>
+        public virtual Padding? ActivePadding
+        {
+            get { return this.__ActivePadding; }
+            set
+            {
+                this.__ActivePadding = value;
+                this.BoundsInvalidate();
+            }
+        }
+        /// <summary>
+        /// Absolutní souřadnice (vzhledem k Controlu Host), na kterých je tento prvek aktivní.
+        /// Souřadnice ve výchozím stavu určuje proces vykreslování, kdy jsou určeny jak offset souřadnic (absolutní počátek parenta),
+        /// tak je určen Intersect viditelných oblastí ze všech parentů = tím je dán vizuální Clip, do něhož se prvek promítá.
+        /// Tato hodnota je při vykreslování uložena do this.AbsoluteInteractiveBounds.
+        /// Následně při testech interaktivity (hledání prvku pod myší) je tato souřadnice využívána.
+        /// Prvek sám může ve své metodě Draw() nastavit hodnotu AbsoluteInteractiveBounds jinak, nebo může nastavit null = prvek není aktivní.
+        /// Tyto souřadnice by neměly být dopočítávány, prostě jsou uloženy a testovány.
+        /// </summary>
+        public virtual Rectangle? AbsoluteInteractiveBounds
+        {
+            get { return this.__AbsoluteInteractiveBounds; }
+            set { this.__AbsoluteInteractiveBounds = value; }
+        }
+        /// <summary>
         /// Inner border between this Bounds and Childs area.
         /// Client area is (Bounds.Left + ClientBorder.Left, Bounds.Top + ClientBorder.Top, Bounds.Width - ClientBorder.Horizontal, Bounds.Height - ClientBorder.Vertical)
         /// </summary>
@@ -66,21 +94,6 @@ namespace Djs.Common.Components
                 this.BoundsInvalidate();
             }
         }
-        private Padding __ClientBorder;
-        /// <summary>
-        /// Outer margin around this Bounds, where this item is interactive.
-        /// Active area is (Bounds.Left - ClientBorder.Left, Bounds.Top - ClientBorder.Top, Bounds.Width + ClientBorder.Horizontal, Bounds.Height + ClientBorder.Vertical)
-        /// </summary>
-        public virtual Padding ActiveOverhead
-        {
-            get { return this.__ActiveOverhead; }
-            set
-            {
-                this.__ActiveOverhead = value;
-                this.BoundsInvalidate();
-            }
-        }
-        private Padding __ActiveOverhead;
 
         /// <summary>
         /// Back color
@@ -90,7 +103,7 @@ namespace Djs.Common.Components
             get { return this._BackColor; }
             set { this._BackColor = value; } 
         }
-        protected Color _BackColor = Color.LightSlateGray;
+        protected Color _BackColor = Skin.Control.BackColor;
 
         /// <summary>
         /// Order for this item
@@ -101,6 +114,7 @@ namespace Djs.Common.Components
         /// </summary>
         public virtual void Refresh()
         {
+            this.Repaint();
             if (this.Host != null)
                 this.Host.Refresh();
         }
@@ -214,11 +228,6 @@ namespace Djs.Common.Components
             protected set { this.SetAbsoluteVisibleBounds(value); }
         }
         /// <summary>
-        /// Relative coordinates of this item, where item is active. Is relative to this.Parent, this is similarly to this.Bounds.
-        /// BoundsActive = Bounds + (to outer) ActiveOverhead
-        /// </summary>
-        protected virtual Rectangle BoundsActive { get { this.BoundsCheck(); return this.__BoundsActive.Value; } }
-        /// <summary>
         /// Relative coordinates for Child items. Is relative to this.Parent, this is similarly to this.Bounds.
         /// BoundsActive = Bounds + (to inner) ClientBorder
         /// </summary>
@@ -232,7 +241,6 @@ namespace Djs.Common.Components
         /// </summary>
         protected void BoundsInvalidate()
         {
-            this.__BoundsActive = null;
             this.__BoundsClient = null;
         }
         /// <summary>
@@ -240,10 +248,8 @@ namespace Djs.Common.Components
         /// </summary>
         protected void BoundsCheck()
         {
-            if (!this.__BoundsActive.HasValue)
-                this.__BoundsActive = this.__Bounds.GetOuterBounds(this.__ActiveOverhead);
             if (!this.__BoundsClient.HasValue)
-                this.__BoundsClient = this.__Bounds.GetClientBounds(this.__ClientBorder);
+                this.__BoundsClient = this.__Bounds.Sub(this.__ClientBorder);
         }
         /// <summary>
         /// Private accessor for Bounds value.
@@ -255,8 +261,10 @@ namespace Djs.Common.Components
             set { this.__Bounds = value; this.BoundsInvalidate(); }
         }
         private Rectangle __Bounds;
-        private Rectangle? __BoundsActive;
         private Rectangle? __BoundsClient;
+        private Padding __ClientBorder;
+        private Padding? __ActivePadding;
+        private Rectangle? __AbsoluteInteractiveBounds;
         #endregion
         #region Events and virtual methods
 
@@ -302,14 +310,19 @@ namespace Djs.Common.Components
         #endregion
         #region Protected, virtual properties (for IInteractiveItem support)
         /// <summary>
-        /// Return true, when item is active at specified point.
-        /// Point is in absolute coordinates (on Control).
-        /// Item can be interactive on standard rectangle (Bounds), then test activity by method Rectangle.Contains(point).
-        /// Or item can be active on multiple rectangles, or GraphicsPath...
+        /// Vrátí true, pokud daný prvek je aktivní na dané souřadnici.
+        /// Souřadnice je v koordinátech Controlu, tedy z hlediska prvku jde o souřadnici srovnatelnou s AbsoluteInteractiveBounds.
+        /// Pokud prvek má nepravidelný tvar, musí testovat tento tvar v této své metodě explicitně.
         /// </summary>
-        /// <param name="point">Point in Control coordinates, for which are test performed (typically point of mouse)</param>
+        /// <param name="absolutePoint">Point v Controlu (=this.Host), v jeho souřadném systému</param>
         /// <returns></returns>
-        protected virtual Boolean IsActiveAtRelativePoint(Point point) { return this.BoundsActive.Contains(point); }
+        protected virtual Boolean IsActiveAtAbsolutePoint(Point absolutePoint)
+        {
+            Rectangle? aib = this.AbsoluteInteractiveBounds;
+            if ((!aib.HasValue) || (!aib.Value.HasPixels())) return false;
+
+            return aib.Value.Contains(absolutePoint);
+        }
         /// <summary>
         /// Repaint item to layers after current operation. Layers are not combinable. Layer None is for invisible, but active items.
         /// </summary>
@@ -318,12 +331,6 @@ namespace Djs.Common.Components
         /// Repaint item to this layers after current operation. Layers are combinable. Layer None is permissible (no repaint).
         /// </summary>
         protected virtual GInteractiveDrawLayer RepaintToLayers { get; set; }
-        /// <summary>
-        /// Any Interactive method or any items need repaint all items, after current (interactive) event.
-        /// This value can be only set to true. Set to false does not change value of this property.
-        /// This value is directly writed to Host control
-        /// </summary>
-        protected virtual Boolean RepaintAllItems { get { return (this.Host != null ? this.Host.RepaintAllItems : false); } set { if (this.Host != null) this.Host.RepaintAllItems = value; } }
         /// <summary>
         /// Current (new) state of item (after this event, not before it).
         /// </summary>
@@ -619,7 +626,8 @@ namespace Djs.Common.Components
         IInteractiveItem IInteractiveItem.Parent { get { return this.Parent; } set { this.Parent = value; } }
         IEnumerable<IInteractiveItem> IInteractiveItem.Childs { get { return this.Childs; } }
         Rectangle IInteractiveItem.Bounds { get { return this.Bounds; } set { this.Bounds = value; } }
-        Rectangle IInteractiveItem.BoundsActive { get { return this.BoundsActive; } }
+        Padding? IInteractiveItem.ActivePadding { get { return this.ActivePadding; } set { this.ActivePadding = value; } }
+        Rectangle? IInteractiveItem.AbsoluteInteractiveBounds { get { return this.AbsoluteInteractiveBounds; } set { this.AbsoluteInteractiveBounds = value; } }
         Rectangle IInteractiveItem.BoundsClient { get { return this.BoundsClient; } }
         GInteractiveStyles IInteractiveItem.Style { get { return this.Style; } }
         Boolean IInteractiveItem.IsInteractive { get { return this.IsInteractive; } }
@@ -629,8 +637,7 @@ namespace Djs.Common.Components
         ZOrder IInteractiveItem.ZOrder { get { return this.ZOrder; } }
         GInteractiveDrawLayer IInteractiveItem.StandardDrawToLayer { get { return this.StandardDrawToLayer; } }
         GInteractiveDrawLayer IInteractiveItem.RepaintToLayers { get { return this.RepaintToLayers; } set { this.RepaintToLayers = value; } }
-        Boolean IInteractiveItem.IsActiveAtRelativePoint(Point point) { return this.IsActiveAtRelativePoint(point); }
-        Boolean IInteractiveItem.RepaintAllItems { get { return this.RepaintAllItems; } set { this.RepaintAllItems = value; } }
+        Boolean IInteractiveItem.IsActiveAtAbsolutePoint(Point absolutePoint) { return this.IsActiveAtAbsolutePoint(absolutePoint); }
         void IInteractiveItem.AfterStateChanged(GInteractiveChangeStateArgs e)
         {
             this.CurrentState = e.TargetState;

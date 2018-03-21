@@ -478,7 +478,6 @@ namespace Djs.Common.Components
 
                     // ActiveOverhead from splitterActiveOverlap:
                     if (!splitterActiveOverlapNew.HasValue) splitterActiveOverlapNew = splitterActiveOverlapOld;
-                    Padding activeOverheadOld = this.ActiveOverhead;
                     Padding activeOverheadNew = this._GetActiveOverhead(orientationNew.Value, splitterActiveOverlapNew.Value);
 
                     // What is really changed?
@@ -487,7 +486,6 @@ namespace Djs.Common.Components
                     bool orientationChanged = (orientationNew.Value != orientationOld);
                     bool splitterVisibleWidthChanged = (splitterVisibleWidthNew.Value != splitterVisibleWidthOld);
                     bool splitterActiveOverlapChanged = (splitterActiveOverlapNew.Value != splitterActiveOverlapOld);
-                    bool activeOverheadChanged = (activeOverheadNew != activeOverheadOld);
 
                     // Store new values, without any actions:
                     this._Bounds = boundsNew.Value;              // Silent set to variable, do not trigger any action (only invalidate BoundsActive)
@@ -495,7 +493,7 @@ namespace Djs.Common.Components
                     this._Orientation = orientationNew.Value;
                     this._SplitterVisibleWidth = splitterVisibleWidthNew.Value;
                     this._SplitterActiveOverlap = splitterActiveOverlapNew.Value;
-                    this.ActiveOverhead = activeOverheadNew;
+                    this.ActivePadding = activeOverheadNew;
 
                     // Akce v době provádění změny = posunu:
                     if (IsAction(actions, ProcessAction.CallChangingEvents))
@@ -697,7 +695,7 @@ namespace Djs.Common.Components
 
             }
             if (isChange)
-                this.RepaintAllItems = isChange;
+                this.Host.RepaintAllItems = isChange;
 
             return isChange;
         }

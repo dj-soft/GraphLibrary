@@ -1733,68 +1733,72 @@ namespace Djs.Common.Components
             return (padding.Top == 0 && padding.Left == 0 && padding.Right == 0 && padding.Bottom == 0);
         }
         #endregion
-        #region Rectangle and Padding
+        #region Rectangle a Padding: Rectangle.Add(), Rectangle.Sub(Padding)
         /// <summary>
-        /// Returns an inner (Client) area within this bounds, with specified inner borders.
-        /// When border is null, or border.All == 0, then return this without a change.
-        /// Return (this.Left + border.Left, this.Top + border.Top, this.Width - border.Horizontal, this.Height - border.Vertical).
+        /// Vrací vnitřní prostor v this Rectangle, po odečtení daných okrajů.
+        /// Pokud okraje (padding) jsou null nebo prázdné, pak vrací výchozí souřadnice.
+        /// Jinak vrací: (this.Left + padding.Left, this.Top + padding.Top, this.Width - padding.Horizontal, this.Height - padding.Vertical).
+        /// Pokud by výsledná šířka nebo výška byla záporná, pak použije hodnotu 0.
         /// </summary>
         /// <param name="bounds"></param>
-        /// <param name="clientBorder"></param>
+        /// <param name="padding"></param>
         /// <returns></returns>
-        public static Rectangle GetClientBounds(this Rectangle bounds, Padding? clientBorder)
+        public static Rectangle Sub(this Rectangle bounds, Padding? padding)
         {
-            if (!clientBorder.HasValue) return bounds;
-            return GetClientBounds(bounds, clientBorder.Value);
+            if (!padding.HasValue) return bounds;
+            return Sub(bounds, padding.Value);
         }
         /// <summary>
-        /// Returns an inner (Client) area within this bounds, with specified inner borders.
-        /// When border.All == 0, then return this without a change.
-        /// Return (this.Left + border.Left, this.Top + border.Top, this.Width - border.Horizontal, this.Height - border.Vertical).
+        /// Vrací vnitřní prostor v this Rectangle, po odečtení daných okrajů.
+        /// Pokud okraje (padding) jsou prázdné, pak vrací výchozí souřadnice.
+        /// Jinak vrací: (this.Left + padding.Left, this.Top + padding.Top, this.Width - padding.Horizontal, this.Height - padding.Vertical).
+        /// Pokud by výsledná šířka nebo výška byla záporná, pak použije hodnotu 0.
         /// </summary>
         /// <param name="bounds"></param>
-        /// <param name="clientBorder"></param>
+        /// <param name="padding"></param>
         /// <returns></returns>
-        public static Rectangle GetClientBounds(this Rectangle bounds, Padding clientBorder)
+        public static Rectangle Sub(this Rectangle bounds, Padding padding)
         {
-            if (clientBorder.All == 0) return bounds;
-            int l = bounds.Left + clientBorder.Left;
-            int t = bounds.Top + clientBorder.Top;
-            int w = bounds.Width - clientBorder.Horizontal;
+            if (padding.All == 0) return bounds;
+            int l = bounds.Left + padding.Left;
+            int t = bounds.Top + padding.Top;
+            int w = bounds.Width - padding.Horizontal;
             if (w < 0) w = 0;
-            int h = bounds.Height - clientBorder.Vertical;
+            int h = bounds.Height - padding.Vertical;
             if (h < 0) h = 0;
             return new Rectangle(l, t, w, h);
         }
         /// <summary>
-        /// Returns an outer area around this bounds, with specified outer margins.
-        /// When margins is null, or margins.All == 0, then return this without a change.
-        /// Return (this.Left - border.Left, this.Top - border.Top, this.Width + border.Horizontal, this.Height + border.Vertical).
+        /// Vrací vnější prostor okolo this.Rectangle, po přičtení daných okrajů.
+        /// Pokud okraje (padding) jsou null nebo prázdné, pak vrací výchozí souřadnice.
+        /// Jinak vrací: (this.Left - padding.Left, this.Top - padding.Top, this.Width + padding.Horizontal, this.Height + padding.Vertical).
+        /// Pokud by výsledná šířka nebo výška byla záporná, pak použije hodnotu 0.
         /// </summary>
         /// <param name="bounds"></param>
-        /// <param name="outerMargin"></param>
+        /// <param name="padding"></param>
         /// <returns></returns>
-        public static Rectangle GetOuterBounds(this Rectangle bounds, Padding? outerMargin)
+        public static Rectangle Add(this Rectangle bounds, Padding? padding)
         {
-            if (!outerMargin.HasValue) return bounds;
-            return GetOuterBounds(bounds, outerMargin.Value);
+            if (!padding.HasValue) return bounds;
+            return Add(bounds, padding.Value);
         }
         /// <summary>
-        /// Returns an outer area around this bounds, with specified outer margins.
-        /// When margins.All == 0, then return this without a change.
-        /// Return (this.Left - border.Left, this.Top - border.Top, this.Width + border.Horizontal, this.Height + border.Vertical).
+        /// Vrací vnější prostor okolo this.Rectangle, po přičtení daných okrajů.
+        /// Pokud okraje (padding) jsou prázdné, pak vrací výchozí souřadnice.
+        /// Jinak vrací: (this.Left - padding.Left, this.Top - padding.Top, this.Width + padding.Horizontal, this.Height + padding.Vertical).
+        /// Pokud by výsledná šířka nebo výška byla záporná, pak použije hodnotu 0.
         /// </summary>
         /// <param name="bounds"></param>
-        /// <param name="outerMargin"></param>
+        /// <param name="padding"></param>
         /// <returns></returns>
-        public static Rectangle GetOuterBounds(this Rectangle bounds, Padding outerMargin)
+        public static Rectangle Add(this Rectangle bounds, Padding padding)
         {
-            if (outerMargin.All == 0) return bounds;
-            int l = bounds.Left - outerMargin.Left;
-            int t = bounds.Top - outerMargin.Top;
-            int w = bounds.Width + outerMargin.Horizontal;
+            if (padding.All == 0) return bounds;
+            int l = bounds.Left - padding.Left;
+            int t = bounds.Top - padding.Top;
+            int w = bounds.Width + padding.Horizontal;
             if (w < 0) w = 0;
-            int h = bounds.Height + outerMargin.Vertical;
+            int h = bounds.Height + padding.Vertical;
             if (h < 0) h = 0;
             return new Rectangle(l, t, w, h);
         }

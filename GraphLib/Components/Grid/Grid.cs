@@ -169,6 +169,36 @@ namespace Djs.Common.Components
         /// </summary>
         protected Rectangle GridVoidBounds2 { get { this._InnerBoundsCheck(); return this._GridVoidBounds2; } } private Rectangle _GridVoidBounds2;
         /// <summary>
+        /// Metoda vrátí relativní souřadnice požadovaného prostoru.
+        /// Relativní = relativně k this.Bounds.Location, který představuje bod {0;0}.
+        /// Povolené typy prostoru jsou: AllTables, HorizontalScrollBar, VerticalScrollBar.
+        /// </summary>
+        /// <param name="areaType"></param>
+        /// <returns></returns>
+        public Rectangle GetRelativeBoundsForArea(TableAreaType areaType)
+        {
+            switch (areaType)
+            {
+                case TableAreaType.AllTables: return this.TablesBounds;
+                case TableAreaType.HorizontalScrollBar: return this.ColumnsScrollBarBounds;
+                case TableAreaType.VerticalScrollBar: return this.TablesScrollBarBounds;
+            }
+            return Rectangle.Empty;
+        }
+        /// <summary>
+        /// Metoda vrátí absolutní souřadnice požadovaného prostoru.
+        /// Souřadnice slouží k provedení Graphics.Clip() před vykreslením obsahu.
+        /// Povolené typy prostoru jsou: AllTables, HorizontalScrollBar, VerticalScrollBar.
+        /// </summary>
+        /// <param name="areaType"></param>
+        /// <returns></returns>
+        public Rectangle GetAbsoluteBoundsForArea(TableAreaType areaType)
+        {
+            Rectangle gridAbsoluteBounds = this.BoundsAbsolute;
+            Rectangle relativeBounds = this.GetRelativeBoundsForArea(areaType);
+            return relativeBounds.Add(gridAbsoluteBounds.Location);
+        }
+        /// <summary>
         /// Platnosti souřadnic vnitřních objektů 
         /// (_TablesBounds, _TablesScrollBarVisible, _TablesScrollBarBounds, _ColumnsScrollBarVisible, _ColumnsScrollBarBounds,
         /// _GridVoidBounds1, _GridVoidBounds2, _ColumnRowHeaderVisualRange, _ColumnsDataVisualRange)

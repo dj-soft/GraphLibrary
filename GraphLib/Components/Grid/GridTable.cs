@@ -266,6 +266,26 @@ namespace Djs.Common.Components.Grid
             return relativeBounds.Add(tableAbsoluteBounds.Location);
         }
         /// <summary>
+        /// Metoda vrátí absolutní souřadnice požadovaného prostoru.
+        /// Metoda může oříznout daný prostor do souřadnic, které GGrid vymezuje pro Tables (podle hodnoty clipToTableBounds).
+        /// Souřadnice slouží k provedení Graphics.Clip() před vykreslením obsahu.
+        /// </summary>
+        /// <param name="areaType"></param>
+        /// <param name="clipToTableBounds"></param>
+        /// <returns></returns>
+        public Rectangle GetAbsoluteBoundsForArea(TableAreaType areaType, bool clipToTableBounds)
+        {
+            Rectangle tableAbsoluteBounds = this.BoundsAbsolute;
+            Rectangle relativeBounds = this.GetRelativeBoundsForArea(areaType);
+            Rectangle absoluteBounds = relativeBounds.Add(tableAbsoluteBounds.Location);
+            if (clipToTableBounds && this.HasGrid)
+            {
+                Rectangle tablesAbsoluteBounds = this.Grid.GetAbsoluteBoundsForArea(TableAreaType.AllTables);
+                absoluteBounds = Rectangle.Intersect(absoluteBounds, tablesAbsoluteBounds);
+            }
+            return absoluteBounds;
+        }
+        /// <summary>
         /// Platnosti souřadnic vnitřních objektů (_TableHeaderBounds, _ColumnHeaderBounds, _RowHeaderBounds, _RowAreaBounds, _RowsScrollBarVisible, _RowsScrollBarBounds, _HeaderSplitterBounds)
         /// </summary>
         private bool _TableInnerLayoutValid;
@@ -1660,9 +1680,10 @@ namespace Djs.Common.Components.Grid
         /// <param name="boundsAbsolute"></param>
         protected override void DrawStandard(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
         {
+            Application.App.TraceInfo(Application.TracePriority.Priority1_ElementaryTimeDebug, this.GetType().Name, "Draw", "Component", this.ToString(), "BoundsAbsolute: " + boundsAbsolute.ToString());
+
             if (this.NeedDebug)
             { }
-            Application.App.TraceInfo(Application.TracePriority.Priority1_ElementaryTimeDebug, this.GetType().Name, "Draw", "Component", this.ToString(), "BoundsAbsolute: " + boundsAbsolute.ToString());
 
             if (!this.GraphicClip(e, boundsAbsolute)) return;                  // Není kam kreslit (oříznutí souřadnic vrátílo nulu)
 
@@ -1711,13 +1732,23 @@ namespace Djs.Common.Components.Grid
             // Ořezáváme jen při kreslení do vrstvy Standard:
             if (e.DrawLayer != GInteractiveDrawLayer.Standard) return true;
 
-            Rectangle areaAbsoluteBounds = this.OwnerGTable.GetAbsoluteBoundsForArea(this.ComponentType);    // Prostor pro oblast (ColumnHeaders, RowHeaders, atd)
-            Rectangle controlBounds = Rectangle.Intersect(areaAbsoluteBounds, boundsAbsolute);               // Prostor pro aktuální prvek = intersect se souřadnicemi prvku
+            // Prostor pro oblast (ColumnHeaders, RowHeaders, atd), se zohledněním souřadnic určených pro prostor tabulek v rámci Gridu:
+            Rectangle areaAbsoluteBounds = this.OwnerGTable.GetAbsoluteBoundsForArea(this.ComponentType, true);
+
+            // Prostor pro aktuální prvek = intersect se souřadnicemi prvku:
+            Rectangle controlBounds = Rectangle.Intersect(areaAbsoluteBounds, boundsAbsolute);
             if (!controlBounds.HasPixels()) return false;
 
-            Rectangle clipBounds = Rectangle.Intersect(controlBounds, e.AbsoluteVisibleClip);                         // Prostor po oříznutí s aktuálním Clipem v grafice
+            // Prostor po oříznutí s aktuálním Clipem v grafice:
+            //  Aktuální Clip v grafice obsahuje prostor, daný pro tento prvek v rámci jeho parentů:
+            Rectangle clipBounds = Rectangle.Intersect(controlBounds, e.AbsoluteVisibleClip);
             e.GraphicsClipWith(clipBounds, true);
-            return !e.IsVisibleClipEmpty;
+
+            // Pokud aktuální Clip je viditelný, pak jeho hodnota určuje souřadnice, kde je prvek interaktivní:
+            bool isVisible = !e.IsVisibleClipEmpty;
+            this.AbsoluteInteractiveBounds = (isVisible ? (Rectangle?)e.AbsoluteVisibleClip : (Rectangle?)null);
+
+            return isVisible;
         }
         #endregion
         #region Drag - podpora pro přesunutí this headeru na jinou pozici
@@ -2832,6 +2863,14 @@ namespace Djs.Common.Components.Grid
     public enum TableAreaType
     {
         None,
+        /// <summary>
+        /// Prostor všech tabulek
+        /// </summary>
+        AllTables,
+        /// <summary>
+        /// Prostor celé tabulky
+        /// </summary>
+        Table,
         /// <summary>
         /// Záhlaví tabulky (pak jde o header vlevo nahoře, v křížení sloupce RowHeader a řádku ColumnHeader)
         /// </summary>

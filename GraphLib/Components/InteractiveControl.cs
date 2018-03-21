@@ -1463,9 +1463,9 @@ namespace Djs.Common.Components
                 // Do prvku nastavíme absolutní souřadnice, kde je vykreslen - včetně oříznutí, jakožto jeho interaktivní souřadnice (kde je prvek interaktivní):
                 if (this.Item.IsInteractive)
                 {
-                    Rectangle absoluteBounds = this.Item.Bounds.Add(this.AbsoluteItemOffset);
-                    Rectangle absoluteBounds2 = this.Item.GetAbsoluteVisibleBounds();
-                    Rectangle absoluteVisibleBounds = Rectangle.Intersect(absoluteBounds, this.AbsoluteVisibleClip);
+                    Rectangle absoluteBounds = this.Item.Bounds.Add(this.AbsoluteItemOffset);             // Absolutní Bounds prvku Item
+                    Rectangle absoluteInteractiveBounds = absoluteBounds.Add(this.Item.ActivePadding);    // Absolutní interaktivní souřadnice
+                    this.Item.AbsoluteInteractiveBounds = Rectangle.Intersect(absoluteInteractiveBounds, this.AbsoluteVisibleClip);  // Clip na zobrazené souřadnice
                 }
 
                 // Prvek vykreslíme:
@@ -2170,11 +2170,12 @@ namespace Djs.Common.Components
             }
 
             // Search for current item: when have an existing current item (currentItem) then search for its FoundItemList preferred:
+            IInteractiveItem[] items = list.ToArray();
             List<FindItemPoint> foundList = new List<FindItemPoint>();
             if (prevItem != null && prevItem.ExistsItem)
-                foundList = _TryFindChildItemAtPoint(list, point, withDisabled, prevItem.FoundItemList);
+                foundList = _TryFindChildItemAtPoint(items, point, withDisabled, prevItem.FoundItemList);
             else
-                foundList = _TryFindChildItemAtPoint(list, point, withDisabled, null);
+                foundList = _TryFindChildItemAtPoint(items, point, withDisabled, null);
 
             currItem.FoundItemList.AddRange(foundList);
 
@@ -2186,56 +2187,54 @@ namespace Djs.Common.Components
         /// If satisfactory item is IInteractiveContainer, then search continue in its ItemList.
         /// Lists are searched in order from last item to first.
         /// </summary>
-        /// <param name="point"></param>
-        /// <param name="list"></param>
+        /// <param name="items"></param>
+        /// <param name="absolutePoint"></param>
         /// <param name="withDisabled"></param>
         /// <param name="resultList"></param>
         /// <returns></returns>
-        private static List<FindItemPoint> _TryFindChildItemAtPoint(List<IInteractiveItem> list, Point point, bool withDisabled, List<FindItemPoint> preferList)
+        private static List<FindItemPoint> _TryFindChildItemAtPoint(IInteractiveItem[] items, Point absolutePoint, bool withDisabled, List<FindItemPoint> preferList)
         {
             List<FindItemPoint> resultList = new List<FindItemPoint>();
             Queue<FindItemPoint> preferredQueue = (preferList == null ? null : new Queue<FindItemPoint>(preferList));       // Chain of preferred items
-            Point itemLocation = new Point(0, 0);
             bool run = true;
             while (run)
             {
                 run = false;
                 int foundAt = -1;
                 if (preferredQueue != null && preferredQueue.Count > 0)
-                {   // Preferred item is stil active?
+                {   // Máme hledat nejprve v preferovaných prvcích?
                     FindItemPoint fip = preferredQueue.Dequeue();
                     if (fip.Item.HoldMouse)
                     {
-                        foundAt = _FindIndexOfItem(list, point, withDisabled, fip.Item);
+                        foundAt = _FindIndexOfItem(items, absolutePoint, withDisabled, fip.Item);
                         if (foundAt < 0)
                             preferredQueue.Clear();
                     }
                 }
                 if (foundAt < 0)
-                {   // Search with no preferred item, only by active point:
-                    foundAt = _FindIndexOfItem(list, point, withDisabled, null);
+                {   // Hledáme mimo preferované prvky, pouze podle souřadnice myši:
+                    foundAt = _FindIndexOfItem(items, absolutePoint, withDisabled, null);
                 }
 
                 if (foundAt >= 0)
-                {
-                    IInteractiveItem item = list[foundAt];
+                {   // Našli jsme prvek:
+                    IInteractiveItem item = items[foundAt];
 
-                    // Item already is in resultList => there is an infinite loop:
+                    // Pokud jsme se zacyklili => skončíme chybou:
                     if (resultList.Any(iii => Object.ReferenceEquals(iii.Item, item)))
                         throw new StackOverflowException("There is an cycling loop in nesting of IInteractiveItem list");
-                        
-                    // Found:
-                    Point relPoint = item.BoundsActive.Location;     // Location of item in its Parent
-                    itemLocation = itemLocation.Add(relPoint);       // Location of item.Location in main Control
-                    Point relativeMousePoint = point.Sub(relPoint);  // Relative mouse point on item (value in "point" is allways relative to current container)
-                    resultList.Add(new FindItemPoint(item, itemLocation, relativeMousePoint));
 
-                    // Found item has Childs: scan its Childs in next loop:
-                    if (item.Childs != null)
+                    // Určíme relativní pozici myši vůči prvku, to se někdy hodí:
+                    Point itemAbsolutePoint = item.GetAbsoluteVisibleBounds().Location;
+                    Point relativeMousePoint = absolutePoint.Sub(itemAbsolutePoint);
+                    resultList.Add(new FindItemPoint(item, itemAbsolutePoint, relativeMousePoint));
+
+                    // Pokud prvek má Childs, projdeme je taky v další smyčce.
+                    // Nemusíme řešit posun relativních souřadnic myši, jedeme stále v absolutních:
+                    IEnumerable<IInteractiveItem> childs = item.Childs;
+                    if (childs != null)
                     {
-                        // IInteractiveContainer container = item as IInteractiveContainer;
-                        list = new List<IInteractiveItem>(item.Childs);
-                        point = point.Sub(item.BoundsActive.Location);
+                        items = childs.ToArray();
                         run = true;
                     }
                 }
@@ -2249,19 +2248,19 @@ namespace Djs.Common.Components
         /// Return index of this item, or -1 when not found.
         /// </summary>
         /// <param name="list"></param>
-        /// <param name="point"></param>
+        /// <param name="absolutePoint"></param>
         /// <param name="withDisabled"></param>
         /// <param name="preferredItem"></param>
         /// <returns></returns>
-        private static int _FindIndexOfItem(List<IInteractiveItem> list, Point point, bool withDisabled, IInteractiveItem preferredItem)
+        private static int _FindIndexOfItem(IInteractiveItem[] items, Point absolutePoint, bool withDisabled, IInteractiveItem preferredItem)
         {
-            for (int idx = list.Count - 1; idx >= 0; idx--)
-            {   // Search item in order from last to first visible item:
-                IInteractiveItem item = list[idx];
+            for (int idx = items.Length - 1; idx >= 0; idx--)
+            {   // Hledáme v poli prvků od konce = vizuálně od nejvýše vykresleného prvku:
+                IInteractiveItem item = items[idx];
                 if ((preferredItem == null || Object.ReferenceEquals(preferredItem, item)) 
                     && item.IsVisible 
                     && (withDisabled || item.IsEnabled) 
-                    && item.IsActiveAtRelativePoint(point))
+                    && item.IsActiveAtAbsolutePoint(absolutePoint))
                 {   // This item contain specified point:
                     return idx;
                 }
@@ -2320,9 +2319,9 @@ namespace Djs.Common.Components
             for (int i = firstDiffIdx; i <= nextLastIdx; i++)
                 enterList.Add(next.FoundItemList[i].Item);
         }
-        #region class FindItemPoint : Found item and relative mouse location
+        #region class FindItemPoint : Informace o jednom nalezeném prvku a relativní poloze myši
         /// <summary>
-        /// FindItemPoint : Found item and relative mouse location
+        /// FindItemPoint : Informace o jednom nalezeném prvku a relativní poloze myši
         /// </summary>
         public class FindItemPoint
         {
@@ -2333,15 +2332,15 @@ namespace Djs.Common.Components
                 this.RelativeMousePoint = relativeMousePoint;
             }
             /// <summary>
-            /// Found item
+            /// Nalezený prvek
             /// </summary>
             public IInteractiveItem Item { get; private set; }
             /// <summary>
-            /// Item absolute location on Control
+            /// Souřadnice prvku v Controlu, absolutní
             /// </summary>
             public Point ItemAbsoluteLocation { get; private set; }
             /// <summary>
-            /// Mouse point in coordinates of this item (where Item.ActiveBounds.Location = 0;0)
+            /// Souřadnice myši v prvku, relativně (tedy bod RelativeMousePoint 0,0 odpovídá poloze myši v levém horním rohu prvku Item)
             /// </summary>
             public Point RelativeMousePoint { get; private set; }
         }
