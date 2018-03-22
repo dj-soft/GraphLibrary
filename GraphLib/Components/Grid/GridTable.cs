@@ -1796,7 +1796,7 @@ namespace Djs.Common.Components.Grid
         }
         /// <summary>
         /// Vykreslí podklad prostoru pro záhlaví.
-        /// Bázová třída GHeader vykreslí pouze pozadí, pomocí metody GPainter.DrawColumnHeader()
+        /// Bázová třída GComponent vykreslí pouze pozadí, a to jen pokud se kreslí jako ghost do vrstvy Standard.
         /// </summary>
         /// <param name="e"></param>
         /// <param name="boundsAbsolute"></param>
@@ -1806,7 +1806,6 @@ namespace Djs.Common.Components.Grid
         {
             if (drawAsGhost && e.DrawLayer == GInteractiveDrawLayer.Standard)
                 e.Graphics.FillRectangle(Brushes.DarkGray, boundsAbsolute);
-            GPainter.DrawColumnHeader(e.Graphics, boundsAbsolute, ColorPalette.ButtonBackEnableColor, this.CurrentState, System.Windows.Forms.Orientation.Horizontal, null, opacity);
         }
         /// <summary>
         /// Metoda zajistí oříznutí aktuální grafiky tak, aby prvek kreslil jen do přiměřeného prostoru.
@@ -1841,6 +1840,19 @@ namespace Djs.Common.Components.Grid
             this.AbsoluteInteractiveBounds = (isVisible ? (Rectangle?)e.AbsoluteVisibleClip : (Rectangle?)null);
 
             return isVisible;
+        }
+        /// <summary>
+        /// Pokud běží aplikace v IsDebug režimu, vykreslí rozpoznatelný rámeček okolo this prvku tak, aby bylo možno poznat jak to kreslíme... :-)
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="opacity"></param>
+        protected void DrawDebugBorder(GInteractiveDrawArgs e, Rectangle boundsAbsolute, int? opacity)
+        {
+            if (Application.App.IsDebugMode)
+                GPainter.DrawBorder(e.Graphics, boundsAbsolute, RectangleSide.All, 
+                    System.Drawing.Drawing2D.DashStyle.Dot,
+                    Color.Yellow, Color.LightGreen, Color.IndianRed, Color.Blue);
         }
         #endregion
         #region Interaktivita
@@ -1990,7 +2002,9 @@ namespace Djs.Common.Components.Grid
         /// <param name="opacity"></param>
         protected override void DrawContent(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
         {
-            this.DrawBackground(e, boundsAbsolute, drawAsGhost, opacity);
+            base.DrawContent(e, boundsAbsolute, drawAsGhost, opacity);
+            this.DrawGridHeader(e, boundsAbsolute, drawAsGhost, opacity);
+            this.DrawDebugBorder(e, boundsAbsolute, opacity);
         }
         /// <summary>
         /// Vykreslí jen pozadí
@@ -1999,11 +2013,9 @@ namespace Djs.Common.Components.Grid
         /// <param name="boundsAbsolute"></param>
         /// <param name="drawAsGhost"></param>
         /// <param name="opacity"></param>
-        protected void DrawBackground(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
+        protected void DrawGridHeader(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
         {
-            if (drawAsGhost && e.DrawLayer == GInteractiveDrawLayer.Standard)
-                e.Graphics.FillRectangle(Brushes.DarkGray, boundsAbsolute);
-            GPainter.DrawColumnHeader(e.Graphics, boundsAbsolute, ColorPalette.ButtonBackEnableColor, this.CurrentState, System.Windows.Forms.Orientation.Horizontal, null, opacity);
+            GPainter.DrawGridHeader(e.Graphics, boundsAbsolute, RectangleSide.Top, Skin.Grid.HeaderBackColor, true, Skin.Grid.HeaderLineColor, this.CurrentState, System.Windows.Forms.Orientation.Horizontal, null, opacity);
         }
         #endregion
     }
@@ -2138,6 +2150,8 @@ namespace Djs.Common.Components.Grid
             if (this._TimeAxis != null) return;
 
             this._TimeAxis = new GTimeAxis();
+            this._TimeAxis.ResizeContentMode = AxisResizeContentMode.ChangeScale;
+
             ((IInteractiveItem)this._TimeAxis).Parent = this;
             this._TimeAxis.ValueChanging += _TimeAxis_ValueChange;
             this._TimeAxis.ValueChanged += _TimeAxis_ValueChange;
@@ -2172,9 +2186,9 @@ namespace Djs.Common.Components.Grid
         protected void SetTimeAxisBounds(Rectangle newBounds)
         {
             if (this.UseTimeAxis)
-            {   // Časovou osu kreslíme v ose X přesně do this.Bounds, v ose Y necháme nahoře 5 pixelů (pro Drag sloupce), dole necháme 1 pixel (pro strýčka Příhodu):
+            {   // Časovou osu kreslíme v ose X o 1px menší z obou stran, a v ose Y necháme nahoře 5 pixelů (pro Drag sloupce), dole necháme 1 pixel (pro strýčka Příhodu):
                 Rectangle bounds = this.Bounds;
-                this.TimeAxis.Bounds = new Rectangle(1, 5, bounds.Width - 1, bounds.Height - 6);
+                this.TimeAxis.BoundsSilent = new Rectangle(1, 5, bounds.Width - 1, bounds.Height - 6);
             }
         }
         /// <summary>
@@ -2430,9 +2444,11 @@ namespace Djs.Common.Components.Grid
         #region Draw - kreslení záhlaví sloupce : ikona, text, značky při procesu Drag
         protected override void DrawContent(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
         {
-            this.DrawBackground(e, boundsAbsolute, drawAsGhost, opacity);
+            base.DrawContent(e, boundsAbsolute, drawAsGhost, opacity);
+            this.DrawGridHeader(e, boundsAbsolute, drawAsGhost, opacity);
             this.DrawInsertMarks(e, boundsAbsolute, opacity);
             this.DrawColumnHeader(e, boundsAbsolute, opacity);
+            this.DrawDebugBorder(e, boundsAbsolute, opacity);
         }
         /// <summary>
         /// Vykreslí jen pozadí
@@ -2441,11 +2457,9 @@ namespace Djs.Common.Components.Grid
         /// <param name="boundsAbsolute"></param>
         /// <param name="drawAsGhost"></param>
         /// <param name="opacity"></param>
-        protected void DrawBackground(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
+        protected void DrawGridHeader(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
         {
-            if (drawAsGhost && e.DrawLayer == GInteractiveDrawLayer.Standard)
-                e.Graphics.FillRectangle(Brushes.DarkGray, boundsAbsolute);
-            GPainter.DrawColumnHeader(e.Graphics, boundsAbsolute, ColorPalette.ButtonBackEnableColor, this.CurrentState, System.Windows.Forms.Orientation.Horizontal, null, opacity);
+            GPainter.DrawGridHeader(e.Graphics, boundsAbsolute, RectangleSide.Top, Skin.Grid.HeaderBackColor, true, Skin.Grid.HeaderLineColor, this.CurrentState, System.Windows.Forms.Orientation.Horizontal, null, opacity);
         }
         /// <summary>
         /// Do this záhlaví vykreslí ikonu třídění a titulkový text
@@ -2642,9 +2656,11 @@ namespace Djs.Common.Components.Grid
         #region Draw - kreslení záhlaví řádku
         protected override void DrawContent(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
         {
-            this.DrawBackground(e, boundsAbsolute, drawAsGhost, opacity);
+            base.DrawContent(e, boundsAbsolute, drawAsGhost, opacity);
+            this.DrawGridHeader(e, boundsAbsolute, drawAsGhost, opacity);
             this.DrawMouseHot(e, boundsAbsolute, opacity);
             this.DrawSelectedRow(e, boundsAbsolute, opacity);
+            this.DrawDebugBorder(e, boundsAbsolute, opacity);
         }
         /// <summary>
         /// Vykreslí jen pozadí
@@ -2653,11 +2669,9 @@ namespace Djs.Common.Components.Grid
         /// <param name="boundsAbsolute"></param>
         /// <param name="drawAsGhost"></param>
         /// <param name="opacity"></param>
-        protected void DrawBackground(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
+        protected void DrawGridHeader(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
         {
-            if (drawAsGhost && e.DrawLayer == GInteractiveDrawLayer.Standard)
-                e.Graphics.FillRectangle(Brushes.DarkGray, boundsAbsolute);
-            GPainter.DrawColumnHeader(e.Graphics, boundsAbsolute, ColorPalette.ButtonBackEnableColor, this.CurrentState, System.Windows.Forms.Orientation.Horizontal, null, opacity);
+            GPainter.DrawGridHeader(e.Graphics, boundsAbsolute, RectangleSide.Left, Skin.Grid.HeaderBackColor, true, Skin.Grid.HeaderLineColor, this.CurrentState, System.Windows.Forms.Orientation.Horizontal, null, opacity);
         }
         /// <summary>
         /// Do this záhlaví podbarvení v situaci, kdy tento řádek je MouseHot
@@ -2877,8 +2891,10 @@ namespace Djs.Common.Components.Grid
         /// <param name="opacity"></param>
         protected override void DrawContent(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
         {
+            base.DrawContent(e, boundsAbsolute, drawAsGhost, opacity);
             this.DrawCellContent(e, boundsAbsolute);
             this.OwnerGTable.DrawRowGridLines(e, this.OwnerCell, boundsAbsolute);
+            this.DrawDebugBorder(e, boundsAbsolute, opacity);
         }
         /// <summary>
         /// Vykreslí obsah této buňky podle jejího druhu, jako text nebo jako graf nebo jako obrázek.
@@ -2999,7 +3015,8 @@ namespace Djs.Common.Components.Grid
             FontInfo font = style.Font ?? FontInfo.Default;
             Color textColor = this.OwnerGTable.GetTextColorForCell(this.OwnerCell);
 
-            GPainter.DrawString(e.Graphics, boundsAbsolute, text, textColor, font, alignment);
+            Rectangle boundsContent = boundsAbsolute.Enlarge(-1);
+            GPainter.DrawString(e.Graphics, boundsContent, text, textColor, font, alignment);
         }
         /// <summary>
         /// Převede danou hodnotu (obsah buňky) na string s využitím formátovacího řetězce, a podle konkrétního datového typu určí výchozí zarovnání.

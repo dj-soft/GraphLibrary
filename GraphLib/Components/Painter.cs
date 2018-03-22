@@ -59,28 +59,18 @@ namespace Djs.Common.Components
             }
         }
         #endregion
-        #region DrawColumnHeader
-        /// <summary>
-        /// Draw ColumnHeader
-        /// </summary>
-        /// <param name="graphics"></param>
-        /// <param name="bounds"></param>
-        /// <param name="color"></param>
-        /// <param name="opacity"></param>
-        public static void DrawColumnHeader(Graphics graphics, Rectangle bounds, Color color, Orientation orientation, Point? point, Int32? opacity)
-        {
-            DrawColumnHeader(graphics, bounds, color, GInteractiveState.Enabled, orientation, point, opacity, 0);
-        }
+        #region DrawGridHeader
         /// <summary>
         /// Draw button base (background and border, by state)
         /// </summary>
         /// <param name="graphics"></param>
         /// <param name="bounds"></param>
         /// <param name="color"></param>
+        /// <param name="state"></param>
         /// <param name="opacity"></param>
-        public static void DrawColumnHeader(Graphics graphics, Rectangle bounds, Color color, Orientation orientation, Point? point, Int32? opacity, int roundCorner)
+        public static void DrawGridHeader(Graphics graphics, Rectangle bounds, RectangleSide side, Color backColor, bool draw3D, Color? lineColor, GInteractiveState state, Orientation orientation, Point? relativePoint, Int32? opacity)
         {
-            DrawColumnHeader(graphics, bounds, color, GInteractiveState.Enabled, orientation, point, opacity, roundCorner);
+            _DrawGridHeader(graphics, bounds, side, backColor, draw3D, lineColor, state, orientation, relativePoint, opacity);
         }
         /// <summary>
         /// Draw button base (background and border, by state)
@@ -90,35 +80,152 @@ namespace Djs.Common.Components
         /// <param name="color"></param>
         /// <param name="state"></param>
         /// <param name="opacity"></param>
-        public static void DrawColumnHeader(Graphics graphics, Rectangle bounds, Color color, GInteractiveState state, Orientation orientation, Point? point, Int32? opacity)
-        {
-            if (bounds.Width <= 0 || bounds.Height <= 0) return;
-            DrawColumnHeader(graphics, bounds, color, state, orientation, point, opacity, 0);
-        }
-        /// <summary>
-        /// Draw button base (background and border, by state)
-        /// </summary>
-        /// <param name="graphics"></param>
-        /// <param name="bounds"></param>
-        /// <param name="color"></param>
-        /// <param name="state"></param>
-        /// <param name="opacity"></param>
-        public static void DrawColumnHeader(Graphics graphics, Rectangle bounds, Color color, GInteractiveState state, Orientation orientation, Point? point, Int32? opacity, int roundCorner)
+        private static void _DrawGridHeader(Graphics graphics, Rectangle bounds, RectangleSide side, Color backColor, bool draw3D, Color? lineColor, GInteractiveState state, Orientation orientation, Point? relativePoint, Int32? opacity)
         {
             if (bounds.Width <= 0 || bounds.Height <= 0) return;
 
-            int roundX = roundCorner;
-            int roundY = roundCorner;
-            using (GraphicsPath path = CreatePathRoundRectangle(bounds, roundX, roundY))
-            using (Brush brush = Skin.CreateBrushForBackground(bounds, orientation, state, true, color, opacity, point))
+            // Pozadí:
+            using (Brush brush = Skin.CreateBrushForBackground(bounds, orientation, state, true, backColor, opacity, relativePoint))
             {
-                graphics.FillPath(brush, path);
+                graphics.FillRectangle(brush, bounds);
             }
 
-            Rectangle border = bounds.Enlarge(0, 0, -1, -1);
-            graphics.DrawLine(Skin.Pen(Skin.Grid.HeaderLineLeftVerticalColor), border.X, border.Y, border.X, border.Bottom);
-            graphics.DrawLine(Skin.Pen(Skin.Grid.HeaderLineRightVerticalColor), border.Right, border.Y, border.Right, border.Bottom);
-            graphics.DrawLine(Skin.Pen(Skin.Grid.HeaderLineHorizontalColor, 2f), border.X + 1, border.Bottom, border.Right - 0, border.Bottom);
+            // 3D efekt na okrajích:
+            if (draw3D)
+            {   // 3D okraje NEJSOU kresleny na poslední pixel vpravo a dole (ten je vyhrazen pro linku barvy lineColor), 
+                // 3D okraje jsou o 1 pixel před tím:
+                Rectangle boundsBorder = (lineColor.HasValue ? bounds.Enlarge(0, 0, -1, -1) : bounds);
+                RectangleSide borderSides = _GetHeaderBorderSides(side);
+                float? effect3D = _GetHeadersEffect3D(state);
+                DrawBorder(graphics, boundsBorder, borderSides, null, backColor, effect3D);
+            }
+
+            // Linky vpravo a dole:
+            if (lineColor.HasValue)
+            {
+                DrawBorder(graphics, bounds, RectangleSide.Right | RectangleSide.Bottom, null, null, lineColor, lineColor, null);
+            }
+        }
+        /// <summary>
+        /// Metoda vrátí souhrn stran, na kterých se má vykreslit Border, při vykreslování Headeru na dané straně objektu.
+        /// Tedy: pokud headerSide == Top, pak se Border kreslí na stranách Left, Bottom, Right.
+        /// Pokud headerSide == Left, pak se Border kreslí na stranách Top, Right, Bottom. Atd.
+        /// </summary>
+        /// <param name="headerSide"></param>
+        /// <returns></returns>
+        private static RectangleSide _GetHeaderBorderSides(RectangleSide headerSide)
+        {
+            switch (headerSide)
+            {
+                case RectangleSide.Top: return RectangleSide.Left | RectangleSide.Bottom | RectangleSide.Right;
+                case RectangleSide.Left: return RectangleSide.Top | RectangleSide.Right | RectangleSide.Bottom;
+                case RectangleSide.Bottom: return RectangleSide.Left | RectangleSide.Top | RectangleSide.Right;
+                case RectangleSide.Right: return RectangleSide.Top | RectangleSide.Left | RectangleSide.Bottom;
+                case RectangleSide.None: return RectangleSide.None;
+            }
+            return RectangleSide.All;
+        }
+        /// <summary>
+        /// Metoda vrátí hodnotu effect3D pro konkrétní interaktivní stav
+        /// </summary>
+        /// <param name="state"></param>
+        /// <returns></returns>
+        private static float? _GetHeadersEffect3D(GInteractiveState state)
+        {
+            switch (state)
+            {
+                case GInteractiveState.Disabled: return 0f;
+                case GInteractiveState.None: return 0.25f;
+                case GInteractiveState.Enabled: return 0.25f;
+                case GInteractiveState.MouseOver: return 0.50f;
+                case GInteractiveState.LeftDown:
+                case GInteractiveState.RightDown: return -0.35f;
+                case GInteractiveState.LeftDrag:
+                case GInteractiveState.RightDrag: return -0.15f;
+            }
+            return null;
+        }
+        #endregion
+        #region DrawBorder
+        /// <summary>
+        /// Vykreslí okraje kolem daného prostoru. 
+        /// Kreslí i pravou a dolní hranu na okraj daného rozměru.
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="sides"></param>
+        /// <param name="dashStyle"></param>
+        /// <param name="lineColor"></param>
+        /// <param name="effect3D">Hodnota 3D efektu: 
+        /// kladná vytváří "nahoru zvednutý povrch" (tj. color1 = nahoře/vlevo je světlejší, color2 = dole/vpravo je tmavší),
+        /// kdežto záporná hodnota vytváří "dolů promáčknutý povrch".
+        /// Hodnota 1.00 vytvoří bílou a černou barvu, hodnota 0.10f vytvoří lehký 3D efekt, 0.50f poměrně silný efekt.
+        /// </param>
+        public static void DrawBorder(Graphics graphics, Rectangle bounds, RectangleSide sides, DashStyle? dashStyle, Color lineColor, float? effect3D)
+        {
+            Color? colorTop = null;
+            Color? colorRight = null;
+            Color? colorBottom = null;
+            Color? colorLeft = null;
+            if (effect3D.HasValue && effect3D.Value != 0f)
+            {
+                if (effect3D.Value > 0f)
+                {   // Vlevo a nahoře bude barva světlejší, vpravo a dole tmavší:
+                    colorTop = lineColor.Morph(Skin.Modifiers.Effect3DLight, effect3D.Value);
+                    colorRight = lineColor.Morph(Skin.Modifiers.Effect3DDark, effect3D.Value);
+                    colorBottom = colorRight;
+                    colorLeft = colorTop;
+                }
+                else
+                {   // Vlevo a nahoře bude barva tmavší, vpravo a dole světlejší:
+                    colorTop = lineColor.Morph(Skin.Modifiers.Effect3DDark, -effect3D.Value);
+                    colorRight = lineColor.Morph(Skin.Modifiers.Effect3DLight, -effect3D.Value);
+                    colorBottom = colorRight;
+                    colorLeft = colorTop;
+                }
+            }
+
+            DrawBorder(graphics, bounds, sides, dashStyle, colorTop, colorRight, colorBottom, colorLeft);
+        }
+        /// <summary>
+        /// Vykreslí okraje kolem daného prostoru. 
+        /// Kreslí i pravou a dolní hranu na okraj daného rozměru.
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="sides"></param>
+        /// <param name="dashStyle"></param>
+        public static void DrawBorder(Graphics graphics, Rectangle bounds, RectangleSide sides, DashStyle? dashStyle, Color? colorTop, Color? colorRight, Color? colorBottom, Color? colorLeft)
+        {
+            int x0 = bounds.X;
+            int y0 = bounds.Y;
+            int x1 = x0 + bounds.Width - 1;
+            int y1 = y0 + bounds.Height - 1;
+            using (Pen pen = new Pen(Color.Black))
+            {
+                pen.DashStyle = (dashStyle.HasValue ? dashStyle.Value : DashStyle.Solid);
+
+                if (colorTop.HasValue && (sides & RectangleSide.Top) != 0)
+                {
+                    pen.Color = colorTop.Value;
+                    graphics.DrawLine(pen, x0, y0, x1, y0);
+                }
+                if (colorRight.HasValue && (sides & RectangleSide.Right) != 0)
+                {
+                    pen.Color = colorRight.Value;
+                    graphics.DrawLine(pen, x0, y1, x1, y1);
+                }
+                if (colorBottom.HasValue && (sides & RectangleSide.Bottom) != 0)
+                {
+                    pen.Color = colorBottom.Value;
+                    graphics.DrawLine(pen, x0, y0, x0, y1);
+                }
+                if (colorLeft.HasValue && (sides & RectangleSide.Left) != 0)
+                {
+                    pen.Color = colorLeft.Value;
+                    graphics.DrawLine(pen, x1, y0, x1, y1);
+                }
+            }
         }
         #endregion
         #region DrawArea
@@ -186,8 +293,11 @@ namespace Djs.Common.Components
         /// <param name="bounds"></param>
         /// <param name="color"></param>
         /// <param name="orientation"></param>
-        /// <param name="effect3D"></param>
-        /// <param name="opacity"></param>
+        /// <param name="effect3D">Hodnota 3D efektu: 
+        /// kladná vytváří "nahoru zvednutý povrch" (tj. color1 = nahoře/vlevo je světlejší, color2 = dole/vpravo je tmavší),
+        /// kdežto záporná hodnota vytváří "dolů promáčknutý povrch".
+        /// Hodnota 1.00 vytvoří bílou a černou barvu, hodnota 0.10f vytvoří lehký 3D efekt, 0.50f poměrně silný efekt.
+        /// </param>  /// <param name="opacity"></param>
         public static void DrawEffect3D(Graphics graphics, Rectangle bounds, Color color, Orientation orientation, float? effect3D)
         {
             _DrawEffect3D(graphics, bounds, color, orientation, effect3D, null);
@@ -199,8 +309,11 @@ namespace Djs.Common.Components
         /// <param name="bounds"></param>
         /// <param name="color"></param>
         /// <param name="orientation"></param>
-        /// <param name="effect3D"></param>
-        /// <param name="opacity"></param>
+        /// <param name="effect3D">Hodnota 3D efektu: 
+        /// kladná vytváří "nahoru zvednutý povrch" (tj. color1 = nahoře/vlevo je světlejší, color2 = dole/vpravo je tmavší),
+        /// kdežto záporná hodnota vytváří "dolů promáčknutý povrch".
+        /// Hodnota 1.00 vytvoří bílou a černou barvu, hodnota 0.10f vytvoří lehký 3D efekt, 0.50f poměrně silný efekt.
+        /// </param>  /// <param name="opacity"></param>
         public static void DrawEffect3D(Graphics graphics, Rectangle bounds, Color color, Orientation orientation, float? effect3D, Int32? opacity)
         {
             _DrawEffect3D(graphics, bounds, color, orientation, effect3D, opacity);
@@ -212,8 +325,11 @@ namespace Djs.Common.Components
         /// <param name="bounds"></param>
         /// <param name="color"></param>
         /// <param name="orientation"></param>
-        /// <param name="effect3D"></param>
-        /// <param name="opacity"></param>
+        /// <param name="effect3D">Hodnota 3D efektu: 
+        /// kladná vytváří "nahoru zvednutý povrch" (tj. color1 = nahoře/vlevo je světlejší, color2 = dole/vpravo je tmavší),
+        /// kdežto záporná hodnota vytváří "dolů promáčknutý povrch".
+        /// Hodnota 1.00 vytvoří bílou a černou barvu, hodnota 0.10f vytvoří lehký 3D efekt, 0.50f poměrně silný efekt.
+        /// </param> /// <param name="opacity"></param>
         private static void _DrawEffect3D(Graphics graphics, Rectangle bounds, Color color, Orientation orientation, float? effect3D, Int32? opacity)
         {
             Color color1, color2;

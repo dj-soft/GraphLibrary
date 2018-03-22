@@ -386,6 +386,11 @@ namespace Djs.Common.Application
         {
             Instance._Trace.End();
         }
+        /// <summary>
+        /// true pokud byla aplikace spuštěna v Debug režimu.
+        /// Tato property nereaguje na změny (Attach / Detach) ve Visual Studiu, provedené až po spuštění aplikace.
+        /// </summary>
+        public static bool IsDebugMode { get { return Instance._IsDebugMode; } }
         private void _TraceInit()
         {
             this._Trace = new Trace();

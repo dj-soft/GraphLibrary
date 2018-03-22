@@ -333,6 +333,16 @@ namespace Djs.Common.Components
         /// </summary>
         private SizeRange _ScaleLimit;
         /// <summary>
+        /// Režim změny obsahu po změně rozměru.
+        /// Výchozí režim je ChangeValueEnd.
+        /// </summary>
+        public virtual AxisResizeContentMode ResizeContentMode
+        {
+            get { return this._ResizeContentMode; }
+            set { this._ResizeContentMode = value; }
+        }
+        protected AxisResizeContentMode _ResizeContentMode = AxisResizeContentMode.ChangeValueEnd;
+        /// <summary>
         /// Contains true, when is valid all: Value and Scale and Visual
         /// </summary>
         public bool IsValid { get { return this.IsAxisValid; } }
@@ -619,13 +629,31 @@ namespace Djs.Common.Components
         /// <param name="eventSource">Zdroj této události</param>
         protected override void SetBoundsAfterChange(Rectangle oldBounds, Rectangle newBounds, ref ProcessAction actions, EventSourceType eventSource)
         {
+            if (this._LastSize != null && this._LastSize.Value == newBounds.Size) return;
+
             this.DetectOrientation(LeaveOnlyActions(actions, ProcessAction.CallChangedEvents), eventSource);
 
-            if (IsAction(actions, ProcessAction.RecalcValue))        // Value.End from current Size, Scale and Value.Begin:
-                this.DetectValueEnd(LeaveOnlyActions(actions, ProcessAction.PrepareInnerItems, ProcessAction.CallChangedEvents, ProcessAction.CallSynchronizeSlave), eventSource);
-            else if (IsAction(actions, ProcessAction.RecalcScale))   // Scale from Value and Size
-                this.DetectScale(LeaveOnlyActions(actions, ProcessAction.RecalcInnerData, ProcessAction.PrepareInnerItems, ProcessAction.CallChangedEvents, ProcessAction.CallSynchronizeSlave), eventSource);
+            // Po změně velikosti můžeme buď změnit Value, nebo Scale:
+            AxisResizeContentMode mode = this.ResizeContentMode;
+            ProcessAction subActions = actions;
+            switch (mode)
+            {
+                case AxisResizeContentMode.None:
+                case AxisResizeContentMode.ChangeValueEnd:
+                    subActions = LeaveOnlyActions(subActions, ProcessAction.PrepareInnerItems, ProcessAction.CallChangedEvents, ProcessAction.CallSynchronizeSlave);
+                    this.DetectValueEnd(subActions, eventSource);
+                    break;
+                case AxisResizeContentMode.ChangeScale:
+                    subActions = LeaveOnlyActions(subActions, ProcessAction.RecalcInnerData, ProcessAction.PrepareInnerItems, ProcessAction.CallChangedEvents, ProcessAction.CallSynchronizeSlave);
+                    subActions = AddActions(subActions, ProcessAction.RecalcInnerData, ProcessAction.PrepareInnerItems);
+                    this.DetectScale(subActions, eventSource);
+                    break;
+            }
         }
+        /// <summary>
+        /// Velikost, pro kterou byly naposledy přepočteny vnitřní data. Null = dosud nepřepočteny.
+        /// </summary>
+        private Size? _LastSize;
         /// <summary>
         /// Accomodate this.OrientationCurrent to this.OrientationUser and this.VisibleRelativeBounds
         /// </summary>
@@ -725,9 +753,9 @@ namespace Djs.Common.Components
 
             ArrangementOne oldArrangement = this.ArrangementCurrent;
             ArrangementOne newArrangement = this.GetCurrentArrangement();
-            if (ArrangementOne.IsEqual(oldArrangement, newArrangement)) return;
-
             this.ArrangementCurrent = newArrangement;
+
+            if (this.IsCurrentTicksValid) return;
 
             if (IsAction(actions, ProcessAction.PrepareInnerItems))
                 this.DetectTicks(actions, eventSource);
@@ -751,15 +779,12 @@ namespace Djs.Common.Components
         /// <param name="eventSource">Zdroj této události</param>
         internal void DetectTicks(ProcessAction actions, EventSourceType eventSource)
         {
-            ArrangementOne arrangementCurrent = this.ArrangementCurrent;
-            if (arrangementCurrent == null) return;
-            if (ArrangementOne.IsEqual(arrangementCurrent, this.ArrangementPrevious) && this._ValueHelper.IsEqual(this.Value, this.ValuePrevious)) return;
+            if (this.ArrangementCurrent == null) return;
+            if (this.IsCurrentTicksValid) return;
 
             BaseTick<TTick>[] oldTickList = this.TickList;
             BaseTick<TTick>[] newTickList = this.GetCurrentTicks();
             this.TickList = newTickList;
-            this.ArrangementPrevious = this.ArrangementCurrent;
-            this.ValuePrevious = this.Value;
 
             if (IsAction(actions, ProcessAction.CallChangedEvents))
                 this.CallTicksChanged(oldTickList, newTickList, eventSource);
@@ -804,7 +829,35 @@ namespace Djs.Common.Components
                     initTick.Text = "";
             }
 
+            // Uložíme aktuálně použité hodnoty:
+            this._LastTickArrangement = arrangementCurrent;
+            this._LastTickSize = this.PixelSize;
+            this._LastTickScale = this.Scale;
+            this._LastTickValue = this.Value;
+
             return newTickList.ToArray();
+        }
+        protected ArrangementOne _LastTickArrangement;
+        protected Decimal? _LastTickSize;
+        protected Decimal? _LastTickScale;
+        protected TValue _LastTickValue;
+        /// <summary>
+        /// Obsahuje true, pokud dříve vygenerované ticky (pomocí metody GetCurrentTicks()) jsou pro aktuální stav (ArrangementCurrent, PixelSize, Scale, Value) stále platné.
+        /// </summary>
+        protected bool IsCurrentTicksValid
+        {
+            get
+            {
+                if (this._LastTickArrangement == null || !this._LastTickSize.HasValue || !this._LastTickScale.HasValue || this._LastTickValue == null)
+                    return false;
+
+                if (!ArrangementOne.IsEqual(_LastTickArrangement, this.ArrangementCurrent)) return false;
+                if (this._LastTickSize != this.PixelSize) return false;
+                if (this._LastTickScale != this.Scale) return false;
+                if (this._LastTickValue != this.Value) return false;
+
+                return true;
+            }
         }
         /// <summary>
         /// Set a new Value to this Axis.
@@ -1309,14 +1362,6 @@ namespace Djs.Common.Components
         /// Current ArrangementOne, valid for current Scale (Value and Size)
         /// </summary>
         protected ArrangementOne ArrangementCurrent { get; private set; }
-        /// <summary>
-        /// Previous ArrangementOne: for this arrangement and for ValuePrevious was detected Ticks stored in TickList.
-        /// </summary>
-        protected ArrangementOne ArrangementPrevious { get; private set; }
-        /// <summary>
-        /// Previous Value: for this Value and for ArrangementPrevious was detected Ticks stored in TickList.
-        /// </summary>
-        protected TValue ValuePrevious { get; private set; }
         #region classes for Arrangement: ArrangementSet, ArrangementOne, ArrangementTick
         /// <summary>
         /// Set of all disponible Axis arrangements
@@ -2897,6 +2942,33 @@ namespace Djs.Common.Components
         /// Myš mění měřítko na novou hodnotu (Zoomování)
         /// </summary>
         DragZoom
+    }
+    /// <summary>
+    /// Režim, jak osa reaguje na změnu velikosti.
+    /// Pokud osa obsahuje data pro rozsah { 100 ÷ 150 } a má velikost 50 pixelů, 
+    /// pak po změně velikosti osy na 100 pixelů může dojít k jedné ze dvou akcí: změna rozsahu, nebo změna měřítka.
+    /// a) změní se zobrazený rozsah, a zachová se měřítko (to je defaultní chování), pak 
+    /// </summary>
+    public enum AxisResizeContentMode
+    {
+        /// <summary>
+        /// Neurčeno, v případě nutnosti se použije ChangeValue
+        /// </summary>
+        None,
+        /// <summary>
+        /// Změna hodnoty End:
+        /// Pokud osa ve výchozím stavu zobrazuje data pro rozsah { 100 ÷ 150 } a má velikost 50 pixelů, 
+        /// pak po změně velikosti osy na 100 pixelů se zachová měřítko (1:1), a zvětší se rozsah zobrazených dat tak, 
+        /// že osa bude nově zobrazovat data pro rozsah { 100 ÷ 200 }.
+        /// </summary>
+        ChangeValueEnd,
+        /// <summary>
+        /// Změna měřítka:
+        /// Pokud osa ve výchozím stavu zobrazuje data pro rozsah { 100 ÷ 150 } a má velikost 50 pixelů, 
+        /// pak po změně velikosti osy na 100 pixelů se ponechá rozsah zobrazených hodnot (stále bude zobrazen rozsah dat { 100 ÷ 150 }),
+        /// ale upraví se měřítko tak, že osa bude zobrazovat více detailů (z měřítka 1:1 bude 2:1).
+        /// </summary>
+        ChangeScale
     }
     #endregion
 }

@@ -894,6 +894,7 @@ namespace Djs.Common.Components
         #region Public colors
         public Color HeaderBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "HeaderBackColor", DefaultHeaderBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "HeaderBackColor", value); } }
         public Color HeaderTextColor { get { return this._Owner.GetValue(this._SkinSetKey, "HeaderTextColor", DefaultHeaderTextColor); } set { this._Owner.SetValue(this._SkinSetKey, "HeaderTextColor", value); } }
+        public Color HeaderLineColor { get { return this._Owner.GetValue(this._SkinSetKey, "HeaderLineColor", DefaultHeaderLineColor); } set { this._Owner.SetValue(this._SkinSetKey, "HeaderLineColor", value); } }
         public Color HeaderLineLeftVerticalColor { get { return this._Owner.GetValue(this._SkinSetKey, "HeaderLineLeftVerticalColor", DefaultHeaderLineLeftVerticalColor); } set { this._Owner.SetValue(this._SkinSetKey, "HeaderLineLeftVerticalColor", value); } }
         public Color HeaderLineRightVerticalColor { get { return this._Owner.GetValue(this._SkinSetKey, "HeaderLineRightVerticalColor", DefaultHeaderLineRightVerticalColor); } set { this._Owner.SetValue(this._SkinSetKey, "HeaderLineRightVerticalColor", value); } }
         public Color HeaderLineHorizontalColor { get { return this._Owner.GetValue(this._SkinSetKey, "HeaderLineHorizontalColor", DefaultHeaderLineHorizontalColor); } set { this._Owner.SetValue(this._SkinSetKey, "HeaderLineHorizontalColor", value); } }
@@ -911,8 +912,9 @@ namespace Djs.Common.Components
         public Image RowSelectedImage { get { return this._Owner.GetValue(this._SkinSetKey, "RowSelectedImage", DefaultRowSelectedImage); } set { this._Owner.SetValue(this._SkinSetKey, "RowSelectedImage", value); } }
         #endregion
         #region Default colors
-        protected virtual Color DefaultHeaderBackColor { get { return Color.LightSkyBlue; } }
+        protected virtual Color DefaultHeaderBackColor { get { return Color.LightSkyBlue.Morph(Color.White, 0.33f); } }
         protected virtual Color DefaultHeaderTextColor { get { return Color.Black; } }
+        protected virtual Color DefaultHeaderLineColor { get { return Color.DimGray; } }
         protected virtual Color DefaultHeaderLineLeftVerticalColor { get { return Color.Gray; } }
         protected virtual Color DefaultHeaderLineRightVerticalColor { get { return Color.LightGray; } }
         protected virtual Color DefaultHeaderLineHorizontalColor { get { return Color.LightGray; } }

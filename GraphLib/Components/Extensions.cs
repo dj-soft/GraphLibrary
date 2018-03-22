@@ -1952,7 +1952,13 @@ namespace Djs.Common.Components
         /// <summary>Dolní</summary>
         Bottom = 4,
         /// <summary>Vlevo</summary>
-        Left = 8
+        Left = 8,
+        /// <summary>Vodorovné = Top + Bottom</summary>
+        Horizontal = Top | Bottom,
+        /// <summary>Svislé = Left + Right</summary>
+        Vertical = Left | Right,
+        /// <summary>Všechny</summary>
+        All = Left | Top | Right | Bottom
     }
     /// <summary>
     /// Vyjádření názvu rohu na objektu Rectangle (Vlevo nahoře, Vpravo nahoře, ...)
