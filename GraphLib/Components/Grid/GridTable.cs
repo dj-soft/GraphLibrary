@@ -155,7 +155,7 @@ namespace Djs.Common.Components.Grid
 
             // Určíme souřadnice jednotlivých elementů:
             int x0 = 0;                                                             // x0: úplně vlevo
-            int x1 = (this.HasGrid ? this.Grid.ColumnsDataVisualRange.Begin : 0);   // x1: tady začíná prostor pro datové sloupce
+            int x1 = (this.HasGrid ? this.Grid.ColumnsPositions.VisualFirstPixel : 0);   // x1: tady začíná prostor pro datové sloupce
             int x3 = clientSize.Width;                                              // x3: úplně vpravo
             int x2t = x3 - GScrollBar.DefaultSystemBarWidth;                        // x2t: zde začíná RowsScrollBar (vpravo, hned za koncem prostoru pro řádky), tedy pokud by byl zobrazen
             int x2r = (this._RowsScrollBarVisible ? x2t : x3);                      // x2r: zde reálně končí oblast prostoru pro řádky, se zohledněním aktuální viditelnosti RowsScrollBaru
@@ -245,6 +245,7 @@ namespace Djs.Common.Components.Grid
         {
             switch (areaType)
             {
+                case TableAreaType.Table: return new Rectangle(new Point(0, 0), this.Bounds.Size);
                 case TableAreaType.TableHeader: return this.TableHeaderBounds;
                 case TableAreaType.ColumnHeader: return this.ColumnHeaderBounds;
                 case TableAreaType.RowHeader: return this.RowHeaderBounds;
@@ -262,8 +263,9 @@ namespace Djs.Common.Components.Grid
         public Rectangle GetAbsoluteBoundsForArea(TableAreaType areaType)
         {
             Rectangle tableAbsoluteBounds = this.BoundsAbsolute;
-            Rectangle relativeBounds = this.GetRelativeBoundsForArea(areaType);
-            return relativeBounds.Add(tableAbsoluteBounds.Location);
+            Rectangle areaRelativeBounds = this.GetRelativeBoundsForArea(areaType);
+            Rectangle areaAbsoluteBounds = areaRelativeBounds.Add(tableAbsoluteBounds.Location);
+            return areaAbsoluteBounds;
         }
         /// <summary>
         /// Metoda vrátí absolutní souřadnice požadovaného prostoru.
@@ -275,15 +277,13 @@ namespace Djs.Common.Components.Grid
         /// <returns></returns>
         public Rectangle GetAbsoluteBoundsForArea(TableAreaType areaType, bool clipToTableBounds)
         {
-            Rectangle tableAbsoluteBounds = this.BoundsAbsolute;
-            Rectangle relativeBounds = this.GetRelativeBoundsForArea(areaType);
-            Rectangle absoluteBounds = relativeBounds.Add(tableAbsoluteBounds.Location);
+            Rectangle areaAbsoluteBounds = this.GetAbsoluteBoundsForArea(areaType);
             if (clipToTableBounds && this.HasGrid)
             {
                 Rectangle tablesAbsoluteBounds = this.Grid.GetAbsoluteBoundsForArea(TableAreaType.AllTables);
-                absoluteBounds = Rectangle.Intersect(absoluteBounds, tablesAbsoluteBounds);
+                areaAbsoluteBounds = Rectangle.Intersect(areaAbsoluteBounds, tablesAbsoluteBounds);
             }
-            return absoluteBounds;
+            return areaAbsoluteBounds;
         }
         /// <summary>
         /// Platnosti souřadnic vnitřních objektů (_TableHeaderBounds, _ColumnHeaderBounds, _RowHeaderBounds, _RowAreaBounds, _RowsScrollBarVisible, _RowsScrollBarBounds, _HeaderSplitterBounds)
@@ -368,6 +368,7 @@ namespace Djs.Common.Components.Grid
             List<Column> columnsList = this.DataTable.Columns.Where(c => c.IsVisible).ToList();    // Vybrat viditelné sloupce
             columnsList.Sort(Column.CompareOrder);                                                 // Setřídit podle pořadí
             SequenceLayout.SequenceLayoutCalculate(columnsList);                                   // Napočítat jejich ISequenceLayout.Begin a .End
+            this._ColumnListWidthValid = true;                                                     // ISequenceLayout jsou platné
             this._Columns = columnsList.ToArray();                                                 // Uložit
             this._VisibleColumns = null;                                                           // Invalidovat viditelné sloupce
         }
@@ -379,10 +380,17 @@ namespace Djs.Common.Components.Grid
         {
             if (this._VisibleColumns != null) return;
 
+            Column[] columns = this.Columns;
+            if (!this._ColumnListWidthValid)
+            {
+                SequenceLayout.SequenceLayoutCalculate(columns);                                   // Napočítat jejich ISequenceLayout.Begin a .End
+                this._ColumnListWidthValid = true;                                                 // ISequenceLayout jsou platné
+            }
+
             List<Column> visibleColumns = new List<Column>();
             GridPosition columnsPositions = this.Grid.ColumnsPositions;
             Int32Range dataVisibleRange = columnsPositions.DataVisibleRange;                       // Rozmezí datových pixelů, které jsou viditelné
-            foreach (Column column in this.Columns)
+            foreach (Column column in columns)
             {
                 ISequenceLayout isl = column as ISequenceLayout;
                 bool isColumnVisible = SequenceLayout.IsItemVisible(isl, dataVisibleRange);        // Tento sloupec je vidět?
@@ -393,6 +401,10 @@ namespace Djs.Common.Components.Grid
             this._VisibleColumns = visibleColumns.ToArray();
             this._ChildArrayValid = false;
         }
+        /// <summary>
+        /// true = hodnoty ISequenceLayout.Begin a End v sloupcích jsou platné
+        /// </summary>
+        private bool _ColumnListWidthValid;
         /// <summary>
         /// Pole všech sloupců této tabulky, v pořadí dle jejich ColumnOrder.
         /// Viditelné sloupce mají nastavenu hodnotu column.ColumnHeader.VisualRange na vizuální pixely, neviditelné sloupce mají VisualRange = null.
@@ -422,13 +434,13 @@ namespace Djs.Common.Components.Grid
             bool heightValid = this._RowListHeightValid;
             if (rows == null)
             {
-                rows = this.DataTable.RowsSorted;                                                  // Získat viditelné řádky, setříděné
+                rows = this.DataTable.RowsSorted;                    // Získat viditelné řádky, setříděné podle zvoleného třídícího sloupce
                 this._Rows = rows;
                 heightValid = false;
             }
             if (!heightValid)
             {
-                SequenceLayout.SequenceLayoutCalculate(rows);                                      // Napočítat jejich ISequenceLayout.Begin a .End
+                SequenceLayout.SequenceLayoutCalculate(rows);        // Napočítat jejich ISequenceLayout.Begin a .End
                 this._RowListHeightValid = true;
                 this._VisibleRows = null;
             }
@@ -759,6 +771,13 @@ namespace Djs.Common.Components.Grid
             return (cell != null && this._ActiveCell != null && Object.ReferenceEquals(cell, this._ActiveCell));
         }
         /// <summary>
+        /// true pokud je povoleno vybírat jednotlivé buňky tabulky, false pokud celý řádek.
+        /// </summary>
+        protected bool AllowSelectSingleCell { get { return this.DataTable.AllowSelectSingleCell; } }
+        #endregion
+        #endregion
+        #region Nastavení aktivního řádku, aktivní tabulky; Scroll řádku/tabulky do viditlné oblasti; Repaint řádku, Repaint sloupce
+        /// <summary>
         /// Nastaví daný řádek jako aktivní, vyvolá event ActiveRowChanged, nastaví daný řádek tak aby byl vidět.
         /// Zajistí překreslení řádku.
         /// </summary>
@@ -830,18 +849,6 @@ namespace Djs.Common.Components.Grid
                 this.ScrollColumnToVisibleArea(newActiveCell.Column);
         }
         /// <summary>
-        /// Zajistí vyvolání metody Repaint pro RowHeader i pro všechny Cell.Control v daném řádku.
-        /// Je vhodné volat po změně aktivního řádku (pro starý i nový aktivní řádek), a stejně i po změně Hot řádku (=ten pod myší).
-        /// </summary>
-        /// <param name="row"></param>
-        protected void RepaintRow(Row row)
-        {
-            if (row == null) return;
-            row.RowHeader.Repaint();
-            foreach (Cell cell in row.Cells)
-                cell.Control.Repaint();
-        }
-        /// <summary>
         /// Nastaví daný řádek tak, aby byl viditelný = tj. zcela, ne jen zčásti (pokud to jen trochu jde).
         /// </summary>
         /// <param name="row"></param>
@@ -864,10 +871,33 @@ namespace Djs.Common.Components.Grid
                 this.Invalidate(InvalidateItem.RowScroll);
         }
         /// <summary>
-        /// true pokud je povoleno vybírat jednotlivé buňky tabulky, false pokud celý řádek.
+        /// Zajistí vyvolání metody Repaint pro RowHeader i pro všechny Cell.Control v daném řádku.
+        /// Je vhodné volat po změně aktivního řádku (pro starý i nový aktivní řádek), a stejně i po změně Hot řádku (=ten pod myší).
         /// </summary>
-        protected bool AllowSelectSingleCell { get { return this.DataTable.AllowSelectSingleCell; } }
-        #endregion
+        /// <param name="row"></param>
+        protected void RepaintRow(Row row)
+        {
+            if (row == null) return;
+            row.RowHeader.Repaint();
+            foreach (Cell cell in row.Cells)
+                cell.Control.Repaint();
+        }
+        /// <summary>
+        /// Zajistí vyvolání metody Repaint pro ColumnHeader i pro všechny Cell.Control ve viditelných řádcích v daném sloupci.
+        /// Je vhodné volat po změně na časové ose tohoto sloupce.
+        /// </summary>
+        /// <param name="row"></param>
+        protected void RepaintColumn(Column column)
+        {
+            if (column == null) return;
+            column.ColumnHeader.Repaint();
+            int columnId = column.ColumnId;
+            foreach (Row row in this.VisibleRows)
+            {
+                Cell cell = row[columnId];
+                cell.Control.Repaint();
+            }
+        }
         #endregion
         #region Invalidace, resety, refreshe
         /// <summary>
@@ -908,7 +938,7 @@ namespace Djs.Common.Components.Grid
             }
 
             if ((items & (InvalidateItem.RowHeader)) != 0)
-            {   // Po změně šířky RowHeader pozice Rovnitřního uspořádání (vlivem změny rozměrů, nebo vlivem posunu vnitřních splitterů (RowHeader, ColumnHeader):
+            {   // Po změně šířky RowHeader pozice (vlivem změny rozměrů, nebo vlivem posunu vnitřních splitterů) (RowHeader, ColumnHeader):
                 this._TableInnerLayoutValid = false;
                 this._VisibleColumns = null;
                 this._ChildArrayValid = false;
@@ -916,7 +946,7 @@ namespace Djs.Common.Components.Grid
             }
 
             if ((items & (InvalidateItem.ColumnHeader)) != 0)
-            {   // Po změně vnitřního uspořádání (vlivem změny rozměrů, nebo vlivem posunu vnitřních splitterů (RowHeader, ColumnHeader):
+            {   // Po změně vnitřního uspořádání (vlivem změny rozměrů, nebo vlivem posunu vnitřních splitterů) (RowHeader, ColumnHeader):
                 this._TableInnerLayoutValid = false;
                 this._VisibleColumns = null;
                 this._VisibleRows = null;
@@ -937,6 +967,7 @@ namespace Djs.Common.Components.Grid
 
             if ((items & (InvalidateItem.ColumnWidth | InvalidateItem.ColumnScroll)) != 0)
             {   // Po změně šířky sloupce nebo scrollu sloupců: zrušíme pole viditelných sloupců, vygeneruje se znovu:
+                this._ColumnListWidthValid = false;
                 this._VisibleColumns = null;
                 this._ChildArrayValid = false;
                 callGrid = true;
@@ -1029,7 +1060,7 @@ namespace Djs.Common.Components.Grid
         /// </summary>
         protected void InitTableSplitter()
         {
-            this._TableSplitter = new GSplitter() { Orientation = System.Windows.Forms.Orientation.Horizontal, SplitterVisibleWidth = 0, SplitterActiveOverlap = 4, LinkedItemPrevMinSize = 50, LinkedItemNextMinSize = 50, IsResizeToLinkItems = true };
+            this._TableSplitter = new GSplitter() { Orientation = System.Windows.Forms.Orientation.Horizontal, SplitterVisibleWidth = TableSplitterSize, SplitterActiveOverlap = 4, LinkedItemPrevMinSize = 50, LinkedItemNextMinSize = 50, IsResizeToLinkItems = true };
             this._TableSplitter.ValueSilent = this.Bounds.Bottom;
             this._TableSplitter.ValueChanging += new GPropertyChanged<int>(_TableSplitter_LocationChange);
             this._TableSplitter.ValueChanged += new GPropertyChanged<int>(_TableSplitter_LocationChange);
@@ -1073,8 +1104,12 @@ namespace Djs.Common.Components.Grid
         /// TableSplitter
         /// </summary>
         private GSplitter _TableSplitter;
+        /// <summary>
+        /// Vizuální velikost splitteru pod tabulkou = jeho výška v pixelech
+        /// </summary>
+        public static int TableSplitterSize { get { return 3; } }
         #endregion
-        #region Childs items : pole všech prvků v tabulce (jednotlivé headery, jednotlivé buňky, jednotlivé spittery, a scrollbar řádků)
+        #region Child items : pole všech prvků v tabulce (jednotlivé headery, jednotlivé buňky, jednotlivé spittery, a scrollbar řádků)
         /// <summary>
         /// Pole sub-itemů v tabulce.
         /// Tabulka obsahuje: hlavičku tabulky, hlavičky viditelných sloupců, hlavičky viditelných řádků, buňky viditelných řádků a sloupců, 
@@ -1218,26 +1253,60 @@ namespace Djs.Common.Components.Grid
         /// Je voláno z eventhandleru TimeAxis.ValueChange, při/po změně hodnoty Value na některé TimeAxis na sloupci columnId v this.Columns.
         /// Metoda zajistí synchronizaci okolních tabulek (kromě zdejší, ta je v tomto pohledu Master).
         /// Metoda se volá po jakékoli změně hodnot na časové ose daného sloupce v TÉTO tabulce.
+        /// Metoda vyvolá Grid.OnChangeTimeAxis(), tím dojde k synchronizaci Value z this tabulky a aktuálního sloupce do okolních tabulek stejného Gridu.
+        /// Metoda dále zajistí překreslení všech Cell pro daný sloupec ve všech viditelných řádcích této tabulky.
         /// </summary>
         /// <param name="columnId">Identifikace sloupce</param>
         /// <param name="e">Data o změně</param>
         internal void OnChangeTimeAxis(int columnId, GPropertyChangeArgs<TimeRange> e)
         {
-            if (this.HasGrid)
-                this.Grid.OnChangeTimeAxis(this.TableId, columnId, e);
+            Column column = this.Columns.FirstOrDefault(c => c.ColumnId == columnId);
+            this.OnChangeTimeAxis(column, e);
         }
         /// <summary>
-        /// Není voláno z GGrid (ale bývalo), po změně hodnoty Value na některé TimeAxis na sloupci columnId (v this.Columns), ale na jiné tabulce než je this tabulka.
+        /// Je voláno z eventhandleru TimeAxis.ValueChange, při/po změně hodnoty Value na některé TimeAxis na sloupci columnId v this.Columns.
+        /// Metoda zajistí synchronizaci okolních tabulek (kromě zdejší, ta je v tomto pohledu Master).
+        /// Metoda se volá po jakékoli změně hodnot na časové ose daného sloupce v TÉTO tabulce.
+        /// Metoda vyvolá Grid.OnChangeTimeAxis(), tím dojde k synchronizaci Value z this tabulky a aktuálního sloupce do okolních tabulek stejného Gridu.
+        /// Metoda dále zajistí překreslení všech Cell pro daný sloupec ve všech viditelných řádcích této tabulky.
+        /// </summary>
+        /// <param name="columnId">Identifikace sloupce</param>
+        /// <param name="e">Data o změně</param>
+        internal void OnChangeTimeAxis(Column column, GPropertyChangeArgs<TimeRange> e)
+        {
+            if (column == null) return;
+            this.RepaintColumn(column);
+            if (this.HasGrid)
+                this.Grid.OnChangeTimeAxis(this.TableId, column.ColumnId, e);
+        }
+        /// <summary>
+        /// Je voláno z GGrid, po změně hodnoty Value na některé TimeAxis na sloupci columnId (v this.Columns), ale na jiné tabulce než je this tabulka.
         /// Tato tabulka je tedy Slave, a má si změnit svoji hodnotu bez toho, aby vyvolala další event o změně hodnoty.
         /// Metoda se volá po jakékoli změně hodnot na časové ose daného sloupce v JINÉ tabulce.
+        /// Metoda zajistí aktualizaci hodnoty v TimeAxis této tabulky v daném sloupci, a překreslení ColumnHeader (=tedy TimeAxis) 
+        /// i překreslení všech Cell pro daný sloupec ve všech viditelných řádcích.
         /// </summary>
         /// <param name="columnId">Identifikace sloupce</param>
         /// <param name="e">Data o změně</param>
         internal void RefreshTimeAxis(int columnId, GPropertyChangeArgs<TimeRange> e)
         {
             Column column = this.Columns.FirstOrDefault(c => c.ColumnId == columnId);
+            this.RefreshTimeAxis(column, e);
+        }
+        /// <summary>
+        /// Je voláno z GGrid, po změně hodnoty Value na některé TimeAxis na sloupci columnId (v this.Columns), ale na jiné tabulce než je this tabulka.
+        /// Tato tabulka je tedy Slave, a má si změnit svoji hodnotu bez toho, aby vyvolala další event o změně hodnoty.
+        /// Metoda se volá po jakékoli změně hodnot na časové ose daného sloupce v JINÉ tabulce.
+        /// Metoda zajistí aktualizaci hodnoty v TimeAxis této tabulky v daném sloupci, a překreslení ColumnHeader (=tedy TimeAxis) 
+        /// i překreslení všech Cell pro daný sloupec ve všech viditelných řádcích.
+        /// </summary>
+        /// <param name="column">Data sloupce</param>
+        /// <param name="e">Data o změně</param>
+        internal void RefreshTimeAxis(Column column, GPropertyChangeArgs<TimeRange> e)
+        {
             if (column == null || !column.UseTimeAxis) return;
             column.ColumnHeader.RefreshTimeAxis(e);
+            this.RepaintColumn(column);
         }
         /// <summary>
         /// Vrátí ITimeConvertor pro daný columnId.
@@ -1353,11 +1422,34 @@ namespace Djs.Common.Components.Grid
         #region Draw : kreslení vlastní tabulky
         protected override void Draw(GInteractiveDrawArgs e)
         {
-            // GTable kreslí pouze svoje vlastní pozadí (a to by si ještě měla rozmyslet, kolik ho bude, než začne malovat úplně celou plochu :-) ):
-            if (this.DataTable == null || this.DataTable.ColumnsCount == 0)
-                base.Draw(e);
+            this.GraphicClip(e);
+            base.Draw(e);
 
             // Všechno ostatní (záhlaví sloupců, řádky, scrollbary, splittery) si malují Childs samy.
+        }
+        protected bool GraphicClip(GInteractiveDrawArgs e)
+        {
+            // Ořezáváme jen při kreslení do vrstvy Standard, jinak ne:
+            if (e.DrawLayer != GInteractiveDrawLayer.Standard) return true;
+
+            // Prostor pro oblast tabulky, se zohledněním souřadnic určených pro prostor tabulek v rámci Gridu:
+            Rectangle boundsAbsolute = this.BoundsAbsolute;
+            Rectangle areaAbsoluteBounds = this.GetAbsoluteBoundsForArea(TableAreaType.Table, true);
+
+            // Prostor pro aktuální prvek = intersect se souřadnicemi prvku:
+            Rectangle controlBounds = Rectangle.Intersect(areaAbsoluteBounds, boundsAbsolute);
+            if (!controlBounds.HasPixels()) return false;
+
+            // Prostor po oříznutí s aktuálním Clipem v grafice:
+            //  Aktuální Clip v grafice obsahuje prostor, daný pro tento prvek v rámci jeho parentů:
+            Rectangle clipBounds = Rectangle.Intersect(controlBounds, e.AbsoluteVisibleClip);
+            e.GraphicsClipWith(clipBounds, true);
+
+            // Pokud aktuální Clip je viditelný, pak jeho hodnota určuje souřadnice, kde je prvek interaktivní:
+            bool isVisible = !e.IsVisibleClipEmpty;
+            this.AbsoluteInteractiveBounds = (isVisible ? (Rectangle?)e.AbsoluteVisibleClip : (Rectangle?)null);
+
+            return isVisible;
         }
         #endregion
         #region Podpora pro kreslení obsahu řádků (pozadí, gridlines)
@@ -1619,9 +1711,9 @@ namespace Djs.Common.Components.Grid
         }
         #endregion
     }
-    #region Třída GControl : abstraktní předek pro vizuální třídy zobrazující záhlaví i buňku
+    #region Třída GComponent : abstraktní předek pro vizuální třídy zobrazující záhlaví i buňku
     /// <summary>
-    /// GControl : abstraktní předek pro vizuální třídy zobrazující záhlaví i buňku
+    /// GComponent : abstraktní předek pro vizuální třídy zobrazující záhlaví i buňku
     /// </summary>
     public abstract class GComponent : InteractiveDragObject, IInteractiveItem
     {
@@ -1729,7 +1821,7 @@ namespace Djs.Common.Components.Grid
         /// <param name="boundsAbsolute"></param>
         protected bool GraphicClip(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
         {
-            // Ořezáváme jen při kreslení do vrstvy Standard:
+            // Ořezáváme jen při kreslení do vrstvy Standard, jinak ne:
             if (e.DrawLayer != GInteractiveDrawLayer.Standard) return true;
 
             // Prostor pro oblast (ColumnHeaders, RowHeaders, atd), se zohledněním souřadnic určených pro prostor tabulek v rámci Gridu:
@@ -1750,6 +1842,24 @@ namespace Djs.Common.Components.Grid
 
             return isVisible;
         }
+        #endregion
+        #region Interaktivita
+        /// <summary>
+        /// Potomek třídy GComponent má vždy volat base.AfterStateChangedMouseEnter(), protože třída GComponent vyvolá virtual metodu PrepareToolTip().
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void AfterStateChangedMouseEnter(GInteractiveChangeStateArgs e)
+        {
+            this.PrepareToolTip(e);
+        }
+        /// <summary>
+        /// Metoda je volána v události MouseEnter, a jejím úkolem je přpravit data pro ToolTip.
+        /// Zobrazení ToolTipu zajišťuje jádro.
+        /// Bázová třída GComponent zde nedělá nic.
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void PrepareToolTip(GInteractiveChangeStateArgs e)
+        { }
         #endregion
         #region Drag - podpora pro přesunutí this headeru na jinou pozici
         /// <summary>
@@ -2028,6 +2138,7 @@ namespace Djs.Common.Components.Grid
             if (this._TimeAxis != null) return;
 
             this._TimeAxis = new GTimeAxis();
+            ((IInteractiveItem)this._TimeAxis).Parent = this;
             this._TimeAxis.ValueChanging += _TimeAxis_ValueChange;
             this._TimeAxis.ValueChanged += _TimeAxis_ValueChange;
         }
@@ -2040,7 +2151,7 @@ namespace Djs.Common.Components.Grid
         /// <param name="e"></param>
         private void _TimeAxis_ValueChange(object sender, GPropertyChangeArgs<TimeRange> e)
         {
-            this.OwnerGTable.OnChangeTimeAxis(this.OwnerColumn.ColumnId, e);
+            this.OwnerGTable.OnChangeTimeAxis(this.OwnerColumn, e);
         }
         /// <summary>
         /// Je voláno z GGrid, po změně hodnoty Value na některé TimeAxis na sloupci columnId (v this.Columns), ale na jiné tabulce než je this tabulka.
@@ -2052,6 +2163,7 @@ namespace Djs.Common.Components.Grid
         {
             if (!this.UseTimeAxis) return;
             this.TimeAxis.ValueSilent = e.NewValue;
+            this.Repaint();
         }
         /// <summary>
         /// Umístí časovou osu do odpovídajícího prostoru v this objektu (nastaví TimeAxis.Bounds).
@@ -2062,7 +2174,7 @@ namespace Djs.Common.Components.Grid
             if (this.UseTimeAxis)
             {   // Časovou osu kreslíme v ose X přesně do this.Bounds, v ose Y necháme nahoře 5 pixelů (pro Drag sloupce), dole necháme 1 pixel (pro strýčka Příhodu):
                 Rectangle bounds = this.Bounds;
-                this.TimeAxis.Bounds = new Rectangle(0, 5, bounds.Width, bounds.Height - 6);
+                this.TimeAxis.Bounds = new Rectangle(1, 5, bounds.Width - 1, bounds.Height - 6);
             }
         }
         /// <summary>
@@ -2070,14 +2182,43 @@ namespace Djs.Common.Components.Grid
         /// </summary>
         private GTimeAxis _TimeAxis;
         #endregion
+        #region Childs items : záhlaví sloupce může obsahovat TimeAxis
+        protected override IEnumerable<IInteractiveItem> Childs { get { this._ChildArrayCheck(); return this._ChildList; } }
+        private void _ChildArrayCheck()
+        {
+            bool useTimeAxis = this.OwnerColumn.UseTimeAxis;
+            if (useTimeAxis)
+            {
+                if (this._ChildList == null)
+                {
+                    GTimeAxis timeAxis = this.TimeAxis;
+                    this._ChildList = new List<IInteractiveItem>();
+                    this._ChildList.Add(timeAxis);
+                }
+            }
+            else
+            {
+                if (this._ChildList != null)
+                {
+                    this._ChildList = null;
+                }
+            }
+        }
+        private List<IInteractiveItem> _ChildList;
+        #endregion
         #region Interaktivita
-        protected override void AfterStateChangedMouseEnter(GInteractiveChangeStateArgs e)
+        /// <summary>
+        /// Metoda je volána v události MouseEnter, a jejím úkolem je přpravit data pro ToolTip.
+        /// Zobrazení ToolTipu zajišťuje jádro.
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void PrepareToolTip(GInteractiveChangeStateArgs e)
         {
             Djs.Common.Localizable.TextLoc toolTip = this.OwnerColumn.ToolTip;
             if (toolTip != null && !String.IsNullOrEmpty(toolTip.Text))
             {
-                e.ToolTipData.InfoText = toolTip.Text;
                 e.ToolTipData.TitleText = "Column info";
+                e.ToolTipData.InfoText = toolTip.Text;
                 e.ToolTipData.ShapeType = TooltipShapeType.Rectangle;
                 e.ToolTipData.Opacity = 240;
             }
@@ -2103,7 +2244,7 @@ namespace Djs.Common.Components.Grid
             // Ale ColumnHeader má mít prostor pro posun omezen jen na vhodná místa mezi ostatními sloupci:
             Rectangle allowedBounds = this.OwnerGTable.GetRelativeBoundsForArea(TableAreaType.ColumnHeader);    // Souřadnice prostoru ColumnHeader, relativně k Table
             allowedBounds.Y = allowedBounds.Y + 5;                   // Prostor ColumnHeader omezím: dolů o 5px,
-            allowedBounds.Height = 2 * allowedBounds.Height - 5;     //  a dolní okraj tak, aby byl o něco menší než 2x výšky.
+            allowedBounds.Height = 2 * allowedBounds.Height - 10;    //  a dolní okraj tak, aby byl o něco menší než 2x výšky.
             Rectangle modifiedBounds = targetRelativeBounds.FitInto(allowedBounds, false);         // Souřadnice "Drag" musí být uvnitř vymezeného prostoru
 
             // V této chvíli si base třída zapracuje "upravené" souřadnice (bounds) do this objektu,
@@ -2144,8 +2285,12 @@ namespace Djs.Common.Components.Grid
         /// </summary>
         protected void ResetInsertMark()
         {
-            this.DrawInsertMarkAtBegin = 0;
-            this.DrawInsertMarkAtEnd = 0;
+            if (this.DrawInsertMarkAtBegin != 0 || this.DrawInsertMarkAtEnd != 0)
+            {
+                this.DrawInsertMarkAtBegin = 0;
+                this.DrawInsertMarkAtEnd = 0;
+                this.Repaint();
+            }
         }
         /// <summary>
         /// Najde sloupce ležící před a za místem, kam bychom rádi vložili this sloupec v procesu přetahování.
@@ -2281,7 +2426,6 @@ namespace Djs.Common.Components.Grid
         /// Cílové pořadí pro this sloupec v procesu přetahování tohoto sloupce na jiné místo.
         /// </summary>
         protected Int32? DragThisToColumnOrder { get; set; }
-
         #endregion
         #region Draw - kreslení záhlaví sloupce : ikona, text, značky při procesu Drag
         protected override void DrawContent(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
@@ -2525,8 +2669,8 @@ namespace Djs.Common.Components.Grid
         {
             if (!this.OwnerRow.IsMouseHot) return;
 
-            Rectangle bounds = new Rectangle(boundsAbsolute.Right - 6, boundsAbsolute.Y + 1, 6, boundsAbsolute.Height - 2);
-            GPainter.DrawInsertMark(e.Graphics, bounds, Skin.Control.GlowColor, ContentAlignment.MiddleRight, false, 192);
+            Rectangle bounds = new Rectangle(boundsAbsolute.Right - 7, boundsAbsolute.Y + 1, 7, boundsAbsolute.Height - 2);
+            GPainter.DrawInsertMark(e.Graphics, bounds, Skin.Modifiers.MouseHotColor, ContentAlignment.MiddleRight, false, 255);
         }
         /// <summary>
         /// Do this záhlaví vykreslí ikonu pro RowHeaderImage (typicky pro SelectedRow).
@@ -2682,20 +2826,59 @@ namespace Djs.Common.Components.Grid
             base.AfterStateChangedLeftClick(e);
             this.OwnerGTable.CellClick(e, this.OwnerCell);
         }
+        /// <summary>
+        /// Metoda je volána v události MouseEnter, a jejím úkolem je přpravit data pro ToolTip.
+        /// Zobrazení ToolTipu zajišťuje jádro.
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void PrepareToolTip(GInteractiveChangeStateArgs e)
+        {
+            Cell cell = this.OwnerCell;
+            Djs.Common.Localizable.TextLoc toolTip = this.OwnerCell.ToolTip;
+            bool setStdTip = false;
+            if (cell.ValueType == CellValueType.Image && cell.UseImageAsToolTip)
+            {
+                e.ToolTipData.TitleText = (toolTip != null ? toolTip.Text : null);
+                e.ToolTipData.Icon = null;
+                e.ToolTipData.Image = cell.Value as Image;
+                setStdTip = true;
+            }
+            else if (cell.ToolTipImage != null)
+            {
+                if (toolTip != null && !String.IsNullOrEmpty(toolTip.Text))
+                    e.ToolTipData.TitleText = toolTip.Text;
+                else
+                    e.ToolTipData.TitleText = "Data info";
+                e.ToolTipData.Image = cell.ToolTipImage;
+                setStdTip = true;
+            }
+            else if (toolTip != null && !String.IsNullOrEmpty(toolTip.Text))
+            {
+                e.ToolTipData.TitleText = "Data info";
+                e.ToolTipData.InfoText = toolTip.Text;
+                e.ToolTipData.Image = cell.ToolTipImage;
+                setStdTip = true;
+            }
+
+            if (setStdTip)
+            {
+                e.ToolTipData.ShapeType = TooltipShapeType.Rectangle;
+                e.ToolTipData.Opacity = 240;
+            }
+        }
         #endregion
         #region Draw
+        /// <summary>
+        /// Vykreslení obsahu
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="drawAsGhost"></param>
+        /// <param name="opacity"></param>
         protected override void DrawContent(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
         {
             this.DrawCellContent(e, boundsAbsolute);
             this.OwnerGTable.DrawRowGridLines(e, this.OwnerCell, boundsAbsolute);
-        }
-        protected override bool NeedDebug
-        {
-            get
-            {
-                object value = this.OwnerCell.Value;
-                return (value is int && ((int)value) == 260);
-            }
         }
         /// <summary>
         /// Vykreslí obsah této buňky podle jejího druhu, jako text nebo jako graf nebo jako obrázek.
@@ -2750,6 +2933,9 @@ namespace Djs.Common.Components.Grid
         /// <param name="graph"></param>
         private void DrawContentInteractiveTimeGraph(GInteractiveDrawArgs e, Rectangle boundsAbsolute, ITimeInteractiveGraph graph)
         {
+            // Pozadí řádku:
+            this.OwnerGTable.DrawRowBackground(e, this.OwnerCell, boundsAbsolute);
+
             if (graph.Convertor == null)
                 graph.Convertor = this.ColumnHeader.TimeConvertor;
             if (graph.Parent == null)
@@ -2767,6 +2953,9 @@ namespace Djs.Common.Components.Grid
         /// <param name="graph"></param>
         private void DrawContentTimeGraph(GInteractiveDrawArgs e, Rectangle boundsAbsolute, ITimeGraph graph)
         {
+            // Pozadí řádku:
+            this.OwnerGTable.DrawRowBackground(e, this.OwnerCell, boundsAbsolute);
+
             if (graph.Convertor == null)
                 graph.Convertor = this.ColumnHeader.TimeConvertor;
 

@@ -1399,19 +1399,51 @@ namespace Djs.Common.Components
         }
         /// <summary>
         /// Vrací Rectangle, který je souhrnem všech zadaných Rectangle.
+        /// Akceptuje i neviditelné Rectangle (který má Width nebo Height nula nebo záporné), i z nich střádá jejich souřadnice.
         /// </summary>
         /// <param name="items"></param>
         /// <returns></returns>
         public static Rectangle SummaryRectangle(params Rectangle[] items)
         {
-            return SummaryRectangle(items as IEnumerable<Rectangle>);
+            return _SummaryRectangle(items as IEnumerable<Rectangle>, false);
+        }
+        /// <summary>
+        /// Vrací Rectangle, který je souhrnem viditelných Rectangle.
+        /// Viditelný = ten který má Width a Height kladné.
+        /// </summary>
+        /// <param name="items"></param>
+        /// <returns></returns>
+        public static Rectangle SummaryVisibleRectangle(params Rectangle[] items)
+        {
+            return _SummaryRectangle(items as IEnumerable<Rectangle>, true);
         }
         /// <summary>
         /// Vrací RectangleF, který je souhrnem všech zadaných Rectangle.
+        /// Akceptuje i neviditelné Rectangle (který má Width nebo Height nula nebo záporné), i z nich střádá jejich souřadnice.
         /// </summary>
         /// <param name="items"></param>
         /// <returns></returns>
         public static Rectangle SummaryRectangle(IEnumerable<Rectangle> items)
+        {
+            return _SummaryRectangle(items as IEnumerable<Rectangle>, false);
+        }
+        /// <summary>
+        /// Vrací RectangleF, který je souhrnem viditelných Rectangle.
+        /// Viditelný = ten který má Width a Height kladné.
+        /// </summary>
+        /// <param name="items"></param>
+        /// <returns></returns>
+        public static Rectangle SummaryVisibleRectangle(IEnumerable<Rectangle> items)
+        {
+            return _SummaryRectangle(items as IEnumerable<Rectangle>, true);
+        }
+        /// <summary>
+        /// Vrací RectangleF, který je souhrnem zadaných Rectangle.
+        /// </summary>
+        /// <param name="items"></param>
+        /// <param name="onlyVisible"></param>
+        /// <returns></returns>
+        private static Rectangle _SummaryRectangle(IEnumerable<Rectangle> items, bool onlyVisible)
         {
             int l = 0;
             int t = 0;
@@ -1420,6 +1452,8 @@ namespace Djs.Common.Components
             bool empty = true;
             foreach (Rectangle item in items)
             {
+                if (onlyVisible && (item.Width <= 0 || item.Height <= 0)) continue;
+
                 if (empty)
                 {
                     l = item.Left;

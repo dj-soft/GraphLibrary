@@ -642,6 +642,7 @@ namespace Djs.Common.Components
         #region Public colors
         public Color MouseMoveTracking { get { return this._Owner.GetValue(this._SkinSetKey, "MouseMoveTracking", DefaultMouseMoveTracking); } set { this._Owner.SetValue(this._SkinSetKey, "MouseMoveTracking", value); } }
         public Color MouseDragTracking { get { return this._Owner.GetValue(this._SkinSetKey, "MouseDragTracking", DefaultMouseDragTracking); } set { this._Owner.SetValue(this._SkinSetKey, "MouseDragTracking", value); } }
+        public Color MouseHotColor { get { return this._Owner.GetValue(this._SkinSetKey, "MouseHotColor", DefaultMouseHotColor); } set { this._Owner.SetValue(this._SkinSetKey, "MouseHotColor", value); } }
         public Color BackColorBegin { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorBegin", DefaultBackColorBegin); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorBegin", value); } }
         public Color BackColorEnd { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorEnd", DefaultBackColorEnd); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorEnd", value); } }
         public Color BackColorHotBegin { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorHotBegin", DefaultBackColorHotBegin); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorHotBegin", value); } }
@@ -656,11 +657,15 @@ namespace Djs.Common.Components
         public Color TextColorDown { get { return this._Owner.GetValue(this._SkinSetKey, "TextColorDown", DefaultTextColorDown); } set { this._Owner.SetValue(this._SkinSetKey, "TextColorDown", value); } }
         public Color TextColorDrag { get { return this._Owner.GetValue(this._SkinSetKey, "TextColorDrag", DefaultTextColorDrag); } set { this._Owner.SetValue(this._SkinSetKey, "TextColorDrag", value); } }
         public Color TextColorDisable { get { return this._Owner.GetValue(this._SkinSetKey, "TextColorDisable", DefaultTextColorDisable); } set { this._Owner.SetValue(this._SkinSetKey, "TextColorDisable", value); } }
+        public Color Effect3DDark { get { return this._Owner.GetValue(this._SkinSetKey, "Effect3DDark", DefaultEffect3DDark); } set { this._Owner.SetValue(this._SkinSetKey, "Effect3DDark", value); } }
+        public Color Effect3DLight { get { return this._Owner.GetValue(this._SkinSetKey, "Effect3DLight", DefaultEffect3DLight); } set { this._Owner.SetValue(this._SkinSetKey, "Effect3DLight", value); } }
+        public float Effect3DRatio { get { return this._Owner.GetValue(this._SkinSetKey, "Effect3DRatio", DefaultEffect3DRatio); } set { this._Owner.SetValue(this._SkinSetKey, "Effect3DRatio", value); } }
         #endregion
         #region Default colors
-        protected virtual Color DefaultMouseMoveTracking { get { return Color.FromArgb(96, Color.LightYellow); } }
-        protected virtual Color DefaultMouseDragTracking { get { return Color.FromArgb(64, Color.Violet); } }
         // Modifier colors: Alpha value (0-255) represents Morphing value (0-1) !!!
+        protected virtual Color DefaultMouseMoveTracking { get { return Color.FromArgb(96, Color.LightYellow); } }
+        protected virtual Color DefaultMouseDragTracking { get { return Color.FromArgb(64, Color.LightYellow); } }
+        protected virtual Color DefaultMouseHotColor { get { return Color.FromArgb(192, Color.LightYellow); } }
         protected virtual Color DefaultBackColorBegin { get { return Color.FromArgb(38, Color.White); } }
         protected virtual Color DefaultBackColorEnd { get { return Color.FromArgb(38, Color.Black); } }
         protected virtual Color DefaultBackColorHotBegin { get { return Color.FromArgb(64, Color.White); } }
@@ -675,6 +680,9 @@ namespace Djs.Common.Components
         protected virtual Color DefaultTextColorDown { get { return Color.FromArgb(96, Color.DarkViolet); } }
         protected virtual Color DefaultTextColorDrag { get { return Color.FromArgb(96, Color.DarkViolet); } }
         protected virtual Color DefaultTextColorDisable { get { return Color.FromArgb(64, Color.DimGray); } }
+        protected virtual Color DefaultEffect3DDark { get { return Color.DarkGray; } }
+        protected virtual Color DefaultEffect3DLight { get { return Color.White; } }
+        protected virtual float DefaultEffect3DRatio { get { return 0.25f; } }
         #endregion
     }
     /// <summary>
@@ -711,18 +719,10 @@ namespace Djs.Common.Components
         #region Public colors
         public Color BackColor { get { return this._Owner.GetValue(this._SkinSetKey, "BackColor", DefaultBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "BackColor", value); } }
         public Color TextColor { get { return this._Owner.GetValue(this._SkinSetKey, "TextColor", DefaultTextColor); } set { this._Owner.SetValue(this._SkinSetKey, "TextColor", value); } }
-        public Color GlowColor { get { return this._Owner.GetValue(this._SkinSetKey, "GlowColor", DefaultGlowColor); } set { this._Owner.SetValue(this._SkinSetKey, "GlowColor", value); } }
-        public Color Effect3DDark { get { return this._Owner.GetValue(this._SkinSetKey, "Effect3DDark", DefaultEffect3DDark); } set { this._Owner.SetValue(this._SkinSetKey, "Effect3DDark", value); } }
-        public Color Effect3DLight { get { return this._Owner.GetValue(this._SkinSetKey, "Effect3DLight", DefaultEffect3DLight); } set { this._Owner.SetValue(this._SkinSetKey, "Effect3DLight", value); } }
-        public float Effect3DRatio { get { return this._Owner.GetValue(this._SkinSetKey, "Effect3DRatio", DefaultEffect3DRatio); } set { this._Owner.SetValue(this._SkinSetKey, "Effect3DRatio", value); } }
         #endregion
         #region Default colors
         protected virtual Color DefaultBackColor { get { return Color.LightGray; } }
         protected virtual Color DefaultTextColor { get { return Color.Black; } }
-        protected virtual Color DefaultGlowColor { get { return Color.PaleVioletRed; } }
-        protected virtual Color DefaultEffect3DDark { get { return Color.DarkGray; } }
-        protected virtual Color DefaultEffect3DLight { get { return Color.White; } }
-        protected virtual float DefaultEffect3DRatio { get { return 0.25f; } }
         #endregion
     }
     /// <summary>

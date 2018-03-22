@@ -1746,9 +1746,9 @@ namespace Djs.Common.Components
         /// <returns></returns>
         protected Color DrawBorderGet3DColor(RectangleSide side, Color color, bool is3DSunken)
         {
-            float ratio = Skin.Control.Effect3DRatio;
-            Color dark = Skin.Control.Effect3DDark;
-            Color light = Skin.Control.Effect3DLight;
+            float ratio = Skin.Modifiers.Effect3DRatio;
+            Color dark = Skin.Modifiers.Effect3DDark;
+            Color light = Skin.Modifiers.Effect3DLight;
             switch (side)
             {
                 case RectangleSide.Left:

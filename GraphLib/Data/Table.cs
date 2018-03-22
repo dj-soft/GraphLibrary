@@ -44,6 +44,7 @@ namespace Djs.Common.Data
         /// </summary>
         private void _TableInit()
         {
+            this._TableId = Application.App.GetNextId(this.GetType());
             this._ColumnsInit();
             this._RowsInit();
             this._LayoutInit();
@@ -61,10 +62,26 @@ namespace Djs.Common.Data
             return text;
         }
         /// <summary>
+        /// Jednoduché textové vyjádření obsahu this instance
+        /// </summary>
+        public string Text
+        {
+            get
+            {
+                string text = "Table " + (!String.IsNullOrEmpty(this.TableName) ? this.TableName.Trim() : "Id" + this.TableId.ToString());
+                return text;
+            }
+        }
+        /// <summary>
         /// Název tabulky, podle něj lze hledat. jde o klíčové slovo, nikoli popisek (Caption)
         /// </summary>
         public string TableName { get { return this._TableName; } set { this._TableName = value; } }
         private string _TableName;
+        /// <summary>
+        /// Jednoznačné ID tabulky
+        /// </summary>
+        public int TableId { get { return this._TableId; } }
+        private int _TableId;
         #endregion
         #region GTable - Linkování datové tabulky do grafické tabulky
         /// <summary>
@@ -527,7 +544,8 @@ namespace Djs.Common.Data
             //   pak metoda PrepareValue() dostává parametr "valueIsComparable" = false, metoda PrepareValue() tedy naplní Value, 
             //   a komparátor (sortColumn.ValueComparator) dostane k porovnání hodnotu object IComparableItem.Value :
             bool columnHasComparator = (sortColumn.ValueComparator != null);
-            list.ForEach(r => (r as IComparableItem).PrepareValue(sortColumn.ColumnId, !columnHasComparator));
+            bool valueIsComparable = !columnHasComparator;
+            list.ForEach(r => (r as IComparableItem).PrepareValue(sortColumn.ColumnId, valueIsComparable));
 
             switch (sortColumn.SortCurrent)
             {
@@ -829,10 +847,10 @@ namespace Djs.Common.Data
         private void _LayoutInit()
         {
             this._TableHeightLayout = new SequenceLayout(60, 250);
-            this._ColumnHeaderHeightLayout = new SequenceLayout(20, 45);
-            this._RowHeaderWidthLayout = new SequenceLayout(20, 35);
+            this._ColumnHeaderHeightLayout = new SequenceLayout(20, 45, 160);
+            this._RowHeaderWidthLayout = new SequenceLayout(20, 35, 120);
             this._ColumnWidthLayout = new SequenceLayout(20, 160);
-            this._RowHeightLayout = new SequenceLayout(8, 24);
+            this._RowHeightLayout = new SequenceLayout(8, 24, 1024);
         }
         private ISequenceLayout _SequenceLayout { get { return (ISequenceLayout)this._TableHeightLayout; } }
         int ISequenceLayout.Begin { get { return this._SequenceLayout.Begin; } set { this._SequenceLayout.Begin = value; } }
@@ -1110,7 +1128,7 @@ namespace Djs.Common.Data
         /// </summary>
         public Djs.Common.Localizable.TextLoc Title { get { return (this._Text != null ? this._Text : (Djs.Common.Localizable.TextLoc)this._Name); } set { this._Text = value; } } private Djs.Common.Localizable.TextLoc _Text;
         /// <summary>
-        /// ToolTip pro hlavičku sloupce, lokalizovaný
+        /// Text pro ToolTip pro hlavičku tohoto sloupce, lokalizovaný
         /// </summary>
         public Djs.Common.Localizable.TextLoc ToolTip { get { return this._ToolTip; } set { this._ToolTip = value; } } private Djs.Common.Localizable.TextLoc _ToolTip;
         /// <summary>
@@ -1313,8 +1331,23 @@ namespace Djs.Common.Data
         /// <returns></returns>
         public override string ToString()
         {
-            return "Row " + this.RowId.ToString() + ": "
-                + " in " + (this.HasTable ? this.Table.ToString() : "NULL");
+            string text = "Row [" + this.RowId.ToString() + "] "
+                        + " in " + (this.HasTable ? this.Table.Text : "NULL")
+                        + "; Content: " + this.Text;
+            return text;
+        }
+        /// <summary>
+        /// Jednoduché textové vyjádření obsahu this instance
+        /// </summary>
+        public string Text
+        {
+            get
+            {
+                string text = "|";
+                foreach (Cell cell in this.Cells)
+                    text += " " + cell.Text + " |";
+                return text;
+            }
         }
         /// <summary>
         /// Jednoznačné ID tohoto řádku. Read only.
@@ -1367,6 +1400,17 @@ namespace Djs.Common.Data
             get { return this._GetCell(columnId); }
         }
         /// <summary>
+        /// Obsahuje (vrátí) instanci Cell, pro dané columnName sloupce. 
+        /// Trvá déle než hledání podle columnId.
+        /// Může vrátit null, pokud neexistuje buňka se vztahem na sloupec daného jména.
+        /// </summary>
+        /// <param name="columnName">Název sloupce</param>
+        /// <returns></returns>
+        public Cell this[string columnName]
+        {
+            get { return this._GetCell(columnName); }
+        }
+        /// <summary>
         /// Obsahuje všechny platné buňky řádku (tj. ty, které odpovídají sloupcům tabulky). 
         /// </summary>
         public Cell[] Cells
@@ -1407,6 +1451,17 @@ namespace Djs.Common.Data
                 this._CellDict.Add(columnId, cell);
             }
             return cell;
+        }
+        /// <summary>
+        /// Vrátí buňku pro dané columnName.
+        /// Trvá déle než hledání podle Id.
+        /// Může vrátit null, pokud neexistuje buňka se vztahem na sloupec daného jména.
+        /// </summary>
+        /// <param name="columnName"></param>
+        /// <returns></returns>
+        private Cell _GetCell(string columnName)
+        {
+            return this._CellDict.Values.FirstOrDefault(c => c.Column != null && String.Equals(c.Column.Name, columnName, StringComparison.InvariantCultureIgnoreCase));
         }
         /// <summary>
         /// Soupis buněk
@@ -1493,13 +1548,22 @@ namespace Djs.Common.Data
         bool IContentValidity.ColumnLayoutIsValid { get { return _ColumnLayoutIsValid; } set { _ColumnLayoutIsValid = value; } } private bool _ColumnLayoutIsValid;
         #endregion
         #region IComparableItem
-        void IComparableItem.PrepareValue(int valueId, bool valueIsComparable)
+        /// <summary>
+        /// Metoda je volána jedenkrát pro jeden řádek, před tříděním seznamu řádků podle daného sloupce (columnId).
+        /// Pokud sloupec má implementován svůj komparátor (Column.ValueComparator není null), pak na vstupu je valueIsComparable = false,
+        ///  a tato metoda má připravit hodnotu z dané buňky (Cell[columnId]) do zdejší proměnné _IComparableItemValue
+        /// </summary>
+        /// <param name="columnId"></param>
+        /// <param name="valueIsComparable"></param>
+        void IComparableItem.PrepareValue(int columnId, bool valueIsComparable)
         {
-            var cell = this._GetCell(valueId);
+            var cell = this._GetCell(columnId);
             if (valueIsComparable)
-                this._IComparableItemValue = cell.Value;
-            else
+                // Daný sloupec NEMÁ svůj komparátor, v tom případě hodnota buňky musí být IComparable a vloží se do IComparableItem.ValueComparable:
                 this._IComparableItemValueComparable = cell.Value as IComparable;
+            else
+                // Daný sloupec MÁ svůj komparátor, v tom případě hodnota buňky je libovolného typu, vloží se do IComparableItem.Value, zpracovávat ji bude komparátor sloupce:
+                this._IComparableItemValue = cell.Value;
         }
         object IComparableItem.Value { get { return _IComparableItemValue; } } private object _IComparableItemValue;
         IComparable IComparableItem.ValueComparable { get { return _IComparableItemValueComparable; } } private IComparable _IComparableItemValueComparable;
@@ -1528,7 +1592,21 @@ namespace Djs.Common.Data
             string row = (this._Row != null ? this._Row.RowId.ToString() : "??");
             string col = (this._ColumnId >= 0 ? this._ColumnId.ToString() : "??");
             return "Cell[" + row + "," + col + "] "
-                + " in " + (this.HasTable ? this.Table.ToString() : "NULL");
+                + " in " + (this.HasTable ? this.Table.Text : "NULL")
+                + " Content: " + this.Text;
+        }
+        /// <summary>
+        /// Jednoduché textové vyjádření obsahu this instance
+        /// </summary>
+        public string Text
+        {
+            get
+            {
+                CellValueType valueType = this.ValueType;
+                if (valueType == CellValueType.Text)
+                    return this.Value.ToString();
+                return valueType.ToString();
+            }
         }
         /// <summary>
         /// true pokud mám svůj řádek
@@ -1581,6 +1659,37 @@ namespace Djs.Common.Data
         /// Výška se uplatní při určení výšky řádku.
         /// </summary>
         public Int32? Height { get { return _Height; } set { _Height = value; this.InvalidateRowLayout(); } } private Int32? _Height;
+        /// <summary>
+        /// Text pro ToolTip pro tuto buňku, lokalizovaný
+        /// </summary>
+        public Djs.Common.Localizable.TextLoc ToolTip { get { return _ToolTip; } set { _ToolTip = value; } } private Djs.Common.Localizable.TextLoc _ToolTip;
+        /// <summary>
+        /// Pokud this.ValueType bude Image, pak je možno použít tento obrázek (Cell.Value) jako ToolTip.Image.
+        /// </summary>
+        public bool UseImageAsToolTip { get { return _UseImageAsToolTip; } set { _UseImageAsToolTip = value; } } private bool _UseImageAsToolTip;
+        /// <summary>
+        /// Velký obrázek do tooltipu k buňce.
+        /// Obrázek lze vložit do buňky, která je libovolného typu vyjma buňky typu Image (tam se neuplatní).
+        /// </summary>
+        public Image ToolTipImage { get { return _ToolTipImage; } set { _ToolTipImage = value; } }
+        private Image _ToolTipImage;
+        /// <summary>
+        /// Typ obsahu této buňky, určuje režim kreslení jejího obsahu.
+        /// Určuje se dynamicky podle typu this.Value, tady pokud je zde určeno "Image", pak Value určitě není Null.
+        /// </summary>
+        public CellValueType ValueType
+        {
+            get
+            {
+                object value = this.Value;
+                if (value == null) return CellValueType.Null;
+                if (value is IDrawItem) return CellValueType.IDrawItem;
+                if (value is ITimeInteractiveGraph) return CellValueType.ITimeInteractiveGraph;
+                if (value is ITimeGraph) return CellValueType.ITimeGraph;
+                if (value is Image) return CellValueType.Image;
+                return CellValueType.Text;
+            }
+        }
         protected void InvalidateRowLayout()
         {
             // 1. Tímhle donutím můj Parent řádek, aby si přepočítal (až to bude potřeba) svoji výšku:
@@ -1764,6 +1873,12 @@ namespace Djs.Common.Data
             this.SizeMinimum = sizeMinimum;
             this.SizeDefault = sizeDefault;
         }
+        public SequenceLayout(int sizeMinimum, int sizeDefault, int sizeMaximum)
+        {
+            this.SizeMinimum = sizeMinimum;
+            this.SizeDefault = sizeDefault;
+            this.SizeRange = new Int32NRange(sizeMinimum, sizeMaximum);
+        }
         /// <summary>
         /// Aktuální velikost, vyhodnocená podle všech pravidel a velikosti předků, vždy Int32, tato hodnota není null.
         /// </summary>
@@ -1852,27 +1967,74 @@ namespace Djs.Common.Data
         #region ISequenceLayout podpora - nápočet hodnot ISequenceLayout.Begin do prvků pole, a do jednotlivého prvku
         /// <summary>
         /// Do všech položek ISequenceLayout dodané kolekce vepíše hodnotu Begin postupně od 0.
-        /// K hodnotě position přičte item.Size (pouze pokud je hodnota větší než 0), tato upravená position se vrací v ref parametru, a slouží jako Begin pro další položky v kolekci.
+        /// Vrací hodnotu End posledního viditelného prvku (toho, který má Size větší enž 0).
         /// </summary>
-        /// <param name="item"></param>
-        /// <param name="position"></param>
-        public static void SequenceLayoutCalculate(IEnumerable<ISequenceLayout> items)
+        /// <param name="items">Kolekce položek typu ISequenceLayout, jejich Begin a End se bude nastavovat</param>
+        public static int SequenceLayoutCalculate(IEnumerable<ISequenceLayout> items)
         {
-            int position = 0;
+            int begin = 0;
+            return SequenceLayoutCalculate(items, ref begin, 0);
+        }
+        /// <summary>
+        /// Do všech položek ISequenceLayout dodané kolekce vepíše hodnotu Begin postupně od 0.
+        /// Lze zadat mezeru mezi prvky = vzdálenost Begin prvku [N+1] od End prvku [N].
+        /// Vrací hodnotu End posledního viditelného prvku (toho, který má Size větší enž 0).
+        /// </summary>
+        /// <param name="items">Kolekce položek typu ISequenceLayout, jejich Begin a End se bude nastavovat</param>
+        /// <param name="spacing">Mezera mezi prvky = hodnota, o kterou bude Begin následující položky navýšen proti End položky předešlé.</param>
+        public static int SequenceLayoutCalculate(IEnumerable<ISequenceLayout> items, int spacing)
+        {
+            int begin = 0;
+            return SequenceLayoutCalculate(items, ref begin, spacing);
+        }
+        /// <summary>
+        /// Do všech položek ISequenceLayout dodané kolekce vepíše hodnotu Begin postupně od hodnoty begin.
+        /// Lze zadat mezeru mezi prvky = vzdálenost Begin prvku [N+1] od End prvku [N].
+        /// Vrací hodnotu End posledního viditelného prvku (toho, který má Size větší enž 0).
+        /// Parametr ref begin po skončení metody obsahuje hodnotu, kde by začínal další prvek za posledním prvkem této kolekce (akceptujíc spacing).
+        /// </summary>
+        /// <param name="items">Kolekce položek typu ISequenceLayout, jejich Begin a End se bude nastavovat</param>
+        /// <param name="begin">Hodnota Begin do první položky </param>
+        /// <param name="spacing">Mezera mezi prvky = hodnota, o kterou bude Begin následující položky navýšen proti End položky předešlé.</param>
+        public static int SequenceLayoutCalculate(IEnumerable<ISequenceLayout> items, ref int begin, int spacing)
+        {
+            int end = begin;
             foreach (ISequenceLayout item in items)
-                SequenceLayoutCalculate(item, ref position);
+                SequenceLayoutCalculate(item, ref begin, ref end, spacing);
+            return end;
         }
         /// <summary>
         /// Do položky ISequenceLayout vepíše Begin = position.
         /// K hodnotě position přičte item.Size (pouze pokud je hodnota větší než 0), tato upravená position se vrací v ref parametru, a slouží jako Begin pro další položky v kolekci.
         /// </summary>
         /// <param name="item"></param>
-        /// <param name="position"></param>
-        public static void SequenceLayoutCalculate(ISequenceLayout item, ref int position)
+        /// <param name="begin"></param>
+        public static void SequenceLayoutCalculate(ISequenceLayout item, ref int begin)
         {
-            item.Begin = position;
+            int end = begin;
+            SequenceLayoutCalculate(item, ref begin, ref end, 0);
+        }
+        /// <summary>
+        /// Do položky ISequenceLayout vepíše Begin = begin.
+        /// Pokud item.Size je kladné, pak:
+        /// K hodnotě begin přičte item.Size, to vloží do ref parametru end, 
+        /// a do ref parametru begin vloží end (plus spacing, pokud je hodnota spacing větší než nula).
+        /// Pokud Size není kladné, pak begin bude nezměněno, a end bude rovněž nezměněno, bez ohledu na spacing. Jde o neviditelný prvek.
+        /// Význam: begin určuje počátek tohoto prvku, a následně i prvku následujícího. Akceptuje spacing, pokud to má smysl.
+        /// Hodnota end obsahuje konec posledního viditelného prvku, nenavýšený o spacing, přeskakuje neviditelné prvky.
+        /// end obsahuje vždy konec 
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="position"></param>
+        public static void SequenceLayoutCalculate(ISequenceLayout item, ref int begin, ref int end, int spacing)
+        {
+            item.Begin = begin;
             int size = item.Size;
-            if (size > 0) position += size;
+            if (size > 0)
+            {
+                end = begin + size;
+                begin = ((spacing > 0) ? end + spacing : end);
+            }
         }
         #endregion
         #region ISequenceLayout podpora - filtrování prvků typu ISequenceLayout podle viditelné oblasti
@@ -2019,6 +2181,16 @@ namespace Djs.Common.Data
         /// Sestupně
         /// </summary>
         Descending = 2
+    }
+    public enum CellValueType
+    {
+        None,
+        Null,
+        IDrawItem,
+        ITimeInteractiveGraph,
+        ITimeGraph,
+        Image,
+        Text
     }
     #endregion
 

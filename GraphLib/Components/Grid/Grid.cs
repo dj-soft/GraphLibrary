@@ -115,8 +115,6 @@ namespace Djs.Common.Components
             int y2 = y3 - GScrollBar.DefaultSystemBarHeight;                   // y2: zde začíná ColumnsScrollBar (dole, hned za koncem prostoru pro tabulky)
 
             this._TablesBounds = new Rectangle(x0, y0, x2r - x0, y2 - y0);
-            this._ColumnRowHeaderVisualRange = new Int32Range(x0, x1);
-            this._ColumnsDataVisualRange = new Int32Range(x1, x2r);
             this._TablesScrollBarBounds = new Rectangle(x2t, y1, x3 - x2t, y2 - y1);
             this._ColumnsScrollBarBounds = new Rectangle(x1, y2, x2r - x1, y3 - y2);
             this._GridVoidBounds1 = new Rectangle(x0, y2, x1 - x0, y3 - y2);
@@ -134,14 +132,6 @@ namespace Djs.Common.Components
         /// Prostor pro tabulky (hlavní prostor), neobsahuje pozice scrollbarů X a Y
         /// </summary>
         protected Rectangle TablesBounds { get { this._InnerBoundsCheck(); return this._TablesBounds; } } private Rectangle _TablesBounds;
-        /// <summary>
-        /// Vizuální rozmezí prostoru pro sloupec RowHeader v ose X = začíná na pozici 0 a končí tam, kde začíná prostor pro datové sloupce
-        /// </summary>
-        public Int32Range ColumnRowHeaderVisualRange { get { this._InnerBoundsCheck(); return this._ColumnRowHeaderVisualRange; } } private Int32Range _ColumnRowHeaderVisualRange;
-        /// <summary>
-        /// Vizuální rozmezí prostoru pro datové sloupce v ose X = začíná za RowHeader columnem, a končí na začátku svislého scrollbaru tabulek
-        /// </summary>
-        public Int32Range ColumnsDataVisualRange { get { this._InnerBoundsCheck(); return this._ColumnsDataVisualRange; } } private Int32Range _ColumnsDataVisualRange;
         /// <summary>
         /// true pokud se má zobrazovat svislý scrollbar (pro tabulky, vpravo)
         /// </summary>
@@ -456,14 +446,15 @@ namespace Djs.Common.Components
 
             int widthOld = masterTable.RowHeaderWidth;
             masterTable.RowHeaderWidth = width;
+            this.ColumnsPositions.VisualFirstPixel = width;
             int widthNew = masterTable.RowHeaderWidth;
 
             bool isChanged = (widthNew != widthOld);
             if (isChanged)
             {
                 width = widthNew;
-                // Zajistit invalidaci a překresení:
-                this.Invalidate(InvalidateItem.GridColumnsScroll);
+                // Zajistit invalidaci a překreslení:
+                this.Invalidate(InvalidateItem.RowHeader | InvalidateItem.GridColumnsScroll);
             }
             return isChanged;
         }
@@ -591,9 +582,7 @@ namespace Djs.Common.Components
         /// <returns></returns>
         private int _TablesPositionGetDataSize()
         {
-            ISequenceLayout[] list = this.TablesAll;
-            int count = list.Length;
-            return (count > 0 ? list[count - 1].End : 0);
+            return this.TablesAllDataSize;
         }
         /// <summary>
         /// Eventhandler pro událost změny pozice svislého scrollbaru = posun pole tabulek nahoru/dolů
@@ -616,6 +605,7 @@ namespace Djs.Common.Components
         /// Tato property nikdy nevrací null, ale může vrátit kolekci s počtem = 0 prvků (pokud neexistují tabulky).
         /// </summary>
         protected GTable[] TablesAll { get { this._TablesAllCheck(); return this._TablesAll; } }
+        protected int TablesAllDataSize { get { this._TablesAllDataSizeCheck(); return this._TablesAllDataSize.Value; } }
         /// <summary>
         /// Soupis viditelných grafických objektů tabulek, setříděný podle TableOrder, se správně napočtenou hodnotou ISequenceLayout.Begin a End (=datová oblast).
         /// Tento seznam se ukládá do místní cache, jeho generování se provádí jen jedenkrát po jeho invalidaci.
@@ -631,7 +621,6 @@ namespace Djs.Common.Components
         private void _TablesAllCheck()
         {
             GTable[] tables = this._TablesAll;
-            bool heightValid = this._TableListHeightValid;
             if (tables == null)
             {
                 List<GTable> tableList = this._Tables.ToList();
@@ -639,12 +628,29 @@ namespace Djs.Common.Components
                     tableList.Sort(GTable.CompareOrder);
                 tables = tableList.ToArray();
                 this._TablesAll = tables;
-                heightValid = false;
+                this._TablesAllDataSize = null;
             }
-            if (!heightValid)
+            if (!this._TablesAllDataSize.HasValue)
             {
-                SequenceLayout.SequenceLayoutCalculate(tables);
-                this._TableListHeightValid = true;
+                this._TablesAllDataSize = SequenceLayout.SequenceLayoutCalculate(tables, GTable.TableSplitterSize);
+                this._TablesVisible = null;
+            }
+        }
+        /// <summary>
+        /// Ověří a zajistí připravenost hodnoty TablesAllDataSize
+        /// </summary>
+        private void _TablesAllDataSizeCheck()
+        {
+            if (this._TablesAllDataSize.HasValue) return;
+
+            GTable[] tables = this._TablesAll;
+            if (tables == null)
+            {   // Protože není platná ani kolekce tabulek, předáme to tam:
+                this._TablesAllCheck();
+            }
+            else
+            {   // Kolekce tabulek je OK, pouze přepočteme SequenceLayoutCalculate a tím určíme this._TablesAllDataSize:
+                this._TablesAllDataSize = SequenceLayout.SequenceLayoutCalculate(tables, GTable.TableSplitterSize);
                 this._TablesVisible = null;
             }
         }
@@ -673,13 +679,14 @@ namespace Djs.Common.Components
         /// </summary>
         private GTable[] _TablesAll;
         /// <summary>
+        /// Počet datových pixelů kolekce _TablesAll, je určeno při nápočtu SequenceLayoutCalculate().
+        /// Pokud je null, pak není platný tento nápočet a je nutno jej přepočítat znovu.
+        /// </summary>
+        private int? _TablesAllDataSize;
+        /// <summary>
         /// Cache kolekce TablesVisible
         /// </summary>
         private GTable[] _TablesVisible;
-        /// <summary>
-        /// Platnost údajů ISequenceLayout pro GTable
-        /// </summary>
-        private bool _TableListHeightValid;
         /// <summary>
         /// Svislý Scrollbar pro posouvání pole tabulek nahoru/dolů (nikoli jejich řádků, na to má každá tabulka svůj vlastní Scrollbar).
         /// </summary>
@@ -861,8 +868,17 @@ namespace Djs.Common.Components
             }
             if (items.HasFlag(InvalidateItem.GridTablesChange))
             {
+                this._TableInnerLayoutValid = false;
                 this._TablesAll = null;
                 this._ChildArrayValid = false;
+            }
+            if (items.HasFlag(InvalidateItem.TableHeight))
+            {
+                this._TableInnerLayoutValid = false;
+                this._TablesAllDataSize = null;
+                this._TablesVisible = null;
+                this._ChildArrayValid = false;
+                callTables = true;
             }
             if (items.HasFlag(InvalidateItem.GridTablesScroll))
             {
@@ -992,11 +1008,11 @@ namespace Djs.Common.Components
         {
             Rectangle bounds1 = this.GridVoidBounds1;
             if (bounds1.HasPixels())
-                this.Host.FillRectangle(e.Graphics, this.GetAbsoluteBounds(bounds1), this.BackColor);
+                this.Host.FillRectangle(e.Graphics, this.GetAbsoluteBounds(bounds1), Color.Violet); // this.BackColor);
 
             Rectangle bounds2 = this.GridVoidBounds2;
             if (bounds2.HasPixels())
-                this.Host.FillRectangle(e.Graphics, this.GetAbsoluteBounds(bounds2), this.BackColor);
+                this.Host.FillRectangle(e.Graphics, this.GetAbsoluteBounds(bounds2), Color.Violet); // this.BackColor);
         }
         #endregion
         #region Defaultní hodnoty
@@ -1114,7 +1130,9 @@ namespace Djs.Common.Components
             foreach (Column column in this._ColumnList)
             {
                 if (!tableId.HasValue || (tableId.HasValue && tableId.Value != column.Table.GTable.TableId))
-                    column.ColumnHeader.RefreshTimeAxis(e);
+                {
+                    column.Table.GTable.RefreshTimeAxis(column, e);
+                }
             }
         }
         #endregion
@@ -1163,7 +1181,7 @@ namespace Djs.Common.Components
     /// </summary>
     public class GridPosition : IScrollBarData
     {
-        #region Základní data
+        #region Konstrukce
         /// <summary>
         /// Vytvoří pozicioner pro obsah.
         /// </summary>
@@ -1219,6 +1237,18 @@ namespace Djs.Common.Components
             this._DataSizeAddSpace = dataSizeAddSpace;
             this._DataVisibleReserve = DefaultDataVisibleReserve;
         }
+        public override string ToString()
+        {
+            int visualBegin = this.VisualFirstPixel;
+            int visualSize = this.VisualSize;
+            Int32Range visualRange = new Int32Range(visualBegin, visualBegin + visualSize);
+            int dataBegin = this.DataFirstPixel;
+            int dataSize = this.DataSize;
+            Int32Range dataRange = new Int32Range(dataBegin, dataBegin + dataSize);
+            return "Visual Range: " + visualRange.ToString() + "; Data Range: " + dataRange.ToString();
+        }
+        #endregion
+        #region Funkční provázanost s podkladovou grafickou a datovou vrstvou
         /// <summary>
         /// Metoda, která vrátí počet vizuálních pixelů, na nichž se zobrazují data.
         /// Jde o čistý prostor pro data, nezahrnuje žádný Header ani Footer nebo Scrollbar.
@@ -1228,6 +1258,14 @@ namespace Djs.Common.Components
         /// Metoda, která vrátí velikost dat = počet pixelů, které by obsadila data zobrazená najednou. Bez rezervy, bez přídavku.
         /// </summary>
         private Func<int> _GetDataSizeMethod;
+        /// <summary>
+        /// Metoda, která vrátí první viditelný pixel (VisualFirstPixel) z aplikace
+        /// </summary>
+        private Func<int> _GetVisualFirstPixel;
+        /// <summary>
+        /// Metoda, která nastaví daný pixel jako první viditelný pixel (VisualFirstPixel) do aplikace
+        /// </summary>
+        private Action<int> _SetVisualFirstPixel;
         /// <summary>
         /// Číslo vizuálního pixelu, na kterém začíná zobrazení dat. Pixely před tímto jsou obsazeny něčím jiným (typicky Header).
         /// Tato hodnota je buď uložená v this instanci, anebo může být napojená na externí funkcionalitu 
@@ -1249,14 +1287,6 @@ namespace Djs.Common.Components
                     this._VisualFirstPixelValue = value;
             }
         }
-        /// <summary>
-        /// Metoda, která vrátí první viditelný pixel (VisualFirstPixel) z aplikace
-        /// </summary>
-        private Func<int> _GetVisualFirstPixel;
-        /// <summary>
-        /// Metoda, která nastaví daný pixel jako první viditelný pixel (VisualFirstPixel) do aplikace
-        /// </summary>
-        private Action<int> _SetVisualFirstPixel;
         /// <summary>
         /// Lokálně uložená hodnota VisualFirstPixel, pokud tato hodnota není provázaná s aplikací pomocí metod _GetVisualFirstPixel a _SetVisualFirstPixel
         /// </summary>
@@ -1498,7 +1528,7 @@ namespace Djs.Common.Components
         ColumnWidth = ColumnOrder << 1,
         /// <summary>Posun sloupců</summary>
         ColumnScroll = ColumnWidth << 1,
-        /// <summary>Výška záhlaví sloupců</summary>
+        /// <summary>Výška záhlaví sloupců (ColumnHeader.Height)</summary>
         ColumnHeader = ColumnScroll << 1,
         /// <summary>Počet řádků v tabulce</summary>
         RowsCount = ColumnHeader << 1,
@@ -1508,7 +1538,7 @@ namespace Djs.Common.Components
         RowHeight = RowOrder << 1,
         /// <summary>Posun řádků nahoru/dolů</summary>
         RowScroll = RowHeight << 1,
-        /// <summary>Šířka hlavičky řádku</summary>
+        /// <summary>Šířka záhlaví řádku (RowHeader.Width)</summary>
         RowHeader = RowScroll << 1,
 
         /// <summary>Pokud je nastaven tento bit, pak aktuální akce je určena pouze k provádění v Gridu, a Grid už nemá volat invalidaci do tabulek GTable. A pokud by ji Grid zavolal, pak ji GTable bude ignorovat.</summary>

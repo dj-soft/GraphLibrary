@@ -474,7 +474,7 @@ namespace Djs.Common.Components
 
 
                     // New bounds (location are now aligned to Limit and LinkedItems; boundsNew accept all relevant values = width, LinkedItems -> inactive Bounds):
-                    boundsNew = this._GetBoundsFromLocation(locationNew.Value, orientationNew.Value, splitterVisibleWidthNew.Value);
+                    boundsNew = this._GetBoundsFromLocation(locationNew.Value, orientationNew.Value, boundsNew, splitterVisibleWidthNew.Value);
 
                     // ActiveOverhead from splitterActiveOverlap:
                     if (!splitterActiveOverlapNew.HasValue) splitterActiveOverlapNew = splitterActiveOverlapOld;
@@ -591,16 +591,21 @@ namespace Djs.Common.Components
         /// </summary>
         /// <param name="location"></param>
         /// <param name="orientation"></param>
+        /// <param name="bounds"></param>
         /// <param name="width"></param>
         /// <returns></returns>
-        private Rectangle _GetBoundsFromLocation(int location, Orientation orientation, int width)
+        private Rectangle _GetBoundsFromLocation(int location, Orientation orientation, Rectangle? bounds, int width)
         {
             Rectangle boundsOld = this.Bounds;
-            Rectangle? linkedSum = (this.IsResizeToLinkItems 
-                ? DrawingExtensions.SummaryRectangle(
+
+            Rectangle? linkedSum = null;
+            if (this.IsResizeToLinkItems && (this._LinkedItemPrev != null || this._LinkedItemNext != null))
+                linkedSum = DrawingExtensions.SummaryRectangle(
                     (this._LinkedItemPrev != null ? (Rectangle?)this._LinkedItemPrev.Bounds : (Rectangle?)null),
-                    (this._LinkedItemNext != null ? (Rectangle?)this._LinkedItemNext.Bounds : (Rectangle?)null))
-                : (Rectangle?)null);
+                    (this._LinkedItemNext != null ? (Rectangle?)this._LinkedItemNext.Bounds : (Rectangle?)null));
+            if (!linkedSum.HasValue)
+                linkedSum = bounds;
+
             Int32NRange active = new Int32NRange(location - (width / 2), width);
             switch (orientation)
             {
@@ -827,6 +832,7 @@ namespace Djs.Common.Components
         {
             if (!this.IsVisible) return;
 
+            bool repaintParent = false;
             switch (e.ChangeState)
             {
                 case GInteractiveChangeState.MouseEnter:
@@ -843,7 +849,8 @@ namespace Djs.Common.Components
                     if (e.UserDragPoint.HasValue)
                     {
                         int location = this._GetValue(e.UserDragPoint.Value, this.Orientation);
-                        e.RepaintAllItems = this.SetSplitter(null, location, null, null, null, null, null, 
+                        // e.RepaintAllItems =  ... 
+                        repaintParent = this.SetSplitter(null, location, null, null, null, null, null, 
                             DragResponseType.InDragMove, ProcessAction.DragValueActions, EventSourceType.ValueChanging | EventSourceType.ApplicationCode);
                     }
                     break;
@@ -851,12 +858,14 @@ namespace Djs.Common.Components
                     if (this._LocationOriginal.HasValue)
                     {
                         int location = this._GetValue(this._LocationOriginal.Value, this.Orientation);
-                        e.RepaintAllItems = this.SetSplitter(null, location, null, null, null, null, null, DragResponseType.AfterDragEnd);
+                        // e.RepaintAllItems =  ...
+                        repaintParent = this.SetSplitter(null, location, null, null, null, null, null, DragResponseType.AfterDragEnd);
                     }
                     break;
                 case GInteractiveChangeState.LeftDragDone:
                     // To call "ValueChanged" events we must accept "_LocationOriginal" as LocationOriginal:
-                    e.RepaintAllItems = this.SetSplitter(null, this.Value, null, null, null, null, this._LocationOriginal, DragResponseType.AfterDragEnd);
+                    // e.RepaintAllItems =  ...
+                    repaintParent = this.SetSplitter(null, this.Value, null, null, null, null, this._LocationOriginal, DragResponseType.AfterDragEnd);
                     break;
                 case GInteractiveChangeState.LeftDragEnd:
                     this._LocationOriginal = null;
@@ -865,6 +874,14 @@ namespace Djs.Common.Components
                     e.RequiredCursorType = SysCursorType.Default;
                     this.RepaintToLayers = GInteractiveDrawLayer.Standard;
                     break;
+            }
+
+            if (repaintParent)
+            {
+                if (this.Parent != null)
+                    this.Parent.Repaint();
+                else
+                    e.RepaintAllItems = true;
             }
         }
         #endregion

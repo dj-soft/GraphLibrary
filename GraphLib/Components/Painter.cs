@@ -252,14 +252,14 @@ namespace Djs.Common.Components
             float ratio = effect3D.Value;
             if (ratio > 0f)
             {   // Nahoru = barva 1 je světlejší, barva 2 je tmavší:
-                color1 = color.Morph(Skin.Control.Effect3DLight, ratio);
-                color2 = color.Morph(Skin.Control.Effect3DDark, ratio);
+                color1 = color.Morph(Skin.Modifiers.Effect3DLight, ratio);
+                color2 = color.Morph(Skin.Modifiers.Effect3DDark, ratio);
             }
             else
             {   // Dolů = barva 1 je tmavší, barva 2 je světlejší:
                 ratio = -ratio;
-                color1 = color.Morph(Skin.Control.Effect3DDark, ratio);
-                color2 = color.Morph(Skin.Control.Effect3DLight, ratio);
+                color1 = color.Morph(Skin.Modifiers.Effect3DDark, ratio);
+                color2 = color.Morph(Skin.Modifiers.Effect3DLight, ratio);
             }
             return true;
         }

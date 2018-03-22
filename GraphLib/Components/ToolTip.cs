@@ -9,7 +9,7 @@ using System.Drawing.Drawing2D;
 
 namespace Djs.Common.Components
 {
-    #region class ToolTipItem : for drawing tooltip informations
+    #region class ToolTipItem : řídící objekt pro zobrazení ToolTipu na základě dat v ToolTipData
     /// <summary>
     /// ToolTipItem : for drawing tooltip informations
     /// </summary>
@@ -118,6 +118,10 @@ namespace Djs.Common.Components
         /// Icon before Info Text to ToolTip
         /// </summary>
         protected Image Icon { get { return (this.DataIsValid ? this._Data.Icon : null); } }
+        /// <summary>
+        /// Image namísto hlavního textu
+        /// </summary>
+        protected Image Image { get { return (this.DataIsValid ? this._Data.Image : null); } }
         /// <summary>
         /// Layout of Icon - Title - Info in Tooltip
         /// </summary>
@@ -540,19 +544,23 @@ namespace Djs.Common.Components
         /// <summary>
         /// true when ShapeType is other than None, and exists Title or Info (not empty text + not null font)
         /// </summary>
-        protected bool ToolTipExist { get { return (this.ShapeType != TooltipShapeType.None && (this.TitleExist || this.InfoExist)); } }
+        protected bool ToolTipExist { get { return (this.ShapeType != TooltipShapeType.None && (this.TitleExist || this.InfoExist || this.ImageExist)); } }
         /// <summary>
         /// true when exists Title (not empty text + not null font)
         /// </summary>
         protected bool TitleExist { get { return (!String.IsNullOrEmpty(this.TitleText) && this.TitleFont != null); } }
         /// <summary>
-        /// true when exists Info (not empty text + not null font)
+        /// true when exists Info ((not empty text + not null font) or explicit request for ShowImage)
         /// </summary>
         protected bool InfoExist { get { return (!String.IsNullOrEmpty(this.InfoText) && this.InfoFont != null); } }
         /// <summary>
         /// true when exists Icon (is not null)
         /// </summary>
         protected bool IconExist { get { return (this.Icon != null); } }
+        /// <summary>
+        /// true pokud je zadán velký obrázek (Image)
+        /// </summary>
+        protected bool ImageExist { get { return (this.Image != null); } }
         #endregion
         #region Draw
         /// <summary>
@@ -640,6 +648,10 @@ namespace Djs.Common.Components
                 {
                     graphics.DrawString(this.InfoText, this.InfoFont.Font, Skin.Brush(this.InfoFontColor), this._InfoBounds.Value);
                 }
+                if (this.ImageExist)
+                {
+                    graphics.DrawImage(this.Image, this._ImageBounds.Value);
+                }
 
                 graphics.DrawPath(Skin.Pen(this.BorderColor), this._TotalPath);
             }
@@ -684,6 +696,10 @@ namespace Djs.Common.Components
                 if (this.InfoExist)
                 {
                     graphics.DrawString(this.InfoText, this.InfoFont.Font, Skin.Brush(this.InfoFontColor), this._InfoBounds.Value);
+                }
+                if (this.ImageExist)
+                {
+                    graphics.DrawImage(this.Image, this._ImageBounds.Value);
                 }
 
                 graphics.DrawPath(Skin.Pen(this.BorderColor), this._TotalPath);
@@ -732,8 +748,9 @@ namespace Djs.Common.Components
         {
             this._ShadowSize = null;
             this._TitleSize = null;
-            this._InfoSize = null;
+            this._TextSize = null;
             this._IconSize = null;
+            this._ImageSize = null;
             this._TotalSize = null;
 
             this.InvalidateBounds();
@@ -744,7 +761,7 @@ namespace Djs.Common.Components
         protected void CheckValidSize(Graphics graphics)
         {
             if (!this.ToolTipExist) return;
-            if (this._ShadowSize.HasValue && this._TitleSize.HasValue && this._InfoSize.HasValue && this._IconSize.HasValue && this._TotalSize.HasValue) return;
+            if (this._ShadowSize.HasValue && this._TitleSize.HasValue && this._TextSize.HasValue && this._IconSize.HasValue && this._ImageSize.HasValue && this._TotalSize.HasValue) return;
 
             this.CalculateSize(graphics);
         }
@@ -756,23 +773,30 @@ namespace Djs.Common.Components
         {
             SizeF maxSize = this.ToolTipMaxSize;
             Size titleSize = _CalculateOneTextSize(graphics, this.TitleText, this.TitleFont, maxSize, 0.15f);
-            Size infoSize = _CalculateOneTextSize(graphics, this.InfoText, this.InfoFont, maxSize, 0.85f);
+            Size textSize = _CalculateOneTextSize(graphics, this.InfoText, this.InfoFont, maxSize, 0.85f);
             Size iconSize = _CalculateIconSize(this.Icon, IconMaxSize);
+            Size imageSize = _CalculateIconSize(this.Image, ImageMaxSize);
             int titleWidth = (titleSize.Height > 0 ? titleSize.Width + 20 : 0);
-            int infoWidth = (infoSize.Height > 0 ? infoSize.Width : 0);
-            int infoHeight = infoSize.Height;
+            int infoWidth = (textSize.Height > 0 ? textSize.Width : 0);
+            int infoHeight = textSize.Height;
+            if (imageSize.Width > 0 && imageSize.Height > 0)
+            {   // Pokud máme Image, zvětší se prostor Info:
+                infoWidth = GetMax(infoWidth, imageSize.Width);
+                infoHeight = infoHeight + GetSpace(infoHeight, imageSize.Height, InfoImageSpace) + imageSize.Height;
+            }
             if (iconSize.Width > 0 && iconSize.Height > 0)
             {
                 infoWidth = iconSize.Width + IconInfoSpace + infoWidth;
-                infoHeight = (infoHeight > iconSize.Height ? infoHeight : iconSize.Height);
+                infoHeight = GetMax(infoHeight, iconSize.Height);
             }
             int width = ((titleWidth > infoWidth) ? titleWidth : infoWidth);
-            int height = titleSize.Height + ((titleSize.Height > 0 && infoSize.Height > 0) ? TitleInfoSpace : 0) + infoSize.Height;
+            int height = titleSize.Height + GetSpace(titleSize.Height, infoHeight, TitleInfoSpace) + infoHeight;
 
             this._ShadowSize = 4;
             this._TitleSize = titleSize;
-            this._InfoSize = infoSize;
+            this._TextSize = textSize;
             this._IconSize = iconSize;
+            this._ImageSize = imageSize;
             this._TotalSize = new Size(2 * InnerMargin.Width + width, 2 * InnerMargin.Height + height);
         }
         /// <summary>
@@ -806,11 +830,34 @@ namespace Djs.Common.Components
         /// <summary>Size of Title text</summary>
         protected Size? _TitleSize;
         /// <summary>Size of Info text</summary>
-        protected Size? _InfoSize;
+        protected Size? _TextSize;
         /// <summary>Size of Icon</summary>
         protected Size? _IconSize;
+        /// <summary>Size of Image</summary>
+        protected Size? _ImageSize;
         /// <summary>Sum of size _TitleSize + _InfoSize</summary>
         protected Size? _TotalSize;
+        /// <summary>
+        /// Vrátí větší z hodnot
+        /// </summary>
+        /// <param name="value1"></param>
+        /// <param name="value2"></param>
+        /// <returns></returns>
+        protected static int GetMax(int value1, int value2)
+        {
+            return ((value1 > value2) ? value1 : value2);
+        }
+        /// <summary>
+        /// Pokud size1 i size2 jsou větší než 0, vrátí space. Jinak vrátí 0.
+        /// </summary>
+        /// <param name="size1"></param>
+        /// <param name="size2"></param>
+        /// <param name="space"></param>
+        /// <returns></returns>
+        protected static int GetSpace(int size1, int size2, int space)
+        {
+            return (size1 > 0 && size2 > 0 ? space : 0);
+        }
         #endregion
         #region Paths for Title, Text, Total - for relative bounds (Location = 0, 0)
         /// <summary>
@@ -826,6 +873,7 @@ namespace Djs.Common.Components
             this._InfoPath = null;
             this._InfoBounds = null;
             if (this._TotalPath != null) this._TotalPath.Dispose();
+            this._ImageBounds = null;
             this._TotalPath = null;
             this._TotalBounds = null;
 
@@ -840,6 +888,7 @@ namespace Djs.Common.Components
             if (this._TitleBounds.HasValue &&
                 this._IconBounds.HasValue &&
                 this._InfoBounds.HasValue &&
+                this._ImageBounds.HasValue &&
                 this._TotalBounds.HasValue)
                 return;
 
@@ -888,11 +937,13 @@ namespace Djs.Common.Components
             int shadowSize = (this._ShadowSize.HasValue ? this._ShadowSize.Value : 0);
             Size titleSize = (this.TitleExist && this._TitleSize.HasValue ? this._TitleSize.Value : Size.Empty);
             Size iconSize = (this.IconExist && this._IconSize.HasValue ? this._IconSize.Value : Size.Empty);
-            Size infoSize = (this.InfoExist && this._InfoSize.HasValue ? this._InfoSize.Value : Size.Empty);
+            Size infoSize = (this.InfoExist && this._TextSize.HasValue ? this._TextSize.Value : Size.Empty);
+            Size imageSize = (this.ImageExist && this._ImageSize.HasValue ? this._ImageSize.Value : Size.Empty);
 
             Rectangle titleBounds = Rectangle.Empty;
             Rectangle iconBounds = Rectangle.Empty;
             Rectangle infoBounds = Rectangle.Empty;
+            Rectangle imageBounds = Rectangle.Empty;
             Rectangle? lineBounds = null;
 
             int mx = InnerMargin.Width;
@@ -926,10 +977,22 @@ namespace Djs.Common.Components
             if (infoSize.Width > 0)
             {
                 infoBounds = new Rectangle(l, t, infoSize.Width, infoSize.Height);
+                t = infoBounds.Bottom + InfoImageSpace;
             }
             else
             {
                 infoBounds = new Rectangle(l, t, 0, 0);
+            }
+
+            // Image:
+            if (imageSize.Width > 0)
+            {
+                imageBounds = new Rectangle(l, t, imageSize.Width, imageSize.Height);
+                t = imageBounds.Bottom + InfoImageSpace;
+            }
+            else
+            {
+                imageBounds = new Rectangle(l, t, 0, 0);
             }
 
             // Line between Title and Info:
@@ -937,13 +1000,14 @@ namespace Djs.Common.Components
                 lineBounds = new Rectangle(titleBounds.X, titleBounds.Bottom, Math.Max(titleBounds.Width, infoBounds.Width), 0);
 
             // Total:
-            Rectangle totalBounds = DrawingExtensions.SummaryRectangle(iconBounds, titleBounds, infoBounds);
+            Rectangle totalBounds = DrawingExtensions.SummaryVisibleRectangle(iconBounds, titleBounds, infoBounds, imageBounds);
             totalBounds = totalBounds.Enlarge(mx, my, mx, my);
             Rectangle outerBounds = totalBounds.Enlarge(shadowSize);
 
             this._TitleBounds = titleBounds;
             this._IconBounds = iconBounds;
             this._InfoBounds = infoBounds;
+            this._ImageBounds = imageBounds;
             this._LineBounds = lineBounds;
             this._TotalBounds = totalBounds;
             this._OuterBounds = outerBounds;
@@ -953,11 +1017,13 @@ namespace Djs.Common.Components
             int shadowSize = (this._ShadowSize.HasValue ? this._ShadowSize.Value : 0);
             Size titleSize = (this.TitleExist && this._TitleSize.HasValue ? this._TitleSize.Value : Size.Empty);
             Size iconSize = (this.IconExist && this._IconSize.HasValue ? this._IconSize.Value : Size.Empty);
-            Size infoSize = (this.InfoExist && this._InfoSize.HasValue ? this._InfoSize.Value : Size.Empty);
+            Size infoSize = (this.InfoExist && this._TextSize.HasValue ? this._TextSize.Value : Size.Empty);
+            Size imageSize = (this.ImageExist && this._ImageSize.HasValue ? this._ImageSize.Value : Size.Empty);
 
             Rectangle titleBounds = Rectangle.Empty;
             Rectangle iconBounds = Rectangle.Empty;
             Rectangle infoBounds = Rectangle.Empty;
+            Rectangle imageBounds = Rectangle.Empty;
             Rectangle? lineBounds = null;
 
             int mx = InnerMargin.Width;
@@ -993,10 +1059,22 @@ namespace Djs.Common.Components
             if (infoSize.Width > 0)
             {
                 infoBounds = new Rectangle(l, t, infoSize.Width, infoSize.Height);
+                t = infoBounds.Bottom + InfoImageSpace;
             }
             else
             {
                 infoBounds = new Rectangle(l, t, 0, 0);
+            }
+
+            // Image:
+            if (imageSize.Width > 0)
+            {
+                imageBounds = new Rectangle(l, t, imageSize.Width, imageSize.Height);
+                t = imageBounds.Bottom + InfoImageSpace;
+            }
+            else
+            {
+                imageBounds = new Rectangle(l, t, 0, 0);
             }
 
             // Line between Title and Info:
@@ -1004,13 +1082,14 @@ namespace Djs.Common.Components
                 lineBounds = new Rectangle(titleBounds.X, titleBounds.Bottom, Math.Max(titleBounds.Width, infoBounds.Width), 0);
 
             // Total:
-            Rectangle totalBounds = DrawingExtensions.SummaryRectangle(iconBounds, titleBounds, infoBounds);
+            Rectangle totalBounds = DrawingExtensions.SummaryVisibleRectangle(iconBounds, titleBounds, infoBounds, imageBounds);
             totalBounds = totalBounds.Enlarge(mx, my, mx, my);
             Rectangle outerBounds = totalBounds.Enlarge(shadowSize);
 
             this._TitleBounds = titleBounds;
             this._IconBounds = iconBounds;
             this._InfoBounds = infoBounds;
+            this._ImageBounds = imageBounds;
             this._LineBounds = lineBounds;
             this._TotalBounds = totalBounds;
             this._OuterBounds = outerBounds;
@@ -1027,6 +1106,8 @@ namespace Djs.Common.Components
         protected GraphicsPath _InfoPath;
         /// <summary>Bounds for Info text</summary>
         protected Rectangle? _InfoBounds;
+        /// <summary>Bounds for Image</summary>
+        protected Rectangle? _ImageBounds;
         /// <summary>Shape of whole tooltip</summary>
         protected GraphicsPath _TotalPath;
         /// <summary>Bounds for inner area of tooltip (border, background) = exclude shadow</summary>
@@ -1214,6 +1295,10 @@ namespace Djs.Common.Components
         /// </summary>
         protected static Size IconMaxSize { get { return new Size(64, 64); } }
         /// <summary>
+        /// Maximal size for Image
+        /// </summary>
+        protected static Size ImageMaxSize { get { return new Size(512, 512); } }
+        /// <summary>
         /// Space between Icon and Info text area
         /// </summary>
         protected static int IconInfoSpace { get { return 5; } }
@@ -1221,6 +1306,10 @@ namespace Djs.Common.Components
         /// Space between Title and Info text area
         /// </summary>
         protected static int TitleInfoSpace { get { return 2; } }
+        /// <summary>
+        /// Space between Info and Image text area
+        /// </summary>
+        protected static int InfoImageSpace { get { return 6; } }
         protected static Point TextShift { get { return new Point(3, 1); } }
         /// <summary>
         /// Margin between ToolTip and its Inner parts (Icon, texts)
@@ -1242,167 +1331,16 @@ namespace Djs.Common.Components
             this._ShadowSize = null;
             this._TitleSize = null;
             this._IconSize = null;
-            this._InfoSize = null;
+            this._TextSize = null;
 
             if (this._Data != null) ((IDisposable)this._Data).Dispose();
             this._Data = null;
         }
         #endregion
         #endregion
-        #region ???
-        private void _CalculatePositionLineHandler(System.Drawing.Drawing2D.GraphicsPath gp, int line, Point point1, Point point2)
-        {
-            if ((this._Position == ToolTipPosition.Under && line == 0) || (this._Position == ToolTipPosition.Above && line == 2))
-            {   // Create a bezier arrow from line (point1 => point2) to this.Point:
-                int xp = this.Point.Value.X;
-                int yp = this.Point.Value.Y;
-                int y = point1.Y;
-                double yh = this.Point.Value.Y - y;
-                if (yh < 0) yh = -yh;        // Height of arrow, positive number
-
-                int x0 = point1.X;
-                int x5 = point2.X;
-                double dx = x5 - x0;         // Width of whole line
-                double dw = 0.75d * (double)yh;     // Width of base of arrow = 75% of height
-                if (dx < 0d) dw = -dw;       // Same sign as dx
-                double mw = dx / 3d;         // Max width of base
-                if (mw < 0d) mw = -mw;
-
-                int x1 = xp + (int)(0.25d * dw);
-                if (dx > 0 && x1 < x0)
-                    x1 = x0 + 4;
-                else if (dx < 0 && x1 > x0)
-                    x1 = x0 - 4;
-
-                int x2 = x1 + (int)(0.25d * dw);
-                int x3 = x2 + (int)(0.50d * dw);
-                int x4 = x3 + (int)(0.25d * dw);
-
-                Point point3 = this.Point.Value;
-                gp.AddLine(x0, y, x1, y);
-                gp.AddBezier(x1, y, x2, y, x2, y, xp, yp);
-                gp.AddBezier(xp, yp, x3, y, x3, y, x4, y);
-                gp.AddLine(x4, y, x5, y);
-            }
-            else
-            {
-                gp.AddLine(point1, point2);
-            }
-        }
-        #endregion
-        #region      zahodit
-        /*
-         * 
-         * 
-        /// <summary>Brush for total background</summary>
-        protected Brush OutlineBrush { get { this.CheckValidPoints(); return this._OutlineBrush; } }
-        /// <summary>Brush for Title background</summary>
-        protected Brush TitleBackBrush { get { this.CheckValidPoints(); return this._TitleBackBrush; } }
-        
-         * 
-         * 
-        /// <summary>Bounds of total basic inner area for ToolTip (by Point and _TotalSize) = Sum(_TitleSize + _InfoSize)</summary>
-        protected Rectangle? _TotalInnerBounds;
-        /// <summary>Bounds of total outer area for ToolTip (by _TotalInnerBounds and ShapeType), for OutlineBrush</summary>
-        protected Rectangle? _TotalOuterBounds;
-        /// <summary>Brush for total background</summary>
-        protected Brush _OutlineBrush;
-
-
-        /// <summary></summary>
-        protected Brush _TitleBackBrush;
-
-        /// <summary></summary>
-        protected Brush _InfoBackBrush;
-
-        /// <summary>
-        /// Calculate total inner bounds by Point, _TotalSize and ClientArea size, and store it to _TotalBounds
-        /// </summary>
-        /// <returns></returns>
-        protected void _CalculateTotalBoundsAbsolute()
-        {
-            // AddTo TextSize (Width, Height):
-            Point add = TextShift;
-            int addX = add.X;
-            int addY = add.Y;
-
-            // Borders around text (Width, Height):
-            Size border = OuterMargin;
-            int borderWidth = border.Width;
-            int borderHeight = border.Height;
-
-            // Target point, Content size, and disponible space:
-            Point point = this.Point.Value;
-            Size size = this._TotalSize.Value.MinMax(this.ToolTipMinSize, this.ToolTipMaxSize);
-            Rectangle space = this._Owner.ClientRectangle;
-
-            // Up/Down Y offset from point:
-            int offsetX = 14;
-            int offsetYUp = 5;
-            int offsetYBottom = 20;
-
-            // X point and Width:
-            int tooltipX = point.X - offsetX;                                                      // X: from cursor (X-10), to right
-            int tooltipWidth = size.Width;
-            if (tooltipWidth > size.Width) tooltipWidth = size.Width;
-            if ((tooltipX + tooltipWidth + addX + borderWidth) > space.Right)                      // Exceeds to Right:
-                tooltipX = space.Right - borderWidth - addX - tooltipWidth;                        // X: from Right edge to left
-            if (tooltipX < (space.Left + borderWidth))                                             // Exceeds to Left:
-            {
-                tooltipX = space.Left + borderWidth;                                               // X: from Left edge to right
-                if ((tooltipX + tooltipWidth + addX + borderWidth) > space.Right)                  // Size exceeds disponible space, reduce width
-                    tooltipWidth = space.Right - borderWidth - addX - borderWidth;
-            }
-
-            // Y point and Height:
-            this._Position = ToolTipPosition.Under;
-            int tooltipY = point.Y + offsetYBottom;                                                // Y: from cursor (Y+20), down
-            int tooltipHeight = size.Height;
-            if (tooltipHeight > size.Height) tooltipHeight = size.Height;
-            if ((tooltipY + tooltipHeight + addY + borderHeight) > space.Bottom)                   // Exceeds to Bottom: from cursor (Y-bh-ah-h), up
-            {
-                this._Position = ToolTipPosition.Above;
-                tooltipY = point.Y - offsetYUp - borderHeight - addY - tooltipHeight;
-                if ((tooltipY + tooltipHeight + addY + borderHeight) > space.Bottom)
-                    tooltipY = space.Bottom - borderHeight - addY - tooltipHeight;
-            }
-            if (tooltipY < (space.Top + borderHeight))
-            {
-                tooltipY = space.Top + borderHeight;
-                if ((tooltipY + tooltipHeight + addY + borderHeight) > space.Bottom)
-                    tooltipHeight = space.Bottom - borderHeight - addY - borderHeight;
-            }
-
-            if (!space.Contains(point))
-                this._Position = ToolTipPosition.None;
-
-            this._TotalInnerBounds = new Rectangle(tooltipX, tooltipY, tooltipWidth + addX, tooltipHeight + addY);
-        }
-
-        /// <summary>
-        /// Calculate and store _TitleBounds and _InfoBounds from _TotalBounds, _TitleSize and _InfoSize
-        /// </summary>
-        /// <param name="totalBounds"></param>
-        protected void _CalculateTitleInfoBounds()
-        {
-            Rectangle totalBounds = this._TotalInnerBounds.Value;
-            Size titleSize = this._TitleSize.Value;
-            bool titleExists = (titleSize.Height > 0);
-            Size infoSize = this._InfoSize.Value;
-            bool infoExists = (infoSize.Height > 0);
-
-            Point add = TextShift;
-            int x = totalBounds.X;
-            int y = totalBounds.Y;
-            this._TitleBounds = (titleExists ? new Rectangle(x + add.X + 10, y + add.Y, titleSize.Width, titleSize.Height) : Rectangle.Empty);
-            if (titleExists) y += titleSize.Height + TitleInfoSpace;
-            this._InfoBounds = (infoExists ? new Rectangle(x + add.X, y + add.Y, infoSize.Width, infoSize.Height) : Rectangle.Empty);
-        }
-        */
-        #endregion
     }
     #endregion
-    #region class ToolTipData : Data for Tooltip object
+    #region class ToolTipData : pouze data tooltip
     /// <summary>
     /// ToolTipData : Data for Tooltip object
     /// </summary>
@@ -1457,6 +1395,10 @@ namespace Djs.Common.Components
         /// </summary>
         public Image Icon { get { return this._Icon; } set { this._Icon = value; } } private Image _Icon;
         /// <summary>
+        /// Image namísto hlavního textu
+        /// </summary>
+        public Image Image { get { return this._Image; } set { this._Image = value; } } private Image _Image;
+        /// <summary>
         /// Layout of Icon - Title - Info in Tooltip
         /// </summary>
         public ToolTipLayoutType ToolTipLayout { get { return this._ToolTipLayout; } set { this._ToolTipLayout = value; } } private ToolTipLayoutType _ToolTipLayout;
@@ -1481,7 +1423,7 @@ namespace Djs.Common.Components
         /// <summary>
         /// true when this contain valid data for draw tooltip
         /// </summary>
-        public bool IsValid { get { return (!String.IsNullOrEmpty(this._InfoText)); } }
+        public bool IsValid { get { return (!String.IsNullOrEmpty(this._InfoText) || this.Image != null); } }
         /// <summary>
         /// Clone of all data
         /// </summary>
@@ -1564,6 +1506,8 @@ namespace Djs.Common.Components
         {
         }
     }
+    #endregion
+    #region Enumy : TooltipAnimationType, TooltipShapeType, ToolTipLayoutType
     /// <summary>
     /// Animation of ToolTip
     /// </summary>
