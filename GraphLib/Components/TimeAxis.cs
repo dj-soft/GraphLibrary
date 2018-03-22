@@ -210,6 +210,13 @@ namespace Djs.Common.Components
                     break;
             }
         }
+        protected override string PrepareToolTipText(DateTime? value)
+        {
+            if (!value.HasValue) return "";
+            string text = value.Value.ToString("dddd") + Environment.NewLine +
+                          value.Value.ToString();
+            return text;
+        }
         #region ITimeConvertor members
         string ITimeConvertor.Identity
         { 

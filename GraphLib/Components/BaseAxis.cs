@@ -70,6 +70,15 @@ namespace Djs.Common.Components
             e.ToolTipData.ShapeType = TooltipShapeType.Rectangle;
             e.ToolTipData.AnimationType = TooltipAnimationType.Instant;
         }
+        /// <summary>
+        /// Připraví a vrátí text do ToolTipu pro danou hodnotu osy.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        protected virtual string PrepareToolTipText(TTick value)
+        {
+            return value.ToString();
+        }
         #endregion
         #region Visual public members, events and so on
         /// <summary>
@@ -1941,7 +1950,8 @@ namespace Djs.Common.Components
             if (!relativePoint.HasValue) return null;
             if (!this.IsValid) return null;
             TTick value = this.CalculateTickForPixelRelative(relativePoint.Value, AxisTickType.Pixel);
-            return value.ToString();
+            string text = this.PrepareToolTipText(value);
+            return text;
         }
         /// <summary>
         /// Create and return text for tooltip for specified relative point

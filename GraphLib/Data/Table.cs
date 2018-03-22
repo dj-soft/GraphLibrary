@@ -1266,6 +1266,14 @@ namespace Djs.Common.Data
         /// </summary>
         public Int32? Width { get { return this.WidthLayout.Size; } set { this.WidthLayout.Size = value; } }
         /// <summary>
+        /// Nejmenší povolená šířka
+        /// </summary>
+        public Int32? WidthMininum { get { return this.WidthLayout.SizeMinimum; } set { this.WidthLayout.SizeMinimum = value; } }
+        /// <summary>
+        /// Největší povolená šířka
+        /// </summary>
+        public Int32? WidthMaximum { get { return this.WidthLayout.SizeMaximum; } set { this.WidthLayout.SizeMaximum = value; } }
+        /// <summary>
         /// true pro viditelný sloupec (default), false for skrytý
         /// </summary>
         public bool IsVisible { get { return this.WidthLayout.Visible; } set { this.WidthLayout.Visible = value; } }
@@ -1276,7 +1284,7 @@ namespace Djs.Common.Data
         /// </summary>
         public bool AutoWidth { get { return this.WidthLayout.AutoSize; } set { this.WidthLayout.AutoSize = value; } }
         /// <summary>
-        /// Veškeré hodnoty související s výškou řádku (rozsah hodnot, povolení Resize)
+        /// Veškeré hodnoty související s šířkou sloupce (rozsah hodnot, povolení Resize)
         /// </summary>
         public SequenceLayout WidthLayout { get { return this._SizeLayout; } } private SequenceLayout _SizeLayout;
         private ISequenceLayout _SequenceLayout { get { return (ISequenceLayout)this._SizeLayout; } }
@@ -1868,15 +1876,16 @@ namespace Djs.Common.Data
         /// </summary>
         /// <param name="sizeMinimum"></param>
         /// <param name="sizeDefault"></param>
-        public SequenceLayout(int sizeMinimum, int sizeDefault)
+        public SequenceLayout(int? sizeMinimum, int sizeDefault)
         {
             this.SizeMinimum = sizeMinimum;
             this.SizeDefault = sizeDefault;
         }
-        public SequenceLayout(int sizeMinimum, int sizeDefault, int sizeMaximum)
+        public SequenceLayout(int? sizeMinimum, int sizeDefault, int? sizeMaximum)
         {
             this.SizeMinimum = sizeMinimum;
             this.SizeDefault = sizeDefault;
+            this.SizeMaximum = sizeMaximum;
             this.SizeRange = new Int32NRange(sizeMinimum, sizeMaximum);
         }
         /// <summary>
@@ -1891,7 +1900,11 @@ namespace Djs.Common.Data
         /// <summary>
         /// Minimální velikost prvku
         /// </summary>
-        protected int SizeMinimum { get; set; }
+        public int? SizeMinimum { get; set; }
+        /// <summary>
+        /// Minimální velikost prvku
+        /// </summary>
+        public int? SizeMaximum { get; set; }
         /// <summary>
         /// Implicitní velikost prvku
         /// </summary>
@@ -1953,7 +1966,10 @@ namespace Djs.Common.Data
         /// <returns></returns>
         protected int AlignSizeToValidRange(int size)
         {
-            if (size < this.SizeMinimum) size = this.SizeMinimum;
+            if (this.SizeMaximum.HasValue && size > this.SizeMaximum.Value) size = this.SizeMaximum.Value;
+            if (this.SizeMinimum.HasValue && size < this.SizeMinimum.Value) size = this.SizeMinimum.Value;
+            if (size < 0) size = 0;
+
             Int32NRange sizeRange = this.SizeRange;         // Automaticky vyhodnocuje ParentLayout
             if (sizeRange != null)
             {

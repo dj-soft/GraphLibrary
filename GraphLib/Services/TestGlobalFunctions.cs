@@ -13,7 +13,7 @@ namespace Djs.Common.Services
         /// <summary>
         /// Activity of this implementation
         /// </summary>
-        PluginActivity IPlugin.Activity { get { return PluginActivity.OnlyDebug; } }
+        PluginActivity IPlugin.Activity { get { return PluginActivity.Standard; } }
         /// <summary>
         /// Create and return items for Toolbar GUI from current service
         /// </summary>
