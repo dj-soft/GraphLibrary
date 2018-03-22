@@ -167,10 +167,14 @@ namespace Djs.Common.TestGUI
                     int height = ((this.Rand.Next(0, 100) > 80) ? 65 : 25);
 
                     Row row = new Row(klic, datumOd, datumDo, graph1, price, image);
+
                     if (this.Rand.Next(0, 100) > 80)
                         row.Height = 65;
 
                     table.AddRow(row);
+
+                    Cell cim = row["image"];
+                    cim.UseImageAsToolTip = true;
 
                     imgPointer = (++imgPointer) % imgCount;
                 }
@@ -230,11 +234,22 @@ namespace Djs.Common.TestGUI
                     string t2 = (mf == "M" ? arrayM2[Rand.Next(0, arrayM2.Length)] : arrayF2[Rand.Next(0, arrayF2.Length)]);
                     string nazev = t1 + " " + t2;
                     string value = t2 + " " + t1;
+
+                    // TextComparable obsahuje Text = "Jméno Příjmení" (čitelné pro uživatelů), a porovnávací hodnotu = "Příjmení Jméno" (vhodné pro třídění):
                     TextComparable tc = new TextComparable(nazev, value);
 
                     string prof = arrayP[Rand.Next(0, arrayP.Length)];
 
-                    Row row = new Row(r, image, nazev, prof, mf);
+                    Row row = new Row(r, image, tc, prof, mf);
+
+                    Cell imageCell = row[1];
+                    imageCell.ToolTip = nazev;
+                    imageCell.UseImageAsToolTip = true;
+
+                    Cell nameCell = row[2];
+                    nameCell.ToolTip = nazev;
+                    nameCell.ToolTipImage = image;
+
                     table.AddRow(row);
                 }
 
