@@ -221,7 +221,7 @@ namespace Djs.Common.TestGUI
                         new Column() { Name = "photo", Title = "Fotografie", SortingEnabled = false, Width = 45, WidthMininum = 10, WidthMaximum = 60 },
                         new Column() { Name = "nazev", Title = "Jméno", ToolTip = "Jméno zaměstnance", SortingEnabled = true, Width = 200, WidthMininum = 50, WidthMaximum = 300 },
                         new Column() { Name = "prof", Title = "Profese", SortingEnabled = true, ToolTip = "Hlavní profese zaměstnance", Width = 150 },
-                        new Column() { Name = "gender", Title = "Rod", SortingEnabled = false, Width = 35, WidthMininum = 35, WidthMaximum = 35 }
+                        new Column() { Name = "gender", Title = "Rod", SortingEnabled = false, Width = 35, AllowColumnResize = false, WidthMininum = 35, WidthMaximum = 35 }
                     );
 
                 Image[] images = _LoadImages();
