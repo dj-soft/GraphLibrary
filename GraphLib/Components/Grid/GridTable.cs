@@ -1480,7 +1480,7 @@ namespace Djs.Common.Components.Grid
             VisualStyle style = ((IVisualMember)this.DataTable).Style;
             Color color = style.BorderColor ?? Skin.Grid.BorderLineColor;
             BorderLinesType linesType = style.BorderLines ?? Skin.Grid.BorderLineType;
-
+            // GPainter.DrawBorder(e.Graphics, boundsAbsolute, RectangleSide.Right | RectangleSide.Bottom, null, color, null);
             this.Host.DrawBorder(e.Graphics, boundsAbsolute, color, linesType, true);
         }
         /// <summary>
@@ -1852,7 +1852,7 @@ namespace Djs.Common.Components.Grid
             if (Application.App.IsDebugMode)
                 GPainter.DrawBorder(e.Graphics, boundsAbsolute, RectangleSide.All, 
                     System.Drawing.Drawing2D.DashStyle.Dot,
-                    Color.Yellow, Color.LightGreen, Color.IndianRed, Color.Blue);
+                    Color.Yellow, Color.LightGreen, Color.Red, Color.DarkBlue);
         }
         #endregion
         #region Interaktivita
@@ -2893,6 +2893,8 @@ namespace Djs.Common.Components.Grid
         {
             base.DrawContent(e, boundsAbsolute, drawAsGhost, opacity);
             this.DrawCellContent(e, boundsAbsolute);
+            if (this.OwnerRow.RowId == 0 && this.OwnerColumn.ColumnId == 0)
+            { }
             this.OwnerGTable.DrawRowGridLines(e, this.OwnerCell, boundsAbsolute);
             this.DrawDebugBorder(e, boundsAbsolute, opacity);
         }

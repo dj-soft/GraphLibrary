@@ -91,6 +91,7 @@ namespace Djs.Common.Components
             }
 
             // 3D efekt na okrajích:
+            draw3D = false;
             if (draw3D)
             {   // 3D okraje NEJSOU kresleny na poslední pixel vpravo a dole (ten je vyhrazen pro linku barvy lineColor), 
                 // 3D okraje jsou o 1 pixel před tím:
@@ -163,10 +164,10 @@ namespace Djs.Common.Components
         /// </param>
         public static void DrawBorder(Graphics graphics, Rectangle bounds, RectangleSide sides, DashStyle? dashStyle, Color lineColor, float? effect3D)
         {
-            Color? colorTop = null;
-            Color? colorRight = null;
-            Color? colorBottom = null;
-            Color? colorLeft = null;
+            Color? colorTop = lineColor;
+            Color? colorRight = lineColor;
+            Color? colorBottom = lineColor;
+            Color? colorLeft = lineColor;
             if (effect3D.HasValue && effect3D.Value != 0f)
             {
                 if (effect3D.Value > 0f)
@@ -213,17 +214,17 @@ namespace Djs.Common.Components
                 if (colorRight.HasValue && (sides & RectangleSide.Right) != 0)
                 {
                     pen.Color = colorRight.Value;
-                    graphics.DrawLine(pen, x0, y1, x1, y1);
+                    graphics.DrawLine(pen, x1, y0, x1, y1);
                 }
                 if (colorBottom.HasValue && (sides & RectangleSide.Bottom) != 0)
                 {
                     pen.Color = colorBottom.Value;
-                    graphics.DrawLine(pen, x0, y0, x0, y1);
+                    graphics.DrawLine(pen, x0, y1, x1, y1);
                 }
                 if (colorLeft.HasValue && (sides & RectangleSide.Left) != 0)
                 {
                     pen.Color = colorLeft.Value;
-                    graphics.DrawLine(pen, x1, y0, x1, y1);
+                    graphics.DrawLine(pen, x0, y0, x0, y1);
                 }
             }
         }
