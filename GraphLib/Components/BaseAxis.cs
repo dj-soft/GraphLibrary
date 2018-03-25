@@ -744,8 +744,9 @@ namespace Djs.Common.Components
             return scale;
         }
         /// <summary>
-        /// For current Scale (=number of value units per one pixel) select one from ArrangementOne to this.ArrangementCurrent
-        /// Can call methods: DetectTicks(); { CallTicksChanged(); CallDrawRequest(); } CallArrangementChanged();
+        /// Pro aktuální měřítko (Scale = počet datových jednotek na jeden pixel)  najde nejvhodnější ArrangementOne,
+        /// a pokud se bude lišit od aktuálního, pak nově vytvoří Ticky pro osu, a zavolá event CallArrangementChanged().
+        /// Může vyvolat metody: DetectTicks(); { CallTicksChanged(); CallDrawRequest(); } CallArrangementChanged();
         /// </summary>
         internal void DetectArrangement(ProcessAction actions, EventSourceType eventSource)
         {
@@ -764,7 +765,7 @@ namespace Djs.Common.Components
                 this.CallArrangementChanged(oldArrangement, newArrangement, eventSource);
         }
         /// <summary>
-        /// Returns ArrangementOne for current Scale.
+        /// Vrátí ArrangementOne pro aktuální měřítko (Scale).
         /// </summary>
         /// <returns></returns>
         protected ArrangementOne GetCurrentArrangement()
@@ -772,8 +773,8 @@ namespace Djs.Common.Components
             return this.Arrangements.SelectSetForScale(this.Scale); ;
         }
         /// <summary>
-        /// For current ArrangementCurrent and Value prepare all Ticks on current Axis.
-        /// Can call methods: CallTicksChanged(); CallDrawRequest();
+        /// Zajistí, že pole TickList bude obsahovat platné Ticky pro aktuální osu.
+        /// Vyvolá požadované eventy (CallTicksChanged(); CallDrawRequest()), pokud dojde ke změně v naplnění pole TickList.
         /// </summary>
         /// <param name="actions">Akce k provedení</param>
         /// <param name="eventSource">Zdroj této události</param>
@@ -793,26 +794,29 @@ namespace Djs.Common.Components
                 this.CallDrawRequest(eventSource);
         }
         /// <summary>
-        /// Create and returns an array of ticks for current Value and ArrangementCurrent.
+        /// Vytvoří a vrátí pole Ticků pro aktuální osu (arrangement, měřítko, hodnota, počet pixelů).
         /// </summary>
         /// <returns></returns>
         protected virtual BaseTick<TTick>[] GetCurrentTicks()
         {
             ArrangementOne arrangementCurrent = this.ArrangementCurrent;
 
-            // Create and fill dictionary of ticks, where key is position on axis.
-            // Fill it from greater ticks to smallest ticks:
+            // Založíme Dictionary, kde klíčem je typ Tick (pozice na ose), a hodnotou je vytvořený Tick:
             Dictionary<TTick, BaseTick<TTick>> tickDict = new Dictionary<TTick, BaseTick<TTick>>();
+
+            // Do Dictionary naplníme jednotlivé Ticky, počínaje těmi s nejvyšší důležitostí:
             arrangementCurrent.AddInitialTicks(tickDict);
             arrangementCurrent.CalculateTicksLine(AxisTickType.BigLabel, tickDict);
             arrangementCurrent.CalculateTicksLine(AxisTickType.StdLabel, tickDict);
             arrangementCurrent.CalculateTicksLine(AxisTickType.BigTick, tickDict);
             arrangementCurrent.CalculateTicksLine(AxisTickType.StdTick, tickDict);
 
+            // Připravené Ticky převezmu z Dictionary do Listu a setřídím je podle jejich hodnoty:
             List<BaseTick<TTick>> newTickList = new List<BaseTick<TTick>>(tickDict.Values);
             newTickList.Sort((a, b) => this._ValueHelper.CompareEdge(a.Value, b.Value));
 
-            // Suppress label on Initial ticks, when its text are equal to first or last tick of type Title:
+            // Potlačíme zobrazení labelů na Ticku typu Initialial, pokud jeho text je identický 
+            //  jako text na prvním / posledním Ticku typu BigLabel (byly by dva shodné texty poblíž u sebe):
             int tickCount = newTickList.Count;
             if (tickCount > 0 && newTickList[0].TickType == AxisTickType.OuterLabel)
             {
@@ -829,7 +833,7 @@ namespace Djs.Common.Components
                     initTick.Text = "";
             }
 
-            // Uložíme aktuálně použité hodnoty:
+            // Uložíme aktuálně použité hodnoty jako Last, abychom dokázali příště poznat změnu dat, která má vést k přepočtům na ose:
             this._LastTickArrangement = arrangementCurrent;
             this._LastTickSize = this.PixelSize;
             this._LastTickScale = this.Scale;
@@ -837,12 +841,25 @@ namespace Djs.Common.Components
 
             return newTickList.ToArray();
         }
+        /// <summary>
+        /// Arrangement, pro který byl naposledy generován soupis Ticků
+        /// </summary>
         protected ArrangementOne _LastTickArrangement;
+        /// <summary>
+        /// Velikost osy v pixelech, pro kterou byl naposledy generován soupis Ticků
+        /// </summary>
         protected Decimal? _LastTickSize;
+        /// <summary>
+        /// Měřítko osy, pro které byl naposledy generován soupis Ticků
+        /// </summary>
         protected Decimal? _LastTickScale;
+        /// <summary>
+        /// Hodnota osy (Begin, End), pro kterou byl naposledy generován soupis Ticků
+        /// </summary>
         protected TValue _LastTickValue;
         /// <summary>
-        /// Obsahuje true, pokud dříve vygenerované ticky (pomocí metody GetCurrentTicks()) jsou pro aktuální stav (ArrangementCurrent, PixelSize, Scale, Value) stále platné.
+        /// Obsahuje true, pokud dříve vygenerované ticky (pomocí metody GetCurrentTicks()) jsou stále platné 
+        /// pro aktuální stav (ArrangementCurrent, PixelSize, Scale, Value).
         /// </summary>
         protected bool IsCurrentTicksValid
         {
