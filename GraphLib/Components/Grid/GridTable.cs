@@ -1480,8 +1480,15 @@ namespace Djs.Common.Components.Grid
             VisualStyle style = ((IVisualMember)this.DataTable).Style;
             Color color = style.BorderColor ?? Skin.Grid.BorderLineColor;
             BorderLinesType linesType = style.BorderLines ?? Skin.Grid.BorderLineType;
-            // GPainter.DrawBorder(e.Graphics, boundsAbsolute, RectangleSide.Right | RectangleSide.Bottom, null, color, null);
-            this.Host.DrawBorder(e.Graphics, boundsAbsolute, color, linesType, true);
+            GPainter.DrawBorder(e.Graphics, boundsAbsolute, RectangleSide.Right | RectangleSide.Bottom, null, color, null);
+            if (cell.Row.IsActive)
+            {
+                Rectangle boundsActive = boundsAbsolute.Enlarge(0, 0, 0, -1);
+                Color colorTop = color.Morph(Skin.Modifiers.Effect3DDark, Skin.Modifiers.Effect3DRatio);
+                Color colorBottom = color.Morph(Skin.Modifiers.Effect3DLight, Skin.Modifiers.Effect3DRatio);
+                GPainter.DrawBorder(e.Graphics, boundsActive, RectangleSide.Top | RectangleSide.Bottom, null, colorTop, null, colorBottom, null);
+            }
+            // this.Host.DrawBorder(e.Graphics, boundsAbsolute, color, linesType, true);
         }
         /// <summary>
         /// Vrací barvu pro vykreslení pozadí daného řádku.
@@ -1849,10 +1856,12 @@ namespace Djs.Common.Components.Grid
         /// <param name="opacity"></param>
         protected void DrawDebugBorder(GInteractiveDrawArgs e, Rectangle boundsAbsolute, int? opacity)
         {
+            /*
             if (Application.App.IsDebugMode)
                 GPainter.DrawBorder(e.Graphics, boundsAbsolute, RectangleSide.All, 
                     System.Drawing.Drawing2D.DashStyle.Dot,
                     Color.Yellow, Color.LightGreen, Color.Red, Color.DarkBlue);
+            */
         }
         #endregion
         #region Interaktivita
@@ -2651,7 +2660,7 @@ namespace Djs.Common.Components.Grid
         {
             this.OwnerGTable.RowHeaderClick(e, this.OwnerRow);
         }
-        protected override bool CanDrag { get { return this.OwnerTable.AllowColumnReorder; } }
+        protected override bool CanDrag { get { return this.OwnerTable.AllowRowReorder; } }
         #endregion
         #region Draw - kreslení záhlaví řádku
         protected override void DrawContent(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)

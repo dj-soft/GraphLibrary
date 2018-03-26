@@ -314,7 +314,8 @@ namespace Djs.Common.Components
         /// <summary>
         /// Current Scale value = number of axis logical units per one visual pixel.
         /// </summary>
-        private decimal _Scale;
+        private decimal _Scale { get { return this.__Scale; } set { this.__Scale = value;  this._LastTickPositionDict = null; } }
+        private decimal __Scale;
         /// <summary>
         /// Maximum limits for Scale value.
         /// Scale can not be outside this Limit, when is specified.
@@ -782,8 +783,8 @@ namespace Djs.Common.Components
             if (this.IsCurrentTicksValid) return;
 
             BaseTick<TTick>[] oldTickList = this.TickList;
-            BaseTick<TTick>[] newTickList = this.GetCurrentTicks();
-            this.TickList = newTickList;
+            this.TickList = this.GetCurrentTicks();
+            BaseTick<TTick>[] newTickList = this.TickList;
 
             if (IsAction(actions, ProcessAction.CallChangedEvents))
                 this.CallTicksChanged(oldTickList, newTickList, eventSource);
@@ -840,6 +841,8 @@ namespace Djs.Common.Components
             this._LastTickSize = this.PixelSize;
             this._LastTickScale = this.Scale;
             this._LastTickValue = this.Value;
+
+            this._LastTickPositionDict = tickDict;
 
             return newTickList.ToArray();
         }
@@ -1686,14 +1689,14 @@ namespace Djs.Common.Components
         /// </summary>
         protected class ArrangementItem
         {
-            public ArrangementItem(AxisTickType tickType, TSize interval, string timeFormat, ArrangementOne owner)
+            public ArrangementItem(AxisTickType tickType, TSize interval, string textFormat, ArrangementOne owner)
             {
                 this.Owner = owner;
                 this.TickType = tickType;
                 this.Interval = interval;
                 decimal? unitSize = this.Axis.GetAxisUnits(interval);
                 this._UnitSize = (unitSize.HasValue && unitSize.Value > 0m ? unitSize.Value : 0m);
-                this.TimeFormat = timeFormat;
+                this.TextFormat = textFormat;
             }
             public override string ToString()
             {
@@ -1719,7 +1722,7 @@ namespace Djs.Common.Components
             /// <summary>
             /// User string format for display value of this tick on axis
             /// </summary>
-            public string TimeFormat { get; private set; }
+            public string TextFormat { get; private set; }
             /// <summary>
             /// Return distance between two tick (in pixels) of this type for specified scale (scale = number of units of Value per one pixel).
             /// </summary>
@@ -1792,9 +1795,9 @@ namespace Djs.Common.Components
                     this.AddOneTick(tickDict, value.End, textEnd, AxisTickAlignment.End);
             }
             /// <summary>
-            /// Store to Dictionary (tickDict) all ticks for current item and current state of Axis (TimeRange, Scale).
-            /// When Dictionary contains a key for any time on line of this item, does not add new tick.
-            /// Dictionary must be filled from top to bottom (from Title to Regular items).
+            /// Uloží do předané Dictionary všechny ticky pro this položku Arrangement (=jedna řada ticků).
+            /// Vygeneruje Ticky pro celý aktuální rozsah osy (this.Axis.Value), jen pro ty Ticky, jejichž hodnota dosud v Dictionary není obsažena.
+            /// Při správném postupu se tak osa naplní od Ticků největších (Outer, Title) až po nejmenší (Regular) Ticky.
             /// </summary>
             /// <param name="tickDict"></param>
             internal void CalculateTicksLine(Dictionary<TTick, BaseTick<TTick>> tickDict)
@@ -1804,11 +1807,15 @@ namespace Djs.Common.Components
                 this.CalculateTicksLine(tickDict, lastTickDict, ref currentPixelOffset);
             }
             /// <summary>
-            /// Store to Dictionary (tickDict) all ticks for current item and current state of Axis (TimeRange, Scale).
-            /// When Dictionary contains a key for any time on line of this item, does not add new tick.
-            /// Dictionary must be filled from top to bottom (from Title to Regular items).
+            /// Uloží do předané Dictionary všechny ticky pro this položku Arrangement (=jedna řada ticků).
+            /// Vygeneruje Ticky pro celý aktuální rozsah osy (this.Axis.Value), jen pro ty Ticky, jejichž hodnota dosud v Dictionary není obsažena.
+            /// Při správném postupu se tak osa naplní od Ticků největších (Outer, Title) až po nejmenší (Regular) Ticky.
+            /// Tato varianta může využívat informace o dřívějších pozicích Ticků v Dictionary lastTickDict 
+            /// a o posunu (offsetu) dřívějších a aktuálních Ticků v ref currentPixelOffset.
             /// </summary>
             /// <param name="tickDict"></param>
+            /// <param name="lastTickDict"></param>
+            /// <param name="currentPixelOffset"></param>
             internal void CalculateTicksLine(Dictionary<TTick, BaseTick<TTick>> tickDict, Dictionary<TTick, BaseTick<TTick>> lastTickDict, ref int? currentPixelOffset)
             {
                 TValue value = this.Axis.Value;
@@ -1830,37 +1837,73 @@ namespace Djs.Common.Components
                     tick = tickNext;
                 }
             }
+            /// <summary>
+            /// Vrátí text pro daný Tick.
+            /// Pokud je zadán formátovací string (this.TextFormat), zavolá se abstract metoda this.Axis.GetTickText(tick, this.TextFormat).
+            /// Jinak se vrátí prostý tick.ToString().
+            /// </summary>
+            /// <param name="tick"></param>
+            /// <returns></returns>
             private string GetTickText(TTick tick)
             {
-                return (this.TimeFormat != null ? this.Axis.GetTickText(tick, this.TimeFormat) : null);
+                return (this.TextFormat != null ? this.Axis.GetTickText(tick, this.TextFormat) : tick.ToString());
             }
+            /// <summary>
+            /// Zajistí přidání jednoho Ticku do dané Dictionary.
+            /// Tato varianta metody nepracuje s pamětí předchozích pozic (lastTickDict a currentPixelOffset).
+            /// </summary>
+            /// <param name="tickDict"></param>
+            /// <param name="value"></param>
+            /// <param name="text"></param>
+            /// <param name="alignment"></param>
             private void AddOneTick(Dictionary<TTick, BaseTick<TTick>> tickDict, TTick value, string text, AxisTickAlignment alignment)
             {
                 Dictionary<TTick, BaseTick<TTick>> lastTickDict = null;
                 int? currentPixelOffset = null;
                 this.AddOneTick(tickDict, value, text, alignment, lastTickDict, ref currentPixelOffset);
             }
+            /// <summary>
+            /// Zajistí přidání jednoho Ticku do dané Dictionary.
+            /// Tato varianta metody pracuje s pamětí předchozích pozic (lastTickDict a currentPixelOffset).
+            /// </summary>
+            /// <param name="tickDict"></param>
+            /// <param name="value"></param>
+            /// <param name="text"></param>
+            /// <param name="alignment"></param>
+            /// <param name="lastTickDict"></param>
+            /// <param name="currentPixelOffset"></param>
             private void AddOneTick(Dictionary<TTick, BaseTick<TTick>> tickDict, TTick value, string text, AxisTickAlignment alignment, Dictionary<TTick, BaseTick<TTick>> lastTickDict, ref int? currentPixelOffset)
             {
                 if (!tickDict.ContainsKey(value))
                 {
                     Int32? pixel = null;
-                    if (lastTickDict != null)
-                    {
-                        BaseTick<TTick> lastTick;
-                        if (lastTickDict.TryGetValue(value, out lastTick))
-                        {
-                            qqq;
+                    BaseTick<TTick> lastTick;
+                    if (lastTickDict != null && lastTickDict.TryGetValue(value, out lastTick))
+                    {   // Pokud máme k dispozici údaje o Ticku pro tutéž hodnotu (value), jako nyní ukládáme na osu:
+                        // Přečteme si její tehdejší pozici v pixelech:
+                        int lastPixel = lastTick.RelativePixel;
+                        if (!currentPixelOffset.HasValue)
+                        {   // Pokud dosud nemáme určen offset = posun mezi předchozími Ticky (předchozí stav osy) a aktuálním stavem osy,
+                            //  tak zjistíme aktuální pozici ticku a odvodíme si offset pro následující Ticky:
+                            pixel = this.Axis.CalculatePixelLocalForTick(value);
+                            currentPixelOffset = pixel - lastPixel;
                         }
+                        else
+                        {   // Pokud již máme určen offset, tak jej použijeme:
+                            pixel = lastPixel + currentPixelOffset.Value;
+                        }
+                    }
+                    
+                    if (!pixel.HasValue)
+                        // Nemáme pole dřívějších Ticků, anebo v něm nebyl Tick pro aktuální hodnotu (value):
+                        //  určíme pozici (pixel) standardně výpočtem na ose:
+                        pixel = this.Axis.CalculatePixelLocalForTick(value);
 
-                        pixel = this.Axis.CalculatePixelLocalForTick(value);
-                    }
-                    else
+                    if (pixel.HasValue)
                     {
-                        pixel = this.Axis.CalculatePixelLocalForTick(value);
+                        BaseTick<TTick> tick = new BaseTick<TTick>(this.TickType, value, pixel.Value, this.TickSize, text, alignment);
+                        tickDict.Add(value, tick);
                     }
-                    BaseTick<TTick> tick = new BaseTick<TTick>(this.TickType, value, pixel.Value, this.TickSize, text, alignment);
-                    tickDict.Add(value, tick);
                 }
             }
         }

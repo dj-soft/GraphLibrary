@@ -682,7 +682,7 @@ namespace Djs.Common.Components
         protected virtual Color DefaultTextColorDisable { get { return Color.FromArgb(64, Color.DimGray); } }
         protected virtual Color DefaultEffect3DDark { get { return Color.DarkGray; } }
         protected virtual Color DefaultEffect3DLight { get { return Color.White; } }
-        protected virtual float DefaultEffect3DRatio { get { return 0.25f; } }
+        protected virtual float DefaultEffect3DRatio { get { return 0.40f; } }
         #endregion
     }
     /// <summary>
