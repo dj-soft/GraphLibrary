@@ -145,6 +145,10 @@ namespace Djs.Common.TestGUI
             Table table = new Table(name);
             using (Application.App.TraceScope("TestFormGrid", "_PrepareTable", "Start", "RowCount: " + rowCount.ToString()))
             {
+
+                table.AllowRowSelectByClick = false;
+                table.AllowRowReorder = false;
+
                 table.AddColumns
                     (
                         new Column() { Title = "Klíč", ToolTip = "Klíč záznamu v tomto sloupci", Name = "key", FormatString = "0000000", Width = 60 },
@@ -214,6 +218,8 @@ namespace Djs.Common.TestGUI
                 string[] arrayP = "Konstruktér;Technolog;Mistr;Svářeč;Elektro;Montér;Obráběč;Slévač;Formíř;Šponař;Jeřábník;Kuchař;Řidič;Skladník;Účetní;Analytik;Programátor;Recepční;Prodavač;Učitel;Klempíř;Pokrývač;Lékař;Úředník".Split(';');
 
                 #endregion
+
+                table.AllowRowResize = false;
 
                 table.AddColumns
                     (
