@@ -263,7 +263,7 @@ namespace Djs.Common.Components
             return 0;
         }
         #endregion
-        #region Bounds, Value and ValueLimit, Scale and ScaleLimit: properties, call Set methods
+        #region Data: Value, ValueSilent, ValueLimit = aktuální rozsah osy. Scale, ScaleLimit = aktuální měřítko. ResizeContentMode, IsValid, Identity.
         /// <summary>
         /// Value of Axis = Visible Range of data on Axis
         /// </summary>
@@ -392,7 +392,7 @@ namespace Djs.Common.Components
         /// </summary>
         protected virtual decimal PixelSizeMinimum { get { return 20m; } }
         #endregion
-        #region Value conversion between TSize, TTick, TValue and Unit, Pixels, Scale
+        #region Různé přepočtové metody mezi údaji typu: Value, Size, Pixel, Zoom, Ratio, Shift, Scale
         /// <summary>
         /// Returns a local pixel distance from Axis.FirstPixel, for specified TTick point (this is a logical value).
         /// Return pixel == 0 for tick = this.Value.Begin.
@@ -429,7 +429,6 @@ namespace Djs.Common.Components
             decimal? pixels = this.GetPixelsFromUnits(units);
             return (pixels.HasValue ? (Int32?)(Math.Round(pixels.Value, 0)) : (Int32?)null);
         }
-
         /// <summary>
         /// Returns a TTick (a logical value) for specified relative point (pixel value).
         /// Relative point is in sameo coordinate as this.Bounds, this is: when this.Bounds.Location = { 10, 10 } and relativePoint = { 10, 10 }, 
@@ -457,7 +456,6 @@ namespace Djs.Common.Components
                 tick = this.ArrangementCurrent.RoundValueToTick(tick, roundType.Value);
             return tick;
         }
-
         /// <summary>
         /// Returns a logical TSize for specified distance in pixels, simply by pixel distance and current Scale of Axis.
         /// </summary>
@@ -544,7 +542,6 @@ namespace Djs.Common.Components
                 begin = this.ArrangementCurrent.RoundValueToTick(begin, roundType.Value);
             return this.GetValueSize(begin, originalValue.Size);
         }
-
         /// <summary>
         /// Returns a clone of value.
         /// </summary>
@@ -600,7 +597,6 @@ namespace Djs.Common.Components
             decimal? pixels = this.GetPixelsFromUnits(units);                  // Distance in pixels by units and Scale (or null)
             return pixels;
         }
-
         #endregion
         #region Set and Detect methods - core of Axis for inner reacalculations and change values
         /*    Akce a reakce objektu BaseAxis na změny / vložení hodnot:
@@ -705,8 +701,9 @@ namespace Djs.Common.Components
             this.SetValue(newValue, RemoveActions(actions, ProcessAction.RecalcScale, ProcessAction.RecalcInnerData), eventSource);
         }
         /// <summary>
-        /// Calculate current scale from current Value.Size and AxisSizeInPixel.
-        /// Cann call methods: DetectArrangement() { DetectTicks() { CallTicksChanged(); CallDrawRequest(); } CallArrangementChanged(); } CallScaleChanged();
+        /// Zjistí, jakou hodnotu by mělo mít měřítko (Scale) pro současnou osu (Pixely : AxisSizeInPixel, Value.Size).
+        /// Pokud dojde ke změně Scale, uloží si novou hodnotu a vyvolá eventy:
+        /// DetectArrangement() { DetectTicks() { CallTicksChanged(); CallDrawRequest(); } CallArrangementChanged(); } CallScaleChanged();
         /// </summary>
         /// <param name="actions">Akce k provedení</param>
         /// <param name="eventSource">Zdroj této události</param>
@@ -721,6 +718,7 @@ namespace Djs.Common.Components
             if (newScale <= 0m || oldScale == newScale) return;
 
             this._Scale = newScale;
+            this._LastTickPositionDict = null;
 
             if (IsAction(actions, ProcessAction.RecalcInnerData))
                 this.DetectArrangement(actions, eventSource);
@@ -804,12 +802,16 @@ namespace Djs.Common.Components
             // Založíme Dictionary, kde klíčem je typ Tick (pozice na ose), a hodnotou je vytvořený Tick:
             Dictionary<TTick, BaseTick<TTick>> tickDict = new Dictionary<TTick, BaseTick<TTick>>();
 
+            // Můžeme využít data o dosavadních pozicích Ticků:
+            Dictionary<TTick, BaseTick<TTick>> lastTickDict = this._LastTickPositionDict;
+            int? currentPixelOffset = null;
+
             // Do Dictionary naplníme jednotlivé Ticky, počínaje těmi s nejvyšší důležitostí:
             arrangementCurrent.AddInitialTicks(tickDict);
-            arrangementCurrent.CalculateTicksLine(AxisTickType.BigLabel, tickDict);
-            arrangementCurrent.CalculateTicksLine(AxisTickType.StdLabel, tickDict);
-            arrangementCurrent.CalculateTicksLine(AxisTickType.BigTick, tickDict);
-            arrangementCurrent.CalculateTicksLine(AxisTickType.StdTick, tickDict);
+            arrangementCurrent.CalculateTicksLine(AxisTickType.BigLabel, tickDict, lastTickDict, ref currentPixelOffset);
+            arrangementCurrent.CalculateTicksLine(AxisTickType.StdLabel, tickDict, lastTickDict, ref currentPixelOffset);
+            arrangementCurrent.CalculateTicksLine(AxisTickType.BigTick, tickDict, lastTickDict, ref currentPixelOffset);
+            arrangementCurrent.CalculateTicksLine(AxisTickType.StdTick, tickDict, lastTickDict, ref currentPixelOffset);
 
             // Připravené Ticky převezmu z Dictionary do Listu a setřídím je podle jejich hodnoty:
             List<BaseTick<TTick>> newTickList = new List<BaseTick<TTick>>(tickDict.Values);
@@ -857,6 +859,24 @@ namespace Djs.Common.Components
         /// Hodnota osy (Begin, End), pro kterou byl naposledy generován soupis Ticků
         /// </summary>
         protected TValue _LastTickValue;
+        /// <summary>
+        /// Index ticků, jak byly posledně vygenerovány.
+        /// Slouží při tvorbě nových Ticků jako podklad o fyzické pozici předchozích ticků (souřadnice v pixelech),
+        /// důvodem je "hladké" posouvání celé sady ticků po ose při běžném shiftu pomocí posouván myší.
+        /// Pokud by neexistovala data o předchozích pozicích ticků, pak se pozice (v pixelech) pro nové ticky počítá matematicky podle měřítka,
+        /// což je jistě správný postup. Ale musí se při něm provést zaokrouhlení pozice ticku na celé pixely (nepodporujeme kreslení ticků na pixely
+        /// s float souřadnicí). I toto zaokrouhlení je tedy opodstatněné. Ale po přesunu dat na ose o 1 pixel (posun myší) se vypočte nová hodnota Value.Begin,
+        /// následně se vypočtou nové pozice jednotlivých Ticků na ose, ty se zaokrouhlí na celé pixely, ale to může být JINÉ ZAOKROUHLENÍ než pro minulé Value.Begin.
+        /// Důsledkem toho všeho je stav, kdy při posouvání osy některé ticky na ose poskakují v jiném rytmu, než ostatní.
+        /// S použitím _LastTickPositionDict se využijí pixelové pozice ticků z předchozího stavu pro nově vypočítávané ticky, důsledkem je tedy hladký posun.
+        /// Pro ilustraci postačí nastavit this._IgnoreLastTickPositionDict na true a posouvat osu.
+        /// Je nastaveno na null po každé změně Scale, protože pak tento princip neplatí = pak je nutno reálně znovu napočítat pozice Ticků podle nového měřítka.
+        /// </summary>
+        protected Dictionary<TTick, BaseTick<TTick>> _LastTickPositionDict;
+        /// <summary>
+        /// jen pro otestování chování this._LastTickPositionDict (viz komentář k _LastTickPositionDict).
+        /// </summary>
+        protected bool _IgnoreLastTickPositionDict = false;
         /// <summary>
         /// Obsahuje true, pokud dříve vygenerované ticky (pomocí metody GetCurrentTicks()) jsou stále platné 
         /// pro aktuální stav (ArrangementCurrent, PixelSize, Scale, Value).
@@ -1595,9 +1615,20 @@ namespace Djs.Common.Components
             /// <param name="tickDict"></param>
             internal void CalculateTicksLine(AxisTickType tickType, Dictionary<TTick, BaseTick<TTick>> tickDict)
             {
+                Dictionary<TTick, BaseTick<TTick>> lastTickDict = null;
+                int? currentPixelOffset = null;
+                this.CalculateTicksLine(tickType, tickDict, lastTickDict, ref currentPixelOffset);
+            }
+            /// <summary>
+            /// Prepare Ticks for specified TickType to tick Dictionary
+            /// </summary>
+            /// <param name="tickType"></param>
+            /// <param name="tickDict"></param>
+            internal void CalculateTicksLine(AxisTickType tickType, Dictionary<TTick, BaseTick<TTick>> tickDict, Dictionary<TTick, BaseTick<TTick>> lastTickDict, ref int? currentPixelOffset)
+            {
                 ArrangementItem item = this.GetArrangementItemForTick(tickType);
                 if (item != null)
-                    item.CalculateTicksLine(tickDict);
+                    item.CalculateTicksLine(tickDict, lastTickDict, ref currentPixelOffset);
             }
             /// <summary>
             /// Returns instance of ArrangementItem for specified Tick type
@@ -1768,6 +1799,18 @@ namespace Djs.Common.Components
             /// <param name="tickDict"></param>
             internal void CalculateTicksLine(Dictionary<TTick, BaseTick<TTick>> tickDict)
             {
+                Dictionary<TTick, BaseTick<TTick>> lastTickDict = null;
+                int? currentPixelOffset = null;
+                this.CalculateTicksLine(tickDict, lastTickDict, ref currentPixelOffset);
+            }
+            /// <summary>
+            /// Store to Dictionary (tickDict) all ticks for current item and current state of Axis (TimeRange, Scale).
+            /// When Dictionary contains a key for any time on line of this item, does not add new tick.
+            /// Dictionary must be filled from top to bottom (from Title to Regular items).
+            /// </summary>
+            /// <param name="tickDict"></param>
+            internal void CalculateTicksLine(Dictionary<TTick, BaseTick<TTick>> tickDict, Dictionary<TTick, BaseTick<TTick>> lastTickDict, ref int? currentPixelOffset)
+            {
                 TValue value = this.Axis.Value;
                 decimal? unitSize = this.Axis.GetAxisUnits(value.Size);
                 if (!unitSize.HasValue || unitSize.Value <= 0m) return;
@@ -1779,7 +1822,7 @@ namespace Djs.Common.Components
                 while (value.Contains(tick))
                 {
                     string text = this.GetTickText(tick);
-                    this.AddOneTick(tickDict, tick, text, AxisTickAlignment.Center);
+                    this.AddOneTick(tickDict, tick, text, AxisTickAlignment.Center, lastTickDict, ref currentPixelOffset);
                     // one step with "tick": tick = Round(tick + this.Interval, Math)
                     TTick tickNext = this.Axis.RoundTickToInterval(value.Add(tick, this.Interval), this.Interval, RoundMode.Math);
                     tickNext = this.Axis.RoundTickToLine(tickNext, this.Owner, this.TickType, value, this.Interval);
@@ -1793,9 +1836,29 @@ namespace Djs.Common.Components
             }
             private void AddOneTick(Dictionary<TTick, BaseTick<TTick>> tickDict, TTick value, string text, AxisTickAlignment alignment)
             {
+                Dictionary<TTick, BaseTick<TTick>> lastTickDict = null;
+                int? currentPixelOffset = null;
+                this.AddOneTick(tickDict, value, text, alignment, lastTickDict, ref currentPixelOffset);
+            }
+            private void AddOneTick(Dictionary<TTick, BaseTick<TTick>> tickDict, TTick value, string text, AxisTickAlignment alignment, Dictionary<TTick, BaseTick<TTick>> lastTickDict, ref int? currentPixelOffset)
+            {
                 if (!tickDict.ContainsKey(value))
                 {
-                    Int32? pixel = this.Axis.CalculatePixelLocalForTick(value);
+                    Int32? pixel = null;
+                    if (lastTickDict != null)
+                    {
+                        BaseTick<TTick> lastTick;
+                        if (lastTickDict.TryGetValue(value, out lastTick))
+                        {
+                            qqq;
+                        }
+
+                        pixel = this.Axis.CalculatePixelLocalForTick(value);
+                    }
+                    else
+                    {
+                        pixel = this.Axis.CalculatePixelLocalForTick(value);
+                    }
                     BaseTick<TTick> tick = new BaseTick<TTick>(this.TickType, value, pixel.Value, this.TickSize, text, alignment);
                     tickDict.Add(value, tick);
                 }
