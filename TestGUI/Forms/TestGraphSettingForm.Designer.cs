@@ -28,7 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.TestPanel = new System.Windows.Forms.Panel();
+            this.TestPanel = new DoubleBufferPanel();
             this.SuspendLayout();
             // 
             // TestPanel
@@ -54,6 +54,6 @@
 
         #endregion
 
-        private System.Windows.Forms.Panel TestPanel;
+        private DoubleBufferPanel TestPanel;
     }
 }
