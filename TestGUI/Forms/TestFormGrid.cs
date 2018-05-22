@@ -154,7 +154,7 @@ namespace Djs.Common.TestGUI
                         new Column() { Title = "Klíč", ToolTip = "Klíč záznamu v tomto sloupci", Name = "key", FormatString = "0000000", Width = 60 },
                         new Column() { Title = "Datum OD", ToolTip = "Počáteční datum směny", Name = "date_from", FormatString = "yyyy-MM-dd HH:mm", Width = 80 },
                         new Column() { Title = "Datum DO", ToolTip = "Koncové datum směny", Name = "date_to", FormatString = "yyyy-MM-dd HH:mm:ss", Width = 80 },
-                        new Column() { Title = "graf", ToolTip = "Graf vytížení", Name = "graph1", UseTimeAxis = true, Width = 180, AutoWidth = true, SortingEnabled = false },
+                        new Column() { Title = "graf", ToolTip = "Graf vytížení", Name = "graph1", UseTimeAxis = true, Width = 180, AutoWidth = true, SortingEnabled = false, WidthMininum = 160 },
                         new Column() { Title = "Cena jednotky", ToolTip = "Jednotková cena.\r\nJe zde jen pro informaci.", Name = "price1", FormatString = "### ##0.00", Width = 80 },
                         new Column() { Title = "Fotografie", ToolTip = "Zobrazení", Name = "image", Width = 60, SortingEnabled = false }
                     );
@@ -173,12 +173,25 @@ namespace Djs.Common.TestGUI
                     Row row = new Row(klic, datumOd, datumDo, graph1, price, image);
 
                     if (this.Rand.Next(0, 100) > 80)
-                        row.Height = 65;
+                        row.Height = 75;
+                    else
+                        row.Height = 35;
 
                     table.AddRow(row);
 
                     Cell cim = row["image"];
                     cim.UseImageAsToolTip = true;
+
+                    Cell cellKey = row["key"];
+                    cellKey.VisualStyle = new VisualStyle();
+                    cellKey.VisualStyle.Font = new FontInfo();
+                    cellKey.VisualStyle.Font.RelativeSize = 120;
+                    if ((r % 5) == 0)
+                    {
+                        cellKey.VisualStyle.Font.Bold = true;
+                        cellKey.VisualStyle.BackColor = Color.LightYellow;
+                    }
+
 
                     imgPointer = (++imgPointer) % imgCount;
                 }

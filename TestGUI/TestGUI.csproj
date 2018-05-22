@@ -79,6 +79,12 @@
     <Compile Include="Forms\TestFormNew.Designer.cs">
       <DependentUpon>TestFormNew.cs</DependentUpon>
     </Compile>
+    <Compile Include="Forms\TestGraphSettingForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\TestGraphSettingForm.Designer.cs">
+      <DependentUpon>TestGraphSettingForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="Forms\MainForm.resx">
@@ -93,6 +99,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Forms\TestFormNew.resx">
       <DependentUpon>TestFormNew.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\TestGraphSettingForm.resx">
+      <DependentUpon>TestGraphSettingForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
