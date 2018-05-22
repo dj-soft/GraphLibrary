@@ -2171,6 +2171,8 @@ namespace Djs.Common.Components
         /// <param name="e"></param>
         protected override void Draw(GInteractiveDrawArgs e)
         {
+            e.GraphicsClipWith(this.BoundsAbsolute);
+
             if (this.IsBoundsValid && this.IsVisualValid && this.IsValueValid && !this.IsScaleValid)
                 this.CalculateRequiredEntities();
 
@@ -2252,7 +2254,7 @@ namespace Djs.Common.Components
             }
         }
         #endregion
-        #region Raise events (ValueChanged, ValueRangeChanged, ScaleChanged, ScaleRangeChanged, AreaChanged, DrawRequest)
+        #region Vyvolání eventů (ValueChanged, ValueRangeChanged, ScaleChanged, ScaleRangeChanged, AreaChanged, DrawRequest)
         /// <summary>
         /// Call method OnDataRangeChanged() and event DataRangeChanged
         /// </summary>

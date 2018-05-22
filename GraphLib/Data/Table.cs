@@ -856,6 +856,7 @@ namespace Djs.Common.Data
         int ISequenceLayout.Begin { get { return this._SequenceLayout.Begin; } set { this._SequenceLayout.Begin = value; } }
         int ISequenceLayout.Size { get { return this._SequenceLayout.Size; } set { this._SequenceLayout.Size = value; } }
         int ISequenceLayout.End { get { return this._SequenceLayout.End; } }
+        bool ISequenceLayout.AutoSize { get { return this._SequenceLayout.AutoSize; } }
         /// <summary>
         /// Komparátor podle hodnoty TableOrder ASC
         /// </summary>
@@ -1291,6 +1292,7 @@ namespace Djs.Common.Data
         int ISequenceLayout.Begin { get { return this._SequenceLayout.Begin; } set { this._SequenceLayout.Begin = value; } }
         int ISequenceLayout.Size { get { return this._SequenceLayout.Size; } set { this._SequenceLayout.Size = value; } }
         int ISequenceLayout.End { get { return this._SequenceLayout.End; } }
+        bool ISequenceLayout.AutoSize { get { return this._SequenceLayout.AutoSize; } }
         #endregion
         #region Visual style
         /// <summary>
@@ -1549,6 +1551,7 @@ namespace Djs.Common.Data
         int ISequenceLayout.Begin { get { return this._SequenceLayout.Begin; } set { this._SequenceLayout.Begin = value; } }
         int ISequenceLayout.Size { get { return this._SequenceLayout.Size; } set { this._SequenceLayout.Size = value; } }
         int ISequenceLayout.End { get { return this._SequenceLayout.End; } }
+        bool ISequenceLayout.AutoSize { get { return this._SequenceLayout.AutoSize; } }
         #endregion
         #region IContentValidity
         bool IContentValidity.DataIsValid { get { return _RowDataIsValid; } set { _RowDataIsValid = value; } } private bool _RowDataIsValid;
@@ -1860,6 +1863,12 @@ namespace Djs.Common.Data
         /// Interface ISequenceLayout tuto hodnotu nesetuje, pouze ji čte.
         /// </summary>
         int End { get; }
+        /// <summary>
+        /// true, pokud velikost tohoto objektu (<see cref="Size"/>) bude změněna při změně velikosti celého prvku.
+        /// Typicky: sloupec tabulky s nastavením (<see cref="AutoSize"/> == true) bude rozšířen nebo zúžen při změně šířky tabulky.
+        /// Při této změně bude vložena nová Size, přitom tento objekt může aplikovat svoje restrikce (Min a Max).
+        /// </summary>
+        bool AutoSize { get; }
     }
     #endregion
     #region class SequenceLayout
@@ -2053,6 +2062,45 @@ namespace Djs.Common.Data
             }
         }
         #endregion
+        public static bool AutoSizeLayoutCalculate(IEnumerable<ISequenceLayout> items, int visualSize)
+        {
+            // Nejprve projdu všechny vstupní prvky, oddělím prvky s AutoSize = true, sečtu jejich Size zvlášť za Fixní a zvlášť za Variabilní:
+            List<ISequenceLayout> itemsVarList = new List<ISequenceLayout>();
+            int sizeSumFix = 0;
+            int sizeSumVar = 0;
+            foreach (ISequenceLayout item in items)
+            {
+                if (item.AutoSize)
+                {
+                    sizeSumVar += item.Size;
+                    itemsVarList.Add(item);
+                }
+                else
+                {
+                    sizeSumFix += item.Size;
+                }
+            }
+            if (itemsVarList.Count == 0) return false;               // Není zde žádný variabilní prvek
+
+            bool isChanged = false;
+            int sizeNewVar = visualSize - sizeSumFix;
+            decimal ratio = (decimal)sizeNewVar / (decimal)sizeSumVar;
+            foreach (ISequenceLayout column in itemsVarList)
+            {
+                int sizeOneOld = column.Size;
+                int sizeOneNew = (int)(Math.Round(ratio * (decimal)sizeOneOld, 0));
+                column.Size = sizeOneNew;
+                int sizeOneMod = column.Size;
+                if (sizeOneMod != sizeOneOld && !isChanged)
+                    isChanged = true;
+            }
+            if (!isChanged) return false;
+
+            // Zajistím provedení nápočtu pozic (ISequenceLayout.Begin, End):
+            SequenceLayout.SequenceLayoutCalculate(items);
+            return true;
+        }
+        
         #region ISequenceLayout podpora - filtrování prvků typu ISequenceLayout podle viditelné oblasti
         /// <summary>
         /// Vrátí true, pokud daný prvek (item) se svojí pozicí (Begin, End) bude viditelný v aktuálním datovém prostoru
@@ -2176,6 +2224,12 @@ namespace Djs.Common.Data
         /// Interface ISequenceLayout tuto hodnotu nesetuje, pouze ji čte.
         /// </summary>
         int ISequenceLayout.End { get { return this._ISequenceLayoutBegin + (this.Visible ? this.GetLayoutSize() : 0); } }
+        /// <summary>
+        /// true, pokud velikost tohoto objektu (<see cref="Size"/>) bude změněna při změně velikosti celého prvku.
+        /// Typicky: sloupec tabulky s nastavením (<see cref="AutoSize"/> == true) bude rozšířen nebo zúžen při změně šířky tabulky.
+        /// Při této změně bude vložena nová Size, přitom tento objekt může aplikovat svoje restrikce (Min a Max).
+        /// </summary>
+        bool ISequenceLayout.AutoSize { get { return this.AutoSize; } }
         #endregion
     }
     #endregion

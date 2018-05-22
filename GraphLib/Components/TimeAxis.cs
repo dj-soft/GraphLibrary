@@ -15,6 +15,7 @@ namespace Djs.Common.Components
     public class GTimeAxis
         : GBaseAxis<DateTime?, TimeSpan?, TimeRange>, ITimeConvertor
     {
+        #region Obecné overrides osy
         /// <summary>
         /// Initial value for new axis
         /// </summary>
@@ -104,6 +105,8 @@ namespace Djs.Common.Components
             }
             return tick;
         }
+        #endregion
+        #region Příprava měřítek pro časovou osu
         /// <summary>
         /// Axis class here declared items (ArrangementOne) for use in Axis.
         /// Each individual ArrangementOne contains specification for range of scale on axis, declare distance of axis ticks by tick types (pixel, small, standard, big...) 
@@ -184,6 +187,8 @@ namespace Djs.Common.Components
         protected const string AxisCycle_Day = "AxisCycle.Day";
         protected const string AxisCycle_Week = "AxisCycle.Week";
         protected const string AxisCycle_Month = "AxisCycle.Month";
+        #endregion
+        #region Tooltip pro časovou osu
         /// <summary>
         /// Prepare layout for Tooltip in case, when ToolTip will be showed.
         /// Is called after e.ToolTipData.InfoText is prepared (contain valid text).
@@ -217,6 +222,7 @@ namespace Djs.Common.Components
                           value.Value.ToString();
             return text;
         }
+        #endregion
         #region ITimeConvertor members
         string ITimeConvertor.Identity
         { 

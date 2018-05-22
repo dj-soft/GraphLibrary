@@ -87,11 +87,11 @@ namespace Djs.Common.Components
         protected void _InnerBoundsCheck()
         {
             if (this._TableInnerLayoutValid) return;
-            Size clientSize = this.ClientSize;
 
+            Size clientSize = this.ClientSize;
             if (clientSize.Width <= 0 || clientSize.Height <= 0) return;
 
-            this._TableInnerLayoutValid = true;                                     // Normálně to patří až na konec metody. Ale některé komponenty mohou používat již částečně napočtené hodnoty, a pak bychom se zacyklili
+            this._TableInnerLayoutValid = true;                      // Normálně to patří až na konec metody. Ale některé komponenty mohou používat již částečně napočtené hodnoty, a pak bychom se zacyklili
 
             // Určíme, zda bude zobrazen scrollbar vpravo (to je tehdy, když výška tabulek je větší než výška prostoru pro tabulky = (ClientSize.Height - ColumnsScrollBar.Bounds.Height)):
             //  Objekt TablesPositions tady provede dotaz na velikost dat (metoda this._TablesPositionGetDataSize()) a velikost viditelného prostoru (metoda this._TablesPositionGetVisualSize()).
@@ -99,24 +99,32 @@ namespace Djs.Common.Components
             //  velikost viditelného prostoru pro tabulky je dána (this.ClientSize.Height - this.ColumnsScrollBar.Bounds.Height), takže se vždy počítá s prostorem pro zobrazením vodorovného scrollbaru:
             this._TablesScrollBarVisible = this.TablesPositions.IsScrollBarActive;
 
+            // Určíme souřadnice jednotlivých elementů:
+            int x0 = 0;                                              // x0: úplně vlevo
+            int x1 = this.ColumnsPositions.VisualFirstPixel;         // x1: zde začíná ColumnsScrollBar (hned za koncem RowHeaderColumn)
+            int x3 = clientSize.Width;                               // x3: úplně vpravo
+            int x2t = x3 - GScrollBar.DefaultSystemBarWidth;         // x2t: zde začíná TablesScrollBar (vpravo, hned za koncem ColumnsScrollBar), tedy pokud by byl zobrazen
+            int x2r = (this._TablesScrollBarVisible ? x2t : x3);     // x2r: zde reálně končí oblast prostoru pro tabulky a končí zde i ColumnsScrollBar, se zohledněním aktuální viditelnosti TablesScrollBaru
+            int y0 = 0;                                              // y0: úplně nahoře
+            int y1 = y0;                                             // y1: zde začíná prostor pro tabulky i TablesScrollBar 
+            int y3 = clientSize.Height;                              // y3: úplně dole
+            int y2 = y3 - GScrollBar.DefaultSystemBarHeight;         // y2: zde začíná ColumnsScrollBar (dole, hned za koncem prostoru pro tabulky)
+
+            // Umožníme sloupcům aplikovat jejich hodnotu AutoSize při dané šířce viditelné oblasti:
+            int wt = (x2r - x1);                                     // wt: šířka tabulky (včetně svislého scrollbaru pro řádky)
+            int wc = wt - GScrollBar.DefaultSystemBarWidth;          // wc: šířka dat tabulky (viditelný prostor bez svislého scrollbaru pro řádky)
+            this._ColumnPositionCalculateAutoSize(wc);
+
             // Určíme, zda bude zobrazen scrollbar dole (to je tehdy, když šířka datových sloupců tabulek je větší než prostor od RowHeaderColumn do pravého Scrollbaru, pokud je zobrazen):
             //  Objekt ColumnsPositions si data zjistí sám, poocí zdejších metod this._ColumnPositionGetVisualSize() a this._ColumnPositionGetDataSize()
+            //  Tzn. opírá se o hodnoty získané z: ClientSize.Width, ColumnsPositions.VisualFirstPixel, TablesScrollBarVisible (GScrollBar.DefaultSystemBarWidth)
+            //       a ze sloupce: Columns[last].End
             this._ColumnsScrollBarVisible = this.ColumnsPositions.IsScrollBarActive;
 
-            // Určíme souřadnice jednotlivých elementů:
-            int x0 = 0;                                                        // x0: úplně vlevo
-            int x1 = this.ColumnsPositions.VisualFirstPixel;                   // x1: zde začíná ColumnsScrollBar (hned za koncem RowHeaderColumn)
-            int x3 = clientSize.Width;                                         // x3: úplně vpravo
-            int x2t = x3 - GScrollBar.DefaultSystemBarWidth;                   // x2t: zde začíná TablesScrollBar (vpravo, hned za koncem ColumnsScrollBar), tedy pokud by byl zobrazen
-            int x2r = (this._TablesScrollBarVisible ? x2t : x3);               // x2r: zde reálně končí oblast prostoru pro tabulky a končí zde i ColumnsScrollBar, se zohledněním aktuální viditelnosti TablesScrollBaru
-            int y0 = 0;                                                        // y0: úplně nahoře
-            int y1 = y0;                                                       // y1: zde začíná prostor pro tabulky i TablesScrollBar 
-            int y3 = clientSize.Height;                                        // y3: úplně dole
-            int y2 = y3 - GScrollBar.DefaultSystemBarHeight;                   // y2: zde začíná ColumnsScrollBar (dole, hned za koncem prostoru pro tabulky)
-
+            // Souřadnice jednotlivých oblastí:
             this._TablesBounds = new Rectangle(x0, y0, x2r - x0, y2 - y0);
             this._TablesScrollBarBounds = new Rectangle(x2t, y1, x3 - x2t, y2 - y1);
-            this._ColumnsScrollBarBounds = new Rectangle(x1, y2, x2r - x1, y3 - y2);
+            this._ColumnsScrollBarBounds = new Rectangle(x1, y2, wt, y3 - y2);
             this._GridVoidBounds1 = new Rectangle(x0, y2, x1 - x0, y3 - y2);
             this._GridVoidBounds2 = new Rectangle(x2r, y2, x3 - x2r, y3 - y2);
 
@@ -502,7 +510,7 @@ namespace Djs.Common.Components
                 // Sloupec current má být za sloupcem sourceColumn, a ten (sourceColumn) už byl do seznamu reorderedColumns přidán dříve:
                 else { reorderedColumns.Add(current); }
             }
-            // Pokud jsem až dosdu nepřidal sourceColumn, přidám jej na konec:
+            // Pokud jsem až dosud nepřidal sourceColumn, přidám jej na konec:
             if (!isSourceAdded) { reorderedColumns.Add(sourceColumn); isSourceAdded = true; }
 
             // Dosud jsme nezměnili žádné ColumnOrder, ale máme korektně seřazenou kolekci = takže do ní vepíšeme novou hodnotu ColumnOrder:
@@ -752,6 +760,16 @@ namespace Djs.Common.Components
             ISequenceLayout[] array = this.Columns;
             int count = array.Length;
             return (count > 0 ? array[count - 1].End : 0);
+        }
+        /// <summary>
+        /// Umožní sloupcům aplikovat jejich AutoSize (pokud některý sloupec tuto vlastnost má), pro danou šířku viditelné oblasti
+        /// </summary>
+        /// <param name="width"></param>
+        private void _ColumnPositionCalculateAutoSize(int width)
+        {
+            bool isChanged = SequenceLayout.AutoSizeLayoutCalculate(this.Columns, width);
+            if (isChanged)
+                this._ChildArrayValid = false;
         }
         /// <summary>
         /// Eventhandler volaný při/po změně hodnoty na vodorovném scrollbaru = posuny sloupců
@@ -1166,6 +1184,13 @@ namespace Djs.Common.Components
             get
             {
                 return ((ISequenceLayout)this.MasterColumn).End;
+            }
+        }
+        bool ISequenceLayout.AutoSize
+        {
+            get
+            {
+                return ((ISequenceLayout)this.MasterColumn).AutoSize;
             }
         }
         #endregion

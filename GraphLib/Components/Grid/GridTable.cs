@@ -141,11 +141,11 @@ namespace Djs.Common.Components.Grid
         protected void _InnerBoundsCheck()
         {
             if (this._TableInnerLayoutValid) return;
-            Size clientSize = this.ClientSize;
 
+            Size clientSize = this.ClientSize;
             if (clientSize.Width <= 0 || clientSize.Height <= 0) return;
 
-            this._TableInnerLayoutValid = true;                                     // Normálně to patří až na konec metody. Ale některé komponenty mohou používat již částečně napočtené hodnoty, a pak bychom se zacyklili
+            this._TableInnerLayoutValid = true;                      // Normálně to patří až na konec metody. Ale některé komponenty mohou používat již částečně napočtené hodnoty, a pak bychom se zacyklili
 
             // Bude viditelný scrollbar řádků? (to je tehdy, když výška zobrazitelných řádků je větší než výška prostoru pro řádky):
             //  Objekt RowsPositions tady provede dotaz na velikost dat (metoda _RowsPositionGetDataSize()) a velikost viditelného prostoru (metoda _RowsPositionGetVisualSize()).
@@ -154,14 +154,14 @@ namespace Djs.Common.Components.Grid
             this._RowsScrollBarVisible = this.RowsPositions.IsScrollBarActive;
 
             // Určíme souřadnice jednotlivých elementů:
-            int x0 = 0;                                                             // x0: úplně vlevo
+            int x0 = 0;                                              // x0: úplně vlevo
             int x1 = (this.HasGrid ? this.Grid.ColumnsPositions.VisualFirstPixel : 0);   // x1: tady začíná prostor pro datové sloupce
-            int x3 = clientSize.Width;                                              // x3: úplně vpravo
-            int x2t = x3 - GScrollBar.DefaultSystemBarWidth;                        // x2t: zde začíná RowsScrollBar (vpravo, hned za koncem prostoru pro řádky), tedy pokud by byl zobrazen
-            int x2r = (this._RowsScrollBarVisible ? x2t : x3);                      // x2r: zde reálně končí oblast prostoru pro řádky, se zohledněním aktuální viditelnosti RowsScrollBaru
-            int y0 = 0;                                                             // y0: úplně nahoře
-            int y1 = this.RowsPositions.VisualFirstPixel;                           // y1: zde začíná prostor pro řádky, hned pod prostorem ColumnHeader (hodnota se fyzicky načte z this.DataTable.ColumnHeaderHeight)
-            int y3 = clientSize.Height;                                             // y3: úplně dole
+            int x3 = clientSize.Width;                               // x3: úplně vpravo
+            int x2t = x3 - GScrollBar.DefaultSystemBarWidth;         // x2t: zde začíná RowsScrollBar (vpravo, hned za koncem prostoru pro řádky), tedy pokud by byl zobrazen
+            int x2r = (this._RowsScrollBarVisible ? x2t : x3);       // x2r: zde reálně končí oblast prostoru pro řádky, se zohledněním aktuální viditelnosti RowsScrollBaru
+            int y0 = 0;                                              // y0: úplně nahoře
+            int y1 = this.RowsPositions.VisualFirstPixel;            // y1: zde začíná prostor pro řádky, hned pod prostorem ColumnHeader (hodnota se fyzicky načte z this.DataTable.ColumnHeaderHeight)
+            int y3 = clientSize.Height;                              // y3: úplně dole
 
             this._TableHeaderBounds = new Rectangle(x0, y0, x1 - x0, y1 - y0);
             this._ColumnHeaderBounds = new Rectangle(x1, y0, x3 - x1, y1 - y0);
@@ -1246,6 +1246,7 @@ namespace Djs.Common.Components.Grid
         int ISequenceLayout.Begin { get { return this._SequenceLayout.Begin; } set { this._SequenceLayout.Begin = value; } }
         int ISequenceLayout.Size { get { return this._SequenceLayout.Size; } set { this._SequenceLayout.Size = value; } }
         int ISequenceLayout.End { get { return this._SequenceLayout.End; } }
+        bool ISequenceLayout.AutoSize { get { return this._SequenceLayout.AutoSize; } }
         private ISequenceLayout _SequenceLayout { get { return (ISequenceLayout)this.DataTable; } }
         #endregion
         #region TimeAxis
@@ -3027,6 +3028,8 @@ namespace Djs.Common.Components.Grid
             Color textColor = this.OwnerGTable.GetTextColorForCell(this.OwnerCell);
 
             Rectangle boundsContent = boundsAbsolute.Enlarge(-1);
+            if (font.Bold)
+            { }
             GPainter.DrawString(e.Graphics, boundsContent, text, textColor, font, alignment);
         }
         /// <summary>

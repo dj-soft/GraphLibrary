@@ -624,20 +624,25 @@ namespace Djs.Common.Components
             if (String.IsNullOrEmpty(text)) return;
             if (bounds.Width <= 0 || bounds.Height <= 0) return;
 
-            StringFormat sf = new StringFormat( StringFormatFlags.LineLimit);
+            StringFormat sf = new StringFormat(StringFormatFlags.LineLimit);
 
-            Font font = fontInfo.Font;
-            SizeF textSize = graphics.MeasureString(text, font, bounds.Width, sf);
-            textArea = textSize.AlignTo(bounds, alignment, true);
-            if (drawBackground != null)
-                drawBackground(textArea);
+            using (GraphicsUseText(graphics))
+            {
+                // graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
 
-            if (brush != null)
-                graphics.DrawString(text, font, brush, textArea, sf);
-            else if (color.HasValue)
-                graphics.DrawString(text, font, Skin.Brush(color.Value), textArea, sf);
-            else
-                graphics.DrawString(text, font, SystemBrushes.ControlText, textArea, sf);
+                Font font = fontInfo.Font;
+                SizeF textSize = graphics.MeasureString(text, font, bounds.Width, sf);
+                textArea = textSize.AlignTo(bounds, alignment, true);
+                if (drawBackground != null)
+                    drawBackground(textArea);
+
+                if (brush != null)
+                    graphics.DrawString(text, font, brush, textArea, sf);
+                else if (color.HasValue)
+                    graphics.DrawString(text, font, Skin.Brush(color.Value), textArea, sf);
+                else
+                    graphics.DrawString(text, font, SystemBrushes.ControlText, textArea, sf);
+            }
         }
         #endregion
         #region MeasureString
@@ -1620,9 +1625,9 @@ namespace Djs.Common.Components
         /// <param name="graphics"></param>
         private static void _GraphicsSetText(Graphics graphics)
         {
-            graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None;
-            graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Default;
-            graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
+            graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;        // None;
+            graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Bilinear; // Default;
+            graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;     // AntiAliasGridFit;
         }
         /// <summary>
         /// Set graphic to sharp mode
