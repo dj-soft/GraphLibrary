@@ -33,15 +33,23 @@ namespace Djs.Common.TestGUI.Forms
         {
             // this._Settings = OneSetting.GetAll();
             // this._Settings = OneSetting.GetAll((s,i,t) => (t == TextRenderingHint.SystemDefault || t == TextRenderingHint.AntiAliasGridFit));
-            this._Settings = OneSetting.GetAll((s, i, t) => (t == TextRenderingHint.AntiAlias));
+            this._Settings = OneSetting.GetAll(
+                (s, i, t) =>
+                (s == SmoothingMode.AntiAlias || s == SmoothingMode.HighQuality) && 
+                (t == TextRenderingHint.AntiAlias)
+                );
             this._VScrollBar.Maximum = this._Settings[this._Settings.Length - 1].BoundsAbsolute.Bottom;
 
 
             // Výsledky pro Text:
-            //  a) Správné změření a zarovnání textu (doprava) je možné pouze s TextRenderingHint.AntiAlias
+            //  a) Správné změření a zarovnání textu (doprava) je možné pouze s TextRenderingHint.AntiAlias, ostatní nastavení nemají vliv na správnost zarovnání vpravo (tj. korektní výpočet rozměru textu)
             //  b) Pro zobrazení textu nemají další nastavení význam
 
-            // Výsledky pro Kolmé čáry:
+            // Výsledky pro Line (vodorovné, svislé, i úhlopříčné):
+            //  Nejlepší podání čar poskytne SmoothingMode.AntiAlias nebo SmoothingMode.HighQuality (nevidím rozdíl)
+
+            // Výsledky pro Křivky jsou stejné jako pro Line:
+            //  Nejlepší podání čar poskytne SmoothingMode.AntiAlias nebo SmoothingMode.HighQuality (nevidím rozdíl)
 
         }
         private void _VScrollBar_ValueChanged(object sender, EventArgs e)
@@ -126,14 +134,16 @@ namespace Djs.Common.TestGUI.Forms
             this.InterpolationBounds = new Rectangle(x, 3, ITEM_INTERPOLATION_WIDTH, h); x = this.InterpolationBounds.Right + 5;
             this.TextRenderingBounds = new Rectangle(x, 3, ITEM_RENDERING_WIDTH, h); x = this.TextRenderingBounds.Right + 5;
             this.TextSampleBounds = new Rectangle(x, 0, ITEM_TEXTSAMPLE_WIDTH, h); x = this.TextSampleBounds.Right + 5;
-            this.LineSampleBounds = new Rectangle(x, 0, ITEM_TEXTSAMPLE_WIDTH, h); x = this.LineSampleBounds.Right + 5;
+            this.LineSampleBounds = new Rectangle(x, 0, ITEM_DRAWSAMPLE_WIDTH, h); x = this.LineSampleBounds.Right + 5;
+            this.CurveSampleBounds = new Rectangle(x, 0, ITEM_DRAWSAMPLE_WIDTH, h); x = this.CurveSampleBounds.Right + 5;
             y = this.BoundsAbsolute.Bottom + 2;
         }
         private const int ROW_HEIGHT = 34;
         private const int ITEM_SMOOTHING_WIDTH = 225;
         private const int ITEM_INTERPOLATION_WIDTH = 250;
         private const int ITEM_RENDERING_WIDTH = 250;
-        private const int ITEM_TEXTSAMPLE_WIDTH = 140;
+        private const int ITEM_TEXTSAMPLE_WIDTH = 175;
+        private const int ITEM_DRAWSAMPLE_WIDTH = 75;
         #endregion
         #region Kreslení
         /// <summary>
@@ -165,11 +175,11 @@ namespace Djs.Common.TestGUI.Forms
                 this.PaintOne(graphics, fontStd, boundsRelative, this.SmoothingBounds, this.SmoothingText);
                 this.PaintOne(graphics, fontStd, boundsRelative, this.InterpolationBounds, this.InterpolationText);
                 this.PaintOne(graphics, fontStd, boundsRelative, this.TextRenderingBounds, this.TextRenderingText);
-                this.PaintSample(graphics, fontStd, fontBold, boundsRelative);
+                this.PaintTextSample(graphics, fontStd, fontBold, boundsRelative);
             }
-
+            this.PaintLineSample(graphics, boundsRelative);
+            this.PaintCurveSample(graphics, boundsRelative);
         }
-
         private void PaintOne(Graphics graphics, Font font, Rectangle boundsRelative, Rectangle boundsItem, string text)
         {
             Rectangle bounds = boundsItem;
@@ -178,15 +188,14 @@ namespace Djs.Common.TestGUI.Forms
             StringFormat sf = new StringFormat(StringFormatFlags.NoWrap);
             graphics.DrawString(text, font, Brushes.Black, bounds, sf);
         }
-        private void PaintSample(Graphics graphics, Font fontStd, Font fontBold, Rectangle boundsRelative)
+        private void PaintTextSample(Graphics graphics, Font fontStd, Font fontBold, Rectangle boundsRelative)
         {
-
             Rectangle bounds = this.TextSampleBounds;
             bounds.X = bounds.X + boundsRelative.X;
             bounds.Y = bounds.Y + boundsRelative.Y;
 
             StringFormat sf = new StringFormat(StringFormatFlags.NoWrap);
-            string text = "000000";
+            string text = "[Libovolný text]";
 
             SizeF textSizeStd = graphics.MeasureString(text, fontStd, bounds.Width, sf);
             Rectangle textAreaStd = textSizeStd.AlignTo(bounds, ContentAlignment.TopRight, true);
@@ -197,6 +206,38 @@ namespace Djs.Common.TestGUI.Forms
             graphics.DrawString(text, fontBold, Brushes.Black, textAreaBold, sf);
 
         }
+        private void PaintLineSample(Graphics graphics, Rectangle boundsRelative)
+        {
+            Rectangle bounds = this.LineSampleBounds;
+            bounds.X = bounds.X + boundsRelative.X;
+            bounds.Y = bounds.Y + boundsRelative.Y;
+            bounds = bounds.Enlarge(-1);
+
+            using (Pen pen = new Pen(Color.Black, 1f))
+            {
+                graphics.DrawRectangle(pen, bounds);
+
+                bounds = bounds.Enlarge(0, 0, -1, -1);
+                graphics.DrawLine(pen, bounds.X, bounds.Y, bounds.Right, bounds.Bottom);
+                graphics.DrawLine(pen, bounds.X, bounds.Bottom, bounds.Right, bounds.Y);
+            }
+        }
+        private void PaintCurveSample(Graphics graphics, Rectangle boundsRelative)
+        {
+            Rectangle bounds = this.CurveSampleBounds;
+            bounds.X = bounds.X + boundsRelative.X;
+            bounds.Y = bounds.Y + boundsRelative.Y;
+            bounds = bounds.Enlarge(-2);
+
+            using (Pen pen = new Pen(Color.Black, 1f))
+            {
+                graphics.DrawEllipse(pen, bounds);
+
+                Rectangle circle = bounds.Center().CreateRectangleFromCenter(bounds.Height - 2);
+                graphics.DrawEllipse(pen, circle);
+            }
+        }
+
         #endregion
 
     }
