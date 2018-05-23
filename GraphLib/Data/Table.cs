@@ -523,7 +523,7 @@ namespace Djs.Common.Data
                 // Třídění podle sloupce:
                 if (list.Count > 1)
                 {
-                    Column sortColumn = this.Columns.FirstOrDefault(c => (c.SortCurrent == TableSortRowType.Ascending || c.SortCurrent == TableSortRowType.Descending));
+                    Column sortColumn = this.Columns.FirstOrDefault(c => (c.SortCurrent == ItemSortType.Ascending || c.SortCurrent == ItemSortType.Descending));
                     if (sortColumn != null)
                         // Bude to tříděné...
                         _RowsSort(list, sortColumn);
@@ -549,14 +549,14 @@ namespace Djs.Common.Data
 
             switch (sortColumn.SortCurrent)
             {
-                case TableSortRowType.Ascending:
+                case ItemSortType.Ascending:
                     if (columnHasComparator)
                         list.Sort((a, b) => sortColumn.ValueComparator((a as IComparableItem).Value, (b as IComparableItem).Value));
                     else
                         list.Sort((a, b) => SortRowsCompare((a as IComparableItem).ValueComparable, (b as IComparableItem).ValueComparable));
                     break;
 
-                case TableSortRowType.Descending:
+                case ItemSortType.Descending:
                     if (columnHasComparator)
                         list.Sort((a, b) => sortColumn.ValueComparator((b as IComparableItem).Value, (a as IComparableItem).Value));
                     else
@@ -1119,7 +1119,7 @@ namespace Djs.Common.Data
                 if (this.IsSortingColumn && table != null && table.Columns.Any(c => c.ColumnId != id && c.IsSortingColumn))
                     // Pokud do tabulky přidávám další (tj. this) sloupec, který už má v sobě nastavené třídění, 
                     //  a přitom v tabulce existuje nějaký jiný sloupec, který již je třídícím sloupcem, pak pro this sloupec třídění zruším:
-                    this._SortCurrent = TableSortRowType.None;
+                    this._SortCurrent = ItemSortType.None;
             }
         }
         #endregion
@@ -1193,20 +1193,20 @@ namespace Djs.Common.Data
         /// Režim třídění v tomto sloupci.
         /// Změna hodnoty vyvolá invalidaci tabulky typu RowOrder.
         /// </summary>
-        public TableSortRowType SortCurrent
+        public ItemSortType SortCurrent
         {
             get { return this._SortCurrent; }
             set
             {
-                TableSortRowType oldValue = this._SortCurrent;
+                ItemSortType oldValue = this._SortCurrent;
                 if (value != oldValue)
                 {
                     if (this.HasTable)
                     {   // Pokud this sloupec je součástí datové tabulky (on nemusí být), 
                         //  a pokud aktuální třídění je jiné než None,
                         //  pak zajistím, že pouze this sloupec bude mít nastavené třídění, a ostatní budou mít None:
-                        if (value != TableSortRowType.None)
-                            this.Table.Columns.ForEachItem(c => c._SortCurrent = TableSortRowType.None);
+                        if (value != ItemSortType.None)
+                            this.Table.Columns.ForEachItem(c => c._SortCurrent = ItemSortType.None);
                         this._SortCurrent = value;
                         // Pokud this sloupec je součástí vizuální tabulky (on nemusí být), 
                         //  pak provedu invalidaci RowOrder:
@@ -1219,11 +1219,11 @@ namespace Djs.Common.Data
                     }
                 }
             }
-        } private TableSortRowType _SortCurrent = TableSortRowType.None;
+        } private ItemSortType _SortCurrent = ItemSortType.None;
         /// <summary>
         /// true pokud this sloupec je třídící (tzn. má SortCurrent : Ascending nebo Descending)
         /// </summary>
-        protected bool IsSortingColumn { get { return (this._SortCurrent == TableSortRowType.Ascending || this._SortCurrent == TableSortRowType.Descending); } }
+        protected bool IsSortingColumn { get { return (this._SortCurrent == ItemSortType.Ascending || this._SortCurrent == ItemSortType.Descending); } }
         /// <summary>
         /// Změní třídění tohoto sloupce, volá se po kliknutí na jeho záhlaví.
         /// Pokud je třídění povoleno, změní SortCurrent v pořadí None - Asc - Desc - None; a vrátí true.
@@ -1236,14 +1236,14 @@ namespace Djs.Common.Data
             if (!this.SortingEnabled) return false;
             switch (this.SortCurrent)
             {
-                case TableSortRowType.None:
-                    this.SortCurrent = TableSortRowType.Ascending;
+                case ItemSortType.None:
+                    this.SortCurrent = ItemSortType.Ascending;
                     break;
-                case TableSortRowType.Ascending:
-                    this.SortCurrent = TableSortRowType.Descending;
+                case ItemSortType.Ascending:
+                    this.SortCurrent = ItemSortType.Descending;
                     break;
-                case TableSortRowType.Descending:
-                    this.SortCurrent = TableSortRowType.None;
+                case ItemSortType.Descending:
+                    this.SortCurrent = ItemSortType.None;
                     break;
             }
             return true;
@@ -1870,6 +1870,25 @@ namespace Djs.Common.Data
         /// </summary>
         bool AutoSize { get; }
     }
+    /// <summary>
+    /// Implicitní určování prvku AutoSize, aplikuje se pokud v kolekci prvků <see cref="ISequenceLayout"/> neexistuje žádný, který by měl <see cref="ISequenceLayout.AutoSize"/> == true.
+    /// Pokud je zadáno <see cref="ImplicitAutoSizeType.None"/>, pak kolekce nebude mít chování AutoSize.
+    /// </summary>
+    public enum ImplicitAutoSizeType
+    {
+        /// <summary>
+        /// Žádný z prvků nebude mít chování AutoSize
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Pokud žádný z prvků kolekce <see cref="ISequenceLayout"/> nebude mít nastaveno <see cref="ISequenceLayout.AutoSize"/> = true, pak se za takový prvek bude považovat PRVNÍ prvek kolekce.
+        /// </summary>
+        FirstItem,
+        /// <summary>
+        /// Pokud žádný z prvků kolekce <see cref="ISequenceLayout"/> nebude mít nastaveno <see cref="ISequenceLayout.AutoSize"/> = true, pak se za takový prvek bude považovat POSLEDNÍ prvek kolekce.
+        /// </summary>
+        LastItem
+    }
     #endregion
     #region class SequenceLayout
     /// <summary>
@@ -2062,8 +2081,17 @@ namespace Djs.Common.Data
             }
         }
         #endregion
+        #region SequenceLayout podpora - výpočty AutoSize pro prvky kolekce ISequenceLayout
         public static bool AutoSizeLayoutCalculate(IEnumerable<ISequenceLayout> items, int visualSize)
         {
+            return AutoSizeLayoutCalculate(items, visualSize, ImplicitAutoSizeType.None);
+        }
+        public static bool AutoSizeLayoutCalculate(IEnumerable<ISequenceLayout> items, int visualSize, ImplicitAutoSizeType implicitAutoSize)
+        {
+            ISequenceLayout[] array = items.ToArray();
+            int count = array.Length;
+            if (count == 0) return false;
+
             // Nejprve projdu všechny vstupní prvky, oddělím prvky s AutoSize = true, sečtu jejich Size zvlášť za Fixní a zvlášť za Variabilní:
             List<ISequenceLayout> itemsVarList = new List<ISequenceLayout>();
             int sizeSumFix = 0;
@@ -2080,8 +2108,29 @@ namespace Djs.Common.Data
                     sizeSumFix += item.Size;
                 }
             }
-            if (itemsVarList.Count == 0) return false;               // Není zde žádný variabilní prvek
 
+            // Žádný prvek není AutoSize => ke slovu přichází ImplicitAutoSizeType:
+            if (itemsVarList.Count == 0)
+            {
+                ISequenceLayout implicitItem = null;
+                switch (implicitAutoSize)
+                {
+                    case ImplicitAutoSizeType.FirstItem:
+                        implicitItem = array[0];
+                        break;
+                    case ImplicitAutoSizeType.LastItem:
+                        implicitItem = array[count - 1];
+                        break;
+                    default:
+                        return false;               // Není zde žádný variabilní prvek
+                }
+                // Jako AutoSize vezmeme prvek implicitItem:
+                sizeSumVar += implicitItem.Size;
+                sizeSumFix -= implicitItem.Size;
+                itemsVarList.Add(implicitItem);
+            }
+
+            // Přepočet Size u prvků AutoSize:
             bool isChanged = false;
             int sizeNewVar = visualSize - sizeSumFix;
             decimal ratio = (decimal)sizeNewVar / (decimal)sizeSumVar;
@@ -2100,7 +2149,7 @@ namespace Djs.Common.Data
             SequenceLayout.SequenceLayoutCalculate(items);
             return true;
         }
-        
+        #endregion
         #region ISequenceLayout podpora - filtrování prvků typu ISequenceLayout podle viditelné oblasti
         /// <summary>
         /// Vrátí true, pokud daný prvek (item) se svojí pozicí (Begin, End) bude viditelný v aktuálním datovém prostoru
@@ -2237,7 +2286,7 @@ namespace Djs.Common.Data
     /// <summary>
     /// Typ třídění
     /// </summary>
-    public enum TableSortRowType
+    public enum ItemSortType
     {
         /// <summary>
         /// Netřídit

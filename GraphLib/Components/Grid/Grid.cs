@@ -93,6 +93,10 @@ namespace Djs.Common.Components
 
             this._TableInnerLayoutValid = true;                      // Normálně to patří až na konec metody. Ale některé komponenty mohou používat již částečně napočtené hodnoty, a pak bychom se zacyklili
 
+            // Umožníme tabulkám aplikovat jejich hodnotu AutoSize při dané výšce viditelné oblasti:
+            int ht = clientSize.Height - GScrollBar.DefaultSystemBarHeight;
+            this._TablesPositionCalculateAutoSize(ht);
+
             // Určíme, zda bude zobrazen scrollbar vpravo (to je tehdy, když výška tabulek je větší než výška prostoru pro tabulky = (ClientSize.Height - ColumnsScrollBar.Bounds.Height)):
             //  Objekt TablesPositions tady provede dotaz na velikost dat (metoda this._TablesPositionGetDataSize()) a velikost viditelného prostoru (metoda this._TablesPositionGetVisualSize()).
             //  Velikost dat je dána tabulkami, resp. pozici End poslední tabulky v sekvenci this.TablesSequence, 
@@ -113,7 +117,7 @@ namespace Djs.Common.Components
             // Umožníme sloupcům aplikovat jejich hodnotu AutoSize při dané šířce viditelné oblasti:
             int wt = (x2r - x1);                                     // wt: šířka tabulky (včetně svislého scrollbaru pro řádky)
             int wc = wt - GScrollBar.DefaultSystemBarWidth;          // wc: šířka dat tabulky (viditelný prostor bez svislého scrollbaru pro řádky)
-            this._ColumnPositionCalculateAutoSize(wc);
+            this._ColumnsPositionCalculateAutoSize(wc);
 
             // Určíme, zda bude zobrazen scrollbar dole (to je tehdy, když šířka datových sloupců tabulek je větší než prostor od RowHeaderColumn do pravého Scrollbaru, pokud je zobrazen):
             //  Objekt ColumnsPositions si data zjistí sám, poocí zdejších metod this._ColumnPositionGetVisualSize() a this._ColumnPositionGetDataSize()
@@ -561,11 +565,17 @@ namespace Djs.Common.Components
         #endregion
         #region Pozicování svislé - tabulky a vpravo svislý scrollbar
         /// <summary>
+        /// Určuje, která tabulka z tabulek obsažených v Gridu (<see cref="DataTables"/>) bude se bude chovat jako by měla AutoSize = true, když fyzicky žádná z nich to nebude mít nastavené.
+        /// Default = First
+        /// </summary>
+        public ImplicitAutoSizeType TablesAutoSize { get { return this._TablesAutoSize; } set { this._TablesAutoSize = value; } } private ImplicitAutoSizeType _TablesAutoSize;
+        /// <summary>
         /// Inicializace objektů pro pozicování tabulek: TablesPositions, TablesScrollBar
         /// </summary>
         private void InitTablesPositions()
         {
             this._TablesPositions = new GridPosition(0, this._TablesPositionGetVisualSize, this._TablesPositionGetDataSize);
+            this._TablesAutoSize = ImplicitAutoSizeType.FirstItem;
 
             this._TablesScrollBar = new GScrollBar() { Orientation = System.Windows.Forms.Orientation.Vertical };
             this._TablesScrollBar.ValueChanging += new GPropertyChanged<SizeRange>(TablesScrollBar_ValueChange);
@@ -591,6 +601,34 @@ namespace Djs.Common.Components
         private int _TablesPositionGetDataSize()
         {
             return this.TablesAllDataSize;
+        }
+        /// <summary>
+        /// Metoda je volána poté, kdy dojde ke změně výšky tabulky, a Grid by měl reagovat v případě potřeby změnou výšky okolních tabulek, aby byl zajištěn režim AutoSize
+        /// </summary>
+        /// <param name="gTable"></param>
+        internal void TableHeightChanged(GTable gTable)
+        {
+
+
+            this.Invalidate(InvalidateItem.TableHeight);
+        }
+        /// <summary>
+        /// Umožní tabulkám aplikovat jejich AutoSize (pokud některá tabulka tuto vlastnost má), pro aktuální výšku viditelné oblasti
+        /// </summary>
+        private void _TablesPositionCalculateAutoSize()
+        {
+            int height = this.ClientSize.Height - GScrollBar.DefaultSystemBarHeight;
+            this._TablesPositionCalculateAutoSize(height);
+        }
+        /// <summary>
+        /// Umožní tabulkám aplikovat jejich AutoSize (pokud některá tabulka tuto vlastnost má), pro danou výšku viditelné oblasti
+        /// </summary>
+        /// <param name="height">Výška prostoru pro tabulky</param>
+        private void _TablesPositionCalculateAutoSize(int height)
+        {
+            bool isChanged = SequenceLayout.AutoSizeLayoutCalculate(this.Tables, height, this.TablesAutoSize);
+            if (isChanged)
+                this._ChildArrayValid = false;
         }
         /// <summary>
         /// Eventhandler pro událost změny pozice svislého scrollbaru = posun pole tabulek nahoru/dolů
@@ -762,10 +800,18 @@ namespace Djs.Common.Components
             return (count > 0 ? array[count - 1].End : 0);
         }
         /// <summary>
+        /// Umožní sloupcům aplikovat jejich AutoSize (pokud některý sloupec tuto vlastnost má), pro aktuální šířku viditelné oblasti
+        /// </summary>
+        private void _ColumnsPositionCalculateAutoSize()
+        {
+            int width = this._ColumnsScrollBarBounds.Width;
+            this._ColumnsPositionCalculateAutoSize(width);
+        }
+        /// <summary>
         /// Umožní sloupcům aplikovat jejich AutoSize (pokud některý sloupec tuto vlastnost má), pro danou šířku viditelné oblasti
         /// </summary>
         /// <param name="width"></param>
-        private void _ColumnPositionCalculateAutoSize(int width)
+        private void _ColumnsPositionCalculateAutoSize(int width)
         {
             bool isChanged = SequenceLayout.AutoSizeLayoutCalculate(this.Columns, width);
             if (isChanged)

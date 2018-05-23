@@ -628,8 +628,6 @@ namespace Djs.Common.Components
 
             using (GraphicsUseText(graphics))
             {
-                // graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
-
                 Font font = fontInfo.Font;
                 SizeF textSize = graphics.MeasureString(text, font, bounds.Width, sf);
                 textArea = textSize.AlignTo(bounds, alignment, true);
@@ -1610,34 +1608,34 @@ namespace Djs.Common.Components
             return state;
         }
         /// <summary>
-        /// Set graphic to smooth mode
+        /// Nastaví Graphics tak, aby ideálně kreslil hladké čáry
         /// </summary>
         /// <param name="graphics"></param>
         private static void _GraphicsSetSmooth(Graphics graphics)
         {
-            graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
-            graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
-            graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
+            graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;        // SmoothingMode.AntiAlias poskytuje ideální hladké kreslení grafiky
+            graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Default;  // Nemá vliv na vykreslování čehokoliv
+            graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;     // TextRenderingHint.AntiAlias vyhovuje pro všechny režimy, a neovlivňuje vykreslení jiné grafiky
         }
         /// <summary>
-        /// Set graphic to text mode
+        /// Nastaví Graphics tak, aby ideálně kreslil text
         /// </summary>
         /// <param name="graphics"></param>
         private static void _GraphicsSetText(Graphics graphics)
         {
-            graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;        // None;
-            graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Bilinear; // Default;
-            graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;     // AntiAliasGridFit;
+            graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;        // SmoothingMode.AntiAlias poskytuje ideální hladké kreslení grafiky
+            graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Default;  // Nemá vliv na vykreslování čehokoliv
+            graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;     // TextRenderingHint.AntiAlias je jediný, který garantuje korektní měření textu, což je nezbytné pro ContentAlignement;
         }
         /// <summary>
-        /// Set graphic to sharp mode
+        /// Nastaví Graphics tak, aby ideálně kreslil ostré linie
         /// </summary>
         /// <param name="graphics"></param>
         private static void _GraphicsSetSharp(Graphics graphics)
         {
-            graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None;
+            graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None;             // Kreslí jednotlivé pixely
             graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Default;
-            graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.SystemDefault;
+            graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;     // TextRenderingHint.AntiAlias vyhovuje pro všechny režimy, a neovlivňuje vykreslení jiné grafiky
         }
         #region class GraphicsStateRestore : Disposable pattern for graphics.Save(), Set, use and Restore on Dispose
         /// <summary>

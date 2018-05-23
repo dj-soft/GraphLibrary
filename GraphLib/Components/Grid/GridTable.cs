@@ -1074,11 +1074,11 @@ namespace Djs.Common.Components.Grid
         {
             // Vypočteme výšku tabulky:
             int value = this._TableSplitter.Value - this.Bounds.Top;
-            this.DataTable.Height = value;                 // Tady dojde ke kompletnímu vyhodnocení pravidel pro výšku Table (Minimum, Default, Range)
+            this.DataTable.Height = value;                 // Tady dojde ke kompletnímu vyhodnocení vnitřních pravidel pro výšku Table (Minimum, Default, Range)
             e.CorrectValue = this.DataTable.Height;        // Pokud požadovaná hodnota (value) nebyla akceptovatelná, pak correctValue je hodnota přípustná
             if (e.IsChangeValue)
             {
-                this.Grid.Invalidate(InvalidateItem.TableHeight);
+                this.Grid.TableHeightChanged(this);
             }
         }
         /// <summary>
@@ -2485,7 +2485,7 @@ namespace Djs.Common.Components.Grid
             if (!String.IsNullOrEmpty(text) && !column.UseTimeAxis)
             {   // Sloupec má zadaný titulek, a nepoužívá časovou osu (pak nebudeme kreslit titulek, bude tam jen osa):
                 FontInfo fontInfo = FontInfo.Caption;
-                fontInfo.Bold = (column.SortCurrent == TableSortRowType.Ascending || column.SortCurrent == TableSortRowType.Descending);
+                fontInfo.Bold = (column.SortCurrent == ItemSortType.Ascending || column.SortCurrent == ItemSortType.Descending);
                 Color textColor = Skin.Grid.HeaderTextColor.SetOpacity(opacity);
                 GPainter.DrawString(e.Graphics, boundsAbsolute, text, textColor, fontInfo, ContentAlignment.MiddleCenter, out textArea);
 
@@ -2537,8 +2537,8 @@ namespace Djs.Common.Components.Grid
             {
                 switch (this.OwnerColumn.SortCurrent)
                 {
-                    case TableSortRowType.Ascending: return Skin.Grid.SortAscendingImage;
-                    case TableSortRowType.Descending: return Skin.Grid.SortDescendingImage;
+                    case ItemSortType.Ascending: return Skin.Grid.SortAscendingImage;
+                    case ItemSortType.Descending: return Skin.Grid.SortDescendingImage;
                 }
                 return null;
             }
