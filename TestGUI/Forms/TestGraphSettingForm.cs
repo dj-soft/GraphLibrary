@@ -37,9 +37,12 @@ namespace Djs.Common.TestGUI.Forms
             this._VScrollBar.Maximum = this._Settings[this._Settings.Length - 1].BoundsAbsolute.Bottom;
 
 
-            // Výsledky:
+            // Výsledky pro Text:
             //  a) Správné změření a zarovnání textu (doprava) je možné pouze s TextRenderingHint.AntiAlias
-            //  b) 
+            //  b) Pro zobrazení textu nemají další nastavení význam
+
+            // Výsledky pro Kolmé čáry:
+
         }
         private void _VScrollBar_ValueChanged(object sender, EventArgs e)
         {
@@ -58,55 +61,6 @@ namespace Djs.Common.TestGUI.Forms
             int drawH = this.TestPanel.ClientSize.Height;
             foreach (OneSetting oneSetting in this._Settings)
                 oneSetting.Paint(e.Graphics, drawY, drawH);
-
-            /*
-            SmoothingMode[] smoothingModes = new SmoothingMode[] { SmoothingMode.Default, SmoothingMode.HighSpeed, SmoothingMode.HighQuality, SmoothingMode.None, SmoothingMode.AntiAlias };
-            InterpolationMode[] interpolationModes = new InterpolationMode[] { InterpolationMode.Default, InterpolationMode.Low, InterpolationMode.High, InterpolationMode.Bilinear, InterpolationMode.Bicubic, InterpolationMode.NearestNeighbor, InterpolationMode.HighQualityBilinear, InterpolationMode.HighQualityBicubic };
-            TextRenderingHint[] textRenderingHints = new TextRenderingHint[] { TextRenderingHint.SystemDefault, TextRenderingHint.SingleBitPerPixelGridFit, TextRenderingHint.SingleBitPerPixel, TextRenderingHint.AntiAliasGridFit, TextRenderingHint.AntiAlias, TextRenderingHint.ClearTypeGridFit };
-            int w = 255;
-            int l = 224;
-            Color[] backColors = new Color[] { Color.FromArgb(w, l, l), Color.FromArgb(l, w, l), Color.FromArgb(l, l, w), Color.FromArgb(w, l, w), Color.FromArgb(w, w, l), Color.FromArgb(l, w, w) };
-            int c = 0;
-            int y = 5;
-            using (Font font1 = new Font(FontFamily.GenericSansSerif, 11f, FontStyle.Regular))
-            using (Font font2 = new Font(FontFamily.GenericSansSerif, 11f, FontStyle.Bold))
-            {
-                foreach (SmoothingMode smoothingMode in smoothingModes)
-                    foreach (InterpolationMode interpolationMode in interpolationModes)
-                        foreach (TextRenderingHint textRenderingHint in textRenderingHints)
-                            TestPaint(e.Graphics, font1, font2, smoothingMode, interpolationMode, textRenderingHint, backColors[(c++) % (backColors.Length)], ref y);
-            }
-            */
-        }
-        private void TestPaint(Graphics graphics, Font font1, Font font2, SmoothingMode smoothingMode, InterpolationMode interpolationMode, TextRenderingHint textRenderingHint, Color backColor, ref int y)
-        {
-            graphics.SmoothingMode = smoothingMode;
-            graphics.InterpolationMode = interpolationMode;
-            graphics.TextRenderingHint = textRenderingHint;
-            graphics.ResetClip();
-
-            Rectangle boundsRow = new Rectangle(5, y, this.TestPanel.ClientSize.Width - 12, 24);
-            graphics.IntersectClip(boundsRow);
-            using (SolidBrush backBrush = new SolidBrush(backColor))
-            {
-                graphics.FillRectangle(backBrush, boundsRow);
-            }
-
-            Font sysFont = SystemFonts.DialogFont;
-
-            Rectangle boundsSmo = new Rectangle(5, y + 3, 130, 24);
-            string textSmo = "Smo:" + smoothingMode.ToString();
-            graphics.DrawString(textSmo, sysFont, Brushes.Black, boundsSmo);
-
-            Rectangle boundsInt = new Rectangle(140, y + 3, 170, 24);
-            string textInt = "Int:" + interpolationMode.ToString();
-            graphics.DrawString(textInt, sysFont, Brushes.Black, boundsInt);
-
-            Rectangle boundsTxh = new Rectangle(315, y + 3, 170, 24);
-            string textTxh = "Hint:" + textRenderingHint.ToString();
-            graphics.DrawString(textTxh, sysFont, Brushes.Black, boundsTxh);
-
-            y = boundsRow.Bottom + 1;
         }
     }
     public class OneSetting
@@ -121,7 +75,9 @@ namespace Djs.Common.TestGUI.Forms
         public Rectangle InterpolationBounds { get; private set; }
         public string TextRenderingText { get; private set; }
         public Rectangle TextRenderingBounds { get; private set; }
-        public Rectangle SampleBounds { get; private set; }
+        public Rectangle TextSampleBounds { get; private set; }
+        public Rectangle LineSampleBounds { get; private set; }
+        public Rectangle CurveSampleBounds { get; private set; }
         public Color BackColor { get; private set; }
         public Rectangle BoundsAbsolute { get; private set; }
         #endregion
@@ -165,18 +121,19 @@ namespace Djs.Common.TestGUI.Forms
 
             int h = ROW_HEIGHT;
             this.BoundsAbsolute = new Rectangle(5, y, 2000, h);
-            this.SmoothingBounds = new Rectangle(0, 3, ITEM_SMOOTHING_WIDTH, h);
-            this.InterpolationBounds = new Rectangle(this.SmoothingBounds.Right + 5, 3, ITEM_INTERPOLATION_WIDTH, h);
-            this.TextRenderingBounds = new Rectangle(this.InterpolationBounds.Right + 5, 3, ITEM_RENDERING_WIDTH, h);
-            this.SampleBounds = new Rectangle(this.TextRenderingBounds.Right + 5, 0, ITEM_SAMPLE_WIDTH, h);
-
+            int x = 0;
+            this.SmoothingBounds = new Rectangle(x, 3, ITEM_SMOOTHING_WIDTH, h); x = this.SmoothingBounds.Right + 5;
+            this.InterpolationBounds = new Rectangle(x, 3, ITEM_INTERPOLATION_WIDTH, h); x = this.InterpolationBounds.Right + 5;
+            this.TextRenderingBounds = new Rectangle(x, 3, ITEM_RENDERING_WIDTH, h); x = this.TextRenderingBounds.Right + 5;
+            this.TextSampleBounds = new Rectangle(x, 0, ITEM_TEXTSAMPLE_WIDTH, h); x = this.TextSampleBounds.Right + 5;
+            this.LineSampleBounds = new Rectangle(x, 0, ITEM_TEXTSAMPLE_WIDTH, h); x = this.LineSampleBounds.Right + 5;
             y = this.BoundsAbsolute.Bottom + 2;
         }
         private const int ROW_HEIGHT = 34;
-        private const int ITEM_SMOOTHING_WIDTH = 195;
-        private const int ITEM_INTERPOLATION_WIDTH = 215;
-        private const int ITEM_RENDERING_WIDTH = 225;
-        private const int ITEM_SAMPLE_WIDTH = 225;
+        private const int ITEM_SMOOTHING_WIDTH = 225;
+        private const int ITEM_INTERPOLATION_WIDTH = 250;
+        private const int ITEM_RENDERING_WIDTH = 250;
+        private const int ITEM_TEXTSAMPLE_WIDTH = 140;
         #endregion
         #region Kreslení
         /// <summary>
@@ -224,7 +181,7 @@ namespace Djs.Common.TestGUI.Forms
         private void PaintSample(Graphics graphics, Font fontStd, Font fontBold, Rectangle boundsRelative)
         {
 
-            Rectangle bounds = this.SampleBounds;
+            Rectangle bounds = this.TextSampleBounds;
             bounds.X = bounds.X + boundsRelative.X;
             bounds.Y = bounds.Y + boundsRelative.Y;
 
