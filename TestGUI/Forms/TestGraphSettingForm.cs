@@ -31,13 +31,14 @@ namespace Djs.Common.TestGUI.Forms
         }
         private void InitializeSetting()
         {
-            // this._Settings = OneSetting.GetAll();
             // this._Settings = OneSetting.GetAll((s,i,t) => (t == TextRenderingHint.SystemDefault || t == TextRenderingHint.AntiAliasGridFit));
             this._Settings = OneSetting.GetAll(
                 (s, i, t) =>
                 (s == SmoothingMode.AntiAlias || s == SmoothingMode.HighQuality) && 
                 (t == TextRenderingHint.AntiAlias)
                 );
+
+            this._Settings = OneSetting.GetAll();
             this._VScrollBar.Maximum = this._Settings[this._Settings.Length - 1].BoundsAbsolute.Bottom;
 
 
@@ -50,6 +51,8 @@ namespace Djs.Common.TestGUI.Forms
 
             // Výsledky pro Křivky jsou stejné jako pro Line:
             //  Nejlepší podání čar poskytne SmoothingMode.AntiAlias nebo SmoothingMode.HighQuality (nevidím rozdíl)
+
+            // Nastavení InterpolationMode nemá vliv asi na nic viditelného
 
         }
         private void _VScrollBar_ValueChanged(object sender, EventArgs e)
