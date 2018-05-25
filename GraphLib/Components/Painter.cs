@@ -874,6 +874,113 @@ namespace Djs.Common.Components
             GPainter.DrawAreaBase(graphics, bounds, color, state, orientation, null, null, 0);
         }
         #endregion
+        #region DrawScrollBar
+        /// <summary>
+        /// Vykreslí ScrollBar
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="scrollBar"></param>
+        public static void DrawScrollBar(Graphics graphics, Rectangle bounds, IScrollBarPaintData scrollBar)
+        {
+            Point location = bounds.Location;
+            Orientation orientation = scrollBar.Orientation;
+            bool isEnabled = scrollBar.IsEnabled;
+
+            // Pozadí:
+            _DrawScrollBarBack(graphics, bounds, orientation, isEnabled);
+
+            // Prostor Data (mezi Min a Max buttonem, pod Thumbem), plus UserDataDraw method:
+            _DrawScrollBarData(graphics, scrollBar.DataAreaBounds.Add(location), orientation, isEnabled, scrollBar.UserDataDraw);
+
+            // Aktivní prostor Min/Max area (prostor pro kliknutí mezi Thumb a Min/Max Buttonem):
+            if (scrollBar.MinAreaState.IsMouseActive())
+                _DrawScrollBarActiveArea(graphics, scrollBar.MinAreaBounds.Add(location), orientation, isEnabled, scrollBar.MinAreaState);
+            else if (scrollBar.MaxAreaState.IsMouseActive())
+                _DrawScrollBarActiveArea(graphics, scrollBar.MaxAreaBounds.Add(location), orientation, isEnabled, scrollBar.MaxAreaState);
+
+            // Buttony:
+            _DrawScrollBarButton(graphics, scrollBar.MinButtonBounds.Add(location), orientation, isEnabled, scrollBar.MinButtonState, true, LinearShapeType.LeftArrow, LinearShapeType.UpArrow);
+            _DrawScrollBarButton(graphics, scrollBar.MaxButtonBounds.Add(location), orientation, isEnabled, scrollBar.MaxButtonState, true, LinearShapeType.RightArrow, LinearShapeType.DownArrow);
+            if (isEnabled)
+                _DrawScrollBarButton(graphics, scrollBar.ThumbButtonBounds.Add(location), orientation, isEnabled, scrollBar.ThumbButtonState, false, LinearShapeType.HorizontalLines, LinearShapeType.VerticalLines);
+
+        }
+        /// <summary>
+        /// Vykreslí základní pozadí pod celý ScrollBar
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="orientation"></param>
+        /// <param name="isEnabled"></param>
+        private static void _DrawScrollBarBack(Graphics graphics, Rectangle bounds, Orientation orientation, bool isEnabled)
+        {
+            Color backColor = Skin.ScrollBar.BackColorArea;
+            if (!isEnabled)
+                backColor = backColor.Morph(Skin.Modifiers.BackColorDisable, 0.35f);
+
+            graphics.FillRectangle(Skin.Brush(backColor), bounds);
+        }
+        /// <summary>
+        /// Vykreslí prostor Data (mezi MinButton a MaxButton), nehledí na interaktivní stav
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="orientation"></param>
+        /// <param name="isEnabled"></param>
+        /// <param name="itemState"></param>
+        private static void _DrawScrollBarData(Graphics graphics, Rectangle bounds, Orientation orientation, bool isEnabled, Action<Graphics, Rectangle> userDataDraw)
+        {
+            GInteractiveState itemState = (isEnabled ? GInteractiveState.Enabled : GInteractiveState.Disabled);
+            graphics.FillRectangle(Skin.Brush(Skin.ScrollBar.BackColorArea), bounds);
+            // GPainter.DrawAreaBase(graphics, bounds, Skin.ScrollBar.BackColorArea, itemState, orientation, null, null);
+        }
+        /// <summary>
+        /// Vykreslí prostor MinArea / MaxArea
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="orientation"></param>
+        /// <param name="isEnabled"></param>
+        /// <param name="itemState"></param>
+        private static void _DrawScrollBarActiveArea(Graphics graphics, Rectangle bounds, Orientation orientation, bool isEnabled, GInteractiveState itemState)
+        {
+            GPainter.DrawAreaBase(graphics, bounds, Skin.ScrollBar.BackColorArea, itemState, orientation, null, 96);
+        }
+        /// <summary>
+        /// Vykreslí button pro ScrollBar a do něj jeho grafiku
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="orientation"></param>
+        /// <param name="isEnabled"></param>
+        /// <param name="itemState"></param>
+        /// <param name="shapeHorizontal"></param>
+        /// <param name="shapeVertical"></param>
+        private static void _DrawScrollBarButton(Graphics graphics, Rectangle bounds, Orientation orientation, bool isEnabled, GInteractiveState itemState, bool drawOnlyMouseActive, LinearShapeType shapeHorizontal, LinearShapeType shapeVertical)
+        {
+            if (isEnabled && (!drawOnlyMouseActive || itemState.IsMouseActive()))
+            {   // Buttony kreslím jen pokud ScrollBar je Enabled, a (mám kreslit i za stavu bez myši = Thumb, anebo button je myšoaktivní = Min/Max):
+                GPainter.DrawAreaBase(graphics, bounds, Skin.ScrollBar.BackColorButton, itemState, orientation, null, null);
+                // GPainter.DrawButtonBase(graphics, bounds, Skin.ScrollBar.BackColorButton, itemState, orientation, 0, null, null);
+            }
+
+            LinearShapeType shape = (orientation == Orientation.Vertical ? shapeVertical : shapeHorizontal);
+            if (shape == LinearShapeType.None) return;
+
+            GraphicSetting graphicSetting;
+            GraphicsPath imagePath = GPainter.CreatePathLinearShape(shape, bounds, 2, out graphicSetting);
+            if (imagePath != null)
+            {
+                GInteractiveState state = (isEnabled ? itemState : GInteractiveState.Disabled);
+                Color foreColor = Skin.GetForeColor(Skin.ScrollBar.TextColorButton, state);
+                using (GPainter.GraphicsUse(graphics, graphicSetting))
+                {
+                    graphics.DrawPath(Skin.Pen(foreColor), imagePath);
+                }
+            }
+        }
+        #endregion
         #region DrawShadow
         public static void DrawShadow(Graphics graphics, Rectangle bounds)
         {
@@ -1608,6 +1715,19 @@ namespace Djs.Common.Components
             return state;
         }
         /// <summary>
+        /// Zajistí oříznutí aktivní plochy v grafice na daný prostor.
+        /// Po konci bloku using() bude plocha vrácena na předchozí nastavení.
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="setClip"></param>
+        /// <returns></returns>
+        public static IDisposable GraphicsClip(Graphics graphics, Rectangle setClip)
+        {
+            IDisposable state = new GraphicsStateRestore(graphics, setClip);
+            graphics.SetClip(setClip);
+            return state;
+        }
+        /// <summary>
         /// Nastaví Graphics tak, aby ideálně kreslil hladké čáry
         /// </summary>
         /// <param name="graphics"></param>
@@ -1770,6 +1890,27 @@ namespace Djs.Common.Components
         public static Color InteractiveClipDownColor { get { return Color.Black; } }
         public static Color InteractiveClipDragColor { get { return Color.Blue; } }
         #endregion
+    }
+    public interface IScrollBarPaintData
+    {
+        Orientation Orientation { get; }
+        bool IsEnabled { get; }
+        Rectangle ScrollBarBounds { get; }
+        Rectangle MinButtonBounds { get; }
+        GInteractiveState MinButtonState { get; }
+        Rectangle DataAreaBounds { get; }
+        Rectangle MinAreaBounds { get; }
+        GInteractiveState MinAreaState { get; }
+        Rectangle MaxAreaBounds { get; }
+        GInteractiveState MaxAreaState { get; }
+        Rectangle MaxButtonBounds { get; }
+        GInteractiveState MaxButtonState { get; }
+        Rectangle ThumbButtonBounds { get; }
+        GInteractiveState ThumbButtonState { get; }
+        Rectangle ThumbImageBounds { get; }
+        void UserDataDraw(Graphics graphics, Rectangle bounds);
+
+
     }
     #region Enums
     public enum GraphicSetting { None, Text, Smooth, Sharp }

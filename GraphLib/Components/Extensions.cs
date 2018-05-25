@@ -1767,6 +1767,17 @@ namespace Djs.Common.Components
             return (padding.Top == 0 && padding.Left == 0 && padding.Right == 0 && padding.Bottom == 0);
         }
         #endregion
+        #region GInteractiveState
+        /// <summary>
+        /// Vrací true, pokud interaktivní stav je jeden z: MouseOver, LeftDown, LeftDrag, RightDown, RightDrag.
+        /// </summary>
+        /// <param name="state"></param>
+        /// <returns></returns>
+        public static bool IsMouseActive(this GInteractiveState state)
+        {
+            return (state == GInteractiveState.MouseOver || state == GInteractiveState.LeftDown || state == GInteractiveState.LeftDrag || state == GInteractiveState.RightDown || state == GInteractiveState.RightDrag);
+        }
+        #endregion
         #region Rectangle a Padding: Rectangle.Add(), Rectangle.Sub(Padding)
         /// <summary>
         /// Vrací vnitřní prostor v this Rectangle, po odečtení daných okrajů.

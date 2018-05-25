@@ -820,7 +820,7 @@ namespace Djs.Common.Components
         public Color TextColorButton { get { return this._Owner.GetValue(this._SkinSetKey, "TextColorButton", DefaultTextColor); } set { this._Owner.SetValue(this._SkinSetKey, "TextColorButton", value); } }
         #endregion
         #region Default colors
-        protected virtual Color DefaultBackColorArea { get { return Color.FromArgb(255, 160, 160, 160); } }
+        protected virtual Color DefaultBackColorArea { get { return Color.FromArgb(255, 160, 160, 176); } }
         protected virtual Color DefaultBackColorButton { get { return Color.FromArgb(255, 216, 216, 216); } }
         protected virtual Color DefaultTextColor { get { return Color.Black; } }
         #endregion

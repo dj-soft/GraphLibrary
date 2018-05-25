@@ -2082,22 +2082,73 @@ namespace Djs.Common.Data
         }
         #endregion
         #region SequenceLayout podpora - výpočty AutoSize pro prvky kolekce ISequenceLayout
+        /// <summary>
+        /// Metoda najde explicitně zadané prvky s <see cref="ISequenceLayout.AutoSize"/> == true, anebo najde první nebo poslední (podle parametru implicitAutoSize),
+        /// a upraví jejich velikost (<see cref="ISequenceLayout.Size"/>) tak, aby součet velikostí prvků kolekce měl 
+        /// včetně započtení mezery mezi prvky (podle parametru spacing) hodnotu dle parametru visualSize.
+        /// Pokud dojde k reálné změně velikosti některého prvku, provede se pro kolekci prvků metoda <see cref="SequenceLayout.SequenceLayoutCalculate(IEnumerable{ISequenceLayout}, int)"/> a vrací se true.
+        /// </summary>
+        /// <param name="items">Prvky v kolekci</param>
+        /// <param name="visualSize">Cílová sumární velikost</param>
+        /// <returns></returns>
         public static bool AutoSizeLayoutCalculate(IEnumerable<ISequenceLayout> items, int visualSize)
         {
             return _AutoSizeLayoutCalculate(items, visualSize, 0, ImplicitAutoSizeType.None);
         }
+        /// <summary>
+        /// Metoda najde explicitně zadané prvky s <see cref="ISequenceLayout.AutoSize"/> == true, anebo najde první nebo poslední (podle parametru implicitAutoSize),
+        /// a upraví jejich velikost (<see cref="ISequenceLayout.Size"/>) tak, aby součet velikostí prvků kolekce měl 
+        /// včetně započtení mezery mezi prvky (podle parametru spacing) hodnotu dle parametru visualSize.
+        /// Pokud dojde k reálné změně velikosti některého prvku, provede se pro kolekci prvků metoda <see cref="SequenceLayout.SequenceLayoutCalculate(IEnumerable{ISequenceLayout}, int)"/> a vrací se true.
+        /// </summary>
+        /// <param name="items">Prvky v kolekci</param>
+        /// <param name="visualSize">Cílová sumární velikost</param>
+        /// <param name="spacing">Mezera mezi prvky</param>
+        /// <returns></returns>
         public static bool AutoSizeLayoutCalculate(IEnumerable<ISequenceLayout> items, int visualSize, int spacing)
         {
             return _AutoSizeLayoutCalculate(items, visualSize, spacing, ImplicitAutoSizeType.None);
         }
+        /// <summary>
+        /// Metoda najde explicitně zadané prvky s <see cref="ISequenceLayout.AutoSize"/> == true, anebo najde první nebo poslední (podle parametru implicitAutoSize),
+        /// a upraví jejich velikost (<see cref="ISequenceLayout.Size"/>) tak, aby součet velikostí prvků kolekce měl 
+        /// včetně započtení mezery mezi prvky (podle parametru spacing) hodnotu dle parametru visualSize.
+        /// Pokud dojde k reálné změně velikosti některého prvku, provede se pro kolekci prvků metoda <see cref="SequenceLayout.SequenceLayoutCalculate(IEnumerable{ISequenceLayout}, int)"/> a vrací se true.
+        /// </summary>
+        /// <param name="items">Prvky v kolekci</param>
+        /// <param name="visualSize">Cílová sumární velikost</param>
+        /// <param name="implicitAutoSize">Režim <see cref="ImplicitAutoSizeType"/>, uplatněný pokud se mezi prvky kolekce nenajde žádný s (<see cref="ISequenceLayout.AutoSize"/> == true)</param>
+        /// <returns></returns>
         public static bool AutoSizeLayoutCalculate(IEnumerable<ISequenceLayout> items, int visualSize, ImplicitAutoSizeType implicitAutoSize)
         {
             return _AutoSizeLayoutCalculate(items, visualSize, 0, implicitAutoSize);
         }
+        /// <summary>
+        /// Metoda najde explicitně zadané prvky s <see cref="ISequenceLayout.AutoSize"/> == true, anebo najde první nebo poslední (podle parametru implicitAutoSize),
+        /// a upraví jejich velikost (<see cref="ISequenceLayout.Size"/>) tak, aby součet velikostí prvků kolekce měl 
+        /// včetně započtení mezery mezi prvky (podle parametru spacing) hodnotu dle parametru visualSize.
+        /// Pokud dojde k reálné změně velikosti některého prvku, provede se pro kolekci prvků metoda <see cref="SequenceLayout.SequenceLayoutCalculate(IEnumerable{ISequenceLayout}, int)"/> a vrací se true.
+        /// </summary>
+        /// <param name="items">Prvky v kolekci</param>
+        /// <param name="visualSize">Cílová sumární velikost</param>
+        /// <param name="spacing">Mezera mezi prvky</param>
+        /// <param name="implicitAutoSize">Režim <see cref="ImplicitAutoSizeType"/>, uplatněný pokud se mezi prvky kolekce nenajde žádný s (<see cref="ISequenceLayout.AutoSize"/> == true)</param>
+        /// <returns></returns>
         public static bool AutoSizeLayoutCalculate(IEnumerable<ISequenceLayout> items, int visualSize, int spacing, ImplicitAutoSizeType implicitAutoSize)
         {
             return _AutoSizeLayoutCalculate(items, visualSize, spacing, implicitAutoSize);
         }
+        /// <summary>
+        /// Metoda najde explicitně zadané prvky s <see cref="ISequenceLayout.AutoSize"/> == true, anebo najde první nebo poslední (podle parametru implicitAutoSize),
+        /// a upraví jejich velikost (<see cref="ISequenceLayout.Size"/>) tak, aby součet velikostí prvků kolekce měl 
+        /// včetně započtení mezery mezi prvky (podle parametru spacing) hodnotu dle parametru visualSize.
+        /// Pokud dojde k reálné změně velikosti některého prvku, provede se pro kolekci prvků metoda <see cref="SequenceLayout.SequenceLayoutCalculate(IEnumerable{ISequenceLayout}, int)"/> a vrací se true.
+        /// </summary>
+        /// <param name="items">Prvky v kolekci</param>
+        /// <param name="visualSize">Cílová sumární velikost</param>
+        /// <param name="spacing">Mezera mezi prvky</param>
+        /// <param name="implicitAutoSize">Režim <see cref="ImplicitAutoSizeType"/>, uplatněný pokud se mezi prvky kolekce nenajde žádný s (<see cref="ISequenceLayout.AutoSize"/> == true)</param>
+        /// <returns></returns>
         private static bool _AutoSizeLayoutCalculate(IEnumerable<ISequenceLayout> items, int visualSize, int spacing, ImplicitAutoSizeType implicitAutoSize)
         {
             ISequenceLayout[] array = items.ToArray();
@@ -2330,20 +2381,4 @@ namespace Djs.Common.Data
         Text
     }
     #endregion
-
-
-    [TestClass]
-    public class Test_Table
-    {
-        [TestMethod]
-        public void Test()
-        {
-            Table tbl = new Table();
-            tbl.AddRow(12, 34, 56, 78);
-            tbl.AddColumns("a", "b", "c", "d");
-            tbl.Rows[0].Height = 65;
-            Row row = new Row(1, 2, 3, 4);
-            tbl.AddRow(row);
-        }
-    }
 }

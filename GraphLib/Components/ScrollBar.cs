@@ -12,7 +12,7 @@ namespace Djs.Common.Components
     /// <summary>
     /// Scroll bar
     /// </summary>
-    public class GScrollBar : InteractiveObject, IInteractiveItem
+    public class GScrollBar : InteractiveObject, IScrollBarPaintData, IInteractiveItem
     {
         #region Konstruktor
         /// <summary>
@@ -45,17 +45,18 @@ namespace Djs.Common.Components
             }
         } private Orientation _Orientation = Orientation.Horizontal;
         /// <summary>
-        /// The default width, in pixels, of the vertical scroll bar ( = System.Windows.Forms.SystemInformation.VerticalScrollBarWidth).
+        /// Výchozí šířka svislého scrollbaru (je rovna <see cref="System.Windows.Forms.SystemInformation.VerticalScrollBarWidth"/>)
         /// </summary>
         public static int DefaultSystemBarWidth { get { return SystemInformation.VerticalScrollBarWidth; } }
         /// <summary>
-        /// The default height, in pixels, of the horizontal scroll bar ( = System.Windows.Forms.SystemInformation.HorizontalScrollBarHeight).
+        /// Výchozí výška vodorovného scrollbaru (je rovna <see cref="System.Windows.Forms.SystemInformation.HorizontalScrollBarHeight"/>)
         /// </summary>
         public static int DefaultSystemBarHeight { get { return SystemInformation.HorizontalScrollBarHeight; } }
         #endregion
         #region Value, ValueTotal
         /// <summary>
-        /// Logical value: position of first visible pixel of document in visible part
+        /// Logická hodnota.
+        /// Lze ji chápat jako první a poslední pixel dokumentu, který bude zobrazen jako první ve viditelné oblasti Controlu.
         /// </summary>
         public SizeRange Value
         {
@@ -63,8 +64,9 @@ namespace Djs.Common.Components
             set { this.SetValue(value, ProcessAction.All, EventSourceType.ValueChange | EventSourceType.ApplicationCode); }
         }
         /// <summary>
-        /// Logical value: position of first visible pixel of document in visible part.
-        /// Silent = setting an value to this property do not trigger event ValueChanged.
+        /// Logická hodnota.
+        /// Lze ji chápat jako první a poslední pixel dokumentu, který bude zobrazen jako první ve viditelné oblasti Controlu.
+        /// Silent = vložení hodnoty do této property nespustí událost ValueChanged.
         /// </summary>
         protected SizeRange ValueSilent
         {
@@ -72,8 +74,9 @@ namespace Djs.Common.Components
             set { this.SetValue(value, ProcessAction.SilentValueActions, EventSourceType.ValueChange | EventSourceType.ApplicationCode); }
         }
         /// <summary>
-        /// Logical value: position of first visible pixel of document in visible part.
-        /// Drag = setting an value to this property do not reset inner bounds (InnerBoundsReset())
+        /// Logická hodnota.
+        /// Lze ji chápat jako první a poslední pixel dokumentu, který bude zobrazen jako první ve viditelné oblasti Controlu.
+        /// Drag = vložení hodnoty do této property nevede k přepočtu vnitřních souřadnic = pozice thumbu, protože ta je právě zdrojem akce.
         /// </summary>
         protected SizeRange ValueDrag
         {
@@ -81,7 +84,8 @@ namespace Djs.Common.Components
             set { this.SetValue(value, ProcessAction.DragValueActions, EventSourceType.ValueChanging | EventSourceType.ApplicationCode); }
         }
         /// <summary>
-        /// Logical value: total size of document (Begin, End)
+        /// Logická velikost.
+        /// Lze ji chápat jako celkový rozsah pixelů dokumentu, který je zobrazován ve viditelné oblasti Controlu.
         /// </summary>
         public SizeRange ValueTotal
         {
@@ -91,33 +95,35 @@ namespace Djs.Common.Components
         private SizeRange _Value;
         private SizeRange _ValueTotal;
         /// <summary>
-        /// Value for small change (by clicking to Up/Down arrow).
-        /// Value is ratio of current this.Value.Size.
-        /// Default = 0.10m.
-        /// Value is aligned to range 0.001 to 1.000 (include).
+        /// Poměrná hodnota pro malý posun, tj. když je kliknuto na horní/dolní šipku.
+        /// Představuje poměr z viditelné velikosti dokumentu (<see cref="Value"/>), o kolik se posune zobrazený obsah.
+        /// Default = 0.10m
         /// </summary>
         public decimal? ValueRatioSmallChange
         {
             get { return this._ValueRatioSmallChange; }
             set { this._ValueRatioSmallChange = (value < 0m ? 0.001m : (value > 1m ? 1m : value)); }
         } private decimal? _ValueRatioSmallChange = 0.10m;
-        /// <summary>Current small step for current Value and ValueRatioSmallChange ( = ValueRatioSmallChange * Value.Size)</summary>
+        /// <summary>
+        /// Aktuální absolutní hodnota malého posunu ( = ValueRatioSmallChange * Value.Size)
+        /// </summary>
         protected decimal ValueRatioSmallChangeCurrent { get { return this.GetValueStep(this._ValueRatioSmallChange, 0.10m); } }
         /// <summary>
-        /// Value for big change (by clicking to Up/Down area).
-        /// Value is ratio of current this.Value.Size.
-        /// Default = 0.90m.
-        /// Value is aligned to range 0.002 to 1.000 (include).
+        /// Poměrná hodnota pro velký posun, tj. když je kliknuto na horní/dolní pole.
+        /// Představuje poměr z viditelné velikosti dokumentu (<see cref="Value"/>), o kolik se posune zobrazený obsah.
+        /// Default = 0.90m
         /// </summary>
         public decimal? ValueRatioBigChange
         {
             get { return this._ValueRatioBigChange; }
             set { this._ValueRatioBigChange = (value < 0m ? 0.002m : (value > 1m ? 1m : value)); }
         } private decimal? _ValueRatioBigChange = 0.90m;
-        /// <summary>Current big step for current Value and ValueRatioBigChange ( = ValueRatioBigChange * Value.Size)</summary>
+        /// <summary>
+        /// Aktuální absolutní hodnota velkého posunu ( = ValueRatioBigChange * Value.Size)
+        /// </summary>
         protected decimal ValueRatioBigChangeCurrent { get { return this.GetValueStep(this._ValueRatioBigChange, 0.90m); } }
         /// <summary>
-        /// Returns step for this.Value and specified ratio
+        /// Vrátí hodnotu kroku pro aktuální <see cref="Value"/> a daný poměr ratio.
         /// </summary>
         /// <param name="ratio"></param>
         /// <param name="defaultValue"></param>
@@ -134,7 +140,7 @@ namespace Djs.Common.Components
             return step;
         }
         #endregion
-        #region FillFrom
+        #region LoadFrom : načtení sady dat jedním voláním z jednoho zdroje
         /// <summary>
         /// Do this scrollbaru naplní hodnoty do ValueTotal, Value, IsEnabled a Bounds
         /// </summary>
@@ -190,20 +196,19 @@ namespace Djs.Common.Components
         #endregion
         #region Set*() methods, Detect*() methods
         /// <summary>
-        /// Is called after change of this.Bounds, without another conditions
+        /// Provede se po změně this.Bounds, bez dalších podmínek
         /// </summary>
         /// <param name="oldBounds"></param>
         /// <param name="newBounds"></param>
         /// <param name="actions">Akce k provedení</param>
         /// <param name="eventSource">Zdroj této události</param>
         protected override void SetBoundsAfterChange(Rectangle oldBounds, Rectangle newBounds, ref ProcessAction actions, EventSourceType eventSource)
-        {   // Change of Bounds never does change Value.
-            // Allways (without test of requested actions) does DetectOrientation():
+        {   // Změna Bounds nikdy nezmění Value. Vždy provede detekci orientace.
             this.DetectOrientation(LeaveOnlyActions(actions, ProcessAction.CallChangedEvents), eventSource);
         }
         /// <summary>
-        /// Is called after Bounds change, from SetBound() method, only when action PrepareInnerItems is specified.
-        /// Recalculate SubItems bounds after change this.Bounds.
+        /// Je voláno po změně Bounds, z metody SetBound(), pokud je specifikováno PrepareInnerItems.
+        /// Přepočte souřadnice SubItems.
         /// </summary>
         /// <param name="oldBounds">Původní umístění, před změnou</param>
         /// <param name="newBounds">Nové umístění, po změnou. Používejme raději tuto hodnotu než this.Bounds</param>
@@ -214,7 +219,7 @@ namespace Djs.Common.Components
             this.ChildItemsCalculate(true);
         }
         /// <summary>
-        /// Store specified value to this.Orientation, call ChildItemsCalculate()...
+        /// Vloží danou orientaci, zavolá ChildItemsCalculate()...
         /// </summary>
         /// <param name="bounds"></param>
         internal void SetOrientation(Orientation orientation, ProcessAction actions, EventSourceType eventSource)
@@ -234,7 +239,7 @@ namespace Djs.Common.Components
                 this.CallDrawRequest(eventSource);
         }
         /// <summary>
-        /// Accomodate this.OrientationCurrent to this.OrientationUser and this.VisibleRelativeBounds
+        /// Přizpůsobí this.OrientationCurrent podle this.OrientationUser a this.VisibleRelativeBounds
         /// </summary>
         /// <param name="raiseOnDrawRequest">Raise the DrawRequest event and method when OrientationCurrent is changed</param>
         internal void DetectOrientation(ProcessAction actions, EventSourceType eventSource)
@@ -252,7 +257,7 @@ namespace Djs.Common.Components
                 this.CallDrawRequest(eventSource);
         }
         /// <summary>
-        /// Returns a valid orientation for current VisibleRelativeBounds.
+        /// Vrátí vhodnou orientaci pro aktuální Bounds.
         /// </summary>
         /// <returns></returns>
         internal Orientation GetValidOrientation()
@@ -261,8 +266,8 @@ namespace Djs.Common.Components
             return (size.Width >= size.Height ? System.Windows.Forms.Orientation.Horizontal : System.Windows.Forms.Orientation.Vertical);       // Autodetect Orientation
         }
         /// <summary>
-        /// Store specified value to this._Value.
-        /// Perform optional _AlignValue, ScrollDataValidate, InnerBoundsReset, OnValueChanged.
+        /// Uloží danou hodnotu do this._Value.
+        /// Provede požadované akce (ValueAlign, ScrollDataValidate, InnerBoundsReset, OnValueChanged).
         /// </summary>
         /// <param name="value"></param>
         /// <param name="align"></param>
@@ -291,8 +296,8 @@ namespace Djs.Common.Components
                 this.CallDrawRequest(eventSource);
         }
         /// <summary>
-        /// Store specified value to this._Value.
-        /// Perform optional _AlignValue, ScrollDataValidate, InnerBoundsReset, OnValueChanged.
+        /// Uloží danou hodnotu do this._ValueTotal.
+        /// Provede požadované akce (ValueAlign, ScrollDataValidate, InnerBoundsReset, OnValueChanged).
         /// </summary>
         /// <param name="value"></param>
         /// <param name="align"></param>
@@ -318,7 +323,7 @@ namespace Djs.Common.Components
                 this.CallDrawRequest(eventSource);
         }
         /// <summary>
-        /// Align specified value to this.ValueTotal
+        /// Zarovná danou hodnotu do rozmezí  <see cref="ValueTotal"/>
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
@@ -349,7 +354,7 @@ namespace Djs.Common.Components
         #endregion
         #region Raise events (ValueChanged, ValueRangeChanged, ScaleChanged, ScaleRangeChanged, AreaChanged, DrawRequest)
         /// <summary>
-        /// Call method OnValueChanging() and event ValueChanging
+        /// Vyvolá metodu OnValueChanging() a event ValueChanging
         /// </summary>
         protected void CallValueChanging(SizeRange oldValue, SizeRange newValue, EventSourceType eventSource)
         {
@@ -359,17 +364,16 @@ namespace Djs.Common.Components
                 this.ValueChanging(this, args);
         }
         /// <summary>
-        /// Occured during interactive changing Value value
+        /// Háček volaný v průběhu interaktivní změny hodnoty <see cref="Value"/>
         /// </summary>
         protected virtual void OnValueChanging(GPropertyChangeArgs<SizeRange> args) { }
-
         /// <summary>
-        /// Event on this.Value interactive changing
+        /// Event volaný v průběhu interaktivní změny hodnoty <see cref="Value"/>
         /// </summary>
         public event GPropertyChanged<SizeRange> ValueChanging;
 
         /// <summary>
-        /// Call method OnValueChanged() and event ValueChanged
+        /// Vyvolá metodu OnValueChanged() a event ValueChanged
         /// </summary>
         protected void CallValueChanged(SizeRange oldValue, SizeRange newValue, EventSourceType eventSource)
         {
@@ -379,16 +383,16 @@ namespace Djs.Common.Components
                 this.ValueChanged(this, args);
         }
         /// <summary>
-        /// Occured after change Value value
+        /// Háček volaný po skončení změny hodnoty <see cref="Value"/>
         /// </summary>
         protected virtual void OnValueChanged(GPropertyChangeArgs<SizeRange> args) { }
         /// <summary>
-        /// Event on this.Value changes
+        /// Event volaný po skončení změny hodnoty <see cref="Value"/>
         /// </summary>
         public event GPropertyChanged<SizeRange> ValueChanged;
 
         /// <summary>
-        /// Call method OnValueTotalChanged() and event ValueTotalChanged
+        /// Vyvolá metodu OnValueTotalChanged() a event ValueTotalChanged
         /// </summary>
         protected void CallValueTotalChanged(SizeRange oldValue, SizeRange newValue, EventSourceType eventSource)
         {
@@ -398,7 +402,7 @@ namespace Djs.Common.Components
                 this.ValueTotalChanged(this, args);
         }
         /// <summary>
-        /// Occured after change Value value
+        /// Háček volaný po skončení změny hodnoty <see cref="ValueTotal"/>
         /// </summary>
         protected virtual void OnValueTotalChanged(GPropertyChangeArgs<SizeRange> args) { }
         /// <summary>
@@ -444,14 +448,15 @@ namespace Djs.Common.Components
         public event GUserDrawHandler UserDraw;
 
         #endregion
-        #region ChildItems relative bounds calculator; ChildPixels data calculator
+        #region Výpočet souřadnic jednotlivých prvků ScrollBaru; ChildPixels data calculator
         /// <summary>
-        /// Ensure validity for InnerBounds (when IsInnerAreaValid = false)
+        /// Zajistí platnost souřadnic všech SubItemů
         /// </summary>
         /// <returns></returns>
         protected bool ChildItemsCalculate(bool force)
         {
-            if (this.IsChildItemsValid && !force) return true;        // If all is valid and not need Force, then OK
+            if (this.IsChildItemsValid && !force) return true;
+
             switch (this._Orientation)
             {
                 case System.Windows.Forms.Orientation.Horizontal:
@@ -465,7 +470,7 @@ namespace Djs.Common.Components
             return this.IsChildItemsValid;
         }
         /// <summary>
-        /// Calculate inner area for horizontal orientation
+        /// Vypočte souřadnice všech SubItemů pro orientaci Horizontal
         /// </summary>
         protected void ChildItemsCalculateH()
         {
@@ -478,26 +483,26 @@ namespace Djs.Common.Components
             int size = r.Height - 1;
             int areaEnd = r.Width - 1 - buttonLength;
             int current = 0;
+            SizeRange dataTotal = this.ChildDataTotal;
+            SizeRange dataThumb = this.ChildDataThumb;
             this.ChildItemMinArrow.Bounds = new Rectangle(current, begin, buttonLength, size);
             current = areaEnd;
             this.ChildItemMaxArrow.Bounds = new Rectangle(current, begin, buttonLength, size);
-            this.ChildItemDataArea.Bounds = new Rectangle((int)this.ChildDataTotal.Begin.Value, begin, (int)this.ChildDataTotal.Size.Value, size);
-            this.ChildItemAllArea.Bounds = new Rectangle((int)this.ChildDataTotal.Begin.Value, begin, (int)this.ChildDataTotal.Size.Value, size);
-            this.ChildItemMinArea.Bounds = new Rectangle((int)this.ChildDataTotal.Begin.Value, begin, (int)(this.ChildDataThumb.Begin.Value - this.ChildDataTotal.Begin.Value), size);
-            this.ChildItemMaxArea.Bounds = new Rectangle((int)this.ChildDataThumb.End.Value, begin, (int)(this.ChildDataTotal.End.Value - this.ChildDataThumb.End.Value), size);
-            this.ChildItemThumb.Bounds = new Rectangle((int)this.ChildDataThumb.Begin.Value, begin, (int)this.ChildDataThumb.Size.Value, size);
+            this.ChildItemDataArea.Bounds = new Rectangle((int)dataTotal.Begin.Value, begin, (int)dataTotal.Size.Value, size);
+            this.ChildItemAllArea.Bounds = new Rectangle((int)dataTotal.Begin.Value, begin, (int)dataTotal.Size.Value, size);
+            this.ChildItemMinArea.Bounds = new Rectangle((int)dataTotal.Begin.Value, begin, (int)(dataThumb.Begin.Value - dataTotal.Begin.Value), size);
+            this.ChildItemMaxArea.Bounds = new Rectangle((int)dataThumb.End.Value, begin, (int)(dataTotal.End.Value - dataThumb.End.Value), size);
+            this.ChildItemThumb.Bounds = new Rectangle((int)dataThumb.Begin.Value, begin, (int)dataThumb.Size.Value, size);
 
             this.ChildItemMinArrow.ImageType = LinearShapeType.LeftArrow;
             this.ChildItemThumb.ImageType = LinearShapeType.HorizontalLines;
             this.ChildItemMaxArrow.ImageType = LinearShapeType.RightArrow;
             this.ChildItemThumb.DragCursorType = SysCursorType.NoMoveHoriz;
 
-            // this.SubItemCenterThumb.RelativeBoundsSet(new Rectangle(thumbBegin + (thumbEnd - thumbBegin - size) / 2, begin, size, size));
-
             this.IsChildItemsValid = true;
         }
         /// <summary>
-        /// Calculate inner area for vertical orientation
+        /// Vypočte souřadnice všech SubItemů pro orientaci Vertical
         /// </summary>
         protected void ChildItemsCalculateV()
         {
@@ -510,33 +515,33 @@ namespace Djs.Common.Components
             int size = r.Width - 1;
             int areaEnd = r.Height - 1 - buttonLength;
             int current = 0;
+            SizeRange dataTotal = this.ChildDataTotal;
+            SizeRange dataThumb = this.ChildDataThumb;
             this.ChildItemMinArrow.Bounds = new Rectangle(begin, current, size, buttonLength);
             current = areaEnd;
             this.ChildItemMaxArrow.Bounds = new Rectangle(begin, current, size, buttonLength);
-            this.ChildItemDataArea.Bounds = new Rectangle(begin, (int)this.ChildDataTotal.Begin.Value, size, (int)this.ChildDataTotal.Size.Value);
-            this.ChildItemAllArea.Bounds = new Rectangle(begin, (int)this.ChildDataTotal.Begin.Value, size, (int)this.ChildDataTotal.Size.Value);
-            this.ChildItemMinArea.Bounds = new Rectangle(begin, (int)this.ChildDataTotal.Begin.Value, size, (int)(this.ChildDataValue.Center.Value - this.ChildDataTotal.Begin.Value));
-            this.ChildItemMaxArea.Bounds = new Rectangle(begin, (int)this.ChildDataValue.Center.Value, size, (int)(this.ChildDataTotal.End.Value - this.ChildDataValue.Center.Value));
-            this.ChildItemThumb.Bounds = new Rectangle(begin, (int)this.ChildDataThumb.Begin.Value, size, (int)this.ChildDataThumb.Size.Value);
+            this.ChildItemDataArea.Bounds = new Rectangle(begin, (int)dataTotal.Begin.Value, size, (int)dataTotal.Size.Value);
+            this.ChildItemAllArea.Bounds = new Rectangle(begin, (int)dataTotal.Begin.Value, size, (int)dataTotal.Size.Value);
+            this.ChildItemMinArea.Bounds = new Rectangle(begin, (int)dataTotal.Begin.Value, size, (int)(this.ChildDataValue.Center.Value - dataTotal.Begin.Value));
+            this.ChildItemMaxArea.Bounds = new Rectangle(begin, (int)this.ChildDataValue.Center.Value, size, (int)(dataTotal.End.Value - this.ChildDataValue.Center.Value));
+            this.ChildItemThumb.Bounds = new Rectangle(begin, (int)dataThumb.Begin.Value, size, (int)dataThumb.Size.Value);
 
             this.ChildItemMinArrow.ImageType = LinearShapeType.UpArrow;
             this.ChildItemThumb.ImageType = LinearShapeType.VerticalLines;
             this.ChildItemMaxArrow.ImageType = LinearShapeType.DownArrow;
             this.ChildItemThumb.DragCursorType = SysCursorType.NoMoveVert;
 
-            // this.SubItemCenterThumb.RelativeBoundsSet(new Rectangle(thumbBegin + (thumbEnd - thumbBegin - size) / 2, begin, size, size));
-
             this.IsChildItemsValid = true;
         }
         /// <summary>
-        /// Invalidate relative bounds in ChildItems.
+        /// Invaliduje relativní souřadnice v ChildItems.
         /// </summary>
         protected void ChildItemsReset()
         {
             this.IsChildItemsValid = false;
         }
         /// <summary>
-        /// true when ChildItems contains valid relative bounds (by current Value, ValueTotal and Bounds); false when not valid.
+        /// true pokud ChildItems obsahuje platné relativní souřadnice (podle hodnot Value, ValueTotal a Bounds)
         /// </summary>
         protected bool IsChildItemsValid { get; private set; }
 
@@ -724,55 +729,55 @@ namespace Djs.Common.Components
         #region Child items, Init, Filter and Cache, Type-properties
         protected override IEnumerable<IInteractiveItem> Childs { get { return this.GetSubItems(); } }
         /// <summary>
-        /// Create all Child items
+        /// Vytvoří všechny Child items
         /// </summary>
         protected void ChildItemsInit()
         {
             this.ChildItemDict = new Dictionary<ChildItemType, ChildItem>();
-            // Order of items is liable, in this order will be Childs drawed:
-            this.ChildItemDict.Add(ChildItemType.AllArea, new ChildItem(this, ChildItemType.AllArea));
-            this.ChildItemDict.Add(ChildItemType.Data, new ChildItem(this, ChildItemType.Data));
+            // Na pořadí záleží, v něm se budou prvky vykreslovat:
+            this.ChildItemDict.Add(ChildItemType.AllArea, new ChildItem(this, ChildItemType.AllArea, false));
+            this.ChildItemDict.Add(ChildItemType.Data, new ChildItem(this, ChildItemType.Data, false));
             this.ChildItemDict.Add(ChildItemType.MinArea, new ChildItem(this, ChildItemType.MinArea, true));
             this.ChildItemDict.Add(ChildItemType.MaxArea, new ChildItem(this, ChildItemType.MaxArea, true));
             this.ChildItemDict.Add(ChildItemType.MinArrow, new ChildItem(this, ChildItemType.MinArrow, true));
             this.ChildItemDict.Add(ChildItemType.MaxArrow, new ChildItem(this, ChildItemType.MaxArrow, true));
             this.ChildItemDict.Add(ChildItemType.Thumb, new ChildItem(this, ChildItemType.Thumb, true));
-            this.ChildItemDict.Add(ChildItemType.CenterThumb, new ChildItem(this, ChildItemType.CenterThumb));
+            this.ChildItemDict.Add(ChildItemType.CenterThumb, new ChildItem(this, ChildItemType.CenterThumb, false));
         }
         /// <summary>
-        /// Child Item, representing whole area of ScrollBar
+        /// Child Item, který představuje celou plochu ScrollBaru
         /// </summary>
         protected ChildItem ChildItemAllArea { get { return this.ChildItemDict[ChildItemType.AllArea]; } }
         /// <summary>
-        /// Child Item, representing data area of ScrollBar (without MinArrow a MaxArrow)
+        /// Child Item, který představuje datovou plochu ScrollBaru (bez MinArrow a MaxArrow)
         /// </summary>
         protected ChildItem ChildItemDataArea { get { return this.ChildItemDict[ChildItemType.Data]; } }
         /// <summary>
-        /// Child Item, representing MinArrow (small button Down/Left)
+        /// Child Item, který představuje MinArrow (malý button Down/Left)
         /// </summary>
         protected ChildItem ChildItemMinArrow { get { return this.ChildItemDict[ChildItemType.MinArrow]; } }
         /// <summary>
-        /// Child Item, representing flat area for "PageDown" / "PageLeft"
+        /// Child Item, který představuje plochu pro "PageDown" / "PageLeft"
         /// </summary>
         protected ChildItem ChildItemMinArea { get { return this.ChildItemDict[ChildItemType.MinArea]; } }
         /// <summary>
-        /// Child Item, representing draggable thumb on Scrollbar, which size is relative to current value
+        /// Child Item, který představuje tlačítko pro manuální přesun na Scrollbaru, jeho velikost je úměrná aktuální hodnotě <see cref="Value"/>.
         /// </summary>
         protected ChildItem ChildItemThumb { get { return this.ChildItemDict[ChildItemType.Thumb]; } }
         /// <summary>
-        /// Child Item, representing flat area for "PageUp" / "PageRight"
+        /// Child Item, který představuje plochu "PageUp" / "PageRight"
         /// </summary>
         protected ChildItem ChildItemMaxArea { get { return this.ChildItemDict[ChildItemType.MaxArea]; } }
         /// <summary>
-        /// Child Item, representing MaxArrow (small button Up/Right)
+        /// Child Item, který představuje MaxArrow (malý button Up/Right)
         /// </summary>
         protected ChildItem ChildItemMaxArrow { get { return this.ChildItemDict[ChildItemType.MaxArrow]; } }
         /// <summary>
-        /// Child Item, representing center of thumb on Scrollbar (for image or another graphic), has constant size
+        /// Child Item, který představuje střed thumb na Scrollbar (plocha pro image nebo jinou grafiku), má konstantní velikost
         /// </summary>
         protected ChildItem ChildItemCenterThumb { get { return this.ChildItemDict[ChildItemType.CenterThumb]; } }
         /// <summary>
-        /// Returns a (cached) array of currently active items
+        /// Vrací pole všech aktivních prvků SubItem
         /// </summary>
         /// <returns></returns>
         protected IEnumerable<InteractiveObject> GetSubItems()
@@ -802,7 +807,13 @@ namespace Djs.Common.Components
         /// </summary>
         protected class ChildItem : InteractiveObject
         {
-            public ChildItem(GScrollBar owner, ChildItemType itemType)
+            /// <summary>
+            /// Konstruktor prvku
+            /// </summary>
+            /// <param name="owner"></param>
+            /// <param name="itemType"></param>
+            /// <param name="isEnabled"></param>
+            public ChildItem(GScrollBar owner, ChildItemType itemType, bool isEnabled)
             {
                 this.Parent = owner;
                 this.ItemType = itemType;
@@ -810,17 +821,7 @@ namespace Djs.Common.Components
                 this.OverCursorType = null;
                 this.DragCursorType = null;
                 this.IsHoldMouse = false;
-            }
-            public ChildItem(GScrollBar owner, ChildItemType itemType, bool isEnabled)
-                : this(owner, itemType)
-            {
                 this.IsEnabled = isEnabled;
-            }
-            public ChildItem(GScrollBar owner, ChildItemType itemType, bool isEnabled, SysCursorType? dragCursorType)
-                : this(owner, itemType)
-            {
-                this.IsEnabled = isEnabled;
-                this.DragCursorType = dragCursorType;
             }
             public override string ToString()
             {
@@ -894,12 +895,11 @@ namespace Djs.Common.Components
             /// </summary>
             /// <param name="e"></param>
             protected override void AfterStateChanged(GInteractiveChangeStateArgs e)
-            {
+            {   // Předám interaktivitu svému Owneru = ScrollBaru:
                 this.Owner.AfterStateChanged(e, this);
             }
             /// <summary>
-            /// Called to draw content of this item.
-            /// This instance (GScrollbar.ChildItem) is not drawed by system, but as part of Scrollbar.
+            /// Metoda má vykreslit obsah this prvku.
             /// </summary>
             /// <param name="e"></param>
             protected override void Draw(GInteractiveDrawArgs e)
@@ -909,7 +909,7 @@ namespace Djs.Common.Components
             }
         }
         /// <summary>
-        /// ChildItemType : type of specific Child item
+        /// ChildItemType : druh položky ve ScrollBaru
         /// </summary>
         protected enum ChildItemType : int
         {
@@ -925,7 +925,7 @@ namespace Djs.Common.Components
         }
         #endregion
         #endregion
-        #region Interactivity
+        #region Interaktivita ScrollBaru
         /// <summary>
         /// Called after any interactive change value of State
         /// </summary>
@@ -942,7 +942,7 @@ namespace Djs.Common.Components
         {
             if (!this.IsEnabled) return;
 
-            ChildItemType it = (childItem == null ? ChildItemType.None : childItem.ItemType);
+            ChildItemType itemType = (childItem == null ? ChildItemType.None : childItem.ItemType);
             switch (e.ChangeState)
             {
                 case GInteractiveChangeState.MouseEnter:
@@ -963,7 +963,7 @@ namespace Djs.Common.Components
                     this.RepaintToLayers = GInteractiveDrawLayer.Standard;
                     break;
                 case GInteractiveChangeState.LeftDown:
-                    if (childItem != null && childItem.IsEnabled && (it == ChildItemType.MinArrow || it == ChildItemType.MinArea || it == ChildItemType.MaxArea || it == ChildItemType.MaxArrow))
+                    if (childItem != null && childItem.IsEnabled && (itemType == ChildItemType.MinArrow || itemType == ChildItemType.MinArea || itemType == ChildItemType.MaxArea || itemType == ChildItemType.MaxArrow))
                         this.CalculateBoundsInteractiveClick(childItem);
                     this.RepaintToLayers = GInteractiveDrawLayer.Standard;
                     break;
@@ -1012,7 +1012,7 @@ namespace Djs.Common.Components
             }
         }
         /// <summary>
-        /// Calculate new bounds and values after LeftClick on subItem (MinArrow, MinArea, MaxArea, MaxArrow)
+        /// Vypočte nové souřadnice a hodnoty po LeftClick na daný ChildItem (MinArrow, MinArea, MaxArea, MaxArrow)
         /// </summary>
         /// <param name="subItem"></param>
         protected void CalculateBoundsInteractiveClick(ChildItem subItem)
@@ -1025,7 +1025,7 @@ namespace Djs.Common.Components
             this.SetValue(value, ProcessAction.All, EventSourceType.InteractiveChanged);
         }
         /// <summary>
-        /// Calculate new bounds and values during interactive moving (Drag) of Thumb item, on Horizontal scrollbar
+        /// Vypočte nové souřadnice a hodnoty v procesu Drag na Thumb prvku, pro Horizontal ScrollBar
         /// </summary>
         /// <param name="subItem"></param>
         /// <param name="point"></param>
@@ -1041,10 +1041,10 @@ namespace Djs.Common.Components
             }
         }
         /// <summary>
-        /// Calculate new bounds and values during interactive moving (Drag) of Thumb item, on Vertical scrollbar
+        /// Vypočte nové souřadnice a hodnoty v procesu Drag na Thumb prvku, pro Vertical ScrollBar
         /// </summary>
         /// <param name="subItem"></param>
-        /// <param name="p"></param>
+        /// <param name="point"></param>
         protected void CalculateBoundsInteractiveDragV(ChildItem subItem, Point point)
         {
             Rectangle bounds = subItem.Bounds;
@@ -1084,78 +1084,56 @@ namespace Djs.Common.Components
         /// <param name="e"></param>
         protected override void Draw(GInteractiveDrawArgs e)
         {
-            e.Graphics.FillRectangle(Skin.Brush(Skin.ScrollBar.BackColorArea), this.BoundsAbsolute);
-            if (!this.ChildItemsCalculate(false)) return;
-
-            bool scrollBarIsEnabled = this.IsEnabled;
-
-            this.DrawOneBack(e.Graphics, this.ChildItemAllArea, scrollBarIsEnabled);
-            if (this.ChildItemMinArea.IsMouseActive)
-                this.DrawOneBase(e.Graphics, this.ChildItemMinArea, scrollBarIsEnabled);
-            if (this.ChildItemMaxArea.IsMouseActive)
-                this.DrawOneBase(e.Graphics, this.ChildItemMaxArea, scrollBarIsEnabled);
-            this.DrawUserData(e.Graphics, e.DrawLayer, this.ChildItemDataArea, scrollBarIsEnabled);
-            this.DrawOneButton(e.Graphics, this.ChildItemMinArrow, 0, scrollBarIsEnabled);
-            if (scrollBarIsEnabled)
-                this.DrawOneButton(e.Graphics, this.ChildItemThumb, 1, scrollBarIsEnabled);
-            this.DrawOneButton(e.Graphics, this.ChildItemMaxArrow, 0, scrollBarIsEnabled);
+            this.CurrentDrawLayer = e.DrawLayer;
+            Rectangle bounds = this.BoundsAbsolute;
+            if (this.ChildItemsCalculate(false))
+                GPainter.DrawScrollBar(e.Graphics, bounds, this as IScrollBarPaintData);
+            else
+                GPainter.DrawAreaBase(e.Graphics, bounds, Skin.ScrollBar.BackColorArea, this.Orientation, null, null);
         }
-        protected void DrawOneBack(Graphics graphics, ChildItem subItem, bool scrollBarIsEnabled)
+        /// <summary>
+        /// Vyvolá událost <see cref="UserDraw"/> pro uživatelské kreslení pozadí ScrollBaru
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        protected void UserDataDraw(Graphics graphics, Rectangle bounds)
         {
-            Rectangle bounds = subItem.GetAbsoluteVisibleBounds();
-            this.Host.FillRectangle(graphics, bounds, Skin.ScrollBar.BackColorArea);
-        }
-        protected void DrawOneBase(Graphics graphics, ChildItem subItem, bool scrollBarIsEnabled)
-        {
-            if (subItem.IsEnabled)
+            if (this.UserDraw != null)
             {
-                Rectangle bounds = subItem.GetAbsoluteVisibleBounds();
-                GPainter.DrawAreaBase(graphics, bounds, Skin.ScrollBar.BackColorArea, subItem.ItemState, this.Orientation, null, null);
-            }
-        }
-        protected void DrawOneButton(Graphics graphics, ChildItem subItem, int roundCorner, bool scrollBarIsEnabled)
-        {
-            if (subItem.IsEnabled)
-            {
-                Rectangle bounds = subItem.GetAbsoluteVisibleBounds();
-                if (subItem.IsMouseDown)
-                    bounds = bounds.ShiftBy(1, 1);
-
-                GPainter.DrawButtonBase(graphics, bounds, Skin.ScrollBar.BackColorButton, subItem.ItemState, this.Orientation, roundCorner, null, null);
-                if (subItem.ImageType != LinearShapeType.None)
+                using (GPainter.GraphicsClip(graphics, bounds))
                 {
-                    GraphicSetting graphicSetting;
-                    GraphicsPath imagePath = GPainter.CreatePathLinearShape(subItem.ImageType, bounds, 2, out graphicSetting);
-                    if (imagePath != null)
+                    try
                     {
-                        GInteractiveState state = (scrollBarIsEnabled ? subItem.ItemState : GInteractiveState.Disabled);
-                        Color foreColor = Skin.GetForeColor(Skin.ScrollBar.TextColorButton, state);
-                        using (GPainter.GraphicsUse(graphics, graphicSetting))
-                        {
-                            graphics.DrawPath(Skin.Pen(foreColor), imagePath);
-                        }
+                        GUserDrawArgs e = new GUserDrawArgs(graphics, this.CurrentDrawLayer, bounds);
+                        this.CallUserDraw(e);
                     }
+                    catch { }
                 }
             }
         }
-        protected void DrawUserData(Graphics graphics, GInteractiveDrawLayer drawLayer, ChildItem subItem, bool scrollBarIsEnabled)
-        {
-            Region clip = graphics.Clip;
-            try
-            {
-                Rectangle bounds = subItem.GetAbsoluteVisibleBounds();
-                graphics.SetClip(bounds);
-                GUserDrawArgs e = new GUserDrawArgs(graphics, drawLayer, bounds);
-                this.CallUserDraw(e);
-            }
-            finally
-            {
-                if (clip.IsInfinite(graphics))
-                    graphics.ResetClip();
-                else
-                    graphics.SetClip(clip, CombineMode.Replace);
-            }
-        }
+        /// <summary>
+        /// Aktuálně krelená vrstva
+        /// </summary>
+        protected GInteractiveDrawLayer CurrentDrawLayer { get; set; }
+        #region Implementace IScrollBarPaintData : podpora pro univerzální vykreslení ScrollBaru
+        Orientation IScrollBarPaintData.Orientation { get { return this.Orientation; } }
+        bool IScrollBarPaintData.IsEnabled { get { return this.IsEnabled; } }
+        Rectangle IScrollBarPaintData.ScrollBarBounds { get { return this.ChildItemAllArea.Bounds; } }
+        Rectangle IScrollBarPaintData.MinButtonBounds { get { return this.ChildItemMinArrow.Bounds; } }
+        GInteractiveState IScrollBarPaintData.MinButtonState { get { return this.ChildItemMinArrow.ItemState; } }
+        Rectangle IScrollBarPaintData.DataAreaBounds { get { return this.ChildItemDataArea.Bounds; } }
+        Rectangle IScrollBarPaintData.MinAreaBounds { get { return this.ChildItemMinArea.Bounds; } }
+        GInteractiveState IScrollBarPaintData.MinAreaState { get { return this.ChildItemMinArea.ItemState; } }
+        Rectangle IScrollBarPaintData.MaxAreaBounds { get { return this.ChildItemMaxArea.Bounds; } }
+        GInteractiveState IScrollBarPaintData.MaxAreaState { get { return this.ChildItemMaxArea.ItemState; } }
+        Rectangle IScrollBarPaintData.MaxButtonBounds { get { return this.ChildItemMaxArrow.Bounds; } }
+        GInteractiveState IScrollBarPaintData.MaxButtonState { get { return this.ChildItemMaxArrow.ItemState; } }
+        Rectangle IScrollBarPaintData.ThumbButtonBounds { get { return this.ChildItemThumb.Bounds; } }
+        GInteractiveState IScrollBarPaintData.ThumbButtonState { get { return this.ChildItemThumb.ItemState; } }
+        Rectangle IScrollBarPaintData.ThumbImageBounds { get { return this.ChildItemCenterThumb.Bounds; } }
+        void IScrollBarPaintData.UserDataDraw(Graphics graphics, Rectangle bounds) { this.UserDataDraw(graphics, bounds); }
+
+        #endregion
         #endregion
     }
     #region interface IScrollBarData : Podklady pro nastavení ScrollBaru

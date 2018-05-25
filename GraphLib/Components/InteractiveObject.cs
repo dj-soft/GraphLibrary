@@ -32,10 +32,9 @@ namespace Djs.Common.Components
         protected virtual IEnumerable<IInteractiveItem> Childs { get { return null; } }
 
         /// <summary>
-        /// Coordinates of this item in their Parent client area.
-        /// This is relative bounds within my Parent, where this item is visible.
-        /// Appropriate absolute bounds can be calculated via (extension) method IInteractiveItem.GetAbsoluteVisibleBounds().
-        /// Setting a new value into this property caused calling All ProcesActions (see method SetBounds()).
+        /// Souřadnice tohoto prvku v rámci jeho Parenta.
+        /// Přepočet na absolutní souřadnice provádí (extension) metoda IInteractiveItem.GetAbsoluteVisibleBounds().
+        /// Vložení hodnoty do této property způsobí veškeré zpracování akcí (<see cref="ProcessAction.All"/>).
         /// </summary>
         public virtual Rectangle Bounds 
         {
