@@ -91,11 +91,13 @@ namespace Djs.Common.Components
             Size clientSize = this.ClientSize;
             if (clientSize.Width <= 0 || clientSize.Height <= 0) return;
 
-            this._TableInnerLayoutValid = true;                      // Normálně to patří až na konec metody. Ale některé komponenty mohou používat již částečně napočtené hodnoty, a pak bychom se zacyklili
-
             // Umožníme tabulkám aplikovat jejich hodnotu AutoSize při dané výšce viditelné oblasti:
-            int ht = clientSize.Height - GScrollBar.DefaultSystemBarHeight;
-            this._TablesPositionCalculateAutoSize(ht);
+            this._TablesPositionCalculateAutoSize();
+
+            // Umožníme sloupcům aplikovat jejich hodnotu AutoSize při dané šířce viditelné oblasti:
+            this._ColumnsPositionCalculateAutoSize();
+
+            this._TableInnerLayoutValid = true;                      // Normálně to patří až na konec metody. Ale některé komponenty mohou používat již částečně napočtené hodnoty, a pak bychom se zacyklili
 
             // Určíme, zda bude zobrazen scrollbar vpravo (to je tehdy, když výška tabulek je větší než výška prostoru pro tabulky = (ClientSize.Height - ColumnsScrollBar.Bounds.Height)):
             //  Objekt TablesPositions tady provede dotaz na velikost dat (metoda this._TablesPositionGetDataSize()) a velikost viditelného prostoru (metoda this._TablesPositionGetVisualSize()).
@@ -113,11 +115,7 @@ namespace Djs.Common.Components
             int y1 = y0;                                             // y1: zde začíná prostor pro tabulky i TablesScrollBar 
             int y3 = clientSize.Height;                              // y3: úplně dole
             int y2 = y3 - GScrollBar.DefaultSystemBarHeight;         // y2: zde začíná ColumnsScrollBar (dole, hned za koncem prostoru pro tabulky)
-
-            // Umožníme sloupcům aplikovat jejich hodnotu AutoSize při dané šířce viditelné oblasti:
-            int wt = (x2r - x1);                                     // wt: šířka tabulky (včetně svislého scrollbaru pro řádky)
-            int wc = wt - GScrollBar.DefaultSystemBarWidth;          // wc: šířka dat tabulky (viditelný prostor bez svislého scrollbaru pro řádky)
-            this._ColumnsPositionCalculateAutoSize(wc);
+            int wt = x2r - x1;                                       // wt: šířka prostoru pro datové sloupce tabulek (za RowHeaderem, před TableScrollBarem)
 
             // Určíme, zda bude zobrazen scrollbar dole (to je tehdy, když šířka datových sloupců tabulek je větší než prostor od RowHeaderColumn do pravého Scrollbaru, pokud je zobrazen):
             //  Objekt ColumnsPositions si data zjistí sám, poocí zdejších metod this._ColumnPositionGetVisualSize() a this._ColumnPositionGetDataSize()
@@ -403,7 +401,7 @@ namespace Djs.Common.Components
                 columnList.Sort(GridColumn.CompareOrder);
 
                 // Zajistím provedení nápočtu pozic (ISequenceLayout.Begin, End):
-                SequenceLayout.SequenceLayoutCalculate(columnList);
+                SequenceLayout.SequenceLayoutCalculate(columnList, 0);         // explicitně zadávám spacing = 0
 
                 // Na závěr je nutno uložit vypočtená data:
                 this._ColumnDict = columnDict;
@@ -633,13 +631,14 @@ namespace Djs.Common.Components
         private void _TablesPositionCalculateAutoSize(int height)
         {
             if (!this.TablesHasAutoSize) return;
-            bool isChanged = SequenceLayout.AutoSizeLayoutCalculate(this.Tables, height, this.TablesAutoSize);
+            bool isChanged = SequenceLayout.AutoSizeLayoutCalculate(this.Tables, height, GTable.TableSplitterSize, this.TablesAutoSize);
             if (isChanged)
-                this._ChildArrayValid = false;
+                this.Invalidate(InvalidateItem.TableHeight);
         }
         /// <summary>
         /// true pokud existuje nějaká tabulka s vlastností <see cref="ISequenceLayout.AutoSize"/> = true,
         /// anebo pokud režim <see cref="TablesAutoSize"/> je <see cref="ImplicitAutoSizeType.FirstItem"/> nebo <see cref="ImplicitAutoSizeType.LastItem"/>.
+        /// Pokud je true, pak poslední tabulka nemá mít svůj dolní splitter, protože jeho chování v AutoSize gridu je nevhodné.
         /// </summary>
         protected bool TablesHasAutoSize { get { return ((this.TablesAutoSize == ImplicitAutoSizeType.FirstItem || this.TablesAutoSize == ImplicitAutoSizeType.LastItem) || this.Tables.Any(t => ((ISequenceLayout)t).AutoSize)); } }
         /// <summary>
@@ -680,8 +679,9 @@ namespace Djs.Common.Components
         {
             GTable[] tables = this._TablesAll;
             if (tables == null)
-            {
-                List<GTable> tableList = this._Tables.ToList();
+            {   // Tabulky v TablesAll mají být sice VŠECHNY, ale jen ty všechny, které se uživateli mohou zobrazit při vhodném scrollování gridu nahoru/dolů.
+                //  Proto v nich NESMÍ být tabulky, které jsou označeny jako IsVisible = false.
+                List<GTable> tableList = this._Tables.Where(t => t.IsVisible).ToList();
                 if (tableList.Count > 1)
                     tableList.Sort(GTable.CompareOrder);
                 tables = tableList.ToArray();
@@ -816,7 +816,7 @@ namespace Djs.Common.Components
         /// </summary>
         private void _ColumnsPositionCalculateAutoSize()
         {
-            int width = this._ColumnsScrollBarBounds.Width;
+            int width = this.ClientSize.Width - GScrollBar.DefaultSystemBarWidth - this.ColumnsPositions.VisualFirstPixel;
             this._ColumnsPositionCalculateAutoSize(width);
         }
         /// <summary>
@@ -825,7 +825,7 @@ namespace Djs.Common.Components
         /// <param name="width"></param>
         private void _ColumnsPositionCalculateAutoSize(int width)
         {
-            bool isChanged = SequenceLayout.AutoSizeLayoutCalculate(this.Columns, width);
+            bool isChanged = SequenceLayout.AutoSizeLayoutCalculate(this.Columns, width, 0);
             if (isChanged)
                 this._ChildArrayValid = false;
         }
@@ -1034,6 +1034,9 @@ namespace Djs.Common.Components
             Rectangle tablesBounds = this.TablesBounds;
             GTable [] tables = this.TablesVisible;
             int count = tables.Length;
+            // Pokud Grid má tabulky v režimu AutoSize, pak poslední tabulka gridu nebude mít svůj TableSplitter. Chování Gridu s ním by bylo nevhodné!
+            if (this.TablesHasAutoSize)
+                count--;
             for (int i = 0; i < count; i++)
             {
                 GTable table = tables[i];

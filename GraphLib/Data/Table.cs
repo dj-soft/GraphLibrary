@@ -2084,9 +2084,21 @@ namespace Djs.Common.Data
         #region SequenceLayout podpora - výpočty AutoSize pro prvky kolekce ISequenceLayout
         public static bool AutoSizeLayoutCalculate(IEnumerable<ISequenceLayout> items, int visualSize)
         {
-            return AutoSizeLayoutCalculate(items, visualSize, ImplicitAutoSizeType.None);
+            return _AutoSizeLayoutCalculate(items, visualSize, 0, ImplicitAutoSizeType.None);
+        }
+        public static bool AutoSizeLayoutCalculate(IEnumerable<ISequenceLayout> items, int visualSize, int spacing)
+        {
+            return _AutoSizeLayoutCalculate(items, visualSize, spacing, ImplicitAutoSizeType.None);
         }
         public static bool AutoSizeLayoutCalculate(IEnumerable<ISequenceLayout> items, int visualSize, ImplicitAutoSizeType implicitAutoSize)
+        {
+            return _AutoSizeLayoutCalculate(items, visualSize, 0, implicitAutoSize);
+        }
+        public static bool AutoSizeLayoutCalculate(IEnumerable<ISequenceLayout> items, int visualSize, int spacing, ImplicitAutoSizeType implicitAutoSize)
+        {
+            return _AutoSizeLayoutCalculate(items, visualSize, spacing, implicitAutoSize);
+        }
+        private static bool _AutoSizeLayoutCalculate(IEnumerable<ISequenceLayout> items, int visualSize, int spacing, ImplicitAutoSizeType implicitAutoSize)
         {
             ISequenceLayout[] array = items.ToArray();
             int count = array.Length;
@@ -2096,6 +2108,8 @@ namespace Djs.Common.Data
             List<ISequenceLayout> itemsVarList = new List<ISequenceLayout>();
             int sizeSumFix = 0;
             int sizeSumVar = 0;
+            int sizeOneSpc = (spacing < 0 ? 0 : spacing);
+            int sizeSumSpc = 0;
             foreach (ISequenceLayout item in items)
             {
                 if (item.AutoSize)
@@ -2107,7 +2121,9 @@ namespace Djs.Common.Data
                 {
                     sizeSumFix += item.Size;
                 }
+                sizeSumSpc += sizeOneSpc;
             }
+            if (sizeSumSpc > 0) sizeSumSpc -= sizeOneSpc;                      // Odečtu spacing, který byl přičtený za posledním prvkem pole, protože tam se space již nezapočítává!
 
             // Žádný prvek není AutoSize => ke slovu přichází ImplicitAutoSizeType:
             if (itemsVarList.Count == 0)
@@ -2122,7 +2138,7 @@ namespace Djs.Common.Data
                         implicitItem = array[count - 1];
                         break;
                     default:
-                        return false;               // Není zde žádný variabilní prvek
+                        return false;                                          // Není zde žádný variabilní prvek
                 }
                 // Jako AutoSize vezmeme prvek implicitItem:
                 sizeSumVar += implicitItem.Size;
@@ -2132,7 +2148,9 @@ namespace Djs.Common.Data
 
             // Přepočet Size u prvků AutoSize:
             bool isChanged = false;
-            int sizeNewVar = visualSize - sizeSumFix;
+            int sizeNewVar = visualSize - (sizeSumFix + sizeSumSpc);           // Nová sumární šířka variabilních prvků = daný prostor mínus (pevné prvky + mezery)
+            if (sizeNewVar == sizeSumVar) return false;
+
             decimal ratio = (decimal)sizeNewVar / (decimal)sizeSumVar;
             foreach (ISequenceLayout column in itemsVarList)
             {
@@ -2140,13 +2158,13 @@ namespace Djs.Common.Data
                 int sizeOneNew = (int)(Math.Round(ratio * (decimal)sizeOneOld, 0));
                 column.Size = sizeOneNew;
                 int sizeOneMod = column.Size;
-                if (sizeOneMod != sizeOneOld && !isChanged)
+                if (!isChanged && sizeOneMod != sizeOneOld)
                     isChanged = true;
             }
             if (!isChanged) return false;
 
             // Zajistím provedení nápočtu pozic (ISequenceLayout.Begin, End):
-            SequenceLayout.SequenceLayoutCalculate(items);
+            SequenceLayout.SequenceLayoutCalculate(items, sizeOneSpc);
             return true;
         }
         #endregion
