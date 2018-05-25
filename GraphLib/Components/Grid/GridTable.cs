@@ -1073,12 +1073,14 @@ namespace Djs.Common.Components.Grid
         private void _TableSplitter_LocationChange(object sender, GPropertyChangeArgs<int> e)
         {
             // Vypočteme výšku tabulky:
+            int heightOld = this.DataTable.Height;
             int value = this._TableSplitter.Value - this.Bounds.Top;
             this.DataTable.Height = value;                 // Tady dojde ke kompletnímu vyhodnocení vnitřních pravidel pro výšku Table (Minimum, Default, Range)
-            e.CorrectValue = this.DataTable.Height;        // Pokud požadovaná hodnota (value) nebyla akceptovatelná, pak correctValue je hodnota přípustná
+            int heightNew = this.DataTable.Height;
+            e.CorrectValue = heightNew;                    // Pokud požadovaná hodnota (value) nebyla akceptovatelná, pak correctValue je hodnota přípustná
             if (e.IsChangeValue)
             {
-                this.Grid.TableHeightChanged(this);
+                this.Grid.TableHeightChanged(this, heightOld, heightNew);
             }
         }
         /// <summary>
@@ -2198,7 +2200,7 @@ namespace Djs.Common.Components.Grid
             if (this.UseTimeAxis)
             {   // Časovou osu kreslíme v ose X o 1px menší z obou stran, a v ose Y necháme nahoře 5 pixelů (pro Drag sloupce), dole necháme 1 pixel (pro strýčka Příhodu):
                 Rectangle bounds = this.Bounds;
-                this.TimeAxis.BoundsSilent = new Rectangle(1, 5, bounds.Width - 1, bounds.Height - 6);
+                this.TimeAxis.BoundsSilent = new Rectangle(1, 5, bounds.Width - 2, bounds.Height - 6);
             }
         }
         /// <summary>

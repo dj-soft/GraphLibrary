@@ -76,6 +76,49 @@ namespace Djs.Common.Data
             result.AddRange(appendItems);
             return result;
         }
+        public static T GetNearestItem<T>(this IEnumerable<T> collection, T currentItem)
+        {
+            return GetNearestItem(collection, currentItem, Direction.Positive);
+        }
+        public static T GetNearestItem<T>(this IEnumerable<T> collection, T currentItem, Data.Direction nearestSide)
+        {
+            if (collection == null) return default(T);
+
+            // Jedním průchodem najdu prvek currentItem, přitom si zaeviduji prvek těsně před ním, a zaregistruji i prvek těsně po něm:
+            bool hasPrevItem = false;
+            T prevItem = default(T);
+            bool hasNextItem = false;
+            T nextItem = default(T);
+
+            bool isFound = false;
+            foreach (T item in collection)
+            {
+                if (isFound)
+                {
+                    hasNextItem = true;
+                    nextItem = item;
+                    break;
+                }
+                if (Object.ReferenceEquals(item, currentItem))
+                {
+                    isFound = true;
+                }
+                else
+                {
+                    hasPrevItem = true;
+                    prevItem = item;
+                }
+            }
+            // Pokud nemám nic (buď jsem nenašel hledaný prvek, nebo sice mám hledaný prvek, ale ten okolo sebe nemá žádný jiný prvek), vracím null:
+            if ((!isFound) || (!hasPrevItem && !hasNextItem)) return default(T);
+
+            // Pokud mám prvek jen na jedné straně (next nebo prev), vracím ten nalezený:
+            if (!hasPrevItem && hasNextItem) return nextItem;
+            if (hasPrevItem && !hasNextItem) return prevItem;
+
+            // Máme oba okolní prvky, vrátím ten který má přednost podle parametru nearestSide:
+            return ((nearestSide == Direction.Positive) ? nextItem : prevItem);
+        }
         #endregion
         #region List<T>
         /// <summary>

@@ -606,10 +606,16 @@ namespace Djs.Common.Components
         /// Metoda je volána poté, kdy dojde ke změně výšky tabulky, a Grid by měl reagovat v případě potřeby změnou výšky okolních tabulek, aby byl zajištěn režim AutoSize
         /// </summary>
         /// <param name="gTable"></param>
-        internal void TableHeightChanged(GTable gTable)
+        /// <param name="heightOld">Původní výška tabulky před změnou</param>
+        /// <param name="heightNew">Nový výška tabulky po změně</param>
+        internal void TableHeightChanged(GTable gTable, int heightOld, int heightNew)
         {
-
-
+            if (this.TablesHasAutoSize)
+            {   // Pokud máme režim AutoSize u tabulek v Gridu, pak změna výšky tabulky 01 se projeví jako opačná změna u tabulky 02:
+                ISequenceLayout nearTable = this.Tables.GetNearestItem(gTable) as ISequenceLayout;
+                if (nearTable != null)
+                    nearTable.Size = nearTable.Size - (heightNew - heightOld);
+            }
             this.Invalidate(InvalidateItem.TableHeight);
         }
         /// <summary>
@@ -626,10 +632,16 @@ namespace Djs.Common.Components
         /// <param name="height">Výška prostoru pro tabulky</param>
         private void _TablesPositionCalculateAutoSize(int height)
         {
+            if (!this.TablesHasAutoSize) return;
             bool isChanged = SequenceLayout.AutoSizeLayoutCalculate(this.Tables, height, this.TablesAutoSize);
             if (isChanged)
                 this._ChildArrayValid = false;
         }
+        /// <summary>
+        /// true pokud existuje nějaká tabulka s vlastností <see cref="ISequenceLayout.AutoSize"/> = true,
+        /// anebo pokud režim <see cref="TablesAutoSize"/> je <see cref="ImplicitAutoSizeType.FirstItem"/> nebo <see cref="ImplicitAutoSizeType.LastItem"/>.
+        /// </summary>
+        protected bool TablesHasAutoSize { get { return ((this.TablesAutoSize == ImplicitAutoSizeType.FirstItem || this.TablesAutoSize == ImplicitAutoSizeType.LastItem) || this.Tables.Any(t => ((ISequenceLayout)t).AutoSize)); } }
         /// <summary>
         /// Eventhandler pro událost změny pozice svislého scrollbaru = posun pole tabulek nahoru/dolů
         /// </summary>
