@@ -438,18 +438,18 @@ namespace Djs.Common.TestGUI
                 }
 
                 y += 3;
-                int h = size.Height - y - 6;
+                int h = size.Height - y - 0;
                 if (this._SplitterWZ != null)
                 {
                     int split = this._SplitterWZ.Value;
                     if (this._GridW != null)
                     {
-                        this._GridW.Bounds = new Rectangle(5, y, split - 8, h);
+                        this._GridW.Bounds = new Rectangle(0, y, split - 2, h);
                         this._GridW.Refresh();
                     }
                     if (this._GridZ != null)
                     {
-                        this._GridZ.Bounds = new Rectangle(split + 3, y, size.Width - 5 - split - 6, h);
+                        this._GridZ.Bounds = new Rectangle(split + 2, y, size.Width - 0 - split - 2, h);
                         this._GridZ.Refresh();
                     }
                     this._SplitterWZ.BoundsNonActive = new Int32NRange(y, y + h);
