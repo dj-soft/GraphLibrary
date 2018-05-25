@@ -479,6 +479,8 @@ namespace Djs.Common.Components
             if (!this.ChildPixelsCalculate(0, r.Width, r.Height, out buttonLength))
                 return;
 
+            qqq optimalizuj !
+
             int begin = 0;
             int size = r.Height - 1;
             int areaEnd = r.Width - 1 - buttonLength;
