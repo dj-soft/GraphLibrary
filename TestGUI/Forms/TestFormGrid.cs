@@ -450,7 +450,7 @@ namespace Djs.Common.TestGUI
                     if (this._GridZ != null)
                     {
                         this._GridZ.Bounds = new Rectangle(split + 3, y, size.Width - 5 - split - 6, h);
-                        this._GridW.Refresh();
+                        this._GridZ.Refresh();
                     }
                     this._SplitterWZ.BoundsNonActive = new Int32NRange(y, y + h);
                     this._SplitterWZ.Refresh();
