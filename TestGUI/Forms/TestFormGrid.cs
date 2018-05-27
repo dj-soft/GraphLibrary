@@ -48,7 +48,7 @@ namespace Djs.Common.TestGUI
 
                 this.Rand = new Random((int)DateTime.Now.Ticks % 0x0FFFFFFF);
 
-                this._Table1 = this._PrepareTableW("stroje", 48);
+                this._Table1 = this._PrepareTableW("stroje", 64);
                 this._Table2 = this._PrepareTableW("směny", 128);
                 this._TableZ = this._PrepareTableZ("lidi", 18);
 
