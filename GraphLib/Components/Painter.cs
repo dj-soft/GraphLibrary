@@ -968,8 +968,11 @@ namespace Djs.Common.Components
             LinearShapeType shape = (orientation == Orientation.Vertical ? shapeVertical : shapeHorizontal);
             if (shape == LinearShapeType.None) return;
 
+            Rectangle shapeBounds = bounds;
+            if (itemState.IsMouseDown())
+                shapeBounds = shapeBounds.Add(1, 1);
             GraphicSetting graphicSetting;
-            GraphicsPath imagePath = GPainter.CreatePathLinearShape(shape, bounds, 2, out graphicSetting);
+            GraphicsPath imagePath = GPainter.CreatePathLinearShape(shape, shapeBounds, 2, out graphicSetting);
             if (imagePath != null)
             {
                 GInteractiveState state = (isEnabled ? itemState : GInteractiveState.Disabled);
@@ -1394,7 +1397,6 @@ namespace Djs.Common.Components
             Point center = area.Center();
             int size = ((area.Width < area.Height ? area.Width : area.Height) / 2) - border;
             Rectangle bounds = center.CreateRectangleFromCenter(2 * size);
-            bounds = bounds.ShiftBy(1, 1);
             switch (shape)
             {
                 case LinearShapeType.LeftArrow: return _CreatePathLinearShapeLeftArrow(bounds, out graphicSetting);

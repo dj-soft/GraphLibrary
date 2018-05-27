@@ -1627,6 +1627,16 @@ namespace Djs.Common.Components
             return new Rectangle(r.Location.Add(point), r.Size);
         }
         /// <summary>
+        /// Returns a Rectangle, which is this rectangle plus point (=new Rectangle(this.X + point.X, this.Y + point.Y, this.Width, this.Height))
+        /// </summary>
+        /// <param name="r"></param>
+        /// <param name="point"></param>
+        /// <returns></returns>
+        public static Rectangle Add(this Rectangle r, int x, int y)
+        {
+            return new Rectangle(r.X + x, r.Y + y, r.Width, r.Height);
+        }
+        /// <summary>
         /// Returns a Rectangle, which is this rectangle minus point (=new Rectangle(this.X - point.X, this.Y - point.Y, this.Width, this.Height))
         /// </summary>
         /// <param name="r"></param>
@@ -1635,6 +1645,16 @@ namespace Djs.Common.Components
         public static Rectangle Sub(this Rectangle r, Point point)
         {
             return new Rectangle(r.Location.Sub(point), r.Size);
+        }
+        /// <summary>
+        /// Returns a Rectangle, which is this rectangle minus point (=new Rectangle(this.X - point.X, this.Y - point.Y, this.Width, this.Height))
+        /// </summary>
+        /// <param name="r"></param>
+        /// <param name="point"></param>
+        /// <returns></returns>
+        public static Rectangle Sub(this Rectangle r, int x, int y)
+        {
+            return new Rectangle(r.X - x, r.Y - y, r.Width, r.Height);
         }
         /// <summary>
         /// Returns a RectangleF, which is this rectangle plus point (=new RectangleF(this.X + point.X, this.Y + point.Y, this.Width, this.Height))
@@ -1647,6 +1667,16 @@ namespace Djs.Common.Components
             return new RectangleF(r.Location.Add(point), r.Size);
         }
         /// <summary>
+        /// Returns a Rectangle, which is this rectangle plus point (=new Rectangle(this.X + point.X, this.Y + point.Y, this.Width, this.Height))
+        /// </summary>
+        /// <param name="r"></param>
+        /// <param name="point"></param>
+        /// <returns></returns>
+        public static RectangleF Add(this RectangleF r, float x, float y)
+        {
+            return new RectangleF(r.X + x, r.Y + y, r.Width, r.Height);
+        }
+        /// <summary>
         /// Returns a RectangleF, which is this rectangle minus point (=new RectangleF(this.X - point.X, this.Y - point.Y, this.Width, this.Height))
         /// </summary>
         /// <param name="r"></param>
@@ -1655,6 +1685,16 @@ namespace Djs.Common.Components
         public static RectangleF Sub(this RectangleF r, PointF point)
         {
             return new RectangleF(r.Location.Sub(point), r.Size);
+        }
+        /// <summary>
+        /// Returns a Rectangle, which is this rectangle minus point (=new Rectangle(this.X - point.X, this.Y - point.Y, this.Width, this.Height))
+        /// </summary>
+        /// <param name="r"></param>
+        /// <param name="point"></param>
+        /// <returns></returns>
+        public static RectangleF Sub(this RectangleF r, float x, float y)
+        {
+            return new RectangleF(r.X - x, r.Y - y, r.Width, r.Height);
         }
         #endregion
         #region Rectangle: FitInto()
@@ -1776,6 +1816,15 @@ namespace Djs.Common.Components
         public static bool IsMouseActive(this GInteractiveState state)
         {
             return (state == GInteractiveState.MouseOver || state == GInteractiveState.LeftDown || state == GInteractiveState.LeftDrag || state == GInteractiveState.RightDown || state == GInteractiveState.RightDrag);
+        }
+        /// <summary>
+        /// Vrací true, pokud interaktivní stav je jeden z: LeftDown, RightDown.
+        /// </summary>
+        /// <param name="state"></param>
+        /// <returns></returns>
+        public static bool IsMouseDown(this GInteractiveState state)
+        {
+            return (state == GInteractiveState.LeftDown || state == GInteractiveState.RightDown);
         }
         #endregion
         #region Rectangle a Padding: Rectangle.Add(), Rectangle.Sub(Padding)

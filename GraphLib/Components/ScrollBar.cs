@@ -448,195 +448,6 @@ namespace Djs.Common.Components
         public event GUserDrawHandler UserDraw;
 
         #endregion
-        #region Výpočet souřadnic jednotlivých prvků ScrollBaru; ChildPixels data calculator
-        /// <summary>
-        /// Zajistí platnost souřadnic všech SubItemů
-        /// </summary>
-        /// <returns></returns>
-        protected bool ChildItemsCalculate(bool force)
-        {
-            if (this.IsChildItemsValid && !force) return true;
-
-            switch (this._Orientation)
-            {
-                case System.Windows.Forms.Orientation.Horizontal:
-                    this.ChildItemsCalculateH();
-                    break;
-                case System.Windows.Forms.Orientation.Vertical:
-                    this.ChildItemsCalculateV();
-                    break;
-            }
-            this.Items = null;
-            return this.IsChildItemsValid;
-        }
-        /// <summary>
-        /// Vypočte souřadnice všech SubItemů pro orientaci Horizontal
-        /// </summary>
-        protected void ChildItemsCalculateH()
-        {
-            Rectangle r = base.Bounds;
-            int buttonLength;
-            if (!this.ChildPixelsCalculate(0, r.Width, r.Height, out buttonLength))
-                return;
-
-            qqq optimalizuj !
-
-            int begin = 0;
-            int size = r.Height - 1;
-            int areaEnd = r.Width - 1 - buttonLength;
-            int current = 0;
-            SizeRange dataTotal = this.ChildDataTotal;
-            SizeRange dataThumb = this.ChildDataThumb;
-            this.ChildItemMinArrow.Bounds = new Rectangle(current, begin, buttonLength, size);
-            current = areaEnd;
-            this.ChildItemMaxArrow.Bounds = new Rectangle(current, begin, buttonLength, size);
-            this.ChildItemDataArea.Bounds = new Rectangle((int)dataTotal.Begin.Value, begin, (int)dataTotal.Size.Value, size);
-            this.ChildItemAllArea.Bounds = new Rectangle((int)dataTotal.Begin.Value, begin, (int)dataTotal.Size.Value, size);
-            this.ChildItemMinArea.Bounds = new Rectangle((int)dataTotal.Begin.Value, begin, (int)(dataThumb.Begin.Value - dataTotal.Begin.Value), size);
-            this.ChildItemMaxArea.Bounds = new Rectangle((int)dataThumb.End.Value, begin, (int)(dataTotal.End.Value - dataThumb.End.Value), size);
-            this.ChildItemThumb.Bounds = new Rectangle((int)dataThumb.Begin.Value, begin, (int)dataThumb.Size.Value, size);
-
-            this.ChildItemMinArrow.ImageType = LinearShapeType.LeftArrow;
-            this.ChildItemThumb.ImageType = LinearShapeType.HorizontalLines;
-            this.ChildItemMaxArrow.ImageType = LinearShapeType.RightArrow;
-            this.ChildItemThumb.DragCursorType = SysCursorType.NoMoveHoriz;
-
-            this.IsChildItemsValid = true;
-        }
-        /// <summary>
-        /// Vypočte souřadnice všech SubItemů pro orientaci Vertical
-        /// </summary>
-        protected void ChildItemsCalculateV()
-        {
-            Rectangle r = base.Bounds;
-            int buttonLength;
-            if (!this.ChildPixelsCalculate(0, r.Height, r.Width, out buttonLength))
-                return;
-
-            int begin = 0;
-            int size = r.Width - 1;
-            int areaEnd = r.Height - 1 - buttonLength;
-            int current = 0;
-            SizeRange dataTotal = this.ChildDataTotal;
-            SizeRange dataThumb = this.ChildDataThumb;
-            this.ChildItemMinArrow.Bounds = new Rectangle(begin, current, size, buttonLength);
-            current = areaEnd;
-            this.ChildItemMaxArrow.Bounds = new Rectangle(begin, current, size, buttonLength);
-            this.ChildItemDataArea.Bounds = new Rectangle(begin, (int)dataTotal.Begin.Value, size, (int)dataTotal.Size.Value);
-            this.ChildItemAllArea.Bounds = new Rectangle(begin, (int)dataTotal.Begin.Value, size, (int)dataTotal.Size.Value);
-            this.ChildItemMinArea.Bounds = new Rectangle(begin, (int)dataTotal.Begin.Value, size, (int)(this.ChildDataValue.Center.Value - dataTotal.Begin.Value));
-            this.ChildItemMaxArea.Bounds = new Rectangle(begin, (int)this.ChildDataValue.Center.Value, size, (int)(dataTotal.End.Value - this.ChildDataValue.Center.Value));
-            this.ChildItemThumb.Bounds = new Rectangle(begin, (int)dataThumb.Begin.Value, size, (int)dataThumb.Size.Value);
-
-            this.ChildItemMinArrow.ImageType = LinearShapeType.UpArrow;
-            this.ChildItemThumb.ImageType = LinearShapeType.VerticalLines;
-            this.ChildItemMaxArrow.ImageType = LinearShapeType.DownArrow;
-            this.ChildItemThumb.DragCursorType = SysCursorType.NoMoveVert;
-
-            this.IsChildItemsValid = true;
-        }
-        /// <summary>
-        /// Invaliduje relativní souřadnice v ChildItems.
-        /// </summary>
-        protected void ChildItemsReset()
-        {
-            this.IsChildItemsValid = false;
-        }
-        /// <summary>
-        /// true pokud ChildItems obsahuje platné relativní souřadnice (podle hodnot Value, ValueTotal a Bounds)
-        /// </summary>
-        protected bool IsChildItemsValid { get; private set; }
-
-        /// <summary>
-        /// Calculate data for current ValueTotal, Value, and active visual Length in pixels.
-        /// Calculate data into SizeRange to ChildDataTotal, ChildDataTrack, ChildDataValue and ChildDataThumb.
-        /// </summary>
-        /// <param name="begin">Relative pixel (in active direction: Horizontal = Left, Vertical = Top), where active Scrollbar begins</param>
-        /// <param name="length">Length of ScrollBar in active direction (Horizontal = Width, Vertical = Height)</param>
-        /// <param name="width">Thick of ScrollBar in non-active direction (Horizontal = Height, Vertical = Width)</param></param>
-        /// <param name="buttonLength">Out: Size for Min and Max buttons in active direction (Horizontal = Width, Vertical = Height)</param>
-        /// <returns>true = OK</returns>
-        private bool ChildPixelsCalculate(int begin, int length, int width, out int buttonLength)
-        {
-            this.ChildPixelsReset();
-            buttonLength = 0;
-            if (this._ValueTotal == null || !this._ValueTotal.IsFilled) return false;
-            if (this._Value == null || !this._Value.IsFilled || this._Value.Size <= 0m) return false;
-            if (length < 10) return false;
-
-            buttonLength = (length > 25 ? ((length > (5 * width)) ? width : length / 5) : 0);
-            this.ChildDataTotal = SizeRange.CreateFromBeginSize(begin + buttonLength, length - (2 * buttonLength));
-            this.ChildDataTrack = this.ChildDataTotal.Clone;
-            this.ChildDataScale = this._ValueTotal.Size.Value / this.ChildDataTrack.Size.Value;
-            this.ChildDataValue = this._GetPixelFromValue(this._Value, false);
-            decimal minThumbSize = (this.ChildDataTotal.Size.Value < 24m ? this.ChildDataTotal.Size.Value / 3m : 8m);
-            if (this.ChildDataValue.Size.Value >= minThumbSize)
-            {   // Thumb size is correct => no offset, no inflate _PixelThumb, no shrink _PixelTrack:
-                this.ChildDataThumbOffset = 0m;
-                this.ChildDataThumb = this.ChildDataValue.Clone;
-            }
-            else
-            {   // Thumbs theoretical size is smaller than 8px, we must inflate thumb to 8px (or 1/3 of _PixelTotal.Size):
-                this.ChildDataThumbOffset = (minThumbSize - this.ChildDataValue.Size.Value) / 2m;
-                this.ChildDataTrack = new SizeRange(this.ChildDataTotal.Begin.Value + this.ChildDataThumbOffset, this.ChildDataTotal.End.Value - this.ChildDataThumbOffset);
-                this.ChildDataScale = this._ValueTotal.Size.Value / this.ChildDataTrack.Size.Value;
-                this.ChildDataValue = this._GetPixelFromValue(this._Value, false);
-                this.ChildDataThumb = new SizeRange(this.ChildDataValue.Begin.Value - this.ChildDataThumbOffset, this.ChildDataValue.End.Value + this.ChildDataThumbOffset);
-            }
-
-            // Round this.ChildDataThumb to Int32:
-            decimal thumbBegin = this.ChildDataThumb.Begin.Value;
-            decimal roundBegin = Math.Round(this.ChildDataThumb.Begin.Value, 0);
-            decimal roundSize = Math.Round(this.ChildDataThumb.Size.Value, 0);
-            this.ChildDataThumb = SizeRange.CreateFromBeginSize(roundBegin, roundSize);
-            // this._PixelThumbOffset += (thumbBegin - roundBegin);    // Hezký úmysl, ale musely by se předělat metody CalculateBoundsInteractiveDragH() a CalculateBoundsInteractiveDragV() tak, aby ... co vlastně? No, jednoduše to nefungovalo.
-
-            return true;
-        }
-        private void ChildPixelsReset()
-        {
-            this.ChildDataTotal = null;
-            this.ChildDataTrack = null;
-            this.ChildDataValue = null;
-            this.ChildDataThumb = null;
-            this.ChildDataThumbOffset = 0m;
-            this.ChildDataScale = 0m;
-        }
-        /// <summary>
-        /// Range of pixel of whole scrollable area (area for thumb move).
-        /// Not for calculations, only for InnerArea (interactivity and paint).
-        /// Integer numbers (as decimal, but without fractions).
-        /// </summary>
-        private SizeRange ChildDataTotal;
-        /// <summary>
-        /// Range of pixel of theoretical thumb position.
-        /// Theoretical value, for calculations.
-        /// Real thumb can be bigger.
-        /// Decimal numbers (with fractions).
-        /// </summary>
-        private SizeRange ChildDataValue;
-        /// <summary>
-        /// Range of pixel of real thumb position.
-        /// When theoretical value in this._Pixel has .Size small than 8 pixel, then _PixelThumb has size 8 pixel, and is "shifted" = centered around this._Pixel.
-        /// Not for calculations, only for InnerArea (interactivity and paint).
-        /// Integer numbers (as decimal, but without fractions).
-        /// </summary>
-        private SizeRange ChildDataThumb;
-        /// <summary>
-        /// Area for scrolling of theoretical thumb (this._Pixel).
-        /// When theoretical value in this._Pixel has .Size small than 8 pixel, and _PixelThumb is inflate, then usable area for track is smaller (about this inflate).
-        /// Theoretical value, for calculations.
-        /// Decimal numbers (with fractions).
-        /// </summary>
-        private SizeRange ChildDataTrack;
-        /// <summary>
-        /// Offset = (this._Pixel.Begin - this._PixelThumb.Begin).
-        /// For interactive change (Thumb.Dragging), where are from physical coordinates of thumb (_PixelThumb) calculated theoretical position (_Pixel).
-        /// Calculations: _Pixel.Begin = (_PixelThumb.Begin + Offset); _PixelThumb.Begin = (_Pixel.Begin + Offset).
-        /// It also includes the difference of rounding (in the same sense).
-        /// </summary>
-        private decimal ChildDataThumbOffset;
-        #endregion
         #region Convert Value to/from Pixel
         /// <summary>
         /// Return SizeRange in pixels from value (booth in absolute coordinates)
@@ -727,6 +538,201 @@ namespace Djs.Common.Components
         /// </summary>
         private decimal? ChildDataScale;
         #endregion
+        #endregion
+        #region Výpočet souřadnic jednotlivých prvků ScrollBaru; ChildPixels data calculator
+        /// <summary>
+        /// Zajistí platnost souřadnic všech SubItemů
+        /// </summary>
+        /// <returns></returns>
+        protected bool ChildItemsCalculate(bool force)
+        {
+            if (this.IsChildItemsValid && !force) return true;
+
+            switch (this._Orientation)
+            {
+                case System.Windows.Forms.Orientation.Horizontal:
+                    this.ChildItemsCalculateH();
+                    break;
+                case System.Windows.Forms.Orientation.Vertical:
+                    this.ChildItemsCalculateV();
+                    break;
+            }
+            this.Items = null;
+            return this.IsChildItemsValid;
+        }
+        /// <summary>
+        /// Vypočte souřadnice všech SubItemů pro orientaci Horizontal
+        /// </summary>
+        protected void ChildItemsCalculateH()
+        {
+            Rectangle r = base.Bounds;
+            int buttonLength;
+            if (!this.ChildPixelsCalculate(0, r.Width, r.Height, out buttonLength))
+                return;
+
+            int begin = 0;
+            int size = r.Height;
+            int areaEnd = r.Width - buttonLength;
+            int current = 0;
+            SizeRange dataTotal = this.ChildDataTotal;
+            SizeRange dataThumb = this.ChildDataThumb;
+            this.ChildItemMinArrow.Bounds = new Rectangle(current, begin, buttonLength, size);
+            current = areaEnd;
+            this.ChildItemMaxArrow.Bounds = new Rectangle(current, begin, buttonLength, size);
+            this.ChildItemDataArea.Bounds = new Rectangle((int)dataTotal.Begin.Value, begin, (int)dataTotal.Size.Value, size);
+            this.ChildItemAllArea.Bounds = new Rectangle((int)dataTotal.Begin.Value, begin, (int)dataTotal.Size.Value, size);
+            this.ChildItemMinArea.Bounds = new Rectangle((int)dataTotal.Begin.Value, begin, (int)(dataThumb.Begin.Value - dataTotal.Begin.Value), size);
+            this.ChildItemMaxArea.Bounds = new Rectangle((int)dataThumb.End.Value, begin, (int)(dataTotal.End.Value - dataThumb.End.Value), size);
+            this.ChildItemThumb.Bounds = new Rectangle((int)dataThumb.Begin.Value, begin, (int)dataThumb.Size.Value, size);
+
+            this.ChildItemMinArrow.ImageType = LinearShapeType.LeftArrow;
+            this.ChildItemThumb.ImageType = LinearShapeType.HorizontalLines;
+            this.ChildItemMaxArrow.ImageType = LinearShapeType.RightArrow;
+            this.ChildItemThumb.DragCursorType = SysCursorType.NoMoveHoriz;
+
+            this.IsChildItemsValid = true;
+        }
+        /// <summary>
+        /// Vypočte souřadnice všech SubItemů pro orientaci Vertical
+        /// </summary>
+        protected void ChildItemsCalculateV()
+        {
+            Rectangle r = base.Bounds;
+            int buttonLength;
+            if (!this.ChildPixelsCalculate(0, r.Height, r.Width, out buttonLength))
+                return;
+
+            int begin = 0;
+            int size = r.Width;
+            int areaEnd = r.Height - buttonLength;
+            int current = 0;
+            SizeRange dataTotal = this.ChildDataTotal;
+            SizeRange dataThumb = this.ChildDataThumb;
+            this.ChildItemMinArrow.Bounds = new Rectangle(begin, current, size, buttonLength);
+            current = areaEnd;
+            this.ChildItemMaxArrow.Bounds = new Rectangle(begin, current, size, buttonLength);
+            this.ChildItemDataArea.Bounds = new Rectangle(begin, (int)dataTotal.Begin.Value, size, (int)dataTotal.Size.Value);
+            this.ChildItemAllArea.Bounds = new Rectangle(begin, (int)dataTotal.Begin.Value, size, (int)dataTotal.Size.Value);
+            this.ChildItemMinArea.Bounds = new Rectangle(begin, (int)dataTotal.Begin.Value, size, (int)(this.ChildDataValue.Center.Value - dataTotal.Begin.Value));
+            this.ChildItemMaxArea.Bounds = new Rectangle(begin, (int)this.ChildDataValue.Center.Value, size, (int)(dataTotal.End.Value - this.ChildDataValue.Center.Value));
+            this.ChildItemThumb.Bounds = new Rectangle(begin, (int)dataThumb.Begin.Value, size, (int)dataThumb.Size.Value);
+
+            this.ChildItemMinArrow.ImageType = LinearShapeType.UpArrow;
+            this.ChildItemThumb.ImageType = LinearShapeType.VerticalLines;
+            this.ChildItemMaxArrow.ImageType = LinearShapeType.DownArrow;
+            this.ChildItemThumb.DragCursorType = SysCursorType.NoMoveVert;
+
+            this.IsChildItemsValid = true;
+        }
+        /// <summary>
+        /// Invaliduje relativní souřadnice v ChildItems.
+        /// </summary>
+        protected void ChildItemsReset()
+        {
+            this.IsChildItemsValid = false;
+        }
+        /// <summary>
+        /// true pokud ChildItems obsahuje platné relativní souřadnice (podle hodnot Value, ValueTotal a Bounds)
+        /// </summary>
+        protected bool IsChildItemsValid { get; private set; }
+        /// <summary>
+        /// Vypočítá data pro aktuální hodnoty <see cref="ValueTotal"/>, <see cref="Value"/>, a danou velikost prvku (parametry length a width).
+        /// Vypočtená data ukládá do <see cref="ChildDataTotal"/>, <see cref="ChildDataTrack"/>, <see cref="ChildDataValue"/> a <see cref="ChildDataThumb"/>.
+        /// </summary>
+        /// <param name="begin">Pixel, kde aktuálně začíná ScrollBar (podle orientace: pro Horizontal = Left, Vertical = Top)</param>
+        /// <param name="length">Délka ScrollBaru v aktivním směru (Horizontal = Width, Vertical = Height)</param>
+        /// <param name="width">Šířka ScrollBaru v neaktivním směru (Horizontal = Height, Vertical = Width)</param></param>
+        /// <param name="buttonLength">Out: velikost buttonů Min a Max v aktivním směru (Horizontal = Width, Vertical = Height)</param>
+        /// <returns>true = OK</returns>
+        private bool ChildPixelsCalculate(int begin, int length, int width, out int buttonLength)
+        {
+            this.ChildPixelsReset();
+            buttonLength = 0;
+            SizeRange value = this._Value;
+            SizeRange valueTotal = this._ValueTotal;
+            if (valueTotal == null || !valueTotal.IsFilled) return false;
+            if (value == null || !value.IsFilled || value.Size <= 0m) return false;
+            if (length < 10) return false;
+
+            buttonLength = (length > 25 ? ((length > (5 * width)) ? width : length / 5) : 0);                          // Délka buttonu Min a Max
+            this.ChildDataTotal = SizeRange.CreateFromBeginSize(begin + buttonLength, length - (2 * buttonLength));
+            this.ChildDataTrack = this.ChildDataTotal.Clone;
+            this.ChildDataScale = valueTotal.Size.Value / this.ChildDataTrack.Size.Value;
+            this.ChildDataValue = this._GetPixelFromValue(value, false);
+            // Minimální délka thumbu (v aktivním směru, v pixelech):
+            decimal minThumbSize = (this.ChildDataTotal.Size.Value < 36m ? this.ChildDataTotal.Size.Value / 3m : 12m);
+            if (this.ChildDataValue.Size.Value >= minThumbSize)
+            {   // Vypočtená velikost Thumbu je vyhovující => nemusíme řešit Offset ani zvětšovat Thumb (_PixelThumb), ani zmenšovat _PixelTrack:
+                this.ChildDataThumbOffset = 0m;
+                this.ChildDataThumb = this.ChildDataValue.Clone;
+            }
+            else
+            {   // Vypočtená velikost Thumbu je příliš malá, musíme Thumb zvětšit na minimální velikost, a vyřešit ty vzniklé disproporce:
+                this.ChildDataThumbOffset = (minThumbSize - this.ChildDataValue.Size.Value) / 2m;
+                this.ChildDataTrack = new SizeRange(this.ChildDataTotal.Begin.Value + this.ChildDataThumbOffset, this.ChildDataTotal.End.Value - this.ChildDataThumbOffset);
+                this.ChildDataScale = valueTotal.Size.Value / this.ChildDataTrack.Size.Value;
+                this.ChildDataValue = this._GetPixelFromValue(value, false);
+                this.ChildDataThumb = new SizeRange(this.ChildDataValue.Begin.Value - this.ChildDataThumbOffset, this.ChildDataValue.End.Value + this.ChildDataThumbOffset);
+            }
+
+            // Zaokrouhlit ChildDataThumb na Int32:
+            decimal thumbBegin = this.ChildDataThumb.Begin.Value;
+            decimal roundBegin = Math.Round(this.ChildDataThumb.Begin.Value, 0);
+            decimal roundSize = Math.Round(this.ChildDataThumb.Size.Value, 0);
+            this.ChildDataThumb = SizeRange.CreateFromBeginSize(roundBegin, roundSize);
+
+            // Hezký úmysl, ale musely by se předělat metody CalculateBoundsInteractiveDragH() a CalculateBoundsInteractiveDragV() tak, aby ... co vlastně? No, jednoduše to nefungovalo.
+            // this._PixelThumbOffset += (thumbBegin - roundBegin);    
+
+            return true;
+        }
+        /// <summary>
+        /// Nuluje veškeré výsledky výpočtů souřadnic
+        /// </summary>
+        private void ChildPixelsReset()
+        {
+            this.ChildDataTotal = null;
+            this.ChildDataTrack = null;
+            this.ChildDataValue = null;
+            this.ChildDataThumb = null;
+            this.ChildDataThumbOffset = 0m;
+            this.ChildDataScale = 0m;
+        }
+        /// <summary>
+        /// Rozmezí pixelů celé oblasti DataArea, nad touto oblastí se může pohybovat Thumb.
+        /// Oblast neobsahuje buttony Min a Max. Jde o rozmezí pixelů v relativních souřadnicích, v ose ve které je Scrollbar aktivní.
+        /// Není určeno pro kalkulace, pouze pro interaktivitu a kreslení.
+        /// Obsahuje Integer čísla bez desetinné části.
+        /// </summary>
+        private SizeRange ChildDataTotal;
+        /// <summary>
+        /// Range of pixel of theoretical thumb position.
+        /// Theoretical value, for calculations.
+        /// Real thumb can be bigger.
+        /// Decimal numbers (with fractions).
+        /// </summary>
+        private SizeRange ChildDataValue;
+        /// <summary>
+        /// Range of pixel of real thumb position.
+        /// When theoretical value in this._Pixel has .Size small than 8 pixel, then _PixelThumb has size 8 pixel, and is "shifted" = centered around this._Pixel.
+        /// Not for calculations, only for InnerArea (interactivity and paint).
+        /// Integer numbers (as decimal, but without fractions).
+        /// </summary>
+        private SizeRange ChildDataThumb;
+        /// <summary>
+        /// Area for scrolling of theoretical thumb (this._Pixel).
+        /// When theoretical value in this._Pixel has .Size small than 8 pixel, and _PixelThumb is inflate, then usable area for track is smaller (about this inflate).
+        /// Theoretical value, for calculations.
+        /// Decimal numbers (with fractions).
+        /// </summary>
+        private SizeRange ChildDataTrack;
+        /// <summary>
+        /// Offset = (this._Pixel.Begin - this._PixelThumb.Begin).
+        /// For interactive change (Thumb.Dragging), where are from physical coordinates of thumb (_PixelThumb) calculated theoretical position (_Pixel).
+        /// Calculations: _Pixel.Begin = (_PixelThumb.Begin + Offset); _PixelThumb.Begin = (_Pixel.Begin + Offset).
+        /// It also includes the difference of rounding (in the same sense).
+        /// </summary>
+        private decimal ChildDataThumbOffset;
         #endregion
         #region Child items, Init, Filter and Cache, Type-properties
         protected override IEnumerable<IInteractiveItem> Childs { get { return this.GetSubItems(); } }
@@ -1079,7 +1085,7 @@ namespace Djs.Common.Components
         protected ChildItemType ActiveChildType { get { return (this.ActiveChild != null ? this.ActiveChild.ItemType : ChildItemType.None); } }
         protected ChildItem ActiveChild { get; set; }
         #endregion
-        #region Draw
+        #region Draw + implementace IScrollBarPaintData
         /// <summary>
         /// Draw this scrollbar
         /// </summary>
