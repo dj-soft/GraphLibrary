@@ -7,7 +7,7 @@ using System.Drawing;
 using System.ComponentModel;
 using System.Drawing.Drawing2D;
 
-namespace Djs.Common.Components
+namespace Asol.Tools.WorkScheduler.Components
 {
     #region class InteractiveObject : abstract ancestor for all common interactive items
     /// <summary>
@@ -866,7 +866,7 @@ namespace Djs.Common.Components
         }
         /// <summary>
         /// Current value of this object.
-        /// Setting value to this property does not call any event (action = <seealso cref="Djs.Common.Components.ProcessAction.SilentValueActions"SilentValueActions/>)
+        /// Setting value to this property does not call any event (action = <seealso cref="Asol.Tools.WorkScheduler.Components.ProcessAction.SilentValueActions"SilentValueActions/>)
         /// </summary>
         public virtual TValue ValueSilent
         {

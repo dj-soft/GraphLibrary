@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
-namespace Djs.Common.Components
+namespace Asol.Tools.WorkScheduler.Components
 {
     public abstract class VirtualInteractiveContainer : InteractiveContainer, IInteractiveItem
     {

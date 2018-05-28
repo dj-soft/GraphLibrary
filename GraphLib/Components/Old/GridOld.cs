@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Drawing;
-using Djs.Common.Data;
-using Djs.Common.Components;
-using Djs.Common.ComponentsOld.Grid;
+using Asol.Tools.WorkScheduler.Data;
+using Asol.Tools.WorkScheduler.Components;
+using Asol.Tools.WorkScheduler.ComponentsOld.Grid;
 
 // This file contain Visual items for Graphical Grid (all classes are InteractiveObject, is used in GGrid class for visualisation of Grid data
-namespace Djs.Common.ComponentsOld
+namespace Asol.Tools.WorkScheduler.ComponentsOld
 {
     /*
 

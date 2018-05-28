@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Djs.Common.Application
+namespace Asol.Tools.WorkScheduler.Application
 {
     #region Test engine
     /// <summary>

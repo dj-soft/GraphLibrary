@@ -1,4 +1,4 @@
-﻿namespace Djs.Common.Forms
+﻿namespace Asol.Tools.WorkScheduler.Forms
 {
     partial class EditorForm
     {

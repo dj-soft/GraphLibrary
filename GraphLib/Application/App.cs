@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Djs.Common.Data;
+using Asol.Tools.WorkScheduler.Data;
 using System.Drawing;
 
-namespace Djs.Common.Application
+namespace Asol.Tools.WorkScheduler.Application
 {
     /// <summary>
     /// App: service class
@@ -103,7 +103,7 @@ namespace Djs.Common.Application
         {
             TraceEnd();
             this._WorkerEnd();
-            Djs.Common.Components.FontInfo.ResetFonts();
+            Asol.Tools.WorkScheduler.Components.FontInfo.ResetFonts();
         }
         #endregion
         #region Run main form
@@ -680,7 +680,7 @@ namespace Djs.Common.Application
             if (newZoom != oldZoom)
             {
                 this._Zoom = newZoom;
-                Djs.Common.Components.FontInfo.ResetFonts();
+                Asol.Tools.WorkScheduler.Components.FontInfo.ResetFonts();
             }
         }
         private float _Zoom;

@@ -4,10 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Drawing;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Djs.Common.Components;
-using Djs.Common.Components.Grid;
+using Asol.Tools.WorkScheduler.Components;
+using Asol.Tools.WorkScheduler.Components.Grid;
 
-namespace Djs.Common.Data
+namespace Asol.Tools.WorkScheduler.Data
 {
     // Tento soubor obsahuje datové prvky pro tabulku s daty. 
     // To jest: Tabulka, Sloupec, Řádek, Buňka. 
@@ -1048,7 +1048,7 @@ namespace Djs.Common.Data
         /// </summary>
         /// <param name="name"></param>
         /// <param name="text"></param>
-        public Column(string name, Djs.Common.Localizable.TextLoc text)
+        public Column(string name, Asol.Tools.WorkScheduler.Localizable.TextLoc text)
             : this()
         {
             this._Name = name;
@@ -1127,11 +1127,11 @@ namespace Djs.Common.Data
         /// <summary>
         /// Titulkový text, lokalizovaný
         /// </summary>
-        public Djs.Common.Localizable.TextLoc Title { get { return (this._Text != null ? this._Text : (Djs.Common.Localizable.TextLoc)this._Name); } set { this._Text = value; } } private Djs.Common.Localizable.TextLoc _Text;
+        public Asol.Tools.WorkScheduler.Localizable.TextLoc Title { get { return (this._Text != null ? this._Text : (Asol.Tools.WorkScheduler.Localizable.TextLoc)this._Name); } set { this._Text = value; } } private Asol.Tools.WorkScheduler.Localizable.TextLoc _Text;
         /// <summary>
         /// Text pro ToolTip pro hlavičku tohoto sloupce, lokalizovaný
         /// </summary>
-        public Djs.Common.Localizable.TextLoc ToolTip { get { return this._ToolTip; } set { this._ToolTip = value; } } private Djs.Common.Localizable.TextLoc _ToolTip;
+        public Asol.Tools.WorkScheduler.Localizable.TextLoc ToolTip { get { return this._ToolTip; } set { this._ToolTip = value; } } private Asol.Tools.WorkScheduler.Localizable.TextLoc _ToolTip;
         /// <summary>
         /// Pořadí tohoto sloupce při zobrazování.
         /// Výchozí je -1, takový sloupec je při přidání do tabulky zařazen na její konec.
@@ -1673,7 +1673,7 @@ namespace Djs.Common.Data
         /// <summary>
         /// Text pro ToolTip pro tuto buňku, lokalizovaný
         /// </summary>
-        public Djs.Common.Localizable.TextLoc ToolTip { get { return _ToolTip; } set { _ToolTip = value; } } private Djs.Common.Localizable.TextLoc _ToolTip;
+        public Asol.Tools.WorkScheduler.Localizable.TextLoc ToolTip { get { return _ToolTip; } set { _ToolTip = value; } } private Asol.Tools.WorkScheduler.Localizable.TextLoc _ToolTip;
         /// <summary>
         /// Pokud this.ValueType bude Image, pak je možno použít tento obrázek (Cell.Value) jako ToolTip.Image.
         /// </summary>

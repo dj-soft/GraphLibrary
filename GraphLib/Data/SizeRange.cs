@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Djs.Common.Data;
+using Asol.Tools.WorkScheduler.Data;
 using System.Drawing;
 
-namespace Djs.Common.Data
+namespace Asol.Tools.WorkScheduler.Data
 {
     #region SizeRange = BaseRange<Decimal?, Decimal?>
     /// <summary>

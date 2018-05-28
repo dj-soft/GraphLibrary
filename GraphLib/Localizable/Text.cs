@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Djs.Common.Localizable
+namespace Asol.Tools.WorkScheduler.Localizable
 {
     /// <summary>
     /// One localizable text. For use as String.

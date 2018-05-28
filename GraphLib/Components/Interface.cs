@@ -5,7 +5,7 @@ using System.Text;
 using System.Drawing;
 using System.Windows.Forms;
 
-namespace Djs.Common.Components
+namespace Asol.Tools.WorkScheduler.Components
 {
     #region interface IInteractiveItem
     /// <summary>

@@ -7,7 +7,7 @@ using System.Drawing;
 using System.ComponentModel;
 using System.Collections;
 
-namespace Djs.Common.TextParser
+namespace Asol.Tools.WorkScheduler.TextParser
 {
     /// <summary>
     /// Panel, který zapouzdřuje editor textu spojený s Parserem se zvýrazněním syntaxe (za pomoci RTF editoru).

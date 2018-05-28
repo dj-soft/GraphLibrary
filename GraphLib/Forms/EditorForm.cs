@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
-namespace Djs.Common.Forms
+namespace Asol.Tools.WorkScheduler.Forms
 {
     public partial class EditorForm : Form
     {

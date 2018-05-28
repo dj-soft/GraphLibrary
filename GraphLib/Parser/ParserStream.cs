@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Djs.Common.TextParser
+namespace Asol.Tools.WorkScheduler.TextParser
 {
     // tento soubor se může z definitivní verze smazat, zdejší třídy jsou jen testovací.
 

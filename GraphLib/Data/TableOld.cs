@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Djs.Common.Components;
+using Asol.Tools.WorkScheduler.Components;
 using System.Drawing;
 
-namespace Djs.Common.Data
+namespace Asol.Tools.WorkScheduler.Data
 {
     // This file contain Data items (Non-Visual) for Graphical Grid. This classes is used in application for data collections and for link data to visual Grid
     /*

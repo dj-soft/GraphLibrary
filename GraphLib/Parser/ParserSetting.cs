@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Drawing;
 
-namespace Djs.Common.TextParser
+namespace Asol.Tools.WorkScheduler.TextParser
 {
     /// <summary>
     /// ParserDefaultSetting : Generátor settingů pro různé konkrétní jazyky.

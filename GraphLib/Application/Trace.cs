@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Djs.Common.Data;
+using Asol.Tools.WorkScheduler.Data;
 
-namespace Djs.Common.Application
+namespace Asol.Tools.WorkScheduler.Application
 {
     /// <summary>
     /// Trace : class for write trace informations

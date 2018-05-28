@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Drawing;
-using Djs.Common.Data;
-using Djs.Common.Components.Grid;
+using Asol.Tools.WorkScheduler.Data;
+using Asol.Tools.WorkScheduler.Components.Grid;
 
-namespace Djs.Common.Components
+namespace Asol.Tools.WorkScheduler.Components
 {
     // Filosofický základ pro obsluhu různých událostí: Grid je línej jako veš! 
     // Ten je tak línej, že když se dojde ke změně něčeho (třeba výšky některé tabulky), tak ta změna (v property Table.Height) zavolá "nahoru" že došlo k dané změně,

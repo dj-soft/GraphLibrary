@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Djs.Common.Application;
+using Asol.Tools.WorkScheduler.Application;
 
-namespace Djs.Common.Services
+namespace Asol.Tools.WorkScheduler.Services
 {
     public class TestDataSource : IDataSource
     {

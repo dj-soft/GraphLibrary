@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Djs.Common.Rtf
+namespace Asol.Tools.WorkScheduler.Rtf
 {
     public class RtfPaint
     {

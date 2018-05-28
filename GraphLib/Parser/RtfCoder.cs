@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Drawing;
 
-namespace Djs.Common.TextParser
+namespace Asol.Tools.WorkScheduler.TextParser
 {
     #region class RtfCoder : třída pro sestavování RTF textu z jednotlivých složek, a následnou kompletaci do standardního RTF kódu
     /// <summary>

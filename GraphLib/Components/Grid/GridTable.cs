@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Drawing;
-using Djs.Common.Data;
+using Asol.Tools.WorkScheduler.Data;
 
-namespace Djs.Common.Components.Grid
+namespace Asol.Tools.WorkScheduler.Components.Grid
 {
     // Filosofický základ pro obsluhu různých událostí: Tabulka gridu je líná jako veš! 
     // Ta je tak líná, že když se dojde ke změně něčeho (třeba výšky některé tabulky), tak ta změna (v property Table.Height) zavolá "nahoru" že došlo k dané změně,
@@ -2240,7 +2240,7 @@ namespace Djs.Common.Components.Grid
         /// <param name="e"></param>
         protected override void PrepareToolTip(GInteractiveChangeStateArgs e)
         {
-            Djs.Common.Localizable.TextLoc toolTip = this.OwnerColumn.ToolTip;
+            Asol.Tools.WorkScheduler.Localizable.TextLoc toolTip = this.OwnerColumn.ToolTip;
             if (toolTip != null && !String.IsNullOrEmpty(toolTip.Text))
             {
                 e.ToolTipData.TitleText = "Column info";
@@ -2860,7 +2860,7 @@ namespace Djs.Common.Components.Grid
         protected override void PrepareToolTip(GInteractiveChangeStateArgs e)
         {
             Cell cell = this.OwnerCell;
-            Djs.Common.Localizable.TextLoc toolTip = this.OwnerCell.ToolTip;
+            Asol.Tools.WorkScheduler.Localizable.TextLoc toolTip = this.OwnerCell.ToolTip;
             bool setStdTip = false;
             if (cell.ValueType == CellValueType.Image && cell.UseImageAsToolTip)
             {

@@ -3,21 +3,27 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Drawing;
-using Djs.Common.Application;
-using Djs.Common.Data;
-using Djs.Common.Services;
-using Djs.Common.Localizable;
+using Asol.Tools.WorkScheduler.Application;
+using Asol.Tools.WorkScheduler.Data;
+using Asol.Tools.WorkScheduler.Services;
+using Asol.Tools.WorkScheduler.Localizable;
 
-namespace Djs.Common.Components
+namespace Asol.Tools.WorkScheduler.Components
 {
     #region class Toolbar
     public class GToolbar : InteractiveContainer
     {
-        #region Create toolbar (not load content), public members
+        #region Vytvoření Toolbaru bez načítání obsahu, public prvky
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public GToolbar()
         {
             this.InitToolbar();
         }
+        /// <summary>
+        /// Inicializace
+        /// </summary>
         private void InitToolbar()
         {
             this._TitleFont = FontInfo.CaptionSmallBold;
@@ -27,18 +33,15 @@ namespace Djs.Common.Components
             this._CreateSplitter();
         }
         /// <summary>
-        /// Font for Title in toolbar
+        /// Font pro titulek na Toolbaru
         /// </summary>
         public FontInfo ToolbarTitleFont { get { return (this._TitleFont != null ? this._TitleFont.Clone : null); } set { this._TitleFont = (value != null ? value.Clone : null); } } private FontInfo _TitleFont;
         /// <summary>
-        /// Default Font for item in toolbar
+        /// Default Font pro prvky na Toolbaru
         /// </summary>
         public FontInfo ToolbarDefaultItemFont { get { return (this._ItemFont != null ? this._ItemFont.Clone : null); } set { this._ItemFont = (value != null ? value.Clone : null); } } private FontInfo _ItemFont;
         /// <summary>
-        /// Coordinates of this item in their Parent client area.
-        /// This is relative bounds within my Parent, where this item is visible.
-        /// Appropriate absolute bounds can be calculated via (extension) method IInteractiveItem.GetAbsoluteVisibleBounds().
-        /// Setting a new value into this property caused calling All ProcesActions (see method SetBounds()).
+        /// Souřadnice Toolbaru v rámci jeho Parenta.
         /// </summary>
         public override Rectangle Bounds
         {
@@ -135,11 +138,18 @@ namespace Djs.Common.Components
         }
         private GSplitter _Splitter;
         #endregion
-        #region Load content of Toolbar from services
+        #region Načtení obsahu Toolbaru z dostupných Services (IFunctionGlobal)
+        /// <summary>
+        /// Zajistí načtení obsahu Toolbaru z dostupných Services typu IFunctionGlobal
+        /// </summary>
         public void FillFunctionGlobals()
         {
             this._FillFunctionGlobals(typeof(IFunctionGlobal));
         }
+        /// <summary>
+        /// Zajistí načtení obsahu Toolbaru z dostupných Services daného typu
+        /// </summary>
+        /// <param name="providerType"></param>
         public void FillFunctionGlobals(Type providerType)
         {
             this._FillFunctionGlobals(providerType);

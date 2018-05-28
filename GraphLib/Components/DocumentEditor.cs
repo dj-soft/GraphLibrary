@@ -6,9 +6,9 @@ using System.Windows.Forms;
 using System.Drawing;
 using System.ComponentModel;
 using System.Drawing.Drawing2D;
-using Djs.Common.Data;
+using Asol.Tools.WorkScheduler.Data;
 
-namespace Djs.Common.Components
+namespace Asol.Tools.WorkScheduler.Components
 {
     public class GDocumentEditor : GInteractiveControl
     {

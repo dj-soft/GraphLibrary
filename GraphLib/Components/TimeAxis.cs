@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Drawing;
 using System.Windows.Forms;
-using Djs.Common.Data;
+using Asol.Tools.WorkScheduler.Data;
 
-namespace Djs.Common.Components
+namespace Asol.Tools.WorkScheduler.Components
 {
     #region class GTimeAxis : Interactive object for TimeAxis control
     /// <summary>
@@ -19,7 +19,7 @@ namespace Djs.Common.Components
         /// <summary>
         /// Initial value for new axis
         /// </summary>
-        protected override Djs.Common.Data.TimeRange InitialValue
+        protected override Asol.Tools.WorkScheduler.Data.TimeRange InitialValue
         {
             get { DateTime now = DateTime.Now; return new TimeRange(now.Date, now.Date.AddDays(1d)); }
         }

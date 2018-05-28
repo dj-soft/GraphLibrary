@@ -8,7 +8,7 @@
     <ProjectGuid>{EEED39BD-6EAE-4167-B694-CB812598395D}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Djs.Common</RootNamespace>
+    <RootNamespace>Asol.Tools.WorkScheduler</RootNamespace>
     <AssemblyName>GraphLib</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <TargetFrameworkProfile>
@@ -92,6 +92,9 @@
     <Compile Include="Parser\WinMsgCode.cs" />
     <Compile Include="Rtf\RtfDocument.cs" />
     <Compile Include="Rtf\RtfPaint.cs" />
+    <Compile Include="Scheduler\SchedulerPanel.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Services\Interface.cs" />
     <Compile Include="Services\TestDataSource.cs" />
     <Compile Include="Data\DataPersist.cs" />

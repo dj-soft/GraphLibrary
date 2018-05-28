@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Djs.Common.Data
+namespace Asol.Tools.WorkScheduler.Data
 {
     /// <summary>
     /// Array with two index and one value on intersect of this indexes.

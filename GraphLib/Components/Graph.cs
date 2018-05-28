@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Drawing;
-using Djs.Common.Data;
+using Asol.Tools.WorkScheduler.Data;
 
-namespace Djs.Common.Components
+namespace Asol.Tools.WorkScheduler.Components
 {
     public class GTimeGraph : InteractiveContainer, ITimeInteractiveGraph
     {

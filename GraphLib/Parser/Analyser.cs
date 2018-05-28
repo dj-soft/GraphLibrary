@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Djs.Common.TextParser
+namespace Asol.Tools.WorkScheduler.TextParser
 {
     #region SyntacticSetting
     /// <summary>

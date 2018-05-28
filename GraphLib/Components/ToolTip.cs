@@ -7,7 +7,7 @@ using System.Drawing;
 using System.ComponentModel;
 using System.Drawing.Drawing2D;
 
-namespace Djs.Common.Components
+namespace Asol.Tools.WorkScheduler.Components
 {
     #region class ToolTipItem : řídící objekt pro zobrazení ToolTipu na základě dat v ToolTipData
     /// <summary>
@@ -1373,7 +1373,7 @@ namespace Djs.Common.Components
         /// <summary>
         /// Title to ToolTip
         /// </summary>
-        public Djs.Common.Localizable.TextLoc TitleText { get { return this._TitleText; } set { this._TitleText = value; } } private string _TitleText;
+        public Asol.Tools.WorkScheduler.Localizable.TextLoc TitleText { get { return this._TitleText; } set { this._TitleText = value; } } private string _TitleText;
         /// <summary>
         /// Back color for Title text
         /// </summary>

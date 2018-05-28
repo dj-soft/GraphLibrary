@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Drawing;
-using Djs.Common.Data;
+using Asol.Tools.WorkScheduler.Data;
 
-namespace Djs.Common.ComponentsOld.Grid
+namespace Asol.Tools.WorkScheduler.ComponentsOld.Grid
 {
     /*
     #region GridPositions, GridPositionSet, GridPositionItem : position of all columns, tables, rows in GGrid

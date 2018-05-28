@@ -7,7 +7,7 @@ using System.Drawing;
 using System.ComponentModel;
 using System.Drawing.Drawing2D;
 
-namespace Djs.Common.Components
+namespace Asol.Tools.WorkScheduler.Components
 {
     #region GControl : Control with buffered graphic
     /// <summary>

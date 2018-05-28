@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Djs.Common.Data
+namespace Asol.Tools.WorkScheduler.Data
 {
     #region class IntervalArray : chain (of PrevNextItem) with items as interval of TValue (Begin ÷ End)
     /// <summary>

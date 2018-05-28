@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Drawing;
-using Djs.Common.Data;
-using Djs.Common.Components;
-using Djs.Common.ComponentsOld;
+using Asol.Tools.WorkScheduler.Data;
+using Asol.Tools.WorkScheduler.Components;
+using Asol.Tools.WorkScheduler.ComponentsOld;
 
-namespace Djs.Common.ComponentsOld.Grid
+namespace Asol.Tools.WorkScheduler.ComponentsOld.Grid
 {
     /*
     /// <summary>

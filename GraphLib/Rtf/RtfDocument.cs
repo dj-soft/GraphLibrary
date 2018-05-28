@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-using Djs.Common.TextParser;
+using Asol.Tools.WorkScheduler.TextParser;
 using System.Drawing;
 
-namespace Djs.Common.Rtf
+namespace Asol.Tools.WorkScheduler.Rtf
 {
     public class RtfDocument
     {

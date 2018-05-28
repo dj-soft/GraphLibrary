@@ -7,7 +7,7 @@ using System.Security;
 using System.Runtime.Serialization;
 using System.Collections.ObjectModel;
 
-namespace Djs.Common.Data
+namespace Asol.Tools.WorkScheduler.Data
 {
     #region CollectIdx<T> kolekce dat s dvojitým indexem podle item.Id a item.Key
     /// <summary>

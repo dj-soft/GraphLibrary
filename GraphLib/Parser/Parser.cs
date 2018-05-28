@@ -4,7 +4,7 @@ using System.Text;
 using System.Linq;
 using System.Drawing;
 
-namespace Djs.Common.TextParser
+namespace Asol.Tools.WorkScheduler.TextParser
 {
     #region class Parser : parser textu na segmenty (text, závorky, stringy, komentáře, atd) ale nikoliv významový lexer
     /// <summary>

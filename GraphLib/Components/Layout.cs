@@ -4,10 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Drawing;
 
-using Djs.Common.Application;
-using Djs.Common.Data;
+using Asol.Tools.WorkScheduler.Application;
+using Asol.Tools.WorkScheduler.Data;
 
-namespace Djs.Common.Components
+namespace Asol.Tools.WorkScheduler.Components
 {
     #region class LayoutEngine, LayoutEngineArgs, LayoutEngineResultRow
     /// <summary>

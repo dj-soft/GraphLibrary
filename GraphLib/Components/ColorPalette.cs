@@ -6,7 +6,7 @@ using System.Drawing;
 using System.Windows.Forms;
 using System.Drawing.Drawing2D;
 
-namespace Djs.Common.Components
+namespace Asol.Tools.WorkScheduler.Components
 {
     /// <summary>
     /// Palette of standard application Colors and its Pens and Brushes.

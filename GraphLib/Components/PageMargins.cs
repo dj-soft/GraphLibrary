@@ -6,7 +6,7 @@ using System.Drawing;
 using System.Windows.Forms;
 using System.Drawing.Drawing2D;
 
-namespace Djs.Common.Components
+namespace Asol.Tools.WorkScheduler.Components
 {
     public class PageMargins : VirtualInteractiveContainer, IInteractiveItem
     {

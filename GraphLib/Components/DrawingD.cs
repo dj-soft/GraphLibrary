@@ -5,7 +5,7 @@ using System.Text;
 using System.ComponentModel;
 using System.Drawing;
 
-namespace Djs.Common.Components
+namespace Asol.Tools.WorkScheduler.Components
 {
     #region struct PointD
     /// <summary>

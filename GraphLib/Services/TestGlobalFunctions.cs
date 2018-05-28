@@ -2,11 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Djs.Common.Application;
+using Asol.Tools.WorkScheduler.Application;
 using System.Drawing;
-using Djs.Common.Components;
+using Asol.Tools.WorkScheduler.Components;
 
-namespace Djs.Common.Services
+namespace Asol.Tools.WorkScheduler.Services
 {
     internal class TestGlobalFunctions : IFunctionGlobal
     {

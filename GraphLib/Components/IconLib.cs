@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Drawing;
 
-namespace Djs.Common.Components
+namespace Asol.Tools.WorkScheduler.Components
 {
     /// <summary>
     /// Library of images
@@ -763,60 +763,60 @@ namespace Djs.Common.Components
     /// </summary>
     public class IconStandard
     {
-        public static Image BulletBlack16 { get { return Djs.Common.Properties.Resources.bullet_black_16; } }
-        public static Image BulletBlue16 { get { return Djs.Common.Properties.Resources.bullet_blue_16; } }
-        public static Image BulletGreen16 { get { return Djs.Common.Properties.Resources.bullet_green_16; } }
-        public static Image BulletOrange16 { get { return Djs.Common.Properties.Resources.bullet_orange_16; } }
-        public static Image BulletPink16 { get { return Djs.Common.Properties.Resources.bullet_pink_16; } }
-        public static Image BulletPurple16 { get { return Djs.Common.Properties.Resources.bullet_purple_16; } }
-        public static Image BulletRed16 { get { return Djs.Common.Properties.Resources.bullet_red_16; } }
-        public static Image BulletWhite16 { get { return Djs.Common.Properties.Resources.bullet_white_16; } }
-        public static Image BulletYellow16 { get { return Djs.Common.Properties.Resources.bullet_yellow_16; } }
-        public static Image BulletStar16 { get { return Djs.Common.Properties.Resources.bullet_star_16; } }
+        public static Image BulletBlack16 { get { return Asol.Tools.WorkScheduler.Properties.Resources.bullet_black_16; } }
+        public static Image BulletBlue16 { get { return Asol.Tools.WorkScheduler.Properties.Resources.bullet_blue_16; } }
+        public static Image BulletGreen16 { get { return Asol.Tools.WorkScheduler.Properties.Resources.bullet_green_16; } }
+        public static Image BulletOrange16 { get { return Asol.Tools.WorkScheduler.Properties.Resources.bullet_orange_16; } }
+        public static Image BulletPink16 { get { return Asol.Tools.WorkScheduler.Properties.Resources.bullet_pink_16; } }
+        public static Image BulletPurple16 { get { return Asol.Tools.WorkScheduler.Properties.Resources.bullet_purple_16; } }
+        public static Image BulletRed16 { get { return Asol.Tools.WorkScheduler.Properties.Resources.bullet_red_16; } }
+        public static Image BulletWhite16 { get { return Asol.Tools.WorkScheduler.Properties.Resources.bullet_white_16; } }
+        public static Image BulletYellow16 { get { return Asol.Tools.WorkScheduler.Properties.Resources.bullet_yellow_16; } }
+        public static Image BulletStar16 { get { return Asol.Tools.WorkScheduler.Properties.Resources.bullet_star_16; } }
 
-        public static Image DocumentExport { get { return Djs.Common.Properties.Resources.document_export_64; } }
-        public static Image DocumentSave { get { return Djs.Common.Properties.Resources.document_save_5_64; } }
-        public static Image DocumentSaveAs { get { return Djs.Common.Properties.Resources.document_save_as_5_64; } }
+        public static Image DocumentExport { get { return Asol.Tools.WorkScheduler.Properties.Resources.document_export_64; } }
+        public static Image DocumentSave { get { return Asol.Tools.WorkScheduler.Properties.Resources.document_save_5_64; } }
+        public static Image DocumentSaveAs { get { return Asol.Tools.WorkScheduler.Properties.Resources.document_save_as_5_64; } }
 
-        public static Image EditCopy { get { return Djs.Common.Properties.Resources.edit_copy_3_64; } }
-        public static Image EditCut { get { return Djs.Common.Properties.Resources.edit_cut_3_64; } }
-        public static Image EditPaste { get { return Djs.Common.Properties.Resources.edit_paste_3_64; } }
-        public static Image EditUndo { get { return Djs.Common.Properties.Resources.edit_undo_3_64; } }
-        public static Image EditRedo { get { return Djs.Common.Properties.Resources.edit_redo_3_64; } }
+        public static Image EditCopy { get { return Asol.Tools.WorkScheduler.Properties.Resources.edit_copy_3_64; } }
+        public static Image EditCut { get { return Asol.Tools.WorkScheduler.Properties.Resources.edit_cut_3_64; } }
+        public static Image EditPaste { get { return Asol.Tools.WorkScheduler.Properties.Resources.edit_paste_3_64; } }
+        public static Image EditUndo { get { return Asol.Tools.WorkScheduler.Properties.Resources.edit_undo_3_64; } }
+        public static Image EditRedo { get { return Asol.Tools.WorkScheduler.Properties.Resources.edit_redo_3_64; } }
 
-        public static Image GoTop { get { return Djs.Common.Properties.Resources.go_top_3_64; } }
-        public static Image GoUp { get { return Djs.Common.Properties.Resources.go_up_4_64; } }
-        public static Image GoDown { get { return Djs.Common.Properties.Resources.go_down_4_64; } }
-        public static Image GoBottom { get { return Djs.Common.Properties.Resources.go_bottom_3_64; } }
+        public static Image GoTop { get { return Asol.Tools.WorkScheduler.Properties.Resources.go_top_3_64; } }
+        public static Image GoUp { get { return Asol.Tools.WorkScheduler.Properties.Resources.go_up_4_64; } }
+        public static Image GoDown { get { return Asol.Tools.WorkScheduler.Properties.Resources.go_down_4_64; } }
+        public static Image GoBottom { get { return Asol.Tools.WorkScheduler.Properties.Resources.go_bottom_3_64; } }
 
-        public static Image GoHome { get { return Djs.Common.Properties.Resources.go_first_2_64; } }
-        public static Image GoLeft { get { return Djs.Common.Properties.Resources.go_previous_4_64; } }
-        public static Image GoRight { get { return Djs.Common.Properties.Resources.go_next_4_64; } }
-        public static Image GoEnd { get { return Djs.Common.Properties.Resources.go_last_2_64; } }
+        public static Image GoHome { get { return Asol.Tools.WorkScheduler.Properties.Resources.go_first_2_64; } }
+        public static Image GoLeft { get { return Asol.Tools.WorkScheduler.Properties.Resources.go_previous_4_64; } }
+        public static Image GoRight { get { return Asol.Tools.WorkScheduler.Properties.Resources.go_next_4_64; } }
+        public static Image GoEnd { get { return Asol.Tools.WorkScheduler.Properties.Resources.go_last_2_64; } }
 
-        public static Image Refresh { get { return Djs.Common.Properties.Resources.view_refresh_3_64; } }
+        public static Image Refresh { get { return Asol.Tools.WorkScheduler.Properties.Resources.view_refresh_3_64; } }
 
-        public static Image ObjectFlipHorizontal32 { get { return Djs.Common.Properties.Resources.object_flip_horizontal_32; } }
-        public static Image ObjectFlipVertical32 { get { return Djs.Common.Properties.Resources.object_flip_vertical_32; } }
-        public static Image ViewPimCalendar32 { get { return Djs.Common.Properties.Resources.view_pim_calendar_32; } }
-        public static Image ZoomFitBest32 { get { return Djs.Common.Properties.Resources.zoom_fit_best_3_32; } }
+        public static Image ObjectFlipHorizontal32 { get { return Asol.Tools.WorkScheduler.Properties.Resources.object_flip_horizontal_32; } }
+        public static Image ObjectFlipVertical32 { get { return Asol.Tools.WorkScheduler.Properties.Resources.object_flip_vertical_32; } }
+        public static Image ViewPimCalendar32 { get { return Asol.Tools.WorkScheduler.Properties.Resources.view_pim_calendar_32; } }
+        public static Image ZoomFitBest32 { get { return Asol.Tools.WorkScheduler.Properties.Resources.zoom_fit_best_3_32; } }
 
-        public static Image SortAsc { get { return Djs.Common.Properties.Resources.go_up_2_16; } }
-        public static Image SortDesc { get { return Djs.Common.Properties.Resources.go_down_2_16; } }
-        public static Image RowSelected { get { return Djs.Common.Properties.Resources.dialog_accept_2_16; } }
+        public static Image SortAsc { get { return Asol.Tools.WorkScheduler.Properties.Resources.go_up_2_16; } }
+        public static Image SortDesc { get { return Asol.Tools.WorkScheduler.Properties.Resources.go_down_2_16; } }
+        public static Image RowSelected { get { return Asol.Tools.WorkScheduler.Properties.Resources.dialog_accept_2_16; } }
 
-        public static Image IconInfo { get { return Djs.Common.Properties.Resources.help_contents_32; } }
-        public static Image IconHelp { get { return Djs.Common.Properties.Resources.help_32; } }
+        public static Image IconInfo { get { return Asol.Tools.WorkScheduler.Properties.Resources.help_contents_32; } }
+        public static Image IconHelp { get { return Asol.Tools.WorkScheduler.Properties.Resources.help_32; } }
 
-        internal static Image Dragon { get { return Djs.Common.Properties.Resources.Dragon_128; } }
+        internal static Image Dragon { get { return Asol.Tools.WorkScheduler.Properties.Resources.Dragon_128; } }
 
-        internal static Image Shadow00 { get { return Djs.Common.Properties.Resources.Shadow00; } }
-        internal static Image Shadow01 { get { return Djs.Common.Properties.Resources.Shadow01; } }
-        internal static Image Shadow02 { get { return Djs.Common.Properties.Resources.Shadow02; } }
-        internal static Image Shadow10 { get { return Djs.Common.Properties.Resources.Shadow10; } }
-        internal static Image Shadow12 { get { return Djs.Common.Properties.Resources.Shadow12; } }
-        internal static Image Shadow20 { get { return Djs.Common.Properties.Resources.Shadow20; } }
-        internal static Image Shadow21 { get { return Djs.Common.Properties.Resources.Shadow21; } }
-        internal static Image Shadow22 { get { return Djs.Common.Properties.Resources.Shadow22; } }
+        internal static Image Shadow00 { get { return Asol.Tools.WorkScheduler.Properties.Resources.Shadow00; } }
+        internal static Image Shadow01 { get { return Asol.Tools.WorkScheduler.Properties.Resources.Shadow01; } }
+        internal static Image Shadow02 { get { return Asol.Tools.WorkScheduler.Properties.Resources.Shadow02; } }
+        internal static Image Shadow10 { get { return Asol.Tools.WorkScheduler.Properties.Resources.Shadow10; } }
+        internal static Image Shadow12 { get { return Asol.Tools.WorkScheduler.Properties.Resources.Shadow12; } }
+        internal static Image Shadow20 { get { return Asol.Tools.WorkScheduler.Properties.Resources.Shadow20; } }
+        internal static Image Shadow21 { get { return Asol.Tools.WorkScheduler.Properties.Resources.Shadow21; } }
+        internal static Image Shadow22 { get { return Asol.Tools.WorkScheduler.Properties.Resources.Shadow22; } }
     }
 }

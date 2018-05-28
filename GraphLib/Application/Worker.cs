@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Djs.Common.Application
+namespace Asol.Tools.WorkScheduler.Application
 {
     /// <summary>
     /// Worker class : run queue requests in thread on background.

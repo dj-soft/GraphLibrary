@@ -2,14 +2,14 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Djs.Common.Application;
+using Asol.Tools.WorkScheduler.Application;
 using System.Drawing;
 
-using Djs.Common.Components;
-using Djs.Common.Localizable;
-using Djs.Common.Data;
+using Asol.Tools.WorkScheduler.Components;
+using Asol.Tools.WorkScheduler.Localizable;
+using Asol.Tools.WorkScheduler.Data;
 
-namespace Djs.Common.Services
+namespace Asol.Tools.WorkScheduler.Services
 {
     #region IDataSource, Requests and Responses : Source of data and classes
     #region interface IDataSource; classes DataSourceRequest and DataSourceResponse

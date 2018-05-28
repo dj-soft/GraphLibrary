@@ -6,7 +6,7 @@ using System.Drawing;
 using System.Windows.Forms;
 using System.Drawing.Drawing2D;
 
-namespace Djs.Common.Components
+namespace Asol.Tools.WorkScheduler.Components
 {
     #region GVirtualMovableItem : item with VirtualBounds and IVirtualConvertor, whose position and size can interactively changed by the user (by dragging with area or edge marks).
     /// <summary>
