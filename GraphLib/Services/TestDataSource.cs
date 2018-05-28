@@ -43,7 +43,7 @@ namespace Asol.Tools.WorkScheduler.Services
         #endregion
         #endregion
         #region IDataSource members
-        PluginActivity IPlugin.Activity { get { return PluginActivity.Standard; } }
+        PluginActivity IPlugin.Activity { get { return PluginActivity.None; } }
         DataSourceResponse IDataSource.ProcessRequest(DataSourceRequest request) { return this.ProcessRequest(request); }
         #endregion
     }

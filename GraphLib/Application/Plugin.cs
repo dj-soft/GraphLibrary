@@ -261,34 +261,34 @@ namespace Asol.Tools.WorkScheduler.Application
     }
     #region Interface IPlugin; enum PluginActivity
     /// <summary>
-    /// Ancestor for all Plugin interfaces
+    /// Předek pro všechny interface Pluginů
     /// </summary>
     public interface IPlugin
     {
         /// <summary>
-        /// Activity of this implementation
+        /// Aktivita tohoto pluginu
         /// </summary>
         PluginActivity Activity { get; }
     }
     /// <summary>
-    /// Activity of plugin instance
+    /// Aktivita jakéhokoli pluginu
     /// </summary>
     public enum PluginActivity
     {
         /// <summary>
-        /// Plugin is inactive
+        /// Plugin není aktivní (slouží k operativnímu vypnutí pluginu)
         /// </summary>
         None,
         /// <summary>
-        /// Plugin is active only in Debug mode (when debugger is attached)
+        /// Plugin je aktivní pouze v Debug modu (pokud je připojen Debugger)
         /// </summary>
         OnlyDebug,
         /// <summary>
-        /// Standard activity
+        /// Standardní aktivita
         /// </summary>
         Standard,
         /// <summary>
-        /// Disabled = after error on initalizing of instance
+        /// Disabled = po chybě při inicializaci instance pluginu
         /// </summary>
         Disabled
     }

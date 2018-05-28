@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Asol.Tools.WorkScheduler.Application;
 using System.Drawing;
+using Asol.Tools.WorkScheduler.Application;
 using Asol.Tools.WorkScheduler.Components;
 
 namespace Asol.Tools.WorkScheduler.Services
@@ -13,7 +13,7 @@ namespace Asol.Tools.WorkScheduler.Services
         /// <summary>
         /// Activity of this implementation
         /// </summary>
-        PluginActivity IPlugin.Activity { get { return PluginActivity.Standard; } }
+        PluginActivity IPlugin.Activity { get { return PluginActivity.None; } }
         /// <summary>
         /// Create and return items for Toolbar GUI from current service
         /// </summary>

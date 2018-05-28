@@ -854,6 +854,106 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         #endregion
+        #region DrawImage
+        /// <summary>
+        /// Vykreslí daný Image
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="image"></param>
+        /// <param name="alignment"></param>
+        public static void DrawImage(Graphics graphics, Rectangle bounds, Image image, ContentAlignment alignment)
+        {
+            _DrawImage(graphics, bounds, image, null, alignment);
+        }
+        /// <summary>
+        /// Vykreslí daný Image, pokud isEnabled je false, pak bude Image modifikovaný do šedé barvy
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="image"></param>
+        /// <param name="isEnabled"></param>
+        /// <param name="alignment"></param>
+        public static void DrawImage(Graphics graphics, Rectangle bounds, Image image, bool isEnabled, ContentAlignment alignment)
+        {
+            System.Drawing.Imaging.ColorMatrix colorMatrix = (!isEnabled  ? CreateColorMatrixGray(0.75f) : null);
+            _DrawImage(graphics, bounds, image, colorMatrix, alignment);
+        }
+        /// <summary>
+        /// Vykreslí daný Image s aplikací barevného posunu dle interaktivního stavu
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="image"></param>
+        /// <param name="state"></param>
+        /// <param name="alignment"></param>
+        public static void DrawImage(Graphics graphics, Rectangle bounds, Image image, GInteractiveState? state, ContentAlignment alignment)
+        {
+            System.Drawing.Imaging.ColorMatrix colorMatrix = ((state.HasValue && state.Value != GInteractiveState.Enabled) ? CreateColorMatrixForState(state.Value) : null);
+            _DrawImage(graphics, bounds, image, colorMatrix, alignment);
+        }
+        private static void _DrawImage(Graphics graphics, Rectangle bounds, Image image, System.Drawing.Imaging.ColorMatrix colorMatrix, ContentAlignment alignment)
+        {
+            if (image == null || bounds.Width <= 0 || bounds.Height <= 0) return;
+
+            Size imageSize = image.Size;
+            Rectangle imageBounds = imageSize.AlignTo(bounds, alignment, true);
+            if (colorMatrix != null)
+            {   // Vykreslení s barevnou transformací:
+                using (System.Drawing.Imaging.ImageAttributes imageAttributes = new System.Drawing.Imaging.ImageAttributes())
+                {
+                    imageAttributes.SetColorMatrix(colorMatrix, System.Drawing.Imaging.ColorMatrixFlag.Default, System.Drawing.Imaging.ColorAdjustType.Bitmap);
+                    graphics.DrawImage(image, imageBounds, 0, 0, imageSize.Width, imageSize.Height, GraphicsUnit.Pixel, imageAttributes);
+                }
+            }
+            else
+            {   // Normální vykreslení, bez barevného posunu:
+                graphics.DrawImage(image, imageBounds);
+            }
+        }
+        #endregion
+        #region ColorMatrix
+        public static System.Drawing.Imaging.ColorMatrix CreateColorMatrixAlpha(float alpha)
+        {
+            System.Drawing.Imaging.ColorMatrix colorMatrix = new System.Drawing.Imaging.ColorMatrix();
+            colorMatrix.Matrix33 = alpha;                       // Alpha channel: when input Alpha is 1 (full opacity, no transparent), then output Alpha will be (alpha) = input Alpha * (alpha)
+            return colorMatrix;
+        }
+        public static System.Drawing.Imaging.ColorMatrix CreateColorMatrixGray(float gray)
+        {
+            float z = 0f;
+            float o = 0.35f;
+            float g = gray;
+            float u = 1f;
+            float[][] elements =
+            {
+                new float[] { o, z, z, z, g },                  // Red
+                new float[] { z, o, z, z, g },                  // Green
+                new float[] { z, z, o, z, g },                  // Blue
+                new float[] { z, z, z, u, z },                  // Alpha
+                new float[] { z, z, z, z, z },                  // Mix
+            };
+            System.Drawing.Imaging.ColorMatrix colorMatrix = new System.Drawing.Imaging.ColorMatrix(elements);
+            return colorMatrix;
+        }
+        public static System.Drawing.Imaging.ColorMatrix CreateColorMatrixForState(GInteractiveState state)
+        {
+            float z = 0f;
+            float o = 1.0f;
+            float g = 0f;
+            float u = 1f;
+            float[][] elements =
+            {
+                new float[] { o, z, z, z, g },                  // Red
+                new float[] { z, o, z, z, g },                  // Green
+                new float[] { z, z, o, z, g },                  // Blue
+                new float[] { z, z, z, u, z },                  // Alpha
+                new float[] { z, z, z, z, z },                  // Mix
+            };
+            System.Drawing.Imaging.ColorMatrix colorMatrix = new System.Drawing.Imaging.ColorMatrix(elements);
+            return colorMatrix;
+        }
+        #endregion
         #region DrawAxis
         /// <summary>
         /// Paint axis background
@@ -1893,6 +1993,10 @@ namespace Asol.Tools.WorkScheduler.Components
         public static Color InteractiveClipDragColor { get { return Color.Blue; } }
         #endregion
     }
+    #region interface IScrollBarPaintData : Interface pro vykreslení komplexní struktury Scrollbaru
+    /// <summary>
+    /// Interface pro vykreslení komplexní struktury Scrollbaru
+    /// </summary>
     public interface IScrollBarPaintData
     {
         Orientation Orientation { get; }
@@ -1911,9 +2015,8 @@ namespace Asol.Tools.WorkScheduler.Components
         GInteractiveState ThumbButtonState { get; }
         Rectangle ThumbImageBounds { get; }
         void UserDataDraw(Graphics graphics, Rectangle bounds);
-
-
     }
+    #endregion
     #region Enums
     public enum GraphicSetting { None, Text, Smooth, Sharp }
     [Flags]

@@ -9,7 +9,7 @@ using System.Windows.Forms;
 namespace Asol.Tools.WorkScheduler.Scheduler
 {
     /// <summary>
-    /// Hlavní control Dílenské tabule: obsahuje <see cref="GToolbar"/> + <see cref="SchedulerPanel"/>.
+    /// Hlavní control Dílenské tabule: obsahuje <see cref="GToolBar"/> + <see cref="SchedulerPanel"/>.
     /// </summary>
     public class MainControl : GInteractiveControl
     {
@@ -24,7 +24,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         }
         private void _InitComponents()
         {
-            this._MainToolbar = new GToolbar() { Bounds = new Rectangle(0, 0, 1024, 64) };
+            this._MainToolbar = new GToolBar() { Bounds = new Rectangle(0, 0, 1024, 64) };
             this._MainToolbar.ToolbarSizeChanged += _MainToolbar_ToolbarSizeChanged;
             this.AddItem(this._MainToolbar);
 
@@ -52,7 +52,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.Refresh();
         }
 
-        private GToolbar _MainToolbar;
+        private GToolBar _MainToolbar;
         private SchedulerPanel _SchedulerPanel;
         #endregion
         #region Datové zdroje

@@ -11,13 +11,13 @@ using Asol.Tools.WorkScheduler.Localizable;
 namespace Asol.Tools.WorkScheduler.Components
 {
     #region class Toolbar
-    public class GToolbar : InteractiveContainer
+    public class GToolBar : InteractiveContainer
     {
         #region Vytvoření Toolbaru bez načítání obsahu, public prvky
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public GToolbar()
+        public GToolBar()
         {
             this.InitToolbar();
         }
@@ -184,7 +184,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this._AddGuiGroups(groupList);
         }
         /// <summary>
-        /// Read GUI groups from IFunctionGlobal service
+        /// Načte skupiny GUI z objektu function, implementujícího IFunctionGlobal
         /// </summary>
         /// <param name="function"></param>
         /// <param name="groupList"></param>
@@ -192,7 +192,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             try
             {
-                Services.FunctionGlobalPrepareGuiRequest request = new Services.FunctionGlobalPrepareGuiRequest();
+                Services.FunctionGlobalPrepareGuiRequest request = new Services.FunctionGlobalPrepareGuiRequest(this);
                 Services.FunctionGlobalPrepareResponse response = function.PrepareGui(request);
                 if (response != null && response.Items != null && response.Items.Length > 0)
                     groupList.AddRange(response.Items);
@@ -545,7 +545,7 @@ namespace Asol.Tools.WorkScheduler.Components
     internal class GToolbarGroup : InteractiveContainer
     {
         #region Constructor, basic properties
-        internal static GToolbarGroup CreateFrom(GToolbar owner, FunctionGlobalGroup dataGroup)
+        internal static GToolbarGroup CreateFrom(GToolBar owner, FunctionGlobalGroup dataGroup)
         {
             GToolbarGroup group = new GToolbarGroup(owner, dataGroup);
 
@@ -558,7 +558,7 @@ namespace Asol.Tools.WorkScheduler.Components
 
             return group;
         }
-        private GToolbarGroup(GToolbar toolbar, FunctionGlobalGroup dataGroup)
+        private GToolbarGroup(GToolBar toolbar, FunctionGlobalGroup dataGroup)
         {
             this._Toolbar = toolbar;
             this._DataGroup = dataGroup;
@@ -581,7 +581,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this.AddItem(item);
             this._ToolbarItemList.Add(item);
         }
-        private GToolbar _Toolbar;
+        private GToolBar _Toolbar;
         private FunctionGlobalGroup _DataGroup;
         /// <summary>
         /// All interactive items in this group
@@ -602,11 +602,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Toolbar in which is this group located.
         /// </summary>
-        internal GToolbar Toolbar { get { return this._Toolbar; } }
+        internal GToolBar Toolbar { get { return this._Toolbar; } }
         /// <summary>
         /// Setting for layout on current toolbar (by ToolbarSize)
         /// </summary>
-        internal GToolbar.LayoutSettingTBarInfo TBarSetting { get { return this._Toolbar.TBarSetting; } }
+        internal GToolBar.LayoutSettingTBarInfo TBarSetting { get { return this._Toolbar.TBarSetting; } }
         /// <summary>
         /// Return index of specified item
         /// </summary>
@@ -694,7 +694,7 @@ namespace Asol.Tools.WorkScheduler.Components
         private void PrepareLayoutOne(LayoutEngineArgs layoutArgs, ref int tableX)
         {
             if (layoutArgs.ResultProcessedItemCount <= 0) return;
-            GToolbar.LayoutSettingTBarInfo tBarSetting = this.TBarSetting;
+            GToolBar.LayoutSettingTBarInfo tBarSetting = this.TBarSetting;
             int itemY = tBarSetting.ContentBounds.Y;
             int nextX = tableX;
             int modulePixel = tBarSetting.PixelPerModule;
@@ -774,7 +774,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         internal void DrawGroupTitle(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
         {
-            GToolbar.LayoutSettingTBarInfo tBarSetting = this.TBarSetting;
+            GToolBar.LayoutSettingTBarInfo tBarSetting = this.TBarSetting;
             Rectangle tb = tBarSetting.TitleBounds;
             Rectangle titleBounds = new Rectangle(this.Bounds.X, tb.Y, this.Bounds.Width - 4, tb.Height);
             Rectangle titleAbsoluteBounds = this.GetAbsoluteBounds(titleBounds);
@@ -829,15 +829,15 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Toolbar in which is this group located.
         /// </summary>
-        internal GToolbar Toolbar { get { return this._ToolbarGroup.Toolbar; } }
+        internal GToolBar Toolbar { get { return this._ToolbarGroup.Toolbar; } }
         /// <summary>
         /// Setting for layout on current toolbar (by ToolbarSize)
         /// </summary>
-        internal GToolbar.LayoutSettingTBarInfo TBarSetting { get { return this.Toolbar.TBarSetting; } }
+        internal GToolBar.LayoutSettingTBarInfo TBarSetting { get { return this.Toolbar.TBarSetting; } }
         /// <summary>
         /// Setting for layout current Item by ItemSize
         /// </summary>
-        internal GToolbar.LayoutSettingTItemInfo TItemSetting { get { return this.Toolbar.TBarSetting.GetInfoForSize(this.ItemSize); } }
+        internal GToolBar.LayoutSettingTItemInfo TItemSetting { get { return this.Toolbar.TBarSetting.GetInfoForSize(this.ItemSize); } }
         #endregion
         #region Data from DataItem
         /// <summary>
@@ -960,7 +960,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected Size GetImageSize(Image image)
         {
             if (image == null) return new Size(0, 0);
-            GToolbar.LayoutSettingTItemInfo itemSetting = this.TItemSetting;
+            GToolBar.LayoutSettingTItemInfo itemSetting = this.TItemSetting;
             return itemSetting.ImageSize;
         }
         /// <summary>
@@ -970,7 +970,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         protected Size GetImageSizeFromSubItems(bool withThisImage, EList<FunctionItem> subItems)
         {
-            GToolbar.LayoutSettingTItemInfo itemSetting = this.TItemSetting;
+            GToolBar.LayoutSettingTItemInfo itemSetting = this.TItemSetting;
             if (withThisImage && this.ItemImage != null)
                 return itemSetting.ImageSize;
 
@@ -1068,8 +1068,8 @@ namespace Asol.Tools.WorkScheduler.Components
         #region ItemType Label: specific methods
         protected virtual void PrepareBoundsLabel(Graphics graphics)
         {
-            GToolbar.LayoutSettingTBarInfo tBarSetting = this.TBarSetting;
-            GToolbar.LayoutSettingTItemInfo itemSetting = this.TItemSetting;
+            GToolBar.LayoutSettingTBarInfo tBarSetting = this.TBarSetting;
+            GToolBar.LayoutSettingTItemInfo itemSetting = this.TItemSetting;
             
             Size sizeImage = this.GetImageSize(this.ItemImage);
             Size sizeText = this.GetTextSize(graphics, this.ItemText);
@@ -1140,8 +1140,8 @@ namespace Asol.Tools.WorkScheduler.Components
         #region ItemType Button: specific methods
         protected virtual void PrepareBoundsButton(Graphics graphics)
         {
-            GToolbar.LayoutSettingTBarInfo tBarSetting = this.TBarSetting;
-            GToolbar.LayoutSettingTItemInfo itemSetting = this.TItemSetting;
+            GToolBar.LayoutSettingTBarInfo tBarSetting = this.TBarSetting;
+            GToolBar.LayoutSettingTItemInfo itemSetting = this.TItemSetting;
 
             Size sizeImage = this.GetImageSize(this.ItemImage);
             Size sizeText = this.GetTextSize(graphics, this.ItemText);
@@ -1202,8 +1202,8 @@ namespace Asol.Tools.WorkScheduler.Components
         #region ItemType ComboBox: specific methods
         protected virtual void PrepareBoundsComboBox(Graphics graphics)
         {
-            GToolbar.LayoutSettingTBarInfo tBarSetting = this.TBarSetting;
-            GToolbar.LayoutSettingTItemInfo itemSetting = this.TItemSetting;
+            GToolBar.LayoutSettingTBarInfo tBarSetting = this.TBarSetting;
+            GToolBar.LayoutSettingTItemInfo itemSetting = this.TItemSetting;
 
             EList<FunctionItem> subItems = this.ItemSubItems;
             Size sizeImage = this.GetImageSizeFromSubItems(true, subItems);
@@ -1288,8 +1288,8 @@ namespace Asol.Tools.WorkScheduler.Components
         #region ItemType Image: specific methods
         protected virtual void PrepareBoundsImage(Graphics graphics)
         {
-            GToolbar.LayoutSettingTBarInfo tBarSetting = this.TBarSetting;
-            GToolbar.LayoutSettingTItemInfo itemSetting = this.TItemSetting;
+            GToolBar.LayoutSettingTBarInfo tBarSetting = this.TBarSetting;
+            GToolBar.LayoutSettingTItemInfo itemSetting = this.TItemSetting;
 
             Size sizeImage = this.GetImageSize(this.ItemImage);
             Size sizeText = this.GetTextSize(graphics, this.ItemText);
@@ -1381,11 +1381,7 @@ namespace Asol.Tools.WorkScheduler.Components
             if (image != null)
             {
                 Rectangle boundsImageAbsolute = this.BoundsImage.ShiftBy(boundsAbsolute.Location);
-                Size imageSize = image.Size;
-                Size boundsSize = boundsImageAbsolute.Size;
-                if ((imageSize.Width < (boundsSize.Width / 2)) || (imageSize.Height < (boundsSize.Height / 2)))
-                    boundsImageAbsolute = boundsImageAbsolute.Center().CreateRectangleFromCenter(imageSize);
-                e.Graphics.DrawImage(image, boundsImageAbsolute);
+                GPainter.DrawImage(e.Graphics, boundsImageAbsolute, image, activeItem.IsEnabled, ContentAlignment.MiddleCenter);
             }
         }
         protected void DrawItemText(GInteractiveDrawArgs e, Rectangle boundsAbsolute)

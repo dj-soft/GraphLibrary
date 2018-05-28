@@ -13,8 +13,17 @@ namespace Asol.Tools.WorkScheduler.Services
 {
     #region IDataSource, Requests and Responses : Source of data and classes
     #region interface IDataSource; classes DataSourceRequest and DataSourceResponse
+    /// <summary>
+    /// Interface pro datové zdroje, které poskytují data pro zobrazení
+    /// </summary>
     public interface IDataSource : IPlugin
     {
+        /// <summary>
+        /// Datový zdroj dostane jistý požadavek, a ten zpracuje a vrací data.
+        /// Formát požadavku a vrácené odpovědi je závislý na konkrétní situaci.
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
         DataSourceResponse ProcessRequest(DataSourceRequest request);
     }
     public abstract class DataSourceRequest
@@ -73,25 +82,42 @@ namespace Asol.Tools.WorkScheduler.Services
     #endregion
     #region IFunctionGlobal and classes
     /// <summary>
-    /// Plugin for create Toolbar items
+    /// Deklarace pro plugin, který může vytvořit sadu globálních funkcí do ToolBaru
     /// </summary>
     public interface IFunctionGlobal : IFunctionProvider
     {
         /// <summary>
-        /// Create and return items for Toolbar GUI from current service
+        /// Vytvoří a vrátí sadu globálních funkcí pro this plugin
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
         FunctionGlobalPrepareResponse PrepareGui(FunctionGlobalPrepareGuiRequest request);
         /// <summary>
-        /// Check all items for Toolbar GUI created from all services.
-        /// Any service can set FunctionGlobalGroup.IsVisible to false, or FunctionGlobalGroup.Items[].IsVisible or IsEnabled to false, to hide any function from other service.
+        /// Metoda může prověřit funkce, vytvořené ostatními pluginy.
+        /// Kterýkoli plugin tak může nastavit FunctionGlobalGroup.IsVisible = false, 
+        /// nebo FunctionGlobalGroup.Items[].IsVisible nebo IsEnabled = false, a zajistit tak skrytí jakékoli funkce z jiné služby.
         /// </summary>
         /// <param name="request"></param>
         void CheckGui(FunctionGlobalCheckGuiRequest request);
     }
+    /// <summary>
+    /// Požadavek na vytvoření dat pro ToolBar (=globální funkce)
+    /// </summary>
     public class FunctionGlobalPrepareGuiRequest
-    { }
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="toolBar"></param>
+        public FunctionGlobalPrepareGuiRequest(GToolBar toolBar)
+        {
+            this.ToolBar = toolBar;
+        }
+        /// <summary>
+        /// Reference na GUI ToolBaru
+        /// </summary>
+        public GToolBar ToolBar { get; private set; }
+    }
     public class FunctionGlobalCheckGuiRequest
     {
         public FunctionGlobalCheckGuiRequest(FunctionGlobalGroup[] items)
