@@ -95,6 +95,7 @@
     <Compile Include="Scheduler\MainControl.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="Scheduler\SchedulerData.cs" />
     <Compile Include="Scheduler\SchedulerPanel.cs" />
     <Compile Include="Services\Interface.cs" />
     <Compile Include="Services\TestDataSource.cs" />
