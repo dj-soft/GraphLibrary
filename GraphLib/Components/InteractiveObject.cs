@@ -274,7 +274,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             GPropertyChangeArgs<Rectangle> args = new GPropertyChangeArgs<Rectangle>(eventSource, oldValue, newValue);
             this.OnBoundsChanged(args);
-            if (!this.IsSupressedEvent && this.BoundsChanged != null)
+            if (!this.IsSuppressedEvent && this.BoundsChanged != null)
                 this.BoundsChanged(this, args);
         }
         /// <summary>
@@ -294,7 +294,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             this.RepaintToLayers = this.StandardDrawToLayer;
             this.OnDrawRequest();
-            if (!this.IsSupressedEvent && this.DrawRequest != null)
+            if (!this.IsSuppressedEvent && this.DrawRequest != null)
                 this.DrawRequest(this, EventArgs.Empty);
         }
         /// <summary>
@@ -563,7 +563,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Is now suppressed all events?
         /// </summary>
-        protected bool IsSupressedEvent { get { return this.Is.SuppressEvents; } set { this.Is.SuppressEvents = value; } }
+        protected bool IsSuppressedEvent { get { return this.Is.SuppressEvents; } set { this.Is.SuppressEvents = value; } }
         /// <summary>
         /// On constructor is stacked value from owner.IsSupressedEvent, and then is set to true.
         /// On Dispose is returned original value from stack to owner.IsSupressedEvent.
@@ -573,16 +573,16 @@ namespace Asol.Tools.WorkScheduler.Components
             public SuppressEventClass(InteractiveObject owner)
             {
                 this._Owner = owner;
-                this.OldSupressedEventValue = (owner != null ? owner.IsSupressedEvent : false);
+                this.OldSupressedEventValue = (owner != null ? owner.IsSuppressedEvent : false);
                 if (this._Owner != null)
-                    this._Owner.IsSupressedEvent = true;
+                    this._Owner.IsSuppressedEvent = true;
             }
             private InteractiveObject _Owner;
             private bool OldSupressedEventValue;
             void IDisposable.Dispose()
             {
                 if (this._Owner != null)
-                    this._Owner.IsSupressedEvent = this.OldSupressedEventValue;
+                    this._Owner.IsSuppressedEvent = this.OldSupressedEventValue;
                 this._Owner = null;
             }
         }
@@ -1055,7 +1055,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             GPropertyChangeArgs<TValue> args = new GPropertyChangeArgs<TValue>(eventSource, oldValue, newValue);
             this.OnValueChanged(args);
-            if (!this.IsSupressedEvent && this.ValueChanged != null)
+            if (!this.IsSuppressedEvent && this.ValueChanged != null)
                 this.ValueChanged(this, args);
         }
         /// <summary>
@@ -1074,7 +1074,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             GPropertyChangeArgs<TRange> args = new GPropertyChangeArgs<TRange>(eventSource, oldValue, newValue);
             this.OnValueRangeChanged(args);
-            if (!this.IsSupressedEvent && this.ValueRangeChanged != null)
+            if (!this.IsSuppressedEvent && this.ValueRangeChanged != null)
                 this.ValueRangeChanged(this, args);
         }
         /// <summary>

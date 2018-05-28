@@ -317,7 +317,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             GPropertyChangeArgs<ComponentSize> args = new GPropertyChangeArgs<ComponentSize>(eventSource, oldValue, newValue);
             this.OnToolbarSizeChanged(args);
-            if (!this.IsSupressedEvent && this.ToolbarSizeChanged != null)
+            if (!this.IsSuppressedEvent && this.ToolbarSizeChanged != null)
                 this.ToolbarSizeChanged(this, args);
         }
         /// <summary>

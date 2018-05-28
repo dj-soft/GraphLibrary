@@ -360,7 +360,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             GPropertyChangeArgs<SizeRange> args = new GPropertyChangeArgs<SizeRange>(eventSource, oldValue, newValue);
             this.OnValueChanging(args);
-            if (!this.IsSupressedEvent && this.ValueChanging != null)
+            if (!this.IsSuppressedEvent && this.ValueChanging != null)
                 this.ValueChanging(this, args);
         }
         /// <summary>
@@ -379,7 +379,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             GPropertyChangeArgs<SizeRange> args = new GPropertyChangeArgs<SizeRange>(eventSource, oldValue, newValue);
             this.OnValueChanged(args);
-            if (!this.IsSupressedEvent && this.ValueChanged != null)
+            if (!this.IsSuppressedEvent && this.ValueChanged != null)
                 this.ValueChanged(this, args);
         }
         /// <summary>
@@ -398,7 +398,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             GPropertyChangeArgs<SizeRange> args = new GPropertyChangeArgs<SizeRange>(eventSource, oldValue, newValue);
             this.OnValueTotalChanged(args);
-            if (!this.IsSupressedEvent && this.ValueTotalChanged != null)
+            if (!this.IsSuppressedEvent && this.ValueTotalChanged != null)
                 this.ValueTotalChanged(this, args);
         }
         /// <summary>
@@ -417,7 +417,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             GPropertyChangeArgs<Orientation> args = new GPropertyChangeArgs<Orientation>(eventSource, oldValue, newValue);
             this.OnOrientationChanged(args);
-            if (!this.IsSupressedEvent && this.OrientationChanged != null)
+            if (!this.IsSuppressedEvent && this.OrientationChanged != null)
                 this.OrientationChanged(this, args);
         }
         /// <summary>
@@ -435,7 +435,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected void CallUserDraw(GUserDrawArgs e)
         {
             this.OnUserDraw(e);
-            if (!this.IsSupressedEvent && this.UserDraw != null)
+            if (!this.IsSuppressedEvent && this.UserDraw != null)
                 this.UserDraw(this, e);
         }
         /// <summary>

@@ -2262,7 +2262,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             GPropertyChangeArgs<TValue> args = new GPropertyChangeArgs<TValue>(eventSource, oldValue, newValue);
             this.OnValueChanging(args);
-            if (!this.IsSupressedEvent && this.ValueChanging != null)
+            if (!this.IsSuppressedEvent && this.ValueChanging != null)
                 this.ValueChanging(this, args);
         }
         /// <summary>
@@ -2281,7 +2281,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             GPropertyChangeArgs<TValue> args = new GPropertyChangeArgs<TValue>(eventSource, oldValue, newValue);
             this.OnValueChanged(args);
-            if (!this.IsSupressedEvent && this.ValueChanged != null)
+            if (!this.IsSuppressedEvent && this.ValueChanged != null)
                 this.ValueChanged(this, args);
         }
         /// <summary>
@@ -2300,7 +2300,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             GPropertyChangeArgs<TValue> args = new GPropertyChangeArgs<TValue>(eventSource, oldValue, newValue);
             this.OnValueLimitChanged(args);
-            if (!this.IsSupressedEvent && this.ValueLimitChanged != null)
+            if (!this.IsSuppressedEvent && this.ValueLimitChanged != null)
                 this.ValueLimitChanged(this, args);
         }
         /// <summary>
@@ -2319,7 +2319,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             GPropertyChangeArgs<TValue> args = new GPropertyChangeArgs<TValue>(eventSource, oldValue, newValue);
             this.OnSlaveSynchronize(args);
-            if (!this.IsSupressedEvent && this.SlaveSynchronize != null)
+            if (!this.IsSuppressedEvent && this.SlaveSynchronize != null)
                 this.SlaveSynchronize(this, args);
         }
         /// <summary>
@@ -2338,7 +2338,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             GPropertyChangeArgs<decimal> args = new GPropertyChangeArgs<decimal>(eventSource, oldValue, newValue);
             this.OnScaleChanged(args);
-            if (!this.IsSupressedEvent && this.ScaleChanged != null)
+            if (!this.IsSuppressedEvent && this.ScaleChanged != null)
                 this.ScaleChanged(this, args);
         }
         /// <summary>
@@ -2357,7 +2357,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             GPropertyChangeArgs<SizeRange> args = new GPropertyChangeArgs<SizeRange>(eventSource, oldValue, newValue);
             this.OnScaleLimitChanged(args);
-            if (!this.IsSupressedEvent && this.ScaleLimitChanged != null)
+            if (!this.IsSuppressedEvent && this.ScaleLimitChanged != null)
                 this.ScaleLimitChanged(this, args);
         }
         /// <summary>
@@ -2395,7 +2395,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             GPropertyChangeArgs<Rectangle> args = new GPropertyChangeArgs<Rectangle>(eventSource, oldValue, newValue);
             this.OnAreaChanged(args);
-            if (!this.IsSupressedEvent && this.AreaChanged != null)
+            if (!this.IsSuppressedEvent && this.AreaChanged != null)
                 this.AreaChanged(this, args);
         }
         /// <summary>
@@ -2414,7 +2414,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             GPropertyChangeArgs<BaseTick<TTick>[]> args = new GPropertyChangeArgs<BaseTick<TTick>[]>(eventSource, oldTickList, newTickList);
             this.OnTicksChanged(args);
-            if (!this.IsSupressedEvent && this.TicksChanged != null)
+            if (!this.IsSuppressedEvent && this.TicksChanged != null)
                 this.TicksChanged(this, args);
         }
         /// <summary>
@@ -2433,7 +2433,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             GPropertyChangeArgs<AxisOrientation> args = new GPropertyChangeArgs<AxisOrientation>(eventSource, oldValue, newValue);
             this.OnOrientationChanged(args);
-            if (!this.IsSupressedEvent && this.OrientationChanged != null)
+            if (!this.IsSuppressedEvent && this.OrientationChanged != null)
                 this.OrientationChanged(this, args);
         }
         /// <summary>

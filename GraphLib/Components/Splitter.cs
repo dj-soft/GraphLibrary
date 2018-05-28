@@ -714,7 +714,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             GPropertyChangeArgs<int> args = new GPropertyChangeArgs<int>(eventSource, oldValue, newValue);
             this.OnValueChanging(args);
-            if (!this.IsSupressedEvent && this.ValueChanging != null)
+            if (!this.IsSuppressedEvent && this.ValueChanging != null)
                 this.ValueChanging(this, args);
             return args.ResultValue;
         }
@@ -734,7 +734,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             GPropertyChangeArgs<int> args = new GPropertyChangeArgs<int>(eventSource, oldValue, newValue);
             this.OnValueChanged(args);
-            if (!this.IsSupressedEvent && this.ValueChanged != null)
+            if (!this.IsSuppressedEvent && this.ValueChanged != null)
                 this.ValueChanged(this, args);
             return args.ResultValue;
         }
@@ -754,7 +754,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             GPropertyChangeArgs<Orientation> args = new GPropertyChangeArgs<Orientation>(eventSource, oldValue, newValue);
             this.OnOrientationChanged(args);
-            if (!this.IsSupressedEvent && this.OrientationChanged != null)
+            if (!this.IsSuppressedEvent && this.OrientationChanged != null)
                 this.OrientationChanged(this, args);
         }
         /// <summary>
@@ -773,7 +773,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             GPropertyChangeArgs<Int32NRange> args = new GPropertyChangeArgs<Int32NRange>(eventSource, oldValue, newValue);
             this.OnLocationLimitChanged(args);
-            if (!this.IsSupressedEvent && this.LocationLimitChanged != null)
+            if (!this.IsSuppressedEvent && this.LocationLimitChanged != null)
                 this.LocationLimitChanged(this, args);
         }
         /// <summary>
@@ -792,7 +792,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             GPropertyChangeArgs<int> args = new GPropertyChangeArgs<int>(eventSource, oldValue, newValue);
             this.OnSplitterVisibleWidthChanged(args);
-            if (!this.IsSupressedEvent && this.SplitterVisibleWidthChanged != null)
+            if (!this.IsSuppressedEvent && this.SplitterVisibleWidthChanged != null)
                 this.SplitterVisibleWidthChanged(this, args);
         }
         /// <summary>
@@ -811,7 +811,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             GPropertyChangeArgs<int> args = new GPropertyChangeArgs<int>(eventSource, oldValue, newValue);
             this.OnSplitterActiveOverlapChanged(args);
-            if (!this.IsSupressedEvent && this.SplitterActiveOverlapChanged != null)
+            if (!this.IsSuppressedEvent && this.SplitterActiveOverlapChanged != null)
                 this.SplitterActiveOverlapChanged(this, args);
         }
         /// <summary>

@@ -1127,6 +1127,10 @@ namespace Asol.Tools.WorkScheduler.Components
         private bool _ToolTipNeedAnimation { get { return (this._ToolTip != null && this._ToolTip.NeedAnimation); } }
         #endregion
         #region Support for Progress
+        /// <summary>
+        /// Data ukazatele postupu
+        /// </summary>
+        public ProgressData ProgressData { get { return this._ProgressItem.ProgressData; } }
         private void _ProgressInit()
         {
             this._ProgressItem = new ProgressItem(this);

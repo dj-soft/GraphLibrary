@@ -1681,43 +1681,43 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         {
             ITableEventTarget target = (this.DataTable as ITableEventTarget);
             if (target != null)
-                target.CallActiveRowChanged(oldActiveRow, newActiveRow, eventSource, !this.IsSupressedEvent);
+                target.CallActiveRowChanged(oldActiveRow, newActiveRow, eventSource, !this.IsSuppressedEvent);
         }
         protected void CallHotRowChanged(Row oldHotRow, Row newHotRow, EventSourceType eventSource)
         {
             ITableEventTarget target = (this.DataTable as ITableEventTarget);
             if (target != null)
-                target.CallHotRowChanged(oldHotRow, newHotRow, eventSource, !this.IsSupressedEvent);
+                target.CallHotRowChanged(oldHotRow, newHotRow, eventSource, !this.IsSuppressedEvent);
         }
         protected void CallHotCellChanged(Cell oldHotCell, Cell newHotCell, EventSourceType eventSource)
         {
             ITableEventTarget target = (this.DataTable as ITableEventTarget);
             if (target != null)
-                target.CallHotCellChanged(oldHotCell, newHotCell, eventSource, !this.IsSupressedEvent);
+                target.CallHotCellChanged(oldHotCell, newHotCell, eventSource, !this.IsSuppressedEvent);
         }
         protected void CallActiveCellChanged(Cell oldActiveCell, Cell newActiveCell, EventSourceType eventSource)
         {
             ITableEventTarget target = (this.DataTable as ITableEventTarget);
             if (target != null)
-                target.CallActiveCellChanged(oldActiveCell, oldActiveCell, eventSource, !this.IsSupressedEvent);
+                target.CallActiveCellChanged(oldActiveCell, oldActiveCell, eventSource, !this.IsSuppressedEvent);
         }
         protected void CallCellMouseEnter(Cell cell, EventSourceType eventSource)
         {
             ITableEventTarget target = (this.DataTable as ITableEventTarget);
             if (target != null)
-                target.CallCellMouseEnter(cell, eventSource, !this.IsSupressedEvent);
+                target.CallCellMouseEnter(cell, eventSource, !this.IsSuppressedEvent);
         }
         protected void CallCellMouseLeave(Cell cell, EventSourceType eventSource)
         {
             ITableEventTarget target = (this.DataTable as ITableEventTarget);
             if (target != null)
-                target.CallCellMouseLeave(cell, eventSource, !this.IsSupressedEvent);
+                target.CallCellMouseLeave(cell, eventSource, !this.IsSuppressedEvent);
         }
         protected void CallActiveCellClick(Cell cell, EventSourceType eventSource)
         {
             ITableEventTarget target = (this.DataTable as ITableEventTarget);
             if (target != null)
-                target.CallActiveCellClick(cell, eventSource, !this.IsSupressedEvent);
+                target.CallActiveCellClick(cell, eventSource, !this.IsSuppressedEvent);
         }
         #endregion
     }
