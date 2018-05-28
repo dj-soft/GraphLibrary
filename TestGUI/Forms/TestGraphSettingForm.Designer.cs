@@ -1,4 +1,4 @@
-﻿namespace Djs.Common.TestGUI.Forms
+﻿namespace Asol.Tools.WorkScheduler.TestGUI.Forms
 {
     partial class TestGraphSettingForm
     {

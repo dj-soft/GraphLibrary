@@ -8,9 +8,9 @@ using System.Text;
 using System.Windows.Forms;
 using System.Drawing.Drawing2D;
 using System.Drawing.Text;
-using Djs.Common.Components;
+using Asol.Tools.WorkScheduler.Components;
 
-namespace Djs.Common.TestGUI.Forms
+namespace Asol.Tools.WorkScheduler.TestGUI.Forms
 {
     public partial class TestGraphSettingForm : Form
     {

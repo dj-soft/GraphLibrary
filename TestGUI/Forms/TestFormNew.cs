@@ -7,10 +7,10 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
-using Djs.Common.Data;
-using Djs.Common.Components;
+using Asol.Tools.WorkScheduler.Data;
+using Asol.Tools.WorkScheduler.Components;
 
-namespace Djs.Common.TestGUI
+namespace Asol.Tools.WorkScheduler.TestGUI
 {
     public partial class TestFormNew : Form
     {

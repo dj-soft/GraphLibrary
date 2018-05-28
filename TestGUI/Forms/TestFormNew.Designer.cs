@@ -1,4 +1,4 @@
-﻿namespace Djs.Common.TestGUI
+﻿namespace Asol.Tools.WorkScheduler.TestGUI
 {
     partial class TestFormNew
     {
@@ -28,7 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.GControl = new Djs.Common.Components.GInteractiveControl();
+            this.GControl = new Asol.Tools.WorkScheduler.Components.GInteractiveControl();
             this.SuspendLayout();
             // 
             // GControl

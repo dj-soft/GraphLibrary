@@ -1,4 +1,4 @@
-﻿namespace Djs.Common.TestGUI.Forms
+﻿namespace Asol.Tools.WorkScheduler.TestGUI.Forms
 {
     partial class MainForm
     {
@@ -30,7 +30,7 @@
         {
             this.toolStrip1 = new System.Windows.Forms.ToolStrip();
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
-            this.gInteractiveControl1 = new Djs.Common.Components.GInteractiveControl();
+            this.gInteractiveControl1 = new Asol.Tools.WorkScheduler.Components.GInteractiveControl();
             this.SuspendLayout();
             // 
             // toolStrip1

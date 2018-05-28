@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace Djs.Common.TestGUI.Properties {
+namespace Asol.Tools.WorkScheduler.TestGUI.Properties {
     
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Windows.Forms;
 using System.IO;
 
-namespace Djs.Common.TestGUI
+namespace Asol.Tools.WorkScheduler.TestGUI
 {
     static class Program
     {
@@ -15,7 +15,7 @@ namespace Djs.Common.TestGUI
         static void Main()
         {
             // Application.App.RunMainForm(typeof(Forms.MainForm));
-            Application.App.RunMainForm(typeof(Djs.Common.TestGUI.TestFormGrid));
+            Application.App.RunMainForm(typeof(Asol.Tools.WorkScheduler.TestGUI.TestFormGrid));
 
             // Application.App.RunMainForm(typeof(Djs.Common.TestGUI.Forms.TestGraphSettingForm));
         }

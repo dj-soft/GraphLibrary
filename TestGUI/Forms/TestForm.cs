@@ -6,10 +6,10 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
-using Djs.Common.Components;
-using Djs.Common.Data;
+using Asol.Tools.WorkScheduler.Components;
+using Asol.Tools.WorkScheduler.Data;
 
-namespace Djs.Common.TestGUI
+namespace Asol.Tools.WorkScheduler.TestGUI
 {
     public partial class TestForm : Form
     {
@@ -150,7 +150,7 @@ namespace Djs.Common.TestGUI
 
         protected InteractiveContainer ContainerArea1;
 
-        protected Djs.Common.Components.GSplitter _Splitter;
+        protected Asol.Tools.WorkScheduler.Components.GSplitter _Splitter;
         private void button1_Click(object sender, EventArgs e)
         {
             this._SizeAxisH.Value = new SizeRange(100, 500);

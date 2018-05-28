@@ -1,4 +1,4 @@
-﻿namespace Djs.Common.TestGUI
+﻿namespace Asol.Tools.WorkScheduler.TestGUI
 {
     partial class TestFormGrid
     {
@@ -29,7 +29,7 @@
         private void InitializeComponent()
         {
             this.CloseButton = new System.Windows.Forms.Button();
-            this.GControl = new Djs.Common.Components.GInteractiveControl();
+            this.GControl = new Asol.Tools.WorkScheduler.Components.GInteractiveControl();
             this.checkBox1 = new System.Windows.Forms.CheckBox();
             this.checkBox2 = new System.Windows.Forms.CheckBox();
             this.checkBox3 = new System.Windows.Forms.CheckBox();
@@ -38,7 +38,7 @@
             // CloseButton
             // 
             this.CloseButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.CloseButton.Image = global::Djs.Common.TestGUI.Properties.Resources.dialog_close;
+            this.CloseButton.Image = global::Asol.Tools.WorkScheduler.TestGUI.Properties.Resources.dialog_close;
             this.CloseButton.Location = new System.Drawing.Point(934, 521);
             this.CloseButton.Name = "CloseButton";
             this.CloseButton.Size = new System.Drawing.Size(170, 56);

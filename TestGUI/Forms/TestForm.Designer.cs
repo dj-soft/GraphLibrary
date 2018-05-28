@@ -1,4 +1,4 @@
-﻿namespace Djs.Common.TestGUI
+﻿namespace Asol.Tools.WorkScheduler.TestGUI
 {
     partial class TestForm
     {
@@ -28,13 +28,13 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this._GInteractiveControl = new Djs.Common.Components.GInteractiveControl();
+            this._GInteractiveControl = new Asol.Tools.WorkScheduler.Components.GInteractiveControl();
             this.button1 = new System.Windows.Forms.Button();
             this._AxisEnabledCheck = new System.Windows.Forms.CheckBox();
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
             this.tabPage2 = new System.Windows.Forms.TabPage();
-            this._DocumentEditor = new Djs.Common.Components.GDocumentEditor();
+            this._DocumentEditor = new Asol.Tools.WorkScheduler.Components.GDocumentEditor();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tabPage2.SuspendLayout();

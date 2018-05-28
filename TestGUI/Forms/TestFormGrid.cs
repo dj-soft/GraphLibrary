@@ -7,10 +7,10 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
-using Djs.Common.Data;
-using Djs.Common.Components;
+using Asol.Tools.WorkScheduler.Data;
+using Asol.Tools.WorkScheduler.Components;
 
-namespace Djs.Common.TestGUI
+namespace Asol.Tools.WorkScheduler.TestGUI
 {
     public partial class TestFormGrid : Form
     {
@@ -48,7 +48,7 @@ namespace Djs.Common.TestGUI
 
                 this.Rand = new Random((int)DateTime.Now.Ticks % 0x0FFFFFFF);
 
-                this._Table1 = this._PrepareTableW("stroje", 64);
+                this._Table1 = this._PrepareTableW("stroje", 48);
                 this._Table2 = this._PrepareTableW("směny", 128);
                 this._TableZ = this._PrepareTableZ("lidi", 18);
 
@@ -278,21 +278,21 @@ namespace Djs.Common.TestGUI
         private Image[] _LoadImages()
         {
             List<Image> images = new List<Image>();
-            images.Add(Djs.Common.Components.IconStandard.DocumentSave);
-            images.Add(Djs.Common.Components.IconStandard.EditCopy);
-            images.Add(Djs.Common.Components.IconStandard.EditCut);
-            images.Add(Djs.Common.Components.IconStandard.EditPaste);
-            images.Add(Djs.Common.Components.IconStandard.EditUndo);
-            images.Add(Djs.Common.Components.IconStandard.EditRedo);
-            images.Add(Djs.Common.Components.IconStandard.GoTop);
-            images.Add(Djs.Common.Components.IconStandard.GoUp);
-            images.Add(Djs.Common.Components.IconStandard.GoDown);
-            images.Add(Djs.Common.Components.IconStandard.GoBottom);
-            images.Add(Djs.Common.Components.IconStandard.GoHome);
-            images.Add(Djs.Common.Components.IconStandard.GoLeft);
-            images.Add(Djs.Common.Components.IconStandard.GoRight);
-            images.Add(Djs.Common.Components.IconStandard.GoEnd);
-            images.Add(Djs.Common.Components.IconStandard.Refresh);
+            images.Add(Asol.Tools.WorkScheduler.Components.IconStandard.DocumentSave);
+            images.Add(Asol.Tools.WorkScheduler.Components.IconStandard.EditCopy);
+            images.Add(Asol.Tools.WorkScheduler.Components.IconStandard.EditCut);
+            images.Add(Asol.Tools.WorkScheduler.Components.IconStandard.EditPaste);
+            images.Add(Asol.Tools.WorkScheduler.Components.IconStandard.EditUndo);
+            images.Add(Asol.Tools.WorkScheduler.Components.IconStandard.EditRedo);
+            images.Add(Asol.Tools.WorkScheduler.Components.IconStandard.GoTop);
+            images.Add(Asol.Tools.WorkScheduler.Components.IconStandard.GoUp);
+            images.Add(Asol.Tools.WorkScheduler.Components.IconStandard.GoDown);
+            images.Add(Asol.Tools.WorkScheduler.Components.IconStandard.GoBottom);
+            images.Add(Asol.Tools.WorkScheduler.Components.IconStandard.GoHome);
+            images.Add(Asol.Tools.WorkScheduler.Components.IconStandard.GoLeft);
+            images.Add(Asol.Tools.WorkScheduler.Components.IconStandard.GoRight);
+            images.Add(Asol.Tools.WorkScheduler.Components.IconStandard.GoEnd);
+            images.Add(Asol.Tools.WorkScheduler.Components.IconStandard.Refresh);
             return images.ToArray();
         }
         private GTimeGraph _PrepareGraph(DateTime now)
