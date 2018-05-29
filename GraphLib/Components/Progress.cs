@@ -80,7 +80,7 @@ namespace Asol.Tools.WorkScheduler.Components
 
             GPainter.DrawWindow(graphics, bounds, this.DataBackColor, System.Windows.Forms.Orientation.Vertical, this.DataOpacity, 2, 4);
 
-            int progressHeight = Application.App.ZoomDistance(21);
+            int progressHeight = Application.App.Zoom.ZoomDistance(21);
             Rectangle progBounds = new Rectangle(x + 15, b - progressHeight - 10, w - 30, progressHeight);
             GPainter.DrawButtonBase(graphics, progBounds, this.DataProgressBackColor, System.Windows.Forms.Orientation.Horizontal, null, null);
 

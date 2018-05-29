@@ -333,7 +333,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Current (new) state of item (after this event, not before it).
         /// </summary>
-        protected GInteractiveState CurrentState { get; set; }
+        protected GInteractiveState CurrentState { get { return (this.IsEnabled ? this._CurrentState : GInteractiveState.Disabled); } set { this._CurrentState = value; } } private GInteractiveState _CurrentState;
         /// <summary>
         /// true when this is dragged (CurrentState is LeftDrag or RightDrag)
         /// </summary>

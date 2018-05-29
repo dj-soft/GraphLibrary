@@ -9,6 +9,10 @@ using Asol.Tools.WorkScheduler.Services;
 
 namespace Asol.Tools.WorkScheduler.Scheduler
 {
+    /// <summary>
+    /// Třída, která obsahuje veškerá data Scheduleru.
+    /// Současně představuje jak zdroj globálních funkcí do ToolBaru (IFunctionGlobal), tak i zdroj dat pro grafy v GUI (IDataSource).
+    /// </summary>
     public class SchedulerData : IFunctionGlobal, IDataSource
     {
         #region Konstruktor a privátní data
@@ -16,11 +20,12 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             // Konstruktor vrátí new objekt, ale pouze pro použití jako Plugin.
             // Pro plnohodnotné použití a permanentní životnost je určen singleton Data.
+            // Ten po vytvoření instance třídy SchedulerData navíc volá metodu Initialise(), která fyzicky naplní instanci potřebnými daty.
         }
         /// <summary>
         /// Singleton, jediná instance obsahující reálná data datového zdroje
         /// </summary>
-        private static SchedulerData Data
+        public static SchedulerData Data
         {
             get
             {
@@ -38,10 +43,19 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private static SchedulerData CreateData()
         {
             SchedulerData data = new SchedulerData();
+            data.Initialise();
             return data;
         }
         private static SchedulerData __Data;
         private static object __Lock = new object();
+        #endregion
+        #region Inicializace dat objektu, který se používá jako datová základna
+        /// <summary>
+        /// Inicializace dat Scheduleru
+        /// </summary>
+        protected void Initialise()
+        {
+        }
         #endregion
         #region implementace IFunctionGlobal a IDataSource
         PluginActivity IPlugin.Activity { get { return PluginActivity.Standard; } }
@@ -75,7 +89,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             return Data.ProcessRequest(request);
         }
         #endregion
-        #region Tvorba prvků GUI (ToolBar)
+        #region Tvorba prvků GUI (ToolBar), obsluha událostí vyvolaných v Toolbaru (eventhandlery)
         /// <summary>
         /// Připraví GUI.
         /// Běží v rámci Singletonu.
@@ -84,6 +98,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <returns></returns>
         protected FunctionGlobalPrepareResponse PrepareGui(FunctionGlobalPrepareGuiRequest request)
         {
+            this._ToolBar = request.ToolBar;
+
             List<FunctionGlobalGroup> groups = new List<FunctionGlobalGroup>();
             this._PrepareGuiEdit(groups);
             this._PrepareGuiShow(groups);
@@ -118,11 +134,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         }
         private void _PrepareGuiShow(List<FunctionGlobalGroup> groups)
         { }
-
-
+        /// <summary>
+        /// Reference na objekt GToolBar, který reprezentuje hlavní toolbar aplikace.
+        /// </summary>
+        private GToolBar _ToolBar;
         private void ButtonUndo_Click(object sender, FunctionItemEventArgs args) { }
         private void ButtonRedo_Click(object sender, FunctionItemEventArgs args) { }
-        private void ButtonReload_Click(object sender, FunctionItemEventArgs args) { }
+        private void ButtonReload_Click(object sender, FunctionItemEventArgs args) {  }
         private void ButtonSave_Click(object sender, FunctionItemEventArgs args) { }
 
         protected void CheckGui(FunctionGlobalCheckGuiRequest request)

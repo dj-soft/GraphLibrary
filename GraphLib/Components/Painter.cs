@@ -876,7 +876,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="alignment"></param>
         public static void DrawImage(Graphics graphics, Rectangle bounds, Image image, bool isEnabled, ContentAlignment alignment)
         {
-            System.Drawing.Imaging.ColorMatrix colorMatrix = (!isEnabled  ? CreateColorMatrixGray(0.75f) : null);
+            System.Drawing.Imaging.ColorMatrix colorMatrix = (!isEnabled  ? CreateColorMatrixGray(0.75f, 0.25f) : null);
             _DrawImage(graphics, bounds, image, colorMatrix, alignment);
         }
         /// <summary>
@@ -913,25 +913,39 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         #endregion
         #region ColorMatrix
+        /// <summary>
+        /// Vrací ColorMatrix, který aplikuje pouze danou průhlednost
+        /// </summary>
+        /// <param name="alpha"></param>
+        /// <returns></returns>
         public static System.Drawing.Imaging.ColorMatrix CreateColorMatrixAlpha(float alpha)
         {
             System.Drawing.Imaging.ColorMatrix colorMatrix = new System.Drawing.Imaging.ColorMatrix();
             colorMatrix.Matrix33 = alpha;                       // Alpha channel: when input Alpha is 1 (full opacity, no transparent), then output Alpha will be (alpha) = input Alpha * (alpha)
             return colorMatrix;
         }
-        public static System.Drawing.Imaging.ColorMatrix CreateColorMatrixGray(float gray)
+        /// <summary>
+        /// Vrací ColorMatrix, který konvertuje barvy ve směru do šedivé a průhledné
+        /// </summary>
+        /// <param name="gray"></param>
+        /// <param name="light"></param>
+        /// <returns></returns>
+        public static System.Drawing.Imaging.ColorMatrix CreateColorMatrixGray(float gray, float light)
         {
-            float z = 0f;
-            float o = 0.35f;
-            float g = gray;
-            float u = 1f;
+            float gr = (gray < 0f ? 0f : (gray > 1f ? 1f : gray));   // gray v rozmezí 0 až 1
+            float li = (light < 0f ? 0f : (light > 1f ? 1f : light));// light v rozmezí 0 až 1
+            float c0 = 0f;                                           // 0 = konstanta 0
+            float c1 = 1f;                                           // 1 = konstanta 1
+            float sc = 1 - gr;                                       // Podíl původní barvy ve výsledné barvě (v téže složce) = poměr zachování barevnosti
+            float oc = gray;                                         // Podíl zdrojové barvy do ostatních barev (ostatní složky) = přelévání barvy => odbarvení
+            float al = 0.4f * gr;
             float[][] elements =
             {
-                new float[] { o, z, z, z, g },                  // Red
-                new float[] { z, o, z, z, g },                  // Green
-                new float[] { z, z, o, z, g },                  // Blue
-                new float[] { z, z, z, u, z },                  // Alpha
-                new float[] { z, z, z, z, z },                  // Mix
+                new float[] { sc, oc, oc, c0, c0 },                  // Tento řádek řídí distribuci hodnoty ze vstupního kanálu Red do výstupních kanálů R-G-B-A-?
+                new float[] { oc, sc, oc, c0, c0 },                  // Ze vstupního kanálu Green do výstupních R-G-B-A-?
+                new float[] { oc, oc, sc, c0, c0 },                  // Ze vstupního kanálu Blue do výstupních R-G-B-A-?
+                new float[] { c0, c0, c0, al, c0 },                  // Ze vstupního kanálu Aplha do výstupních R-G-B-A-?     (Alpha: 0=průhledná, 1=Plná barva)
+                new float[] { li, li, li, c0, c1 },                  // Fixní přídavek k výstupnímu kanálu
             };
             System.Drawing.Imaging.ColorMatrix colorMatrix = new System.Drawing.Imaging.ColorMatrix(elements);
             return colorMatrix;

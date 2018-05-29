@@ -82,61 +82,61 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 int x0 = 0;
                 int x3 = width;
 
-                bool isTaskVisible = (this._IsTaskVisible && width >= MinControlWidthForSideGrids);
-                int x1 = CalculateLayoutOne(isTaskVisible, x0, this._TaskSplitter.Value, x0 + MinGridWidth, x0 + maxw);
+                this._IsTaskVisible = (this._IsTaskEnabled && width >= MinControlWidthForSideGrids);
+                int x1 = CalculateLayoutOne(this._IsTaskVisible, x0, this._TaskSplitter.Value, x0 + MinGridWidth, x0 + maxw);
 
-                bool isWorkVisible = true;
+                this._IsWorkVisible = true;
 
-                bool isSourceVisible = (this._IsSourceVisible && width >= MinControlWidthForSideGrids);
-                int x2 = CalculateLayoutOne(isSourceVisible, x3, this._SourceSplitter.Value, x3 - maxw, x3 - MinGridWidth);
+                this._IsSourceVisible = (this._IsSourceEnabled && width >= MinControlWidthForSideGrids);
+                int x2 = CalculateLayoutOne(this._IsSourceVisible, x3, this._SourceSplitter.Value, x3 - maxw, x3 - MinGridWidth);
 
                 int height = size.Height;
                 int maxh = height / 2;
                 int y0 = 0;
                 int y3 = size.Height;
 
-                bool isInfoVisible = (this._IsInfoVisible && height >= MinControlHeightForSideGrids);
-                int y2 = CalculateLayoutOne(isInfoVisible, y3, this._InfoSplitter.Value, y3 - maxh, y3 - MinGridHeight);
+                this._IsInfoVisible = (this._IsInfoEnabled && height >= MinControlHeightForSideGrids);
+                int y2 = CalculateLayoutOne(this._IsInfoVisible, y3, this._InfoSplitter.Value, y3 - maxh, y3 - MinGridHeight);
 
-                bool isChangeChildItems = (this._TaskGrid.IsVisible != isTaskVisible) ||
-                                          (this._TaskSplitter.IsVisible != isTaskVisible) ||
-                                          (this._WorkGrid.IsVisible != isWorkVisible) ||
-                                          (this._SourceSplitter.IsVisible != isSourceVisible) ||
-                                          (this._SourceGrid.IsVisible != isSourceVisible) ||
-                                          (this._InfoSplitter.IsVisible != isInfoVisible) ||
-                                          (this._InfoGrid.IsVisible != isInfoVisible);
+                bool isChangeChildItems = (this._TaskGrid.IsVisible != this._IsTaskVisible) ||
+                                          (this._TaskSplitter.IsVisible != this._IsTaskVisible) ||
+                                          (this._WorkGrid.IsVisible != this._IsWorkVisible) ||
+                                          (this._SourceSplitter.IsVisible != this._IsSourceVisible) ||
+                                          (this._SourceGrid.IsVisible != this._IsSourceVisible) ||
+                                          (this._InfoSplitter.IsVisible != this._IsInfoVisible) ||
+                                          (this._InfoGrid.IsVisible != this._IsInfoVisible);
 
-                this._TaskGrid.IsVisible = isTaskVisible;
-                this._TaskSplitter.IsVisible = isTaskVisible;
-                this._WorkGrid.IsVisible = isWorkVisible;
-                this._SourceSplitter.IsVisible = isSourceVisible;
-                this._SourceGrid.IsVisible = isSourceVisible;
-                this._InfoSplitter.IsVisible = isInfoVisible;
-                this._InfoGrid.IsVisible = isInfoVisible;
+                this._TaskGrid.IsVisible = this._IsTaskVisible;
+                this._TaskSplitter.IsVisible = this._IsTaskVisible;
+                this._WorkGrid.IsVisible = this._IsWorkVisible;
+                this._SourceSplitter.IsVisible = this._IsSourceVisible;
+                this._SourceGrid.IsVisible = this._IsSourceVisible;
+                this._InfoSplitter.IsVisible = this._IsInfoVisible;
+                this._InfoGrid.IsVisible = this._IsInfoVisible;
 
-                if (isTaskVisible)
+                if (this._IsTaskVisible)
                 {
                     int r = x1 - sp;
-                    int b = y2 - (isInfoVisible ? sp : 0);
+                    int b = y2 - (this._IsInfoVisible ? sp : 0);
                     this._TaskGrid.Bounds = new Rectangle(x0, y0, r - x0, b - y0);
                     this._TaskSplitter.LoadFrom(this._TaskGrid.Bounds, RectangleSide.Right, true);
                 }
-                if (isWorkVisible)
+                if (this._IsWorkVisible)
                 {
-                    int l = x1 + (isTaskVisible ? sn : 0);
-                    int r = x2 - (isSourceVisible ? sp : 0);
+                    int l = x1 + (this._IsTaskVisible ? sn : 0);
+                    int r = x2 - (this._IsSourceVisible ? sp : 0);
                     int t = y0;
-                    int b = y2 - (isInfoVisible ? sp : 0);
+                    int b = y2 - (this._IsInfoVisible ? sp : 0);
                     this._WorkGrid.Bounds = new Rectangle(l, t, r - l, b - t);
                 }
-                if (isSourceVisible)
+                if (this._IsSourceVisible)
                 {
                     int l = x2 + sn;
-                    int b = y2 - (isInfoVisible ? sp : 0);
+                    int b = y2 - (this._IsInfoVisible ? sp : 0);
                     this._SourceGrid.Bounds = new Rectangle(l, y0, x3 - l, b - y0);
                     this._SourceSplitter.LoadFrom(this._SourceGrid.Bounds, RectangleSide.Left, true);
                 }
-                if (isInfoVisible)
+                if (this._IsInfoVisible)
                 {
                     int t = y2 + sn;
                     this._InfoGrid.Bounds = new Rectangle(x0, t, x3 - x0, y3 - t);
@@ -162,22 +162,34 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private GGrid _TaskGrid;
         private GSplitter _TaskSplitter;
         private bool _IsTaskVisible;
+        private bool _IsTaskEnabled;
         private GGrid _WorkGrid;
+        private bool _IsWorkVisible;
         private GSplitter _SourceSplitter;
         private GGrid _SourceGrid;
         private bool _IsSourceVisible;
+        private bool _IsSourceEnabled;
         private GSplitter _InfoSplitter;
         private GGrid _InfoGrid;
         private bool _IsInfoVisible;
+        private bool _IsInfoEnabled;
         #endregion
         #region Child items
-        protected override IEnumerable<IInteractiveItem> Childs { get { return this._ChildList; } }
-        private void _ChildListValidate()
+        protected override IEnumerable<IInteractiveItem> Childs { get { return this._GetChildList(); } }
+        private IEnumerable<IInteractiveItem> _GetChildList()
         {
-            if (this._ChildList != null && this._IsChildValid) return;
-
-            this._ChildList = new List<IInteractiveItem>();
-            if ()
+            if (this._ChildList == null || !this._IsChildValid)
+            {
+                this._ChildList = new List<IInteractiveItem>();
+                if (this._IsTaskVisible) this._ChildList.Add(this._TaskGrid);
+                if (this._IsWorkVisible) this._ChildList.Add(this._WorkGrid);
+                if (this._IsSourceVisible) this._ChildList.Add(this._SourceGrid);
+                if (this._IsInfoVisible) this._ChildList.Add(this._InfoGrid);
+                if (this._IsTaskVisible) this._ChildList.Add(this._TaskSplitter);
+                if (this._IsSourceVisible) this._ChildList.Add(this._SourceSplitter);
+                if (this._IsInfoVisible) this._ChildList.Add(this._InfoSplitter);
+            }
+            return this._ChildList;
         }
         private List<IInteractiveItem> _ChildList;
         private bool _IsChildValid;
@@ -186,15 +198,15 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// true pokud je viditelná tabulka úkolů k zapracování
         /// </summary>
-        public bool IsTaskVisible { get { return this._IsTaskVisible; } set { this._IsTaskVisible = value; this.CalculateLayout();  } }
+        public bool IsTaskEnabled { get { return this._IsTaskEnabled; } set { this._IsTaskEnabled = value; this.CalculateLayout();  } }
         /// <summary>
         /// true pokud je viditelná tabulka zdrojů k zaplánování
         /// </summary>
-        public bool IsSourceVisible { get { return this._IsSourceVisible; } set { this._IsSourceVisible = value; this.CalculateLayout(); } }
+        public bool IsSourceEnabled { get { return this._IsSourceEnabled; } set { this._IsSourceEnabled = value; this.CalculateLayout(); } }
         /// <summary>
         /// true pokud je viditelná tabulka informací o zaplánování
         /// </summary>
-        public bool IsInfoVisible { get { return this._IsInfoVisible; } set { this._IsInfoVisible = value; this.CalculateLayout(); } }
+        public bool IsInfoEnabled { get { return this._IsInfoEnabled; } set { this._IsInfoEnabled = value; this.CalculateLayout(); } }
 
 
         #endregion

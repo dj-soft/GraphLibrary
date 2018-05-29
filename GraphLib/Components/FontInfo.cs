@@ -213,7 +213,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     break;
             }
 
-            float ratio = _ToRange(Application.App.Zoom * ((float)this.RelativeSize / 100f));   // Relative size (in percent) * Zoom (ratio) = Font Ratio to prototype size
+            float ratio = _ToRange(Application.App.Zoom.Value * ((float)this.RelativeSize / 100f));   // Relative size (in percent) * Zoom (ratio) = Font Ratio to prototype size
             float emSize = ratio * prototype.Size;
             FontStyle fontStyle =
                 (this.Bold ? FontStyle.Bold : FontStyle.Regular) |

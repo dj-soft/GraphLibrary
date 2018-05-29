@@ -613,77 +613,17 @@ namespace Asol.Tools.WorkScheduler.Application
         #endregion
         #region GuiZoom
         /// <summary>
-        /// Zoom for GUI. Can change size of all elements.
-        /// Default zoom = 1, then GUI is showed in original pixel size.
+        /// Zde je poskytována veškerá podpora pro zoomování aplikace
         /// </summary>
-        public static float Zoom
-        {
-            get { return Instance._Zoom; }
-            set { Instance._ZoomSet(value); }
-        }
+        public static Zoom Zoom { get { return Instance._Zoom; } }
         /// <summary>
-        /// Return bounds zoomed by current App.Zoom
+        /// Inicializuje instanci objektu Zoom
         /// </summary>
-        /// <param name="bounds"></param>
-        /// <returns></returns>
-        public static Rectangle ZoomBounds(Rectangle bounds)
-        {
-            float zoom = Instance._Zoom;
-            int l = _ZoomValue(zoom, bounds.Left);
-            int t = _ZoomValue(zoom, bounds.Top);
-            int r = _ZoomValue(zoom, bounds.Right);
-            int b = _ZoomValue(zoom, bounds.Bottom);
-            return Rectangle.FromLTRB(l, t, r, b);
-        }
-        /// <summary>
-        /// Return point zoomed by current App.Zoom
-        /// </summary>
-        /// <param name="point"></param>
-        /// <returns></returns>
-        public static Point ZoomPoint(Point point)
-        {
-            float zoom = Instance._Zoom;
-            return new Point(_ZoomValue(zoom, point.X), _ZoomValue(zoom, point.Y));
-        }
-        /// <summary>
-        /// Return size zoomed by current App.Zoom
-        /// </summary>
-        /// <param name="size"></param>
-        /// <returns></returns>
-        public static Size ZoomSize(Size size)
-        {
-            float zoom = Instance._Zoom;
-            return new Size(_ZoomValue(zoom, size.Width), _ZoomValue(zoom, size.Height));
-        }
-        /// <summary>
-        /// Return distance zoomed by current App.Zoom
-        /// </summary>
-        /// <param name="distance"></param>
-        /// <returns></returns>
-        public static int ZoomDistance(int distance)
-        {
-            float zoom = Instance._Zoom;
-            return _ZoomValue(zoom, distance);
-        }
-        private static int _ZoomValue(float zoom, int distance)
-        {
-            return (int)(Math.Round((double)(zoom * (float)distance), 0));
-        }
         private void _ZoomInit()
         {
-            this._Zoom = 1.0f;
+            this._Zoom = new Application.Zoom();
         }
-        private void _ZoomSet(float value)
-        {
-            float oldZoom = this._Zoom;
-            float newZoom = (value < 0.2f ? 0.2f : (value > 5.0f ? 5.0f : value));
-            if (newZoom != oldZoom)
-            {
-                this._Zoom = newZoom;
-                Asol.Tools.WorkScheduler.Components.FontInfo.ResetFonts();
-            }
-        }
-        private float _Zoom;
+        private Zoom _Zoom;
         #endregion
         #region Register / Config
         public static bool RegisterContainsKey(string key)
