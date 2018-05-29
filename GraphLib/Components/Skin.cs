@@ -744,7 +744,7 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Default colors
         protected virtual Color DefaultBorderColor { get { return Color.DimGray; } }
-        protected virtual Color DefaultBackColor { get { return Color.LightYellow; } }
+        protected virtual Color DefaultBackColor { get { return Color.FromArgb(255, 255, 240) /*Color.LightYellow*/; } }
         protected virtual Color DefaultTitleColor { get { return Color.Black; } }
         protected virtual Color DefaultInfoColor { get { return Color.Black; } }
         #endregion

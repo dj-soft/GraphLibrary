@@ -630,7 +630,7 @@ namespace Asol.Tools.WorkScheduler.Components
             using (GPainter.GraphicsUseSmooth(graphics))
             {
                 Rectangle totalBackBounds = this._TotalBounds.Value; //  Rectangle.Truncate(this._TotalPath.GetBounds());
-                using (Brush brush = Skin.CreateBrushForBackground(totalBackBounds, Orientation.Horizontal, GInteractiveState.MouseOver, true, this.InfoBackColor, this.InfoBackOpacity))
+                using (Brush brush = Skin.CreateBrushForBackground(totalBackBounds, Orientation.Horizontal, GInteractiveState.Enabled /* .MouseOver*/, true, this.InfoBackColor, this.InfoBackOpacity))
                 {
                     graphics.FillPath(brush, this._TotalPath);
                 }
