@@ -73,10 +73,15 @@ namespace Asol.Tools.WorkScheduler.Data
             }
         }
         /// <summary>
-        /// Název tabulky, podle něj lze hledat. jde o klíčové slovo, nikoli popisek (Caption)
+        /// Název tabulky, podle něj lze hledat. jde o klíčové slovo, nikoli popisek - ten je v <see cref="Title"/>.
         /// </summary>
         public string TableName { get { return this._TableName; } set { this._TableName = value; } }
         private string _TableName;
+        /// <summary>
+        /// Titulek tabulky, bude použit tehdy, když tabulka bude umístěna ve vhodném kontejneru.
+        /// </summary>
+        public Localizable.TextLoc Title { get { return this._Title; } set { this._Title = value; } }
+        private Localizable.TextLoc _Title;
         /// <summary>
         /// Jednoznačné ID tabulky
         /// </summary>

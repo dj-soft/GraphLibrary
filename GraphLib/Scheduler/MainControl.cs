@@ -28,9 +28,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this._MainToolbar.ToolbarSizeChanged += _MainToolbar_ToolbarSizeChanged;
             this.AddItem(this._MainToolbar);
 
-            this._SchedulerPanel = new SchedulerPanel() { Bounds = new Rectangle(0, this._MainToolbar.Bounds.Bottom, 1024, 640) };
-            this._SchedulerPanel.BackColor = Color.LightCyan;
-            this.AddItem(this._SchedulerPanel);
+            // this._SchedulerPanel = new SchedulerPanel() { Bounds = new Rectangle(0, this._MainToolbar.Bounds.Bottom, 1024, 640) };
+            // this._SchedulerPanel.BackColor = Color.LightCyan;
+            // this.AddItem(this._SchedulerPanel);
         }
         private void _MainToolbar_ToolbarSizeChanged(object sender, GPropertyChangeArgs<Services.ComponentSize> e)
         {
@@ -48,12 +48,33 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             int y = 0;
             this._MainToolbar.Bounds = new Rectangle(y, 0, size.Width, th);
             y = this._MainToolbar.Bounds.Bottom + 1;
-            this._SchedulerPanel.Bounds = new Rectangle(0, y, size.Width, size.Height - y);
+            // this._SchedulerPanel.Bounds = new Rectangle(0, y, size.Width, size.Height - y);
             this.Refresh();
         }
-
+        /// <summary>
+        /// Instance toolbaru
+        /// </summary>
         private GToolBar _MainToolbar;
-        private SchedulerPanel _SchedulerPanel;
+        /// <summary>
+        /// Instance všech Scheduler panelů
+        /// </summary>
+        private SchedulerPanel[] _SchedulerPanels;
+        /// <summary>
+        /// Index aktuálního Scheduler panelu
+        /// </summary>
+        private int _CurrentSchedulerPanelIndex;
+        /// <summary>
+        /// true pokud se má zobrazovat záhlaví panelů, tzn. je více než jeden Scheduler panel (máme více než jeden DataSource)
+        /// </summary>
+        protected bool SelectPanelExists { get { return (this._SchedulerPanels != null && this._SchedulerPanels.Length > 1); } }
+        /// <summary>
+        /// true pokud aktuálně máme vybraný panel v <see cref="SchedulerPanelCurrent"/>
+        /// </summary>
+        protected bool SchedulerPanelExists { get { return (this._SchedulerPanels != null && this._CurrentSchedulerPanelIndex >= 0 && this._CurrentSchedulerPanelIndex < this._SchedulerPanels.Length); } }
+        /// <summary>
+        /// Aktuálně zobrazovaný Scheduler panel
+        /// </summary>
+        protected SchedulerPanel SchedulerPanelCurrent { get { return (this.SchedulerPanelExists ? this._SchedulerPanels[this._CurrentSchedulerPanelIndex] : null); } }
         #endregion
         #region Datové zdroje
         /// <summary>
@@ -69,10 +90,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private void _InitDataSources()
         {
             this._GetDataSources();
-            this._LoadFromDataSources();
+            this._GetTableFromDataSources();
         }
         /// <summary>
-        /// Načte soupis dostupných datových zdrojů
+        /// Načte soupis dostupných datových zdrojů (=pluginy)
         /// </summary>
         private void _GetDataSources()
         {
@@ -88,10 +109,20 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 }
             }
         }
-        private void _LoadFromDataSources()
+        /// <summary>
+        /// Načte soupis tabulek z datového zdroje
+        /// </summary>
+        private void _GetTableFromDataSources()
         {
             using (Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "MainControl", "LoadFromDataSources", "GUIThread"))
             {
+                foreach (Services.IDataSource dataSource in this._DataSourceList)
+                {
+                    DataSourceGetTablesRequest request = new DataSourceGetTablesRequest(null);
+                    DataSourceGetTablesResponse response = dataSource.ProcessRequest(request) as DataSourceGetTablesResponse;
+
+
+                }
                 Services.IDataSource source = this._DataSourceList.FirstOrDefault();
                 if (source != null)
                 {

@@ -26,6 +26,9 @@ namespace Asol.Tools.WorkScheduler.Services
         /// <returns></returns>
         DataSourceResponse ProcessRequest(DataSourceRequest request);
     }
+    /// <summary>
+    /// Obecný požadavek na datový zdroj
+    /// </summary>
     public abstract class DataSourceRequest
     {
         public DataSourceRequest(Data.ProgressData progressData)
@@ -37,6 +40,9 @@ namespace Asol.Tools.WorkScheduler.Services
         /// </summary>
         public Data.ProgressData ProgressData { get { return this._ProgressData; } } private Data.ProgressData _ProgressData;
     }
+    /// <summary>
+    /// Obecná odpověď na obecný požadavek na datový zdroj
+    /// </summary>
     public abstract class DataSourceResponse
     {
         public DataSourceResponse(DataSourceRequest request)
@@ -44,39 +50,6 @@ namespace Asol.Tools.WorkScheduler.Services
             this.Request = request;
         }
         public DataSourceRequest Request { get; private set; }
-    }
-    #endregion
-    #region GetControls request and response
-    public class DataSourceGetControlsRequest : DataSourceRequest
-    {
-        public DataSourceGetControlsRequest(Data.ProgressData progressData)
-            : base(progressData)
-        {
-
-        }
-
-    }
-    public class DataSourceGetControlsResponse : DataSourceResponse
-    {
-        public DataSourceGetControlsResponse(DataSourceGetControlsRequest request)
-            : base(request)
-        { }
-    }
-    #endregion
-    #region GetData request and response
-    public class DataSourceGetDataRequest : DataSourceRequest
-    {
-        public DataSourceGetDataRequest(Data.ProgressData progressData)
-            : base(progressData)
-        {
-
-        }
-    }
-    public class DataSourceGetDataResponse : DataSourceResponse
-    {
-        public DataSourceGetDataResponse(DataSourceGetDataRequest request)
-            : base(request)
-        { }
     }
     #endregion
     #endregion

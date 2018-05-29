@@ -12,15 +12,15 @@ namespace Asol.Tools.WorkScheduler.Services
         protected virtual DataSourceResponse ProcessRequest(DataSourceRequest request)
         {
             if (request == null) return null;
-            if (request is DataSourceGetControlsRequest) return this.ProcessRequestGetControls(request as DataSourceGetControlsRequest);
+            if (request is DataSourceGetTablesRequest) return this.ProcessRequestGetControls(request as DataSourceGetTablesRequest);
             if (request is DataSourceGetDataRequest) return this.ProcessRequestGetData(request as DataSourceGetDataRequest);
 
             return null;
         }
         #region Get Controls
-        private DataSourceResponse ProcessRequestGetControls(DataSourceGetControlsRequest request)
+        private DataSourceResponse ProcessRequestGetControls(DataSourceGetTablesRequest request)
         {
-            DataSourceGetControlsResponse response = new DataSourceGetControlsResponse(request);
+            DataSourceGetTablesResponse response = new DataSourceGetTablesResponse(request);
 
 
 

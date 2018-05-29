@@ -24,7 +24,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             this._TaskGrid = new GGrid();
             this._TaskSplitter = new GSplitter() { SplitterVisibleWidth = SplitterSize, SplitterActiveOverlap = 2, Orientation = Orientation.Vertical, Value = 300, BoundsNonActive = new Int32NRange(0, 200) };
-            this._WorkGrid = new GGrid();
+            this._SchedulerGrid = new GGrid();
             this._SourceSplitter = new GSplitter() { SplitterVisibleWidth = SplitterSize, SplitterActiveOverlap = 2, Orientation = Orientation.Vertical, Value = 600, BoundsNonActive = new Int32NRange(0, 200) };
             this._SourceGrid = new GGrid();
             this._InfoSplitter = new GSplitter() { SplitterVisibleWidth = SplitterSize, SplitterActiveOverlap = 2, Orientation = Orientation.Horizontal, Value = 300, BoundsNonActive = new Int32NRange(0, 600) };
@@ -32,7 +32,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
             this.AddItem(this._TaskGrid);
             this.AddItem(this._TaskSplitter);
-            this.AddItem(this._WorkGrid);
+            this.AddItem(this._SchedulerGrid);
             this.AddItem(this._SourceSplitter);
             this.AddItem(this._SourceGrid);
             this.AddItem(this._InfoSplitter);
@@ -85,7 +85,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 this._IsTaskVisible = (this._IsTaskEnabled && width >= MinControlWidthForSideGrids);
                 int x1 = CalculateLayoutOne(this._IsTaskVisible, x0, this._TaskSplitter.Value, x0 + MinGridWidth, x0 + maxw);
 
-                this._IsWorkVisible = true;
+                this._IsSchedulerVisible = true;
 
                 this._IsSourceVisible = (this._IsSourceEnabled && width >= MinControlWidthForSideGrids);
                 int x2 = CalculateLayoutOne(this._IsSourceVisible, x3, this._SourceSplitter.Value, x3 - maxw, x3 - MinGridWidth);
@@ -100,7 +100,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
                 bool isChangeChildItems = (this._TaskGrid.IsVisible != this._IsTaskVisible) ||
                                           (this._TaskSplitter.IsVisible != this._IsTaskVisible) ||
-                                          (this._WorkGrid.IsVisible != this._IsWorkVisible) ||
+                                          (this._SchedulerGrid.IsVisible != this._IsSchedulerVisible) ||
                                           (this._SourceSplitter.IsVisible != this._IsSourceVisible) ||
                                           (this._SourceGrid.IsVisible != this._IsSourceVisible) ||
                                           (this._InfoSplitter.IsVisible != this._IsInfoVisible) ||
@@ -108,7 +108,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
                 this._TaskGrid.IsVisible = this._IsTaskVisible;
                 this._TaskSplitter.IsVisible = this._IsTaskVisible;
-                this._WorkGrid.IsVisible = this._IsWorkVisible;
+                this._SchedulerGrid.IsVisible = this._IsSchedulerVisible;
                 this._SourceSplitter.IsVisible = this._IsSourceVisible;
                 this._SourceGrid.IsVisible = this._IsSourceVisible;
                 this._InfoSplitter.IsVisible = this._IsInfoVisible;
@@ -121,13 +121,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                     this._TaskGrid.Bounds = new Rectangle(x0, y0, r - x0, b - y0);
                     this._TaskSplitter.LoadFrom(this._TaskGrid.Bounds, RectangleSide.Right, true);
                 }
-                if (this._IsWorkVisible)
+                if (this._IsSchedulerVisible)
                 {
                     int l = x1 + (this._IsTaskVisible ? sn : 0);
                     int r = x2 - (this._IsSourceVisible ? sp : 0);
                     int t = y0;
                     int b = y2 - (this._IsInfoVisible ? sp : 0);
-                    this._WorkGrid.Bounds = new Rectangle(l, t, r - l, b - t);
+                    this._SchedulerGrid.Bounds = new Rectangle(l, t, r - l, b - t);
                 }
                 if (this._IsSourceVisible)
                 {
@@ -163,8 +163,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private GSplitter _TaskSplitter;
         private bool _IsTaskVisible;
         private bool _IsTaskEnabled;
-        private GGrid _WorkGrid;
-        private bool _IsWorkVisible;
+        private GGrid _SchedulerGrid;
+        private bool _IsSchedulerVisible;
         private GSplitter _SourceSplitter;
         private GGrid _SourceGrid;
         private bool _IsSourceVisible;
@@ -182,7 +182,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             {
                 this._ChildList = new List<IInteractiveItem>();
                 if (this._IsTaskVisible) this._ChildList.Add(this._TaskGrid);
-                if (this._IsWorkVisible) this._ChildList.Add(this._WorkGrid);
+                if (this._IsSchedulerVisible) this._ChildList.Add(this._SchedulerGrid);
                 if (this._IsSourceVisible) this._ChildList.Add(this._SourceGrid);
                 if (this._IsInfoVisible) this._ChildList.Add(this._InfoGrid);
                 if (this._IsTaskVisible) this._ChildList.Add(this._TaskSplitter);
