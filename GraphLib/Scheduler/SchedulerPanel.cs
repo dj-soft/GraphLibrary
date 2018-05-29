@@ -20,6 +20,12 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             this._InitComponents();
         }
+        public SchedulerPanel(Services.IDataSource schedulerDataSource, DataSourceGetTablesResponse response)
+        {
+            this._SchedulerDataSource = schedulerDataSource;
+            this._SchedulerTablesResponse = response;
+            this._InitComponents();
+        }
         private void _InitComponents()
         {
             this._TaskGrid = new GGrid();
@@ -173,6 +179,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private GGrid _InfoGrid;
         private bool _IsInfoVisible;
         private bool _IsInfoEnabled;
+        private Services.IDataSource _SchedulerDataSource;
+        private DataSourceGetTablesResponse _SchedulerTablesResponse;
         #endregion
         #region Child items
         protected override IEnumerable<IInteractiveItem> Childs { get { return this._GetChildList(); } }
@@ -195,6 +203,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private bool _IsChildValid;
         #endregion
         #region Public data
+        public Services.IDataSource SchedulerDataSource { get { return this._SchedulerDataSource; } }
         /// <summary>
         /// true pokud je viditelná tabulka úkolů k zapracování
         /// </summary>

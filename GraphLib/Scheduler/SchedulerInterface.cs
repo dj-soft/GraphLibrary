@@ -17,7 +17,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         }
 
     }
-    public class DataSourceGetTablesResponse : DataSourceResponse<DataSourceGetTablesRequest>
+    public class DataSourceGetTablesResponse : DataSourceResponse
     {
         public DataSourceGetTablesResponse(DataSourceGetTablesRequest request)
             : base(request)

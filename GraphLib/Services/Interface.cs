@@ -43,7 +43,7 @@ namespace Asol.Tools.WorkScheduler.Services
     /// <summary>
     /// Obecná odpověď na obecný požadavek na datový zdroj
     /// </summary>
-    public abstract class DataSourceResponse
+    public class DataSourceResponse
     {
         public DataSourceResponse(DataSourceRequest request)
         {

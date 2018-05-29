@@ -90,46 +90,46 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private void _InitDataSources()
         {
             this._GetDataSources();
-            this._GetTableFromDataSources();
+            this._GetSchedulerPanels();
         }
         /// <summary>
         /// Načte soupis dostupných datových zdrojů (=pluginy)
         /// </summary>
         private void _GetDataSources()
         {
+            List<Services.IDataSource> sourceList = new List<Services.IDataSource>();
             using (Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "MainControl", "GetDataSources", "GUIThread"))
             {
-                this._DataSourceList = new List<Services.IDataSource>();
                 var plugins = Application.App.GetPlugins(typeof(Services.IDataSource));
                 foreach (object plugin in plugins)
                 {
                     Services.IDataSource source = plugin as Services.IDataSource;
                     if (source != null)
-                        this._DataSourceList.Add(source);
+                        sourceList.Add(source);
                 }
             }
+            this._DataSources = sourceList.ToArray();
         }
         /// <summary>
         /// Načte soupis tabulek z datového zdroje
         /// </summary>
-        private void _GetTableFromDataSources()
+        private void _GetSchedulerPanels()
         {
+            List<SchedulerPanel> panelList = new List<SchedulerPanel>();
             using (Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "MainControl", "LoadFromDataSources", "GUIThread"))
             {
-                foreach (Services.IDataSource dataSource in this._DataSourceList)
+                foreach (Services.IDataSource dataSource in this._DataSources)
                 {
                     DataSourceGetTablesRequest request = new DataSourceGetTablesRequest(null);
                     DataSourceGetTablesResponse response = dataSource.ProcessRequest(request) as DataSourceGetTablesResponse;
-
-
-                }
-                Services.IDataSource source = this._DataSourceList.FirstOrDefault();
-                if (source != null)
-                {
-                    Services.DataSourceGetDataRequest request = new Services.DataSourceGetDataRequest(null);
-                    Application.App.ProcessRequestOnbackground<Services.DataSourceGetDataRequest, Services.DataSourceResponse>(source.ProcessRequest, request, this._ProcessResponseData);
+                    if (response != null)
+                    {
+                        SchedulerPanel panel = new SchedulerPanel(dataSource, response);
+                        panelList.Add(panel);
+                    }
                 }
             }
+            this._SchedulerPanels = panelList.ToArray();
         }
         private void _ProcessResponseData(Services.DataSourceGetDataRequest request, Services.DataSourceResponse response)
         {
@@ -148,7 +148,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 }
             }
         }
-        private List<Services.IDataSource> _DataSourceList;
+        private Services.IDataSource[] _DataSources;
         #endregion
     }
 }
