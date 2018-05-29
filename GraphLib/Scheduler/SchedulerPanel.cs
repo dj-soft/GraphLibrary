@@ -175,6 +175,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private void _ChildListValidate()
         {
             if (this._ChildList != null && this._IsChildValid) return;
+
+            this._ChildList = new List<IInteractiveItem>();
+            if ()
         }
         private List<IInteractiveItem> _ChildList;
         private bool _IsChildValid;
