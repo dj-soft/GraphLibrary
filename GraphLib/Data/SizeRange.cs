@@ -603,6 +603,16 @@ namespace Asol.Tools.WorkScheduler.Data
             return new Int32Range(end - (Int32)size, end);
         }
         /// <summary>
+        /// Vrací new instanci z daného bodu středu a velikosti
+        /// </summary>
+        /// <param name="center">Souřadnice středu</param>
+        /// <param name="size">Velikost intervalu</param>
+        public static Int32Range CreateFromCenterSize(Int32 center, Int32 size)
+        {
+            int begin = center - (size / 2);
+            return CreateFromBeginSize(begin, size);
+        }
+        /// <summary>
         /// Obsahuje textovou podobu this intervalu
         /// </summary>
         public string Text
@@ -737,7 +747,7 @@ namespace Asol.Tools.WorkScheduler.Data
             return true;
         }
         #endregion
-        #region GetRectangle
+        #region GetRectangle, FromRectangle
         /// <summary>
         /// Vrací rectangle pro rozmezí hodnot X a Y
         /// </summary>
@@ -767,6 +777,22 @@ namespace Asol.Tools.WorkScheduler.Data
         public static Rectangle GetRectangle(Rectangle x, Int32Range y)
         {
             return new Rectangle(x.X, y.Begin, x.Width, y.Size);
+        }
+        /// <summary>
+        /// Vrátí pozici daného Rectangle na ose X (pro orientation = Horizontal)
+        /// nebo na ose Y (pro orientation = Vertical)
+        /// </summary>
+        /// <param name="source"></param>
+        /// <param name="orientation"></param>
+        /// <returns></returns>
+        public static Int32Range CreateFromRectangle(Rectangle source, System.Windows.Forms.Orientation orientation)
+        {
+            switch (orientation)
+            {
+                case System.Windows.Forms.Orientation.Horizontal: return CreateFromBeginSize(source.X, source.Width);
+                case System.Windows.Forms.Orientation.Vertical: return CreateFromBeginSize(source.Y, source.Height);
+            }
+            return Int32Range.Empty;
         }
         #endregion
         #region Implementace abstraktní třídy

@@ -878,9 +878,9 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         protected void RepaintRow(Row row)
         {
             if (row == null) return;
-            row.RowHeader.Repaint();
+            ((IInteractiveParent)row.RowHeader).Repaint();
             foreach (Cell cell in row.Cells)
-                cell.Control.Repaint();
+                ((IInteractiveParent)cell.Control).Repaint();
         }
         /// <summary>
         /// Zajistí vyvolání metody Repaint pro ColumnHeader i pro všechny Cell.Control ve viditelných řádcích v daném sloupci.
@@ -890,12 +890,12 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         protected void RepaintColumn(Column column)
         {
             if (column == null) return;
-            column.ColumnHeader.Repaint();
+            ((IInteractiveParent)column.ColumnHeader).Repaint();
             int columnId = column.ColumnId;
             foreach (Row row in this.VisibleRows)
             {
                 Cell cell = row[columnId];
-                cell.Control.Repaint();
+                ((IInteractiveParent)cell.Control).Repaint();
             }
         }
         #endregion
@@ -1868,22 +1868,6 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         }
         #endregion
         #region Interaktivita
-        /// <summary>
-        /// Potomek třídy GComponent má vždy volat base.AfterStateChangedMouseEnter(), protože třída GComponent vyvolá virtual metodu PrepareToolTip().
-        /// </summary>
-        /// <param name="e"></param>
-        protected override void AfterStateChangedMouseEnter(GInteractiveChangeStateArgs e)
-        {
-            this.PrepareToolTip(e);
-        }
-        /// <summary>
-        /// Metoda je volána v události MouseEnter, a jejím úkolem je přpravit data pro ToolTip.
-        /// Zobrazení ToolTipu zajišťuje jádro.
-        /// Bázová třída GComponent zde nedělá nic.
-        /// </summary>
-        /// <param name="e"></param>
-        protected virtual void PrepareToolTip(GInteractiveChangeStateArgs e)
-        { }
         #endregion
         #region Drag - podpora pro přesunutí this headeru na jinou pozici
         /// <summary>

@@ -11,140 +11,17 @@ namespace Asol.Tools.WorkScheduler.Components
 {
     public class GPainter
     {
-        #region DrawRadiance
-        public static void DrawRadiance(Graphics graphics, Point center, Color centerColor)
-        {
-            DrawRadiance(graphics, center, null, centerColor);
-        }
-        public static void DrawRadiance(Graphics graphics, Point center, Rectangle? clipBounds, Color centerColor)
-        {
-            Rectangle bounds = center.CreateRectangleFromCenter(new Size(45, 30));
-            DrawRadiance(graphics, bounds, clipBounds, centerColor);
-        }
-        public static void DrawRadiance(Graphics graphics, Point center, Size size, Color centerColor)
-        {
-            DrawRadiance(graphics, center, size, null, centerColor);
-        }
-        public static void DrawRadiance(Graphics graphics, Point center, Size size, Rectangle? clipBounds, Color centerColor)
-        {
-            Rectangle bounds = center.CreateRectangleFromCenter(size);
-            DrawRadiance(graphics, bounds, clipBounds, centerColor);
-        }
-        public static void DrawRadiance(Graphics graphics, Rectangle bounds, Color centerColor)
-        {
-            DrawRadiance(graphics, bounds, null, centerColor);
-        }
-        public static void DrawRadiance(Graphics graphics, Rectangle bounds, Rectangle? clipBounds, Color centerColor)
-        {
-            using (System.Drawing.Drawing2D.GraphicsPath p = new System.Drawing.Drawing2D.GraphicsPath())
-            {
-                p.AddEllipse(bounds);
-                using (System.Drawing.Drawing2D.PathGradientBrush b = new System.Drawing.Drawing2D.PathGradientBrush(p))
-                {
-                    b.CenterColor = centerColor;
-                    b.CenterPoint = bounds.Center();
-                    b.SurroundColors = new Color[] { Color.Transparent };
-                    if (clipBounds.HasValue)
-                    {
-                        Region clip = graphics.Clip;
-                        graphics.SetClip(clipBounds.Value);
-                        graphics.FillEllipse(b, bounds);
-                        graphics.Clip = clip;
-                    }
-                    else
-                    {
-                        graphics.FillEllipse(b, bounds);
-                    }
-                }
-            }
-        }
-        #endregion
-        #region DrawGridHeader
+        #region DrawRectangle
         /// <summary>
-        /// Draw button base (background and border, by state)
+        /// Vyplní daný prostor danou barvou.
+        /// Používá systémový štětec, nevytváří si nový.
         /// </summary>
         /// <param name="graphics"></param>
         /// <param name="bounds"></param>
-        /// <param name="color"></param>
-        /// <param name="state"></param>
-        /// <param name="opacity"></param>
-        public static void DrawGridHeader(Graphics graphics, Rectangle bounds, RectangleSide side, Color backColor, bool draw3D, Color? lineColor, GInteractiveState state, Orientation orientation, Point? relativePoint, Int32? opacity)
+        /// <param name="backColor"></param>
+        public static void DrawRectangle(Graphics graphics, Rectangle bounds, Color backColor)
         {
-            _DrawGridHeader(graphics, bounds, side, backColor, draw3D, lineColor, state, orientation, relativePoint, opacity);
-        }
-        /// <summary>
-        /// Draw button base (background and border, by state)
-        /// </summary>
-        /// <param name="graphics"></param>
-        /// <param name="bounds"></param>
-        /// <param name="color"></param>
-        /// <param name="state"></param>
-        /// <param name="opacity"></param>
-        private static void _DrawGridHeader(Graphics graphics, Rectangle bounds, RectangleSide side, Color backColor, bool draw3D, Color? lineColor, GInteractiveState state, Orientation orientation, Point? relativePoint, Int32? opacity)
-        {
-            if (bounds.Width <= 0 || bounds.Height <= 0) return;
-
-            // Pozadí:
-            using (Brush brush = Skin.CreateBrushForBackground(bounds, orientation, state, true, backColor, opacity, relativePoint))
-            {
-                graphics.FillRectangle(brush, bounds);
-            }
-
-            // 3D efekt na okrajích:
-            draw3D = false;
-            if (draw3D)
-            {   // 3D okraje NEJSOU kresleny na poslední pixel vpravo a dole (ten je vyhrazen pro linku barvy lineColor), 
-                // 3D okraje jsou o 1 pixel před tím:
-                Rectangle boundsBorder = (lineColor.HasValue ? bounds.Enlarge(0, 0, -1, -1) : bounds);
-                RectangleSide borderSides = _GetHeaderBorderSides(side);
-                float? effect3D = _GetHeadersEffect3D(state);
-                DrawBorder(graphics, boundsBorder, borderSides, null, backColor, effect3D);
-            }
-
-            // Linky vpravo a dole:
-            if (lineColor.HasValue)
-            {
-                DrawBorder(graphics, bounds, RectangleSide.Right | RectangleSide.Bottom, null, null, lineColor, lineColor, null);
-            }
-        }
-        /// <summary>
-        /// Metoda vrátí souhrn stran, na kterých se má vykreslit Border, při vykreslování Headeru na dané straně objektu.
-        /// Tedy: pokud headerSide == Top, pak se Border kreslí na stranách Left, Bottom, Right.
-        /// Pokud headerSide == Left, pak se Border kreslí na stranách Top, Right, Bottom. Atd.
-        /// </summary>
-        /// <param name="headerSide"></param>
-        /// <returns></returns>
-        private static RectangleSide _GetHeaderBorderSides(RectangleSide headerSide)
-        {
-            switch (headerSide)
-            {
-                case RectangleSide.Top: return RectangleSide.Left | RectangleSide.Bottom | RectangleSide.Right;
-                case RectangleSide.Left: return RectangleSide.Top | RectangleSide.Right | RectangleSide.Bottom;
-                case RectangleSide.Bottom: return RectangleSide.Left | RectangleSide.Top | RectangleSide.Right;
-                case RectangleSide.Right: return RectangleSide.Top | RectangleSide.Left | RectangleSide.Bottom;
-                case RectangleSide.None: return RectangleSide.None;
-            }
-            return RectangleSide.All;
-        }
-        /// <summary>
-        /// Metoda vrátí hodnotu effect3D pro konkrétní interaktivní stav
-        /// </summary>
-        /// <param name="state"></param>
-        /// <returns></returns>
-        private static float? _GetHeadersEffect3D(GInteractiveState state)
-        {
-            switch (state)
-            {
-                case GInteractiveState.Disabled: return 0f;
-                case GInteractiveState.None: return 0.25f;
-                case GInteractiveState.Enabled: return 0.25f;
-                case GInteractiveState.MouseOver: return 0.50f;
-                case GInteractiveState.LeftDown:
-                case GInteractiveState.RightDown: return -0.35f;
-                case GInteractiveState.LeftDrag:
-                case GInteractiveState.RightDrag: return -0.15f;
-            }
-            return null;
+            graphics.FillRectangle(Skin.Brush(backColor), bounds);
         }
         #endregion
         #region DrawBorder
@@ -510,7 +387,22 @@ namespace Asol.Tools.WorkScheduler.Components
         public static void DrawString(Graphics graphics, Rectangle bounds, string text, Color color, FontInfo fontInfo, ContentAlignment alignment)
         {
             Rectangle textArea;
-            _DrawString(graphics, bounds, text, null, color, fontInfo, alignment, null, out textArea);
+            _DrawString(graphics, bounds, text, null, color, fontInfo, alignment, MatrixTransformationType.NoTransform, null, out textArea);
+        }
+        /// <summary>
+        /// Draw a text to specified area
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="text"></param>
+        /// <param name="color"></param>
+        /// <param name="fontInfo"></param>
+        /// <param name="alignment"></param>
+        /// <param name="transformation"></param>
+        public static void DrawString(Graphics graphics, Rectangle bounds, string text, Color color, FontInfo fontInfo, ContentAlignment alignment, MatrixTransformationType transformation)
+        {
+            Rectangle textArea;
+            _DrawString(graphics, bounds, text, null, color, fontInfo, alignment, transformation, null, out textArea);
         }
         /// <summary>
         /// Draw a text to specified area
@@ -524,7 +416,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public static void DrawString(Graphics graphics, Rectangle bounds, string text, Color color, FontInfo fontInfo, ContentAlignment alignment, Action<Rectangle> drawBackground)
         {
             Rectangle textArea;
-            _DrawString(graphics, bounds, text, null, color, fontInfo, alignment, drawBackground, out textArea);
+            _DrawString(graphics, bounds, text, null, color, fontInfo, alignment, MatrixTransformationType.NoTransform, drawBackground, out textArea);
         }
         /// <summary>
         /// Draw a text to specified area
@@ -538,7 +430,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public static void DrawString(Graphics graphics, Rectangle bounds, string text, Brush brush, FontInfo fontInfo, ContentAlignment alignment)
         {
             Rectangle textArea;
-            _DrawString(graphics, bounds, text, brush, null, fontInfo, alignment, null, out textArea);
+            _DrawString(graphics, bounds, text, brush, null, fontInfo, alignment, MatrixTransformationType.NoTransform, null, out textArea);
         }
         /// <summary>
         /// Draw a text to specified area
@@ -552,7 +444,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public static void DrawString(Graphics graphics, Rectangle bounds, string text, Brush brush, FontInfo fontInfo, ContentAlignment alignment, Action<Rectangle> drawBackground)
         {
             Rectangle textArea;
-            _DrawString(graphics, bounds, text, brush, null, fontInfo, alignment, drawBackground, out textArea);
+            _DrawString(graphics, bounds, text, brush, null, fontInfo, alignment, MatrixTransformationType.NoTransform, drawBackground, out textArea);
         }
         /// <summary>
         /// Draw a text to specified area
@@ -565,7 +457,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="alignment"></param>
         public static void DrawString(Graphics graphics, Rectangle bounds, string text, Color color, FontInfo fontInfo, ContentAlignment alignment, out Rectangle textArea)
         {
-            _DrawString(graphics, bounds, text, null, color, fontInfo, alignment, null, out textArea);
+            _DrawString(graphics, bounds, text, null, color, fontInfo, alignment, MatrixTransformationType.NoTransform, null, out textArea);
         }
         /// <summary>
         /// Draw a text to specified area
@@ -578,7 +470,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="alignment"></param>
         public static void DrawString(Graphics graphics, Rectangle bounds, string text, Color color, FontInfo fontInfo, ContentAlignment alignment, Action<Rectangle> drawBackground, out Rectangle textArea)
         {
-            _DrawString(graphics, bounds, text, null, color, fontInfo, alignment, drawBackground, out textArea);
+            _DrawString(graphics, bounds, text, null, color, fontInfo, alignment, MatrixTransformationType.NoTransform, drawBackground, out textArea);
         }
         /// <summary>
         /// Draw a text to specified area
@@ -591,7 +483,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="alignment"></param>
         public static void DrawString(Graphics graphics, Rectangle bounds, string text, Brush brush, FontInfo fontInfo, ContentAlignment alignment, out Rectangle textArea)
         {
-            _DrawString(graphics, bounds, text, brush, null, fontInfo, alignment, null, out textArea);
+            _DrawString(graphics, bounds, text, brush, null, fontInfo, alignment, MatrixTransformationType.NoTransform, null, out textArea);
         }
         /// <summary>
         /// Draw a text to specified area
@@ -604,7 +496,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="alignment"></param>
         public static void DrawString(Graphics graphics, Rectangle bounds, string text, Brush brush, FontInfo fontInfo, ContentAlignment alignment, Action<Rectangle> drawBackground, out Rectangle textArea)
         {
-             _DrawString(graphics, bounds, text, brush, null, fontInfo, alignment, drawBackground, out textArea);
+             _DrawString(graphics, bounds, text, brush, null, fontInfo, alignment, MatrixTransformationType.NoTransform, drawBackground, out textArea);
         }
         /// <summary>
         /// Draw a text to specified area
@@ -618,32 +510,46 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="alignment"></param>
         /// <param name="drawBackground"></param>
         /// <param name="textArea"></param>
-        private static void _DrawString(Graphics graphics, Rectangle bounds, string text, Brush brush, Color? color, FontInfo fontInfo, ContentAlignment alignment, Action<Rectangle> drawBackground, out Rectangle textArea)
+        private static void _DrawString(Graphics graphics, Rectangle bounds, string text, Brush brush, Color? color, FontInfo fontInfo, ContentAlignment alignment, MatrixTransformationType transformation, Action<Rectangle> drawBackground, out Rectangle textArea)
         {
             textArea = new Rectangle(bounds.X, bounds.Y, 0, 0);
             if (String.IsNullOrEmpty(text)) return;
             if (bounds.Width <= 0 || bounds.Height <= 0) return;
 
-            StringFormat sf = new StringFormat(StringFormatFlags.LineLimit);
+            bool isVertical = (transformation == MatrixTransformationType.Rotate90 || transformation == MatrixTransformationType.Rotate270);
+            int boundsLength = (isVertical ? bounds.Height : bounds.Width);
+            if (isVertical)
+            { }
+            StringFormat sFormat = new StringFormat(StringFormatFlags.LineLimit);
 
             using (GraphicsUseText(graphics))
             {
                 Font font = fontInfo.Font;
-                SizeF textSize = graphics.MeasureString(text, font, bounds.Width, sf);
+                SizeF textSize = graphics.MeasureString(text, font, boundsLength, sFormat);
+                if (isVertical) textSize = new SizeF(textSize.Height, textSize.Width);
                 textArea = textSize.AlignTo(bounds, alignment, true);
                 if (drawBackground != null)
                     drawBackground(textArea);
 
+                var matrixOld = graphics.Transform;
+                graphics.Transform = GetMatrix(transformation, textArea);
                 if (brush != null)
-                    graphics.DrawString(text, font, brush, textArea, sf);
+                    graphics.DrawString(text, font, brush, textArea, sFormat);
                 else if (color.HasValue)
-                    graphics.DrawString(text, font, Skin.Brush(color.Value), textArea, sf);
+                    graphics.DrawString(text, font, Skin.Brush(color.Value), textArea, sFormat);
                 else
-                    graphics.DrawString(text, font, SystemBrushes.ControlText, textArea, sf);
+                    graphics.DrawString(text, font, SystemBrushes.ControlText, textArea, sFormat);
+                graphics.Transform = matrixOld;
             }
         }
         #endregion
         #region MeasureString
+        /// <summary>
+        /// Metoda vrátí rozměry daného textu v daném fontu, rozměr odhadne jen podle vlastností fontu.
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="fontInfo"></param>
+        /// <returns></returns>
         public static Size MeasureString(string text, FontInfo fontInfo)
         {
             if (String.IsNullOrEmpty(text)) return new Size(0, 0);
@@ -653,15 +559,159 @@ namespace Asol.Tools.WorkScheduler.Components
             float width = font.Size * (float)text.Length + 6f;
             return new Size((int)width, height);
         }
-
+        /// <summary>
+        /// Metoda změří daný text v daném fontu a v dané grafice.
+        /// Pokud je grafika null, pak text změří jen odhadem.
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="text"></param>
+        /// <param name="fontInfo"></param>
+        /// <returns></returns>
         public static Size MeasureString(Graphics graphics, string text, FontInfo fontInfo)
         {
             if (String.IsNullOrEmpty(text)) return new Size(0, 0);
+            if (graphics == null) return MeasureString(text, fontInfo);
 
             Font font = fontInfo.Font;
             SizeF sizeF = graphics.MeasureString(text, font);
             Size size = sizeF.Enlarge(1f, 3f).ToSize();
             return size;
+        }
+        #endregion
+        #region DrawRadiance
+        public static void DrawRadiance(Graphics graphics, Point center, Color centerColor)
+        {
+            DrawRadiance(graphics, center, null, centerColor);
+        }
+        public static void DrawRadiance(Graphics graphics, Point center, Rectangle? clipBounds, Color centerColor)
+        {
+            Rectangle bounds = center.CreateRectangleFromCenter(new Size(45, 30));
+            DrawRadiance(graphics, bounds, clipBounds, centerColor);
+        }
+        public static void DrawRadiance(Graphics graphics, Point center, Size size, Color centerColor)
+        {
+            DrawRadiance(graphics, center, size, null, centerColor);
+        }
+        public static void DrawRadiance(Graphics graphics, Point center, Size size, Rectangle? clipBounds, Color centerColor)
+        {
+            Rectangle bounds = center.CreateRectangleFromCenter(size);
+            DrawRadiance(graphics, bounds, clipBounds, centerColor);
+        }
+        public static void DrawRadiance(Graphics graphics, Rectangle bounds, Color centerColor)
+        {
+            DrawRadiance(graphics, bounds, null, centerColor);
+        }
+        public static void DrawRadiance(Graphics graphics, Rectangle bounds, Rectangle? clipBounds, Color centerColor)
+        {
+            using (System.Drawing.Drawing2D.GraphicsPath p = new System.Drawing.Drawing2D.GraphicsPath())
+            {
+                p.AddEllipse(bounds);
+                using (System.Drawing.Drawing2D.PathGradientBrush b = new System.Drawing.Drawing2D.PathGradientBrush(p))
+                {
+                    b.CenterColor = centerColor;
+                    b.CenterPoint = bounds.Center();
+                    b.SurroundColors = new Color[] { Color.Transparent };
+                    if (clipBounds.HasValue)
+                    {
+                        Region clip = graphics.Clip;
+                        graphics.SetClip(clipBounds.Value);
+                        graphics.FillEllipse(b, bounds);
+                        graphics.Clip = clip;
+                    }
+                    else
+                    {
+                        graphics.FillEllipse(b, bounds);
+                    }
+                }
+            }
+        }
+        #endregion
+        #region DrawGridHeader
+        /// <summary>
+        /// Draw button base (background and border, by state)
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="color"></param>
+        /// <param name="state"></param>
+        /// <param name="opacity"></param>
+        public static void DrawGridHeader(Graphics graphics, Rectangle bounds, RectangleSide side, Color backColor, bool draw3D, Color? lineColor, GInteractiveState state, Orientation orientation, Point? relativePoint, Int32? opacity)
+        {
+            _DrawGridHeader(graphics, bounds, side, backColor, draw3D, lineColor, state, orientation, relativePoint, opacity);
+        }
+        /// <summary>
+        /// Draw button base (background and border, by state)
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="color"></param>
+        /// <param name="state"></param>
+        /// <param name="opacity"></param>
+        private static void _DrawGridHeader(Graphics graphics, Rectangle bounds, RectangleSide side, Color backColor, bool draw3D, Color? lineColor, GInteractiveState state, Orientation orientation, Point? relativePoint, Int32? opacity)
+        {
+            if (bounds.Width <= 0 || bounds.Height <= 0) return;
+
+            // Pozadí:
+            using (Brush brush = Skin.CreateBrushForBackground(bounds, orientation, state, true, backColor, opacity, relativePoint))
+            {
+                graphics.FillRectangle(brush, bounds);
+            }
+
+            // 3D efekt na okrajích:
+            draw3D = false;
+            if (draw3D)
+            {   // 3D okraje NEJSOU kresleny na poslední pixel vpravo a dole (ten je vyhrazen pro linku barvy lineColor), 
+                // 3D okraje jsou o 1 pixel před tím:
+                Rectangle boundsBorder = (lineColor.HasValue ? bounds.Enlarge(0, 0, -1, -1) : bounds);
+                RectangleSide borderSides = _GetHeaderBorderSides(side);
+                float? effect3D = _GetHeadersEffect3D(state);
+                DrawBorder(graphics, boundsBorder, borderSides, null, backColor, effect3D);
+            }
+
+            // Linky vpravo a dole:
+            if (lineColor.HasValue)
+            {
+                DrawBorder(graphics, bounds, RectangleSide.Right | RectangleSide.Bottom, null, null, lineColor, lineColor, null);
+            }
+        }
+        /// <summary>
+        /// Metoda vrátí souhrn stran, na kterých se má vykreslit Border, při vykreslování Headeru na dané straně objektu.
+        /// Tedy: pokud headerSide == Top, pak se Border kreslí na stranách Left, Bottom, Right.
+        /// Pokud headerSide == Left, pak se Border kreslí na stranách Top, Right, Bottom. Atd.
+        /// </summary>
+        /// <param name="headerSide"></param>
+        /// <returns></returns>
+        private static RectangleSide _GetHeaderBorderSides(RectangleSide headerSide)
+        {
+            switch (headerSide)
+            {
+                case RectangleSide.Top: return RectangleSide.Left | RectangleSide.Bottom | RectangleSide.Right;
+                case RectangleSide.Left: return RectangleSide.Top | RectangleSide.Right | RectangleSide.Bottom;
+                case RectangleSide.Bottom: return RectangleSide.Left | RectangleSide.Top | RectangleSide.Right;
+                case RectangleSide.Right: return RectangleSide.Top | RectangleSide.Left | RectangleSide.Bottom;
+                case RectangleSide.None: return RectangleSide.None;
+            }
+            return RectangleSide.All;
+        }
+        /// <summary>
+        /// Metoda vrátí hodnotu effect3D pro konkrétní interaktivní stav
+        /// </summary>
+        /// <param name="state"></param>
+        /// <returns></returns>
+        private static float? _GetHeadersEffect3D(GInteractiveState state)
+        {
+            switch (state)
+            {
+                case GInteractiveState.Disabled: return 0f;
+                case GInteractiveState.None: return 0.25f;
+                case GInteractiveState.Enabled: return 0.25f;
+                case GInteractiveState.MouseOver: return 0.50f;
+                case GInteractiveState.LeftDown:
+                case GInteractiveState.RightDown: return -0.35f;
+                case GInteractiveState.LeftDrag:
+                case GInteractiveState.RightDrag: return -0.15f;
+            }
+            return null;
         }
         #endregion
         #region DrawWindow
@@ -1047,6 +1097,8 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             GInteractiveState itemState = (isEnabled ? GInteractiveState.Enabled : GInteractiveState.Disabled);
             graphics.FillRectangle(Skin.Brush(Skin.ScrollBar.BackColorArea), bounds);
+            if (userDataDraw != null)
+                userDataDraw(graphics, bounds);
             // GPainter.DrawAreaBase(graphics, bounds, Skin.ScrollBar.BackColorArea, itemState, orientation, null, null);
         }
         /// <summary>
@@ -1096,6 +1148,142 @@ namespace Asol.Tools.WorkScheduler.Components
                     graphics.DrawPath(Skin.Pen(foreColor), imagePath);
                 }
             }
+        }
+        #endregion
+        #region DrawTabHeader
+        public static void DrawTabHeaderItem(Graphics graphics, Rectangle bounds, ITabHeaderItemPaintData tabHeader)
+        {
+            Rectangle? backArea, lineArea, lightArea, darkArea;
+            _DrawTabHeaderItemGetArea(bounds, tabHeader, out backArea, out lineArea, out lightArea, out darkArea);
+
+            _DrawTabHeaderItemBackground(graphics, bounds, tabHeader, backArea, lineArea, lightArea, darkArea);
+            _DrawTabHeaderItemImage(graphics, bounds, tabHeader, backArea, lineArea, lightArea, darkArea);
+            _DrawTabHeaderItemText(graphics, bounds, tabHeader, backArea, lineArea, lightArea, darkArea);
+            _DrawTabHeaderItemCloseButton(graphics, bounds, tabHeader, backArea, lineArea, lightArea, darkArea);
+            _DrawTabHeaderItemLines(graphics, bounds, tabHeader, backArea, lineArea, lightArea, darkArea);
+        }
+        /// <summary>
+        /// Určí souřadnice jednotlivých prostor (pozadí a linky)
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <param name="tabHeader"></param>
+        /// <param name="backArea"></param>
+        /// <param name="lineArea"></param>
+        /// <param name="lightArea"></param>
+        /// <param name="darkArea"></param>
+        private static void _DrawTabHeaderItemGetArea(Rectangle bounds, ITabHeaderItemPaintData tabHeader, out Rectangle? backArea, out Rectangle? lineArea, out Rectangle? lightArea, out Rectangle? darkArea)
+        {
+            backArea = null;
+            lineArea = null;
+            lightArea = null;
+            darkArea = null;
+
+            int x = bounds.X;
+            int y = bounds.Y;
+            int w = bounds.Width;
+            int h = bounds.Height;
+
+            bool isActive = tabHeader.IsActive;                      // Aktivní záhlaví: má linku, prostor backArea jde až dolů, ale nemá light a dark area
+            bool isHot = tabHeader.InteractiveState.IsMouseActive(); // Hot záhlaví: má linku, prostor backArea nejde až dolů, má light a dark area
+
+            int al = (isActive || isHot ? 2 : 0);          // Šířka horní linky (kreslí se u záhlaví, které je aktivní nebo hot)
+            int dl = (isActive ? 0 : 2);                   // Šířka dolní linky (nekreslí se u záhlaví, které je aktivní)
+            int bl = (isActive ? 0 : 1);                   // Šířka bočních linek (lightArea a darkArea) (nekreslí se u záhlaví, které je aktivní)
+
+            switch (tabHeader.Position)
+            {
+                case RectangleSide.Top:
+                    backArea = new Rectangle(x + bl, y + al, w - bl - bl, h - al - dl);  // Plocha pozadí, bez Aktivní linky, bez Dolní linky, bez Dark a Light linky
+                    lineArea = new Rectangle(x + bl, y, w - bl - bl, al);                // Plocha aktivní linky
+                    lightArea = new Rectangle(x, y + al, bl, h - al - dl);               // Plocha světlé boční linky
+                    darkArea = new Rectangle(x + w - dl, y + al, bl, h - al - dl);       // Plocha tmavé boční linky
+                    break;
+                case RectangleSide.Bottom:
+                    backArea = new Rectangle(x + bl, y + dl, w - bl - bl, h - al - dl);
+                    lineArea = new Rectangle(x + bl, y + h - al, w - bl - bl, al);
+                    lightArea = new Rectangle(x, y + dl, bl, h - al - dl);
+                    darkArea = new Rectangle(x + w - dl, y + dl, bl, h - al - dl);
+                    break;
+                case RectangleSide.Left:
+                    backArea = new Rectangle(x + al, y + bl, w - al - dl, h - bl - bl);
+                    lineArea = new Rectangle(x, y + bl, al, h - bl - bl);
+                    lightArea = new Rectangle(x + al, y, w - al - dl, bl);
+                    darkArea = new Rectangle(x + al, y + h - bl, w - al - dl, bl);
+                    break;
+                case RectangleSide.Right:
+                    backArea = new Rectangle(x + dl, y + bl, w - al - dl, h - bl - bl);
+                    lineArea = new Rectangle(x + w - al, y + bl, al, h - bl - bl);
+                    lightArea = new Rectangle(x + dl, y, w - al - dl, bl);
+                    darkArea = new Rectangle(x + dl, y + h - bl, w - al - dl, bl);
+                    break;
+            }
+        }
+        private static void _DrawTabHeaderItemBackground(Graphics graphics, Rectangle bounds, ITabHeaderItemPaintData tabHeader,
+            Rectangle? backArea, Rectangle? lineArea, Rectangle? lightArea, Rectangle? darkArea)
+        {
+            bool isActive = tabHeader.IsActive;
+            bool hasBackColor = tabHeader.BackColor.HasValue;
+
+            Color? backColor = (isActive ? 
+                  (hasBackColor ? tabHeader.BackColor.Value : Skin.TabHeader.BackColorActive) : 
+                  (hasBackColor ? tabHeader.BackColor.Value.Morph(Skin.TabHeader.BackColor, 0.25f) : Skin.TabHeader.BackColor));
+
+            if (backArea.HasValue && backColor.HasValue)
+                graphics.FillRectangle(Skin.Brush(backColor.Value), backArea.Value);
+        }
+        private static void _DrawTabHeaderItemImage(Graphics graphics, Rectangle bounds, ITabHeaderItemPaintData tabHeader, Rectangle? backArea, Rectangle? lineArea, Rectangle? lightArea, Rectangle? darkArea)
+        {
+            if (tabHeader.Image == null) return;
+            Rectangle imageBounds = tabHeader.ImageBounds.Add(bounds.Location);
+            graphics.DrawImage(tabHeader.Image, imageBounds);
+        }
+        private static void _DrawTabHeaderItemText(Graphics graphics, Rectangle bounds, ITabHeaderItemPaintData tabHeader, Rectangle? backArea, Rectangle? lineArea, Rectangle? lightArea, Rectangle? darkArea)
+        {
+            Rectangle textBounds = tabHeader.TextBounds.Add(bounds.Location);
+            bool isActive = tabHeader.IsActive;
+            Color textColor = (isActive ? Skin.TabHeader.TextColorActive : Skin.TabHeader.TextColor);
+            MatrixTransformationType transformation = _DrawTabHeaderGetTransformation(tabHeader.Position);
+            GPainter.DrawString(graphics, textBounds, tabHeader.Text, textColor, tabHeader.Font, ContentAlignment.MiddleCenter, transformation);
+        }
+        private static void _DrawTabHeaderItemCloseButton(Graphics graphics, Rectangle bounds, ITabHeaderItemPaintData tabHeader, Rectangle? backArea, Rectangle? lineArea, Rectangle? lightArea, Rectangle? darkArea)
+        { }
+        private static void _DrawTabHeaderItemLines(Graphics graphics, Rectangle bounds, ITabHeaderItemPaintData tabHeader, Rectangle? backArea, Rectangle? lineArea, Rectangle? lightArea, Rectangle? darkArea)
+        {
+            bool isActive = tabHeader.IsActive;
+            bool isHot = tabHeader.InteractiveState.IsMouseActive();
+            bool hasBackColor = tabHeader.BackColor.HasValue;
+
+            Color? backColor = (isActive ?
+                  (hasBackColor ? tabHeader.BackColor.Value : Skin.TabHeader.BackColorActive) :
+                  (hasBackColor ? tabHeader.BackColor.Value.Morph(Skin.TabHeader.BackColor, 0.25f) : Skin.TabHeader.BackColor));
+
+            Color? lineColor = (isActive ? (Color?)Skin.TabHeader.LineColorActive : (isHot ? (Color?)Skin.TabHeader.LineColorHot : (Color?)null));
+            Color? lightColor = (isActive ? (Color?)null : backColor.Value.Morph(Skin.Modifiers.Effect3DLight));  // Skin.TabHeader.BorderColor.Morph(Skin.Modifiers.Effect3DLight));
+            Color? darkColor = (isActive ? (Color?)null : backColor.Value.Morph(Skin.Modifiers.Effect3DDark));    // Skin.TabHeader.BorderColor.Morph(Skin.Modifiers.Effect3DDark));
+
+            if (lineArea.HasValue && lineColor.HasValue)
+                graphics.FillRectangle(Skin.Brush(lineColor.Value), lineArea.Value);
+            if (lightArea.HasValue && lightColor.HasValue)
+                graphics.FillRectangle(Skin.Brush(lightColor.Value), lightArea.Value);
+            if (darkArea.HasValue && darkColor.HasValue)
+                graphics.FillRectangle(Skin.Brush(darkColor.Value), darkArea.Value);
+        }
+        /// <summary>
+        /// Vrátí režim transformace prostoru pro zobrazení textu záhlaví TabHeader,
+        /// pro danou hodnotu RectangleSide = <see cref="ITabHeaderItemPaintData.Position"/>
+        /// </summary>
+        /// <param name="side"></param>
+        /// <returns></returns>
+        private static MatrixTransformationType _DrawTabHeaderGetTransformation(RectangleSide side)
+        {
+            switch (side)
+            {
+                case RectangleSide.Top: return MatrixTransformationType.NoTransform;
+                case RectangleSide.Right: return MatrixTransformationType.Rotate90;
+                case RectangleSide.Bottom: return MatrixTransformationType.NoTransform;
+                case RectangleSide.Left: return MatrixTransformationType.Rotate270;
+            }
+            return MatrixTransformationType.NoTransform;
         }
         #endregion
         #region DrawShadow
@@ -1200,6 +1388,187 @@ namespace Asol.Tools.WorkScheduler.Components
                     graphics.FillPie(b, brushBounds, angle, 90f);
                 }
             }
+        }
+        #endregion
+        #region GetMatrix
+        /// <summary>
+        /// Vrátí Matrix pro transformaci požadovaného typu,
+        /// a to tak že střed transformace bude uprostřed daného prostoru.
+        /// </summary>
+        /// <param name="transformation">Typ transformace</param>
+        /// <param name="area">Prostor, který se má transformovat okolo svého středu</param>
+        /// <returns>Matrix, který zajistí transformaci</returns>
+        public static Matrix GetMatrix(MatrixTransformationType transformation, RectangleF area)
+        {
+            return GetMatrix(transformation, new PointF(area.X + area.Width / 2F, area.Y + area.Height / 2F));
+        }
+        /// <summary>
+        /// Vrátí Matrix pro transformaci požadovaného typu,
+        /// a to tak že střed transformace bude v daném bodě.
+        /// </summary>
+        /// <param name="transformation">Typ transformace</param>
+        /// <param name="center">Bod, okolo kterého se bude tvar transformovat</param>
+        /// <returns>Matrix, který zajistí transformaci</returns>
+        public static Matrix GetMatrix(MatrixTransformationType transformation, PointF center)
+        {
+            switch (transformation)
+            {
+                case MatrixTransformationType.Rotate90:
+                    return _GetMatrixRotate90(center);
+                case MatrixTransformationType.Rotate180:
+                    return _GetMatrixRotate180(center);
+                case MatrixTransformationType.Rotate270:
+                    return _GetMatrixRotate270(center);
+                case MatrixTransformationType.MirrorHorizontal:
+                    return _GetMatrixMirrorHorizontal(center);
+                case MatrixTransformationType.MirrorVertical:
+                    return _GetMatrixMirrorVertical(center);
+            }
+            return new Matrix(1, 0, 0, 1, 0, 0);          // void Matrix, sice pracuje, ale dané souřadnice nijak netransformuje. Takové ((1 * 1) == 1)..
+        }
+        /// <summary>
+        /// Vrátí Matrix, který provede rotaci tvaru (Path, Polygon) o 90° VE SMĚRU hodinových ručiček, 
+        /// a to tak že střed rotace bude uprostřed daného prostoru.
+        /// </summary>
+        /// <param name="area">Prostor, který se má otáčet okolo svého středu</param>
+        /// <returns>Matrix, který zajistí otáčení</returns>
+        private static Matrix _GetMatrixRotate90(RectangleF area)
+        {
+            return _GetMatrixRotate90(area.Center());
+        }
+        /// <summary>
+        /// Vrátí Matrix, který provede rotaci tvaru (Path, Polygon) o 90° VE SMĚRU hodinových ručiček, 
+        /// a to tak že střed rotace bude v daném bodě.
+        /// </summary>
+        /// <param name="center">Bod, okolo kterého se bude tvar otáčet</param>
+        /// <returns>Matrix, který zajistí otáčení</returns>
+        private static Matrix _GetMatrixRotate90(PointF center)
+        {
+            float dx = center.X + center.Y;
+            float dy = center.Y - center.X;
+            return new Matrix(0F, 1F, -1F, 0F, dx, dy);
+        }
+        /// <summary>
+        /// Vrátí Matrix, který provede rotaci tvaru (Path, Polygon) o 180°, což je stejné jako zrcadlení horizontální i vertikální, 
+        /// a to tak že střed otáčení = zrcadlení bude uprostřed daného prostoru.
+        /// </summary>
+        /// <param name="area">Prostor, který se má otáčet okolo svého středu</param>
+        /// <returns>Matrix, který zajistí zrcadlení</returns>
+        private static Matrix _GetMatrixRotate180(RectangleF area)
+        {
+            return _GetMatrixRotate180(area.Center());
+        }
+        /// <summary>
+        /// Vrátí Matrix, který provede rotaci tvaru (Path, Polygon) o 180°, což je stejné jako zrcadlení horizontální i vertikální, 
+        /// a to tak že střed otáčení = zrcadlení bude v daném bodě.
+        /// </summary>
+        /// <param name="center">Bod, okolo kterého se bude tvar otáčet</param>
+        /// <returns>Matrix, který zajistí zrcadlení</returns>
+        private static Matrix _GetMatrixRotate180(PointF center)
+        {
+            float dx = center.X + center.X;
+            float dy = center.Y + center.Y;
+            return new Matrix(-1F, 0F, 0F, -1F, dx, dy);
+        }
+        /// <summary>
+        /// Vrátí Matrix, který provede rotaci tvaru (Path, Polygon) o 90° PROTI SMĚRU hodinových ručiček, 
+        /// a to tak že střed rotace bude uprostřed daného prostoru.
+        /// </summary>
+        /// <param name="area">Prostor, který se má otáčet okolo svého středu</param>
+        /// <returns>Matrix, který zajistí otáčení</returns>
+        private static Matrix _GetMatrixRotate270(RectangleF area)
+        {
+            return _GetMatrixRotate270(area.Center());
+        }
+        /// <summary>
+        /// Vrátí Matrix, který provede rotaci tvaru (Path, Polygon) o 90° PROTI SMĚRU hodinových ručiček, 
+        /// a to tak že střed rotace bude v daném bodě.
+        /// </summary>
+        /// <param name="center">Bod, okolo kterého se bude tvar otáčet</param>
+        /// <returns>Matrix, který zajistí otáčení</returns>
+        private static Matrix _GetMatrixRotate270(PointF center)
+        {
+            float dx = center.X - center.Y;
+            float dy = center.Y + center.X;
+            return new Matrix(0F, -1F, 1F, 0F, dx, dy);
+        }
+        /// <summary>
+        /// Vrátí Matrix, který provede zrcadlení tvaru (Path, Polygon) vodorovně = zleva doprava, a zprava doleva,
+        /// a to tak že střed zrcadlení bude uprostřed daného prostoru.
+        /// </summary>
+        /// <param name="area">Prostor, který se má zrcadlit okolo svého středu</param>
+        /// <returns>Matrix, který zajistí zrcadlení</returns>
+        private static Matrix _GetMatrixMirrorHorizontal(RectangleF area)
+        {
+            return _GetMatrixMirrorHorizontal(new PointF(area.X + area.Width / 2F, area.Y + area.Height / 2F));
+        }
+        /// <summary>
+        /// Vrátí Matrix, který provede zrcadlení tvaru (Path, Polygon) vodorovně = zleva doprava, a zprava doleva,
+        /// a to tak že střed zrcadlení bude v daném bodě.
+        /// </summary>
+        /// <param name="center">Bod, okolo kterého se bude tvar zrcadlit</param>
+        /// <returns>Matrix, který zajistí zrcadlení</returns>
+        private static Matrix _GetMatrixMirrorHorizontal(PointF center)
+        {
+            float dx = center.X + center.X;
+            float dy = 0F;
+            return new Matrix(-1F, 0F, 0F, 1F, dx, dy);
+        }
+        /// <summary>
+        /// Vrátí Matrix, který provede zrcadlení tvaru (Path, Polygon) svisle = shora dolů, a sdola nahoru,
+        /// a to tak že střed zrcadlení bude uprostřed daného prostoru.
+        /// </summary>
+        /// <param name="area">Prostor, který se má zrcadlit okolo svého středu</param>
+        /// <returns>Matrix, který zajistí zrcadlení</returns>
+        private static Matrix _GetMatrixMirrorVertical(RectangleF area)
+        {
+            return _GetMatrixMirrorVertical(new PointF(area.X + area.Width / 2F, area.Y + area.Height / 2F));
+        }
+        /// <summary>
+        /// Vrátí Matrix, který provede zrcadlení tvaru (Path, Polygon) svisle = shora dolů, a sdola nahoru,
+        /// a to tak že střed zrcadlení bude v daném bodě.
+        /// </summary>
+        /// <param name="center">Bod, okolo kterého se bude tvar zrcadlit</param>
+        /// <returns>Matrix, který zajistí zrcadlení</returns>
+        private static Matrix _GetMatrixMirrorVertical(PointF center)
+        {
+            float dx = 0F;
+            float dy = center.Y + center.Y;
+            return new Matrix(1F, 0F, 0F, -1F, dx, dy);
+        }
+        /// <summary>
+        /// Transformuje prostor čtyřúhleníku s pomocí daného matrixu
+        /// </summary>
+        /// <param name="rectangle"></param>
+        /// <param name="matrix"></param>
+        /// <returns></returns>
+        public static Rectangle Transform(Rectangle rectangle, Matrix matrix)
+        {
+            // Matrix umí transformovat sady bodů, tak mu dva připravíme, přetransformujeme, a z nich vytvoříme výsledný čtyřúhelník:
+            Point[] data = new Point[] {
+                new Point(rectangle.X, rectangle.Y),
+                new Point(rectangle.Right - 1, rectangle.Bottom - 1)};   // Poznámka k bodu 2: souřadnice Right a Bottom jsou vždy ty "až za" rectanglem ! A my budeme transformovat poslední viditelné body rectanglu.
+            matrix.TransformPoints(data);                                // Přetransformujeme body
+            Rectangle result = RectangleFromTwoPoint(data[0], data[1]);  // Vytvoříme rectangle (takhle, protože nevím zda orientace bodů po transformaci je korektní)
+            result.Width = result.Width + 1;                             // Zpátky přidáme 1 bod na šířku i na výšku, ten co jsme na začátku ukradli
+            result.Height = result.Height + 1;
+            return result;
+        }
+        /// <summary>
+        /// Vrátí prostor (Rectangle), vytvořený ze dvou bodů. Vzájemná pozice dvou bodů je libovolná.
+        /// Pokud by jeden rozměr (Width, Height) byl nulový, vrací Rectangle.Empty
+        /// </summary>
+        /// <param name="a">Jeden bod</param>
+        /// <param name="b">Druhý bod</param>
+        /// <returns>Prostor daný dvěma body</returns>
+        public static Rectangle RectangleFromTwoPoint(Point a, Point b)
+        {
+            if (a.X == b.X || a.Y == b.Y) return Rectangle.Empty;           // Nulová výška / šířka => Empty
+            return Rectangle.FromLTRB(
+                (a.X < b.X ? a.X : b.X),        // Left = menší X
+                (a.Y < b.Y ? a.Y : b.Y),        // Top  = menší Y
+                (a.X > b.X ? a.X : b.X),        // Right = větší X
+                (a.Y > b.Y ? a.Y : b.Y));       // Bottom = větší Y
         }
         #endregion
         #region CreatePath
@@ -2031,8 +2400,41 @@ namespace Asol.Tools.WorkScheduler.Components
         void UserDataDraw(Graphics graphics, Rectangle bounds);
     }
     #endregion
+    #region interface ITabHeaderPaintData : Interface pro vykreslení komplexní struktury TabHeader
+    /// <summary>
+    /// Interface pro vykreslení komplexní struktury TabHeader
+    /// </summary>
+    public interface ITabHeaderItemPaintData
+    {
+        RectangleSide Position { get; }
+        bool IsEnabled { get; }
+        Color? BackColor { get; }
+        bool IsActive { get; }
+        GInteractiveState InteractiveState { get; }
+        FontInfo Font { get; }
+        Image Image { get; }
+        Rectangle ImageBounds { get; }
+        string Text { get; }
+        Rectangle TextBounds { get; }
+        bool CloseButtonVisible { get; }
+        Rectangle CloseButtonBounds { get; }
+        void UserDataDraw(Graphics graphics, Rectangle bounds);
+    }
+    #endregion
     #region Enums
-    public enum GraphicSetting { None, Text, Smooth, Sharp }
+    /// <summary>
+    /// Konfigurace grafiky pro různé vykreslované motivy
+    /// </summary>
+    public enum GraphicSetting
+    {
+        None,
+        Text,
+        Smooth,
+        Sharp
+    }
+    /// <summary>
+    /// Relativní pozice dvou obdélníků
+    /// </summary>
     [Flags]
     public enum RelativePosition 
     { 
@@ -2055,6 +2457,37 @@ namespace Asol.Tools.WorkScheduler.Components
         AllBottom = BottomRight | Bottom | BottomLeft,
         AllLeft = LeftBottom | Left | LeftTop
     }
-    public enum LinearShapeType { None, LeftArrow, UpArrow, RightArrow, DownArrow, HorizontalLines, VerticalLines }
+    /// <summary>
+    /// Tvary, které generuje metoda <see cref="GPainter.CreatePathLinearShape(LinearShapeType, Rectangle, int)"/>
+    /// </summary>
+    public enum LinearShapeType
+    {
+        None,
+        LeftArrow,
+        UpArrow,
+        RightArrow,
+        DownArrow,
+        HorizontalLines,
+        VerticalLines
+    }
+    /// <summary>
+    /// Druhy transformací, pro které lze vygenerovat matrix v metodě GetMatrix(MatrixBasicTransformType).
+    /// Udává jeden z několika základních druhů transformací.
+    /// </summary>
+    public enum MatrixTransformationType
+    {
+        /// <summary>Žádná transformace</summary>
+        NoTransform = 0,
+        /// <summary>Otočení o 90° = o 90° ve směru hodinových ručiček</summary>
+        Rotate90,
+        /// <summary>Otočení o 180° = stejné jako dvojité zrcadlení</summary>
+        Rotate180,
+        /// <summary>Otočení o 270° = o 90° proti směru hodinových ručiček</summary>
+        Rotate270,
+        /// <summary>Zrcadlení horizontální = zprava doleva a zleva doprava</summary>
+        MirrorHorizontal,
+        /// <summary>Zrcadlení vertikální = shora dolů, a sdola nahoru</summary>
+        MirrorVertical
+    }
     #endregion
 }

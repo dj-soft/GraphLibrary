@@ -13,7 +13,7 @@ namespace Asol.Tools.WorkScheduler.Components
     /// <summary>
     /// Abstract ancestor for interactive item, which contain collection of IInteractiveItem
     /// </summary>
-    public class InteractiveContainer : InteractiveObject, /*IInteractiveContainer, */ IInteractiveItem
+    public class InteractiveContainer : InteractiveObject, IInteractiveItem, IInteractiveParent
     {
         #region Constructor
         /// <summary>
@@ -147,8 +147,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         protected override void Draw(GInteractiveDrawArgs e)
         {
-            base.Draw(e);
             this.PaintBackground(e);
+            base.Draw(e);
         }
         protected virtual void PaintBackground(GInteractiveDrawArgs e)
         {

@@ -11,21 +11,44 @@ namespace Asol.Tools.WorkScheduler.Components
 {
     #region class InteractiveObject : abstract ancestor for all common interactive items
     /// <summary>
-    /// InteractiveObject : abstract ancestor for all common interactive items
-    /// (optionally with SubItems = any number of small areas, typically control points)
+    /// InteractiveObject : abstraktní předek všech běžně používaných grafických prvků.
+    /// Může mít své Child items <see cref="Chil"/>.
     /// </summary>
-    public abstract class InteractiveObject : IInteractiveItem
+    public abstract class InteractiveObject : IInteractiveItem, IInteractiveParent
     {
         #region Public properties
         /// <summary>
-        /// Host of this control, which is GrandParent of all items.
+        /// Jednoznačné ID
         /// </summary>
-        public GInteractiveControl Host { get { return (this._Host != null ? this._Host : (this.Parent != null ? this.Parent.Host : null)); } set { this._Host = value; } } private GInteractiveControl _Host;
+        public UInt32 Id { get { return this._Id; } }
         /// <summary>
-        /// Parent of this item (its host). Can be null.
-        /// Parent is typically an IInteractiveContainer.
+        /// Grafický prvek GInteractiveControl, který je hostitelem tohoto prvku nebo jeho Parenta.
+        /// Může být null, pokud prvek this ještě není nikam přidán.
         /// </summary>
-        public IInteractiveItem Parent { get; protected set; }
+        protected GInteractiveControl Host
+        {
+            get
+            {
+                IInteractiveParent item = this;
+                for (int t = 0; t < 200; t++)
+                {
+                    if (item is GInteractiveControl) return item as GInteractiveControl;
+                    if (item.Parent == null) return null;
+                    item = item.Parent;
+                }
+                return null;
+            }
+            // set
+            // {
+            //     this._Host = value;
+            // }
+        }
+        /// <summary>
+        /// Parent tohoto objektu. Parentem je buď jiný prvek IInteractiveItem (jako Container), anebo přímo GInteractiveControl.
+        /// Může být null, v době kdy prvek ještě není přidán do parent containeru.
+        /// </summary>
+        protected IInteractiveParent Parent { get; set; }
+        protected bool HasParent { get { return (this.Parent != null); } }
         /// <summary>
         /// An array of sub-items in this item
         /// </summary>
@@ -114,8 +137,8 @@ namespace Asol.Tools.WorkScheduler.Components
         public virtual void Refresh()
         {
             this.Repaint();
-            if (this.Host != null)
-                this.Host.Refresh();
+            GInteractiveControl host = this.Host;
+            if (host != null) host.Refresh();
         }
         /// <summary>
         /// Interactive style
@@ -331,6 +354,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected virtual GInteractiveDrawLayer RepaintToLayers { get; set; }
         /// <summary>
+        /// Zajistí, že this prvek bude standardně vykreslen včetně všech svých <see cref="Childs"/>.
+        /// </summary>
+        /// <param name="item"></param>
+        protected void Repaint()
+        {
+            this.RepaintToLayers = this.StandardDrawToLayer;
+        }
+        /// <summary>
         /// Current (new) state of item (after this event, not before it).
         /// </summary>
         protected GInteractiveState CurrentState { get { return (this.IsEnabled ? this._CurrentState : GInteractiveState.Disabled); } set { this._CurrentState = value; } } private GInteractiveState _CurrentState;
@@ -391,6 +422,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 case GInteractiveChangeState.MouseEnter:
                     this.RepaintToLayers = GInteractiveDrawLayer.Standard;
                     this.AfterStateChangedMouseEnter(e);
+                    this.PrepareToolTip(e);
                     break;
                 case GInteractiveChangeState.LeftDown:
                     this.RepaintToLayers = GInteractiveDrawLayer.Standard;
@@ -447,6 +479,15 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="e"></param>
         protected virtual void AfterStateChangedLeftClick(GInteractiveChangeStateArgs e)
+        { }
+        /// <summary>
+        /// Metoda je volána v události MouseEnter, a jejím úkolem je připravit data pro ToolTip.
+        /// Metoda je volána poté, kdy byla volána metoda <see cref="AfterStateChangedMouseEnter"/>.
+        /// Zobrazení ToolTipu zajišťuje jádro.
+        /// Bázová třída InteractiveObject zde nedělá nic.
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void PrepareToolTip(GInteractiveChangeStateArgs e)
         { }
         /// <summary>
         /// this method is called on each drag action
@@ -619,18 +660,16 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected InteractiveProperties Is { get { if (this._Is == null) this._Is = new InteractiveProperties(); return this._Is; } } private InteractiveProperties _Is;
         #endregion
-        #region IInteractiveItem members
-        UInt32 IInteractiveItem.Id { get { return this.Id; } }
-        GInteractiveControl IInteractiveItem.Host { get { return this.Host; } set { this.Host = value; } }
-        IInteractiveItem IInteractiveItem.Parent { get { return this.Parent; } set { this.Parent = value; } }
+        #region IInteractiveItem + IInteractiveParent members
+        // UInt32 IInteractiveItem.Id { get { return this._Id; } }
+        // GInteractiveControl IInteractiveItem.Host { get { return this.Host; } set { this.Host = value; } }
+        // IInteractiveParent IInteractiveItem.Parent { get { return this.Parent; } set { this.Parent = value; } }
         IEnumerable<IInteractiveItem> IInteractiveItem.Childs { get { return this.Childs; } }
         Rectangle IInteractiveItem.Bounds { get { return this.Bounds; } set { this.Bounds = value; } }
         Padding? IInteractiveItem.ActivePadding { get { return this.ActivePadding; } set { this.ActivePadding = value; } }
         Rectangle? IInteractiveItem.AbsoluteInteractiveBounds { get { return this.AbsoluteInteractiveBounds; } set { this.AbsoluteInteractiveBounds = value; } }
-        Rectangle IInteractiveItem.BoundsClient { get { return this.BoundsClient; } }
-        GInteractiveStyles IInteractiveItem.Style { get { return this.Style; } }
         Boolean IInteractiveItem.IsInteractive { get { return this.IsInteractive; } }
-        Boolean IInteractiveItem.IsVisible { get { return this.IsVisible; } }
+        Boolean IInteractiveItem.IsVisible { get { return this.IsVisible; } set { this.IsVisible = value; } }
         Boolean IInteractiveItem.IsEnabled { get { return this.IsEnabled; } }
         Boolean IInteractiveItem.HoldMouse { get { return this.IsHoldMouse; } }
         ZOrder IInteractiveItem.ZOrder { get { return this.ZOrder; } }
@@ -645,6 +684,13 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         void IInteractiveItem.DragAction(GDragActionArgs e) { this.DragAction(e); }
         void IInteractiveItem.Draw(GInteractiveDrawArgs e) { this.Draw(e); }
+
+        UInt32 IInteractiveParent.Id { get { return this._Id; } }
+        GInteractiveControl IInteractiveParent.Host { get { return this.Host; } }
+        IInteractiveParent IInteractiveParent.Parent { get { return this.Parent; } set { this.Parent = value; } }
+        GInteractiveStyles IInteractiveParent.Style { get { return this.Style; } }
+        Rectangle IInteractiveParent.BoundsClient { get { return this.BoundsClient; } }
+        void IInteractiveParent.Repaint() { this.Repaint(); }
         #endregion
         #region Basic members
         /// <summary>
@@ -653,12 +699,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         public override string ToString()
         {
-            return this.GetType().Name + " #" + this.Id.ToString() + ", Bounds: " + this.Bounds.ToString() + "; Parent: " + (this.Parent != null ? this.Parent.ToString() : (this.Host != null ? this.Host.ToString() : "null"));
+            return this.GetType().Name + " #" + this._Id.ToString() + ", Bounds: " + this.Bounds.ToString() + "; Parent: " + (this.Parent != null ? this.Parent.ToString() : "null");
         }
         /// <summary>
-        /// Unique ID of this object
+        /// Jednoznačné ID tohoto objektu
         /// </summary>
-        protected UInt32 Id = ++LastId;
+        protected UInt32 _Id = ++LastId;
         protected static UInt32 LastId = 0;
         /// <summary>
         /// Returns unique ID for new IInteractiveItem object

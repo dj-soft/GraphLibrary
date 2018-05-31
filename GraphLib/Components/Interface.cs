@@ -7,25 +7,25 @@ using System.Windows.Forms;
 
 namespace Asol.Tools.WorkScheduler.Components
 {
-    #region interface IInteractiveItem
+    #region interface IInteractiveItem a IInteractiveParent
     /// <summary>
     /// Definuje vlastnosti třídy, která může být interaktivní a vykreslovaná v InteractiveControlu
     /// </summary>
-    public interface IInteractiveItem
+    public interface IInteractiveItem : IInteractiveParent
     {
         /// <summary>
         /// Jednoznačné ID of object. je přiřazeno v konstruktoru a nemění se po celý život instance.
         /// </summary>
-        UInt32 Id { get; }
+        /// UInt32 Id { get; }
         /// <summary>
         /// Reference na Hosta, což je GrandParent všech prvků.
         /// </summary>
-        GInteractiveControl Host { get; set; }
+        /// GInteractiveControl Host { get; set; }
         /// <summary>
         /// Parent tohoto prvku. Může být null, pokud this je hostován přímo v controlu GInteractiveControl.
         /// Parent je typicky typu IInteractiveContainer.
         /// </summary>
-        IInteractiveItem Parent { get; set; }
+        /// IInteractiveParent Parent { get; set; }
         /// <summary>
         /// Relativní souřadnice this prvku v rámci parenta.
         /// Absolutní souřadnice mohou být určeny pomocí extension metody IInteractiveItem.GetAbsoluteVisibleBounds().
@@ -54,15 +54,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         IEnumerable<IInteractiveItem> Childs { get; }
         /// <summary>
-        /// Coordinates of area, where CHILD ITEMS of this item have their origin.
-        /// This is relative bounds within my Parent, where this item is visible.
-        /// Appropriate absolute bounds can be calculated via (extension) method IInteractiveItem.GetAbsoluteVisibleBounds(), 
+        /// Souřadnice prostoru, který je vyhrazen pro <see cref="Childs"/> prvky obsažené v this prvku.
+        /// Souřadnice jsou relativní vzhledem <see cref="Bounds"/>.
         /// </summary>
-        Rectangle BoundsClient { get; }
+        /// Rectangle BoundsClient { get; }
         /// <summary>
-        /// Interactive style
+        /// Interaktivní styl = dostupné chování objektu
         /// </summary>
-        GInteractiveStyles Style { get; }
+        /// GInteractiveStyles Style { get; }
         /// <summary>
         /// Is item currently interactive?
         /// When true, then item can be found by mouse, and can be activate by mouse events.
@@ -72,7 +71,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Is item currently visible?
         /// When true, then item can be Drawed.
         /// </summary>
-        Boolean IsVisible { get; }
+        Boolean IsVisible { get; set; }
         /// <summary>
         /// When true, then item can be interactive (and can be Drawed).
         /// When false, then item can NOT be interactive, but can be Drawed.
@@ -125,6 +124,35 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="e"></param>
         void Draw(GInteractiveDrawArgs e);
+    }
+    public interface IInteractiveParent
+    {
+        /// <summary>
+        /// Jednoznačné ID prvku. Je přiřazeno v konstruktoru a nemění se po celý život instance.
+        /// </summary>
+        UInt32 Id { get; }
+        /// <summary>
+        /// Reference na Hosta, což je GrandParent všech prvků.
+        /// </summary>
+        GInteractiveControl Host { get; }
+        /// <summary>
+        /// Parent tohoto prvku. Může být null, pokud this je hostován přímo v controlu GInteractiveControl.
+        /// Parent je typicky typu IInteractiveContainer.
+        /// </summary>
+        IInteractiveParent Parent { get; set; }
+        /// <summary>
+        /// Souřadnice prostoru, který je vyhrazen pro <see cref="Childs"/> prvky obsažené v this prvku.
+        /// Souřadnice jsou relativní vzhledem <see cref="Bounds"/>.
+        /// </summary>
+        Rectangle BoundsClient { get; }
+        /// <summary>
+        /// Interaktivní styl = dostupné chování objektu
+        /// </summary>
+        GInteractiveStyles Style { get; }
+        /// <summary>
+        /// Zajistí vykreslení sebe a svých Childs
+        /// </summary>
+        void Repaint();
     }
     #endregion
     #region interface IDrawItem
@@ -295,6 +323,8 @@ namespace Asol.Tools.WorkScheduler.Components
             return boundsClient.Add(location);
         }
         /// <summary>
+        /// Vrátí absolutní souřadnice prostoru, v němž je daný prvek umístěn.
+        /// Jde o prostor parenta 
         /// Returns absolute coordinates of area, in which this item is contained.
         /// If this item has no parent, then return { 0, 0, Host.Width, Host.Height }.
         /// Otherwise return absolute coordinates of this.Parent client area.
@@ -304,15 +334,15 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         public static Rectangle GetAbsoluteOriginArea(this IInteractiveItem item)
         {
+            if (item.Parent == null) return new Rectangle(0, 0, 4096, 4096);          // Pokud dosud není vložen Parent, pak prostor je "neomezený".
+
             Point location = item.GetAbsoluteOriginPoint();
-            Size size = (item.Parent != null ? item.Parent.BoundsClient.Size : item.Host.Size);
+            Size size = item.Parent.BoundsClient.Size;
             return new Rectangle(location, size);
         }
         /// <summary>
-        /// Returns absolute coordinates of point, which is "origin" for this relative coordinates.
-        /// If this item has no parent, then return {0,0}.
-        /// Otherwise return absolute coordinates of this.Parent client area.
-        /// When item.Bounds has Location { 0, 0 }, then its absolute location (on Host area) will be on result point.
+        /// Vrátí absolutní souřadnice (tj. v koordinátech Host controlu) bodu, na němž leží počátek this prvku (tj. IInteractiveItem.Bounds.Location).
+        /// Pokud daný prvek nemá Parenta, pak vrací bod {0,0}.
         /// </summary>
         /// <param name="item">current IInteractiveItem item</param>
         /// <returns></returns>
@@ -321,26 +351,21 @@ namespace Asol.Tools.WorkScheduler.Components
             int x = 0;
             int y = 0;
             if (item != null)
-            {
-                IInteractiveItem i = item;
+            {   // Prvek je zadán, budeme procházet řetěz prvků počínaje daným item:
+                IInteractiveParent i = item;
+                // Ať se nezacyklíme:
+                Dictionary<uint, object> scanned = new Dictionary<uint, object>();
+                scanned.Add(i.Id, null);
                 while (i.Parent != null)
                 {
                     i = i.Parent;
+                    if (scanned.ContainsKey(i.Id)) break;            // Cyklíme? Padáme!
                     Rectangle parentBounds = i.BoundsClient;
                     x += parentBounds.X;
                     y += parentBounds.Y;
                 }
             }
             return new Point(x, y);
-        }
-        /// <summary>
-        /// Ensure paint for this item to its standard layer
-        /// </summary>
-        /// <param name="item"></param>
-        public static void Repaint(this IInteractiveItem item)
-        {
-            if (item != null)
-                item.RepaintToLayers = item.StandardDrawToLayer;
         }
         #endregion
     }

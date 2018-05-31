@@ -140,7 +140,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private GToolBar _ToolBar;
         private void ButtonUndo_Click(object sender, FunctionItemEventArgs args) { }
         private void ButtonRedo_Click(object sender, FunctionItemEventArgs args) { }
-        private void ButtonReload_Click(object sender, FunctionItemEventArgs args) { App }
+        private void ButtonReload_Click(object sender, FunctionItemEventArgs args) { }
         private void ButtonSave_Click(object sender, FunctionItemEventArgs args) { }
 
         protected void CheckGui(FunctionGlobalCheckGuiRequest request)
@@ -151,15 +151,15 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         protected FunctionGlobalItem ButtonSave;
         #endregion
         #region Zpracování požadavku z GUI vrstvy
-        protected DataSourceResponse<DataSourceRequest> ProcessRequest(DataSourceRequest request)
+        protected DataSourceResponse ProcessRequest(DataSourceRequest request)
         {
             if (request == null) return null;
             if (request is DataSourceGetTablesRequest) return this.ProcessRequestGetTables(request as DataSourceGetTablesRequest);
-            if (request is DataSourceGetDataRequest) return this.ProcessRequestGetData(request as DataSourceGetDataRequest);
+           // if (request is DataSourceGetDataRequest) return this.ProcessRequestGetData(request as DataSourceGetDataRequest);
 
             return null;
         }
-        protected DataSourceResponse<DataSourceRequest> ProcessRequestGetTables(DataSourceGetTablesRequest request)
+        protected DataSourceResponse ProcessRequestGetTables(DataSourceGetTablesRequest request)
         {
             DataSourceGetTablesResponse response = new DataSourceGetTablesResponse(request);
 

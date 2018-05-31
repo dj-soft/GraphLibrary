@@ -13,7 +13,7 @@ namespace Asol.Tools.WorkScheduler.Components
     /// <summary>
     /// GInteractiveControl : Jediný používaný interaktivní WinForm control, který se používá pro zobrazení interaktivních dat
     /// </summary>
-    public partial class GInteractiveControl : GControlLayered
+    public partial class GInteractiveControl : GControlLayered, IInteractiveParent
     {
         #region Konstruktor
         public GInteractiveControl()
@@ -257,14 +257,14 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         /// <summary>
-        /// Get item (or nearest from its Parent), which has Style = KeyboardInput.
+        /// Vrátí prvek (daný, nebo jeho parenta), jehož <see cref="IInteractiveParent.Style"/> obsahuje <see cref="GInteractiveStyles.KeyboardInput"/>.
         /// Can return null.
         /// </summary>
         /// <param name="item"></param>
         /// <returns></returns>
         private IInteractiveItem _ItemKeyboardSearchKeyboardInput(IInteractiveItem item)
         {
-            Dictionary<uint, object> scanned = new Dictionary<uint,object>();
+            Dictionary<uint, object> scanned = new Dictionary<uint, object>();
             while (item != null)
             {
                 if (scanned.ContainsKey(item.Id))
@@ -274,7 +274,11 @@ namespace Asol.Tools.WorkScheduler.Components
                     return item;
                 if (item.Parent == null)
                     return null;
-                item = item.Parent;
+                // Přejdu na parenta daného prvku, ale jen pokud je to IInteractiveItem.
+                // Tím vyloučím přechod na parenta, který je fyzický WinForm control GInteractiveControl.
+                item = item.Parent as IInteractiveItem;
+                if (item == null)
+                    return null;
             }
             return null;
         }
@@ -1025,7 +1029,7 @@ namespace Asol.Tools.WorkScheduler.Components
         private void _InteractiveDrawRun()
         {
             DrawRequest request = new DrawRequest(this._RepaintAllItems, this._ToolTip, this._ProgressItem);
-            request.Fill(this.ClientRectangle, this.ItemsList, this.PendingFullDraw, true);
+            request.Fill(this.ClientRectangle, this, this.ItemsList, this.PendingFullDraw, true);
             if (request.NeedAnyDraw)
             {
                 using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "InteractiveDrawRun", ""))
@@ -1184,13 +1188,15 @@ namespace Asol.Tools.WorkScheduler.Components
                 if (request == null)
                 {   // Explicit request not specified, we will draw all items:
                     request = new DrawRequest(true, this._ToolTip, this._ProgressItem);
-                    request.Fill(this.ClientRectangle, this.ItemsList, true, false);
+                    request.Fill(this.ClientRectangle, this, this.ItemsList, true, false);
                 }
 
                 if (request.NeedStdDraw || request.DrawAllItems)
                 {
                     if (request.DrawAllItems)
                         base.OnPaintLayers(e);
+                    Graphics graphics = e.GraphicsForLayer(0);
+                    this.CallDrawStandardLayer(graphics);
                     this._PaintItems(e.GraphicsForLayer(0), request.StandardItems, GInteractiveDrawLayer.Standard);
                     scope.AddItem("Layer Standard, Items: " + request.StandardItems.Count.ToString());
                 }
@@ -1264,6 +1270,37 @@ namespace Asol.Tools.WorkScheduler.Components
         private SysCursorType? _CurrentCursorType;
         private InteractiveDrawState _DrawState = InteractiveDrawState.Standard;
         private enum InteractiveDrawState { Standard = 0, InteractiveEvent, InteractiveRepaint }
+        /// <summary>
+        /// Zajistí překreslení všech prvků
+        /// </summary>
+        protected void Repaint()
+        {
+            this._RepaintAllItems = true;
+            this.Invalidate();
+        }
+        /// <summary>
+        /// Volá se po vykreslení pozadí do standardní vrstvy.
+        /// Zavolá háček <see cref="OnDrawStandardLayer"/> a event <see cref="DrawStandardLayer"/>
+        /// </summary>
+        /// <param name="graphics"></param>
+        protected void CallDrawStandardLayer(Graphics graphics)
+        {
+            this.OnDrawStandardLayer(graphics);
+            if (this.DrawStandardLayer != null)
+                this.DrawStandardLayer(this, new PaintEventArgs(graphics, this.ClientRectangle));
+        }
+        /// <summary>
+        /// Háček pro potomky volaný v procesu kreslení standardní vrstvy
+        /// </summary>
+        /// <param name="graphics"></param>
+        protected virtual void OnDrawStandardLayer(Graphics graphics)
+        { }
+        /// <summary>
+        /// Událost volaná v procesu kreslení standardní vrstvy
+        /// </summary>
+        public event PaintEventHandler DrawStandardLayer;
+
+
         #region class DrawRequest + DrawRequestItem
         /// <summary>
         /// Class for analyze items to repaint/draw
@@ -1334,12 +1371,12 @@ namespace Asol.Tools.WorkScheduler.Components
             /// <param name="items">Prvky k vykreslení</param>
             /// <param name="drawAllItems">true = vykreslit všechny prvky</param>
             /// <param name="interactive">true = provádí se interaktivní vykreslení</param>
-            internal void Fill(Rectangle absoluteVisibleClip, IEnumerable<IInteractiveItem> items, bool drawAllItems, bool interactive)
+            internal void Fill(Rectangle absoluteVisibleClip, IInteractiveParent parent, IEnumerable<IInteractiveItem> items, bool drawAllItems, bool interactive)
             {
                 using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "DrawRequest", "Fill", ""))
                 {
                     this.InteractiveMode = interactive;
-                    this.FillFromItems(new Point(0, 0), absoluteVisibleClip, items, GInteractiveDrawLayer.None);
+                    this.FillFromItems(new Point(0, 0), absoluteVisibleClip, parent, items, GInteractiveDrawLayer.None);
                     scope.AddItem("StandardItems.Count: " + this.StandardItems.Count.ToString());
                     scope.AddItem("InteractiveItems.Count: " + this.InteractiveItems.Count.ToString());
                     scope.AddItem("DynamicItems.Count: " + this.DynamicItems.Count.ToString());
@@ -1352,12 +1389,16 @@ namespace Asol.Tools.WorkScheduler.Components
             /// </summary>
             /// <param name="absoluteItemOffset">Absolutní souřadnice počátku (absolutní = v koordinátech Controlu), k nimž se vztahují souřadnice item.Bounds</param>
             /// <param name="absoluteVisibleClip">Absolutní souřadnice prostoru (absolutní = v koordinátech Controlu), v nichž může být item viditelný = prostor pro Clip grafiky</param>
+            /// <param name="parent">Parent prvků</param>
             /// <param name="items">Prvky k vykreslení</param>
             /// <param name="parentLayers">Vrstvy k vykreslení</param>
-            private void FillFromItems(Point absoluteItemOffset, Rectangle absoluteVisibleClip, IEnumerable<IInteractiveItem> items, GInteractiveDrawLayer parentLayers)
+            private void FillFromItems(Point absoluteItemOffset, Rectangle absoluteVisibleClip, IInteractiveParent parent, IEnumerable<IInteractiveItem> items, GInteractiveDrawLayer parentLayers)
             {
                 foreach (IInteractiveItem item in items)
                 {
+                    // Doplníme Parenta:
+                    if (item.Parent == null) item.Parent = parent;
+
                     if (!item.IsVisible) continue;
 
                     // Abychom se nezacyklili = jeden prvek smí být vidět jen jedenkrát:
@@ -1408,7 +1449,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 Rectangle absoluteChildsVisibleClip = Rectangle.Intersect(absoluteVisibleClip, itemAbsoluteBounds);
 
                 // Čistokrevná rekurze:
-                this.FillFromItems(absoluteChildsOffset, absoluteChildsVisibleClip, childs, itemLayers);
+                this.FillFromItems(absoluteChildsOffset, absoluteChildsVisibleClip, parent, childs, itemLayers);
             }
             /// <summary>
             /// Vrací vrstvy, do kterých má být vykreslen daný prvek, s přihlédnutím k tomu, do jakých vrstev se kreslí jeho parent,
@@ -1601,7 +1642,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         private void _BorderRectangle(Graphics graphics, Rectangle bounds, Color? borderColor, bool enlarge, int enlargeL, int enlargeT, int enlargeR, int enlargeB)
         {
-            bounds = bounds.Enlarge(enlargeL, enlargeT, enlargeR - 1, enlargeB - 1);     // Shring Width and Height by 1 pixel is standard for draw Border into (!) area.
+            bounds = bounds.Enlarge(enlargeL, enlargeT, enlargeR - 1, enlargeB - 1);     // Shrink Width and Height by 1 pixel is standard for draw Border into (!) area.
             this._ResetPen(borderColor);
             graphics.DrawRectangle(this.Pen, bounds);
         }
@@ -2039,7 +2080,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             if (item != null)
             {
-                item.Host = this;
+                item.Parent = this;
                 this.ItemsList.Add(item);
             }
         }
@@ -2054,6 +2095,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Event after change of interactive state
         /// </summary>
         public event GInteractiveChangeStateHandler InteractiveStateChanged;
+        #endregion
+        #region Implementace IInteractiveParent : on totiž GInteractiveControl je umístěn jako Parent ve svých IInteractiveItem
+        UInt32 IInteractiveParent.Id { get { return 0; } }
+        GInteractiveControl IInteractiveParent.Host { get { return null; } }
+        IInteractiveParent IInteractiveParent.Parent { get { return null; } set { } }
+        GInteractiveStyles IInteractiveParent.Style { get { return GInteractiveStyles.None; } }
+        Rectangle IInteractiveParent.BoundsClient { get { return this.ClientRectangle; } }
+        void IInteractiveParent.Repaint() { this.Repaint(); }
         #endregion
     }
     #endregion

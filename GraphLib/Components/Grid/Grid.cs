@@ -1087,11 +1087,11 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             Rectangle bounds1 = this.GridVoidBounds1;
             if (bounds1.HasPixels())
-                this.Host.FillRectangle(e.Graphics, this.GetAbsoluteBounds(bounds1), Color.Violet); // this.BackColor);
+                GPainter.DrawRectangle(e.Graphics, this.GetAbsoluteBounds(bounds1), Color.Violet);
 
             Rectangle bounds2 = this.GridVoidBounds2;
             if (bounds2.HasPixels())
-                this.Host.FillRectangle(e.Graphics, this.GetAbsoluteBounds(bounds2), Color.Violet); // this.BackColor);
+                GPainter.DrawRectangle(e.Graphics, this.GetAbsoluteBounds(bounds2), Color.Violet); // this.BackColor);
         }
         #endregion
         #region Defaultní hodnoty

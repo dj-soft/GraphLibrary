@@ -48,6 +48,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public static SkinButtonSet Button { get { return Instance._Button; } }
         /// <summary>
+        /// Color items for TabHeader (BackColor, TextColor, BackColorActive, TextColorActive)
+        /// </summary>
+        public static SkinTabHeaderSet TabHeader { get { return Instance._TabHeader; } }
+        /// <summary>
         /// Color items for scrollbar (BackColorArea, BackColorButton, TextColorButton)
         /// </summary>
         public static SkinScrollBarSet ScrollBar { get { return Instance._ScrollBar; } }
@@ -90,6 +94,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this._ToolTip = new SkinToolTipSet(this, "ToolTip");
             this._ToolBar = new SkinToolBarSet(this, "ToolBar");
             this._Button = new SkinButtonSet(this, "Button");
+            this._TabHeader = new SkinTabHeaderSet(this, "TabHeader");
             this._ScrollBar = new SkinScrollBarSet(this, "ScrollBar");
             this._Progress = new SkinProgressSet(this, "Progress");
             this._Axis = new SkinAxisSet(this, "Axis");
@@ -110,6 +115,7 @@ namespace Asol.Tools.WorkScheduler.Components
         private SkinToolTipSet _ToolTip;
         private SkinToolBarSet _ToolBar;
         private SkinButtonSet _Button;
+        private SkinTabHeaderSet _TabHeader;
         private SkinScrollBarSet _ScrollBar;
         private SkinProgressSet _Progress;
         private SkinAxisSet _Axis;
@@ -801,6 +807,38 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual Color DefaultBorderColor { get { return Color.DimGray; } }
         protected virtual Color DefaultBackColor { get { return Color.FromArgb(255, 216, 216, 216); } }
         protected virtual Color DefaultTextColor { get { return Color.Black; } }
+        #endregion
+    }
+    /// <summary>
+    /// Skin set for TabHeader.
+    /// Has colors: BorderColor, BackColor; TextColor, BackColorActive, TextColorActive;
+    /// </summary>
+    public class SkinTabHeaderSet : SkinSet
+    {
+        #region Internal and private
+        internal SkinTabHeaderSet(Skin owner, string skinSetKey)
+            : base(owner, skinSetKey)
+        { }
+        #endregion
+        #region Public colors
+        public Color SpaceColor { get { return this._Owner.GetValue(this._SkinSetKey, "SpaceColor", DefaultSpaceColor); } set { this._Owner.SetValue(this._SkinSetKey, "SpaceColor", value); } }
+        public Color BorderColor { get { return this._Owner.GetValue(this._SkinSetKey, "BorderColor", DefaultBorderColor); } set { this._Owner.SetValue(this._SkinSetKey, "BorderColor", value); } }
+        public Color LineColorHot { get { return this._Owner.GetValue(this._SkinSetKey, "LineColorHot", DefaultLineColorHot); } set { this._Owner.SetValue(this._SkinSetKey, "LineColorHot", value); } }
+        public Color BackColor { get { return this._Owner.GetValue(this._SkinSetKey, "BackColor", DefaultBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "BackColor", value); } }
+        public Color TextColor { get { return this._Owner.GetValue(this._SkinSetKey, "TextColor", DefaultTextColor); } set { this._Owner.SetValue(this._SkinSetKey, "TextColor", value); } }
+        public Color LineColorActive { get { return this._Owner.GetValue(this._SkinSetKey, "LineColorActive", DefaultLineColorActive); } set { this._Owner.SetValue(this._SkinSetKey, "LineColorActive", value); } }
+        public Color BackColorActive { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorActive", DefaultBackColorActive); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorActive", value); } }
+        public Color TextColorActive { get { return this._Owner.GetValue(this._SkinSetKey, "TextColorActive", DefaultTextColorActive); } set { this._Owner.SetValue(this._SkinSetKey, "TextColorActive", value); } }
+        #endregion
+        #region Default colors
+        protected virtual Color DefaultSpaceColor { get { return Color.FromArgb(0, 255, 255, 255); } }
+        protected virtual Color DefaultBorderColor { get { return Color.DimGray; } }
+        protected virtual Color DefaultLineColorHot { get { return Color.FromArgb(255, 216, 216, 128); } }
+        protected virtual Color DefaultBackColor { get { return Color.FromArgb(255, 160, 160, 160); } }
+        protected virtual Color DefaultTextColor { get { return Color.Black; } }
+        protected virtual Color DefaultLineColorActive { get { return Color.FromArgb(255, 255, 255, 128); } }
+        protected virtual Color DefaultBackColorActive { get { return Color.FromArgb(255, 216, 216, 216); } }
+        protected virtual Color DefaultTextColorActive { get { return Color.Black; } }
         #endregion
     }
     /// <summary>

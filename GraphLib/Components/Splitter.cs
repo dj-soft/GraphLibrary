@@ -699,8 +699,8 @@ namespace Asol.Tools.WorkScheduler.Components
                     break;
 
             }
-            if (isChange)
-                this.Host.RepaintAllItems = isChange;
+            if (isChange && this.HasParent)
+                this.Parent.Repaint();
 
             return isChange;
         }

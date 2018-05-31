@@ -12,6 +12,13 @@ namespace Asol.Tools.WorkScheduler.Application
     public class Zoom
     {
         /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public Zoom()
+        {
+            this._Value = 1f;
+        }
+        /// <summary>
         /// Hodnota Zoomu pro GUI. Její změna změní velikost všech grafických elementů.
         /// Default = 1, pak GUI zobrazuje prvky v originální velikosti.
         /// </summary>

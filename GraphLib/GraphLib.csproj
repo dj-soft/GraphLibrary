@@ -80,6 +80,7 @@
     <Compile Include="Components\Layout.cs" />
     <Compile Include="Components\Progress.cs" />
     <Compile Include="Components\Skin.cs" />
+    <Compile Include="Components\TabHeader.cs" />
     <Compile Include="Components\ToolBar.cs" />
     <Compile Include="Components\ToolTip.cs" />
     <Compile Include="Data\TableOld.cs" />

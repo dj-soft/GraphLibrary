@@ -131,6 +131,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             }
             this._SchedulerPanels = panelList.ToArray();
         }
+        /*
         private void _ProcessResponseData(Services.DataSourceGetDataRequest request, Services.DataSourceResponse response)
         {
             if (this.InvokeRequired)
@@ -148,6 +149,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 }
             }
         }
+        */
         private Services.IDataSource[] _DataSources;
         #endregion
     }

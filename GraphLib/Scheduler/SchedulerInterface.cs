@@ -142,7 +142,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
         }
     }
-    public class DataSourceGetDataResponse : DataSourceResponse<DataSourceGetDataRequest>
+    public class DataSourceGetDataResponse : DataSourceResponse
     {
         public DataSourceGetDataResponse(DataSourceGetDataRequest request)
             : base(request)

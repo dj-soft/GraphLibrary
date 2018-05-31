@@ -11,7 +11,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public ProgressItem(GInteractiveControl host)
         {
             this._ProgressData = new ProgressData();
-            this.Host = host;
+            this.Parent = host;
             this.IsVisible = false;
         }
         private ProgressData _ProgressData;
@@ -47,9 +47,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         internal void SetPosition()
         {
-            if (this.Host == null) return;
+            GInteractiveControl host = this.Host;
+            if (host == null) return;
 
-            Rectangle hostBounds = this.Host.ClientRectangle;
+            Rectangle hostBounds = host.ClientRectangle;
 
             Size maxSize = new Size(hostBounds.Width - 12, hostBounds.Height - 12);
             Size size = new Size(420, 200);
@@ -69,7 +70,8 @@ namespace Asol.Tools.WorkScheduler.Components
         public bool NeedDraw { get { return this.IsVisible; } }
         internal void Draw(System.Drawing.Graphics graphics)
         {
-            if (this.Host == null) return;
+            GInteractiveControl host = this.Host;
+            if (host == null) return;
 
             Rectangle bounds = this.BoundsAbsolute;
             int x = bounds.X;
@@ -86,7 +88,7 @@ namespace Asol.Tools.WorkScheduler.Components
 
             int progressWidth = this.GetDataProgressWidth(progBounds.Width - 4);
             Rectangle dataBounds = new Rectangle(progBounds.X + 2, progBounds.Y + 2, progressWidth, progBounds.Height - 4);
-            this.Host.FillRectangle(graphics, dataBounds, this.DataProgressForeColor);
+            host.FillRectangle(graphics, dataBounds, this.DataProgressForeColor);
 
             string progressText = this.GetDataProgressText();
             GPainter.DrawString(graphics, progBounds, progressText, Brushes.Black, FontInfo.Caption, ContentAlignment.MiddleCenter);

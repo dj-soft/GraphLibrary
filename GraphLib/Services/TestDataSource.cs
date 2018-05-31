@@ -12,12 +12,13 @@ namespace Asol.Tools.WorkScheduler.Services
         protected virtual DataSourceResponse ProcessRequest(DataSourceRequest request)
         {
             if (request == null) return null;
-            if (request is DataSourceGetTablesRequest) return this.ProcessRequestGetControls(request as DataSourceGetTablesRequest);
-            if (request is DataSourceGetDataRequest) return this.ProcessRequestGetData(request as DataSourceGetDataRequest);
+            // if (request is DataSourceGetTablesRequest) return this.ProcessRequestGetControls(request as DataSourceGetTablesRequest);
+            // if (request is DataSourceGetDataRequest) return this.ProcessRequestGetData(request as DataSourceGetDataRequest);
 
             return null;
         }
         #region Get Controls
+        /*
         private DataSourceResponse ProcessRequestGetControls(DataSourceGetTablesRequest request)
         {
             DataSourceGetTablesResponse response = new DataSourceGetTablesResponse(request);
@@ -28,8 +29,10 @@ namespace Asol.Tools.WorkScheduler.Services
             return response;
 
         }
+        */
         #endregion
         #region Get Data
+        /*
         private DataSourceResponse ProcessRequestGetData(DataSourceGetDataRequest request)
         {
             DataSourceGetDataResponse response = new DataSourceGetDataResponse(request);
@@ -40,6 +43,7 @@ namespace Asol.Tools.WorkScheduler.Services
 
             return response;
         }
+        */
         #endregion
         #endregion
         #region IDataSource members
