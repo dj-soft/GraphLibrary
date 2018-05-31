@@ -1263,6 +1263,9 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         protected virtual void LeftClickComboBox(GInteractiveChangeStateArgs e)
         {
+            var host = this.Host;
+            if (host == null) return;
+
             Rectangle bounds = this.BoundsAbsolute;
             Point point = new Point(bounds.X, bounds.Bottom - 1);
 
@@ -1270,7 +1273,7 @@ namespace Asol.Tools.WorkScheduler.Components
             System.Windows.Forms.ToolStripDropDownMenu menu = FunctionItem.CreateDropDownMenuFrom(subItems);
             menu.MinimumSize = new Size(bounds.Width, 0); // 3 * this.TItemSetting.ModulePixel);
             menu.ItemClicked += new System.Windows.Forms.ToolStripItemClickedEventHandler(_ComboMenu_ItemClicked);
-            menu.Show(this.Host, point, System.Windows.Forms.ToolStripDropDownDirection.BelowRight);
+            menu.Show(host, point, System.Windows.Forms.ToolStripDropDownDirection.BelowRight);
         }
         private void _ComboMenu_ItemClicked(object sender, System.Windows.Forms.ToolStripItemClickedEventArgs e)
         {
