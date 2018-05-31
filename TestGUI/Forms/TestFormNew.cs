@@ -17,13 +17,19 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         public TestFormNew()
         {
             InitializeComponent();
+            this.Size = new Size(1020, 920);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.InitGControl();
+        }
+        protected override void OnShown(EventArgs e)
+        {
+            this.ControlsPosition();
         }
         private void InitGControl()
         {
             this.GControl.BackColor = Color.LightBlue;
             this.GControl.ResizeControl += new EventHandler(GControl_ResizeControl);
+            this.GControl.DrawStandardLayer += GControl_DrawStandardLayer;
 
             this._TimeAxis = new GTimeAxis() { Bounds = new Rectangle(60, 30, 950, 45), Orientation = AxisOrientation.Top, Value = new TimeRange(DateTime.Now.Subtract(TimeSpan.FromDays(4)), DateTime.Now) };
             this._TimeAxis.BackColor = Color.LightSkyBlue;
@@ -48,8 +54,54 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this._ScrollBarV.UserDraw += new GUserDrawHandler(_ScrollBarV_UserDraw);
             this.GControl.AddItem(this._ScrollBarV);
 
+            this._TabHeaderH = new TabHeader() { Bounds = new Rectangle(0, 160, 950, 32), Position = RectangleSide.Bottom };
+            var headerH1 = this._TabHeaderH.AddHeader("První stránka", Asol.Tools.WorkScheduler.Components.IconStandard.ObjectFlipVertical32);
+            var headerH2 = this._TabHeaderH.AddHeader("Druhá stránka", Asol.Tools.WorkScheduler.Components.IconStandard.ObjectFlipHorizontal32);
+            var headerH3 = this._TabHeaderH.AddHeader("Třetí...");
+            var headerH4 = this._TabHeaderH.AddHeader("Vodorovný scrollbar");
+            headerH4.ToolTipText = "Aktivace této stránky aktivuje Vodorovný scrollbar.";
+            headerH4.LinkItem = this._ScrollBarH;
+            headerH4.BackColor = Color.Violet.Morph(Color.Yellow, 0.50f);
+            var headerH5 = this._TabHeaderH.AddHeader("Str.5");
+            this._TabHeaderH.ActiveHeaderItem = headerH3;
+            this.GControl.AddItem(this._TabHeaderH);
+
+            this._TabHeaderV = new TabHeader() { Bounds = new Rectangle(0, 160, 950, 32), Position = RectangleSide.Left };
+            var headerV1 = this._TabHeaderV.AddHeader("Plan items", Asol.Tools.WorkScheduler.Components.IconStandard.ObjectFlipVertical32);
+            headerV1.ToolTipText = "Položky ve stavu Zaplánováno";
+            var headerV2 = this._TabHeaderV.AddHeader("Product orders", Asol.Tools.WorkScheduler.Components.IconStandard.ObjectFlipHorizontal32);
+            headerV2.ToolTipText = "Existující výrobní příkazy";
+            var headerV3 = this._TabHeaderV.AddHeader("Invalid items");
+            headerV3.ToolTipText = "Chybné položky";
+            this._TabHeaderV.ActiveHeaderItem = headerV1;
+            this.GControl.AddItem(this._TabHeaderV);
+
             this.ControlsPosition();
         }
+
+        private void GControl_DrawStandardLayer(object sender, PaintEventArgs e)
+        {
+            bool draw = true;
+            if (draw)
+            {
+                Point center = this.ClientRectangle.Center();
+                Rectangle area = center.CreateRectangleFromCenter(430);
+                GPainter.DrawRectangle(e.Graphics, area, Color.LightGreen);
+                FontInfo fontInfo = FontInfo.MessageBox;
+
+                int h = 32;
+                Rectangle areaT = new Rectangle(area.X, area.Y, area.Width, h);
+                Rectangle areaR = new Rectangle(area.Right - h, area.Y, h, area.Height);
+                Rectangle areaB = new Rectangle(area.X, area.Bottom - h, area.Width, h);
+                Rectangle areaL = new Rectangle(area.X, area.Y, h, area.Height);
+
+                GPainter.DrawString(e.Graphics, areaB, "Normal => Normal => Normal => Normal", Color.Black, fontInfo, ContentAlignment.MiddleCenter, MatrixTransformationType.NoTransform);
+                GPainter.DrawString(e.Graphics, areaL, "Rotate90 => Rotate90 => Rotate90 => Rotate90", Color.Black, fontInfo, ContentAlignment.MiddleCenter, MatrixTransformationType.Rotate90);
+                GPainter.DrawString(e.Graphics, areaT, "Rotate180 => Rotate180 => Rotate180 => Rotate180", Color.Black, fontInfo, ContentAlignment.MiddleCenter, MatrixTransformationType.Rotate180);
+                GPainter.DrawString(e.Graphics, areaR, "Rotate270 => Rotate270 => Rotate270 => Rotate270", Color.Black, fontInfo, ContentAlignment.MiddleCenter, MatrixTransformationType.Rotate270);
+            }
+        }
+
         void GControl_ResizeControl(object sender, EventArgs e)
         {
             this.ControlsPosition();
@@ -75,6 +127,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         private GSizeAxis _SizeAxis;
         private GScrollBar _ScrollBarH;
         private GScrollBar _ScrollBarV;
+        private TabHeader _TabHeaderH;
+        private TabHeader _TabHeaderV;
         protected void ControlsPosition()
         {
             Size size = this.GControl.Size;
@@ -102,15 +156,33 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             int scrollHeight = GScrollBar.DefaultSystemBarHeight;
             int scrollWidth = GScrollBar.DefaultSystemBarWidth;
-            if (this._ScrollBarH != null)
-            {
-                Rectangle bounds = new Rectangle(2, size.Height - 30 - scrollHeight, size.Width - 2 - scrollWidth - 2, scrollHeight);
-                this._ScrollBarH.Bounds = bounds;
-            }
+            int headerHeight = 32;
+            int top = 30;
+            int bottom = size.Height - 2;
+            int y = top;
             if (this._ScrollBarV != null)
             {
-                Rectangle bounds = new Rectangle(size.Width - 2 - scrollWidth, 30, scrollWidth, size.Height - 30 - 30 - scrollHeight);
+                Rectangle bounds = new Rectangle(size.Width - 2 - scrollWidth, y, scrollWidth, bottom - scrollHeight - y);
                 this._ScrollBarV.Bounds = bounds;
+                bottom = bounds.Bottom;
+                y = bounds.Bottom;
+            }
+            if (this._ScrollBarH != null)
+            {
+                Rectangle bounds = new Rectangle(2, y, size.Width - 2 - scrollWidth - 2, scrollHeight);
+                this._ScrollBarH.Bounds = bounds;
+                y = bounds.Y - headerHeight;
+            }
+            if (this._TabHeaderH != null)
+            {
+                Rectangle bounds = new Rectangle(2, y - 3, size.Width - 2 - scrollWidth - 2, headerHeight);
+                this._TabHeaderH.Bounds = bounds;
+                bottom = bounds.Y;
+            }
+            if (this._TabHeaderV != null)
+            {
+                Rectangle bounds = new Rectangle(2, top, headerHeight, bottom - top);
+                this._TabHeaderV.Bounds = bounds;
             }
         }
     }

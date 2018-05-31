@@ -106,7 +106,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         {
             Services.IDataSource source = this._DataSourceList.FirstOrDefault();
             if (source == null) return;
-
+            /*
             using (Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "TestFormGrid", "LoadDataFromSource", "WorkerThread"))
             {
 
@@ -114,7 +114,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
                 Application.App.ProcessRequestOnbackground<Services.DataSourceGetDataRequest, Services.DataSourceResponse>(source.ProcessRequest, request, this._ProcessResponseData);
             }
+            */
         }
+        /*
         private void _ProcessResponseData(Services.DataSourceGetDataRequest request, Services.DataSourceResponse response)
         {
             if (this.InvokeRequired)
@@ -127,6 +129,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 Application.App.TraceInfo(Application.TracePriority.Priority1_ElementaryTimeDebug, "TestFormGrid", "ProcessResponseData", "WorkerThread", "Native in GUI");
             }
         }
+        */
         private List<Services.IDataSource> _DataSourceList;
         void _SplitterWZ_ValueChanging(object sender, GPropertyChangeArgs<int> e)
         {

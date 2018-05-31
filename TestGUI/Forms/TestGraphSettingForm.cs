@@ -38,7 +38,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI.Forms
                 (t == TextRenderingHint.AntiAlias)
                 );
 
-            this._Settings = OneSetting.GetAll();
+
+            this._Settings = OneSetting.GetAll((s, i, t) => (t == TextRenderingHint.AntiAlias));
+
+            // this._Settings = OneSetting.GetAll();
             this._VScrollBar.Maximum = this._Settings[this._Settings.Length - 1].BoundsAbsolute.Bottom;
 
 
