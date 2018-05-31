@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Drawing;
+using System.Windows.Forms;
 
 using Asol.Tools.WorkScheduler.Data;
 using Asol.Tools.WorkScheduler.Application;
@@ -434,24 +435,40 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 int height = this.TabHeader.HeaderHeight;
                 bool headerIsVertical = this.TabHeader.HeaderIsVertical;
-                Int32Range l;               // Prostor ve směru délky headeru (Horizontal: fyzická osa X, Width; Vertical: fyzická osa Y, Height)
-                Int32Range h;               // Prostor ve směru výšky headeru (Horizontal: fyzická osa Y, Height; Vertical: fyzická osa X, Width)
+                bool headerIsReverseOrder = (this.TabHeader.Position == RectangleSide.Left);
                 int contentPosition = 6;    // Začátek následujícího prvku ve směru délky headeru
-                Int32Range contentHeight = Int32Range.CreateFromCenterSize(height / 2, height - 6);    // Prostor pro vnitřní obsah ve směru výšky headeru
+                Int32Range contentHeight = Int32Range.CreateFromCenterSize(height / 2, height - 6);     // Prostor pro vnitřní obsah ve směru výšky headeru
 
-                // Ikonka:
+                if (!headerIsReverseOrder)
+                {
+                    PrepareBoundsImage(graphics, headerIsVertical, ref contentPosition, contentHeight); // Ikonka
+                    PrepareBoundsText(graphics, headerIsVertical, ref contentPosition, contentHeight);  // Text
+                    PrepareBoundsClose(graphics, headerIsVertical, ref contentPosition, contentHeight); // Close button
+                }
+                else
+                {
+                    PrepareBoundsClose(graphics, headerIsVertical, ref contentPosition, contentHeight); // Close button
+                    PrepareBoundsText(graphics, headerIsVertical, ref contentPosition, contentHeight);  // Text
+                    PrepareBoundsImage(graphics, headerIsVertical, ref contentPosition, contentHeight); // Ikonka
+                }
+
+                PrepareBoundsTotal(graphics, headerIsVertical, ref begin, contentPosition, height);     // Celkové rozměry
+            }
+            private void PrepareBoundsImage(Graphics graphics, bool headerIsVertical,  ref int contentPosition, Int32Range contentHeight)
+            {
                 this.ImageBounds = Rectangle.Empty;
                 if (this.Image != null)
                 {
                     int imageWidth = this.Image.Size.Width;
                     if (imageWidth > contentHeight.Size) imageWidth = contentHeight.Size;
-                    l = Int32Range.CreateFromBeginSize(contentPosition, imageWidth);
-                    h = Int32Range.CreateFromCenterSize(contentHeight.Center, imageWidth);
+                    Int32Range l = Int32Range.CreateFromBeginSize(contentPosition, imageWidth);        // Prostor ve směru délky headeru (Horizontal: fyzická osa X, Width; Vertical: fyzická osa Y, Height)
+                    Int32Range h = Int32Range.CreateFromCenterSize(contentHeight.Center, imageWidth);  // Prostor ve směru výšky headeru (Horizontal: fyzická osa Y, Height; Vertical: fyzická osa X, Width)
                     this.ImageBounds = (headerIsVertical ? Int32Range.GetRectangle(h, l) : Int32Range.GetRectangle(l, h));
                     contentPosition = l.End + 4;
                 }
-
-                // Text:
+            }
+            private void PrepareBoundsText(Graphics graphics, bool headerIsVertical, ref int contentPosition, Int32Range contentHeight)
+            {
                 this.TextBounds = Rectangle.Empty;
                 if (!String.IsNullOrEmpty(this.Text))
                 {
@@ -460,26 +477,29 @@ namespace Asol.Tools.WorkScheduler.Components
                     Size textSize = GPainter.MeasureString(graphics, text, fontInfo);
                     int width = textSize.Width + 6;
                     if (width > 220) width = 220;
-                    l = Int32Range.CreateFromBeginSize(contentPosition, width);
-                    h = contentHeight;
+                    Int32Range l = Int32Range.CreateFromBeginSize(contentPosition, width);
+                    Int32Range h = contentHeight;
                     this.TextBounds = (headerIsVertical ? Int32Range.GetRectangle(h, l) : Int32Range.GetRectangle(l, h));
                     contentPosition = l.End + 4;
                 }
-
-                // CloseButton:
+            }
+            private void PrepareBoundsClose(Graphics graphics, bool headerIsVertical, ref int contentPosition, Int32Range contentHeight)
+            {
                 this.CloseButtonBounds = Rectangle.Empty;
                 if (this.CloseButtonVisible)
                 {
-                    l = Int32Range.CreateFromBeginSize(contentPosition, 24);
-                    h = Int32Range.CreateFromCenterSize(contentHeight.Center, 24);
+                    Int32Range l = Int32Range.CreateFromBeginSize(contentPosition, 24);
+                    Int32Range h = Int32Range.CreateFromCenterSize(contentHeight.Center, 24);
                     this.CloseButtonBounds = (headerIsVertical ? Int32Range.GetRectangle(h, l) : Int32Range.GetRectangle(l, h));
                     contentPosition = l.End + 4;
                 }
                 contentPosition += 2;
-
+            }
+            private void PrepareBoundsTotal(Graphics graphics, bool headerIsVertical, ref int begin, int contentPosition, int height)
+            {
                 // Souřadnice tohoto prvku jsou dány orientací TabHeaderu:
-                l = Int32Range.CreateFromBeginSize(begin, contentPosition);         // Pozice ve směru délky = od počátku, s danou velikostí
-                h = Int32Range.CreateFromBeginSize(0, height);                      // Pozice ve směru výšky = relativně k Headeru
+                Int32Range l = Int32Range.CreateFromBeginSize(begin, contentPosition);         // Pozice ve směru délky = od počátku, s danou velikostí
+                Int32Range h = Int32Range.CreateFromBeginSize(0, height);                      // Pozice ve směru výšky = relativně k Headeru
                 this.BoundsSilent = (headerIsVertical ? Int32Range.GetRectangle(h, l) : Int32Range.GetRectangle(l, h));   // Fyzické souřadnice this prvku
 
                 // Začátek příštího prvku = konec this prvku + jeho velikost ve směru jeho délky:
@@ -555,7 +575,12 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 GPainter.DrawTabHeaderItem(e.Graphics, boundsAbsolute, this);
             }
-            protected virtual void UserDataDraw(Graphics graphics, Rectangle bounds) { }
+            protected virtual void UserDataDraw(Graphics graphics, Rectangle bounds)
+            {
+                if (this.TabHeaderPaintBackGround != null)
+                    this.TabHeaderPaintBackGround(this, new PaintEventArgs(graphics, bounds));
+            }
+            public event PaintEventHandler TabHeaderPaintBackGround;
             protected override void AfterStateChangedLeftClick(GInteractiveChangeStateArgs e)
             {
                 base.AfterStateChangedLeftClick(e);

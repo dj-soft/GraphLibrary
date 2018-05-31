@@ -512,34 +512,43 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="textArea"></param>
         private static void _DrawString(Graphics graphics, Rectangle bounds, string text, Brush brush, Color? color, FontInfo fontInfo, ContentAlignment alignment, MatrixTransformationType transformation, Action<Rectangle> drawBackground, out Rectangle textArea)
         {
-            textArea = new Rectangle(bounds.X, bounds.Y, 0, 0);
-            if (String.IsNullOrEmpty(text)) return;
+            textArea = new Rectangle(bounds.X, bounds.Y, 0, 0);           // out parametr
+            if (fontInfo == null || String.IsNullOrEmpty(text)) return;
             if (bounds.Width <= 0 || bounds.Height <= 0) return;
 
             bool isVertical = (transformation == MatrixTransformationType.Rotate90 || transformation == MatrixTransformationType.Rotate270);
             int boundsLength = (isVertical ? bounds.Height : bounds.Width);
-            if (isVertical)
-            { }
-            StringFormat sFormat = new StringFormat(StringFormatFlags.LineLimit);
 
             using (GraphicsUseText(graphics))
             {
                 Font font = fontInfo.Font;
+                StringFormat sFormat = new StringFormat(StringFormatFlags.LineLimit);
                 SizeF textSize = graphics.MeasureString(text, font, boundsLength, sFormat);
-                if (isVertical) textSize = new SizeF(textSize.Height, textSize.Width);
-                textArea = textSize.AlignTo(bounds, alignment, true);
-                if (drawBackground != null)
-                    drawBackground(textArea);
+                if (isVertical) textSize = textSize.Swap();               // Pro vertikální text převedu prostor textu "na výšku"
+                textArea = textSize.AlignTo(bounds, alignment, true);     // Zarovnám oblast textu do přiděleného prostoru dle zarovnání
 
-                var matrixOld = graphics.Transform;
-                graphics.Transform = GetMatrix(transformation, textArea);
+                if (drawBackground != null)
+                    drawBackground(textArea);                             // UserDraw pozadí pod textem: v nativní orientaci
+
+                Matrix matrixOld = null;
+                if (isVertical)
+                {
+                    textArea = textArea.Swap();               // Pro vertikální text převedu prostor textu "na šířku", protože otáčet "na výšku" ho bude Matrix aplikovaný do Graphics
+                    matrixOld = graphics.Transform;
+                    graphics.Transform = GetMatrix(transformation, textArea);
+                }
+
                 if (brush != null)
                     graphics.DrawString(text, font, brush, textArea, sFormat);
                 else if (color.HasValue)
                     graphics.DrawString(text, font, Skin.Brush(color.Value), textArea, sFormat);
                 else
                     graphics.DrawString(text, font, SystemBrushes.ControlText, textArea, sFormat);
-                graphics.Transform = matrixOld;
+
+                if (isVertical)
+                {
+                    graphics.Transform = matrixOld;
+                }
             }
         }
         #endregion
@@ -1155,12 +1164,13 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             Rectangle? backArea, lineArea, lightArea, darkArea;
             _DrawTabHeaderItemGetArea(bounds, tabHeader, out backArea, out lineArea, out lightArea, out darkArea);
+            MatrixTransformationType transformation = _DrawTabHeaderGetTransformation(tabHeader.Position);
 
-            _DrawTabHeaderItemBackground(graphics, bounds, tabHeader, backArea, lineArea, lightArea, darkArea);
-            _DrawTabHeaderItemImage(graphics, bounds, tabHeader, backArea, lineArea, lightArea, darkArea);
-            _DrawTabHeaderItemText(graphics, bounds, tabHeader, backArea, lineArea, lightArea, darkArea);
-            _DrawTabHeaderItemCloseButton(graphics, bounds, tabHeader, backArea, lineArea, lightArea, darkArea);
-            _DrawTabHeaderItemLines(graphics, bounds, tabHeader, backArea, lineArea, lightArea, darkArea);
+            _DrawTabHeaderItemBackground(graphics, bounds, tabHeader, backArea, lineArea, lightArea, darkArea, transformation);
+            _DrawTabHeaderItemImage(graphics, bounds, tabHeader, backArea, lineArea, lightArea, darkArea, transformation);
+            _DrawTabHeaderItemText(graphics, bounds, tabHeader, backArea, lineArea, lightArea, darkArea, transformation);
+            _DrawTabHeaderItemCloseButton(graphics, bounds, tabHeader, backArea, lineArea, lightArea, darkArea, transformation);
+            _DrawTabHeaderItemLines(graphics, bounds, tabHeader, backArea, lineArea, lightArea, darkArea, transformation);
         }
         /// <summary>
         /// Určí souřadnice jednotlivých prostor (pozadí a linky)
@@ -1218,8 +1228,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     break;
             }
         }
-        private static void _DrawTabHeaderItemBackground(Graphics graphics, Rectangle bounds, ITabHeaderItemPaintData tabHeader,
-            Rectangle? backArea, Rectangle? lineArea, Rectangle? lightArea, Rectangle? darkArea)
+        private static void _DrawTabHeaderItemBackground(Graphics graphics, Rectangle bounds, ITabHeaderItemPaintData tabHeader, Rectangle? backArea, Rectangle? lineArea, Rectangle? lightArea, Rectangle? darkArea, MatrixTransformationType transformation)
         {
             bool isActive = tabHeader.IsActive;
             bool hasBackColor = tabHeader.BackColor.HasValue;
@@ -1228,26 +1237,42 @@ namespace Asol.Tools.WorkScheduler.Components
                   (hasBackColor ? tabHeader.BackColor.Value : Skin.TabHeader.BackColorActive) : 
                   (hasBackColor ? tabHeader.BackColor.Value.Morph(Skin.TabHeader.BackColor, 0.25f) : Skin.TabHeader.BackColor));
 
-            if (backArea.HasValue && backColor.HasValue)
-                graphics.FillRectangle(Skin.Brush(backColor.Value), backArea.Value);
+            if (backArea.HasValue)
+            {
+                if (backColor.HasValue)
+                    graphics.FillRectangle(Skin.Brush(backColor.Value), backArea.Value);
+
+                tabHeader.UserDataDraw(graphics, backArea.Value);
+            }
         }
-        private static void _DrawTabHeaderItemImage(Graphics graphics, Rectangle bounds, ITabHeaderItemPaintData tabHeader, Rectangle? backArea, Rectangle? lineArea, Rectangle? lightArea, Rectangle? darkArea)
+        private static void _DrawTabHeaderItemImage(Graphics graphics, Rectangle bounds, ITabHeaderItemPaintData tabHeader, Rectangle? backArea, Rectangle? lineArea, Rectangle? lightArea, Rectangle? darkArea, MatrixTransformationType transformation)
         {
             if (tabHeader.Image == null) return;
             Rectangle imageBounds = tabHeader.ImageBounds.Add(bounds.Location);
-            graphics.DrawImage(tabHeader.Image, imageBounds);
+            bool isVertical = (tabHeader.Position == RectangleSide.Left || tabHeader.Position == RectangleSide.Right);
+            if (!isVertical)
+            {
+                graphics.DrawImage(tabHeader.Image, imageBounds);
+            }
+            else
+            {
+                imageBounds = imageBounds.Swap();               // Pro vertikální text převedu prostor textu "na šířku", protože otáčet "na výšku" ho bude Matrix aplikovaný do Graphics
+                Matrix matrixOld = graphics.Transform;
+                graphics.Transform = GetMatrix(transformation, imageBounds);
+                graphics.DrawImage(tabHeader.Image, imageBounds);
+                graphics.Transform = matrixOld;
+            }
         }
-        private static void _DrawTabHeaderItemText(Graphics graphics, Rectangle bounds, ITabHeaderItemPaintData tabHeader, Rectangle? backArea, Rectangle? lineArea, Rectangle? lightArea, Rectangle? darkArea)
+        private static void _DrawTabHeaderItemText(Graphics graphics, Rectangle bounds, ITabHeaderItemPaintData tabHeader, Rectangle? backArea, Rectangle? lineArea, Rectangle? lightArea, Rectangle? darkArea, MatrixTransformationType transformation)
         {
             Rectangle textBounds = tabHeader.TextBounds.Add(bounds.Location);
             bool isActive = tabHeader.IsActive;
             Color textColor = (isActive ? Skin.TabHeader.TextColorActive : Skin.TabHeader.TextColor);
-            MatrixTransformationType transformation = _DrawTabHeaderGetTransformation(tabHeader.Position);
             GPainter.DrawString(graphics, textBounds, tabHeader.Text, textColor, tabHeader.Font, ContentAlignment.MiddleCenter, transformation);
         }
-        private static void _DrawTabHeaderItemCloseButton(Graphics graphics, Rectangle bounds, ITabHeaderItemPaintData tabHeader, Rectangle? backArea, Rectangle? lineArea, Rectangle? lightArea, Rectangle? darkArea)
+        private static void _DrawTabHeaderItemCloseButton(Graphics graphics, Rectangle bounds, ITabHeaderItemPaintData tabHeader, Rectangle? backArea, Rectangle? lineArea, Rectangle? lightArea, Rectangle? darkArea, MatrixTransformationType transformation)
         { }
-        private static void _DrawTabHeaderItemLines(Graphics graphics, Rectangle bounds, ITabHeaderItemPaintData tabHeader, Rectangle? backArea, Rectangle? lineArea, Rectangle? lightArea, Rectangle? darkArea)
+        private static void _DrawTabHeaderItemLines(Graphics graphics, Rectangle bounds, ITabHeaderItemPaintData tabHeader, Rectangle? backArea, Rectangle? lineArea, Rectangle? lightArea, Rectangle? darkArea, MatrixTransformationType transformation)
         {
             bool isActive = tabHeader.IsActive;
             bool isHot = tabHeader.InteractiveState.IsMouseActive();

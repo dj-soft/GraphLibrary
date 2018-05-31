@@ -342,7 +342,11 @@ namespace Asol.Tools.WorkScheduler.Application
                     sb.Append(tab + _TraceFormatText(item));
             }
 
-            this._SynchronizedTraceStream.WriteLine(sb.ToString());
+            try
+            {
+                this._SynchronizedTraceStream.WriteLine(sb.ToString());
+            }
+            catch { }
         }
         private static string _TraceFormatText(string item)
         {

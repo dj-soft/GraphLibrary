@@ -1696,6 +1696,47 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             return new RectangleF(r.X - x, r.Y - y, r.Width, r.Height);
         }
+        /// <summary>
+        /// Vrátí nový Rectangle, který má stejnou pozici středu (Center), ale je otočený o 90°: z výšky na šířku.
+        /// </summary>
+        /// <param name="r"></param>
+        /// <returns></returns>
+        public static Rectangle Swap(this Rectangle r)
+        {
+            Point center = Center(r);
+            Size size = Swap(r.Size);
+            return center.CreateRectangleFromCenter(size);
+        }
+        /// <summary>
+        /// Vrátí danou velikost otočenou o 90°: z výšky na šířku.
+        /// </summary>
+        /// <param name="size"></param>
+        /// <returns></returns>
+        public static Size Swap(this Size size)
+        {
+            return new Size(size.Height, size.Width);
+        }
+
+        /// <summary>
+        /// Vrátí nový Rectangle, který má stejnou pozici středu (Center), ale je otočený o 90°: z výšky na šířku.
+        /// </summary>
+        /// <param name="r"></param>
+        /// <returns></returns>
+        public static RectangleF Swap(this RectangleF r)
+        {
+            PointF center = Center(r);
+            SizeF size = Swap(r.Size);
+            return center.CreateRectangleFromCenter(size);
+        }
+        /// <summary>
+        /// Vrátí danou velikost otočenou o 90°: z výšky na šířku.
+        /// </summary>
+        /// <param name="size"></param>
+        /// <returns></returns>
+        public static SizeF Swap(this SizeF size)
+        {
+            return new SizeF(size.Height, size.Width);
+        }
         #endregion
         #region Rectangle: FitInto()
         /// <summary>
