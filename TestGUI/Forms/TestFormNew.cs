@@ -57,19 +57,20 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this._TabHeaderH = new TabHeader() { Bounds = new Rectangle(0, 160, 950, 32), Position = RectangleSide.Bottom };
             var headerH1 = this._TabHeaderH.AddHeader("První stránka", Asol.Tools.WorkScheduler.Components.IconStandard.ObjectFlipVertical32);
             var headerH2 = this._TabHeaderH.AddHeader("Druhá stránka", Asol.Tools.WorkScheduler.Components.IconStandard.ObjectFlipHorizontal32);
+            headerH2.TabHeaderPaintBackGround += HeaderH2_TabHeaderPaintBackGround;
             var headerH3 = this._TabHeaderH.AddHeader("Třetí...");
             var headerH4 = this._TabHeaderH.AddHeader("Vodorovný scrollbar");
             headerH4.ToolTipText = "Aktivace této stránky aktivuje Vodorovný scrollbar.";
             headerH4.LinkItem = this._ScrollBarH;
             headerH4.BackColor = Color.Violet.Morph(Color.Yellow, 0.50f);
-            var headerH5 = this._TabHeaderH.AddHeader("Str.5");
+            var headerH5 = this._TabHeaderH.AddHeader("Str.5", Asol.Tools.WorkScheduler.Components.IconStandard.GoDown);
             this._TabHeaderH.ActiveHeaderItem = headerH3;
             this.GControl.AddItem(this._TabHeaderH);
 
             this._TabHeaderV = new TabHeader() { Bounds = new Rectangle(0, 160, 950, 32), Position = RectangleSide.Left };
-            var headerV1 = this._TabHeaderV.AddHeader("Plan items", Asol.Tools.WorkScheduler.Components.IconStandard.ObjectFlipVertical32);
+            var headerV1 = this._TabHeaderV.AddHeader("Plan items", Asol.Tools.WorkScheduler.Components.IconStandard.GoDown);
             headerV1.ToolTipText = "Položky ve stavu Zaplánováno";
-            var headerV2 = this._TabHeaderV.AddHeader("Product orders", Asol.Tools.WorkScheduler.Components.IconStandard.ObjectFlipHorizontal32);
+            var headerV2 = this._TabHeaderV.AddHeader("Product orders", Asol.Tools.WorkScheduler.Components.IconStandard.EditUndo);
             headerV2.ToolTipText = "Existující výrobní příkazy";
             var headerV3 = this._TabHeaderV.AddHeader("Invalid items");
             headerV3.ToolTipText = "Chybné položky";
@@ -77,6 +78,11 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this.GControl.AddItem(this._TabHeaderV);
 
             this.ControlsPosition();
+        }
+
+        private void HeaderH2_TabHeaderPaintBackGround(object sender, PaintEventArgs e)
+        {
+            e.Graphics.DrawImage(Asol.Tools.WorkScheduler.Components.IconLibrary.BackSand, e.ClipRectangle);
         }
 
         private void GControl_DrawStandardLayer(object sender, PaintEventArgs e)
