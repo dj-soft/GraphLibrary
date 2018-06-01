@@ -68,23 +68,30 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this.GControl.AddItem(this._TabHeaderH);
 
             this._TabHeaderV = new TabHeader() { Bounds = new Rectangle(0, 160, 950, 32), Position = RectangleSide.Left };
-            var headerV1 = this._TabHeaderV.AddHeader("Plan items", Asol.Tools.WorkScheduler.Components.IconStandard.GoDown);
+            this._TabHeaderV.ActiveItemChanged += _TabHeaderV_ActiveItemChanged;
+            var headerV1 = this._TabHeaderV.AddHeader("Plan", "Plan items", Asol.Tools.WorkScheduler.Components.IconStandard.GoDown);
             headerV1.ToolTipText = "Položky ve stavu Zaplánováno";
-            var headerV2 = this._TabHeaderV.AddHeader("Product orders", Asol.Tools.WorkScheduler.Components.IconStandard.EditUndo);
+            var headerV2 = this._TabHeaderV.AddHeader("Product", "Product orders", Asol.Tools.WorkScheduler.Components.IconStandard.EditUndo);
             headerV2.ToolTipText = "Existující výrobní příkazy";
-            var headerV3 = this._TabHeaderV.AddHeader("Invalid items");
+            var headerV3 = this._TabHeaderV.AddHeader("Invalid", "Invalid items");
             headerV3.ToolTipText = "Chybné položky";
-            this._TabHeaderV.ActiveHeaderItem = headerV1;
+            // this._TabHeaderV.ActiveHeaderItem = headerV1;
             this.GControl.AddItem(this._TabHeaderV);
 
             this.ControlsPosition();
         }
-
         private void HeaderH2_TabHeaderPaintBackGround(object sender, PaintEventArgs e)
         {
             e.Graphics.DrawImage(Asol.Tools.WorkScheduler.Components.IconLibrary.BackSand, e.ClipRectangle);
         }
+        private void _TabHeaderV_ActiveItemChanged(object sender, GPropertyChangeArgs<TabHeader.TabItem> e)
+        {
+            if (e.OldValue != null && e.OldValue.Key == "Plan")
+                e.OldValue.Text = "Plan items";
+            if (e.NewValue != null && e.NewValue.Key == "Plan")
+                e.NewValue.Text = "Položky plánu";
 
+        }
         private void GControl_DrawStandardLayer(object sender, PaintEventArgs e)
         {
             bool draw = true;
