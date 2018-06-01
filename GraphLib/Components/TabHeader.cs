@@ -17,6 +17,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             this._ItemList = new List<TabItem>();
             this._Position = RectangleSide.Top;
+            this.__ActiveHeaderIndex = -1;
         }
         protected override void SetBoundsPrepareInnerItems(Rectangle oldBounds, Rectangle newBounds, ref ProcessAction actions, EventSourceType eventSource)
         {
@@ -65,8 +66,9 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             get
             {
+                int count = this.HeaderItemCount;
                 int index = this.ActiveHeaderIndex;
-                return (index >= 0 ? this._ItemList[index] : null);
+                return ((index >= 0 && index < count) ? this._ItemList[index] : null);
             }
             set
             {
@@ -89,13 +91,17 @@ namespace Asol.Tools.WorkScheduler.Components
             set
             {
                 int count = this.HeaderItemCount;
-                int oldValue = this.__ActiveHeaderIndex;
-                int newValue = (value < 0 ? 0 : ((value >= count) ? count - 1 : value));
-                if (newValue != oldValue)
+                int oldIndex = this.__ActiveHeaderIndex;
+                TabItem oldItem = this.ActiveHeaderItem;
+
+                int newIndex = value;
+                if (newIndex >= 0 && newIndex < count && newIndex != oldIndex)
                 {
-                    this.__ActiveHeaderIndex = newValue;
-                    this._ShowLinkedItems(this._ItemList[newValue]);
-                    this.CallActiveItemChanged(oldValue, newValue, EventSourceType.InteractiveChanged);
+                    this.__ActiveHeaderIndex = newIndex;
+                    this._ShowLinkedItems(this._ItemList[newIndex]);
+                    TabItem newItem = this.ActiveHeaderItem;
+                    this.CallActiveIndexChanged(oldIndex, newIndex, EventSourceType.InteractiveChanged);
+                    this.CallActiveItemChanged(oldItem, newItem, EventSourceType.InteractiveChanged);
                 }
             }
         }
@@ -146,12 +152,18 @@ namespace Asol.Tools.WorkScheduler.Components
 
         public TabItem AddHeader(Localizable.TextLoc text, Image image = null, int tabOrder = 0, IInteractiveItem linkItem = null)
         {
-            return this._AddHeader(text, image, tabOrder, linkItem);
+            return this._AddHeader(null, text, image, tabOrder, linkItem);
         }
-        private TabItem _AddHeader(Localizable.TextLoc text, Image image, int tabOrder, IInteractiveItem linkItem)
+        public TabItem AddHeader(string key, Localizable.TextLoc text, Image image = null, int tabOrder = 0, IInteractiveItem linkItem = null)
         {
-            TabItem tabHeaderItem = new TabItem(this, text, image, linkItem, tabOrder);
+            return this._AddHeader(key, text, image, tabOrder, linkItem);
+        }
+        private TabItem _AddHeader(string key, Localizable.TextLoc text, Image image, int tabOrder, IInteractiveItem linkItem)
+        {
+            TabItem tabHeaderItem = new TabItem(this, key, text, image, linkItem, tabOrder);
             this._ItemList.Add(tabHeaderItem);
+            if (this._ActiveHeaderIndex < 0)
+                this._ActiveHeaderIndex = 0;
             this._ShowLinkedItems();
             this.InvalidateChildItems();
             return tabHeaderItem;
@@ -159,11 +171,31 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Eventy
         /// <summary>
-        /// Vyvolá háček OnActiveItemChanged a event ActiveItemChanged
+        /// Vyvolá háček OnActiveIndexChanged a event ActiveIndexChanged
         /// </summary>
-        protected int CallActiveItemChanged(int oldValue, int newValue, EventSourceType eventSource)
+        protected int CallActiveIndexChanged(int oldValue, int newValue, EventSourceType eventSource)
         {
             GPropertyChangeArgs<int> args = new GPropertyChangeArgs<int>(eventSource, oldValue, newValue);
+            this.OnActiveIndexChanged(args);
+            if (!this.IsSuppressedEvent && this.ActiveIndexChanged != null)
+                this.ActiveIndexChanged(this, args);
+            return args.ResultValue;
+        }
+        /// <summary>
+        /// Provede se po změně indexu aktivní záložky (<see cref="ActiveHeaderItem"/>)
+        /// </summary>
+        protected virtual void OnActiveIndexChanged(GPropertyChangeArgs<int> args) { }
+        /// <summary>
+        /// Event volaný po změně indexu aktivní záložky (<see cref="ActiveHeaderItem"/>)
+        /// </summary>
+        public event GPropertyChanged<int> ActiveIndexChanged;
+
+        /// <summary>
+        /// Vyvolá háček OnActiveItemChanged a event ActiveItemChanged
+        /// </summary>
+        protected TabItem CallActiveItemChanged(TabItem oldValue, TabItem newValue, EventSourceType eventSource)
+        {
+            GPropertyChangeArgs<TabItem> args = new GPropertyChangeArgs<TabItem>(eventSource, oldValue, newValue);
             this.OnActiveItemChanged(args);
             if (!this.IsSuppressedEvent && this.ActiveItemChanged != null)
                 this.ActiveItemChanged(this, args);
@@ -172,12 +204,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Provede se po změně aktivní záložky (<see cref="ActiveHeaderItem"/>)
         /// </summary>
-        protected virtual void OnActiveItemChanged(GPropertyChangeArgs<int> args) { }
+        protected virtual void OnActiveItemChanged(GPropertyChangeArgs<TabItem> args) { }
         /// <summary>
         /// Event volaný po změně aktivní záložky (<see cref="ActiveHeaderItem"/>)
         /// </summary>
-        public event GPropertyChanged<int> ActiveItemChanged;
-
+        public event GPropertyChanged<TabItem> ActiveItemChanged;
         #endregion
         #region Uspořádání jednotlivých záhlaví - výpočty jejich Bounds podle orientace a jejich textu, fontu a zdejších souřadnic
         /// <summary>
@@ -362,10 +393,11 @@ namespace Asol.Tools.WorkScheduler.Components
             /// <param name="image"></param>
             /// <param name="linkItem"></param>
             /// <param name="tabOrder"></param>
-            internal TabItem(TabHeader tabHeader, Localizable.TextLoc text, Image image, IInteractiveItem linkItem, int tabOrder)
+            internal TabItem(TabHeader tabHeader, string key, Localizable.TextLoc text, Image image, IInteractiveItem linkItem, int tabOrder)
             {
                 this.Parent = tabHeader;
                 this.TabHeader = tabHeader;
+                this._Key = key;
                 this._Text = text;
                 this._Image = image;
                 this._TabOrder = tabOrder;
@@ -380,6 +412,12 @@ namespace Asol.Tools.WorkScheduler.Components
             /// Reference na vlastníka této záložky
             /// </summary>
             protected TabHeader TabHeader { get; private set; }
+            /// <summary>
+            /// Klíč headeru, zadaný při jeho vytváření.
+            /// Jeho obsah a unikátnost je čistě na uživateli.
+            /// </summary>
+            public string Key { get { return this._Key; } }
+            private string _Key;
             /// <summary>
             /// Text v záhlaví
             /// </summary>
@@ -423,6 +461,11 @@ namespace Asol.Tools.WorkScheduler.Components
             /// Viditelnost záhlaví
             /// </summary>
             public override bool IsVisible { get { return base.IsVisible; } set { base.IsVisible = value; this.TabHeaderInvalidate(); } }
+            /// <summary>
+            /// Jakákoli uživatelská data
+            /// </summary>
+            public object UserData { get { return this._UserData; } set { this._UserData = value; } }
+            private object _UserData;
             #endregion
             #region Souřadnice záhlaví a jeho vnitřních položek, komparátor podle TabOrder
             /// <summary>
