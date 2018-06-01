@@ -54,10 +54,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this._ScrollBarV.UserDraw += new GUserDrawHandler(_ScrollBarV_UserDraw);
             this.GControl.AddItem(this._ScrollBarV);
 
-            this._TabHeaderH = new TabHeader() { Bounds = new Rectangle(0, 160, 950, 32), Position = RectangleSide.Bottom };
+            this._TabHeaderH = new TabHeader() { Bounds = new Rectangle(0, 160, 950, 32), Position = RectangleSide.Top };
+            this._TabHeaderH.TabItemPaintBackGround += _TabHeaderH_TabItemPaintBackGround;
             var headerH1 = this._TabHeaderH.AddHeader("První stránka", Asol.Tools.WorkScheduler.Components.IconStandard.ObjectFlipVertical32);
             var headerH2 = this._TabHeaderH.AddHeader("Druhá stránka", Asol.Tools.WorkScheduler.Components.IconStandard.ObjectFlipHorizontal32);
-            headerH2.TabHeaderPaintBackGround += HeaderH2_TabHeaderPaintBackGround;
             var headerH3 = this._TabHeaderH.AddHeader("Třetí...");
             var headerH4 = this._TabHeaderH.AddHeader("Vodorovný scrollbar");
             headerH4.ToolTipText = "Aktivace této stránky aktivuje Vodorovný scrollbar.";
@@ -68,6 +68,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this.GControl.AddItem(this._TabHeaderH);
 
             this._TabHeaderV = new TabHeader() { Bounds = new Rectangle(0, 160, 950, 32), Position = RectangleSide.Left };
+            this._TabHeaderV.HeaderSizeRange = new Int32Range(180, 180);
             this._TabHeaderV.ActiveItemChanged += _TabHeaderV_ActiveItemChanged;
             var headerV1 = this._TabHeaderV.AddHeader("Plan", "Plan items", Asol.Tools.WorkScheduler.Components.IconStandard.GoDown);
             headerV1.ToolTipText = "Položky ve stavu Zaplánováno";
@@ -79,6 +80,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this.GControl.AddItem(this._TabHeaderV);
 
             this.ControlsPosition();
+        }
+        private void _TabHeaderH_TabItemPaintBackGround(object sender, PaintEventArgs e)
+        {
+            e.Graphics.DrawImage(Asol.Tools.WorkScheduler.Components.IconLibrary.BackSand, e.ClipRectangle);
         }
         private void HeaderH2_TabHeaderPaintBackGround(object sender, PaintEventArgs e)
         {
