@@ -16,6 +16,15 @@ namespace Asol.Tools.WorkScheduler.Components
         : GBaseAxis<Decimal?, Decimal?, SizeRange>
     {
         /// <summary>
+        /// Konstruktor s parentem
+        /// </summary>
+        /// <param name="parent"></param>
+        public GSizeAxis(IInteractiveParent parent) : this() { this.Parent = parent; }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public GSizeAxis() : base() { }
+        /// <summary>
         /// Initial value for new axis
         /// </summary>
         protected override SizeRange InitialValue

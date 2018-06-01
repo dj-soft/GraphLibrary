@@ -15,6 +15,11 @@ namespace Asol.Tools.WorkScheduler.Components
     {
         #region Vytvoření Toolbaru bez načítání obsahu, public prvky
         /// <summary>
+        /// Konstruktor s parentem
+        /// </summary>
+        /// <param name="parent"></param>
+        public GToolBar(IInteractiveParent parent) : this() { this.Parent = parent; }
+        /// <summary>
         /// Konstruktor
         /// </summary>
         public GToolBar()

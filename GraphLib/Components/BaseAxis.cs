@@ -19,6 +19,11 @@ namespace Asol.Tools.WorkScheduler.Components
     {
         #region Konstruktory
         /// <summary>
+        /// Konstruktor s parentem
+        /// </summary>
+        /// <param name="parent"></param>
+        public GBaseAxis(IInteractiveParent parent) : this() { this.Parent = parent; }
+        /// <summary>
         /// Konstruktor
         /// </summary>
         public GBaseAxis()
@@ -65,7 +70,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Potomek může mít jiný názor.
         /// </summary>
         /// <param name="e"></param>
-        protected virtual void PrepareToolTip(GInteractiveChangeStateArgs e)
+        protected override void PrepareToolTip(GInteractiveChangeStateArgs e)
         {
             e.ToolTipData.ShapeType = TooltipShapeType.Rectangle;
             e.ToolTipData.AnimationType = TooltipAnimationType.Instant;

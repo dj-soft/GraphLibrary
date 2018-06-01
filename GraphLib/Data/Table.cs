@@ -83,6 +83,11 @@ namespace Asol.Tools.WorkScheduler.Data
         public Localizable.TextLoc Title { get { return this._Title; } set { this._Title = value; } }
         private Localizable.TextLoc _Title;
         /// <summary>
+        /// Ikonka tabulky, bude použita tehdy, když tabulka bude umístěna ve vhodném kontejneru.
+        /// </summary>
+        public Image Image { get { return this._Image; } set { this._Image = value; } }
+        private Image _Image;
+        /// <summary>
         /// Jednoznačné ID tabulky
         /// </summary>
         public int TableId { get { return this._TableId; } }

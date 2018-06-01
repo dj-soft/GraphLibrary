@@ -165,6 +165,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private const int MinGridWidth = 95;
         private const int MinGridHeight = 75;
         private const int SplitterSize = 4;
+        
         private GGrid _TaskGrid;
         private GSplitter _TaskSplitter;
         private bool _IsTaskVisible;
@@ -204,6 +205,16 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         #endregion
         #region Public data
         public Services.IDataSource SchedulerDataSource { get { return this._SchedulerDataSource; } }
+        /// <summary>
+        /// Titulek celých dat, zobrazí se v TabHeaderu, pokud bude datových zdrojů více než 1
+        /// </summary>
+        public Localizable.TextLoc Title { get { return this._Title; } set { this._Title = value; } }
+        private Localizable.TextLoc _Title;
+        /// <summary>
+        /// Ikona celých dat, zobrazí se v TabHeaderu, pokud bude datových zdrojů více než 1
+        /// </summary>
+        public Image Icon { get { return this._Icon; } set { this._Icon = value; } }
+        private Image _Icon;
         /// <summary>
         /// true pokud je viditelná tabulka úkolů k zapracování
         /// </summary>

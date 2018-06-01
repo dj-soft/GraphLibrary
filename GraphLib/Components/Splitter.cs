@@ -13,9 +13,14 @@ namespace Asol.Tools.WorkScheduler.Components
     /// </summary>
     public class GSplitter : InteractiveObject, IInteractiveItem
     {
-        #region Constructor
+        #region Konstruktor
         /// <summary>
-        /// Constructor
+        /// Konstruktor s parentem
+        /// </summary>
+        /// <param name="parent"></param>
+        public GSplitter(IInteractiveParent parent) : this() { this.Parent = parent; }
+        /// <summary>
+        /// Konstruktor
         /// </summary>
         public GSplitter()
         {

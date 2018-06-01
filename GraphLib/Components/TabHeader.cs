@@ -13,10 +13,19 @@ namespace Asol.Tools.WorkScheduler.Components
     public class TabHeader : InteractiveContainer
     {
         #region Konstruktor a public data celého headeru
+        /// <summary>
+        /// Konstruktor s parentem
+        /// </summary>
+        /// <param name="parent"></param>
+        public TabHeader(IInteractiveParent parent) : this() { this.Parent = parent; }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public TabHeader()
         {
             this._ItemList = new List<TabItem>();
             this._Position = RectangleSide.Top;
+            this._HeaderSizeRange = new Int32Range(50, 600);
             this.__ActiveHeaderIndex = -1;
         }
         protected override void SetBoundsPrepareInnerItems(Rectangle oldBounds, Rectangle newBounds, ref ProcessAction actions, EventSourceType eventSource)
@@ -28,6 +37,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public RectangleSide Position { get { return this._Position; } set { this._Position = value; this.InvalidateChildItems(); } }
         private RectangleSide _Position;
+        /// <summary>
+        /// Rozsah velikosti (délky) jednotlivého záhlaví, počet pixelů.
+        /// Výchozí hodnota je { 50 ÷ 600 }.
+        /// </summary>
+        public Int32Range HeaderSizeRange { get { return this._HeaderSizeRange; } set { this._HeaderSizeRange = value; this.InvalidateChildItems(); } }
+        private Int32Range _HeaderSizeRange;
         /// <summary>
         /// Počet položek celkem přítomných v poli <see cref="TabItems"/>
         /// </summary>
@@ -162,6 +177,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             TabItem tabHeaderItem = new TabItem(this, key, text, image, linkItem, tabOrder);
             this._ItemList.Add(tabHeaderItem);
+            tabHeaderItem.TabItemPaintBackGround += _TabHeaderItemPaintBackGround;
             if (this._ActiveHeaderIndex < 0)
                 this._ActiveHeaderIndex = 0;
             this._ShowLinkedItems();
@@ -170,6 +186,29 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         #endregion
         #region Eventy
+        /// <summary>
+        /// Eventhandler pro událost na konkrétním záhlaví (TabItem), kde se provádí uživatelské vykreslení pozadí
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _TabHeaderItemPaintBackGround(object sender, PaintEventArgs e)
+        {
+            this.OnTabItemPaintBackGround(sender, e);
+            if (this.TabItemPaintBackGround != null)
+                this.TabItemPaintBackGround(sender, e);
+        }
+        /// <summary>
+        /// Háček pro uživatelské kreslení pozadí záhlaví
+        /// </summary>
+        /// <param name="sender">Objekt kde k události došlo = <see cref="TabHeader.TabItem"/></param>
+        /// <param name="e">Data pro kreslení</param>
+        protected virtual void OnTabItemPaintBackGround(object sender, PaintEventArgs e) { }
+        /// <summary>
+        /// Event pro uživatelské kreslení pozadí záhlaví.
+        /// Jako parametr sender je předán objekt konkrétního záhlaví <see cref="TabHeader.TabItem"/>.
+        /// </summary>
+        public event PaintEventHandler TabItemPaintBackGround;
+
         /// <summary>
         /// Vyvolá háček OnActiveIndexChanged a event ActiveIndexChanged
         /// </summary>
@@ -339,7 +378,7 @@ namespace Asol.Tools.WorkScheduler.Components
         #region Draw, Interactivity
         protected override void DrawStandard(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
         {
-            Color spaceColor = Skin.TabHeader.SpaceColor;
+            Color spaceColor = this.BackColor;                  // tam je default: Skin.TabHeader.SpaceColor;
             if (spaceColor.A > 0)
                 e.Graphics.FillRectangle(Skin.Brush(spaceColor), boundsAbsolute);
 
@@ -376,6 +415,16 @@ namespace Asol.Tools.WorkScheduler.Components
 
             e.Graphics.FillRectangle(Skin.Brush(color), line);
         }
+        /// <summary>
+        /// Protože: this prvek může mít transparentní svoje pozadí, a navíc podporuje proměnný obsah popředí, musíme zajistit přemalování Parenta před přemalováním this.
+        /// </summary>
+        protected override RepaintParentMode RepaintParent { get { return RepaintParentMode.OnBackColorAlpha; } }
+        /// <summary>
+        /// Aby fungovalo přemalování parenta v režimu <see cref="RepaintParentMode.OnBackColorAlpha"/>, musíme vracet korektní barvu BackColor.
+        /// Výchozí je <see cref="Skin.TabHeader.SpaceColor"/>.
+        /// </summary>
+        public override Color BackColor { get { return (this._BackColor.HasValue ? this._BackColor.Value : Skin.TabHeader.SpaceColor); } set { this._BackColor = value; base.BackColor = value; } }
+        private new Color? _BackColor;
         protected override IEnumerable<IInteractiveItem> Childs { get { return this.GetChilds(null); } }
         #endregion
         #region class TabItem : jedna položka reprezentující záhlaví stránky
@@ -462,12 +511,16 @@ namespace Asol.Tools.WorkScheduler.Components
             /// </summary>
             public override bool IsVisible { get { return base.IsVisible; } set { base.IsVisible = value; this.TabHeaderInvalidate(); } }
             /// <summary>
+            /// Obsahuje true, pokud this záhlaví je aktivní
+            /// </summary>
+            public bool IsActive { get { return (this.TabHeader != null && Object.ReferenceEquals(this, this.TabHeader.ActiveHeaderItem)); } }
+            /// <summary>
             /// Jakákoli uživatelská data
             /// </summary>
             public object UserData { get { return this._UserData; } set { this._UserData = value; } }
             private object _UserData;
             #endregion
-            #region Souřadnice záhlaví a jeho vnitřních položek, komparátor podle TabOrder
+            #region Souřadnice záhlaví a jeho vnitřních položek, jeho výpočty, komparátor podle TabOrder
             /// <summary>
             /// Metoda připraví souřadnice tohoto prvku (<see cref="TabItem"/>) a jeho vnitřní souřadnice (ikona, text, close button).
             /// Vychází z pixelu begin, kde má zíhlaví začínat, z orientace headeru a jeho fontu, a z vnitřních dat záhlaví.
@@ -479,38 +532,77 @@ namespace Asol.Tools.WorkScheduler.Components
                 int height = this.TabHeader.HeaderHeight;
                 bool headerIsVertical = this.TabHeader.HeaderIsVertical;
                 bool headerIsReverseOrder = (this.TabHeader.Position == RectangleSide.Left);
-                int contentPosition = 6;    // Začátek následujícího prvku ve směru délky headeru
                 Int32Range contentHeight = Int32Range.CreateFromCenterSize(height / 2, height - 6);     // Prostor pro vnitřní obsah ve směru výšky headeru
+                Int32Range textLengthRange = GetLengthRangeText(contentHeight);
 
+                int contentPosition = LengthBorder;    // Začátek následujícího prvku ve směru délky headeru
                 if (!headerIsReverseOrder)
                 {
-                    PrepareBoundsImage(graphics, headerIsVertical, ref contentPosition, contentHeight); // Ikonka
-                    PrepareBoundsText(graphics, headerIsVertical, ref contentPosition, contentHeight);  // Text
-                    PrepareBoundsClose(graphics, headerIsVertical, ref contentPosition, contentHeight); // Close button
+                    PrepareBoundsImage(graphics, headerIsVertical, ref contentPosition, contentHeight);                // Ikonka
+                    PrepareBoundsText(graphics, headerIsVertical, ref contentPosition, contentHeight, textLengthRange);// Text
+                    PrepareBoundsClose(graphics, headerIsVertical, ref contentPosition, contentHeight);                // Close button
                 }
                 else
                 {
-                    PrepareBoundsClose(graphics, headerIsVertical, ref contentPosition, contentHeight); // Close button
-                    PrepareBoundsText(graphics, headerIsVertical, ref contentPosition, contentHeight);  // Text
-                    PrepareBoundsImage(graphics, headerIsVertical, ref contentPosition, contentHeight); // Ikonka
+                    PrepareBoundsClose(graphics, headerIsVertical, ref contentPosition, contentHeight);                // Close button
+                    PrepareBoundsText(graphics, headerIsVertical, ref contentPosition, contentHeight, textLengthRange);// Text
+                    PrepareBoundsImage(graphics, headerIsVertical, ref contentPosition, contentHeight);                // Ikonka
                 }
+                contentPosition += (LengthBorder - LengthSpace);
 
                 PrepareBoundsTotal(graphics, headerIsVertical, ref begin, contentPosition, height);     // Celkové rozměry
+            }
+            /// <summary>
+            /// Metoda vypočte a vrátí rozsah délky (v pixelech) pro pole Text.
+            /// Vychází přitom z povoleného rozsahu <see cref="TabHeader.HeaderSizeRange"/>, a z velikosti zdejší ikony a close buttonu.
+            /// Pokud není povolený rozsah <see cref="TabHeader.HeaderSizeRange"/> zadán (je null) nebo pokud by výsledná velikost textu Max byla menší než 30 px, vrací se null.
+            /// </summary>
+            /// <param name="contentHeight"></param>
+            /// <returns></returns>
+            private Int32Range GetLengthRangeText(Int32Range contentHeight)
+            {
+                Int32Range sizeRange = this.TabHeader.HeaderSizeRange;         // Povolená délka celého záhlaví (tj. včetně okrajů, mezer a ikon)
+                if (sizeRange == null) return null;
+
+                int imageLen = this.GetLengthImage(contentHeight);
+                int closeLen = (this.CloseButtonVisible ? LengthClose : 0);
+                int fixedLen = LengthBorder +
+                    (imageLen == 0 ? 0 : imageLen + LengthSpace) +
+                    (closeLen == 0 ? 0 : closeLen + LengthSpace) +
+                    ((imageLen == 0 && closeLen == 0) ? LengthBorder : (LengthBorder - LengthSpace));
+
+                int textMin = sizeRange.Begin - fixedLen;
+                int textMax = sizeRange.End - fixedLen;
+                return (textMax >= 30 ? new Int32Range(textMin, textMax) : null);
+            }
+            /// <summary>
+            /// Vrátí délku ikony Image: pokud je null, pak 0; jinak vrátí její Width pokud je menší než contentHeight.Size; anebo vrátí contentHeight.Size (jako nejvyšší možnou velikost obrázku)
+            /// </summary>
+            /// <param name="contentHeight"></param>
+            /// <returns></returns>
+            private int GetLengthImage(Int32Range contentHeight)
+            {
+                int length = 0;
+                if (this.Image != null)
+                {
+                    length = this.Image.Size.Width;
+                    if (length > contentHeight.Size) length = contentHeight.Size;
+                }
+                return length;
             }
             private void PrepareBoundsImage(Graphics graphics, bool headerIsVertical,  ref int contentPosition, Int32Range contentHeight)
             {
                 this.ImageBounds = Rectangle.Empty;
                 if (this.Image != null)
                 {
-                    int imageWidth = this.Image.Size.Width;
-                    if (imageWidth > contentHeight.Size) imageWidth = contentHeight.Size;
+                    int imageWidth = this.GetLengthImage(contentHeight);
                     Int32Range l = Int32Range.CreateFromBeginSize(contentPosition, imageWidth);        // Prostor ve směru délky headeru (Horizontal: fyzická osa X, Width; Vertical: fyzická osa Y, Height)
                     Int32Range h = Int32Range.CreateFromCenterSize(contentHeight.Center, imageWidth);  // Prostor ve směru výšky headeru (Horizontal: fyzická osa Y, Height; Vertical: fyzická osa X, Width)
                     this.ImageBounds = (headerIsVertical ? Int32Range.GetRectangle(h, l) : Int32Range.GetRectangle(l, h));
-                    contentPosition = l.End + 4;
+                    contentPosition = l.End + LengthSpace;
                 }
             }
-            private void PrepareBoundsText(Graphics graphics, bool headerIsVertical, ref int contentPosition, Int32Range contentHeight)
+            private void PrepareBoundsText(Graphics graphics, bool headerIsVertical, ref int contentPosition, Int32Range contentHeight, Int32Range textLengthRange)
             {
                 this.TextBounds = Rectangle.Empty;
                 if (!String.IsNullOrEmpty(this.Text))
@@ -519,11 +611,14 @@ namespace Asol.Tools.WorkScheduler.Components
                     string text = this.Text;
                     Size textSize = GPainter.MeasureString(graphics, text, fontInfo);
                     int width = textSize.Width + 6;
-                    if (width > 220) width = 220;
+                    if (textLengthRange != null)
+                        width = textLengthRange.Align(width);
+                    else if (width > 220)
+                        width = 220;
                     Int32Range l = Int32Range.CreateFromBeginSize(contentPosition, width);
                     Int32Range h = contentHeight;
                     this.TextBounds = (headerIsVertical ? Int32Range.GetRectangle(h, l) : Int32Range.GetRectangle(l, h));
-                    contentPosition = l.End + 4;
+                    contentPosition = l.End + LengthSpace;
                 }
             }
             private void PrepareBoundsClose(Graphics graphics, bool headerIsVertical, ref int contentPosition, Int32Range contentHeight)
@@ -531,12 +626,11 @@ namespace Asol.Tools.WorkScheduler.Components
                 this.CloseButtonBounds = Rectangle.Empty;
                 if (this.CloseButtonVisible)
                 {
-                    Int32Range l = Int32Range.CreateFromBeginSize(contentPosition, 24);
-                    Int32Range h = Int32Range.CreateFromCenterSize(contentHeight.Center, 24);
+                    Int32Range l = Int32Range.CreateFromBeginSize(contentPosition, LengthClose);
+                    Int32Range h = Int32Range.CreateFromCenterSize(contentHeight.Center, LengthClose);
                     this.CloseButtonBounds = (headerIsVertical ? Int32Range.GetRectangle(h, l) : Int32Range.GetRectangle(l, h));
-                    contentPosition = l.End + 4;
+                    contentPosition = l.End + LengthSpace;
                 }
-                contentPosition += 2;
             }
             private void PrepareBoundsTotal(Graphics graphics, bool headerIsVertical, ref int begin, int contentPosition, int height)
             {
@@ -548,6 +642,9 @@ namespace Asol.Tools.WorkScheduler.Components
                 // Začátek příštího prvku = konec this prvku + jeho velikost ve směru jeho délky:
                 begin = l.End;
             }
+            private const int LengthBorder = 6;
+            private const int LengthSpace = 6;
+            private const int LengthClose = 24;
             /// <summary>
             /// Pozice, kde se záhlaví nachází vzhledem k datové oblasti, pro kterou má přepínat její obsah
             /// </summary>
@@ -614,21 +711,51 @@ namespace Asol.Tools.WorkScheduler.Components
             }
             #endregion
             #region Draw, Interactivity, ITabHeaderItemPaintData
+            /// <summary>
+            /// Zajistí standardní vykreslení záhlaví
+            /// </summary>
+            /// <param name="e"></param>
+            /// <param name="boundsAbsolute"></param>
             protected override void DrawStandard(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
             {
                 GPainter.DrawTabHeaderItem(e.Graphics, boundsAbsolute, this);
             }
-            protected virtual void UserDataDraw(Graphics graphics, Rectangle bounds)
+            /// <summary>
+            /// Zajistí vyvolání háčku <see cref="OnTabHeaderPaintBackGround(Graphics, Rectangle)"/> a eventu <see cref="TabItemPaintBackGround"/>.
+            /// </summary>
+            /// <param name="graphics"></param>
+            /// <param name="bounds"></param>
+            protected void CallUserDataDraw(Graphics graphics, Rectangle bounds)
             {
-                if (this.TabHeaderPaintBackGround != null)
-                    this.TabHeaderPaintBackGround(this, new PaintEventArgs(graphics, bounds));
+                PaintEventArgs e = new PaintEventArgs(graphics, bounds);
+                this.OnTabItemPaintBackGround(this, e);
+                if (this.TabItemPaintBackGround != null)
+                    this.TabItemPaintBackGround(this, e);
             }
-            public event PaintEventHandler TabHeaderPaintBackGround;
+            /// <summary>
+            /// Háček pro uživatelské kreslení pozadí záhlaví
+            /// </summary>
+            /// <param name="graphics"></param>
+            /// <param name="bounds"></param>
+            protected virtual void OnTabItemPaintBackGround(object sender, PaintEventArgs e) { }
+            /// <summary>
+            /// Event pro uživatelské kreslení pozadí záhlaví
+            /// </summary>
+            public event PaintEventHandler TabItemPaintBackGround;
+
+            /// <summary>
+            /// Po kliknutí levou myší na záhlaví: provede aktivaci záhlaví
+            /// </summary>
+            /// <param name="e"></param>
             protected override void AfterStateChangedLeftClick(GInteractiveChangeStateArgs e)
             {
                 base.AfterStateChangedLeftClick(e);
                 this.TabHeader.ActiveHeaderItem = this;
             }
+            /// <summary>
+            /// Připraví Tooltip pro toto záhlaví
+            /// </summary>
+            /// <param name="e"></param>
             protected override void PrepareToolTip(GInteractiveChangeStateArgs e)
             {
                 Localizable.TextLoc toolTip = this.ToolTipText;
@@ -651,7 +778,7 @@ namespace Asol.Tools.WorkScheduler.Components
             Rectangle ITabHeaderItemPaintData.TextBounds { get { return this.TextBounds; } }
             bool ITabHeaderItemPaintData.CloseButtonVisible { get { return this.CloseButtonVisible; } }
             Rectangle ITabHeaderItemPaintData.CloseButtonBounds { get { return this.CloseButtonBounds; } }
-            void ITabHeaderItemPaintData.UserDataDraw(Graphics graphics, Rectangle bounds) { this.UserDataDraw(graphics, bounds); }
+            void ITabHeaderItemPaintData.UserDataDraw(Graphics graphics, Rectangle bounds) { this.CallUserDataDraw(graphics, bounds); }
             #endregion
             #endregion
         }

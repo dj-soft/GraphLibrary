@@ -821,6 +821,7 @@ namespace Asol.Tools.WorkScheduler.Components
         { }
         #endregion
         #region Public colors
+        public int HeaderHeight { get { return this._Owner.GetValue(this._SkinSetKey, "HeaderHeight", DefaultHeaderHeight); } set { this._Owner.SetValue(this._SkinSetKey, "HeaderHeight", value); } }
         public Color SpaceColor { get { return this._Owner.GetValue(this._SkinSetKey, "SpaceColor", DefaultSpaceColor); } set { this._Owner.SetValue(this._SkinSetKey, "SpaceColor", value); } }
         public Color BorderColor { get { return this._Owner.GetValue(this._SkinSetKey, "BorderColor", DefaultBorderColor); } set { this._Owner.SetValue(this._SkinSetKey, "BorderColor", value); } }
         public Color LineColorHot { get { return this._Owner.GetValue(this._SkinSetKey, "LineColorHot", DefaultLineColorHot); } set { this._Owner.SetValue(this._SkinSetKey, "LineColorHot", value); } }
@@ -831,6 +832,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public Color TextColorActive { get { return this._Owner.GetValue(this._SkinSetKey, "TextColorActive", DefaultTextColorActive); } set { this._Owner.SetValue(this._SkinSetKey, "TextColorActive", value); } }
         #endregion
         #region Default colors
+        protected virtual int DefaultHeaderHeight { get { return 28; } }
         protected virtual Color DefaultSpaceColor { get { return Color.FromArgb(0, 255, 255, 255); } }
         protected virtual Color DefaultBorderColor { get { return Color.DimGray; } }
         protected virtual Color DefaultLineColorHot { get { return Color.FromArgb(255, 216, 216, 128); } }

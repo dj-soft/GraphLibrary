@@ -23,6 +23,14 @@ namespace Asol.Tools.WorkScheduler.Components
     public class GGrid : InteractiveContainer, IInteractiveItem
     {
         #region Inicializace
+        /// <summary>
+        /// Konstruktor s parentem
+        /// </summary>
+        /// <param name="parent"></param>
+        public GGrid(IInteractiveParent parent) : this() { this.Parent = parent; }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public GGrid()
         {
             this.Init();

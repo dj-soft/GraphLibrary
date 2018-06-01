@@ -15,11 +15,20 @@ namespace Asol.Tools.WorkScheduler.Components
     public class GTimeAxis
         : GBaseAxis<DateTime?, TimeSpan?, TimeRange>, ITimeConvertor
     {
-        #region Obecné overrides osy
+        #region Knstruktory, Obecné overrides osy
+        /// <summary>
+        /// Konstruktor s parentem
+        /// </summary>
+        /// <param name="parent"></param>
+        public GTimeAxis(IInteractiveParent parent) : this() { this.Parent = parent; }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public GTimeAxis() : base() { }
         /// <summary>
         /// Initial value for new axis
         /// </summary>
-        protected override Asol.Tools.WorkScheduler.Data.TimeRange InitialValue
+        protected override TimeRange InitialValue
         {
             get { DateTime now = DateTime.Now; return new TimeRange(now.Date, now.Date.AddDays(1d)); }
         }

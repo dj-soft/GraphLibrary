@@ -357,10 +357,20 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Zajistí, že this prvek bude standardně vykreslen včetně všech svých <see cref="Childs"/>.
         /// </summary>
         /// <param name="item"></param>
-        protected void Repaint()
+        protected virtual void Repaint()
         {
             this.RepaintToLayers = this.StandardDrawToLayer;
+            if (this.HasParent)
+            {
+                RepaintParentMode repaintParent = this.RepaintParent;
+                if ((repaintParent == RepaintParentMode.OnBackColorAlpha && this.BackColor.A < 255) || repaintParent == RepaintParentMode.Always)
+                    this.Parent.Repaint();
+            }
         }
+        /// <summary>
+        /// Volba, zda metoda <see cref="Repaint"/> způsobí i vyvolání metody <see cref="Parent"/>.<see cref="IInteractiveParent.Repaint"/>.
+        /// </summary>
+        protected virtual RepaintParentMode RepaintParent { get { return RepaintParentMode.None; } }
         /// <summary>
         /// Current (new) state of item (after this event, not before it).
         /// </summary>

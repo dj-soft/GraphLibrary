@@ -1328,6 +1328,27 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         InteractiveChanged = 0x2000
     }
+    /// <summary>
+    /// Režim překreslení objektu Parent při překreslení objektu this.
+    /// V naprosté většině případů není při překreslení this objektu zapotřebí překreslovat objekt Parent.
+    /// Exitují výjimky, typicky pokud aktuální objekt používá průhlednost (ve své BackColor nebo jinou cestou ne-kreslené pozadí), 
+    /// pak může být zapotřebí vykreslit nejprve Parent objekt, a teprve na něj this objekt.
+    /// </summary>
+    public enum RepaintParentMode
+    {
+        /// <summary>
+        /// Překreslení this objektu nevyžaduje předchozí vykreslení Parenta
+        /// </summary>
+        None,
+        /// <summary>
+        /// Překreslení this objektu vyžaduje nejprve vykreslení Parenta, pokud this.BackColor má hodnotu A menší než 255 (tzn. naše pozadí je trochu nebo úplně průhledné)
+        /// </summary>
+        OnBackColorAlpha,
+        /// <summary>
+        /// Překreslení this objektu bezpodmínečně vyžaduje nejprve vykreslení Parenta
+        /// </summary>
+        Always
+    }
     #endregion
     #region Vizuální styly : interface IVisualMember, class VisualStyle, enum BorderLinesType
     /// <summary>

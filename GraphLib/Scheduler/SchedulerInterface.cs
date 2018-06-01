@@ -5,6 +5,7 @@ using System.Text;
 
 using Asol.Tools.WorkScheduler.Data;
 using Asol.Tools.WorkScheduler.Services;
+using System.Drawing;
 
 namespace Asol.Tools.WorkScheduler.Scheduler
 {
@@ -15,7 +16,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             : base(progressData)
         {
         }
-
     }
     public class DataSourceGetTablesResponse : DataSourceResponse
     {
@@ -27,120 +27,49 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         public Localizable.TextLoc Title { get; set; }
         /// <summary>
-        /// Tabulka zobrazující úkoly k zaplánování, zobrazuje se vlevo.
-        /// Tato tabulka by logicky neměla obsahovat časové grafy, jde o prostý seznam úkolů.
-        /// Typicky obsahuje položky, které dosud nejsou obsaženy v grafech v WorkTable.
+        /// Ikona panelu, bude použita pokud bude existovat více zdrojů dat
         /// </summary>
-        public Table TaskPlanTable { get; set; }
+        public Image Image { get; set; }
         /// <summary>
-        /// Tabulka zobrazující úkoly již zaplánované, zobrazuje se vlevo.
-        /// Tato tabulka by logicky neměla obsahovat časové grafy, jde o prostý seznam úkolů.
-        /// Typicky obsahuje položky, které již jsou obsaženy v grafech v WorkTable.
+        /// Tabulky zobrazené v levém panelu, typicky podklady k zaplánování (výrobní příkazy, a jiné úkoly).
+        /// Tyto tabulky na sobě nejsou závislé, jen se střídavě zobrazují v jednom prostoru, opatřeném TabHeaderem (pokud je jich více).
+        /// Pokud bude toto pole null nebo prázdné, nebudou se podklady nabízet .
         /// </summary>
-        public Table TaskWorkTable { get; set; }
+        public Table[] TaskTables { get; set; }
         /// <summary>
-        /// Hlavní tabulka obsahující plánování, zobrazuje se uprostřed v hlavním poli.
-        /// Její položky = místa, kam se plánuje práce.
-        /// Tabulka by měla obsahovat jeden sloupec typu TimeGraph.
+        /// Tabulky zobrazené v prostředním = hlavním Gridu, reprezentují hlavní plánovací pole.
+        /// Typicky mají být dvě, přičemž první reprezentuje pracoviště, a do druhé se promítají další zdroje (vybrané v tabulkce zdrojů ).
+        /// Tyto tabulky sdílí jeden Grid, mají tedy splečný layout sloupců, a očekává se že v jednom (posledním) sloupci budou obsahovat časový graf.
+        /// Toto pole by nemělo být null nebo prázdné, protože pak Scheduler nemá smysl.
         /// </summary>
-        public Table SchedulerMainTable { get; set; }
+        public Table[] ScheduleTables { get; set; }
         /// <summary>
-        /// Vedlejší tabulka, obsahující použité zdroje pro plánování, zobrazuje se uprostřed pod hlavním polem.
-        /// Její položky = zdroje použité k plánování, vybrané v tabulce vpravo.
+        /// Tabulky zobrazené v pravém panelu, typicky zdroje (pracovníky, přípravky, atd) k zaplánování.
+        /// Tyto tabulky na sobě nejsou závislé, jen se střídavě zobrazují v jednom prostoru, opatřeném TabHeaderem (pokud je jich více).
+        /// Pokud bude toto pole null nebo prázdné, nebudou se zdroje nabízet.
         /// </summary>
-        public Table SchedulerUsedTable { get; set; }
+        public Table[] SourceTables { get; set; }
         /// <summary>
-        /// Tabulka zdrojů 1, zobrazuje se vpravo
+        /// Tabulky zobrazené v dolním panelu, typicky informace (konflikty, využití dat, atd) pro obsluhu.
+        /// Tyto tabulky na sobě nejsou závislé, jen se střídavě zobrazují v jednom prostoru, opatřeném TabHeaderem (pokud je jich více).
+        /// Pokud bude toto pole null nebo prázdné, nebudou se informace nabízet.
         /// </summary>
-        public Table Source1Table { get; set; }
-        /// <summary>
-        /// Tabulka zdrojů 2, zobrazuje se vpravo
-        /// </summary>
-        public Table Source2Table { get; set; }
-        /// <summary>
-        /// Tabulka zdrojů 3, zobrazuje se vpravo
-        /// </summary>
-        public Table Source3Table { get; set; }
-        /// <summary>
-        /// Tabulka výstupních informací 1, zobrazuje se dole
-        /// </summary>
-        public Table Info1Table { get; set; }
-        /// <summary>
-        /// Tabulka výstupních informací 2, zobrazuje se dole
-        /// </summary>
-        public Table Info2Table { get; set; }
-    }
-    /// <summary>
-    /// Enum určující obsah levého panelu v okně Scheduleru: typicky obsahuje úkoly, které se mají plánovat (již jsou v plánu, nebo ještě nejsou).
-    /// </summary>
-    public enum LeftPanelContentType
-    {
-        /// <summary>
-        /// Žádný obsah, panel není nepoužit
-        /// </summary>
-        None = 0,
-        /// <summary>
-        /// Položky kategorie Plán, tabulka <see cref="DataSourceGetTablesRequest.TaskPlanTable"/>
-        /// </summary>
-        TaskPlan,
-        /// <summary>
-        /// Položky kategorie Work, tabulka <see cref="DataSourceGetTablesRequest.TaskWorkTable"/>
-        /// </summary>
-        TaskWork
-    }
-    /// <summary>
-    /// Enum určující obsah pravého panelu v okně Scheduleru: typicky obsahuje nějaké potřebné zdroje, které se mají pro zaplánování použít
-    /// </summary>
-    public enum RightPanelContentType
-    {
-        /// <summary>
-        /// Žádný obsah, panel není nepoužit
-        /// </summary>
-        None = 0,
-        /// <summary>
-        /// Zdroje 1, tabulka <see cref="DataSourceGetTablesRequest.Source1Table"/>
-        /// </summary>
-        Source1,
-        /// <summary>
-        /// Zdroje 2, tabulka <see cref="DataSourceGetTablesRequest.Source2Table"/>
-        /// </summary>
-        Source2,
-        /// <summary>
-        /// Zdroje 3, tabulka <see cref="DataSourceGetTablesRequest.Source3Table"/>
-        /// </summary>
-        Source3
-    }
-    /// <summary>
-    /// Enum určující obsah dolního panelu v okně Scheduleru: typicky obsahuje nějaké informace o stavu zaplánování.
-    /// Tyto informace se nikam interaktivně nepoužívají, jde o statické výstupní informace.
-    /// </summary>
-    public enum BottomPanelContentType
-    {
-        /// <summary>
-        /// Žádný obsah, panel není nepoužit
-        /// </summary>
-        None = 0,
-        /// <summary>
-        /// Zdroje 1, tabulka <see cref="DataSourceGetTablesRequest.Info1Table"/>
-        /// </summary>
-        Info1,
-        /// <summary>
-        /// Zdroje 2, tabulka <see cref="DataSourceGetTablesRequest.Info2Table"/>
-        /// </summary>
-        Info2
+        public Table[] InfoTables { get; set; }
     }
     #endregion
-    #region GetData request and response
+    #region GetData request a response
     /// <summary>
-    /// Požadavek na vygenerování tabulek, které bude datový zdroj používat
+    /// Požadavek na naplnění dat do tabulek, které datový zdroj již dříve připravil v požadavku <see cref="DataSourceGetTablesRequest"/> do odpovědi <see cref="DataSourceGetTablesResponse"/>.
+    /// Nyní má datový zdroj do těchto tabulek naplnit data (=řádky).
     /// </summary>
     public class DataSourceGetDataRequest : DataSourceRequest
     {
-        public DataSourceGetDataRequest(Data.ProgressData progressData)
+        public DataSourceGetDataRequest(Data.ProgressData progressData, SchedulerPanel panel)
             : base(progressData)
         {
-
+            this.Panel = panel;
         }
+        public SchedulerPanel Panel { get; private set; }
     }
     public class DataSourceGetDataResponse : DataSourceResponse
     {

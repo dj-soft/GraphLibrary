@@ -16,6 +16,11 @@ namespace Asol.Tools.WorkScheduler.Components
     {
         #region Konstruktor
         /// <summary>
+        /// Konstruktor s parentem
+        /// </summary>
+        /// <param name="parent"></param>
+        public GScrollBar(IInteractiveParent parent) : this() { this.Parent = parent; }
+        /// <summary>
         /// Konstruktor
         /// </summary>
         public GScrollBar()

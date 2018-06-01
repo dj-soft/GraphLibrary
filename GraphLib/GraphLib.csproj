@@ -73,6 +73,7 @@
     <Compile Include="Components\ColorPalette.cs" />
     <Compile Include="Components\FontInfo.cs" />
     <Compile Include="Components\Graph.cs" />
+    <Compile Include="Components\Grid\GridArray.cs" />
     <Compile Include="Components\Old\GridOld.cs" />
     <Compile Include="Components\Grid\GridTable.cs" />
     <Compile Include="Components\Old\GridPositionOld.cs" />

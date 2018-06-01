@@ -6,6 +6,8 @@ using Asol.Tools.WorkScheduler.Components;
 using System.Drawing;
 using System.Windows.Forms;
 
+using Asol.Tools.WorkScheduler.Services;
+
 namespace Asol.Tools.WorkScheduler.Scheduler
 {
     /// <summary>
@@ -17,23 +19,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         public MainControl()
         {
             this.SetStyle(ControlStyles.ResizeRedraw, true);
-            this._InitComponents();
-            this._InitDataSources();
-            this._LoadGlobalFunctions();
-            this.CalculateLayout();
-        }
-        private void _InitComponents()
-        {
-            this._MainToolbar = new GToolBar() { Bounds = new Rectangle(0, 0, 1024, 64) };
-            this._MainToolbar.ToolbarSizeChanged += _MainToolbar_ToolbarSizeChanged;
-            this.AddItem(this._MainToolbar);
-
-            // this._SchedulerPanel = new SchedulerPanel() { Bounds = new Rectangle(0, this._MainToolbar.Bounds.Bottom, 1024, 640) };
-            // this._SchedulerPanel.BackColor = Color.LightCyan;
-            // this.AddItem(this._SchedulerPanel);
-        }
-        private void _MainToolbar_ToolbarSizeChanged(object sender, GPropertyChangeArgs<Services.ComponentSize> e)
-        {
+            this._InitToolBar();
+            this._TabHeaderInit();
+            this._InitData();
             this.CalculateLayout();
         }
         protected override void OnSizeChanged(EventArgs e)
@@ -51,10 +39,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             // this._SchedulerPanel.Bounds = new Rectangle(0, y, size.Width, size.Height - y);
             this.Refresh();
         }
-        /// <summary>
-        /// Instance toolbaru
-        /// </summary>
-        private GToolBar _MainToolbar;
         /// <summary>
         /// Instance všech Scheduler panelů
         /// </summary>
@@ -76,7 +60,23 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         protected SchedulerPanel SchedulerPanelCurrent { get { return (this.SchedulerPanelExists ? this._SchedulerPanels[this._CurrentSchedulerPanelIndex] : null); } }
         #endregion
-        #region Datové zdroje
+        #region ToolBar
+        private void _InitToolBar()
+        {
+            this._MainToolbar = new GToolBar() { Bounds = new Rectangle(0, 0, 1024, 64) };
+            this._MainToolbar.ToolbarSizeChanged += _MainToolbar_ToolbarSizeChanged;
+            this.AddItem(this._MainToolbar);
+
+            this._LoadGlobalFunctions();
+
+            // this._SchedulerPanel = new SchedulerPanel() { Bounds = new Rectangle(0, this._MainToolbar.Bounds.Bottom, 1024, 640) };
+            // this._SchedulerPanel.BackColor = Color.LightCyan;
+            // this.AddItem(this._SchedulerPanel);
+        }
+        private void _MainToolbar_ToolbarSizeChanged(object sender, GPropertyChangeArgs<ComponentSize> e)
+        {
+            this.CalculateLayout();
+        }
         /// <summary>
         /// Naplní funkce do Toolbaru
         /// </summary>
@@ -85,59 +85,140 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this._MainToolbar.FillFunctionGlobals();
         }
         /// <summary>
+        /// Instance toolbaru
+        /// </summary>
+        private GToolBar _MainToolbar;
+        #endregion
+        #region TabHeader nad panely (pokud je více než jeden datový zdroj)
+        private void _TabHeaderInit()
+        {
+            this._MainTabHeader = new TabHeader() { Position = RectangleSide.Top };
+            this._MainTabHeader.ActiveItemChanged += _TabHeaderActiveItemChanged;
+            this.AddItem(this._MainTabHeader);
+        }
+        /// <summary>
+        /// Po změně aktivní záložky
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _TabHeaderActiveItemChanged(object sender, GPropertyChangeArgs<TabHeader.TabItem> e)
+        {
+            // Záložka automaticky zajišťuje přepínání IsVisible na navázaných objektech (třída MainPanel)
+        }
+        /// <summary>
+        /// Zajistí přidání nové záložky do _MainTabHeader pro předaný panel
+        /// </summary>
+        /// <param name="panel"></param>
+        private void _TabHeaderAddItem(SchedulerPanel panel)
+        {
+            if (panel == null) return;
+            var tabItem = this._MainTabHeader.AddHeader(panel.Title, panel.Icon, linkItem: panel);
+
+        }
+        /// <summary>
+        /// TabHeader, který umožní přepínat mezi hlavními panely různých datových zdrojů
+        /// </summary>
+        private TabHeader _MainTabHeader;
+
+        #endregion
+        #region Datové zdroje
+        /// <summary>
         /// Provede inicializaci datových zdrojů
         /// </summary>
-        private void _InitDataSources()
+        private void _InitData()
         {
-            this._GetDataSources();
-            this._GetSchedulerPanels();
+            this._PrepareData();
+            this._LoadData();
         }
         /// <summary>
         /// Načte soupis dostupných datových zdrojů (=pluginy)
         /// </summary>
-        private void _GetDataSources()
+        private void _PrepareData()
         {
-            List<Services.IDataSource> sourceList = new List<Services.IDataSource>();
+            List<DataSourcePanel> dataList = new List<DataSourcePanel>();
             using (Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "MainControl", "GetDataSources", "GUIThread"))
             {
-                var plugins = Application.App.GetPlugins(typeof(Services.IDataSource));
+                var plugins = Application.App.GetPlugins(typeof(IDataSource));
                 foreach (object plugin in plugins)
                 {
-                    Services.IDataSource source = plugin as Services.IDataSource;
+                    IDataSource source = plugin as IDataSource;
                     if (source != null)
-                        sourceList.Add(source);
-                }
-            }
-            this._DataSources = sourceList.ToArray();
-        }
-        /// <summary>
-        /// Načte soupis tabulek z datového zdroje
-        /// </summary>
-        private void _GetSchedulerPanels()
-        {
-            List<SchedulerPanel> panelList = new List<SchedulerPanel>();
-            using (Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "MainControl", "LoadFromDataSources", "GUIThread"))
-            {
-                foreach (Services.IDataSource dataSource in this._DataSources)
-                {
-                    DataSourceGetTablesRequest request = new DataSourceGetTablesRequest(null);
-                    DataSourceGetTablesResponse response = dataSource.ProcessRequest(request) as DataSourceGetTablesResponse;
-                    if (response != null)
                     {
-                        SchedulerPanel panel = new SchedulerPanel(dataSource, response);
-                        panelList.Add(panel);
+                        SchedulerPanel panel = this._GetDataPanel(source);
+                        if (panel != null)
+                        {
+                            DataSourcePanel data = new DataSourcePanel(source, panel);
+                            dataList.Add(data);
+                        }
                     }
                 }
             }
-            this._SchedulerPanels = panelList.ToArray();
+            this._Data = dataList.ToArray();
         }
+        /// <summary>
+        /// Pro daný datový zdroj vytvoří grafický panel (SchedulerPanel), pro panel vytvoří záložku v <see cref="_MainTabHeader"/>, 
+        /// panel vloží do this.Items a panel poté vrátí.
+        /// </summary>
+        /// <param name="dataSource"></param>
+        /// <returns></returns>
+        private SchedulerPanel _GetDataPanel(IDataSource dataSource)
+        {
+            SchedulerPanel panel = null;
+            try
+            {
+                DataSourceGetTablesRequest request = new DataSourceGetTablesRequest(null);
+                DataSourceGetTablesResponse response = dataSource.ProcessRequest(request) as DataSourceGetTablesResponse;
+                if (response != null)
+                {
+                    panel = new SchedulerPanel(dataSource, response);
+                    this.AddItem(panel);
+                    this._TabHeaderAddItem(panel);
+                }
+            }
+            catch (Exception exc)
+            {
+                Type dataSourceType = dataSource.GetType();
+                string dataSourceName = dataSourceType.Namespace + "." + dataSourceType.Name;
+                Application.App.TraceException(exc, $"Error {exc.Message} in datasource {dataSourceName} on processing request: GetTables.");
+                panel = null;
+            }
+            return panel;
+        }
+        /// <summary>
+        /// Metoda zajistí nastartování procesu načítání dat z datového zdroje (ze všech zdrojů) do jeho panelu, to vše na pozadí.
+        /// </summary>
+        private void _LoadData()
+        {
+            foreach (DataSourcePanel data in this._Data)
+                this._LoadDataOne(data);
+        }
+        /// <summary>
+        /// Nastartuje načítání dat pro jeden datový zdroj a jeden panel
+        /// </summary>
+        /// <param name="data"></param>
+        private void _LoadDataOne(DataSourcePanel data)
+        {
+            DataSourceGetDataRequest request = new DataSourceGetDataRequest(null, data.DataPanel);
+            Application.App.ProcessRequestOnbackground<DataSourceGetDataRequest, DataSourceResponse>(data.DataSource.ProcessRequest, request, this._LoadDataOneResponse);
+        }
+        /// <summary>
+        /// Metoda je volána v threadu na pozadí, po dokončení zpracování požadavku <see cref="DataSourceGetDataRequest"/> v rámci datového zdroje.
+        /// Tato metoda má za úkol zajistit dokončení zpracování dat.
+        /// </summary>
+        /// <param name="request"></param>
+        /// <param name="response"></param>
+        private void _LoadDataOneResponse(DataSourceGetDataRequest request, DataSourceResponse response)
+        {
+
+        }
+        
         /*
-        private void _ProcessResponseData(Services.DataSourceGetDataRequest request, Services.DataSourceResponse response)
+        private void _ProcessResponseData(DataSourceGetDataRequest request, DataSourceResponse response)
         {
             if (this.InvokeRequired)
             {
                 Application.App.TraceInfo(Application.TracePriority.Priority1_ElementaryTimeDebug, "MainControl", "ProcessResponseData", "WorkerThread", "InvokeGUI");
-                this.BeginInvoke(new Action<Services.DataSourceGetDataRequest, Services.DataSourceResponse>(this._ProcessResponseData), request, response);
+                this.BeginInvoke(new Action<DataSourceGetDataRequest, DataSourceResponse>(this._ProcessResponseData), request, response);
             }
             else
             {
@@ -150,7 +231,17 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             }
         }
         */
-        private Services.IDataSource[] _DataSources;
+        private DataSourcePanel[] _Data;
+        protected class DataSourcePanel
+        {
+            public DataSourcePanel(IDataSource source, SchedulerPanel panel)
+            {
+                this.DataSource = source;
+                this.DataPanel = panel;
+            }
+            public IDataSource DataSource { get; private set; }
+            public SchedulerPanel DataPanel { get; private set; }
+        }
         #endregion
     }
 }

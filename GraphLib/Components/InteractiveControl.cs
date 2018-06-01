@@ -1273,7 +1273,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Zajistí překreslení všech prvků
         /// </summary>
-        protected void Repaint()
+        protected virtual void Repaint()
         {
             this._RepaintAllItems = true;
             this.Invalidate();
