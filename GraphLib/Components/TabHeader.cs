@@ -130,6 +130,12 @@ namespace Asol.Tools.WorkScheduler.Components
             return tabItem;
         }
         /// <summary>
+        /// Skrýt původní metodu
+        /// </summary>
+        /// <param name="item"></param>
+        protected new void AddItem(IInteractiveItem item) { }
+
+        /// <summary>
         /// Key název prvku TabItem, který obsahuje uživatelský Control
         /// </summary>
         private const string TabItemKeyControl = "ControlItem";

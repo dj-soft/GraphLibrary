@@ -101,7 +101,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Does not trigger Draw().
         /// </summary>
         /// <param name="item"></param>
-        public void AddItem(IInteractiveItem item)
+        public virtual void AddItem(IInteractiveItem item)
         {
             this.ChildList.Add(item);
         }

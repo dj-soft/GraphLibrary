@@ -211,6 +211,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         public Localizable.TextLoc Title { get { return this._Title; } set { this._Title = value; } }
         private Localizable.TextLoc _Title;
         /// <summary>
+        /// ToolTip celých dat, zobrazí se v TabHeaderu, pokud bude datových zdrojů více než 1
+        /// </summary>
+        public Localizable.TextLoc ToolTip { get { return this._ToolTip; } set { this._ToolTip = value; } }
+        private Localizable.TextLoc _ToolTip;
+        /// <summary>
         /// Ikona celých dat, zobrazí se v TabHeaderu, pokud bude datových zdrojů více než 1
         /// </summary>
         public Image Icon { get { return this._Icon; } set { this._Icon = value; } }

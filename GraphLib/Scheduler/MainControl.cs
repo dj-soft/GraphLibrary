@@ -19,8 +19,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         public MainControl()
         {
             this.SetStyle(ControlStyles.ResizeRedraw, true);
-            this._InitToolBar();
-            this._TabHeaderInit();
+            this._ToolBarInit();
+            this._TabDataInit();
             this._InitData();
             this.CalculateLayout();
         }
@@ -32,10 +32,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         protected void CalculateLayout()
         {
             Size size = this.ClientSize;
-            int th = this._MainToolbar.Bounds.Height;
+            int th = this._ToolBar.Bounds.Height;
             int y = 0;
-            this._MainToolbar.Bounds = new Rectangle(y, 0, size.Width, th);
-            y = this._MainToolbar.Bounds.Bottom + 1;
+            this._ToolBar.Bounds = new Rectangle(y, 0, size.Width, th);
+            y = this._ToolBar.Bounds.Bottom + 1;
             // this._SchedulerPanel.Bounds = new Rectangle(0, y, size.Width, size.Height - y);
             this.Refresh();
         }
@@ -61,65 +61,63 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         protected SchedulerPanel SchedulerPanelCurrent { get { return (this.SchedulerPanelExists ? this._SchedulerPanels[this._CurrentSchedulerPanelIndex] : null); } }
         #endregion
         #region ToolBar
-        private void _InitToolBar()
+        private void _ToolBarInit()
         {
-            this._MainToolbar = new GToolBar() { Bounds = new Rectangle(0, 0, 1024, 64) };
-            this._MainToolbar.ToolbarSizeChanged += _MainToolbar_ToolbarSizeChanged;
-            this.AddItem(this._MainToolbar);
+            this._ToolBar = new GToolBar() { Bounds = new Rectangle(0, 0, 1024, 64) };
+            this._ToolBar.ToolbarSizeChanged += _ToolBarSizeChanged;
+            this.AddItem(this._ToolBar);
 
-            this._LoadGlobalFunctions();
+            this._ToolBarLoad();
 
             // this._SchedulerPanel = new SchedulerPanel() { Bounds = new Rectangle(0, this._MainToolbar.Bounds.Bottom, 1024, 640) };
             // this._SchedulerPanel.BackColor = Color.LightCyan;
             // this.AddItem(this._SchedulerPanel);
         }
-        private void _MainToolbar_ToolbarSizeChanged(object sender, GPropertyChangeArgs<ComponentSize> e)
+        private void _ToolBarSizeChanged(object sender, GPropertyChangeArgs<ComponentSize> e)
         {
             this.CalculateLayout();
         }
         /// <summary>
         /// Naplní funkce do Toolbaru
         /// </summary>
-        private void _LoadGlobalFunctions()
+        private void _ToolBarLoad()
         {
-            this._MainToolbar.FillFunctionGlobals();
+            this._ToolBar.FillFunctionGlobals();
         }
         /// <summary>
         /// Instance toolbaru
         /// </summary>
-        private GToolBar _MainToolbar;
+        private GToolBar _ToolBar;
         #endregion
         #region TabHeader nad panely (pokud je více než jeden datový zdroj)
-        private void _TabHeaderInit()
+        private void _TabDataInit()
         {
-            this._MainTabHeader = new GTabHeader() { Position = RectangleSide.Top };
-            this._MainTabHeader.ActivePageChanged += _TabHeaderActiveItemChanged;
-            this.AddItem(this._MainTabHeader);
+            this._TabData = new GTabContainer(this) { TabHeaderPosition = RectangleSide.Top, TabHeaderMode = ShowTabHeaderMode.Default };
+            this._TabData.ActivePageChanged += _TabData_ActivePageChanged;
+            this.AddItem(this._TabData);
         }
         /// <summary>
-        /// Po změně aktivní záložky
+        /// Po změně záložky, která reprezentuje komplexní GUI datového zdroje
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _TabHeaderActiveItemChanged(object sender, GPropertyChangeArgs<GTabPage> e)
+        private void _TabData_ActivePageChanged(object sender, GPropertyChangeArgs<GTabPage> e)
         {
-            // Záložka automaticky zajišťuje přepínání IsVisible na navázaných objektech (třída MainPanel)
+            
         }
         /// <summary>
-        /// Zajistí přidání nové záložky do _MainTabHeader pro předaný panel
+        /// Přidá novou záložku do containeru <see cref="_TabData"/>
         /// </summary>
         /// <param name="panel"></param>
-        private void _TabHeaderAddItem(SchedulerPanel panel)
+        private GTabPage _TabDataAdd(SchedulerPanel panel)
         {
-            if (panel == null) return;
-            var tabItem = this._MainTabHeader.AddHeader(panel.Title, panel.Icon, linkItem: panel);
-
+            this._TabData.AddItem(panel);
+            return this._TabData.AddTabItem(panel, panel.Title, toolTip: panel.ToolTip, image: panel.Icon);
         }
         /// <summary>
-        /// TabHeader, který umožní přepínat mezi hlavními panely různých datových zdrojů
+        /// Záložky s daty jednotlivých datových zdrojů
         /// </summary>
-        private GTabHeader _MainTabHeader;
-
+        private GTabContainer _TabData;
         #endregion
         #region Datové zdroje
         /// <summary>
@@ -147,7 +145,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                         SchedulerPanel panel = this._GetDataPanel(source);
                         if (panel != null)
                         {
-                            DataSourcePanel data = new DataSourcePanel(source, panel);
+                            GTabPage page = this._TabDataAdd(panel);
+                            DataSourcePanel data = new DataSourcePanel(source, panel, page);
                             dataList.Add(data);
                         }
                     }
@@ -172,7 +171,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 {
                     panel = new SchedulerPanel(dataSource, response);
                     this.AddItem(panel);
-                    this._TabHeaderAddItem(panel);
+                    this._TabDataAdd(panel);
                 }
             }
             catch (Exception exc)
@@ -232,15 +231,20 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         }
         */
         private DataSourcePanel[] _Data;
+        /// <summary>
+        /// Třída, která spojuje datový zdroj a jeho GUI
+        /// </summary>
         protected class DataSourcePanel
         {
-            public DataSourcePanel(IDataSource source, SchedulerPanel panel)
+            public DataSourcePanel(IDataSource source, SchedulerPanel panel, GTabPage page)
             {
                 this.DataSource = source;
                 this.DataPanel = panel;
+                this.Page = page;
             }
             public IDataSource DataSource { get; private set; }
             public SchedulerPanel DataPanel { get; private set; }
+            public GTabPage Page { get; private set; }
         }
         #endregion
     }
