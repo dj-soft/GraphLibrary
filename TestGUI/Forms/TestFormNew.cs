@@ -54,6 +54,13 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this._ScrollBarV.UserDraw += new GUserDrawHandler(_ScrollBarV_UserDraw);
             this.GControl.AddItem(this._ScrollBarV);
 
+            this._TabContainer = new TabContainer() { TabHeaderMode = ShowTabHeaderMode.Always | ShowTabHeaderMode.CollapseItem };
+            this._TabContainer.AddTabItem(new GScrollBar(), "První scrollbar");
+            this._TabContainer.AddTabItem(new GScrollBar(), "Druhý scrollbar");
+            this._TabContainer.AddTabItem(new GScrollBar(), "Třetí scrollbar");
+            this.GControl.AddItem(this._TabContainer);
+
+            /*
             this._TabHeaderH = new TabHeader() { Bounds = new Rectangle(0, 160, 950, 32), Position = RectangleSide.Top };
             this._TabHeaderH.TabItemPaintBackGround += _TabHeaderH_TabItemPaintBackGround;
             var headerH1 = this._TabHeaderH.AddHeader("První stránka", Asol.Tools.WorkScheduler.Components.IconStandard.ObjectFlipVertical32);
@@ -61,7 +68,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             var headerH3 = this._TabHeaderH.AddHeader("Třetí...");
             var headerH4 = this._TabHeaderH.AddHeader("Vodorovný scrollbar");
             headerH4.ToolTipText = "Aktivace této stránky aktivuje Vodorovný scrollbar.";
-            headerH4.LinkItem = this._ScrollBarH;
+            headerH4.Control = this._ScrollBarH;
             headerH4.BackColor = Color.Violet.Morph(Color.Yellow, 0.50f);
             var headerH5 = this._TabHeaderH.AddHeader("Str.5", Asol.Tools.WorkScheduler.Components.IconStandard.GoDown);
             this._TabHeaderH.ActiveHeaderItem = headerH3;
@@ -78,7 +85,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             headerV3.ToolTipText = "Chybné položky";
             // this._TabHeaderV.ActiveHeaderItem = headerV1;
             this.GControl.AddItem(this._TabHeaderV);
-
+            */
             this.ControlsPosition();
         }
         private void _TabHeaderH_TabItemPaintBackGround(object sender, PaintEventArgs e)
@@ -99,27 +106,26 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         }
         private void GControl_DrawStandardLayer(object sender, PaintEventArgs e)
         {
-            bool draw = true;
-            if (draw)
-            {
-                Point center = this.ClientRectangle.Center();
-                Rectangle area = center.CreateRectangleFromCenter(430);
-                GPainter.DrawRectangle(e.Graphics, area, Color.LightGreen);
-                FontInfo fontInfo = FontInfo.MessageBox;
-
-                int h = 32;
-                Rectangle areaT = new Rectangle(area.X, area.Y, area.Width, h);
-                Rectangle areaR = new Rectangle(area.Right - h, area.Y, h, area.Height);
-                Rectangle areaB = new Rectangle(area.X, area.Bottom - h, area.Width, h);
-                Rectangle areaL = new Rectangle(area.X, area.Y, h, area.Height);
-
-                GPainter.DrawString(e.Graphics, areaB, "Normal => Normal => Normal => Normal", Color.Black, fontInfo, ContentAlignment.MiddleCenter, MatrixTransformationType.NoTransform);
-                GPainter.DrawString(e.Graphics, areaL, "Rotate90 => Rotate90 => Rotate90 => Rotate90", Color.Black, fontInfo, ContentAlignment.MiddleCenter, MatrixTransformationType.Rotate90);
-                GPainter.DrawString(e.Graphics, areaT, "Rotate180 => Rotate180 => Rotate180 => Rotate180", Color.Black, fontInfo, ContentAlignment.MiddleCenter, MatrixTransformationType.Rotate180);
-                GPainter.DrawString(e.Graphics, areaR, "Rotate270 => Rotate270 => Rotate270 => Rotate270", Color.Black, fontInfo, ContentAlignment.MiddleCenter, MatrixTransformationType.Rotate270);
-            }
+            // this._DrawArea(e);
         }
+        private void _DrawArea(PaintEventArgs e)
+        {
+            Point center = this.ClientRectangle.Center();
+            Rectangle area = center.CreateRectangleFromCenter(430);
+            GPainter.DrawRectangle(e.Graphics, area, Color.LightGreen);
+            FontInfo fontInfo = FontInfo.MessageBox;
 
+            int h = 32;
+            Rectangle areaT = new Rectangle(area.X, area.Y, area.Width, h);
+            Rectangle areaR = new Rectangle(area.Right - h, area.Y, h, area.Height);
+            Rectangle areaB = new Rectangle(area.X, area.Bottom - h, area.Width, h);
+            Rectangle areaL = new Rectangle(area.X, area.Y, h, area.Height);
+
+            GPainter.DrawString(e.Graphics, areaB, "Normal => Normal => Normal => Normal", Color.Black, fontInfo, ContentAlignment.MiddleCenter, MatrixTransformationType.NoTransform);
+            GPainter.DrawString(e.Graphics, areaL, "Rotate90 => Rotate90 => Rotate90 => Rotate90", Color.Black, fontInfo, ContentAlignment.MiddleCenter, MatrixTransformationType.Rotate90);
+            GPainter.DrawString(e.Graphics, areaT, "Rotate180 => Rotate180 => Rotate180 => Rotate180", Color.Black, fontInfo, ContentAlignment.MiddleCenter, MatrixTransformationType.Rotate180);
+            GPainter.DrawString(e.Graphics, areaR, "Rotate270 => Rotate270 => Rotate270 => Rotate270", Color.Black, fontInfo, ContentAlignment.MiddleCenter, MatrixTransformationType.Rotate270);
+        }
         void GControl_ResizeControl(object sender, EventArgs e)
         {
             this.ControlsPosition();
@@ -147,6 +153,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         private GScrollBar _ScrollBarV;
         private TabHeader _TabHeaderH;
         private TabHeader _TabHeaderV;
+        private TabContainer _TabContainer;
+
         protected void ControlsPosition()
         {
             Size size = this.GControl.Size;
@@ -155,17 +163,20 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 dx = size.Width / 3;
             int dw = size.Width - (2 * dx);
 
+            int axisBottom = 60;
             if (this._TimeAxis != null)
             {
                 Rectangle oldBounds = this._TimeAxis.Bounds;
                 Rectangle newBounds = new Rectangle(dx - 10, oldBounds.Y, dw, oldBounds.Height);
                 this._TimeAxis.Bounds = newBounds;
+                axisBottom = newBounds.Bottom;
             }
             if (this._SizeAxis != null)
             {
                 Rectangle oldBounds = this._SizeAxis.Bounds;
                 Rectangle newBounds = new Rectangle(dx + 10, oldBounds.Y, dw, oldBounds.Height);
                 this._SizeAxis.Bounds = newBounds;
+                axisBottom = newBounds.Bottom;
             }
             if (this._Splitter != null)
             {
@@ -201,6 +212,11 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             {
                 Rectangle bounds = new Rectangle(2, top, headerHeight, bottom - top);
                 this._TabHeaderV.Bounds = bounds;
+            }
+            if (this._TabContainer != null)
+            {
+                Rectangle bounds = new Rectangle(2, axisBottom, 640, bottom - 42);
+                this._TabContainer.Bounds = bounds;
             }
         }
     }

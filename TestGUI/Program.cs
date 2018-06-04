@@ -14,9 +14,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         [STAThread]
         static void Main()
         {
-            Application.App.RunMainForm(typeof(Asol.Tools.WorkScheduler.TestGUI.TestFinalForm));
+            // Application.App.RunMainForm(typeof(Asol.Tools.WorkScheduler.TestGUI.TestFinalForm));
 
-            // Application.App.RunMainForm(typeof(Asol.Tools.WorkScheduler.TestGUI.TestFormNew));
+            Application.App.RunMainForm(typeof(Asol.Tools.WorkScheduler.TestGUI.TestFormNew));
 
             // Application.App.RunMainForm(typeof(Forms.MainForm));
             // Application.App.RunMainForm(typeof(Asol.Tools.WorkScheduler.TestGUI.TestFormGrid));
