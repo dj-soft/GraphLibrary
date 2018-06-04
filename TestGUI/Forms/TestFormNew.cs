@@ -46,18 +46,22 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this._Splitter.LinkedItemNext = this._SizeAxis;
             this.GControl.AddItem(this._Splitter);
 
-            this._ScrollBarH = new GScrollBar() { Bounds = new Rectangle(0, 200, 950, 28), ValueTotal = new SizeRange(0m, 1000m), Value = new SizeRange(200m, 400m) };
+            this._ScrollBarH = new GScrollBar() { Bounds = new Rectangle(0, 200, 950, 28), ValueTotal = new SizeRange(0m, 1000m), Value = new SizeRange(200m, 400m), BackColor = Color.DimGray, Tag = "Vodorovný ScrollBar dole" };
             this._ScrollBarH.UserDraw += new GUserDrawHandler(_ScrollBar_UserDraw);
             this.GControl.AddItem(this._ScrollBarH);
 
-            this._ScrollBarV = new GScrollBar() { Bounds = new Rectangle(960, 0, 28, 300), ValueTotal = new SizeRange(0m, 1000m), Value = new SizeRange(200m, 400m) };
+            this._ScrollBarV = new GScrollBar() { Bounds = new Rectangle(960, 0, 28, 300), ValueTotal = new SizeRange(0m, 1000m), Value = new SizeRange(200m, 400m), Tag = "Svislý ScrollBar vpravo" };
             this._ScrollBarV.UserDraw += new GUserDrawHandler(_ScrollBarV_UserDraw);
             this.GControl.AddItem(this._ScrollBarV);
 
-            this._TabContainer = new TabContainer() { TabHeaderMode = ShowTabHeaderMode.Always | ShowTabHeaderMode.CollapseItem };
-            this._TabContainer.AddTabItem(new GScrollBar(), "První scrollbar");
-            this._TabContainer.AddTabItem(new GScrollBar(), "Druhý scrollbar");
-            this._TabContainer.AddTabItem(new GScrollBar(), "Třetí scrollbar");
+            this._TabContainer = new GTabContainer() { TabHeaderMode = ShowTabHeaderMode.Always | ShowTabHeaderMode.CollapseItem, TabHeaderPosition = RectangleSide.Bottom };
+            GScrollBar dataControl;
+            dataControl = new GScrollBar() { Orientation = Orientation.Horizontal, ValueTotal = new SizeRange(0, 1000), Value = new SizeRange(160, 260), BackColor = Color.LightCyan, Tag = "Přepínací ScrollBar na straně 1" };
+            this._TabContainer.AddTabItem(dataControl, "První scrollbar", image: Asol.Tools.WorkScheduler.Components.IconStandard.BulletBlue16);
+            dataControl = new GScrollBar() { Orientation = Orientation.Horizontal, ValueTotal = new SizeRange(0, 1000), Value = new SizeRange(840, 860), Tag = "Přepínací ScrollBar na straně 2" };
+            this._TabContainer.AddTabItem(dataControl, "Druhý scrollbar", image: Asol.Tools.WorkScheduler.Components.IconStandard.BulletGreen16);
+            dataControl = new GScrollBar() { Orientation = Orientation.Horizontal, ValueTotal = new SizeRange(0, 1000), Value = new SizeRange(450, 850), Tag = "Přepínací ScrollBar na straně 3" };
+            this._TabContainer.AddTabItem(dataControl, "Třetí scrollbar", image: Asol.Tools.WorkScheduler.Components.IconStandard.BulletOrange16);
             this.GControl.AddItem(this._TabContainer);
 
             /*
@@ -96,13 +100,12 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         {
             e.Graphics.DrawImage(Asol.Tools.WorkScheduler.Components.IconLibrary.BackSand, e.ClipRectangle);
         }
-        private void _TabHeaderV_ActiveItemChanged(object sender, GPropertyChangeArgs<TabHeader.TabItem> e)
+        private void _TabHeaderV_ActiveItemChanged(object sender, GPropertyChangeArgs<GTabPage> e)
         {
             if (e.OldValue != null && e.OldValue.Key == "Plan")
                 e.OldValue.Text = "Plan items";
             if (e.NewValue != null && e.NewValue.Key == "Plan")
                 e.NewValue.Text = "Položky plánu";
-
         }
         private void GControl_DrawStandardLayer(object sender, PaintEventArgs e)
         {
@@ -151,9 +154,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         private GSizeAxis _SizeAxis;
         private GScrollBar _ScrollBarH;
         private GScrollBar _ScrollBarV;
-        private TabHeader _TabHeaderH;
-        private TabHeader _TabHeaderV;
-        private TabContainer _TabContainer;
+        private GTabHeader _TabHeaderH;
+        private GTabHeader _TabHeaderV;
+        private GTabContainer _TabContainer;
 
         protected void ControlsPosition()
         {
@@ -186,37 +189,32 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             int scrollHeight = GScrollBar.DefaultSystemBarHeight;
             int scrollWidth = GScrollBar.DefaultSystemBarWidth;
             int headerHeight = 32;
+
+            // Datový prostor:
+            Rectangle dataArea = new Rectangle(2, axisBottom + 4, size.Width - 2 - 2 - scrollWidth, size.Height - 3 - scrollHeight - axisBottom - 4);
+
             int top = 30;
             int bottom = size.Height - 2;
             int y = top;
             if (this._ScrollBarV != null)
-            {
-                Rectangle bounds = new Rectangle(size.Width - 2 - scrollWidth, y, scrollWidth, bottom - scrollHeight - y);
-                this._ScrollBarV.Bounds = bounds;
-                bottom = bounds.Bottom;
-                y = bounds.Bottom;
+            {   // Svislý scrollbar vpravo:
+                this._ScrollBarV.Bounds = new Rectangle(dataArea.Right, dataArea.Y, scrollWidth, dataArea.Height);
             }
             if (this._ScrollBarH != null)
-            {
-                Rectangle bounds = new Rectangle(2, y, size.Width - 2 - scrollWidth - 2, scrollHeight);
-                this._ScrollBarH.Bounds = bounds;
-                y = bounds.Y - headerHeight;
+            {   // Vodorovný scrollbar dole:
+                this._ScrollBarH.Bounds = new Rectangle(dataArea.X, dataArea.Bottom, dataArea.Width, scrollHeight);
             }
             if (this._TabHeaderH != null)
-            {
-                Rectangle bounds = new Rectangle(2, y - 3, size.Width - 2 - scrollWidth - 2, headerHeight);
-                this._TabHeaderH.Bounds = bounds;
-                bottom = bounds.Y;
+            {   // Vodorovný TabPage je dole těsně nad scollbarem, ale vlevo nechává prostor (headerHeight) volný:
+                this._TabHeaderH.Bounds = new Rectangle(dataArea.X + headerHeight, dataArea.Bottom - headerHeight, dataArea.Width - headerHeight, headerHeight);
             }
             if (this._TabHeaderV != null)
-            {
-                Rectangle bounds = new Rectangle(2, top, headerHeight, bottom - top);
-                this._TabHeaderV.Bounds = bounds;
+            {   // Svislý TabPage je vlevo, ale dole nechává prostor (headerHeight) volný:
+                this._TabHeaderV.Bounds = new Rectangle(dataArea.X, dataArea.Y, headerHeight, dataArea.Height - headerHeight);
             }
             if (this._TabContainer != null)
-            {
-                Rectangle bounds = new Rectangle(2, axisBottom, 640, bottom - 42);
-                this._TabContainer.Bounds = bounds;
+            {   // TabContainer vyplňuje prostor dataArea:
+                this._TabContainer.Bounds = new Rectangle(dataArea.X, dataArea.Y, dataArea.Width - 2, dataArea.Height - 2);
             }
         }
     }
