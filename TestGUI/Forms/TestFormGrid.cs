@@ -17,9 +17,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         public TestFormGrid()
         {
             Application.App.TracePriority = Application.TracePriority.Priority1_ElementaryTimeDebug;
-            using (var scope = Application.App.TraceScope(Application.TracePriority.Priority2_Lowest, "TestFormGrid", "Constructor", "Start"))
+            using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority2_Lowest, "TestFormGrid", "Constructor", "Start"))
             {
-                using (Application.App.TraceScope("TestFormGrid", "InitializeComponent", ""))
+                using (Application.App.Trace.Scope("TestFormGrid", "InitializeComponent", ""))
                 {
                     InitializeComponent();
                 }
@@ -40,7 +40,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             // Application.App.Zoom = 1.12f;
 
-            using (var scope = Application.App.TraceScope("TestFormGrid", "InitGControl", "Start"))
+            using (var scope = Application.App.Trace.Scope("TestFormGrid", "InitGControl", "Start"))
             {
                 this._Toolbar = new GToolBar();
                 this._Toolbar.FillFunctionGlobals();
@@ -52,7 +52,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 this._Table2 = this._PrepareTableW("směny", 128);
                 this._TableZ = this._PrepareTableZ("lidi", 18);
 
-                using (var scope2 = Application.App.TraceScope("TestFormGrid", "InitGControl", "CreateGrid"))
+                using (var scope2 = Application.App.Trace.Scope("TestFormGrid", "InitGControl", "CreateGrid"))
                 {
                     this._GridW = new GGrid() { Bounds = new Rectangle(10, 10, 750, 550) };
                     this._GridW.AddTable(this._Table1);
@@ -69,7 +69,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                     this._GridZ.AddTable(this._TableZ);
                 }
 
-                using (var scope3 = Application.App.TraceScope("TestFormGrid", "InitGControl", "GControl.AddItem(Grid)"))
+                using (var scope3 = Application.App.Trace.Scope("TestFormGrid", "InitGControl", "GControl.AddItem(Grid)"))
                 {
                     this.GControl.AddItem(this._Toolbar);
                     this.GControl.AddItem(this._GridW);
@@ -80,7 +80,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 this.ControlsPosition();
 
                 // this._Table1.AddRow(new TestItem() { Klic = 70, DatumOd = DateTime.Now.Add(TimeSpan.FromMinutes(60)), DatumDo = DateTime.Now.Add(TimeSpan.FromMinutes(80)) });
-                Application.App.TraceInfo("TestFormGrid", "InitGControl", "AddRow done");
+                Application.App.Trace.Info("TestFormGrid", "InitGControl", "AddRow done");
 
                 scope.Result = "OK";
             }
@@ -107,7 +107,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             Services.IDataSource source = this._DataSourceList.FirstOrDefault();
             if (source == null) return;
             /*
-            using (Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "TestFormGrid", "LoadDataFromSource", "WorkerThread"))
+            using (Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "TestFormGrid", "LoadDataFromSource", "WorkerThread"))
             {
 
                 Services.DataSourceGetDataRequest request = new Services.DataSourceGetDataRequest(null);
@@ -146,7 +146,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             int imgCount = images.Length;
 
             Table table = new Table(name);
-            using (Application.App.TraceScope("TestFormGrid", "_PrepareTable", "Start", "RowCount: " + rowCount.ToString()))
+            using (Application.App.Trace.Scope("TestFormGrid", "_PrepareTable", "Start", "RowCount: " + rowCount.ToString()))
             {
 
                 table.AllowRowSelectByClick = false;
@@ -204,7 +204,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         private Table _PrepareTableZ(string name, int rowCount)
         {
             Table table = new Table(name);
-            using (Application.App.TraceScope("TestFormGrid", "_PrepareTable", "Start", "RowCount: " + rowCount.ToString()))
+            using (Application.App.Trace.Scope("TestFormGrid", "_PrepareTable", "Start", "RowCount: " + rowCount.ToString()))
             {
 
                 #region Jména a příjmení
@@ -430,7 +430,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         }
         protected void ControlsPosition()
         {
-            using (Application.App.TraceScope("TestFormGrid", "ControlsPosition", "Start"))
+            using (Application.App.Trace.Scope("TestFormGrid", "ControlsPosition", "Start"))
             {
                 Size size = this.GControl.ClientSize;
                 int y = 0;
