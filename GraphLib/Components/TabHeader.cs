@@ -10,6 +10,9 @@ using Asol.Tools.WorkScheduler.Application;
 
 namespace Asol.Tools.WorkScheduler.Components
 {
+    /// <summary>
+    /// TabHeader : záhlaví bloku stránek
+    /// </summary>
     public class TabHeader : InteractiveContainer
     {
         #region Konstruktor a public data celého headeru
@@ -57,6 +60,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// a je v nativním pořadí (jak byly prvky přidávány, ne jak jsou setříděny).
         /// Setování indexu lze provést pouze na hodnotu, která odkazuje na existující a viditelný prvek.
         /// Nelze tedy vložit ActiveHeaderIndex = 0 pokud prvek TabItems[0] má IsVisible = false (takové setování indexu bude ignorováno).
+        /// Setování vyvolá eventy ActiveIndexChanged a ActiveItemChanged
         /// </summary>
         public int ActiveHeaderIndex
         {
@@ -76,6 +80,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         /// <summary>
         /// Data aktuálně aktivního záhlaví. Může být null.
+        /// Setování vyvolá eventy ActiveIndexChanged a ActiveItemChanged
         /// </summary>
         public TabItem ActiveHeaderItem
         {
@@ -88,7 +93,7 @@ namespace Asol.Tools.WorkScheduler.Components
             set
             {
                 TabItem item = value;
-                int index = (item != null ? this._ItemList.FindIndex(i => Object.ReferenceEquals(i, item)) : -1);
+                int index = (item != null ? this._ItemList.FindIndex(i => i.IsVisible && Object.ReferenceEquals(i, item)) : -1);
                 if (index >= 0)
                 {
                     this._ActiveHeaderIndex = index;
@@ -98,7 +103,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         /// <summary>
         /// Index aktuálního záhlaví. Vrací __ActiveHeaderIndex (bez kontrol). 
-        /// Setování provede kontrolu hodnoty a po změně vyvolá ActiveItemChanged, a nastavení viditelnosti u <see cref="TabItem.LinkItem"/>.
+        /// Setování provede kontrolu hodnoty a po změně vyvolá ActiveItemChanged, a nastavení viditelnosti u <see cref="TabItem.Control"/>.
         /// </summary>
         private int _ActiveHeaderIndex
         {
@@ -122,7 +127,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         private int __ActiveHeaderIndex;
         /// <summary>
-        /// Metoda zajistí nastavení IsVisible pro všechny <see cref="TabItem.LinkItem"/> v <see cref="_ItemList"/>.
+        /// Metoda zajistí nastavení IsVisible pro všechny <see cref="TabItem.Control"/> v <see cref="_ItemList"/>.
         /// Pouze záložka <see cref="ActiveHeaderItem"/> bude mít LinkItem.IsVisible = true, ostatní budou mít false.
         /// </summary>
         private void _ShowLinkedItems()
@@ -130,7 +135,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this._ShowLinkedItems(this.ActiveHeaderItem);
         }
         /// <summary>
-        /// Metoda zajistí nastavení IsVisible pro všechny <see cref="TabItem.LinkItem"/> v <see cref="_ItemList"/>.
+        /// Metoda zajistí nastavení IsVisible pro všechny <see cref="TabItem.Control"/> v <see cref="_ItemList"/>.
         /// Pouze záložka odpovídající zadanému záhlaví bude mít LinkItem.IsVisible = true, ostatní budou mít false.
         /// </summary>
         /// <param name="activeItem"></param>
@@ -138,7 +143,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             foreach (TabItem tabItem in this._ItemList)
             {
-                IInteractiveItem linkItem = tabItem.LinkItem;
+                IInteractiveItem linkItem = tabItem.Control;
                 if (linkItem != null)
                 {
                     bool isVisible = (activeItem != null && Object.ReferenceEquals(tabItem, activeItem));
@@ -504,7 +509,7 @@ namespace Asol.Tools.WorkScheduler.Components
             /// <summary>
             /// Grafický prvek, který je zobrazován tímto záhlavím
             /// </summary>
-            public IInteractiveItem LinkItem { get { return this._LinkItem; } set { this._LinkItem = value; } }
+            public IInteractiveItem Control { get { return this._LinkItem; } set { this._LinkItem = value; } }
             private IInteractiveItem _LinkItem;
             /// <summary>
             /// Viditelnost záhlaví
@@ -784,4 +789,307 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         #endregion
     }
+    /// <summary>
+    /// Ucelený blok, obsahující záhlaví jednotlivých "stránek" a k nim příslušné jednotlivé stránky
+    /// </summary>
+    public class TabContainer : InteractiveContainer
+    {
+        #region Konstrukce, proměnné
+        /// <summary>
+        /// Konstruktor s parentem
+        /// </summary>
+        /// <param name="parent"></param>
+        public TabContainer(IInteractiveParent parent) : this() { this.Parent = parent; }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public TabContainer()
+        {
+            this._TabHeaderMode = ShowTabHeaderMode.Default;
+            this._IsCollapsed = false;
+
+            this._TabHeader = new TabHeader(this) { Position = RectangleSide.Top };
+            this._TabItemCollapse = this._TabHeader.AddHeader(TabItemKeyCollapse, "", Components.IconStandard.GoTop, tabOrder: 99999);
+            this._TabItemCollapse.IsVisible = this._TabItemCollapseIsAvailable;
+            this._TabHeader.ActiveItemChanged += _TabHeader_ActiveItemChanged;
+
+            this._Controls = new List<IInteractiveItem>();
+        }
+        /// <summary>
+        /// eventhandler po změně _TabHeader.ActiveItemChanged
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _TabHeader_ActiveItemChanged(object sender, GPropertyChangeArgs<TabHeader.TabItem> e)
+        {
+            // Nejprve řeším vnitřní záležitosti, bez eventů:
+            this._TabHeaderItemChanged(e);
+            // Poté volám eventhandlery:
+            e.CorrectValue = this.CallActivePageChanged(e.OldValue, e.NewValue, e.EventSource);
+        }
+        /// <summary>
+        /// Provede se po změně aktivního záhlaví, řeší pouze změnu stavu IsCollapsed.
+        /// </summary>
+        /// <param name="e"></param>
+        private void _TabHeaderItemChanged(GPropertyChangeArgs<TabHeader.TabItem> e)
+        {
+            bool isCollapseNew = (e.NewValue != null && e.NewValue.Key == TabItemKeyCollapse);
+            if (!IsCollapsed)
+                this._TabItemLastActive = e.NewValue;
+
+            // Řeším změnu Collapsed:
+            bool isCollapseOld = this._IsCollapsed;
+            if (isCollapseOld == isCollapseNew) return;
+            this.IsCollapsed = isCollapseNew;              // Set property řeší volání eventů, .
+        }
+        /// <summary>
+        /// Sada záložek
+        /// </summary>
+        private TabHeader _TabHeader;
+        /// <summary>
+        /// Záložka reprezentující "Collapse" položku
+        /// </summary>
+        private TabHeader.TabItem _TabItemCollapse;
+        /// <summary>
+        /// true pokud má být zobrazen TabItem pro Collapse
+        /// </summary>
+        private bool _TabItemCollapseIsAvailable { get { return this._TabHeaderMode.HasFlag(ShowTabHeaderMode.CollapseItem); } }
+        /// <summary>
+        /// Záložka (TabItem), která byla naposledy aktivní před provedením Collapse.
+        /// Pokud bude stav Collapse zrušen prostým nastavením IsCollapsed = false, pak algoritmus provede aktivaci této záložky.
+        /// </summary>
+        private TabHeader.TabItem _TabItemLastActive;
+        private List<IInteractiveItem> _Controls;
+        private ShowTabHeaderMode _TabHeaderMode;
+        private bool _IsCollapsed;
+        #endregion
+        #region Přidání a odebrání položek
+        /// <summary>
+        /// Přidá (a vrátí) novou záložku pro daný prvek
+        /// </summary>
+        /// <returns></returns>
+        public TabHeader.TabItem AddTabItem(IInteractiveItem item, Localizable.TextLoc text, Localizable.TextLoc toolTip = null, Image image = null)
+        {
+            if (item == null) return null;
+            item.Parent = this;
+            bool isActive = (this._TabHeader.HeaderItemCount <= 1);
+            TabHeader.TabItem tabItem = this._TabHeader.AddHeader(TabItemKeyControl, text, image, linkItem: item);
+            if (toolTip != null)
+                tabItem.ToolTipText = toolTip;
+            if (isActive)
+                this._TabHeader.ActiveHeaderItem = tabItem;
+            return tabItem;
+        }
+        /// <summary>
+        /// Key název prvku TabItem, který obsahuje uživatelský Control
+        /// </summary>
+        private const string TabItemKeyControl = "ControlItem";
+        /// <summary>
+        /// Key název prvku TabItem, který provádí Collapse
+        /// </summary>
+        private const string TabItemKeyCollapse = "CollapseItem";
+        #endregion
+        #region Layout
+        protected override void SetBoundsPrepareInnerItems(Rectangle oldBounds, Rectangle newBounds, ref ProcessAction actions, EventSourceType eventSource)
+        {
+            base.SetBoundsPrepareInnerItems(oldBounds, newBounds, ref actions, eventSource);
+
+        }
+        /// <summary>
+        /// Metoda upraví vlastní layout podle parametrů.
+        /// Tzn. Umístí TabHeader, a v případě Collapse nastaví this.Bounds podle potřeby.
+        /// </summary>
+        protected void PrepareLayout()
+        { }
+        #endregion
+        #region Public property a metody
+        /// <summary>
+        /// Pole všech položek, v jejich nativním pořadí (=tak jak se přidávaly).
+        /// </summary>
+        public TabHeader.TabItem[] TabItems { get { return this._TabHeader.TabItems.Where(t => (t.Key != TabItemKeyCollapse)).ToArray(); } }
+
+        public ShowTabHeaderMode TabHeaderMode
+        {
+            get { return this._TabHeaderMode; }
+            set
+            {
+                ShowTabHeaderMode oldValue = this._TabHeaderMode;
+                ShowTabHeaderMode newValue = value;
+                if (newValue == oldValue) return;
+                this.PrepareLayout();
+                this._TabHeaderMode = newValue;
+            }
+        }
+        /// <summary>
+        /// Control, který je aktuálně zobrazen.
+        /// Pokud je stav <see cref="IsCollapsed"/>, pak <see cref="ActiveControl"/> je null.
+        /// </summary>
+        public IInteractiveItem ActiveControl
+        {
+            get
+            {
+                TabHeader.TabItem activePage = this.ActivePage;
+                return (activePage != null ? activePage.Control : null);
+            }
+            set
+            {
+                IInteractiveItem oldValue = this.ActiveControl;
+                IInteractiveItem newValue = value;
+                if (newValue != null && !Object.ReferenceEquals(newValue, oldValue))
+                {   // Pouze pokud je nový objekt zadán, a je odlišný od aktuálního:
+                    TabHeader.TabItem tabItem = (newValue != null ? this._TabHeader.TabItems.FirstOrDefault(t => Object.ReferenceEquals(t, newValue)) : null);
+                    if (tabItem != null)
+                    {
+                        this.ActivePage = tabItem;         // Vyvolá událost TabHeader.ActiveItemChanged => this._TabHeader_ActiveItemChanged;
+                        this.CallActiveControlChanged(oldValue, newValue, EventSourceType.ApplicationCode);
+                    }
+                }
+            }
+        }
+        /// <summary>
+        /// Aktivní záhlaví
+        /// </summary>
+        public TabHeader.TabItem ActivePage
+        {
+            get { return this._TabHeader.ActiveHeaderItem; }
+            set { this._TabHeader.ActiveHeaderItem = value; /* Vyvolá event TabHeader_ActiveItemChanged => this._TabHeader_ActiveItemChanged  */ }
+        }
+        /// <summary>
+        /// Obsahuje true, pokud this je ve stavu Collapsed, tzn. je zobrazen jen pás se záhlavím (<see cref="TabHeader"/>),
+        /// ale není zobrazen navázaný Control.
+        /// </summary>
+        public bool IsCollapsed
+        {
+            get { return this._IsCollapsed; }
+            set
+            {
+                bool oldValue = this._IsCollapsed;
+                bool newValue = value;
+                if (newValue != oldValue)
+                {   // Setování této property se provádí zvenku, a jejím úkolem je aktivovat záložku Collapse nebo LastActive:
+                    if (newValue)
+                    {   // true = stav je Collapsed => měl bych aktivovat TabItem pro Collapse:
+                        TabHeader.TabItem tabItem = this._TabItemCollapse;
+                    }
+                    else
+                    {   // false = stav je Expanded => měl bych aktivovat TabItem posledně aktivní:
+
+                    }
+
+
+                    this._IsCollapsed = value;
+                    this.CallIsCollapsedChanged(oldValue, newValue, EventSourceType.ApplicationCode);
+                }
+            }
+        }
+        /// <summary>
+        /// Obsahuje true, pokud this je ve stavu Collapsed, tzn. je zobrazen jen pás se záhlavím (<see cref="TabHeader"/>),
+        /// ale není zobrazen navázaný Control.
+        /// Setování této property neřeší přepínání TabItem, ale vyvolá event IsCollapsedChanged.
+        /// </summary>
+        protected bool IsCollapsedInternal
+        {
+            get { return this._IsCollapsed; }
+            set
+            {
+                bool oldValue = this._IsCollapsed;
+                bool newValue = value;
+                if (newValue != oldValue)
+                {
+                    this._IsCollapsed = value;
+                    this.PrepareLayout();
+                    this.CallIsCollapsedChanged(oldValue, newValue, EventSourceType.ApplicationCode);
+                }
+            }
+        }
+        #endregion
+        #region Eventy
+
+        /// <summary>
+        /// Zavolá metody <see cref="OnActivePageChanged"/> a eventhandler <see cref="ActivePageChanged"/>.
+        /// </summary>
+        protected TabHeader.TabItem CallActivePageChanged(TabHeader.TabItem oldValue, TabHeader.TabItem newValue, EventSourceType eventSource)
+        {
+            GPropertyChangeArgs<TabHeader.TabItem> args = new GPropertyChangeArgs<TabHeader.TabItem>(eventSource, oldValue, newValue);
+            this.OnActivePageChanged(args);
+            if (!this.IsSuppressedEvent && this.ActivePageChanged != null)
+                this.ActivePageChanged(this, args);
+            return args.ResultValue;
+        }
+        /// <summary>
+        /// Metoda prováděná při změně hodnoty <see cref="IsCollapsed"/>
+        /// </summary>
+        protected virtual void OnActivePageChanged(GPropertyChangeArgs<TabHeader.TabItem> args) { }
+        /// <summary>
+        /// Event provedený po změně hodnoty <see cref="ActivePage"/>
+        /// </summary>
+        public event GPropertyChanged<TabHeader.TabItem> ActivePageChanged;
+
+        /// <summary>
+        /// Zavolá metody <see cref="OnActiveControlChanged"/> a eventhandler <see cref="ActiveControlChanged"/>.
+        /// </summary>
+        protected IInteractiveItem CallActiveControlChanged(IInteractiveItem oldValue, IInteractiveItem newValue, EventSourceType eventSource)
+        {
+            GPropertyChangeArgs<IInteractiveItem> args = new GPropertyChangeArgs<IInteractiveItem>(eventSource, oldValue, newValue);
+            this.OnActiveControlChanged(args);
+            if (!this.IsSuppressedEvent && this.ActiveControlChanged != null)
+                this.ActiveControlChanged(this, args);
+            return args.ResultValue;
+        }
+        /// <summary>
+        /// Metoda prováděná při změně hodnoty <see cref="IsCollapsed"/>
+        /// </summary>
+        protected virtual void OnActiveControlChanged(GPropertyChangeArgs<IInteractiveItem> args) { }
+        /// <summary>
+        /// Event provedený po změně hodnoty <see cref="IsCollapsed"/>
+        /// </summary>
+        public event GPropertyChanged<IInteractiveItem> ActiveControlChanged;
+
+        /// <summary>
+        /// Zavolá metody <see cref="OnIsCollapsedChanged"/> a eventhandler <see cref="IsCollapsedChanged"/>.
+        /// </summary>
+        protected bool CallIsCollapsedChanged(bool oldValue, bool newValue, EventSourceType eventSource)
+        {
+            GPropertyChangeArgs<bool> args = new GPropertyChangeArgs<bool>(eventSource, oldValue, newValue);
+            this.OnIsCollapsedChanged(args);
+            if (!this.IsSuppressedEvent && this.IsCollapsedChanged != null)
+                this.IsCollapsedChanged(this, args);
+            return args.ResultValue;
+        }
+        /// <summary>
+        /// Metoda prováděná při změně hodnoty <see cref="IsCollapsed"/>
+        /// </summary>
+        protected virtual void OnIsCollapsedChanged(GPropertyChangeArgs<bool> args) { }
+        /// <summary>
+        /// Event provedený po změně hodnoty <see cref="IsCollapsed"/>
+        /// </summary>
+        public event GPropertyChanged<bool> IsCollapsedChanged;
+        #endregion
+    }
+    #region enum ShowTabHeaderMode : Režim zobrazování záložek TabHeader při zobrazování pole prvků
+    /// <summary>
+    /// Režim zobrazování záložek <see cref="TabHeader"/> při zobrazování pole prvků
+    /// </summary>
+    [Flags]
+    public enum ShowTabHeaderMode
+    {
+        /// <summary>
+        /// Zobrazovat <see cref="TabHeader"/> jen tehdy, když pole prvků obsahuje dvě nebo více položek (pak má výběr zobrazené položky logický význam)
+        /// </summary>
+        Default = 0,
+        /// <summary>
+        /// Zobrazovat TabHeader vždy, tedy i když pole prvků obsahuje jen jeden prvek (pak výběr zobrazené položky nemá logický význam, 
+        /// ale <see cref="TabHeader"/> pak hraje roli titulku = zobrazuje totiž Image a Text)
+        /// </summary>
+        Always = 1,
+        /// <summary>
+        /// Nikdy nezobrazovat <see cref="TabHeader"/>, ani když je v poli přítomno více položek (přepínání položek se řeší kódem)
+        /// </summary>
+        NoTabHeader = 2,
+        /// <summary>
+        /// Přidat <see cref="TabHeader.TabItem"/> pro funkci Collapse, která zmenší prostor <see cref="TabContainer"/> jen na lištu záhlaví <see cref="TabHeader"/>.
+        /// </summary>
+        CollapseItem = 0x10
+    }
+    #endregion
 }

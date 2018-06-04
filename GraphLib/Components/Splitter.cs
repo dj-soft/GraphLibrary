@@ -712,8 +712,7 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Public events and virtual methods
         /// <summary>
-        /// Zavolá metody OnValueChanging a eventhandler ValueChanging
-        /// Call method OnValueChanging() and event ValueChanging
+        /// Zavolá metody <see cref="OnValueChanging"/> a eventhandler <see cref="ValueChanging"/>.
         /// </summary>
         protected int CallValueChanging(int oldValue, int newValue, EventSourceType eventSource)
         {
@@ -724,11 +723,11 @@ namespace Asol.Tools.WorkScheduler.Components
             return args.ResultValue;
         }
         /// <summary>
-        /// Metoda prováděná při změně hodnoty, před voláním eventhandleru
+        /// Metoda prováděná při změně hodnoty <see cref="Value"/>, před voláním eventhandleru
         /// </summary>
         protected virtual void OnValueChanging(GPropertyChangeArgs<int> args) { }
         /// <summary>
-        /// Event on this.Value interactive changing
+        /// Event volaný při změně hodnoty <see cref="Value"/>
         /// </summary>
         public event GPropertyChanged<int> ValueChanging;
 

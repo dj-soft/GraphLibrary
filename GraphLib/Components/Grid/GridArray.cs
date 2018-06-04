@@ -92,28 +92,4 @@ namespace Asol.Tools.WorkScheduler.Components
         protected IInteractiveItem[] _ChildItems;
         #endregion
     }
-    /// <summary>
-    /// Režim zobrazování záložek <see cref="TabHeader"/> při zobrazování pole prvků
-    /// </summary>
-    [Flags]
-    public enum ShowTabHeaderMode
-    {
-        /// <summary>
-        /// Zobrazovat TabHeader jen tehdy, když pole prvků obsahuje dvě nebo více položek (pak má výběr zobrazené položky logický význam)
-        /// </summary>
-        Default = 0,
-        /// <summary>
-        /// Zobrazovat TabHeader vždy, tedy i když pole prvků obsahuje jen jeden prvek (pak výběr zobrazené položky nemá logický význam, 
-        /// ale <see cref="TabHeader"/> pak hraje roli titulku = zobrazuje totiž Image a Text)
-        /// </summary>
-        Always = 1,
-        /// <summary>
-        /// Nikdy nezobrazovat TabHeader, ani když je v poli přítomno více položek (přepínání položek se řeší kódem)
-        /// </summary>
-        NoTabHeader = 2,
-        /// <summary>
-        /// Přidat TabHeader, který "zhasne" = nezobrazí se žádný prvek pole, zůstane jen TabHeader
-        /// </summary>
-        AddEmptyHeader
-    }
 }
