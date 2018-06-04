@@ -92,8 +92,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         #region TabHeader nad panely (pokud je více než jeden datový zdroj)
         private void _TabHeaderInit()
         {
-            this._MainTabHeader = new TabHeader() { Position = RectangleSide.Top };
-            this._MainTabHeader.ActiveItemChanged += _TabHeaderActiveItemChanged;
+            this._MainTabHeader = new GTabHeader() { Position = RectangleSide.Top };
+            this._MainTabHeader.ActivePageChanged += _TabHeaderActiveItemChanged;
             this.AddItem(this._MainTabHeader);
         }
         /// <summary>
@@ -101,7 +101,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _TabHeaderActiveItemChanged(object sender, GPropertyChangeArgs<TabHeader.TabItem> e)
+        private void _TabHeaderActiveItemChanged(object sender, GPropertyChangeArgs<GTabPage> e)
         {
             // Záložka automaticky zajišťuje přepínání IsVisible na navázaných objektech (třída MainPanel)
         }
@@ -118,7 +118,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// TabHeader, který umožní přepínat mezi hlavními panely různých datových zdrojů
         /// </summary>
-        private TabHeader _MainTabHeader;
+        private GTabHeader _MainTabHeader;
 
         #endregion
         #region Datové zdroje

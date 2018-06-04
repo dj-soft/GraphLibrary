@@ -48,6 +48,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Může být null, v době kdy prvek ještě není přidán do parent containeru.
         /// </summary>
         protected IInteractiveParent Parent { get; set; }
+        /// <summary>
+        /// true = mám parenta
+        /// </summary>
         protected bool HasParent { get { return (this.Parent != null); } }
         /// <summary>
         /// An array of sub-items in this item
@@ -118,15 +121,37 @@ namespace Asol.Tools.WorkScheduler.Components
         }
 
         /// <summary>
-        /// Back color
+        /// Použitá barva pozadí.
+        /// Pokud <see cref="BackColorUser"/> bude null, použije se <see cref="DefaultBackColor"/>.
+        /// Sem nelze setovat null.
         /// </summary>
         public virtual Color BackColor 
         {
-            get { return this._BackColor; }
-            set { this._BackColor = value; } 
+            get { return (this.BackColorUser.HasValue ? this.BackColorUser.Value : this.DefaultBackColor) ; }
+            set { this.BackColorUser = value; } 
         }
-        protected Color _BackColor = Skin.Control.BackColor;
-
+        /// <summary>
+        /// Aktuálně vložená barva pozadí.
+        /// Lze vložit null, pak jako BackColor bude figurovat <see cref="DefaultBackColor"/>.
+        /// </summary>
+        public Color? BackColorUser
+        {
+            get { return this._BackColorUser; }
+            set { this._BackColorUser = value; this.Repaint(); }
+        }
+        private Color? _BackColorUser = null;
+        /// <summary>
+        /// Defaultní barva pozadí. Potomek může přepsat na svoji dle Skinu
+        /// </summary>
+        protected virtual Color DefaultBackColor { get { return Skin.Control.BackColor; } }
+        /// <summary>
+        /// Libovolný popisný údaj
+        /// </summary>
+        public object Tag { get; set; }
+        /// <summary>
+        /// Libovolný datový údaj
+        /// </summary>
+        public object UserData { get; set; }
         /// <summary>
         /// Order for this item
         /// </summary>
@@ -709,7 +734,13 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         public override string ToString()
         {
-            return this.GetType().Name + " #" + this._Id.ToString() + ", Bounds: " + this.Bounds.ToString() + "; Parent: " + (this.Parent != null ? this.Parent.ToString() : "null");
+            string text = this.GetType().Name;
+            if (this.Tag != null)
+                text += "; Tag: " + this.Tag.ToString();
+            else
+                text += "; Id: " + this.Id.ToString();
+            text += "; Bounds: " + this.Bounds.ToString();
+            return text;
         }
         /// <summary>
         /// Jednoznačné ID tohoto objektu

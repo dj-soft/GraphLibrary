@@ -1061,10 +1061,10 @@ namespace Asol.Tools.WorkScheduler.Components
             bool isEnabled = scrollBar.IsEnabled;
 
             // Pozadí:
-            _DrawScrollBarBack(graphics, bounds, orientation, isEnabled);
+            _DrawScrollBarBack(graphics, bounds, orientation, isEnabled, scrollBar.ScrollBarBackColor);
 
             // Prostor Data (mezi Min a Max buttonem, pod Thumbem), plus UserDataDraw method:
-            _DrawScrollBarData(graphics, scrollBar.DataAreaBounds.Add(location), orientation, isEnabled, scrollBar.UserDataDraw);
+            _DrawScrollBarData(graphics, scrollBar.DataAreaBounds.Add(location), orientation, isEnabled, scrollBar.ScrollBarBackColor, scrollBar.UserDataDraw);
 
             // Aktivní prostor Min/Max area (prostor pro kliknutí mezi Thumb a Min/Max Buttonem):
             if (scrollBar.MinAreaState.IsMouseActive())
@@ -1086,9 +1086,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="bounds"></param>
         /// <param name="orientation"></param>
         /// <param name="isEnabled"></param>
-        private static void _DrawScrollBarBack(Graphics graphics, Rectangle bounds, Orientation orientation, bool isEnabled)
+        private static void _DrawScrollBarBack(Graphics graphics, Rectangle bounds, Orientation orientation, bool isEnabled, Color backColor)
         {
-            Color backColor = Skin.ScrollBar.BackColorArea;
             if (!isEnabled)
                 backColor = backColor.Morph(Skin.Modifiers.BackColorDisable, 0.35f);
 
@@ -1102,13 +1101,17 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="orientation"></param>
         /// <param name="isEnabled"></param>
         /// <param name="itemState"></param>
-        private static void _DrawScrollBarData(Graphics graphics, Rectangle bounds, Orientation orientation, bool isEnabled, Action<Graphics, Rectangle> userDataDraw)
+        private static void _DrawScrollBarData(Graphics graphics, Rectangle bounds, Orientation orientation, bool isEnabled, Color backColor, Action<Graphics, Rectangle> userDataDraw)
         {
-            GInteractiveState itemState = (isEnabled ? GInteractiveState.Enabled : GInteractiveState.Disabled);
-            graphics.FillRectangle(Skin.Brush(Skin.ScrollBar.BackColorArea), bounds);
+            // GInteractiveState itemState = (isEnabled ? GInteractiveState.Enabled : GInteractiveState.Disabled);
+            // GPainter.DrawAreaBase(graphics, bounds, Skin.ScrollBar.BackColorArea, itemState, orientation, null, null);
+
+            if (!isEnabled)
+                backColor = backColor.Morph(Skin.Modifiers.BackColorDisable, 0.35f);
+
+            graphics.FillRectangle(Skin.Brush(backColor), bounds);
             if (userDataDraw != null)
                 userDataDraw(graphics, bounds);
-            // GPainter.DrawAreaBase(graphics, bounds, Skin.ScrollBar.BackColorArea, itemState, orientation, null, null);
         }
         /// <summary>
         /// Vykreslí prostor MinArea / MaxArea
@@ -2481,6 +2484,7 @@ namespace Asol.Tools.WorkScheduler.Components
         Orientation Orientation { get; }
         bool IsEnabled { get; }
         Rectangle ScrollBarBounds { get; }
+        Color ScrollBarBackColor { get; }
         Rectangle MinButtonBounds { get; }
         GInteractiveState MinButtonState { get; }
         Rectangle DataAreaBounds { get; }

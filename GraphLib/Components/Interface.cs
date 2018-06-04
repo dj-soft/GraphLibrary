@@ -91,6 +91,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         ZOrder ZOrder { get; }
         /// <summary>
+        /// Libovolný popisný údaj
+        /// </summary>
+        object Tag { get; set; }
+        /// <summary>
+        /// Libovolný datový údaj
+        /// </summary>
+        object UserData { get; set; }
+        /// <summary>
         /// Repaint item to layers after current operation. 
         /// Layers are not combinable. 
         /// Layer None is for invisible, but active items (item then has IsVisible = true, IsEnabled = true, but will not be really drawed).

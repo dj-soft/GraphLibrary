@@ -99,6 +99,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         private SizeRange _Value;
         private SizeRange _ValueTotal;
+        private bool _ValueIsValid;
         /// <summary>
         /// Poměrná hodnota pro malý posun, tj. když je kliknuto na horní/dolní šipku.
         /// Představuje poměr z viditelné velikosti dokumentu (<see cref="Value"/>), o kolik se posune zobrazený obsah.
@@ -577,19 +578,24 @@ namespace Asol.Tools.WorkScheduler.Components
 
             int begin = 0;
             int size = r.Height;
-            int areaEnd = r.Width - buttonLength;
-            int current = 0;
-            SizeRange dataTotal = this.ChildDataTotal;
-            SizeRange dataThumb = this.ChildDataThumb;
-            this.ChildItemMinArrow.Bounds = new Rectangle(current, begin, buttonLength, size);
-            current = areaEnd;
-            this.ChildItemMaxArrow.Bounds = new Rectangle(current, begin, buttonLength, size);
-            this.ChildItemDataArea.Bounds = new Rectangle((int)dataTotal.Begin.Value, begin, (int)dataTotal.Size.Value, size);
-            this.ChildItemAllArea.Bounds = new Rectangle((int)dataTotal.Begin.Value, begin, (int)dataTotal.Size.Value, size);
-            this.ChildItemMinArea.Bounds = new Rectangle((int)dataTotal.Begin.Value, begin, (int)(dataThumb.Begin.Value - dataTotal.Begin.Value), size);
-            this.ChildItemMaxArea.Bounds = new Rectangle((int)dataThumb.End.Value, begin, (int)(dataTotal.End.Value - dataThumb.End.Value), size);
-            this.ChildItemThumb.Bounds = new Rectangle((int)dataThumb.Begin.Value, begin, (int)dataThumb.Size.Value, size);
 
+            SizeRange dataTotal = this.ChildDataTotal;
+            this.ChildItemAllArea.Bounds = new Rectangle((int)dataTotal.Begin.Value, begin, (int)dataTotal.Size.Value, size);
+            this.ChildItemDataArea.Bounds = new Rectangle((int)dataTotal.Begin.Value, begin, (int)dataTotal.Size.Value, size);
+
+            if (buttonLength > 0)
+            {
+                this.ChildItemMinArrow.Bounds = new Rectangle(0, begin, buttonLength, size);
+                this.ChildItemMaxArrow.Bounds = new Rectangle(r.Width - buttonLength, begin, buttonLength, size);
+            }
+
+            if (this._ValueIsValid)
+            {
+                SizeRange dataThumb = this.ChildDataThumb;
+                this.ChildItemMinArea.Bounds = new Rectangle((int)dataTotal.Begin.Value, begin, (int)(dataThumb.Begin.Value - dataTotal.Begin.Value), size);
+                this.ChildItemMaxArea.Bounds = new Rectangle((int)dataThumb.End.Value, begin, (int)(dataTotal.End.Value - dataThumb.End.Value), size);
+                this.ChildItemThumb.Bounds = new Rectangle((int)dataThumb.Begin.Value, begin, (int)dataThumb.Size.Value, size);
+            }
             this.ChildItemMinArrow.ImageType = LinearShapeType.LeftArrow;
             this.ChildItemThumb.ImageType = LinearShapeType.HorizontalLines;
             this.ChildItemMaxArrow.ImageType = LinearShapeType.RightArrow;
@@ -609,19 +615,24 @@ namespace Asol.Tools.WorkScheduler.Components
 
             int begin = 0;
             int size = r.Width;
-            int areaEnd = r.Height - buttonLength;
-            int current = 0;
-            SizeRange dataTotal = this.ChildDataTotal;
-            SizeRange dataThumb = this.ChildDataThumb;
-            this.ChildItemMinArrow.Bounds = new Rectangle(begin, current, size, buttonLength);
-            current = areaEnd;
-            this.ChildItemMaxArrow.Bounds = new Rectangle(begin, current, size, buttonLength);
-            this.ChildItemDataArea.Bounds = new Rectangle(begin, (int)dataTotal.Begin.Value, size, (int)dataTotal.Size.Value);
-            this.ChildItemAllArea.Bounds = new Rectangle(begin, (int)dataTotal.Begin.Value, size, (int)dataTotal.Size.Value);
-            this.ChildItemMinArea.Bounds = new Rectangle(begin, (int)dataTotal.Begin.Value, size, (int)(this.ChildDataValue.Center.Value - dataTotal.Begin.Value));
-            this.ChildItemMaxArea.Bounds = new Rectangle(begin, (int)this.ChildDataValue.Center.Value, size, (int)(dataTotal.End.Value - this.ChildDataValue.Center.Value));
-            this.ChildItemThumb.Bounds = new Rectangle(begin, (int)dataThumb.Begin.Value, size, (int)dataThumb.Size.Value);
 
+            SizeRange dataTotal = this.ChildDataTotal;
+            this.ChildItemAllArea.Bounds = new Rectangle(begin, (int)dataTotal.Begin.Value, size, (int)dataTotal.Size.Value);
+            this.ChildItemDataArea.Bounds = new Rectangle(begin, (int)dataTotal.Begin.Value, size, (int)dataTotal.Size.Value);
+
+            if (buttonLength > 0)
+            {
+                this.ChildItemMinArrow.Bounds = new Rectangle(begin, 0, size, buttonLength);
+                this.ChildItemMaxArrow.Bounds = new Rectangle(begin, r.Height - buttonLength, size, buttonLength);
+            }
+
+            if (this._ValueIsValid)
+            {
+                SizeRange dataThumb = this.ChildDataThumb;
+                this.ChildItemMinArea.Bounds = new Rectangle(begin, (int)dataTotal.Begin.Value, size, (int)(this.ChildDataValue.Center.Value - dataTotal.Begin.Value));
+                this.ChildItemMaxArea.Bounds = new Rectangle(begin, (int)this.ChildDataValue.Center.Value, size, (int)(dataTotal.End.Value - this.ChildDataValue.Center.Value));
+                this.ChildItemThumb.Bounds = new Rectangle(begin, (int)dataThumb.Begin.Value, size, (int)dataThumb.Size.Value);
+            }
             this.ChildItemMinArrow.ImageType = LinearShapeType.UpArrow;
             this.ChildItemThumb.ImageType = LinearShapeType.VerticalLines;
             this.ChildItemMaxArrow.ImageType = LinearShapeType.DownArrow;
@@ -646,7 +657,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="begin">Pixel, kde aktuálně začíná ScrollBar (podle orientace: pro Horizontal = Left, Vertical = Top)</param>
         /// <param name="length">Délka ScrollBaru v aktivním směru (Horizontal = Width, Vertical = Height)</param>
-        /// <param name="width">Šířka ScrollBaru v neaktivním směru (Horizontal = Height, Vertical = Width)</param></param>
+        /// <param name="width">Šířka ScrollBaru v neaktivním směru (Horizontal = Height, Vertical = Width)</param>
         /// <param name="buttonLength">Out: velikost buttonů Min a Max v aktivním směru (Horizontal = Width, Vertical = Height)</param>
         /// <returns>true = OK</returns>
         private bool ChildPixelsCalculate(int begin, int length, int width, out int buttonLength)
@@ -656,30 +667,42 @@ namespace Asol.Tools.WorkScheduler.Components
             SizeRange value = this._Value;
             SizeRange valueTotal = this._ValueTotal;
             if (valueTotal == null || !valueTotal.IsFilled) return false;
-            if (value == null || !value.IsFilled || value.Size <= 0m) return false;
+            this._ValueIsValid = (value != null && value.IsFilled && value.Size > 0m);
             if (length < 10) return false;
-
-            buttonLength = (length > 25 ? ((length > (5 * width)) ? width : length / 5) : 0);                          // Délka buttonu Min a Max
+            buttonLength = ChildPixelsCalculateMinMaxLength(length, width);                        // Délka buttonu Min a Max
             this.ChildDataTotal = SizeRange.CreateFromBeginSize(begin + buttonLength, length - (2 * buttonLength));
             this.ChildDataTrack = this.ChildDataTotal.Clone;
             this.ChildDataScale = valueTotal.Size.Value / this.ChildDataTrack.Size.Value;
-            this.ChildDataValue = this._GetPixelFromValue(value, false);
-            // Minimální délka thumbu (v aktivním směru, v pixelech):
-            decimal minThumbSize = (this.ChildDataTotal.Size.Value < 36m ? this.ChildDataTotal.Size.Value / 3m : 12m);
-            if (this.ChildDataValue.Size.Value >= minThumbSize)
-            {   // Vypočtená velikost Thumbu je vyhovující => nemusíme řešit Offset ani zvětšovat Thumb (_PixelThumb), ani zmenšovat _PixelTrack:
-                this.ChildDataThumbOffset = 0m;
-                this.ChildDataThumb = this.ChildDataValue.Clone;
+            if (this._ValueIsValid)
+            {   // Hodnota Value je korektní (její Size je větší než 0):
+                this.ChildDataValue = this._GetPixelFromValue(value, false);
+                // Minimální délka thumbu (v aktivním směru, v pixelech):
+                decimal minThumbSize = (this.ChildDataTotal.Size.Value < 36m ? this.ChildDataTotal.Size.Value / 3m : 12m);
+                if (this.ChildDataValue.Size.Value >= minThumbSize)
+                {   // Vypočtená velikost Thumbu je vyhovující => nemusíme řešit Offset ani zvětšovat Thumb (_PixelThumb), ani zmenšovat _PixelTrack:
+                    this.ChildDataThumbOffset = 0m;
+                    this.ChildDataThumb = this.ChildDataValue.Clone;
+                }
+                else
+                {   // Vypočtená velikost Thumbu je příliš malá, musíme Thumb zvětšit na minimální velikost, a vyřešit ty vzniklé disproporce:
+                    this.ChildDataThumbOffset = (minThumbSize - this.ChildDataValue.Size.Value) / 2m;
+                    this.ChildDataTrack = new SizeRange(this.ChildDataTotal.Begin.Value + this.ChildDataThumbOffset, this.ChildDataTotal.End.Value - this.ChildDataThumbOffset);
+                    this.ChildDataScale = valueTotal.Size.Value / this.ChildDataTrack.Size.Value;
+                    this.ChildDataValue = this._GetPixelFromValue(value, false);
+                    this.ChildDataThumb = new SizeRange(this.ChildDataValue.Begin.Value - this.ChildDataThumbOffset, this.ChildDataValue.End.Value + this.ChildDataThumbOffset);
+                }
+                this.ChildItemMinArrow.IsEnabled = true;
+                this.ChildItemMaxArrow.IsEnabled = true;
             }
             else
-            {   // Vypočtená velikost Thumbu je příliš malá, musíme Thumb zvětšit na minimální velikost, a vyřešit ty vzniklé disproporce:
-                this.ChildDataThumbOffset = (minThumbSize - this.ChildDataValue.Size.Value) / 2m;
-                this.ChildDataTrack = new SizeRange(this.ChildDataTotal.Begin.Value + this.ChildDataThumbOffset, this.ChildDataTotal.End.Value - this.ChildDataThumbOffset);
-                this.ChildDataScale = valueTotal.Size.Value / this.ChildDataTrack.Size.Value;
-                this.ChildDataValue = this._GetPixelFromValue(value, false);
-                this.ChildDataThumb = new SizeRange(this.ChildDataValue.Begin.Value - this.ChildDataThumbOffset, this.ChildDataValue.End.Value + this.ChildDataThumbOffset);
+            {   // Hodnota Value je nesprávná (její Size je 0 nebo záporná):
+                //  V tomto případě se nebude vykreslovat Thumb a ani datové oblasti
+                this.ChildDataValue = new SizeRange(0m, 0m);
+                this.ChildDataThumbOffset = 0m;
+                this.ChildDataThumb = this.ChildDataValue.Clone;
+                this.ChildItemMinArrow.IsEnabled = false;
+                this.ChildItemMaxArrow.IsEnabled = false;
             }
-
             // Zaokrouhlit ChildDataThumb na Int32:
             decimal thumbBegin = this.ChildDataThumb.Begin.Value;
             decimal roundBegin = Math.Round(this.ChildDataThumb.Begin.Value, 0);
@@ -692,6 +715,20 @@ namespace Asol.Tools.WorkScheduler.Components
             return true;
         }
         /// <summary>
+        /// Metoda vrátí délku buttonu Min a Max v aktivním směru. Může být 0.
+        /// </summary>
+        /// <param name="length">Délka ScrollBaru v aktivním směru (Horizontal = Width, Vertical = Height)</param>
+        /// <param name="width">Šířka ScrollBaru v neaktivním směru (Horizontal = Height, Vertical = Width)</param>
+        /// <returns></returns>
+        protected int ChildPixelsCalculateMinMaxLength(int length, int width)
+        {
+            if (width < 12) return 0;
+            if (width > 32 && length > 128) return 32;
+            int maxLength = (int)(length / 5);
+            if (width > maxLength) return maxLength;
+            return width;
+        }
+        /// <summary>
         /// Nuluje veškeré výsledky výpočtů souřadnic
         /// </summary>
         private void ChildPixelsReset()
@@ -702,6 +739,15 @@ namespace Asol.Tools.WorkScheduler.Components
             this.ChildDataThumb = null;
             this.ChildDataThumbOffset = 0m;
             this.ChildDataScale = 0m;
+
+            this.ChildItemMinArrow.Bounds = Rectangle.Empty;
+            this.ChildItemMinArea.Bounds = Rectangle.Empty;
+            this.ChildItemThumb.Bounds = Rectangle.Empty;
+            this.ChildItemMaxArea.Bounds = Rectangle.Empty;
+            this.ChildItemMaxArrow.Bounds = Rectangle.Empty;
+
+            this.ChildItemMinArrow.IsEnabled = false;
+            this.ChildItemMaxArrow.IsEnabled = false;
         }
         /// <summary>
         /// Rozmezí pixelů celé oblasti DataArea, nad touto oblastí se může pohybovat Thumb.
@@ -1104,6 +1150,7 @@ namespace Asol.Tools.WorkScheduler.Components
             else
                 GPainter.DrawAreaBase(e.Graphics, bounds, Skin.ScrollBar.BackColorArea, this.Orientation, null, null);
         }
+        protected override Color DefaultBackColor { get { return Skin.ScrollBar.BackColorArea; } }
         /// <summary>
         /// Vyvolá událost <see cref="UserDraw"/> pro uživatelské kreslení pozadí ScrollBaru
         /// </summary>
@@ -1132,6 +1179,7 @@ namespace Asol.Tools.WorkScheduler.Components
         Orientation IScrollBarPaintData.Orientation { get { return this.Orientation; } }
         bool IScrollBarPaintData.IsEnabled { get { return this.IsEnabled; } }
         Rectangle IScrollBarPaintData.ScrollBarBounds { get { return this.ChildItemAllArea.Bounds; } }
+        Color IScrollBarPaintData.ScrollBarBackColor { get { return this.BackColor; } }
         Rectangle IScrollBarPaintData.MinButtonBounds { get { return this.ChildItemMinArrow.Bounds; } }
         GInteractiveState IScrollBarPaintData.MinButtonState { get { return this.ChildItemMinArrow.ItemState; } }
         Rectangle IScrollBarPaintData.DataAreaBounds { get { return this.ChildItemDataArea.Bounds; } }
