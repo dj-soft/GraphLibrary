@@ -117,7 +117,7 @@ namespace Asol.Tools.WorkScheduler.Application
             }
             catch (Exception exc)
             {
-                App.TraceException(exc, "Exception when create instance of plugin", "Type: " + instanceType.Namespace + "." + instanceType.Name, "Assembly: " + instanceType.AssemblyQualifiedName);
+                App.Trace.Exception(exc, "Exception when create instance of plugin", "Type: " + instanceType.Namespace + "." + instanceType.Name, "Assembly: " + instanceType.AssemblyQualifiedName);
                 singleton = null;
             }
             return singleton;

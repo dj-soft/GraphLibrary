@@ -204,7 +204,7 @@ namespace Asol.Tools.WorkScheduler.Components
             }
             catch (Exception exc)
             {
-                App.TraceException(exc, "IFunctionGlobal.PrepareGui() error", "Type: " + function.GetType().NsName());
+                App.Trace.Exception(exc, "IFunctionGlobal.PrepareGui() error", "Type: " + function.GetType().NsName());
             }
         }
         /// <summary>
@@ -221,7 +221,7 @@ namespace Asol.Tools.WorkScheduler.Components
             }
             catch (Exception exc)
             {
-                App.TraceException(exc, "IFunctionGlobal.CheckGui() error", "Type: " + function.GetType().NsName());
+                App.Trace.Exception(exc, "IFunctionGlobal.CheckGui() error", "Type: " + function.GetType().NsName());
             }
         }
         /// <summary>
@@ -1477,7 +1477,6 @@ namespace Asol.Tools.WorkScheduler.Components
                         this.Parent.Repaint();
                     break;
                 case GInteractiveChangeState.MouseEnter:
-                    this.PrepareToolTip(e);
                     if (isEnabled)
                         this.Parent.Repaint();
                     break;
@@ -1487,15 +1486,18 @@ namespace Asol.Tools.WorkScheduler.Components
                     break;
             }
         }
-        protected void PrepareToolTip(GInteractiveChangeStateArgs e)
+        /// <summary>
+        /// Připraví data pro zobrazení ToolTipu. Metodu volá předek.
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void PrepareToolTip(GInteractiveChangeStateArgs e)
         {
             string toolTip = this.GetToolTipText();
             if (String.IsNullOrEmpty(toolTip)) return;
             e.ToolTipData.InfoText = toolTip;
 
             string toolTipTitle = this._ToolbarGroup.DataToolTipTitle;
-            if (!String.IsNullOrEmpty(toolTipTitle))
-                e.ToolTipData.TitleText = toolTipTitle;
+            e.ToolTipData.TitleText = (!String.IsNullOrEmpty(toolTipTitle) ? toolTipTitle : this._ToolbarGroup.DataTitle);
         }
         protected virtual string GetToolTipText()
         {

@@ -36,7 +36,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             int y = 0;
             this._ToolBar.Bounds = new Rectangle(y, 0, size.Width, th);
             y = this._ToolBar.Bounds.Bottom + 1;
-            // this._SchedulerPanel.Bounds = new Rectangle(0, y, size.Width, size.Height - y);
+            this._TabData.Bounds = new Rectangle(0, y, size.Width, size.Height - y);
             this.Refresh();
         }
         /// <summary>
@@ -68,10 +68,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.AddItem(this._ToolBar);
 
             this._ToolBarLoad();
-
-            // this._SchedulerPanel = new SchedulerPanel() { Bounds = new Rectangle(0, this._MainToolbar.Bounds.Bottom, 1024, 640) };
-            // this._SchedulerPanel.BackColor = Color.LightCyan;
-            // this.AddItem(this._SchedulerPanel);
         }
         private void _ToolBarSizeChanged(object sender, GPropertyChangeArgs<ComponentSize> e)
         {
@@ -93,7 +89,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private void _TabDataInit()
         {
             this._TabData = new GTabContainer(this) { TabHeaderPosition = RectangleSide.Top, TabHeaderMode = ShowTabHeaderMode.Default };
-            this._TabData.ActivePageChanged += _TabData_ActivePageChanged;
+            this._TabData.ActivePageChanged += _TabDataActivePageChanged;
             this.AddItem(this._TabData);
         }
         /// <summary>
@@ -101,7 +97,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _TabData_ActivePageChanged(object sender, GPropertyChangeArgs<GTabPage> e)
+        private void _TabDataActivePageChanged(object sender, GPropertyChangeArgs<GTabPage> e)
         {
             
         }
@@ -129,12 +125,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this._LoadData();
         }
         /// <summary>
-        /// Načte soupis dostupných datových zdrojů (=pluginy)
+        /// Načte soupis dostupných datových zdrojů (=pluginy).
+        /// Z datových zdrojů získá popisky dat <see cref="DataDescriptor"/>.
+        /// Pro každý <see cref="DataDescriptor"/> založí jednu záložku v <see cref="_TabData"/>.
         /// </summary>
         private void _PrepareData()
         {
             List<DataSourcePanel> dataList = new List<DataSourcePanel>();
-            using (Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "MainControl", "GetDataSources", "GUIThread"))
+            using (Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "MainControl", "GetDataSources", "GUIThread"))
             {
                 var plugins = Application.App.GetPlugins(typeof(IDataSource));
                 foreach (object plugin in plugins)
@@ -142,12 +140,12 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                     IDataSource source = plugin as IDataSource;
                     if (source != null)
                     {
-                        SchedulerPanel panel = this._GetDataPanel(source);
-                        if (panel != null)
+                        IEnumerable<DataDescriptor> dataDescriptors = this._GetDataPanel(source);
+                        foreach (DataDescriptor dataDescriptor in dataDescriptors)
                         {
+                            SchedulerPanel panel = new SchedulerPanel(source, dataDescriptor);
                             GTabPage page = this._TabDataAdd(panel);
-                            DataSourcePanel data = new DataSourcePanel(source, panel, page);
-                            dataList.Add(data);
+                            DataSourcePanel data = new DataSourcePanel(source, dataDescriptor, panel, page);
                         }
                     }
                 }
@@ -160,28 +158,32 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="dataSource"></param>
         /// <returns></returns>
-        private SchedulerPanel _GetDataPanel(IDataSource dataSource)
+        private IEnumerable<DataDescriptor> _GetDataPanel(IDataSource dataSource)
         {
-            SchedulerPanel panel = null;
+            List<DataDescriptor> dataDescriptors = new List<DataDescriptor>();
             try
             {
                 DataSourceGetTablesRequest request = new DataSourceGetTablesRequest(null);
                 DataSourceGetTablesResponse response = dataSource.ProcessRequest(request) as DataSourceGetTablesResponse;
-                if (response != null)
+                if (response != null && response.DataDescriptorList != null)
+                    dataDescriptors.AddRange(response.DataDescriptorList);
+
                 {
-                    panel = new SchedulerPanel(dataSource, response);
-                    this.AddItem(panel);
-                    this._TabDataAdd(panel);
+                    foreach (DataDescriptor dataDescriptor in response.DataDescriptorList)
+                    {
+                        SchedulerPanel panel = new SchedulerPanel(dataSource, dataDescriptor);
+                        GTabPage page = this._TabDataAdd(panel);
+                    }
                 }
             }
             catch (Exception exc)
             {
                 Type dataSourceType = dataSource.GetType();
                 string dataSourceName = dataSourceType.Namespace + "." + dataSourceType.Name;
-                Application.App.TraceException(exc, $"Error {exc.Message} in datasource {dataSourceName} on processing request: GetTables.");
-                panel = null;
+                Application.App.Trace.Exception(exc, $"Error {exc.Message} in datasource {dataSourceName} on processing request: GetTables.");
+                dataDescriptors.Clear();
             }
-            return panel;
+            return dataDescriptors.ToArray();
         }
         /// <summary>
         /// Metoda zajistí nastartování procesu načítání dat z datového zdroje (ze všech zdrojů) do jeho panelu, to vše na pozadí.
@@ -197,8 +199,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="data"></param>
         private void _LoadDataOne(DataSourcePanel data)
         {
-            DataSourceGetDataRequest request = new DataSourceGetDataRequest(null, data.DataPanel);
-            Application.App.ProcessRequestOnbackground<DataSourceGetDataRequest, DataSourceResponse>(data.DataSource.ProcessRequest, request, this._LoadDataOneResponse);
+            if (data.DataDescriptor.NeedLoadData)
+            {
+                DataSourceGetDataRequest request = new DataSourceGetDataRequest(null, data.DataPanel);
+                Application.App.ProcessRequestOnbackground<DataSourceGetDataRequest, DataSourceResponse>(data.DataSource.ProcessRequest, request, this._LoadDataOneResponse);
+            }
         }
         /// <summary>
         /// Metoda je volána v threadu na pozadí, po dokončení zpracování požadavku <see cref="DataSourceGetDataRequest"/> v rámci datového zdroje.
@@ -221,7 +226,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             }
             else
             {
-                using (Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "MainControl", "ProcessResponseData", "GUIThread"))
+                using (Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "MainControl", "ProcessResponseData", "GUIThread"))
                 {
                     
 
@@ -232,18 +237,35 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         */
         private DataSourcePanel[] _Data;
         /// <summary>
-        /// Třída, která spojuje datový zdroj a jeho GUI
+        /// Třída, která spojuje datový zdroj <see cref="IDataSource"/>, descriptor konkrétních dat <see cref="Scheduler.DataDescriptor"/>, 
+        /// jeho GUI <see cref="SchedulerPanel"/> a záložku, pod kterou je zobrazován <see cref="GTabPage"/>.
         /// </summary>
         protected class DataSourcePanel
         {
-            public DataSourcePanel(IDataSource source, SchedulerPanel panel, GTabPage page)
+            public DataSourcePanel(IDataSource source, DataDescriptor dataDescriptor, SchedulerPanel panel, GTabPage page)
             {
                 this.DataSource = source;
+                this.DataDescriptor = dataDescriptor;
                 this.DataPanel = panel;
                 this.Page = page;
             }
+            /// <summary>
+            /// Datový zdroj, který zde zobrazuje data.
+            /// Jeden datový zdroj může zobrazovat více dat, každá sada dat má svůj <see cref="Scheduler.DataDescriptor"/>, 
+            /// svůj <see cref="SchedulerPanel"/> a svoji záložku <see cref="GTabPage"/>.
+            /// </summary>
             public IDataSource DataSource { get; private set; }
+            /// <summary>
+            /// Popisek dat. Tento popisovač vytvořil datový zdroj <see cref="DataSource"/>, tato data jsou zde obsažena a zobrazena.
+            /// </summary>
+            public DataDescriptor DataDescriptor { get; private set; }
+            /// <summary>
+            /// GUI panel, který fyzicky zobrazuje data
+            /// </summary>
             public SchedulerPanel DataPanel { get; private set; }
+            /// <summary>
+            /// Záložka, pod kterou jsou tato data zobrazena.
+            /// </summary>
             public GTabPage Page { get; private set; }
         }
         #endregion

@@ -970,11 +970,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Obsahuje true, pokud this záhlaví je aktivní
         /// </summary>
         public bool IsActive { get { return (this.TabHeader != null && Object.ReferenceEquals(this, this.TabHeader.ActivePage)); } }
-        /// <summary>
-        /// Jakákoli uživatelská data
-        /// </summary>
-        public object UserData { get { return this._UserData; } set { this._UserData = value; } }
-        private object _UserData;
         #endregion
         #region Souřadnice záhlaví a jeho vnitřních položek, jeho výpočty, komparátor podle TabOrder
         /// <summary>

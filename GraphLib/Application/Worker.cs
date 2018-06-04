@@ -287,14 +287,14 @@ namespace Asol.Tools.WorkScheduler.Application
             try
             {
                 this._State = WorkState.Processing;
-                using (var scopeW = App.TraceScope(TracePriority.Priority1_ElementaryTimeDebug, "Worker", "Run", "WorkMethod"))
+                using (var scopeW = App.Trace.Scope(TracePriority.Priority1_ElementaryTimeDebug, "Worker", "Run", "WorkMethod"))
                 {
                     this._WorkMethod(this._WorkData);
                     if (!this._IsStopped)
                     {
                         if (this._CallbackMethod != null)
                         {
-                            using (var scopeC = App.TraceScope(TracePriority.Priority1_ElementaryTimeDebug, "Worker", "Run", "CallbackMethod"))
+                            using (var scopeC = App.Trace.Scope(TracePriority.Priority1_ElementaryTimeDebug, "Worker", "Run", "CallbackMethod"))
                             {
                                 this._CallbackMethod(this._WorkData);
                             }
@@ -306,12 +306,12 @@ namespace Asol.Tools.WorkScheduler.Application
             catch (Exception exc)
             {
                 this._State = WorkState.Error;
-                App.TraceException(exc, "Exception in Worker thread");
+                App.Trace.Exception(exc, "Exception in Worker thread");
                 if (!this._IsStopped)
                 {
                     if (this._ExceptionMethod != null)
                     {
-                        using (var scopeE = App.TraceScope(TracePriority.Priority1_ElementaryTimeDebug, "Worker", "Run", "ExceptionMethod"))
+                        using (var scopeE = App.Trace.Scope(TracePriority.Priority1_ElementaryTimeDebug, "Worker", "Run", "ExceptionMethod"))
                         {
                             this._ExceptionMethod(this._WorkData, exc);
                         }
@@ -361,14 +361,14 @@ namespace Asol.Tools.WorkScheduler.Application
             try
             {
                 this._State = WorkState.Processing;
-                using (var scopeW = App.TraceScope(TracePriority.Priority1_ElementaryTimeDebug, "Worker", "Run", "WorkMethod"))
+                using (var scopeW = App.Trace.Scope(TracePriority.Priority1_ElementaryTimeDebug, "Worker", "Run", "WorkMethod"))
                 {
                     TResponse response = this._WorkMethod(this._WorkData);
                     if (!this._IsStopped)
                     {
                         if (this._CallbackMethod != null)
                         {
-                            using (var scopeC = App.TraceScope(TracePriority.Priority1_ElementaryTimeDebug, "Worker", "Run", "CallbackMethod"))
+                            using (var scopeC = App.Trace.Scope(TracePriority.Priority1_ElementaryTimeDebug, "Worker", "Run", "CallbackMethod"))
                             {
                                 this._CallbackMethod(this._WorkData, response);
                             }
@@ -380,12 +380,12 @@ namespace Asol.Tools.WorkScheduler.Application
             catch (Exception exc)
             {
                 this._State = WorkState.Error;
-                App.TraceException(exc, "Exception in Worker thread");
+                App.Trace.Exception(exc, "Exception in Worker thread");
                 if (!this._IsStopped)
                 {
                     if (this._ExceptionMethod != null)
                     {
-                        using (var scopeE = App.TraceScope(TracePriority.Priority1_ElementaryTimeDebug, "Worker", "Run", "ExceptionMethod"))
+                        using (var scopeE = App.Trace.Scope(TracePriority.Priority1_ElementaryTimeDebug, "Worker", "Run", "ExceptionMethod"))
                         {
                             this._ExceptionMethod(this._WorkData, exc);
                         }

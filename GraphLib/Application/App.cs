@@ -101,7 +101,7 @@ namespace Asol.Tools.WorkScheduler.Application
         }
         private void _End()
         {
-            TraceEnd();
+            Trace.End();
             this._WorkerEnd();
             Asol.Tools.WorkScheduler.Components.FontInfo.ResetFonts();
         }
@@ -128,7 +128,7 @@ namespace Asol.Tools.WorkScheduler.Application
             }
             catch (Exception exc)
             {
-                TraceException(exc);
+                Trace.Exception(exc);
 
                 Exception e = exc;
                 while (e.InnerException != null)
@@ -151,205 +151,7 @@ namespace Asol.Tools.WorkScheduler.Application
         private System.Windows.Forms.Form _AppMainForm;
         #endregion
         #region Trace (write info to trace file)
-        /// <summary>
-        /// Write one line "Info" into trace, when current priority level is Normal_5 or higher.
-        /// </summary>
-        /// <param name="type"></param>
-        /// <param name="method"></param>
-        /// <param name="result"></param>
-        /// <param name="items"></param>
-        public static void TraceInfo(string type, string method, string result, params string[] items)
-        {
-            if (TraceForPriority(TracePriority.Priority5_Normal))
-                Instance._Trace.Info(type, method, result, items);
-        }
-        /// <summary>
-        /// Write one line "Info" into trace, when current priority level is (parameter "priority") or higher.
-        /// </summary>
-        /// <param name="priority"></param>
-        /// <param name="type"></param>
-        /// <param name="method"></param>
-        /// <param name="result"></param>
-        /// <param name="items"></param>
-        public static void TraceInfo(TracePriority priority, string type, string method, string result, params string[] items)
-        {
-            if (TraceForPriority(priority))
-                Instance._Trace.Info(type, method, result, items);
-        }
-        /// <summary>
-        /// Write one line "Info" into trace, when current priority level is Normal_5 or higher.
-        /// Immediatelly after write call Flush into file.
-        /// </summary>
-        /// <param name="type"></param>
-        /// <param name="method"></param>
-        /// <param name="result"></param>
-        /// <param name="items"></param>
-        public static void TraceInfoNow(string type, string method, string result, params string[] items)
-        {
-            if (TraceForPriority(TracePriority.Priority5_Normal))
-                Instance._Trace.InfoNow(type, method, result, items);
-        }
-        /// <summary>
-        /// Write one line "Info" into trace, when current priority level is (parameter "priority") or higher.
-        /// Immediatelly after write call Flush into file.
-        /// </summary>
-        /// <param name="priority"></param>
-        /// <param name="type"></param>
-        /// <param name="method"></param>
-        /// <param name="result"></param>
-        /// <param name="items"></param>
-        public static void TraceInfoNow(TracePriority priority, string type, string method, string result, params string[] items)
-        {
-            if (TraceForPriority(priority))
-                Instance._Trace.InfoNow(type, method, result, items);
-        }
-
-        /// <summary>
-        /// Write one line "Warning" into trace, when current priority level is Normal_5 or higher.
-        /// </summary>
-        /// <param name="type"></param>
-        /// <param name="method"></param>
-        /// <param name="result"></param>
-        /// <param name="items"></param>
-        public static void TraceWarning(string type, string method, string result, params string[] items)
-        {
-            if (TraceForPriority(TracePriority.Priority5_Normal))
-                Instance._Trace.Warning(type, method, result, items);
-        }
-        /// <summary>
-        /// Write one line "Warning" into trace, when current priority level is (parameter "priority") or higher.
-        /// </summary>
-        /// <param name="priority"></param>
-        /// <param name="type"></param>
-        /// <param name="method"></param>
-        /// <param name="result"></param>
-        /// <param name="items"></param>
-        public static void TraceWarning(TracePriority priority, string type, string method, string result, params string[] items)
-        {
-            if (TraceForPriority(priority))
-                Instance._Trace.Warning(type, method, result, items);
-        }
-        /// <summary>
-        /// Write one line "Warning" into trace, when current priority level is Normal_5 or higher.
-        /// Immediatelly after write call Flush into file.
-        /// </summary>
-        /// <param name="type"></param>
-        /// <param name="method"></param>
-        /// <param name="result"></param>
-        /// <param name="items"></param>
-        public static void TraceWarningNow(string type, string method, string result, params string[] items)
-        {
-            if (TraceForPriority(TracePriority.Priority5_Normal))
-                Instance._Trace.WarningNow(type, method, result, items);
-        }
-        /// <summary>
-        /// Write one line "Warning" into trace, when current priority level is (parameter "priority") or higher.
-        /// Immediatelly after write call Flush into file.
-        /// </summary>
-        /// <param name="priority"></param>
-        /// <param name="type"></param>
-        /// <param name="method"></param>
-        /// <param name="result"></param>
-        /// <param name="items"></param>
-        public static void TraceWarningNow(TracePriority priority, string type, string method, string result, params string[] items)
-        {
-            if (TraceForPriority(priority))
-                Instance._Trace.WarningNow(type, method, result, items);
-        }
-
-        /// <summary>
-        /// Write one line "Error" into trace, regardless of current priority level.
-        /// Immediatelly after write call Flush into file.
-        /// </summary>
-        /// <param name="type"></param>
-        /// <param name="method"></param>
-        /// <param name="result"></param>
-        /// <param name="items"></param>
-        public static void TraceError(string type, string method, string result, params string[] items)
-        {
-            Instance._Trace.Error(type, method, result, items);
-        }
-
-        /// <summary>
-        /// Write one block for "Exception" into trace, regardless of current priority level.
-        /// Write all InnerExceptions.
-        /// Immediatelly after write call Flush into file.
-        /// </summary>
-        /// <param name="exc"></param>
-        /// <param name="items"></param>
-        public static void TraceException(Exception exc, params string[] items)
-        {
-            Instance._Trace.Exception(exc, items);
-        }
-
-        /// <summary>
-        /// Returns an ITraceScope object: this object write Begin line into trace when is created, and write End line on Dispose this scope instance.
-        /// Additional informations (array items) is writed into Begin line.
-        /// User can add any information during scope live via methods AddItem() / AddItems(), and can set Result value. This is write into End line.
-        /// Real write into trace file is performed only when current priority level is Normal_5 or higher.
-        /// Instance is (in code) usable regardless on priority (=even when does not really write to trace file).
-        /// </summary>
-        /// <param name="type"></param>
-        /// <param name="method"></param>
-        /// <param name="result"></param>
-        /// <param name="items"></param>
-        /// <returns></returns>
-        public static ITraceScope TraceScope(string type, string method, string result, params string[] items)
-        {
-            return Instance._Trace.Scope(TraceForPriority(TracePriority.Priority5_Normal), type, method, result, items);
-        }
-        /// <summary>
-        /// Returns an ITraceScope object: this object write Begin line into trace when is created, and write End line on Dispose this scope instance.
-        /// Additional informations (array items) is writed into Begin line.
-        /// User can add any information during scope live via methods AddItem() / AddItems(), and can set Result value. This is write into End line.
-        /// Real write into trace file is performed only when current priority level is (parameter "priority") or higher.
-        /// Instance is (in code) usable regardless on priority (=even when does not really write to trace file).
-        /// </summary>
-        /// <param name="priority"></param>
-        /// <param name="type"></param>
-        /// <param name="method"></param>
-        /// <param name="result"></param>
-        /// <param name="items"></param>
-        /// <returns></returns>
-        public static ITraceScope TraceScope(TracePriority priority, string type, string method, string result, params string[] items)
-        {
-            return Instance._Trace.Scope(TraceForPriority(priority), type, method, result, items);
-        }
-        /// <summary>
-        /// Returns an ITraceScope object: this object write Begin line into trace when is created, and write End line on Dispose this scope instance.
-        /// Additional informations (array items) is writed into Begin line.
-        /// User can add any information during scope live via methods AddItem() / AddItems(), and can set Result value. This is write into End line.
-        /// Real write into trace file is performed only when current priority level is Normal_5 or higher.
-        /// Instance is (in code) usable regardless on priority (=even when does not really write to trace file).
-        /// This method create scope with immediatelly writing into file (after write line is performed Flush() on file stream).
-        /// </summary>
-        /// <param name="type"></param>
-        /// <param name="method"></param>
-        /// <param name="result"></param>
-        /// <param name="items"></param>
-        /// <returns></returns>
-        public static ITraceScope TraceScopeNow(string type, string method, string result, params string[] items)
-        {
-            return Instance._Trace.ScopeNow(TraceForPriority(TracePriority.Priority5_Normal), type, method, result, items);
-        }
-        /// <summary>
-        /// Returns an ITraceScope object: this object write Begin line into trace when is created, and write End line on Dispose this scope instance.
-        /// Additional informations (array items) is writed into Begin line.
-        /// User can add any information during scope live via methods AddItem() / AddItems(), and can set Result value. This is write into End line.
-        /// Real write into trace file is performed only when current priority level is (parameter "priority") or higher.
-        /// Instance is (in code) usable regardless on priority (=even when does not really write to trace file).
-        /// This method create scope with immediatelly writing into file (after write line is performed Flush() on file stream).
-        /// </summary>
-        /// <param name="priority"></param>
-        /// <param name="type"></param>
-        /// <param name="method"></param>
-        /// <param name="result"></param>
-        /// <param name="items"></param>
-        /// <returns></returns>
-        public static ITraceScope TraceScopeNow(TracePriority priority, string type, string method, string result, params string[] items)
-        {
-            return Instance._Trace.ScopeNow(TraceForPriority(priority), type, method, result, items);
-        }
+        public static Trace Trace { get { return Instance._Trace; } }
         /// <summary>
         /// Returns true when specified priority is equal or higher than TracePriority, and request for write to trace has been performed.
         /// </summary>
@@ -371,20 +173,6 @@ namespace Asol.Tools.WorkScheduler.Application
         {
             get { return Instance._TracePriority; }
             set { Instance._TracePriority = value; }
-        }
-        /// <summary>
-        /// Immediatelly call Flush() on file stream.
-        /// </summary>
-        public static void TraceFlush()
-        {
-            Instance._Trace.Flush();
-        }
-        /// <summary>
-        /// Write into trace new event for End of application, perform Flush on stream, and really close trace file.
-        /// </summary>
-        public static void TraceEnd()
-        {
-            Instance._Trace.End();
         }
         /// <summary>
         /// true pokud byla aplikace spuštěna v Debug režimu.

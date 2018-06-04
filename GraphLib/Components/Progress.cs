@@ -37,7 +37,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected string DataInfoCurrent { get { return (this.HasData ? this._ProgressData.InfoCurrent : null); } }
         protected List<string> DataInfoPrevious { get { return (this.HasData ? this._ProgressData.InfoPrevious : null); } }
 
-        protected Color DefaultBackColor { get { return Color.DarkOrchid; } }
+        protected override Color DefaultBackColor { get { return Color.DarkOrchid; } }
         protected Color DefaultForeColor { get { return this.DataBackColor.Contrast(); } }
         protected Color DefaultProgressBackColor { get { return Color.LightGray; } }
         protected Color DefaultProgressForeColor { get { return Color.MediumBlue; } }

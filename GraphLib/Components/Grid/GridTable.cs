@@ -1782,7 +1782,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="boundsAbsolute"></param>
         protected override void DrawStandard(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
         {
-            Application.App.TraceInfo(Application.TracePriority.Priority1_ElementaryTimeDebug, this.GetType().Name, "Draw", "Component", this.ToString(), "BoundsAbsolute: " + boundsAbsolute.ToString());
+            Application.App.Trace.Info(Application.TracePriority.Priority1_ElementaryTimeDebug, this.GetType().Name, "Draw", "Component", this.ToString(), "BoundsAbsolute: " + boundsAbsolute.ToString());
 
             if (this.NeedDebug)
             { }

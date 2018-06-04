@@ -71,7 +71,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             if (this._KeyboardLeavedItem != null)
             {
-                using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "Enter", ""))
+                using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "Enter", ""))
                 {
                     try
                     {
@@ -107,7 +107,7 @@ namespace Asol.Tools.WorkScheduler.Components
         private void _OnLeave(EventArgs e)
         {
             this._KeyboardLeavedItem = this._KeyboardCurrentItem;
-            using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "Leave", ""))
+            using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "Leave", ""))
             {
                 try
                 {
@@ -129,7 +129,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             if (this._KeyboardCurrentItemCanKeyboard)
             {
-                using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "PreviewKeyDown", ""))
+                using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "PreviewKeyDown", ""))
                 {
                     try
                     {
@@ -152,7 +152,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             if (this._MouseDraggedItem != null && e.KeyCode == Keys.Escape)
             {   // When we have Dragged Item, and Escape is pressed, then perform Cancel for current Drag operation:
-                using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "KeyDown_DragCancel", ""))
+                using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "KeyDown_DragCancel", ""))
                 {
                     this._MouseDragCancel();
                     this._InteractiveDrawRun();
@@ -160,7 +160,7 @@ namespace Asol.Tools.WorkScheduler.Components
             }
             else if (this._KeyboardCurrentItemCanKeyboard)
             {
-                using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "KeyDown", ""))
+                using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "KeyDown", ""))
                 {
                     try
                     {
@@ -183,7 +183,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             if (this._KeyboardCurrentItemCanKeyboard)
             {
-                using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "KeyUp", ""))
+                using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "KeyUp", ""))
                 {
                     try
                     {
@@ -206,7 +206,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             if (this._KeyboardCurrentItemCanKeyboard)
             {
-                using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "KeyPress", ""))
+                using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "KeyPress", ""))
                 {
                     try
                     {
@@ -330,7 +330,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         private void _OnMouseEnter(EventArgs e)
         {
-            using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "MouseEnter", ""))
+            using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "MouseEnter", ""))
             {
                 try
                 {
@@ -350,7 +350,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         private void _OnMouseMove(MouseEventArgs e)
         {
-            using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "MouseMove", ""))
+            using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "MouseMove", ""))
             {
                 try
                 {
@@ -399,7 +399,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         private void _OnMouseDown(MouseEventArgs e)
         {
-            using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "MouseDown", ""))
+            using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "MouseDown", ""))
             {
                 try
                 {
@@ -419,7 +419,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         private void _OnMouseUp(MouseEventArgs e)
         {
-            using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "MouseUp", ""))
+            using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "MouseUp", ""))
             {
                 try
                 {
@@ -444,7 +444,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         private void _OnMouseWheel(MouseEventArgs e)
         {
-            using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "MouseWheel", ""))
+            using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "MouseWheel", ""))
             {
                 try
                 {
@@ -464,7 +464,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         private void _OnMouseLeave(EventArgs e)
         {
-            using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "MouseLeave", ""))
+            using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "MouseLeave", ""))
             {
                 try
                 {
@@ -1032,7 +1032,7 @@ namespace Asol.Tools.WorkScheduler.Components
             request.Fill(this.ClientRectangle, this, this.ItemsList, this.PendingFullDraw, true);
             if (request.NeedAnyDraw)
             {
-                using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "InteractiveDrawRun", ""))
+                using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "InteractiveDrawRun", ""))
                 {
                     try
                     {
@@ -1150,7 +1150,7 @@ namespace Asol.Tools.WorkScheduler.Components
             DrawRequest request = new DrawRequest(false, this._ToolTip, this._ProgressItem);
             if (request.NeedAnyDraw)
             {
-                using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "ProgressDrawRun", ""))
+                using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "ProgressDrawRun", ""))
                 {
                     try
                     {
@@ -1181,7 +1181,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         protected override void OnPaintLayers(LayeredPaintEventArgs e)
         {
-            using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "OnPaintLayers", ""))
+            using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "OnPaintLayers", ""))
             {
                 DrawRequest request = e.UserData as DrawRequest;
                 scope.AddItem("e.UserData: " + ((request == null) ? "null => Draw " : "Explicit request"));
@@ -1373,7 +1373,7 @@ namespace Asol.Tools.WorkScheduler.Components
             /// <param name="interactive">true = provádí se interaktivní vykreslení</param>
             internal void Fill(Rectangle absoluteVisibleClip, IInteractiveParent parent, IEnumerable<IInteractiveItem> items, bool drawAllItems, bool interactive)
             {
-                using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "DrawRequest", "Fill", ""))
+                using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "DrawRequest", "Fill", ""))
                 {
                     this.InteractiveMode = interactive;
                     this.FillFromItems(new Point(0, 0), absoluteVisibleClip, parent, items, GInteractiveDrawLayer.None);

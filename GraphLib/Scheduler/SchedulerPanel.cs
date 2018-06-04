@@ -20,29 +20,29 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             this._InitComponents();
         }
-        public SchedulerPanel(Services.IDataSource schedulerDataSource, DataSourceGetTablesResponse response)
+        public SchedulerPanel(Services.IDataSource schedulerDataSource, DataDescriptor dataDescriptor)
         {
-            this._SchedulerDataSource = schedulerDataSource;
-            this._SchedulerTablesResponse = response;
+            this._DataSource = schedulerDataSource;
+            this._DataDescriptor = dataDescriptor;
             this._InitComponents();
         }
         private void _InitComponents()
         {
-            this._TaskGrid = new GGrid();
+            this._TaskContainer = new GTabContainer(this) { TabHeaderPosition = RectangleSide.Left, TabHeaderMode = ShowTabHeaderMode.Default };
             this._TaskSplitter = new GSplitter() { SplitterVisibleWidth = SplitterSize, SplitterActiveOverlap = 2, Orientation = Orientation.Vertical, Value = 300, BoundsNonActive = new Int32NRange(0, 200) };
-            this._SchedulerGrid = new GGrid();
+            this._SchedulerGrid = new GGrid(this);
             this._SourceSplitter = new GSplitter() { SplitterVisibleWidth = SplitterSize, SplitterActiveOverlap = 2, Orientation = Orientation.Vertical, Value = 600, BoundsNonActive = new Int32NRange(0, 200) };
-            this._SourceGrid = new GGrid();
+            this._SourceContainer = new GTabContainer(this) { TabHeaderPosition = RectangleSide.Right, TabHeaderMode = ShowTabHeaderMode.Default };
             this._InfoSplitter = new GSplitter() { SplitterVisibleWidth = SplitterSize, SplitterActiveOverlap = 2, Orientation = Orientation.Horizontal, Value = 300, BoundsNonActive = new Int32NRange(0, 600) };
-            this._InfoGrid = new GGrid();
+            this._InfoContainer = new GTabContainer(this) { TabHeaderPosition = RectangleSide.Bottom, TabHeaderMode = ShowTabHeaderMode.Default };
 
-            this.AddItem(this._TaskGrid);
+            this.AddItem(this._TaskContainer);
             this.AddItem(this._TaskSplitter);
             this.AddItem(this._SchedulerGrid);
             this.AddItem(this._SourceSplitter);
-            this.AddItem(this._SourceGrid);
+            this.AddItem(this._SourceContainer);
             this.AddItem(this._InfoSplitter);
-            this.AddItem(this._InfoGrid);
+            this.AddItem(this._InfoContainer);
 
             this._TaskSplitter.ValueChanging += LayoutChanging;
             this._TaskSplitter.ValueChanged += LayoutChanging;
@@ -104,28 +104,28 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 this._IsInfoVisible = (this._IsInfoEnabled && height >= MinControlHeightForSideGrids);
                 int y2 = CalculateLayoutOne(this._IsInfoVisible, y3, this._InfoSplitter.Value, y3 - maxh, y3 - MinGridHeight);
 
-                bool isChangeChildItems = (this._TaskGrid.IsVisible != this._IsTaskVisible) ||
+                bool isChangeChildItems = (this._TaskContainer.IsVisible != this._IsTaskVisible) ||
                                           (this._TaskSplitter.IsVisible != this._IsTaskVisible) ||
                                           (this._SchedulerGrid.IsVisible != this._IsSchedulerVisible) ||
                                           (this._SourceSplitter.IsVisible != this._IsSourceVisible) ||
-                                          (this._SourceGrid.IsVisible != this._IsSourceVisible) ||
+                                          (this._SourceContainer.IsVisible != this._IsSourceVisible) ||
                                           (this._InfoSplitter.IsVisible != this._IsInfoVisible) ||
-                                          (this._InfoGrid.IsVisible != this._IsInfoVisible);
+                                          (this._InfoContainer.IsVisible != this._IsInfoVisible);
 
-                this._TaskGrid.IsVisible = this._IsTaskVisible;
+                this._TaskContainer.IsVisible = this._IsTaskVisible;
                 this._TaskSplitter.IsVisible = this._IsTaskVisible;
                 this._SchedulerGrid.IsVisible = this._IsSchedulerVisible;
                 this._SourceSplitter.IsVisible = this._IsSourceVisible;
-                this._SourceGrid.IsVisible = this._IsSourceVisible;
+                this._SourceContainer.IsVisible = this._IsSourceVisible;
                 this._InfoSplitter.IsVisible = this._IsInfoVisible;
-                this._InfoGrid.IsVisible = this._IsInfoVisible;
+                this._InfoContainer.IsVisible = this._IsInfoVisible;
 
                 if (this._IsTaskVisible)
                 {
                     int r = x1 - sp;
                     int b = y2 - (this._IsInfoVisible ? sp : 0);
-                    this._TaskGrid.Bounds = new Rectangle(x0, y0, r - x0, b - y0);
-                    this._TaskSplitter.LoadFrom(this._TaskGrid.Bounds, RectangleSide.Right, true);
+                    this._TaskContainer.Bounds = new Rectangle(x0, y0, r - x0, b - y0);
+                    this._TaskSplitter.LoadFrom(this._TaskContainer.Bounds, RectangleSide.Right, true);
                 }
                 if (this._IsSchedulerVisible)
                 {
@@ -139,14 +139,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 {
                     int l = x2 + sn;
                     int b = y2 - (this._IsInfoVisible ? sp : 0);
-                    this._SourceGrid.Bounds = new Rectangle(l, y0, x3 - l, b - y0);
-                    this._SourceSplitter.LoadFrom(this._SourceGrid.Bounds, RectangleSide.Left, true);
+                    this._SourceContainer.Bounds = new Rectangle(l, y0, x3 - l, b - y0);
+                    this._SourceSplitter.LoadFrom(this._SourceContainer.Bounds, RectangleSide.Left, true);
                 }
                 if (this._IsInfoVisible)
                 {
                     int t = y2 + sn;
-                    this._InfoGrid.Bounds = new Rectangle(x0, t, x3 - x0, y3 - t);
-                    this._InfoSplitter.LoadFrom(this._InfoGrid.Bounds, RectangleSide.Top, true);
+                    this._InfoContainer.Bounds = new Rectangle(x0, t, x3 - x0, y3 - t);
+                    this._InfoSplitter.LoadFrom(this._InfoContainer.Bounds, RectangleSide.Top, true);
                 }
 
                 if (isChangeChildItems)
@@ -166,22 +166,22 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private const int MinGridHeight = 75;
         private const int SplitterSize = 4;
         
-        private GGrid _TaskGrid;
+        private GTabContainer _TaskContainer;
         private GSplitter _TaskSplitter;
         private bool _IsTaskVisible;
         private bool _IsTaskEnabled;
         private GGrid _SchedulerGrid;
         private bool _IsSchedulerVisible;
         private GSplitter _SourceSplitter;
-        private GGrid _SourceGrid;
+        private GTabContainer _SourceContainer;
         private bool _IsSourceVisible;
         private bool _IsSourceEnabled;
         private GSplitter _InfoSplitter;
-        private GGrid _InfoGrid;
+        private GTabContainer _InfoContainer;
         private bool _IsInfoVisible;
         private bool _IsInfoEnabled;
-        private Services.IDataSource _SchedulerDataSource;
-        private DataSourceGetTablesResponse _SchedulerTablesResponse;
+        private Services.IDataSource _DataSource;
+        private DataDescriptor _DataDescriptor;
         #endregion
         #region Child items
         protected override IEnumerable<IInteractiveItem> Childs { get { return this._GetChildList(); } }
@@ -190,10 +190,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (this._ChildList == null || !this._IsChildValid)
             {
                 this._ChildList = new List<IInteractiveItem>();
-                if (this._IsTaskVisible) this._ChildList.Add(this._TaskGrid);
+                if (this._IsTaskVisible) this._ChildList.Add(this._TaskContainer);
                 if (this._IsSchedulerVisible) this._ChildList.Add(this._SchedulerGrid);
-                if (this._IsSourceVisible) this._ChildList.Add(this._SourceGrid);
-                if (this._IsInfoVisible) this._ChildList.Add(this._InfoGrid);
+                if (this._IsSourceVisible) this._ChildList.Add(this._SourceContainer);
+                if (this._IsInfoVisible) this._ChildList.Add(this._InfoContainer);
                 if (this._IsTaskVisible) this._ChildList.Add(this._TaskSplitter);
                 if (this._IsSourceVisible) this._ChildList.Add(this._SourceSplitter);
                 if (this._IsInfoVisible) this._ChildList.Add(this._InfoSplitter);
@@ -204,7 +204,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private bool _IsChildValid;
         #endregion
         #region Public data
-        public Services.IDataSource SchedulerDataSource { get { return this._SchedulerDataSource; } }
+        public Services.IDataSource SchedulerDataSource { get { return this._DataSource; } }
         /// <summary>
         /// Titulek celých dat, zobrazí se v TabHeaderu, pokud bude datových zdrojů více než 1
         /// </summary>

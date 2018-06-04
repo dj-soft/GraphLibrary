@@ -9,28 +9,58 @@ namespace Asol.Tools.WorkScheduler.Application
     /// <summary>
     /// Trace : class for write trace informations
     /// </summary>
-    internal class Trace
+    public class Trace
     {
         #region Public: TraceInfo, Flush, End
         public void Info(string type, string method, string result, params string[] items)
         {
-            this._TraceWrite(null, LEVEL_INFO, "", type, method, result, false, items);
+            if (App.TraceForPriority(TracePriority.Priority5_Normal))
+                this._TraceWrite(null, LEVEL_INFO, "", type, method, result, false, items);
+        }
+        public void Info(TracePriority priority, string type, string method, string result, params string[] items)
+        {
+            if (App.TraceForPriority(priority))
+                this._TraceWrite(null, LEVEL_INFO, "", type, method, result, false, items);
         }
         public void InfoNow(string type, string method, string result, params string[] items)
         {
-            this._TraceWrite(null, LEVEL_INFO, "", type, method, result, true, items);
+            if (App.TraceForPriority(TracePriority.Priority5_Normal))
+                this._TraceWrite(null, LEVEL_INFO, "", type, method, result, true, items);
+        }
+        public void InfoNow(TracePriority priority, string type, string method, string result, params string[] items)
+        {
+            if (App.TraceForPriority(priority))
+                this._TraceWrite(null, LEVEL_INFO, "", type, method, result, true, items);
         }
         public void Warning(string type, string method, string result, params string[] items)
         {
-            this._TraceWrite(null, LEVEL_WARNING, "", type, method, result, false, items);
+            if (App.TraceForPriority(TracePriority.Priority5_Normal))
+                this._TraceWrite(null, LEVEL_WARNING, "", type, method, result, false, items);
+        }
+        public void Warning(TracePriority priority, string type, string method, string result, params string[] items)
+        {
+            if (App.TraceForPriority(priority))
+                this._TraceWrite(null, LEVEL_WARNING, "", type, method, result, false, items);
         }
         public void WarningNow(string type, string method, string result, params string[] items)
         {
-            this._TraceWrite(null, LEVEL_WARNING, "", type, method, result, true, items);
+            if (App.TraceForPriority(TracePriority.Priority5_Normal))
+                this._TraceWrite(null, LEVEL_WARNING, "", type, method, result, true, items);
+        }
+        public void WarningNow(TracePriority priority, string type, string method, string result, params string[] items)
+        {
+            if (App.TraceForPriority(priority))
+                this._TraceWrite(null, LEVEL_WARNING, "", type, method, result, true, items);
         }
         public void Error(string type, string method, string result, params string[] items)
         {
-            this._TraceWrite(null, LEVEL_ERROR, "", type, method, result, true, items);
+            if (App.TraceForPriority(TracePriority.Priority5_Normal))
+                this._TraceWrite(null, LEVEL_ERROR, "", type, method, result, true, items);
+        }
+        public void Error(TracePriority priority, string type, string method, string result, params string[] items)
+        {
+            if (App.TraceForPriority(priority))
+                this._TraceWrite(null, LEVEL_ERROR, "", type, method, result, true, items);
         }
         /// <summary>
         /// Perform Flush on stream of trace file
@@ -68,12 +98,24 @@ namespace Asol.Tools.WorkScheduler.Application
         }
         #endregion
         #region Scope
-        public ITraceScope Scope(bool isReal, string type, string method, string result, params string[] items)
+        public ITraceScope Scope(string type, string method, string result, params string[] items)
         {
+            bool isReal = App.TraceForPriority(TracePriority.Priority5_Normal);
             return TraceScope.GetScope(this, false, isReal, type, method, result, items);
         }
-        public ITraceScope ScopeNow(bool isReal, string type, string method, string result, params string[] items)
+        public ITraceScope Scope(TracePriority priority, string type, string method, string result, params string[] items)
         {
+            bool isReal = App.TraceForPriority(priority);
+            return TraceScope.GetScope(this, false, isReal, type, method, result, items);
+        }
+        public ITraceScope ScopeNow(string type, string method, string result, params string[] items)
+        {
+            bool isReal = App.TraceForPriority(TracePriority.Priority5_Normal);
+            return TraceScope.GetScope(this, true, isReal, type, method, result, items);
+        }
+        public ITraceScope ScopeNow(TracePriority priority, string type, string method, string result, params string[] items)
+        {
+            bool isReal = App.TraceForPriority(priority);
             return TraceScope.GetScope(this, true, isReal, type, method, result, items);
         }
         /// <summary>

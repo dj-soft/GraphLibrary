@@ -609,8 +609,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public Int32 Height
         {
-            get
-            { return this.TableHeightLayout.CurrentSize; }
+            get { return this.TableHeightLayout.CurrentSize; }
             set
             {
                 int oldValue = this.TableHeightLayout.CurrentSize;
@@ -624,8 +623,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public bool IsVisible
         {
-            get
-            { return this.TableHeightLayout.Visible; }
+            get { return this.TableHeightLayout.Visible; }
             set
             {
                 bool oldValue = this.TableHeightLayout.Visible;
@@ -641,8 +639,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public Int32 ColumnHeaderHeight
         {
-            get
-            { return this.ColumnHeaderHeightLayout.CurrentSize; }
+            get { return this.ColumnHeaderHeightLayout.CurrentSize; }
             set
             {
                 int oldValue = this.ColumnHeaderHeightLayout.CurrentSize;
@@ -675,8 +672,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public int TableOrder
         {
-            get
-            { return this._TableOrder; }
+            get { return this._TableOrder; }
             set
             {
                 int oldValue = this._TableOrder;

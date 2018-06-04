@@ -35,7 +35,7 @@ namespace Asol.Tools.WorkScheduler.Components
         #region CheckValid, recalculate validity
         protected void CheckValid()
         {
-            using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "CheckValid", ""))
+            using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "CheckValid", ""))
             {
                 this.CheckValidTimeAxis();
                 this.CheckValidLogicalY();
@@ -108,7 +108,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected void ItemsRecalculateLogicalY()
         {
-            using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "ItemsRecalculateLogY", ""))
+            using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "ItemsRecalculateLogY", ""))
             {
                 int layers = 0;
                 int levels = 0;
@@ -277,7 +277,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected void ItemsRecalculateVisibleList()
         {
-            using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "ItemsRecalculateVisibleList", ""))
+            using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "ItemsRecalculateVisibleList", ""))
             {
                 int layers = 0;
                 int groups = 0;
@@ -406,7 +406,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual void DrawContentTimeGraph(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
         {
             this.DrawContentPrepareArgs(e, boundsAbsolute);
-            using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "DrawContent", ""))
+            using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "DrawContent", ""))
             {
                 this.Bounds = new Rectangle(0, 0, boundsAbsolute.Width, boundsAbsolute.Height);
                 this.CheckValid();
@@ -431,7 +431,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected void DrawTicks()
         {
-            using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "PaintGrid", ""))
+            using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "PaintGrid", ""))
             {
                 int x;
                 int x0 = this.ItemDrawArgs.GraphBoundsAbsolute.X + this.TimeAxisBegin;
@@ -460,7 +460,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         protected void DrawItems()
         {
-            using (var scope = Application.App.TraceScope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "PaintItems", ""))
+            using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "PaintItems", ""))
             {
                 int layers = 0;
                 int groups = 0;
@@ -912,14 +912,6 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Draw support
         /// <summary>
-        /// Common SolidBrush object
-        /// </summary>
-        public SolidBrush SolidBrush { get { return this._Host.SolidBrush; } }
-        /// <summary>
-        /// Common Pen object
-        /// </summary>
-        public Pen Pen { get { return this._Host.Pen; } }
-        /// <summary>
         /// Default color for fill rectangle
         /// </summary>
         public Color DefaultBackColor { get { return this._Host.DefaultBackColor; } set { this._Host.DefaultBackColor = value; } }
@@ -987,8 +979,9 @@ namespace Asol.Tools.WorkScheduler.Components
             bounds = bounds.Enlarge(enlargeL, enlargeT, enlargeR - 1, enlargeB - 1);     // Shring Width and Height by 1 pixel is standard for draw Border into (!) area.
             if (this._IsBoundsVisible(bounds))
             {
-                this._ResetPen(borderColor);
-                this.Graphics.DrawRectangle(this.Pen, bounds);
+                Color color = (borderColor.HasValue ? borderColor.Value : this.DefaultBorderColor);
+                Pen pen = Skin.Pen(color);
+                this.Graphics.DrawRectangle(pen, bounds);
             }
         }
         /// <summary>
@@ -1062,25 +1055,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="dashStyle"></param>
         public void DrawLine(int x1, int y1, int x2, int y2, Color color, float width, System.Drawing.Drawing2D.DashStyle dashStyle)
         {
-            Pen pen = this.Pen;
-            pen.Width = width;
-            pen.Color = color;
-            pen.DashStyle = dashStyle;
+            Pen pen = Skin.Pen(color, width, dashStyle);
             this.Graphics.DrawLine(pen, x1, y1, x2, y2);
         }
-        private void _ResetPen(Color? color)
-        {
-            this.Pen.Color = (color.HasValue ? color.Value : this.DefaultBorderColor);
-            if (this.Pen.Width != 1f) this.Pen.Width = 1f;
-            if (this.Pen.DashStyle != System.Drawing.Drawing2D.DashStyle.Solid) this.Pen.DashStyle = System.Drawing.Drawing2D.DashStyle.Solid;
-        }
-        private SolidBrush _SolidBrush;
-        private Pen _Pen;
         private void _DrawSupportDispose()
         {
-            if (this._SolidBrush != null)
-                this._SolidBrush.Dispose();
-            this._SolidBrush = null;
         }
         #endregion
     }
