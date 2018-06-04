@@ -71,6 +71,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         public Localizable.TextLoc Title { get; set; }
         /// <summary>
+        /// ToolTip panelu, bude použit pokud bude existovat více zdrojů dat
+        /// </summary>
+        public Localizable.TextLoc ToolTip { get; set; }
+        /// <summary>
         /// Ikona panelu, bude použita pokud bude existovat více zdrojů dat
         /// </summary>
         public Image Image { get; set; }

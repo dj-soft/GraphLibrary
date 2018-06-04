@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
+using Asol.Tools.WorkScheduler.Data;
 using Asol.Tools.WorkScheduler.Application;
 using Asol.Tools.WorkScheduler.Components;
 using Asol.Tools.WorkScheduler.Services;
@@ -163,6 +164,22 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             DataSourceGetTablesResponse response = new DataSourceGetTablesResponse(request);
 
+            DataDescriptor dataDescriptor = new DataDescriptor();
+            dataDescriptor.DataId = 123456;
+            dataDescriptor.Title = "Dílna LISY";
+            dataDescriptor.ToolTip = "Nabízí možnosti uspořádat práci na této dílně";
+
+            Table productOrders = new Table() { Title = "Výrobní příkazy" };
+            Table planItems = new Table() { Title = "Plán výroby" };
+            dataDescriptor.TaskTables = new Table[] { productOrders, planItems };
+
+            Table workPlaceSchedule = new Table();
+            Table workPlaceSource = new Table();
+            dataDescriptor.ScheduleTables = new Table[] { workPlaceSchedule, workPlaceSource };
+
+
+
+            response.DataDescriptorList.Add(dataDescriptor)
 
 
             return response;
