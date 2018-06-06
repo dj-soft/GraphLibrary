@@ -169,7 +169,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                     int klic = 10 * (r + 1);
                     DateTime datumOd = now.AddMinutes(15 * r);
                     DateTime datumDo = now.AddMinutes((15 * r) + 5);
-                    GTimeGraph graph1 = this._PrepareGraph(now);
+                    GTimeGraph graph1 = this._PrepareGraphW(now);
                     double price = Math.Round((this.Rand.NextDouble() * 100000d), 2);
                     Image image = images[imgPointer];
                     int height = ((this.Rand.Next(0, 100) > 80) ? 65 : 25);
@@ -249,6 +249,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
                 Image[] images = _LoadImages();
 
+                DateTime now = DateTime.Now.Date.AddHours(8);
                 for (int r = 0; r < rowCount; r++)
                 {
                     string mf = (Rand.NextDouble() < 0.333d) ? "F" : "M";
@@ -272,6 +273,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                     Cell nameCell = row[2];
                     nameCell.ToolTip = nazev;
                     nameCell.ToolTipImage = image;
+
+                    GTimeGraph graph1 = this._PrepareGraphZ(now);
+                    row.BackgroundValue = graph1;
 
                     table.AddRow(row);
                 }
@@ -299,13 +303,12 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             images.Add(Asol.Tools.WorkScheduler.Components.IconStandard.Refresh);
             return images.ToArray();
         }
-        private GTimeGraph _PrepareGraph(DateTime now)
+        private GTimeGraph _PrepareGraphW(DateTime now)
         {
             GTimeGraph graph = new GTimeGraph();
 
-            graph.GraphDefaultHeight = 120;
-            graph.LineUnitHeight = 18;
-            graph.GraphHeightRange = new Int32NRange(35, 480);
+            graph.GraphLineHeight = 18;
+            graph.GraphTotalHeightRange = new Int32NRange(35, 480);
 
             DateTime begin, end;
             GTimeGraphItem item;
@@ -368,7 +371,12 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 item.BorderColor = Color.Blue;
                 graph.ItemList.Add(item);
 
-                workBegin = workBegin.AddDays(1d);
+                for (int t = 0; t < 7; t++)
+                {
+                    workBegin = workBegin.AddDays(1d);
+                    if (workBegin.DayOfWeek == DayOfWeek.Saturday || workBegin.DayOfWeek == DayOfWeek.Saturday) continue;
+                    break;
+                }
             }
 
             List<Color> colors = new List<Color>();
@@ -415,6 +423,45 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 }
             }
 
+            return graph;
+        }
+        private GTimeGraph _PrepareGraphZ(DateTime now)
+        {
+            GTimeGraph graph = new GTimeGraph();
+
+            graph.GraphLineHeight = 18;
+            graph.GraphTotalHeightRange = new Int32NRange(35, 480);
+
+            DateTime begin, end;
+            GTimeGraphItem item;
+
+            int workLayer = 0;
+            DateTime workBegin = now.Date.AddDays(-1d);
+            DateTime workEnd = workBegin.AddDays(62d);
+            while (workBegin < workEnd)
+            {
+                begin = workBegin.AddHours(6d);
+                end = workBegin.AddHours(14d);
+
+                item = new GTimeGraphItem();
+                item.Layer = workLayer;
+                item.Level = 0;
+                item.GroupId = item.ItemId;
+                item.Time = new TimeRange(begin, end);
+                item.Height = 5f;
+                item.ToolTip = "Ranní směna";
+                item.BackColor = Color.FromArgb(240, 240, 255);
+                item.BorderColor = Color.Green;
+                graph.ItemList.Add(item);
+
+                for (int t = 0; t < 7; t++)
+                {
+                    workBegin = workBegin.AddDays(1d);
+                    if (workBegin.DayOfWeek == DayOfWeek.Saturday || workBegin.DayOfWeek == DayOfWeek.Saturday) continue;
+                    break;
+                }
+            }
+            
             return graph;
         }
         private Random Rand;
