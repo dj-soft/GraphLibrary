@@ -915,7 +915,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// Událost se vyvolá pokud uživatel posune myš (jen pohyb, bez drag/drop, bez click) na nový řádek
         /// </summary>
-        public event GPropertyChanged<Row> HotRowChanged;
+        public event GPropertyChangedHandler<Row> HotRowChanged;
         /// <summary>
         /// Obsluha události Změna Hot buňky (pod myší)
         /// </summary>
@@ -934,7 +934,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// Událost se vyvolá pokud uživatel posune myš (jen pohyb, bez drag/drop, bez click) na novou buňku (v témže řádku, v jiném řádku)
         /// </summary>
-        public event GPropertyChanged<Cell> HotCellChanged;
+        public event GPropertyChangedHandler<Cell> HotCellChanged;
         /// <summary>
         /// Obsluha události Změna aktivního řádku
         /// </summary>
@@ -950,7 +950,7 @@ namespace Asol.Tools.WorkScheduler.Data
                 this.ActiveRowChanged(this, args);
         }
         protected virtual void OnActiveRowChanged(GPropertyChangeArgs<Row> args) { }
-        public event GPropertyChanged<Row> ActiveRowChanged;
+        public event GPropertyChangedHandler<Row> ActiveRowChanged;
         /// <summary>
         /// Obsluha události Změna aktivní buňky
         /// </summary>
@@ -966,7 +966,7 @@ namespace Asol.Tools.WorkScheduler.Data
                 this.ActiveCellChanged(this, args);
         }
         protected virtual void OnActiveCellChanged(GPropertyChangeArgs<Cell> args) { }
-        public event GPropertyChanged<Cell> ActiveCellChanged;
+        public event GPropertyChangedHandler<Cell> ActiveCellChanged;
         /// <summary>
         /// Obsluha události MouseEnter na buňce tabulky
         /// </summary>
@@ -1321,7 +1321,7 @@ namespace Asol.Tools.WorkScheduler.Data
     /// <summary>
     /// Row : informace o jednom řádku tabulky
     /// </summary>
-    public class Row : ITableMember, IVisualMember, ISequenceLayout, IContentValidity, IComparableItem
+    public class Row : ITableMember, IVisualMember, IVisualParent, ISequenceLayout, IContentValidity, IComparableItem
     {
         #region Konstruktor, základní data
         /// <summary>
@@ -1537,7 +1537,7 @@ namespace Asol.Tools.WorkScheduler.Data
             }
         }
         #endregion
-        #region Výška řádku, kompletní layout okolo výšky řádku
+        #region Výška řádku, kompletní layout okolo výšky řádku, implementace ISequenceLayout a IVisualParent
         /// <summary>
         /// Zadaná výška řádku.
         /// Hodnotu může vložit aplikační kód, hodnota se projeví v GUI.
@@ -1558,6 +1558,24 @@ namespace Asol.Tools.WorkScheduler.Data
         int ISequenceLayout.Size { get { return this._SequenceLayout.Size; } set { this._SequenceLayout.Size = value; } }
         int ISequenceLayout.End { get { return this._SequenceLayout.End; } }
         bool ISequenceLayout.AutoSize { get { return this._SequenceLayout.AutoSize; } }
+        int IVisualParent.ClientWidth { get { return (this.HasGTable ? this.GTable.Bounds.Width : 0); } set { } }
+        int IVisualParent.ClientHeight
+        {
+            get { return (this._SequenceLayout.Size - 1); }
+            set
+            {
+                int height = value + 1;          // Výška řádku je + 1 pixel vyšší proti výšce klientského prostoru (grid line)
+                if (this.HasGTable)
+                    // Pokud datový řádek má referenci na grafickou tabulku:
+                    //  pak změním výšku pomocí tabulky => změna se i tam provede přes ISequenceLayout.Size,
+                    //  ale po změně se provede invalidace výšky řádků v GridTable:
+                    this.GTable.RowResizeTo(this, ref height);
+                else
+                    // Nemáme referenci na grafickou tabulku:
+                    //  změníme jen výšku řádku s akceptováním pravidel v ISequenceLayout:
+                    this._SequenceLayout.Size = value;
+            }
+        }
         #endregion
         #region IContentValidity
         bool IContentValidity.DataIsValid { get { return _RowDataIsValid; } set { _RowDataIsValid = value; } } private bool _RowDataIsValid;

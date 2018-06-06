@@ -98,8 +98,8 @@ namespace Asol.Tools.WorkScheduler.Components
             this._Splitter.ValueRange = new Int32NRange(heightMin, heightMax);
             this._Splitter.SplitterVisibleWidth = 2;
             this._Splitter.SplitterActiveOverlap = 2;
-            this._Splitter.ValueChanging += new GPropertyChanged<int>(_Splitter_ValueChanging);
-            this._Splitter.ValueChanged += new GPropertyChanged<int>(_Splitter_ValueChanged);
+            this._Splitter.ValueChanging += new GPropertyChangedHandler<int>(_Splitter_ValueChanging);
+            this._Splitter.ValueChanged += new GPropertyChangedHandler<int>(_Splitter_ValueChanged);
         }
         void _Splitter_ValueChanging(object sender, GPropertyChangeArgs<int> e)
         {
@@ -332,7 +332,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Event on this.Value interactive changing
         /// </summary>
-        public event GPropertyChanged<ComponentSize> ToolbarSizeChanged;
+        public event GPropertyChangedHandler<ComponentSize> ToolbarSizeChanged;
 
         #endregion
         #region Layout of Toolbar - classes

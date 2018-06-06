@@ -40,12 +40,12 @@ namespace Asol.Tools.WorkScheduler.Components
             this.ComponentLayout();
             this.AcceptMaximalBoundsFromDocument(true);
 
-            this.SplitterH.ValueChanged += new GPropertyChanged<int>(SplitterH_LocationChanging);
-            this.SplitterV.ValueChanged += new GPropertyChanged<int>(SplitterV_LocationChanging);
-            this.AxisH.ValueChanged += new GPropertyChanged<SizeRange>(AxisH_ValueChanged);
-            this.AxisV.ValueChanged += new GPropertyChanged<SizeRange>(AxisV_ValueChanged);
-            this.ScrollH.ValueChanged += new GPropertyChanged<SizeRange>(ScrollH_ValueChanged);
-            this.ScrollV.ValueChanged += new GPropertyChanged<SizeRange>(ScrollV_ValueChanged);
+            this.SplitterH.ValueChanged += new GPropertyChangedHandler<int>(SplitterH_LocationChanging);
+            this.SplitterV.ValueChanged += new GPropertyChangedHandler<int>(SplitterV_LocationChanging);
+            this.AxisH.ValueChanged += new GPropertyChangedHandler<SizeRange>(AxisH_ValueChanged);
+            this.AxisV.ValueChanged += new GPropertyChangedHandler<SizeRange>(AxisV_ValueChanged);
+            this.ScrollH.ValueChanged += new GPropertyChangedHandler<SizeRange>(ScrollH_ValueChanged);
+            this.ScrollV.ValueChanged += new GPropertyChangedHandler<SizeRange>(ScrollV_ValueChanged);
             this.DocumentArea.MaximalBoundsChanged += new EventHandler(DocumentArea_MaximalBoundsChanged);
 
             this.AddItems(DocumentArea, AxisH, ScrollH, AxisV, ScrollV, SplitterH, SplitterV);

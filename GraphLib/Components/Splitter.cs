@@ -729,7 +729,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Event volaný při změně hodnoty <see cref="Value"/>
         /// </summary>
-        public event GPropertyChanged<int> ValueChanging;
+        public event GPropertyChangedHandler<int> ValueChanging;
 
         /// <summary>
         /// Call method OnLocationChanged() and event LocationChanged
@@ -749,7 +749,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Event on this.Location changes
         /// </summary>
-        public event GPropertyChanged<int> ValueChanged;
+        public event GPropertyChangedHandler<int> ValueChanged;
 
         /// <summary>
         /// Call method OnOrientationChanged() and event OrientationChanged
@@ -768,7 +768,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Event on this.Orientation changes
         /// </summary>
-        public event GPropertyChanged<Orientation> OrientationChanged;
+        public event GPropertyChangedHandler<Orientation> OrientationChanged;
 
         /// <summary>
         /// Call method OnLocationRangeChanged() and event LocationRangeChanged
@@ -787,7 +787,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Event on this.LocationRange changes
         /// </summary>
-        public event GPropertyChanged<Int32NRange> LocationLimitChanged;
+        public event GPropertyChangedHandler<Int32NRange> LocationLimitChanged;
 
         /// <summary>
         /// Call method OnVisibleWideChanged() and event VisibleWideChanged
@@ -806,7 +806,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Event on this.Location changes
         /// </summary>
-        public event GPropertyChanged<int> SplitterVisibleWidthChanged;
+        public event GPropertyChangedHandler<int> SplitterVisibleWidthChanged;
 
         /// <summary>
         /// Call method OnActiveOverheadChanged() and event ActiveOverheadChanged
@@ -825,7 +825,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Event on this.ActiveOverhead changes
         /// </summary>
-        public event GPropertyChanged<int> SplitterActiveOverlapChanged;
+        public event GPropertyChangedHandler<int> SplitterActiveOverlapChanged;
         #endregion
         #region Interactivity
         /// <summary>

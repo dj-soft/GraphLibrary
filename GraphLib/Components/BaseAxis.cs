@@ -2003,7 +2003,7 @@ namespace Asol.Tools.WorkScheduler.Components
 
                             if (shiftValue != this._Value)
                             {
-                                this.SetValue(shiftValue, ProcessAction.PrepareInnerItems | ProcessAction.CallDraw | ProcessAction.CallChangedEvents | ProcessAction.CallSynchronizeSlave, EventSourceType.InteractiveChanged | EventSourceType.ValueChange);
+                                this.SetValue(shiftValue, ProcessAction.PrepareInnerItems | ProcessAction.CallDraw | ProcessAction.CallChangedEvents | ProcessAction.CallSynchronizeSlave, EventSourceType.InteractiveChanging | EventSourceType.InteractiveChanged | EventSourceType.ValueChange);
                                 this.RepaintToLayers = GInteractiveDrawLayer.Standard;
                                 addToolTip = eol + "ShiftOrigin = " + this._InteractiveShiftOrigin.ToString() + "; ShiftSize = " + shiftSize.ToString() + "; NewBegin = " + shiftBegin.ToString() + "; NewValue = " + shiftValue.ToString();
                             }
@@ -2032,7 +2032,7 @@ namespace Asol.Tools.WorkScheduler.Components
                             addToolTip += eol + "; ZoomAlignedValue = " + zoomValue.ToString();
                             if (zoomValue != this._Value)
                             {
-                                this.SetValue(zoomValue, ProcessAction.RecalcScale | ProcessAction.RecalcInnerData | ProcessAction.PrepareInnerItems | ProcessAction.CallDraw | ProcessAction.CallChangedEvents | ProcessAction.CallSynchronizeSlave, EventSourceType.InteractiveChanged | EventSourceType.ValueChange);
+                                this.SetValue(zoomValue, ProcessAction.RecalcScale | ProcessAction.RecalcInnerData | ProcessAction.PrepareInnerItems | ProcessAction.CallDraw | ProcessAction.CallChangedEvents | ProcessAction.CallSynchronizeSlave, EventSourceType.InteractiveChanging | EventSourceType.InteractiveChanged | EventSourceType.ValueChange);
                                 this.RepaintToLayers = GInteractiveDrawLayer.Standard;
                                 addToolTip += "; SetValue()";
                             }
@@ -2277,7 +2277,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Event on this.Value changes
         /// </summary>
-        public event GPropertyChanged<TValue> ValueChanging;
+        public event GPropertyChangedHandler<TValue> ValueChanging;
 
         /// <summary>
         /// Call method OnDataRangeChanged() and event DataRangeChanged
@@ -2296,7 +2296,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Event on this.Value changes
         /// </summary>
-        public event GPropertyChanged<TValue> ValueChanged;
+        public event GPropertyChangedHandler<TValue> ValueChanged;
 
         /// <summary>
         /// Call method OnValueRangeChanged() and event ValueRangeChanged
@@ -2315,7 +2315,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Event on this.ValueRange changes
         /// </summary>
-        public event GPropertyChanged<TValue> ValueLimitChanged;
+        public event GPropertyChangedHandler<TValue> ValueLimitChanged;
 
         /// <summary>
         /// Call method OnSlaveSynchronize() and event SlaveSynchronize
@@ -2334,7 +2334,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Event on this.Value changes
         /// </summary>
-        public event GPropertyChanged<TValue> SlaveSynchronize;
+        public event GPropertyChangedHandler<TValue> SlaveSynchronize;
 
         /// <summary>
         /// Call method OnScaleChanged() and event ScaleChanged
@@ -2353,7 +2353,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Event on this.Scale changes
         /// </summary>
-        public event GPropertyChanged<decimal> ScaleChanged;
+        public event GPropertyChangedHandler<decimal> ScaleChanged;
 
         /// <summary>
         /// Call method OnScaleRangeChanged() and event ScaleRangeChanged
@@ -2372,7 +2372,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Event on this.ScaleRange changes
         /// </summary>
-        public event GPropertyChanged<SizeRange> ScaleLimitChanged;
+        public event GPropertyChangedHandler<SizeRange> ScaleLimitChanged;
 
         /// <summary>
         /// Call method OnArrangementChanged() and event ArrangementChanged
@@ -2391,7 +2391,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Event on this.Scale changes
         /// </summary>
-        protected event GPropertyChanged<ArrangementOne> ArrangementChanged;
+        protected event GPropertyChangedHandler<ArrangementOne> ArrangementChanged;
 
         /// <summary>
         /// Call method OnAreaChange() and event AreaChange
@@ -2410,7 +2410,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Event on this.AreaChange occured
         /// </summary>
-        public event GPropertyChanged<Rectangle> AreaChanged;
+        public event GPropertyChangedHandler<Rectangle> AreaChanged;
 
         /// <summary>
         /// Call method OnAreaChange() and event AreaChange
@@ -2429,7 +2429,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Event on this.AreaChange occured
         /// </summary>
-        public event GPropertyChanged<BaseTick<TTick>[]> TicksChanged;
+        public event GPropertyChangedHandler<BaseTick<TTick>[]> TicksChanged;
 
         /// <summary>
         /// Call method OnOrientationChanged() and event OrientationChanged
@@ -2448,7 +2448,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Event on this.Scale changes
         /// </summary>
-        public event GPropertyChanged<AxisOrientation> OrientationChanged;
+        public event GPropertyChangedHandler<AxisOrientation> OrientationChanged;
 
         #endregion
         #region Abstract layer: members, which descendant must override for actual data types

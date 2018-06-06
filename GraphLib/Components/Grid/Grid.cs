@@ -584,8 +584,8 @@ namespace Asol.Tools.WorkScheduler.Components
             this._TablesAutoSize = ImplicitAutoSizeType.FirstItem;
 
             this._TablesScrollBar = new GScrollBar() { Orientation = System.Windows.Forms.Orientation.Vertical };
-            this._TablesScrollBar.ValueChanging += new GPropertyChanged<SizeRange>(TablesScrollBar_ValueChange);
-            this._TablesScrollBar.ValueChanged += new GPropertyChanged<SizeRange>(TablesScrollBar_ValueChange);
+            this._TablesScrollBar.ValueChanging += new GPropertyChangedHandler<SizeRange>(TablesScrollBar_ValueChange);
+            this._TablesScrollBar.ValueChanged += new GPropertyChangedHandler<SizeRange>(TablesScrollBar_ValueChange);
         }
         /// <summary>
         /// Řídící prvek pro Pozice tabulek
@@ -794,8 +794,8 @@ namespace Asol.Tools.WorkScheduler.Components
             this._ColumnsPositions = new GridPosition(GGrid.DefaultRowHeaderWidth, 28, this._ColumnPositionGetVisualSize, this._ColumnPositionGetDataSize);
 
             this._ColumnsScrollBar = new GScrollBar() { Orientation = System.Windows.Forms.Orientation.Horizontal };
-            this._ColumnsScrollBar.ValueChanging += new GPropertyChanged<SizeRange>(ColumnsScrollBar_ValueChange);
-            this._ColumnsScrollBar.ValueChanged += new GPropertyChanged<SizeRange>(ColumnsScrollBar_ValueChange);
+            this._ColumnsScrollBar.ValueChanging += new GPropertyChangedHandler<SizeRange>(ColumnsScrollBar_ValueChange);
+            this._ColumnsScrollBar.ValueChanged += new GPropertyChangedHandler<SizeRange>(ColumnsScrollBar_ValueChange);
         }
         /// <summary>
         /// Řídící prvek pro Pozice sloupců
@@ -912,7 +912,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="columnId"></param>
         /// <returns></returns>
-        internal ITimeConvertor GetTimeConvertor(int columnId)
+        public ITimeConvertor GetTimeConvertor(int columnId)
         {
             GridColumn gridColumn;
             if (!this.TryGetGridColumn(columnId, out gridColumn)) return null;
@@ -922,15 +922,57 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Obsahuje hlavní časovou osu celého Gridu.
         /// Je to ITimeConvertor z prvního sloupce, který používá časovou osu (má UseTimeAxis == true).
+        /// Hlavní časovou osu lze i setovat (vložit sem nějakou osu z jiného Gridu).
+        /// Pak se this Grid stává "závislým" na dodané časové ose (která je pak Master).
+        /// Vložením null do <see cref="MainTimeAxis"/> se this Grid zase odpojí od Master časové osy a bude si sám svým pánem.
         /// </summary>
-        internal ITimeConvertor MainTimeAxis
+        public ITimeConvertor MainTimeAxis
         {
             get
             {
-                GridColumn timeAxisColumn = this.Columns.FirstOrDefault(c => c.UseTimeAxis);
+                if (this._MainTimeAxisExternal != null) return this._MainTimeAxisExternal;         // Externí časová osa vložená do tohoto Gridu?
+                return this._MainTimeAxisInternal;                                                 // Interní osa nebo null
+            }
+            set
+            {
+                if (this._MainTimeAxisExternal != null)
+                {   // Odpojit handler ze stávajícího objektu, a odpojit stávající objekt:
+                    this._MainTimeAxisExternal.VisibleTimeChanged -= _MainTimeAxisExternal_VisibleTimeChanged;
+                    this._MainTimeAxisExternal = null;
+                }
+                if (value != null)
+                {   // Zapojit nový objekt, a zapojit náš handler do jeho eventu:
+                    this._MainTimeAxisExternal = value;
+                    this._MainTimeAxisExternal.VisibleTimeChanged += _MainTimeAxisExternal_VisibleTimeChanged;
+                }
+            }
+        }
+        /// <summary>
+        /// Událost, kdy externí časová osa provedla nějakou změnu zobrazeného času, 
+        /// a náš graf (který je v režimu Slave, proto má napojenou externí časovou osu) na to má reagovat
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _MainTimeAxisExternal_VisibleTimeChanged(object sender, GPropertyChangeArgs<TimeRange> e)
+        {
+            qqq
+        }
+        /// <summary>
+        /// Interní hlavní časová osa tohoto Gridu. Vždy pochází z prvního sloupce <see cref="Columns"/>, který používá časovou osu: <see cref="GridColumn.UseTimeAxis"/>.
+        /// Tato property nijak nereaguje na přítomnost externí časové osy <see cref="_MainTimeAxisExternal"/>: vrací interní osu i když by byla externé osa zadaná.
+        /// </summary>
+        private ITimeConvertor _MainTimeAxisInternal
+        {
+            get
+            {
+                GridColumn timeAxisColumn = this.Columns.FirstOrDefault(c => c.UseTimeAxis);       // Nemáme externí, zkusíme najít vlastní časovou osu...
                 return (timeAxisColumn != null ? timeAxisColumn.TimeConvertor : null);
             }
         }
+        /// <summary>
+        /// Externí časová osa. Je null, pokud this Grid jede "ze své časové osy", anebo žádnou nemá.
+        /// </summary>
+        private ITimeConvertor _MainTimeAxisExternal;
         #endregion
         #region Invalidace, resety, refreshe
         /// <summary>

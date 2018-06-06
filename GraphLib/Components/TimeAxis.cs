@@ -15,7 +15,7 @@ namespace Asol.Tools.WorkScheduler.Components
     public class GTimeAxis
         : GBaseAxis<DateTime?, TimeSpan?, TimeRange>, ITimeConvertor
     {
-        #region Knstruktory, Obecné overrides osy
+        #region Konstruktory, Obecné overrides osy
         /// <summary>
         /// Konstruktor s parentem
         /// </summary>
@@ -232,7 +232,7 @@ namespace Asol.Tools.WorkScheduler.Components
             return text;
         }
         #endregion
-        #region ITimeConvertor members
+        #region ITimeConvertor members + jejich obsluha
         string ITimeConvertor.Identity
         { 
             get 
@@ -243,19 +243,48 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         TimeRange ITimeConvertor.VisibleTime { get { return this.Value; } }
+        VisualTick[] ITimeConvertor.Ticks { get { return this.TickList.ToArray(); } }
         int ITimeConvertor.GetPixel(DateTime? time)
         {
             int begin = (int)this.PixelFirst;
             int? pixel = this.CalculatePixelLocalForTick(time);
             return begin + (pixel.HasValue ? pixel.Value : 0);
         }
-        VisualTick[] ITimeConvertor.Ticks { get { return this.TickList.ToArray(); } }
+        event GPropertyChangedHandler<TimeRange> ITimeConvertor.VisibleTimeChanged { add { this._VisibleTimeChanged += value; } remove { this._VisibleTimeChanged -= value; } }
         protected static string ToIdentity(DateTime? value)
         {
             if (value.HasValue)
                 return value.Value.ToString("yyyy-MM-dd HH:mm:ss.fff");
             return "NULL";
         }
+        /// <summary>
+        /// Je voláno v průběhu změny hodnoty <see cref="GBaseAxis{TTick, TSize, TValue}.Value"/>
+        /// </summary>
+        /// <param name="args"></param>
+        protected override void OnValueChanging(GPropertyChangeArgs<TimeRange> args)
+        {
+            base.OnValueChanging(args);
+            this.CallVisibleTimeChanged(args);
+        }
+        /// <summary>
+        /// Je voláno po změně hodnoty <see cref="GBaseAxis{TTick, TSize, TValue}.Value"/>
+        /// </summary>
+        /// <param name="args"></param>
+        protected override void OnValueChanged(GPropertyChangeArgs<TimeRange> args)
+        {
+            base.OnValueChanged(args);
+            this.CallVisibleTimeChanged(args);
+        }
+        /// <summary>
+        /// Vyvolá event <see cref="_VisibleTimeChanged"/>
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void CallVisibleTimeChanged(GPropertyChangeArgs<TimeRange> args)
+        {
+            if (this._VisibleTimeChanged != null)
+                this._VisibleTimeChanged(this, args);
+        }
+        private event GPropertyChangedHandler<TimeRange> _VisibleTimeChanged;
         #endregion
     }
     #endregion

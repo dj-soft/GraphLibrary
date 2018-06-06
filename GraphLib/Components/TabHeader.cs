@@ -446,7 +446,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Event provedený po změně hodnoty <see cref="ActivePage"/>
         /// </summary>
-        public event GPropertyChanged<GTabPage> ActivePageChanged;
+        public event GPropertyChangedHandler<GTabPage> ActivePageChanged;
 
         /// <summary>
         /// Zavolá metody <see cref="OnActiveControlChanged"/> a eventhandler <see cref="ActiveControlChanged"/>.
@@ -466,7 +466,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Event provedený po změně hodnoty <see cref="IsCollapsed"/>
         /// </summary>
-        public event GPropertyChanged<IInteractiveItem> ActiveControlChanged;
+        public event GPropertyChangedHandler<IInteractiveItem> ActiveControlChanged;
 
         /// <summary>
         /// Zavolá metody <see cref="OnIsCollapsedChanged"/> a eventhandler <see cref="IsCollapsedChanged"/>.
@@ -486,7 +486,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Event provedený po změně hodnoty <see cref="IsCollapsed"/>
         /// </summary>
-        public event GPropertyChanged<bool> IsCollapsedChanged;
+        public event GPropertyChangedHandler<bool> IsCollapsedChanged;
         #endregion
     }
     #endregion
@@ -686,7 +686,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Event volaný po změně aktivní záložky (<see cref="ActivePage"/>)
         /// </summary>
-        public event GPropertyChanged<GTabPage> ActivePageChanged;
+        public event GPropertyChangedHandler<GTabPage> ActivePageChanged;
         #endregion
         #region Uspořádání jednotlivých záhlaví - výpočty jejich Bounds podle orientace a jejich textu, fontu a zdejších souřadnic
         /// <summary>

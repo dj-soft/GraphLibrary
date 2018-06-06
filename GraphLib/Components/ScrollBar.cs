@@ -376,7 +376,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Event volaný v průběhu interaktivní změny hodnoty <see cref="Value"/>
         /// </summary>
-        public event GPropertyChanged<SizeRange> ValueChanging;
+        public event GPropertyChangedHandler<SizeRange> ValueChanging;
 
         /// <summary>
         /// Vyvolá metodu OnValueChanged() a event ValueChanged
@@ -395,7 +395,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Event volaný po skončení změny hodnoty <see cref="Value"/>
         /// </summary>
-        public event GPropertyChanged<SizeRange> ValueChanged;
+        public event GPropertyChangedHandler<SizeRange> ValueChanged;
 
         /// <summary>
         /// Vyvolá metodu OnValueTotalChanged() a event ValueTotalChanged
@@ -414,7 +414,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Event on this.Value changes
         /// </summary>
-        public event GPropertyChanged<SizeRange> ValueTotalChanged;
+        public event GPropertyChangedHandler<SizeRange> ValueTotalChanged;
 
         /// <summary>
         /// Call method OnOrientationChanged() and event OrientationChanged
@@ -433,7 +433,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Event on this.Scale changes
         /// </summary>
-        public event GPropertyChanged<Orientation> OrientationChanged;
+        public event GPropertyChangedHandler<Orientation> OrientationChanged;
 
         /// <summary>
         /// Call method OnUserDraw() and event UserDraw

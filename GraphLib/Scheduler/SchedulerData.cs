@@ -179,7 +179,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
 
 
-            response.DataDescriptorList.Add(dataDescriptor)
+            response.DataDescriptorList.Add(dataDescriptor);
 
 
             return response;

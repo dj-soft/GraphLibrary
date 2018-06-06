@@ -9,6 +9,15 @@ namespace Asol.Tools.WorkScheduler.Components
 {
     public class GTimeGraph : InteractiveContainer, ITimeInteractiveGraph
     {
+        #region Konstrukce, pole položek Items
+        /// <summary>
+        /// Konstruktor s parentem
+        /// </summary>
+        /// <param name="parent"></param>
+        public GTimeGraph(IInteractiveParent parent) : this() { this.Parent = parent; }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public GTimeGraph()
         {
             this._ItemList = new EList<ITimeGraphItem>();
@@ -17,44 +26,65 @@ namespace Asol.Tools.WorkScheduler.Components
 
             this.LineUnitHeight = 6;
             this.GraphHeightRange = new Int32NRange(16, 125);
-            
         }
-        #region Items
         /// <summary>
-        /// All Items in graph
+        /// Všechny prvky grafu (časové úseky)
         /// </summary>
         public EList<ITimeGraphItem> ItemList { get { return this._ItemList; } } private EList<ITimeGraphItem> _ItemList;
+        /// <summary>
+        /// Eventhandler události: z <see cref="ItemList"/> byla odebrána položka
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
         private void _ItemList_ItemRemoveAfter(object sender, EList<ITimeGraphItem>.EListAfterEventArgs args) { this.InvalidateItemList(); }
+        /// <summary>
+        /// Eventhandler události: do <see cref="ItemList"/> byla přidána položka
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
         private void _ItemList_ItemAddAfter(object sender, EList<ITimeGraphItem>.EListAfterEventArgs args) { this.InvalidateItemList(); }
+        /// <summary>
+        /// Invaliduje platnost položek
+        /// </summary>
         protected void InvalidateItemList()
         {
-            this._ItemValid = false;
+            this.IsValidItems = false;
         }
-        private bool _ItemValid;
-        #endregion
-        #region CheckValid, recalculate validity
+        /// <summary>
+        /// Příznak platnosti položek
+        /// </summary>
+        private bool IsValidItems;
+        /// <summary>
+        /// Metoda zajistí provedení kontroly platnosti všech vnitřních dat, podle toho která kontrola a přepočet je zapotřebí.
+        /// </summary>
         protected void CheckValid()
         {
             using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "CheckValid", ""))
             {
                 this.CheckValidTimeAxis();
-                this.CheckValidLogicalY();
+                this.CheckValidGroupList();
                 this.CheckValidVisibleList();
             }
         }
         #endregion
-        #region TimeAxis : CheckValid, Identity
+        #region TimeAxis : Kontrola platnosti, paměť Identity časové osy
+        /// <summary>
+        /// Prověří platnost zdejších dat s ohledem na aktuální hodnoty časové osy <see cref="_TimeConvertor"/>.
+        /// Pokud zdejší data jsou vypočítaná pro identický stav časové osy, nechá data beze změn, 
+        /// jinak přenačte data osy a invaliduje seznam viditelných dat : <see cref="InvalidateVisibleList()"/>.
+        /// </summary>
         protected void CheckValidTimeAxis()
         {
             string identity = this.TimeAxisIdentityCurrent;
             if (String.Equals(identity, this.TimeAxisIdentityPrevious)) return;
-            this.TimeAxisReload();
+            this.RecalculateTimeAxis();
             this.TimeAxisIdentityPrevious = identity;
         }
         /// <summary>
-        /// Reload all relevant data from current TimeAxis
+        /// Přenačte do sebe soupis odpovídajících dat z <see cref="_TimeConvertor"/>, 
+        /// a invaliduje seznam viditelných dat : <see cref="InvalidateVisibleList()"/>.
         /// </summary>
-        protected void TimeAxisReload()
+        protected void RecalculateTimeAxis()
         {
             this.TimeAxisTicks = this._TimeConvertor.Ticks.Where(t => t.TickType == AxisTickType.BigLabel || t.TickType == AxisTickType.StdLabel || t.TickType == AxisTickType.BigTick).ToArray();
             this.TimeAxisBegin = this._TimeConvertor.GetPixel(this._TimeConvertor.VisibleTime.Begin);
@@ -62,51 +92,50 @@ namespace Asol.Tools.WorkScheduler.Components
             this.InvalidateVisibleList();
         }
         /// <summary>
-        /// Contain array of Tick from current Axis (from this._TimeConvertor.Ticks), only Ticks of type: ( BigLabel || StdLabel || BigTick )
+        /// Obsahuje pole vybraných Ticků z časové osy, protože tyto Ticky se kreslí do grafu.
+        /// Obsahuje pouze ticky typu: <see cref="AxisTickType.BigLabel"/>, <see cref="AxisTickType.StdLabel"/>, <see cref="AxisTickType.BigTick"/>.
         /// </summary>
         protected VisualTick[] TimeAxisTicks;
         /// <summary>
-        /// Relative position X in pixel where TimeAxis begins
+        /// Relativní pozice X počátku časové osy.
         /// </summary>
-        protected int TimeAxisBegin;
+        protected int TimeAxisBegin { get; set; }
         /// <summary>
-        /// Identity of TimeAxis on last calculate of VisibleList
+        /// Identita časové osy, pro kterou byly naposledy přepočítány hodnoty v <see cref="VisibleList"/>.
         /// </summary>
-        protected string TimeAxisIdentityPrevious;
+        protected string TimeAxisIdentityPrevious { get; set; }
         /// <summary>
-        /// Identity of current TimeAxis
+        /// Identita časové osy aktuální, získaná z <see cref="_TimeConvertor"/>.
         /// </summary>
         protected string TimeAxisIdentityCurrent { get { return (this._TimeConvertor != null ? this._TimeConvertor.Identity : null); } }
         /// <summary>
-        /// TimeConvertor
+        /// Reference na aktuální TimeConvertor
         /// </summary>
         private ITimeConvertor _TimeConvertor;
         #endregion
-        #region LogY : Grouping items of type ITimeGraphItem to GTimeGraphGroup, Sorting array of ITimeGraphItem to Logical Y axis
+        #region GroupList : Seskupování položek z this.ItemList do skupin GTimeGraphGroup, setřídění těchto skupin podle vrstev a hladin na logické ose Y
         /// <summary>
-        /// Invalidate LogY.
-        /// Call after add/remove any GraphItem, or after change GraphItem properties: Time, Height
+        /// Invaliduje data LogicalY.
+        /// Volá se po změnách v poli položek, a po změnách dat v položkách.
+        /// Není nutné volat po změnách časové osy, protože zoom ani posun nezmění pozice Y jednotlivých položek.
         /// </summary>
-        protected void InvalidateLogicalY()
+        protected void InvalidateGroupList()
         {
-            this.IsValidLogicalY = false;
+            this.GroupListIsValid = false;
         }
         /// <summary>
-        /// Check validity LogY.
+        /// Prověří platnost zdejších dat s ohledem na aktuální logické souřadnice Y.
+        /// Pokud jsou neplatné, znovu vytvoří pole <see cref="GroupList"/> a vypočítá logické souřadnice Y.
         /// </summary>
-        protected void CheckValidLogicalY()
+        protected void CheckValidGroupList()
         {
-            if (this.IsValidLogicalY) return;
-            this.ItemsRecalculateLogicalY();
+            if (this.IsValidItems && this.GroupListIsValid && this.GroupList != null) return;
+            this.RecalculateGroupList();
         }
         /// <summary>
-        /// true when LogY is valid
+        /// Vypočítá logické souřadnice Y pro všechny položky pole <see cref="ItemList"/>
         /// </summary>
-        protected bool IsValidLogicalY;
-        /// <summary>
-        /// Recalculate LogY for all Items
-        /// </summary>
-        protected void ItemsRecalculateLogicalY()
+        protected void RecalculateGroupList()
         {
             using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "ItemsRecalculateLogY", ""))
             {
@@ -115,48 +144,51 @@ namespace Asol.Tools.WorkScheduler.Components
                 int groups = 0;
                 int items = this.ItemList.Count;
 
-                this.ItemGroupList = new List<List<GTimeGraphGroup>>();
+                this.GroupList = new List<List<GTimeGraphGroup>>();
                 Interval<float> usedHeightLogY = new Interval<float>(0f, 0f, true);
 
-                // In groups by visual Layer, ascending:
+                // Vytvoříme oddělené skupiny prvků, podle jejich příslušnosti do grafické vrstvy (ITimeGraphItem.Layer), vzestupně:
                 List<IGrouping<int, ITimeGraphItem>> layerGroups = this.ItemList.GroupBy(i => i.Layer).ToList();
                 if (layerGroups.Count > 1)
-                    layerGroups.Sort((a, b) => a.Key.CompareTo(b.Key));
+                    layerGroups.Sort((a, b) => a.Key.CompareTo(b.Key));        // Vrstvy setřídit podle Key = ITimeGraphItem.Layer, vzestupně
                 layers = layerGroups.Count;
 
                 foreach (IGrouping<int, ITimeGraphItem> layerGroup in layerGroups)
-                {
-                    // Each layer has its own array of usage. This array is common to all Levels:
+                {   // Každá vrstva (layerGroup) má svoje vlastní pole využití prostoru, toto pole je společné pro všechny ITimeGraphItem.Level
                     PointArray<DateTime, IntervalArray<float>> layerUsing = new PointArray<DateTime, IntervalArray<float>>();
 
-                    // Layer value for this group. One Layer is equivalent to graphical layer, items can be drawed one over other.
+                    // Hodnota Layer pro tuto skupinu. 
+                    // Jedna vrstva Layer je ekvivalentní jedné grafické vrstvě, položky z různých vrstev jsou kresleny jedna přes druhou.
                     int layer = layerGroup.Key;
 
-                    // In one groups: subgrouping by Level value, ascending:
+                    // V rámci jedné vrstvy: další grupování jejích prvků podle jejich hodnoty ITimeGraphItem.Level, vzestupně:
                     List<IGrouping<int, ITimeGraphItem>> levelGroups = layerGroup.GroupBy(i => i.Level).ToList();
                     if (levelGroups.Count > 1)
-                        levelGroups.Sort((a, b) => a.Key.CompareTo(b.Key));
+                        levelGroups.Sort((a, b) => a.Key.CompareTo(b.Key));    // Hladiny setřídit podle Key = ITimeGraphItem.Level, vzestupně
                     levels += levelGroups.Count;
 
-                    // Level is "visual group" of more items in one range of Y coordinates.
-                    // Negative levels are drawed to bottom (as negative values on Y axis).
-                    List<GTimeGraphGroup> layerGroupList = new List<GTimeGraphGroup>();
+                    // Hladina (Level) má význam "vodorovného pásu" pro více prvků stejné hladiny.
+                    // Záporné hladiny jsou kresleny dolů (jako záporné hodnoty na ose Y).
 
+                    // Nyní zpracuji grafické prvky dané vrstvy (layerGroup) po jednotlivých skupinách za hladiny Level (levelGroups),
+                    // vypočtu jejich logické souřadnice Y a přidám je do ItemGroupList:
                     Interval<float> yUsed = new Interval<float>(0f, 0f, true);
+                    List<GTimeGraphGroup> layerGroupList = new List<GTimeGraphGroup>();
                     foreach (IGrouping<int, ITimeGraphItem> levelGroup in levelGroups)
                     {
                         layerUsing.Clear();
-                        this.ItemsRecalculateLogicalYOneLevel(layer, layerUsing, levelGroup.Key, levelGroup, layerGroupList, yUsed, ref groups);
+                        this.RecalculateGroupListOneLevel(levelGroup, layerUsing, (levelGroup.Key < 0), layerGroupList, yUsed, ref groups);
                     }
                     usedHeightLogY.MergeWith(yUsed);
 
-                    this.ItemGroupList.Add(layerGroupList);
+                    this.GroupList.Add(layerGroupList);
                 }
 
                 this.CalculatorYPrepare(usedHeightLogY);
 
+                this.IsValidItems = true;
+                this.GroupListIsValid = true;
                 this.InvalidateVisibleList();
-                this.IsValidLogicalY = true;
 
                 scope.AddItem("Layers Count: " + layers.ToString());
                 scope.AddItem("Levels Count: " + levels.ToString());
@@ -165,53 +197,68 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         /// <summary>
-        /// Recalculate one level in one layer
+        /// Zpracuje grafické prvky jedné vrstvy a jedné hladiny (z prvků <see cref="ITimeGraphItem"/> z pole items, do prvků <see cref="GTimeGraphGroup"/> do pole layerGroupList.
+        /// Vstupní prvky seskupí podle hodnoty <see cref="ITimeGraphItem.GroupId"/> do skupin, pro každou skupinu najde její pozici na ose X (její datum počátku a konce), 
+        /// určí její výšku na ose Y, a v objektu layerUsing najde vhodnou logickou pozici na ose Y, kde nová skupina nebude v konfliktu s jinou již zadanou skupinou.
         /// </summary>
-        /// <param name="layer"></param>
-        /// <param name="layerUsing"></param>
-        /// <param name="level"></param>
-        /// <param name="levelItems"></param>
-        /// <param name="yUsed"></param>
-        protected void ItemsRecalculateLogicalYOneLevel(int layer, PointArray<DateTime, IntervalArray<float>> layerUsing, int level, IEnumerable<ITimeGraphItem> levelItems, List<GTimeGraphGroup> layerGroupList, Interval<float> yUsed, ref int groups)
+        /// <param name="items">Jednotlivé grafické prvky, které budeme zpracovávat</param>
+        /// <param name="layerUsing">Objekt, který řeší využití 2D plochy, kde ve směru X je hodnota typu DateTime, a ve směru Y je pole intervalů typu float</param>
+        /// <param name="isDownward">Směr využití na ose Y: true = hledáme volé místo směrem dolů, false = nahoru</param>
+        /// <param name="layerGroupList">Výstupní pole, do něhož se ukládají prvky typu <see cref="GTimeGraphGroup"/>, které v sobě zahrnují jeden nebo více prvků <see cref="ITimeGraphItem"/> se shodnou hodnotou <see cref="ITimeGraphItem.GroupId"/></param>
+        /// <param name="yUsed">Sumární interval využití osy Y</param>
+        /// <param name="groups">Počet skupin, průběžné počitadlo</param>
+        protected void RecalculateGroupListOneLevel(IEnumerable<ITimeGraphItem> items, PointArray<DateTime, IntervalArray<float>> layerUsing, bool isDownward, List<GTimeGraphGroup> layerGroupList, Interval<float> yUsed, ref int groups)
         {
-            bool isDownward = (level < 0 );
             float searchFrom = (isDownward ? yUsed.Begin : yUsed.End);
             float nextSearch = searchFrom;
 
-            // by GroupId (one Group has more ITimeGraphItem, with same GroupId, for example: more working times for one job):
+            // Grafické prvky seskupíme podle ITimeGraphItem.GroupId:
+            //  více prvků se shodným GroupId tvoří jeden logický celek, tyto prvky jsou vykresleny ve společné linii, nemíchají se s prvky s jiným GroupId.
+            // Jedna GroupId reprezentuje například jednu výrobní operaci (nebo přesněji její paralelní průchod), například dva týdny práce;
+            //  kdežto jednotlivé položky ITimeGraphItem reprezentují jednotlivé pracovní časy, například jednotlivé směny.
             List<GTimeGraphGroup> groupList = new List<GTimeGraphGroup>();
-            IEnumerable<IGrouping<int, ITimeGraphItem>> groupArray = levelItems.GroupBy(i => i.GroupId);
+            IEnumerable<IGrouping<int, ITimeGraphItem>> groupArray = items.GroupBy(i => i.GroupId);
             foreach (IGrouping<int, ITimeGraphItem> group in groupArray)
-                groupList.Add(new GTimeGraphGroup(group));
-            // Sort by Time.Begin ASC:
+                groupList.Add(new GTimeGraphGroup(group));                     // Jedna instance GTimeGraphGroup obsahuje jeden nebo více pracovních časů
+
+            // Setřídíme prvky GTimeGraphGroup podle času jejich počátku:
             if (groupList.Count > 1)
                 groupList.Sort((a, b) => GTimeGraphGroup.ItemsRecalculateLogicalYCompare(a, b));
             groups += groupList.Count;
 
-            // Now recalculate Y position for each item from GroupItem list, by its time and height and use pattern on time:
+            // Hlavním úkolem nyní je určit logické souřadnice Y pro každou skupinu prvků GTimeGraphGroup,
+            //  vycházíme přitom z jejího časového intervalu a její výšky,
+            // a tuto skupinu zařazujeme do volného prostoru v instanci layerUsing:
             foreach (GTimeGraphGroup group in groupList)
             {
                 if (group.IsValidRealTime)
-                {   // Group is Real:
-                    // Array of IntervalArray for group.Time, insert explicit points for Begin and End (when this points does not exists), include last item (where Point (on X axis) == end):
-                    DateTime begin = group.Time.Begin.Value;
-                    DateTime end = group.Time.End.Value;
-                    var intervalAllItems = layerUsing.Search(begin, end, true);
+                {   // Grupa je reálná (časy a výška jsou kladné):
+                    // Instance layerUsing je PointArray pro Point = DateTime, a Value = pole intervalů typu float.
+                    // Což znamená: instance obsahuje prvky, kde klíčem (na ose X) je datum, kdy se mění využití daného prostoru, 
+                    // a hodnotou na této X souřadnici je využití prostoru počínaje tímto datem.
+                    // Využití prostoru (obsazení na ose Y) reprezentuje IntervalArray, což je pole intervalů, kde interval má Begin a End, 
+                    // v tomto rozmezí osy Y je prostor obsazen.
 
-                    // Array of found IntervalArray, except last item:
-                    var intervalWorkItems = intervalAllItems.GetRange(0, intervalAllItems.Count - 1);
+                    // Nejprve získáme pole obsahující datum změny (souřadnice X) a využití prostoru (souřadnice Y), pro daný časový interval:
+                    TimeRange time = group.Time;
+                    var intervalAllItems = layerUsing.Search(time.Begin.Value, time.End.Value, true);
+                    var intervalWorkItems = intervalAllItems.GetRange(0, intervalAllItems.Count - 1);        // poslední prvek odeberu, nezajímá mě (reprezentuje situaci na ose Y v čase našeho konce)
 
-                    // Summary of all intervals of usage this graph row within our time (except last row):
+                    // Provedeme sumarizaci využití prostoru na souřadnici Y:
+                    // Což má význam: Máme pole využití prostoru Y v různých časových okamžicích (intervalWorkItems), 
+                    //  ale nás zajímá jejich souhrn => abych v souhrnu tom našel kontinuální prostor pro náš nový požadavek:
                     IntervalArray<float> summary = (intervalWorkItems.Count > 1 ? IntervalArray<float>.Summary(intervalWorkItems.Select(i => i.Value.Value)) : intervalWorkItems[0].Value.Value);
 
-                    // Negative level search for negative size (downward):
+                    // Negativní level bude hledat negativní velikost (dolů):
                     float size = (isDownward ? -group.Height : group.Height);
+
+                    // Nyní v sumáři využitého místa (summary) vyhledáme nejbližší volný prostor s přinejmenším požadovanou velikostí:
                     Interval<float> useSpace = summary.SearchForSpace(searchFrom, size, (a, b) => (a + b));
 
-                    // Store useSpace into all items in current group:
+                    // Nalezený logický prostor Y vložíme do grupy:
                     group.LogicalY = useSpace;
 
-                    // Store usage of (useSpace) into all working points:
+                    // Nalezený logický prostor (useSpace) vepíšeme do všech prvků na časové ose (patří do layerUsing):
                     intervalWorkItems.ForEachItem(pni => pni.Value.Value.Add(useSpace));
 
                     // Keep the summary values for next Level:
@@ -222,7 +269,7 @@ namespace Asol.Tools.WorkScheduler.Components
 
                 }
                 else
-                {   // NonReal item (Time or Height is zero or negative):
+                {   // Nereálné položky (Time or Height je nla nebo záporné):
                     group.LogicalY = new Interval<float>(searchFrom, searchFrom);
                 }
                 layerGroupList.Add(group);
@@ -235,7 +282,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 yUsed.End = RoundLogicalY(nextSearch, isDownward);
         }
         /// <summary>
-        /// Round logical Y value after recalculate one Level
+        /// Zarovná logickou hodnotu y na nejbližší celé číslo (dolů/nahoru) po dokončení rekalkulace jedné hladiny.
         /// </summary>
         /// <param name="y"></param>
         /// <param name="isDownward"></param>
@@ -247,110 +294,31 @@ namespace Asol.Tools.WorkScheduler.Components
             return (float)(isDownward ? -Math.Ceiling((double)ya) : Math.Ceiling((double)ya));
         }
         /// <summary>
-        /// List of all items, structured as List of Layers, and List of Groups of items.
+        /// Seznam všech skupin prvků k zobrazení v grafu.
+        /// Seznam má dvojitou úroveň: v první úrovni jsou vizuální vrstvy (od spodní po vrchní), 
+        /// v druhé úrovni jsou pak jednotlivé prvky <see cref="GTimeGraphGroup"/> k vykreslení.
         /// </summary>
-        protected List<List<GTimeGraphGroup>> ItemGroupList;
+        protected List<List<GTimeGraphGroup>> GroupList { get; set; }
+        /// <summary>
+        /// true pokud jsou platné aktuálně vypočtené logické souřadnice Y v poli <see cref="GroupList"/>
+        /// </summary>
+        protected bool GroupListIsValid { get; set; }
         #endregion
-        #region VisibleList : recalculate items to visible area on X axis y TimeAxis, prepare pixel-coordinates for GraphGroups and GraphItems
+        #region Kalkulátor výšky grafu a přepočtů souřadnice Y z logické (float, zdola nahoru) do fyzických pixelů (int, zhora dolů)
         /// <summary>
-        /// Invalidate VisibleList.
-        /// Call after any change on LogY or TimeAxis change.
+        /// Instance objektu, jehož výšku může graf změnit i číst pro korektní přepočty svých vnitřních souřadnic.
+        /// Typicky se sem vkládá řádek grafu, instance třídy <see cref="Row"/>.
+        /// Graf nikdy nepracuje se šířkou parenta <see cref="IVisualParent.ClientWidth"/>.
         /// </summary>
-        protected void InvalidateVisibleList()
-        {
-            this.IsValidVisibleList = false;
-        }
-        /// <summary>
-        /// Check validity VisibleList.
-        /// </summary>
-        protected void CheckValidVisibleList()
-        {
-            if (this.IsValidVisibleList) return;
-            this.ItemsRecalculateVisibleList();
-        }
-        /// <summary>
-        /// true when LogY is valid
-        /// </summary>
-        protected bool IsValidVisibleList;
-        /// <summary>
-        /// Recalculate VisibleList and its properties (pixel bounds)
-        /// </summary>
-        protected void ItemsRecalculateVisibleList()
-        {
-            using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "ItemsRecalculateVisibleList", ""))
-            {
-                int layers = 0;
-                int groups = 0;
-                int items = 0;
+        public IVisualParent VisualParent { get { return this._VisualParent; } set { this._VisualParent = value; this.InvalidateVisibleList(); } }
 
-                int luh = this.LineUnitHeight + 2;
-
-                this.ItemGroupVisibleList = new List<List<GTimeGraphGroup>>();
-
-                ITimeConvertor timeConvertor = this._TimeConvertor;
-                if (timeConvertor == null) return;
-
-                TimeRange visibleTime = timeConvertor.VisibleTime;
-
-                foreach (List<GTimeGraphGroup> layerList in this.ItemGroupList)
-                {   // Items for one Layer:
-                    List<GTimeGraphGroup> visibleItems = new List<GTimeGraphGroup>();
-
-                    foreach (GTimeGraphGroup group in layerList)
-                    {
-                        if (group.IsValidRealTime && visibleTime.HasIntersect(group.Time))
-                        {   // Group time is fully / partially in visible part of TimeAxis:
-                            groups++;
-
-                            int yTop = this.CalculatorYGetPixel(group.LogicalY.End);
-                            int yBot = this.CalculatorYGetPixel(group.LogicalY.Begin);
-                            int h = (yTop - yBot);
-
-                            int x1 = timeConvertor.GetPixel(group.Time.Begin);
-                            int x2 = timeConvertor.GetPixel(group.Time.End);
-                            group.VirtualBounds = new Rectangle(x1, yTop, (x2 - x1), h);
-
-                            foreach (ITimeGraphItem item in group.Items)
-                            {
-                                items++;
-
-                                x1 = timeConvertor.GetPixel(item.Time.Begin);
-                                x2 = timeConvertor.GetPixel(item.Time.End);
-                                item.VirtualBounds = new Rectangle(x1, yTop, (x2 - x1), h);
-                            }
-
-                            visibleItems.Add(group);
-                        }
-                    }
-
-                    if (visibleItems.Count > 0)
-                    {
-                        this.ItemGroupVisibleList.Add(visibleItems);
-                        layers++;
-                    }
-                }
-
-                this.IsValidVisibleList = true;
-
-                scope.AddItem("Visual Layers Count: " + layers.ToString());
-                scope.AddItem("Visual Groups Count: " + groups.ToString());
-                scope.AddItem("Visual Items Count: " + items.ToString());
-            }
-        }
-        /// <summary>
-        /// List of currently visible items, structured as List of Layers, and List of Groups of items.
-        /// List1 = layers; List2 = Group items in one layer, all levels
-        /// </summary>
-        protected List<List<GTimeGraphGroup>> ItemGroupVisibleList;
-        #endregion
-        #region Calculator LogY to PixelY
         /// <summary>
         /// Prepare value to GraphPixelHeight, prepare variables to formula for calculator Y pixel
         /// </summary>
         /// <param name="usedHeightLogY"></param>
         protected void CalculatorYPrepare(Interval<float> usedHeightLogY)
         {
-            this.UsedHeightLogY = usedHeightLogY;
+            this.UsedLogicalY = usedHeightLogY;
 
             float logBegin = usedHeightLogY.Begin;
             if (logBegin > 0f) logBegin = 0f;
@@ -387,14 +355,111 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             get
             {
-                this.CheckValidLogicalY();
+                this.CheckValidGroupList();
                 return this._GraphPixelHeight;
             }
         }
+        /// <summary>
+        /// Aktuálně použité rozmezí logických souřadnic na ose Y
+        /// </summary>
+        protected Interval<float> UsedLogicalY;
         private int _GraphPixelHeight;
-        protected Interval<float> UsedHeightLogY;
         private float _CalculatorY_Offset;
         private float _CalculatorY_Scale;
+        private IVisualParent _VisualParent;
+        #endregion
+        #region VisibleList : výpočty fyzických pixelových souřadnic prvků na ose X a Y pro grupy GTimeGraphGroup i pro jednotlivé prvky ITimeGraphItem
+        /// <summary>
+        /// Invaliduje platnost dat v <see cref="VisibleList"/>.
+        /// Volá se po změně na časové ose a po přepočtech LogicalY.
+        /// </summary>
+        protected void InvalidateVisibleList()
+        {
+            this.VisibleListIsValid = false;
+        }
+        /// <summary>
+        /// Prověří platnost zdejších dat s ohledem na aktuální fyzické pixelové souřadnice X a Y.
+        /// Pokud jsou neplatné, znovu vytvoří pole <see cref="VisibleList"/> a patřičné souřadnice vypočte.
+        /// </summary>
+        protected void CheckValidVisibleList()
+        {
+            if (this.VisibleListIsValid) return;
+            this.RecalculateVisibleList();
+        }
+        /// <summary>
+        /// Naplní korektní data do pole <see cref="VisibleList"/> a vypočte patřičné pixelové souřadnice.
+        /// </summary>
+        protected void RecalculateVisibleList()
+        {
+            using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "ItemsRecalculateVisibleList", ""))
+            {
+                int layers = 0;
+                int groups = 0;
+                int items = 0;
+
+                int luh = this.LineUnitHeight + 2;
+
+                this.VisibleList = new List<List<GTimeGraphGroup>>();
+
+                ITimeConvertor timeConvertor = this._TimeConvertor;
+                if (timeConvertor == null) return;
+
+                TimeRange visibleTime = timeConvertor.VisibleTime;
+
+                foreach (List<GTimeGraphGroup> layerList in this.GroupList)
+                {   // Items for one Layer:
+                    List<GTimeGraphGroup> visibleItems = new List<GTimeGraphGroup>();
+
+                    foreach (GTimeGraphGroup group in layerList)
+                    {
+                        if (group.IsValidRealTime && visibleTime.HasIntersect(group.Time))
+                        {   // Group time is fully / partially in visible part of TimeAxis:
+                            groups++;
+
+                            int yTop = this.CalculatorYGetPixel(group.LogicalY.End);
+                            int yBot = this.CalculatorYGetPixel(group.LogicalY.Begin);
+                            int h = (yTop - yBot);
+
+                            int x1 = timeConvertor.GetPixel(group.Time.Begin);
+                            int x2 = timeConvertor.GetPixel(group.Time.End);
+                            group.VirtualBounds = new Rectangle(x1, yTop, (x2 - x1), h);
+
+                            foreach (ITimeGraphItem item in group.Items)
+                            {
+                                items++;
+
+                                x1 = timeConvertor.GetPixel(item.Time.Begin);
+                                x2 = timeConvertor.GetPixel(item.Time.End);
+                                item.VirtualBounds = new Rectangle(x1, yTop, (x2 - x1), h);
+                            }
+
+                            visibleItems.Add(group);
+                        }
+                    }
+
+                    if (visibleItems.Count > 0)
+                    {
+                        this.VisibleList.Add(visibleItems);
+                        layers++;
+                    }
+                }
+
+                this.VisibleListIsValid = true;
+
+                scope.AddItem("Visual Layers Count: " + layers.ToString());
+                scope.AddItem("Visual Groups Count: " + groups.ToString());
+                scope.AddItem("Visual Items Count: " + items.ToString());
+            }
+        }
+        /// <summary>
+        /// List of currently visible items, structured as List of Layers, and List of Groups of items.
+        /// List1 = layers; List2 = Group items in one layer, all levels
+        /// </summary>
+        protected List<List<GTimeGraphGroup>> VisibleList { get; set; }
+        /// <summary>
+        /// Obshauje true pokud <see cref="VisibleList"/> obsahuje platná data.
+        /// </summary>
+        protected bool VisibleListIsValid { get; set; }
         #endregion
         
         public int GraphDefaultHeight { get; set; }
@@ -466,7 +531,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 int groups = 0;
                 int items = 0;
 
-                foreach (List<GTimeGraphGroup> layerList in this.ItemGroupVisibleList)
+                foreach (List<GTimeGraphGroup> layerList in this.VisibleList)
                 {
                     layers++;
                     foreach (GTimeGraphGroup group in layerList)
@@ -489,7 +554,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected TimeGraphItemDrawArgs ItemDrawArgs;
         #endregion
         #region ITimeGraph members
-        ITimeConvertor ITimeGraph.Convertor { get { return this._TimeConvertor; } set { this._TimeConvertor = value; } }
+        ITimeConvertor ITimeGraph.TimeConvertor { get { return this._TimeConvertor; } set { this._TimeConvertor = value; } }
         int ITimeGraph.UnitHeight { get { return this._LineUnitHeight; } } 
         void ITimeGraph.DrawContentTimeGraph(GInteractiveDrawArgs e, Rectangle boundsAbsolute) { this.DrawContentTimeGraph(e, boundsAbsolute); }
         #endregion
@@ -506,6 +571,10 @@ namespace Asol.Tools.WorkScheduler.Components
             this._ItemId = Application.App.GetNextId(typeof(ITimeGraphItem));
             this._FirstItem = null;
         }
+        /// <summary>
+        /// Konstruktor s předáním skupiny položek, s výpočtem jejich sumárního časového intervalu a výšky
+        /// </summary>
+        /// <param name="items"></param>
         public GTimeGraphGroup(IEnumerable<ITimeGraphItem> items)
             : this()
         {
@@ -776,7 +845,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
 
         #region ITimeGraph members
-        ITimeConvertor ITimeGraph.Convertor { get { return this._Convertor; } set { this._Convertor = value; } } private ITimeConvertor _Convertor;
+        ITimeConvertor ITimeGraph.TimeConvertor { get { return this._Convertor; } set { this._Convertor = value; } } private ITimeConvertor _Convertor;
         int ITimeGraph.UnitHeight { get { return this._UnitHeight; } } private int _UnitHeight;
         void ITimeGraph.DrawContentTimeGraph(GInteractiveDrawArgs e, Rectangle boundsAbsolute) { this.DrawContentTimeGraph(e, boundsAbsolute); }
         #endregion
@@ -790,7 +859,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Reference na objekt, který provádí časové konverze pro tento graf.
         /// Instanci do této property plní ten, kdo ji zná.
         /// </summary>
-        ITimeConvertor Convertor { get; set; }
+        ITimeConvertor TimeConvertor { get; set; }
         /// <summary>
         /// Height (in pixels) for one unit of GTimeItem.Height
         /// </summary>
@@ -853,18 +922,33 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="drawArgs">All data and support for drawing</param>
         void Draw(TimeGraphItemDrawArgs drawArgs);
     }
+    /// <summary>
+    /// Interface, který umožní pracovat s časovou osou
+    /// </summary>
     public interface ITimeConvertor
     {
+        /// <summary>
+        /// Identita časového a vizuálního prostoru
+        /// </summary>
         string Identity { get; }
         /// <summary>
-        /// Currently visible TimeRange
+        /// Aktuálně zobrazený interval data a času
         /// </summary>
         TimeRange VisibleTime { get; }
         /// <summary>
-        /// All current visual ticks
+        /// Obsahuje všechny aktuální ticky na časové ose.
         /// </summary>
         VisualTick[] Ticks { get; }
+        /// <summary>
+        /// Vrátí relativní pixel, na kterém se nachází daný čas.
+        /// </summary>
+        /// <param name="time"></param>
+        /// <returns></returns>
         int GetPixel(DateTime? time);
+        /// <summary>
+        /// Event vyvolaný po každé změně hodnoty <see cref="VisibleTime"/>
+        /// </summary>
+        event GPropertyChangedHandler<TimeRange> VisibleTimeChanged;
     }
     public class TimeGraphItemDrawArgs : IDisposable
     {

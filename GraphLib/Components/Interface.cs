@@ -162,6 +162,25 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         void Repaint();
     }
+    /// <summary>
+    /// Interface, který umožní child prvku číst a měnit rozměry některého sého hostitele.
+    /// Technicky to nemusí být jeho přímý Parent ve smyslu vztahu Parent - Child, může to být i Parent jeho Parenta.
+    /// Praktické využití je mezi grafem umístěným v buňce Gridu, kde jeho IVisualParent může být řádek (a nikoli buňka).
+    /// Interface pak dovoluje grafu požádat o změnu výšky řádku (setováním <see cref="IVisualParent.ClientHeight"/>, 
+    /// kdy na to řádek grafu reaguje nastavením své výšky podle svých pravidel (minimální a maximální povolená výška řádku).
+    /// Následně si graf načte zpět výšku parenta (již s korekcemi) a této výšce přizpůsobí svoje vnitřní souřadnice.
+    /// </summary>
+    public interface IVisualParent
+    {
+        /// <summary>
+        /// Šířka klientského prosturu uvnitř parenta
+        /// </summary>
+        int ClientWidth { get; set; }
+        /// <summary>
+        /// Výška klientského prosturu uvnitř parenta
+        /// </summary>
+        int ClientHeight { get; set; }
+    }
     #endregion
     #region interface IDrawItem
     /// <summary>
@@ -402,7 +421,7 @@ namespace Asol.Tools.WorkScheduler.Components
     /// </summary>
     /// <param name="sender"></param>
     /// <param name="e"></param>
-    public delegate void GPropertyChanged<T>(object sender, GPropertyChangeArgs<T> e);
+    public delegate void GPropertyChangedHandler<T>(object sender, GPropertyChangeArgs<T> e);
     /// <summary>
     /// Delegate for handlers for Drawing into User Area
     /// </summary>
@@ -1330,11 +1349,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Interactive action is source of change (user was entered / dragged new value).
         /// Change of value is still in process (Drag). After DragEnd will be sent event with source = InteractiveChanged.
         /// </summary>
-        InteractiveChanging = 0x1000,
+        InteractiveChanging = 0x2000,
         /// <summary>
         /// Interactive action is source of change (user was entered / dragged new value)
         /// </summary>
-        InteractiveChanged = 0x2000
+        InteractiveChanged = 0x4000
     }
     /// <summary>
     /// Režim překreslení objektu Parent při překreslení objektu this.

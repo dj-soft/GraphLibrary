@@ -510,8 +510,8 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             this._RowsPositions = new GridPosition(DefaultColumnHeaderHeight, 50, this._RowsPositionGetVisualSize, this._RowsPositionGetDataSize, this._GetVisualFirstPixel, this._SetVisualFirstPixel);
 
             this._RowsScrollBar = new GScrollBar() { Orientation = System.Windows.Forms.Orientation.Vertical };
-            this._RowsScrollBar.ValueChanging += new GPropertyChanged<SizeRange>(RowsScrollBar_ValueChange);
-            this._RowsScrollBar.ValueChanged += new GPropertyChanged<SizeRange>(RowsScrollBar_ValueChange);
+            this._RowsScrollBar.ValueChanging += new GPropertyChangedHandler<SizeRange>(RowsScrollBar_ValueChange);
+            this._RowsScrollBar.ValueChanged += new GPropertyChangedHandler<SizeRange>(RowsScrollBar_ValueChange);
         }
         /// <summary>
         /// Řídící prvek pro Pozice řádků
@@ -1012,8 +1012,8 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         {
             this._HeaderSplitter = new GSplitter() { Orientation = System.Windows.Forms.Orientation.Horizontal, SplitterVisibleWidth = 0, SplitterActiveOverlap = 4, LinkedItemPrevMinSize = 50, LinkedItemNextMinSize = 50, IsResizeToLinkItems = true };
             this._HeaderSplitter.ValueSilent = this.Bounds.Bottom;
-            this._HeaderSplitter.ValueChanging += new GPropertyChanged<int>(_HeaderSplitter_LocationChange);
-            this._HeaderSplitter.ValueChanged += new GPropertyChanged<int>(_HeaderSplitter_LocationChange);
+            this._HeaderSplitter.ValueChanging += new GPropertyChangedHandler<int>(_HeaderSplitter_LocationChange);
+            this._HeaderSplitter.ValueChanged += new GPropertyChangedHandler<int>(_HeaderSplitter_LocationChange);
         }
         /// <summary>
         /// Eventhandler události _TableSplitter.LocationChanged (došlo nebo stále dochází ke změně pozice splitteru pod tabulkou)
@@ -1062,8 +1062,8 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         {
             this._TableSplitter = new GSplitter() { Orientation = System.Windows.Forms.Orientation.Horizontal, SplitterVisibleWidth = TableSplitterSize, SplitterActiveOverlap = 4, LinkedItemPrevMinSize = 50, LinkedItemNextMinSize = 50, IsResizeToLinkItems = true };
             this._TableSplitter.ValueSilent = this.Bounds.Bottom;
-            this._TableSplitter.ValueChanging += new GPropertyChanged<int>(_TableSplitter_LocationChange);
-            this._TableSplitter.ValueChanged += new GPropertyChanged<int>(_TableSplitter_LocationChange);
+            this._TableSplitter.ValueChanging += new GPropertyChangedHandler<int>(_TableSplitter_LocationChange);
+            this._TableSplitter.ValueChanged += new GPropertyChangedHandler<int>(_TableSplitter_LocationChange);
         }
         /// <summary>
         /// Eventhandler události _TableSplitter.LocationChanged (došlo nebo stále dochází ke změně pozice splitteru od tabulkou)
@@ -1951,8 +1951,8 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         {
             this._ColumnSplitter = new GSplitter() { Orientation = System.Windows.Forms.Orientation.Vertical, SplitterVisibleWidth = 0, SplitterActiveOverlap = 4 };
             this._ColumnSplitter.ValueSilent = this.Bounds.Right;
-            this._ColumnSplitter.ValueChanging += new GPropertyChanged<int>(_ColumnSplitter_LocationChange);
-            this._ColumnSplitter.ValueChanged += new GPropertyChanged<int>(_ColumnSplitter_LocationChange);
+            this._ColumnSplitter.ValueChanging += new GPropertyChangedHandler<int>(_ColumnSplitter_LocationChange);
+            this._ColumnSplitter.ValueChanged += new GPropertyChangedHandler<int>(_ColumnSplitter_LocationChange);
         }
         /// <summary>
         /// Eventhandler pro událost _ColumnSplitter.ValueChanging a ValueChanged
@@ -2084,8 +2084,8 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         {
             this._ColumnSplitter = new GSplitter() { Orientation = System.Windows.Forms.Orientation.Vertical, SplitterVisibleWidth = 0, SplitterActiveOverlap = 4 };
             this._ColumnSplitter.ValueSilent = this.Bounds.Right;
-            this._ColumnSplitter.ValueChanging += new GPropertyChanged<int>(_ColumnSplitter_LocationChange);
-            this._ColumnSplitter.ValueChanged += new GPropertyChanged<int>(_ColumnSplitter_LocationChange);
+            this._ColumnSplitter.ValueChanging += new GPropertyChangedHandler<int>(_ColumnSplitter_LocationChange);
+            this._ColumnSplitter.ValueChanged += new GPropertyChangedHandler<int>(_ColumnSplitter_LocationChange);
         }
         /// <summary>
         /// Eventhandler pro událost _ColumnSplitter.ValueChanging a ValueChanged
@@ -2598,8 +2598,8 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         {
             this._RowSplitter = new GSplitter() { Orientation = System.Windows.Forms.Orientation.Horizontal, SplitterVisibleWidth = 0, SplitterActiveOverlap = 4 };
             this._RowSplitter.ValueSilent = this.Bounds.Right;
-            this._RowSplitter.ValueChanging += new GPropertyChanged<int>(_RowSplitter_LocationChange);
-            this._RowSplitter.ValueChanged += new GPropertyChanged<int>(_RowSplitter_LocationChange);
+            this._RowSplitter.ValueChanging += new GPropertyChangedHandler<int>(_RowSplitter_LocationChange);
+            this._RowSplitter.ValueChanged += new GPropertyChangedHandler<int>(_RowSplitter_LocationChange);
         }
         /// <summary>
         /// Eventhandler pro událost _RowSplitter.ValueChanging a ValueChanged
@@ -2950,8 +2950,8 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             // Pozadí řádku:
             this.OwnerGTable.DrawRowBackground(e, this.OwnerCell, boundsAbsolute);
 
-            if (graph.Convertor == null)
-                graph.Convertor = this.ColumnHeader.TimeConvertor;
+            if (graph.TimeConvertor == null)
+                graph.TimeConvertor = this.ColumnHeader.TimeConvertor;
             if (graph.Parent == null)
                 graph.Parent = this;
             if (graph.Bounds != this.BoundsClient)
@@ -2970,8 +2970,8 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             // Pozadí řádku:
             this.OwnerGTable.DrawRowBackground(e, this.OwnerCell, boundsAbsolute);
 
-            if (graph.Convertor == null)
-                graph.Convertor = this.ColumnHeader.TimeConvertor;
+            if (graph.TimeConvertor == null)
+                graph.TimeConvertor = this.ColumnHeader.TimeConvertor;
 
             graph.DrawContentTimeGraph(e, boundsAbsolute);
         }

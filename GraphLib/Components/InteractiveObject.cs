@@ -332,7 +332,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Event on this.Bounds changes
         /// </summary>
-        public event GPropertyChanged<Rectangle> BoundsChanged;
+        public event GPropertyChangedHandler<Rectangle> BoundsChanged;
 
         /// <summary>
         /// Call method OnDrawRequest() and event DrawRequest.
@@ -1152,7 +1152,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Event on this.Value changes
         /// </summary>
-        public event GPropertyChanged<TValue> ValueChanged;
+        public event GPropertyChangedHandler<TValue> ValueChanged;
 
         /// <summary>
         /// Call method OnValueRangeChanged() and event ValueChanged
@@ -1171,7 +1171,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Event on this.ValueRange changes
         /// </summary>
-        public event GPropertyChanged<TRange> ValueRangeChanged;
+        public event GPropertyChangedHandler<TRange> ValueRangeChanged;
 
 
         #endregion
