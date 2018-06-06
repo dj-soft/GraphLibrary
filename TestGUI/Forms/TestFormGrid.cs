@@ -44,7 +44,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             {
                 this._Toolbar = new GToolBar();
                 this._Toolbar.FillFunctionGlobals();
-                this._Toolbar.ToolbarSizeChanged += new GPropertyChanged<Services.ComponentSize>(_Toolbar_ToolbarSizeChanged);
+                this._Toolbar.ToolbarSizeChanged += new GPropertyChangedHandler<Services.ComponentSize>(_Toolbar_ToolbarSizeChanged);
 
                 this.Rand = new Random((int)DateTime.Now.Ticks % 0x0FFFFFFF);
 
@@ -63,10 +63,11 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                     Cell[] items = this._Table1.Rows[2].Cells;
 
                     this._SplitterWZ = new GSplitter() { SplitterVisibleWidth = 4, SplitterActiveOverlap = 2, Orientation = Orientation.Vertical, Value = 400, BoundsNonActive = new Int32NRange(0, 200) };
-                    this._SplitterWZ.ValueChanged += new GPropertyChanged<int>(_SplitterWZ_ValueChanged);
-                    this._SplitterWZ.ValueChanging += new GPropertyChanged<int>(_SplitterWZ_ValueChanging);
+                    this._SplitterWZ.ValueChanged += new GPropertyChangedHandler<int>(_SplitterWZ_ValueChanged);
+                    this._SplitterWZ.ValueChanging += new GPropertyChangedHandler<int>(_SplitterWZ_ValueChanging);
                     this._GridZ = new GGrid();
                     this._GridZ.AddTable(this._TableZ);
+                    this._GridZ.MainTimeAxis = this._GridW.MainTimeAxis;
                 }
 
                 using (var scope3 = Application.App.Trace.Scope("TestFormGrid", "InitGControl", "GControl.AddItem(Grid)"))
