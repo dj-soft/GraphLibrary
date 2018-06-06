@@ -250,6 +250,17 @@ namespace Asol.Tools.WorkScheduler.Components
             int? pixel = this.CalculatePixelLocalForTick(time);
             return begin + (pixel.HasValue ? pixel.Value : 0);
         }
+        int ITimeConvertor.GetProportionalPixel(DateTime? time, int targetSize)
+        {
+            if (targetSize <= 0) return 0;
+            decimal axisSize = this.PixelSize;
+            if (axisSize <= 0m) return 0;
+
+            int? axisPixel = this.CalculatePixelLocalForTick(time);
+            if (!axisPixel.HasValue) return 0;
+            decimal targetPixel = (decimal)targetSize * (((decimal)axisPixel.Value) / axisSize);
+            return (int)(Math.Round(targetPixel, 0));
+        }
         event GPropertyChangedHandler<TimeRange> ITimeConvertor.VisibleTimeChanged { add { this._VisibleTimeChanged += value; } remove { this._VisibleTimeChanged -= value; } }
         protected static string ToIdentity(DateTime? value)
         {

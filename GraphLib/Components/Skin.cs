@@ -6,6 +6,7 @@ using System.Windows.Forms;
 using System.Drawing;
 using System.ComponentModel;
 using System.Drawing.Drawing2D;
+using Asol.Tools.WorkScheduler.Data;
 
 namespace Asol.Tools.WorkScheduler.Components
 {
@@ -68,6 +69,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public static SkinGridSet Grid { get { return Instance._Grid; } }
         /// <summary>
+        /// Grafické prvky pro kreslení objektů typu Graph
+        /// </summary>
+        public static SkinGraphSet Graph { get { return Instance._Graph; } }
+        /// <summary>
         /// All items, for configuration
         /// </summary>
         public static IEnumerable<KeyValuePair<string, object>> AllSkinItems { get { return Instance._ValueDict.ToArray(); } }
@@ -99,7 +104,8 @@ namespace Asol.Tools.WorkScheduler.Components
             this._Progress = new SkinProgressSet(this, "Progress");
             this._Axis = new SkinAxisSet(this, "Axis");
             this._Grid = new SkinGridSet(this, "Grid");
-        }
+            this._Graph = new SkinGraphSet(this, "Graph");
+    }
         /// <summary>
         /// Add a new instance of SkinSet to Skin.
         /// Use pattern for "external" SkinSet:
@@ -120,6 +126,7 @@ namespace Asol.Tools.WorkScheduler.Components
         private SkinProgressSet _Progress;
         private SkinAxisSet _Axis;
         private SkinGridSet _Grid;
+        private SkinGraphSet _Graph;
         private Dictionary<string, object> _ValueDict;
         #endregion
         #region Get and Set Values
@@ -970,6 +977,31 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual Image DefaultSortAscendingImage { get { return IconStandard.SortAsc; } }
         protected virtual Image DefaultSortDescendingImage { get { return IconStandard.SortDesc; } }
         protected virtual Image DefaultRowSelectedImage { get { return IconStandard.RowSelected; } }
+        #endregion
+    }
+    /// <summary>
+    /// Sada grafických prvků pro typ Graph.
+    /// </summary>
+    public class SkinGraphSet : SkinSet
+    {
+        #region Internal and private
+        internal SkinGraphSet(Skin owner, string skinSetKey)
+            : base(owner, skinSetKey)
+        { }
+        #endregion
+        #region Public colors
+        public Int32 LineHeight { get { return this._Owner.GetValue(this._SkinSetKey, "LineHeight", DefaultLineHeight); } set { this._Owner.SetValue(this._SkinSetKey, "LineHeight", value); } }
+        public Int32 TotalHeightMin { get { return this._Owner.GetValue(this._SkinSetKey, "TotalHeightMin", DefaultTotalHeightMin); } set { this._Owner.SetValue(this._SkinSetKey, "TotalHeightMin", value); } }
+        public Int32 TotalHeightMax { get { return this._Owner.GetValue(this._SkinSetKey, "TotalHeightMax", DefaultTotalHeightMax); } set { this._Owner.SetValue(this._SkinSetKey, "TotalHeightMax", value); } }
+
+        public Color BackColor { get { return this._Owner.GetValue(this._SkinSetKey, "BackColor", DefaultBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "BackColor", value); } }
+        #endregion
+        #region Default colors
+        protected virtual Int32 DefaultLineHeight { get { return 18; } }
+        protected virtual Int32 DefaultTotalHeightMin { get { return 14; } }
+        protected virtual Int32 DefaultTotalHeightMax { get { return 480; } }
+        
+        protected virtual Color DefaultBackColor { get { return Color.DimGray; } }
         #endregion
     }
     /// <summary>

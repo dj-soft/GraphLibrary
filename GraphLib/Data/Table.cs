@@ -1023,6 +1023,20 @@ namespace Asol.Tools.WorkScheduler.Data
         public event GPropertyEvent<Cell> ActiveCellClick;
 
         #endregion
+        #region Statické služby
+        /// <summary>
+        /// Vrací typ obsahu pro danou hodnotu.
+        /// </summary>
+        public static TableValueType GetValueType(object value)
+        {
+            if (value == null) return TableValueType.Null;
+            if (value is IDrawItem) return TableValueType.IDrawItem;
+            if (value is ITimeInteractiveGraph) return TableValueType.ITimeInteractiveGraph;
+            if (value is ITimeGraph) return TableValueType.ITimeGraph;
+            if (value is Image) return TableValueType.Image;
+            return TableValueType.Text;
+        }
+        #endregion
     }
     #endregion
     #region Column
@@ -1484,6 +1498,20 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         private Dictionary<int, Cell> _CellDict;
         #endregion
+        #region BackgroundValue
+        /// <summary>
+        /// Objekt, který bude vykreslen na pozadí celého řádku.
+        /// Řešené datové typy jsou: IDrawItem, ITimeInteractiveGraph, ITimeGraph, Image.
+        /// Vykreslování objektu pozadí provádí instance <see cref="Control"/> třídy <see cref="GRow"/>.
+        /// </summary>
+        public object BackgroundValue { get; set; }
+        /// <summary>
+        /// Typ objektu <see cref="BackgroundValue"/>, určuje režim kreslení jejího obsahu.
+        /// Určuje se dynamicky podle obsahu <see cref="BackgroundValue"/>, tady pokud je zde určeno "Image", pak <see cref="BackgroundValue"/> určitě není Null.
+        /// Vykreslování objektu pozadí provádí instance <see cref="Control"/> třídy <see cref="GRow"/>.
+        /// </summary>
+        public TableValueType BackgroundValueType { get { return Data.Table.GetValueType(this.BackgroundValue); } }
+        #endregion
         #region GUI vlastnosti
         /// <summary>
         /// true pokud this řádek je vybrán k další práci. Default = false
@@ -1508,6 +1536,20 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Image použitý pro zobrazení Selected řádku v prostoru RowHeader. Default = null, v tom případě se použije image this.Table.SelectedRowImage.
         /// </summary>
         public Image SelectedRowImage { get { return this._SelectedRowImage ?? this.Table.SelectedRowImage; } set { this._SelectedRowImage = value; } } private Image _SelectedRowImage = null;
+        /// <summary>
+        /// Grafická instance reprezentující prostor řádku, grafický prvek, auitoinicializační
+        /// </summary>
+        public GRow Control
+        {
+            get
+            {
+                if (this._Control == null)
+                    this._Control = new GRow(this);
+                return this._Control;
+            }
+            set { this._Control = value; }
+        }
+        private GRow _Control;
         /// <summary>
         /// Záhlaví tohoto řádku, grafický prvek, auitoinicializační
         /// </summary>
@@ -1637,8 +1679,8 @@ namespace Asol.Tools.WorkScheduler.Data
         {
             get
             {
-                CellValueType valueType = this.ValueType;
-                if (valueType == CellValueType.Text)
+                TableValueType valueType = this.ValueType;
+                if (valueType == TableValueType.Text)
                     return this.Value.ToString();
                 return valueType.ToString();
             }
@@ -1712,19 +1754,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Typ obsahu této buňky, určuje režim kreslení jejího obsahu.
         /// Určuje se dynamicky podle typu this.Value, tady pokud je zde určeno "Image", pak Value určitě není Null.
         /// </summary>
-        public CellValueType ValueType
-        {
-            get
-            {
-                object value = this.Value;
-                if (value == null) return CellValueType.Null;
-                if (value is IDrawItem) return CellValueType.IDrawItem;
-                if (value is ITimeInteractiveGraph) return CellValueType.ITimeInteractiveGraph;
-                if (value is ITimeGraph) return CellValueType.ITimeGraph;
-                if (value is Image) return CellValueType.Image;
-                return CellValueType.Text;
-            }
-        }
+        public TableValueType ValueType { get { return Data.Table.GetValueType(this.Value); } }
         protected void InvalidateRowLayout()
         {
             // 1. Tímhle donutím můj Parent řádek, aby si přepočítal (až to bude potřeba) svoji výšku:
@@ -2394,7 +2424,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         Descending = 2
     }
-    public enum CellValueType
+    public enum TableValueType
     {
         None,
         Null,
