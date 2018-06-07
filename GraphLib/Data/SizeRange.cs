@@ -751,8 +751,8 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// Vrací rectangle pro rozmezí hodnot X a Y
         /// </summary>
-        /// <param name="x"></param>
-        /// <param name="y"></param>
+        /// <param name="x">Rozsah na ose X</param>
+        /// <param name="y">Rozsah na ose </param>
         /// <returns></returns>
         public static Rectangle GetRectangle(Int32Range x, Int32Range y)
         {
@@ -761,8 +761,8 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// Vrací rectangle pro rozmezí hodnot X a Y
         /// </summary>
-        /// <param name="x"></param>
-        /// <param name="y"></param>
+        /// <param name="x">Rozsah na ose X</param>
+        /// <param name="y">Rozsah na ose Y se převezme z tohoto Rectangle, z jeho souřadnic na ose Y</param>
         /// <returns></returns>
         public static Rectangle GetRectangle(Int32Range x, Rectangle y)
         {
@@ -771,12 +771,22 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// Vrací rectangle pro rozmezí hodnot X a Y
         /// </summary>
-        /// <param name="x"></param>
-        /// <param name="y"></param>
+        /// <param name="x">Rozsah na ose X se převezme z tohoto Rectangle, z jeho souřadnic na ose X</param>
+        /// <param name="y">Rozsah na ose </param>
         /// <returns></returns>
         public static Rectangle GetRectangle(Rectangle x, Int32Range y)
         {
             return new Rectangle(x.X, y.Begin, x.Width, y.Size);
+        }
+        /// <summary>
+        /// Vrací rectangle pro rozmezí hodnot X a Y
+        /// </summary>
+        /// <param name="x">Rozsah na ose X se převezme z tohoto Rectangle, z jeho souřadnic na ose X</param>
+        /// <param name="y">Rozsah na ose Y se převezme z tohoto Rectangle, z jeho souřadnic na ose Y</param>
+        /// <returns></returns>
+        public static Rectangle GetRectangle(Rectangle x, Rectangle y)
+        {
+            return new Rectangle(x.X, y.Y, x.Width, y.Height);
         }
         /// <summary>
         /// Vrátí pozici daného Rectangle na ose X (pro orientation = Horizontal)

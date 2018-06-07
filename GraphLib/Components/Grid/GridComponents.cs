@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Drawing;
+using System.Windows.Forms;
 using Asol.Tools.WorkScheduler.Data;
 
 namespace Asol.Tools.WorkScheduler.Components.Grid
@@ -351,7 +352,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <summary>
         /// Typ záhlaví.
         /// </summary>
-        protected override TableAreaType ComponentType { get { return TableAreaType.ColumnHeader; } }
+        protected override TableAreaType ComponentType { get { return TableAreaType.ColumnHeaders; } }
         #endregion
         #region Public rozhraní
         /// <summary>
@@ -546,7 +547,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         {
             // base třída je ochotná přesunout this objekt do libovolného místa (to je ostatně její velké pozitivum).
             // Ale ColumnHeader má mít prostor pro posun omezen jen na vhodná místa mezi ostatními sloupci:
-            Rectangle allowedBounds = this.OwnerGTable.GetRelativeBoundsForArea(TableAreaType.ColumnHeader);    // Souřadnice prostoru ColumnHeader, relativně k Table
+            Rectangle allowedBounds = this.OwnerGTable.GetRelativeBoundsForArea(TableAreaType.ColumnHeaders);    // Souřadnice prostoru ColumnHeader, relativně k Table
             allowedBounds.Y = allowedBounds.Y + 5;                   // Prostor ColumnHeader omezím: dolů o 5px,
             allowedBounds.Height = 2 * allowedBounds.Height - 10;    //  a dolní okraj tak, aby byl o něco menší než 2x výšky.
             Rectangle modifiedBounds = targetRelativeBounds.FitInto(allowedBounds, false);         // Souřadnice "Drag" musí být uvnitř vymezeného prostoru
@@ -868,9 +869,17 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <summary>
         /// Typ prvku.
         /// </summary>
-        protected override TableAreaType ComponentType { get { return TableAreaType.RowArea; } }
+        protected override TableAreaType ComponentType { get { return TableAreaType.RowData; } }
         #endregion
-        #region Draw
+        #region Public rozhraní
+        /// <summary>
+        /// Souřadnice na ose Y, v pixelech, v koordinátech GTable, kde je tento řádek právě zobrazen.
+        /// Může být null pro řádky mimo zobrazovaný prostor.
+        /// Řádky, které jsou viditelné plně nebo i jen zčásti mají <see cref="VisualRange"/> naplněno, s tím že hodnota výšky odpovídá plné výšce řádku i když řádek je vidět jen zčásti.
+        /// </summary>
+        public Int32Range VisualRange { get; set; }
+        #endregion
+        #region Draw, příprava Childs
         /// <summary>
         /// Vykreslení obsahu
         /// </summary>
@@ -885,6 +894,69 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             { }
             this.OwnerGTable.DrawValue(e, boundsAbsolute, this.OwnerRow.BackgroundValue, this.OwnerRow.BackgroundValueType, this.OwnerRow, null);
         }
+        /// <summary>
+        /// Metoda připraví patřičné prvky tohoto řádku do svého seznam Childs prvků.
+        /// Tyto prvky pak budou v řádku zobrazovány a budou interaktivní.
+        /// </summary>
+        /// <param name="rowHeadersBounds"></param>
+        /// <param name="rowDataBounds"></param>
+        /// <param name="visibleColumns"></param>
+        public void PrepareChilds(Row row, Rectangle rowHeadersBounds, Rectangle rowDataBounds, Column[] visibleColumns)
+        {
+            Int32Range rowHeaderXRange = rowHeadersBounds.GetVisualRange(Orientation.Horizontal);  // Pozice RowHeader na ose X  (záhlaví řádků)
+            Int32Range rowAreaXRange = rowDataBounds.GetVisualRange(Orientation.Horizontal);       // Pozice RowArea na ose X    (prostor pro data řádků, začíná za RowHeader, ale končí těsně před ScrollBarem)
+            Int32Range rowChildsYRange = new Int32Range(0, this.VisualRange.Size - 1);             // Pozice všech Child items na ose Y (ta je relativní vzhledem k this řádku, proto začíná 0, a je o 1 pixel menší = o dolní GridLine)
+
+            List<IInteractiveItem> childList = new List<IInteractiveItem>();
+
+            int left = rowHeaderXRange.Begin;
+            int right = left;
+
+            // Viditelné buňky:
+            foreach (Column column in visibleColumns)
+            {
+                GCell gCell = row[column.ColumnId].Control;
+                this.PrepareChildOne(gCell, column.ColumnHeader.VisualRange, rowChildsYRange, childList, ref right);
+            }
+
+            // Záhlaví aktuálního řádku přidám až po buňkách, bude "navrchu" z hlediska kreslení i interaktivity:
+            this.PrepareChildOne(row.RowHeader, rowHeaderXRange, rowChildsYRange, childList, ref right);
+            row.RowHeader.PrepareSplitterBounds();
+
+
+            // Souřadnice this řádku v rámci tabulky:
+            Int32Range rowXRange = new Int32Range(left, right);
+            Rectangle rowBounds = Int32Range.GetRectangle(rowXRange, this.VisualRange);
+            if (this.Bounds != rowBounds) this.Bounds = rowBounds;
+
+            // Soupis Child prvků:
+            this._ChildItems = childList.ToArray();
+        }
+        /// <summary>
+        /// Provede veškerou přípravu dat jedné Child buňky v aktuálním řádku
+        /// </summary>
+        /// <param name="item">Prvek (GCell nebo GRowHeader)</param>
+        /// <param name="xRange">Pozice na ose X relativně k řádku</param>
+        /// <param name="yRange">Pozice na ose Y relativně k řádku</param>
+        /// <param name="childList">Soupis Child items, tam se prvek přidá</param>
+        /// <param name="right">Průběžně střádaná Max() souřadnice Right</param>
+        private void PrepareChildOne(IInteractiveItem item, Int32Range xRange, Int32Range yRange, List<IInteractiveItem> childList, ref int right)
+        {
+            if (item.Parent == null)
+                item.Parent = this;
+            Rectangle itemBounds = Int32Range.GetRectangle(xRange, yRange);
+            if (item.Bounds != itemBounds) item.Bounds = itemBounds;
+            if (right < itemBounds.Right) right = itemBounds.Right;
+            childList.Add(item);
+        }
+        /// <summary>
+        /// Aktuální Child prvky tohoto řádku
+        /// </summary>
+        private IInteractiveItem[] _ChildItems;
+        /// <summary>
+        /// Child prvky <see cref="IInteractiveItem.Childs"/>
+        /// </summary>
+        protected override IEnumerable<IInteractiveItem> Childs { get { return this._ChildItems; } }
         #endregion
     }
     #endregion
@@ -908,7 +980,6 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="newBounds"></param>
         protected override void SetChildBounds(Rectangle newBounds)
         {
-            this.SetSplitterBounds(newBounds);
         }
         /// <summary>
         /// Vizualizace
@@ -931,20 +1002,29 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <summary>
         /// Typ záhlaví.
         /// </summary>
-        protected override TableAreaType ComponentType { get { return TableAreaType.RowHeader; } }
-        #endregion
-        #region Public rozhraní
-        /// <summary>
-        /// Souřadnice na ose Y, v pixelech, v koordinátech GTable, kde je tento řádek právě zobrazen.
-        /// Může být null pro řádky mimo zobrazovaný prostor.
-        /// </summary>
-        public Int32Range VisualRange { get; set; }
+        protected override TableAreaType ComponentType { get { return TableAreaType.RowHeaders; } }
         #endregion
         #region RowSplitter
         /// <summary>
-        /// Vodorovný Splitter pod tímto řádkem, řídí výšku tohoto řádku
+        /// Vodorovný Splitter pod tímto řádkem, řídí výšku tohoto řádku.
+        /// Jeho Bounds a tedy i <see cref="GSplitter.Value"/> jsou relativní k <see cref="GTable"/>.
         /// </summary>
         public GSplitter RowSplitter { get { return this._RowSplitter; } }
+        /// <summary>
+        /// Metoda je volána po nastavení souřadnic řádku, jejím úkolem je nastavit souřadnice splitteru.
+        /// Splitter je child prvkem <see cref="GTable"/>, není child prvkem svého řádku <see cref="GRow"/> - to proto, že jeho pohyb a vykreslení má být volné v rámci téměř celé tabulky.
+        /// </summary>
+        public void PrepareSplitterBounds()
+        {
+            GTable gTable = this.OwnerGTable;
+            if (this.Parent == null)
+                this.Parent = gTable;
+
+            GRow gRow = this.OwnerRow.Control;
+            Rectangle rowHeadersBounds = gTable.GetRelativeBoundsForArea(TableAreaType.RowHeaders);          // Celý prostor všech RowHeaders, relativně k GTable, nás bude zajímat jeho pozice X
+            Rectangle rowHeaderBounds = Int32Range.GetRectangle(rowHeadersBounds, gRow.VisualRange);         // Souřadnice RowHeader relativně k GTable (pozice na ose Y je převzata z řádku: VisualRange)
+            this.RowSplitter.LoadFrom(rowHeaderBounds, RectangleSide.Bottom, true);                          // Splitter umístíme na dolní hranu prostoru RowHeader, relativně k GTable
+        }
         /// <summary>
         /// true pokud má být zobrazen splitter za tímto řádkem, závisí na (OwnerTable.AllowRowResize)
         /// </summary>
@@ -968,20 +1048,11 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="e"></param>
         private void _RowSplitter_LocationChange(object sender, GPropertyChangeArgs<int> e)
         {
-            int top = this.Bounds.Top;
-            int value = this.RowSplitter.Value;
+            int top = this.OwnerRow.Control.VisualRange.Begin;       // Souřadnice Y, kde začíná Row, relativně k GTable
+            int value = this.RowSplitter.Value;                      // Aktuálně platná souřadnice Splitteru = nový Bottom souřadnic řádku
             int height = value - top;
             this.OwnerGTable.RowResizeTo(this.OwnerRow, ref height);
             e.CorrectValue = top + height;
-        }
-        /// <summary>
-        /// Nastaví souřadnice zdejšího splitteru, po změně souřadnic this headeru.
-        /// Splitter má být vždy umístěn na dolním okraji this záhlaví.
-        /// </summary>
-        /// <param name="newBounds"></param>
-        protected void SetSplitterBounds(Rectangle newBounds)
-        {
-            this.RowSplitter.LoadFrom(newBounds, RectangleSide.Bottom, true);
         }
         /// <summary>
         /// RowSplitter
@@ -1070,6 +1141,10 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                 return null;
             }
         }
+        /// <summary>
+        /// Volba, zda metoda <see cref="Repaint()"/> způsobí i vyvolání metody <see cref="Parent"/>.<see cref="IInteractiveParent.Repaint"/>.
+        /// </summary>
+        protected override RepaintParentMode RepaintParent { get { return RepaintParentMode.Always; } }
         #endregion
     }
     #endregion
@@ -1256,6 +1331,10 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             this.OwnerGTable.DrawRowGridLines(e, this.OwnerCell, boundsAbsolute);
             this.DrawDebugBorder(e, boundsAbsolute, opacity);
         }
+        /// <summary>
+        /// Volba, zda metoda <see cref="Repaint()"/> způsobí i vyvolání metody <see cref="Parent"/>.<see cref="IInteractiveParent.Repaint"/>.
+        /// </summary>
+        protected override RepaintParentMode RepaintParent { get { return RepaintParentMode.Always; } }
         #endregion
     }
     #endregion
@@ -1281,15 +1360,15 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <summary>
         /// Záhlaví sloupce
         /// </summary>
-        ColumnHeader,
+        ColumnHeaders,
         /// <summary>
         /// Záhlaví řádku
         /// </summary>
-        RowHeader,
+        RowHeaders,
         /// <summary>
         /// Prostor řádku vizuální (za koncem záhlaví, pod všemi buňkami)
         /// </summary>
-        RowArea,
+        RowData,
         /// <summary>
         /// Prostor jedné buňky v tabulce (křížení řádku a sloupce)
         /// </summary>

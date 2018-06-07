@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Drawing;
 using System.Windows.Forms;
+using Asol.Tools.WorkScheduler.Data;
 
 namespace Asol.Tools.WorkScheduler.Components
 {
@@ -1084,6 +1085,24 @@ namespace Asol.Tools.WorkScheduler.Components
                     return rectangle.Bottom;
                 case RectangleSide.Left:
                     return rectangle.Left;
+            }
+            return null;
+        }
+        /// <summary>
+        /// Vrátí rozsah { Begin, End } z this rectangle na požadované ose (orientaci).
+        /// Pokud je zadána hodnota axis = <see cref="Orientation.Horizontal"/>, pak je vrácen <see cref="Int32Range"/> s hodnotami X, Width, Right.
+        /// Pokud je zadána hodnota axis = <see cref="Orientation.Vertical"/>, pak je vrácen <see cref="Int32Range"/> s hodnotami Y, Height, Bottom.
+        /// Jinak se vrací null.
+        /// </summary>
+        /// <param name="rectangle"></param>
+        /// <param name="axis"></param>
+        /// <returns></returns>
+        public static Int32Range GetVisualRange(this Rectangle rectangle, Orientation axis)
+        {
+            switch (axis)
+            {
+                case Orientation.Horizontal: return new Int32Range(rectangle.X, rectangle.Right);
+                case Orientation.Vertical: return new Int32Range(rectangle.Y, rectangle.Bottom);
             }
             return null;
         }

@@ -393,7 +393,7 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         /// <summary>
-        /// Volba, zda metoda <see cref="Repaint"/> způsobí i vyvolání metody <see cref="Parent"/>.<see cref="IInteractiveParent.Repaint"/>.
+        /// Volba, zda metoda <see cref="Repaint()"/> způsobí i vyvolání metody <see cref="Parent"/>.<see cref="IInteractiveParent.Repaint"/>.
         /// </summary>
         protected virtual RepaintParentMode RepaintParent { get { return RepaintParentMode.None; } }
         /// <summary>

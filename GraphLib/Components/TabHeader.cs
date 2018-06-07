@@ -862,8 +862,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Aby fungovalo přemalování parenta v režimu <see cref="RepaintParentMode.OnBackColorAlpha"/>, musíme vracet korektní barvu BackColor.
         /// Výchozí je <see cref="Skin.TabHeader.SpaceColor"/>.
         /// </summary>
-        public override Color BackColor { get { return (this._BackColor.HasValue ? this._BackColor.Value : Skin.TabHeader.SpaceColor); } set { this._BackColor = value; base.BackColor = value; } }
-        private new Color? _BackColor;
+        public override Color BackColor { get { return (this._BackColorExplicit.HasValue ? this._BackColorExplicit.Value : Skin.TabHeader.SpaceColor); } set { this._BackColorExplicit = value; base.BackColor = value; } }
+        private Color? _BackColorExplicit;
         protected override IEnumerable<IInteractiveItem> Childs { get { return this.GetChilds(null); } }
         #endregion
         #region Implementace ITabHeaderInternal

@@ -164,9 +164,9 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             int y3 = clientSize.Height;                              // y3: úplně dole
 
             this._TableHeaderBounds = new Rectangle(x0, y0, x1 - x0, y1 - y0);
-            this._ColumnHeaderBounds = new Rectangle(x1, y0, x3 - x1, y1 - y0);
-            this._RowHeaderBounds = new Rectangle(x0, y1, x1 - x0, y3 - y1);
-            this._RowAreaBounds = new Rectangle(x1, y1, x2r - x1, y3 - y1);
+            this._ColumnHeadersBounds = new Rectangle(x1, y0, x3 - x1, y1 - y0);
+            this._RowHeadersBounds = new Rectangle(x0, y1, x1 - x0, y3 - y1);
+            this._RowDataBounds = new Rectangle(x1, y1, x2r - x1, y3 - y1);
             this._RowsScrollBarBounds = new Rectangle(x2t, y1, x3 - x2t, y3 - y1);
             this._HeaderSplitterBounds = new Rectangle(x0, y1, x3 - x0, 0);
 
@@ -206,15 +206,15 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <summary>
         /// Vizuální souřadnice prostoru záhlaví sloupců (datové ColumnHeaders)
         /// </summary>
-        protected Rectangle ColumnHeaderBounds { get { this._InnerBoundsCheck(); return this._ColumnHeaderBounds; } } private Rectangle _ColumnHeaderBounds;
+        protected Rectangle ColumnHeadersBounds { get { this._InnerBoundsCheck(); return this._ColumnHeadersBounds; } } private Rectangle _ColumnHeadersBounds;
         /// <summary>
         /// Vizuální souřadnice prostoru záhlaví řádků (RowHeader)
         /// </summary>
-        protected Rectangle RowHeaderBounds { get { this._InnerBoundsCheck(); return this._RowHeaderBounds; } } private Rectangle _RowHeaderBounds;
+        protected Rectangle RowHeadersBounds { get { this._InnerBoundsCheck(); return this._RowHeadersBounds; } } private Rectangle _RowHeadersBounds;
         /// <summary>
         /// Vizuální souřadnice prostoru řádků (RowArea) = vlastní obsah dat, nikoli záhlaví
         /// </summary>
-        protected Rectangle RowAreaBounds { get { this._InnerBoundsCheck(); return this._RowAreaBounds; } } private Rectangle _RowAreaBounds;
+        protected Rectangle RowDataBounds { get { this._InnerBoundsCheck(); return this._RowDataBounds; } } private Rectangle _RowDataBounds;
         /// <summary>
         /// Viditelnost scrollbaru řádků
         /// </summary>
@@ -247,10 +247,10 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             {
                 case TableAreaType.Table: return new Rectangle(new Point(0, 0), this.Bounds.Size);
                 case TableAreaType.TableHeader: return this.TableHeaderBounds;
-                case TableAreaType.ColumnHeader: return this.ColumnHeaderBounds;
-                case TableAreaType.RowHeader: return this.RowHeaderBounds;
-                case TableAreaType.RowArea: return this.RowAreaBounds;
-                case TableAreaType.Cell: return this.RowAreaBounds;
+                case TableAreaType.ColumnHeaders: return this.ColumnHeadersBounds;
+                case TableAreaType.RowHeaders: return this.RowHeadersBounds;
+                case TableAreaType.RowData: return this.RowDataBounds;
+                case TableAreaType.Cell: return this.RowDataBounds;
                 case TableAreaType.VerticalScrollBar: return this.RowsScrollBarBounds;
             }
             return Rectangle.Empty;
@@ -461,7 +461,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             {
                 ISequenceLayout isl = row as ISequenceLayout;
                 bool isRowVisible = SequenceLayout.IsItemVisible(isl, dataVisibleRange);           // Tento řádek je vidět?
-                row.RowHeader.VisualRange = (isRowVisible ? rowsPositions.GetVisualPosition(isl) : null);
+                row.Control.VisualRange = (isRowVisible ? rowsPositions.GetVisualPosition(isl) : null);
                 if (isRowVisible)
                     visibleRows.Add(row);
             }
@@ -879,9 +879,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         protected void RepaintRow(Row row)
         {
             if (row == null) return;
-            ((IInteractiveParent)row.RowHeader).Repaint();
-            foreach (Cell cell in row.Cells)
-                ((IInteractiveParent)cell.Control).Repaint();
+            ((IInteractiveItem)row.Control).Repaint();
         }
         /// <summary>
         /// Zajistí vyvolání metody Repaint pro ColumnHeader i pro všechny Cell.Control ve viditelných řádcích v daném sloupci.
@@ -1149,7 +1147,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             tableHeader.Bounds = this.TableHeaderBounds;
             this.ChildList.Add(tableHeader);
 
-            Rectangle headerBounds = this.ColumnHeaderBounds;
+            Rectangle headerBounds = this.ColumnHeadersBounds;
             foreach (Column column in this.VisibleColumns)
             {
                 GColumnHeader columnHeader = column.ColumnHeader;
@@ -1186,34 +1184,21 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                 this._ChildItemsAddRowContent(row);
         }
         /// <summary>
-        /// Do pole this.ChildList přidá obsah jednoho daného řádku, obsah je: RowHeader + za každý viditelný sloupec (VisibleColumns) pak obsah vizuální buňky (row[column.ColumnId].Control).
+        /// Do pole this.ChildList přidá obsah jednoho daného řádku, obsahem je: GRow.
+        /// Jednotlivé prvky řádku (GRowHeader + GCells) jsou Childs až tohoto GRow.
+        /// Nicméně tato metoda <see cref="_ChildItemsAddRowContent(Row)"/> vyvolá i přípravu těchto Childs v GRow, společně s informací o viditelných sloupcích a jejich souřadnicích.
+        /// + za každý viditelný sloupec (VisibleColumns) pak obsah vizuální buňky (row[column.ColumnId].Control).
         /// </summary>
         /// <param name="row"></param>
         protected void _ChildItemsAddRowContent(Row row)
         {
-            Rectangle rowHeaderBounds = this.RowHeaderBounds;        // Celý prostor pro záhlaví řádků = přes všechny řádky
-            Rectangle rowAreaBounds = this.RowAreaBounds;            // Celý prostor pro data (vpravo od RowHeader, dolů pod ColumnHeader)
-            GRowHeader rowHeader = row.RowHeader;                    // Záhlaví aktuálního řádku
-            Int32Range rowVisualRange = rowHeader.VisualRange;       // Pozice aktuálního řádku na ose Y (rozmezí pixelů)
-
-            // Něco k pořadí vkládání prvků do Items: dospodu dáme to, co by mělo být "vespodu" = obsah buněk. Nad ně dáme Headers a na ně Splitters:
-
-            GRow gRow = row.Control;
-            gRow.Bounds = new Rectangle(rowAreaBounds.X, rowVisualRange.Begin, rowAreaBounds.Width, rowVisualRange.Size);
+            Rectangle rowHeadersBounds = this.RowHeadersBounds;      // Celý prostor pro záhlaví řádků = přes všechny řádky
+            Rectangle rowDataBounds = this.RowDataBounds;            // Celý prostor pro data (vpravo od RowHeader, dolů pod ColumnHeader)
+            GRow gRow = row.Control;                                 // Vizuální reprezentace řádku
+            if (((IInteractiveParent)gRow).Parent == null)
+                ((IInteractiveParent)gRow).Parent = this;
+            gRow.PrepareChilds(row, rowHeadersBounds, rowDataBounds, this.VisibleColumns);
             this.ChildList.Add(gRow);
-
-            foreach (Column column in this.VisibleColumns)
-            {
-                Int32Range columnVisualRange = column.ColumnHeader.VisualRange;               // Pozice aktuálního sloupce na ose X (rozmezí pixelů)  
-                GCell gCell = row[column.ColumnId].Control;                                   // Data buňky, měli bychom doplnit jejího parenta = this
-                if (((IInteractiveParent)gCell).Parent == null)
-                    ((IInteractiveParent)gCell).Parent = this;
-                gCell.Bounds = Int32Range.GetRectangle(columnVisualRange, rowVisualRange);    // Souřadnice buňky (v koordinátech GTable, která je Parentem)
-                this.ChildList.Add(gCell);
-            }
-
-            rowHeader.Bounds = Int32Range.GetRectangle(rowHeaderBounds, rowVisualRange);
-            this.ChildList.Add(rowHeader);
         }
         /// <summary>
         /// Do pole this.ChildList přidá HeaderSplitter, pokud tabulka povoluje změnu výšky záhlaví (DataTable.AllowColumnHeaderResize)
