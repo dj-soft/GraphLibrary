@@ -2259,59 +2259,59 @@ namespace Asol.Tools.WorkScheduler.Components
             while (run)
             {
                 run = false;
-                int foundAt = -1;
+                bool isFound = false;
+                IInteractiveItem foundItem = null;
                 if (preferredQueue != null && preferredQueue.Count > 0)
                 {   // Máme hledat nejprve v preferovaných prvcích?
                     FindItemPoint fip = preferredQueue.Dequeue();
                     if (fip.Item.HoldMouse)
                     {
-                        foundAt = _FindIndexOfItem(items, absolutePoint, withDisabled, fip.Item);
-                        if (foundAt < 0)
+                        isFound = _TryFindIndexOfItem(items, absolutePoint, withDisabled, fip.Item, out foundItem);
+                        if (!isFound)
                             preferredQueue.Clear();
                     }
                 }
-                if (foundAt < 0)
-                {   // Hledáme mimo preferované prvky, pouze podle souřadnice myši:
-                    foundAt = _FindIndexOfItem(items, absolutePoint, withDisabled, null);
-                }
-
-                if (foundAt >= 0)
+                if (!isFound)
+                    // Hledáme mimo preferované prvky, pouze podle souřadnice myši:
+                    isFound = _TryFindIndexOfItem(items, absolutePoint, withDisabled, null, out foundItem);
+               
+                if (isFound)
                 {   // Našli jsme prvek:
-                    IInteractiveItem item = items[foundAt];
-
                     // Pokud jsme se zacyklili => skončíme chybou:
-                    if (resultList.Any(iii => Object.ReferenceEquals(iii.Item, item)))
+                    if (resultList.Any(iii => Object.ReferenceEquals(iii.Item, foundItem)))
                         throw new StackOverflowException("There is an cycling loop in nesting of IInteractiveItem list");
 
                     // Určíme relativní pozici myši vůči prvku, to se někdy hodí:
-                    Point itemAbsolutePoint = item.GetAbsoluteVisibleBounds().Location;
-                    Point relativeMousePoint = absolutePoint.Sub(itemAbsolutePoint);
-                    resultList.Add(new FindItemPoint(item, itemAbsolutePoint, relativeMousePoint));
+                    Point itemAbsolutePoint = foundItem.GetAbsoluteVisibleBounds().Location;
+                    Point relativeMousePoint = absolutePoint.Sub(itemAbsolutePoint);                         // Relativní souřadnici pouze vložíme do FindItemPoint, ale pro hledání používáme stále absolutní souřadnici...
+                    resultList.Add(new FindItemPoint(foundItem, itemAbsolutePoint, relativeMousePoint));
 
                     // Pokud prvek má Childs, projdeme je taky v další smyčce.
                     // Nemusíme řešit posun relativních souřadnic myši, jedeme stále v absolutních:
-                    IEnumerable<IInteractiveItem> childs = item.Childs;
+                    IEnumerable<IInteractiveItem> childs = foundItem.Childs;
                     if (childs != null)
                     {
                         items = childs.ToArray();
-                        run = true;
+                        run = (items.Length > 0);
                     }
                 }
             }
             return resultList;
         }
         /// <summary>
-        /// Search for item with topmost index in (list), 
-        /// where item (is equal to preferredItem or preferredItem == null), 
-        /// and item is visible and (enabled or withDisabled), and item.IsActiveAtPoint(point).
-        /// Return index of this item, or -1 when not found.
+        /// Hledá v daném poli od konce prvek, který je aktivní na dané absolutní souřadnici.
+        /// Pokud je zadán preferovaný prvek (preferredItem), kontroluje pouze tento prvek (pokud existuje, a vyhoví podmínkám).
+        /// prvek musí být <see cref="IInteractiveItem.IsVisible"/>, musí být <see cref="IInteractiveItem.IsEnabled"/> nebo musí být povoleno vyhledání i Disabled prvků,
+        /// a prvek musí být interaktivní na dané souřadnici.
+        /// Výstup: true pokud je nalezeno (pak je nalezený prvek uložen v out parametru foundItem).
         /// </summary>
         /// <param name="list"></param>
         /// <param name="absolutePoint"></param>
         /// <param name="withDisabled"></param>
         /// <param name="preferredItem"></param>
+        /// <param name="foundItem"></param>
         /// <returns></returns>
-        private static int _FindIndexOfItem(IInteractiveItem[] items, Point absolutePoint, bool withDisabled, IInteractiveItem preferredItem)
+        private static bool _TryFindIndexOfItem(IInteractiveItem[] items, Point absolutePoint, bool withDisabled, IInteractiveItem preferredItem, out IInteractiveItem foundItem)
         {
             for (int idx = items.Length - 1; idx >= 0; idx--)
             {   // Hledáme v poli prvků od konce = vizuálně od nejvýše vykresleného prvku:
@@ -2320,11 +2320,13 @@ namespace Asol.Tools.WorkScheduler.Components
                     && item.IsVisible 
                     && (withDisabled || item.IsEnabled) 
                     && item.IsActiveAtAbsolutePoint(absolutePoint))
-                {   // This item contain specified point:
-                    return idx;
+                {   // Daný prvek vyhovuje => máme hotovo:
+                    foundItem = item;
+                    return true;
                 }
             }
-            return -1;
+            foundItem = null;
+            return false;
         }
         /// <summary>
         /// Return a relative point to current item

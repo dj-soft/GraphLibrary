@@ -165,6 +165,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
 
             this._TableHeaderBounds = new Rectangle(x0, y0, x1 - x0, y1 - y0);
             this._ColumnHeadersBounds = new Rectangle(x1, y0, x3 - x1, y1 - y0);
+            this._RowBounds = new Rectangle(x0, y1, x2r - x0, y3 - y1);
             this._RowHeadersBounds = new Rectangle(x0, y1, x1 - x0, y3 - y1);
             this._RowDataBounds = new Rectangle(x1, y1, x2r - x1, y3 - y1);
             this._RowsScrollBarBounds = new Rectangle(x2t, y1, x3 - x2t, y3 - y1);
@@ -208,6 +209,10 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         protected Rectangle ColumnHeadersBounds { get { this._InnerBoundsCheck(); return this._ColumnHeadersBounds; } } private Rectangle _ColumnHeadersBounds;
         /// <summary>
+        /// Vizuální souřadnice prostoru řádků (RowHeader + RowData)
+        /// </summary>
+        protected Rectangle RowBounds { get { this._InnerBoundsCheck(); return this._RowBounds; } } private Rectangle _RowBounds;
+        /// <summary>
         /// Vizuální souřadnice prostoru záhlaví řádků (RowHeader)
         /// </summary>
         protected Rectangle RowHeadersBounds { get { this._InnerBoundsCheck(); return this._RowHeadersBounds; } } private Rectangle _RowHeadersBounds;
@@ -248,6 +253,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                 case TableAreaType.Table: return new Rectangle(new Point(0, 0), this.Bounds.Size);
                 case TableAreaType.TableHeader: return this.TableHeaderBounds;
                 case TableAreaType.ColumnHeaders: return this.ColumnHeadersBounds;
+                case TableAreaType.Row: return this.RowBounds;
                 case TableAreaType.RowHeaders: return this.RowHeadersBounds;
                 case TableAreaType.RowData: return this.RowDataBounds;
                 case TableAreaType.Cell: return this.RowDataBounds;

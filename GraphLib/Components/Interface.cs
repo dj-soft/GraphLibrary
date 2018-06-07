@@ -110,12 +110,12 @@ namespace Asol.Tools.WorkScheduler.Components
         GInteractiveDrawLayer RepaintToLayers { get; set; }
         /// <summary>
         /// Vrátí true, pokud daný prvek je aktivní na dané souřadnici.
-        /// Souřadnice je v koordinátech Controlu, tedy z hlediska prvku jde o souřadnici srovnatelnou s AbsoluteInteractiveBounds.
+        /// Souřadnice je v koordinátech Parenta prvku, je tedy srovnatelná s <see cref="IInteractiveItem.Bounds"/>.
         /// Pokud prvek má nepravidelný tvar, musí testovat tento tvar v této své metodě explicitně.
         /// </summary>
-        /// <param name="absolutePoint">Point v Controlu (=this.Host), v jeho souřadném systému</param>
+        /// <param name="relativePoint">Bod, který testujeme, v koordinátech srovnatelných s <see cref="IInteractiveItem.Bounds"/></param>
         /// <returns></returns>
-        Boolean IsActiveAtAbsolutePoint(Point absolutePoint);
+        Boolean IsActiveAtAbsolutePoint(Point relativePoint);
         /// <summary>
         /// This method is called after any interactive change
         /// </summary>

@@ -104,7 +104,12 @@ namespace Asol.Tools.WorkScheduler.Components
         public virtual Rectangle? AbsoluteInteractiveBounds
         {
             get { return this.__AbsoluteInteractiveBounds; }
-            set { this.__AbsoluteInteractiveBounds = value; }
+            set
+            {
+                if (this.GetType().Name == "GRow")
+                { }
+                this.__AbsoluteInteractiveBounds = value;
+            }
         }
         /// <summary>
         /// Inner border between this Bounds and Childs area.

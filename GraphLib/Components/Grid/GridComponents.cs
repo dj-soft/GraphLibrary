@@ -71,10 +71,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         {
             Application.App.Trace.Info(Application.TracePriority.Priority1_ElementaryTimeDebug, this.GetType().Name, "Draw", "Component", this.ToString(), "BoundsAbsolute: " + boundsAbsolute.ToString());
 
-            if (this.NeedDebug)
-            { }
-
-            if (!this.GraphicClip(e, boundsAbsolute)) return;                  // Není kam kreslit (oříznutí souřadnic vrátílo nulu)
+            if (!this.GraphicClip(e, boundsAbsolute)) return;                  // Není kam kreslit (oříznutí souřadnic vrátilo nulu)
 
             int? opacity = (e.DrawLayer == GInteractiveDrawLayer.Standard ? (int?)null : (int?)128);
             this.DrawContent(e, boundsAbsolute, false, opacity);
@@ -869,7 +866,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <summary>
         /// Typ prvku.
         /// </summary>
-        protected override TableAreaType ComponentType { get { return TableAreaType.RowData; } }
+        protected override TableAreaType ComponentType { get { return TableAreaType.Row; } }
         #endregion
         #region Public rozhraní
         /// <summary>
@@ -958,6 +955,20 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         protected override IEnumerable<IInteractiveItem> Childs { get { return this._ChildItems; } }
         #endregion
+
+        public override Rectangle Bounds
+        {
+            get
+            {
+                return base.Bounds;
+            }
+
+            set
+            {
+                base.Bounds = value;
+            }
+        }
+
     }
     #endregion
     #region Třída GRowHeader : vizuální třída pro zobrazování záhlaví řádku
@@ -1146,6 +1157,20 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         protected override RepaintParentMode RepaintParent { get { return RepaintParentMode.Always; } }
         #endregion
+
+        public override Rectangle Bounds
+        {
+            get
+            {
+                return base.Bounds;
+            }
+
+            set
+            {
+                base.Bounds = value;
+            }
+        }
+
     }
     #endregion
     #region Třída GCell : vizuální třída pro zobrazení obsahu buňky tabulky
@@ -1361,6 +1386,10 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// Záhlaví sloupce
         /// </summary>
         ColumnHeaders,
+        /// <summary>
+        /// Prostor pro řádky: (záhlaví + data)
+        /// </summary>
+        Row,
         /// <summary>
         /// Záhlaví řádku
         /// </summary>
