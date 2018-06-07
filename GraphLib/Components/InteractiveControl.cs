@@ -1414,6 +1414,8 @@ namespace Asol.Tools.WorkScheduler.Components
                     if (itemLayers.HasFlag(GInteractiveDrawLayer.Dynamic))
                         this.DynamicItems.Add(new DrawRequestItem(absoluteItemOffset, absoluteVisibleClip, item));
 
+                    item.RepaintToLayers = GInteractiveDrawLayer.None;
+
                     // Pokud má prvek potomstvo, vyřešíme i to:
                     //  Child items budou zkontrolovány i tehdy, když jejich Parent prvek není kreslen, to je základní princip Layered Control!
                     IEnumerable<IInteractiveItem> childs = item.Childs;        // get_Childs() method we call only once during Draw.
@@ -1466,7 +1468,11 @@ namespace Asol.Tools.WorkScheduler.Components
                     ((interactive & !drawAllItems) ? item.RepaintToLayers :
                     ((interactive & drawAllItems) ? (item.StandardDrawToLayer | item.RepaintToLayers) :
                      item.StandardDrawToLayer));
-                return (itemLayers | parentLayers);        // Child item is everytime drawed into same layers, as its parent...
+
+                // Pokud item se kreslit nemusí nikam (itemLayers je None), ale jeho parent se už někam kreslí (parentLayers něco obsahuje), 
+                //  pak i item (jako Child od toho Parenta) se musí kreslit do týchž vrstev jako Parent,
+                //  protože jinak by tam namísto prvku item byla díra!
+                return (itemLayers | parentLayers);
             }
         }
         /// <summary>
