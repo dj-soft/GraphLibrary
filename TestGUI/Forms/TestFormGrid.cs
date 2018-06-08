@@ -433,7 +433,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             graph.GraphParameters.OneLineHeight = 18;
             graph.GraphParameters.TotalHeightRange = new Int32NRange(35, 480);
             graph.GraphParameters.TimeAxisMode = TimeGraphTimeAxisMode.LogarithmicScale;
-            graph.GraphParameters.LogarithmicRatio = 0.80f;
+            graph.GraphParameters.LogarithmicRatio = 0.50f;
 
             DateTime begin, end;
             GTimeGraphItem item;
