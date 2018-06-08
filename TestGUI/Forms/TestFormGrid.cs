@@ -274,11 +274,11 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                     nameCell.ToolTip = nazev;
                     nameCell.ToolTipImage = image;
 
-                    GTimeGraph graph1 = this._PrepareGraphZ(now);
-                    row.BackgroundValue = graph1;
+                    row.BackgroundValue = this._PrepareGraphZ(now, false, 4);
 
                     table.AddRow(row);
                 }
+                table.GraphDefaultTimeAxisMode = TimeGraphTimeAxisMode.LogarithmicScale;
 
             }
             return table;
@@ -425,43 +425,71 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             return graph;
         }
-        private GTimeGraph _PrepareGraphZ(DateTime now)
+        private GTimeGraph _PrepareGraphZ(DateTime now, bool withShift, int taskCount)
         {
             GTimeGraph graph = new GTimeGraph();
 
             graph.GraphLineHeight = 18;
             graph.GraphTotalHeightRange = new Int32NRange(35, 480);
+            graph.TimeAxisMode = TimeGraphTimeAxisMode.LogarithmicScale;
 
             DateTime begin, end;
             GTimeGraphItem item;
 
+            // Směny:
             int workLayer = 0;
             DateTime workBegin = now.Date.AddDays(-1d);
             DateTime workEnd = workBegin.AddDays(62d);
-            while (workBegin < workEnd)
+            if (withShift)
             {
-                begin = workBegin.AddHours(6d);
-                end = workBegin.AddHours(14d);
-
-                item = new GTimeGraphItem();
-                item.Layer = workLayer;
-                item.Level = 0;
-                item.GroupId = item.ItemId;
-                item.Time = new TimeRange(begin, end);
-                item.Height = 5f;
-                item.ToolTip = "Ranní směna";
-                item.BackColor = Color.FromArgb(240, 240, 255);
-                item.BorderColor = Color.Green;
-                graph.ItemList.Add(item);
-
-                for (int t = 0; t < 7; t++)
+                while (workBegin < workEnd)
                 {
-                    workBegin = workBegin.AddDays(1d);
-                    if (workBegin.DayOfWeek == DayOfWeek.Saturday || workBegin.DayOfWeek == DayOfWeek.Saturday) continue;
-                    break;
+                    begin = workBegin.AddHours(6d);
+                    end = workBegin.AddHours(14d);
+
+                    item = new GTimeGraphItem();
+                    item.Layer = workLayer;
+                    item.Level = 0;
+                    item.GroupId = item.ItemId;
+                    item.Time = new TimeRange(begin, end);
+                    item.Height = 1f;
+                    item.ToolTip = "Ranní směna";
+                    item.BackColor = Color.FromArgb(192, 255, 192);
+                    item.BorderColor = Color.FromArgb(128, 160, 128);
+                    graph.ItemList.Add(item);
+
+                    for (int t = 0; t < 7; t++)
+                    {
+                        workBegin = workBegin.AddDays(1d);
+                        if (workBegin.DayOfWeek == DayOfWeek.Saturday || workBegin.DayOfWeek == DayOfWeek.Saturday) continue;
+                        break;
+                    }
                 }
             }
-            
+
+            // Nějaký ten pracovní úkol:
+            DateTime start = now.AddMinutes(15 * Rand.Next(0, 14 * 24 * 4));
+            for (int t = 0; t < taskCount; t++)
+            {
+                begin = start.AddMinutes(15 * Rand.Next(0, 14 * 24 * 4));
+                end = begin.AddMinutes(15 * Rand.Next(16, 5 * 24 * 4));
+
+                item = new GTimeGraphItem();
+                item.Layer = 1;
+                item.Level = 0;
+                item.Order = 0;
+                item.GroupId = t;
+                item.Time = new TimeRange(begin, end);
+                item.Height = 0.5f;
+                item.ToolTip = "Přiřazen k operaci " + (10 * (t + 1)).ToString();
+                item.BackColor = Color.FromArgb(216, 160, 160);
+                item.BorderColor = Color.Black;
+
+                graph.ItemList.Add(item);
+
+                start = end.AddMinutes(15 * Rand.Next(4, 1 * 24 * 4));
+            }
+
             return graph;
         }
         private Random Rand;
