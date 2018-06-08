@@ -278,8 +278,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
                     table.AddRow(row);
                 }
-                table.GraphDefaultTimeAxisMode = TimeGraphTimeAxisMode.LogarithmicScale;
-
+                table.GraphParameters.TimeAxisMode = TimeGraphTimeAxisMode.LogarithmicScale;
             }
             return table;
         }
@@ -307,8 +306,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         {
             GTimeGraph graph = new GTimeGraph();
 
-            graph.GraphLineHeight = 18;
-            graph.GraphTotalHeightRange = new Int32NRange(35, 480);
+            graph.GraphParameters = TimeGraphParameters.Default;
+            graph.GraphParameters.OneLineHeight = 18;
+            graph.GraphParameters.TotalHeightRange = new Int32NRange(35, 480);
 
             DateTime begin, end;
             GTimeGraphItem item;
@@ -429,9 +429,11 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         {
             GTimeGraph graph = new GTimeGraph();
 
-            graph.GraphLineHeight = 18;
-            graph.GraphTotalHeightRange = new Int32NRange(35, 480);
-            graph.TimeAxisMode = TimeGraphTimeAxisMode.LogarithmicScale;
+            graph.GraphParameters = TimeGraphParameters.Default;
+            graph.GraphParameters.OneLineHeight = 18;
+            graph.GraphParameters.TotalHeightRange = new Int32NRange(35, 480);
+            graph.GraphParameters.TimeAxisMode = TimeGraphTimeAxisMode.LogarithmicScale;
+            graph.GraphParameters.LogarithmicRatio = 0.80f;
 
             DateTime begin, end;
             GTimeGraphItem item;
@@ -482,8 +484,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 item.Time = new TimeRange(begin, end);
                 item.Height = 0.5f;
                 item.ToolTip = "Přiřazen k operaci " + (10 * (t + 1)).ToString();
-                item.BackColor = Color.FromArgb(216, 160, 160);
-                item.BorderColor = Color.Black;
+                item.BackColor = Color.FromArgb(192, 192, 216);
+                item.BorderColor = Color.FromArgb(128, 128, 160);
 
                 graph.ItemList.Add(item);
 
