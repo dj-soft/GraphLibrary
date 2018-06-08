@@ -742,14 +742,14 @@ namespace Asol.Tools.WorkScheduler.Components
             int width = (int)(((1f - this.GraphParameters.LogarithmicRatio) / 2f) * (float)boundsAbsolute.Width);
 
             Rectangle leftBounds = new Rectangle(boundsAbsolute.X, boundsAbsolute.Y, width, boundsAbsolute.Height);
-            Rectangle leftBoundsG = leftBounds; leftBoundsG.X = leftBoundsG.X - 1;              // To je úchylka WinFormů
+            Rectangle leftBoundsG = leftBounds.Enlarge(1, 0, 0, 1);                      // To je úchylka WinFormů
             using (System.Drawing.Drawing2D.LinearGradientBrush lgb = new System.Drawing.Drawing2D.LinearGradientBrush(leftBoundsG, color2, color1, 00f))
             {
                 e.Graphics.FillRectangle(lgb, leftBounds);
             }
 
             Rectangle rightBounds = new Rectangle(boundsAbsolute.Right - width, boundsAbsolute.Y, width, boundsAbsolute.Height);
-            Rectangle rightBoundsG = rightBounds; rightBoundsG.X = rightBoundsG.X - 1;          // To je úchylka WinFormů
+            Rectangle rightBoundsG = rightBounds.Enlarge(1, 0, 0, 1);                    // To je úchylka WinFormů
             using (System.Drawing.Drawing2D.LinearGradientBrush rgb = new System.Drawing.Drawing2D.LinearGradientBrush(rightBoundsG, color2, color1, 180f))
             {
                 e.Graphics.FillRectangle(rgb, rightBounds);
