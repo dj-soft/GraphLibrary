@@ -727,8 +727,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="boundsAbsolute"></param>
         protected virtual void DrawBackground(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
         {
-            if (this.GraphParameters.TimeAxisMode == TimeGraphTimeAxisMode.LogarithmicScale)
-                this.DrawBackgroundLogarithmic(e, boundsAbsolute);
+            switch (this.GraphParameters.TimeAxisMode)
+            {
+                case TimeGraphTimeAxisMode.LogarithmicScale:
+                    this.DrawBackgroundLogarithmic(e, boundsAbsolute);
+                    break;
+            }
         }
         /// <summary>
         /// Metoda umožní udělat něco s pozadím grafu, který má logaritmickou osu
@@ -737,8 +741,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="boundsAbsolute"></param>
         protected virtual void DrawBackgroundLogarithmic(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
         {
+            float shadow = this.GraphParameters.LogarithmicGraphDrawOuterShadow;
+            if (shadow <= 0f) return;
+            int alpha = (int)(255f * shadow);
             Color color1 = Color.FromArgb(0, 0, 0, 0);
-            Color color2 = Color.FromArgb(48, 0, 0, 0);
+            Color color2 = Color.FromArgb(alpha, 0, 0, 0);
             int width = (int)(((1f - this.GraphParameters.LogarithmicRatio) / 2f) * (float)boundsAbsolute.Width);
 
             Rectangle leftBounds = new Rectangle(boundsAbsolute.X, boundsAbsolute.Y, width, boundsAbsolute.Height);
@@ -1476,6 +1483,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this._TimeAxisTickIsVisible = true;
             this._OneLineHeight = Skin.Graph.LineHeight;
             this._LogarithmicRatio = 0.60f;
+            this._LogarithmicGraphDrawOuterShadow = 0.20f;
         }
         /// <summary>
         /// Režim zobrazování času na ose X
@@ -1538,7 +1546,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         private Int32NRange _TotalHeightRange;
         /// <summary>
-        /// Rozsah lineární části grafu uprostřed logaritmické časové osy.
+        /// Logaritmická časová osa: Rozsah lineární části grafu uprostřed logaritmické časové osy.
         /// Default = 0.60f, povolené rozmezí od 0.40f po 0.90f.
         /// </summary>
         public float LogarithmicRatio
@@ -1547,6 +1555,17 @@ namespace Asol.Tools.WorkScheduler.Components
             set { float v = value; this._LogarithmicRatio = (v < 0.4f ? 0.4f : (v > 0.9f ? 0.9f : v)); }
         }
         private float _LogarithmicRatio;
+        /// <summary>
+        /// Logaritmická časová osa: vykreslovat vystínování oblastí s logaritmickým měřítkem osy (tedy ty levé a pravé okraje, kde již neplatí lineární měřítko).
+        /// Zde se zadává hodnota 0 až 1, která reprezentuje úroven vystínování těchto okrajů.
+        /// Hodnota 0 = žádné stínování, hodnota 1 = krajní pixel je zcela černý. Default hodnota = 0.20f.
+        /// </summary>
+        public float LogarithmicGraphDrawOuterShadow
+        {
+            get { return this._LogarithmicGraphDrawOuterShadow; }
+            set { float v = value; this._LogarithmicGraphDrawOuterShadow = (v < 0.0f ? 0.0f : (v > 1.0f ? 1.0f : v)); }
+        }
+        private float _LogarithmicGraphDrawOuterShadow;
 
     }
     #endregion

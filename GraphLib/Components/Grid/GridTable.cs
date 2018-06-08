@@ -1693,7 +1693,8 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             VisualStyle style = ((IVisualMember)this.DataTable).Style;
             Color color = style.BorderColor ?? Skin.Grid.BorderLineColor;
             BorderLinesType linesType = style.BorderLines ?? Skin.Grid.BorderLineType;
-            GPainter.DrawBorder(e.Graphics, boundsAbsolute, RectangleSide.Right | RectangleSide.Bottom, null, color, null);
+            RectangleSide side = GetSidesFromLines(linesType);
+            GPainter.DrawBorder(e.Graphics, boundsAbsolute, side, null, color, null);
             if (cell.Row.IsActive)
             {
                 Rectangle boundsActive = boundsAbsolute.Enlarge(0, 0, 0, -1);
@@ -1701,7 +1702,15 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                 Color colorBottom = color.Morph(Skin.Modifiers.Effect3DLight, Skin.Modifiers.Effect3DRatio);
                 GPainter.DrawBorder(e.Graphics, boundsActive, RectangleSide.Top | RectangleSide.Bottom, null, colorTop, null, colorBottom, null);
             }
-            // this.Host.DrawBorder(e.Graphics, boundsAbsolute, color, linesType, true);
+        }
+        protected static RectangleSide GetSidesFromLines(BorderLinesType linesType)
+        {
+            RectangleSide side = RectangleSide.None;
+            if (((linesType & (BorderLinesType.HorizontalSolid | BorderLinesType.HorizontalDotted | BorderLinesType.Horizontal3DSunken | BorderLinesType.Horizontal3DRisen))) != 0)
+                side |= RectangleSide.Bottom;
+            if (((linesType & (BorderLinesType.VerticalSolid | BorderLinesType.VerticalDotted | BorderLinesType.Vertical3DSunken | BorderLinesType.Vertical3DRisen))) != 0)
+                side |= RectangleSide.Right;
+            return side;
         }
         /// <summary>
         /// Vrátí barvu pozadí pro danou definici a vizuální styl.

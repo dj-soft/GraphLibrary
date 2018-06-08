@@ -897,10 +897,20 @@ namespace Asol.Tools.WorkScheduler.Data
         #endregion
         #region Visual style
         /// <summary>
-        /// Všechny vizuální vlastnosti dat v tomto sloupci (nikoli hlavičky).
-        /// Default hodnota je null.
+        /// Všechny vizuální vlastnosti dat v této tabulce.
+        /// Tato property je autoinicializační = nikdy není null.
         /// </summary>
-        public VisualStyle VisualStyle { get { return _VisualStyle; } set { _VisualStyle = value; } } private VisualStyle _VisualStyle = null;
+        public VisualStyle VisualStyle
+        {
+            get
+            {
+                if (this._VisualStyle == null)
+                    this._VisualStyle = new VisualStyle();
+                return this._VisualStyle;
+            }
+            set { this._VisualStyle = value; }
+        }
+        private VisualStyle _VisualStyle = null;
         VisualStyle IVisualMember.Style
         {
             get
