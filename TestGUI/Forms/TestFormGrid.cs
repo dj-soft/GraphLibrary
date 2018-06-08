@@ -278,7 +278,17 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
                     table.AddRow(row);
                 }
+
                 table.GraphParameters.TimeAxisMode = TimeGraphTimeAxisMode.LogarithmicScale;
+                table.GraphParameters.OneLineHeight = 18;
+                table.GraphParameters.TotalHeightRange = new Int32NRange(35, 480);
+                table.GraphParameters.TimeAxisMode = TimeGraphTimeAxisMode.LogarithmicScale;
+                table.GraphParameters.LogarithmicRatio = 0.70f;
+                table.GraphParameters.LogarithmicGraphDrawOuterShadow = 0.30f;
+
+                table.VisualStyle.BorderLines = BorderLinesType.HorizontalSolid;
+
+
             }
             return table;
         }
@@ -429,11 +439,13 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         {
             GTimeGraph graph = new GTimeGraph();
 
+            /*
             graph.GraphParameters = TimeGraphParameters.Default;
             graph.GraphParameters.OneLineHeight = 18;
             graph.GraphParameters.TotalHeightRange = new Int32NRange(35, 480);
             graph.GraphParameters.TimeAxisMode = TimeGraphTimeAxisMode.LogarithmicScale;
             graph.GraphParameters.LogarithmicRatio = 0.50f;
+            */
 
             DateTime begin, end;
             GTimeGraphItem item;
@@ -484,8 +496,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 item.Time = new TimeRange(begin, end);
                 item.Height = 0.5f;
                 item.ToolTip = "Přiřazen k operaci " + (10 * (t + 1)).ToString();
-                item.BackColor = Color.FromArgb(192, 192, 216);
-                item.BorderColor = Color.FromArgb(128, 128, 160);
+                item.BackColor = Color.FromArgb(216, 192, 255);
+                item.BorderColor = Color.FromArgb(140, 128, 160);
 
                 graph.ItemList.Add(item);
 
