@@ -796,13 +796,23 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public Image SelectedRowImage { get { return this._SelectedRowImage; } set { this._SelectedRowImage = value; } } private Image _SelectedRowImage = IconStandard.RowSelected;
         /// <summary>
-        /// Výchozí režim zobrazování časové osy v časových grafech, které jsou zobrazeny v řádcích jako graf pro hodnotu <see cref="Row.BackgroundValue"/>.
+        /// Defaultní parametry pro grafy v tomto sloupci.
+        /// Tato property nikdy není null.
         /// </summary>
-        public TimeGraphTimeAxisMode GraphDefaultTimeAxisMode { get { return this._GraphDefaultTimeAxisMode; } set { this._GraphDefaultTimeAxisMode = value; } } private TimeGraphTimeAxisMode _GraphDefaultTimeAxisMode = TimeGraphTimeAxisMode.Standard;
-        /// <summary>
-        /// Výchozí režim zobrazování časových značek v časových grafech, které jsou zobrazeny v řádcích jako graf pro hodnotu <see cref="Row.BackgroundValue"/>.
-        /// </summary>
-        public bool GraphDefaultTimeAxisTickIsVisible { get { return this._GraphDefaultTimeAxisTickIsVisible; } set { this._GraphDefaultTimeAxisTickIsVisible = value; } } private bool _GraphDefaultTimeAxisTickIsVisible = true;
+        public TimeGraphParameters GraphParameters
+        {
+            get
+            {
+                if (this._GraphParameters == null)
+                    this._GraphParameters = TimeGraphParameters.Default;
+                return this._GraphParameters;
+            }
+            set
+            {
+                this._GraphParameters = value;
+            }
+        }
+        private TimeGraphParameters _GraphParameters;
         /// <summary>
         /// Provede se poté, kdy uživatel klikne na záhlaví tabulky = buňka v křížení ColumnHeader * RowHeader.
         /// </summary>
@@ -1189,14 +1199,10 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public bool UseTimeAxis { get { return this._UseTimeAxis; } set { this._UseTimeAxis = value; } } private bool _UseTimeAxis;
         /// <summary>
-        /// Výchozí režim zobrazování časové osy v časových grafech tohoto sloupce
+        /// Defaultní parametry pro grafy v tomto sloupci.
+        /// Tato property může být null.
         /// </summary>
-        public TimeGraphTimeAxisMode GraphDefaultTimeAxisMode { get { return this._GraphDefaultTimeAxisMode; } set { this._GraphDefaultTimeAxisMode = value; } } private TimeGraphTimeAxisMode _GraphDefaultTimeAxisMode = TimeGraphTimeAxisMode.Standard;
-        /// <summary>
-        /// Výchozí režim zobrazování časových značek v časových grafech tohoto sloupce
-        /// </summary>
-        public bool GraphDefaultTimeAxisTickIsVisible { get { return this._GraphDefaultTimeAxisTickIsVisible; } set { this._GraphDefaultTimeAxisTickIsVisible = value; } } private bool _GraphDefaultTimeAxisTickIsVisible = true;
-
+        public TimeGraphParameters GraphParameters { get { return this._GraphParameters; } set { this._GraphParameters = value; } } private TimeGraphParameters _GraphParameters;
         /// <summary>
         /// Komparátor ColumnOrder ASC
         /// </summary>

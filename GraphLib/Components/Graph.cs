@@ -70,112 +70,64 @@ namespace Asol.Tools.WorkScheduler.Components
             base.SetBoundsPrepareInnerItems(oldBounds, newBounds, ref actions, eventSource);
         }
         #endregion
-        #region Definice grafu, jeho vlastnosti, režim kreslení atd
+        #region GUI grafu
         /// <summary>
-        /// Režim zobrazování času na ose X
+        /// Parametry pro tento graf.
+        /// Buď jsou uloženy přímo zde jako explicitní, nebo jsou načteny z parenta, nebo jsou použity defaultní.
+        /// Nikdy nevrací null.
+        /// Lze setovat parametry, nebo null.
         /// </summary>
-        public TimeGraphTimeAxisMode TimeAxisMode
+        public TimeGraphParameters GraphParameters
         {
             get
             {
-                TimeGraphTimeAxisMode result = TimeGraphTimeAxisMode.Default;
-                if (this._TimeAxisMode.HasValue)
-                    result = this._TimeAxisMode.Value;
-                if (result == TimeGraphTimeAxisMode.Default)
-                    result = this._GetParentTimeAxisMode();
-                if (result == TimeGraphTimeAxisMode.Default)
-                    result = TimeGraphTimeAxisMode.Standard;
-                return result;
+                TimeGraphParameters gp = this._GraphParameters;
+                if (gp == null)
+                    gp = this._SearchParentGraphParameters();
+                if (gp == null)
+                    gp = this._GetDefaultGraphParameters();
+                return gp;
             }
             set
             {
-                TimeGraphTimeAxisMode oldValue = this.TimeAxisMode;
-                this._TimeAxisMode = (value != TimeGraphTimeAxisMode.Default ? (TimeGraphTimeAxisMode?)value : (TimeGraphTimeAxisMode?)null);
-                TimeGraphTimeAxisMode newValue = this.TimeAxisMode;
-
-                if (oldValue != newValue)
-                {
-                    this.InvalidateVisibleList();
-                    this.Repaint();
+                this._GraphParameters = value;
+            }
+        }
+        private TimeGraphParameters _SearchParentGraphParameters()
+        {
+            TimeGraphParameters gp = null;
+            IInteractiveParent parent = this.Parent;
+            if (parent != null)
+            {
+                if (parent is Grid.GCell)
+                {   // Graf je umístěn v buňce => hledáme GraphParameters v sloupci a poté v tabulce:
+                    Grid.GCell gCell = parent as Grid.GCell;
+                    Column column = gCell.OwnerColumn;
+                    if (column != null)
+                    {
+                        gp = column.GraphParameters;
+                        if (gp == null && column.HasTable)
+                            gp = column.Table.GraphParameters;
+                    }
+                }
+                else if (parent is Grid.GRow)
+                {   // Graf je umístěn v řádku => hledáme GraphParameters v tabulce:
+                    Grid.GRow gRow = parent as Grid.GRow;
+                    Table table = gRow.OwnerTable;
+                    if (table != null)
+                        gp = table.GraphParameters;
                 }
             }
+            return gp;
         }
-        private TimeGraphTimeAxisMode? _TimeAxisMode;
-        /// <summary>
-        /// Metoda vrátí režim časové osy z vhodného parenta.
-        /// Pokud nenajde, vrátí <see cref="TimeGraphTimeAxisMode.Default"/>
-        /// </summary>
-        /// <returns></returns>
-        private TimeGraphTimeAxisMode _GetParentTimeAxisMode()
+        private TimeGraphParameters _GetDefaultGraphParameters()
         {
-            IInteractiveParent parent = this.Parent;
-            if (parent == null) return TimeGraphTimeAxisMode.Default;
-            if (parent is Grid.GCell)
-            {   // Graf je umístěn v buňce: default typ časové osy grafu je uváděn ve sloupci, do něhož tato buňka patří:
-                Grid.GCell gCell = parent as Grid.GCell;
-                Column column = gCell.OwnerColumn;
-                if (column != null) return column.GraphDefaultTimeAxisMode;
-            }
-            if (parent is Grid.GRow)
-            {   // Graf je umístěn v řádku: default typ časové osy grafu je uváděn v tabulce, do které tento řádek patří:
-                Grid.GRow gRow = parent as Grid.GRow;
-                Table table = gRow.OwnerTable;
-                if (table != null) return table.GraphDefaultTimeAxisMode;
-            }
-            return TimeGraphTimeAxisMode.Default;
+            if (this._GraphParametersDefault == null)
+                this._GraphParametersDefault = TimeGraphParameters.Default;
+            return this._GraphParametersDefault;
         }
-        /// <summary>
-        /// true pokud mají být v grafu zobrazovány časové linky (Ticks).
-        /// Pro graf s režimem osy <see cref="TimeAxisMode"/> == <see cref="TimeGraphTimeAxisMode.Standard"/> 
-        /// jsou souřadnice značek převzaty z jejich dat napřímo.
-        /// Pro graf s režimem osy <see cref="TimeAxisMode"/> == <see cref="TimeGraphTimeAxisMode.ProportionalScale"/> 
-        /// jsou souřadnice značek přepočteny do aktuálního prostoru.
-        /// Pro graf s režimem osy <see cref="TimeAxisMode"/> == <see cref="TimeGraphTimeAxisMode.LogarithmicScale"/> 
-        /// nejsou časové značky nikdy vykreslovány.
-        /// </summary>
-        public bool TimeAxisTickIsVisible
-        {
-            get
-            {
-                TimeGraphTimeAxisMode timeAxisMode = this.TimeAxisMode;
-                if (timeAxisMode == TimeGraphTimeAxisMode.LogarithmicScale) return false;          // Tento typ grafu (LogarithmicScale) nikdy nemá TimeAxisTick
-
-                if (this._TimeAxisTickIsVisible.HasValue) return this._TimeAxisTickIsVisible.Value;
-                return this._GetParentTimeAxisTickIsVisible();
-            }
-            set
-            {
-                bool oldValue = this.TimeAxisTickIsVisible;
-                this._TimeAxisTickIsVisible = value;
-                bool newValue = this.TimeAxisTickIsVisible;
-                if (oldValue != newValue)
-                    this.Repaint();
-            }
-        }
-        private bool? _TimeAxisTickIsVisible;
-        /// <summary>
-        /// Metoda vrátí viditelnost časových značek z vhodného parenta.
-        /// Pokud nenajde, vrátí true.
-        /// </summary>
-        /// <returns></returns>
-        private bool _GetParentTimeAxisTickIsVisible()
-        {
-            IInteractiveParent parent = this.Parent;
-            if (parent == null) return true;
-            if (parent is Grid.GCell)
-            {   // Graf je umístěn v buňce: viditelnost časových značek grafu je uváděna ve sloupci, do něhož tato buňka patří:
-                Grid.GCell gCell = parent as Grid.GCell;
-                Column column = gCell.OwnerColumn;
-                if (column != null) return column.GraphDefaultTimeAxisTickIsVisible;
-            }
-            if (parent is Grid.GRow)
-            {   // Graf je umístěn v řádku: viditelnost časových značek grafu je uváděna v tabulce, do které tento řádek patří:
-                Grid.GRow gRow = parent as Grid.GRow;
-                Table table = gRow.OwnerTable;
-                if (table != null) return table.GraphDefaultTimeAxisTickIsVisible;
-            }
-            return true;
-        }
+        private TimeGraphParameters _GraphParameters;
+        private TimeGraphParameters _GraphParametersDefault;
         #endregion
         #region TimeAxis : Kontrola platnosti, paměť Identity časové osy
         /// <summary>
@@ -434,7 +386,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         /// <summary>
         /// Vrací true, pokud data v seznamu <see cref="VisibleList"/> jsou platná.
-        /// Zohledňuje i stav <see cref="VisibleList"/>, <see cref="VisibleListLastWidth"/>, <see cref="TimeAxisMode"/>.
+        /// Zohledňuje i stav <see cref="VisibleList"/>, <see cref="VisibleListLastWidth"/>, <see cref="GraphParameters"/>: <see cref="TimeGraphParameters.TimeAxisMode"/>.
         /// Hodnotu lze nastavit, ale i když se vloží true, může se vracet false (pokud výše uvedené není platné).
         /// </summary>
         protected bool IsValidVisibleList
@@ -443,7 +395,7 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 if (this.VisibleList == null) return false;
                 if (!this.VisibleListLastWidth.HasValue || this.ClientSize.Width != this.VisibleListLastWidth.Value) return false;
-                if (!this.VisibleListLastTimeAxisMode.HasValue || this.TimeAxisMode != this.VisibleListLastTimeAxisMode.Value) return false;
+                if (!this.VisibleListLastTimeAxisMode.HasValue || this.GraphParameters.TimeAxisMode != this.VisibleListLastTimeAxisMode.Value) return false;
                 return this._IsValidVisibleList;
             }
             set
@@ -460,7 +412,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this.VisibleList = new List<List<GTimeGraphGroup>>();
             ITimeConvertor timeConvertor = this._TimeConvertor;
             if (timeConvertor == null) return;
-            TimeGraphTimeAxisMode timeAxisMode = this.TimeAxisMode;
+            TimeGraphTimeAxisMode timeAxisMode = this.GraphParameters.TimeAxisMode;
 
             using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "ItemsRecalculateVisibleList", ""))
             {
@@ -559,8 +511,9 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             ITimeConvertor timeConvertor = this._TimeConvertor;
             int size = this.Bounds.Width;
-            float proportionalRatio = 0.60f;
-            if (group.IsValidRealTime)           // Pozor: režim Logarithmic zajistí, že zobrazeny budou VŠECHNY prvky, takže prvky nefiltrujeme na VisibleTime.HasIntersect() !
+            float proportionalRatio = this.GraphParameters.LogarithmicRatio;
+            // Pozor: režim Logarithmic zajistí, že zobrazeny budou VŠECHNY prvky, takže prvky nefiltrujeme s ohledem na jejich čas : VisibleTime.HasIntersect() !
+            if (group.IsValidRealTime)
             {
                 groups++;
                 Int32Range y = this.CalculatorYGetRange(group.LogicalY);
@@ -578,7 +531,6 @@ namespace Asol.Tools.WorkScheduler.Components
                 visibleItems.Add(group);
             }
         }
-
         /// <summary>
         /// Seznam všech aktuálně viditelných prvků v grafu.
         /// Seznam má dvojitou úroveň: v první úrovni jsou vizuální vrstvy (od spodní po vrchní), 
@@ -591,8 +543,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected int? VisibleListLastWidth { get; set; }
         /// <summary>
-        /// Hodnota <see cref="TimeAxisMode"/>, pro kterou jsou platné hodnoty ve <see cref="VisibleList"/>.
-        /// Po změně <see cref="TimeAxisMode"/> dojde k přepočtu dat v tomto seznamu.
+        /// Hodnota <see cref="GraphParameters"/>: <see cref="TimeGraphParameters.TimeAxisMode"/>, pro kterou jsou platné hodnoty ve <see cref="VisibleList"/>.
+        /// Po změně <see cref="GraphParameters"/>: <see cref="TimeGraphParameters.TimeAxisMode"/> dojde k přepočtu dat v tomto seznamu.
         /// </summary>
         protected TimeGraphTimeAxisMode? VisibleListLastTimeAxisMode { get; set; }
         #endregion
@@ -606,48 +558,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Graf nikdy nepracuje se šířkou parenta <see cref="IVisualParent.ClientWidth"/>.
         /// </summary>
         public IVisualParent VisualParent { get { return this._VisualParent; } set { this._VisualParent = value; this.InvalidateVisibleList(); } }
-        /// <summary>
-        /// Fyzická výška jedné logické linky grafu v pixelech.
-        /// Jedna logická linka odpovídá výšce <see cref="ITimeGraphItem.Height"/> = 1.0f.
-        /// Pokud graf obsahuje více položek pro jeden časový úsek (a položky jsou ze stejné vrstvy <see cref="ITimeGraphItem.Layer"/>, pak tyto prvky jsou kresleny nad sebe.
-        /// Výška grafu pak bude součtem výšky těchto prvků (=logická výška), násobená výškou <see cref="GraphLineHeight"/> (pixely na jednotku výšky prvku).
-        /// <para/>
-        /// Lze vložit hodnotu null, pak se bude vracet defaultní výška (<see cref="Skin.Graph.LineHeight"/>).
-        /// Čtení hodnoty nikdy nevrací null, vždy lze pracovat s GraphLineHeight.Value.
-        /// </summary>
-        public int? GraphLineHeight
-        {
-            get { return (this._GraphLineHeight.HasValue ? this._GraphLineHeight.Value : Skin.Graph.LineHeight); }
-            set
-            {
-                int oldValue = this.GraphLineHeight.Value;
-                if (value != null)
-                    this._GraphLineHeight = (value < 5 ? 5 : (value > 500 ? 500 : value));
-                else
-                    this._GraphLineHeight = null;
-                int newValue = this.GraphLineHeight.Value;
-
-                if (newValue != oldValue)
-                {   // Reálně došlo ke změně => přepočteme kalkulátor Y (tím se invalidují viditelné prvky):
-                    this.CalculateYPrepare();
-                }
-            }
-        }
-        private int? _GraphLineHeight;
-        /// <summary>
-        /// Rozmezí výšky celého grafu, v pixelech.
-        /// Výchozí hodnota je null, pak se použije rozmezí <see cref="Skin.Graph.DefaultTotalHeightMin"/> až <see cref="Skin.Graph.DefaultTotalHeightMax"/>
-        /// </summary>
-        public Int32NRange GraphTotalHeightRange
-        {
-            get { return this._GraphTotalHeightRange; }
-            set
-            {
-                this._GraphTotalHeightRange = value;
-                this.CalculateYPrepare();
-            }
-        }
-        private Int32NRange _GraphTotalHeightRange;
         /// <summary>
         /// Aktuální výška dat celého grafu, v pixelech
         /// </summary>
@@ -698,7 +608,7 @@ namespace Asol.Tools.WorkScheduler.Components
             float logSize = logEnd - logBegin;
 
             // Výška dat grafu v pixelech, zarovnaná do patřičných mezí:
-            int pixelSize = this._CalculateYAlignHeight((int)(Math.Ceiling(logSize * (float)this.GraphLineHeight.Value)));
+            int pixelSize = this._CalculateYAlignHeight((int)(Math.Ceiling(logSize * (float)this.GraphParameters.OneLineHeight.Value)));
             this._GraphPixelHeight = pixelSize;
 
             // Výpočty kalkulátoru, invalidace VisibleList:
@@ -709,7 +619,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         /// <summary>
         /// Metoda zajistí zarovnání výšky grafu (v pixelech) do patřičného rozmezí.
-        /// Využívá: rozmezí <see cref="GraphTotalHeightRange"/>, hodnoty Skin.Graph.TotalHeightMin a TotalHeightMax;
+        /// Využívá: rozmezí <see cref="GraphParameters"/>: <see cref="TimeGraphParameters.TotalHeightRange"/>, hodnoty Skin.Graph.TotalHeightMin a TotalHeightMax;
         /// a dále využívá objekt <see cref="VisualParent"/> a jeho <see cref="IVisualParent.ClientHeight"/>
         /// </summary>
         /// <param name="height"></param>
@@ -718,7 +628,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             int result = height;
 
-            Int32NRange range = this.GraphTotalHeightRange;
+            Int32NRange range = this.GraphParameters.TotalHeightRange;
             if (range != null && range.IsReal)
                 result = range.Align(result).Value;
             else
@@ -800,6 +710,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual void DrawContentTimeGraph(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
         {
             this.DrawContentPrepareArgs(e, boundsAbsolute);
+            this.DrawBackground(e, boundsAbsolute);
             using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "DrawContent", ""))
             {
                 this.Bounds = new Rectangle(0, 0, boundsAbsolute.Width, boundsAbsolute.Height);
@@ -807,6 +718,41 @@ namespace Asol.Tools.WorkScheduler.Components
                 e.GraphicsClipWith(boundsAbsolute);
                 this.DrawTicks();
                 this.DrawItems();
+            }
+        }
+        /// <summary>
+        /// Metoda umožní udělat něco s pozadím grafu.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        protected virtual void DrawBackground(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
+        {
+            if (this.GraphParameters.TimeAxisMode == TimeGraphTimeAxisMode.LogarithmicScale)
+                this.DrawBackgroundLogarithmic(e, boundsAbsolute);
+        }
+        /// <summary>
+        /// Metoda umožní udělat něco s pozadím grafu, který má logaritmickou osu
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        protected virtual void DrawBackgroundLogarithmic(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
+        {
+            Color color1 = Color.FromArgb(0, 0, 0, 0);
+            Color color2 = Color.FromArgb(48, 0, 0, 0);
+            int width = (int)(((1f - this.GraphParameters.LogarithmicRatio) / 2f) * (float)boundsAbsolute.Width);
+
+            Rectangle leftBounds = new Rectangle(boundsAbsolute.X, boundsAbsolute.Y, width, boundsAbsolute.Height);
+            Rectangle leftBoundsG = leftBounds; leftBoundsG.X = leftBoundsG.X - 1;              // To je úchylka WinFormů
+            using (System.Drawing.Drawing2D.LinearGradientBrush lgb = new System.Drawing.Drawing2D.LinearGradientBrush(leftBoundsG, color2, color1, 00f))
+            {
+                e.Graphics.FillRectangle(lgb, leftBounds);
+            }
+
+            Rectangle rightBounds = new Rectangle(boundsAbsolute.Right - width, boundsAbsolute.Y, width, boundsAbsolute.Height);
+            Rectangle rightBoundsG = rightBounds; rightBoundsG.X = rightBoundsG.X - 1;          // To je úchylka WinFormů
+            using (System.Drawing.Drawing2D.LinearGradientBrush rgb = new System.Drawing.Drawing2D.LinearGradientBrush(rightBoundsG, color2, color1, 180f))
+            {
+                e.Graphics.FillRectangle(rgb, rightBounds);
             }
         }
         /// <summary>
@@ -825,7 +771,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected void DrawTicks()
         {
-            if (!this.TimeAxisTickIsVisible) return;
+            if (!this.GraphParameters.TimeAxisTickIsVisible) return;
 
             using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "PaintGrid", ""))
             {
@@ -886,7 +832,7 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region ITimeGraph members
         ITimeConvertor ITimeGraph.TimeConvertor { get { return this._TimeConvertor; } set { this._TimeConvertor = value; this.InvalidateVisibleList(); } }
-        int ITimeGraph.UnitHeight { get { return this.GraphLineHeight.Value; } } 
+        int ITimeGraph.UnitHeight { get { return this.GraphParameters.OneLineHeight.Value; } } 
         void ITimeGraph.DrawContentTimeGraph(GInteractiveDrawArgs e, Rectangle boundsAbsolute) { this.DrawContentTimeGraph(e, boundsAbsolute); }
         #endregion
     }
@@ -1186,7 +1132,7 @@ namespace Asol.Tools.WorkScheduler.Components
         TimeRange Time { get; }
         /// <summary>
         /// Relativní výška tohoto prvku. Standardní hodnota = 1.0F. Fyzická výška (v pixelech) jednoho prvku je dána součinem 
-        /// <see cref="Height"/> * <see cref="GTimeGraph.GraphLineHeight"/>.
+        /// <see cref="Height"/> * <see cref="GTimeGraph.GraphParameters"/>: <see cref="TimeGraphParameters.OneLineHeight"/>
         /// Prvky s výškou 0 a menší nebudou vykresleny.
         /// </summary>
         float Height { get; }
@@ -1509,6 +1455,99 @@ namespace Asol.Tools.WorkScheduler.Components
         {
         }
         #endregion
+    }
+    #endregion
+    #region class TimeGraphParameters : třída obsahující vlastnosti vykreslovaného grafu
+    /// <summary>
+    /// TimeGraphParameters : třída obsahující vlastnosti vykreslovaného grafu
+    /// </summary>
+    public class TimeGraphParameters
+    {
+        /// <summary>
+        /// Defaultní nastavení
+        /// </summary>
+        public static TimeGraphParameters Default { get { return new TimeGraphParameters(); } }
+        /// <summary>
+        /// Defaultní konstruktor
+        /// </summary>
+        public TimeGraphParameters()
+        {
+            this._TimeAxisMode = TimeGraphTimeAxisMode.Standard;
+            this._TimeAxisTickIsVisible = true;
+            this._OneLineHeight = Skin.Graph.LineHeight;
+            this._LogarithmicRatio = 0.60f;
+        }
+        /// <summary>
+        /// Režim zobrazování času na ose X
+        /// </summary>
+        public TimeGraphTimeAxisMode TimeAxisMode { get { return this._TimeAxisMode; } set { this._TimeAxisMode = value; } } private TimeGraphTimeAxisMode _TimeAxisMode;
+        /// <summary>
+        /// true pokud mají být v grafu zobrazovány časové linky (Ticks).
+        /// Pro graf s režimem osy <see cref="TimeAxisMode"/> == <see cref="TimeGraphTimeAxisMode.Standard"/> 
+        /// jsou souřadnice značek převzaty z jejich dat napřímo.
+        /// Pro graf s režimem osy <see cref="TimeAxisMode"/> == <see cref="TimeGraphTimeAxisMode.ProportionalScale"/> 
+        /// jsou souřadnice značek přepočteny do aktuálního prostoru.
+        /// Pro graf s režimem osy <see cref="TimeAxisMode"/> == <see cref="TimeGraphTimeAxisMode.LogarithmicScale"/> 
+        /// nejsou časové značky nikdy vykreslovány.
+        /// </summary>
+        public bool TimeAxisTickIsVisible
+        {
+            get
+            {
+                TimeGraphTimeAxisMode timeAxisMode = this.TimeAxisMode;
+                if (timeAxisMode == TimeGraphTimeAxisMode.LogarithmicScale) return false;          // Tento typ grafu (LogarithmicScale) nikdy nemá TimeAxisTick
+                return this._TimeAxisTickIsVisible;
+            }
+            set
+            {
+                this._TimeAxisTickIsVisible = value;
+            }
+        }
+        private bool _TimeAxisTickIsVisible;
+        /// <summary>
+        /// Fyzická výška jedné logické linky grafu v pixelech.
+        /// Jedna logická linka odpovídá výšce <see cref="ITimeGraphItem.Height"/> = 1.0f.
+        /// Pokud graf obsahuje více položek pro jeden časový úsek (a položky jsou ze stejné vrstvy <see cref="ITimeGraphItem.Layer"/>, pak tyto prvky jsou kresleny nad sebe.
+        /// Výška grafu pak bude součtem výšky těchto prvků (=logická výška), násobená výškou <see cref="OneLineHeight"/> (pixely na jednotku výšky prvku).
+        /// <para/>
+        /// Lze vložit hodnotu null, pak se bude vracet defaultní výška (<see cref="Skin.Graph.LineHeight"/>).
+        /// Čtení hodnoty nikdy nevrací null, vždy lze pracovat s GraphLineHeight.Value.
+        /// </summary>
+        public int? OneLineHeight
+        {
+            get { return (this._OneLineHeight.HasValue ? this._OneLineHeight.Value : Skin.Graph.LineHeight); }
+            set
+            {
+                int oldValue = this.OneLineHeight.Value;
+                if (value != null)
+                    this._OneLineHeight = (value < 5 ? 5 : (value > 500 ? 500 : value));
+                else
+                    this._OneLineHeight = null;
+                int newValue = this.OneLineHeight.Value;
+            }
+        }
+        private int? _OneLineHeight;
+        /// <summary>
+        /// Rozmezí výšky celého grafu, v pixelech.
+        /// Výchozí hodnota je null, pak se použije rozmezí <see cref="Skin.Graph.DefaultTotalHeightMin"/> až <see cref="Skin.Graph.DefaultTotalHeightMax"/>
+        /// </summary>
+        public Int32NRange TotalHeightRange
+        {
+            get { return this._TotalHeightRange; }
+            set { this._TotalHeightRange = value; }
+        }
+        private Int32NRange _TotalHeightRange;
+        /// <summary>
+        /// Rozsah lineární části grafu uprostřed logaritmické časové osy.
+        /// Default = 0.60f, povolené rozmezí od 0.40f po 0.90f.
+        /// </summary>
+        public float LogarithmicRatio
+        {
+            get { return this._LogarithmicRatio; }
+            set { float v = value; this._LogarithmicRatio = (v < 0.4f ? 0.4f : (v > 0.9f ? 0.9f : v)); }
+        }
+        private float _LogarithmicRatio;
+
     }
     #endregion
 }

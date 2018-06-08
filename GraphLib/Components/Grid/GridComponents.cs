@@ -165,6 +165,71 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         protected int DrawInsertMarkAtEnd { get; set; }
         #endregion
+        #region Statické metody
+        /// <summary>
+        /// Zajistí přípravu jednoho prvku.
+        /// Nastaví do něj daného parenta, nastaví do něj Bounds, prvek přidá do seznamu.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="parent"></param>
+        /// <param name="xRange"></param>
+        /// <param name="yRange"></param>
+        /// <param name="childList"></param>
+        public static void PrepareChildOne(IInteractiveItem item, IInteractiveParent parent, Int32Range xRange, Int32Range yRange, List<IInteractiveItem> childList)
+        {
+            Point lastPoint = Point.Empty;
+            _PrepareChildOne(item, parent, Int32Range.GetRectangle(xRange, yRange), childList, ref lastPoint);
+        }
+        /// <summary>
+        /// Zajistí přípravu jednoho prvku.
+        /// Nastaví do něj daného parenta, nastaví do něj Bounds, prvek přidá do seznamu, napočítává nejzazší přidaný bod Bounds.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="parent"></param>
+        /// <param name="xRange"></param>
+        /// <param name="yRange"></param>
+        /// <param name="childList"></param>
+        /// <param name="lastPoint"></param>
+        public static void PrepareChildOne(IInteractiveItem item, IInteractiveParent parent, Int32Range xRange, Int32Range yRange, List<IInteractiveItem> childList, ref Point lastPoint)
+        {
+            _PrepareChildOne(item, parent, Int32Range.GetRectangle(xRange, yRange), childList, ref lastPoint);
+        }
+        /// <summary>
+        /// Zajistí přípravu jednoho prvku.
+        /// Nastaví do něj daného parenta, nastaví do něj Bounds, prvek přidá do seznamu.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="parent"></param>
+        /// <param name="itemBounds"></param>
+        /// <param name="childList"></param>
+        public static void PrepareChildOne(IInteractiveItem item, IInteractiveParent parent, Rectangle itemBounds, List<IInteractiveItem> childList)
+        {
+            Point lastPoint = Point.Empty;
+            _PrepareChildOne(item, parent, itemBounds, childList, ref lastPoint);
+        }
+        /// <summary>
+        /// Zajistí přípravu jednoho prvku.
+        /// Nastaví do něj daného parenta, nastaví do něj Bounds, prvek přidá do seznamu, napočítává nejzazší přidaný bod Bounds.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="parent"></param>
+        /// <param name="itemBounds"></param>
+        /// <param name="childList"></param>
+        /// <param name="lastPoint"></param>
+        public static void PrepareChildOne(IInteractiveItem item, IInteractiveParent parent, Rectangle itemBounds, List<IInteractiveItem> childList, ref Point lastPoint)
+        {
+            _PrepareChildOne(item, parent, itemBounds, childList, ref lastPoint);
+        }
+        private static void _PrepareChildOne(IInteractiveItem item, IInteractiveParent parent, Rectangle itemBounds, List<IInteractiveItem> childList, ref Point lastPoint)
+        {
+            if (item == null || !item.IsVisible) return;
+            if (item.Parent == null) item.Parent = parent;
+            if (item.Bounds != itemBounds) item.Bounds = itemBounds;
+            childList.Add(item);
+            if (lastPoint.X < itemBounds.Right) lastPoint.X = itemBounds.Right;
+            if (lastPoint.Y < itemBounds.Bottom) lastPoint.Y = itemBounds.Bottom;
+        }
+        #endregion
     }
     #endregion
     #region Třída GTableHeader : třída zobrazující záhlaví tabulky (vlevo nahoře, vpravo nahoře)
@@ -895,36 +960,35 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// Metoda připraví patřičné prvky tohoto řádku do svého seznam Childs prvků.
         /// Tyto prvky pak budou v řádku zobrazovány a budou interaktivní.
         /// </summary>
-        /// <param name="rowHeadersBounds"></param>
-        /// <param name="rowDataBounds"></param>
-        /// <param name="visibleColumns"></param>
-        public void PrepareChilds(Row row, Rectangle rowHeadersBounds, Rectangle rowDataBounds, Column[] visibleColumns)
+        /// <param name="rowDataBounds">Souřadnice prostoru pro data buněk ve všech řádcích</param>
+        /// <param name="visibleColumns">Viditelné sloupce</param>
+        /// <param name="rowBounds"></param>
+        public void PrepareChilds(Rectangle rowDataBounds, Column[] visibleColumns, out Rectangle rowBounds)
         {
-            Int32Range rowHeaderXRange = rowHeadersBounds.GetVisualRange(Orientation.Horizontal);  // Pozice RowHeader na ose X  (záhlaví řádků)
-            Int32Range rowAreaXRange = rowDataBounds.GetVisualRange(Orientation.Horizontal);       // Pozice RowArea na ose X    (prostor pro data řádků, začíná za RowHeader, ale končí těsně před ScrollBarem)
+            Row row = this.OwnerRow;
+
+            Int32Range rowAreaXRange = rowDataBounds.GetVisualRange(Orientation.Horizontal);       // Pozice RowData na ose X    (prostor pro data řádků, začíná za RowHeader, ale končí těsně před ScrollBarem)
             Int32Range rowChildsYRange = new Int32Range(0, this.VisualRange.Size - 0);             // Pozice všech Child items na ose Y (ta je relativní vzhledem k this řádku, proto začíná 0, a je o 1 pixel menší = o dolní GridLine)
 
             List<IInteractiveItem> childList = new List<IInteractiveItem>();
 
-            int left = rowHeaderXRange.Begin;
-            int right = left;
-
             // Viditelné buňky:
+            int cellXBegin = rowAreaXRange.Begin;
+            Point lastPoint = new Point(rowAreaXRange.Begin, 0);
             foreach (Column column in visibleColumns)
-            {
-                GCell gCell = row[column.ColumnId].Control;
-                this.PrepareChildOne(gCell, column.ColumnHeader.VisualRange, rowChildsYRange, childList, ref right);
+            {   // Musíme provést korekci souřadnic na ose X:
+                // a) Hodnota column.ColumnHeader.VisualRange je v koordinátech GTable, tedy včetně RowHeader, typicky počínaje 0
+                // b) Control this (tj. GRow) ale začíná až na pozici první buňky, za RowHeader, například 35
+                // c) Souřadnice controlů GCell musí začínat na 0, protože jsou relativní k GRow!  Musí se tedy posunout doleva o (rowDataBounds.X):
+                Int32Range columnXRange = column.ColumnHeader.VisualRange;
+                Int32Range cellXRange = Int32Range.CreateFromBeginSize(columnXRange.Begin - cellXBegin, columnXRange.Size);
+                GComponent.PrepareChildOne(row[column.ColumnId].Control, this, cellXRange, rowChildsYRange, childList, ref lastPoint);
             }
 
-            // Záhlaví aktuálního řádku přidám až po buňkách, bude "navrchu" z hlediska kreslení i interaktivity:
-            this.PrepareChildOne(row.RowHeader, rowHeaderXRange, rowChildsYRange, childList, ref right);
-            row.RowHeader.PrepareSplitterBounds();
-
-
-            // Souřadnice this řádku v rámci tabulky:
-            Int32Range rowXRange = new Int32Range(left, right);
-            Rectangle rowBounds = Int32Range.GetRectangle(rowXRange, this.VisualRange);
-            if (this.Bounds != rowBounds) this.Bounds = rowBounds;
+            // Souřadnice this GRow v rámci tabulky:
+            int cellXEnd = lastPoint.X + cellXBegin;
+            Int32Range rowXRange = new Int32Range(cellXBegin, cellXEnd);
+            rowBounds = Int32Range.GetRectangle(rowXRange, this.VisualRange);
 
             // Soupis Child prvků:
             this._ChildItems = childList.ToArray();
@@ -1017,7 +1081,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             if (this.Parent == null)
                 this.Parent = gTable;
 
-            GRow gRow = this.OwnerRow.Control;
+            GRow gRow = this.OwnerRow.Control;               // Vizuální control pro data našeho řádku
             Rectangle rowHeadersBounds = gTable.GetRelativeBoundsForArea(TableAreaType.RowHeaders);          // Celý prostor všech RowHeaders, relativně k GTable, nás bude zajímat jeho pozice X
             Rectangle rowHeaderBounds = Int32Range.GetRectangle(rowHeadersBounds, gRow.VisualRange);         // Souřadnice RowHeader relativně k GTable (pozice na ose Y je převzata z řádku: VisualRange)
             this.RowSplitter.LoadFrom(rowHeaderBounds, RectangleSide.Bottom, true);                          // Splitter umístíme na dolní hranu prostoru RowHeader, relativně k GTable
