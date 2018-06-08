@@ -1116,7 +1116,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         public static int TableSplitterSize { get { return 3; } }
         #endregion
-        #region Child items : pole všech prvků v tabulce (jednotlivé headery, jednotlivé buňky, jednotlivé spittery, a scrollbar řádků)
+        #region Child items : pole všech prvků v tabulce (jednotlivé headery, jednotlivé řádky, jednotlivé spittery, a scrollbar řádků)
         /// <summary>
         /// Pole sub-itemů v tabulce.
         /// Tabulka obsahuje: hlavičku tabulky, hlavičky viditelných sloupců, hlavičky viditelných řádků, buňky viditelných řádků a sloupců, 
@@ -1457,6 +1457,8 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         #region Draw : podpora pro kreslení obsahu řádků (pozadí, gridlines, hodnota)
         internal void DrawValue(GInteractiveDrawArgs e, Rectangle boundsAbsolute, object value, TableValueType valueType, Row row, Cell cell)
         {
+            this.DrawBackground(e, boundsAbsolute, row, cell);
+
             switch (valueType)
             {
                 case TableValueType.Null:
@@ -1480,13 +1482,65 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             }
         }
         /// <summary>
+        /// Metoda vyplní pozadí dané plochy barvou pozadí řádku.
+        /// Tato metoda nekreslí žádný obsah, pouze barvu.
+        /// Tato metoda proběhne pouze tehdy, když parametr "row" není null, a parametr "cell" je null, tedy při kreslení celého řádku.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="row"></param>
+        /// <param name="cell"></param>
+        private void DrawBackground(GInteractiveDrawArgs e, Rectangle boundsAbsolute, Row row, Cell cell)
+        {
+            if (row != null && cell == null)
+                this.DrawRowBackColor(e, boundsAbsolute, row, cell);
+        }
+        /// <summary>
         /// Vykreslí prázdnou buňku / řádek (jen pozadí)
         /// </summary>
         /// <param name="e"></param>
         /// <param name="boundsAbsolute"></param>
         private void DrawNull(GInteractiveDrawArgs e, Rectangle boundsAbsolute, Row row, Cell cell)
+        { }
+        /// <summary>
+        /// Vykreslí obsah this buňky jako text
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="value"></param>
+        private void DrawContentText(GInteractiveDrawArgs e, Rectangle boundsAbsolute, Row row, Cell cell, object value)
         {
-            this.DrawRowBackground(e, boundsAbsolute, row, cell);
+            if (row == null || cell == null) return;
+
+            // if (!(row.BackgroundValueType == TableValueType.ITimeInteractiveGraph && cell != null))
+            //    this.DrawRowBackColor(e, boundsAbsolute, row, cell);
+
+            // Obsah řádku:
+            string formatString = cell.Column.FormatString;
+            ContentAlignment textAlignment;
+            string text = GetText(value, formatString, out textAlignment);
+
+            VisualStyle style = ((IVisualMember)cell).Style;
+            ContentAlignment alignment = style.ContentAlignment ?? textAlignment;
+            FontInfo font = style.Font ?? FontInfo.Default;
+            Color textColor = this.GetTextColor(row, cell);
+
+            Rectangle boundsContent = boundsAbsolute.Enlarge(-1);
+            GPainter.DrawString(e.Graphics, boundsContent, text, textColor, font, alignment);
+        }
+        /// <summary>
+        /// Vykreslí obsah this buňky jako Image
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="image"></param>
+        private void DrawContentImage(GInteractiveDrawArgs e, Rectangle boundsAbsolute, Row row, Cell cell, Image image)
+        {
+            if (image == null) return;
+            Size size = image.Size;
+            Rectangle imageBounds = size.AlignTo(boundsAbsolute, ContentAlignment.MiddleCenter, true, true);
+            if (imageBounds.Width > 4 && imageBounds.Height > 4)
+                e.Graphics.DrawImage(image, imageBounds);
         }
         /// <summary>
         /// Vykreslí obsah this buňky pomocí její vlastní metody IDrawItem.Draw()
@@ -1507,7 +1561,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="graph"></param>
         private void DrawContentInteractiveTimeGraph(GInteractiveDrawArgs e, Rectangle boundsAbsolute, Row row, Cell cell, ITimeInteractiveGraph graph)
         {
-            this.DrawRowBackground(e, boundsAbsolute, row, cell);
+            this.DrawRowBackColor(e, boundsAbsolute, row, cell);     // Co s pozadím pod grafem?
 
             if (graph.TimeConvertor == null)
                 graph.TimeConvertor = this.GetTimeConvertor(cell);
@@ -1527,54 +1581,12 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="graph"></param>
         private void DrawContentTimeGraph(GInteractiveDrawArgs e, Rectangle boundsAbsolute, Row row, Cell cell, ITimeGraph graph)
         {
-            this.DrawRowBackground(e, boundsAbsolute, row, cell);
+            this.DrawRowBackColor(e, boundsAbsolute, row, cell);     // Co s pozadím pod grafem?
 
             if (graph.TimeConvertor == null)
                 graph.TimeConvertor = this.GetTimeConvertor(cell);
 
             graph.DrawContentTimeGraph(e, boundsAbsolute);
-        }
-        /// <summary>
-        /// Vykreslí obsah this buňky jako Image
-        /// </summary>
-        /// <param name="e"></param>
-        /// <param name="boundsAbsolute"></param>
-        /// <param name="image"></param>
-        private void DrawContentImage(GInteractiveDrawArgs e, Rectangle boundsAbsolute, Row row, Cell cell, Image image)
-        {
-            this.DrawRowBackground(e, boundsAbsolute, row, cell);
-
-            if (image == null) return;
-            Size size = image.Size;
-            Rectangle imageBounds = size.AlignTo(boundsAbsolute, ContentAlignment.MiddleCenter, true, true);
-            if (imageBounds.Width > 4 && imageBounds.Height > 4)
-                e.Graphics.DrawImage(image, imageBounds);
-        }
-        /// <summary>
-        /// Vykreslí obsah this buňky jako text
-        /// </summary>
-        /// <param name="e"></param>
-        /// <param name="boundsAbsolute"></param>
-        /// <param name="value"></param>
-        private void DrawContentText(GInteractiveDrawArgs e, Rectangle boundsAbsolute, Row row, Cell cell, object value)
-        {
-            if (row == null || cell == null) return;
-
-            if (!(row.BackgroundValueType == TableValueType.ITimeInteractiveGraph && cell != null))
-                this.DrawRowBackground(e, boundsAbsolute, row, cell);
-
-            // Obsah řádku:
-            string formatString = cell.Column.FormatString;
-            ContentAlignment textAlignment;
-            string text = GetText(value, formatString, out textAlignment);
-
-            VisualStyle style = ((IVisualMember)cell).Style;
-            ContentAlignment alignment = style.ContentAlignment ?? textAlignment;
-            FontInfo font = style.Font ?? FontInfo.Default;
-            Color textColor = this.GetTextColor(row, cell);
-
-            Rectangle boundsContent = boundsAbsolute.Enlarge(-1);
-            GPainter.DrawString(e.Graphics, boundsContent, text, textColor, font, alignment);
         }
         /// <summary>
         /// Převede danou hodnotu (obsah buňky) na string s využitím formátovacího řetězce, a podle konkrétního datového typu určí výchozí zarovnání.
@@ -1661,7 +1673,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="e"></param>
         /// <param name="boundsAbsolute"></param>
         /// <param name="cell"></param>
-        private void DrawRowBackground(GInteractiveDrawArgs e, Rectangle boundsAbsolute, Row row, Cell cell)
+        private void DrawRowBackColor(GInteractiveDrawArgs e, Rectangle boundsAbsolute, Row row, Cell cell)
         {
             float? effect3d = null;
             Color backColor = this.GetBackColor(row, cell, ref effect3d);

@@ -23,8 +23,6 @@ namespace Asol.Tools.WorkScheduler.Components
             this._ItemList = new EList<ITimeGraphItem>();
             this._ItemList.ItemAddAfter += new EList<ITimeGraphItem>.EListEventAfterHandler(_ItemList_ItemAddAfter);
             this._ItemList.ItemRemoveAfter += new EList<ITimeGraphItem>.EListEventAfterHandler(_ItemList_ItemRemoveAfter);
-
-            this._AxisXMode = TimeGraphAxisXMode.Standard;
         }
         /// <summary>
         /// Všechny prvky grafu (časové úseky)
@@ -72,18 +70,28 @@ namespace Asol.Tools.WorkScheduler.Components
             base.SetBoundsPrepareInnerItems(oldBounds, newBounds, ref actions, eventSource);
         }
         #endregion
-        #region TimeAxis : Kontrola platnosti, paměť Identity časové osy
+        #region Definice grafu, jeho vlastnosti, režim kreslení atd
         /// <summary>
         /// Režim zobrazování času na ose X
         /// </summary>
-        public TimeGraphAxisXMode AxisXMode
+        public TimeGraphTimeAxisMode TimeAxisMode
         {
-            get { return this._AxisXMode; }
+            get
+            {
+                TimeGraphTimeAxisMode result = TimeGraphTimeAxisMode.Default;
+                if (this._TimeAxisMode.HasValue)
+                    result = this._TimeAxisMode.Value;
+                if (result == TimeGraphTimeAxisMode.Default)
+                    result = this._GetParentTimeAxisMode();
+                if (result == TimeGraphTimeAxisMode.Default)
+                    result = TimeGraphTimeAxisMode.Standard;
+                return result;
+            }
             set
             {
-                TimeGraphAxisXMode oldValue = this.AxisXMode;
-                this._AxisXMode = value;
-                TimeGraphAxisXMode newValue = this.AxisXMode;
+                TimeGraphTimeAxisMode oldValue = this.TimeAxisMode;
+                this._TimeAxisMode = (value != TimeGraphTimeAxisMode.Default ? (TimeGraphTimeAxisMode?)value : (TimeGraphTimeAxisMode?)null);
+                TimeGraphTimeAxisMode newValue = this.TimeAxisMode;
 
                 if (oldValue != newValue)
                 {
@@ -92,23 +100,84 @@ namespace Asol.Tools.WorkScheduler.Components
                 }
             }
         }
-        private TimeGraphAxisXMode _AxisXMode;
+        private TimeGraphTimeAxisMode? _TimeAxisMode;
         /// <summary>
-        /// true pokud mají být v grafu zobrazovány časové linky (Ticks)
+        /// Metoda vrátí režim časové osy z vhodného parenta.
+        /// Pokud nenajde, vrátí <see cref="TimeGraphTimeAxisMode.Default"/>
         /// </summary>
-        public bool IsTimeTickVisible
+        /// <returns></returns>
+        private TimeGraphTimeAxisMode _GetParentTimeAxisMode()
         {
-            get { return (this._IsTimeTickVisible && (this._AxisXMode == TimeGraphAxisXMode.Standard || this._AxisXMode == TimeGraphAxisXMode.ProportionalScale)); }
+            IInteractiveParent parent = this.Parent;
+            if (parent == null) return TimeGraphTimeAxisMode.Default;
+            if (parent is Grid.GCell)
+            {   // Graf je umístěn v buňce: default typ časové osy grafu je uváděn ve sloupci, do něhož tato buňka patří:
+                Grid.GCell gCell = parent as Grid.GCell;
+                Column column = gCell.OwnerColumn;
+                if (column != null) return column.GraphDefaultTimeAxisMode;
+            }
+            if (parent is Grid.GRow)
+            {   // Graf je umístěn v řádku: default typ časové osy grafu je uváděn v tabulce, do které tento řádek patří:
+                Grid.GRow gRow = parent as Grid.GRow;
+                Table table = gRow.OwnerTable;
+                if (table != null) return table.GraphDefaultTimeAxisMode;
+            }
+            return TimeGraphTimeAxisMode.Default;
+        }
+        /// <summary>
+        /// true pokud mají být v grafu zobrazovány časové linky (Ticks).
+        /// Pro graf s režimem osy <see cref="TimeAxisMode"/> == <see cref="TimeGraphTimeAxisMode.Standard"/> 
+        /// jsou souřadnice značek převzaty z jejich dat napřímo.
+        /// Pro graf s režimem osy <see cref="TimeAxisMode"/> == <see cref="TimeGraphTimeAxisMode.ProportionalScale"/> 
+        /// jsou souřadnice značek přepočteny do aktuálního prostoru.
+        /// Pro graf s režimem osy <see cref="TimeAxisMode"/> == <see cref="TimeGraphTimeAxisMode.LogarithmicScale"/> 
+        /// nejsou časové značky nikdy vykreslovány.
+        /// </summary>
+        public bool TimeAxisTickIsVisible
+        {
+            get
+            {
+                TimeGraphTimeAxisMode timeAxisMode = this.TimeAxisMode;
+                if (timeAxisMode == TimeGraphTimeAxisMode.LogarithmicScale) return false;          // Tento typ grafu (LogarithmicScale) nikdy nemá TimeAxisTick
+
+                if (this._TimeAxisTickIsVisible.HasValue) return this._TimeAxisTickIsVisible.Value;
+                return this._GetParentTimeAxisTickIsVisible();
+            }
             set
             {
-                bool oldValue = this.IsTimeTickVisible;
-                this._IsTimeTickVisible = value;
-                bool newValue = this.IsTimeTickVisible;
+                bool oldValue = this.TimeAxisTickIsVisible;
+                this._TimeAxisTickIsVisible = value;
+                bool newValue = this.TimeAxisTickIsVisible;
                 if (oldValue != newValue)
                     this.Repaint();
             }
         }
-        private bool _IsTimeTickVisible;
+        private bool? _TimeAxisTickIsVisible;
+        /// <summary>
+        /// Metoda vrátí viditelnost časových značek z vhodného parenta.
+        /// Pokud nenajde, vrátí true.
+        /// </summary>
+        /// <returns></returns>
+        private bool _GetParentTimeAxisTickIsVisible()
+        {
+            IInteractiveParent parent = this.Parent;
+            if (parent == null) return true;
+            if (parent is Grid.GCell)
+            {   // Graf je umístěn v buňce: viditelnost časových značek grafu je uváděna ve sloupci, do něhož tato buňka patří:
+                Grid.GCell gCell = parent as Grid.GCell;
+                Column column = gCell.OwnerColumn;
+                if (column != null) return column.GraphDefaultTimeAxisTickIsVisible;
+            }
+            if (parent is Grid.GRow)
+            {   // Graf je umístěn v řádku: viditelnost časových značek grafu je uváděna v tabulce, do které tento řádek patří:
+                Grid.GRow gRow = parent as Grid.GRow;
+                Table table = gRow.OwnerTable;
+                if (table != null) return table.GraphDefaultTimeAxisTickIsVisible;
+            }
+            return true;
+        }
+        #endregion
+        #region TimeAxis : Kontrola platnosti, paměť Identity časové osy
         /// <summary>
         /// Prověří platnost zdejších dat s ohledem na aktuální hodnoty časové osy <see cref="_TimeConvertor"/>.
         /// Pokud zdejší data jsou vypočítaná pro identický stav časové osy, nechá data beze změn, 
@@ -352,7 +421,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected void InvalidateVisibleList()
         {
-            this.VisibleListIsValid = false;
+            this.IsValidVisibleList = false;
         }
         /// <summary>
         /// Prověří platnost zdejších dat s ohledem na aktuální fyzické pixelové souřadnice X a Y.
@@ -360,9 +429,29 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected void CheckValidVisibleList()
         {
-            if (this.VisibleList != null && this.VisibleListIsValid && this.VisibleListWidth == this.ClientSize.Width) return;
+            if (this.IsValidVisibleList) return;
             this.RecalculateVisibleList();
         }
+        /// <summary>
+        /// Vrací true, pokud data v seznamu <see cref="VisibleList"/> jsou platná.
+        /// Zohledňuje i stav <see cref="VisibleList"/>, <see cref="VisibleListLastWidth"/>, <see cref="TimeAxisMode"/>.
+        /// Hodnotu lze nastavit, ale i když se vloží true, může se vracet false (pokud výše uvedené není platné).
+        /// </summary>
+        protected bool IsValidVisibleList
+        {
+            get
+            {
+                if (this.VisibleList == null) return false;
+                if (!this.VisibleListLastWidth.HasValue || this.ClientSize.Width != this.VisibleListLastWidth.Value) return false;
+                if (!this.VisibleListLastTimeAxisMode.HasValue || this.TimeAxisMode != this.VisibleListLastTimeAxisMode.Value) return false;
+                return this._IsValidVisibleList;
+            }
+            set
+            {
+                this._IsValidVisibleList = value;
+            }
+        }
+        private bool _IsValidVisibleList;
         /// <summary>
         /// Naplní korektní data do pole <see cref="VisibleList"/> a vypočte patřičné pixelové souřadnice.
         /// </summary>
@@ -371,7 +460,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this.VisibleList = new List<List<GTimeGraphGroup>>();
             ITimeConvertor timeConvertor = this._TimeConvertor;
             if (timeConvertor == null) return;
-            TimeGraphAxisXMode axisXMode = this.AxisXMode;
+            TimeGraphTimeAxisMode timeAxisMode = this.TimeAxisMode;
 
             using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "ItemsRecalculateVisibleList", ""))
             {
@@ -384,15 +473,15 @@ namespace Asol.Tools.WorkScheduler.Components
                     List<GTimeGraphGroup> visibleItems = new List<GTimeGraphGroup>();
                     foreach (GTimeGraphGroup group in layerList)
                     {   // Jeden prvek (GTimeGraphGroup) za druhým:
-                        switch (axisXMode)
+                        switch (timeAxisMode)
                         {
-                            case TimeGraphAxisXMode.ProportionalScale:
+                            case TimeGraphTimeAxisMode.ProportionalScale:
                                 this.RecalculateVisibleListOneGroupProportional(group, visibleItems, ref groups, ref items);
                                 break;
-                            case TimeGraphAxisXMode.LogarithmicScale:
+                            case TimeGraphTimeAxisMode.LogarithmicScale:
                                 this.RecalculateVisibleListOneGroupLogarithmic(group, visibleItems, ref groups, ref items);
                                 break;
-                            case TimeGraphAxisXMode.Standard:
+                            case TimeGraphTimeAxisMode.Standard:
                             default:
                                 this.RecalculateVisibleListOneGroupStandard(group, visibleItems, ref groups, ref items);
                                 break;
@@ -406,8 +495,9 @@ namespace Asol.Tools.WorkScheduler.Components
                     }
                 }
 
-                this.VisibleListIsValid = true;
-                this.VisibleListWidth = this.ClientSize.Width;
+                this.VisibleListLastWidth = this.ClientSize.Width;
+                this.VisibleListLastTimeAxisMode = timeAxisMode;
+                this.IsValidVisibleList = true;
 
                 scope.AddItem("Visual Layers Count: " + layers.ToString());
                 scope.AddItem("Visual Groups Count: " + groups.ToString());
@@ -416,7 +506,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         /// <summary>
         /// Metoda připraví data pro jeden grafický prvek typu <see cref="GTimeGraphGroup"/> pro aktuální stav časové osy grafu, 
-        /// v režimu <see cref="TimeGraphAxisXMode.Standard"/>
+        /// v režimu <see cref="TimeGraphTimeAxisMode.Standard"/>
         /// </summary>
         /// <param name="group">Jedna ucelená skupina grafických prvků <see cref="ITimeGraphItem"/></param>
         /// <param name="visibleItems">Výstupní seznam, do něhož se vkládají viditelné prvky</param>
@@ -428,22 +518,16 @@ namespace Asol.Tools.WorkScheduler.Components
             if (group.IsValidRealTime && timeConvertor.VisibleTime.HasIntersect(group.Time))
             {   // Prvek je alespoň zčásti viditelný v časovém okně:
                 groups++;
-
-                int yTop = this.CalculatorYGetPixel(group.LogicalY.End);
-                int yBot = this.CalculatorYGetPixel(group.LogicalY.Begin);
-                int h = (yTop - yBot);
-
-                int x1 = timeConvertor.GetPixel(group.Time.Begin);
-                int x2 = timeConvertor.GetPixel(group.Time.End);
-                group.VirtualBounds = new Rectangle(x1, yTop, (x2 - x1), h);
+                Int32Range y = this.CalculatorYGetRange(group.LogicalY);
+                Int32Range x = timeConvertor.GetPixelRange(group.Time);
+                group.VirtualBounds = Int32Range.GetRectangle(x, y);
 
                 foreach (ITimeGraphItem item in group.Items)
                 {
                     items++;
 
-                    x1 = timeConvertor.GetPixel(item.Time.Begin);
-                    x2 = timeConvertor.GetPixel(item.Time.End);
-                    item.VirtualBounds = new Rectangle(x1, yTop, (x2 - x1), h);
+                    x = timeConvertor.GetPixelRange(item.Time);
+                    item.VirtualBounds = Int32Range.GetRectangle(x, y);
                 }
 
                 visibleItems.Add(group);
@@ -456,22 +540,16 @@ namespace Asol.Tools.WorkScheduler.Components
             if (group.IsValidRealTime && timeConvertor.VisibleTime.HasIntersect(group.Time))
             {   // Prvek je alespoň zčásti viditelný v časovém okně:
                 groups++;
-
-                int yTop = this.CalculatorYGetPixel(group.LogicalY.End);
-                int yBot = this.CalculatorYGetPixel(group.LogicalY.Begin);
-                int h = (yTop - yBot);
-
-                int x1 = timeConvertor.GetProportionalPixel(group.Time.Begin, size);
-                int x2 = timeConvertor.GetProportionalPixel(group.Time.End, size);
-                group.VirtualBounds = new Rectangle(x1, yTop, (x2 - x1), h);
+                Int32Range y = this.CalculatorYGetRange(group.LogicalY);
+                Int32Range x = timeConvertor.GetProportionalPixelRange(group.Time, size);
+                group.VirtualBounds = Int32Range.GetRectangle(x, y);
 
                 foreach (ITimeGraphItem item in group.Items)
                 {
                     items++;
 
-                    x1 = timeConvertor.GetProportionalPixel(item.Time.Begin, size);
-                    x2 = timeConvertor.GetProportionalPixel(item.Time.End, size);
-                    item.VirtualBounds = new Rectangle(x1, yTop, (x2 - x1), h);
+                    x = timeConvertor.GetProportionalPixelRange(item.Time, size);
+                    item.VirtualBounds = Int32Range.GetRectangle(x, y);
                 }
 
                 visibleItems.Add(group);
@@ -479,7 +557,26 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         protected void RecalculateVisibleListOneGroupLogarithmic(GTimeGraphGroup group, List<GTimeGraphGroup> visibleItems, ref int groups, ref int items)
         {
+            ITimeConvertor timeConvertor = this._TimeConvertor;
+            int size = this.Bounds.Width;
+            float proportionalRatio = 0.60f;
+            if (group.IsValidRealTime)           // Pozor: režim Logarithmic zajistí, že zobrazeny budou VŠECHNY prvky, takže prvky nefiltrujeme na VisibleTime.HasIntersect() !
+            {
+                groups++;
+                Int32Range y = this.CalculatorYGetRange(group.LogicalY);
+                Int32Range x = timeConvertor.GetLogarithmicPixelRange(group.Time, size, proportionalRatio);
+                group.VirtualBounds = Int32Range.GetRectangle(x, y);
 
+                foreach (ITimeGraphItem item in group.Items)
+                {
+                    items++;
+
+                    x = timeConvertor.GetLogarithmicPixelRange(item.Time, size, proportionalRatio);
+                    item.VirtualBounds = Int32Range.GetRectangle(x, y);
+                }
+
+                visibleItems.Add(group);
+            }
         }
 
         /// <summary>
@@ -489,14 +586,15 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected List<List<GTimeGraphGroup>> VisibleList { get; set; }
         /// <summary>
-        /// Obsahuje true pokud <see cref="VisibleList"/> obsahuje platná data.
-        /// </summary>
-        protected bool VisibleListIsValid { get; set; }
-        /// <summary>
         /// Hodnota Bounds.Width, pro kterou byly naposledy přepočítávány prvky pole <see cref="VisibleList"/>.
         /// Po změně souřadnic se provádí invalidace.
         /// </summary>
-        protected int VisibleListWidth { get; set; }
+        protected int? VisibleListLastWidth { get; set; }
+        /// <summary>
+        /// Hodnota <see cref="TimeAxisMode"/>, pro kterou jsou platné hodnoty ve <see cref="VisibleList"/>.
+        /// Po změně <see cref="TimeAxisMode"/> dojde k přepočtu dat v tomto seznamu.
+        /// </summary>
+        protected TimeGraphTimeAxisMode? VisibleListLastTimeAxisMode { get; set; }
         #endregion
         #region Kalkulátor souřadnic X : přepočet z DateTime na pixel s pomocí časové osy a režimu
 
@@ -640,6 +738,20 @@ namespace Asol.Tools.WorkScheduler.Components
             return result;
         }
         /// <summary>
+        /// Metoda vrátí rozsah na ose Y (ve virtuálním formátu), jehož logické souřadnice jsou zadány.
+        /// Virtuální formát je v pixelech, ale hodnota 0 odpovídá dolnímu okraji grafu.
+        /// Je to proto, aby se grafy nemusely přepočítávat při změně výšky grafu: 0 je stále dole.
+        /// Kdežto ve WinForm reprezentaci je nula nahoře...
+        /// </summary>
+        /// <param name="logicalY"></param>
+        /// <returns></returns>
+        protected Int32Range CalculatorYGetRange(Interval<float> logicalY)
+        {
+            float end = this.CalculatorYGetPosition(logicalY.End);
+            float size = this._CalculatorY_Scale * (logicalY.End - logicalY.Begin);
+            return Int32Range.CreateFromBeginSize((int)Math.Round(end, 0), (int)Math.Round(size, 0));
+        }
+        /// <summary>
         /// Metoda vrátí souřadnici Y v pixelech pro zadanou logickou souřadnici Y.
         /// Vrácená hodnota je rovna (GraphPixelHeight - 1) pro logicalY = this.UsedLogicalY.Begin (logický začátek osy Y je dole = ve Windows grafice větší souřadnice Y).
         /// Pro logickou hodnotu this.UsedLogicalY.End je vrácen pixel = 0 (logický kladný konec osy je nahoře = ve Windows grafice menší souřadnice Y).
@@ -648,9 +760,20 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         protected int CalculatorYGetPixel(float logicalY)
         {
-            int pixelY = (int)(Math.Round(this._CalculatorY_Scale * (logicalY - this._CalculatorY_Offset), 0));
-            if (pixelY < 0) pixelY = 0;
-            return pixelY;
+            float pixelY = this.CalculatorYGetPosition(logicalY);
+            return (int)Math.Round(pixelY, 0);
+        }
+        /// <summary>
+        /// Metoda vrátí souřadnici Y jako float, pro zadanou logickou souřadnici Y.
+        /// Vrácená hodnota je rovna (GraphPixelHeight - 1) pro logicalY = this.UsedLogicalY.Begin (logický začátek osy Y je dole = ve Windows grafice větší souřadnice Y).
+        /// Pro logickou hodnotu this.UsedLogicalY.End je vrácen pixel = 0 (logický kladný konec osy je nahoře = ve Windows grafice menší souřadnice Y).
+        /// </summary>
+        /// <param name="logicalY"></param>
+        /// <returns></returns>
+        protected float CalculatorYGetPosition(float logicalY)
+        {
+            float result = (this._CalculatorY_Scale * (logicalY - this._CalculatorY_Offset));
+            return (result < 0f ? 0f : result);
         }
         /// <summary>
         /// Aktuálně použité rozmezí logických souřadnic na ose Y
@@ -702,6 +825,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected void DrawTicks()
         {
+            if (!this.TimeAxisTickIsVisible) return;
+
             using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "PaintGrid", ""))
             {
                 int x;
@@ -866,7 +991,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public void Draw(TimeGraphItemDrawArgs drawArgs)
         {
             if (!this.IsValidRealTime || this._FirstItem.Layer < 0 || this.ItemCount <= 1) return;
-            drawArgs.FillRectangle(this.VirtualBounds, Color.FromArgb(160, Color.Gray), -1, -2, -1, -1);
+            drawArgs.FillRectangle(this.VirtualBounds, Color.FromArgb(160, Color.Gray), -1, -1, -1, -1);
         }
         /// <summary>
         /// Compare two instance by Order ASC, Time.Begin ASC
@@ -968,9 +1093,23 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual void Draw(TimeGraphItemDrawArgs drawArgs)
         {
             if (!this.IsValidRealTime) return;
-            int l = ((this.Layer >= 0) ? -1 : 0);
-            drawArgs.FillRectangle(this.VirtualBounds, this.BackColor, 0, l, 0, 0);
-            drawArgs.BorderRectangle(this.VirtualBounds, this.BorderColor, 0, l, 0, 0);
+            Rectangle bounds = this.VirtualBounds;
+            if (this.Layer >= 0)
+            {
+             //   bounds.Y = bounds.Y + 1;
+             //   bounds.Height = bounds.Height - 1;
+            }
+            if (bounds.Width < 1) bounds.Width = 1;
+            int w = bounds.Width;
+            if (w <= 2)
+            {
+                drawArgs.FillRectangle(bounds, this.BorderColor);
+            }
+            else
+            {
+                drawArgs.FillRectangle(bounds, this.BackColor);
+                drawArgs.BorderRectangle(bounds, this.BorderColor);
+            }
         }
         #endregion
         #region explicit ITimeGraphItem members
@@ -1094,6 +1233,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         int GetPixel(DateTime? time);
         /// <summary>
+        /// Vrátí pozici, na které se nachází daný časový úsek na aktuální časové ose.
+        /// </summary>
+        /// <param name="timeRange"></param>
+        /// <returns></returns>
+        Int32Range GetPixelRange(TimeRange timeRange);
+        /// <summary>
         /// Vrátí relativní pixel, na kterém se nachází daný čas.
         /// Vrací pixel pro jinou velikost prostoru, než jakou má aktuální TimeAxis, kdy cílová velikost je dána parametrem targetSize.
         /// Jinými slovy: pokud na reálné časové ose máme zobrazeno rozmezí (numerický příklad): 40 - 80,
@@ -1101,9 +1246,36 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Proč? Protože: požadovaná hodnota 50 se nachází na pozici 0.25 časové osy (40 - 80), a odpovídající pozice v cílovém prostoru (100 pixelů) je 25.
         /// </summary>
         /// <param name="time">Čas, jehož pozici hledáme</param>
-        /// <param name="targetSize">Cílový prostor, do něhož </param>
+        /// <param name="targetSize">Cílový prostor, do něhož máme promítnout viditelný prostor na ose</param>
         /// <returns></returns>
         int GetProportionalPixel(DateTime? time, int targetSize);
+        /// <summary>
+        /// Vrátí pozici, na které se nachází daný časový úsek v daném cílovém prostoru.
+        /// </summary>
+        /// <param name="timeRange"></param>
+        /// <returns></returns>
+        Int32Range GetProportionalPixelRange(TimeRange timeRange, int targetSize);
+        /// <summary>
+        /// Vrátí relativní pixel, na kterém se nachází daný čas.
+        /// Vrací pixel na logaritmické časové ose, kde střední část prostoru (z parametru "size") je proporcionální (její velikost je dána hodnotou "ratio"),
+        /// a okrajové části jsou logaritmické, takže do daného prostoru "size" se promítnou úplně všechny časy, jen v těch okrajových částech budou zahuštěné.
+        /// </summary>
+        /// <param name="time">Čas, jehož pozici hledáme</param>
+        /// <param name="targetSize">Cílový prostor, do něhož máme promítnout viditelný prostor na ose</param>
+        /// <param name="proportionalRatio">Relativní část prostoru "size", v němž je čas proporcionální (lineární). Povolené hodnoty jsou 0.4 až 0.9</param>
+        /// <returns></returns>
+        int GetLogarithmicPixel(DateTime? time, int targetSize, float proportionalRatio);
+        /// <summary>
+        /// Vrátí pozici, na které se nachází daný časový úsek v daném cílovém prostoru, v logaritmickém měřítku.
+        /// Vrací pixel na logaritmické časové ose, kde střední část prostoru (z parametru "size") je proporcionální (její velikost je dána hodnotou "ratio"),
+        /// a okrajové části jsou logaritmické, takže do daného prostoru "size" se promítnou úplně všechny časy, jen v těch okrajových částech budou zahuštěné.
+        /// </summary>
+        /// <param name="timeRange"></param>
+        /// <param name="targetSize">Cílový prostor, do něhož máme promítnout viditelný prostor na ose</param>
+        /// <param name="proportionalRatio">Relativní část prostoru "size", v němž je čas proporcionální (lineární). Povolené hodnoty jsou 0.4 až 0.9</param>
+        /// <returns></returns>
+        Int32Range GetLogarithmicPixelRange(TimeRange timeRange, int targetSize, float proportionalRatio);
+
         /// <summary>
         /// Event vyvolaný po každé změně hodnoty <see cref="VisibleTime"/>
         /// </summary>
@@ -1112,13 +1284,17 @@ namespace Asol.Tools.WorkScheduler.Components
     /// <summary>
     /// Režim přepočtu DateTime na osu X.
     /// </summary>
-    public enum TimeGraphAxisXMode
+    public enum TimeGraphTimeAxisMode
     {
+        /// <summary>
+        /// Výchozí = podle vlastníka (sloupce, nebo tabulky).
+        /// </summary>
+        Default = 0,
         /// <summary>
         /// Standardní režim, kdy graf má osu X rovnou 1:1 k prvku TimeAxis.
         /// Využívá se v situaci, kdy prvky grafu jsou kresleny přímo pod TimeAxis.
         /// </summary>
-        Standard = 0,
+        Standard,
         /// <summary>
         /// Proporcionální režim, kdy graf vykresluje ve své ploše stejný časový úsek jako TimeAxis,
         /// ale graf má jinou šířku v pixelech než časová osa (a tedy může mít i jiný počátek = souřadnici Bounds.X.

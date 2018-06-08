@@ -40,16 +40,16 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <summary>
         /// Grid (grafický), do kterého patří zdejší tabulka
         /// </summary>
-        protected GGrid OwnerGGrid { get { return ((this.OwnerTable != null && this.OwnerTable.HasGTable) ? this.OwnerTable.GTable.Grid : null); } }
+        public GGrid OwnerGGrid { get { return ((this.OwnerTable != null && this.OwnerTable.HasGTable) ? this.OwnerTable.GTable.Grid : null); } }
         /// <summary>
         /// Tabulka (grafická), do které patří toto záhlaví
         /// </summary>
-        protected GTable OwnerGTable { get { return ((this.OwnerTable != null && this.OwnerTable.HasGTable) ? this.OwnerTable.GTable : null); } }
+        public GTable OwnerGTable { get { return ((this.OwnerTable != null && this.OwnerTable.HasGTable) ? this.OwnerTable.GTable : null); } }
         /// <summary>
         /// Datová tabulka, do které this záhlaví patří.
         /// Je k dispozici pro všechny tři typy záhlaví (Table, Column, Row).
         /// </summary>
-        protected abstract Table OwnerTable { get; }
+        public abstract Table OwnerTable { get; }
         /// <summary>
         /// Typ záhlaví. Potomek musí přepsat na správnou hodnotu.
         /// </summary>
@@ -205,7 +205,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <summary>
         /// Tabulka, do které patří toto záhlaví
         /// </summary>
-        protected override Table OwnerTable { get { return this._OwnerTable; } }
+        public override Table OwnerTable { get { return this._OwnerTable; } }
         /// <summary>
         /// Typ záhlaví.
         /// </summary>
@@ -341,11 +341,11 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <summary>
         /// Tabulka (datová), do které patří toto záhlaví
         /// </summary>
-        protected override Table OwnerTable { get { return this._OwnerColumn.Table; } }
+        public override Table OwnerTable { get { return this._OwnerColumn.Table; } }
         /// <summary>
         /// Sloupec, do kterého patří toto záhlaví
         /// </summary>
-        protected virtual Column OwnerColumn { get { return this._OwnerColumn; } }
+        public virtual Column OwnerColumn { get { return this._OwnerColumn; } }
         /// <summary>
         /// Typ záhlaví.
         /// </summary>
@@ -858,11 +858,11 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <summary>
         /// Tabulka (datová), do které patří pozadí řádku
         /// </summary>
-        protected override Table OwnerTable { get { return this._OwnerRow.Table; } }
+        public override Table OwnerTable { get { return this._OwnerRow.Table; } }
         /// <summary>
         /// Řádek, do kterého patří toto pozadí řádku
         /// </summary>
-        protected virtual Row OwnerRow { get { return this._OwnerRow; } }
+        public virtual Row OwnerRow { get { return this._OwnerRow; } }
         /// <summary>
         /// Typ prvku.
         /// </summary>
@@ -902,7 +902,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         {
             Int32Range rowHeaderXRange = rowHeadersBounds.GetVisualRange(Orientation.Horizontal);  // Pozice RowHeader na ose X  (záhlaví řádků)
             Int32Range rowAreaXRange = rowDataBounds.GetVisualRange(Orientation.Horizontal);       // Pozice RowArea na ose X    (prostor pro data řádků, začíná za RowHeader, ale končí těsně před ScrollBarem)
-            Int32Range rowChildsYRange = new Int32Range(0, this.VisualRange.Size - 1);             // Pozice všech Child items na ose Y (ta je relativní vzhledem k this řádku, proto začíná 0, a je o 1 pixel menší = o dolní GridLine)
+            Int32Range rowChildsYRange = new Int32Range(0, this.VisualRange.Size - 0);             // Pozice všech Child items na ose Y (ta je relativní vzhledem k this řádku, proto začíná 0, a je o 1 pixel menší = o dolní GridLine)
 
             List<IInteractiveItem> childList = new List<IInteractiveItem>();
 
@@ -955,20 +955,6 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         protected override IEnumerable<IInteractiveItem> Childs { get { return this._ChildItems; } }
         #endregion
-
-        public override Rectangle Bounds
-        {
-            get
-            {
-                return base.Bounds;
-            }
-
-            set
-            {
-                base.Bounds = value;
-            }
-        }
-
     }
     #endregion
     #region Třída GRowHeader : vizuální třída pro zobrazování záhlaví řádku
@@ -1005,11 +991,11 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <summary>
         /// Tabulka (datová), do které patří toto záhlaví
         /// </summary>
-        protected override Table OwnerTable { get { return this._OwnerRow.Table; } }
+        public override Table OwnerTable { get { return this._OwnerRow.Table; } }
         /// <summary>
         /// Řádek, do kterého patří toto záhlaví
         /// </summary>
-        protected virtual Row OwnerRow { get { return this._OwnerRow; } }
+        public virtual Row OwnerRow { get { return this._OwnerRow; } }
         /// <summary>
         /// Typ záhlaví.
         /// </summary>
@@ -1157,20 +1143,6 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         protected override RepaintParentMode RepaintParent { get { return RepaintParentMode.Always; } }
         #endregion
-
-        public override Rectangle Bounds
-        {
-            get
-            {
-                return base.Bounds;
-            }
-
-            set
-            {
-                base.Bounds = value;
-            }
-        }
-
     }
     #endregion
     #region Třída GCell : vizuální třída pro zobrazení obsahu buňky tabulky
@@ -1206,27 +1178,27 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <summary>
         /// Tabulka (datová), do které patří tato buňka
         /// </summary>
-        protected override Table OwnerTable { get { return this._Cell.Table; } }
+        public override Table OwnerTable { get { return this._Cell.Table; } }
         /// <summary>
         /// Řádek, do kterého patří tato vizuální buňka
         /// </summary>
-        protected Row OwnerRow { get { return this._Cell.Row; } }
+        public Row OwnerRow { get { return this._Cell.Row; } }
         /// <summary>
         /// Záhlaví řádku kam patří tato buňka, grafický prvek
         /// </summary>
-        protected GRowHeader RowHeader { get { return this._Cell.Row.RowHeader; } }
+        public GRowHeader RowHeader { get { return this._Cell.Row.RowHeader; } }
         /// <summary>
         /// Sloupec, do kterého patří tato vizuální buňka
         /// </summary>
-        protected Column OwnerColumn { get { return this._Cell.Column; } }
+        public Column OwnerColumn { get { return this._Cell.Column; } }
         /// <summary>
         /// Záhlaví sloupce, kam patří tato buňka, grafický prvek
         /// </summary>
-        protected GColumnHeader ColumnHeader { get { return this._Cell.Column.ColumnHeader; } }
+        public GColumnHeader ColumnHeader { get { return this._Cell.Column.ColumnHeader; } }
         /// <summary>
         /// Datová buňka, do které patří tato vizuální buňka
         /// </summary>
-        protected Cell OwnerCell { get { return this._Cell; } }
+        public Cell OwnerCell { get { return this._Cell; } }
         /// <summary>
         /// Typ oblasti tabulky.
         /// </summary>

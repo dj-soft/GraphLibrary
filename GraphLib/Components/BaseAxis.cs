@@ -400,9 +400,21 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Různé přepočtové metody mezi údaji typu: Value, Size, Pixel, Zoom, Ratio, Shift, Scale
         /// <summary>
-        /// Returns a local pixel distance from Axis.FirstPixel, for specified TTick point (this is a logical value).
-        /// Return pixel == 0 for tick = this.Value.Begin.
-        /// Can returns a null, when this.GetAxisUnits(tick - this.Value) returns a null value.
+        /// Vrátí pozici souřadnice pixelu pro danou logickou hodnotu, bez zaokrouhlení.
+        /// Vrátí hodnotu pixelu 0 pro daný tick rovný počátku osy = this.Value.Begin.
+        /// Může vrátit null, pokud výpočet this.GetAxisUnits(tick - this.Value) vrátí null.
+        /// </summary>
+        /// <param name="tick"></param>
+        /// <returns></returns>
+        public decimal? CalculatePositionLocalForTick(TTick tick)
+        {
+            decimal? pixels = this._CalculatePixelLocalForTick(tick);
+            return pixels;
+        }
+        /// <summary>
+        /// Vrátí vizuální souřadnici pixelu pro danou logickou hodnotu.
+        /// Vrátí hodnotu pixelu 0 pro daný tick rovný počátku osy = this.Value.Begin.
+        /// Může vrátit null, pokud výpočet this.GetAxisUnits(tick - this.Value) vrátí null.
         /// </summary>
         /// <param name="tick"></param>
         /// <returns></returns>

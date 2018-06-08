@@ -956,6 +956,7 @@ namespace Asol.Tools.WorkScheduler.Components
         private void _MainTimeAxisExternal_VisibleTimeChanged(object sender, GPropertyChangeArgs<TimeRange> e)
         {
             int qqq = 0;
+            this.Repaint();
         }
         /// <summary>
         /// Interní hlavní časová osa tohoto Gridu. Vždy pochází z prvního sloupce <see cref="Columns"/>, který používá časovou osu: <see cref="GridColumn.UseTimeAxis"/>.
