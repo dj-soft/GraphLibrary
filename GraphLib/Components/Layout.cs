@@ -380,15 +380,19 @@ namespace Asol.Tools.WorkScheduler.Components
     public interface ILayoutItem
     {
         /// <summary>
-        /// Size of this item (input)
+        /// Velikost tohoto prvku (vstupní)
         /// </summary>
         Size ItemSize { get; }
         /// <summary>
-        /// Hints for positioning of this item
+        /// Nápověda ke zpracování layoutu této položky
         /// </summary>
         LayoutHint Hint { get; }
         /// <summary>
-        /// Position (=Location + this.ItemSize) of this item after Layout processed (result)
+        /// Explicitně požadovaná šířka prvku v počtu modulů
+        /// </summary>
+        int? ModuleWidth { get; }
+        /// <summary>
+        /// Pozice prvku v layoutu (=Location + this.ItemSize) po zpracování layoutu (výstupní)
         /// </summary>
         Rectangle? ItemBounds { get; set; }
     }
@@ -512,6 +516,7 @@ namespace Asol.Tools.WorkScheduler.Components
             public Size ItemSize { get; set; }
             public Rectangle? ItemBounds { get; set; }
             public LayoutHint Hint { get; set; }
+            public int? ModuleWidth { get; set; }
             public string Content { get; set; }
         }
         #endregion

@@ -237,33 +237,47 @@ namespace Asol.Tools.WorkScheduler.Services
         }
     }
     /// <summary>
-    /// One global function item (global functions are showed on main Toolbar)
+    /// Data o jedné globální funkci.
+    /// Globální funkce jsou zobrazeny v toolbaru.
     /// </summary>
     public class FunctionGlobalItem : FunctionItem
     {
+        /// <summary>
+        /// Konstruktor.
+        /// Jako parametr "provider" se předává reference na objekt, který položku vytořil.
+        /// </summary>
+        /// <param name="provider"></param>
         public FunctionGlobalItem(IFunctionProvider provider)
             : base(provider)
         { }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
-            return this.Size.ToString() + " " + this.ItemType.ToString() + ": " + this.Text;
+            return $"{this.Text}; Type: {this.ItemType}; Size: {this.Size}";
         }
         /// <summary>
-        /// Owner group of this item
+        /// Skupina, do které patří tato položka
         /// </summary>
         public FunctionGlobalGroup Group { get; internal set; }
         /// <summary>
-        /// Type of GlobalItem
+        /// Typ prvku GlobalItem
         /// </summary>
         public FunctionGlobalItemType ItemType { get; set; }
         /// <summary>
-        /// Size type of this item.
+        /// Velikost prvku na toolbaru, vzhledem k jeho výšce
         /// </summary>
         public FunctionGlobalItemSize Size { get; set; }
         /// <summary>
-        /// Hint for layout process
+        /// Nápověda ke zpracování layoutu této položky
         /// </summary>
         public LayoutHint LayoutHint { get; set; }
+        /// <summary>
+        /// Explicitně požadovaná šířka prvku v počtu modulů
+        /// </summary>
+        public int? ModuleWidth { get; set; }
     }
     public enum FunctionGlobalItemType
     {

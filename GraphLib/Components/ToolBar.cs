@@ -846,19 +846,23 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Data from DataItem
         /// <summary>
-        /// Item type
+        /// Typ prvku GlobalItem
         /// </summary>
         public FunctionGlobalItemType ItemType { get { return this._DataItem.ItemType; } }
         /// <summary>
-        /// Item size
+        /// Velikost prvku na toolbaru, vzhledem k jeho výšce
         /// </summary>
         public FunctionGlobalItemSize ItemSize { get { return this._DataItem.Size; } }
         /// <summary>
-        /// Hint for LayoutEngine
+        /// Nápověda ke zpracování layoutu této položky
         /// </summary>
         public LayoutHint ItemLayoutHint { get { return this._DataItem.LayoutHint; } }
         /// <summary>
-        /// Image 
+        /// Explicitně požadovaná šířka prvku v počtu modulů
+        /// </summary>
+        public int? ItemModuleWidth { get { return this._DataItem.ModuleWidth; } }
+        /// <summary>
+        /// Ikonka
         /// </summary>
         protected Image ItemImage { get { return this._DataItem.Image; } }
         // public FontInfo ItemFont { get { FontInfo itemFont = this._DataItem.Font; return (itemFont != null ? itemFont : FontInfo.Menu); } }
@@ -1044,13 +1048,77 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         Size ILayoutItem.ItemSize { get { return this.ModuleSize; } }
         /// <summary>
-        /// Hints for positioning of this item
+        /// Nápověda ke zpracování layoutu této položky
         /// </summary>
         LayoutHint ILayoutItem.Hint { get { return this.ItemLayoutHint; } }
+        /// <summary>
+        /// Explicitně požadovaná šířka prvku v počtu modulů
+        /// </summary>
+        int? ILayoutItem.ModuleWidth { get { return this.ItemModuleWidth; } }
         /// <summary>
         /// Position (=Location + this.ItemSize) of this item after Layout processed (result)
         /// </summary>
         Rectangle? ILayoutItem.ItemBounds { get { return this.ModuleBounds; } set { this.ModuleBounds = value; } }
+        #endregion
+        #region Společné metody pro přípravu layoutu
+        /// <summary>
+        /// Připraví data pro layout aktuálního prvku, společná metoda
+        /// </summary>
+        /// <param name="graphics"></param>
+        protected void PrepareBoundsCommon(Graphics graphics)
+        {
+            this.PrepareBoundsCommon(graphics, null, null);
+        }
+        /// <summary>
+        /// Připraví data pro layout aktuálního prvku, společná metoda
+        /// </summary>
+        /// <param name="graphics"></param>
+        protected void PrepareBoundsCommon(Graphics graphics, Func<Graphics, Size> getImageSize, Func<Graphics, Size> getTextSize)
+        {
+            GToolBar.LayoutSettingTBarInfo tBarSetting = this.TBarSetting;
+            GToolBar.LayoutSettingTItemInfo itemSetting = this.TItemSetting;
+
+            Size sizeImage = (getImageSize != null ? getImageSize(graphics) : this.GetImageSize(this.ItemImage));      // Velikost pro prvek: Velká ikona = obrázek tlačítka
+            Size sizeText = (getTextSize != null ? getTextSize(graphics) : this.GetTextSize(graphics, this.ItemText)); // Velikost pro prvek: Text tlačítka
+            Size sizeIcon = this.GetIconSize(this.HasDownArrow);               // Ikona reprezentující rozbalovací tlačítko u combo boxu
+            if (sizeText.Height > itemSetting.TextHeight) sizeText.Height = itemSetting.TextHeight;
+            int textIconWidth = sizeText.Width + sizeIcon.Width;               // Šířka textové části = text + šipka dolů
+
+            if (this.ItemSize == FunctionGlobalItemSize.Whole)
+            {   // Celá výška toolbaru: nahoře je Image, pod ním je Text, obě jsou zarovnány na svislý střed:
+                int w = (sizeImage.Width > textIconWidth ? sizeImage.Width : textIconWidth);
+                int c = 2 + (w / 2);
+                int y = 2;
+                this.BoundsImage = new Rectangle(c - (sizeImage.Width / 2), y, sizeImage.Width, sizeImage.Height);
+                if (sizeImage.Height > 0) y = y + sizeImage.Height + 2;
+                this.BoundsText = new Rectangle(c - (textIconWidth / 2), y, sizeText.Width, sizeText.Height);
+                this.BoundsIcon = new Rectangle(this.BoundsText.Right, this.BoundsText.Y, sizeIcon.Width, sizeText.Height);
+                if (sizeText.Height > 0) y = y + sizeText.Height + 2;
+
+                int modulesWidth = tBarSetting.GetModuleCount(w + 4);
+                int modulesHeight = this.TBarSetting.HeightModule;
+                this.ModuleSize = new Size(modulesWidth, modulesHeight);
+                this.PixelSizeMin = tBarSetting.GetPixelSize(this.ModuleSize);
+            }
+            else
+            {   // Small item: small image on left, before text, horizontally aligned to Y center:
+                int h = itemSetting.ModulePixel;
+                int c = (h / 2);
+                int x = 2;
+                this.BoundsImage = new Rectangle(x, c - (sizeImage.Height / 2), sizeImage.Width, sizeImage.Height);
+                if (sizeImage.Width > 0) x = x + sizeImage.Width;
+                if (sizeImage.Width > 0 && sizeText.Width > 0) x = x + 4;
+                this.BoundsText = new Rectangle(x, c - (sizeText.Height / 2), sizeText.Width, sizeText.Height);
+                if (sizeText.Width > 0) x = x + sizeText.Width + 3;
+                this.BoundsIcon = new Rectangle(x, 2, sizeIcon.Width, h - 4);
+                if (sizeIcon.Width > 0) x = x + sizeIcon.Width + 3;
+
+                int modulesWidth = tBarSetting.GetModuleCount(x);
+                int modulesHeight = itemSetting.ModuleCount;
+                this.ModuleSize = new Size(modulesWidth, modulesHeight);
+                this.PixelSizeMin = tBarSetting.GetPixelSize(this.ModuleSize);
+            }
+        }
         #endregion
         #region ItemType Separator: specific methods
         protected virtual void PrepareBoundsSeparator(Graphics graphics)
@@ -1073,49 +1141,7 @@ namespace Asol.Tools.WorkScheduler.Components
         #region ItemType Label: specific methods
         protected virtual void PrepareBoundsLabel(Graphics graphics)
         {
-            GToolBar.LayoutSettingTBarInfo tBarSetting = this.TBarSetting;
-            GToolBar.LayoutSettingTItemInfo itemSetting = this.TItemSetting;
-            
-            Size sizeImage = this.GetImageSize(this.ItemImage);
-            Size sizeText = this.GetTextSize(graphics, this.ItemText);
-            Size sizeIcon = this.GetIconSize(this.HasDownArrow);
-            if (sizeText.Height > itemSetting.TextHeight) sizeText.Height = itemSetting.TextHeight;
-            int tiw = sizeText.Width + sizeIcon.Width;
-
-            if (this.ItemSize == FunctionGlobalItemSize.Whole)
-            {   // Big item: big image in top position, under image is text, vertically aligned to X center:
-                int w = (sizeImage.Width > tiw ? sizeImage.Width : tiw);
-                int c = 2 + (w / 2);
-                int y = 2;
-                this.BoundsImage = new Rectangle(c - (sizeImage.Width / 2), y, sizeImage.Width, sizeImage.Height);
-                if (sizeImage.Height > 0) y = y + sizeImage.Height + 2;
-                this.BoundsText = new Rectangle(c - (tiw / 2), y, sizeText.Width, sizeText.Height);
-                this.BoundsIcon = new Rectangle(this.BoundsText.Right, this.BoundsText.Y, sizeIcon.Width, sizeText.Height);
-                if (sizeText.Height > 0) y = y + sizeText.Height + 2;
-
-                int mw = tBarSetting.GetModuleCount(w + 4);
-                int mh = this.TBarSetting.HeightModule;
-                this.ModuleSize = new Size(mw, mh);
-                this.PixelSizeMin = tBarSetting.GetPixelSize(this.ModuleSize);
-            }
-            else
-            {   // Small item: small image on left, before text, horizontally aligned to Y center:
-                int h = itemSetting.ModulePixel;
-                int c = (h / 2);
-                int x = 2;
-                this.BoundsImage = new Rectangle(x, c - (sizeImage.Height / 2), sizeImage.Width, sizeImage.Height);
-                if (sizeImage.Width > 0) x = x + sizeImage.Width;
-                if (sizeImage.Width > 0 && sizeText.Width > 0) x = x + 4;
-                this.BoundsText = new Rectangle(x, c - (sizeText.Height / 2), sizeText.Width, sizeText.Height);
-                if (sizeText.Width > 0) x = x + sizeText.Width + 3;
-                this.BoundsIcon = new Rectangle(x, 2, sizeIcon.Width, h - 4);
-                if (sizeIcon.Width > 0) x = x + sizeIcon.Width + 3;
-
-                int mw = tBarSetting.GetModuleCount(x);
-                int mh = itemSetting.ModuleCount;
-                this.ModuleSize = new Size(mw, mh);
-                this.PixelSizeMin = tBarSetting.GetPixelSize(this.ModuleSize);
-            }
+            this.PrepareBoundsCommon(graphics);
         }
         protected virtual void DrawStandardLabel(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
         {
@@ -1145,49 +1171,7 @@ namespace Asol.Tools.WorkScheduler.Components
         #region ItemType Button: specific methods
         protected virtual void PrepareBoundsButton(Graphics graphics)
         {
-            GToolBar.LayoutSettingTBarInfo tBarSetting = this.TBarSetting;
-            GToolBar.LayoutSettingTItemInfo itemSetting = this.TItemSetting;
-
-            Size sizeImage = this.GetImageSize(this.ItemImage);
-            Size sizeText = this.GetTextSize(graphics, this.ItemText);
-            Size sizeIcon = this.GetIconSize(this.HasDownArrow);
-            if (sizeText.Height > itemSetting.TextHeight) sizeText.Height = itemSetting.TextHeight;
-            int tiw = sizeText.Width + sizeIcon.Width;
-
-            if (this.ItemSize == FunctionGlobalItemSize.Whole)
-            {   // Big item: big image in top position, under image is text, vertically aligned to X center:
-                int w = (sizeImage.Width > tiw ? sizeImage.Width : tiw);
-                int c = 2 + (w / 2);
-                int y = 2;
-                this.BoundsImage = new Rectangle(c - (sizeImage.Width / 2), y, sizeImage.Width, sizeImage.Height);
-                if (sizeImage.Height > 0) y = y + sizeImage.Height + 2;
-                this.BoundsText = new Rectangle(c - (tiw / 2), y, sizeText.Width, sizeText.Height);
-                this.BoundsIcon = new Rectangle(this.BoundsText.Right, this.BoundsText.Y, sizeIcon.Width, sizeText.Height);
-                if (sizeText.Height > 0) y = y + sizeText.Height + 2;
-
-                int mw = tBarSetting.GetModuleCount(w + 4);
-                int mh = this.TBarSetting.HeightModule;
-                this.ModuleSize = new Size(mw, mh);
-                this.PixelSizeMin = tBarSetting.GetPixelSize(this.ModuleSize);
-            }
-            else
-            {   // Small item: small image on left, before text, horizontally aligned to Y center:
-                int h = itemSetting.ModulePixel;
-                int c = (h / 2);
-                int x = 2;
-                this.BoundsImage = new Rectangle(x, c - (sizeImage.Height / 2), sizeImage.Width, sizeImage.Height);
-                if (sizeImage.Width > 0) x = x + sizeImage.Width;
-                if (sizeImage.Width > 0 && sizeText.Width > 0) x = x + 4;
-                this.BoundsText = new Rectangle(x, c - (sizeText.Height / 2), sizeText.Width, sizeText.Height);
-                if (sizeText.Width > 0) x = x + sizeText.Width + 3;
-                this.BoundsIcon = new Rectangle(x, 2, sizeIcon.Width, h - 4);
-                if (sizeIcon.Width > 0) x = x + sizeIcon.Width + 3;
-
-                int mw = tBarSetting.GetModuleCount(x);
-                int mh = itemSetting.ModuleCount;
-                this.ModuleSize = new Size(mw, mh);
-                this.PixelSizeMin = tBarSetting.GetPixelSize(this.ModuleSize);
-            }
+            this.PrepareBoundsCommon(graphics);
         }
         protected virtual void DrawStandardButton(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
         {
@@ -1207,50 +1191,10 @@ namespace Asol.Tools.WorkScheduler.Components
         #region ItemType ComboBox: specific methods
         protected virtual void PrepareBoundsComboBox(Graphics graphics)
         {
-            GToolBar.LayoutSettingTBarInfo tBarSetting = this.TBarSetting;
-            GToolBar.LayoutSettingTItemInfo itemSetting = this.TItemSetting;
-
             EList<FunctionItem> subItems = this.ItemSubItems;
-            Size sizeImage = this.GetImageSizeFromSubItems(true, subItems);
-            Size sizeText = this.GetTextSizeFromSubItems(graphics, true, subItems, 7);
-            Size sizeIcon = this.GetIconSize(this.HasDownArrow);
-            if (sizeText.Height > itemSetting.TextHeight) sizeText.Height = itemSetting.TextHeight;
-            int tiw = sizeText.Width + sizeIcon.Width;
-  
-            if (this.ItemSize == FunctionGlobalItemSize.Whole)
-            {   // Big item: big image in top position, under image is text, vertically aligned to X center:
-                int w = (sizeImage.Width > sizeText.Width ? sizeImage.Width : sizeText.Width);
-                int c = 2 + (w / 2);
-                int y = 2;
-                this.BoundsImage = new Rectangle(c - (sizeImage.Width / 2), y, sizeImage.Width, sizeImage.Height);
-                if (sizeImage.Height > 0) y = y + sizeImage.Height + 2;
-                this.BoundsText = new Rectangle(c - (tiw / 2), y, sizeText.Width, sizeText.Height);
-                this.BoundsIcon = new Rectangle(this.BoundsText.Right, this.BoundsText.Y, sizeIcon.Width, sizeText.Height);
-                if (sizeText.Height > 0) y = y + sizeText.Height + 2;
-
-                int mw = tBarSetting.GetModuleCount(w + 4);
-                int mh = this.TBarSetting.HeightModule;
-                this.ModuleSize = new Size(mw, mh);
-                this.PixelSizeMin = tBarSetting.GetPixelSize(this.ModuleSize);
-            }
-            else
-            {   // Small item: small image on left, before text, horizontally aligned to Y center:
-                int h = itemSetting.ModulePixel;
-                int c = (h / 2);
-                int x = 2;
-                this.BoundsImage = new Rectangle(x, c - (sizeImage.Height / 2), sizeImage.Width, sizeImage.Height);
-                if (sizeImage.Width > 0) x = x + sizeImage.Width;
-                if (sizeImage.Width > 0 && sizeText.Width > 0) x = x + 4;
-                this.BoundsText = new Rectangle(x, c - (sizeText.Height / 2), sizeText.Width, sizeText.Height);
-                if (sizeText.Width > 0) x = x + sizeText.Width + 3;
-                this.BoundsIcon = new Rectangle(x, 2, sizeIcon.Width, h - 4);
-                if (sizeIcon.Width > 0) x = x + sizeIcon.Width + 3;
-
-                int mw = tBarSetting.GetModuleCount(x);
-                int mh = itemSetting.ModuleCount;
-                this.ModuleSize = new Size(mw, mh);
-                this.PixelSizeMin = tBarSetting.GetPixelSize(this.ModuleSize);
-            }
+            this.PrepareBoundsCommon(graphics, 
+                g => this.GetImageSizeFromSubItems(true, subItems), 
+                g => this.GetTextSizeFromSubItems(g, true, subItems, 7));
         }
         protected virtual void DrawStandardComboBox(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
         {
@@ -1296,49 +1240,7 @@ namespace Asol.Tools.WorkScheduler.Components
         #region ItemType Image: specific methods
         protected virtual void PrepareBoundsImage(Graphics graphics)
         {
-            GToolBar.LayoutSettingTBarInfo tBarSetting = this.TBarSetting;
-            GToolBar.LayoutSettingTItemInfo itemSetting = this.TItemSetting;
-
-            Size sizeImage = this.GetImageSize(this.ItemImage);
-            Size sizeText = this.GetTextSize(graphics, this.ItemText);
-            Size sizeIcon = this.GetIconSize(this.HasDownArrow);
-            if (sizeText.Height > itemSetting.TextHeight) sizeText.Height = itemSetting.TextHeight;
-            int tiw = sizeText.Width + sizeIcon.Width;
-
-            if (this.ItemSize == FunctionGlobalItemSize.Whole)
-            {   // Big item: big image in top position, under image is text, vertically aligned to X center:
-                int w = (sizeImage.Width > sizeText.Width ? sizeImage.Width : sizeText.Width);
-                int c = 2 + (w / 2);
-                int y = 2;
-                this.BoundsImage = new Rectangle(c - (sizeImage.Width / 2), y, sizeImage.Width, sizeImage.Height);
-                if (sizeImage.Height > 0) y = y + sizeImage.Height + 2;
-                this.BoundsText = new Rectangle(c - (tiw / 2), y, sizeText.Width, sizeText.Height);
-                this.BoundsIcon = new Rectangle(this.BoundsText.Right, this.BoundsText.Y, sizeIcon.Width, sizeText.Height);
-                if (sizeText.Height > 0) y = y + sizeText.Height + 2;
-
-                int mw = tBarSetting.GetModuleCount(w + 4);
-                int mh = this.TBarSetting.HeightModule;
-                this.ModuleSize = new Size(mw, mh);
-                this.PixelSizeMin = tBarSetting.GetPixelSize(this.ModuleSize);
-            }
-            else
-            {   // Small item: small image on left, before text, horizontally aligned to Y center:
-                int h = itemSetting.ModulePixel;
-                int c = (h / 2);
-                int x = 2;
-                this.BoundsImage = new Rectangle(x, c - (sizeImage.Height / 2), sizeImage.Width, sizeImage.Height);
-                if (sizeImage.Width > 0) x = x + sizeImage.Width;
-                if (sizeImage.Width > 0 && sizeText.Width > 0) x = x + 4;
-                this.BoundsText = new Rectangle(x, c - (sizeText.Height / 2), sizeText.Width, sizeText.Height);
-                if (sizeText.Width > 0) x = x + sizeText.Width + 3;
-                this.BoundsIcon = new Rectangle(x, 2, sizeIcon.Width, h - 4);
-                if (sizeIcon.Width > 0) x = x + sizeIcon.Width + 3;
-
-                int mw = tBarSetting.GetModuleCount(x);
-                int mh = itemSetting.ModuleCount;
-                this.ModuleSize = new Size(mw, mh);
-                this.PixelSizeMin = tBarSetting.GetPixelSize(this.ModuleSize);
-            }
+            this.PrepareBoundsCommon(graphics);
         }
         protected virtual void DrawStandardImage(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
         {

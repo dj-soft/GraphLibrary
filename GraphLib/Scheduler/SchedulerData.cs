@@ -110,6 +110,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             response.Items = groups.ToArray();
             return response;
         }
+        /// <summary>
+        /// Zkontroluje všechny vytvořené prvky GUI, tzn. i z ostatníh modulů
+        /// </summary>
+        /// <param name="request"></param>
+        protected void CheckGui(FunctionGlobalCheckGuiRequest request)
+        { }
+        #region Skupina Edit
         private void _PrepareGuiEdit(List<FunctionGlobalGroup> groups)
         {
             FunctionGlobalGroup group = new FunctionGlobalGroup(this);
@@ -135,8 +142,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             groups.Add(group);
         }
       
-        private void _PrepareGuiShow(List<FunctionGlobalGroup> groups)
-        { }
         /// <summary>
         /// Reference na objekt GToolBar, který reprezentuje hlavní toolbar aplikace.
         /// </summary>
@@ -146,15 +151,12 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private void ButtonReload_Click(object sender, FunctionItemEventArgs args) { }
         private void ButtonSave_Click(object sender, FunctionItemEventArgs args) { }
 
-        protected void CheckGui(FunctionGlobalCheckGuiRequest request)
-        { }
         protected FunctionGlobalItem ButtonUndo;
         protected FunctionGlobalItem ButtonRedo;
         protected FunctionGlobalItem ButtonReload;
         protected FunctionGlobalItem ButtonSave;
-
-
-        #region Řízení časové osy
+        #endregion
+        #region Skupina : Řízení časové osy
         private void _PrepareGuiTime(List<FunctionGlobalGroup> groups)
         {
             FunctionGlobalGroup group = new FunctionGlobalGroup(this);
@@ -162,29 +164,30 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             group.Order = "D1";
             group.ToolTipTitle = "Řízení pohybu na časové ose";
 
-            this.ButtonTimeWeek5 = new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Small, Image = Components.IconStandard.EditUndo, Text = "Zpět", IsEnabled = false, LayoutHint = LayoutHint.NextItemSkipToNextRow };
+            this.ButtonTimeWeek5 = new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Half, Image = Components.IconStandard.EditUndo, Text = "Týden 5 (Po-Pá)", LayoutHint = LayoutHint.NextItemOnSameRow };
             this.ButtonTimeWeek5.Click += ButtonTimeWeek5_Click;
-            this.ButtonTimeWeek7 = new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Small, Image = Components.IconStandard.EditRedo, Text = "Vpřed", IsEnabled = true };
+            this.ButtonTimeWeek7 = new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Half, Image = Components.IconStandard.EditRedo, Text = "Týden 7 (Po-Ne)", LayoutHint = LayoutHint.NextItemSkipToNextRow };
             this.ButtonTimeWeek7.Click += ButtonTimeWeek7_Click;
-            this.ButtonTimePrev = new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Half, Image = Components.IconStandard.Refresh, Text = "Přenačíst", ToolTip = "Zruší všechny provedené změny a znovu načte data z databáze", IsEnabled = true };
+            this.ButtonTimePrev = new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Half, Image = Components.IconStandard.GoLeft, Text = "", ToolTip = "Zobrazí předchozí týden", ModuleWidth = 3, LayoutHint = LayoutHint.NextItemOnSameRow };
             this.ButtonTimePrev.Click += ButtonTimePrev_Click;
-            this.ButtonTimeCurr = new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Half, Image = Components.IconStandard.DocumentSave, Text = "Uložit", ToolTip = "Uloží všechny provedené změny do databáze", IsEnabled = false };
+            this.ButtonTimeCurr = new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Half, Image = Components.IconStandard.DocumentSave, Text = "Jdi na dnešek", ToolTip = "Zobrazí aktuální týden", LayoutHint = LayoutHint.NextItemOnSameRow };
             this.ButtonTimeCurr.Click += ButtonTimeCurr_Click;
-            this.ButtonTimeNext = new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Half, Image = Components.IconStandard.DocumentSave, Text = "Uložit", ToolTip = "Uloží všechny provedené změny do databáze", IsEnabled = false };
+            this.ButtonTimeNext = new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Half, Image = Components.IconStandard.GoRight, Text = "", ToolTip = "Zobrazí následující týden", ModuleWidth = 3, LayoutHint = LayoutHint.NextItemSkipToNextTable };
             this.ButtonTimeNext.Click += ButtonTimeNext_Click;
 
-            group.Items.Add(this.ButtonUndo);
-            group.Items.Add(this.ButtonRedo);
-            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Separator, Size = FunctionGlobalItemSize.Whole });
-            group.Items.Add(this.ButtonReload);
-            group.Items.Add(this.ButtonSave);
+            group.Items.Add(this.ButtonTimeWeek5);
+            group.Items.Add(this.ButtonTimeWeek7);
+            group.Items.Add(this.ButtonTimePrev);
+            group.Items.Add(this.ButtonTimeCurr);
+            group.Items.Add(this.ButtonTimeNext);
+            // group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Separator, Size = FunctionGlobalItemSize.Whole });
 
             groups.Add(group);
         }
 
         private void ButtonTimeWeek5_Click(object sender, FunctionItemEventArgs args)
         {
-            args.Item
+            
         }
         private void ButtonTimeWeek7_Click(object sender, FunctionItemEventArgs args) { }
         private void ButtonTimePrev_Click(object sender, FunctionItemEventArgs args) { }
@@ -195,6 +198,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         protected FunctionGlobalItem ButtonTimePrev;
         protected FunctionGlobalItem ButtonTimeCurr;
         protected FunctionGlobalItem ButtonTimeNext;
+        #endregion
+        #region Skupina Show
+        private void _PrepareGuiShow(List<FunctionGlobalGroup> groups)
+        { }
+
         #endregion
         #endregion
         #region Zpracování požadavku z GUI vrstvy
