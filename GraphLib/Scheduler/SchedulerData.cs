@@ -103,6 +103,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
             List<FunctionGlobalGroup> groups = new List<FunctionGlobalGroup>();
             this._PrepareGuiEdit(groups);
+            this._PrepareGuiTime(groups);
             this._PrepareGuiShow(groups);
 
             FunctionGlobalPrepareResponse response = new FunctionGlobalPrepareResponse();
@@ -133,6 +134,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
             groups.Add(group);
         }
+      
         private void _PrepareGuiShow(List<FunctionGlobalGroup> groups)
         { }
         /// <summary>
@@ -150,6 +152,50 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         protected FunctionGlobalItem ButtonRedo;
         protected FunctionGlobalItem ButtonReload;
         protected FunctionGlobalItem ButtonSave;
+
+
+        #region Řízení časové osy
+        private void _PrepareGuiTime(List<FunctionGlobalGroup> groups)
+        {
+            FunctionGlobalGroup group = new FunctionGlobalGroup(this);
+            group.Title = "ČASOVÁ OSA";
+            group.Order = "D1";
+            group.ToolTipTitle = "Řízení pohybu na časové ose";
+
+            this.ButtonTimeWeek5 = new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Small, Image = Components.IconStandard.EditUndo, Text = "Zpět", IsEnabled = false, LayoutHint = LayoutHint.NextItemSkipToNextRow };
+            this.ButtonTimeWeek5.Click += ButtonTimeWeek5_Click;
+            this.ButtonTimeWeek7 = new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Small, Image = Components.IconStandard.EditRedo, Text = "Vpřed", IsEnabled = true };
+            this.ButtonTimeWeek7.Click += ButtonTimeWeek7_Click;
+            this.ButtonTimePrev = new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Half, Image = Components.IconStandard.Refresh, Text = "Přenačíst", ToolTip = "Zruší všechny provedené změny a znovu načte data z databáze", IsEnabled = true };
+            this.ButtonTimePrev.Click += ButtonTimePrev_Click;
+            this.ButtonTimeCurr = new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Half, Image = Components.IconStandard.DocumentSave, Text = "Uložit", ToolTip = "Uloží všechny provedené změny do databáze", IsEnabled = false };
+            this.ButtonTimeCurr.Click += ButtonTimeCurr_Click;
+            this.ButtonTimeNext = new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Half, Image = Components.IconStandard.DocumentSave, Text = "Uložit", ToolTip = "Uloží všechny provedené změny do databáze", IsEnabled = false };
+            this.ButtonTimeNext.Click += ButtonTimeNext_Click;
+
+            group.Items.Add(this.ButtonUndo);
+            group.Items.Add(this.ButtonRedo);
+            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Separator, Size = FunctionGlobalItemSize.Whole });
+            group.Items.Add(this.ButtonReload);
+            group.Items.Add(this.ButtonSave);
+
+            groups.Add(group);
+        }
+
+        private void ButtonTimeWeek5_Click(object sender, FunctionItemEventArgs args)
+        {
+            args.Item
+        }
+        private void ButtonTimeWeek7_Click(object sender, FunctionItemEventArgs args) { }
+        private void ButtonTimePrev_Click(object sender, FunctionItemEventArgs args) { }
+        private void ButtonTimeCurr_Click(object sender, FunctionItemEventArgs args) { }
+        private void ButtonTimeNext_Click(object sender, FunctionItemEventArgs args) { }
+        protected FunctionGlobalItem ButtonTimeWeek5;
+        protected FunctionGlobalItem ButtonTimeWeek7;
+        protected FunctionGlobalItem ButtonTimePrev;
+        protected FunctionGlobalItem ButtonTimeCurr;
+        protected FunctionGlobalItem ButtonTimeNext;
+        #endregion
         #endregion
         #region Zpracování požadavku z GUI vrstvy
         protected DataSourceResponse ProcessRequest(DataSourceRequest request)
