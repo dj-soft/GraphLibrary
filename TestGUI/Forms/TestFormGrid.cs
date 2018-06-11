@@ -155,12 +155,12 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
                 table.AddColumns
                     (
-                        new Column() { Title = "Klíč", ToolTip = "Klíč záznamu v tomto sloupci", Name = "key", FormatString = "0000000", Width = 60 },
-                        new Column() { Title = "Datum OD", ToolTip = "Počáteční datum směny", Name = "date_from", FormatString = "yyyy-MM-dd HH:mm", Width = 80 },
-                        new Column() { Title = "Datum DO", ToolTip = "Koncové datum směny", Name = "date_to", FormatString = "yyyy-MM-dd HH:mm:ss", Width = 80 },
-                        new Column() { Title = "graf", ToolTip = "Graf vytížení", Name = "graph1", UseTimeAxis = true, Width = 180, AutoWidth = true, SortingEnabled = false, WidthMininum = 160 },
-                        new Column() { Title = "Cena jednotky", ToolTip = "Jednotková cena.\r\nJe zde jen pro informaci.", Name = "price1", FormatString = "### ##0.00", Width = 80 },
-                        new Column() { Title = "Fotografie", ToolTip = "Zobrazení", Name = "image", Width = 60, SortingEnabled = false }
+                        new Column("key", "Klíč", "Klíč záznamu v tomto sloupci", "0000000", 60),
+                        new Column("date_from", "Datum OD", "Počáteční datum směny", "yyyy-MM-dd HH:mm", 80),
+                        new Column("date_to", "Datum DO", "Koncové datum směny", "yyyy-MM-dd HH:mm:ss", 80),
+                        new Column("graph1", "graf", "Graf vytížení", null, 180, true, true, false, 160, null),
+                        new Column("price1", "Cena jednotky", "Jednotková cena.\r\nJe zde jen pro informaci.", "### ##0.00", 80),
+                        new Column("image", "Fotografie", "Zobrazení", null, 60, sortingEnabled: false)
                     );
 
                 DateTime now = DateTime.Now.Date.AddHours(8);
@@ -240,11 +240,11 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
                 table.AddColumns
                     (
-                        new Column() { Name = "id", Title = "ID", IsVisible = false },
-                        new Column() { Name = "photo", Title = "Fotografie", SortingEnabled = false, Width = 45, WidthMininum = 10, WidthMaximum = 60 },
-                        new Column() { Name = "nazev", Title = "Jméno", ToolTip = "Jméno zaměstnance", SortingEnabled = true, Width = 200, WidthMininum = 50, WidthMaximum = 300 },
-                        new Column() { Name = "prof", Title = "Profese", SortingEnabled = true, ToolTip = "Hlavní profese zaměstnance", Width = 150 },
-                        new Column() { Name = "gender", Title = "Rod", SortingEnabled = false, Width = 35, AllowColumnResize = false, WidthMininum = 35, WidthMaximum = 35 }
+                        new Column("id", "ID", isVisible: false),
+                        new Column("photo", "Fotografie", sortingEnabled: false, width: 45, widthMininum: 10, widthMaximum: 60),
+                        new Column("nazev", "Jméno", "Jméno zaměstnance", width: 200, widthMininum: 50, widthMaximum: 300),
+                        new Column("prof", "Profese", "Hlavní profese zaměstnance", width: 150),
+                        new Column("gender", "Rod", sortingEnabled: false, width: 35, allowColumnResize: false, widthMininum: 35, widthMaximum: 35)
                     );
 
                 Image[] images = _LoadImages();
