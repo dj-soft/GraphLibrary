@@ -496,8 +496,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 item.Time = new TimeRange(begin, end);
                 item.Height = 0.5f;
                 item.ToolTip = "Přiřazen k operaci " + (10 * (t + 1)).ToString();
-                item.BackColor = Color.FromArgb(216, 192, 255);
-                item.BorderColor = Color.FromArgb(140, 128, 160);
+                item.BackColor = Color.FromArgb(230, 216, 255);
+                item.BorderColor = Color.FromArgb(180, 160, 192);
 
                 graph.ItemList.Add(item);
 
