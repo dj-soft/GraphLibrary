@@ -70,7 +70,7 @@ namespace Asol.Tools.WorkScheduler.Components
             base.SetBoundsPrepareInnerItems(oldBounds, newBounds, ref actions, eventSource);
         }
         #endregion
-        #region GUI grafu
+        #region GUI grafu : GraphParameters
         /// <summary>
         /// Parametry pro tento graf.
         /// Buď jsou uloženy přímo zde jako explicitní, nebo jsou načteny z parenta, nebo jsou použity defaultní.
@@ -93,6 +93,11 @@ namespace Asol.Tools.WorkScheduler.Components
                 this._GraphParameters = value;
             }
         }
+        /// <summary>
+        /// Metoda se pokusí najít parametry pro kreslení grafu ve svém parentovi, což může být GCell (pak hledám Column), 
+        /// nebo je parentem GRow (pak hledám Table).
+        /// </summary>
+        /// <returns></returns>
         private TimeGraphParameters _SearchParentGraphParameters()
         {
             TimeGraphParameters gp = null;
@@ -120,6 +125,10 @@ namespace Asol.Tools.WorkScheduler.Components
             }
             return gp;
         }
+        /// <summary>
+        /// Metoda vrátí defaultní parametry grafu
+        /// </summary>
+        /// <returns></returns>
         private TimeGraphParameters _GetDefaultGraphParameters()
         {
             if (this._GraphParametersDefault == null)
@@ -548,9 +557,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected TimeGraphTimeAxisMode? VisibleListLastTimeAxisMode { get; set; }
         #endregion
-        #region Kalkulátor souřadnic X : přepočet z DateTime na pixel s pomocí časové osy a režimu
-
-        #endregion
         #region Kalkulátor souřadnic Y : výška grafu a přepočty souřadnice Y z logické (float, zdola nahoru) do fyzických pixelů (int, zhora dolů)
         /// <summary>
         /// Instance objektu, jehož výšku může graf změnit i číst pro korektní přepočty svých vnitřních souřadnic.
@@ -707,8 +713,18 @@ namespace Asol.Tools.WorkScheduler.Components
         private IVisualParent _VisualParent;
         #endregion
         #region Draw : vykreslení grafu
+        /// <summary>
+        /// Systémové kreslení grafu: nepoužívá se...
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void Draw(GInteractiveDrawArgs e)
+        {
+            // base.Draw(e);
+        }
         protected virtual void DrawContentTimeGraph(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
         {
+            if (this.Parent is Grid.GRow && (int)(((Grid.GRow)this.Parent).OwnerRow[0].Value) == 0)
+            { }
             this.DrawContentPrepareArgs(e, boundsAbsolute);
             this.DrawBackground(e, boundsAbsolute);
             using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "DrawContent", ""))
@@ -843,13 +859,13 @@ namespace Asol.Tools.WorkScheduler.Components
         void ITimeGraph.DrawContentTimeGraph(GInteractiveDrawArgs e, Rectangle boundsAbsolute) { this.DrawContentTimeGraph(e, boundsAbsolute); }
         #endregion
     }
-    #region class GTimeGraphGroup : Group of one or more ITimeGraphItem, with summary Time and maximal Height from items
+    #region class GTimeGraphGroup : skupina jednoho nebo více prvků ITimeGraphItem, obsahující sumární čas Time a Max(Height) z položek
     /// <summary>
-    /// GTimeGraphGroup : Group of one or more ITimeGraphItem, with summary Time and maximal Height from items
+    /// GTimeGraphGroup : GTimeGraphGroup : skupina jednoho nebo více prvků ITimeGraphItem, obsahující sumární čas Time a Max(Height) z položek
     /// </summary>
     public class GTimeGraphGroup : ITimeGraphItem
     {
-        #region Constructors - from IEnumerable<ITimeGraphItem> items
+        #region Konstruktory
         public GTimeGraphGroup()
         {
             this._ItemId = Application.App.GetNextId(typeof(ITimeGraphItem));
@@ -884,7 +900,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 "; UseSpace: " + (this.LogicalY == null ? "none" : this.LogicalY.ToString());
         }
         #endregion
-        #region Private members
+        #region Privátní proměnné
         private int _ItemId;
         private ITimeGraphItem _FirstItem;
         private ITimeGraphItem[] _Items;
@@ -895,7 +911,7 @@ namespace Asol.Tools.WorkScheduler.Components
         private Rectangle _VirtualBounds;
         private Rectangle _Bounds;
         #endregion
-        #region Public properties, Draw()
+        #region Public prvky, Draw()
         /// <summary>
         /// All items in this Group. Always has at least one item.
         /// </summary>

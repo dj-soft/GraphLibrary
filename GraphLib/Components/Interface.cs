@@ -522,19 +522,13 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="changeState">Type of event (change of status)</param>
         /// <param name="targetState">New state of item (after this event, not before it).</param>
         public GInteractiveChangeStateArgs(bool existsItem, IInteractiveItem currentItem, GInteractiveChangeState changeState, GInteractiveState targetState, Func<Point, bool, IInteractiveItem> searchItemMethod)
+               : this()
         {
             this.ExistsItem = existsItem;
             this.CurrentItem = currentItem;
             this.ChangeState = changeState;
             this.TargetState = targetState;
             this.SearchItemMethod = searchItemMethod;
-            this.MouseAbsolutePoint = null;
-            this.MouseRelativePoint = null;
-            this.DragOriginBounds = null;
-            this.DragToBounds = null;
-            this.KeyboardPreviewArgs = null;
-            this.KeyboardEventArgs = null;
-            this.KeyboardPressEventArgs = null;
         }
         /// <summary>
         /// Constructor
@@ -547,6 +541,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="dragOriginBounds">Original area before current Drag operacion begun (in DragMove events)</param>
         /// <param name="dragToBounds">Target area during Drag operation (in DragMove event)</param>
         public GInteractiveChangeStateArgs(bool existsItem, IInteractiveItem currentItem, GInteractiveChangeState changeState, GInteractiveState targetState, Func<Point, bool, IInteractiveItem> searchItemMethod, Point? mouseAbsolutePoint, Point? mouseRelativePoint, Rectangle? dragOriginBounds, Rectangle? dragToBounds)
+              : this()
         {
             this.ExistsItem = existsItem;
             this.CurrentItem = currentItem;
@@ -557,9 +552,6 @@ namespace Asol.Tools.WorkScheduler.Components
             this.MouseRelativePoint = mouseRelativePoint;
             this.DragOriginBounds = dragOriginBounds;
             this.DragToBounds = dragToBounds;
-            this.KeyboardPreviewArgs = null;
-            this.KeyboardEventArgs = null;
-            this.KeyboardPressEventArgs = null;
         }
         /// <summary>
         /// Constructor
@@ -572,19 +564,35 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="keyArgs">Keyboard Events Data</param>
         /// <param name="keyPressArgs">Keyboard KeyPress data</param>
         public GInteractiveChangeStateArgs(bool existsItem, IInteractiveItem currentItem, GInteractiveChangeState changeState, GInteractiveState targetState, Func<Point, bool, IInteractiveItem> searchItemMethod, PreviewKeyDownEventArgs previewArgs, KeyEventArgs keyArgs, KeyPressEventArgs keyPressArgs)
+            : this()
         {
             this.ExistsItem = existsItem;
             this.CurrentItem = currentItem;
             this.ChangeState = changeState;
             this.TargetState = targetState;
             this.SearchItemMethod = searchItemMethod;
+            this.KeyboardPreviewArgs = previewArgs;
+            this.KeyboardEventArgs = keyArgs;
+            this.KeyboardPressEventArgs = keyPressArgs;
+        }
+        /// <summary>
+        /// Konstruktor pro inicializaci
+        /// </summary>
+        protected GInteractiveChangeStateArgs()
+        {
+            this.ExistsItem = false;
+            this.CurrentItem = null;
+            this.ChangeState = GInteractiveChangeState.None;
+            this.TargetState = GInteractiveState.None;
+            this.SearchItemMethod = null;
             this.MouseAbsolutePoint = null;
             this.MouseRelativePoint = null;
             this.DragOriginBounds = null;
             this.DragToBounds = null;
-            this.KeyboardPreviewArgs = previewArgs;
-            this.KeyboardEventArgs = keyArgs;
-            this.KeyboardPressEventArgs = keyPressArgs;
+            this.ModifierKeys = System.Windows.Forms.Control.ModifierKeys;
+            this.KeyboardPreviewArgs = null;
+            this.KeyboardEventArgs = null;
+            this.KeyboardPressEventArgs = null;
         }
         #endregion
         #region Input properties (read-only)
@@ -629,6 +637,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Real target bounds can be other than this unlimited bounds.
         /// </summary>
         public Rectangle? DragToBounds { get; protected set; }
+        /// <summary>
+        /// Stav kláves v okamžiku události, včetně události myši
+        /// </summary>
+        public System.Windows.Forms.Keys ModifierKeys { get; protected set; }
         /// <summary>
         /// Keyboard Preview data
         /// </summary>

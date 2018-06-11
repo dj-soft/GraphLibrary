@@ -258,7 +258,7 @@ namespace Asol.Tools.WorkScheduler.Data
 
             if (!this._ColumnIdDict.ContainsKey(id))
                 this._ColumnIdDict.Add(id, column);
-            string name = column.Name;
+            string name = column.ColumnName;
             if (!String.IsNullOrEmpty(name) && !this._ColumnNameDict.ContainsKey(name))
                 this._ColumnNameDict.Add(name, column);
         }
@@ -301,7 +301,7 @@ namespace Asol.Tools.WorkScheduler.Data
 
             if (this._ColumnIdDict.ContainsKey(id))
                 this._ColumnIdDict.Remove(id);
-            string name = column.Name;
+            string name = column.ColumnName;
             if (!String.IsNullOrEmpty(name) && this._ColumnNameDict.ContainsKey(name))
                 this._ColumnNameDict.Remove(name);
         }
@@ -553,7 +553,7 @@ namespace Asol.Tools.WorkScheduler.Data
             // Pokud třídící sloupec obsahuje komparátor (funkce sortColumn.ValueComparator je zadaná), 
             //   pak metoda PrepareValue() dostává parametr "valueIsComparable" = false, metoda PrepareValue() tedy naplní Value, 
             //   a komparátor (sortColumn.ValueComparator) dostane k porovnání hodnotu object IComparableItem.Value :
-            bool columnHasComparator = (sortColumn.ValueComparator != null);
+            bool columnHasComparator = (sortColumn.ColumnProperties.ValueComparator != null);
             bool valueIsComparable = !columnHasComparator;
             list.ForEach(r => (r as IComparableItem).PrepareValue(sortColumn.ColumnId, valueIsComparable));
 
@@ -561,14 +561,14 @@ namespace Asol.Tools.WorkScheduler.Data
             {
                 case ItemSortType.Ascending:
                     if (columnHasComparator)
-                        list.Sort((a, b) => sortColumn.ValueComparator((a as IComparableItem).Value, (b as IComparableItem).Value));
+                        list.Sort((a, b) => sortColumn.ColumnProperties.ValueComparator((a as IComparableItem).Value, (b as IComparableItem).Value));
                     else
                         list.Sort((a, b) => SortRowsCompare((a as IComparableItem).ValueComparable, (b as IComparableItem).ValueComparable));
                     break;
 
                 case ItemSortType.Descending:
                     if (columnHasComparator)
-                        list.Sort((a, b) => sortColumn.ValueComparator((b as IComparableItem).Value, (a as IComparableItem).Value));
+                        list.Sort((a, b) => sortColumn.ColumnProperties.ValueComparator((b as IComparableItem).Value, (a as IComparableItem).Value));
                     else
                         list.Sort((a, b) => SortRowsCompare((b as IComparableItem).ValueComparable, (a as IComparableItem).ValueComparable));
                     break;
@@ -941,7 +941,7 @@ namespace Asol.Tools.WorkScheduler.Data
         }
         protected virtual void OnHotRowChanged(GPropertyChangeArgs<Row> args) { }
         /// <summary>
-        /// Událost se vyvolá pokud uživatel posune myš (jen pohyb, bez drag/drop, bez click) na nový řádek
+        /// Událost, která se vyvolá pokud uživatel posune myš (jen pohyb, bez drag/drop, bez click) na nový řádek
         /// </summary>
         public event GPropertyChangedHandler<Row> HotRowChanged;
         /// <summary>
@@ -960,7 +960,7 @@ namespace Asol.Tools.WorkScheduler.Data
         }
         protected virtual void OnHotCellChanged(GPropertyChangeArgs<Cell> args) { }
         /// <summary>
-        /// Událost se vyvolá pokud uživatel posune myš (jen pohyb, bez drag/drop, bez click) na novou buňku (v témže řádku, v jiném řádku)
+        /// Událost, která se vyvolá pokud uživatel posune myš (jen pohyb, bez drag/drop, bez click) na novou buňku (v témže řádku, v jiném řádku)
         /// </summary>
         public event GPropertyChangedHandler<Cell> HotCellChanged;
         /// <summary>
@@ -1010,7 +1010,7 @@ namespace Asol.Tools.WorkScheduler.Data
         }
         protected virtual void OnCellMouseEnter(GPropertyEventArgs<Cell> args) { }
         /// <summary>
-        /// Událost se vyvolá při vstupu myši nad danou buňku, bez Drag, bez Click
+        /// Událost, která se vyvolá při vstupu myši nad danou buňku, bez Drag, bez Click
         /// </summary>
         public event GPropertyEvent<Cell> CellMouseEnter;
         /// <summary>
@@ -1028,9 +1028,10 @@ namespace Asol.Tools.WorkScheduler.Data
         }
         protected virtual void OnCellMouseLeave(GPropertyEventArgs<Cell> args) { }
         /// <summary>
-        /// Událost se vyvolá při opuštění myši z dané buňku, bez Drag, bez Click
+        /// Událost, která se vyvolá při opuštění myši z dané buňku, bez Drag, bez Click
         /// </summary>
         public event GPropertyEvent<Cell> CellMouseLeave;
+
         /// <summary>
         /// Obsluha události Click na buňku tabulky
         /// </summary>
@@ -1046,9 +1047,74 @@ namespace Asol.Tools.WorkScheduler.Data
         }
         protected virtual void OnActiveCellClick(GPropertyEventArgs<Cell> args) { }
         /// <summary>
-        /// Událost se vyvolá Click na dané buňce tabulky
+        /// Událost, která se vyvolá Click na dané buňce tabulky
         /// </summary>
         public event GPropertyEvent<Cell> ActiveCellClick;
+        /// <summary>
+        /// Obsluha události DoubleClick na buňku tabulky
+        /// </summary>
+        /// <param name="cell"></param>
+        /// <param name="eventSource"></param>
+        /// <param name="callEvents"></param>
+        void ITableEventTarget.CallActiveCellDoubleClick(Cell cell, EventSourceType eventSource, bool callEvents)
+        {
+            GPropertyEventArgs<Cell> args = new GPropertyEventArgs<Cell>(eventSource, cell);
+            this.OnActiveCellDoubleClick(args);
+            if (callEvents && this.ActiveCellDoubleClick != null)
+                this.ActiveCellDoubleClick(this, args);
+        }
+        protected virtual void OnActiveCellDoubleClick(GPropertyEventArgs<Cell> args) { }
+        /// <summary>
+        /// Událost, která se vyvolá DoubleClick na dané buňce tabulky
+        /// </summary>
+        public event GPropertyEvent<Cell> ActiveCellDoubleClick;
+        /// <summary>
+        /// Obsluha události LongClick na buňku tabulky
+        /// </summary>
+        /// <param name="cell"></param>
+        /// <param name="eventSource"></param>
+        /// <param name="callEvents"></param>
+        void ITableEventTarget.CallActiveCellLongClick(Cell cell, EventSourceType eventSource, bool callEvents)
+        {
+            GPropertyEventArgs<Cell> args = new GPropertyEventArgs<Cell>(eventSource, cell);
+            this.OnActiveCellLongClick(args);
+            if (callEvents && this.ActiveCellLongClick != null)
+                this.ActiveCellLongClick(this, args);
+        }
+        protected virtual void OnActiveCellLongClick(GPropertyEventArgs<Cell> args) { }
+        /// <summary>
+        /// Událost, která se vyvolá LongClick na dané buňce tabulky
+        /// </summary>
+        public event GPropertyEvent<Cell> ActiveCellLongClick;
+        /// <summary>
+        /// Obsluha události RightClick na buňku tabulky
+        /// </summary>
+        /// <param name="cell"></param>
+        /// <param name="eventSource"></param>
+        /// <param name="callEvents"></param>
+        void ITableEventTarget.CallActiveCellRightClick(Cell cell, EventSourceType eventSource, bool callEvents)
+        {
+            GPropertyEventArgs<Cell> args = new GPropertyEventArgs<Cell>(eventSource, cell);
+            this.OnActiveCellRightClick(args);
+            if (callEvents && this.ActiveCellRightClick != null)
+                this.ActiveCellRightClick(this, args);
+        }
+        protected virtual void OnActiveCellRightClick(GPropertyEventArgs<Cell> args) { }
+        /// <summary>
+        /// Událost, která se vyvolá RightClick na dané buňce tabulky
+        /// </summary>
+        public event GPropertyEvent<Cell> ActiveCellRightClick;
+        #endregion
+        #region Eventy volané z tabulky na základě logických dat
+
+        /// <summary>
+        /// Událost, která se vyvolá po aktivaci řádku (Enter nebo DoubleClick na buňce, která není Relation)
+        /// </summary>
+        public event GPropertyEvent<Cell> DataRowActivate;
+        /// <summary>
+        /// Událost, která se vyvolá po aktivaci vztahu (Ctrl + DoubleClick na buňce tabulky, která je Relation)
+        /// </summary>
+        public event GPropertyEvent<Cell> DataRelatedRecordActivate;
 
         #endregion
         #region Statické služby
@@ -1089,18 +1155,31 @@ namespace Asol.Tools.WorkScheduler.Data
         public Column(string name)
             : this()
         {
-            this._Name = name;
+            this._ColumnName = name;
         }
         /// <summary>
         /// Konstruktor
         /// </summary>
         /// <param name="name"></param>
-        /// <param name="text"></param>
-        public Column(string name, Asol.Tools.WorkScheduler.Localizable.TextLoc text)
+        /// <param name="title"></param>
+        public Column(string name, Localizable.TextLoc title = null, Localizable.TextLoc toolTip = null, string formatString = null, int? width = null,
+            bool useTimeAxis = false, bool autoWidth = false, bool sortingEnabled = true, int? widthMininum = null, int? widthMaximum = null, 
+            bool isVisible = true, bool allowColumnResize = true)
             : this()
         {
-            this._Name = name;
-            this._Text = text;
+            this._ColumnName = name;
+            Data.ColumnProperties columnProperties = this.ColumnProperties;
+            columnProperties.Title = title;
+            columnProperties.ToolTip = toolTip;
+            columnProperties.FormatString = formatString;
+            columnProperties.UseTimeAxis = useTimeAxis;
+            columnProperties.AllowColumnSortByClick = sortingEnabled;
+            columnProperties.AllowColumnResize = allowColumnResize;
+            columnProperties.Width = width;
+            columnProperties.IsVisible = isVisible;
+            columnProperties.AutoWidth = autoWidth;
+            columnProperties.WidthMininum = widthMininum;
+            columnProperties.WidthMaximum = widthMaximum;
         }
         /// <summary>
         /// Vizualizace
@@ -1109,7 +1188,7 @@ namespace Asol.Tools.WorkScheduler.Data
         public override string ToString()
         {
             return "Column " + this.ColumnId.ToString() + ": " 
-                + this.Name + ": " + this.Title 
+                + this.ColumnName + ": " + this.ColumnProperties.Title 
                 + " in " + (this.HasTable ? this.Table.ToString() : "NULL");
         }
         /// <summary>
@@ -1122,7 +1201,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// Klíčový název, typicky sloupec DB tabulky nebo jiné klíčové slovo. Nejde o titulek.
         /// </summary>
-        public string Name { get { return this._Name; } set { this._Name = value; } } private string _Name;
+        public string ColumnName { get { return this._ColumnName; } set { this._ColumnName = value; } } private string _ColumnName;
         #endregion
         #region Linkování na tabulku
         /// <summary>
@@ -1157,12 +1236,12 @@ namespace Asol.Tools.WorkScheduler.Data
             int id = this._ColumnId;
             if (id < 0)
             {   // this sloupec byl z tabulky odebrán:
-                this._ColumnOrder = id;
+                this.ColumnProperties.ColumnOrder = id;
             }
             else
             {   // this sloupec byl do tabulky přidán:
-                if (this._ColumnOrder < 0)
-                    this._ColumnOrder = id;
+                if (this.ColumnProperties.ColumnOrder < 0)
+                    this.ColumnProperties.ColumnOrder = id;
                 Table table = this._Table;
                 if (this.IsSortingColumn && table != null && table.Columns.Any(c => c.ColumnId != id && c.IsSortingColumn))
                     // Pokud do tabulky přidávám další (tj. this) sloupec, který už má v sobě nastavené třídění, 
@@ -1173,59 +1252,56 @@ namespace Asol.Tools.WorkScheduler.Data
         #endregion
         #region GUI vlastnosti sloupce
         /// <summary>
-        /// Titulkový text, lokalizovaný
+        /// Vlastnosti tohoto sloupce.
+        /// Tato property je autoinicializační, nikdy není null.
         /// </summary>
-        public Asol.Tools.WorkScheduler.Localizable.TextLoc Title { get { return (this._Text != null ? this._Text : (Asol.Tools.WorkScheduler.Localizable.TextLoc)this._Name); } set { this._Text = value; } } private Asol.Tools.WorkScheduler.Localizable.TextLoc _Text;
+        public ColumnProperties ColumnProperties
+        {
+            get
+            {
+                if (this._ColumnProperties == null)
+                {
+                    Data.ColumnProperties columnProperties = Data.ColumnProperties.Default;
+                    ((IOwnerProperty<Column>)columnProperties).Owner = this;
+                    this._ColumnProperties = columnProperties;
+                }
+                return this._ColumnProperties;
+            }
+            set
+            {
+                if (this._ColumnProperties != null)
+                    ((IOwnerProperty<Column>)this._ColumnProperties).Owner = null;
+                this._ColumnProperties = value;
+                if (this._ColumnProperties != null)
+                {
+                    ((IOwnerProperty<Column>)this._ColumnProperties).Owner = this;
+                    this.ReloadWidthLayout();
+                }
+            }
+        }
+        private ColumnProperties _ColumnProperties;
         /// <summary>
-        /// Text pro ToolTip pro hlavičku tohoto sloupce, lokalizovaný
+        /// Metoda promítne data z <see cref="ColumnProperties"/> do <see cref="WidthLayout"/>.
         /// </summary>
-        public Asol.Tools.WorkScheduler.Localizable.TextLoc ToolTip { get { return this._ToolTip; } set { this._ToolTip = value; } } private Asol.Tools.WorkScheduler.Localizable.TextLoc _ToolTip;
-        /// <summary>
-        /// Pořadí tohoto sloupce při zobrazování.
-        /// Výchozí je -1, takový sloupec je při přidání do tabulky zařazen na její konec.
-        /// Pokud je vytvořen sloupec s ColumnOrder nula a kladným, pak při přidání do tabulky se jeho ColumnOrder nezmění.
-        /// Jednotlivé sloupce nemusí mít hodnoty ColumnOrder v nepřerušovaném pořadí.
-        /// Po napojení sloupce do tabulky je do ColumnOrder vepsána hodnota = ColumnID, takže nový sloupec se zařadí vždy na konec.
-        /// </summary>
-        public int ColumnOrder { get { return this._ColumnOrder; } set { this._ColumnOrder = value; } } private int _ColumnOrder = -1;
-        /// <summary>
-        /// Datový typ obsahu sloupce. Null = obecná data
-        /// </summary>
-        public Type DataType { get { return this._DataType; } set { this._DataType = value; } } private Type _DataType;
-        /// <summary>
-        /// Formátovací string pro data zobrazovaná v tomto sloupci.
-        /// </summary>
-        public string FormatString { get { return this._FormatString; } set { this._FormatString = value; } } private string _FormatString;
-        /// <summary>
-        /// true pokud je povoleno třídit řádky kliknutím na záhlaví tohoto sloupce. Default = true;
-        /// </summary>
-        public bool AllowColumnSortByClick { get { return this._AllowColumnSortByClick; } set { this._AllowColumnSortByClick = value; } } private bool _AllowColumnSortByClick = true;
-        /// <summary>
-        /// true pokud je měnit šířku tohoto sloupce pomocí myši. Default = true;
-        /// </summary>
-        public bool AllowColumnResize { get { return this._AllowColumnResize; } set { this._AllowColumnResize = value; } } private bool _AllowColumnResize = true;
-        /// <summary>
-        /// true pokud se pro sloupec má zobrazit časová osa v záhlaví
-        /// </summary>
-        public bool UseTimeAxis { get { return this._UseTimeAxis; } set { this._UseTimeAxis = value; } } private bool _UseTimeAxis;
+        internal void ReloadWidthLayout()
+        {
+            ColumnProperties columnProperties = this.ColumnProperties;
+            this.WidthLayout.Size = columnProperties.Width;
+            this.WidthLayout.Visible = columnProperties.IsVisible;
+            this.WidthLayout.AutoSize = columnProperties.AutoWidth;
+            this.WidthLayout.SizeMinimum = columnProperties.WidthMininum;
+            this.WidthLayout.SizeMaximum = columnProperties.WidthMaximum;
+        }
         /// <summary>
         /// Defaultní parametry pro grafy v tomto sloupci.
         /// Tato property může být null.
         /// </summary>
-        public TimeGraphParameters GraphParameters { get { return this._GraphParameters; } set { this._GraphParameters = value; } } private TimeGraphParameters _GraphParameters;
-        /// <summary>
-        /// Komparátor ColumnOrder ASC
-        /// </summary>
-        /// <param name="a"></param>
-        /// <param name="b"></param>
-        /// <returns></returns>
-        public static int CompareOrder(Column a, Column b)
+        public TimeGraphParameters GraphParameters
         {
-            if (a == null && b == null) return 0;
-            if (a == null) return -1;
-            if (b == null) return 1;
-            return a.ColumnOrder.CompareTo(b.ColumnOrder);
+            get { return this._GraphParameters; }
+            set { this._GraphParameters = value; }
         }
+        private TimeGraphParameters _GraphParameters;
         /// <summary>
         /// Záhlaví tohoto sloupce, grafický prvek, auitoinicializační
         /// </summary>
@@ -1286,7 +1362,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <returns></returns>
         public bool SortChange()
         {
-            if (!this.SortingEnabled) return false;
+            if (!this.ColumnProperties.AllowColumnSortByClick) return false;
             switch (this.SortCurrent)
             {
                 case ItemSortType.None:
@@ -1302,41 +1378,20 @@ namespace Asol.Tools.WorkScheduler.Data
             return true;
         }
         /// <summary>
-        /// true pokud je povoleno třídit podle tohoto sloupce.
-        /// false = nemožno.
+        /// Komparátor ColumnOrder ASC
         /// </summary>
-        public bool SortingEnabled { get { return this._SortingEnabled; } set { this._SortingEnabled = value; } } private bool _SortingEnabled = true;
-        /// <summary>
-        /// Komparátor pro dvě hodnoty v tomto sloupci, pro třídění
-        /// </summary>
-        public Func<object, object, int> ValueComparator;
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static int CompareOrder(Column a, Column b)
+        {
+            if (a == null && b == null) return 0;
+            if (a == null) return -1;
+            if (b == null) return 1;
+            return a.ColumnProperties.ColumnOrder.CompareTo(b.ColumnProperties.ColumnOrder);
+        }
         #endregion
-        #region Šířka sloupce, kompletní layout okolo šířky sloupce
-        /// <summary>
-        /// Zadaná šířka sloupce.
-        /// Hodnotu může vložit aplikační kód, hodnota se projeví v GUI.
-        /// Uživatel může interaktivně měnit velikost objektu, změna se projeví v této hodnotě.
-        /// Veškerá další nastavení jsou v property WidthLayout.
-        /// </summary>
-        public Int32? Width { get { return this.WidthLayout.Size; } set { this.WidthLayout.Size = value; } }
-        /// <summary>
-        /// Nejmenší povolená šířka
-        /// </summary>
-        public Int32? WidthMininum { get { return this.WidthLayout.SizeMinimum; } set { this.WidthLayout.SizeMinimum = value; } }
-        /// <summary>
-        /// Největší povolená šířka
-        /// </summary>
-        public Int32? WidthMaximum { get { return this.WidthLayout.SizeMaximum; } set { this.WidthLayout.SizeMaximum = value; } }
-        /// <summary>
-        /// true pro viditelný sloupec (default), false for skrytý
-        /// </summary>
-        public bool IsVisible { get { return this.WidthLayout.Visible; } set { this.WidthLayout.Visible = value; } }
-        /// <summary>
-        /// true pokud tento prvek má být použit jako "guma" při změně šířky tabulky tak, aby kolekce sloupců vyplnila celý prostor.
-        /// Na true se nastavuje typicky u "hlavního" sloupce grafové tabulky.
-        /// Je vhodné přitom nastavit minimální šířku sloupce (WidthLayout.SizeMinimum) tak, aby při zmenšení prostoru z daného sloupce něco zbylo.
-        /// </summary>
-        public bool AutoWidth { get { return this.WidthLayout.AutoSize; } set { this.WidthLayout.AutoSize = value; } }
+        #region Layout šířky sloupce
         /// <summary>
         /// Veškeré hodnoty související s šířkou sloupce (rozsah hodnot, povolení Resize)
         /// </summary>
@@ -1362,6 +1417,100 @@ namespace Asol.Tools.WorkScheduler.Data
             }
         }
         #endregion
+    }
+    #endregion
+    #region ColumnProperties
+    /// <summary>
+    /// Vlastnosti konkrétního sloupce tabulky
+    /// </summary>
+    public class ColumnProperties : IOwnerProperty<Column>
+    {
+        public static ColumnProperties Default
+        {
+            get
+            {
+                return new ColumnProperties();
+            }
+        }
+        /// <summary>
+        /// Vlastník tohoto objektu
+        /// </summary>
+        Column IOwnerProperty<Column>.Owner { get { return this._Owner; } set { this._Owner = value; } } private Column _Owner;
+
+        private void _ReloadOwnerLayout()
+        {
+            if (this._Owner != null)
+                this._Owner.ReloadWidthLayout();
+        }
+
+        /// <summary>
+        /// Titulkový text, lokalizovaný
+        /// </summary>
+        public Localizable.TextLoc Title { get { return (this._Title != null ? this._Title : (Localizable.TextLoc)this._Owner.ColumnName); } set { this._Title = value; } } private Localizable.TextLoc _Title;
+        /// <summary>
+        /// Text pro ToolTip pro hlavičku tohoto sloupce, lokalizovaný
+        /// </summary>
+        public Localizable.TextLoc ToolTip { get { return this._ToolTip; } set { this._ToolTip = value; } } private Localizable.TextLoc _ToolTip;
+        /// <summary>
+        /// Pořadí tohoto sloupce při zobrazování.
+        /// Výchozí je -1, takový sloupec je při přidání do tabulky zařazen na její konec.
+        /// Pokud je vytvořen sloupec s ColumnOrder nula a kladným, pak při přidání do tabulky se jeho ColumnOrder nezmění.
+        /// Jednotlivé sloupce nemusí mít hodnoty ColumnOrder v nepřerušovaném pořadí.
+        /// Po napojení sloupce do tabulky je do ColumnOrder vepsána hodnota = ColumnID, takže nový sloupec se zařadí vždy na konec.
+        /// </summary>
+        public int ColumnOrder { get { return this._ColumnOrder; } set { this._ColumnOrder = value; } } private int _ColumnOrder = -1;
+        /// <summary>
+        /// Datový typ obsahu sloupce. Null = obecná data
+        /// </summary>
+        public Type DataType { get { return this._DataType; } set { this._DataType = value; } } private Type _DataType;
+        /// <summary>
+        /// Formátovací string pro data zobrazovaná v tomto sloupci.
+        /// </summary>
+        public string FormatString { get { return this._FormatString; } set { this._FormatString = value; } } private string _FormatString;
+        /// <summary>
+        /// true pokud je povoleno třídit řádky kliknutím na záhlaví tohoto sloupce. Default = true;
+        /// </summary>
+        public bool AllowColumnSortByClick { get { return this._AllowColumnSortByClick; } set { this._AllowColumnSortByClick = value; } } private bool _AllowColumnSortByClick = true;
+        /// <summary>
+        /// true pokud je měnit šířku tohoto sloupce pomocí myši. Default = true;
+        /// </summary>
+        public bool AllowColumnResize { get { return this._AllowColumnResize; } set { this._AllowColumnResize = value; } } private bool _AllowColumnResize = true;
+        /// <summary>
+        /// true pokud se pro sloupec má zobrazit časová osa v záhlaví
+        /// </summary>
+        public bool UseTimeAxis { get { return this._UseTimeAxis; } set { this._UseTimeAxis = value; } } private bool _UseTimeAxis;
+
+        /// <summary>
+        /// Zadaná šířka sloupce.
+        /// Hodnotu může vložit aplikační kód, hodnota se projeví v GUI.
+        /// Uživatel může interaktivně měnit velikost objektu, změna se projeví v této hodnotě.
+        /// Veškerá další nastavení jsou v property WidthLayout.
+        /// </summary>
+        public Int32? Width { get { return this._Width; } set { this._Width = value; this._ReloadOwnerLayout(); } } private Int32? _Width;
+        /// <summary>
+        /// Nejmenší povolená šířka
+        /// </summary>
+        public Int32? WidthMininum { get { return this._WidthMininum; } set { this._WidthMininum = value; this._ReloadOwnerLayout(); } } private Int32? _WidthMininum;
+        /// <summary>
+        /// Největší povolená šířka
+        /// </summary>
+        public Int32? WidthMaximum { get { return this._WidthMaximum; } set { this._WidthMaximum = value; this._ReloadOwnerLayout(); } } private Int32? _WidthMaximum;
+        /// <summary>
+        /// true pro viditelný sloupec (default), false for skrytý
+        /// </summary>
+        public bool IsVisible { get { return this._IsVisible; } set { this._IsVisible = value; this._ReloadOwnerLayout(); } } private bool _IsVisible;
+        /// <summary>
+        /// true pokud tento prvek má být použit jako "guma" při změně šířky tabulky tak, aby kolekce sloupců vyplnila celý prostor.
+        /// Na true se nastavuje typicky u "hlavního" sloupce grafové tabulky.
+        /// Je vhodné přitom nastavit minimální šířku sloupce (WidthLayout.SizeMinimum) tak, aby při zmenšení prostoru z daného sloupce něco zbylo.
+        /// </summary>
+        public bool AutoWidth { get { return this._AutoWidth; } set { this._AutoWidth = value; this._ReloadOwnerLayout(); } } private bool _AutoWidth;
+
+        /// <summary>
+        /// Komparátor pro dvě hodnoty v tomto sloupci, pro třídění podle tohoto sloupce
+        /// </summary>
+        public Func<object, object, int> ValueComparator;
+
     }
     #endregion
     #region Row
@@ -1524,7 +1673,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <returns></returns>
         private Cell _GetCell(string columnName)
         {
-            return this._CellDict.Values.FirstOrDefault(c => c.Column != null && String.Equals(c.Column.Name, columnName, StringComparison.InvariantCultureIgnoreCase));
+            return this._CellDict.Values.FirstOrDefault(c => c.Column != null && String.Equals(c.Column.ColumnName, columnName, StringComparison.InvariantCultureIgnoreCase));
         }
         /// <summary>
         /// Soupis buněk
@@ -1772,7 +1921,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// Text pro ToolTip pro tuto buňku, lokalizovaný
         /// </summary>
-        public Asol.Tools.WorkScheduler.Localizable.TextLoc ToolTip { get { return _ToolTip; } set { _ToolTip = value; } } private Asol.Tools.WorkScheduler.Localizable.TextLoc _ToolTip;
+        public Localizable.TextLoc ToolTip { get { return _ToolTip; } set { _ToolTip = value; } } private Localizable.TextLoc _ToolTip;
         /// <summary>
         /// Pokud this.ValueType bude Image, pak je možno použít tento obrázek (Cell.Value) jako ToolTip.Image.
         /// </summary>
@@ -1870,6 +2019,9 @@ namespace Asol.Tools.WorkScheduler.Data
         void CallCellMouseEnter(Cell cell, EventSourceType eventSource, bool callEvents);
         void CallCellMouseLeave(Cell cell, EventSourceType eventSource, bool callEvents);
         void CallActiveCellClick(Cell cell, EventSourceType eventSource, bool callEvents);
+        void CallActiveCellDoubleClick(Cell cell, EventSourceType eventSource, bool callEvents);
+        void CallActiveCellLongClick(Cell cell, EventSourceType eventSource, bool callEvents);
+        void CallActiveCellRightClick(Cell cell, EventSourceType eventSource, bool callEvents);
     }
     /// <summary>
     /// Objekt, kterému je možno nastavit stav platnosti dat, sloupce a řádku

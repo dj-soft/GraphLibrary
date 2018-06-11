@@ -478,48 +478,69 @@ namespace Asol.Tools.WorkScheduler.Components
                     this.RepaintToLayers = GInteractiveDrawLayer.Standard;
                     this.AfterStateChangedLeftClick(e);
                     break;
+                case GInteractiveChangeState.LeftDoubleClick:
+                    this.RepaintToLayers = GInteractiveDrawLayer.Standard;
+                    this.AfterStateChangedLeftDoubleClick(e);
+                    break;
+                case GInteractiveChangeState.LeftLongClick:
+                    this.RepaintToLayers = GInteractiveDrawLayer.Standard;
+                    this.AfterStateChangedLeftLongClick(e);
+                    break;
+                case GInteractiveChangeState.RightClick:
+                    this.RepaintToLayers = GInteractiveDrawLayer.Standard;
+                    this.AfterStateChangedRightClick(e);
+                    break;
             }
         }
         /// <summary>
-        /// Is called from InteractiveObject.AfterStateChanged() for ChangeState = KeyboardFocusEnter.
-        /// Value in this.HasFocus is now true.
+        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = KeyboardFocusEnter
+        /// Hodnota v <see cref="HasFocus"/> je nyní true.
         /// </summary>
         /// <param name="e"></param>
-        protected virtual void AfterStateChangedFocusEnter(GInteractiveChangeStateArgs e)
-        { }
+        protected virtual void AfterStateChangedFocusEnter(GInteractiveChangeStateArgs e) { }
         /// <summary>
-        /// Is called from InteractiveObject.AfterStateChanged() for ChangeState = KeyboardKeyPress.
-        /// Value in this.HasFocus is now true.
+        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = KeyboardKeyPress
+        /// Hodnota v <see cref="HasFocus"/> je nyní true.
         /// </summary>
         /// <param name="e"></param>
-        protected virtual void AfterStateChangedKeyPress(GInteractiveChangeStateArgs e)
-        { }
+        protected virtual void AfterStateChangedKeyPress(GInteractiveChangeStateArgs e) { }
         /// <summary>
-        /// Is called from InteractiveObject.AfterStateChanged() for ChangeState = KeyboardFocusLeave.
-        /// Value in this.HasFocus is now false.
+        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = KeyboardFocusLeave
+        /// Hodnota v <see cref="HasFocus"/> je nyní false.
         /// </summary>
         /// <param name="e"></param>
-        protected virtual void AfterStateChangedFocusLeave(GInteractiveChangeStateArgs e)
-        { }
+        protected virtual void AfterStateChangedFocusLeave(GInteractiveChangeStateArgs e) { }
         /// <summary>
-        /// Is called from InteractiveObject.AfterStateChanged() for ChangeState = MouseEnter.
-        /// Here can be set ToolTip: e.ToolTipData.InfoText = "text", e.ToolTipData.ShapeType = TooltipShapeType.Rectangle;, and so on
+        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = MouseEnter
+        /// Přípravu tooltipu je vhodnější provést v metodě <see cref="PrepareToolTip(GInteractiveChangeStateArgs)"/>, ta je volaná hned poté.
         /// </summary>
         /// <param name="e"></param>
-        protected virtual void AfterStateChangedMouseEnter(GInteractiveChangeStateArgs e)
-        { }
+        protected virtual void AfterStateChangedMouseEnter(GInteractiveChangeStateArgs e) { }
         /// <summary>
-        /// Is called from InteractiveObject.AfterStateChanged() for ChangeState = MouseLeave
+        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = MouseLeave
         /// </summary>
         /// <param name="e"></param>
-        protected virtual void AfterStateChangedMouseLeave(GInteractiveChangeStateArgs e)
-        { }
+        protected virtual void AfterStateChangedMouseLeave(GInteractiveChangeStateArgs e) { }
         /// <summary>
-        /// Is called from InteractiveObject.AfterStateChanged() for ChangeState = LeftClick
+        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = LeftClick
         /// </summary>
         /// <param name="e"></param>
-        protected virtual void AfterStateChangedLeftClick(GInteractiveChangeStateArgs e)
-        { }
+        protected virtual void AfterStateChangedLeftClick(GInteractiveChangeStateArgs e) { }
+        /// <summary>
+        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = LeftDoubleClick
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void AfterStateChangedLeftDoubleClick(GInteractiveChangeStateArgs e) { }
+        /// <summary>
+        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = LeftLongClick
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void AfterStateChangedLeftLongClick(GInteractiveChangeStateArgs e) { }
+        /// <summary>
+        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = RightClick
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void AfterStateChangedRightClick(GInteractiveChangeStateArgs e) { }
         /// <summary>
         /// Metoda je volána v události MouseEnter, a jejím úkolem je připravit data pro ToolTip.
         /// Metoda je volána poté, kdy byla volána metoda <see cref="AfterStateChangedMouseEnter"/>.
@@ -527,8 +548,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Bázová třída InteractiveObject zde nedělá nic.
         /// </summary>
         /// <param name="e"></param>
-        protected virtual void PrepareToolTip(GInteractiveChangeStateArgs e)
-        { }
+        protected virtual void PrepareToolTip(GInteractiveChangeStateArgs e) { }
         /// <summary>
         /// this method is called on each drag action
         /// </summary>

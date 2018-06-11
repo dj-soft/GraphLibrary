@@ -372,7 +372,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         private void _ColumnsCheck()
         {
             if (this._Columns != null) return;
-            List<Column> columnsList = this.DataTable.Columns.Where(c => c.IsVisible).ToList();    // Vybrat viditelné sloupce
+            List<Column> columnsList = this.DataTable.Columns.Where(c => c.ColumnProperties.IsVisible).ToList();    // Vybrat viditelné sloupce
             columnsList.Sort(Column.CompareOrder);                                                 // Setřídit podle pořadí
             SequenceLayout.SequenceLayoutCalculate(columnsList);                                   // Napočítat jejich ISequenceLayout.Begin a .End
             this._ColumnListWidthValid = true;                                                     // ISequenceLayout jsou platné
@@ -932,6 +932,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                 this._RowsScrollBarDataValid = false;
                 this._HeaderSplitterDataValid = false;
                 this._ChildArrayValid = false;
+                items |= InvalidateItem.Paint;
             }
 
             if ((items & (InvalidateItem.TableHeight)) != 0)
@@ -940,6 +941,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                 this._VisibleColumns = null;
                 this._VisibleRows = null;
                 this._ChildArrayValid = false;
+                items |= InvalidateItem.Paint;
             }
 
             if ((items & (InvalidateItem.RowHeader)) != 0)
@@ -947,6 +949,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                 this._TableInnerLayoutValid = false;
                 this._VisibleColumns = null;
                 this._ChildArrayValid = false;
+                items |= InvalidateItem.Paint;
                 callGrid = true;
             }
 
@@ -957,6 +960,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                 this._VisibleRows = null;
                 this._RowsScrollBarDataValid = false;
                 this._ChildArrayValid = false;
+                items |= InvalidateItem.Paint;
                 // Změna RowHeader by mohla zajímat i ostatní tabulky:
                 if ((items & (InvalidateItem.RowHeader)) != 0)
                     callGrid = true;
@@ -967,6 +971,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                 this._Columns = null;
                 this._VisibleColumns = null;
                 this._ChildArrayValid = false;
+                items |= InvalidateItem.Paint;
                 callGrid = true;
             }
 
@@ -975,6 +980,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                 this._ColumnListWidthValid = false;
                 this._VisibleColumns = null;
                 this._ChildArrayValid = false;
+                items |= InvalidateItem.Paint;
                 callGrid = true;
             }
 
@@ -985,6 +991,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                 this._VisibleRows = null;
                 this._RowsScrollBarDataValid = false;
                 this._ChildArrayValid = false;
+                items |= InvalidateItem.Paint;
             }
 
             if ((items & (InvalidateItem.RowHeight)) != 0)
@@ -993,11 +1000,13 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                 this._VisibleRows = null;
                 this._RowsScrollBarDataValid = false;
                 this._ChildArrayValid = false;
+                items |= InvalidateItem.Paint;
             }
             if ((items & (InvalidateItem.RowScroll)) != 0)
             {   // Po scrollu řádků: zrušíme pole viditelných řádků, vygeneruje se znovu:
                 this._VisibleRows = null;
                 this._ChildArrayValid = false;
+                items |= InvalidateItem.Paint;
             }
             if ((items & (InvalidateItem.Paint)) != 0)
             {   // Požadavek na kreslení tabulky:
@@ -1306,7 +1315,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="e">Data o změně</param>
         internal void RefreshTimeAxis(Column column, GPropertyChangeArgs<TimeRange> e)
         {
-            if (column == null || !column.UseTimeAxis) return;
+            if (column == null || !column.ColumnProperties.UseTimeAxis) return;
             column.ColumnHeader.RefreshTimeAxis(e);
             this.RepaintColumn(column);
         }
@@ -1318,7 +1327,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         internal ITimeConvertor GetTimeConvertor(int columnId)
         {
             Column column = this.Columns.FirstOrDefault(c => c.ColumnId == columnId);
-            if (column == null || !column.UseTimeAxis) return null;
+            if (column == null || !column.ColumnProperties.UseTimeAxis) return null;
             return column.ColumnHeader.TimeConvertor;
         }
         #endregion
@@ -1363,7 +1372,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             if (column != null)
             {
                 column.Table.ColumnHeaderClick(column);
-                if (column.AllowColumnSortByClick && column.Table.AllowColumnSortByClick)
+                if (column.ColumnProperties.AllowColumnSortByClick && column.Table.AllowColumnSortByClick)
                 {
                     if (column.SortChange())
                         this.Repaint();
@@ -1419,6 +1428,45 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         {
             this.SetActiveCell(cell, EventSourceType.InteractiveChanged, true);
             this.CallActiveCellClick(cell, EventSourceType.InteractiveChanged);
+        }
+        /// <summary>
+        /// Provede se poté, kdy uživatel povede DoubleClick na datovou buňku.
+        /// Pokud řádek buňky není aktivní, měl by být aktivován.
+        /// Pokud buňka není aktivní, a tabulka podporuje výběr buněk, měla by být aktivována.
+        /// Po změně aktivní buňky se vyžádá překreslení tabulky.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="cell">řádek</param>
+        public void CellDoubleClick(GInteractiveChangeStateArgs e, Cell cell)
+        {
+            this.SetActiveCell(cell, EventSourceType.InteractiveChanged, true);
+            this.CallActiveCellDoubleClick(cell, EventSourceType.InteractiveChanged);
+        }
+        /// <summary>
+        /// Provede se poté, kdy uživatel povede LongClick na datovou buňku.
+        /// Pokud řádek buňky není aktivní, měl by být aktivován.
+        /// Pokud buňka není aktivní, a tabulka podporuje výběr buněk, měla by být aktivována.
+        /// Po změně aktivní buňky se vyžádá překreslení tabulky.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="cell">řádek</param>
+        public void CellLongClick(GInteractiveChangeStateArgs e, Cell cell)
+        {
+            this.SetActiveCell(cell, EventSourceType.InteractiveChanged, true);
+            this.CallActiveCellLongClick(cell, EventSourceType.InteractiveChanged);
+        }
+        /// <summary>
+        /// Provede se poté, kdy uživatel povede RightClick na datovou buňku.
+        /// Pokud řádek buňky není aktivní, měl by být aktivován.
+        /// Pokud buňka není aktivní, a tabulka podporuje výběr buněk, měla by být aktivována.
+        /// Po změně aktivní buňky se vyžádá překreslení tabulky.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="cell">řádek</param>
+        public void CellRightClick(GInteractiveChangeStateArgs e, Cell cell)
+        {
+            this.SetActiveCell(cell, EventSourceType.InteractiveChanged, true);
+            this.CallActiveCellRightClick(cell, EventSourceType.InteractiveChanged);
         }
         #endregion
         #region Draw : kreslení vlastní tabulky
@@ -1516,7 +1564,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             //    this.DrawRowBackColor(e, boundsAbsolute, row, cell);
 
             // Obsah řádku:
-            string formatString = cell.Column.FormatString;
+            string formatString = cell.Column.ColumnProperties.FormatString;
             ContentAlignment textAlignment;
             string text = GetText(value, formatString, out textAlignment);
 
@@ -1912,6 +1960,26 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             if (target != null)
                 target.CallActiveCellClick(cell, eventSource, !this.IsSuppressedEvent);
         }
+        protected void CallActiveCellDoubleClick(Cell cell, EventSourceType eventSource)
+        {
+            ITableEventTarget target = (this.DataTable as ITableEventTarget);
+            if (target != null)
+                target.CallActiveCellDoubleClick(cell, eventSource, !this.IsSuppressedEvent);
+        }
+        protected void CallActiveCellLongClick(Cell cell, EventSourceType eventSource)
+        {
+            ITableEventTarget target = (this.DataTable as ITableEventTarget);
+            if (target != null)
+                target.CallActiveCellLongClick(cell, eventSource, !this.IsSuppressedEvent);
+        }
+        protected void CallActiveCellRightClick(Cell cell, EventSourceType eventSource)
+        {
+            ITableEventTarget target = (this.DataTable as ITableEventTarget);
+            if (target != null)
+                target.CallActiveCellRightClick(cell, eventSource, !this.IsSuppressedEvent);
+        }
+
+
         #endregion
     }
 }

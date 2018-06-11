@@ -431,7 +431,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <summary>
         /// true pokud má být zobrazen splitter za tímto sloupcem, závisí na (OwnerTable.AllowColumnResize && OwnerColumn.AllowColumnResize)
         /// </summary>
-        public bool ColumnSplitterVisible { get { return (this.OwnerTable.AllowColumnResize && this.OwnerColumn.AllowColumnResize); } }
+        public bool ColumnSplitterVisible { get { return (this.OwnerTable.AllowColumnResize && this.OwnerColumn.ColumnProperties.AllowColumnResize); } }
         /// <summary>
         /// Připraví ColumnSplitter.
         /// Splitter je připraven vždy, i když se aktuálně nepoužívá.
@@ -475,7 +475,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <summary>
         /// true pokud se pro sloupec má zobrazit časová osa v záhlaví
         /// </summary>
-        public bool UseTimeAxis { get { return this.OwnerColumn.UseTimeAxis; } }
+        public bool UseTimeAxis { get { return this.OwnerColumn.ColumnProperties.UseTimeAxis; } }
         /// <summary>
         /// Objekt, který provádí konverze časových údajů a pixelů, jde o vizuální časovou osu.
         /// Může být null, pokud this.UseTimeAxis je false.
@@ -489,7 +489,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         {
             get
             {
-                if (!this.OwnerColumn.UseTimeAxis) return null;
+                if (!this.OwnerColumn.ColumnProperties.UseTimeAxis) return null;
                 this._TimeAxisCheck();
                 return this._TimeAxis;
             }
@@ -553,7 +553,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         protected override IEnumerable<IInteractiveItem> Childs { get { this._ChildArrayCheck(); return this._ChildList; } }
         private void _ChildArrayCheck()
         {
-            bool useTimeAxis = this.OwnerColumn.UseTimeAxis;
+            bool useTimeAxis = this.OwnerColumn.ColumnProperties.UseTimeAxis;
             if (useTimeAxis)
             {
                 if (this._ChildList == null)
@@ -581,7 +581,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="e"></param>
         protected override void PrepareToolTip(GInteractiveChangeStateArgs e)
         {
-            Asol.Tools.WorkScheduler.Localizable.TextLoc toolTip = this.OwnerColumn.ToolTip;
+            Localizable.TextLoc toolTip = this.OwnerColumn.ColumnProperties.ToolTip;
             if (toolTip != null && !String.IsNullOrEmpty(toolTip.Text))
             {
                 e.ToolTipData.TitleText = "Column info";
@@ -740,10 +740,10 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             if (setDragToOrder)
             {   // Nastavíme _DragThisToColumnOrder na hodnotu toho sloupce, před kterým chceme být umístěni:
                 if (nextColumn != null)
-                    this.DragThisToColumnOrder = nextColumn.ColumnOrder;
+                    this.DragThisToColumnOrder = nextColumn.ColumnProperties.ColumnOrder;
                 else
                     // Pokud máme být umístěni za poslední sloupec, dáme hodnotu posledního sloupce + 1:
-                    this.DragThisToColumnOrder = columns[lastIndex].ColumnOrder + 1;
+                    this.DragThisToColumnOrder = columns[lastIndex].ColumnProperties.ColumnOrder + 1;
             }
         }
         /// <summary>
@@ -823,9 +823,9 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         protected void DrawColumnHeader(GInteractiveDrawArgs e, Rectangle boundsAbsolute, int? opacity)
         {
             Column column = this.OwnerColumn;
-            string text = column.Title;
+            string text = column.ColumnProperties.Title;
             Rectangle textArea = Rectangle.Empty;
-            if (!String.IsNullOrEmpty(text) && !column.UseTimeAxis)
+            if (!String.IsNullOrEmpty(text) && !column.ColumnProperties.UseTimeAxis)
             {   // Sloupec má zadaný titulek, a nepoužívá časovou osu (pak nebudeme kreslit titulek, bude tam jen osa):
                 FontInfo fontInfo = FontInfo.Caption;
                 fontInfo.Bold = (column.SortCurrent == ItemSortType.Ascending || column.SortCurrent == ItemSortType.Descending);
@@ -967,14 +967,14 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         {
             Row row = this.OwnerRow;
 
-            Int32Range rowAreaXRange = rowDataBounds.GetVisualRange(Orientation.Horizontal);       // Pozice RowData na ose X    (prostor pro data řádků, začíná za RowHeader, ale končí těsně před ScrollBarem)
+            Int32Range rowDataXRange = rowDataBounds.GetVisualRange(Orientation.Horizontal);       // Pozice RowData na ose X    (prostor pro data řádků, začíná za RowHeader, ale končí těsně před ScrollBarem)
             Int32Range rowChildsYRange = new Int32Range(0, this.VisualRange.Size - 0);             // Pozice všech Child items na ose Y (ta je relativní vzhledem k this řádku, proto začíná 0, a je o 1 pixel menší = o dolní GridLine)
 
             List<IInteractiveItem> childList = new List<IInteractiveItem>();
 
             // Viditelné buňky:
-            int cellXBegin = rowAreaXRange.Begin;
-            Point lastPoint = new Point(rowAreaXRange.Begin, 0);
+            int cellXBegin = rowDataXRange.Begin;
+            Point lastPoint = new Point(rowDataXRange.Begin, 0);
             foreach (Column column in visibleColumns)
             {   // Musíme provést korekci souřadnic na ose X:
                 // a) Hodnota column.ColumnHeader.VisualRange je v koordinátech GTable, tedy včetně RowHeader, typicky počínaje 0
@@ -986,7 +986,8 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             }
 
             // Souřadnice this GRow v rámci tabulky:
-            int cellXEnd = lastPoint.X + cellXBegin;
+            int cellXEnd = cellXBegin + lastPoint.X;
+            if (cellXEnd > rowDataXRange.End) cellXEnd = rowDataXRange.End;
             Int32Range rowXRange = new Int32Range(cellXBegin, cellXEnd);
             rowBounds = Int32Range.GetRectangle(rowXRange, this.VisualRange);
 
@@ -1335,6 +1336,33 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         {
             base.AfterStateChangedLeftClick(e);
             this.OwnerGTable.CellClick(e, this.OwnerCell);
+        }
+        /// <summary>
+        /// Uživatel dal DoubleClick
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void AfterStateChangedLeftDoubleClick(GInteractiveChangeStateArgs e)
+        {
+            base.AfterStateChangedLeftDoubleClick(e);
+            this.OwnerGTable.CellDoubleClick(e, this.OwnerCell);
+        }
+        /// <summary>
+        /// Uživatel dal LongClick
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void AfterStateChangedLeftLongClick(GInteractiveChangeStateArgs e)
+        {
+            base.AfterStateChangedLeftLongClick(e);
+            this.OwnerGTable.CellLongClick(e, this.OwnerCell);
+        }
+        /// <summary>
+        /// Uživatel dal RightClick
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void AfterStateChangedRightClick(GInteractiveChangeStateArgs e)
+        {
+            base.AfterStateChangedRightClick(e);
+            this.OwnerGTable.CellRightClick(e, this.OwnerCell);
         }
         /// <summary>
         /// Metoda je volána v události MouseEnter, a jejím úkolem je přpravit data pro ToolTip.
