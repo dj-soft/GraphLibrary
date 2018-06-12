@@ -533,29 +533,28 @@ namespace Asol.Tools.WorkScheduler.Components
             return new Size((int)((decimal)size.Width * shrink), (int)((decimal)size.Height * shrink));
         }
         /// <summary>
-        /// Create a new Rectangle, which is current rectangle enlarged by size specified for each side.
-        /// For example: this Rectangle {50, 10, 30, 20} .Enlarge(1, 1, 1, 1) will be after: {49, 9, 32, 22}.
-        /// For example: this Rectangle {50, 10, 30, 20} .Enlarge(0, 0, -1, -1) will be after: {50, 10, 29, 19}.
+        /// Vytvoří a vrátí nový Rectangle, jehož velikost je do všech stran zvětšená o daný počet pixelů.
+        /// Záporné číslo velikost zmenší.
+        /// Například this Rectangle {50, 10, 30, 20} .Enlarge(1) vrátí hodnotu: {49, 9, 32, 22}.
+        /// Například this Rectangle {50, 10, 30, 20} .Enlarge(-1) vrátí hodnotu: {51, 11, 28, 18}.
         /// </summary>
         /// <param name="r"></param>
-        /// <param name="left"></param>
-        /// <param name="top"></param>
-        /// <param name="right"></param>
-        /// <param name="bottom"></param>
+        /// <param name="all">Změna aplikovaná na všechny strany</param>
         public static Rectangle Enlarge(this Rectangle r, int all)
         {
             return r.Enlarge(all, all, all, all);
         }
         /// <summary>
-        /// Create a new Rectangle, which is current rectangle enlarged by size specified for each side.
-        /// For example: this Rectangle {50, 10, 30, 20} .Enlarge(1, 1, 1, 1) will be after: {49, 9, 32, 22}.
-        /// For example: this Rectangle {50, 10, 30, 20} .Enlarge(0, 0, -1, -1) will be after: {50, 10, 29, 19}.
+        /// Vytvoří a vrátí nový Rectangle, jehož velikost je do všech stran zvětšená o daný počet pixelů.
+        /// Záporné číslo velikost zmenší.
+        /// Například this Rectangle {50, 10, 30, 20} .Enlarge(1, 1, 1, 1) vrátí hodnotu: {49, 9, 32, 22}.
+        /// Například this Rectangle {50, 10, 30, 20} .Enlarge(0, 0, -1, -1) vrátí hodnotu: {50, 10, 29, 19}.
         /// </summary>
         /// <param name="r"></param>
-        /// <param name="left"></param>
-        /// <param name="top"></param>
-        /// <param name="right"></param>
-        /// <param name="bottom"></param>
+        /// <param name="left">Zvětšení doleva (zmenší X a zvětší Width)</param>
+        /// <param name="top">Zvětšení nahoru (zmenší Y a zvětší Height)</param>
+        /// <param name="right">Zvětšení doprava (zvětší Width)</param>
+        /// <param name="bottom">Zvětšení dolů (zvětší Height)</param>
         public static Rectangle Enlarge(this Rectangle r, int left, int top, int right, int bottom)
         {
             r.X = r.X - left;
