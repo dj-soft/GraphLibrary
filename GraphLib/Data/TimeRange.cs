@@ -534,6 +534,12 @@ namespace Asol.Tools.WorkScheduler.Data
         }
         #endregion
         #region Comparators
+        /// <summary>
+        /// Porovná dvě instance <see cref="TimeRange"/> podle hodnoty <see cref="BaseRange{TEdge, TSize}.Begin"/> ASC
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public static int CompareByBeginAsc(TimeRange a, TimeRange b)
         {
             if (a == null && b == null) return 0;

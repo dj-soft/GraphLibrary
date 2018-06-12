@@ -12,7 +12,7 @@ namespace Asol.Tools.WorkScheduler.Components
     #region class InteractiveObject : abstract ancestor for all common interactive items
     /// <summary>
     /// InteractiveObject : abstraktní předek všech běžně používaných grafických prvků.
-    /// Může mít své Child items <see cref="Chil"/>.
+    /// Může mít své vlastní Child (<see cref="Childs"/>).
     /// </summary>
     public abstract class InteractiveObject : IInteractiveItem, IInteractiveParent
     {

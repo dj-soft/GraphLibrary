@@ -287,12 +287,24 @@ namespace Asol.Tools.WorkScheduler.Components
             //  více prvků se shodným GroupId tvoří jeden logický celek, tyto prvky jsou vykresleny ve společné linii, nemíchají se s prvky s jiným GroupId.
             // Jedna GroupId reprezentuje například jednu výrobní operaci (nebo přesněji její paralelní průchod), například dva týdny práce;
             //  kdežto jednotlivé položky ITimeGraphItem reprezentují jednotlivé pracovní časy, například jednotlivé směny.
-            List<GTimeGraphGroup> groupList = new List<GTimeGraphGroup>();
-            IEnumerable<IGrouping<int, ITimeGraphItem>> groupArray = items.GroupBy(i => i.GroupId);
+            List<GTimeGraphGroup> groupList = new List<GTimeGraphGroup>();     // Výsledné pole prvků GTimeGraphGroup
+            List<ITimeGraphItem> groupsItems = new List<ITimeGraphItem>();     // Sem vložíme prvky ITimeGraphItem, které mají GroupId nenulové, odsud budeme generovat grupy...
+
+            // a) Položky bez GroupId:
+            foreach (ITimeGraphItem item in items)
+            {
+                if (item.GroupId == 0)
+                    groupList.Add(new GTimeGraphGroup(item));                  // Jedna instance GTimeGraphGroup obsahuje jeden pracovní čas
+                else
+                    groupsItems.Add(item);
+            }
+
+            // b) Položky, které mají GroupId nenulové, podle něj seskupíme:
+            IEnumerable<IGrouping<int, ITimeGraphItem>> groupArray = groupsItems.GroupBy(i => (i.GroupId != 0 ? i.GroupId : i.ItemId));
             foreach (IGrouping<int, ITimeGraphItem> group in groupArray)
                 groupList.Add(new GTimeGraphGroup(group));                     // Jedna instance GTimeGraphGroup obsahuje jeden nebo více pracovních časů
 
-            // Setřídíme prvky GTimeGraphGroup podle času jejich počátku:
+            // Setřídíme prvky GTimeGraphGroup podle jejich Order a podle času jejich počátku:
             if (groupList.Count > 1)
                 groupList.Sort((a, b) => GTimeGraphGroup.ItemsRecalculateLogicalYCompare(a, b));
             groups += groupList.Count;
@@ -488,7 +500,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     items++;
 
                     x = timeConvertor.GetPixelRange(item.Time);
-                    item.VirtualBounds = Int32Range.GetRectangle(x, y);
+                    item.GControl.VirtualBounds = Int32Range.GetRectangle(x, y);
                 }
 
                 visibleItems.Add(group);
@@ -510,7 +522,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     items++;
 
                     x = timeConvertor.GetProportionalPixelRange(item.Time, size);
-                    item.VirtualBounds = Int32Range.GetRectangle(x, y);
+                    item.GControl.VirtualBounds = Int32Range.GetRectangle(x, y);
                 }
 
                 visibleItems.Add(group);
@@ -534,7 +546,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     items++;
 
                     x = timeConvertor.GetLogarithmicPixelRange(item.Time, size, proportionalRatio);
-                    item.VirtualBounds = Int32Range.GetRectangle(x, y);
+                    item.GControl.VirtualBounds = Int32Range.GetRectangle(x, y);
                 }
 
                 visibleItems.Add(group);
@@ -853,7 +865,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         protected TimeGraphItemDrawArgs ItemDrawArgs;
         #endregion
-        #region ITimeGraph members
+        #region ITimeGraph + ITimeInteractiveGraph members
         ITimeConvertor ITimeGraph.TimeConvertor { get { return this._TimeConvertor; } set { this._TimeConvertor = value; this.InvalidateVisibleList(); } }
         int ITimeGraph.UnitHeight { get { return this.GraphParameters.OneLineHeight.Value; } } 
         void ITimeGraph.DrawContentTimeGraph(GInteractiveDrawArgs e, Rectangle boundsAbsolute) { this.DrawContentTimeGraph(e, boundsAbsolute); }
@@ -870,6 +882,19 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             this._ItemId = Application.App.GetNextId(typeof(ITimeGraphItem));
             this._FirstItem = null;
+            _PrepareGControl(this);
+        }
+        /// <summary>
+        /// Konstruktor s předáním jediné položky
+        /// </summary>
+        /// <param name="items"></param>
+        public GTimeGraphGroup(ITimeGraphItem item)
+            : this()
+        {
+            _PrepareGControl(item);
+            this._FirstItem = item;
+            this._Items = new ITimeGraphItem[] { item };
+            this._Store(item.Time.Begin, item.Time.End, item.Height);
         }
         /// <summary>
         /// Konstruktor s předáním skupiny položek, s výpočtem jejich sumárního časového intervalu a výšky
@@ -879,18 +904,38 @@ namespace Asol.Tools.WorkScheduler.Components
             : this()
         {
             this._Items = items.ToArray();
-            float height = 0f;
             DateTime? begin = null;
             DateTime? end = null;
+            float height = 0f;
             foreach (ITimeGraphItem item in this.Items)
             {
+                _PrepareGControl(item);
                 if (this._FirstItem == null) this._FirstItem = item;
                 if (item.Height > height) height = item.Height;
                 if (item.Time.Begin.HasValue && (!begin.HasValue || item.Time.Begin.Value < begin.Value)) begin = item.Time.Begin;
                 if (item.Time.End.HasValue && (!end.HasValue || item.Time.End.Value > end.Value)) end = item.Time.End;
             }
-            this._Height = height;
+            this._Store(begin, end, height);
+        }
+        /// <summary>
+        /// Metoda zajistí, že prvek (item) bude mít svůj grafický control (<see cref="ITimeGraphItem.GControl"/>).
+        /// </summary>
+        /// <param name="item"></param>
+        private static void _PrepareGControl(ITimeGraphItem item)
+        {
+            if (item != null && item.GControl == null)
+                item.GControl = new GTimeGraphControl(item);
+        }
+        /// <summary>
+        /// Zadané údaje vloží do <see cref="Time"/> a <see cref="Height"/>, vypočte hodnotu <see cref="IsValidRealTime"/>.
+        /// </summary>
+        /// <param name="begin"></param>
+        /// <param name="end"></param>
+        /// <param name="height"></param>
+        private void _Store(DateTime? begin, DateTime? end, float height)
+        {
             this._Time = new TimeRange(begin, end);
+            this._Height = height;
             this._IsValidRealTime = ((height > 0f) && (begin.HasValue && end.HasValue && end.Value > begin.Value));
         }
         public override string ToString()
@@ -921,9 +966,21 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public int ItemCount { get { return this._Items.Length; } }
         /// <summary>
-        /// Logical height of this item. Only postive Height is seen as Real.
+        /// Relativní výška tohoto prvku. Standardní hodnota = 1.0F. Fyzická výška (v pixelech) jednoho prvku je dána součinem 
+        /// <see cref="Height"/> * <see cref="GTimeGraph.GraphParameters"/>: <see cref="TimeGraphParameters.OneLineHeight"/>
+        /// Prvky s výškou 0 a menší nebudou vykresleny.
         /// </summary>
         public float Height { get { return this._Height; } }
+        /// <summary>
+        /// Barva pozadí prvku.
+        /// </summary>
+        public Color? BackColor { get; set; }
+        /// <summary>
+        /// Barva spojovací linky mezi prvky jedné skupiny.
+        /// Default = null = kreslí se barvou <see cref="BackColor"/>, která je morfována na 50% do barvy 
+        /// </summary>
+        public Color? LinkBackColor { get; set; }
+
         /// <summary>
         /// Summary time of all items.
         /// Only positive time is seen as real (End is higher than Begin).
@@ -934,6 +991,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         internal bool IsValidRealTime { get { return this._IsValidRealTime; } }
         /// <summary>
+        /// Vizuální prvek, který v sobě zahrnuje jak podporu pro vykreslování, tak podporu interaktivity.
+        /// A přitom to nevyžaduje od třídy, která fyzicky implementuje <see cref="ITimeGraphItem"/>.
+        /// Aplikační kód (implementační objekt <see cref="ITimeGraphItem"/> se o tuto property nemusí starat, řídící mechanismus sem vloží v případě potřeby new instanci.
+        /// Implementátor pouze poskytuje úložiště pro tuto instanci.
+        /// </summary>
+        public GTimeGraphControl GControl { get; set; }
+
+        /// <summary>
         /// Allocated logical space on the Y axis (not pixels). Value of 1 is standard logical unit of height.
         /// </summary>
         public Interval<float> LogicalY
@@ -942,7 +1007,7 @@ namespace Asol.Tools.WorkScheduler.Components
             set
             {
                 this._LogicalY = value.ValueClone;
-                this.Items.ForEachItem(i => i.LogicalY = this._LogicalY);
+                this.Items.ForEachItem(i => i.GControl.LogicalY = this._LogicalY);
             }
         }
         /// <summary>
@@ -954,7 +1019,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public Rectangle Bounds { get { return this._Bounds; } set { this._Bounds = value; } }
         /// <summary>
-        /// Draw this group
+        /// Vykreslí tuto grupu. Kreslí pouze pokud obsahuje více než 1 prvek, a pokud vrstva <see cref="ITimeGraphItem.Layer"/> je nula nebo kladná (pro záporné vrstvy se nekreslí).
+        /// Vykreslí spojovací linii.
         /// </summary>
         /// <param name="drawArgs">All data and support for drawing</param>
         public void Draw(TimeGraphItemDrawArgs drawArgs)
@@ -963,7 +1029,7 @@ namespace Asol.Tools.WorkScheduler.Components
             drawArgs.FillRectangle(this.VirtualBounds, Color.FromArgb(160, Color.Gray), -1, -1, -1, -1);
         }
         /// <summary>
-        /// Compare two instance by Order ASC, Time.Begin ASC
+        /// Porovná dvě instance <see cref="GTimeGraphGroup"/> podle <see cref="ITimeGraphItem.Order"/> ASC, <see cref="ITimeGraphItem.Time"/> ASC
         /// </summary>
         /// <param name="a"></param>
         /// <param name="b"></param>
@@ -984,13 +1050,80 @@ namespace Asol.Tools.WorkScheduler.Components
         int ITimeGraphItem.GroupId { get { return this._FirstItem.GroupId; } }
         TimeRange ITimeGraphItem.Time { get { return this.Time; } }
         float ITimeGraphItem.Height { get { return this.Height; } }
-        Interval<float> ITimeGraphItem.LogicalY { get { return this.LogicalY; } set { this.LogicalY = value; } }
-        Rectangle ITimeGraphItem.VirtualBounds { get { return this.VirtualBounds; } set { this.VirtualBounds = value; } }
-        Rectangle ITimeGraphItem.Bounds { get { return this.Bounds; } set { this.Bounds = value; } }
+        Color? ITimeGraphItem.BackColor { get { return this.BackColor; } }
+        Color? ITimeGraphItem.LinkBackColor { get { return this.LinkBackColor; } }
+        GTimeGraphControl ITimeGraphItem.GControl { get { return this.GControl; } set { this.GControl = value; } }
         void ITimeGraphItem.Draw(TimeGraphItemDrawArgs drawArgs) { this.Draw(drawArgs); }
         #endregion
     }
     #endregion
+    #region class GTimeGraphControl : vizuální a interaktivní control, který se vkládá do implementace ITimeGraphItem
+    /// <summary>
+    /// GTimeGraphControl : vizuální a interaktivní control, který se vkládá do implementace ITimeGraphItem
+    /// </summary>
+    public class GTimeGraphControl : InteractiveObject, IOwnerProperty<ITimeGraphItem>
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="owner"></param>
+        public GTimeGraphControl(ITimeGraphItem owner)
+        {
+            this._Owner = owner;
+        }
+        ITimeGraphItem IOwnerProperty<ITimeGraphItem>.Owner { get { return this._Owner; } set { this._Owner = value; } } private ITimeGraphItem _Owner;
+
+        /// <summary>
+        /// Logické rozmezí tohoto prvku na ose Y. Souřadnice 0 odpovídá hodnotě 0 na ose Y, kladná čísla jsou fyzicky nahoru, záporná jsou povolená a jdou dolů.
+        /// Jednotka je logická, nikoli pixely. Přepočet na pixely probíhá jinde.
+        /// </summary>
+        public Interval<float> LogicalY { get; set; }
+        /// <summary>
+        /// Virtuální souřadnice prvku na ose Y, v pixelech, ale s obráceným významem hodnoty Y:
+        /// 0 je dolní pixel buňky, kladné číslo Y jde nahoru, záporné číslo se nevyskytuje. Důvodem je korektní chování při zvětšování výšky (na ose Y), 
+        /// kdy chceme mít prvek grafu vždy stejně vzdálený od souřadnice Bottom (jak se na slušný graf sluší), a ne že bude fixně viset od souřadnice Top (jak to dělají Windows).
+        /// Souřadnice X je korektní, odpovídá Bounds.X.
+        /// Konverzi virtuálních souřadnic na fyzické provádí vykreslovací objekt třídy <see cref="TimeGraphItemDrawArgs"/>.
+        /// </summary>
+        public Rectangle VirtualBounds { get; set; }
+        /// <summary>
+        /// true když čas je kladný a výška rovněž
+        /// </summary>
+        protected bool IsValidRealTime { get { return (this._Owner != null && this._Owner.Time != null && this._Owner.Time.IsFilled && this._Owner.Time.IsReal && (this.LogicalY.End > this.LogicalY.Begin)); } }
+        /// <summary>
+        /// Metoda je volaná pro vykreslení prvku.
+        /// Implementátor může bez nejmenších obav převolat <see cref="GControl"/>.<see cref="GTimeGraphControl.dr"/> Draw
+        /// </summary>
+        /// <param name="drawArgs">Veškerá podpora pro přepočty souřadnic a pro kreslení prvku grafu</param>
+        public void Draw(TimeGraphItemDrawArgs drawArgs)
+        {
+
+            if (!this.IsValidRealTime) return;
+            Rectangle bounds = this.VirtualBounds;
+            if (this._Owner.Layer >= 0)
+            {
+                //   bounds.Y = bounds.Y + 1;
+                //   bounds.Height = bounds.Height - 1;
+            }
+            if (bounds.Width < 1) bounds.Width = 1;
+            int w = bounds.Width;
+            Color borderColor = Color.Black;
+            if (w <= 2)
+            {
+                drawArgs.FillRectangle(bounds, borderColor);
+            }
+            else
+            {
+                drawArgs.FillRectangle(bounds, this._Owner.BackColor);
+                drawArgs.BorderRectangle(bounds, borderColor);
+            }
+        }
+    }
+    #endregion
+    #region class GTimeGraphItem : Třída reprezentující jednu položku grafů. Jde o jednoduchou a funkční implementaci rozhraní ITimeGraphItem.
+    /// <summary>
+    /// GTimeGraphItem : Třída reprezentující jednu položku grafů. Jde o jednoduchou a funkční implementaci rozhraní ITimeGraphItem.
+    /// </summary>
     public class GTimeGraphItem : ITimeGraphItem
     {
         #region Public members
@@ -999,41 +1132,58 @@ namespace Asol.Tools.WorkScheduler.Components
             this._ItemId = Application.App.GetNextId(typeof(ITimeGraphItem));
         }
         /// <summary>
-        /// ID of this item
+        /// Jednoznačný identifikátor prvku
         /// </summary>
         public Int32 ItemId { get { return this._ItemId; } } private Int32 _ItemId;
         /// <summary>
-        /// Visual layer.
-        /// Items are drawed from lowest layer to highest.
-        /// Items on different layers can be drawed one over another, items on same layer is drawed on different Y coordinate.
-        /// </summary>
-        public Int32 Layer { get; set; }
-        /// <summary>
-        /// Visual level.
-        /// Items are positioned to visual level from bottom (logical Y = 0) up.
-        /// Items of level 1 began at topmost coordinate of items from level 0, and so on.
-        /// </summary>
-        public Int32 Level { get; set; }
-        /// <summary>
-        /// Order of item. Items in same Order are stored to graph on order their Time.Begin, item with higher Order are stored after store all items with lower Order.
-        /// </summary>
-        public Int32 Order { get; set; }
-        /// <summary>
-        /// Group of items for one logical unit (has items in more rows, or more items in one row).
-        /// Items from one group in same row has same Y coordinate.
-        /// Items from one group in another rows is "fixed" together.
+        /// GroupId: číslo skupiny. Prvky se shodným GroupId budou vykreslovány do společného "rámce", 
+        /// a pokud mezi jednotlivými prvky <see cref="ITimeGraphItem"/> se shodným <see cref="GroupId"/> bude na ose X nějaké volné místo,
+        /// nebude mezi nimi vykreslován žádný "cizí" prvek.
         /// </summary>
         public Int32 GroupId { get; set; }
         /// <summary>
-        /// Time of this item
+        /// Layer: Vizuální vrstva. Prvky z různých vrstev jsou kresleny "přes sebe" = mohou se překrývat.
+        /// Nižší hodnota je kreslena dříve.
+        /// Například: záporná hodnota Layer reprezentuje "podklad" který se needituje.
+        /// </summary>
+        public Int32 Layer { get; set; }
+        /// <summary>
+        /// Level: Vizuální hladina. Prvky v jedné hladině jsou kresleny do společného vodorovného pásu, 
+        /// další prvky ve vyšší hladině jsou všechny zase vykresleny ve svém odděleném pásu (nad tímto nižším pásem). 
+        /// Nespadnou do prvků nižšího pásu i když by v něm bylo volné místo.
+        /// </summary>
+        public Int32 Level { get; set; }
+        /// <summary>
+        /// Order: pořadí prvku při výpočtech souřadnic Y před vykreslováním. 
+        /// Prvky se stejným Order budou tříděny vzestupně podle data počátku <see cref="Time"/>.Begin.
+        /// </summary>
+        public Int32 Order { get; set; }
+        /// <summary>
+        /// Časový interval tohoto prvku
         /// </summary>
         public virtual TimeRange Time { get; set; }
         /// <summary>
-        /// Height of item, where value 1.0 = ITimeGraph.UnitHeight
+        /// Relativní výška tohoto prvku. Standardní hodnota = 1.0F. Fyzická výška (v pixelech) jednoho prvku je dána součinem 
+        /// <see cref="Height"/> * <see cref="GTimeGraph.GraphParameters"/>: <see cref="TimeGraphParameters.OneLineHeight"/>
+        /// Prvky s výškou 0 a menší nebudou vykresleny.
         /// </summary>
         public float Height { get; set; }
-        
+        /// <summary>
+        /// Barva pozadí prvku.
+        /// </summary>
         public Color? BackColor { get; set; }
+        /// <summary>
+        /// Barva spojovací linky mezi prvky jedné skupiny.
+        /// Default = null = kreslí se barvou <see cref="BackColor"/>, která je morfována na 50% do barvy 
+        /// </summary>
+        public Color? LinkBackColor { get; set; }
+        /// <summary>
+        /// Vizuální prvek, který v sobě zahrnuje jak podporu pro vykreslování, tak podporu interaktivity.
+        /// A přitom to nevyžaduje od třídy, která fyzicky implementuje <see cref="ITimeGraphItem"/>.
+        /// Aplikační kód (implementační objekt <see cref="ITimeGraphItem"/> se o tuto property nemusí starat, řídící mechanismus sem vloží v případě potřeby new instanci.
+        /// Implementátor pouze poskytuje úložiště pro tuto instanci.
+        /// </summary>
+        public GTimeGraphControl GControl { get; set; }
         public Color? BorderColor { get; set; }
         public Color? TextColor { get; set; }
         public string[] Captions { get; set; }
@@ -1041,44 +1191,10 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Protected members - VirtualBounds, LogicalY, Draw()
         /// <summary>
-        /// Virtual bounds in pixels, where X axis is same as Bounds, but Y axis is reverted (Virtual Y has 0 at bottom, in contrast to WinForm Y which has 0 at top)
-        /// </summary>
-        protected Rectangle VirtualBounds { get; set; }
-        /// <summary>
-        /// Relative bounds in pixels, in standard bounds coordinates as WinForm control
-        /// </summary>
-        protected Rectangle Bounds { get; set; }
-        /// <summary>
-        /// Logical coordinates on Y axis in Graph
-        /// </summary>
-        protected virtual Interval<float> LogicalY { get; set; }
-        /// <summary>
-        /// true if this item has positive Height and Time
-        /// </summary>
-        protected bool IsValidRealTime { get { return (this.Time != null && this.Time.IsFilled && this.Time.IsReal); } }
-        /// <summary>
         /// Draw this item
         /// </summary>
         protected virtual void Draw(TimeGraphItemDrawArgs drawArgs)
         {
-            if (!this.IsValidRealTime) return;
-            Rectangle bounds = this.VirtualBounds;
-            if (this.Layer >= 0)
-            {
-             //   bounds.Y = bounds.Y + 1;
-             //   bounds.Height = bounds.Height - 1;
-            }
-            if (bounds.Width < 1) bounds.Width = 1;
-            int w = bounds.Width;
-            if (w <= 2)
-            {
-                drawArgs.FillRectangle(bounds, this.BorderColor);
-            }
-            else
-            {
-                drawArgs.FillRectangle(bounds, this.BackColor);
-                drawArgs.BorderRectangle(bounds, this.BorderColor);
-            }
         }
         #endregion
         #region explicit ITimeGraphItem members
@@ -1089,12 +1205,13 @@ namespace Asol.Tools.WorkScheduler.Components
         int ITimeGraphItem.GroupId { get { return this.GroupId; } }
         TimeRange ITimeGraphItem.Time { get { return this.Time; } }
         float ITimeGraphItem.Height { get { return this.Height; } }
-        Interval<float> ITimeGraphItem.LogicalY { get { return this.LogicalY; } set { this.LogicalY = value; } }
-        Rectangle ITimeGraphItem.VirtualBounds { get { return this.VirtualBounds; } set { this.VirtualBounds = value; } }
-        Rectangle ITimeGraphItem.Bounds { get { return this.Bounds; } set { this.Bounds = value; } }
-        void ITimeGraphItem.Draw(TimeGraphItemDrawArgs drawArgs) { this.Draw(drawArgs); }
+        Color? ITimeGraphItem.BackColor { get { return this.BackColor; } }
+        Color? ITimeGraphItem.LinkBackColor { get { return this.LinkBackColor; } }
+        GTimeGraphControl ITimeGraphItem.GControl { get { return this.GControl; } set { this.GControl = value; } }
+        void ITimeGraphItem.Draw(TimeGraphItemDrawArgs drawArgs) { this.GControl.Draw(drawArgs); }
         #endregion
     }
+    #endregion
     #region Interface ITimeGraph, ITimeGraphItem, ITimeConvertor; enum TimeGraphAxisXMode
     public interface ITimeInteractiveGraph : ITimeGraph, IInteractiveItem
     { }
@@ -1115,7 +1232,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         /// <param name="boundsAbsolute"></param>
         void DrawContentTimeGraph(GInteractiveDrawArgs e, Rectangle boundsAbsolute);
-
     }
     /// <summary>
     /// Předpis rozhraní pro prvky grafu
@@ -1127,13 +1243,19 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         Int32 ItemId { get; }
         /// <summary>
+        /// GroupId: číslo skupiny. Prvky se shodným GroupId budou vykreslovány do společného "rámce", 
+        /// a pokud mezi jednotlivými prvky <see cref="ITimeGraphItem"/> se shodným <see cref="GroupId"/> bude na ose X nějaké volné místo,
+        /// nebude mezi nimi vykreslován žádný "cizí" prvek.
+        /// </summary>
+        Int32 GroupId { get; }
+        /// <summary>
         /// Layer: Vizuální vrstva. Prvky z různých vrstev jsou kresleny "přes sebe" = mohou se překrývat.
         /// Nižší hodnota je kreslena dříve.
         /// Například: záporná hodnota Layer reprezentuje "podklad" který se needituje.
         /// </summary>
         Int32 Layer { get; }
         /// <summary>
-        /// Level: Hladina. Prvky v jedné hladině jsou kresleny do společného vodorovného pásu, 
+        /// Level: Vizuální hladina. Prvky v jedné hladině jsou kresleny do společného vodorovného pásu, 
         /// další prvky ve vyšší hladině jsou všechny zase vykresleny ve svém odděleném pásu (nad tímto nižším pásem). 
         /// Nespadnou do prvků nižšího pásu i když by v něm bylo volné místo.
         /// </summary>
@@ -1143,12 +1265,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Prvky se stejným Order budou tříděny vzestupně podle data počátku <see cref="Time"/>.Begin.
         /// </summary>
         Int32 Order { get; }
-        /// <summary>
-        /// GroupId: číslo skupiny. Prvky se shodným GroupId budou vykreslovány do společného "rámce", 
-        /// a pokud mezi jednotlivými prvky <see cref="ITimeGraphItem"/> se shodným <see cref="GroupId"/> bude na ose X nějaké volné místo,
-        /// nebude mezi nimi vykreslován žádný "cizí" prvek.
-        /// </summary>
-        Int32 GroupId { get; }
         /// <summary>
         /// Časový interval tohoto prvku
         /// </summary>
@@ -1160,22 +1276,26 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         float Height { get; }
         /// <summary>
-        /// 
-        /// Logical coordinates on Y axis in Graph
+        /// Barva pozadí prvku.
         /// </summary>
-        Interval<float> LogicalY { get; set; }
+        Color? BackColor { get; }
         /// <summary>
-        /// Virtual bounds in pixels, where X axis is same as Bounds, but Y axis is reverted (Virtual Y has 0 at bottom, in contrast to WinForm Y which has 0 at top)
+        /// Barva spojovací linky mezi prvky jedné skupiny.
+        /// Default = null = kreslí se barvou <see cref="BackColor"/>, která je morfována na 50% do barvy 
         /// </summary>
-        Rectangle VirtualBounds { get; set; }
+        Color? LinkBackColor { get; }
         /// <summary>
-        /// Relative bounds in pixels, in standard bounds coordinates as WinForm control
+        /// Vizuální prvek, který v sobě zahrnuje jak podporu pro vykreslování, tak podporu interaktivity.
+        /// A přitom to nevyžaduje od třídy, která fyzicky implementuje <see cref="ITimeGraphItem"/>.
+        /// Aplikační kód (implementační objekt <see cref="ITimeGraphItem"/> se o tuto property nemusí starat, řídící mechanismus sem vloží v případě potřeby new instanci.
+        /// Implementátor pouze poskytuje úložiště pro tuto instanci.
         /// </summary>
-        Rectangle Bounds { get; set; }
+        GTimeGraphControl GControl { get; set; }
         /// <summary>
-        /// Draw this item
+        /// Metoda je volaná pro vykreslení prvku.
+        /// Implementátor může bez nejmenších obav převolat <see cref="GControl"/> : <see cref="GTimeGraphControl.Draw(TimeGraphItemDrawArgs)"/>
         /// </summary>
-        /// <param name="drawArgs">All data and support for drawing</param>
+        /// <param name="drawArgs">Veškerá podpora pro přepočty souřadnic a pro kreslení prvku grafu</param>
         void Draw(TimeGraphItemDrawArgs drawArgs);
     }
     /// <summary>
