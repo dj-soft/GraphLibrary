@@ -1108,13 +1108,15 @@ namespace Asol.Tools.WorkScheduler.Data
         #region Eventy volané z tabulky na základě logických dat
 
         /// <summary>
-        /// Událost, která se vyvolá po aktivaci řádku (Enter nebo DoubleClick na buňce, která není Relation)
+        /// Událost, která se vyvolá po aktivaci řádku (Enter nebo DoubleClick na buňce, která není Relation) 
+        /// = má se provést otevření formuláře záznamu z řádku
         /// </summary>
-        public event GPropertyEvent<Cell> DataRowActivate;
+        public event GPropertyEvent<Cell> DataRowRecordOpen;
         /// <summary>
         /// Událost, která se vyvolá po aktivaci vztahu (Ctrl + DoubleClick na buňce tabulky, která je Relation)
+        /// = má se provést otevření formuláře záznamu ze vztahu v buňce
         /// </summary>
-        public event GPropertyEvent<Cell> DataRelatedRecordActivate;
+        public event GPropertyEvent<Cell> DataRelatedRecordOpen;
 
         #endregion
         #region Statické služby
@@ -1269,23 +1271,31 @@ namespace Asol.Tools.WorkScheduler.Data
             }
             set
             {
+                ColumnProperties columnProperties = value;
                 if (this._ColumnProperties != null)
                     ((IOwnerProperty<Column>)this._ColumnProperties).Owner = null;
-                this._ColumnProperties = value;
-                if (this._ColumnProperties != null)
-                {
-                    ((IOwnerProperty<Column>)this._ColumnProperties).Owner = this;
-                    this.ReloadWidthLayout();
+
+                this._ColumnProperties = null;
+
+                if (columnProperties != null)
+                {   // Následující sekvence má svůj důvod:
+                    //  - Potřebuji, abych hodnoty, které jsou fyzicky uložené v dodaném objektu columnProperties přenesl do this.WidthLayout
+                    //  - Objekt třídy ColumnProperties, pokud má nastaveného Ownera, tak vrací hodnoty z něj (z Owner.WidthLayout), 
+                    //     ale pokud jeho Owner je null, pak vrací hodnoty svoje soukromé = a právě ty mě nyní zajímají!
+                    //  - Takže abych z objektu ColumnProperties dostal jeho vlastní data, musím je číst dřív, než do objektu vložím ownera = this:
+                    ((IOwnerProperty<Column>)columnProperties).Owner = null;   // Aby ColumnProperties vracel svoje vlastní data
+                    this._ReloadWidthLayout(columnProperties);                 // Načtu data z ColumnProperties do this.WidthLayout
+                    ((IOwnerProperty<Column>)columnProperties).Owner = this;   // Vložím Ownera, odteď ColumnProperties čte i ukládá data z/do this.WidthLayout
+                    this._ColumnProperties = columnProperties;                 // Uložím si referenci na ColumnProperties
                 }
             }
         }
         private ColumnProperties _ColumnProperties;
         /// <summary>
-        /// Metoda promítne data z <see cref="ColumnProperties"/> do <see cref="WidthLayout"/>.
+        /// Metoda promítne data z parametru <see cref="Data.ColumnProperties"/> do <see cref="WidthLayout"/>.
         /// </summary>
-        internal void ReloadWidthLayout()
+        private void _ReloadWidthLayout(ColumnProperties columnProperties)
         {
-            ColumnProperties columnProperties = this.ColumnProperties;
             this.WidthLayout.Size = columnProperties.Width;
             this.WidthLayout.Visible = columnProperties.IsVisible;
             this.WidthLayout.AutoSize = columnProperties.AutoWidth;
@@ -1425,24 +1435,22 @@ namespace Asol.Tools.WorkScheduler.Data
     /// </summary>
     public class ColumnProperties : IOwnerProperty<Column>
     {
-        public static ColumnProperties Default
-        {
-            get
-            {
-                return new ColumnProperties();
-            }
-        }
+        /// <summary>
+        /// Obsahuje defaultní vlastnosti
+        /// </summary>
+        public static ColumnProperties Default { get { return new ColumnProperties(); } }
         /// <summary>
         /// Vlastník tohoto objektu
         /// </summary>
         Column IOwnerProperty<Column>.Owner { get { return this._Owner; } set { this._Owner = value; } } private Column _Owner;
-
-        private void _ReloadOwnerLayout()
-        {
-            if (this._Owner != null)
-                this._Owner.ReloadWidthLayout();
-        }
-
+        /// <summary>
+        /// Layout šířky našeho columnu: <see cref="_Owner"/>: <see cref="Column.WidthLayout"/>
+        /// </summary>
+        private SequenceLayout _OwnerWidthLayout { get { return (this._HasOwnerLayout ? this._Owner.WidthLayout : null); } }
+        /// <summary>
+        /// true pokud máme vlastníka a ten má WidthLayout
+        /// </summary>
+        private bool _HasOwnerLayout { get { return (this._Owner != null && this._Owner.WidthLayout != null); } }
         /// <summary>
         /// Titulkový text, lokalizovaný
         /// </summary>
@@ -1486,31 +1494,107 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Uživatel může interaktivně měnit velikost objektu, změna se projeví v této hodnotě.
         /// Veškerá další nastavení jsou v property WidthLayout.
         /// </summary>
-        public Int32? Width { get { return this._Width; } set { this._Width = value; this._ReloadOwnerLayout(); } } private Int32? _Width;
+        public Int32? Width
+        {
+            get { return (this._HasOwnerLayout ? this._OwnerWidthLayout.Size : this._Width); }
+            set { this._Width = value; if (this._HasOwnerLayout) this._OwnerWidthLayout.Size = value; }
+        } private Int32? _Width;
         /// <summary>
         /// Nejmenší povolená šířka
         /// </summary>
-        public Int32? WidthMininum { get { return this._WidthMininum; } set { this._WidthMininum = value; this._ReloadOwnerLayout(); } } private Int32? _WidthMininum;
+        public Int32? WidthMininum
+        {
+            get { return (this._HasOwnerLayout ? this._OwnerWidthLayout.SizeMinimum : this._WidthMininum); }
+            set { this._WidthMininum = value; if (this._HasOwnerLayout) this._OwnerWidthLayout.SizeMinimum = value; }
+        } private Int32? _WidthMininum;
         /// <summary>
         /// Největší povolená šířka
         /// </summary>
-        public Int32? WidthMaximum { get { return this._WidthMaximum; } set { this._WidthMaximum = value; this._ReloadOwnerLayout(); } } private Int32? _WidthMaximum;
+        public Int32? WidthMaximum
+        {
+            get { return (this._HasOwnerLayout ? this._OwnerWidthLayout.SizeMaximum: this._WidthMaximum); }
+            set { this._WidthMaximum = value; if (this._HasOwnerLayout) this._OwnerWidthLayout.SizeMaximum = value; }
+        } private Int32? _WidthMaximum;
         /// <summary>
         /// true pro viditelný sloupec (default), false for skrytý
         /// </summary>
-        public bool IsVisible { get { return this._IsVisible; } set { this._IsVisible = value; this._ReloadOwnerLayout(); } } private bool _IsVisible;
+        public bool IsVisible
+        {
+            get { return (this._HasOwnerLayout ? this._OwnerWidthLayout.Visible : this._IsVisible); }
+            set { this._IsVisible = value; if (this._HasOwnerLayout) this._OwnerWidthLayout.Visible = value; }
+        } private bool _IsVisible;
         /// <summary>
         /// true pokud tento prvek má být použit jako "guma" při změně šířky tabulky tak, aby kolekce sloupců vyplnila celý prostor.
         /// Na true se nastavuje typicky u "hlavního" sloupce grafové tabulky.
         /// Je vhodné přitom nastavit minimální šířku sloupce (WidthLayout.SizeMinimum) tak, aby při zmenšení prostoru z daného sloupce něco zbylo.
         /// </summary>
-        public bool AutoWidth { get { return this._AutoWidth; } set { this._AutoWidth = value; this._ReloadOwnerLayout(); } } private bool _AutoWidth;
+        public bool AutoWidth
+        {
+            get { return (this._HasOwnerLayout ? this._OwnerWidthLayout.AutoSize : this._AutoWidth); }
+            set { this._AutoWidth = value; if (this._HasOwnerLayout) this._OwnerWidthLayout.AutoSize = value; }
+        } private bool _AutoWidth;
 
         /// <summary>
         /// Komparátor pro dvě hodnoty v tomto sloupci, pro třídění podle tohoto sloupce
         /// </summary>
-        public Func<object, object, int> ValueComparator;
+        public Func<object, object, int> ValueComparator { get { return this._ValueComparator; } set { this._ValueComparator = value; } } private Func<object, object, int> _ValueComparator;
 
+        /// <summary>
+        /// Jaká data obsahuje tento sloupec
+        /// </summary>
+        public ColumnContentType ColumnContent { get { return this._ColumnContent; } set { this._ColumnContent = value; } } private ColumnContentType _ColumnContent;
+
+        /// <summary>
+        /// Číslo třídy tohoto záznamu
+        /// </summary>
+        public int? RecordClassNumber { get { return this._RecordClassNumber; } set { this._RecordClassNumber = value; } } private int? _RecordClassNumber;
+        /// <summary>
+        /// true pokud tento sloupec zobrazuje vztažený záznam, a lze jej tedy rozkliknout (pomocí Ctrl + DoubleClick)
+        /// </summary>
+        public bool IsRelation { get { return this._IsRelation; } set { this._IsRelation = value; } } private bool _IsRelation;
+        /// <summary>
+        /// Číslo vztahu, pokud this sloupec je vztahový (<see cref="IsRelation"/> je true)
+        /// </summary>
+        public int? RelationNumber { get { return this._RelationNumber; } set { this._RelationNumber = value; } } private int? _RelationNumber;
+        /// <summary>
+        /// Číslo třídy vztaženého záznamu, pokud this sloupec je vztahový (<see cref="IsRelation"/> je true).
+        /// Při otevírání vztaženého záznamu (pomocí Ctrl + DoubleClick) je otevírán záznam této třídy.
+        /// Může být null pro subjekty.
+        /// </summary>
+        public int? RelatedRecordClassNumber { get { return this._RelatedRecordClassNumber; } set { this._RelatedRecordClassNumber = value; } } private int? _RelatedRecordClassNumber;
+        /// <summary>
+        /// Název sloupce (ColumnName), v němž je uloženo číslo vztaženého záznamu, pokud this sloupec je vztahový (<see cref="IsRelation"/> je true).
+        /// Při otevírání vztaženého záznamu (pomocí Ctrl + DoubleClick) je nalezen tento sloupec, přečteno jeho číslo a získaný záznam je otevřen.
+        /// </summary>
+        public string RelatedRecordColumnName { get { return this._RelatedRecordColumnName; } set { this._RelatedRecordColumnName = value; } } private string _RelatedRecordColumnName;
+
+
+    }
+    /// <summary>
+    /// Jaký druh údaje je obsažen ve sloupci
+    /// </summary>
+    public enum ColumnContentType
+    {
+        /// <summary>
+        /// Žádná data
+        /// </summary>
+        None,
+        /// <summary>
+        /// Běžná uživatelská data
+        /// </summary>
+        UserData,
+        /// <summary>
+        /// Časový graf
+        /// </summary>
+        TimeGraph,
+        /// <summary>
+        /// Číslo záznamu (řádku, i vztahu)
+        /// </summary>
+        RecordNumber,
+        /// <summary>
+        /// Jiná skrytá data
+        /// </summary>
+        HiddenData
     }
     #endregion
     #region Row
