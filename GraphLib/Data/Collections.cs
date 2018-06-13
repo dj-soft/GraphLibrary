@@ -299,7 +299,13 @@ namespace Asol.Tools.WorkScheduler.Data
     /// </summary>
     public interface IIdKey
     {
+        /// <summary>
+        /// Id prvku, numerické
+        /// </summary>
         int Id { get; }
+        /// <summary>
+        /// Klíč prvku, stringový
+        /// </summary>
         string Key { get; }
     }
     #endregion
@@ -1149,6 +1155,7 @@ namespace Asol.Tools.WorkScheduler.Data
     /// <summary>
     /// EList : adaptér na List.
     /// Poskytuje eventy při změnách.
+    /// Pokud datový typ implementuje interface <see cref="IIdKey"/>, pak indexer může pracovat i s hodnotou string <see cref="IIdKey.Key"/>.
     /// </summary>
     /// <typeparam name="T"></typeparam>
     public class EList<T> : IEnumerable<T>, IEnumerable
@@ -1480,6 +1487,7 @@ namespace Asol.Tools.WorkScheduler.Data
         public EList()
         {
             this.List = new List<T>();
+            this.Init();
         }
         /// <summary>
         /// Initializes a new instance of the System.Collections.Generic.List&lt;T&gt; class
@@ -1491,6 +1499,7 @@ namespace Asol.Tools.WorkScheduler.Data
         public EList(IEnumerable<T> collection)
         {
             this.List = new List<T>(collection);
+            this.Init();
         }
         /// <summary>
         /// Initializes a new instance of the System.Collections.Generic.List&lt;T&gt; class that is empty and has the specified initial capacity.
@@ -1500,7 +1509,25 @@ namespace Asol.Tools.WorkScheduler.Data
         public EList(int capacity)
         {
             this.List = new List<T>(capacity);
+            this.Init();
         }
+        /// <summary>
+        /// Společná inicializace
+        /// </summary>
+        protected void Init()
+        {
+            Type iIdKey = typeof(IIdKey);
+            this.TypeOfT = typeof(T);
+            this.TypeOfTImplementsIIdKey = (this.TypeOfT.FindInterfaces((t, p) => (t == iIdKey), null).Length > 0);
+        }
+        /// <summary>
+        /// Informace o typu <see cref="T"/>
+        /// </summary>
+        protected Type TypeOfT { get; private set; }
+        /// <summary>
+        /// true pokud typ <see cref="T"/> implementuje interface <see cref="IIdKey"/>.
+        /// </summary>
+        protected bool TypeOfTImplementsIIdKey { get; private set; }
         // Summary:
         //     Gets or sets the total number of elements the internal data structure can
         //     hold without resizing.
@@ -1557,6 +1584,26 @@ namespace Asol.Tools.WorkScheduler.Data
                     this.List[index] = value;
                     this.OnSetItemAfter(value, index);
                 }
+            }
+        }
+        public T this[string key]
+        {
+            get
+            {
+                if (!this.TypeOfTImplementsIIdKey)
+                    throw new InvalidOperationException($"Type {this.TypeOfT.Name} do not implement interface IIdKey, you can not use indexer EList[string]!");
+
+                int index = this.List.FindIndex(i => ((i as IIdKey).Key == key));
+                if (index < 0)
+                    throw new System.ArgumentOutOfRangeException($"Item with key [{key}] does not exists.");
+
+                T item = this.List[index];
+                if (this.CanGetItem(item, index))
+                {
+                    this.OnGetItemAfter(item, index);
+                    return item;
+                }
+                throw new System.ArgumentOutOfRangeException("Item with key [{key}] can not be retrieved.");
             }
         }
         /// <summary>

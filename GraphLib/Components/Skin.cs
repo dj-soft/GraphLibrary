@@ -993,19 +993,18 @@ namespace Asol.Tools.WorkScheduler.Components
         public Int32 LineHeight { get { return this._Owner.GetValue(this._SkinSetKey, "LineHeight", DefaultLineHeight); } set { this._Owner.SetValue(this._SkinSetKey, "LineHeight", value); } }
         public Int32 TotalHeightMin { get { return this._Owner.GetValue(this._SkinSetKey, "TotalHeightMin", DefaultTotalHeightMin); } set { this._Owner.SetValue(this._SkinSetKey, "TotalHeightMin", value); } }
         public Int32 TotalHeightMax { get { return this._Owner.GetValue(this._SkinSetKey, "TotalHeightMax", DefaultTotalHeightMax); } set { this._Owner.SetValue(this._SkinSetKey, "TotalHeightMax", value); } }
-
-
         public Color ElementBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "ElementBackColor", DefaultElementBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "ElementBackColor", value); } }
         public Color ElementBorderColor { get { return this._Owner.GetValue(this._SkinSetKey, "ElementBorderColor", DefaultElementBorderColor); } set { this._Owner.SetValue(this._SkinSetKey, "ElementBorderColor", value); } }
+        public Color ElementLinkBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "ElementLinkBackColor", DefaultElementLinkBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "ElementLinkBackColor", value); } }
         public Color BackColor { get { return this._Owner.GetValue(this._SkinSetKey, "BackColor", DefaultBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "BackColor", value); } }
         #endregion
         #region Default colors
         protected virtual Int32 DefaultLineHeight { get { return 18; } }
         protected virtual Int32 DefaultTotalHeightMin { get { return 14; } }
         protected virtual Int32 DefaultTotalHeightMax { get { return 480; } }
-
         protected virtual Color DefaultElementBackColor { get { return Color.CornflowerBlue; } }
         protected virtual Color DefaultElementBorderColor { get { return Color.BlueViolet; } }
+        protected virtual Color DefaultElementLinkBackColor { get { return Color.FromArgb(160, Color.DimGray); } }   // Barva linku obsahuje složku Alpha = 160 == úroveň Morphingu
         protected virtual Color DefaultBackColor { get { return Color.DimGray; } }
         #endregion
     }

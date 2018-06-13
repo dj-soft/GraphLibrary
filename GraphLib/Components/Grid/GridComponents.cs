@@ -1317,6 +1317,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         protected override void AfterStateChangedMouseEnter(GInteractiveChangeStateArgs e)
         {
             base.AfterStateChangedMouseEnter(e);
+            this.Repaint();
             this.OwnerGTable.CellMouseEnter(e, this.OwnerCell);
         }
         /// <summary>

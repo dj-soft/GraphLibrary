@@ -416,7 +416,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Vrátí hodnotu pixelu 0 pro daný tick rovný počátku osy = this.Value.Begin.
         /// Může vrátit null, pokud výpočet this.GetAxisUnits(tick - this.Value) vrátí null.
         /// </summary>
-        /// <param name="tick"></param>
+        /// <param name="tick">Logická hodnota</param>
         /// <returns></returns>
         public Int32? CalculatePixelLocalForTick(TTick tick)
         {
@@ -424,11 +424,11 @@ namespace Asol.Tools.WorkScheduler.Components
             return (pixels.HasValue ? (Int32?)(Math.Round(pixels.Value, 0)) : (Int32?)null);
         }
         /// <summary>
-        /// Returns a relative pixel position (in relative coordinates, as this.Bounds, in direction X or Y, by OrientationCurrent) for specified TTick (this is a logical value).
-        /// Return pixel = this.Bounds.X or this.Bounds.Y for tick = this.Value.Begin.
-        /// Can returns a null, when this.GetAxisUnits(tick - this.Value) returns a null value.
+        /// Vrátí relativní pozici v pixelech v relativních koordinátech (k this.Bounds) ve směru X nebo Y podle <see cref="OrientationCurrent"/>, 
+        /// pro daný <see cref="TTick"/> (tedy pro logickou hodnotu).
+        /// Může vrátit null, pokud metoda <see cref="GetAxisUnits(TSize)"/> vrátí null.
         /// </summary>
-        /// <param name="tick"></param>
+        /// <param name="tick">Logická hodnota</param>
         /// <returns></returns>
         public Int32? CalculatePixelRelativeForTick(TTick tick)
         {
@@ -436,10 +436,10 @@ namespace Asol.Tools.WorkScheduler.Components
             return (pixels.HasValue ? (Int32?)(Math.Round(this.PixelPointFromDistance(pixels.Value), 0)) : (Int32?)null);  // returns (PixelFirst + pixels.Value)
         }
         /// <summary>
-        /// Returns a pixel distance (=pixel size) for specified TSize distance (this is a logical value).
-        /// Can returns a 0, when this.GetAxisUnits(tick - this.Value) returns a null value.
+        /// Vrátí vzdálenost v pixelech pro danou vzdálenost logickou <see cref="TSize"/>.
+        /// Může vrátit null, pokud metoda <see cref="GetAxisUnits(TSize)"/> vrátí null.
         /// </summary>
-        /// <param name="tick"></param>
+        /// <param name="size">Logická vzdálenost</param>
         /// <returns></returns>
         public Int32? CalculatePixelDistanceForTSize(TSize size)
         {

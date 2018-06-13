@@ -1139,7 +1139,7 @@ namespace Asol.Tools.WorkScheduler.Data
     /// <summary>
     /// Column : informace o jednom sloupci tabulky
     /// </summary>
-    public class Column : ITableMember, IVisualMember, ISequenceLayout
+    public class Column : ITableMember, ISequenceLayout, IVisualMember, IIdKey
     {
         #region Konstruktor, základní data
         /// <summary>
@@ -1401,7 +1401,7 @@ namespace Asol.Tools.WorkScheduler.Data
             return a.ColumnProperties.ColumnOrder.CompareTo(b.ColumnProperties.ColumnOrder);
         }
         #endregion
-        #region Layout šířky sloupce
+        #region Implementace interface ISequenceLayout (Layout šířky sloupce), IVisualMember (vizuální vlastnosti), IIdKey (dvojitý klíč)
         /// <summary>
         /// Veškeré hodnoty související s šířkou sloupce (rozsah hodnot, povolení Resize)
         /// </summary>
@@ -1411,8 +1411,6 @@ namespace Asol.Tools.WorkScheduler.Data
         int ISequenceLayout.Size { get { return this._SequenceLayout.Size; } set { this._SequenceLayout.Size = value; } }
         int ISequenceLayout.End { get { return this._SequenceLayout.End; } }
         bool ISequenceLayout.AutoSize { get { return this._SequenceLayout.AutoSize; } }
-        #endregion
-        #region Visual style
         /// <summary>
         /// Všechny vizuální vlastnosti dat v tomto sloupci (nikoli hlavičky).
         /// Default hodnota je null.
@@ -1426,6 +1424,8 @@ namespace Asol.Tools.WorkScheduler.Data
                 return VisualStyle.CreateFrom(this.VisualStyle, (this.Table != null ? this.Table.VisualStyle : null));
             }
         }
+        int IIdKey.Id { get { return this.ColumnId; } }
+        string IIdKey.Key { get { return this.ColumnName; } }
         #endregion
     }
     #endregion

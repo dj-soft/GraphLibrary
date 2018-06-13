@@ -7,6 +7,9 @@ using Asol.Tools.WorkScheduler.Data;
 
 namespace Asol.Tools.WorkScheduler.Components
 {
+    /// <summary>
+    /// Graf na časové ose
+    /// </summary>
     public class GTimeGraph : InteractiveContainer, ITimeInteractiveGraph
     {
         #region Konstrukce, pole položek Items
@@ -997,7 +1000,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public Color? BackColor { get { return this._FirstItem.BackColor; } }
         /// <summary>
         /// Barva spojovací linky mezi prvky jedné skupiny.
-        /// Default = null = kreslí se barvou <see cref="BackColor"/>, která je morfována na 50% do barvy 
+        /// Default = null = kreslí se barvou <see cref="BackColor"/>, která je morfována na 50% do barvy DimGray a zprůhledněna na 50%.
         /// </summary>
         public Color? LinkBackColor { get { return this._FirstItem.LinkBackColor; } }
         /// <summary>
@@ -1044,10 +1047,9 @@ namespace Asol.Tools.WorkScheduler.Components
             if (!this.IsValidRealTime || this._FirstItem.Layer < 0 || this.ItemCount <= 1) return;
             Color? backColor = this.LinkBackColor;
             if (!backColor.HasValue)
-            {
-                backColor = (this.LinkBackColor.HasValue ._Owner.BackColor.HasValue ? this._Owner.BackColor.Value : Skin.Graph.ElementBackColor);
-            }
-            Color.FromArgb(160, Color.Gray);
+                // Nemáme explicitně danou barvu linky => odvodíme ji z barvy pozadí prvku + morphing:
+                backColor = (this.BackColor.HasValue ? this.BackColor.Value : Skin.Graph.ElementBackColor).Morph(Skin.Graph.ElementLinkBackColor);
+            backColor = Color.FromArgb(128, backColor.Value);
             Color? borderColor = backColor;
             this.GControl.Draw(drawArgs, backColor, borderColor, - 1);
         }
@@ -1216,7 +1218,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public Color? BackColor { get; set; }
         /// <summary>
         /// Barva spojovací linky mezi prvky jedné skupiny.
-        /// Default = null = kreslí se barvou <see cref="BackColor"/>, která je morfována na 50% do barvy 
+        /// Default = null = kreslí se barvou <see cref="BackColor"/>, která je morfována na 50% do barvy DimGray a zprůhledněna na 50%.
         /// </summary>
         public Color? LinkBackColor { get; set; }
         /// <summary>
@@ -1327,7 +1329,7 @@ namespace Asol.Tools.WorkScheduler.Components
         Color? BackColor { get; }
         /// <summary>
         /// Barva spojovací linky mezi prvky jedné skupiny.
-        /// Default = null = kreslí se barvou <see cref="BackColor"/>, která je morfována na 50% do barvy 
+        /// Default = null = kreslí se barvou <see cref="BackColor"/>, která je morfována na 50% do barvy DimGray a zprůhledněna na 50%.
         /// </summary>
         Color? LinkBackColor { get; }
         /// <summary>

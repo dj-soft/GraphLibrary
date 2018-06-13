@@ -650,6 +650,16 @@ namespace Asol.Tools.WorkScheduler.Components
             }
             return false;
         }
+        /// <summary>
+        /// Zajistí překreslení všech dodaných prvků
+        /// </summary>
+        /// <param name="items"></param>
+        protected static void RepaintItems(params IInteractiveItem[] items)
+        {
+            foreach (IInteractiveItem item in items)
+                if (item != null)
+                    item.Repaint();
+        }
         #endregion
         #region Suppress events
         /// <summary>

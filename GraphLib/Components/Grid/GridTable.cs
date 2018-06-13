@@ -695,8 +695,10 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             // Je tu změna:
 
             // Zajistíme překreslení starého i nového řádku (kvůli barevnosti):
-            this.RepaintRow(this._HotRow);
-            this.RepaintRow(newHotRow);
+            RepaintItems((oldHotRow != null ? oldHotRow.Control : null), 
+                         (oldHotRow != null ? oldHotRow.RowHeader : null),
+                         (newHotRow != null ? newHotRow.Control : null),
+                         (newHotRow != null ? newHotRow.RowHeader : null));
 
             this._HotRow = newHotRow;
             this.CallHotRowChanged(oldHotRow, newHotRow, eventSource);
@@ -730,6 +732,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
 
             // Je tu změna:
             this._HotCell = newHotCell;
+            RepaintItems((oldHotCell != null ? oldHotCell.Control : null), (newHotCell != null ? newHotCell.Control : null));
             this.CallHotCellChanged(oldHotCell, newHotCell, eventSource);
         }
         #endregion
@@ -809,10 +812,11 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             if (!isChange) return;
 
             // Je tu změna:
-
             // Zajistíme překreslení starého i nového řádku (kvůli barevnosti):
-            this.RepaintRow(this._ActiveRow);
-            this.RepaintRow(newActiveRow);
+            RepaintItems((oldActiveRow != null ? oldActiveRow.Control : null),
+                         (oldActiveRow != null ? oldActiveRow.RowHeader : null),
+                         (newActiveRow != null ? newActiveRow.Control : null),
+                         (newActiveRow != null ? newActiveRow.RowHeader : null));
 
             this._ActiveRow = newActiveRow;
             this.CallActiveRowChanged(oldActiveRow, newActiveRow, eventSource);
@@ -876,16 +880,6 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             bool isChange = this.Grid.ColumnsPositions.ScrollDataToVisible(isl);
             if (isChange)
                 this.Invalidate(InvalidateItem.RowScroll);
-        }
-        /// <summary>
-        /// Zajistí vyvolání metody Repaint pro RowHeader i pro všechny Cell.Control v daném řádku.
-        /// Je vhodné volat po změně aktivního řádku (pro starý i nový aktivní řádek), a stejně i po změně Hot řádku (=ten pod myší).
-        /// </summary>
-        /// <param name="row"></param>
-        protected void RepaintRow(Row row)
-        {
-            if (row == null) return;
-            ((IInteractiveItem)row.Control).Repaint();
         }
         /// <summary>
         /// Zajistí vyvolání metody Repaint pro ColumnHeader i pro všechny Cell.Control ve viditelných řádcích v daném sloupci.
@@ -1560,8 +1554,9 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         {
             if (row == null || cell == null) return;
 
-            // if (!(row.BackgroundValueType == TableValueType.ITimeInteractiveGraph && cell != null))
-            //    this.DrawRowBackColor(e, boundsAbsolute, row, cell);
+            // Nejprve podtržení, pokud sloupec zobrazuje vztah:
+            if (cell.Column.ColumnProperties.IsRelation)
+                this.DrawContentRelation(e, boundsAbsolute, row, cell, value);
 
             // Obsah řádku:
             string formatString = cell.Column.ColumnProperties.FormatString;
@@ -1600,6 +1595,21 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         {
             try { drawItem.Draw(e, boundsAbsolute); }
             catch { }
+        }
+        /// <summary>
+        /// Metoda vykreslí podtržení buňky, jako naznačení že sloupec zobrazuje vztah
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="row"></param>
+        /// <param name="cell"></param>
+        /// <param name="drawItem"></param>
+        private void DrawContentRelation(GInteractiveDrawArgs e, Rectangle boundsAbsolute, Row row, Cell cell, object value)
+        {
+            Rectangle boundsLine = new Rectangle(boundsAbsolute.X + 2, boundsAbsolute.Bottom - 3, boundsAbsolute.Width - 5, 1);
+            if (boundsLine.Width <= 0) return;
+
+            e.Graphics.FillRectangle(Skin.Brush(Color.DarkBlue), boundsLine);
         }
         /// <summary>
         /// Vykreslí obsah this buňky jako interaktivní časový graf
@@ -1978,8 +1988,6 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             if (target != null)
                 target.CallActiveCellRightClick(cell, eventSource, !this.IsSuppressedEvent);
         }
-
-
         #endregion
     }
 }
