@@ -163,6 +163,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                         new Column("image", "Fotografie", "Zobrazení", null, 60, sortingEnabled: false)
                     );
 
+                table.Columns["key"].ColumnProperties.IsRelation = true;
+
                 DateTime now = DateTime.Now.Date.AddHours(8);
                 for (int r = 0; r < rowCount; r++)
                 {
@@ -246,6 +248,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                         new Column("prof", "Profese", "Hlavní profese zaměstnance", width: 150),
                         new Column("gender", "Rod", sortingEnabled: false, width: 35, allowColumnResize: false, widthMininum: 35, widthMaximum: 35)
                     );
+
+                table.Columns["prof"].ColumnProperties.IsRelation = true;
 
                 Image[] images = _LoadImages();
 
