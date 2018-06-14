@@ -73,6 +73,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public static SkinGraphSet Graph { get { return Instance._Graph; } }
         /// <summary>
+        /// Grafické prvky pro kreslení objektů typu Relation
+        /// </summary>
+        public static SkinRelationSet Relation { get { return Instance._Relation; } }
+        /// <summary>
         /// All items, for configuration
         /// </summary>
         public static IEnumerable<KeyValuePair<string, object>> AllSkinItems { get { return Instance._ValueDict.ToArray(); } }
@@ -105,7 +109,9 @@ namespace Asol.Tools.WorkScheduler.Components
             this._Axis = new SkinAxisSet(this, "Axis");
             this._Grid = new SkinGridSet(this, "Grid");
             this._Graph = new SkinGraphSet(this, "Graph");
-    }
+            this._Relation = new SkinRelationSet(this, "Relation");
+
+        }
         /// <summary>
         /// Add a new instance of SkinSet to Skin.
         /// Use pattern for "external" SkinSet:
@@ -127,6 +133,7 @@ namespace Asol.Tools.WorkScheduler.Components
         private SkinAxisSet _Axis;
         private SkinGridSet _Grid;
         private SkinGraphSet _Graph;
+        private SkinRelationSet _Relation;
         private Dictionary<string, object> _ValueDict;
         #endregion
         #region Get and Set Values
@@ -1006,6 +1013,31 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual Color DefaultElementBorderColor { get { return Color.BlueViolet; } }
         protected virtual Color DefaultElementLinkBackColor { get { return Color.FromArgb(160, Color.DimGray); } }   // Barva linku obsahuje složku Alpha = 160 == úroveň Morphingu
         protected virtual Color DefaultBackColor { get { return Color.DimGray; } }
+        #endregion
+    }
+    /// <summary>
+    /// Sada grafických prvků pro typ Relation.
+    /// </summary>
+    public class SkinRelationSet : SkinSet
+    {
+        #region Internal and private
+        internal SkinRelationSet(Skin owner, string skinSetKey)
+            : base(owner, skinSetKey)
+        { }
+        #endregion
+        #region Public colors
+        public Int32 LineHeightInGrid { get { return this._Owner.GetValue(this._SkinSetKey, "LineHeightInGrid", DefaultLineHeightInGrid); } set { this._Owner.SetValue(this._SkinSetKey, "LineHeightInGrid", value); } }
+        public Int32 LineHeightInForm { get { return this._Owner.GetValue(this._SkinSetKey, "LineHeightInForm", DefaultLineHeightInForm); } set { this._Owner.SetValue(this._SkinSetKey, "LineHeightInForm", value); } }
+        public Color LineColorInGrid { get { return this._Owner.GetValue(this._SkinSetKey, "LineColorInGrid", DefaultLineColorInGrid); } set { this._Owner.SetValue(this._SkinSetKey, "LineColorInGrid", value); } }
+        public Color LineColorInForm { get { return this._Owner.GetValue(this._SkinSetKey, "LineColorInForm", DefaultLineColorInForm); } set { this._Owner.SetValue(this._SkinSetKey, "LineColorInForm", value); } }
+        public float LineFadingRatio { get { return this._Owner.GetValue(this._SkinSetKey, "LineFadingRatio", DefaultLineFadingRatio); } set { this._Owner.SetValue(this._SkinSetKey, "LineFadingRatio", value); } }
+        #endregion
+        #region Default colors
+        protected virtual Int32 DefaultLineHeightInGrid { get { return 1; } }
+        protected virtual Int32 DefaultLineHeightInForm { get { return 2; } }
+        protected virtual Color DefaultLineColorInGrid { get { return Color.BlueViolet; } }
+        protected virtual Color DefaultLineColorInForm { get { return Color.BlueViolet; } }
+        protected virtual float DefaultLineFadingRatio { get { return 0.60f; } }
         #endregion
     }
     /// <summary>

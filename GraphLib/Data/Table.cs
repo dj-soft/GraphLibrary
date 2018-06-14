@@ -1062,6 +1062,7 @@ namespace Asol.Tools.WorkScheduler.Data
             this.OnActiveCellDoubleClick(args);
             if (callEvents && this.ActiveCellDoubleClick != null)
                 this.ActiveCellDoubleClick(this, args);
+            this.DataCellDoubleClick(cell, eventSource);
         }
         protected virtual void OnActiveCellDoubleClick(GPropertyEventArgs<Cell> args) { }
         /// <summary>
@@ -1106,6 +1107,17 @@ namespace Asol.Tools.WorkScheduler.Data
         public event GPropertyEvent<Cell> ActiveCellRightClick;
         #endregion
         #region Eventy volané z tabulky na základě logických dat
+        /// <summary>
+        /// Metoda je volána po doubleclicku na buňku.
+        /// Metoda má zajistit otevření záznamu nebo jinou akci (vyvolat odpovídající event <see cref="DataRowRecordOpen"/> nebo <see cref="DataRelatedRecordOpen"/>),
+        /// a to na základě detekce obsahu buňky, obsahu sloupce atd.
+        /// </summary>
+        /// <param name="cell"></param>
+        /// <param name="eventSource"></param>
+        protected virtual void DataCellDoubleClick(Cell cell, EventSourceType eventSource)
+        {
+            cell.Column.ColumnProperties.
+        }
 
         /// <summary>
         /// Událost, která se vyvolá po aktivaci řádku (Enter nebo DoubleClick na buňce, která není Relation) 
@@ -1435,6 +1447,7 @@ namespace Asol.Tools.WorkScheduler.Data
     /// </summary>
     public class ColumnProperties : IOwnerProperty<Column>
     {
+        #region Konstruktory a privátní záležitosti
         /// <summary>
         /// Obsahuje defaultní vlastnosti
         /// </summary>
@@ -1451,6 +1464,8 @@ namespace Asol.Tools.WorkScheduler.Data
         /// true pokud máme vlastníka a ten má WidthLayout
         /// </summary>
         private bool _HasOwnerLayout { get { return (this._Owner != null && this._Owner.WidthLayout != null); } }
+        #endregion
+        #region Public data
         /// <summary>
         /// Titulkový text, lokalizovaný
         /// </summary>
@@ -1567,8 +1582,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Při otevírání vztaženého záznamu (pomocí Ctrl + DoubleClick) je nalezen tento sloupec, přečteno jeho číslo a získaný záznam je otevřen.
         /// </summary>
         public string RelatedRecordColumnName { get { return this._RelatedRecordColumnName; } set { this._RelatedRecordColumnName = value; } } private string _RelatedRecordColumnName;
-
-
+        #endregion
     }
     /// <summary>
     /// Jaký druh údaje je obsažen ve sloupci

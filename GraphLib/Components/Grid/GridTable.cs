@@ -1606,10 +1606,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="drawItem"></param>
         private void DrawContentRelation(GInteractiveDrawArgs e, Rectangle boundsAbsolute, Row row, Cell cell, object value)
         {
-            Rectangle boundsLine = new Rectangle(boundsAbsolute.X + 2, boundsAbsolute.Bottom - 3, boundsAbsolute.Width - 5, 1);
-            if (boundsLine.Width <= 0) return;
-
-            e.Graphics.FillRectangle(Skin.Brush(Color.DarkBlue), boundsLine);
+            GPainter.DrawRelationGrid(e.Graphics, boundsAbsolute);
         }
         /// <summary>
         /// Vykreslí obsah this buňky jako interaktivní časový graf
