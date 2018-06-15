@@ -1398,7 +1398,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         public void CellMouseEnter(GInteractiveChangeStateArgs e, Cell cell)
         {
             this.SetHotCell(cell, EventSourceType.InteractiveChanged);
-            this.CallCellMouseEnter(cell, EventSourceType.InteractiveChanged);
+            this.CallCellMouseEnter(e, cell, EventSourceType.InteractiveChanged);
         }
         /// <summary>
         /// Provede se poté, kdy uživatel vystoupí myší z určité buňky jinam.
@@ -1408,7 +1408,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         public void CellMouseLeave(GInteractiveChangeStateArgs e, Cell cell)
         {
             this.SetHotCell(null, EventSourceType.InteractiveChanged);
-            this.CallCellMouseLeave(cell, EventSourceType.InteractiveChanged);
+            this.CallCellMouseLeave(e, cell, EventSourceType.InteractiveChanged);
         }
         /// <summary>
         /// Provede se poté, kdy uživatel klikne na datovou buňku.
@@ -1421,7 +1421,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         public void CellClick(GInteractiveChangeStateArgs e, Cell cell)
         {
             this.SetActiveCell(cell, EventSourceType.InteractiveChanged, true);
-            this.CallActiveCellClick(cell, EventSourceType.InteractiveChanged);
+            this.CallActiveCellClick(e, cell, EventSourceType.InteractiveChanged);
         }
         /// <summary>
         /// Provede se poté, kdy uživatel povede DoubleClick na datovou buňku.
@@ -1434,7 +1434,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         public void CellDoubleClick(GInteractiveChangeStateArgs e, Cell cell)
         {
             this.SetActiveCell(cell, EventSourceType.InteractiveChanged, true);
-            this.CallActiveCellDoubleClick(cell, EventSourceType.InteractiveChanged);
+            this.CallActiveCellDoubleClick(e, cell, EventSourceType.InteractiveChanged);
         }
         /// <summary>
         /// Provede se poté, kdy uživatel povede LongClick na datovou buňku.
@@ -1447,7 +1447,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         public void CellLongClick(GInteractiveChangeStateArgs e, Cell cell)
         {
             this.SetActiveCell(cell, EventSourceType.InteractiveChanged, true);
-            this.CallActiveCellLongClick(cell, EventSourceType.InteractiveChanged);
+            this.CallActiveCellLongClick(e, cell, EventSourceType.InteractiveChanged);
         }
         /// <summary>
         /// Provede se poté, kdy uživatel povede RightClick na datovou buňku.
@@ -1460,7 +1460,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         public void CellRightClick(GInteractiveChangeStateArgs e, Cell cell)
         {
             this.SetActiveCell(cell, EventSourceType.InteractiveChanged, true);
-            this.CallActiveCellRightClick(cell, EventSourceType.InteractiveChanged);
+            this.CallActiveCellRightClick(e, cell, EventSourceType.InteractiveChanged);
         }
         #endregion
         #region Draw : kreslení vlastní tabulky
@@ -1949,19 +1949,19 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             if (target != null)
                 target.CallActiveCellChanged(oldActiveCell, oldActiveCell, eventSource, !this.IsSuppressedEvent);
         }
-        protected void CallCellMouseEnter(Cell cell, EventSourceType eventSource)
+        protected void CallCellMouseEnter(GInteractiveChangeStateArgs e, Cell cell, EventSourceType eventSource)
         {
             ITableEventTarget target = (this.DataTable as ITableEventTarget);
             if (target != null)
-                target.CallCellMouseEnter(cell, eventSource, !this.IsSuppressedEvent);
+                target.CallCellMouseEnter(e, cell, eventSource, !this.IsSuppressedEvent);
         }
-        protected void CallCellMouseLeave(Cell cell, EventSourceType eventSource)
+        protected void CallCellMouseLeave(GInteractiveChangeStateArgs e, Cell cell, EventSourceType eventSource)
         {
             ITableEventTarget target = (this.DataTable as ITableEventTarget);
             if (target != null)
-                target.CallCellMouseLeave(cell, eventSource, !this.IsSuppressedEvent);
+                target.CallCellMouseLeave(e, cell, eventSource, !this.IsSuppressedEvent);
         }
-        protected void CallActiveCellClick(Cell cell, EventSourceType eventSource)
+        protected void CallActiveCellClick(GInteractiveChangeStateArgs e, Cell cell, EventSourceType eventSource)
         {
             ITableEventTarget target = (this.DataTable as ITableEventTarget);
             if (target != null)

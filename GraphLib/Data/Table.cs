@@ -1116,7 +1116,8 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="eventSource"></param>
         protected virtual void DataCellDoubleClick(Cell cell, EventSourceType eventSource)
         {
-            cell.Column.ColumnProperties.
+            if (cell == null) return;
+            if (cell.Column.ColumnProperties.IsRelation && 
         }
 
         /// <summary>
