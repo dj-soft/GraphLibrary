@@ -325,7 +325,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected void CallBoundsChanged(Rectangle oldValue, Rectangle newValue, EventSourceType eventSource)
         {
-            GPropertyChangeArgs<Rectangle> args = new GPropertyChangeArgs<Rectangle>(eventSource, oldValue, newValue);
+            GPropertyChangeArgs<Rectangle> args = new GPropertyChangeArgs<Rectangle>(oldValue, newValue, eventSource);
             this.OnBoundsChanged(args);
             if (!this.IsSuppressedEvent && this.BoundsChanged != null)
                 this.BoundsChanged(this, args);
@@ -1175,7 +1175,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected void CallValueChanged(TValue oldValue, TValue newValue, EventSourceType eventSource)
         {
-            GPropertyChangeArgs<TValue> args = new GPropertyChangeArgs<TValue>(eventSource, oldValue, newValue);
+            GPropertyChangeArgs<TValue> args = new GPropertyChangeArgs<TValue>(oldValue, newValue, eventSource);
             this.OnValueChanged(args);
             if (!this.IsSuppressedEvent && this.ValueChanged != null)
                 this.ValueChanged(this, args);
@@ -1194,7 +1194,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected void CallValueRangeChanged(TRange oldValue, TRange newValue, EventSourceType eventSource)
         {
-            GPropertyChangeArgs<TRange> args = new GPropertyChangeArgs<TRange>(eventSource, oldValue, newValue);
+            GPropertyChangeArgs<TRange> args = new GPropertyChangeArgs<TRange>(oldValue, newValue, eventSource);
             this.OnValueRangeChanged(args);
             if (!this.IsSuppressedEvent && this.ValueRangeChanged != null)
                 this.ValueRangeChanged(this, args);

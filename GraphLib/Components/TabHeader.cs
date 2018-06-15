@@ -433,7 +433,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected GTabPage CallActivePageChanged(GTabPage oldValue, GTabPage newValue, EventSourceType eventSource)
         {
-            GPropertyChangeArgs<GTabPage> args = new GPropertyChangeArgs<GTabPage>(eventSource, oldValue, newValue);
+            GPropertyChangeArgs<GTabPage> args = new GPropertyChangeArgs<GTabPage>(oldValue, newValue, eventSource);
             this.OnActivePageChanged(args);
             if (!this.IsSuppressedEvent && this.ActivePageChanged != null)
                 this.ActivePageChanged(this, args);
@@ -453,7 +453,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected IInteractiveItem CallActiveControlChanged(IInteractiveItem oldValue, IInteractiveItem newValue, EventSourceType eventSource)
         {
-            GPropertyChangeArgs<IInteractiveItem> args = new GPropertyChangeArgs<IInteractiveItem>(eventSource, oldValue, newValue);
+            GPropertyChangeArgs<IInteractiveItem> args = new GPropertyChangeArgs<IInteractiveItem>(oldValue, newValue, eventSource);
             this.OnActiveControlChanged(args);
             if (!this.IsSuppressedEvent && this.ActiveControlChanged != null)
                 this.ActiveControlChanged(this, args);
@@ -473,7 +473,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected bool CallIsCollapsedChanged(bool oldValue, bool newValue, EventSourceType eventSource)
         {
-            GPropertyChangeArgs<bool> args = new GPropertyChangeArgs<bool>(eventSource, oldValue, newValue);
+            GPropertyChangeArgs<bool> args = new GPropertyChangeArgs<bool>(oldValue, newValue, eventSource);
             this.OnIsCollapsedChanged(args);
             if (!this.IsSuppressedEvent && this.IsCollapsedChanged != null)
                 this.IsCollapsedChanged(this, args);
@@ -673,7 +673,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected GTabPage CallActivePageChanged(GTabPage oldValue, GTabPage newValue, EventSourceType eventSource)
         {
-            GPropertyChangeArgs<GTabPage> args = new GPropertyChangeArgs<GTabPage>(eventSource, oldValue, newValue);
+            GPropertyChangeArgs<GTabPage> args = new GPropertyChangeArgs<GTabPage>(oldValue, newValue, eventSource);
             this.OnActivePageChanged(args);
             if (!this.IsSuppressedEvent && this.ActivePageChanged != null)
                 this.ActivePageChanged(this, args);

@@ -364,7 +364,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected void CallValueChanging(SizeRange oldValue, SizeRange newValue, EventSourceType eventSource)
         {
-            GPropertyChangeArgs<SizeRange> args = new GPropertyChangeArgs<SizeRange>(eventSource, oldValue, newValue);
+            GPropertyChangeArgs<SizeRange> args = new GPropertyChangeArgs<SizeRange>(oldValue, newValue, eventSource);
             this.OnValueChanging(args);
             if (!this.IsSuppressedEvent && this.ValueChanging != null)
                 this.ValueChanging(this, args);
@@ -383,7 +383,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected void CallValueChanged(SizeRange oldValue, SizeRange newValue, EventSourceType eventSource)
         {
-            GPropertyChangeArgs<SizeRange> args = new GPropertyChangeArgs<SizeRange>(eventSource, oldValue, newValue);
+            GPropertyChangeArgs<SizeRange> args = new GPropertyChangeArgs<SizeRange>(oldValue, newValue, eventSource);
             this.OnValueChanged(args);
             if (!this.IsSuppressedEvent && this.ValueChanged != null)
                 this.ValueChanged(this, args);
@@ -402,7 +402,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected void CallValueTotalChanged(SizeRange oldValue, SizeRange newValue, EventSourceType eventSource)
         {
-            GPropertyChangeArgs<SizeRange> args = new GPropertyChangeArgs<SizeRange>(eventSource, oldValue, newValue);
+            GPropertyChangeArgs<SizeRange> args = new GPropertyChangeArgs<SizeRange>(oldValue, newValue, eventSource);
             this.OnValueTotalChanged(args);
             if (!this.IsSuppressedEvent && this.ValueTotalChanged != null)
                 this.ValueTotalChanged(this, args);
@@ -421,7 +421,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected void CallOrientationChanged(Orientation oldValue, Orientation newValue, EventSourceType eventSource)
         {
-            GPropertyChangeArgs<Orientation> args = new GPropertyChangeArgs<Orientation>(eventSource, oldValue, newValue);
+            GPropertyChangeArgs<Orientation> args = new GPropertyChangeArgs<Orientation>(oldValue, newValue, eventSource);
             this.OnOrientationChanged(args);
             if (!this.IsSuppressedEvent && this.OrientationChanged != null)
                 this.OrientationChanged(this, args);

@@ -934,7 +934,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="callEvents"></param>
         void ITableEventTarget.CallHotRowChanged(Row oldActiveRow, Row newHotRow, EventSourceType eventSource, bool callEvents)
         {
-            GPropertyChangeArgs<Row> args = new GPropertyChangeArgs<Row>(eventSource, oldActiveRow, newHotRow);
+            GPropertyChangeArgs<Row> args = new GPropertyChangeArgs<Row>(oldActiveRow, newHotRow, eventSource);
             this.OnHotRowChanged(args);
             if (callEvents && this.HotRowChanged != null)
                 this.HotRowChanged(this, args);
@@ -953,7 +953,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="callEvents"></param>
         void ITableEventTarget.CallHotCellChanged(Cell oldHotCell, Cell newHotCell, EventSourceType eventSource, bool callEvents)
         {
-            GPropertyChangeArgs<Cell> args = new GPropertyChangeArgs<Cell>(eventSource, oldHotCell, newHotCell);
+            GPropertyChangeArgs<Cell> args = new GPropertyChangeArgs<Cell>(oldHotCell, newHotCell, eventSource);
             this.OnHotCellChanged(args);
             if (callEvents && this.HotCellChanged != null)
                 this.HotCellChanged(this, args);
@@ -972,7 +972,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="callEvents"></param>
         void ITableEventTarget.CallActiveRowChanged(Row oldActiveRow, Row newActiveRow, EventSourceType eventSource, bool callEvents)
         {
-            GPropertyChangeArgs<Row> args = new GPropertyChangeArgs<Row>(eventSource, oldActiveRow, newActiveRow);
+            GPropertyChangeArgs<Row> args = new GPropertyChangeArgs<Row>(oldActiveRow, newActiveRow, eventSource);
             this.OnActiveRowChanged(args);
             if (callEvents && this.ActiveRowChanged != null)
                 this.ActiveRowChanged(this, args);
@@ -988,7 +988,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="callEvents"></param>
         void ITableEventTarget.CallActiveCellChanged(Cell oldActiveCell, Cell newActiveCell, EventSourceType eventSource, bool callEvents)
         {
-            GPropertyChangeArgs<Cell> args = new GPropertyChangeArgs<Cell>(eventSource, oldActiveCell, newActiveCell);
+            GPropertyChangeArgs<Cell> args = new GPropertyChangeArgs<Cell>(oldActiveCell, newActiveCell, eventSource);
             this.OnActiveCellChanged(args);
             if (callEvents && this.ActiveCellChanged != null)
                 this.ActiveCellChanged(this, args);
@@ -1001,9 +1001,9 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="cell"></param>
         /// <param name="eventSource"></param>
         /// <param name="callEvents"></param>
-        void ITableEventTarget.CallCellMouseEnter(Cell cell, EventSourceType eventSource, bool callEvents)
+        void ITableEventTarget.CallCellMouseEnter(Cell cell, GInteractiveChangeStateArgs e, bool callEvents)
         {
-            GPropertyEventArgs<Cell> args = new GPropertyEventArgs<Cell>(eventSource, cell);
+            GPropertyEventArgs<Cell> args = new GPropertyEventArgs<Cell>(cell, EventSourceType.InteractiveChanged, e);
             this.OnCellMouseEnter(args);
             if (callEvents && this.CellMouseEnter != null)
                 this.CellMouseEnter(this, args);
@@ -1019,9 +1019,9 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="cell"></param>
         /// <param name="eventSource"></param>
         /// <param name="callEvents"></param>
-        void ITableEventTarget.CallCellMouseLeave(Cell cell, EventSourceType eventSource, bool callEvents)
+        void ITableEventTarget.CallCellMouseLeave(Cell cell, GInteractiveChangeStateArgs e, bool callEvents)
         {
-            GPropertyEventArgs<Cell> args = new GPropertyEventArgs<Cell>(eventSource, cell);
+            GPropertyEventArgs<Cell> args = new GPropertyEventArgs<Cell>(cell, EventSourceType.InteractiveChanged, e);
             this.OnCellMouseLeave(args);
             if (callEvents && this.CellMouseLeave != null)
                 this.CellMouseLeave(this, args);
@@ -1038,9 +1038,9 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="cell"></param>
         /// <param name="eventSource"></param>
         /// <param name="callEvents"></param>
-        void ITableEventTarget.CallActiveCellClick(Cell cell, EventSourceType eventSource, bool callEvents)
+        void ITableEventTarget.CallActiveCellClick(Cell cell, GInteractiveChangeStateArgs e, bool callEvents)
         {
-            GPropertyEventArgs<Cell> args = new GPropertyEventArgs<Cell>(eventSource, cell);
+            GPropertyEventArgs<Cell> args = new GPropertyEventArgs<Cell>(cell, EventSourceType.InteractiveChanged, e);
             this.OnActiveCellClick(args);
             if (callEvents && this.ActiveCellClick != null)
                 this.ActiveCellClick(this, args);
@@ -1056,13 +1056,13 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="cell"></param>
         /// <param name="eventSource"></param>
         /// <param name="callEvents"></param>
-        void ITableEventTarget.CallActiveCellDoubleClick(Cell cell, EventSourceType eventSource, bool callEvents)
+        void ITableEventTarget.CallActiveCellDoubleClick(Cell cell, GInteractiveChangeStateArgs e, bool callEvents)
         {
-            GPropertyEventArgs<Cell> args = new GPropertyEventArgs<Cell>(eventSource, cell);
+            GPropertyEventArgs<Cell> args = new GPropertyEventArgs<Cell>(cell, EventSourceType.InteractiveChanged, e);
             this.OnActiveCellDoubleClick(args);
             if (callEvents && this.ActiveCellDoubleClick != null)
                 this.ActiveCellDoubleClick(this, args);
-            this.DataCellDoubleClick(cell, eventSource);
+            this.DataCellDoubleClick(cell, args, callEvents);
         }
         protected virtual void OnActiveCellDoubleClick(GPropertyEventArgs<Cell> args) { }
         /// <summary>
@@ -1075,9 +1075,9 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="cell"></param>
         /// <param name="eventSource"></param>
         /// <param name="callEvents"></param>
-        void ITableEventTarget.CallActiveCellLongClick(Cell cell, EventSourceType eventSource, bool callEvents)
+        void ITableEventTarget.CallActiveCellLongClick(Cell cell, GInteractiveChangeStateArgs e, bool callEvents)
         {
-            GPropertyEventArgs<Cell> args = new GPropertyEventArgs<Cell>(eventSource, cell);
+            GPropertyEventArgs<Cell> args = new GPropertyEventArgs<Cell>(cell, EventSourceType.InteractiveChanged, e);
             this.OnActiveCellLongClick(args);
             if (callEvents && this.ActiveCellLongClick != null)
                 this.ActiveCellLongClick(this, args);
@@ -1093,9 +1093,9 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="cell"></param>
         /// <param name="eventSource"></param>
         /// <param name="callEvents"></param>
-        void ITableEventTarget.CallActiveCellRightClick(Cell cell, EventSourceType eventSource, bool callEvents)
+        void ITableEventTarget.CallActiveCellRightClick(Cell cell, GInteractiveChangeStateArgs e, bool callEvents)
         {
-            GPropertyEventArgs<Cell> args = new GPropertyEventArgs<Cell>(eventSource, cell);
+            GPropertyEventArgs<Cell> args = new GPropertyEventArgs<Cell>(cell, EventSourceType.InteractiveChanged, e);
             this.OnActiveCellRightClick(args);
             if (callEvents && this.ActiveCellRightClick != null)
                 this.ActiveCellRightClick(this, args);
@@ -1114,11 +1114,34 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         /// <param name="cell"></param>
         /// <param name="eventSource"></param>
-        protected virtual void DataCellDoubleClick(Cell cell, EventSourceType eventSource)
+        protected virtual void DataCellDoubleClick(Cell cell, GPropertyEventArgs<Cell> args, bool callEvents)
         {
             if (cell == null) return;
-            if (cell.Column.ColumnProperties.IsRelation && 
+            GId recordId = null;
+
+            // Otestujeme, jestli nejde o sloupec se vztahem => pokusíme se dohledat navázaný záznam z buňky:
+            if (cell.Column.ColumnProperties.IsRelation && args.HasInteractiveArgs && (args.InteractiveArgs.ModifierKeys == System.Windows.Forms.Keys.Control))
+                recordId = this.GetRecordForCell(cell);
+
+            // Anebo zkusíme získat navázaný záznam z řádku:
+            if (recordId == null)
+                recordId = this.GetRecordForRow(cell.Row);
+
+            if (recordId != null)
+                this.CallOpenRecordForm(recordId);
+
+
         }
+        protected void CallOpenRecordForm(GId recordId)
+        {
+            GPropertyEventArgs<GId> args = new GPropertyEventArgs<GId>(recordId, EventSourceType.InteractiveChanged);
+            this.OnOpenRecordForm(args);
+            if (this.OpenRecordForm != null)
+                this.OpenRecordForm(this, args);
+            qqq;
+        }
+        protected virtual void OnOpenRecordForm(GPropertyEventArgs<GId> args) { }
+        public event EventHandler<GPropertyEventArgs<GId>> OpenRecordForm;
 
         /// <summary>
         /// Událost, která se vyvolá po aktivaci řádku (Enter nebo DoubleClick na buňce, která není Relation) 
@@ -1131,6 +1154,12 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public event GPropertyEvent<Cell> DataRelatedRecordOpen;
 
+        #endregion
+        #region Datové služby tabulky
+        public GId GetRecordForRow(Row row)
+        { }
+        public GId GetRecordForCell(Cell cell)
+        { }
         #endregion
         #region Statické služby
         /// <summary>
@@ -2115,12 +2144,12 @@ namespace Asol.Tools.WorkScheduler.Data
         void CallActiveRowChanged(Row oldActiveRow, Row newActiveRow, EventSourceType eventSource, bool callEvents);
         void CallActiveCellChanged(Cell oldActiveCell, Cell newActiveCell, EventSourceType eventSource, bool callEvents);
 
-        void CallCellMouseEnter(Cell cell, EventSourceType eventSource, bool callEvents);
-        void CallCellMouseLeave(Cell cell, EventSourceType eventSource, bool callEvents);
-        void CallActiveCellClick(Cell cell, EventSourceType eventSource, bool callEvents);
-        void CallActiveCellDoubleClick(Cell cell, EventSourceType eventSource, bool callEvents);
-        void CallActiveCellLongClick(Cell cell, EventSourceType eventSource, bool callEvents);
-        void CallActiveCellRightClick(Cell cell, EventSourceType eventSource, bool callEvents);
+        void CallCellMouseEnter(Cell cell, GInteractiveChangeStateArgs e, bool callEvents);
+        void CallCellMouseLeave(Cell cell, GInteractiveChangeStateArgs e, bool callEvents);
+        void CallActiveCellClick(Cell cell, GInteractiveChangeStateArgs e, bool callEvents);
+        void CallActiveCellDoubleClick(Cell cell, GInteractiveChangeStateArgs e, bool callEvents);
+        void CallActiveCellLongClick(Cell cell, GInteractiveChangeStateArgs e, bool callEvents);
+        void CallActiveCellRightClick(Cell cell, GInteractiveChangeStateArgs e, bool callEvents);
     }
     /// <summary>
     /// Objekt, kterému je možno nastavit stav platnosti dat, sloupce a řádku

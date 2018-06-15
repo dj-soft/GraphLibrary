@@ -2277,7 +2277,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected void CallValueChanging(TValue oldValue, TValue newValue, EventSourceType eventSource)
         {
-            GPropertyChangeArgs<TValue> args = new GPropertyChangeArgs<TValue>(eventSource, oldValue, newValue);
+            GPropertyChangeArgs<TValue> args = new GPropertyChangeArgs<TValue>(oldValue, newValue, eventSource);
             this.OnValueChanging(args);
             if (!this.IsSuppressedEvent && this.ValueChanging != null)
                 this.ValueChanging(this, args);
@@ -2296,7 +2296,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected void CallValueChanged(TValue oldValue, TValue newValue, EventSourceType eventSource)
         {
-            GPropertyChangeArgs<TValue> args = new GPropertyChangeArgs<TValue>(eventSource, oldValue, newValue);
+            GPropertyChangeArgs<TValue> args = new GPropertyChangeArgs<TValue>(oldValue, newValue, eventSource);
             this.OnValueChanged(args);
             if (!this.IsSuppressedEvent && this.ValueChanged != null)
                 this.ValueChanged(this, args);
@@ -2315,7 +2315,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected void CallValueLimitChanged(TValue oldValue, TValue newValue, EventSourceType eventSource)
         {
-            GPropertyChangeArgs<TValue> args = new GPropertyChangeArgs<TValue>(eventSource, oldValue, newValue);
+            GPropertyChangeArgs<TValue> args = new GPropertyChangeArgs<TValue>(oldValue, newValue, eventSource);
             this.OnValueLimitChanged(args);
             if (!this.IsSuppressedEvent && this.ValueLimitChanged != null)
                 this.ValueLimitChanged(this, args);
@@ -2334,7 +2334,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected void CallSlaveSynchronize(TValue oldValue, TValue newValue, EventSourceType eventSource)
         {
-            GPropertyChangeArgs<TValue> args = new GPropertyChangeArgs<TValue>(eventSource, oldValue, newValue);
+            GPropertyChangeArgs<TValue> args = new GPropertyChangeArgs<TValue>(oldValue, newValue, eventSource);
             this.OnSlaveSynchronize(args);
             if (!this.IsSuppressedEvent && this.SlaveSynchronize != null)
                 this.SlaveSynchronize(this, args);
@@ -2353,7 +2353,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected void CallScaleChanged(decimal oldValue, decimal newValue, EventSourceType eventSource)
         {
-            GPropertyChangeArgs<decimal> args = new GPropertyChangeArgs<decimal>(eventSource, oldValue, newValue);
+            GPropertyChangeArgs<decimal> args = new GPropertyChangeArgs<decimal>(oldValue, newValue, eventSource);
             this.OnScaleChanged(args);
             if (!this.IsSuppressedEvent && this.ScaleChanged != null)
                 this.ScaleChanged(this, args);
@@ -2372,7 +2372,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected void CallScaleLimitChanged(SizeRange oldValue, SizeRange newValue, EventSourceType eventSource)
         {
-            GPropertyChangeArgs<SizeRange> args = new GPropertyChangeArgs<SizeRange>(eventSource, oldValue, newValue);
+            GPropertyChangeArgs<SizeRange> args = new GPropertyChangeArgs<SizeRange>(oldValue, newValue, eventSource);
             this.OnScaleLimitChanged(args);
             if (!this.IsSuppressedEvent && this.ScaleLimitChanged != null)
                 this.ScaleLimitChanged(this, args);
@@ -2391,7 +2391,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected void CallArrangementChanged(ArrangementOne oldArrangement, ArrangementOne newArrangement, EventSourceType eventSource)
         {
-            GPropertyChangeArgs<ArrangementOne> args = new GPropertyChangeArgs<ArrangementOne>(eventSource, oldArrangement, newArrangement);
+            GPropertyChangeArgs<ArrangementOne> args = new GPropertyChangeArgs<ArrangementOne>(oldArrangement, newArrangement, eventSource);
             this.OnArrangementChanged(args);
             if (this.ArrangementChanged != null)
                 this.ArrangementChanged(this, args);
@@ -2410,7 +2410,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected void CallAreaChanged(Rectangle oldValue, Rectangle newValue, EventSourceType eventSource)
         {
-            GPropertyChangeArgs<Rectangle> args = new GPropertyChangeArgs<Rectangle>(eventSource, oldValue, newValue);
+            GPropertyChangeArgs<Rectangle> args = new GPropertyChangeArgs<Rectangle>(oldValue, newValue, eventSource);
             this.OnAreaChanged(args);
             if (!this.IsSuppressedEvent && this.AreaChanged != null)
                 this.AreaChanged(this, args);
@@ -2429,7 +2429,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected void CallTicksChanged(BaseTick<TTick>[] oldTickList, BaseTick<TTick>[] newTickList, EventSourceType eventSource)
         {
-            GPropertyChangeArgs<BaseTick<TTick>[]> args = new GPropertyChangeArgs<BaseTick<TTick>[]>(eventSource, oldTickList, newTickList);
+            GPropertyChangeArgs<BaseTick<TTick>[]> args = new GPropertyChangeArgs<BaseTick<TTick>[]>(oldTickList, newTickList, eventSource);
             this.OnTicksChanged(args);
             if (!this.IsSuppressedEvent && this.TicksChanged != null)
                 this.TicksChanged(this, args);
@@ -2448,7 +2448,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected void CallOrientationChanged(AxisOrientation oldValue, AxisOrientation newValue, EventSourceType eventSource)
         {
-            GPropertyChangeArgs<AxisOrientation> args = new GPropertyChangeArgs<AxisOrientation>(eventSource, oldValue, newValue);
+            GPropertyChangeArgs<AxisOrientation> args = new GPropertyChangeArgs<AxisOrientation>(oldValue, newValue, eventSource);
             this.OnOrientationChanged(args);
             if (!this.IsSuppressedEvent && this.OrientationChanged != null)
                 this.OrientationChanged(this, args);

@@ -320,7 +320,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected void CallToolbarSizeChanged(ComponentSize oldValue, ComponentSize newValue, EventSourceType eventSource)
         {
-            GPropertyChangeArgs<ComponentSize> args = new GPropertyChangeArgs<ComponentSize>(eventSource, oldValue, newValue);
+            GPropertyChangeArgs<ComponentSize> args = new GPropertyChangeArgs<ComponentSize>(oldValue, newValue, eventSource);
             this.OnToolbarSizeChanged(args);
             if (!this.IsSuppressedEvent && this.ToolbarSizeChanged != null)
                 this.ToolbarSizeChanged(this, args);

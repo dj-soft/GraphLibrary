@@ -433,20 +433,29 @@ namespace Asol.Tools.WorkScheduler.Components
     /// </summary>
     public class GPropertyEventArgs<T> : EventArgs
     {
-        public GPropertyEventArgs(EventSourceType eventSource, T value)
+        public GPropertyEventArgs(T value, EventSourceType eventSource = EventSourceType.InteractiveChanged, GInteractiveChangeStateArgs interactiveArgs = null)
         {
-            this.EventSource = eventSource;
             this.Value = value;
+            this.EventSource = eventSource;
+            this.InteractiveArgs = interactiveArgs;
             this.Cancel = false;
         }
+        /// <summary>
+        /// Objekt, kde došlo k události
+        /// </summary>
+        public T Value { get; private set; }
         /// <summary>
         /// Zdroj události
         /// </summary>
         public EventSourceType EventSource { get; private set; }
         /// <summary>
-        /// Objekt, kde došlo k události
+        /// Data o interaktivní události
         /// </summary>
-        public T Value { get; private set; }
+        public GInteractiveChangeStateArgs InteractiveArgs { get; private set; }
+        /// <summary>
+        /// Obsahuje true pokud <see cref="InteractiveArgs"/> obsahuje data.
+        /// </summary>
+        public bool HasInteractiveArgs { get { return (this.InteractiveArgs != null); } }
         /// <summary>
         /// Požadavek aplikačního kódu na zrušení návazností této akce
         /// Výchozí hodnota je false.
@@ -458,18 +467,14 @@ namespace Asol.Tools.WorkScheduler.Components
     /// </summary>
     public class GPropertyChangeArgs<T> : EventArgs
     {
-        public GPropertyChangeArgs(EventSourceType eventSource, T oldvalue, T newValue)
+        public GPropertyChangeArgs(T oldvalue, T newValue, EventSourceType eventSource)
         {
-            this.EventSource = eventSource;
             this.OldValue = oldvalue;
             this.NewValue = newValue;
+            this.EventSource = eventSource;
             this.CorrectValue = newValue;
             this.Cancel = false;
         }
-        /// <summary>
-        /// Zdroj události
-        /// </summary>
-        public EventSourceType EventSource { get; private set; }
         /// <summary>
         /// Hodnota platná před změnou
         /// </summary>
@@ -478,6 +483,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Hodnota platná po změně
         /// </summary>
         public T NewValue { get; private set; }
+        /// <summary>
+        /// Zdroj události
+        /// </summary>
+        public EventSourceType EventSource { get; private set; }
         /// <summary>
         /// Hodnota odpovídající aplikační logice, hodnotu nastavuje eventhandler.
         /// Výchozí hodnota je NewValue.
@@ -509,13 +518,13 @@ namespace Asol.Tools.WorkScheduler.Components
         public T ResultValue { get { return (this.Cancel ? this.OldValue : this.CorrectValue); } }
     }
     /// <summary>
-    /// Data for handlers of interactive event in GInteractiveControl
+    /// Data pro handlery interaktivních událostí v GInteractiveControl
     /// </summary>
     public class GInteractiveChangeStateArgs : EventArgs
     {
-        #region Constructors
+        #region Konstruktory
         /// <summary>
-        /// Constructor
+        /// Konstruktor
         /// </summary>
         /// <param name="existsItem">true, when CurrentItem is found. Whereby CurrentItem is interface (i.e. can be a struct), then test for CurrentItem == null is not possible.</param>
         /// <param name="currentItem">Active item. Item is found in hierarchy of IInteractiveItem and all its Childs, this is last Child found.</param>
@@ -531,7 +540,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this.SearchItemMethod = searchItemMethod;
         }
         /// <summary>
-        /// Constructor
+        /// Konstruktor
         /// </summary>
         /// <param name="existsItem">true, when CurrentItem is found. Whereby CurrentItem is interface (i.e. can be a struct), then test for CurrentItem == null is not possible.</param>
         /// <param name="currentItem">Active item. Item is found in hierarchy of IInteractiveItem and all its Childs, this is last Child found.</param>
@@ -554,7 +563,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this.DragToBounds = dragToBounds;
         }
         /// <summary>
-        /// Constructor
+        /// Konstruktor
         /// </summary>
         /// <param name="existsItem">true, when CurrentItem is found. Whereby CurrentItem is interface (i.e. can be a struct), then test for CurrentItem == null is not possible.</param>
         /// <param name="currentItem">Active item. Item is found in hierarchy of IInteractiveItem and all its Childs, this is last Child found.</param>
@@ -576,7 +585,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this.KeyboardPressEventArgs = keyPressArgs;
         }
         /// <summary>
-        /// Konstruktor pro inicializaci
+        /// Konstruktor pouze pro inicializaci proměnných
         /// </summary>
         protected GInteractiveChangeStateArgs()
         {
@@ -703,7 +712,7 @@ namespace Asol.Tools.WorkScheduler.Components
             return this.SearchItemMethod(absolutePoint, withDisabled);
         }
         #endregion
-        #region Results (from event to control)
+        #region Výstupy - z EventHandleru do Controlu
         /// <summary>
         /// User defined point during Drag operation.
         /// User (an IInteractiveItem) can set any point in event LeftDragBegin / RightDragBegin;
@@ -714,24 +723,28 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public Point? UserDragPoint { get; set; }
         /// <summary>
-        /// Required Cursor type. Null = default. Control detect change from curent state, CursorType can be set to required value everytime.
+        /// Změnit kurzor na tento typ. null = beze změny.
         /// </summary>
         public SysCursorType? RequiredCursorType { get; set; }
         /// <summary>
-        /// After this event is need to Draw all items on control, not only current item.
-        /// This value can be set only to true. Attempt to set this property to false does not change value from true to false, a value true will remaining in property.
+        /// Po tomto eventu se má překreslit úplně celý Control.
+        /// Lze nastavit pouze na hodnotu true; pokud je jednou true, pak už nelze shodit na false.
+        /// Není to ale ideální řešení, protože jeden maličký control nemůže vědět, jak velký je rozsah toho, co chce překreslit.
+        /// Smysl to dává typicky při změně jazyka, změně barevné palety a Zoomu, atd.
+        /// Optimální je dát Repaint() na tom prvku, který se má znovu vykreslit. Prvek sám si může tuto událost zpracovat (overridovat metodu Repaint()) a zajistit Repaint i pro své sousedící prvky.
         /// </summary>
         public bool RepaintAllItems { get { return this._RepaintAllItems; } set { if (value) this._RepaintAllItems = true; } } private bool _RepaintAllItems;
         /// <summary>
-        /// Data for tooltip (autoinitializing property)
+        /// Data pro tooltip.
+        /// Tuto property lze setovat, nebo ji lze rovnou naplnit (je autoinicializační).
         /// </summary>
         public ToolTipData ToolTipData { get { if (this._ToolTipData == null) this._ToolTipData = new ToolTipData(); return this._ToolTipData; } set { this._ToolTipData = value; } } private ToolTipData _ToolTipData;
         /// <summary>
-        /// true when has data for ToolTip, false when has not.
+        /// Obsahuje true pokud je přítomen objekt <see cref="ToolTipData"/>. Ten je přítomen po jeho vložení nebo po jeho použití. Ve výchozím stavu je false.
         /// </summary>
-        internal bool HasToolTipData { get { return (this._ToolTipData != null); } } 
+        internal bool HasToolTipData { get { return (this._ToolTipData != null); } }
         /// <summary>
-        /// true when this.ToolTipData has valid data for drawing tooltip
+        /// Obsahuje true pokud <see cref="ToolTipData"/> obsahuje platná data pro vykreslení tooltipu.
         /// </summary>
         public bool ToolTipIsValid { get { return (this._ToolTipData != null && this._ToolTipData.IsValid); } }
         #endregion
