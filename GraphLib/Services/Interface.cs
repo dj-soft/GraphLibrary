@@ -256,7 +256,7 @@ namespace Asol.Tools.WorkScheduler.Services
         /// <returns></returns>
         public override string ToString()
         {
-            return $"{this.Text}; Type: {this.ItemType}; Size: {this.Size}";
+            return this.Text + "; Type: " + this.ItemType + "; Size: " + this.Size;
         }
         /// <summary>
         /// Skupina, do které patří tato položka

@@ -1591,11 +1591,11 @@ namespace Asol.Tools.WorkScheduler.Data
             get
             {
                 if (!this.TypeOfTImplementsIIdKey)
-                    throw new InvalidOperationException($"Type {this.TypeOfT.Name} do not implement interface IIdKey, you can not use indexer EList[string]!");
+                    throw new InvalidOperationException("Type " + this.TypeOfT.Name + " do not implement interface IIdKey, you can not use indexer EList[string]!");
 
                 int index = this.List.FindIndex(i => ((i as IIdKey).Key == key));
                 if (index < 0)
-                    throw new System.ArgumentOutOfRangeException($"Item with key [{key}] does not exists.");
+                    throw new System.ArgumentOutOfRangeException("Item with key [" + key + "] does not exists.");
 
                 T item = this.List[index];
                 if (this.CanGetItem(item, index))

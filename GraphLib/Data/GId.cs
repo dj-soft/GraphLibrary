@@ -42,7 +42,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <returns></returns>
         public override string ToString()
         {
-            return $"ClassId: {this.ClassId}; RecordId: {this.RecordId}";
+            return "ClassId: " + this.ClassId + "; RecordId: " + this.RecordId;
         }
        
         /// <summary>

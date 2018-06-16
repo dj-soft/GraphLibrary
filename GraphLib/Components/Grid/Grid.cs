@@ -955,7 +955,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         private void _MainTimeAxisExternal_VisibleTimeChanged(object sender, GPropertyChangeArgs<TimeRange> e)
         {
-            int qqq = 0;
             this.Repaint();
         }
         /// <summary>

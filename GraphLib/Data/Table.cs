@@ -1140,24 +1140,33 @@ namespace Asol.Tools.WorkScheduler.Data
                 this.OpenRecordForm(this, args);
             qqq;
         }
+        /// <summary>
+        /// Háček volaný při otevírání záznamu z <see cref="Table"/>.
+        /// </summary>
+        /// <param name="args"></param>
         protected virtual void OnOpenRecordForm(GPropertyEventArgs<GId> args) { }
+        /// <summary>
+        /// Event volaný při otevírání záznamu z <see cref="Table"/>.
+        /// </summary>
         public event EventHandler<GPropertyEventArgs<GId>> OpenRecordForm;
 
-        /// <summary>
-        /// Událost, která se vyvolá po aktivaci řádku (Enter nebo DoubleClick na buňce, která není Relation) 
-        /// = má se provést otevření formuláře záznamu z řádku
-        /// </summary>
-        public event GPropertyEvent<Cell> DataRowRecordOpen;
-        /// <summary>
-        /// Událost, která se vyvolá po aktivaci vztahu (Ctrl + DoubleClick na buňce tabulky, která je Relation)
-        /// = má se provést otevření formuláře záznamu ze vztahu v buňce
-        /// </summary>
-        public event GPropertyEvent<Cell> DataRelatedRecordOpen;
 
         #endregion
         #region Datové služby tabulky
         public GId GetRecordForRow(Row row)
-        { }
+        {
+            if (this.Columns.Count <= 0) return null;
+            Column keyColumn = this.Columns[0];
+            if (keyColumn.ColumnProperties.ColumnContent != ColumnContentType.RecordNumber) return null;
+
+            Cell keyCell = row[keyColumn];
+            if (keyCell == null) return null;
+            if (keyCell.Value == null) return null;
+            if (!(keyCell.Value is int)) return null;
+
+
+
+        }
         public GId GetRecordForCell(Cell cell)
         { }
         #endregion
@@ -1751,6 +1760,17 @@ namespace Asol.Tools.WorkScheduler.Data
             get { return this._GetCell(columnName); }
         }
         /// <summary>
+        /// Obsahuje (vrátí) instanci Cell, pro daný object column. 
+        /// Trvá déle než hledání podle columnId.
+        /// Může vrátit null, pokud neexistuje buňka se vztahem na daný sloupec.
+        /// </summary>
+        /// <param name="column">Sloupec</param>
+        /// <returns></returns>
+        public Cell this[Column column]
+        {
+            get { return this._GetCell(column); }
+        }
+        /// <summary>
         /// Obsahuje všechny platné buňky řádku (tj. ty, které odpovídají sloupcům tabulky). 
         /// </summary>
         public Cell[] Cells
@@ -1802,6 +1822,17 @@ namespace Asol.Tools.WorkScheduler.Data
         private Cell _GetCell(string columnName)
         {
             return this._CellDict.Values.FirstOrDefault(c => c.Column != null && String.Equals(c.Column.ColumnName, columnName, StringComparison.InvariantCultureIgnoreCase));
+        }
+        /// <summary>
+        /// Vrátí buňku pro daný column.
+        /// Trvá déle než hledání podle Id.
+        /// Může vrátit null, pokud neexistuje buňka se vztahem na daný sloupec.
+        /// </summary>
+        /// <param name="column"></param>
+        /// <returns></returns>
+        private Cell _GetCell(Column column)
+        {
+            return this._CellDict.Values.FirstOrDefault(c => c.Column != null && Object.ReferenceEquals(c.Column, column));
         }
         /// <summary>
         /// Soupis buněk

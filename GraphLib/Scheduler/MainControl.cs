@@ -180,7 +180,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             {
                 Type dataSourceType = dataSource.GetType();
                 string dataSourceName = dataSourceType.Namespace + "." + dataSourceType.Name;
-                Application.App.Trace.Exception(exc, $"Error {exc.Message} in datasource {dataSourceName} on processing request: GetTables.");
+                Application.App.Trace.Exception(exc, "Error " + exc.Message + " in datasource " + dataSourceName + " on processing request: GetTables.");
                 dataDescriptors.Clear();
             }
             return dataDescriptors.ToArray();
