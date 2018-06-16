@@ -1153,6 +1153,12 @@ namespace Asol.Tools.WorkScheduler.Data
 
         #endregion
         #region Datové služby tabulky
+        public bool HasValue(int rowIndex, int columnIndex)
+        {
+            if (rowIndex < 0 || rowIndex >= this.RowsCount) return false;
+            // if 
+        }
+        protected bool TryGetRow(int rowIndex, out Row row)
         public GId GetRecordForRow(Row row)
         {
             if (this.Columns.Count <= 0) return null;
