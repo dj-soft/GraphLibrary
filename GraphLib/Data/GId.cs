@@ -95,4 +95,19 @@ namespace Asol.Tools.WorkScheduler.Data
         }
         #endregion
     }
+    /// <summary>
+    /// Strana vztahu, na které najdeme Mastera.
+    /// </summary>
+    public enum RelationMasterSide
+    {
+        /// <summary>
+        /// Master je vlevo: u statického vztahu je Master ten záznam, v jehož databázovém sloupci je uloženo číslo záznamu vztaženého.
+        /// Left tedy znamená, že v tomto vztahu je je vlevo Master, z něj načteme číslo vztaženého záznamu (Slave), který bude zobrazen vpravo.
+        /// </summary>
+        Left,
+        /// <summary>
+        /// Master je vpravo, vlevo je záznam Slave.
+        /// </summary>
+        Right
+    }
 }

@@ -1125,7 +1125,7 @@ namespace Asol.Tools.WorkScheduler.Data
 
             // Anebo zkusíme získat navázaný záznam z řádku:
             if (recordId == null)
-                recordId = this.GetRecordForRow(cell.Row);
+                recordId = this.GetRecordGId(cell.Row);
 
             if (recordId != null)
                 this.CallOpenRecordForm(recordId);
@@ -1153,25 +1153,39 @@ namespace Asol.Tools.WorkScheduler.Data
 
         #endregion
         #region Datové služby tabulky
-        public bool HasValue(int rowIndex, int columnIndex)
+        /// <summary>
+        /// Vrátí true, pokud daný řádek v daném sloupci obsahuje hodnotu různou od null.
+        /// Pokud daný řádek nebo sloupec je null nebo neexistuje, pak vrací false.
+        /// </summary>
+        /// <param name="row"></param>
+        /// <param name="column"></param>
+        /// <returns></returns>
+        public bool HasValue(Row row, Column column)
         {
-            if (rowIndex < 0 || rowIndex >= this.RowsCount) return false;
-            // if 
+            if (row == null || column == null) return false;
+            return row.HasValue(column);
         }
-        protected bool TryGetRow(int rowIndex, out Row row)
-        public GId GetRecordForRow(Row row)
+        /// <summary>
+        /// Obsahuje číslo třídy záznamů této tabulky. Je načteno ze sloupce [0], z jeho <see cref="Column.ColumnProperties"/> : <see cref="ColumnProperties.RecordClassNumber"/>.
+        /// </summary>
+        public Int32? RowsClassId
         {
-            if (this.Columns.Count <= 0) return null;
-            Column keyColumn = this.Columns[0];
-            if (keyColumn.ColumnProperties.ColumnContent != ColumnContentType.RecordNumber) return null;
-
-            Cell keyCell = row[keyColumn];
-            if (keyCell == null) return null;
-            if (keyCell.Value == null) return null;
-            if (!(keyCell.Value is int)) return null;
-
-
-
+            get
+            {
+                if (this.ColumnsCount == 0) return null;
+                Column column = this.Columns[0];
+                return column.ColumnProperties.RecordClassNumber;
+            }
+        }
+        /// <summary>
+        /// Vrátí identifikátor záznamu v daném řádku
+        /// </summary>
+        /// <param name="row"></param>
+        /// <returns></returns>
+        public GId GetRecordGId(Row row)
+        {
+            if (row == null) return null;
+            return row.RecordGId;
         }
         public GId GetRecordForCell(Cell cell)
         { }
@@ -1222,7 +1236,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="name"></param>
         /// <param name="title"></param>
         public Column(string name, Localizable.TextLoc title = null, Localizable.TextLoc toolTip = null, string formatString = null, int? width = null,
-            bool useTimeAxis = false, bool autoWidth = false, bool sortingEnabled = true, int? widthMininum = null, int? widthMaximum = null, 
+            ColumnContentType columnContent = ColumnContentType.UserData, bool autoWidth = false, bool sortingEnabled = true, int? widthMininum = null, int? widthMaximum = null, 
             bool isVisible = true, bool allowColumnResize = true)
             : this()
         {
@@ -1231,7 +1245,7 @@ namespace Asol.Tools.WorkScheduler.Data
             columnProperties.Title = title;
             columnProperties.ToolTip = toolTip;
             columnProperties.FormatString = formatString;
-            columnProperties.UseTimeAxis = useTimeAxis;
+            columnProperties.ColumnContent = columnContent;
             columnProperties.AllowColumnSortByClick = sortingEnabled;
             columnProperties.AllowColumnResize = allowColumnResize;
             columnProperties.Width = width;
@@ -1528,6 +1542,12 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public int ColumnOrder { get { return this._ColumnOrder; } set { this._ColumnOrder = value; } } private int _ColumnOrder = -1;
         /// <summary>
+        /// Jaká data obsahuje tento sloupec
+        /// </summary>
+        public ColumnContentType ColumnContent { get { return this._ColumnContent; } set { this._ColumnContent = value; } }
+        private ColumnContentType _ColumnContent;
+
+        /// <summary>
         /// Datový typ obsahu sloupce. Null = obecná data
         /// </summary>
         public Type DataType { get { return this._DataType; } set { this._DataType = value; } } private Type _DataType;
@@ -1544,9 +1564,10 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public bool AllowColumnResize { get { return this._AllowColumnResize; } set { this._AllowColumnResize = value; } } private bool _AllowColumnResize = true;
         /// <summary>
-        /// true pokud se pro sloupec má zobrazit časová osa v záhlaví
+        /// Obsahuje true, pokud se pro sloupec má zobrazit časová osa v záhlaví.
+        /// To je jen tehdy, když sloupec obsahuje časový graf (<see cref="ColumnContent"/> == <see cref="ColumnContentType.TimeGraph"/>).
         /// </summary>
-        public bool UseTimeAxis { get { return this._UseTimeAxis; } set { this._UseTimeAxis = value; } } private bool _UseTimeAxis;
+        public bool UseTimeAxis { get { return this.ColumnContent == ColumnContentType.TimeGraph; } }
 
         /// <summary>
         /// Zadaná šířka sloupce.
@@ -1576,14 +1597,6 @@ namespace Asol.Tools.WorkScheduler.Data
             set { this._WidthMaximum = value; if (this._HasOwnerLayout) this._OwnerWidthLayout.SizeMaximum = value; }
         } private Int32? _WidthMaximum;
         /// <summary>
-        /// true pro viditelný sloupec (default), false for skrytý
-        /// </summary>
-        public bool IsVisible
-        {
-            get { return (this._HasOwnerLayout ? this._OwnerWidthLayout.Visible : this._IsVisible); }
-            set { this._IsVisible = value; if (this._HasOwnerLayout) this._OwnerWidthLayout.Visible = value; }
-        } private bool _IsVisible;
-        /// <summary>
         /// true pokud tento prvek má být použit jako "guma" při změně šířky tabulky tak, aby kolekce sloupců vyplnila celý prostor.
         /// Na true se nastavuje typicky u "hlavního" sloupce grafové tabulky.
         /// Je vhodné přitom nastavit minimální šířku sloupce (WidthLayout.SizeMinimum) tak, aby při zmenšení prostoru z daného sloupce něco zbylo.
@@ -1592,36 +1605,47 @@ namespace Asol.Tools.WorkScheduler.Data
         {
             get { return (this._HasOwnerLayout ? this._OwnerWidthLayout.AutoSize : this._AutoWidth); }
             set { this._AutoWidth = value; if (this._HasOwnerLayout) this._OwnerWidthLayout.AutoSize = value; }
-        } private bool _AutoWidth;
+        }
+        private bool _AutoWidth;
+        /// <summary>
+        /// true pro viditelný sloupec (default), false for skrytý
+        /// </summary>
+        public bool IsVisible
+        {
+            get { return (this.CanBeVisible ? (this._HasOwnerLayout ? this._OwnerWidthLayout.Visible : this._IsVisible) : false); }
+            set { this._IsVisible = value; if (this._HasOwnerLayout) this._OwnerWidthLayout.Visible = (value && this.CanBeVisible); }
+        } private bool _IsVisible;
+        /// <summary>
+        /// true, pokud this sloupec smí být někdy zobrazen uživateli.
+        /// To mohou být pouze sloupce, jejichž obsah <see cref="ColumnContent"/> 
+        /// je <see cref="ColumnContentType.UserData"/> nebo <see cref="ColumnContentType.RelationRecordData"/> nebo <see cref="ColumnContentType.TimeGraph"/>.
+        /// </summary>
+        public bool CanBeVisible { get { ColumnContentType cc = this.ColumnContent; return (cc == ColumnContentType.UserData || cc == ColumnContentType.RelationRecordData || cc == ColumnContentType.TimeGraph); } }
 
         /// <summary>
         /// Komparátor pro dvě hodnoty v tomto sloupci, pro třídění podle tohoto sloupce
         /// </summary>
         public Func<object, object, int> ValueComparator { get { return this._ValueComparator; } set { this._ValueComparator = value; } } private Func<object, object, int> _ValueComparator;
 
-        /// <summary>
-        /// Jaká data obsahuje tento sloupec
-        /// </summary>
-        public ColumnContentType ColumnContent { get { return this._ColumnContent; } set { this._ColumnContent = value; } } private ColumnContentType _ColumnContent;
 
         /// <summary>
-        /// Číslo třídy tohoto záznamu
+        /// Číslo třídy tohoto záznamu.
+        /// U sloupce [0] jde o číslo třídy záznamů v tabulce, 
+        /// u jiných sloupců jde o číslo třídy záznamů ve vztahu, které jsou zobrazeny v některém ze sloupců.
         /// </summary>
         public int? RecordClassNumber { get { return this._RecordClassNumber; } set { this._RecordClassNumber = value; } } private int? _RecordClassNumber;
         /// <summary>
         /// true pokud tento sloupec zobrazuje vztažený záznam, a lze jej tedy rozkliknout (pomocí Ctrl + DoubleClick)
         /// </summary>
-        public bool IsRelation { get { return this._IsRelation; } set { this._IsRelation = value; } } private bool _IsRelation;
+        public bool IsRelation { get { ColumnContentType cc = this.ColumnContent; return (cc == ColumnContentType.RelationRecordId || cc == ColumnContentType.RelationRecordData); } }
         /// <summary>
         /// Číslo vztahu, pokud this sloupec je vztahový (<see cref="IsRelation"/> je true)
         /// </summary>
         public int? RelationNumber { get { return this._RelationNumber; } set { this._RelationNumber = value; } } private int? _RelationNumber;
         /// <summary>
-        /// Číslo třídy vztaženého záznamu, pokud this sloupec je vztahový (<see cref="IsRelation"/> je true).
-        /// Při otevírání vztaženého záznamu (pomocí Ctrl + DoubleClick) je otevírán záznam této třídy.
-        /// Může být null pro subjekty.
+        /// Strana vztahu, kde najdeme Master, pokud this sloupec je vztahový (<see cref="IsRelation"/> je true)
         /// </summary>
-        public int? RelatedRecordClassNumber { get { return this._RelatedRecordClassNumber; } set { this._RelatedRecordClassNumber = value; } } private int? _RelatedRecordClassNumber;
+        public RelationMasterSide? RelationSide { get { return this._RelationSide; } set { this._RelationSide = value; } } private RelationMasterSide? _RelationSide;
         /// <summary>
         /// Název sloupce (ColumnName), v němž je uloženo číslo vztaženého záznamu, pokud this sloupec je vztahový (<see cref="IsRelation"/> je true).
         /// Při otevírání vztaženého záznamu (pomocí Ctrl + DoubleClick) je nalezen tento sloupec, přečteno jeho číslo a získaný záznam je otevřen.
@@ -1639,19 +1663,35 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         None,
         /// <summary>
-        /// Běžná uživatelská data
+        /// Běžná uživatelská data. 
+        /// Tento sloupec může být viditelný.
         /// </summary>
         UserData,
         /// <summary>
-        /// Časový graf
+        /// Zobrazovaná data záznamu, který je navázán ve vztahu. 
+        /// Tento sloupec může být viditelný.
+        /// Tento sloupec je vykreslován podtržený.
+        /// </summary>
+        RelationRecordData,
+        /// <summary>
+        /// Časový graf.
+        /// Tento sloupec může být viditelný.
         /// </summary>
         TimeGraph,
         /// <summary>
-        /// Číslo záznamu (řádku, i vztahu)
+        /// Číslo záznamu celého řádku.
+        /// Tento sloupec se nikdy nezobrazuje.
         /// </summary>
-        RecordNumber,
+        RecordId,
         /// <summary>
-        /// Jiná skrytá data
+        /// Číslo vztaženého záznamu (takového, jehož typ == <see cref="RelationRecordData"/>).
+        /// Tento sloupec se nikdy nezobrazuje.
+        /// </summary>
+        RelationRecordId,
+        /// <summary>
+        /// Jiná skrytá data.
+        /// Tento sloupec se nikdy nezobrazuje.
+        /// Typicky ID číslo řádku ze systému Green.
         /// </summary>
         HiddenData
     }
@@ -1966,6 +2006,60 @@ namespace Asol.Tools.WorkScheduler.Data
             }
         }
         #endregion
+        #region Datové služby řádku
+        /// <summary>
+        /// Vrátí true, pokud tento řádek v daném sloupci obsahuje hodnotu různou od null.
+        /// Pokud daný sloupec je null nebo neexistuje, pak vrací false.
+        /// </summary>
+        /// <param name="row"></param>
+        /// <param name="column"></param>
+        /// <returns></returns>
+        public bool HasValue(Column column)
+        {
+            if (column == null) return false;
+            Cell cell = this[column];
+            return (cell != null ? cell.HasValue : false);
+        }
+        /// <summary>
+        /// Obsahuje identifikátor záznamu, který se nachází v tomto řádku.
+        /// To funguje pouze tehdy, když tabulka má sloupec [0] s obsahem <see cref="ColumnProperties.ColumnContent"/> == <see cref="ColumnContentType.RecordId"/>,
+        /// na tomto sloupci je vyplněno číslo třídy v <see cref="ColumnProperties.RecordClassNumber"/>,
+        /// a řádek má v buňce [0] hodnotu typu Int32. Jinak se vrací null.
+        /// </summary>
+        public GId RecordGId
+        {
+            get
+            {
+                if (this.Columns.Count <= 0) return null;
+                Column keyColumn = this.Columns[0];
+                if (!(keyColumn.ColumnProperties.ColumnContent == ColumnContentType.RecordId && keyColumn.ColumnProperties.RecordClassNumber.HasValue)) return null;
+                object value = this[0].Value;
+                if (!(value is Int32)) return null;
+                return new GId(keyColumn.ColumnProperties.RecordClassNumber.Value, (int)value);
+            }
+        }
+        /// <summary>
+        /// Vrátí identifikátor záznamu v daném řádku
+        /// </summary>
+        /// <param name="row"></param>
+        /// <returns></returns>
+        public GId GetRecordGId(Row row)
+        {
+            if (row == null) return null;
+            return row.RecordGId;
+
+
+
+            Cell keyCell = row[keyColumn];
+            if (keyCell == null) return null;
+            if (keyCell.Value == null) return null;
+            if (!(keyCell.Value is int)) return null;
+
+
+
+        }
+
+        #endregion
         #region IContentValidity
         bool IContentValidity.DataIsValid { get { return _RowDataIsValid; } set { _RowDataIsValid = value; } } private bool _RowDataIsValid;
         bool IContentValidity.RowLayoutIsValid { get { return _RowLayoutIsValid; } set { _RowLayoutIsValid = value; } } private bool _RowLayoutIsValid;
@@ -2171,6 +2265,52 @@ namespace Asol.Tools.WorkScheduler.Data
             }
         }
         #endregion
+        #region Datové služby buňky
+        /// <summary>
+        /// Vrátí true, pokud tato buňka obsahuje hodnotu různou od null.
+        /// Vrací false, pokud this buňka obsahuje <see cref="Value"/> == null.
+        /// </summary>
+        /// <param name="row"></param>
+        /// <param name="column"></param>
+        /// <returns></returns>
+        public bool HasValue
+        {
+            get { return (this.Value == null); }
+        }
+        /// <summary>
+        /// Vrátí hodnotu z této buňky typovanou na daný typ (T).
+        /// Pokud buňka obsahuje null (<see cref="HasValue"/> == false), vrací default(T).
+        /// Pokud obsah buňky není převoditelný na (T), vyhodí chybu (aplikace čte nesprávným postupem).
+        /// Neyvhodí chybu.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        public T GetValue<T>()
+        {
+            if (this.Value == null) return default(T);
+            if (this.Value is T) return (T)this.Value;
+            throw new InvalidCastException("Hodnotu ze sloupce " + this.Column.ColumnName + " nelze převést na typ " + typeof(T).Name + ", hodnota je typu " + this.Value.GetType().Name + ".");
+        }
+        /// <summary>
+        /// Přečte hodnotu z této buňky typovanou na daný typ (T).
+        /// Pokud buňka obsahuje null (<see cref="HasValue"/> == false), nebo její obsah není převoditelný na (T), přečte default(T).
+        /// Metoda vrací true, pokud obsah buňky je null (to bereme jako OK) anebo pokud obsah buňky je převoditelný na (T) (to je OK).
+        /// Metoda vrací false, pokud buňka není null ale její typ není převoditelný na (T), to je chyba.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public bool TryGetValue<T>(out T value)
+        {
+            value = default(T);
+            if (this.Value == null) return true;            
+            if (!(this.Value is T)) return false;
+            value = (T)this.Value;
+            return true;
+        }
+
+        #endregion
+
     }
     #endregion
     #region Interfaces
