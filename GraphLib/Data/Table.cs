@@ -1251,9 +1251,63 @@ namespace Asol.Tools.WorkScheduler.Data
         {
             if (dataTable == null) return null;
             Table table = new Table(dataTable.TableName);
-            table.Columns.AddRange(Column.CreateFrom(dataTable.Columns, table));    // Přidávat prvky musím včetně logiky AddItemAfter, kvůli navazujícím algoritmům (indexy, owner)
-            table.Rows.AddRange(Row.CreateFrom(dataTable.Rows, table));
+            table.Columns.AddRange(Column.CreateFrom(dataTable.Columns));    // Přidávat prvky musím včetně logiky AddItemAfter, kvůli navazujícím algoritmům (indexy, owner)
+            table.Rows.AddRange(Row.CreateFrom(dataTable.Rows));
             return table;
+        }
+        #endregion
+        #region Full vizualizace
+        /// <summary>
+        /// CSV formát obsahující prvních 16384 řádků tabulky (anebo tolik, kolik se stihne vygenerovat za 100 milisekund)
+        /// </summary>
+        public string TextCsv
+        {
+            get
+            {
+                System.Text.StringBuilder sb = new StringBuilder();
+                string tab = "\t";
+
+                bool addNames = false;
+                sb.Append(tab);
+                foreach (Column column in this.Columns)
+                {
+                    sb.Append(column.ColumnProperties.Title + tab);
+                    if (!addNames && (!String.Equals(column.ColumnProperties.Title, column.ColumnName)))
+                        addNames = true;
+                }
+                sb.AppendLine();
+
+                if (addNames)
+                {
+                    sb.Append(tab);
+                    foreach (Column column in this.Columns)
+                        sb.Append(column.ColumnName + tab);
+                    sb.AppendLine();
+                }
+
+                DateTime end = DateTime.Now.AddMilliseconds(100);
+                int maxRows = 16384;
+                int rowCount = this.RowsCount;
+                bool rowShort = (rowCount > maxRows);
+                if (rowShort) rowCount = maxRows;
+                for (int rowIndex = 0; rowIndex < rowCount; rowIndex++)
+                {
+                    Row row = this.Rows[rowIndex];
+                    sb.Append(rowIndex.ToString() + tab);
+                    foreach (Column column in this.Columns)
+                        sb.Append(row[column].Value + tab);
+                    sb.AppendLine();
+                    if (DateTime.Now > end)
+                    {
+                        rowShort = true;
+                        break;
+                    }
+                }
+                if (rowShort)
+                    sb.AppendLine("...");
+
+                return sb.ToString();
+            }
         }
         #endregion
     }
@@ -1530,15 +1584,14 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Metoda vytvoří soupis sloupců <see cref="Column"/> na základě dat o sloupcích z tabulky <see cref="System.Data.DataColumnCollection"/>.
         /// </summary>
         /// <param name="dataColumns">Kolekce sloupců, vstup</param>
-        /// <param name="table">Parent tabulka</param>
         /// <returns></returns>
-        public static IEnumerable<Column> CreateFrom(System.Data.DataColumnCollection dataColumns, Table table)
+        public static IEnumerable<Column> CreateFrom(System.Data.DataColumnCollection dataColumns)
         {
             if (dataColumns == null) return null;
             List<Column> columnList = new List<Column>();
             foreach (System.Data.DataColumn dataColumn in dataColumns)
             {
-                Column column = Column.CreateFrom(dataColumn, table);
+                Column column = Column.CreateFrom(dataColumn);
                 if (column != null)
                     columnList.Add(column);
             }
@@ -1548,13 +1601,11 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Metoda vytvoří jeden sloupec <see cref="Column"/> na základě dat o sloupci z tabulky <see cref="System.Data.DataColumn"/>.
         /// </summary>
         /// <param name="dataColumn">Konkrétní sloupec, vstup</param>
-        /// <param name="table">Parent tabulka</param>
         /// <returns></returns>
-        public static Column CreateFrom(System.Data.DataColumn dataColumn, Table table)
+        public static Column CreateFrom(System.Data.DataColumn dataColumn)
         {
             if (dataColumn == null) return null;
             Column column = new Column(dataColumn.ColumnName);
-            column._Table = table;
             column.ColumnProperties.FillFrom(dataColumn);
             return column;
         }
@@ -1585,7 +1636,6 @@ namespace Asol.Tools.WorkScheduler.Data
         int IIdKey.Id { get { return this.ColumnId; } }
         string IIdKey.Key { get { return this.ColumnName; } }
         #endregion
-
     }
     #endregion
     #region ColumnProperties
@@ -2209,19 +2259,34 @@ namespace Asol.Tools.WorkScheduler.Data
             }
         }
         #endregion
-        #region Import tabulky Table z DataTable
+        #region Import řádků Row z DataRows
         /// <summary>
-        /// Metoda vytvoří novou tabulku <see cref="Table"/> na základě dat z tabulky <see cref="System.Data.DataTable"/>.
+        /// Metoda vytvoří soupis sloupců <see cref="Row"/> na základě dat o sloupcích z tabulky <see cref="System.Data.DataRowCollection"/>.
         /// </summary>
-        /// <param name="dataTable"></param>
+        /// <param name="dataRows">Kolekce řádků, vstup</param>
         /// <returns></returns>
-        public static IEnumerable<Row> CreateFrom(System.Data.DataRowCollection dataRows, Table table)
+        public static IEnumerable<Row> CreateFrom(System.Data.DataRowCollection dataRows)
         {
-            if (dataTable == null) return null;
-            Table table = new Table(dataTable.TableName);
-            table.Columns.AddRangeSilent(Column.CreateFrom(dataTable.Columns));
-            table.Rows.AddRangeSilent(Row.CreateFrom(dataTable.Rows));
-            return table;
+            if (dataRows == null) return null;
+            List<Row> rowList = new List<Row>();
+            foreach (System.Data.DataRow dataRow in dataRows)
+            {
+                Row row = Row.CreateFrom(dataRow);
+                if (row != null)
+                    rowList.Add(row);
+            }
+            return rowList;
+        }
+        /// <summary>
+        /// Metoda vytvoří jeden řádek <see cref="Row"/> na základě dat o řádku z tabulky <see cref="System.Data.DataRow"/>.
+        /// </summary>
+        /// <param name="dataRow">Konkrétní řádek, vstup</param>
+        /// <returns></returns>
+        public static Row CreateFrom(System.Data.DataRow dataRow)
+        {
+            if (dataRow == null) return null;
+            Row row = new Row(dataRow.ItemArray);
+            return row;
         }
         #endregion
         #region IContentValidity

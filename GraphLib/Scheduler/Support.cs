@@ -183,11 +183,55 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             Tuple<string, Type>[] columns = ParseTableStructure(structure);
             foreach (Tuple<string, Type> column in columns)
             {
-                if (!table.Columns.Contains(column.Item1)) return "DataTable <" + table.TableName + "> does not contain column <" + column.Item1 + ">";
-                if (table.Columns[column.Item1].DataType != column.Item2) return "Column <" + table.TableName + "> in DataTable <" + table.TableName + "> is not of type <" + column.Item2.Name + ">";
+                string columnName = column.Item1;
+                if (!table.Columns.Contains(columnName)) return "DataTable <" + table.TableName + "> does not contain column <" + columnName + ">.";
+                Type expectedType = column.Item2;
+                Type columnType = table.Columns[columnName].DataType;
+                if (!_IsExpectedType(columnType, expectedType)) return "Column <" + columnName + "> [" + columnType + "] in DataTable <" + table.TableName + "> is not convertible to expected type <" + expectedType + ">.";
             }
 
             return null;
+        }
+        /// <summary>
+        /// Vrátí true, pokud datový typ sloupce (columnType) je vyhovující pro očekávaný typ sloupce (expectedType).
+        /// </summary>
+        /// <param name="columnType"></param>
+        /// <param name="expectedType"></param>
+        /// <returns></returns>
+        private static bool _IsExpectedType(Type columnType, Type expectedType)
+        {
+            if (columnType == expectedType) return true;
+            string convert = columnType.Namespace + "." + columnType.Name + " => " + expectedType.Namespace + "." + expectedType.Name;
+            switch (convert)
+            {   // Co je převoditelné:
+                case "System.Int16 => System.Int32":
+                case "System.Int16 => System.Int64":
+                case "System.Int32 => System.Int64":
+
+                case "System.Int16 => System.Decimal":
+                case "System.Int32 => System.Decimal":
+                case "System.Int64 => System.Decimal":
+                case "System.UInt16 => System.Decimal":
+                case "System.UInt32 => System.Decimal":
+                case "System.UInt64 => System.Decimal":
+
+                case "System.Int16 => System.Single":
+                case "System.Int32 => System.Single":
+                case "System.Int64 => System.Single":
+                case "System.UInt16 => System.Single":
+                case "System.UInt32 => System.Single":
+                case "System.UInt64 => System.Single":
+
+                case "System.Int16 => System.Double":
+                case "System.Int32 => System.Double":
+                case "System.Int64 => System.Double":
+                case "System.UInt16 => System.Double":
+                case "System.UInt32 => System.Double":
+                case "System.UInt64 => System.Double":
+
+                    return true;
+            }
+            return false;
         }
         /// <summary>
         /// Metoda z textové podoby struktury vrací typově definované pole, které obsahuje zadanou strukturu.

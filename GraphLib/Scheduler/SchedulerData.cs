@@ -36,9 +36,12 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 this.GraphTableDict = new Dictionary<string, DataGraphTable>();
                 using (var buffer = WorkSchedulerSupport.CreateDataBufferReader(dataPack))
                 {
-                    string key, data;
-                    if (buffer.ReadNextData(out key, out data))
-                        this._LoadDataOne(key, data);
+                    while (!buffer.ReaderIsEnd)
+                    {
+                        string key, data;
+                        if (buffer.ReadNextData(out key, out data))
+                            this._LoadDataOne(key, data);
+                    }
                 }
             }
             catch (Exception exc)
@@ -72,11 +75,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private void _LoadDataDeclaration(string data)
         {
             string text = WorkSchedulerSupport.Decompress(data);
-            DataTable table = WorkSchedulerSupport.TableDeserialize(text);
-            WorkSchedulerSupport.CheckTable(table, WorkSchedulerSupport.DATA_DECLARATION_STRUCTURE);
+            DataTable dataTable = WorkSchedulerSupport.TableDeserialize(text);
+            WorkSchedulerSupport.CheckTable(dataTable, WorkSchedulerSupport.DATA_DECLARATION_STRUCTURE);
 
             List<DataDeclaration> declarationList = new List<DataDeclaration>();
-            foreach (DataRow row in table.Rows)
+            foreach (DataRow row in dataTable.Rows)
             {
                 DataDeclaration declaration = DataDeclaration.CreateFrom(row);
                 if (declaration != null)
@@ -302,11 +305,18 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             Table table = Table.CreateFrom(dataTable);
         }
         protected void AddTableGraph(DataTable dataTable)
-        { }
+        {
+            WorkSchedulerSupport.CheckTable(dataTable, WorkSchedulerSupport.DATA_TABLE_GRAPH_STRUCTURE);
+            Table table = Table.CreateFrom(dataTable);
+        }
         protected void AddTableRel(DataTable dataTable)
-        { }
+        {
+            Table table = Table.CreateFrom(dataTable);
+        }
         protected void AddTableItem(DataTable dataTable)
-        { }
+        {
+            Table table = Table.CreateFrom(dataTable);
+        }
         #endregion
     }
     #endregion
