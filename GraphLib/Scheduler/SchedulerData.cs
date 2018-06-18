@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Data;
 
 using Asol.Tools.WorkScheduler.Data;
 using Asol.Tools.WorkScheduler.Application;
@@ -10,6 +11,10 @@ using Asol.Tools.WorkScheduler.Services;
 
 namespace Asol.Tools.WorkScheduler.Scheduler
 {
+    #region class MainData : hlavní řídící prvek dat zobrazovaných v controlu <see cref="MainControl"/>.
+    /// <summary>
+    /// MainData : hlavní řídící prvek dat zobrazovaných v controlu <see cref="MainControl"/>.
+    /// </summary>
     public class MainData
     {
         #region Konstrukce a proměnné
@@ -20,9 +25,110 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private Scheduler.IAppHost _AppHost;
         #endregion
         #region Načítání a analýza dodaných dat
-
+        /// <summary>
+        /// Načte data z datového balíku
+        /// </summary>
+        /// <param name="dataPack"></param>
         public void LoadData(string dataPack)
-        { }
+        {
+            try
+            {
+                this.GraphTableDict = new Dictionary<string, DataGraphTable>();
+                using (var buffer = WorkSchedulerSupport.CreateDataBufferReader(dataPack))
+                {
+                    string key, data;
+                    if (buffer.ReadNextData(out key, out data))
+                        this._LoadDataOne(key, data);
+                }
+            }
+            catch (Exception exc)
+            {   // Zatím nijak explicitně neřešíme:
+                throw;
+            }
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="data"></param>
+        private void _LoadDataOne(string key, string data)
+        {
+            string tableName, tableType;
+            if (key == WorkSchedulerSupport.KEY_REQUEST_DATA_DECLARATION)
+            {   // Deklarace dat:
+                this._LoadDataDeclaration(data);
+            }
+            else if (IsKeyRequestTable(key, out tableName, out tableType))
+            {   // Tabulka s daty:
+                this._LoadDataGraphTable(data, tableName, tableType);
+            }
+        }
+        #region Deklarace dat
+        /// <summary>
+        /// Načte informace, popisující deklaraci dat.
+        /// Na vstupu je komprimovaný text, obsahující serializovanou DataTable, která popisuje deklaraci dat.
+        /// </summary>
+        /// <param name="data"></param>
+        private void _LoadDataDeclaration(string data)
+        {
+            string text = WorkSchedulerSupport.Decompress(data);
+            DataTable table = WorkSchedulerSupport.TableDeserialize(text);
+            WorkSchedulerSupport.CheckTable(table, WorkSchedulerSupport.DATA_DECLARATION_STRUCTURE);
+
+            List<DataDeclaration> declarationList = new List<DataDeclaration>();
+            foreach (DataRow row in table.Rows)
+            {
+                DataDeclaration declaration = DataDeclaration.CreateFrom(row);
+                if (declaration != null)
+                    declarationList.Add(declaration);
+            }
+
+            this.Declarations = declarationList.ToArray();
+        }
+        /// <summary>
+        /// Deklarace dat = popis funkcí a tabulek
+        /// </summary>
+        protected DataDeclaration[] Declarations { get; private set; }
+        #endregion
+        #region Data tabulek
+
+        private void _LoadDataGraphTable(string data, string tableName, string tableType)
+        {
+            DataGraphTable dataGraphTable;
+            if (!this.GraphTableDict.TryGetValue(tableName, out dataGraphTable))
+            {
+                dataGraphTable = new DataGraphTable(this, tableName);
+                this.GraphTableDict.Add(tableName, dataGraphTable);
+            }
+            dataGraphTable.AddTable(data, tableType);
+        }
+        /// <summary>
+        /// Klíč z requestu typu "Table.workplace_table.Row.0" rozdělí na části, 
+        /// z nichž název tabulky (zde "workplace_table") uloží do out tableName,
+        /// a druh dat v tabulce (zde "Row") uloží do out tableType.
+        /// Vrací true¨, pokud vstupující klíč obsahuje vyhovující data, nebo vrací false, pokud na vstupu je něco nerozpoznatelného.
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="tableName"></param>
+        /// <param name="tableType"></param>
+        /// <returns></returns>
+        protected static bool IsKeyRequestTable(string key, out string tableName, out string tableType)
+        {
+            tableName = null;
+            tableType = null;
+            if (String.IsNullOrEmpty(key)) return false;
+            string[] parts = key.Split('.');
+            if (parts.Length < 3) return false;
+            if (parts[0] != "Table") return false;
+            tableName = parts[1];
+            tableType = parts[2];
+            return (!String.IsNullOrEmpty(tableName) && (tableType == "Row" || tableType == "Graph" || tableType == "Rel" || tableType == "Item"));
+        }
+        /// <summary>
+        /// Dictionary obsahující data jednotlivých tabulek
+        /// </summary>
+        protected Dictionary<string, DataGraphTable> GraphTableDict { get; private set; }
+        #endregion
         #endregion
         #region Tvorba GUI
 
@@ -36,10 +142,184 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
 
         #endregion
-
     }
+    #endregion
+    #region class DataDeclaration : deklarace dat, předaná z volajícího do pluginu, definuje rozsah dat a funkcí
+    /// <summary>
+    /// DataDeclaration : deklarace dat, předaná z volajícího do pluginu, definuje rozsah dat a funkcí
+    /// </summary>
+    public class DataDeclaration
+    {
+        #region Tvorba instance
+        public static DataDeclaration CreateFrom(DataRow row)
+        {
+            if (row == null) return null;
+
+            DataDeclaration data = new DataDeclaration();
+            data.DataId = row.GetValue<int>("data_id");
+            data.Target = GetDataTargetType(row.GetValue<string>("target"));
+            data.Content = GetDataContentType(row.GetValue<string>("content"));
+            data.Name = row.GetValue<string>("name");
+            data.Title = row.GetValue<string>("title");
+            data.ToolTip = row.GetValue<string>("tooltip");
+            data.Image = row.GetValue<string>("image");
+            data.Data = row.GetValue<string>("data");
+
+            return data;
+        }
+        private DataDeclaration() { }
+        public override string ToString()
+        {
+            return "Target: " + this.Target + "; Content: " + this.Content + "; Title: " + this.Title;
+        }
+        protected static DataTargetType GetDataTargetType(string text)
+        {
+            if (String.IsNullOrEmpty(text)) return DataTargetType.None;
+            switch (text)
+            {
+                case WorkSchedulerSupport.GUI_TARGET_MAIN: return DataTargetType.Main;
+                case WorkSchedulerSupport.GUI_TARGET_TOOLBAR: return DataTargetType.ToolBar;
+                case WorkSchedulerSupport.GUI_TARGET_TASK: return DataTargetType.Task;
+                case WorkSchedulerSupport.GUI_TARGET_SCHEDULE: return DataTargetType.Schedule;
+                case WorkSchedulerSupport.GUI_TARGET_SOURCE: return DataTargetType.Source;
+                case WorkSchedulerSupport.GUI_TARGET_INFO: return DataTargetType.Info;
+            }
+            return DataTargetType.None;
+        }
+        protected static DataContentType GetDataContentType(string text)
+        {
+            if (String.IsNullOrEmpty(text)) return DataContentType.None;
+            switch (text)
+            {
+                case WorkSchedulerSupport.GUI_CONTENT_BUTTON: return DataContentType.Button;
+                case WorkSchedulerSupport.GUI_CONTENT_TABLE: return DataContentType.Table;
+                case WorkSchedulerSupport.GUI_CONTENT_FUNCTION: return DataContentType.Function;
+            }
+            return DataContentType.None;
+        }
+        #endregion
+        #region Public data
+        /// <summary>
+        /// ID skupiny dat. Jedna skupina dat se vkládá do jednoho controlu <see cref="SchedulerPanel"/>, 
+        /// může jich být více, pak hlavní control <see cref="MainControl"/> obsahuje více panelů.
+        /// </summary>
+        public int DataId { get; private set; }
+        /// <summary>
+        /// Cílový prostor v panelu <see cref="SchedulerPanel"/> pro tuto položku deklarace
+        /// </summary>
+        public DataTargetType Target { get; private set; }
+        /// <summary>
+        /// Typ obsahu v této položce deklarace
+        /// </summary>
+        public DataContentType Content { get; private set; }
+        /// <summary>
+        /// Name = strojový identifikátor, nezobrazuje se - ale používá se při komunikaci
+        /// </summary>
+        public string Name { get; private set; }
+        /// <summary>
+        /// Název položky = stále viditelný text pro tuto položku deklarace
+        /// </summary>
+        public string Title { get; private set; }
+        /// <summary>
+        /// Nápovědný text do ToolTipu k této položce deklarace
+        /// </summary>
+        public string ToolTip { get; private set; }
+        /// <summary>
+        /// Název nebo obsah ikony
+        /// </summary>
+        public string Image { get; private set; }
+        /// <summary>
+        /// Rozšiřující data, podle typu obsahu <see cref="Content"/>
+        /// </summary>
+        public string Data { get; private set; }
+        #endregion
+    }
+    /// <summary>
+    /// Cílový prvek položky v deklaraci dat
+    /// </summary>
+    public enum DataTargetType
+    {
+        None,
+        Main,
+        ToolBar,
+        Task,
+        Schedule,
+        Source,
+        Info
+    }
+    /// <summary>
+    /// Typ obsahu v deklaraci dat
+    /// </summary>
+    public enum DataContentType
+    {
+        None,
+        Button,
+        Table,
+        Function
+    }
+    #endregion
+    #region class DataGraphTable : obsah dat jedné logické tabulky: shrnuje v sobě fyzické řádky, položky grafů, vztahy položek grafů a popisky položek grafů
+    /// <summary>
+    /// DataGraphTable : obsah dat jedné logické tabulky: shrnuje v sobě fyzické řádky, položky grafů, vztahy položek grafů a popisky položek grafů
+    /// </summary>
+    public class DataGraphTable
+    {
+        #region Konstrukce, vkládání dat
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="owner"></param>
+        /// <param name="tableName"></param>
+        public DataGraphTable(MainData owner, string tableName)
+        {
+            this.Owner = owner;
+            this.TableName = tableName;
+        }
+        protected MainData Owner { get; private set; }
+        public string TableName { get; private set; }
+        public void AddTable(string data, string tableType)
+        {
+            string text = WorkSchedulerSupport.Decompress(data);
+            DataTable dataTable = WorkSchedulerSupport.TableDeserialize(text);
+            switch (tableType)
+            {
+                case "Row":
+                    this.AddTableRow(dataTable);
+                    break;
+                case "Graph":
+                    this.AddTableGraph(dataTable);
+                    break;
+                case "Rel":
+                    this.AddTableRel(dataTable);
+                    break;
+                case "Item":
+                    this.AddTableItem(dataTable);
+                    break;
+            }
+        }
+        protected void AddTableRow(DataTable dataTable)
+        {
+            Table table = Table.CreateFrom(dataTable);
+        }
+        protected void AddTableGraph(DataTable dataTable)
+        { }
+        protected void AddTableRel(DataTable dataTable)
+        { }
+        protected void AddTableItem(DataTable dataTable)
+        { }
+        #endregion
+    }
+    #endregion
+    #region interface IAppHost : požadavky na objekt, který hraje roli hostitele Scheduleru.
+    /// <summary>
+    /// interface IAppHost : požadavky na objekt, který hraje roli hostitele Scheduleru.
+    /// </summary>
     public interface IAppHost
     { }
+    #endregion
+
+
+
 
     /// <summary>
     /// Třída, která obsahuje veškerá data Scheduleru.

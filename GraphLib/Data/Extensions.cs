@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Data;
 
 namespace Asol.Tools.WorkScheduler.Data
 {
@@ -158,5 +159,28 @@ namespace Asol.Tools.WorkScheduler.Data
             return a.CompareTo(b);
         }
         #endregion
-   }
+        #region DataRow
+        /// <summary>
+        /// Vrátí obsah sloupce daného jména, typovaný na daný typ.
+        /// Pokud řádek v daném sloupci obsahuje null, vrátí default(T).
+        /// Pokud sloupec neexistuje nebo obsahuje hodnotu nepřeveditelnou na typ T, vyhodí chybu.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="row"></param>
+        /// <param name="columnName"></param>
+        /// <returns></returns>
+        public static T GetValue<T>(this DataRow row, string columnName)
+        {
+            if (row == null) throw new ArgumentNullException("row", "DataRow is null");
+            if (String.IsNullOrEmpty(columnName)) throw new ArgumentNullException("columnName", "ColumnName is empty");
+            if (!(row.Table.Columns.Contains(columnName))) throw new ArgumentException("Table <" + row.Table.TableName + "> does not contain column with name <" + columnName + ">.");
+            if (row.IsNull(columnName)) return default(T);
+            object value = row[columnName];
+            if (!(value is T)) throw new InvalidCastException("Value in column <" + columnName + "> is not of type <" + typeof(T).Name + ">.");
+            return (T)value;
+        }
+
+
+        #endregion
+    }
 }

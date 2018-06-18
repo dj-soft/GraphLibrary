@@ -2612,7 +2612,6 @@ namespace Asol.Tools.WorkScheduler.Data
         {
             this.List.Clear();
         }
-        
         #endregion
         #region IEnumerable Members
         IEnumerator<T> IEnumerable<T>.GetEnumerator() { return this.List.GetEnumerator(); }

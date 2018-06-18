@@ -1241,6 +1241,21 @@ namespace Asol.Tools.WorkScheduler.Data
             return TableValueType.Text;
         }
         #endregion
+        #region Import tabulky Table z DataTable
+        /// <summary>
+        /// Metoda vytvoří novou tabulku <see cref="Table"/> na základě dat z tabulky <see cref="System.Data.DataTable"/>.
+        /// </summary>
+        /// <param name="dataTable"></param>
+        /// <returns></returns>
+        public static Table CreateFrom(System.Data.DataTable dataTable)
+        {
+            if (dataTable == null) return null;
+            Table table = new Table(dataTable.TableName);
+            table.Columns.AddRange(Column.CreateFrom(dataTable.Columns, table));    // Přidávat prvky musím včetně logiky AddItemAfter, kvůli navazujícím algoritmům (indexy, owner)
+            table.Rows.AddRange(Row.CreateFrom(dataTable.Rows, table));
+            return table;
+        }
+        #endregion
     }
     #endregion
     #region Column
@@ -1510,6 +1525,40 @@ namespace Asol.Tools.WorkScheduler.Data
             return a.ColumnProperties.ColumnOrder.CompareTo(b.ColumnProperties.ColumnOrder);
         }
         #endregion
+        #region Import sloupců Column z DataColumn
+        /// <summary>
+        /// Metoda vytvoří soupis sloupců <see cref="Column"/> na základě dat o sloupcích z tabulky <see cref="System.Data.DataColumnCollection"/>.
+        /// </summary>
+        /// <param name="dataColumns">Kolekce sloupců, vstup</param>
+        /// <param name="table">Parent tabulka</param>
+        /// <returns></returns>
+        public static IEnumerable<Column> CreateFrom(System.Data.DataColumnCollection dataColumns, Table table)
+        {
+            if (dataColumns == null) return null;
+            List<Column> columnList = new List<Column>();
+            foreach (System.Data.DataColumn dataColumn in dataColumns)
+            {
+                Column column = Column.CreateFrom(dataColumn, table);
+                if (column != null)
+                    columnList.Add(column);
+            }
+            return columnList;
+        }
+        /// <summary>
+        /// Metoda vytvoří jeden sloupec <see cref="Column"/> na základě dat o sloupci z tabulky <see cref="System.Data.DataColumn"/>.
+        /// </summary>
+        /// <param name="dataColumn">Konkrétní sloupec, vstup</param>
+        /// <param name="table">Parent tabulka</param>
+        /// <returns></returns>
+        public static Column CreateFrom(System.Data.DataColumn dataColumn, Table table)
+        {
+            if (dataColumn == null) return null;
+            Column column = new Column(dataColumn.ColumnName);
+            column._Table = table;
+            column.ColumnProperties.FillFrom(dataColumn);
+            return column;
+        }
+        #endregion
         #region Implementace interface ISequenceLayout (Layout šířky sloupce), IVisualMember (vizuální vlastnosti), IIdKey (dvojitý klíč)
         /// <summary>
         /// Veškeré hodnoty související s šířkou sloupce (rozsah hodnot, povolení Resize)
@@ -1536,6 +1585,7 @@ namespace Asol.Tools.WorkScheduler.Data
         int IIdKey.Id { get { return this.ColumnId; } }
         string IIdKey.Key { get { return this.ColumnName; } }
         #endregion
+
     }
     #endregion
     #region ColumnProperties
@@ -1582,17 +1632,23 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// Jaká data obsahuje tento sloupec
         /// </summary>
-        public ColumnContentType ColumnContent { get { return this._ColumnContent; } set { this._ColumnContent = value; } }
-        private ColumnContentType _ColumnContent;
-
+        public ColumnContentType ColumnContent { get { return this._ColumnContent; } set { this._ColumnContent = value; } } private ColumnContentType _ColumnContent;
         /// <summary>
         /// Datový typ obsahu sloupce. Null = obecná data
         /// </summary>
         public Type DataType { get { return this._DataType; } set { this._DataType = value; } } private Type _DataType;
         /// <summary>
+        /// Defaultní hodnota pro nové řádky
+        /// </summary>
+        public object DefaultValue { get { return this._DefaultValue; } set { this._DefaultValue = value; } } private object _DefaultValue;
+        /// <summary>
         /// Formátovací string pro data zobrazovaná v tomto sloupci.
         /// </summary>
         public string FormatString { get { return this._FormatString; } set { this._FormatString = value; } } private string _FormatString;
+        /// <summary>
+        /// Pouze pro čtení
+        /// </summary>
+        public bool ReadOnly { get { return this._ReadOnly; } set { this._ReadOnly = value; } } private bool _ReadOnly;
         /// <summary>
         /// true pokud je povoleno třídit řádky kliknutím na záhlaví tohoto sloupce. Default = true;
         /// </summary>
@@ -1606,7 +1662,6 @@ namespace Asol.Tools.WorkScheduler.Data
         /// To je jen tehdy, když sloupec obsahuje časový graf (<see cref="ColumnContent"/> == <see cref="ColumnContentType.TimeGraph"/>).
         /// </summary>
         public bool UseTimeAxis { get { return this.ColumnContent == ColumnContentType.TimeGraph; } }
-
         /// <summary>
         /// Zadaná šířka sloupce.
         /// Hodnotu může vložit aplikační kód, hodnota se projeví v GUI.
@@ -1691,6 +1746,76 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public string RelatedRecordColumnName { get { return this._RelatedRecordColumnName; } set { this._RelatedRecordColumnName = value; } } private string _RelatedRecordColumnName;
         #endregion
+        #region Import vlastností sloupce ColumnProperties z dat v DataColumn
+        /// <summary>
+        /// Metoda naplní this objekt daty, která načte z dodaného sloupce <see cref="System.Data.DataColumn"/>.
+        /// </summary>
+        /// <param name="dataColumn"></param>
+        /// <returns></returns>
+        public void FillFrom(System.Data.DataColumn dataColumn)
+        {
+            if (dataColumn == null) return;
+            this.Title = dataColumn.Caption;
+            this.DataType = dataColumn.DataType;
+            this.DefaultValue = dataColumn.DefaultValue;
+            this.ReadOnly = dataColumn.ReadOnly;
+
+            Asol.Tools.WorkScheduler.Scheduler.DataColumnExtendedInfo extendedInfo = Scheduler.DataColumnExtendedInfo.CreateForColumn(dataColumn);
+            this.AllowColumnSortByClick = extendedInfo.AllowSort;                   // Povoleno třídění kliknutím
+            this.ColumnContent = GetColumnContent(extendedInfo);                    // Obsah sloupce
+            this.FormatString = GetFormatString(extendedInfo);                      // Formátovací string z Norisu, musí se převést na .NET
+            this.IsVisible = extendedInfo.IsVisible;                                // Je viditelný
+            if (!String.IsNullOrEmpty(extendedInfo.Label)) this.Title = extendedInfo.Label;      // Jen pokud je vyplněno
+            this.Width = GetWidth(extendedInfo);                                    // Na vstupu je šířka Noris, což je něco jako čtvrtpísmeno
+            this.RecordClassNumber = GetClassNumber(extendedInfo);
+            this.RelationNumber = extendedInfo.RelationNumber;
+            this.RelationSide = GetRelationSide(extendedInfo);
+            this.RelatedRecordColumnName = extendedInfo.RelationRecordColumnName;
+        }
+        protected static ColumnContentType GetColumnContent(Asol.Tools.WorkScheduler.Scheduler.DataColumnExtendedInfo extendedInfo)
+        {
+            if (extendedInfo.Index == 0) return ColumnContentType.RecordId;
+            switch (extendedInfo.BrowseColumnType)
+            {
+                case "SubjectNumber":
+                    return ColumnContentType.RecordId;
+                case "ObjectNumber":
+                    return ColumnContentType.EntryId;
+                case "DataColumn":
+                    return ColumnContentType.UserData;
+                case "RelationHelpfulColumn":
+                    return ColumnContentType.RelationRecordId;
+                case "TotalCountHelpfulColumn":
+                    return ColumnContentType.HiddenData;
+            }
+            return ColumnContentType.None;
+        }
+        protected static string GetFormatString(Asol.Tools.WorkScheduler.Scheduler.DataColumnExtendedInfo extendedInfo)
+        {
+            string format = extendedInfo.Format;
+            return null;
+        }
+        protected static int? GetWidth(Asol.Tools.WorkScheduler.Scheduler.DataColumnExtendedInfo extendedInfo)
+        {
+            return 4 * extendedInfo.Width;
+        }
+        protected static int? GetClassNumber(Asol.Tools.WorkScheduler.Scheduler.DataColumnExtendedInfo extendedInfo)
+        {
+            if (extendedInfo.Index == 0) return extendedInfo.ClassNumber;
+            if (extendedInfo.RelationClassNumber.HasValue) return extendedInfo.RelationClassNumber;
+            return null;
+        }
+        protected static RelationMasterSide? GetRelationSide(Asol.Tools.WorkScheduler.Scheduler.DataColumnExtendedInfo extendedInfo)
+        {
+            if (!extendedInfo.RelationClassNumber.HasValue) return null;
+            switch (extendedInfo.RelationSide)
+            {
+                case "Left": return RelationMasterSide.Left;
+                case "Right": return RelationMasterSide.Right;
+            }
+            return null;
+        }
+        #endregion
     }
     /// <summary>
     /// Jaký druh údaje je obsažen ve sloupci
@@ -1722,6 +1847,11 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Tento sloupec se nikdy nezobrazuje.
         /// </summary>
         RecordId,
+        /// <summary>
+        /// Číslo položky v záznamu celého řádku.
+        /// Tento sloupec se nikdy nezobrazuje.
+        /// </summary>
+        EntryId,
         /// <summary>
         /// Číslo vztaženého záznamu (takového, jehož typ == <see cref="RelationRecordData"/>).
         /// Tento sloupec se nikdy nezobrazuje.
@@ -2077,6 +2207,21 @@ namespace Asol.Tools.WorkScheduler.Data
                 if (!this[keyColumn].TryGetValue<int>(out recordNumber)) return null;          // Sloupec[0] neobsahuje číslo?
                 return new GId(keyColumn.ColumnProperties.RecordClassNumber.Value, recordNumber);
             }
+        }
+        #endregion
+        #region Import tabulky Table z DataTable
+        /// <summary>
+        /// Metoda vytvoří novou tabulku <see cref="Table"/> na základě dat z tabulky <see cref="System.Data.DataTable"/>.
+        /// </summary>
+        /// <param name="dataTable"></param>
+        /// <returns></returns>
+        public static IEnumerable<Row> CreateFrom(System.Data.DataRowCollection dataRows, Table table)
+        {
+            if (dataTable == null) return null;
+            Table table = new Table(dataTable.TableName);
+            table.Columns.AddRangeSilent(Column.CreateFrom(dataTable.Columns));
+            table.Rows.AddRangeSilent(Row.CreateFrom(dataTable.Rows));
+            return table;
         }
         #endregion
         #region IContentValidity
