@@ -155,15 +155,14 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
                 table.AddColumns
                     (
-                        new Column("key", "Klíč", "Klíč záznamu v tomto sloupci", "0000000", 60),
+                        new Column("recordid", columnContent: ColumnContentType.RecordId, recordClassNumber: 1188),
+                        new Column("key", "Reference", "Reference záznamu v tomto sloupci", "0000000", 75),
                         new Column("date_from", "Datum OD", "Počáteční datum směny", "yyyy-MM-dd HH:mm", 80),
                         new Column("date_to", "Datum DO", "Koncové datum směny", "yyyy-MM-dd HH:mm:ss", 80),
-                        new Column("graph1", "graf", "Graf vytížení", null, 180, true, true, false, 160, null),
+                        new Column("graph1", "graf", "Graf vytížení", null, 180, columnContent: ColumnContentType.TimeGraph, autoWidth: true, sortingEnabled: false, widthMininum: 160),
                         new Column("price1", "Cena jednotky", "Jednotková cena.\r\nJe zde jen pro informaci.", "### ##0.00", 80),
                         new Column("image", "Fotografie", "Zobrazení", null, 60, sortingEnabled: false)
                     );
-
-                table.Columns["key"].ColumnProperties.IsRelation = true;
 
                 DateTime now = DateTime.Now.Date.AddHours(8);
                 for (int r = 0; r < rowCount; r++)
@@ -176,7 +175,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                     Image image = images[imgPointer];
                     int height = ((this.Rand.Next(0, 100) > 80) ? 65 : 25);
 
-                    Row row = new Row(klic, datumOd, datumDo, graph1, price, image);
+                    Row row = new Row(10001 + r, klic, datumOd, datumDo, graph1, price, image);
 
                     if (this.Rand.Next(0, 100) > 80)
                         row.Height = 75;
@@ -242,14 +241,15 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
                 table.AddColumns
                     (
-                        new Column("id", "ID", isVisible: false),
+                        new Column("id", columnContent: ColumnContentType.RecordId, recordClassNumber: 1364),
+                        new Column("profesion_id", columnContent: ColumnContentType.RelationRecordId, recordClassNumber: 1190),
                         new Column("photo", "Fotografie", sortingEnabled: false, width: 45, widthMininum: 10, widthMaximum: 60),
                         new Column("nazev", "Jméno", "Jméno zaměstnance", width: 200, widthMininum: 50, widthMaximum: 300),
-                        new Column("prof", "Profese", "Hlavní profese zaměstnance", width: 150),
+                        new Column("profesion", "Profese", "Hlavní profese zaměstnance", columnContent: ColumnContentType.RelationRecordData, width: 150),
                         new Column("gender", "Rod", sortingEnabled: false, width: 35, allowColumnResize: false, widthMininum: 35, widthMaximum: 35)
                     );
 
-                table.Columns["prof"].ColumnProperties.IsRelation = true;
+                table.Columns["profesion"].ColumnProperties.RelatedRecordColumnName = "profesion_id";
 
                 Image[] images = _LoadImages();
 
@@ -268,7 +268,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
                     string prof = arrayP[Rand.Next(0, arrayP.Length)];
 
-                    Row row = new Row(r, image, tc, prof, mf);
+                    Row row = new Row(20001 + r, 50001 + r, image, tc, prof, mf);
 
                     Cell imageCell = row[1];
                     imageCell.ToolTip = nazev;

@@ -1,0 +1,84 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Windows.Forms;
+
+namespace Asol.Tools.WorkScheduler.TestGUI
+{
+    /// <summary>
+    /// Třída PluginForm pro účely testování nahrazuje klietnský plugin.
+    /// Zajistí v podstatě totéž, co zajišťuje Connector v pluginu: 
+    /// vytvoření datového objektu WorkScheduler, 
+    /// jeho iniciaci pomocí datového balíku, 
+    /// získání GUI controlu z WorkScheduler a jeho vložení do formuláře.
+    /// Dále tento Form simuluje datovou základnu pro volání funkcí z WorkScheduler do Hosta.
+    /// </summary>
+    public partial class PluginForm : Form, Scheduler.IAppHost
+    {
+        #region Inicializace, tvorba GUI controlu z dodaných dat
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public PluginForm()
+        {
+            InitializeComponent();
+            InitializeWorkScheduler();
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.WindowState = FormWindowState.Maximized;
+        }
+        /// <summary>
+        /// Inicializace controlu Scheduleru
+        /// </summary>
+        protected void InitializeWorkScheduler()
+        {
+            Application.App.AppCompanyName = "Asseco Solutions";
+            Application.App.AppProductName = "WorkScheduler";
+
+            string dataPack = this.SearchForDataPack();
+            if (dataPack == null) return;
+
+            this.MainData = new Scheduler.MainData(this as Scheduler.IAppHost);
+            this.MainData.LoadData(dataPack);
+            this.MainControl = this.MainData.CreateGui();
+            this.Controls.Add(this.MainControl);
+            this.MainControl.Dock = DockStyle.Fill;
+        }
+        /// <summary>
+        /// Main data Scheduleru
+        /// </summary>
+        protected Scheduler.MainData MainData;
+        /// <summary>
+        /// GUI control
+        /// </summary>
+        protected System.Windows.Forms.Control MainControl;
+        /// <summary>
+        /// Vrátí obsah nejnovějšího souboru obsahujícího balík s daty z adresáře AppLocalDataPath / Data.
+        /// Může vrátit null.
+        /// </summary>
+        /// <returns></returns>
+        protected string SearchForDataPack()
+        {
+            string path = Application.App.GetAppLocalDataPath("Data");
+            System.IO.DirectoryInfo pathInfo = new System.IO.DirectoryInfo(path);
+            if (!pathInfo.Exists)
+            {
+                pathInfo.Create();
+                pathInfo.Refresh();
+            }
+            List<System.IO.FileInfo> fileList = pathInfo.GetFiles("Data_????????_??????.dat").ToList();
+            if (fileList.Count == 0) return null;
+            if (fileList.Count > 1)
+                fileList.Sort((a, b) => DateTime.Compare(b.LastAccessTime, a.LastAccessTime));
+
+            return System.IO.File.ReadAllText(fileList[0].FullName);
+        }
+        #endregion
+        #region Implementace Scheduler.IAppHost
+
+        #endregion
+    }
+}
