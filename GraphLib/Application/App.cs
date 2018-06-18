@@ -463,17 +463,26 @@ namespace Asol.Tools.WorkScheduler.Application
         #endregion
         #region App constants, paths
         /// <summary>
-        /// Name of company.
-        /// Is used as part of path in AppLocalDataPath, and for Windows register keys.
+        /// Jméno autora. 
+        /// Default = "Asseco Solutions". 
+        /// Lze setovat jinou hodnotu. Projeví se v <see cref="AppLocalDataPath"/> a v WindowsRegister keys.
         /// </summary>
         public static string AppCompanyName
-        { get { return "Asseco Solutions"; } }
+        {
+            get { string value = Instance._AppCompanyName; return (!String.IsNullOrEmpty(value) ? value : "Asseco Solutions"); }
+            set { Instance._AppCompanyName = value; }
+        } private string _AppCompanyName;
         /// <summary>
-        /// Name of application.
-        /// Is used as part of path in AppLocalDataPath, and for Windows register keys.
+        /// Název aplikace.
+        /// Default = "GraphUtility". 
+        /// Lze setovat jinou hodnotu. Projeví se v <see cref="AppLocalDataPath"/> a v WindowsRegister keys.
         /// </summary>
         public static string AppProductName
-        { get { return "GraphUtility"; } }
+        {
+            get { string value = Instance._AppProductName; return (!String.IsNullOrEmpty(value) ? value : "GraphUtility"); }
+            set { Instance._AppProductName = value; }
+        }
+        private string _AppProductName;
         /// <summary>
         /// Path to LocalApplicationData directory.
         /// Usually this is: C:\Users\{user}\AppData\Local\

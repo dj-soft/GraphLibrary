@@ -1121,24 +1121,26 @@ namespace Asol.Tools.WorkScheduler.Data
 
             // Otestujeme, jestli nejde o sloupec se vztahem => pokusíme se dohledat navázaný záznam z buňky:
             if (cell.Column.ColumnProperties.IsRelation && args.HasInteractiveArgs && (args.InteractiveArgs.ModifierKeys == System.Windows.Forms.Keys.Control))
-                recordId = this.GetRecordForCell(cell);
+                recordId = cell.RelatedRecordGId;
 
             // Anebo zkusíme získat navázaný záznam z řádku:
             if (recordId == null)
-                recordId = this.GetRecordGId(cell.Row);
+                recordId = cell.Row.RecordGId;
 
             if (recordId != null)
                 this.CallOpenRecordForm(recordId);
-
-
         }
+        /// <summary>
+        /// Metoda zajistí vyvolání akcí, které povedou k otevření formuláře záznamu specifikovaného v parametru.
+        /// Vyvlá háček <see cref="OnOpenRecordForm(GPropertyEventArgs{GId})"/> a event <see cref="OpenRecordForm"/>.
+        /// </summary>
+        /// <param name="recordId"></param>
         protected void CallOpenRecordForm(GId recordId)
         {
             GPropertyEventArgs<GId> args = new GPropertyEventArgs<GId>(recordId, EventSourceType.InteractiveChanged);
             this.OnOpenRecordForm(args);
             if (this.OpenRecordForm != null)
                 this.OpenRecordForm(this, args);
-            qqq;
         }
         /// <summary>
         /// Háček volaný při otevírání záznamu z <see cref="Table"/>.
@@ -1178,7 +1180,9 @@ namespace Asol.Tools.WorkScheduler.Data
             }
         }
         /// <summary>
-        /// Vrátí identifikátor záznamu v daném řádku
+        /// Vrátí identifikátor záznamu v daném řádku.
+        /// Jen tak mezi námi, pokud volající už má referenci na řádek <see cref="Row"/>, tak může rovnou číst <see cref="Row.RecordGId"/>.
+        /// Zdejší metoda dělá to samé, jen před tím testuje dodaný řádek, zda není null.
         /// </summary>
         /// <param name="row"></param>
         /// <returns></returns>
@@ -1187,8 +1191,41 @@ namespace Asol.Tools.WorkScheduler.Data
             if (row == null) return null;
             return row.RecordGId;
         }
-        public GId GetRecordForCell(Cell cell)
-        { }
+        /// <summary>
+        /// Vrátí identifikátor záznamu, který je navázán a zobrazen v dané buňce.
+        /// Jen tak mezi námi, pokud volající už má referenci na buňku <see cref="Cell"/>, tak může rovnou číst <see cref="Cell.RelatedRecordGId"/>.
+        /// Zdejší metoda dělá to samé, jen před tím testuje dodanou buňku, zda není null.
+        /// </summary>
+        /// <param name="cell"></param>
+        /// <returns></returns>
+        public GId GetRelatedRecordGId(Cell cell)
+        {
+            if (cell == null) return null;
+            return cell.RelatedRecordGId;
+        }
+        /// <summary>
+        /// Vrátí sloupec (Column), který obsahuje klíč (a další data) o vztaženém záznamu, který je zobrazován v daném sloupci.
+        /// Daný sloupec (parametr column) může obsahovat <see cref="ColumnContentType.RelationRecordData"/> (tj. viditelné hodnoty ze vztaženého záznamu),
+        /// anebo <see cref="ColumnContentType.RelationRecordId"/> (tj. číslo záznamu).
+        /// Metoda vrátí sloupec, který má obsah <see cref="ColumnContentType.RelationRecordId"/>, a obsahuje číslo třídy v <see cref="Data.ColumnProperties.RecordClassNumber"/>.
+        /// </summary>
+        /// <param name="column"></param>
+        /// <returns></returns>
+        public Column GetRelationKeyColumn(Column column)
+        {
+            if (column == null) return null;
+            Data.ColumnProperties columnProperties = column.ColumnProperties;
+            if (columnProperties.ColumnContent == ColumnContentType.RelationRecordId && columnProperties.RecordClassNumber.HasValue) return column;    // daný sloupec obsahuje číslo záznamu
+            if (columnProperties.ColumnContent != ColumnContentType.RelationRecordData) return null;
+
+            string relationColumnName = columnProperties.RelatedRecordColumnName;        // Název sloupce, který obsahuje číslo vztaženého záznamu
+            if (String.IsNullOrEmpty(relationColumnName)) return null;
+            Column relationColumn;
+            if (!this.TryGetColumn(relationColumnName, out relationColumn) || relationColumn == null) return null;
+            columnProperties = relationColumn.ColumnProperties;
+            if (columnProperties.ColumnContent == ColumnContentType.RelationRecordId && columnProperties.RecordClassNumber.HasValue) return relationColumn;    // Vztahový sloupec obsahuje číslo záznamu
+            return null;
+        }
         #endregion
         #region Statické služby
         /// <summary>
@@ -1237,7 +1274,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="title"></param>
         public Column(string name, Localizable.TextLoc title = null, Localizable.TextLoc toolTip = null, string formatString = null, int? width = null,
             ColumnContentType columnContent = ColumnContentType.UserData, bool autoWidth = false, bool sortingEnabled = true, int? widthMininum = null, int? widthMaximum = null, 
-            bool isVisible = true, bool allowColumnResize = true)
+            bool isVisible = true, bool allowColumnResize = true, int? recordClassNumber = null)
             : this()
         {
             this._ColumnName = name;
@@ -1253,6 +1290,7 @@ namespace Asol.Tools.WorkScheduler.Data
             columnProperties.AutoWidth = autoWidth;
             columnProperties.WidthMininum = widthMininum;
             columnProperties.WidthMaximum = widthMaximum;
+            columnProperties.RecordClassNumber = recordClassNumber;
         }
         /// <summary>
         /// Vizualizace
@@ -1635,7 +1673,8 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public int? RecordClassNumber { get { return this._RecordClassNumber; } set { this._RecordClassNumber = value; } } private int? _RecordClassNumber;
         /// <summary>
-        /// true pokud tento sloupec zobrazuje vztažený záznam, a lze jej tedy rozkliknout (pomocí Ctrl + DoubleClick)
+        /// true pokud tento sloupec zobrazuje vztažený záznam, a lze jej tedy rozkliknout (pomocí Ctrl + DoubleClick).
+        /// Vztahový sloupec má typ obsahu <see cref="ColumnContent"/> buď <see cref="ColumnContentType.RelationRecordId"/> nebo <see cref="ColumnContentType.RelationRecordData"/>.
         /// </summary>
         public bool IsRelation { get { ColumnContentType cc = this.ColumnContent; return (cc == ColumnContentType.RelationRecordId || cc == ColumnContentType.RelationRecordData); } }
         /// <summary>
@@ -2030,35 +2069,15 @@ namespace Asol.Tools.WorkScheduler.Data
         {
             get
             {
-                if (this.Columns.Count <= 0) return null;
+                if (this.Columns == null || this.Columns.Count <= 0) return null;
                 Column keyColumn = this.Columns[0];
                 if (!(keyColumn.ColumnProperties.ColumnContent == ColumnContentType.RecordId && keyColumn.ColumnProperties.RecordClassNumber.HasValue)) return null;
-                object value = this[0].Value;
-                if (!(value is Int32)) return null;
-                return new GId(keyColumn.ColumnProperties.RecordClassNumber.Value, (int)value);
+
+                int recordNumber;
+                if (!this[keyColumn].TryGetValue<int>(out recordNumber)) return null;          // Sloupec[0] neobsahuje číslo?
+                return new GId(keyColumn.ColumnProperties.RecordClassNumber.Value, recordNumber);
             }
         }
-        /// <summary>
-        /// Vrátí identifikátor záznamu v daném řádku
-        /// </summary>
-        /// <param name="row"></param>
-        /// <returns></returns>
-        public GId GetRecordGId(Row row)
-        {
-            if (row == null) return null;
-            return row.RecordGId;
-
-
-
-            Cell keyCell = row[keyColumn];
-            if (keyCell == null) return null;
-            if (keyCell.Value == null) return null;
-            if (!(keyCell.Value is int)) return null;
-
-
-
-        }
-
         #endregion
         #region IContentValidity
         bool IContentValidity.DataIsValid { get { return _RowDataIsValid; } set { _RowDataIsValid = value; } } private bool _RowDataIsValid;
@@ -2308,7 +2327,26 @@ namespace Asol.Tools.WorkScheduler.Data
             value = (T)this.Value;
             return true;
         }
+        /// <summary>
+        /// Obsahuje identifikátor záznamu, který se nachází v této buňce.
+        /// To funguje pouze tehdy, když buňka patří do sloupce, který je korektně označen a naplněn jako vztahový.
+        /// Více v <see cref="ColumnProperties.RelatedRecordColumnName"/> a v metodě <see cref="Table.GetRelationKeyColumn(Column)"/>.
+        /// </summary>
+        /// <param name="cell"></param>
+        /// <returns></returns>
+        public GId RelatedRecordGId
+        {
+            get
+            {
+                if (this.Row == null || this.Column == null || this.Table == null) return null;    // Buňka dosud není v řádku, nebo ve sloupci nebo v tabulce
+                Column keyColumn = this.Table.GetRelationKeyColumn(this.Column);                   // Sloupec, který obsahuje číslo záznamu ve vztahu
+                if (keyColumn == null) return null;
 
+                int recordNumber;
+                if (!this.Row[keyColumn].TryGetValue<int>(out recordNumber)) return null;          // Sloupec s číslem záznamu neobsahuje číslo?
+                return new GId(keyColumn.ColumnProperties.RecordClassNumber.Value, recordNumber);
+            }
+        }
         #endregion
 
     }

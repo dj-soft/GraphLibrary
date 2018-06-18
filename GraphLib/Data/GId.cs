@@ -71,6 +71,10 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <returns></returns>
         private static bool _IsEqual(GId a, GId b)
         {
+            bool an = ((object)a) == null;
+            bool bn = ((object)b) == null;
+            if (an && bn) return true;           // null == null
+            if (an || bn) return false;          // (any object) != null
             return (a.RecordId == b.RecordId && a.ClassId == b.ClassId);
         }
         /// <summary>

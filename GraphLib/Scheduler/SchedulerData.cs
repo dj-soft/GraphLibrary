@@ -10,6 +10,37 @@ using Asol.Tools.WorkScheduler.Services;
 
 namespace Asol.Tools.WorkScheduler.Scheduler
 {
+    public class MainData
+    {
+        #region Konstrukce a proměnné
+        public MainData(Scheduler.IAppHost host)
+        {
+            this._AppHost = host;
+        }
+        private Scheduler.IAppHost _AppHost;
+        #endregion
+        #region Načítání a analýza dodaných dat
+
+        public void LoadData(string dataPack)
+        { }
+        #endregion
+        #region Tvorba GUI
+
+        public System.Windows.Forms.Control CreateGui()
+        {
+            System.Windows.Forms.TextBox textBox = new System.Windows.Forms.TextBox() { Bounds = new System.Drawing.Rectangle(25, 8, 450, 150), Multiline = true, Text = "Data scheduleru" };
+            System.Windows.Forms.Panel panel = new System.Windows.Forms.Panel();
+            panel.Controls.Add(textBox);
+            return panel;
+        }
+
+
+        #endregion
+
+    }
+    public interface IAppHost
+    { }
+
     /// <summary>
     /// Třída, která obsahuje veškerá data Scheduleru.
     /// Současně představuje jak zdroj globálních funkcí do ToolBaru (IFunctionGlobal), tak i zdroj dat pro grafy v GUI (IDataSource).
