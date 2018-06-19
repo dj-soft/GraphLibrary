@@ -619,7 +619,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             private void _CheckWritter(string usedMember)
             {
                 if (!this.IsWritter)
-                    throw new InvalidOperationException($"Instance of DataBuffer is not in Writer mode. Using the {usedMember} is not possible.");
+                    throw new InvalidOperationException("Instance of DataBuffer is not in Writer mode. Using the " + usedMember + " is not possible.");
             }
             #endregion
             #region Read: čtení dat
@@ -754,7 +754,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             private void _CheckReader(string usedMember)
             {
                 if (!this.IsReader)
-                    throw new InvalidOperationException($"Instance of DataBuffer is not in Reader mode. Using the {usedMember} is not possible.");
+                    throw new InvalidOperationException("Instance of DataBuffer is not in Reader mode. Using the " + usedMember + " is not possible.");
             }
             #endregion
             #region Konstanty
@@ -969,7 +969,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Název sloupce, který obsahuje číslo záznamu, jehož reference nebo název jsou v aktuálním sloupci zobrazeny.
         /// </summary>
-        public string RelationRecordColumnName { get { return (this.RelationNumber != 0 && !String.IsNullOrEmpty(this.RelationTableAlias) ? $"H_RN_{RelationNumber}_{RelationTableAlias}_RN_H" : ""); } }
+        public string RelationRecordColumnName { get { return (this.RelationNumber != 0 && !String.IsNullOrEmpty(this.RelationTableAlias) ? "H_RN_" + RelationNumber + "_" + RelationTableAlias + "_RN_H" : ""); } }
         /// <summary>
         /// true pokud tento sloupec má být k dispozici uživateli (jeho viditelnost se pak řídí pomocí <see cref="IsVisible"/>),
         /// false pro sloupce "systémové", které se nikdy nezobrazují.

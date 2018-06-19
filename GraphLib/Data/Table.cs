@@ -1228,6 +1228,75 @@ namespace Asol.Tools.WorkScheduler.Data
             return null;
         }
         #endregion
+        #region Primární index
+        /// <summary>
+        /// Obsahuje true, pokud tato tabulka může mít primární index.
+        /// </summary>
+        public bool AllowPrimaryKey { get { return this.Columns.Any(c => c.ColumnProperties.AllowPrimaryKey); } }
+        /// <summary>
+        /// Obsahuje true, pokud tabulka má primární index. Lze setovat, pak proběhne reindexace.
+        /// </summary>
+        public bool HasPrimaryIndex
+        {
+            get { return this._HasPrimaryIndex; }
+            set
+            {
+                if (value == this._HasPrimaryIndex) return;
+                this._HasPrimaryIndex = value;
+                if (this._HasPrimaryIndex)
+                    this.Reindex();
+                else
+                    this._PrimaryIndex = null;
+            }
+        } private bool _HasPrimaryIndex;
+        /// <summary>
+        /// Provede znovuvytvoření Primárního indexu
+        /// </summary>
+        public void Reindex()
+        {
+            if (!this.HasPrimaryIndex)
+                throw new GraphLibCodeException("Nelze provést Reindex() tabulky, která má nastavenu hodnotu HasPrimaryIndex = false.");
+            Column primaryColumn = this.CurrentPrimaryKeyColumn;
+            if (primaryColumn  == null)
+                throw new GraphLibCodeException("Nelze provést Reindex() tabulky, která neobsahuje vhodný primární sloupec (DataType = Int32, a existující ClassNumber v ColumnProperties).");
+            if (!primaryColumn.ColumnProperties.AllowPrimaryKey)
+                throw new GraphLibCodeException("Nelze provést Reindex() tabulky podle sloupce " + primaryColumn.ColumnName + ", tento sloupec nevyhovuje."); ;
+
+            Dictionary<GId, List<Row>> primaryIndex = new Dictionary<GId, List<Row>>();
+            Int32 classId = primaryColumn.ColumnProperties.RecordClassNumber.Value;
+            foreach (Row row in this.Rows)
+            {
+                GId key = new GId(classId, row[primaryColumn].GetValue<Int32>());
+                List<Row> value;
+                if (!primaryIndex.TryGetValue(key, out value))
+                {
+                    value = new List<Row>();
+                    primaryIndex.Add(key, value);
+                }
+                value.Add(row);
+            }
+            this._PrimaryIndex = primaryIndex;
+        }
+        /// <summary>
+        /// Sloupec, podle něhož se vytváří primární index
+        /// </summary>
+        protected Column CurrentPrimaryKeyColumn
+        {
+            get
+            {
+                if (!this._CurrentPrimaryKeyColumnValid)
+                {
+                    this._CurrentPrimaryKeyColumn = this.Columns.FirstOrDefault(c => c.ColumnProperties.AllowPrimaryKey);
+                    this._CurrentPrimaryKeyColumnValid = true;
+                }
+                return this._CurrentPrimaryKeyColumn;
+            }
+        }
+        private Column _CurrentPrimaryKeyColumn;
+        private bool _CurrentPrimaryKeyColumnValid;
+        private Dictionary<GId, List<Row>> _PrimaryIndex;
+        
+        #endregion
         #region Statické služby
         /// <summary>
         /// Vrací typ obsahu pro danou hodnotu.
@@ -1796,6 +1865,16 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Při otevírání vztaženého záznamu (pomocí Ctrl + DoubleClick) je nalezen tento sloupec, přečteno jeho číslo a získaný záznam je otevřen.
         /// </summary>
         public string RelatedRecordColumnName { get { return this._RelatedRecordColumnName; } set { this._RelatedRecordColumnName = value; } } private string _RelatedRecordColumnName;
+        /// <summary>
+        /// Obsahuje true, pokud tento sloupec může být použit jako PrimaryKey. To jest: jeho datový typ je Int32, a obsah je RecordId. 
+        /// </summary>
+        internal bool AllowPrimaryKey
+        {
+            get
+            {
+                return (this.DataType == typeof(Int32) && this.ColumnContent == ColumnContentType.RecordId && this.RecordClassNumber.HasValue);
+            }
+        }
         #endregion
         #region Import vlastností sloupce ColumnProperties z dat v DataColumn
         /// <summary>

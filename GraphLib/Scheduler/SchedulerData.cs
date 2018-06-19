@@ -478,7 +478,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     /// </summary>
     public class DataGraphTable : IDataGraphTableInternal
     {
-        #region Konstrukce, postupné vkládání dat z tabulek
+        #region Konstrukce, postupné vkládání dat z tabulek, včetně finalizace
         /// <summary>
         /// Konstruktor
         /// </summary>
@@ -566,7 +566,12 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         public void LoadFinalise()
         {
             // Připravíme grafy do tabulky TableRow, pokud je tabulka má mít a máme načtená data řádků i data grafů:
+            if (this.TableRow != null)
+            {
+                if (this.TableRow.AllowPrimaryKey)
+                    this.TableRow.HasPrimaryIndex = true;
 
+            }
 
 
         }
