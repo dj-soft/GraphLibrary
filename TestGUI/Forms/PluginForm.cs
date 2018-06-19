@@ -41,11 +41,18 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             string dataPack = this.SearchForDataPack();
             if (dataPack == null) return;
 
-            this.MainData = new Scheduler.MainData(this as Scheduler.IAppHost);
-            this.MainData.LoadData(dataPack);
-            this.MainControl = this.MainData.CreateGui();
-            this.Controls.Add(this.MainControl);
-            this.MainControl.Dock = DockStyle.Fill;
+            try
+            {
+                this.MainData = new Scheduler.MainData(this as Scheduler.IAppHost);
+                this.MainData.LoadData(dataPack);
+                this.MainControl = this.MainData.CreateGui();
+                this.Controls.Add(this.MainControl);
+                this.MainControl.Dock = DockStyle.Fill;
+            }
+            catch (Exception exc)
+            {
+                MessageBox.Show("Při spouštění WorkScheduleru došlo k chybě:" + Environment.NewLine + exc.Message, "Chyba", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
+            }
         }
         /// <summary>
         /// Main data Scheduleru
