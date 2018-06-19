@@ -21,6 +21,48 @@ namespace Asol.Tools.WorkScheduler.Data
         {
             return type.Namespace + "." + type.Name;
         }
+        public static bool IsConvertibleTo(this Type currentType, Type expectedType)
+        {
+            if (currentType == expectedType) return true;
+            Type[] genericArgumnets = expectedType.GetGenericArguments();
+            if (expectedType.Name == "Nullable`1" && genericArgumnets != null && genericArgumnets.Length > 0)
+            {
+                expectedType = genericArgumnets[0];
+                if (currentType == expectedType) return true;
+            }
+
+            string convert = currentType.Namespace + "." + currentType.Name + " => " + expectedType.Namespace + "." + expectedType.Name;
+            switch (convert)
+            {   // Co je převoditelné:
+                case "System.Int16 => System.Int32":
+                case "System.Int16 => System.Int64":
+                case "System.Int32 => System.Int64":
+
+                case "System.Int16 => System.Decimal":
+                case "System.Int32 => System.Decimal":
+                case "System.Int64 => System.Decimal":
+                case "System.UInt16 => System.Decimal":
+                case "System.UInt32 => System.Decimal":
+                case "System.UInt64 => System.Decimal":
+
+                case "System.Int16 => System.Single":
+                case "System.Int32 => System.Single":
+                case "System.Int64 => System.Single":
+                case "System.UInt16 => System.Single":
+                case "System.UInt32 => System.Single":
+                case "System.UInt64 => System.Single":
+
+                case "System.Int16 => System.Double":
+                case "System.Int32 => System.Double":
+                case "System.Int64 => System.Double":
+                case "System.UInt16 => System.Double":
+                case "System.UInt32 => System.Double":
+                case "System.UInt64 => System.Double":
+
+                    return true;
+            }
+            return false;
+        }
         #endregion
         #region String
         /// <summary>
@@ -176,11 +218,224 @@ namespace Asol.Tools.WorkScheduler.Data
             if (!(row.Table.Columns.Contains(columnName))) throw new ArgumentException("Table <" + row.Table.TableName + "> does not contain column with name <" + columnName + ">.");
             if (row.IsNull(columnName)) return default(T);
             object value = row[columnName];
-            if (!(value is T)) throw new InvalidCastException("Value in column <" + columnName + "> is not of type <" + typeof(T).Name + ">.");
-            return (T)value;
+            return (T)GetValue<T>(value);
+            // return (T)value;
+
+            // Type currentType = value.GetType();
+            // Type expectedType = typeof(T);
+            // if (!currentType.IsConvertibleTo(expectedType)) throw new InvalidCastException("Value in column <" + columnName + "> [" + currentType.Name + "] is not convertible to type <" + expectedType.Name + ">.");
+            // return (T)value;
         }
+        /// <summary>
+        /// Vrátí obsah sloupce daného jména, typovaný na daný typ.
+        /// Pokud řádek v daném sloupci obsahuje null, vrátí default(T).
+        /// Pokud sloupec neexistuje nebo obsahuje hodnotu nepřeveditelnou na typ T, vrátí default(T) ale nedojde k chybě.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="row"></param>
+        /// <param name="columnName"></param>
+        /// <returns></returns>
+        public static T TryGetValue<T>(this DataRow row, string columnName)
+        {
+            if (row == null) return default(T);
+            if (String.IsNullOrEmpty(columnName)) throw new ArgumentNullException("columnName", "ColumnName is empty");
+            if (!(row.Table.Columns.Contains(columnName))) return default(T);
+            if (row.IsNull(columnName)) return default(T);
+            object value = row[columnName];
+            try
+            {
+                return (T)value;
+            }
+            catch { }
+            return default(T);
+        }
+        public static object GetValue<T>(object value)
+        {
+            if (value == null) return default(T);
+
+            Type sType = value.GetType();
+            string sName = sType.Namespace + "." + sType.Name;
+            Type tType = typeof(T);
+            string tName = tType.Namespace + "." + tType.Name;
+
+            if (sName == tName) return value;
 
 
+            Int16 valueInt16;
+            Int32 valueInt32;
+            Int64 valueInt64;
+            UInt16 valueUInt16;
+            UInt32 valueUInt32;
+            UInt64 valueUInt64;
+            Single valueSingle;
+            Double valueDouble;
+            Decimal valueDecimal;
+            String valueString;
+            Char valueChar;
+            Byte valueByte;
+            SByte valueSByte;
+            DateTime valueDateTime;
+            TimeSpan valueTimeSpan;
+
+            string convert = tName + " = " + sName;
+            switch (convert)
+            {
+                case "System.Int16 = System.Byte":
+                    valueInt16 = (Int16)((Byte)value);
+                    return valueInt16;
+                case "System.Int16 = System.SByte":
+                    valueInt16 = (Int16)((SByte)value);
+                    return valueInt16;
+                case "System.Int16 = System.Int32":
+                    valueInt16 = (Int16)((Int32)value);
+                    return valueInt16;
+                case "System.Int16 = System.Int64":
+                    valueInt16 = (Int16)((Int64)value);
+                    return valueInt16;
+                case "System.Int16 = System.UInt32":
+                    valueInt16 = (Int16)((UInt32)value);
+                    return valueInt16;
+                case "System.Int16 = System.UInt64":
+                    valueInt16 = (Int16)((UInt64)value);
+                    return valueInt16;
+
+                case "System.Int32 = System.Byte":
+                    valueInt32 = (Int32)((Byte)value);
+                    return valueInt32;
+                case "System.Int32 = System.SByte":
+                    valueInt32 = (Int32)((SByte)value);
+                    return valueInt32;
+                case "System.Int32 = System.Int16":
+                    valueInt32 = (Int32)((Int16)value);
+                    return valueInt32;
+                case "System.Int32 = System.Int64":
+                    valueInt32 = (Int32)((Int64)value);
+                    return valueInt32;
+                case "System.Int32 = System.UInt16":
+                    valueInt32 = (Int32)((UInt16)value);
+                    return valueInt32;
+                case "System.Int32 = System.UInt64":
+                    valueInt32 = (Int32)((UInt64)value);
+                    return valueInt32;
+
+                case "System.Int64 = System.Byte":
+                    valueInt64 = (Int64)((Byte)value);
+                    return valueInt64;
+                case "System.Int64 = System.SByte":
+                    valueInt64 = (Int64)((SByte)value);
+                    return valueInt64;
+                case "System.Int64 = System.Int16":
+                    valueInt64 = (Int64)((Int16)value);
+                    return valueInt64;
+                case "System.Int64 = System.Int32":
+                    valueInt64 = (Int64)((Int32)value);
+                    return valueInt64;
+                case "System.Int64 = System.UInt16":
+                    valueInt64 = (Int64)((UInt16)value);
+                    return valueInt64;
+                case "System.Int64 = System.UInt32":
+                    valueInt64 = (Int64)((UInt32)value);
+                    return valueInt64;
+
+                case "System.Single = System.Byte":
+                    valueSingle = (Single)((Byte)value);
+                    return valueSingle;
+                case "System.Single = System.SByte":
+                    valueSingle = (Single)((SByte)value);
+                    return valueSingle;
+                case "System.Single = System.Int16":
+                    valueSingle = (Single)((Int16)value);
+                    return valueSingle;
+                case "System.Single = System.Int32":
+                    valueSingle = (Single)((Int32)value);
+                    return valueSingle;
+                case "System.Single = System.Int64":
+                    valueSingle = (Single)((Int64)value);
+                    return valueSingle;
+                case "System.Single = System.UInt16":
+                    valueSingle = (Single)((UInt16)value);
+                    return valueSingle;
+                case "System.Single = System.UInt32":
+                    valueSingle = (Single)((UInt32)value);
+                    return valueSingle;
+                case "System.Single = System.UInt64":
+                    valueSingle = (Single)((UInt64)value);
+                    return valueSingle;
+                case "System.Single = System.Double":
+                    valueSingle = (Single)((Double)value);
+                    return valueSingle;
+                case "System.Single = System.Decimal":
+                    valueSingle = (Single)((Decimal)value);
+                    return valueSingle;
+
+                case "System.Double = System.Byte":
+                    valueDouble = (Double)((Byte)value);
+                    return valueDouble;
+                case "System.Double = System.SByte":
+                    valueDouble = (Double)((SByte)value);
+                    return valueDouble;
+                case "System.Double = System.Int16":
+                    valueDouble = (Double)((Int16)value);
+                    return valueDouble;
+                case "System.Double = System.Int32":
+                    valueDouble = (Double)((Int32)value);
+                    return valueDouble;
+                case "System.Double = System.Int64":
+                    valueDouble = (Double)((Int64)value);
+                    return valueDouble;
+                case "System.Double = System.UInt16":
+                    valueDouble = (Double)((UInt16)value);
+                    return valueDouble;
+                case "System.Double = System.UInt32":
+                    valueDouble = (Double)((UInt32)value);
+                    return valueDouble;
+                case "System.Double = System.UInt64":
+                    valueDouble = (Double)((UInt64)value);
+                    return valueDouble;
+                case "System.Double = System.Single":
+                    valueDouble = (Double)((Single)value);
+                    return valueDouble;
+                case "System.Double = System.Decimal":
+                    valueDouble = (Double)((Decimal)value);
+                    return valueDouble;
+
+                case "System.Decimal = System.Byte":
+                    valueDecimal = (Decimal)((Byte)value);
+                    return valueDecimal;
+                case "System.Decimal = System.SByte":
+                    valueDecimal = (Decimal)((SByte)value);
+                    return valueDecimal;
+                case "System.Decimal = System.Int16":
+                    valueDecimal = (Decimal)((Int16)value);
+                    return valueDecimal;
+                case "System.Decimal = System.Int32":
+                    valueDecimal = (Decimal)((Int32)value);
+                    return valueDecimal;
+                case "System.Decimal = System.Int64":
+                    valueDecimal = (Decimal)((Int64)value);
+                    return valueDecimal;
+                case "System.Decimal = System.UInt16":
+                    valueDecimal = (Decimal)((UInt16)value);
+                    return valueDecimal;
+                case "System.Decimal = System.UInt32":
+                    valueDecimal = (Decimal)((UInt32)value);
+                    return valueDecimal;
+                case "System.Decimal = System.UInt64":
+                    valueDecimal = (Decimal)((UInt64)value);
+                    return valueDecimal;
+                case "System.Decimal = System.Single":
+                    valueDecimal = (Decimal)((Single)value);
+                    return valueDecimal;
+                case "System.Decimal = System.Double":
+                    valueDecimal = (Decimal)((Double)value);
+                    return valueDecimal;
+            }
+
+            if (tName == "System.String")
+                return value.ToString();
+
+            return value;
+        }
         #endregion
     }
 }

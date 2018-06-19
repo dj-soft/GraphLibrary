@@ -5,6 +5,7 @@ using System.Text;
 using System.Drawing;
 using System.Windows.Forms;
 using Asol.Tools.WorkScheduler.Data;
+using Asol.Tools.WorkScheduler.Application;
 
 namespace Asol.Tools.WorkScheduler.Components
 {
@@ -1439,7 +1440,7 @@ namespace Asol.Tools.WorkScheduler.Components
             public void AddOne(ArrangementOne one)
             {
                 if (this._IsFinalised)
-                    throw new InvalidOperationException("Can not add any ArrangementOne into ArrangementSet after Finalise()!");
+                    throw new GraphLibCodeException("Nelze přidat další ArrangementOne do ArrangementSet poté, kdy proběhla finalizace.");
 
                 if (one != null)
                 {
@@ -1454,10 +1455,10 @@ namespace Asol.Tools.WorkScheduler.Components
             public void Finalise()
             {
                 if (this._IsFinalised)
-                    throw new InvalidOperationException("Can not Finalise() an object ArrangementSet more than once!");
+                    throw new GraphLibCodeException("Nelze provést finalizaci objektu ArrangementSet více než jedenkrát.");
 
                 if (this._List == null)
-                    throw new InvalidOperationException("Can not Finalise() an object ArrangementSet, without at least one ArrangementOne added!");
+                    throw new GraphLibCodeException("Nelze provést finalizaci objektu ArrangementSet, pokud neobsahuje alespoň jeden prvek ArrangementOne.");
 
                 ArrangementOne.SortList(this._List);
                 this.Items = this._List.ToArray();
@@ -1496,7 +1497,7 @@ namespace Asol.Tools.WorkScheduler.Components
             internal ArrangementOne SelectSetForScale(decimal scale)
             {
                 if (!this._IsFinalised)
-                    throw new InvalidOperationException("Can not SelectSetForScale() from an object ArrangementSet before Finalise()!");
+                    throw new GraphLibCodeException("Není možno pracovat s objektem ArrangementSet (provést SelectSetForScale()) před jeho finalizací.");
 
                 decimal distance = this.SubTitleDistance;
                 distance = (distance < 25m ? 25m : (distance > 250m ? 250m : distance));

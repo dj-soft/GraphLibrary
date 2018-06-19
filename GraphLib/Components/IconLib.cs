@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Drawing;
+using Asol.Tools.WorkScheduler.Application;
 
 namespace Asol.Tools.WorkScheduler.Components
 {
@@ -148,7 +149,7 @@ namespace Asol.Tools.WorkScheduler.Components
         private Image _GetImage(string name, int size, IconState state)
         {
             if (String.IsNullOrEmpty(name))
-                throw new ArgumentNullException("name", "IconLib[name]: name can not be empty or null value.");
+                throw new GraphLibDataException("IconLib[name]: název ikony nesmí být prázdný.");
             string key = name.ToLower().Trim();
             IconImages icon;
             if (!this._ImageDict.TryGetValue(key, out icon))

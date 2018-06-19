@@ -27,7 +27,7 @@ namespace Asol.Tools.WorkScheduler.Application
                         if (__Instance == null)
                         {
                             if (__InitialisationStatus == InitialisationStatus.InProgressRaw)
-                                throw new InvalidOperationException("Error during App._InitRaw(): early use of App singleton during InProgressRaw phase.");
+                                throw new GraphLibCodeException("Chyba při inicializaci instance App: předčasné použití App singletonu ve fázi InProgressRaw.");
 
                             __InitialisationStatus = InitialisationStatus.InProgressRaw;
                             App instance = new App();
@@ -453,7 +453,7 @@ namespace Asol.Tools.WorkScheduler.Application
         private static void _RegisterCheckKey(string key)
         {
             if (String.IsNullOrEmpty(key))
-                throw new ArgumentNullException("key", "App.Register: given key cannot be empty string.");
+                throw new GraphLibDataException("App.Register: zadaný klíč nesmí být prázdný.");
         }
         private void _RegisterInit()
         {
@@ -511,4 +511,45 @@ namespace Asol.Tools.WorkScheduler.Application
         }
         #endregion
     }
+    #region Exceptions : třídy výjimek používaných v GraphLibrary
+    /// <summary>
+    /// Základní třída pro výjimky, které vyhazuje projekt GraphLibrary
+    /// </summary>
+    public class GraphLibException : ApplicationException
+    {
+        public GraphLibException(string message) : base(message) { }
+        public GraphLibException(string message, Exception innerException) : base(message, innerException) { }
+    }
+    /// <summary>
+    /// Výjimka, která oznamuje chybně dodaná data na vstupu do metody.
+    /// Například vstup je null a nemá být, data jsou jiného typu než mají být a nejsou převoditelná na cílový typ, nebo jsou vyžadována data, která neexistují (chybějící klíč v Dictionary) atd.
+    /// Jde tedy o problém spíš závislý na datech, než na kódu.
+    /// </summary>
+    public class GraphLibDataException : ApplicationException
+    {
+        public GraphLibDataException(string message) : base(message) { }
+        public GraphLibDataException(string message, Exception innerException) : base(message, innerException) { }
+    }
+    /// <summary>
+    /// Výjimka, která oznamuje chybně volanou metodu za nevhodné situace.
+    /// Například je volána metoda pro zpracování něčeho, co už je zpracované a uzavřené, nebo naopak se snažíme použít něco, co ještě není připravené.
+    /// Nebo chceme použít určitou metodu, která v aktuální situaci je nepoužitelná.
+    /// Jde tedy o problém spíš způsobený kódem, než nesprávnými daty.
+    /// </summary>
+    public class GraphLibCodeException : ApplicationException
+    {
+        public GraphLibCodeException(string message) : base(message) { }
+        public GraphLibCodeException(string message, Exception innerException) : base(message, innerException) { }
+    }
+    /// <summary>
+    /// Výjimka, která oznamuje chybu uživatelského vstupu.
+    /// Například do datového pole je zadána hodnota, kterou nelze převést na DateTime, nebo uživatel nezadal něco co zadat měl.
+    /// Nejde tedy o problém aplikace.
+    /// </summary>
+    public class GraphLibUserException : ApplicationException
+    {
+        public GraphLibUserException(string message) : base(message) { }
+        public GraphLibUserException(string message, Exception innerException) : base(message, innerException) { }
+    }
+    #endregion
 }

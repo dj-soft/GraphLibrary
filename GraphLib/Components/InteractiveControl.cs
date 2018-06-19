@@ -6,6 +6,7 @@ using System.Windows.Forms;
 using System.Drawing;
 using System.ComponentModel;
 using System.Drawing.Drawing2D;
+using Asol.Tools.WorkScheduler.Application;
 
 namespace Asol.Tools.WorkScheduler.Components
 {
@@ -2279,7 +2280,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 {   // Našli jsme prvek:
                     // Pokud jsme se zacyklili => skončíme chybou:
                     if (resultList.Any(iii => Object.ReferenceEquals(iii.Item, foundItem)))
-                        throw new StackOverflowException("There is an cycling loop in nesting of IInteractiveItem list");
+                        throw new GraphLibCodeException("Při hledání vnořených vizuálních prvků v GCurrentItem došlo k zacyklení položek v seznamech IInteractiveItem.");
 
                     // Určíme relativní pozici myši vůči prvku, to se někdy hodí:
                     Point itemAbsolutePoint = foundItem.GetAbsoluteVisibleBounds().Location;

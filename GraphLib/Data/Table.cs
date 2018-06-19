@@ -6,6 +6,7 @@ using System.Drawing;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Asol.Tools.WorkScheduler.Components;
 using Asol.Tools.WorkScheduler.Components.Grid;
+using Asol.Tools.WorkScheduler.Application;
 
 namespace Asol.Tools.WorkScheduler.Data
 {
@@ -2518,7 +2519,7 @@ namespace Asol.Tools.WorkScheduler.Data
         {
             if (this.Value == null) return default(T);
             if (this.Value is T) return (T)this.Value;
-            throw new InvalidCastException("Hodnotu ze sloupce " + this.Column.ColumnName + " nelze převést na typ " + typeof(T).Name + ", hodnota je typu " + this.Value.GetType().Name + ".");
+            throw new GraphLibDataException("Hodnotu ze sloupce " + this.Column.ColumnName + " nelze převést na typ " + typeof(T).Name + ", hodnota je typu " + this.Value.GetType().Name + ".");
         }
         /// <summary>
         /// Přečte hodnotu z této buňky typovanou na daný typ (T).
