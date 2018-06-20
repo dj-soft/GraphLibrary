@@ -93,6 +93,16 @@ namespace Asol.Tools.WorkScheduler.Data
                 rows = rows.Select(i => i.Trim()).ToArray();
             return rows;
         }
+        /// <summary>
+        /// Rozdělí daný string na pole polí, 
+        /// </summary>
+        /// <param name="text">Vstupující text. Obsahuje řádky, a v řádku obsahuje prvky oddělené daným stringem.</param>
+        /// <param name="itemSeparator">Oddělovač prvků v řádku</param>
+        /// <param name="removeEmptyItems">Vevkládat prázdné prvky (</param>
+        /// <param name="trimItems"></param>
+        /// <returns></returns>
+        public static string[][] ToTable(this string text, string itemSeparator, bool removeEmptyLines, bool trimItems)
+        { }
         #endregion
         #region IEnumerable
         /// <summary>

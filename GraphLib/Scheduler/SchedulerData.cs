@@ -572,7 +572,18 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (this.DataDeclaration == null)
                 return;
 
-            string data = this.DataDeclaration.Data;
+            using (var scope = App.Trace.Scope(TracePriority.Priority3_BellowNormal, "DataGraphTable", "LoadFinalise", ""))
+            {
+                string data = this.DataDeclaration.Data;                       // Obsahuje formát: "GraphPosition: LastColumn; LineHeight: 16; MaxHeight: 320"
+                if (data != null)
+                    this.LoadTableDeclaration(data);
+
+
+            }
+        }
+        private void LoadTableDeclaration(string data)
+        {
+            var items = data.ToTable(";", true, true);
         }
         #endregion
         #region Data - tabulka s řádky, prvky grafů, vztahů, položky s informacemi
