@@ -1280,15 +1280,49 @@ namespace Asol.Tools.WorkScheduler.Data
                 this._PrimaryIndex = primaryIndex;
             }
         }
+        /// <summary>
+        /// Metoda se pokusí vrátit řádek pro daný GId. Pokud záznam neexistuje, vrací false a jako out Row dává null.
+        /// Metoda vyhodí chybu, pokud GId je null, nebo tabulka nemá <see cref="HasPrimaryIndex"/>, nebo pokud pro GId existuje více řádků.
+        /// </summary>
+        /// <param name="gId"></param>
+        /// <param name="row"></param>
+        /// <returns></returns>
         public bool TryGetRowOnPrimaryKey(GId gId, out Row row)
         {
             if (!this.HasPrimaryIndex)
                 throw new GraphLibCodeException("Tabulka <" + this.TableName + "> nemá primární index, nelze v ní použít metodu TryGetRowOnPrimaryKey().");
-            row = null;
-            List<Row> rows;
-            if (!this._PrimaryIndex.TryGetValue(gId, out rows)) return false;
-            if (rows.Count == 0) return false;
+            if (gId == null)
+                throw new GraphLibCodeException("Nelze vyhledávat v tabulce podle GId, pokud je null.");
 
+            row = null;
+            List<Row> rowList;
+            if (!this._PrimaryIndex.TryGetValue(gId, out rowList)) return false;
+            if (rowList.Count == 0) return false;
+            if (rowList.Count > 1)
+                throw new GraphLibCodeException("Tabulka <" + this.TableName + "> obsahuje pro primární klíč <" + gId + "> víc než jeden záznam. Nelze v ní použít metodu TryGetRowOnPrimaryKey(), ale TryGetRowsOnPrimaryKey().");
+            row = rowList[0];
+            return true;
+        }
+        /// <summary>
+        /// Metoda se pokusí vrátit všechny řádky pro daný GId. Pokud záznam neexistuje, vrací false a jako out Rows dává null.
+        /// Metoda vyhodí chybu, pokud GId je null, nebo tabulka nemá <see cref="HasPrimaryIndex"/>.
+        /// </summary>
+        /// <param name="gId"></param>
+        /// <param name="row"></param>
+        /// <returns></returns>
+        public bool TryGetRowsOnPrimaryKey(GId gId, out Row[] rows)
+        {
+            if (!this.HasPrimaryIndex)
+                throw new GraphLibCodeException("Tabulka <" + this.TableName + "> nemá primární index, nelze v ní použít metodu TryGetRowOnPrimaryKey().");
+            if (gId == null)
+                throw new GraphLibCodeException("Nelze vyhledávat v tabulce podle GId, pokud je null.");
+
+            rows = null;
+            List<Row> rowList;
+            if (!this._PrimaryIndex.TryGetValue(gId, out rowList)) return false;
+            if (rowList.Count == 0) return false;
+            rows = rowList.ToArray();
+            return true;
         }
         /// <summary>
         /// Sloupec, podle něhož se vytváří primární index
@@ -2183,14 +2217,15 @@ namespace Asol.Tools.WorkScheduler.Data
         }
         /// <summary>
         /// Vrátí buňku pro daný column.
-        /// Trvá déle než hledání podle Id.
-        /// Může vrátit null, pokud neexistuje buňka se vztahem na daný sloupec.
+        /// Může vrátit null, pokud neexistuje buňka se vztahem na daný sloupec, a daný sloupec a this řádek nepatří do společné tabulky.
         /// </summary>
         /// <param name="column"></param>
         /// <returns></returns>
         private Cell _GetCell(Column column)
         {
-            return this._CellDict.Values.FirstOrDefault(c => c.Column != null && Object.ReferenceEquals(c.Column, column));
+            if (this.HasTable && column.HasTable && Object.ReferenceEquals(this.Table, column.Table))
+                return this._GetCell(column.ColumnId);
+            return null;
         }
         /// <summary>
         /// Soupis buněk

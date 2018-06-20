@@ -646,7 +646,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             using (var scope = App.Trace.Scope(TracePriority.Priority3_BellowNormal, "DataGraphTable", "LoadFinalise", ""))
             {
                 this.CreateGraphs();
-                this.CreateItemIndex();
+                this.FillGraphItems();
 
             }
         }
@@ -728,12 +728,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         protected void FillGraphItem(DataGraphItem graphItem)
         {
-            GTimeGraph gTimeGraph;
-            if (!this.TryGetGraphForItem(graphItem, out gTimeGraph)) return;
-            gTimeGraph.ItemList.Add(graphItem);
-
-            foreach (var graphItem in this.GraphItems)
-                this.FillGraphItem(graphItem);
+            GTimeGraph timeGraph;
+            if (!this.TryGetGraphForItem(graphItem, out timeGraph)) return;
+            timeGraph.ItemList.Add(graphItem);
         }
         /// <summary>
         /// Metoda zkusí najít a vrátit objekt <see cref="GTimeGraph"/> pro položku grafu dle parametru.
@@ -741,13 +738,26 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// a v řádku najde a vrátí graf podle režimu zobrazení grafu: buď z Value posledního columnu, nebo z <see cref="Row.BackgroundValue"/>
         /// </summary>
         /// <param name="graphItem"></param>
-        /// <param name="gTimeGraph"></param>
+        /// <param name="timeGraph"></param>
         /// <returns></returns>
-        protected bool TryGetGraphForItem(DataGraphItem graphItem, out GTimeGraph gTimeGraph)
+        protected bool TryGetGraphForItem(DataGraphItem graphItem, out GTimeGraph timeGraph)
         { 
-                    Row row = 
-            this.TableRow.TryGetRowOnPrimaryKey(graphItem.ParentGId, out 
-}
+            timeGraph = null;
+            Row row;
+            if (graphItem.ParentGId == null || !this.TableRow.TryGetRowOnPrimaryKey(graphItem.ParentGId, out row)) return false;
+            switch (this.GraphPosition)
+            {
+                case DataGraphPositionType.InLastColumn:
+                    if (this.TableRowGraphColumn != null)
+                        timeGraph = row[this.TableRowGraphColumn].Value as GTimeGraph;
+                    break;
+                case DataGraphPositionType.OnBackgroundLogarithmic:
+                case DataGraphPositionType.OnBackgroundProportional:
+                    timeGraph = row.BackgroundValue as GTimeGraph;
+                    break;
+            }
+            return (timeGraph != null);
+        }
         /// <summary>
         /// Obsahuje true, pokud this tabulka má zobrazit graf
         /// </summary>
@@ -755,28 +765,39 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             get
             {
-                if (this.TableRow == null || this.DataDeclaration == null || this.DataGraphProperties == null) return false;
-                DataGraphPositionType? gp = this.DataGraphProperties.GraphPosition;
-                return (gp.HasValue && (gp.Value == DataGraphPositionType.InLastColumn || gp.Value == DataGraphPositionType.OnBackgroundProportional || gp.Value == DataGraphPositionType.OnBackgroundLogarithmic));
+                DataGraphPositionType graphPosition = this.GraphPosition;
+                return (graphPosition == DataGraphPositionType.InLastColumn || 
+                        graphPosition == DataGraphPositionType.OnBackgroundProportional ||
+                        graphPosition == DataGraphPositionType.OnBackgroundLogarithmic);
             }
         }
-        /// <summary>
+         /// <summary>
         /// Režim časové osy v grafu, podle zadání v deklaraci
         /// </summary>
         protected TimeGraphTimeAxisMode TimeAxisMode
         {
             get
             {
-                if (this.TableRow == null || this.DataDeclaration == null || this.DataGraphProperties == null) return TimeGraphTimeAxisMode.Default;
-                DataGraphPositionType? gp = this.DataGraphProperties.GraphPosition;
-                if (!gp.HasValue) return TimeGraphTimeAxisMode.Default;
-                switch (gp.Value)
+                DataGraphPositionType graphPosition = this.GraphPosition;
+                switch (graphPosition)
                 {
                     case DataGraphPositionType.InLastColumn: return TimeGraphTimeAxisMode.Standard;
                     case DataGraphPositionType.OnBackgroundProportional: return TimeGraphTimeAxisMode.ProportionalScale;
                     case DataGraphPositionType.OnBackgroundLogarithmic: return TimeGraphTimeAxisMode.LogarithmicScale;
                 }
                 return TimeGraphTimeAxisMode.Default;
+            }
+        }
+        /// <summary>
+        /// Pozice grafu. Obsahuje None, pokud graf není definován.
+        /// </summary>
+        protected DataGraphPositionType GraphPosition
+        {
+            get
+            {
+                if (this.TableRow == null || this.DataDeclaration == null || this.DataGraphProperties == null) return DataGraphPositionType.None;
+                DataGraphPositionType? gp = this.DataGraphProperties.GraphPosition;
+                return (gp.HasValue ? gp.Value : DataGraphPositionType.None);
             }
         }
         /// <summary>
