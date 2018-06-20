@@ -43,11 +43,14 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             try
             {
-                this.MainData = new Scheduler.MainData(this as Scheduler.IAppHost);
-                this.MainData.LoadData(dataPack);
-                this.MainControl = this.MainData.CreateGui();
-                this.Controls.Add(this.MainControl);
-                this.MainControl.Dock = DockStyle.Fill;
+                using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority3_BellowNormal, "PluginForm", "InitializeWorkScheduler", ""))
+                {
+                    this.MainData = new Scheduler.MainData(this as Scheduler.IAppHost);
+                    this.MainData.LoadData(dataPack);
+                    this.MainControl = this.MainData.CreateGui();
+                    this.Controls.Add(this.MainControl);
+                    this.MainControl.Dock = DockStyle.Fill;
+                }
             }
             catch (Exception exc)
             {
@@ -69,19 +72,29 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <returns></returns>
         protected string SearchForDataPack()
         {
-            string path = Application.App.GetAppLocalDataPath("Data");
-            System.IO.DirectoryInfo pathInfo = new System.IO.DirectoryInfo(path);
-            if (!pathInfo.Exists)
+            string fileName = null;
+            using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority3_BellowNormal, "PluginForm", "SearchForDataPack", ""))
             {
-                pathInfo.Create();
-                pathInfo.Refresh();
+                string path = Application.App.GetAppLocalDataPath("Data");
+                System.IO.DirectoryInfo pathInfo = new System.IO.DirectoryInfo(path);
+                if (!pathInfo.Exists)
+                {
+                    pathInfo.Create();
+                }
+                else
+                {
+                    List<System.IO.FileInfo> fileList = pathInfo.GetFiles("Data_????????_??????.dat").ToList();
+                    int fileCount = fileList.Count;
+                    if (fileCount > 0)
+                    {
+                        if (fileCount > 1)
+                            fileList.Sort((a, b) => DateTime.Compare(b.LastAccessTime, a.LastAccessTime));
+                        fileName = fileList[0].FullName;
+                    }
+                }
+                scope.AddItem("DataFile: " + (fileName != null ? fileName : "NULL"));
             }
-            List<System.IO.FileInfo> fileList = pathInfo.GetFiles("Data_????????_??????.dat").ToList();
-            if (fileList.Count == 0) return null;
-            if (fileList.Count > 1)
-                fileList.Sort((a, b) => DateTime.Compare(b.LastAccessTime, a.LastAccessTime));
-
-            return System.IO.File.ReadAllText(fileList[0].FullName);
+            return (fileName != null ? System.IO.File.ReadAllText(fileName) : null);
         }
         #endregion
         #region Implementace Scheduler.IAppHost
