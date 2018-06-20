@@ -1261,21 +1261,24 @@ namespace Asol.Tools.WorkScheduler.Data
                 throw new GraphLibCodeException("Nelze provést Reindex() tabulky, která neobsahuje vhodný primární sloupec (DataType = Int32, a existující ClassNumber v ColumnProperties).");
             if (!primaryColumn.ColumnProperties.AllowPrimaryKey)
                 throw new GraphLibCodeException("Nelze provést Reindex() tabulky podle sloupce " + primaryColumn.ColumnName + ", tento sloupec nevyhovuje."); ;
-
-            Dictionary<GId, List<Row>> primaryIndex = new Dictionary<GId, List<Row>>();
-            Int32 classId = primaryColumn.ColumnProperties.RecordClassNumber.Value;
-            foreach (Row row in this.Rows)
+            
+            using (App.Trace.Scope(TracePriority.Priority3_BellowNormal, "Table", "Reindex", ""))
             {
-                GId key = new GId(classId, row[primaryColumn].GetValue<Int32>());
-                List<Row> value;
-                if (!primaryIndex.TryGetValue(key, out value))
+                Dictionary<GId, List<Row>> primaryIndex = new Dictionary<GId, List<Row>>();
+                Int32 classId = primaryColumn.ColumnProperties.RecordClassNumber.Value;
+                foreach (Row row in this.Rows)
                 {
-                    value = new List<Row>();
-                    primaryIndex.Add(key, value);
+                    GId key = new GId(classId, row[primaryColumn].GetValue<Int32>());
+                    List<Row> value;
+                    if (!primaryIndex.TryGetValue(key, out value))
+                    {
+                        value = new List<Row>();
+                        primaryIndex.Add(key, value);
+                    }
+                    value.Add(row);
                 }
-                value.Add(row);
+                this._PrimaryIndex = primaryIndex;
             }
-            this._PrimaryIndex = primaryIndex;
         }
         /// <summary>
         /// Sloupec, podle něhož se vytváří primární index

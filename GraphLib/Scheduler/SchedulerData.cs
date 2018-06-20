@@ -572,7 +572,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                     this.TableRow.HasPrimaryIndex = true;
 
             }
-
+            
 
         }
 
