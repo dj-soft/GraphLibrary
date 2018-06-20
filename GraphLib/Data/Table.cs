@@ -2593,15 +2593,21 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Vrátí hodnotu z této buňky typovanou na daný typ (T).
         /// Pokud buňka obsahuje null (<see cref="HasValue"/> == false), vrací default(T).
         /// Pokud obsah buňky není převoditelný na (T), vyhodí chybu (aplikace čte nesprávným postupem).
-        /// Neyvhodí chybu.
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
         public T GetValue<T>()
         {
             if (this.Value == null) return default(T);
-            if (this.Value is T) return (T)this.Value;
-            throw new GraphLibDataException("Hodnotu ze sloupce " + this.Column.ColumnName + " nelze převést na typ " + typeof(T).Name + ", hodnota je typu " + this.Value.GetType().Name + ".");
+            try
+            {
+                T result = (T)DataExtensions.GetValue<T>(this.Value);
+                return result;
+            }
+            catch (Exception exc)
+            {
+                throw new GraphLibDataException("Hodnotu ze sloupce " + this.Column.ColumnName + " nelze převést na typ " + typeof(T).Name + ", hodnota je typu " + this.Value.GetType().Name + ", pokus o převod skončil chybou " + exc.Message + ".");
+            }
         }
         /// <summary>
         /// Přečte hodnotu z této buňky typovanou na daný typ (T).
@@ -2614,11 +2620,16 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <returns></returns>
         public bool TryGetValue<T>(out T value)
         {
-            value = default(T);
-            if (this.Value == null) return true;            
-            if (!(this.Value is T)) return false;
-            value = (T)this.Value;
-            return true;
+            try
+            {
+                value = (T)DataExtensions.GetValue<T>(this.Value);
+                return true;
+            }
+            catch (Exception)
+            {
+                value = default(T);
+            }
+            return false;
         }
         /// <summary>
         /// Obsahuje identifikátor záznamu, který se nachází v této buňce.

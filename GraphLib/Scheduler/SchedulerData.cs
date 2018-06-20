@@ -488,6 +488,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             this.MainData = mainData;
             this.TableName = tableName;
+            this.DataDeclaration = dataDeclaration;
+            this.TableRow = null;
             this._IdDictInit();
         }
         /// <summary>
@@ -536,8 +538,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         protected void AddTableRow(DataTable dataTable)
         {
             if (this.TableRow != null)
-                throw new GraphLibDataException("Duplicate occurrence of Row data for the table <" + this.TableName + ">.");
+                throw new GraphLibDataException("Duplicitní zadání dat typu Row pro tabulku <" + this.TableName + ">.");
             this.TableRow = Table.CreateFrom(dataTable);
+            if (this.TableRow.AllowPrimaryKey)
+                this.TableRow.HasPrimaryIndex = true;
         }
         /// <summary>
         /// Metoda přidá data grafických prvků.
@@ -547,14 +551,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             WorkSchedulerSupport.CheckTable(dataTable, WorkSchedulerSupport.DATA_TABLE_GRAPH_STRUCTURE);
             foreach (DataRow row in dataTable.Rows)
-            {
+            {   // Grafické řádky se vytvářejí přímo z DataRow, nepotřebujeme kvůli nim konvertovat DataTable na Table:
                 DataGraphItem dataGraphItem = DataGraphItem.CreateFrom(this, row);
                 this.AddGraphItem(dataGraphItem);
             }
         }
         protected void AddTableRel(DataTable dataTable)
         {
-            Table table = Table.CreateFrom(dataTable);
+            // Doplnit strukturu a načítání
         }
         protected void AddTableItem(DataTable dataTable)
         {
@@ -565,17 +569,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         public void LoadFinalise()
         {
-            // Připravíme grafy do tabulky TableRow, pokud je tabulka má mít a máme načtená data řádků i data grafů:
-            if (this.TableRow != null)
-            {
-                if (this.TableRow.AllowPrimaryKey)
-                    this.TableRow.HasPrimaryIndex = true;
+            if (this.DataDeclaration == null)
+                return;
 
-            }
-            
-
+            string data = this.DataDeclaration.Data;
         }
-
         #endregion
         #region Data - tabulka s řádky, prvky grafů, vztahů, položky s informacemi
         /// <summary>
@@ -583,15 +581,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Tato tabulka je zobrazována.
         /// </summary>
         public Table TableRow { get { return this._TableRow; } private set { this._TableRow = value; } }
-
         /// <summary>
         /// Tabulka s řádky, které se zobrazují uživateli
         /// </summary>
         protected Table _TableRow;
-        /// <summary>
-        /// Index s prvky grafů. Klíčem je <see cref="DataGraphItem.ItemGId"/>.
-        /// </summary>
-        protected Dictionary<GId, DataGraphItem> _GraphDict;
         #endregion
         #region Správa ID, GId a objektů grafů
         /// <summary>
@@ -677,7 +670,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         private Dictionary<int, GId> _IdGIdDict;
         /// <summary>
-        /// Dictionary pro vyhledání prvku grafu podle jeho GId
+        /// Dictionary pro vyhledání prvku grafu podle jeho GId. Primární úložiště položek grafů.
         /// </summary>
         private Dictionary<GId, DataGraphItem> _GIdGraphItemDict;
         /// <summary>

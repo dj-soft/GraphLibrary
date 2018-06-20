@@ -249,6 +249,14 @@ namespace Asol.Tools.WorkScheduler.Data
             catch { }
             return default(T);
         }
+        /// <summary>
+        /// Vrátí hodnotu v požadovaném typu.
+        /// Používá explicitní přetypování.
+        /// Může dojít k chybě.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="value"></param>
+        /// <returns></returns>
         public static object GetValue<T>(object value)
         {
             if (value == null) return default(T);
@@ -279,7 +287,7 @@ namespace Asol.Tools.WorkScheduler.Data
 
             string convert = tName + " = " + sName;
             switch (convert)
-            {
+            {   //   Cílový typ    = Zdrojový typ
                 case "System.Int16 = System.Byte":
                     valueInt16 = (Int16)((Byte)value);
                     return valueInt16;
@@ -299,6 +307,7 @@ namespace Asol.Tools.WorkScheduler.Data
                     valueInt16 = (Int16)((UInt64)value);
                     return valueInt16;
 
+                //   Cílový typ    = Zdrojový typ
                 case "System.Int32 = System.Byte":
                     valueInt32 = (Int32)((Byte)value);
                     return valueInt32;
@@ -318,6 +327,7 @@ namespace Asol.Tools.WorkScheduler.Data
                     valueInt32 = (Int32)((UInt64)value);
                     return valueInt32;
 
+                //   Cílový typ    = Zdrojový typ
                 case "System.Int64 = System.Byte":
                     valueInt64 = (Int64)((Byte)value);
                     return valueInt64;
@@ -337,6 +347,7 @@ namespace Asol.Tools.WorkScheduler.Data
                     valueInt64 = (Int64)((UInt32)value);
                     return valueInt64;
 
+                //   Cílový typ    = Zdrojový typ
                 case "System.Single = System.Byte":
                     valueSingle = (Single)((Byte)value);
                     return valueSingle;
@@ -368,6 +379,7 @@ namespace Asol.Tools.WorkScheduler.Data
                     valueSingle = (Single)((Decimal)value);
                     return valueSingle;
 
+                //   Cílový typ    = Zdrojový typ
                 case "System.Double = System.Byte":
                     valueDouble = (Double)((Byte)value);
                     return valueDouble;
@@ -399,6 +411,7 @@ namespace Asol.Tools.WorkScheduler.Data
                     valueDouble = (Double)((Decimal)value);
                     return valueDouble;
 
+                //   Cílový typ    = Zdrojový typ
                 case "System.Decimal = System.Byte":
                     valueDecimal = (Decimal)((Byte)value);
                     return valueDecimal;

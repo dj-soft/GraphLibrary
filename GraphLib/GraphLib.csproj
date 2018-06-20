@@ -100,7 +100,7 @@
     <Compile Include="Scheduler\SchedulerData.cs" />
     <Compile Include="Scheduler\SchedulerInterface.cs" />
     <Compile Include="Scheduler\SchedulerPanel.cs" />
-    <Compile Include="Scheduler\Support.cs" />
+    <Compile Include="Scheduler\SchedulerSupport.cs" />
     <Compile Include="Services\Interface.cs" />
     <Compile Include="Services\TestDataSource.cs" />
     <Compile Include="Data\DataPersist.cs" />
