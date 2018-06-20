@@ -815,7 +815,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected void DrawTicks()
         {
-            if (!this.GraphParameters.TimeAxisTickIsVisible) return;
+            AxisTickType tickLevel = this.GraphParameters.TimeAxisVisibleTickLevel;
+            if (tickLevel == AxisTickType.None) return;
+            int tickLevelN = (int)tickLevel;
 
             using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "PaintGrid", ""))
             {
@@ -826,21 +828,25 @@ namespace Asol.Tools.WorkScheduler.Components
 
                 foreach (VisualTick tick in this.TimeAxisTicks)
                 {
+                    if (((int)tick.TickType) < tickLevelN) continue;
+
                     x = x0 + tick.RelativePixel;
-                    switch (tick.TickType)
-                    {
-                        case AxisTickType.BigLabel:
-                            this.ItemDrawArgs.DrawLine(x, y1, x, y2, Color.Gray, 2f, System.Drawing.Drawing2D.DashStyle.Solid);
-                            break;
+                    GPainter.DrawAxisTick(this.ItemDrawArgs.Graphics, tick.TickType, x, y1, x, y2, Skin.Graph.TimeAxisTickMain, Skin.Graph.TimeAxisTickSmall, true);
 
-                        case AxisTickType.StdLabel:
-                            this.ItemDrawArgs.DrawLine(x, y1, x, y2, Color.Gray, 1f, System.Drawing.Drawing2D.DashStyle.Solid);
-                            break;
+                    //switch (tick.TickType)
+                    //{
+                    //    case AxisTickType.BigLabel:
+                    //        this.ItemDrawArgs.DrawLine(x, y1, x, y2, Color.Gray, 2f, System.Drawing.Drawing2D.DashStyle.Solid);
+                    //        break;
 
-                        case AxisTickType.BigTick:
-                            this.ItemDrawArgs.DrawLine(x, y1, x, y2, Color.Gray, 1f, System.Drawing.Drawing2D.DashStyle.Dot);
-                            break;
-                    }
+                    //    case AxisTickType.StdLabel:
+                    //        this.ItemDrawArgs.DrawLine(x, y1, x, y2, Color.Gray, 1f, System.Drawing.Drawing2D.DashStyle.Solid);
+                    //        break;
+
+                    //    case AxisTickType.BigTick:
+                    //        this.ItemDrawArgs.DrawLine(x, y1, x, y2, Color.Gray, 1f, System.Drawing.Drawing2D.DashStyle.Dot);
+                    //        break;
+                    //}
                 }
             }
         }
@@ -1695,7 +1701,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public TimeGraphParameters()
         {
             this._TimeAxisMode = TimeGraphTimeAxisMode.Standard;
-            this._TimeAxisTickIsVisible = true;
+            this._TimeAxisVisibleTickLevel = AxisTickType.BigTick;
             this._OneLineHeight = Skin.Graph.LineHeight;
             this._LogarithmicRatio = 0.60f;
             this._LogarithmicGraphDrawOuterShadow = 0.20f;
@@ -1705,7 +1711,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public TimeGraphTimeAxisMode TimeAxisMode { get { return this._TimeAxisMode; } set { this._TimeAxisMode = value; } } private TimeGraphTimeAxisMode _TimeAxisMode;
         /// <summary>
-        /// true pokud mají být v grafu zobrazovány časové linky (Ticks).
+        /// Hladina ticků, které se budou v grafu zobrazovat.
+        /// None = žádné.
+        /// Ostatní hodnoty značí, že daná hodnota a hodnoty větší budou zobrazovány.
+        /// Výchozí hodnota je BigTick.
         /// Pro graf s režimem osy <see cref="TimeAxisMode"/> == <see cref="TimeGraphTimeAxisMode.Standard"/> 
         /// jsou souřadnice značek převzaty z jejich dat napřímo.
         /// Pro graf s režimem osy <see cref="TimeAxisMode"/> == <see cref="TimeGraphTimeAxisMode.ProportionalScale"/> 
@@ -1713,20 +1722,20 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Pro graf s režimem osy <see cref="TimeAxisMode"/> == <see cref="TimeGraphTimeAxisMode.LogarithmicScale"/> 
         /// nejsou časové značky nikdy vykreslovány.
         /// </summary>
-        public bool TimeAxisTickIsVisible
+        public AxisTickType TimeAxisVisibleTickLevel
         {
             get
             {
                 TimeGraphTimeAxisMode timeAxisMode = this.TimeAxisMode;
-                if (timeAxisMode == TimeGraphTimeAxisMode.LogarithmicScale) return false;          // Tento typ grafu (LogarithmicScale) nikdy nemá TimeAxisTick
-                return this._TimeAxisTickIsVisible;
+                if (timeAxisMode == TimeGraphTimeAxisMode.LogarithmicScale) return AxisTickType.None;  // Tento typ grafu (LogarithmicScale) nikdy nemá TimeAxisTick
+                return this._TimeAxisVisibleTickLevel;
             }
             set
             {
-                this._TimeAxisTickIsVisible = value;
+                this._TimeAxisVisibleTickLevel = value;
             }
         }
-        private bool _TimeAxisTickIsVisible;
+        private AxisTickType _TimeAxisVisibleTickLevel;
         /// <summary>
         /// Fyzická výška jedné logické linky grafu v pixelech.
         /// Jedna logická linka odpovídá výšce <see cref="ITimeGraphItem.Height"/> = 1.0f.

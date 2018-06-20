@@ -990,6 +990,45 @@ namespace Asol.Tools.WorkScheduler.Components
                 state = GInteractiveState.LeftDown;
             GPainter.DrawAreaBase(graphics, bounds, color, state, orientation, null, null, 0);
         }
+        /// <summary>
+        /// Zajistí vykreslení jednoho daného ticku
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="tickLevel"></param>
+        /// <param name="x0"></param>
+        /// <param name="y0"></param>
+        /// <param name="x1"></param>
+        /// <param name="y1"></param>
+        /// <param name="lineColorMain"></param>
+        /// <param name="lineColorSmall"></param>
+        /// <param name="showSmallSize"></param>
+        public static void DrawAxisTick(Graphics graphics, AxisTickType tickLevel, int x0, int y0, int x1, int y1, Color lineColorMain, Color lineColorSmall, bool showSmallSize)
+        {
+            Pen pen = null;
+            bool std = !showSmallSize;
+            switch (tickLevel)
+            {
+                case AxisTickType.OuterLabel:
+                    break;
+                case AxisTickType.BigLabel:
+                    pen = (std ? Skin.Pen(lineColorMain, 2f, DashStyle.Solid) : Skin.Pen(lineColorMain, 1f, DashStyle.Solid));
+                    break;
+                case AxisTickType.StdLabel:
+                    pen = (std ? Skin.Pen(lineColorMain, 1f, DashStyle.Solid) : Skin.Pen(lineColorSmall, 1f, DashStyle.Solid));
+                    break;
+                case AxisTickType.BigTick:
+                    pen = (std ? Skin.Pen(lineColorSmall, 1f, DashStyle.Solid) : Skin.Pen(lineColorSmall, 1f, DashStyle.Dot));
+                    break;
+                case AxisTickType.StdTick:
+                    pen = (std ? Skin.Pen(lineColorSmall, 1f, DashStyle.Dot) : Skin.Pen(lineColorSmall, 1f, DashStyle.Dot));
+                    break;
+                case AxisTickType.Pixel:
+                    break;
+
+            }
+            if (pen != null)
+                graphics.DrawLine(pen, x0, y0, x1, y1);
+        }
         #endregion
         #region DrawRelation
         /// <summary>

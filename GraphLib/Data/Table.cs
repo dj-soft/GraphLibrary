@@ -1280,6 +1280,16 @@ namespace Asol.Tools.WorkScheduler.Data
                 this._PrimaryIndex = primaryIndex;
             }
         }
+        public bool TryGetRowOnPrimaryKey(GId gId, out Row row)
+        {
+            if (!this.HasPrimaryIndex)
+                throw new GraphLibCodeException("Tabulka <" + this.TableName + "> nemá primární index, nelze v ní použít metodu TryGetRowOnPrimaryKey().");
+            row = null;
+            List<Row> rows;
+            if (!this._PrimaryIndex.TryGetValue(gId, out rows)) return false;
+            if (rows.Count == 0) return false;
+
+        }
         /// <summary>
         /// Sloupec, podle něhož se vytváří primární index
         /// </summary>

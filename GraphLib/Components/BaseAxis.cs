@@ -2951,7 +2951,7 @@ namespace Asol.Tools.WorkScheduler.Components
     /// Typ ticku, tick je čárka (nebo místo) na ose, symbolizující konkrétní hodnotu.
     /// Podobně jako na plastovém pravítku jsou graficky odlišeny ticky pro 1mm, pro 5mm, pro 1cm, pro 10cm.
     /// </summary>
-    public enum AxisTickType
+    public enum AxisTickType : int
     {
         /// <summary>
         /// Neurčeno. Symbolizuje volný pohyb po ose.
@@ -2960,27 +2960,27 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Pixel. Nezobrazuje se, slouží k zaokrouhlování hodnoty na konkrétní pixely.
         /// </summary>
-        Pixel,
+        Pixel = 1,
         /// <summary>
         /// Standardní nejmenší zobrazovaný tick, bez popisku, obdoba 1mm čárky na pravítku
         /// </summary>
-        StdTick,
+        StdTick = 2,
         /// <summary>
         /// Větší zobrazovaný tick, bez popisku, obdoba 5mm čárky na pravítku
         /// </summary>
-        BigTick,
+        BigTick = 3,
         /// <summary>
         /// Standardní tick s popiskem, obdoba 1cm čárky na pravítku
         /// </summary>
-        StdLabel,
+        StdLabel = 4,
         /// <summary>
         /// Velký tick s popiskem, obdoba 10cm čárky na pravítku
         /// </summary>
-        BigLabel,
+        BigLabel = 5,
         /// <summary>
         /// Okraj osy
         /// </summary>
-        OuterLabel
+        OuterLabel = 6
     }
     /// <summary>
     /// Typ zarovnání ticku na ose

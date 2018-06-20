@@ -94,15 +94,60 @@ namespace Asol.Tools.WorkScheduler.Data
             return rows;
         }
         /// <summary>
-        /// Rozdělí daný string na pole polí, 
+        /// Rozdělí daný string na pole polí, kdy lze zadat oddělovač řádků a oddělovač sloupců.
         /// </summary>
         /// <param name="text">Vstupující text. Obsahuje řádky, a v řádku obsahuje prvky oddělené daným stringem.</param>
+        /// <param name="rowSeparator">Oddělovač řádků</param>
         /// <param name="itemSeparator">Oddělovač prvků v řádku</param>
-        /// <param name="removeEmptyItems">Vevkládat prázdné prvky (</param>
-        /// <param name="trimItems"></param>
+        /// <param name="removeEmptyLines">Nenačítat prázdné řádky(</param>
+        /// <param name="trimItems">Jednotlivé prvky ukládat Trim()</param>
         /// <returns></returns>
-        public static string[][] ToTable(this string text, string itemSeparator, bool removeEmptyLines, bool trimItems)
-        { }
+        public static string[][] ToTable(this string text, string rowSeparator, string itemSeparator, bool removeEmptyLines, bool trimItems)
+        {
+            List<string[]> result = new List<string[]>();
+            string[] lines = text.Split(new string[] { rowSeparator }, (removeEmptyLines ? StringSplitOptions.RemoveEmptyEntries : StringSplitOptions.None));
+            foreach (string line in lines)
+            {
+                string[] items = line.Split(new string[] { itemSeparator }, StringSplitOptions.None);
+                if (trimItems)
+                    result.Add(items.Select(s => s.Trim()).ToArray());
+                else
+                    result.Add(items);
+            }
+            return result.ToArray();
+        }
+        /// <summary>
+        /// Rozdělí daný string na pole prvků KeyValuePair, kdy lze zadat oddělovač řádků a oddělovač Key a Value.
+        /// </summary>
+        /// <param name="text">Vstupující text. Obsahuje řádky, a v řádku obsahuje prvky oddělené daným stringem.</param>
+        /// <param name="rowSeparator">Oddělovač řádků</param>
+        /// <param name="itemSeparator">Oddělovač prvků v řádku</param>
+        /// <param name="removeEmptyLines">Nenačítat prázdné řádky(</param>
+        /// <param name="trimItems">Jednotlivé prvky ukládat Trim()</param>
+        /// <returns></returns>
+        public static KeyValuePair<string, string>[] ToKeyValues(this string text, string rowSeparator, string itemSeparator, bool removeEmptyLines, bool trimItems)
+        {
+            List<KeyValuePair<string, string>> result = new List<KeyValuePair<string,string>>();
+            int isl = itemSeparator.Length;
+            string[] lines = text.Split(new string[] { rowSeparator }, (removeEmptyLines ? StringSplitOptions.RemoveEmptyEntries : StringSplitOptions.None));
+            foreach (string line in lines)
+            {
+                int pos = line.IndexOf(itemSeparator);
+                if (pos < 0)                          // Bez oddělovače
+                    result.Add(new KeyValuePair<string, string>(_ITrim(line, trimItems), null));
+                else if (pos == 0)                    // Oddělovač na první pozici
+                    result.Add(new KeyValuePair<string, string>("", _ITrim(line.Substring(isl), trimItems)));
+                else if (pos < (line.Length - isl))   // Oddělovač je uprostřed
+                    result.Add(new KeyValuePair<string, string>(_ITrim(line.Substring(0, pos), trimItems), _ITrim(line.Substring(pos + isl), trimItems)));
+                else if (pos == (line.Length - isl))  // Oddělovač je na konci
+                    result.Add(new KeyValuePair<string, string>(_ITrim(line.Substring(0, pos), trimItems), ""));
+            }
+            return result.ToArray();
+        }
+        private static string _ITrim(string value, bool trim)
+        {
+            return (value == null ? null : (trim ? value.Trim() : value));
+        }
         #endregion
         #region IEnumerable
         /// <summary>
