@@ -5,9 +5,6 @@ using System.Text;
 using System.IO;
 using System.Data;
 
-using Asol.Tools.WorkScheduler.Data;
-using Asol.Tools.WorkScheduler.Application;
-
 namespace Asol.Tools.WorkScheduler.Scheduler
 {
     #region class WorkSchedulerSupport : Třída obsahující konstanty a další podporu WorkScheduleru
@@ -193,41 +190,76 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             return null;
         }
         /// <summary>
-        /// Vrátí true, pokud datový typ sloupce (columnType) je vyhovující pro očekávaný typ sloupce (expectedType).
+        /// Vrátí true, pokud datový typ sloupce (sourceType) je vyhovující pro očekávaný cílový typ sloupce (targetType).
         /// </summary>
-        /// <param name="columnType"></param>
-        /// <param name="expectedType"></param>
+        /// <param name="sourceType"></param>
+        /// <param name="targetType"></param>
         /// <returns></returns>
-        private static bool _IsExpectedType(Type columnType, Type expectedType)
+        private static bool _IsExpectedType(Type sourceType, Type targetType)
         {
-            if (columnType == expectedType) return true;
-            string convert = columnType.Namespace + "." + columnType.Name + " => " + expectedType.Namespace + "." + expectedType.Name;
+            if (sourceType == targetType) return true;
+
+            string sourceName = sourceType.Namespace + "." + sourceType.Name;
+            string targetName = targetType.Namespace + "." + targetType.Name;
+            if (sourceName == targetName) return true;
+            string convert = targetName + " = " + sourceName;
+
             switch (convert)
             {   // Co je převoditelné:
-                case "System.Int16 => System.Int32":
-                case "System.Int16 => System.Int64":
-                case "System.Int32 => System.Int64":
+                //   Cílový typ    = Zdrojový typ
+                case "System.Int16 = System.Byte":
+                case "System.Int16 = System.SByte":
+                case "System.Int16 = System.Int32":
+                case "System.Int16 = System.Int64":
+                case "System.Int16 = System.UInt32":
+                case "System.Int16 = System.UInt64":
 
-                case "System.Int16 => System.Decimal":
-                case "System.Int32 => System.Decimal":
-                case "System.Int64 => System.Decimal":
-                case "System.UInt16 => System.Decimal":
-                case "System.UInt32 => System.Decimal":
-                case "System.UInt64 => System.Decimal":
+                case "System.Int32 = System.Byte":
+                case "System.Int32 = System.SByte":
+                case "System.Int32 = System.Int16":
+                case "System.Int32 = System.Int64":
+                case "System.Int32 = System.UInt16":
+                case "System.Int32 = System.UInt64":
 
-                case "System.Int16 => System.Single":
-                case "System.Int32 => System.Single":
-                case "System.Int64 => System.Single":
-                case "System.UInt16 => System.Single":
-                case "System.UInt32 => System.Single":
-                case "System.UInt64 => System.Single":
+                case "System.Int64 = System.Byte":
+                case "System.Int64 = System.SByte":
+                case "System.Int64 = System.Int16":
+                case "System.Int64 = System.Int32":
+                case "System.Int64 = System.UInt16":
+                case "System.Int64 = System.UInt32":
 
-                case "System.Int16 => System.Double":
-                case "System.Int32 => System.Double":
-                case "System.Int64 => System.Double":
-                case "System.UInt16 => System.Double":
-                case "System.UInt32 => System.Double":
-                case "System.UInt64 => System.Double":
+                case "System.Single = System.Byte":
+                case "System.Single = System.SByte":
+                case "System.Single = System.Int16":
+                case "System.Single = System.Int32":
+                case "System.Single = System.Int64":
+                case "System.Single = System.UInt16":
+                case "System.Single = System.UInt32":
+                case "System.Single = System.UInt64":
+                case "System.Single = System.Double":
+                case "System.Single = System.Decimal":
+
+                case "System.Double = System.Byte":
+                case "System.Double = System.SByte":
+                case "System.Double = System.Int16":
+                case "System.Double = System.Int32":
+                case "System.Double = System.Int64":
+                case "System.Double = System.UInt16":
+                case "System.Double = System.UInt32":
+                case "System.Double = System.UInt64":
+                case "System.Double = System.Single":
+                case "System.Double = System.Decimal":
+
+                case "System.Decimal = System.Byte":
+                case "System.Decimal = System.SByte":
+                case "System.Decimal = System.Int16":
+                case "System.Decimal = System.Int32":
+                case "System.Decimal = System.Int64":
+                case "System.Decimal = System.UInt16":
+                case "System.Decimal = System.UInt32":
+                case "System.Decimal = System.UInt64":
+                case "System.Decimal = System.Single":
+                case "System.Decimal = System.Double":
 
                     return true;
             }

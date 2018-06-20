@@ -261,12 +261,12 @@ namespace Asol.Tools.WorkScheduler.Data
         {
             if (value == null) return default(T);
 
-            Type sType = value.GetType();
-            string sName = sType.Namespace + "." + sType.Name;
-            Type tType = typeof(T);
-            string tName = tType.Namespace + "." + tType.Name;
-
-            if (sName == tName) return value;
+            Type sourceType = value.GetType();
+            string sourceName = sourceType.Namespace + "." + sourceType.Name;
+            Type targetType = typeof(T);
+            string targetName = targetType.Namespace + "." + targetType.Name;
+            if (sourceName == targetName) return value;
+            string convert = targetName + " = " + sourceName;
 
 
             Int16 valueInt16;
@@ -285,7 +285,6 @@ namespace Asol.Tools.WorkScheduler.Data
             DateTime valueDateTime;
             TimeSpan valueTimeSpan;
 
-            string convert = tName + " = " + sName;
             switch (convert)
             {   //   Cílový typ    = Zdrojový typ
                 case "System.Int16 = System.Byte":
@@ -444,7 +443,7 @@ namespace Asol.Tools.WorkScheduler.Data
                     return valueDecimal;
             }
 
-            if (tName == "System.String")
+            if (targetName == "System.String")
                 return value.ToString();
 
             return value;
