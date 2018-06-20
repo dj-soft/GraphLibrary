@@ -344,10 +344,28 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
         public System.Windows.Forms.Control CreateGui()
         {
+            GInteractiveControl gic = new GInteractiveControl();
+
+            GGrid grid = new GGrid();
+            grid.AddTable(this.GraphTableDict.Values.FirstOrDefault().TableRow);
+            
+            gic.AddItem(grid);
+            grid.Bounds = new Rectangle(3, 3, 600, 450);
+            gic.SizeChanged += new EventHandler(gic_SizeChanged);
+            return gic;
+
+
             System.Windows.Forms.TextBox textBox = new System.Windows.Forms.TextBox() { Bounds = new System.Drawing.Rectangle(25, 8, 450, 150), Multiline = true, Text = "Data scheduleru" };
             System.Windows.Forms.Panel panel = new System.Windows.Forms.Panel();
             panel.Controls.Add(textBox);
             return panel;
+        }
+        
+        void gic_SizeChanged(object sender, EventArgs e)
+        {
+            GInteractiveControl gic = sender as GInteractiveControl;
+            GGrid grid = gic.Items.FirstOrDefault() as GGrid;
+            grid.Bounds = new Rectangle(3, 3, gic.ClientSize.Width - 6, gic.ClientSize.Height - 6);
         }
 
 
@@ -357,76 +375,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     }
     public interface IMainDataInternal
     { }
-    #endregion
-    #region enumy : DataTableType, DataTargetType, DataContentType
-    /// <summary>
-    /// Typ údajů, které obsahuje určitá tabulka
-    /// </summary>
-    public enum DataTableType
-    {
-        None,
-        /// <summary>
-        /// Vizuální řádky
-        /// </summary>
-        Row,
-        /// <summary>
-        /// Položky grafu
-        /// </summary>
-        Graph,
-        /// <summary>
-        /// Vztahy mezi položkami grafu
-        /// </summary>
-        Rel,
-        /// <summary>
-        /// Informační texty k položkám grafu
-        /// </summary>
-        Item
-    }
-    /// <summary>
-    /// Cílový prvek položky v deklaraci dat
-    /// </summary>
-    public enum DataTargetType
-    {
-        None,
-        Main,
-        ToolBar,
-        Task,
-        Schedule,
-        Source,
-        Info
-    }
-    /// <summary>
-    /// Typ obsahu v deklaraci dat
-    /// </summary>
-    public enum DataContentType
-    {
-        None,
-        Button,
-        Table,
-        Function
-    }
-    /// <summary>
-    /// Pozice grafu v tabulce
-    /// </summary>
-    public enum DataGraphPositionType
-    {
-        /// <summary>
-        /// V dané tabulce není graf (výchozí stav)
-        /// </summary>
-        None,
-        /// <summary>
-        /// Graf zobrazit v posledním sloupci (sloupec bude do tabulky přidán)
-        /// </summary>
-        InLastColumn,
-        /// <summary>
-        /// Graf zobrazit jako poklad, měřítko časové osy = proporcionální
-        /// </summary>
-        OnBackgroundProportional,
-        /// <summary>
-        /// Graf zobrazit jako poklad, měřítko časové osy = logaritmické
-        /// </summary>
-        OnBackgroundLogarithmic
-    }
     #endregion
     #region class DataDeclaration : deklarace dat, předaná z volajícího do pluginu, definuje rozsah dat a funkcí
     /// <summary>
@@ -1212,12 +1160,74 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     public interface IAppHost
     { }
     #endregion
-    #region Exceptions
+    #region enumy : DataTableType, DataTargetType, DataContentType
     /// <summary>
-    /// SchedulerException : Základní třída pro výjimky vyhozené v aplikaci Scheduler
+    /// Typ údajů, které obsahuje určitá tabulka
     /// </summary>
-    public class SchedulerException : ApplicationException
+    public enum DataTableType
     {
+        None,
+        /// <summary>
+        /// Vizuální řádky
+        /// </summary>
+        Row,
+        /// <summary>
+        /// Položky grafu
+        /// </summary>
+        Graph,
+        /// <summary>
+        /// Vztahy mezi položkami grafu
+        /// </summary>
+        Rel,
+        /// <summary>
+        /// Informační texty k položkám grafu
+        /// </summary>
+        Item
+    }
+    /// <summary>
+    /// Cílový prvek položky v deklaraci dat
+    /// </summary>
+    public enum DataTargetType
+    {
+        None,
+        Main,
+        ToolBar,
+        Task,
+        Schedule,
+        Source,
+        Info
+    }
+    /// <summary>
+    /// Typ obsahu v deklaraci dat
+    /// </summary>
+    public enum DataContentType
+    {
+        None,
+        Button,
+        Table,
+        Function
+    }
+    /// <summary>
+    /// Pozice grafu v tabulce
+    /// </summary>
+    public enum DataGraphPositionType
+    {
+        /// <summary>
+        /// V dané tabulce není graf (výchozí stav)
+        /// </summary>
+        None,
+        /// <summary>
+        /// Graf zobrazit v posledním sloupci (sloupec bude do tabulky přidán)
+        /// </summary>
+        InLastColumn,
+        /// <summary>
+        /// Graf zobrazit jako poklad, měřítko časové osy = proporcionální
+        /// </summary>
+        OnBackgroundProportional,
+        /// <summary>
+        /// Graf zobrazit jako poklad, měřítko časové osy = logaritmické
+        /// </summary>
+        OnBackgroundLogarithmic
     }
     #endregion
 

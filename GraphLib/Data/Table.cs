@@ -1974,7 +1974,7 @@ namespace Asol.Tools.WorkScheduler.Data
         }
         protected static int? GetWidth(Asol.Tools.WorkScheduler.Scheduler.DataColumnExtendedInfo extendedInfo)
         {
-            return 4 * extendedInfo.Width;
+            return 1 * extendedInfo.Width;
         }
         protected static int? GetClassNumber(Asol.Tools.WorkScheduler.Scheduler.DataColumnExtendedInfo extendedInfo)
         {
