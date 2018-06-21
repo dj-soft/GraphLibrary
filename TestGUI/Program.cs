@@ -17,7 +17,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             Application.App.AppCompanyName = "Asseco Solutions";
             Application.App.AppProductName = "WorkScheduler";
 
-            Tests.TestLinq(6);
+           // Tests.TestLinq(6);
 
             // Asol.Tools.WorkScheduler.TestGUI
             Application.App.RunMainForm(typeof(Asol.Tools.WorkScheduler.TestGUI.PluginForm));
