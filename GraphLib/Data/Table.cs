@@ -2254,11 +2254,11 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// true pokud this řádek je aktivní (=vybraný kurzorem)
         /// </summary>
-        public bool IsActive { get { return (this.HasGTable ? this.GTable.IsActiveRow(this) : false); } }
+        public bool IsActive { get { return (this.HasGTable ? this.GTable.IsRowActive(this) : false); } }
         /// <summary>
         /// true pokud this řádek je nyní pod myší (=myš se pohybuje nad ním)
         /// </summary>
-        public bool IsMouseHot { get { return (this.HasGTable ? this.GTable.IsHotRow(this) : false); } }
+        public bool IsMouseHot { get { return (this.HasGTable ? this.GTable.IsRowHot(this) : false); } }
         /// <summary>
         /// Změní hodnotu IsSelected v tomto řádku
         /// </summary>
@@ -2582,11 +2582,11 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// true pokud this buňka je aktivní (=vybraná kurzorem)
         /// </summary>
-        public bool IsActive { get { return (this.HasGTable ? this.GTable.IsActiveCell(this) : false); } }
+        public bool IsActive { get { return (this.HasGTable ? this.GTable.IsCellActive(this) : false); } }
         /// <summary>
         /// true pokud this buňka je nyní pod myší (=myš se pohybuje nad ní)
         /// </summary>
-        public bool IsMouseHot { get { return (this.HasGTable ? this.GTable.IsHotCell(this) : false); } }
+        public bool IsMouseHot { get { return (this.HasGTable ? this.GTable.IsCellHot(this) : false); } }
         /// <summary>
         /// Grafická instance reprezentující tuto buňku, grafický prvek, auitoinicializační
         /// </summary>

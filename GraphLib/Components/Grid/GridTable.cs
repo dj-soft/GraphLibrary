@@ -427,21 +427,21 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <summary>
         /// Pole všech řádků této tabulky, které mohou být zobrazeny, v tom pořadí, v jakém jsou zobrazovány.
         /// </summary>
-        public Row[] Rows { get { this._RowsCheck(); return this._Rows; } }
+        public Row[] Rows { get { this._RowsCheck(); return this._Rows.ToArray(); } }
         /// <summary>
         /// Pole viditelných řádků této tabulky, které jsou nyní zčásti nebo plně viditelné, v tom pořadí, v jakém jsou zobrazovány.
         /// </summary>
-        public Row[] VisibleRows { get { this._VisibleRowsCheck(); return this._VisibleRows; } }
+        public Row[] VisibleRows { get { this._VisibleRowsCheck(); return this._VisibleRows.ToArray(); } }
         /// <summary>
         /// Ověří a zajistí připravenost pole Rows
         /// </summary>
         private void _RowsCheck()
         {
-            Row[] rows = this._Rows;
+            List<Row> rows = this._Rows;
             bool heightValid = this._RowListHeightValid;
             if (rows == null)
             {
-                rows = this.DataTable.RowsSorted;                    // Získat viditelné řádky, setříděné podle zvoleného třídícího sloupce
+                rows = this.DataTable.RowsSorted.ToList();           // Získat viditelné řádky, setříděné podle zvoleného třídícího sloupce
                 this._Rows = rows;
                 heightValid = false;
             }
@@ -471,7 +471,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                 if (isRowVisible)
                     visibleRows.Add(row);
             }
-            this._VisibleRows = visibleRows.ToArray();
+            this._VisibleRows = visibleRows;
         }
         /// <summary>
         /// Metoda zajistí změnu výšky daného řádku, a návazné změny v interních strukturách plus překreslení
@@ -502,11 +502,11 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <summary>
         /// Soupis všech aktuálně dostupných řádků, setříděný a vyfiltrovaný.
         /// </summary>
-        private Row[] _Rows;
+        private List<Row> _Rows;
         /// <summary>
         /// Soupis aktuálně zobrazovaných řádků, vizuální objekty
         /// </summary>
-        private Row[] _VisibleRows;
+        private List<Row> _VisibleRows;
         #endregion
         #region Pozicování řádků svislé - pozicioner pro řádky, svislý scrollbar vpravo
         /// <summary>
@@ -614,6 +614,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         internal bool ProcessRowAction(InteractivePositionAction action)
         {
             bool isProcessed = false;
+            this.
             switch (action)
             {
                 case InteractivePositionAction.FirstRow:
@@ -655,7 +656,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         /// <param name="row"></param>
         /// <returns></returns>
-        public bool IsHotRow(Row row)
+        public bool IsRowHot(Row row)
         {
             return (row != null && this._HotRow != null && Object.ReferenceEquals(row, this._HotRow));
         }
@@ -664,7 +665,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         /// <param name="cell"></param>
         /// <returns></returns>
-        public bool IsHotCell(Cell cell)
+        public bool IsCellHot(Cell cell)
         {
             if (!this.AllowSelectSingleCell) return false;
             return (cell != null && this._ActiveCell != null && Object.ReferenceEquals(cell, this._ActiveCell));
@@ -746,6 +747,26 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             set { this.SetActiveRow(value, EventSourceType.ApplicationCode, true); }
         }
         /// <summary>
+        /// Index aktivního řádku <see cref="ActiveRow"/> = ten, který by měl focus, když by focus (this.HasFocus) měla aktuální tabulka.
+        /// </summary>
+        public int? ActiveRowIndex
+        {
+            get 
+            {
+                Row row = this.ActiveRow;
+                if (row == null) return null;
+                int index = this._Rows.FindIndex(r => Object.ReferenceEquals(r, row));
+                return (index >= 0 ? (int?)index : (int?)null);
+            }
+            set
+            {
+                Row row = null;
+                int index = value;
+                Row row = ((index >= 0 && index < this._Rows.Count) ? this._Rows[index] : null);
+
+            }
+        }
+        /// <summary>
         /// Aktivní řádek
         /// </summary>
         private Row _ActiveRow;
@@ -766,7 +787,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         /// <param name="row"></param>
         /// <returns></returns>
-        public bool IsActiveRow(Row row)
+        public bool IsRowActive(Row row)
         {
             return (row != null && this._ActiveRow != null && Object.ReferenceEquals(row, this._ActiveRow));
         }
@@ -775,7 +796,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         /// <param name="cell"></param>
         /// <returns></returns>
-        public bool IsActiveCell(Cell cell)
+        public bool IsCellActive(Cell cell)
         {
             if (!this.AllowSelectSingleCell) return false;
             return (cell != null && this._ActiveCell != null && Object.ReferenceEquals(cell, this._ActiveCell));
@@ -1329,6 +1350,23 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         protected override void AfterStateChanged(GInteractiveChangeStateArgs e)
         {   // Když už tady musí být override AfterStateChanged() (to kdyby to někoho napadlo), tak MUSÍ volat base metodu!
             base.AfterStateChanged(e);
+
+            switch (e.ChangeState)
+            {
+                case GInteractiveChangeState.KeyboardPreviewKeyDown:           // Sem chodí i klávesy Kurzor, Tab
+                    this.KeyboardPreviewKeyDown(e);        // Pokud se ani Cell, a ani Row nepřihlásí ke zpracování Keyboard událostí, musí to provést Table.
+                    break;
+            }
+        }
+        /// <summary>
+        /// Reaguje na klávesy typu kurzor, posune seznam řádků nahoru / dolů
+        /// </summary>
+        /// <param name="e"></param>
+        private void KeyboardPreviewKeyDown(GInteractiveChangeStateArgs e)
+        {
+            InteractivePositionAction action = e.KeyboardPreviewArgs.GetInteractiveAction();
+            if (action != InteractivePositionAction.None)
+                e.KeyboardPreviewArgs.IsInputKey = this.ProcessRowAction(action);
         }
         /// <summary>
         /// Jakmile myš opouští tabulku, pak resetuje informaci o HotRow a HotCell:

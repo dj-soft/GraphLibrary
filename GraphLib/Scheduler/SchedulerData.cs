@@ -911,7 +911,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     /// </summary>
     public class DataGraphItem : ITimeGraphItem
     {
-        #region Konstrukce, načítání dat
+        #region Konstrukce, načítání dat, proměné
         /// <summary>
         /// Metoda vytvoří a vrátí instanci položky grafu z dodaného řádku s daty.
         /// </summary>
@@ -999,8 +999,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private Color? _BorderColor;
         private Color? _LinkBackColor;
         private GTimeGraphControl _GControl;
-        private void Draw(TimeGraphItemDrawArgs drawArgs)
-        { }
         #endregion
         #region Aplikační data - identifikátory atd
         /// <summary>
@@ -1056,6 +1054,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         public Color? LinkBackColor { get { return this._LinkBackColor; } }
 
+        #endregion
+        #region Podpora pro kreslení a interaktivitu
+        private void Draw(TimeGraphItemDrawArgs drawArgs)
+        {
+            this._GControl.Draw(drawArgs);
+        }
+       
         #endregion
         #region Explicitní implementace rozhraní ITimeGraphItem
         int ITimeGraphItem.ItemId { get { return this._ItemId; } } 
