@@ -614,7 +614,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         internal bool ProcessRowAction(InteractivePositionAction action)
         {
             bool isProcessed = false;
-            this.
+            // this.
             switch (action)
             {
                 case InteractivePositionAction.FirstRow:
@@ -761,13 +761,14 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             set
             {
                 Row row = null;
-                int index = value;
-                Row row = ((index >= 0 && index < this._Rows.Count) ? this._Rows[index] : null);
-
+                int? idx = value;
+                if (idx.HasValue && idx.Value >= 0 && idx.Value < this._Rows.Count)
+                    row = this._Rows[idx.Value];
+                this.ActiveRow = row;
             }
         }
         /// <summary>
-        /// Aktivní řádek
+        /// Aktivní řádek, reference na objekt Row
         /// </summary>
         private Row _ActiveRow;
         /// <summary>

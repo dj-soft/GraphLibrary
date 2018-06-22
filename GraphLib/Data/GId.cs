@@ -42,7 +42,8 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <returns></returns>
         public override string ToString()
         {
-            return "C:" + this.ClassId + "; R:" + this.RecordId;
+            string name = Scheduler.Constants.GetClassName(this.ClassId);
+            return "C:" + this.ClassId + "; R:" + this.RecordId + (name == null ? "" : "; \"" + name + "\"");
         }
        
         /// <summary>

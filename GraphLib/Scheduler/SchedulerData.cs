@@ -333,7 +333,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             string hexValue = name.Substring(2).ToUpper();
             int value;
             if (!Int32.TryParse(hexValue, System.Globalization.NumberStyles.AllowHexSpecifier, nfi, out value)) return null;
-            return Color.FromArgb(value);
+            Color color = Color.FromArgb(value);
+            if (color.A == 0)
+                color = Color.FromArgb(255, color);
+            return color;
         }
         /// <summary>
         /// Cache pro rychlejší konverzi názvů barev na Color hodnoty.
@@ -344,28 +347,24 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
         public System.Windows.Forms.Control CreateGui()
         {
-            GInteractiveControl gic = new GInteractiveControl();
+            this._GControl = new GInteractiveControl();
 
-            GGrid grid = new GGrid();
-            grid.AddTable(this.GraphTableDict.Values.FirstOrDefault().TableRow);
+            this._GGrid = new GGrid();
+            this._GGrid.AddTable(this.GraphTableDict.Values.FirstOrDefault().TableRow);
+
+            this._GControl.AddItem(this._GGrid);
+            this._GGrid.Bounds = new Rectangle(3, 3, 600, 450);
+            this._GControl.SizeChanged += new EventHandler(_GControlSizeChanged);
+            return this._GControl;
             
-            gic.AddItem(grid);
-            grid.Bounds = new Rectangle(3, 3, 600, 450);
-            gic.SizeChanged += new EventHandler(gic_SizeChanged);
-            return gic;
-
-
-            System.Windows.Forms.TextBox textBox = new System.Windows.Forms.TextBox() { Bounds = new System.Drawing.Rectangle(25, 8, 450, 150), Multiline = true, Text = "Data scheduleru" };
-            System.Windows.Forms.Panel panel = new System.Windows.Forms.Panel();
-            panel.Controls.Add(textBox);
-            return panel;
         }
-        
-        void gic_SizeChanged(object sender, EventArgs e)
+        private GInteractiveControl _GControl;
+        private GGrid _GGrid;
+        void _GControlSizeChanged(object sender, EventArgs e)
         {
-            GInteractiveControl gic = sender as GInteractiveControl;
-            GGrid grid = gic.Items.FirstOrDefault() as GGrid;
-            grid.Bounds = new Rectangle(3, 3, gic.ClientSize.Width - 6, gic.ClientSize.Height - 6);
+            Size size = _GControl.ClientSize;
+            _GGrid.Bounds = new Rectangle(3, 3, size.Width - 6, size.Height - 6);
+
         }
 
 

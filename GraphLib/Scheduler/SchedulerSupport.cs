@@ -70,7 +70,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Struktura tabulky "Table.Graph"
         /// </summary>
-        public const string DATA_TABLE_GRAPH_STRUCTURE = "parent_rec_id int; parent_class_id int; item_rec_id int; item_class_id int; group_rec_id int; group_class_id int; data_rec_id int; data_class_id int; layer int; level int; is_user_fixed int; time_begin datetime; time_end datetime; height decimal; back_color string; join_back_color string; edit_mode string";
+        public const string DATA_TABLE_GRAPH_STRUCTURE = "parent_rec_id int; parent_class_id int; item_rec_id int; item_class_id int; group_rec_id int; group_class_id int; data_rec_id int; data_class_id int; layer int; level int; is_user_fixed int; time_begin datetime; time_end datetime; height decimal; back_color string; join_back_color string; data string";
 
         /// <summary>
         /// Key v Response: Status

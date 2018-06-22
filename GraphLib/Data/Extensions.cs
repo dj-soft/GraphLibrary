@@ -333,12 +333,12 @@ namespace Asol.Tools.WorkScheduler.Data
             Single valueSingle;
             Double valueDouble;
             Decimal valueDecimal;
-            String valueString;
-            Char valueChar;
+            // String valueString;
+            // Char valueChar;
             Byte valueByte;
             SByte valueSByte;
-            DateTime valueDateTime;
-            TimeSpan valueTimeSpan;
+            // DateTime valueDateTime;
+            // TimeSpan valueTimeSpan;
 
             switch (convert)
             {   //   Cílový typ    = Zdrojový typ
@@ -400,6 +400,75 @@ namespace Asol.Tools.WorkScheduler.Data
                 case "System.Int64 = System.UInt32":
                     valueInt64 = (Int64)((UInt32)value);
                     return valueInt64;
+
+                //   Cílový typ    = Zdrojový typ
+                case "System.UInt16 = System.Byte":
+                    valueUInt16 = (UInt16)((Byte)value);
+                    return valueUInt16;
+                case "System.UInt16 = System.SByte":
+                    valueUInt16 = (UInt16)((SByte)value);
+                    return valueUInt16;
+                case "System.UInt16 = System.Int16":
+                    valueUInt16 = (UInt16)((Int16)value);
+                    return valueUInt16;
+                case "System.UInt16 = System.Int32":
+                    valueUInt16 = (UInt16)((Int32)value);
+                    return valueUInt16;
+                case "System.UInt16 = System.Int64":
+                    valueUInt16 = (UInt16)((Int64)value);
+                    return valueUInt16;
+                case "System.UInt16 = System.UInt32":
+                    valueUInt16 = (UInt16)((UInt32)value);
+                    return valueUInt16;
+                case "System.UInt16 = System.UInt64":
+                    valueUInt16 = (UInt16)((UInt64)value);
+                    return valueUInt16;
+
+                //   Cílový typ    = Zdrojový typ
+                case "System.UInt32 = System.Byte":
+                    valueUInt32 = (UInt32)((Byte)value);
+                    return valueUInt32;
+                case "System.UInt32 = System.SByte":
+                    valueUInt32 = (UInt32)((SByte)value);
+                    return valueUInt32;
+                case "System.UInt32 = System.Int16":
+                    valueUInt32 = (UInt32)((Int16)value);
+                    return valueUInt32;
+                case "System.UInt32 = System.Int32":
+                    valueUInt32 = (UInt32)((Int32)value);
+                    return valueUInt32;
+                case "System.UInt32 = System.Int64":
+                    valueUInt32 = (UInt32)((Int64)value);
+                    return valueUInt32;
+                case "System.UInt32 = System.UInt16":
+                    valueUInt32 = (UInt32)((UInt16)value);
+                    return valueUInt32;
+                case "System.UInt32 = System.UInt64":
+                    valueUInt32 = (UInt32)((UInt64)value);
+                    return valueUInt32;
+
+                //   Cílový typ    = Zdrojový typ
+                case "System.UInt64 = System.Byte":
+                    valueUInt64 = (UInt64)((Byte)value);
+                    return valueUInt64;
+                case "System.UInt64 = System.SByte":
+                    valueUInt64 = (UInt64)((SByte)value);
+                    return valueUInt64;
+                case "System.UInt64 = System.Int16":
+                    valueUInt64 = (UInt64)((Int16)value);
+                    return valueUInt64;
+                case "System.UInt64 = System.Int32":
+                    valueUInt64 = (UInt64)((Int32)value);
+                    return valueUInt64;
+                case "System.UInt64 = System.Int64":
+                    valueUInt64 = (UInt64)((Int64)value);
+                    return valueUInt64;
+                case "System.UInt64 = System.UInt16":
+                    valueUInt64 = (UInt64)((UInt16)value);
+                    return valueUInt64;
+                case "System.UInt64 = System.UInt32":
+                    valueUInt64 = (UInt64)((UInt32)value);
+                    return valueUInt64;
 
                 //   Cílový typ    = Zdrojový typ
                 case "System.Single = System.Byte":
@@ -496,10 +565,46 @@ namespace Asol.Tools.WorkScheduler.Data
                 case "System.Decimal = System.Double":
                     valueDecimal = (Decimal)((Double)value);
                     return valueDecimal;
+
+                //   Cílový typ    = Zdrojový typ
+                case "System.Byte = System.Int16":
+                    valueByte = (Byte)((Int16)value);
+                    return valueByte;
+                case "System.Byte = System.UInt16":
+                    valueByte = (Byte)((UInt16)value);
+                    return valueByte;
+                case "System.Byte = System.Int32":
+                    valueByte = (Byte)((Int16)value);
+                    return valueByte;
+                case "System.Byte = System.UInt32":
+                    valueByte = (Byte)((UInt16)value);
+                    return valueByte;
+
+                //   Cílový typ    = Zdrojový typ
+                case "System.SByte = System.Int16":
+                    valueSByte = (SByte)((Int16)value);
+                    return valueSByte;
+                case "System.SByte = System.UInt16":
+                    valueSByte = (SByte)((UInt16)value);
+                    return valueSByte;
+                case "System.SByte = System.Int32":
+                    valueSByte = (SByte)((Int16)value);
+                    return valueSByte;
+                case "System.SByte = System.UInt32":
+                    valueSByte = (SByte)((UInt16)value);
+                    return valueSByte;
+
             }
 
             if (targetName == "System.String")
                 return value.ToString();
+
+            if (targetName == "System.Char")
+            {
+                string text = value.ToString();
+                if (text.Length > 0) return text[0];
+                return '\0';
+            }
 
             return value;
         }

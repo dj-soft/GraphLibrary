@@ -985,11 +985,13 @@ namespace Asol.Tools.WorkScheduler.Components
             if (items.HasFlag(InvalidateItem.OnlyForTable)) return;
 
             bool callTables = false;
+            bool repaint = false;
 
             if ((items & (InvalidateItem.GridBounds | InvalidateItem.GridInnerBounds)) != 0)
             {
                 this._TableInnerLayoutValid = false;
                 this._ChildArrayValid = false;
+                repaint = true;
                 callTables = true;
             }
             if (items.HasFlag(InvalidateItem.GridTablesChange))
@@ -997,6 +999,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 this._TableInnerLayoutValid = false;
                 this._TablesAll = null;
                 this._ChildArrayValid = false;
+                repaint = true;
             }
             if (items.HasFlag(InvalidateItem.TableHeight))
             {
@@ -1004,6 +1007,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 this._TablesAllDataSize = null;
                 this._TablesVisible = null;
                 this._ChildArrayValid = false;
+                repaint = true;
                 callTables = true;
             }
             if (items.HasFlag(InvalidateItem.GridTablesScroll))
@@ -1016,6 +1020,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 this._Columns = null;
                 this._ChildArrayValid = false;
                 items |= InvalidateItem.ColumnsCount;
+                repaint = true;
                 callTables = true;
             }
             if (items.HasFlag(InvalidateItem.GridColumnsScroll))
@@ -1032,6 +1037,7 @@ namespace Asol.Tools.WorkScheduler.Components
             if (items.HasFlag(InvalidateItem.Paint))
             {
                 callTables = true;
+                repaint = true;
             }
 
             if (!items.HasFlag(InvalidateItem.OnlyForGrid) && callTables)                // Invalidaci tabulek volám jen tehdy, když aktuální invalidace není "Jen pro grid", a podle významu se má týkat i tabulek...
@@ -1040,6 +1046,9 @@ namespace Asol.Tools.WorkScheduler.Components
                 foreach (GTable table in this._Tables.Where(t => t.IsVisible))
                     table.Invalidate(itemsTable);
             }
+
+            if (repaint)
+                this.Repaint();
         }
         #endregion
         #region Pole grafických prvků Childs - obsahuje všechny tabulky, jejich vzájemné oddělovače (Splitter), a scrollbary (sloupce vždy, tabulky podle potřeby)

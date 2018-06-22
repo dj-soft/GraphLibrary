@@ -297,7 +297,7 @@ namespace Asol.Tools.WorkScheduler.Components
             foreach (ITimeGraphItem item in items)
             {
                 if (item.GroupId == 0)
-                    groupList.Add(new GTimeGraphGroup(item));                  // Jedna instance GTimeGraphGroup obsahuje jeden pracovní čas
+                    groupList.Add(new GTimeGraphGroup(this, item));            // Jedna instance GTimeGraphGroup obsahuje jeden pracovní čas
                 else
                     groupsItems.Add(item);
             }
@@ -305,7 +305,7 @@ namespace Asol.Tools.WorkScheduler.Components
             // b) Položky, které mají GroupId nenulové, podle něj seskupíme:
             IEnumerable<IGrouping<int, ITimeGraphItem>> groupArray = groupsItems.GroupBy(i => (i.GroupId != 0 ? i.GroupId : i.ItemId));
             foreach (IGrouping<int, ITimeGraphItem> group in groupArray)
-                groupList.Add(new GTimeGraphGroup(group));                     // Jedna instance GTimeGraphGroup obsahuje jeden nebo více pracovních časů
+                groupList.Add(new GTimeGraphGroup(this, group));               // Jedna instance GTimeGraphGroup obsahuje jeden nebo více pracovních časů
 
             // Setřídíme prvky GTimeGraphGroup podle jejich Order a podle času jejich počátku:
             if (groupList.Count > 1)
@@ -904,20 +904,21 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Konstruktor
         /// </summary>
-        private GTimeGraphGroup()
+        private GTimeGraphGroup(GTimeGraph parent)
         {
+            this._ParentGraph = parent;
             this._ItemId = Application.App.GetNextId(typeof(ITimeGraphItem));
             this._FirstItem = null;
-            _PrepareGControl(this);
+            _PrepareGControl(this, parent);                // Připravím GUI prvek pro sebe = pro grupu, jeho parentem je vlastní graf
         }
         /// <summary>
         /// Konstruktor s předáním jediné položky
         /// </summary>
         /// <param name="items"></param>
-        public GTimeGraphGroup(ITimeGraphItem item)
-            : this()
+        public GTimeGraphGroup(GTimeGraph parent, ITimeGraphItem item)
+            : this(parent)
         {
-            _PrepareGControl(item);
+            _PrepareGControl(item, this.GControl);         // Připravím GUI prvek pro jednotlivý prvek grafu, jeho parentem bude grafický prvek této grupy (=this.GControl)
             this._FirstItem = item;
             this._Items = new ITimeGraphItem[] { item };
             this._Store(item.Time.Begin, item.Time.End, item.Height);
@@ -926,8 +927,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Konstruktor s předáním skupiny položek, s výpočtem jejich sumárního časového intervalu a výšky
         /// </summary>
         /// <param name="items"></param>
-        public GTimeGraphGroup(IEnumerable<ITimeGraphItem> items)
-            : this()
+        public GTimeGraphGroup(GTimeGraph parent, IEnumerable<ITimeGraphItem> items)
+            : this(parent)
         {
             this._Items = items.ToArray();
             DateTime? begin = null;
@@ -935,7 +936,7 @@ namespace Asol.Tools.WorkScheduler.Components
             float height = 0f;
             foreach (ITimeGraphItem item in this.Items)
             {
-                _PrepareGControl(item);
+                _PrepareGControl(item, this.GControl);     // Připravím GUI prvek pro jednotlivý prvek grafu, jeho parentem bude grafický prvek této grupy (=this.GControl)
                 if (this._FirstItem == null) this._FirstItem = item;
                 if (item.Height > height) height = item.Height;
                 if (item.Time.Begin.HasValue && (!begin.HasValue || item.Time.Begin.Value < begin.Value)) begin = item.Time.Begin;
@@ -945,12 +946,14 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         /// <summary>
         /// Metoda zajistí, že prvek (item) bude mít svůj grafický control (<see cref="ITimeGraphItem.GControl"/>).
+        /// Tato metoda tedy připravuje prvek třídy <see cref="GTimeGraphControl"/> jak pro sebe (pro grupu), tak i pro jednotlivé položky grafu (<see cref="ITimeGraphItem"/>).
         /// </summary>
-        /// <param name="item"></param>
-        private static void _PrepareGControl(ITimeGraphItem item)
+        /// <param name="item">Prvek grafu, ten v sobě obsahuje data</param>
+        /// <param name="parent">Parent prvku, GUI container</param>
+        private static void _PrepareGControl(ITimeGraphItem item, IInteractiveParent parent)
         {
             if (item != null && item.GControl == null)
-                item.GControl = new GTimeGraphControl(item);
+                item.GControl = new GTimeGraphControl(item, parent);
         }
         /// <summary>
         /// Zadané údaje vloží do <see cref="Time"/> a <see cref="Height"/>, vypočte hodnotu <see cref="IsValidRealTime"/>.
@@ -974,6 +977,10 @@ namespace Asol.Tools.WorkScheduler.Components
                 "; Height: " + this.Height.ToString() +
                 "; UseSpace: " + (this.LogicalY == null ? "none" : this.LogicalY.ToString());
         }
+        /// <summary>
+        /// Parent této grupy položek = graf
+        /// </summary>
+        private GTimeGraph _ParentGraph;
         #endregion
         #region Privátní proměnné
         private int _ItemId;
@@ -1091,20 +1098,30 @@ namespace Asol.Tools.WorkScheduler.Components
     #endregion
     #region class GTimeGraphControl : vizuální a interaktivní control, který se vkládá do implementace ITimeGraphItem
     /// <summary>
-    /// GTimeGraphControl : vizuální a interaktivní control, který se vkládá do implementace ITimeGraphItem
+    /// GTimeGraphControl : vizuální a interaktivní control, který se vkládá do implementace ITimeGraphItem.
+    /// Tento prvek je zobrazován ve dvou režimech: buď jako přímý child prvek vizuálního grafu, pak reprezentuje grupu prvků (i kdyby grupa měla jen jeden prvek),
+    /// anebo jako child prvek této grupy, pak reprezentuje jeden konkrétní prvek grafu (GraphItem).
     /// </summary>
     public class GTimeGraphControl : InteractiveObject, IOwnerProperty<ITimeGraphItem>
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
-        /// <param name="owner"></param>
-        public GTimeGraphControl(ITimeGraphItem owner)
+        /// <param name="owner">Prvek grafu, ten v sobě obsahuje data</param>
+        /// <param name="parent">Parent prvku, GUI container</param>
+        public GTimeGraphControl(ITimeGraphItem owner, IInteractiveParent parent)
         {
             this._Owner = owner;
+            this._Parent = parent;
         }
+        /// <summary>
+        /// Vlastník tohoto grafického prvku = datový prvek grafu
+        /// </summary>
         ITimeGraphItem IOwnerProperty<ITimeGraphItem>.Owner { get { return this._Owner; } set { this._Owner = value; } } private ITimeGraphItem _Owner;
-
+        /// <summary>
+        /// Parent tohoto grafického prvku = GUI prvek, v němž je tento grafický prvek hostován
+        /// </summary>
+        private IInteractiveParent _Parent;
         /// <summary>
         /// Logické rozmezí tohoto prvku na ose Y. Souřadnice 0 odpovídá hodnotě 0 na ose Y, kladná čísla jsou fyzicky nahoru, záporná jsou povolená a jdou dolů.
         /// Jednotka je logická, nikoli pixely. Přepočet na pixely probíhá jinde.
@@ -1143,7 +1160,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             if (!this.IsValidRealTime) return;
 
-            Rectangle boundsAbsolute = drawArgs.GetBounds(this.VirtualBounds, 1).Enlarge(0, -1, 0, 0);
+            Rectangle boundsAbsolute = drawArgs.GetBoundsAbsolute(this.VirtualBounds, 1).Enlarge(0, -1, 0, 0);
             if (enlargeBounds.HasValue)
             {
                 boundsAbsolute = boundsAbsolute.Enlarge(enlargeBounds.Value);
@@ -1164,7 +1181,19 @@ namespace Asol.Tools.WorkScheduler.Components
             }
             else
             {
-                drawArgs.Graphics.FillRectangle(Skin.Brush(backColor.Value), boundsAbsolute);
+                if (this._Owner.Time.Begin.Value.Minute == 0)
+                {
+                    using (System.Drawing.Drawing2D.HatchBrush hb = new System.Drawing.Drawing2D.HatchBrush(System.Drawing.Drawing2D.HatchStyle.Percent50, backColor.Value, Color.Transparent))
+                    {
+                        drawArgs.Graphics.FillRectangle(hb, boundsAbsolute);
+
+                    }
+                }
+                else
+                {
+                    drawArgs.Graphics.FillRectangle(Skin.Brush(backColor.Value), boundsAbsolute);
+                }
+
                 drawArgs.Graphics.DrawRectangle(Skin.Pen(borderColor.Value), boundsAbsolute);
             }
         }
@@ -1467,19 +1496,26 @@ namespace Asol.Tools.WorkScheduler.Components
     #endregion
     #region class TimeGraphItemDrawArgs : třída pro podporu vykreslování položek grafu
     /// <summary>
-    /// TimeGraphItemDrawArgs : třída pro podporu vykreslování položek grafu
+    /// TimeGraphItemDrawArgs : třída pro podporu vykreslování položek grafu.
+    /// Tato třída v sobě uchovává absolutní souřadnici grafu ve WinForm koordinátech, a standardní kreslící argument <see cref="GInteractiveDrawArgs"/>.
     /// </summary>
     public class TimeGraphItemDrawArgs : IDisposable
     {
         #region Constructor, private variables
         /// <summary>
-        /// Konstruktor
+        /// Konstruktor s předáním reference na control, který je parentem grafu.
         /// </summary>
         /// <param name="host"></param>
         public TimeGraphItemDrawArgs(GInteractiveControl host)
         {
             this._Host = host;
         }
+        /// <summary>
+        /// Připraví data do tohoto argumentu.
+        /// </summary>
+        /// <param name="drawArgs"></param>
+        /// <param name="graphBoundsAbsolute"></param>
+        /// <param name="timeConvertor"></param>
         internal void Prepare(GInteractiveDrawArgs drawArgs, Rectangle graphBoundsAbsolute, ITimeConvertor timeConvertor)
         {
             this._DrawArgs = drawArgs;
@@ -1519,7 +1555,7 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Draw support
         /// <summary>
-        /// Default color for fill rectangle
+        /// Defaultní barva pozadí
         /// </summary>
         public Color DefaultBackColor { get { return this._Host.DefaultBackColor; } set { this._Host.DefaultBackColor = value; } }
         /// <summary>
@@ -1599,7 +1635,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         public Rectangle GetBounds(Rectangle virtualBounds)
         {
-            return this.GetBounds(virtualBounds, 0);
+            return this.GetBoundsAbsolute(virtualBounds, 0);
         }
         /// <summary>
         /// Vrátí absolutní souřadnice v koordinátech Windows.Forms.Control z dodaných souřadnic Virtuálních.
@@ -1608,9 +1644,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="virtualBounds">Virtuální souřadnice prvku</param>
         /// <param name="minimalWidth">Požadavek na minimální šířku prvku</param>
         /// <returns></returns>
-        public Rectangle GetBounds(Rectangle virtualBounds, int minimalWidth)
+        public Rectangle GetBoundsAbsolute(Rectangle virtualBounds, int minimalWidth)
         {
-            int graphB = this._GraphBoundsAbsolute.Bottom - 4;
+            int graphB = this._GraphBoundsAbsolute.Bottom - 1;
             int graphX = this._GraphBoundsAbsolute.X;
             Rectangle boundsAbsolute = new Rectangle(graphX + virtualBounds.X, graphB - virtualBounds.Y, virtualBounds.Width, virtualBounds.Height);
             if (minimalWidth > 0 && boundsAbsolute.Width < minimalWidth)
@@ -1644,7 +1680,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         private Rectangle _GetBounds(Rectangle virtualBounds)
         {
-            int graphB = this._GraphBoundsAbsolute.Bottom - 4;
+            int graphB = this._GraphBoundsAbsolute.Bottom - 1;
             int graphX = this._GraphBoundsAbsolute.X;
             return new Rectangle(graphX + virtualBounds.X, graphB - virtualBounds.Y, virtualBounds.Width, virtualBounds.Height);
         }
