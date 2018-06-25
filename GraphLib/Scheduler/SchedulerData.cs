@@ -334,14 +334,49 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             int value;
             if (!Int32.TryParse(hexValue, System.Globalization.NumberStyles.AllowHexSpecifier, nfi, out value)) return null;
             Color color = Color.FromArgb(value);
-            if (color.A == 0)
-                color = Color.FromArgb(255, color);
+            if (color.A == 0)                              // Pokud v barvě NENÍ zadáno nic do složky Alpha, jde nejspíš o opomenutí!
+                color = Color.FromArgb(255, color);        //   (implicitně se hodnota Alpha nezadává, a přitom se předpokládá že tan bude 255)  =>  Alpha = 255 = plná barva
             return color;
         }
         /// <summary>
         /// Cache pro rychlejší konverzi názvů barev na Color hodnoty.
         /// </summary>
         private static Dictionary<string, Color?> _ColorDict;
+        /// <summary>
+        /// Metoda vrátí <see cref="GraphItemEditMode"/> pro zadaný text.
+        /// Protože enum <see cref="GraphItemEditMode"/> může obsahovat součty hodnot, tak konverze akceptuje znaky "|" a "+" mezi jednotlivými názvy hodnot.
+        /// Vstup tedy může obsahovat: "ResizeTime + ResizeHeight + MoveToAnotherTime + MoveToAnotherRow" ("+" slouží jako oddělovač hodnot, mezery jsou odebrány).
+        /// Může vracet <see cref="GraphItemEditMode.None"/>, když vstup neobsahuje nic rozumného.
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        public static GraphItemEditMode GetEditMode(string text)
+        {
+            GraphItemEditMode editMode = GraphItemEditMode.None;
+            if (String.IsNullOrEmpty(text)) return editMode;
+            string[] names = text.Split("+|".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
+            foreach (string name in names)
+            {
+                GraphItemEditMode value;
+                if (Enum.TryParse(name.Trim(), true, out value))
+                    editMode |= value;
+            }
+            return editMode;
+        }
+        /// <summary>
+        /// Metoda vrátí styl výplně pozadí pro zadaný text.
+        /// Může vrátit null = Solid barva.
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        public static System.Drawing.Drawing2D.HatchStyle? GetHatchStyle(string text)
+        {
+            System.Drawing.Drawing2D.HatchStyle? hatchStyle = null;
+            if (String.IsNullOrEmpty(text)) return hatchStyle;
+            System.Drawing.Drawing2D.HatchStyle value;
+            if (Enum.TryParse(text, true, out value)) return value;
+            return null;
+        }
         #endregion
         #region Tvorba GUI
 
@@ -922,7 +957,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (row == null) return null;
 
             DataGraphItem item = new DataGraphItem(graphTable);
-            // Struktura řádku: parent_rec_id int; parent_class_id int; item_rec_id int; item_class_id int; group_rec_id int; group_class_id int; data_rec_id int; data_class_id int; layer int; level int; is_user_fixed int; time_begin datetime; time_end datetime; height decimal; back_color string; join_back_color string; edit_mode string
+            // Struktura řádku: parent_rec_id int; parent_class_id int; item_rec_id int; item_class_id int; group_rec_id int; group_class_id int; data_rec_id int; data_class_id int; layer int; level int; is_user_fixed int; time_begin datetime; time_end datetime; height decimal; back_color string; join_back_color string; data string
             item._ParentGId = GetGId(row, "parent");
             item._ItemGId = GetGId(row, "item");
             item._GroupGId = GetGId(row, "group");
@@ -934,7 +969,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             item._Time = new TimeRange(row.GetValue<DateTime?>("time_begin"), row.GetValue<DateTime?>("time_end"));
             item._BackColor = MainData.GetColor(row.GetValue<string>("back_color"));
             item._BorderColor = null;
+            item._BackStyle = null;
             item._LinkBackColor = MainData.GetColor(row.GetValue<string>("join_back_color"));
+            item._LoadData(row.GetValue<string>("data"));
 
             // ID pro grafickou vrstvu:
             IDataGraphTableInternal iGraphTable = graphTable as IDataGraphTableInternal;
@@ -942,6 +979,56 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             item._GroupId = iGraphTable.GetId(item.GroupGId);
 
             return item;
+        }
+        /// <summary>
+        /// Metoda rozebere string "data" na KeyValues a z nich naplní další nepovinné prvky.
+        /// </summary>
+        /// <param name="data"></param>
+        protected void _LoadData(string data)
+        {
+            this._LoadDataDefault();
+            if (String.IsNullOrEmpty(data)) return;
+
+            // data mají formát: "key: value; key:value; key: value", 
+            // například: "EditMode: ResizeTime + ResizeHeight + MoveToAnotherTime; BackStyle: Percent50; BorderColor: Black"
+            var items = data.ToKeyValues(";", ":", true, true);
+            foreach (var item in items)
+            {
+                string key = item.Key.ToLower();
+                switch (key)
+                {
+                    case "editmode":
+                    case "edit_mode":
+                        this._EditMode = Scheduler.MainData.GetEditMode(item.Value);
+                        break;
+                    case "backstyle":
+                    case "back_style":
+                        this._BackStyle = Scheduler.MainData.GetHatchStyle(item.Value);
+                        break;
+                    case "bordercolor":
+                    case "border_color":
+                        this._BorderColor = Scheduler.MainData.GetColor(item.Value);
+                        break;
+                        // ...a další klíče a hodnoty mohou následovat:
+                }
+            }
+        }
+        /// <summary>
+        /// Naplní defaultní hodnoty podle čísla třídy prvku
+        /// </summary>
+        protected void _LoadDataDefault()
+        {
+            switch (this._DataGId.ClassId)
+            {
+                case GreenClasses.PlanUnitCCl:
+                    this._BackStyle = System.Drawing.Drawing2D.HatchStyle.Percent25;
+                    this._EditMode = GraphItemEditMode.None;
+                    break;
+                case GreenClasses.PlanUnitCUnit:
+                    this._BackStyle = null;
+                    this._EditMode = GraphItemEditMode.DefaultWorkTime;
+                    break;
+            }
         }
         /// <summary>
         /// Metoda z daného řádku načte hodnoty pro číslo třídy a číslo záznamu, a z nich vrátí <see cref="GId"/>.
@@ -973,7 +1060,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <returns></returns>
         public override string ToString()
         {
-            return "Item: " + this.ItemGId.ToString() + "; Time: " + this.Time.ToString() + "; Height: " + this.Height.ToString();
+            return "Item: " + this._ItemGId.ToString() + "; Time: " + this._Time.ToString() + "; Height: " + this._Height.ToString();
         }
         /// <summary>
         /// Vlastník = datová základna, instance třídy <see cref="Scheduler.MainData"/>
@@ -993,8 +1080,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private int _Level;
         private int _Order;
         private float _Height;
+        private GraphItemEditMode _EditMode;
         private TimeRange _Time;
         private Color? _BackColor;
+        private System.Drawing.Drawing2D.HatchStyle? _BackStyle;
         private Color? _BorderColor;
         private Color? _LinkBackColor;
         private GTimeGraphControl _GControl;
@@ -1037,6 +1126,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         public float Height { get { return this._Height; } }
         /// <summary>
+        /// Režim editovatelnosti položky grafu
+        /// </summary>
+        public GraphItemEditMode EditMode { get { return this._EditMode; } }
+        /// <summary>
         /// Časový interval tohoto prvku
         /// </summary>
         public TimeRange Time { get { return this._Time; } }
@@ -1044,6 +1137,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Barva pozadí prvku
         /// </summary>
         public Color? BackColor { get { return this._BackColor; } }
+        /// <summary>
+        /// Styl vzorku kresleného v pozadí.
+        /// null = Solid.
+        /// </summary>
+        public System.Drawing.Drawing2D.HatchStyle? BackStyle { get { return this._BackStyle; } }
         /// <summary>
         /// Barva okrajů prvku
         /// </summary>
@@ -1068,8 +1166,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         int ITimeGraphItem.Level { get { return this._Level; } } 
         int ITimeGraphItem.Order { get { return this._Order; } }
         float ITimeGraphItem.Height { get { return this._Height; } }
+        GraphItemEditMode ITimeGraphItem.EditMode { get { return this._EditMode; } }
         TimeRange ITimeGraphItem.Time { get { return this._Time; } }
         Color? ITimeGraphItem.BackColor { get { return this._BackColor; } }
+        System.Drawing.Drawing2D.HatchStyle? ITimeGraphItem.BackStyle { get { return this._BackStyle; } }
         Color? ITimeGraphItem.BorderColor { get { return this._BorderColor; } }
         Color? ITimeGraphItem.LinkBackColor { get { return this._LinkBackColor; } }
         GTimeGraphControl ITimeGraphItem.GControl { get { return this._GControl; } set { this._GControl = value; } }

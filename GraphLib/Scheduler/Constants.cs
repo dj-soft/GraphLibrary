@@ -7,6 +7,152 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 {
     public class Constants
     {
+    }
+    #region class GreenClasses
+    /// <summary>
+    /// 
+    /// </summary>
+    public class GreenClasses
+    {
+        #region Konstanty - čísla tříd
+        public const int SourceCharacteristic = 1141;    // Klasifikace
+        public const int Processing = 1142;    // Zpracování
+        public const int Workplace = 1143;    // Pracoviště
+        public const int StandardMfrOperations = 1144;    // Standardní operace
+        public const int ConstrElement = 1151;    // Dílec
+        public const int StructureMod = 1153;    // K modifikace
+        public const int ProtocolChng = 1154;    // Protokol změny
+        public const int OperationMod = 1155;    // T modifikace
+        public const int Structure = 1156;    // Komponenta kusovníku
+        public const int Operation = 1157;    // Operace postupu
+        public const int PlanUnitS = 1160;    // Plánovací jednotka S zdrojů
+        public const int AStructureMod = 1161;    // K modifikace STPV
+        public const int AStructure = 1162;    // Komponenta kusovníku STPV
+        public const int AOperationMod = 1163;    // T modifikace STPV
+        public const int AOperation = 1164;    // Operace postupu STPV
+        public const int AStructOperRel = 1165;    // Komponenta operace STPV
+        public const int ExpHdr = 1167;    // Uložené rozpady - Hlavička
+        public const int StructOperRel = 1176;    // Komponenta operace
+        public const int ResourceAllocation = 1177;    // Zdroj operace
+        public const int MfrModulConfig = 1178;    // Konfigurace modulu Výroba
+        public const int PlanUnitSSl = 1179;    // Plánovací jednotka S stav skladu
+        public const int PlanUnitSAxis = 1180;    // Plánovací jednotka S osa
+        public const int PlanUnitSAxisRel = 1183;    // Plánovací jednotka S osa vztahy
+        public const int StockOfDep = 1184;    // Sklady útvaru
+        public const int AlternativeSource = 1185;    // Alternativní komponenta
+        public const int ConstrElementConfig = 1187;    // Konfigurace katalogu dílců
+        public const int ProductOrder = 1188;    // Výrobní příkaz
+        public const int ProductOrderStructure = 1189;    // Komponenta výrobního příkazu
+        public const int ProductOrderOperation = 1190;    // Operace výrobního příkazu
+        public const int ProductOrderConfig = 1191;    // Konfigurace výrobního příkazu
+        public const int OtherCosts = 1193;    // Ostatní náklady standardní
+        public const int OtherCostsPO = 1194;    // Ostatní náklady VP
+        public const int AConstrElement = 1195;    // Dílec plánovací jednotky
+        public const int MfrTariffSet = 1209;    // Sady výrobních sazeb
+        public const int OverheadCosts = 1210;    // Režie
+        public const int PricingComponent = 1211;    // Složka kalkulace
+        public const int OverheadCostsSet = 1212;    // Sady režií
+        public const int MfrTariff = 1213;    // Výrobní sazby
+        public const int PricingPar = 1214;    // Parametry kalkulací
+        public const int Pricing = 1215;    // Kalkulace
+        public const int ExpStructure = 1218;    // Uložené rozpady - Kusovník
+        public const int PricingDetail = 1219;    // Detail kalkulace
+        public const int OperationReport = 1232;    // Odvedení operace
+        public const int BusinessPlan = 1255;    // Obchodní plán
+        public const int BusinessPlanConfig = 1260;    // Konfigurace obchodního plánu
+        public const int ProductOrderCosts = 1268;    // Výrobní pohyb
+        public const int CumulDocWIP = 1269;    // Kumulovaný doklad NV
+        public const int AccountingStandardWIP = 1275;    // Předpis kontací NV
+        public const int MRPProtocol = 1276;    // MRP protokol
+        public const int OperativeWIP = 1307;    // Operativní rozpracovanost výroby
+        public const int Reject = 1309;    // Vyřazení
+        public const int PricingFlow = 1318;    // Postupová kalkulace
+        public const int DefectCode = 1324;    // Kód závady
+        public const int PriceArraySl = 1325;    // Cenový vektor stavu skladu
+        public const int WIP = 1332;    // Nedokončená výroba
+        public const int WIPLevel = 1335;    // Stav nedokončené výroby
+        public const int WIPByOper = 1336;    // Nedokončená výroba po operacích
+        public const int WIPDetail = 1337;    // Nedokončená výroba detail
+        public const int PlanCVersion = 1362;    // Kapacitní plán verze
+        public const int PlanUnitCTask = 1363;    // Kapacitní úkol
+        public const int PlanUnitC = 1364;    // Kapacitní plánovací jednotka
+        public const int PlanUnitCCl = 1365;    // Stav kapacit
+        public const int PlanUnitSCRel = 1366;    // Kapacitní úkoly a S osa vztahy
+        public const int PlanUnitCClRel = 1367;    // Kap. úkoly a stav kap. vztahy
+        public const int InventuraNV = 1370;    // Inventura NV
+        public const int KonfiguraceInventuryNV = 1374;    // Konfigurace inventury NV
+        public const int PUSAxisLink = 1386;    // Zajištění požadavku
+        public const int AAlternativeSource = 1390;    // Alternativní komponenta STPV
+        public const int TestDataConsistence = 1393;    // Test konzistence dat
+        public const int PlanCTaskLink = 1395;    // Vztahy kapacitních úkolů
+        public const int OtherCostsDevelop = 1411;    // Ostatní náklady VTPV
+        public const int OtherCostsRatif = 1412;    // Ostatní náklady STPV
+        public const int CumulDocWIPConfig = 1427;    // Konfigurace kumul.dokl.NV
+        public const int MoveTimeMatrix = 1438;    // Matice mezioperačních časů
+        public const int AResourceAllocation = 1439;    // Zdroj operace STPV
+        public const int ProductOrderResourceAlloc = 1441;    // Zdroj operace VP
+        public const int RequirementCategories = 1455;    // Kategorie požadavků
+        public const int PlanRealLink = 1482;    // Propojení plánu a reality obj.
+        public const int ImpConstrElement = 1490;    // Dílec importního TPV
+        public const int ImpStructure = 1491;    // Komponenta importního TPV
+        public const int ImpOperation = 1492;    // Operace importního TPV
+        public const int ImpOperationMod = 1493;    // T modifikace importního TPV
+        public const int ImpKmenovaKarta = 1500;    // Kmenová karta importního TPV
+        public const int ImpResourceAllocation = 1501;    // Zdroj operace ITPV
+        public const int WorkEvidenceConfig = 1518;    // Konfigurace evidence činností
+        public const int WorkEvidence = 1519;    // Evidence činností
+        public const int ActionCode = 1520;    // Kód akce
+        public const int TerminalData = 1521;    // Data terminálů
+        public const int TerminalDevice = 1527;    // Terminál
+        public const int Tools = 1535;    // Nářadí
+        public const int ToolsType = 1542;    // Typ nářadí
+        public const int PlanCSourceLink = 1592;    // Vztahy kap. jednotek a zdrojů
+        public const int AlternativeOperation = 1595;    // Alternativní operace
+        public const int AlternativeAOperation = 1596;    // Alternativní operace STPV
+        public const int AlternativePoOperation = 1597;    // Alternativní operace VP
+        public const int CallOffIn = 1628;    // Odvolávka přijatá
+        public const int CallOffInConfig = 1630;    // Konfigurace odvolávek přijat.
+        public const int CallOffInItem = 1631;    // Odvolávka přijatá položka
+        public const int PlanUnitCPass = 1815;    // Kapacitní úkol, paralelní průchod
+        public const int PlanUnitCTime = 1816;    // Kapacitní úkol, pracovní čas
+        public const int PlanUnitCUnit = 1817;    // Kapacitní úkol, pracovní jednotka
+        public const int PlanUnitCDesk = 1818;    // Stav kapacit, kapacitní linka
+        public const int CheckPlan = 1892;    // Kontrolní plán
+        public const int ACheckPlan = 1893;    // Kontrolní plán STPV
+        public const int BatchNumberStatus = 1901;    // Stav šarže
+        public const int WorkTeam = 1902;    // Pracovní tým
+        public const int OperationReportWorkers = 1903;    // Zaměstnanci odvedení operace
+        public const int InventoryFindWip = 1949;    // Inventurní nález NV
+        public const int CallOffInPack = 1960;    // Odvolávka přijatá balení
+        public const int CallOffInDeliv = 1961;    // Odvolávka přijatá dodávky
+        public const int SchedulerConfig = 1963;    // Konfigurace modulu Scheduler
+        public const int EDIUdajeProExpozituru = 2028;    // EDI údaje pro expozituru cizí
+        public const int EDIUdajeDodavatele = 2029;    // EDI údaje dodavatele
+        public const int TextFMEA = 2062;    // Text FMEA
+        public const int FMEASTPV = 2064;    // FMEA STPV
+        public const int FMEA = 2065;    // FMEA
+        public const int MrpBussinesCaseInfo = 2178;    // MRP informace obch. případu
+        public const int TextCheckPlan = 2186;    // Text kontrolního plánu
+        public const int NonconformanceStats = 2198;    // Statistika neshod
+        public const int WorkReportStats = 2207;    // Statistika odvedení práce
+        public const int SumarVyrobnichPohybu = 2210;    // Sumář výrobních pohybů
+        public const int PricingItem = 2234;    // Kalkulace položka
+        public const int OfferBudget = 2266;    // Rozpočet nabídky
+        public const int CallOffOut = 2296;    // Odvolávka vydaná
+        public const int CallOffOutConfig = 2297;    // Konfigurace odvolávek vydaných
+        public const int PricingElement = 2298;    // Položka kalkulace
+        public const int CallOffOutItem = 2299;    // Odvolávka vydaná položka
+        public const int PlanUnitCritical = 2391;    // Kritická položka plánu výroby
+        public const int PricingDetailDecomp = 2409;    // Rozpad detailní kalkulace
+        public const int BatchNumberDecomp = 2444;    // Rozpad šarže
+        public const int AuditlogMessagesConfig = 2496;    // Konfigurace zpráv auditlogu
+        public const int SimulCustOrderHead = 2499;    // Simulace zákaznické objednávky
+        public const int SimulCustOrderEntry = 2500;    // Simulace zákaz. obj., položka
+        public const int WorkshopPlan = 2540;    // Dílenský plán
+
+        public const int ResourcesCalendar = 1196;    // Kalendář zdrojů
+        public const int ResourcesCalendarData = 1207;    // Položky kalendáře zdrojů
+        #endregion
         #region Čísla a názvy tříd Helios Green
         /// <summary>
         /// Metoda vrátí název dané třídy Helios Green.
@@ -162,4 +308,5 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         }
         #endregion
     }
+    #endregion
 }

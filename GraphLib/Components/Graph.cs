@@ -1008,9 +1008,18 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public float Height { get { return this._Height; } }
         /// <summary>
+        /// Režim editovatelnosti položky grafu
+        /// </summary>
+        public GraphItemEditMode EditMode { get { return this._FirstItem.EditMode; } }
+        /// <summary>
         /// Barva pozadí prvku.
         /// </summary>
         public Color? BackColor { get { return this._FirstItem.BackColor; } }
+        /// <summary>
+        /// Styl vzorku kresleného v pozadí.
+        /// null = Solid.
+        /// </summary>
+        public System.Drawing.Drawing2D.HatchStyle? BackStyle { get { return this._FirstItem.BackStyle; } }
         /// <summary>
         /// Barva spojovací linky mezi prvky jedné skupiny.
         /// Default = null = kreslí se barvou <see cref="BackColor"/>, která je morfována na 50% do barvy DimGray a zprůhledněna na 50%.
@@ -1088,7 +1097,9 @@ namespace Asol.Tools.WorkScheduler.Components
         int ITimeGraphItem.GroupId { get { return this._FirstItem.GroupId; } }
         TimeRange ITimeGraphItem.Time { get { return this.Time; } }
         float ITimeGraphItem.Height { get { return this.Height; } }
+        GraphItemEditMode ITimeGraphItem.EditMode { get { return this.EditMode; } }
         Color? ITimeGraphItem.BackColor { get { return this.BackColor; } }
+        System.Drawing.Drawing2D.HatchStyle? ITimeGraphItem.BackStyle { get { return this.BackStyle; } }
         Color? ITimeGraphItem.LinkBackColor { get { return this.LinkBackColor; } }
         Color? ITimeGraphItem.BorderColor { get { return this.BorderColor; } }
         GTimeGraphControl ITimeGraphItem.GControl { get { return this.GControl; } set { this.GControl = value; } }
@@ -1186,13 +1197,6 @@ namespace Asol.Tools.WorkScheduler.Components
                 if (backStyle.HasValue)
                 {
                     using (System.Drawing.Drawing2D.HatchBrush hb = new System.Drawing.Drawing2D.HatchBrush(backStyle.Value, backColor.Value, Color.Transparent))
-                    {
-                        drawArgs.Graphics.FillRectangle(hb, boundsAbsolute);
-                    }
-                }
-                if (this._Owner.Time.Begin.Value.Minute == 0)
-                {
-                    using (System.Drawing.Drawing2D.HatchBrush hb = new System.Drawing.Drawing2D.HatchBrush(System.Drawing.Drawing2D.HatchStyle.Trellis /*Percent25*/, backColor.Value, Color.Transparent))
                     {
                         drawArgs.Graphics.FillRectangle(hb, boundsAbsolute);
                     }
@@ -1606,14 +1610,18 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         float Height { get; }
         /// <summary>
+        /// Režim editovatelnosti položky grafu
+        /// </summary>
+        GraphItemEditMode EditMode { get; }
+        /// <summary>
         /// Barva pozadí prvku.
         /// </summary>
         Color? BackColor { get; }
         /// <summary>
         /// Styl vzorku kresleného v pozadí.
-        /// null = Solid
+        /// null = Solid.
         /// </summary>
-        System.Drawing.Drawing2D.HatchStyle BackStyle { get; }
+        System.Drawing.Drawing2D.HatchStyle? BackStyle { get; }
         /// <summary>
         /// Barva spojovací linky mezi prvky jedné skupiny.
         /// Default = null = kreslí se barvou <see cref="BackColor"/>, která je morfována na 50% do barvy DimGray a zprůhledněna na 50%.
@@ -1738,6 +1746,44 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         LogarithmicScale
     }
+    /// <summary>
+    /// Editovatelnost položky grafu.
+    /// </summary>
+    [Flags]
+    public enum GraphItemEditMode
+    {
+        /// <summary>
+        /// Bez pohybu
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Lze změnit délku času (roztáhnout šířku pomocí přesunutí začátku nebo konce)
+        /// </summary>
+        ResizeTime = 0x01,
+        /// <summary>
+        /// Lze změnit výšku = obsazený prostor v grafu (roztáhnout výšku)
+        /// </summary>
+        ResizeHeight = 0x02,
+        /// <summary>
+        /// Lze přesunout položku grafu na ose X = čas doleva / doprava
+        /// </summary>
+        MoveToAnotherTime = 0x10,
+        /// <summary>
+        /// Lze přesunout položku grafu na ose Y = na jiný řádek tabulky
+        /// </summary>
+        MoveToAnotherRow = 0x20,
+        /// <summary>
+        /// Lze přesunout položku grafu do jiné tabulky
+        /// </summary>
+        MoveToAnotherTable = 0x40,
+        /// <summary>
+        /// Defaultní pro pracovní čas = <see cref="ResizeTime"/> | <see cref="MoveToAnotherTime"/> | <see cref="MoveToAnotherRow"/>
+        /// </summary>
+        DefaultWorkTime = ResizeTime | MoveToAnotherTime | MoveToAnotherRow
+    }
+    /// <summary>
+    /// Tvar položky grafu
+    /// </summary>
     public enum TimeGraphElementShape
     {
         Default = 0,

@@ -42,7 +42,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <returns></returns>
         public override string ToString()
         {
-            string name = Scheduler.Constants.GetClassName(this.ClassId);
+            string name = Scheduler.GreenClasses.GetClassName(this.ClassId);
             return "C:" + this.ClassId + "; R:" + this.RecordId + (name == null ? "" : "; \"" + name + "\"");
         }
        
