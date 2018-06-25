@@ -1886,7 +1886,7 @@ namespace Asol.Tools.WorkScheduler.Components
             return (state == GInteractiveState.LeftDown || state == GInteractiveState.RightDown);
         }
         #endregion
-        #region Rectangle a Padding: Rectangle.Add(), Rectangle.Sub(Padding)
+        #region Rectangle a Padding: Rectangle.Add(), Rectangle.Sub(Padding), Rectangle.ClientBounds(Padding)
         /// <summary>
         /// Vrací vnitřní prostor v this Rectangle, po odečtení daných okrajů.
         /// Pokud okraje (padding) jsou null nebo prázdné, pak vrací výchozí souřadnice.
@@ -1953,6 +1953,22 @@ namespace Asol.Tools.WorkScheduler.Components
             if (w < 0) w = 0;
             int h = bounds.Height + padding.Vertical;
             if (h < 0) h = 0;
+            return new Rectangle(l, t, w, h);
+        }
+        /// <summary>
+        /// Metoda vrátí souřadnice Child prvku, který bude umístěn relativně v rámci this prostoru se zohledněním Padding.
+        /// Pokud bounds = { 100, 60, 300, 40 } a padding má All = 3, pak výsledek bude { 3, 3, 294, 34 }.
+        /// Tedy X a Y bude začínat na pozici 3 px, a šířka a výška klientského prostoru bude o (2*3) pixely menší než je this.Bounds.
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <param name="padding"></param>
+        /// <returns></returns>
+        public static Rectangle ClientBounds(this Rectangle bounds, Padding padding)
+        {
+            int l = padding.Left;
+            int t = padding.Top;
+            int w = bounds.Width - padding.Horizontal;
+            int h = bounds.Height - padding.Vertical;
             return new Rectangle(l, t, w, h);
         }
         #endregion

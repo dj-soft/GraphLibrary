@@ -667,7 +667,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             graphColumn.ColumnProperties.IsVisible = true;
             graphColumn.ColumnProperties.WidthMininum = 250;
             
-            graphColumn.GraphParameters = new TimeGraphParameters();
+            graphColumn.GraphParameters = new TimeGraphProperties();
             graphColumn.GraphParameters.TimeAxisMode = TimeGraphTimeAxisMode.Standard;
             graphColumn.GraphParameters.TimeAxisVisibleTickLevel = AxisTickType.StdTick;
 
@@ -683,7 +683,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         protected void CreateGraphBackground()
         {
-            this.TableRow.GraphParameters = new TimeGraphParameters();
+            this.TableRow.GraphParameters = new TimeGraphProperties();
             this.TableRow.GraphParameters.TimeAxisMode = this.TimeAxisMode;
             this.TableRow.GraphParameters.TimeAxisVisibleTickLevel = AxisTickType.BigTick;
 

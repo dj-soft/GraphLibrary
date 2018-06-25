@@ -1536,6 +1536,17 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         }
         #endregion
         #region Draw : podpora pro kreslení obsahu řádků (pozadí, gridlines, hodnota)
+        /// <summary>
+        /// Metoda zajistí vykreslení pasivního obsahu dané buňky nebo řádku daného typu.
+        /// Aktivní obsah (v současné době <see cref="ITimeInteractiveGraph"/>) se vykresluje automaticky jako Child prvek své buňky / řádku.
+        /// Zdejší metoda pro něj pouze vykreslí pozadí.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="value"></param>
+        /// <param name="valueType"></param>
+        /// <param name="row"></param>
+        /// <param name="cell"></param>
         internal void DrawValue(GInteractiveDrawArgs e, Rectangle boundsAbsolute, object value, TableValueType valueType, Row row, Cell cell)
         {
             this.DrawBackground(e, boundsAbsolute, row, cell);
@@ -1661,11 +1672,14 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                 graph.TimeConvertor = this.GetTimeConvertor(cell);
             if (graph.Parent == null)
                 graph.Parent = this.GetInteractiveParent(row, cell);
+            
+            /* Teď už je pozdě nastavovat Bounds pro graf, protože to je potřeba nastavit dříve kvůli výběru Child prvků pro kreslení...
             Rectangle boundsClient = this.GetBoundsClient(row, cell);
             if (graph.Bounds != boundsClient)
                 graph.Bounds = boundsClient;
+            */
 
-            graph.DrawContentTimeGraph(e, boundsAbsolute);
+            // Graf se nevykresluje jako obrázek v rámci buňky, graf se vykresluje sám protože je Child prvkem své buňky nebo řádku :    graph.DrawContentTimeGraph(e, boundsAbsolute);
         }
         /// <summary>
         /// Vykreslí obsah this buňky jako časový graf

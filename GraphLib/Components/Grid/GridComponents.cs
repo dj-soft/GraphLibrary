@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Drawing;
 using System.Windows.Forms;
+using Asol.Tools.WorkScheduler.Components;
 using Asol.Tools.WorkScheduler.Data;
 
 namespace Asol.Tools.WorkScheduler.Components.Grid
@@ -1228,7 +1229,13 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="newBounds"></param>
         protected override void SetChildBounds(Rectangle newBounds)
         {
-            // Pokud bych měl (já jako GCell) nějaké ChildItems, tak tady jim můžu nastavit Bounds, podle mých rozměrů.
+            // Pokud bych měl (já jako GCell) nějaké ChildItems, tak tady jim můžu nastavit Bounds, podle mých rozměrů:
+            switch (this.OwnerCell.ValueType)
+            {
+                case TableValueType.ITimeInteractiveGraph:
+                    (this.OwnerCell.Value as ITimeInteractiveGraph).Bounds = this.Bounds.ClientBounds(this.ClientBorder);
+                    break;
+            }
         }
         /// <summary>
         /// Vizualizace
@@ -1404,6 +1411,25 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                 e.ToolTipData.ShapeType = TooltipShapeType.Rectangle;
                 e.ToolTipData.Opacity = 240;
             }
+        }
+        #endregion
+        #region Childs
+        /// <summary>
+        /// Child prvky buňky: typicky null nebo pole obsahující jediný prvek typu <see cref="ITimeInteractiveGraph"/>
+        /// </summary>
+        protected override IEnumerable<IInteractiveItem> Childs { get { this.CheckValidChilds(); return this._Childs; } } private IInteractiveItem[] _Childs;
+        /// <summary>
+        /// Zajistí platnost obsahu pole <see cref="_Childs"/>.
+        /// Pole může být null (běžná situace) 
+        /// nebo může obsahovat jeden prvek typu <see cref="ITimeInteractiveGraph"/> v případě, kdy <see cref="OwnerCell"/> obsahuej hodnotu typu <see cref="TableValueType.ITimeInteractiveGraph"/>.
+        /// </summary>
+        protected void CheckValidChilds()
+        {
+            bool hasTimeInteractiveGraph = (this.OwnerCell.ValueType == TableValueType.ITimeInteractiveGraph);
+            if (hasTimeInteractiveGraph && this._Childs == null)
+                this._Childs = new IInteractiveItem[] { this.OwnerCell.Value as ITimeInteractiveGraph };
+            else if (!hasTimeInteractiveGraph && this._Childs != null)
+                this._Childs = null;
         }
         #endregion
         #region Draw

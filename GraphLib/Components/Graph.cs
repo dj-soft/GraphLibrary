@@ -7,6 +7,31 @@ using Asol.Tools.WorkScheduler.Data;
 
 namespace Asol.Tools.WorkScheduler.Components
 {
+    // Prvek GTimeGraph je tak líný, jako by to odkoukal od GGridu a GTable.
+    // Na veškeré vstupní změny reaguje líně, jenom si poznamená: "tohle nebo tamto je od teď neplatné"
+    //  Například: po změně prvků v poli this.ItemList si jen nulluje pole this._GroupList
+    //  anebo po změně výšky Bounds.Height nastaví příznak this.GroupItemsYValid = false.
+    // Následně teprve když instance GTimeGraph má něco ze sebe vydat (typicky když má vrátit pole Childs), 
+    //  tak s hrůzou zjistí, co vše není platné, a honem to dopočítá.
+    // Další infromace k instanci GTimeGraph : jde o plnohodnotný Container, jehož Child prvky jsou prvky typu GTimeGraphGroup.
+    // Tyto prvky mají určenou svoji souřadnici na ose Y v rámci grafu GTimeGraph.
+
+    /*     Chování s ohledem na prostor grafu (Bounds.Size):
+
+         a) Pokud dojde ke změně šířky (this.Bounds.Width), detekuje to časová osa (CheckValidTimeAxis() na základě TimeAxisIdentity, kterážto obsahuje šířku osy)
+              Důsledkem toho bude invalidace VisibleGroups a následný přepočet obsahu VisibleGroupList
+         b) Pokud dojde ke změně výšky (this.Bounds.Height), detekuje to koordinát Y (CheckValidCoordinateY() na základě 
+
+
+
+
+
+
+
+
+    */
+
+
     /// <summary>
     /// Graf na časové ose
     /// </summary>
@@ -36,42 +61,13 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="args"></param>
-        private void _ItemList_ItemRemoveAfter(object sender, EList<ITimeGraphItem>.EListAfterEventArgs args) { this.InvalidateItemList(); }
+        private void _ItemList_ItemRemoveAfter(object sender, EList<ITimeGraphItem>.EListAfterEventArgs args) { this.Invalidate(InvalidateItems.AllGroups); }
         /// <summary>
         /// Eventhandler události: do <see cref="ItemList"/> byla přidána položka
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="args"></param>
-        private void _ItemList_ItemAddAfter(object sender, EList<ITimeGraphItem>.EListAfterEventArgs args) { this.InvalidateItemList(); }
-        /// <summary>
-        /// Invaliduje platnost položek
-        /// </summary>
-        protected void InvalidateItemList()
-        {
-            this.IsValidItems = false;
-        }
-        /// <summary>
-        /// Příznak platnosti položek
-        /// </summary>
-        private bool IsValidItems;
-        /// <summary>
-        /// Metoda zajistí provedení kontroly platnosti všech vnitřních dat, podle toho která kontrola a přepočet je zapotřebí.
-        /// </summary>
-        protected void CheckValid()
-        {
-            using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "CheckValid", ""))
-            {
-                this.CheckValidTimeAxis();
-                this.CheckValidGroupList();
-                this.CheckValidVisibleList();
-            }
-        }
-        #endregion
-        #region Bounds : invalidace vhodných částí grafu
-        protected override void SetBoundsPrepareInnerItems(Rectangle oldBounds, Rectangle newBounds, ref ProcessAction actions, EventSourceType eventSource)
-        {
-            base.SetBoundsPrepareInnerItems(oldBounds, newBounds, ref actions, eventSource);
-        }
+        private void _ItemList_ItemAddAfter(object sender, EList<ITimeGraphItem>.EListAfterEventArgs args) { this.Invalidate(InvalidateItems.AllGroups); }
         #endregion
         #region GUI grafu : GraphParameters
         /// <summary>
@@ -80,11 +76,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Nikdy nevrací null.
         /// Lze setovat parametry, nebo null.
         /// </summary>
-        public TimeGraphParameters GraphParameters
+        public TimeGraphProperties GraphParameters
         {
             get
             {
-                TimeGraphParameters gp = this._GraphParameters;
+                TimeGraphProperties gp = this._GraphParameters;
                 if (gp == null)
                     gp = this._SearchParentGraphParameters();
                 if (gp == null)
@@ -101,9 +97,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// nebo je parentem GRow (pak hledám Table).
         /// </summary>
         /// <returns></returns>
-        private TimeGraphParameters _SearchParentGraphParameters()
+        private TimeGraphProperties _SearchParentGraphParameters()
         {
-            TimeGraphParameters gp = null;
+            TimeGraphProperties gp = null;
             IInteractiveParent parent = this.Parent;
             if (parent != null)
             {
@@ -132,84 +128,29 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Metoda vrátí defaultní parametry grafu
         /// </summary>
         /// <returns></returns>
-        private TimeGraphParameters _GetDefaultGraphParameters()
+        private TimeGraphProperties _GetDefaultGraphParameters()
         {
             if (this._GraphParametersDefault == null)
-                this._GraphParametersDefault = TimeGraphParameters.Default;
+                this._GraphParametersDefault = TimeGraphProperties.Default;
             return this._GraphParametersDefault;
         }
-        private TimeGraphParameters _GraphParameters;
-        private TimeGraphParameters _GraphParametersDefault;
+        private TimeGraphProperties _GraphParameters;
+        private TimeGraphProperties _GraphParametersDefault;
         #endregion
-        #region TimeAxis : Kontrola platnosti, paměť Identity časové osy
-        /// <summary>
-        /// Prověří platnost zdejších dat s ohledem na aktuální hodnoty časové osy <see cref="_TimeConvertor"/>.
-        /// Pokud zdejší data jsou vypočítaná pro identický stav časové osy, nechá data beze změn, 
-        /// jinak přenačte data osy a invaliduje seznam viditelných dat : <see cref="InvalidateVisibleList()"/>.
-        /// </summary>
-        protected void CheckValidTimeAxis()
-        {
-            string identity = this.TimeAxisIdentityCurrent;
-            if (String.Equals(identity, this.TimeAxisIdentityPrevious)) return;
-            this.RecalculateTimeAxis();
-            this.TimeAxisIdentityPrevious = identity;
-        }
-        /// <summary>
-        /// Přenačte do sebe soupis odpovídajících dat z <see cref="_TimeConvertor"/>, 
-        /// a invaliduje seznam viditelných dat : <see cref="InvalidateVisibleList()"/>.
-        /// </summary>
-        protected void RecalculateTimeAxis()
-        {
-            this.TimeAxisTicks = this._TimeConvertor.Ticks.Where(t => t.TickType == AxisTickType.BigLabel || t.TickType == AxisTickType.StdLabel || t.TickType == AxisTickType.BigTick).ToArray();
-            this.TimeAxisBegin = this._TimeConvertor.GetPixel(this._TimeConvertor.VisibleTime.Begin);
-
-            this.InvalidateVisibleList();
-        }
-        /// <summary>
-        /// Obsahuje pole vybraných Ticků z časové osy, protože tyto Ticky se kreslí do grafu.
-        /// Obsahuje pouze ticky typu: <see cref="AxisTickType.BigLabel"/>, <see cref="AxisTickType.StdLabel"/>, <see cref="AxisTickType.BigTick"/>.
-        /// </summary>
-        protected VisualTick[] TimeAxisTicks;
-        /// <summary>
-        /// Relativní pozice X počátku časové osy.
-        /// </summary>
-        protected int TimeAxisBegin { get; set; }
-        /// <summary>
-        /// Identita časové osy, pro kterou byly naposledy přepočítány hodnoty v <see cref="VisibleList"/>.
-        /// </summary>
-        protected string TimeAxisIdentityPrevious { get; set; }
-        /// <summary>
-        /// Identita časové osy aktuální, získaná z <see cref="_TimeConvertor"/>.
-        /// </summary>
-        protected string TimeAxisIdentityCurrent { get { return (this._TimeConvertor != null ? this._TimeConvertor.Identity : null); } }
-        /// <summary>
-        /// Reference na aktuální TimeConvertor
-        /// </summary>
-        private ITimeConvertor _TimeConvertor;
-        #endregion
-        #region GroupList : Seskupování položek z this.ItemList do skupin GTimeGraphGroup, setřídění těchto skupin podle vrstev a hladin na logické ose Y
-        /// <summary>
-        /// Invaliduje data LogicalY.
-        /// Volá se po změnách v poli položek, a po změnách dat v položkách.
-        /// Není nutné volat po změnách časové osy, protože zoom ani posun nezmění pozice Y jednotlivých položek.
-        /// </summary>
-        protected void InvalidateGroupList()
-        {
-            this.GroupListIsValid = false;
-        }
+        #region AllGroupList : Seskupování položek z this.ItemList do skupin GTimeGraphGroup, setřídění těchto skupin podle vrstev a hladin na logické ose Y
         /// <summary>
         /// Prověří platnost zdejších dat s ohledem na aktuální logické souřadnice Y.
-        /// Pokud jsou neplatné, znovu vytvoří pole <see cref="GroupList"/> a vypočítá logické souřadnice Y.
+        /// Pokud jsou neplatné, znovu vytvoří pole <see cref="AllGroupList"/> a vypočítá logické souřadnice Y.
         /// </summary>
-        protected void CheckValidGroupList()
+        protected void CheckValidAllGroupList()
         {
-            if (this.GroupList != null && this.IsValidItems && this.GroupListIsValid) return;
-            this.RecalculateGroupList();
+            if (this._AllGroupList == null)
+                this.RecalculateAllGroupList();
         }
         /// <summary>
         /// Vypočítá logické souřadnice Y pro všechny položky pole <see cref="ItemList"/>
         /// </summary>
-        protected void RecalculateGroupList()
+        protected void RecalculateAllGroupList()
         {
             using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "ItemsRecalculateLogY", ""))
             {
@@ -218,7 +159,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 int groups = 0;
                 int items = this.ItemList.Count;
 
-                this.GroupList = new List<List<GTimeGraphGroup>>();
+                this._AllGroupList = new List<List<GTimeGraphGroup>>();
                 Interval<float> usedLogicalY = new Interval<float>(0f, 0f, true);
 
                 // Vytvoříme oddělené skupiny prvků, podle jejich příslušnosti do grafické vrstvy (ITimeGraphItem.Layer), vzestupně:
@@ -251,18 +192,15 @@ namespace Asol.Tools.WorkScheduler.Components
                     foreach (IGrouping<int, ITimeGraphItem> levelGroup in levelGroups)
                     {
                         layerUsing.Clear();
-                        this.RecalculateGroupListOneLevel(levelGroup, layerUsing, (levelGroup.Key < 0), layerGroupList, layerUsedLogicalY, ref groups);
+                        this.RecalculateAllGroupListOneLevel(levelGroup, layerUsing, (levelGroup.Key < 0), layerGroupList, layerUsedLogicalY, ref groups);
                     }
                     usedLogicalY.MergeWith(layerUsedLogicalY);
 
-                    this.GroupList.Add(layerGroupList);
+                    this._AllGroupList.Add(layerGroupList);
                 }
+                this.Invalidate(InvalidateItems.VisibleGroups);
 
                 this.CalculateYPrepare(usedLogicalY);
-
-                this.IsValidItems = true;
-                this.GroupListIsValid = true;
-                this.InvalidateVisibleList();
 
                 scope.AddItem("Layers Count: " + layers.ToString());
                 scope.AddItem("Levels Count: " + levels.ToString());
@@ -281,7 +219,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="layerGroupList">Výstupní pole, do něhož se ukládají prvky typu <see cref="GTimeGraphGroup"/>, které v sobě zahrnují jeden nebo více prvků <see cref="ITimeGraphItem"/> se shodnou hodnotou <see cref="ITimeGraphItem.GroupId"/></param>
         /// <param name="layerUsedLogicalY">Sumární interval využití osy Y</param>
         /// <param name="groups">Počet skupin, průběžné počitadlo</param>
-        protected void RecalculateGroupListOneLevel(IEnumerable<ITimeGraphItem> items, PointArray<DateTime, IntervalArray<float>> layerUsing, bool isDownward, List<GTimeGraphGroup> layerGroupList, Interval<float> layerUsedLogicalY, ref int groups)
+        protected void RecalculateAllGroupListOneLevel(IEnumerable<ITimeGraphItem> items, PointArray<DateTime, IntervalArray<float>> layerUsing, bool isDownward, List<GTimeGraphGroup> layerGroupList, Interval<float> layerUsedLogicalY, ref int groups)
         {
             float searchFrom = (isDownward ? layerUsedLogicalY.Begin : layerUsedLogicalY.End);
             float nextSearch = searchFrom;
@@ -384,175 +322,263 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Seznam má dvojitou úroveň: v první úrovni jsou vizuální vrstvy (od spodní po vrchní), 
         /// v druhé úrovni jsou pak jednotlivé prvky <see cref="GTimeGraphGroup"/> k vykreslení.
         /// </summary>
-        protected List<List<GTimeGraphGroup>> GroupList { get; set; }
-        /// <summary>
-        /// true pokud jsou platné aktuálně vypočtené logické souřadnice Y v poli <see cref="GroupList"/>
-        /// </summary>
-        protected bool GroupListIsValid { get; set; }
+        protected List<List<GTimeGraphGroup>> AllGroupList { get { this.CheckValidAllGroupList(); return this._AllGroupList; } } private List<List<GTimeGraphGroup>> _AllGroupList;
         #endregion
-        #region VisibleList : výpočty fyzických pixelových souřadnic prvků na ose X a Y pro grupy GTimeGraphGroup i pro jednotlivé prvky ITimeGraphItem
+        #region Souřadnice Y : kontrolní a přepočtové metody
         /// <summary>
-        /// Invaliduje platnost dat v <see cref="VisibleList"/>.
-        /// Volá se po změně na časové ose a po přepočtech LogicalY.
+        /// Metoda prověří platnost vizuálních souřadnic Y ve všech grupách <see cref="AllGroupList"/>, s ohledem na výšku grafu <see cref="InteractiveObject.Bounds"/>.Height 
+        /// v porovnání s 
         /// </summary>
-        protected void InvalidateVisibleList()
+        protected void CheckValidCoordinateY()
         {
-            this.IsValidVisibleList = false;
+            if (this.ValidatedHeight <= 0 || this.Bounds.Height != this.ValidatedHeight)
+                this.RecalculateCoordinateY();
         }
         /// <summary>
+        /// Provede přepočet souřadnic Y ve všech grupách <see cref="AllGroupList"/>
+        /// </summary>
+        protected void RecalculateCoordinateY()
+        {
+            foreach (List<GTimeGraphGroup> layer in this.AllGroupList)
+                foreach (GTimeGraphGroup group in layer)
+                    this.RecalculateCoordinateY(group);
+        }
+        /// <summary>
+        /// Určí reálné souřadnice Y prvku <see cref="GTimeGraphGroup"/>
+        /// </summary>
+        /// <param name="group"></param>
+        protected void RecalculateCoordinateY(GTimeGraphGroup group)
+        {
+            group.GControl.VirtualBounds
+        }
+        /// <summary>
+        /// Výška this grafu, pro kterou byly naposledy přepočteny souřadnice Y v poli <see cref="AllGroupList"/>.
+        /// </summary>
+        protected int ValidatedHeight { get { return this._ValidatedHeight; } } private int _ValidatedHeight;
+
+        /// <summary>
+        /// Příznak, že hodnoty Y souřadnice Bounds v prvcích this.GroupList jsou platné.
+        /// Jde o WinForm koordináty, tedy jde o reálné souřadnice.
+        /// Logické souřadnice jsou platné již od vytvoření instancí <see cref="GTimeGraphGroup"/>.
+        /// </summary>
+        protected bool GroupItemsYValid { get { return this._GroupItemsYValid; } }
+        private bool _GroupItemsYValid;
+
+        #endregion
+        #region TimeAxis : osa X grafu - Kontrola platnosti, paměť Identity časové osy
+        /// <summary>
+        /// Prověří platnost zdejších dat s ohledem na aktuální hodnoty časové osy <see cref="_TimeConvertor"/>.
+        /// Pokud zdejší data jsou vypočítaná pro identický stav časové osy, nechá data beze změn, 
+        /// jinak přenačte data osy a invaliduje seznam viditelných dat : <see cref="Invalidate(InvalidateItems)"/> pro hodnotu <see cref="InvalidateItems.VisibleGroups"/>.
+        /// </summary>
+        protected void CheckValidTimeAxis()
+        {
+            if (!String.Equals(this.TimeAxisIdentity, this.ValidatedAxisIdentity))
+                this.RecalculateTimeAxis();
+        }
+        /// <summary>
+        /// Přenačte do sebe soupis odpovídajících dat z <see cref="_TimeConvertor"/>, 
+        /// a invaliduje seznam viditelných dat : <see cref="Invalidate(InvalidateItems)"/> pro hodnotu <see cref="InvalidateItems.VisibleGroups"/>.
+        /// </summary>
+        protected void RecalculateTimeAxis()
+        {
+            this._TimeAxisBegin = this._TimeConvertor.GetPixel(this._TimeConvertor.VisibleTime.Begin);
+            this._TimeAxisTicks = this._TimeConvertor.Ticks.Where(t => t.TickType == AxisTickType.BigLabel || t.TickType == AxisTickType.StdLabel || t.TickType == AxisTickType.BigTick).ToArray();
+            this._ValidatedAxisIdentity = this.TimeAxisIdentity;
+
+            this.Invalidate(InvalidateItems.VisibleGroups);
+        }
+        /// <summary>
+        /// Obsahuje pole vybraných Ticků z časové osy, protože tyto Ticky se kreslí do grafu.
+        /// Obsahuje pouze ticky typu: <see cref="AxisTickType.BigLabel"/>, <see cref="AxisTickType.StdLabel"/>, <see cref="AxisTickType.BigTick"/>.
+        /// </summary>
+        protected VisualTick[] TimeAxisTicks { get { return this._TimeAxisTicks; } }
+        private VisualTick[] _TimeAxisTicks;
+        /// <summary>
+        /// Relativní pozice X počátku časové osy.
+        /// </summary>
+        protected int TimeAxisBegin { get { return this._TimeAxisBegin; } }
+        private int _TimeAxisBegin;
+        /// <summary>
+        /// Identita časové osy, pro kterou byly naposledy přepočítány hodnoty v <see cref="VisibleGroupList"/>.
+        /// </summary>
+        protected string ValidatedAxisIdentity { get { return this._ValidatedAxisIdentity; } }
+        private string _ValidatedAxisIdentity;
+        /// <summary>
+        /// Identita časové osy aktuální, získaná z <see cref="_TimeConvertor"/>.
+        /// </summary>
+        protected string TimeAxisIdentity { get { return (this._TimeConvertor != null ? this._TimeConvertor.Identity : null); } }
+        /// <summary>
+        /// Reference na aktuální TimeConvertor
+        /// </summary>
+        private ITimeConvertor _TimeConvertor;
+        #endregion
+        #region VisibleGroupList : výpočty fyzických pixelových souřadnic prvků na ose X a Y pro grupy GTimeGraphGroup i pro jednotlivé prvky ITimeGraphItem
+        /// <summary>
         /// Prověří platnost zdejších dat s ohledem na aktuální fyzické pixelové souřadnice X a Y.
-        /// Pokud jsou neplatné, znovu vytvoří pole <see cref="VisibleList"/> a patřičné souřadnice vypočte.
+        /// Pokud jsou neplatné, znovu vytvoří pole <see cref="VisibleGroupList"/> a patřičné souřadnice vypočte.
         /// </summary>
         protected void CheckValidVisibleList()
         {
-            if (this.IsValidVisibleList) return;
-            this.RecalculateVisibleList();
+            if (!this.IsValidVisibleList)
+                this.RecalculateVisibleList();
         }
         /// <summary>
-        /// Vrací true, pokud data v seznamu <see cref="VisibleList"/> jsou platná.
-        /// Zohledňuje i stav <see cref="VisibleList"/>, <see cref="VisibleListLastWidth"/>, <see cref="GraphParameters"/>: <see cref="TimeGraphParameters.TimeAxisMode"/>.
+        /// Vrací true, pokud data v seznamu <see cref="VisibleGroupList"/> jsou platná.
+        /// Zohledňuje i stav <see cref="VisibleGroupList"/>, <see cref="ValidatedWidth"/>, <see cref="GraphParameters"/>: <see cref="TimeGraphProperties.TimeAxisMode"/>.
         /// Hodnotu lze nastavit, ale i když se vloží true, může se vracet false (pokud výše uvedené není platné).
         /// </summary>
         protected bool IsValidVisibleList
         {
             get
             {
-                if (this.VisibleList == null) return false;
-                if (!this.VisibleListLastWidth.HasValue || this.ClientSize.Width != this.VisibleListLastWidth.Value) return false;
-                if (!this.VisibleListLastTimeAxisMode.HasValue || this.GraphParameters.TimeAxisMode != this.VisibleListLastTimeAxisMode.Value) return false;
+                if (this.VisibleGroupList == null) return false;
+                if (!this.ValidatedWidth.HasValue || this.ClientSize.Width != this.ValidatedWidth.Value) return false;
+                if (!this.ValidatedAxisMode.HasValue || this.GraphParameters.TimeAxisMode != this.ValidatedAxisMode.Value) return false;
                 return this._IsValidVisibleList;
             }
-            set
-            {
-                this._IsValidVisibleList = value;
-            }
-        }
-        private bool _IsValidVisibleList;
+        } private bool _IsValidVisibleList;
         /// <summary>
-        /// Naplní korektní data do pole <see cref="VisibleList"/> a vypočte patřičné pixelové souřadnice.
+        /// Naplní korektní data do pole <see cref="VisibleGroupList"/> a vypočte patřičné pixelové souřadnice.
         /// </summary>
         protected void RecalculateVisibleList()
         {
-            this.VisibleList = new List<List<GTimeGraphGroup>>();
+            this._VisibleGroupList = new List<List<GTimeGraphGroup>>();
             ITimeConvertor timeConvertor = this._TimeConvertor;
             if (timeConvertor == null) return;
             TimeGraphTimeAxisMode timeAxisMode = this.GraphParameters.TimeAxisMode;
 
             using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "ItemsRecalculateVisibleList", ""))
             {
-                int layers = 0;
-                int groups = 0;
-                int items = 0;
+                int layerCount = 0;
+                int groupCount = 0;
+                int itemsCount = 0;
 
-                foreach (List<GTimeGraphGroup> layerList in this.GroupList)
+                foreach (List<GTimeGraphGroup> layerList in this.AllGroupList)
                 {   // Jedna vizuální vrstva za druhou:
                     List<GTimeGraphGroup> visibleItems = new List<GTimeGraphGroup>();
-                    foreach (GTimeGraphGroup group in layerList)
-                    {   // Jeden prvek (GTimeGraphGroup) za druhým:
-                        switch (timeAxisMode)
-                        {
-                            case TimeGraphTimeAxisMode.ProportionalScale:
-                                this.RecalculateVisibleListOneGroupProportional(group, visibleItems, ref groups, ref items);
-                                break;
-                            case TimeGraphTimeAxisMode.LogarithmicScale:
-                                this.RecalculateVisibleListOneGroupLogarithmic(group, visibleItems, ref groups, ref items);
-                                break;
-                            case TimeGraphTimeAxisMode.Standard:
-                            default:
-                                this.RecalculateVisibleListOneGroupStandard(group, visibleItems, ref groups, ref items);
-                                break;
-                        }
+                    switch (timeAxisMode)
+                    {
+                        case TimeGraphTimeAxisMode.ProportionalScale:
+                            foreach (GTimeGraphGroup groupItem in layerList)
+                                this.RecalculateVisibleListOneGroupProportional(groupItem, visibleItems, ref groupCount, ref itemsCount);
+                            break;
+                        case TimeGraphTimeAxisMode.LogarithmicScale:
+                            foreach (GTimeGraphGroup groupItem in layerList)
+                                this.RecalculateVisibleListOneGroupLogarithmic(groupItem, visibleItems, ref groupCount, ref itemsCount);
+                            break;
+                        case TimeGraphTimeAxisMode.Standard:
+                        default:
+                            foreach (GTimeGraphGroup groupItem in layerList)
+                                this.RecalculateVisibleListOneGroupStandard(groupItem, visibleItems, ref groupCount, ref itemsCount);
+                            break;
                     }
-
+                    
                     if (visibleItems.Count > 0)
                     {
-                        this.VisibleList.Add(visibleItems);
-                        layers++;
+                        this.VisibleGroupList.Add(visibleItems);
+                        layerCount++;
                     }
                 }
 
-                this.VisibleListLastWidth = this.ClientSize.Width;
-                this.VisibleListLastTimeAxisMode = timeAxisMode;
-                this.IsValidVisibleList = true;
+                this._ValidatedWidth = this.ClientSize.Width;
+                this._ValidatedAxisMode = timeAxisMode;
+                this._IsValidVisibleList = true;
 
-                scope.AddItem("Visual Layers Count: " + layers.ToString());
-                scope.AddItem("Visual Groups Count: " + groups.ToString());
-                scope.AddItem("Visual Items Count: " + items.ToString());
+                scope.AddItem("Visual Layers Count: " + layerCount.ToString());
+                scope.AddItem("Visual Groups Count: " + groupCount.ToString());
+                scope.AddItem("Visual Items Count: " + itemsCount.ToString());
             }
         }
         /// <summary>
         /// Metoda připraví data pro jeden grafický prvek typu <see cref="GTimeGraphGroup"/> pro aktuální stav časové osy grafu, 
         /// v režimu <see cref="TimeGraphTimeAxisMode.Standard"/>
         /// </summary>
-        /// <param name="group">Jedna ucelená skupina grafických prvků <see cref="ITimeGraphItem"/></param>
+        /// <param name="groupItem">Jedna ucelená skupina grafických prvků <see cref="ITimeGraphItem"/></param>
         /// <param name="visibleItems">Výstupní seznam, do něhož se vkládají viditelné prvky</param>
-        /// <param name="groups">Počet viditelných prvků group, pro statistiku</param>
-        /// <param name="items">Počet zpracovaných prvků typu <see cref="ITimeGraphItem"/>, pro statistiku</param>
-        protected void RecalculateVisibleListOneGroupStandard(GTimeGraphGroup group, List<GTimeGraphGroup> visibleItems, ref int groups, ref int items)
+        /// <param name="groupCount">Počet viditelných prvků group, pro statistiku</param>
+        /// <param name="itemsCount">Počet zpracovaných prvků typu <see cref="ITimeGraphItem"/>, pro statistiku</param>
+        protected void RecalculateVisibleListOneGroupStandard(GTimeGraphGroup groupItem, List<GTimeGraphGroup> visibleItems, ref int groupCount, ref int itemsCount)
         {
             ITimeConvertor timeConvertor = this._TimeConvertor;
-            if (group.IsValidRealTime && timeConvertor.VisibleTime.HasIntersect(group.Time))
+            if (groupItem.IsValidRealTime && timeConvertor.VisibleTime.HasIntersect(groupItem.Time))
             {   // Prvek je alespoň zčásti viditelný v časovém okně:
-                groups++;
-                Int32Range y = this.CalculatorYGetRange(group.LogicalY);
-                Int32Range x = timeConvertor.GetPixelRange(group.Time);
-                group.GControl.VirtualBounds = Int32Range.GetRectangle(x, y);
+                groupCount++;
+                Int32Range y = this.CalculatorYGetRange(groupItem.LogicalY);
+                Int32Range x = timeConvertor.GetPixelRange(groupItem.Time);
+                groupItem.GControl.VirtualBounds = Int32Range.GetRectangle(x, y);
 
-                foreach (ITimeGraphItem item in group.Items)
+                foreach (ITimeGraphItem item in groupItem.Items)
                 {
-                    items++;
+                    itemsCount++;
 
                     x = timeConvertor.GetPixelRange(item.Time);
                     item.GControl.VirtualBounds = Int32Range.GetRectangle(x, y);
                 }
 
-                visibleItems.Add(group);
+                visibleItems.Add(groupItem);
             }
         }
-        protected void RecalculateVisibleListOneGroupProportional(GTimeGraphGroup group, List<GTimeGraphGroup> visibleItems, ref int groups, ref int items)
+        /// <summary>
+        /// Metoda připraví data pro jeden grafický prvek typu <see cref="GTimeGraphGroup"/> pro aktuální stav časové osy grafu, 
+        /// v režimu <see cref="TimeGraphTimeAxisMode.ProportionalScale"/>
+        /// </summary>
+        /// <param name="groupItem">Jedna ucelená skupina grafických prvků <see cref="ITimeGraphItem"/></param>
+        /// <param name="visibleItems">Výstupní seznam, do něhož se vkládají viditelné prvky</param>
+        /// <param name="groupCount">Počet viditelných prvků group, pro statistiku</param>
+        /// <param name="itemsCount">Počet zpracovaných prvků typu <see cref="ITimeGraphItem"/>, pro statistiku</param>
+        protected void RecalculateVisibleListOneGroupProportional(GTimeGraphGroup groupItem, List<GTimeGraphGroup> visibleItems, ref int groupCount, ref int itemsCount)
         {
             ITimeConvertor timeConvertor = this._TimeConvertor;
             int size = this.Bounds.Width;
-            if (group.IsValidRealTime && timeConvertor.VisibleTime.HasIntersect(group.Time))
+            if (groupItem.IsValidRealTime && timeConvertor.VisibleTime.HasIntersect(groupItem.Time))
             {   // Prvek je alespoň zčásti viditelný v časovém okně:
-                groups++;
-                Int32Range y = this.CalculatorYGetRange(group.LogicalY);
-                Int32Range x = timeConvertor.GetProportionalPixelRange(group.Time, size);
-                group.GControl.VirtualBounds = Int32Range.GetRectangle(x, y);
+                groupCount++;
+                Int32Range y = this.CalculatorYGetRange(groupItem.LogicalY);
+                Int32Range x = timeConvertor.GetProportionalPixelRange(groupItem.Time, size);
+                groupItem.GControl.VirtualBounds = Int32Range.GetRectangle(x, y);
 
-                foreach (ITimeGraphItem item in group.Items)
+                foreach (ITimeGraphItem item in groupItem.Items)
                 {
-                    items++;
+                    itemsCount++;
 
                     x = timeConvertor.GetProportionalPixelRange(item.Time, size);
                     item.GControl.VirtualBounds = Int32Range.GetRectangle(x, y);
                 }
 
-                visibleItems.Add(group);
+                visibleItems.Add(groupItem);
             }
         }
-        protected void RecalculateVisibleListOneGroupLogarithmic(GTimeGraphGroup group, List<GTimeGraphGroup> visibleItems, ref int groups, ref int items)
+        /// <summary>
+        /// Metoda připraví data pro jeden grafický prvek typu <see cref="GTimeGraphGroup"/> pro aktuální stav časové osy grafu, 
+        /// v režimu <see cref="TimeGraphTimeAxisMode.LogarithmicScale"/>
+        /// </summary>
+        /// <param name="groupItem">Jedna ucelená skupina grafických prvků <see cref="ITimeGraphItem"/></param>
+        /// <param name="visibleItems">Výstupní seznam, do něhož se vkládají viditelné prvky</param>
+        /// <param name="groupCount">Počet viditelných prvků group, pro statistiku</param>
+        /// <param name="itemsCount">Počet zpracovaných prvků typu <see cref="ITimeGraphItem"/>, pro statistiku</param>
+        protected void RecalculateVisibleListOneGroupLogarithmic(GTimeGraphGroup groupItem, List<GTimeGraphGroup> visibleItems, ref int groupCount, ref int itemsCount)
         {
             ITimeConvertor timeConvertor = this._TimeConvertor;
             int size = this.Bounds.Width;
             float proportionalRatio = this.GraphParameters.LogarithmicRatio;
             // Pozor: režim Logarithmic zajistí, že zobrazeny budou VŠECHNY prvky, takže prvky nefiltrujeme s ohledem na jejich čas : VisibleTime.HasIntersect() !
-            if (group.IsValidRealTime)
+            if (groupItem.IsValidRealTime)
             {
-                groups++;
-                Int32Range y = this.CalculatorYGetRange(group.LogicalY);
-                Int32Range x = timeConvertor.GetLogarithmicPixelRange(group.Time, size, proportionalRatio);
-                group.GControl.VirtualBounds = Int32Range.GetRectangle(x, y);
+                groupCount++;
+                Int32Range y = this.CalculatorYGetRange(groupItem.LogicalY);
+                Int32Range x = timeConvertor.GetLogarithmicPixelRange(groupItem.Time, size, proportionalRatio);
+                groupItem.GControl.VirtualBounds = Int32Range.GetRectangle(x, y);
 
-                foreach (ITimeGraphItem item in group.Items)
+                foreach (ITimeGraphItem item in groupItem.Items)
                 {
-                    items++;
+                    itemsCount++;
 
                     x = timeConvertor.GetLogarithmicPixelRange(item.Time, size, proportionalRatio);
                     item.GControl.VirtualBounds = Int32Range.GetRectangle(x, y);
                 }
 
-                visibleItems.Add(group);
+                visibleItems.Add(groupItem);
             }
         }
         /// <summary>
@@ -560,17 +586,17 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Seznam má dvojitou úroveň: v první úrovni jsou vizuální vrstvy (od spodní po vrchní), 
         /// v druhé úrovni jsou pak jednotlivé prvky <see cref="GTimeGraphGroup"/> k vykreslení.
         /// </summary>
-        protected List<List<GTimeGraphGroup>> VisibleList { get; set; }
+        protected List<List<GTimeGraphGroup>> VisibleGroupList { get { return this._VisibleGroupList; } } private List<List<GTimeGraphGroup>> _VisibleGroupList;
         /// <summary>
-        /// Hodnota Bounds.Width, pro kterou byly naposledy přepočítávány prvky pole <see cref="VisibleList"/>.
+        /// Hodnota Bounds.Width, pro kterou byly naposledy přepočítávány prvky pole <see cref="VisibleGroupList"/>.
         /// Po změně souřadnic se provádí invalidace.
         /// </summary>
-        protected int? VisibleListLastWidth { get; set; }
+        protected int? ValidatedWidth { get { return this._ValidatedWidth; } } private int? _ValidatedWidth;
         /// <summary>
-        /// Hodnota <see cref="GraphParameters"/>: <see cref="TimeGraphParameters.TimeAxisMode"/>, pro kterou jsou platné hodnoty ve <see cref="VisibleList"/>.
-        /// Po změně <see cref="GraphParameters"/>: <see cref="TimeGraphParameters.TimeAxisMode"/> dojde k přepočtu dat v tomto seznamu.
+        /// Hodnota <see cref="GraphParameters"/>: <see cref="TimeGraphProperties.TimeAxisMode"/>, pro kterou jsou platné hodnoty ve <see cref="VisibleGroupList"/>.
+        /// Po změně <see cref="GraphParameters"/>: <see cref="TimeGraphProperties.TimeAxisMode"/> dojde k přepočtu dat v tomto seznamu.
         /// </summary>
-        protected TimeGraphTimeAxisMode? VisibleListLastTimeAxisMode { get; set; }
+        protected TimeGraphTimeAxisMode? ValidatedAxisMode { get { return this._ValidatedAxisMode; } } private TimeGraphTimeAxisMode? _ValidatedAxisMode;
         #endregion
         #region Kalkulátor souřadnic Y : výška grafu a přepočty souřadnice Y z logické (float, zdola nahoru) do fyzických pixelů (int, zhora dolů)
         /// <summary>
@@ -578,7 +604,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Typicky se sem vkládá řádek grafu, instance třídy <see cref="Row"/>.
         /// Graf nikdy nepracuje se šířkou parenta <see cref="IVisualParent.ClientWidth"/>.
         /// </summary>
-        public IVisualParent VisualParent { get { return this._VisualParent; } set { this._VisualParent = value; this.InvalidateVisibleList(); } }
+        public IVisualParent VisualParent { get { return this._VisualParent; } set { this._VisualParent = value; this.Invalidate(InvalidateItems.VisibleGroups); } }
         /// <summary>
         /// Aktuální výška dat celého grafu, v pixelech
         /// </summary>
@@ -586,7 +612,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             get
             {
-                this.CheckValidGroupList();
+                this.CheckValidAllGroupList();
                 return this._GraphPixelHeight;
             }
         }
@@ -636,11 +662,11 @@ namespace Asol.Tools.WorkScheduler.Components
             this._CalculatorY_Offset = logBegin;
             this._CalculatorY_Scale = (float)pixelSize / logSize;
 
-            this.InvalidateVisibleList();
+            this.Invalidate(InvalidateItems.VisibleGroups);
         }
         /// <summary>
         /// Metoda zajistí zarovnání výšky grafu (v pixelech) do patřičného rozmezí.
-        /// Využívá: rozmezí <see cref="GraphParameters"/>: <see cref="TimeGraphParameters.TotalHeightRange"/>, hodnoty Skin.Graph.TotalHeightMin a TotalHeightMax;
+        /// Využívá: rozmezí <see cref="GraphParameters"/>: <see cref="TimeGraphProperties.TotalHeightRange"/>, hodnoty Skin.Graph.TotalHeightMin a TotalHeightMax;
         /// a dále využívá objekt <see cref="VisualParent"/> a jeho <see cref="IVisualParent.ClientHeight"/>
         /// </summary>
         /// <param name="height"></param>
@@ -727,31 +753,93 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         private IVisualParent _VisualParent;
         #endregion
+        #region Invalidace je řešená jedním vstupním bodem
+        /// <summary>
+        /// Invaliduje dané prvky grafu, a automaticky přidá i prvky na nich závislé.
+        /// </summary>
+        /// <param name="items"></param>
+        protected void Invalidate(InvalidateItems items)
+        {
+            if ((items & InvalidateItems.AllGroups) != 0)
+            {
+                this._AllGroupList = null;
+                items |= InvalidateItems.VisibleGroups;
+            }
+
+            if ((items & InvalidateItems.XCoord) != 0)
+            {
+                
+            }
+            if ((items & InvalidateItems.YCoord) != 0)
+            {
+                this._ValidatedHeight = 0;
+            }
+
+            if ((items & InvalidateItems.VisibleGroups) != 0)
+            {
+                this._IsValidVisibleList = false;
+                items |= InvalidateItems.Repaint;
+            }
+
+            if ((items & InvalidateItems.Repaint) != 0)
+            {
+                this.Repaint();
+            }
+        }
+        /// <summary>
+        /// Prvky grafu, které budou invalidovány
+        /// </summary>
+        [Flags]
+        protected enum InvalidateItems : int
+        {
+            None = 0,
+            XCoord = 1,
+            YCoord = XCoord << 1,
+            AllGroups = YCoord << 1,
+            VisibleGroups = AllGroups << 1,
+            Childs = VisibleGroups << 1,
+            Repaint = Childs << 1
+        }
+        #endregion
+        #region Child items a kompletní validace
+        /// <summary>
+        /// Child prvky grafu = položky grafu, výhradně typu <see cref="GTimeGraphGroup"/>.
+        /// Před vrácením soupisu proběhne jeho validace.
+        /// </summary>
+        protected override IEnumerable<IInteractiveItem> Childs { get { this.CheckValid(); return this._Childs; } } private List<IInteractiveItem> _Childs;
+        /// <summary>
+        /// Metoda zajistí provedení kontroly platnosti všech vnitřních dat, podle toho která kontrola a přepočet je zapotřebí.
+        /// </summary>
+        protected void CheckValid()
+        {
+            using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "CheckValid", ""))
+            {
+                this.CheckValidAllGroupList();
+                this.CheckValidCoordinateY();
+                this.CheckValidTimeAxis();
+                this.CheckValidVisibleList();
+                this.CheckValidChildList();
+            }
+        }
+        protected void CheckValidChildList()
+        {
+            qqq;
+        }
+        #endregion
         #region Draw : vykreslení grafu
         /// <summary>
-        /// Systémové kreslení grafu: nepoužívá se...
+        /// Systémové kreslení grafu
         /// </summary>
         /// <param name="e"></param>
         protected override void Draw(GInteractiveDrawArgs e)
         {
-            // base.Draw(e);
-        }
-        /// <summary>
-        /// Vykreslení obsahu grafu: vykreslí pozadí (pokud je zapotřebí), následně Ticky (pokud se mají kreslit) a poté vykreslí jednotlivé prvky.
-        /// </summary>
-        /// <param name="e"></param>
-        /// <param name="boundsAbsolute"></param>
-        protected virtual void DrawContentTimeGraph(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
-        {
-            this.DrawContentPrepareArgs(e, boundsAbsolute);
+            Rectangle boundsAbsolute = this.BoundsAbsolute;
             this.DrawBackground(e, boundsAbsolute);
-            using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "DrawContent", ""))
+            using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "Draw", ""))
             {
-                this.Bounds = new Rectangle(0, 0, boundsAbsolute.Width, boundsAbsolute.Height);
                 this.CheckValid();
                 e.GraphicsClipWith(boundsAbsolute);
                 this.DrawTicks();
-                this.DrawItems();
             }
         }
         /// <summary>
@@ -795,6 +883,29 @@ namespace Asol.Tools.WorkScheduler.Components
             using (System.Drawing.Drawing2D.LinearGradientBrush rgb = new System.Drawing.Drawing2D.LinearGradientBrush(rightBoundsG, color2, color1, 180f))
             {
                 e.Graphics.FillRectangle(rgb, rightBounds);
+            }
+        }
+
+
+        // Následující by se mělo zrušit, včetně třídy TimeGraphItemDrawArgs
+
+
+        /// <summary>
+        /// Vykreslení obsahu grafu: vykreslí pozadí (pokud je zapotřebí), následně Ticky (pokud se mají kreslit) a poté vykreslí jednotlivé prvky.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        protected virtual void DrawContentTimeGraph(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
+        {
+            this.DrawContentPrepareArgs(e, boundsAbsolute);
+            this.DrawBackground(e, boundsAbsolute);
+            using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "DrawContent", ""))
+            {
+                this.Bounds = new Rectangle(0, 0, boundsAbsolute.Width, boundsAbsolute.Height);
+                this.CheckValid();
+                e.GraphicsClipWith(boundsAbsolute);
+                this.DrawTicks();
+                this.DrawItems();
             }
         }
         /// <summary>
@@ -853,7 +964,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Metoda vykreslí všechny prvky grafu.
         /// Prvky se kreslí po vrstvách, a pouze ty prvky které jsou viditelné.
-        /// Používá se datový seznam <see cref="VisibleList"/>.
+        /// Používá se datový seznam <see cref="VisibleGroupList"/>.
         /// </summary>
         protected void DrawItems()
         {
@@ -863,7 +974,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 int groups = 0;
                 int items = 0;
 
-                foreach (List<GTimeGraphGroup> layerList in this.VisibleList)
+                foreach (List<GTimeGraphGroup> layerList in this.VisibleGroupList)
                 {
                     layers++;
                     foreach (GTimeGraphGroup group in layerList)
@@ -886,10 +997,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Instance objektu <see cref="TimeGraphItemDrawArgs"/> pro vykreslování prvků grafu, pro přepočty koordinátů na ose Y.
         /// </summary>
-        protected TimeGraphItemDrawArgs ItemDrawArgs;
+        protected TimeGraphItemDrawArgs ItemDrawArgs { get; set; }
         #endregion
         #region ITimeGraph + ITimeInteractiveGraph members
-        ITimeConvertor ITimeGraph.TimeConvertor { get { return this._TimeConvertor; } set { this._TimeConvertor = value; this.InvalidateVisibleList(); } }
+        ITimeConvertor ITimeGraph.TimeConvertor { get { return this._TimeConvertor; } set { this._TimeConvertor = value; this.Invalidate(InvalidateItems.VisibleGroups); } }
         int ITimeGraph.UnitHeight { get { return this.GraphParameters.OneLineHeight.Value; } } 
         void ITimeGraph.DrawContentTimeGraph(GInteractiveDrawArgs e, Rectangle boundsAbsolute) { this.DrawContentTimeGraph(e, boundsAbsolute); }
         #endregion
@@ -990,6 +1101,24 @@ namespace Asol.Tools.WorkScheduler.Components
         private TimeRange _Time;
         private bool _IsValidRealTime;
         #endregion
+        #region Souřadnice prvku
+        /// <summary>
+        /// Logické rozmezí tohoto prvku na ose Y. Souřadnice 0 odpovídá hodnotě 0 na ose Y, kladná čísla jsou fyzicky nahoru, záporná jsou povolená a jdou dolů.
+        /// Jednotka je logická, nikoli pixely. Přepočet na pixely probíhá jinde.
+        /// </summary>
+        public Interval<float> LogicalY { get; set; }
+        /// <summary>
+        /// Virtuální souřadnice na ose Y. Jednotkou jsou pixely.
+        /// Hodnota 0 odpovídá pixelu úplně dole na grafu, tj. jako na matematické ose: Y jde odspodu nahoru.
+        /// </summary>
+        public Int32Range CoordinateYVirtual { get; set; }
+        /// <summary>
+        /// Reálné souřadnice na ose Y. Jednotkou jsou pixely.
+        /// Hodnota 0 odpovídá pixelu na souřadnici Bounds.Top, tj. jako ve Windows.Forms: Y jde odshora dolů.
+        /// </summary>
+        public Int32Range CoordinateYReal { get; set; }
+
+        #endregion
         #region Public prvky, Draw()
         /// <summary>
         /// Pole všech základních prvků <see cref="ITimeGraphItem"/> zahrnutých v tomto objektu.
@@ -1003,7 +1132,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public int ItemCount { get { return this._Items.Length; } }
         /// <summary>
         /// Relativní výška tohoto prvku. Standardní hodnota = 1.0F. Fyzická výška (v pixelech) jednoho prvku je dána součinem 
-        /// <see cref="Height"/> * <see cref="GTimeGraph.GraphParameters"/>: <see cref="TimeGraphParameters.OneLineHeight"/>
+        /// <see cref="Height"/> * <see cref="GTimeGraph.GraphParameters"/>: <see cref="TimeGraphProperties.OneLineHeight"/>
         /// Prvky s výškou 0 a menší nebudou vykresleny.
         /// </summary>
         public float Height { get { return this._Height; } }
@@ -1134,10 +1263,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         private IInteractiveParent _Parent;
         /// <summary>
-        /// Logické rozmezí tohoto prvku na ose Y. Souřadnice 0 odpovídá hodnotě 0 na ose Y, kladná čísla jsou fyzicky nahoru, záporná jsou povolená a jdou dolů.
-        /// Jednotka je logická, nikoli pixely. Přepočet na pixely probíhá jinde.
+        /// Souřadnice na ose X. Jednotkou jsou pixely.
+        /// Tato osa je společná jak pro virtuální, tak pro reálné souřadnice.
+        /// Hodnota 0 odpovídá prvnímu viditelnému pixelu vlevo.
         /// </summary>
-        public Interval<float> LogicalY { get; set; }
+        public Int32Range CoordinateX { get; set; }
         /// <summary>
         /// Virtuální souřadnice prvku na ose Y, v pixelech, ale s obráceným významem hodnoty Y:
         /// 0 je dolní pixel buňky, kladné číslo Y jde nahoru, záporné číslo se nevyskytuje. Důvodem je korektní chování při zvětšování výšky (na ose Y), 
@@ -1145,11 +1275,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Souřadnice X je korektní, odpovídá Bounds.X.
         /// Konverzi virtuálních souřadnic na fyzické provádí vykreslovací objekt třídy <see cref="TimeGraphItemDrawArgs"/>.
         /// </summary>
-        public Rectangle VirtualBounds { get; set; }
+        public Rectangle xxx_VirtualBounds { get; set; }
         /// <summary>
         /// true když čas je kladný a výška rovněž
         /// </summary>
-        protected bool IsValidRealTime { get { return (this._Owner != null && this._Owner.Time != null && this._Owner.Time.IsFilled && this._Owner.Time.IsReal && (this.LogicalY.End > this.LogicalY.Begin)); } }
+        protected bool xxx_IsValidRealTime { get { return (this._Owner != null && this._Owner.Time != null && this._Owner.Time.IsFilled && this._Owner.Time.IsReal && (this.LogicalY.End > this.LogicalY.Begin)); } }
         /// <summary>
         /// Metoda je volaná pro vykreslení prvku.
         /// Implementátor může bez nejmenších obav převolat <see cref="GControl"/>.<see cref="GTimeGraphControl.Draw(TimeGraphItemDrawArgs)"/> Draw
@@ -1211,247 +1341,20 @@ namespace Asol.Tools.WorkScheduler.Components
         }
     }
     #endregion
-    #region class TimeGraphItemDrawArgs : třída pro podporu vykreslování položek grafu
+    #region class TimeGraphProperties : třída obsahující vlastnosti vykreslovaného grafu
     /// <summary>
-    /// TimeGraphItemDrawArgs : třída pro podporu vykreslování položek grafu.
-    /// Tato třída v sobě uchovává absolutní souřadnici grafu ve WinForm koordinátech, a standardní kreslící argument <see cref="GInteractiveDrawArgs"/>.
+    /// TimeGraphProperties : třída obsahující vlastnosti vykreslovaného grafu
     /// </summary>
-    public class TimeGraphItemDrawArgs : IDisposable
-    {
-        #region Constructor, private variables
-        /// <summary>
-        /// Konstruktor s předáním reference na control, který je parentem grafu.
-        /// </summary>
-        /// <param name="host"></param>
-        public TimeGraphItemDrawArgs(GInteractiveControl host)
-        {
-            this._Host = host;
-        }
-        /// <summary>
-        /// Připraví data do tohoto argumentu.
-        /// </summary>
-        /// <param name="drawArgs"></param>
-        /// <param name="graphBoundsAbsolute"></param>
-        /// <param name="timeConvertor"></param>
-        internal void Prepare(GInteractiveDrawArgs drawArgs, Rectangle graphBoundsAbsolute, ITimeConvertor timeConvertor)
-        {
-            this._DrawArgs = drawArgs;
-            this._GraphBoundsAbsolute = graphBoundsAbsolute;
-            this._TimeConvertor = timeConvertor;
-        }
-        private GInteractiveControl _Host;
-        private GInteractiveDrawArgs _DrawArgs;
-        private Rectangle _GraphBoundsAbsolute;
-        private ITimeConvertor _TimeConvertor;
-        void IDisposable.Dispose()
-        {
-            this._DrawSupportDispose();
-        }
-        #endregion
-        #region Public properties
-        /// <summary>
-        /// An Graphics object to draw on
-        /// </summary>
-        public Graphics Graphics { get { return this._DrawArgs.Graphics; } }
-        /// <summary>
-        /// Layer, currently drawed.
-        /// </summary>
-        public GInteractiveDrawLayer DrawLayer { get { return this._DrawArgs.DrawLayer; } }
-        /// <summary>
-        /// Whole GInteractiveDrawArgs
-        /// </summary>
-        public GInteractiveDrawArgs InteractiveDrawArgs { get { return this._DrawArgs; } }
-        /// <summary>
-        /// Absolute bounds of Graph
-        /// </summary>
-        public Rectangle GraphBoundsAbsolute { get { return this._GraphBoundsAbsolute; } }
-        /// <summary>
-        /// Time convertor for X axis
-        /// </summary>
-        public ITimeConvertor TimeConvertor { get { return this._TimeConvertor; } }
-        #endregion
-        #region Draw support
-        /// <summary>
-        /// Defaultní barva pozadí
-        /// </summary>
-        public Color DefaultBackColor { get { return this._Host.DefaultBackColor; } set { this._Host.DefaultBackColor = value; } }
-        /// <summary>
-        /// Default color for border rectangle
-        /// </summary>
-        public Color DefaultBorderColor { get { return this._Host.DefaultBorderColor; } set { this._Host.DefaultBorderColor = value; } }
-        /// <summary>
-        /// Fill rectangle (convert VirtualBounds to real bounds), with color (or DefaultBackColor).
-        /// </summary>
-        /// <param name="virtualBounds"></param>
-        /// <param name="backColor"></param>
-        public void FillRectangle(Rectangle virtualBounds, Color? backColor)
-        {
-            this._FillRectangle(virtualBounds, backColor, false, 0, 0, 0, 0);
-        }
-        /// <summary>
-        /// Fill rectangle (convert VirtualBounds to real bounds), with color (or DefaultBackColor).
-        /// Real bounds are enlarged (Rectangle.Enlarge()) by specified values for each edge: positive value produce greater bounds, negative value smaller bounds.
-        /// </summary>
-        /// <param name="virtualBounds"></param>
-        /// <param name="backColor"></param>
-        /// <param name="enlargeL"></param>
-        /// <param name="enlargeT"></param>
-        /// <param name="enlargeR"></param>
-        /// <param name="enlargeB"></param>
-        public void FillRectangle(Rectangle virtualBounds, Color? backColor, int enlargeL, int enlargeT, int enlargeR, int enlargeB)
-        {
-            this._FillRectangle(virtualBounds, backColor, true, enlargeL, enlargeT, enlargeR, enlargeB);
-        }
-        private void _FillRectangle(Rectangle virtualBounds, Color? backColor, bool enlarge, int enlargeL, int enlargeT, int enlargeR, int enlargeB)
-        {
-            Rectangle bounds = this.GetBounds(virtualBounds);
-            if (enlarge)
-                bounds = bounds.Enlarge(enlargeL, enlargeT, enlargeR, enlargeB);
-            if (this._IsBoundsVisible(bounds))
-                this._Host.FillRectangle(this.Graphics, bounds, (backColor.HasValue ? backColor.Value : this.DefaultBackColor));
-        }
-        /// <summary>
-        /// Draw Border around Virtual bounds, with specified color (or DefaultBorderColor).
-        /// </summary>
-        /// <param name="virtualBounds"></param>
-        /// <param name="borderColor"></param>
-        public void BorderRectangle(Rectangle virtualBounds, Color? borderColor)
-        {
-            this._BorderRectangle(virtualBounds, borderColor, false, 0, 0, 0, 0);
-        }
-        /// <summary>
-        /// Draw Border around Virtual bounds, with specified color (or DefaultBorderColor).
-        /// Real bounds are enlarged (Rectangle.Enlarge()) by specified values for each edge: positive value produce greater bounds, negative value smaller bounds.
-        /// </summary>
-        /// <param name="virtualBounds"></param>
-        /// <param name="borderColor"></param>
-        /// <param name="enlargeL"></param>
-        /// <param name="enlargeT"></param>
-        /// <param name="enlargeR"></param>
-        /// <param name="enlargeB"></param>
-        public void BorderRectangle(Rectangle virtualBounds, Color? borderColor, int enlargeL, int enlargeT, int enlargeR, int enlargeB)
-        {
-            this._BorderRectangle(virtualBounds, borderColor, true, enlargeL, enlargeT, enlargeR, enlargeB);
-        }
-        private void _BorderRectangle(Rectangle virtualBounds, Color? borderColor, bool enlarge, int enlargeL, int enlargeT, int enlargeR, int enlargeB)
-        {
-            Rectangle bounds = this.GetBounds(virtualBounds);
-            bounds = bounds.Enlarge(enlargeL, enlargeT, enlargeR - 1, enlargeB - 1);     // Shring Width and Height by 1 pixel is standard for draw Border into (!) area.
-            if (this._IsBoundsVisible(bounds))
-            {
-                Color color = (borderColor.HasValue ? borderColor.Value : this.DefaultBorderColor);
-                Pen pen = Skin.Pen(color);
-                this.Graphics.DrawRectangle(pen, bounds);
-            }
-        }
-        /// <summary>
-        /// Vrátí absolutní souřadnice v koordinátech Windows.Forms.Control z dodaných souřadnic Virtuálních.
-        /// Vrácené souřadnice mohou být mimo souřadnice grafu (pak budou oříznuty prostřednictvím Graphics.Clip).
-        /// </summary>
-        /// <param name="virtualBounds">Virtuální souřadnice prvku</param>
-        /// <returns></returns>
-        public Rectangle GetBounds(Rectangle virtualBounds)
-        {
-            return this.GetBoundsAbsolute(virtualBounds, 0);
-        }
-        /// <summary>
-        /// Vrátí absolutní souřadnice v koordinátech Windows.Forms.Control z dodaných souřadnic Virtuálních.
-        /// Vrácené souřadnice mohou být mimo souřadnice grafu (pak budou oříznuty prostřednictvím Graphics.Clip).
-        /// </summary>
-        /// <param name="virtualBounds">Virtuální souřadnice prvku</param>
-        /// <param name="minimalWidth">Požadavek na minimální šířku prvku</param>
-        /// <returns></returns>
-        public Rectangle GetBoundsAbsolute(Rectangle virtualBounds, int minimalWidth)
-        {
-            int graphB = this._GraphBoundsAbsolute.Bottom - 1;
-            int graphX = this._GraphBoundsAbsolute.X;
-            Rectangle boundsAbsolute = new Rectangle(graphX + virtualBounds.X, graphB - virtualBounds.Y, virtualBounds.Width, virtualBounds.Height);
-            if (minimalWidth > 0 && boundsAbsolute.Width < minimalWidth)
-                boundsAbsolute.Width = minimalWidth;
-            return boundsAbsolute;
-        }
-        /// <summary>
-        /// Return true when specified item Virtual bounds is (whole or partially) visible in current Graph (in GraphBoundsAbsolute).
-        /// </summary>
-        /// <param name="bounds"></param>
-        /// <returns></returns>
-        public bool IsVirtualBoundsVisible(Rectangle virtualBounds)
-        {
-            Rectangle bounds = this._GetBounds(virtualBounds);
-            return this._IsBoundsVisible(bounds);
-        }
-        /// <summary>
-        /// Return true when specified item Absolute bounds is (whole or partially) visible in current Graph (in GraphBoundsAbsolute).
-        /// </summary>
-        /// <param name="bounds"></param>
-        /// <returns></returns>
-        public bool IsBoundsVisible(Rectangle bounds)
-        {
-            return this._IsBoundsVisible(bounds);
-        }
-        /// <summary>
-        /// Return absolute WinForm bounds for specified Virtual Bounds.
-        /// Returned bounds can be outside of visible bounds of Graph.
-        /// </summary>
-        /// <param name="virtualBounds"></param>
-        /// <returns></returns>
-        private Rectangle _GetBounds(Rectangle virtualBounds)
-        {
-            int graphB = this._GraphBoundsAbsolute.Bottom - 1;
-            int graphX = this._GraphBoundsAbsolute.X;
-            return new Rectangle(graphX + virtualBounds.X, graphB - virtualBounds.Y, virtualBounds.Width, virtualBounds.Height);
-        }
-        /// <summary>
-        /// Return true when specified item absolute bounds is (whole or partially) visible in current Graph (in GraphBoundsAbsolute).
-        /// </summary>
-        /// <param name="bounds"></param>
-        /// <returns></returns>
-        private bool _IsBoundsVisible(Rectangle bounds)
-        {
-            if (bounds.Width <= 0 || bounds.Height <= 0) return false;
-
-            Rectangle graphBounds = this.GraphBoundsAbsolute;
-            return !(
-                    bounds.Right <= graphBounds.Left ||
-                    bounds.Bottom <= graphBounds.Top ||
-                    bounds.Left >= graphBounds.Right ||
-                    bounds.Top >= graphBounds.Bottom);
-        }
-        /// <summary>
-        /// Draw one line using standard Pen, 
-        /// </summary>
-        /// <param name="x1"></param>
-        /// <param name="y1"></param>
-        /// <param name="x2"></param>
-        /// <param name="y2"></param>
-        /// <param name="color"></param>
-        /// <param name="width"></param>
-        /// <param name="dashStyle"></param>
-        public void DrawLine(int x1, int y1, int x2, int y2, Color color, float width, System.Drawing.Drawing2D.DashStyle dashStyle)
-        {
-            Pen pen = Skin.Pen(color, width, dashStyle);
-            this.Graphics.DrawLine(pen, x1, y1, x2, y2);
-        }
-        private void _DrawSupportDispose()
-        {
-        }
-        #endregion
-    }
-    #endregion
-    #region class TimeGraphParameters : třída obsahující vlastnosti vykreslovaného grafu
-    /// <summary>
-    /// TimeGraphParameters : třída obsahující vlastnosti vykreslovaného grafu
-    /// </summary>
-    public class TimeGraphParameters
+    public class TimeGraphProperties
     {
         /// <summary>
         /// Defaultní nastavení
         /// </summary>
-        public static TimeGraphParameters Default { get { return new TimeGraphParameters(); } }
+        public static TimeGraphProperties Default { get { return new TimeGraphProperties(); } }
         /// <summary>
         /// Defaultní konstruktor
         /// </summary>
-        public TimeGraphParameters()
+        public TimeGraphProperties()
         {
             this._TimeAxisMode = TimeGraphTimeAxisMode.Standard;
             this._TimeAxisVisibleTickLevel = AxisTickType.BigTick;
@@ -1605,7 +1508,7 @@ namespace Asol.Tools.WorkScheduler.Components
         TimeRange Time { get; }
         /// <summary>
         /// Relativní výška tohoto prvku. Standardní hodnota = 1.0F. Fyzická výška (v pixelech) jednoho prvku je dána součinem 
-        /// <see cref="Height"/> * <see cref="GTimeGraph.GraphParameters"/>: <see cref="TimeGraphParameters.OneLineHeight"/>
+        /// <see cref="Height"/> * <see cref="GTimeGraph.GraphParameters"/>: <see cref="TimeGraphProperties.OneLineHeight"/>
         /// Prvky s výškou 0 a menší nebudou vykresleny.
         /// </summary>
         float Height { get; }
@@ -1651,7 +1554,9 @@ namespace Asol.Tools.WorkScheduler.Components
     public interface ITimeConvertor
     {
         /// <summary>
-        /// Identita časového a vizuálního prostoru
+        /// Identita časového a vizuálního prostoru.
+        /// Časový prostor popisuje rozmezí času (Begin a End) s maximální přesností.
+        /// Vizuální prostor popisuje počet pixelů velikosti osy (pro osu Horizontal = Width), ale nikoli její pixel počátku (Left).
         /// </summary>
         string Identity { get; }
         /// <summary>
@@ -1790,4 +1695,79 @@ namespace Asol.Tools.WorkScheduler.Components
         Rectangle
     }
     #endregion
+
+
+    //    zrušit:
+    #region class TimeGraphItemDrawArgs : třída pro podporu vykreslování položek grafu
+    /// <summary>
+    /// TimeGraphItemDrawArgs : třída pro podporu vykreslování položek grafu.
+    /// Tato třída v sobě uchovává absolutní souřadnici grafu ve WinForm koordinátech, a standardní kreslící argument <see cref="GInteractiveDrawArgs"/>.
+    /// </summary>
+    public class TimeGraphItemDrawArgs : IDisposable
+    {
+        #region Constructor, private variables
+        /// <summary>
+        /// Konstruktor s předáním reference na control, který je parentem grafu.
+        /// </summary>
+        /// <param name="host"></param>
+        public TimeGraphItemDrawArgs(GInteractiveControl host)
+        {
+            this._Host = host;
+        }
+        /// <summary>
+        /// Připraví data do tohoto argumentu.
+        /// </summary>
+        /// <param name="drawArgs"></param>
+        /// <param name="graphBoundsAbsolute"></param>
+        /// <param name="timeConvertor"></param>
+        internal void Prepare(GInteractiveDrawArgs drawArgs, Rectangle graphBoundsAbsolute, ITimeConvertor timeConvertor)
+        {
+            this._DrawArgs = drawArgs;
+            this._GraphBoundsAbsolute = graphBoundsAbsolute;
+            this._TimeConvertor = timeConvertor;
+        }
+        private GInteractiveControl _Host;
+        private GInteractiveDrawArgs _DrawArgs;
+        private Rectangle _GraphBoundsAbsolute;
+        private ITimeConvertor _TimeConvertor;
+        void IDisposable.Dispose()
+        {
+            this._DrawSupportDispose();
+        }
+        #endregion
+        #region Public properties
+        /// <summary>
+        /// An Graphics object to draw on
+        /// </summary>
+        public Graphics Graphics { get { return this._DrawArgs.Graphics; } }
+
+        /// <summary>
+        /// Absolute bounds of Graph
+        /// </summary>
+        public Rectangle GraphBoundsAbsolute { get { return this._GraphBoundsAbsolute; } }
+        #endregion
+        #region Draw support
+        /// <summary>
+        /// Vrátí absolutní souřadnice v koordinátech Windows.Forms.Control z dodaných souřadnic Virtuálních.
+        /// Vrácené souřadnice mohou být mimo souřadnice grafu (pak budou oříznuty prostřednictvím Graphics.Clip).
+        /// </summary>
+        /// <param name="virtualBounds">Virtuální souřadnice prvku</param>
+        /// <param name="minimalWidth">Požadavek na minimální šířku prvku</param>
+        /// <returns></returns>
+        public Rectangle GetBoundsAbsolute(Rectangle virtualBounds, int minimalWidth)
+        {
+            int graphB = this._GraphBoundsAbsolute.Bottom - 1;
+            int graphX = this._GraphBoundsAbsolute.X;
+            Rectangle boundsAbsolute = new Rectangle(graphX + virtualBounds.X, graphB - virtualBounds.Y, virtualBounds.Width, virtualBounds.Height);
+            if (minimalWidth > 0 && boundsAbsolute.Width < minimalWidth)
+                boundsAbsolute.Width = minimalWidth;
+            return boundsAbsolute;
+        }
+        private void _DrawSupportDispose()
+        {
+        }
+        #endregion
+    }
+    #endregion
+
 }

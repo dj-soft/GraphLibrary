@@ -800,12 +800,12 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Defaultní parametry pro grafy v tomto sloupci.
         /// Tato property nikdy není null.
         /// </summary>
-        public TimeGraphParameters GraphParameters
+        public TimeGraphProperties GraphParameters
         {
             get
             {
                 if (this._GraphParameters == null)
-                    this._GraphParameters = TimeGraphParameters.Default;
+                    this._GraphParameters = TimeGraphProperties.Default;
                 return this._GraphParameters;
             }
             set
@@ -813,7 +813,7 @@ namespace Asol.Tools.WorkScheduler.Data
                 this._GraphParameters = value;
             }
         }
-        private TimeGraphParameters _GraphParameters;
+        private TimeGraphProperties _GraphParameters;
         /// <summary>
         /// Provede se poté, kdy uživatel klikne na záhlaví tabulky = buňka v křížení ColumnHeader * RowHeader.
         /// </summary>
@@ -1601,12 +1601,12 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Defaultní parametry pro grafy v tomto sloupci.
         /// Tato property může být null.
         /// </summary>
-        public TimeGraphParameters GraphParameters
+        public TimeGraphProperties GraphParameters
         {
             get { return this._GraphParameters; }
             set { this._GraphParameters = value; }
         }
-        private TimeGraphParameters _GraphParameters;
+        private TimeGraphProperties _GraphParameters;
         /// <summary>
         /// Záhlaví tohoto sloupce, grafický prvek, auitoinicializační
         /// </summary>
