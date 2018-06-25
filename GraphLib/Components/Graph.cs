@@ -1172,6 +1172,8 @@ namespace Asol.Tools.WorkScheduler.Components
             if (!backColor.HasValue)
                 backColor = (this._Owner.BackColor.HasValue ? this._Owner.BackColor.Value : Skin.Graph.ElementBackColor);
 
+            System.Drawing.Drawing2D.HatchStyle? backStyle = this._Owner.BackStyle;
+
             if (!borderColor.HasValue)
                 borderColor = (this._Owner.BorderColor.HasValue ? this._Owner.BorderColor.Value : backColor.Value.Morph(Color.Black, 0.60f));
 
@@ -1181,12 +1183,18 @@ namespace Asol.Tools.WorkScheduler.Components
             }
             else
             {
-                if (this._Owner.Time.Begin.Value.Minute == 0)
+                if (backStyle.HasValue)
                 {
-                    using (System.Drawing.Drawing2D.HatchBrush hb = new System.Drawing.Drawing2D.HatchBrush(System.Drawing.Drawing2D.HatchStyle.Percent50, backColor.Value, Color.Transparent))
+                    using (System.Drawing.Drawing2D.HatchBrush hb = new System.Drawing.Drawing2D.HatchBrush(backStyle.Value, backColor.Value, Color.Transparent))
                     {
                         drawArgs.Graphics.FillRectangle(hb, boundsAbsolute);
-
+                    }
+                }
+                if (this._Owner.Time.Begin.Value.Minute == 0)
+                {
+                    using (System.Drawing.Drawing2D.HatchBrush hb = new System.Drawing.Drawing2D.HatchBrush(System.Drawing.Drawing2D.HatchStyle.Trellis /*Percent25*/, backColor.Value, Color.Transparent))
+                    {
+                        drawArgs.Graphics.FillRectangle(hb, boundsAbsolute);
                     }
                 }
                 else
@@ -1197,301 +1205,6 @@ namespace Asol.Tools.WorkScheduler.Components
                 drawArgs.Graphics.DrawRectangle(Skin.Pen(borderColor.Value), boundsAbsolute);
             }
         }
-    }
-    #endregion
-    #region class GTimeGraphItem : Třída reprezentující jednu položku grafů. Jde o jednoduchou a funkční implementaci rozhraní ITimeGraphItem.
-    /// <summary>
-    /// GTimeGraphItem : Třída reprezentující jednu položku grafů. Jde o jednoduchou a funkční implementaci rozhraní ITimeGraphItem.
-    /// </summary>
-    public class GTimeGraphItem : ITimeGraphItem
-    {
-        #region Public members
-        public GTimeGraphItem()
-        {
-            this._ItemId = Application.App.GetNextId(typeof(ITimeGraphItem));
-        }
-        /// <summary>
-        /// Jednoznačný identifikátor prvku
-        /// </summary>
-        public Int32 ItemId { get { return this._ItemId; } } private Int32 _ItemId;
-        /// <summary>
-        /// GroupId: číslo skupiny. Prvky se shodným GroupId budou vykreslovány do společného "rámce", 
-        /// a pokud mezi jednotlivými prvky <see cref="ITimeGraphItem"/> se shodným <see cref="GroupId"/> bude na ose X nějaké volné místo,
-        /// nebude mezi nimi vykreslován žádný "cizí" prvek.
-        /// </summary>
-        public Int32 GroupId { get; set; }
-        /// <summary>
-        /// Layer: Vizuální vrstva. Prvky z různých vrstev jsou kresleny "přes sebe" = mohou se překrývat.
-        /// Nižší hodnota je kreslena dříve.
-        /// Například: záporná hodnota Layer reprezentuje "podklad" který se needituje.
-        /// </summary>
-        public Int32 Layer { get; set; }
-        /// <summary>
-        /// Level: Vizuální hladina. Prvky v jedné hladině jsou kresleny do společného vodorovného pásu, 
-        /// další prvky ve vyšší hladině jsou všechny zase vykresleny ve svém odděleném pásu (nad tímto nižším pásem). 
-        /// Nespadnou do prvků nižšího pásu i když by v něm bylo volné místo.
-        /// </summary>
-        public Int32 Level { get; set; }
-        /// <summary>
-        /// Order: pořadí prvku při výpočtech souřadnic Y před vykreslováním. 
-        /// Prvky se stejným Order budou tříděny vzestupně podle data počátku <see cref="Time"/>.Begin.
-        /// </summary>
-        public Int32 Order { get; set; }
-        /// <summary>
-        /// Časový interval tohoto prvku
-        /// </summary>
-        public virtual TimeRange Time { get; set; }
-        /// <summary>
-        /// Relativní výška tohoto prvku. Standardní hodnota = 1.0F. Fyzická výška (v pixelech) jednoho prvku je dána součinem 
-        /// <see cref="Height"/> * <see cref="GTimeGraph.GraphParameters"/>: <see cref="TimeGraphParameters.OneLineHeight"/>
-        /// Prvky s výškou 0 a menší nebudou vykresleny.
-        /// </summary>
-        public float Height { get; set; }
-        /// <summary>
-        /// Barva pozadí prvku.
-        /// </summary>
-        public Color? BackColor { get; set; }
-        /// <summary>
-        /// Barva spojovací linky mezi prvky jedné skupiny.
-        /// Default = null = kreslí se barvou <see cref="BackColor"/>, která je morfována na 50% do barvy DimGray a zprůhledněna na 50%.
-        /// </summary>
-        public Color? LinkBackColor { get; set; }
-        /// <summary>
-        /// Vizuální prvek, který v sobě zahrnuje jak podporu pro vykreslování, tak podporu interaktivity.
-        /// A přitom to nevyžaduje od třídy, která fyzicky implementuje <see cref="ITimeGraphItem"/>.
-        /// Aplikační kód (implementační objekt <see cref="ITimeGraphItem"/> se o tuto property nemusí starat, řídící mechanismus sem vloží v případě potřeby new instanci.
-        /// Implementátor pouze poskytuje úložiště pro tuto instanci.
-        /// </summary>
-        public GTimeGraphControl GControl { get; set; }
-        /// <summary>
-        /// Barva okraje (ohraničení) prvku.
-        /// </summary>
-        public Color? BorderColor { get; set; }
-        public Color? TextColor { get; set; }
-        public string[] Captions { get; set; }
-        public string ToolTip { get; set; }
-        #endregion
-        #region Protected members - VirtualBounds, LogicalY, Draw()
-        /// <summary>
-        /// Draw this item
-        /// </summary>
-        protected virtual void Draw(TimeGraphItemDrawArgs drawArgs)
-        {
-        }
-        #endregion
-        #region explicit ITimeGraphItem members
-        int ITimeGraphItem.ItemId { get { return this._ItemId; } }
-        int ITimeGraphItem.Layer { get { return this.Layer; } }
-        int ITimeGraphItem.Level { get { return this.Level; } }
-        int ITimeGraphItem.Order { get { return this.Order; } }
-        int ITimeGraphItem.GroupId { get { return this.GroupId; } }
-        TimeRange ITimeGraphItem.Time { get { return this.Time; } }
-        float ITimeGraphItem.Height { get { return this.Height; } }
-        Color? ITimeGraphItem.BackColor { get { return this.BackColor; } }
-        Color? ITimeGraphItem.LinkBackColor { get { return this.LinkBackColor; } }
-        Color? ITimeGraphItem.BorderColor { get { return this.BorderColor; } }
-        GTimeGraphControl ITimeGraphItem.GControl { get { return this.GControl; } set { this.GControl = value; } }
-        void ITimeGraphItem.Draw(TimeGraphItemDrawArgs drawArgs) { this.GControl.Draw(drawArgs); }
-        #endregion
-    }
-    #endregion
-    #region Interface ITimeGraph, ITimeGraphItem, ITimeConvertor; enum TimeGraphAxisXMode
-    public interface ITimeInteractiveGraph : ITimeGraph, IInteractiveItem
-    { }
-    public interface ITimeGraph
-    {
-        /// <summary>
-        /// Reference na objekt, který provádí časové konverze pro tento graf.
-        /// Instanci do této property plní ten, kdo ji zná.
-        /// </summary>
-        ITimeConvertor TimeConvertor { get; set; }
-        /// <summary>
-        /// Height (in pixels) for one unit of GTimeItem.Height
-        /// </summary>
-        int UnitHeight { get; }
-        /// <summary>
-        /// Draw content of graph
-        /// </summary>
-        /// <param name="e"></param>
-        /// <param name="boundsAbsolute"></param>
-        void DrawContentTimeGraph(GInteractiveDrawArgs e, Rectangle boundsAbsolute);
-    }
-    /// <summary>
-    /// Předpis rozhraní pro prvky grafu
-    /// </summary>
-    public interface ITimeGraphItem
-    {
-        /// <summary>
-        /// Jednoznačný identifikátor prvku
-        /// </summary>
-        Int32 ItemId { get; }
-        /// <summary>
-        /// GroupId: číslo skupiny. Prvky se shodným GroupId budou vykreslovány do společného "rámce", 
-        /// a pokud mezi jednotlivými prvky <see cref="ITimeGraphItem"/> se shodným <see cref="GroupId"/> bude na ose X nějaké volné místo,
-        /// nebude mezi nimi vykreslován žádný "cizí" prvek.
-        /// </summary>
-        Int32 GroupId { get; }
-        /// <summary>
-        /// Layer: Vizuální vrstva. Prvky z různých vrstev jsou kresleny "přes sebe" = mohou se překrývat.
-        /// Nižší hodnota je kreslena dříve.
-        /// Například: záporná hodnota Layer reprezentuje "podklad" který se needituje.
-        /// </summary>
-        Int32 Layer { get; }
-        /// <summary>
-        /// Level: Vizuální hladina. Prvky v jedné hladině jsou kresleny do společného vodorovného pásu, 
-        /// další prvky ve vyšší hladině jsou všechny zase vykresleny ve svém odděleném pásu (nad tímto nižším pásem). 
-        /// Nespadnou do prvků nižšího pásu i když by v něm bylo volné místo.
-        /// </summary>
-        Int32 Level { get; }
-        /// <summary>
-        /// Order: pořadí prvku při výpočtech souřadnic Y před vykreslováním. 
-        /// Prvky se stejným Order budou tříděny vzestupně podle data počátku <see cref="Time"/>.Begin.
-        /// </summary>
-        Int32 Order { get; }
-        /// <summary>
-        /// Časový interval tohoto prvku
-        /// </summary>
-        TimeRange Time { get; }
-        /// <summary>
-        /// Relativní výška tohoto prvku. Standardní hodnota = 1.0F. Fyzická výška (v pixelech) jednoho prvku je dána součinem 
-        /// <see cref="Height"/> * <see cref="GTimeGraph.GraphParameters"/>: <see cref="TimeGraphParameters.OneLineHeight"/>
-        /// Prvky s výškou 0 a menší nebudou vykresleny.
-        /// </summary>
-        float Height { get; }
-        /// <summary>
-        /// Barva pozadí prvku.
-        /// </summary>
-        Color? BackColor { get; }
-        /// <summary>
-        /// Barva spojovací linky mezi prvky jedné skupiny.
-        /// Default = null = kreslí se barvou <see cref="BackColor"/>, která je morfována na 50% do barvy DimGray a zprůhledněna na 50%.
-        /// </summary>
-        Color? LinkBackColor { get; }
-        /// <summary>
-        /// Barva okraje (ohraničení) prvku.
-        /// </summary>
-        Color? BorderColor { get; }
-        /// <summary>
-        /// Vizuální prvek, který v sobě zahrnuje jak podporu pro vykreslování, tak podporu interaktivity.
-        /// A přitom to nevyžaduje od třídy, která fyzicky implementuje <see cref="ITimeGraphItem"/>.
-        /// Aplikační kód (implementační objekt <see cref="ITimeGraphItem"/> se o tuto property nemusí starat, řídící mechanismus sem vloží v případě potřeby new instanci.
-        /// Implementátor pouze poskytuje úložiště pro tuto instanci.
-        /// </summary>
-        GTimeGraphControl GControl { get; set; }
-        /// <summary>
-        /// Metoda je volaná pro vykreslení prvku.
-        /// Implementátor může bez nejmenších obav převolat <see cref="GControl"/> : <see cref="GTimeGraphControl.Draw(TimeGraphItemDrawArgs)"/>
-        /// </summary>
-        /// <param name="drawArgs">Veškerá podpora pro přepočty souřadnic a pro kreslení prvku grafu</param>
-        void Draw(TimeGraphItemDrawArgs drawArgs);
-    }
-    /// <summary>
-    /// Interface, který umožní pracovat s časovou osou
-    /// </summary>
-    public interface ITimeConvertor
-    {
-        /// <summary>
-        /// Identita časového a vizuálního prostoru
-        /// </summary>
-        string Identity { get; }
-        /// <summary>
-        /// Aktuálně zobrazený interval data a času
-        /// </summary>
-        TimeRange VisibleTime { get; }
-        /// <summary>
-        /// Obsahuje všechny aktuální ticky na časové ose.
-        /// </summary>
-        VisualTick[] Ticks { get; }
-        /// <summary>
-        /// Vrátí relativní pixel, na kterém se nachází daný čas.
-        /// </summary>
-        /// <param name="time">Čas, jehož pozici hledáme</param>
-        /// <returns></returns>
-        int GetPixel(DateTime? time);
-        /// <summary>
-        /// Vrátí pozici, na které se nachází daný časový úsek na aktuální časové ose.
-        /// </summary>
-        /// <param name="timeRange"></param>
-        /// <returns></returns>
-        Int32Range GetPixelRange(TimeRange timeRange);
-        /// <summary>
-        /// Vrátí relativní pixel, na kterém se nachází daný čas.
-        /// Vrací pixel pro jinou velikost prostoru, než jakou má aktuální TimeAxis, kdy cílová velikost je dána parametrem targetSize.
-        /// Jinými slovy: pokud na reálné časové ose máme zobrazeno rozmezí (numerický příklad): 40 - 80,
-        /// pak <see cref="GetProportionalPixel(DateTime?, int)"/> pro hodnotu time = 50 a targetSize = 100 vrátí hodnotu 25.
-        /// Proč? Protože: požadovaná hodnota 50 se nachází na pozici 0.25 časové osy (40 - 80), a odpovídající pozice v cílovém prostoru (100 pixelů) je 25.
-        /// </summary>
-        /// <param name="time">Čas, jehož pozici hledáme</param>
-        /// <param name="targetSize">Cílový prostor, do něhož máme promítnout viditelný prostor na ose</param>
-        /// <returns></returns>
-        int GetProportionalPixel(DateTime? time, int targetSize);
-        /// <summary>
-        /// Vrátí pozici, na které se nachází daný časový úsek v daném cílovém prostoru.
-        /// </summary>
-        /// <param name="timeRange"></param>
-        /// <returns></returns>
-        Int32Range GetProportionalPixelRange(TimeRange timeRange, int targetSize);
-        /// <summary>
-        /// Vrátí relativní pixel, na kterém se nachází daný čas.
-        /// Vrací pixel na logaritmické časové ose, kde střední část prostoru (z parametru "size") je proporcionální (její velikost je dána hodnotou "ratio"),
-        /// a okrajové části jsou logaritmické, takže do daného prostoru "size" se promítnou úplně všechny časy, jen v těch okrajových částech budou zahuštěné.
-        /// </summary>
-        /// <param name="time">Čas, jehož pozici hledáme</param>
-        /// <param name="targetSize">Cílový prostor, do něhož máme promítnout viditelný prostor na ose</param>
-        /// <param name="proportionalRatio">Relativní část prostoru "size", v němž je čas proporcionální (lineární). Povolené hodnoty jsou 0.4 až 0.9</param>
-        /// <returns></returns>
-        int GetLogarithmicPixel(DateTime? time, int targetSize, float proportionalRatio);
-        /// <summary>
-        /// Vrátí pozici, na které se nachází daný časový úsek v daném cílovém prostoru, v logaritmickém měřítku.
-        /// Vrací pixel na logaritmické časové ose, kde střední část prostoru (z parametru "size") je proporcionální (její velikost je dána hodnotou "ratio"),
-        /// a okrajové části jsou logaritmické, takže do daného prostoru "size" se promítnou úplně všechny časy, jen v těch okrajových částech budou zahuštěné.
-        /// </summary>
-        /// <param name="timeRange"></param>
-        /// <param name="targetSize">Cílový prostor, do něhož máme promítnout viditelný prostor na ose</param>
-        /// <param name="proportionalRatio">Relativní část prostoru "size", v němž je čas proporcionální (lineární). Povolené hodnoty jsou 0.4 až 0.9</param>
-        /// <returns></returns>
-        Int32Range GetLogarithmicPixelRange(TimeRange timeRange, int targetSize, float proportionalRatio);
-
-        /// <summary>
-        /// Event vyvolaný po každé změně hodnoty <see cref="VisibleTime"/>
-        /// </summary>
-        event GPropertyChangedHandler<TimeRange> VisibleTimeChanged;
-    }
-    /// <summary>
-    /// Režim přepočtu DateTime na osu X.
-    /// </summary>
-    public enum TimeGraphTimeAxisMode
-    {
-        /// <summary>
-        /// Výchozí = podle vlastníka (sloupce, nebo tabulky).
-        /// </summary>
-        Default = 0,
-        /// <summary>
-        /// Standardní režim, kdy graf má osu X rovnou 1:1 k prvku TimeAxis.
-        /// Využívá se v situaci, kdy prvky grafu jsou kresleny přímo pod TimeAxis.
-        /// </summary>
-        Standard,
-        /// <summary>
-        /// Proporcionální režim, kdy graf vykresluje ve své ploše stejný časový úsek jako TimeAxis,
-        /// ale graf má jinou šířku v pixelech než časová osa (a tedy může mít i jiný počátek = souřadnici Bounds.X.
-        /// Pak se pro přepočet hodnoty DateTime na hodnotu pixelu na ose X nepoužívá přímo TimeConverter, ale prostý přepočet vzdáleností.
-        /// </summary>
-        ProportionalScale,
-        /// <summary>
-        /// Logaritmický režim, kdy graf dovolí vykreslit všechny prvky grafu bez ohledu na to, že jejich pozice X (datum) je mimo rozsah TimeAxis.
-        /// Vykreslování probíhá tak, že střední část grafu (typicky 60%) zobrazuje prvky proporcionálně (tj. lineárně) k časovému oknu,
-        /// a okraje (vlevo a vpravo) zobrazují prvky ležící mimo časové okno, jejichž souřadnice X je určena logaritmicky.
-        /// Na souřadnici X = 0 (úplně vlevo v grafu) se zobrazují prvky, jejichž Begin = mínus nekonečno,
-        /// a na X = Right (úplně vpravo v grafu) se zobrazují prvky, jejichž End = plus nekonečno.
-        /// </summary>
-        LogarithmicScale
-
-    }
-    public enum TimeGraphElementShape
-    {
-        Default = 0,
-        Rectangle
-
     }
     #endregion
     #region class TimeGraphItemDrawArgs : třída pro podporu vykreslování položek grafu
@@ -1827,6 +1540,208 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         private float _LogarithmicGraphDrawOuterShadow;
 
+    }
+    #endregion
+    #region Interface ITimeGraph, ITimeGraphItem, ITimeConvertor; enum TimeGraphAxisXMode
+    public interface ITimeInteractiveGraph : ITimeGraph, IInteractiveItem
+    { }
+    public interface ITimeGraph
+    {
+        /// <summary>
+        /// Reference na objekt, který provádí časové konverze pro tento graf.
+        /// Instanci do této property plní ten, kdo ji zná.
+        /// </summary>
+        ITimeConvertor TimeConvertor { get; set; }
+        /// <summary>
+        /// Height (in pixels) for one unit of GTimeItem.Height
+        /// </summary>
+        int UnitHeight { get; }
+        /// <summary>
+        /// Draw content of graph
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        void DrawContentTimeGraph(GInteractiveDrawArgs e, Rectangle boundsAbsolute);
+    }
+    /// <summary>
+    /// Předpis rozhraní pro prvky grafu
+    /// </summary>
+    public interface ITimeGraphItem
+    {
+        /// <summary>
+        /// Jednoznačný identifikátor prvku
+        /// </summary>
+        Int32 ItemId { get; }
+        /// <summary>
+        /// GroupId: číslo skupiny. Prvky se shodným GroupId budou vykreslovány do společného "rámce", 
+        /// a pokud mezi jednotlivými prvky <see cref="ITimeGraphItem"/> se shodným <see cref="GroupId"/> bude na ose X nějaké volné místo,
+        /// nebude mezi nimi vykreslován žádný "cizí" prvek.
+        /// </summary>
+        Int32 GroupId { get; }
+        /// <summary>
+        /// Layer: Vizuální vrstva. Prvky z různých vrstev jsou kresleny "přes sebe" = mohou se překrývat.
+        /// Nižší hodnota je kreslena dříve.
+        /// Například: záporná hodnota Layer reprezentuje "podklad" který se needituje.
+        /// </summary>
+        Int32 Layer { get; }
+        /// <summary>
+        /// Level: Vizuální hladina. Prvky v jedné hladině jsou kresleny do společného vodorovného pásu, 
+        /// další prvky ve vyšší hladině jsou všechny zase vykresleny ve svém odděleném pásu (nad tímto nižším pásem). 
+        /// Nespadnou do prvků nižšího pásu i když by v něm bylo volné místo.
+        /// </summary>
+        Int32 Level { get; }
+        /// <summary>
+        /// Order: pořadí prvku při výpočtech souřadnic Y před vykreslováním. 
+        /// Prvky se stejným Order budou tříděny vzestupně podle data počátku <see cref="Time"/>.Begin.
+        /// </summary>
+        Int32 Order { get; }
+        /// <summary>
+        /// Časový interval tohoto prvku
+        /// </summary>
+        TimeRange Time { get; }
+        /// <summary>
+        /// Relativní výška tohoto prvku. Standardní hodnota = 1.0F. Fyzická výška (v pixelech) jednoho prvku je dána součinem 
+        /// <see cref="Height"/> * <see cref="GTimeGraph.GraphParameters"/>: <see cref="TimeGraphParameters.OneLineHeight"/>
+        /// Prvky s výškou 0 a menší nebudou vykresleny.
+        /// </summary>
+        float Height { get; }
+        /// <summary>
+        /// Barva pozadí prvku.
+        /// </summary>
+        Color? BackColor { get; }
+        /// <summary>
+        /// Styl vzorku kresleného v pozadí.
+        /// null = Solid
+        /// </summary>
+        System.Drawing.Drawing2D.HatchStyle BackStyle { get; }
+        /// <summary>
+        /// Barva spojovací linky mezi prvky jedné skupiny.
+        /// Default = null = kreslí se barvou <see cref="BackColor"/>, která je morfována na 50% do barvy DimGray a zprůhledněna na 50%.
+        /// </summary>
+        Color? LinkBackColor { get; }
+        /// <summary>
+        /// Barva okraje (ohraničení) prvku.
+        /// </summary>
+        Color? BorderColor { get; }
+        /// <summary>
+        /// Vizuální prvek, který v sobě zahrnuje jak podporu pro vykreslování, tak podporu interaktivity.
+        /// A přitom to nevyžaduje od třídy, která fyzicky implementuje <see cref="ITimeGraphItem"/>.
+        /// Aplikační kód (implementační objekt <see cref="ITimeGraphItem"/> se o tuto property nemusí starat, řídící mechanismus sem vloží v případě potřeby new instanci.
+        /// Implementátor pouze poskytuje úložiště pro tuto instanci.
+        /// </summary>
+        GTimeGraphControl GControl { get; set; }
+        /// <summary>
+        /// Metoda je volaná pro vykreslení prvku.
+        /// Implementátor může bez nejmenších obav převolat <see cref="GControl"/> : <see cref="GTimeGraphControl.Draw(TimeGraphItemDrawArgs)"/>
+        /// </summary>
+        /// <param name="drawArgs">Veškerá podpora pro přepočty souřadnic a pro kreslení prvku grafu</param>
+        void Draw(TimeGraphItemDrawArgs drawArgs);
+    }
+    /// <summary>
+    /// Interface, který umožní pracovat s časovou osou
+    /// </summary>
+    public interface ITimeConvertor
+    {
+        /// <summary>
+        /// Identita časového a vizuálního prostoru
+        /// </summary>
+        string Identity { get; }
+        /// <summary>
+        /// Aktuálně zobrazený interval data a času
+        /// </summary>
+        TimeRange VisibleTime { get; }
+        /// <summary>
+        /// Obsahuje všechny aktuální ticky na časové ose.
+        /// </summary>
+        VisualTick[] Ticks { get; }
+        /// <summary>
+        /// Vrátí relativní pixel, na kterém se nachází daný čas.
+        /// </summary>
+        /// <param name="time">Čas, jehož pozici hledáme</param>
+        /// <returns></returns>
+        int GetPixel(DateTime? time);
+        /// <summary>
+        /// Vrátí pozici, na které se nachází daný časový úsek na aktuální časové ose.
+        /// </summary>
+        /// <param name="timeRange"></param>
+        /// <returns></returns>
+        Int32Range GetPixelRange(TimeRange timeRange);
+        /// <summary>
+        /// Vrátí relativní pixel, na kterém se nachází daný čas.
+        /// Vrací pixel pro jinou velikost prostoru, než jakou má aktuální TimeAxis, kdy cílová velikost je dána parametrem targetSize.
+        /// Jinými slovy: pokud na reálné časové ose máme zobrazeno rozmezí (numerický příklad): 40 - 80,
+        /// pak <see cref="GetProportionalPixel(DateTime?, int)"/> pro hodnotu time = 50 a targetSize = 100 vrátí hodnotu 25.
+        /// Proč? Protože: požadovaná hodnota 50 se nachází na pozici 0.25 časové osy (40 - 80), a odpovídající pozice v cílovém prostoru (100 pixelů) je 25.
+        /// </summary>
+        /// <param name="time">Čas, jehož pozici hledáme</param>
+        /// <param name="targetSize">Cílový prostor, do něhož máme promítnout viditelný prostor na ose</param>
+        /// <returns></returns>
+        int GetProportionalPixel(DateTime? time, int targetSize);
+        /// <summary>
+        /// Vrátí pozici, na které se nachází daný časový úsek v daném cílovém prostoru.
+        /// </summary>
+        /// <param name="timeRange"></param>
+        /// <returns></returns>
+        Int32Range GetProportionalPixelRange(TimeRange timeRange, int targetSize);
+        /// <summary>
+        /// Vrátí relativní pixel, na kterém se nachází daný čas.
+        /// Vrací pixel na logaritmické časové ose, kde střední část prostoru (z parametru "size") je proporcionální (její velikost je dána hodnotou "ratio"),
+        /// a okrajové části jsou logaritmické, takže do daného prostoru "size" se promítnou úplně všechny časy, jen v těch okrajových částech budou zahuštěné.
+        /// </summary>
+        /// <param name="time">Čas, jehož pozici hledáme</param>
+        /// <param name="targetSize">Cílový prostor, do něhož máme promítnout viditelný prostor na ose</param>
+        /// <param name="proportionalRatio">Relativní část prostoru "size", v němž je čas proporcionální (lineární). Povolené hodnoty jsou 0.4 až 0.9</param>
+        /// <returns></returns>
+        int GetLogarithmicPixel(DateTime? time, int targetSize, float proportionalRatio);
+        /// <summary>
+        /// Vrátí pozici, na které se nachází daný časový úsek v daném cílovém prostoru, v logaritmickém měřítku.
+        /// Vrací pixel na logaritmické časové ose, kde střední část prostoru (z parametru "size") je proporcionální (její velikost je dána hodnotou "ratio"),
+        /// a okrajové části jsou logaritmické, takže do daného prostoru "size" se promítnou úplně všechny časy, jen v těch okrajových částech budou zahuštěné.
+        /// </summary>
+        /// <param name="timeRange"></param>
+        /// <param name="targetSize">Cílový prostor, do něhož máme promítnout viditelný prostor na ose</param>
+        /// <param name="proportionalRatio">Relativní část prostoru "size", v němž je čas proporcionální (lineární). Povolené hodnoty jsou 0.4 až 0.9</param>
+        /// <returns></returns>
+        Int32Range GetLogarithmicPixelRange(TimeRange timeRange, int targetSize, float proportionalRatio);
+
+        /// <summary>
+        /// Event vyvolaný po každé změně hodnoty <see cref="VisibleTime"/>
+        /// </summary>
+        event GPropertyChangedHandler<TimeRange> VisibleTimeChanged;
+    }
+    /// <summary>
+    /// Režim přepočtu DateTime na osu X.
+    /// </summary>
+    public enum TimeGraphTimeAxisMode
+    {
+        /// <summary>
+        /// Výchozí = podle vlastníka (sloupce, nebo tabulky).
+        /// </summary>
+        Default = 0,
+        /// <summary>
+        /// Standardní režim, kdy graf má osu X rovnou 1:1 k prvku TimeAxis.
+        /// Využívá se v situaci, kdy prvky grafu jsou kresleny přímo pod TimeAxis.
+        /// </summary>
+        Standard,
+        /// <summary>
+        /// Proporcionální režim, kdy graf vykresluje ve své ploše stejný časový úsek jako TimeAxis,
+        /// ale graf má jinou šířku v pixelech než časová osa (a tedy může mít i jiný počátek = souřadnici Bounds.X.
+        /// Pak se pro přepočet hodnoty DateTime na hodnotu pixelu na ose X nepoužívá přímo TimeConverter, ale prostý přepočet vzdáleností.
+        /// </summary>
+        ProportionalScale,
+        /// <summary>
+        /// Logaritmický režim, kdy graf dovolí vykreslit všechny prvky grafu bez ohledu na to, že jejich pozice X (datum) je mimo rozsah TimeAxis.
+        /// Vykreslování probíhá tak, že střední část grafu (typicky 60%) zobrazuje prvky proporcionálně (tj. lineárně) k časovému oknu,
+        /// a okraje (vlevo a vpravo) zobrazují prvky ležící mimo časové okno, jejichž souřadnice X je určena logaritmicky.
+        /// Na souřadnici X = 0 (úplně vlevo v grafu) se zobrazují prvky, jejichž Begin = mínus nekonečno,
+        /// a na X = Right (úplně vpravo v grafu) se zobrazují prvky, jejichž End = plus nekonečno.
+        /// </summary>
+        LogarithmicScale
+    }
+    public enum TimeGraphElementShape
+    {
+        Default = 0,
+        Rectangle
     }
     #endregion
 }
