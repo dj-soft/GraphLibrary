@@ -578,4 +578,95 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             return this.Value.CompareTo(other.Value);
         }
     }
+
+    #region class GTimeGraphItem : Třída reprezentující jednu položku grafů. Jde o jednoduchou a funkční implementaci rozhraní ITimeGraphItem.
+    /// <summary>
+    /// GTimeGraphItem : Třída reprezentující jednu položku grafů. Jde o jednoduchou a funkční implementaci rozhraní ITimeGraphItem.
+    /// </summary>
+    public class GTimeGraphItem : ITimeGraphItem
+    {
+        #region Public members
+        public GTimeGraphItem()
+        {
+            this._ItemId = Application.App.GetNextId(typeof(ITimeGraphItem));
+        }
+        /// <summary>
+        /// Jednoznačný identifikátor prvku
+        /// </summary>
+        public Int32 ItemId { get { return this._ItemId; } }
+        private Int32 _ItemId;
+        /// <summary>
+        /// GroupId: číslo skupiny. Prvky se shodným GroupId budou vykreslovány do společného "rámce", 
+        /// a pokud mezi jednotlivými prvky <see cref="ITimeGraphItem"/> se shodným <see cref="GroupId"/> bude na ose X nějaké volné místo,
+        /// nebude mezi nimi vykreslován žádný "cizí" prvek.
+        /// </summary>
+        public Int32 GroupId { get; set; }
+        /// <summary>
+        /// Layer: Vizuální vrstva. Prvky z různých vrstev jsou kresleny "přes sebe" = mohou se překrývat.
+        /// Nižší hodnota je kreslena dříve.
+        /// Například: záporná hodnota Layer reprezentuje "podklad" který se needituje.
+        /// </summary>
+        public Int32 Layer { get; set; }
+        /// <summary>
+        /// Level: Vizuální hladina. Prvky v jedné hladině jsou kresleny do společného vodorovného pásu, 
+        /// další prvky ve vyšší hladině jsou všechny zase vykresleny ve svém odděleném pásu (nad tímto nižším pásem). 
+        /// Nespadnou do prvků nižšího pásu i když by v něm bylo volné místo.
+        /// </summary>
+        public Int32 Level { get; set; }
+        /// <summary>
+        /// Order: pořadí prvku při výpočtech souřadnic Y před vykreslováním. 
+        /// Prvky se stejným Order budou tříděny vzestupně podle data počátku <see cref="Time"/>.Begin.
+        /// </summary>
+        public Int32 Order { get; set; }
+        /// <summary>
+        /// Časový interval tohoto prvku
+        /// </summary>
+        public virtual TimeRange Time { get; set; }
+        /// <summary>
+        /// Relativní výška tohoto prvku. Standardní hodnota = 1.0F. Fyzická výška (v pixelech) jednoho prvku je dána součinem 
+        /// <see cref="Height"/> * <see cref="GTimeGraph.GraphParameters"/>: <see cref="TimeGraphParameters.OneLineHeight"/>
+        /// Prvky s výškou 0 a menší nebudou vykresleny.
+        /// </summary>
+        public float Height { get; set; }
+        /// <summary>
+        /// Barva pozadí prvku.
+        /// </summary>
+        public Color? BackColor { get; set; }
+        /// <summary>
+        /// Barva spojovací linky mezi prvky jedné skupiny.
+        /// Default = null = kreslí se barvou <see cref="BackColor"/>, která je morfována na 50% do barvy DimGray a zprůhledněna na 50%.
+        /// </summary>
+        public Color? LinkBackColor { get; set; }
+        /// <summary>
+        /// Vizuální prvek, který v sobě zahrnuje jak podporu pro vykreslování, tak podporu interaktivity.
+        /// A přitom to nevyžaduje od třídy, která fyzicky implementuje <see cref="ITimeGraphItem"/>.
+        /// Aplikační kód (implementační objekt <see cref="ITimeGraphItem"/> se o tuto property nemusí starat, řídící mechanismus sem vloží v případě potřeby new instanci.
+        /// Implementátor pouze poskytuje úložiště pro tuto instanci.
+        /// </summary>
+        public GTimeGraphControl GControl { get; set; }
+        /// <summary>
+        /// Barva okraje (ohraničení) prvku.
+        /// </summary>
+        public Color? BorderColor { get; set; }
+        public Color? TextColor { get; set; }
+        public string[] Captions { get; set; }
+        public string ToolTip { get; set; }
+        #endregion
+        #region explicit ITimeGraphItem members
+        int ITimeGraphItem.ItemId { get { return this._ItemId; } }
+        int ITimeGraphItem.Layer { get { return this.Layer; } }
+        int ITimeGraphItem.Level { get { return this.Level; } }
+        int ITimeGraphItem.Order { get { return this.Order; } }
+        int ITimeGraphItem.GroupId { get { return this.GroupId; } }
+        TimeRange ITimeGraphItem.Time { get { return this.Time; } }
+        float ITimeGraphItem.Height { get { return this.Height; } }
+        Color? ITimeGraphItem.BackColor { get { return this.BackColor; } }
+        Color? ITimeGraphItem.LinkBackColor { get { return this.LinkBackColor; } }
+        Color? ITimeGraphItem.BorderColor { get { return this.BorderColor; } }
+        GTimeGraphControl ITimeGraphItem.GControl { get { return this.GControl; } set { this.GControl = value; } }
+        void ITimeGraphItem.Draw(TimeGraphItemDrawArgs drawArgs) { this.GControl.Draw(drawArgs); }
+        #endregion
+    }
+    #endregion
+
 }
