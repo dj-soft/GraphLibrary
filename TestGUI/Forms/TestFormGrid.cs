@@ -320,7 +320,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         {
             GTimeGraph graph = new GTimeGraph();
 
-            graph.GraphParameters = TimeGraphParameters.Default;
+            graph.GraphParameters = TimeGraphProperties.Default;
             graph.GraphParameters.OneLineHeight = 18;
             graph.GraphParameters.TotalHeightRange = new Int32NRange(35, 480);
 
@@ -624,7 +624,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         public virtual TimeRange Time { get; set; }
         /// <summary>
         /// Relativní výška tohoto prvku. Standardní hodnota = 1.0F. Fyzická výška (v pixelech) jednoho prvku je dána součinem 
-        /// <see cref="Height"/> * <see cref="GTimeGraph.GraphParameters"/>: <see cref="TimeGraphParameters.OneLineHeight"/>
+        /// <see cref="Height"/> * <see cref="GTimeGraph.GraphParameters"/>: <see cref="TimeGraphProperties.OneLineHeight"/>
         /// Prvky s výškou 0 a menší nebudou vykresleny.
         /// </summary>
         public float Height { get; set; }
