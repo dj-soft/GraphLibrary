@@ -1153,11 +1153,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
         #endregion
         #region Podpora pro kreslení a interaktivitu
-        private void Draw(TimeGraphItemDrawArgs drawArgs)
-        {
-            this._GControl.Draw(drawArgs);
-        }
-       
+        /// <summary>
+        /// Metoda je volaná pro vykreslení jedné položky grafu.
+        /// Implementátor může bez nejmenších obav převolat <see cref="GControl"/> : <see cref="GTimeGraphControl.Draw(GInteractiveDrawArgs, Rectangle)"/>
+        /// </summary>
+        /// <param name="e">Standardní data pro kreslení</param>
+        /// <param name="boundsAbsolute">Absolutní souřadnice tohoto prvku</param>
+        protected void Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute) { this._GControl.Draw(e, boundsAbsolute); }
         #endregion
         #region Explicitní implementace rozhraní ITimeGraphItem
         int ITimeGraphItem.ItemId { get { return this._ItemId; } } 
@@ -1173,7 +1175,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         Color? ITimeGraphItem.BorderColor { get { return this._BorderColor; } }
         Color? ITimeGraphItem.LinkBackColor { get { return this._LinkBackColor; } }
         GTimeGraphControl ITimeGraphItem.GControl { get { return this._GControl; } set { this._GControl = value; } }
-        void ITimeGraphItem.Draw(TimeGraphItemDrawArgs drawArgs) { this.Draw(drawArgs); }
+        void ITimeGraphItem.Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute) { this.Draw(e, boundsAbsolute); }
         #endregion
     }
     #endregion

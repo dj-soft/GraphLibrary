@@ -153,6 +153,9 @@ namespace Asol.Tools.WorkScheduler.Application
             this._TraceWrite(tick, LEVEL_SCOPE_END, scope.ToString(), type, method, result, direct, items);
         }
         #region class TraceScope : ITraceScope
+        /// <summary>
+        /// Třída, která slouží jako obálka jednoho Scope v Trace datech.
+        /// </summary>
         public class TraceScope : ITraceScope, IDisposable
         {
             internal static TraceScope GetScope(Trace trace, bool direct, bool isReal, string type, string method, string result, params string[] items)
@@ -200,6 +203,16 @@ namespace Asol.Tools.WorkScheduler.Application
                 if (this._IsReal)
                     this._Trace._TraceWriteScopeEnd(this._Scope, this._Tick, this._Type, this._Method, this._Result, this._Direct, this._ItemsEnd.ToArray());
             }
+            private void _AddValues<T>(T[] values, params string[] labels)
+            {
+                if (values == null || labels == null) return;
+                int valueCount = values.Length;
+                int labelCount = labels.Length;
+                int count = (valueCount < labelCount ? valueCount : labelCount);
+                if (count == 0) return;
+                for (int i = 0; i < count; i++)
+                    this._ItemsEnd.Add(labels[i] + (values[i] != null ? values[i].ToString() : ""));
+            }
             private TimeSpan _GetElapsedTime()
             {
                 return (DateTime.Now - this._StartTime);
@@ -208,6 +221,7 @@ namespace Asol.Tools.WorkScheduler.Application
             void ITraceScope.AddItem(string item) { this._ItemsEnd.Add(item); }
             void ITraceScope.AddItems(IEnumerable<string> items) { this._ItemsEnd.AddRange(items); }
             void ITraceScope.AddItems(params string[] items) { this._ItemsEnd.AddRange(items); }
+            void ITraceScope.AddValues<T>(T[] values, params string[] labels) { this._AddValues(values, labels); }
             string ITraceScope.Type { get { return this._Type; } }
             string ITraceScope.Method { get { return this._Method; } }
             string ITraceScope.Result { get { return this._Result; } set { this._Result = value; } }
@@ -571,6 +585,15 @@ namespace Asol.Tools.WorkScheduler.Application
         /// </summary>
         /// <param name="items"></param>
         void AddItems(params string[] items);
+        /// <summary>
+        /// Do aktuálního scope přidá sadu údajů, které sestaví z dodaných hodnot (values), které opatří odpovídajícím popiskem (labels).
+        /// Jinými slovy, do scope přidá položky: {label[i]}{values[i]}, kde [i] je index 0 až poslední prvek (který je obsažen v obou polích).
+        /// Je na zodpovědnosti volajícího, aby předal dostatek labelů k zadanému počtu hodnot.
+        /// </summary>
+        /// <typeparam name="T">Typ hodnot</typeparam>
+        /// <param name="values">Hodnoty</param>
+        /// <param name="labels">Popisky</param>
+        void AddValues<T>(T[] values, params string[] labels);
         /// <summary>
         /// Info in column Type. Read-only.
         /// </summary>
