@@ -1047,7 +1047,7 @@ namespace Asol.Tools.WorkScheduler.Components
         private void _PrepareGControlGroup(IInteractiveParent parent)
         {
             if (this.GControl != null) return;
-            this.GControl = new GTimeGraphControl(this, parent);          // GUI prvek (GTimeGraphControl) dostává data (=this) a dostává vizuálního parenta (parent)
+            this.GControl = new GTimeGraphControl(this, parent, this, GGraphControlPosition.Group);          // GUI prvek (GTimeGraphControl) dostává data (=this) a dostává vizuálního parenta (parent)
         }
         /// <summary>
         /// Metoda vytvoří grafický control třídy <see cref="GTimeGraphControl"/> (<see cref="ITimeGraphItem.GControl"/>) pro daný datový grafický prvek (item).
@@ -1055,7 +1055,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="item">Datový prvek grafu</param>
         private void _PrepareGControlItem(ITimeGraphItem item)
         {
-            item.GControl = new GTimeGraphControl(item, this.GControl);   // GUI prvek (GTimeGraphControl) dostává data (=item) a dostává vizuálního parenta (this.GControl)
+            item.GControl = new GTimeGraphControl(item, this.GControl, this, GGraphControlPosition.Item);    // GUI prvek (GTimeGraphControl) dostává data (=item) a dostává vizuálního parenta (this.GControl)
             this.GControl.AddItem(item.GControl);                         // Náš hlavní GUI prvek (ten od grupy) si přidá další svůj Child prvek
         }
         /// <summary>
@@ -1231,6 +1231,12 @@ namespace Asol.Tools.WorkScheduler.Components
         public GTimeGraphControl GControl { get; set; }
         #endregion
         #region Childs, Interaktivita, Draw()
+
+        internal void PrepareToolTip(GInteractiveChangeStateArgs e, GGraphControlPosition position, ITimeGraphItem data)
+        {
+            e.ToolTipData.InfoText = "Tooltip ???";
+        }
+
         /// <summary>
         /// Vykreslí tuto grupu. Kreslí pouze pokud obsahuje více než 1 prvek, a pokud vrstva <see cref="ITimeGraphItem.Layer"/> je nula nebo kladná (pro záporné vrstvy se nekreslí).
         /// </summary>
@@ -1295,13 +1301,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Konstruktor
         /// </summary>
-        /// <param name="owner">Prvek grafu, ten v sobě obsahuje data</param>
+        /// <param name="data">Prvek grafu, ten v sobě obsahuje data</param>
         /// <param name="parent">Parent prvku, GUI container</param>
-        public GTimeGraphControl(ITimeGraphItem owner, IInteractiveParent parent)
+        public GTimeGraphControl(ITimeGraphItem data, IInteractiveParent parent, GTimeGraphGroup group, GGraphControlPosition position)
             : base()
         {
-            this._Owner = owner;
+            this._Owner = data;
             this._Parent = parent;
+            this._Group = group;
         }
         /// <summary>
         /// Vlastník tohoto grafického prvku = datový prvek grafu
@@ -1311,6 +1318,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Parent tohoto grafického prvku = GUI prvek, v němž je tento grafický prvek hostován
         /// </summary>
         private IInteractiveParent _Parent;
+        /// <summary>
+        /// Grupa, která slouží jako vazba na globální data
+        /// </summary>
+        private GTimeGraphGroup _Group;
+        /// <summary>
+        /// Pozice tohoto prvku
+        /// </summary>
+        private GGraphControlPosition _Position;
         #endregion
         #region Veřejná data
         /// <summary>
@@ -1340,7 +1355,10 @@ namespace Asol.Tools.WorkScheduler.Components
         private List<IInteractiveItem> _Childs;
         #endregion
         #region Interaktivita
-
+        protected override void PrepareToolTip(GInteractiveChangeStateArgs e)
+        {
+            this._Group.PrepareToolTip(e, this._Position, this._Owner);
+        }
         #endregion
         #region Kreslení prvku
         protected override void Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
@@ -1413,6 +1431,24 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected override RepaintParentMode RepaintParent { get { return RepaintParentMode.Always; } }
         #endregion
+    }
+    /// <summary>
+    /// Pozice GUI controlu pro prvek grafu
+    /// </summary>
+    public enum GGraphControlPosition
+    {
+        /// <summary>
+        /// Neurčeno
+        /// </summary>
+        None,
+        /// <summary>
+        /// Control pro grupu
+        /// </summary>
+        Group,
+        /// <summary>
+        /// Control pro konkrétní instanci <see cref="ITimeGraphItem"/>
+        /// </summary>
+        Item
     }
     #endregion
     #region class TimeGraphProperties : třída obsahující vlastnosti vykreslovaného grafu
