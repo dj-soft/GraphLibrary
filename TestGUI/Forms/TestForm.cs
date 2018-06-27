@@ -249,23 +249,15 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         }
         #endregion
         #region Draw
-        protected override void DrawStandard(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
+        protected override void Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
         {
-            GPainter.DrawButtonBase(e.Graphics, boundsAbsolute, this.Color, this.CurrentState, Orientation.Horizontal, this.MouseCenter, null);
+            bool isGhost = (drawMode.HasFlag(DrawItemMode.Ghost));
+            if (!isGhost)
+                GPainter.DrawButtonBase(e.Graphics, boundsAbsolute, this.Color, this.InteractiveState, Orientation.Horizontal, this.MouseCenter, null);
+            else
+                this._DrawNative(e, boundsAbsolute);
         }
-        protected override void DrawAsGhost(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
-        {
-            // GPainter.DrawButtonBase(e.Graphics, bounds, this.Color, GInteractiveState.None, Orientation.Horizontal, null, 128);
-            this._DrawNative(e, boundsAbsolute);
-        }
-
-
-
-
-        protected void XxxDraw(GInteractiveDrawArgs e)
-        {
-            this._DrawNative(e, this.BoundsAbsolute);
-        }
+        
         private void _DrawNative(GInteractiveDrawArgs e, Rectangle bounds)
         {
             if (this.MouseCenter.HasValue)
