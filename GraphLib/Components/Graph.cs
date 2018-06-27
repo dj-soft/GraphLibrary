@@ -203,7 +203,7 @@ namespace Asol.Tools.WorkScheduler.Components
 
                     this._AllGroupList.Add(layerGroupList);
                 }
-                this.Invalidate(InvalidateItems.CoordinateX);
+                this.Invalidate(InvalidateItems.CoordinateX | InvalidateItems.CoordinateYVirtual);
 
                 this.CalculatorY.Prepare(totalLogicalY);
 
@@ -313,18 +313,6 @@ namespace Asol.Tools.WorkScheduler.Components
                 layerUsedLogicalY.End = RoundLogicalY(nextSearch, isDownward);
         }
         /// <summary>
-        /// Metoda do všech položek v poli <see cref="AllGroupList"/> vypočítá VirtualY souřadnici a vloží ji do <see cref="GTimeGraphGroup.CoordinateYVirtual"/>.
-        /// Tato metoda musí proběhnout až po kompletním zmapování souřadnic LogicalY <see cref="GTimeGraphGroup.CoordinateYLogical"/>
-        /// a po provedení přípravy kalkulátoru Y (<see cref="PositionCalculatorInfo.Prepare(Interval{float})"/>, 
-        /// protože teprve po této přípravě může být kalkulátor použit pro výpočty <see cref="PositionCalculatorInfo.GetVirtualRange(Interval{float})"/>.
-        /// Není tedy možno vypočítat současně <see cref="GTimeGraphGroup.CoordinateYLogical"/> a hned poté <see cref="GTimeGraphGroup.CoordinateYVirtual"/>.
-        /// </summary>
-        protected void RecalculateCoordinateYVirtual()
-        {
-            PositionCalculatorInfo calculatorY = this.CalculatorY;
-            this.AllGroupScan(groupItem => groupItem.CoordinateYVirtual = calculatorY.GetVirtualRange(groupItem.CoordinateYLogical));
-        }
-        /// <summary>
         /// Zarovná logickou hodnotu y na nejbližší celé číslo (dolů/nahoru) po dokončení rekalkulace jedné hladiny.
         /// </summary>
         /// <param name="y"></param>
@@ -353,7 +341,254 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected List<List<GTimeGraphGroup>> AllGroupList { get { this.CheckValidAllGroupList(); return this._AllGroupList; } } private List<List<GTimeGraphGroup>> _AllGroupList;
         #endregion
-        #region TimeAxis : osa X grafu - Kontrola platnosti, paměť Identity časové osy
+        #region CalculatorY = Kalkulátor souřadnic Y : výška grafu a přepočty souřadnice Y z logické (float, zdola nahoru) do fyzických pixelů (int, zhora dolů)
+        /// <summary>
+        /// Kalkulátor souřadnic na ose Y
+        /// </summary>
+        protected PositionCalculatorInfo CalculatorY { get { if (this._CalculatorY == null) this._CalculatorY = new PositionCalculatorInfo(this); return this._CalculatorY; } } private PositionCalculatorInfo _CalculatorY;
+        /// <summary>
+        /// Instance objektu, jehož výšku může graf změnit i číst pro korektní přepočty svých vnitřních souřadnic.
+        /// Typicky se sem vkládá řádek grafu, instance třídy <see cref="Row"/>.
+        /// Graf nikdy nepracuje se šířkou parenta <see cref="IVisualParent.ClientWidth"/>.
+        /// </summary>
+        public IVisualParent VisualParent { get { return this._VisualParent; } set { this._VisualParent = value; this.Invalidate(InvalidateItems.CoordinateYReal); } } private IVisualParent _VisualParent;
+        /// <summary>
+        /// Aktuální výška dat celého grafu, v pixelech
+        /// </summary>
+        public int GraphPixelHeight
+        {
+            get
+            {
+                this.CheckValidAllGroupList();
+                return this.CalculatorY.TotalPixelSize;
+            }
+        }
+        /// <summary>
+        /// Třída, která v sobě zapouzdřuje data a výpočty pro převod souřadnic na ose Y
+        /// </summary>
+        protected class PositionCalculatorInfo
+        {
+            #region Veřejné rozhraní
+            /// <summary>
+            /// Konstuktor
+            /// </summary>
+            /// <param name="owner"></param>
+            public PositionCalculatorInfo(GTimeGraph owner)
+            {
+                this._Owner = owner;
+            }
+            /// <summary>
+            /// Připraví výpočty pro nově zadané rozmezí logických hodnot
+            /// </summary>
+            /// <param name="totalLogicalRange"></param>
+            public void Prepare(Interval<float> totalLogicalRange)
+            {
+                this._IsPrepared = false;
+                this._TotalLogicalRange = totalLogicalRange;
+                if (totalLogicalRange == null) return;
+
+                float logBegin = (totalLogicalRange.Begin < 0f ? totalLogicalRange.Begin : 0f);
+                float logEnd = (totalLogicalRange.End > 1f ? totalLogicalRange.End : 1f) + this._GraphProperties.UpperSpaceLogical;
+                float logSize = logEnd - logBegin;
+
+                // Výška dat grafu v pixelech, zarovnaná do patřičných mezí:
+                int pixelSize = this._AlignTotalPixelSize((int)(Math.Ceiling(logSize * (float)this._GraphProperties.OneLineHeight.Value)));
+                this._TotalPixelSize = pixelSize;
+
+                // Výpočty kalkulátoru, invalidace VisibleList:
+                this._Calculator_Offset = logBegin;
+                this._Calculator_Scale = (float)pixelSize / logSize;
+
+                this._Owner.Invalidate(InvalidateItems.CoordinateYReal);
+                this._IsPrepared = true;
+            }
+            /// <summary>
+            /// Metoda vrátí rozsah hodnot ve virtuálním formátu, pro zadané logické souřadnice.
+            /// Virtuální formát je v pixelech, ale hodnota 0 odpovídá dolnímu okraji grafu.
+            /// Je to proto, aby se grafy nemusely přepočítávat při změně výšky grafu: 0 je stále dole.
+            /// Výstup má Begin = horní souřadnice Y, End = dolní souřadnice Y na virtuální ose Y.
+            /// Kdežto ve WinForm reprezentaci je nula nahoře...
+            /// </summary>
+            /// <param name="logicalRange"></param>
+            /// <returns></returns>
+            public Int32Range GetVirtualRange(Interval<float> logicalRange)
+            {
+                float end = this._GetVirtualPosition(logicalRange.End);        // Pro větší logické hodnoty (logicalRange.End) vrací větší virtuální souřadnici, End = kde nahoře prvek "začíná"
+                float size = this._Calculator_Scale * (logicalRange.End - logicalRange.Begin);     // Velikost prvku v pixelech, měla by být kladná
+                return Int32Range.CreateFromBeginSize((int)Math.Round(end, 0), (int)Math.Round(size, 0));   // Výstup má Begin = horní souřadnice Y, End = dolní souřadnice Y na virtuální ose Y
+            }
+            /// <summary>
+            /// Metoda vrátí virtuální souřadnici v pixelech pro zadanou logickou souřadnici.
+            /// Vrácená hodnota je rovna (GraphPixelHeight - 1) pro logicalY = this.UsedLogicalY.Begin (logický začátek osy Y je dole = ve Windows grafice větší souřadnice Y).
+            /// Pro logickou hodnotu this.UsedLogicalY.End je vrácen pixel = 0 (logický kladný konec osy je nahoře = ve Windows grafice menší souřadnice Y).
+            /// </summary>
+            /// <param name="logicalValue"></param>
+            /// <returns></returns>
+            public int GetVirtualPixel(float logicalValue)
+            {
+                float pixelY = this._GetVirtualPosition(logicalValue);
+                return (int)Math.Round(pixelY, 0);
+            }
+            /// <summary>
+            /// Metoda vrátí reálnou souřadnici pro danou virtuální souřadnici a reálnou výšku.
+            /// Virtuální formát je v pixelech, ale hodnota 0 odpovídá DOLNÍMU okraji grafu.
+            /// Reálný formát je v pixelech, ale hodnota 0 odpovídá HORNÍMU okraji grafu.
+            /// Výstup má Begin = horní souřadnice Y = Top, End = dolní souřadnice Y = Bottom (ve WinForm souřadnicích)
+            /// Proto se převod opírá o reálnou velikost (realSize) = Height
+            /// </summary>
+            /// <param name="virtualRange"></param>
+            /// <param name="realSize"></param>
+            /// <returns></returns>
+            public Int32Range GetRealRange(Int32Range virtualRange, int realSize)
+            {
+                int bottomMargin = this._GraphProperties.BottomMarginPixel;
+                int begin = realSize - bottomMargin - virtualRange.Begin;
+                int size = virtualRange.Size;
+                return Int32Range.CreateFromBeginSize(begin, size);
+            }
+            /// <summary>
+            /// Výška grafu v pixelech
+            /// </summary>
+            public int TotalPixelSize { get { return this._TotalPixelSize; } }
+            /// <summary>
+            /// Obsahuje true poté, kdy kalkulátor prošel přípravou.
+            /// </summary>
+            public bool IsPrepared { get { return this._IsPrepared; } }
+            #endregion
+            #region Privátní metody a proměnné
+            /// <summary>
+            /// Metoda vrátí virtuální souřadnici jako float, pro zadanou logickou souřadnici.
+            /// Vrácená hodnota je rovna (GraphPixelHeight - 1) pro logicalY = this.UsedLogicalY.Begin (logický začátek osy Y je dole = ve Windows grafice větší souřadnice Y).
+            /// Pro logickou hodnotu this.UsedLogicalY.End je vrácen pixel = 0 (logický kladný konec osy je nahoře = ve Windows grafice menší souřadnice Y).
+            /// </summary>
+            /// <param name="logicalY"></param>
+            /// <returns></returns>
+            private float _GetVirtualPosition(float logicalY)
+            {
+                float result = (this._Calculator_Scale * (logicalY - this._Calculator_Offset));
+                return (result < 0f ? 0f : result);
+            }
+            /// <summary>
+            /// Metoda zajistí zarovnání výšky grafu (v pixelech) do patřičného rozmezí.
+            /// Využívá: rozmezí <see cref="GraphParameters"/>: <see cref="TimeGraphProperties.TotalHeightRange"/>, hodnoty Skin.Graph.TotalHeightMin a TotalHeightMax;
+            /// a dále využívá objekt <see cref="VisualParent"/> a jeho <see cref="IVisualParent.ClientHeight"/>
+            /// </summary>
+            /// <param name="size"></param>
+            /// <returns></returns>
+            private int _AlignTotalPixelSize(int size)
+            {
+                int result = size;
+
+                Int32NRange range = this._GraphProperties.TotalHeightRange;
+                if (range != null && range.IsReal)
+                    result = range.Align(result).Value;
+                else
+                {
+                    int min = Skin.Graph.TotalHeightMin;
+                    int max = Skin.Graph.TotalHeightMax;
+                    result = (result < min ? min : (result > max ? max : result));
+                }
+
+                IVisualParent visualParent = this._VisualParent;
+                if (visualParent != null)
+                {
+                    visualParent.ClientHeight = result;
+                    result = visualParent.ClientHeight;
+                }
+
+                return result;
+            }
+            /// <summary>
+            /// Majitel = graf
+            /// </summary>
+            private GTimeGraph _Owner;
+            /// <summary>
+            /// Vlastnosti grafu
+            /// </summary>
+            private TimeGraphProperties _GraphProperties { get { return this._Owner.GraphParameters; } }
+            /// <summary>
+            /// Instance objektu, jehož výšku může graf změnit i číst pro korektní přepočty svých vnitřních souřadnic.
+            /// Typicky se sem vkládá řádek grafu, instance třídy <see cref="Row"/>.
+            /// Graf nikdy nepracuje se šířkou parenta <see cref="IVisualParent.ClientWidth"/>.
+            /// </summary>
+            private IVisualParent _VisualParent { get { return this._Owner.VisualParent; } }
+            /// <summary>
+            /// true po úspěšné přípravě, false pokud objekt není připraven
+            /// </summary>
+            private bool _IsPrepared;
+            /// <summary>
+            /// Aktuálně použité rozmezí logických souřadnic na ose Y
+            /// </summary>
+            private Interval<float> _TotalLogicalRange;
+            /// <summary>
+            /// Úložiště hodnoty Aktuální výška dat celého grafu, v pixelech
+            /// </summary>
+            private int _TotalPixelSize;
+            /// <summary>
+            /// Offset pro kalkulátor Logical to Pixel Y
+            /// </summary>
+            private float _Calculator_Offset;
+            /// <summary>
+            /// Koeficient pro kalkulátor Logical to Pixel Y
+            /// </summary>
+            private float _Calculator_Scale;
+            #endregion
+        }
+        #endregion
+        #region CoordinateYVirtual = Souřadnice Y virtuální : je v pixelech, ve standardním matematickém chápání osy Y: hodnota Y = 0 je na pozici Bottom a kladné hodnoty jdou nahoru
+        /// <summary>
+        /// Metoda prověří platnost virtuálních souřadnic Y ve všech grupách <see cref="AllGroupList"/>.
+        /// </summary>
+        protected void CheckValidCoordinateYVirtual()
+        {
+            if (!this.IsValidCoordinateYVirtual)
+                this.RecalculateCoordinateYVirtual();
+        }
+        /// <summary>
+        /// Metoda do všech položek v poli <see cref="AllGroupList"/> vypočítá VirtualY souřadnici a vloží ji do <see cref="GTimeGraphGroup.CoordinateYVirtual"/>.
+        /// Tato metoda musí proběhnout až po kompletním zmapování souřadnic LogicalY <see cref="GTimeGraphGroup.CoordinateYLogical"/>
+        /// a po provedení přípravy kalkulátoru Y (<see cref="PositionCalculatorInfo.Prepare(Interval{float})"/>, 
+        /// protože teprve po této přípravě může být kalkulátor použit pro výpočty <see cref="PositionCalculatorInfo.GetVirtualRange(Interval{float})"/>.
+        /// Není tedy možno vypočítat současně <see cref="GTimeGraphGroup.CoordinateYLogical"/> a hned poté <see cref="GTimeGraphGroup.CoordinateYVirtual"/>.
+        /// </summary>
+        protected void RecalculateCoordinateYVirtual()
+        {
+            PositionCalculatorInfo calculatorY = this.CalculatorY;
+            this.AllGroupScan(groupItem => groupItem.CoordinateYVirtual = calculatorY.GetVirtualRange(groupItem.CoordinateYLogical));
+            this._IsValidCoordinateYVirtual = true;
+        }
+        /// <summary>
+        /// true pokud jsou platné souřadnice CoordinateYVirtual v grupách
+        /// </summary>
+        protected bool IsValidCoordinateYVirtual { get { return this._IsValidCoordinateYVirtual; } } private bool _IsValidCoordinateYVirtual;
+        #endregion
+        #region CoordinateYReal = Souřadnice Y reálná : je v pixelech, v koordinátech Windows.Forms: hodnota Y = 0 je na pozici Top, větší čísla jdou dolů
+        /// <summary>
+        /// Metoda prověří platnost reálných vizuálních souřadnic Y ve všech grupách <see cref="AllGroupList"/>, 
+        /// s ohledem na výšku grafu <see cref="InteractiveObject.Bounds"/>.Height (oproti téže hodnotě uložené při poslední takové rekalkulaci v <see cref="ValidatedHeight"/>).
+        /// </summary>
+        protected void CheckValidCoordinateYReal()
+        {
+            if (this.ValidatedHeight <= 0 || this.ValidatedHeight != this.Bounds.Height)
+                this.RecalculateCoordinateYReal();
+        }
+        /// <summary>
+        /// Provede přepočet souřadnic Y Real = <see cref="GTimeGraphGroup.CoordinateYReal"/> ve všech grupách <see cref="AllGroupList"/>
+        /// </summary>
+        protected void RecalculateCoordinateYReal()
+        {
+            PositionCalculatorInfo calculatorY = this.CalculatorY;
+            int height = this.Bounds.Height;
+            this.AllGroupScan(groupItem => groupItem.CoordinateYReal = calculatorY.GetRealRange(groupItem.CoordinateYVirtual, height));
+            this._ValidatedHeight = height;
+            this.Invalidate(InvalidateItems.Bounds);
+        }
+        /// <summary>
+        /// Výška this grafu, pro kterou byly naposledy přepočteny souřadnice Y v poli <see cref="AllGroupList"/>.
+        /// </summary>
+        protected int ValidatedHeight { get { return this._ValidatedHeight; } } private int _ValidatedHeight;
+        #endregion
+        #region TimeAxis = časová osa (X) grafu : paměť Identity časové osy, paměť Ticků na ose, instance ITimeConvertor
         /// <summary>
         /// Prověří platnost zdejších dat s ohledem na aktuální hodnoty časové osy <see cref="_TimeConvertor"/>.
         /// Pokud zdejší data jsou vypočítaná pro identický stav časové osy, nechá data beze změn, 
@@ -401,32 +636,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Reference na aktuální TimeConvertor
         /// </summary>
         private ITimeConvertor _TimeConvertor;
-        #endregion
-        #region Souřadnice Y reálná : kontrolní a přepočtové metody souřadnic na ose Y v reálných WinForm koordinátech
-        /// <summary>
-        /// Metoda prověří platnost reálných vizuálních souřadnic Y ve všech grupách <see cref="AllGroupList"/>, 
-        /// s ohledem na výšku grafu <see cref="InteractiveObject.Bounds"/>.Height (oproti téže hodnotě uložené při poslední takové rekalkulaci v <see cref="ValidatedHeight"/>).
-        /// </summary>
-        protected void CheckValidCoordinateYReal()
-        {
-            if (this.ValidatedHeight <= 0 || this.ValidatedHeight != this.Bounds.Height)
-                this.RecalculateCoordinateYReal();
-        }
-        /// <summary>
-        /// Provede přepočet souřadnic Y Real = <see cref="GTimeGraphGroup.CoordinateYReal"/> ve všech grupách <see cref="AllGroupList"/>
-        /// </summary>
-        protected void RecalculateCoordinateYReal()
-        {
-            PositionCalculatorInfo calculatorY = this.CalculatorY;
-            int height = this.Bounds.Height;
-            this.AllGroupScan(groupItem => groupItem.CoordinateYReal = calculatorY.GetRealRange(groupItem.CoordinateYVirtual, height));
-            this._ValidatedHeight = height;
-            this.Invalidate(InvalidateItems.Bounds);
-        }
-        /// <summary>
-        /// Výška this grafu, pro kterou byly naposledy přepočteny souřadnice Y v poli <see cref="AllGroupList"/>.
-        /// </summary>
-        protected int ValidatedHeight { get { return this._ValidatedHeight; } } private int _ValidatedHeight;
         #endregion
         #region Souřadnice X : kontrolní a přepočtové metody souřadnic na ose X, algoritmy Native, Proportional, Logarithmic; určení Visible prvků do VisibleGroupList
         /// <summary>
@@ -573,195 +782,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected TimeGraphTimeAxisMode? ValidatedAxisMode { get { return this._ValidatedAxisMode; } } private TimeGraphTimeAxisMode? _ValidatedAxisMode;
         #endregion
-        #region Kalkulátor souřadnic Y : výška grafu a přepočty souřadnice Y z logické (float, zdola nahoru) do fyzických pixelů (int, zhora dolů)
-        /// <summary>
-        /// Kalkulátor souřadnic na ose Y
-        /// </summary>
-        protected PositionCalculatorInfo CalculatorY { get { if (this._CalculatorY == null) this._CalculatorY = new PositionCalculatorInfo(this); return this._CalculatorY; } } private PositionCalculatorInfo _CalculatorY;
-        /// <summary>
-        /// Instance objektu, jehož výšku může graf změnit i číst pro korektní přepočty svých vnitřních souřadnic.
-        /// Typicky se sem vkládá řádek grafu, instance třídy <see cref="Row"/>.
-        /// Graf nikdy nepracuje se šířkou parenta <see cref="IVisualParent.ClientWidth"/>.
-        /// </summary>
-        public IVisualParent VisualParent { get { return this._VisualParent; } set { this._VisualParent = value; this.Invalidate(InvalidateItems.CoordinateY); } } private IVisualParent _VisualParent;
-        /// <summary>
-        /// Aktuální výška dat celého grafu, v pixelech
-        /// </summary>
-        public int GraphPixelHeight
-        {
-            get
-            {
-                this.CheckValidAllGroupList();
-                return this.CalculatorY.TotalPixelSize;
-            }
-        }
-        /// <summary>
-        /// Třída, která v sobě zapouzdřuje data a výpočty pro převod souřadnic na ose Y
-        /// </summary>
-        protected class PositionCalculatorInfo
-        {
-            #region Veřejné rozhraní
-            /// <summary>
-            /// Konstuktor
-            /// </summary>
-            /// <param name="owner"></param>
-            public PositionCalculatorInfo(GTimeGraph owner)
-            {
-                this._Owner = owner;
-            }
-            /// <summary>
-            /// Připraví výpočty pro nově zadané rozmezí logických hodnot
-            /// </summary>
-            /// <param name="totalLogicalRange"></param>
-            public void Prepare(Interval<float> totalLogicalRange)
-            {
-                this._IsPrepared = false;
-                this._TotalLogicalRange = totalLogicalRange;
-                if (totalLogicalRange == null) return;
-
-                float logBegin = (totalLogicalRange.Begin < 0f ? totalLogicalRange.Begin : 0f);
-                float logEnd = (totalLogicalRange.End > 1f ? totalLogicalRange.End : 1f);
-                float logSize = logEnd - logBegin;
-
-                // Výška dat grafu v pixelech, zarovnaná do patřičných mezí:
-                int pixelSize = this._AlignTotalPixelSize((int)(Math.Ceiling(logSize * (float)this._GraphProperties.OneLineHeight.Value)));
-                this._TotalPixelSize = pixelSize;
-
-                // Výpočty kalkulátoru, invalidace VisibleList:
-                this._Calculator_Offset = logBegin;
-                this._Calculator_Scale = (float)pixelSize / logSize;
-
-                this._Owner.Invalidate(InvalidateItems.CoordinateY);
-            }
-            /// <summary>
-            /// Metoda vrátí rozsah hodnot ve virtuálním formátu, pro zadané logické souřadnice.
-            /// Virtuální formát je v pixelech, ale hodnota 0 odpovídá dolnímu okraji grafu.
-            /// Je to proto, aby se grafy nemusely přepočítávat při změně výšky grafu: 0 je stále dole.
-            /// Výstup má Begin = horní souřadnice Y, End = dolní souřadnice Y na virtuální ose Y.
-            /// Kdežto ve WinForm reprezentaci je nula nahoře...
-            /// </summary>
-            /// <param name="logicalRange"></param>
-            /// <returns></returns>
-            public Int32Range GetVirtualRange(Interval<float> logicalRange)
-            {
-                float end = this._GetVirtualPosition(logicalRange.End);        // Pro větší logické hodnoty (logicalRange.End) vrací větší virtuální souřadnici, End = kde nahoře prvek "začíná"
-                float size = this._Calculator_Scale * (logicalRange.End - logicalRange.Begin);     // Velikost prvku v pixelech, měla by být kladná
-                return Int32Range.CreateFromBeginSize((int)Math.Round(end, 0), (int)Math.Round(size, 0));   // Výstup má Begin = horní souřadnice Y, End = dolní souřadnice Y na virtuální ose Y
-            }
-            /// <summary>
-            /// Metoda vrátí virtuální souřadnici v pixelech pro zadanou logickou souřadnici.
-            /// Vrácená hodnota je rovna (GraphPixelHeight - 1) pro logicalY = this.UsedLogicalY.Begin (logický začátek osy Y je dole = ve Windows grafice větší souřadnice Y).
-            /// Pro logickou hodnotu this.UsedLogicalY.End je vrácen pixel = 0 (logický kladný konec osy je nahoře = ve Windows grafice menší souřadnice Y).
-            /// </summary>
-            /// <param name="logicalValue"></param>
-            /// <returns></returns>
-            public int GetVirtualPixel(float logicalValue)
-            {
-                float pixelY = this._GetVirtualPosition(logicalValue);
-                return (int)Math.Round(pixelY, 0);
-            }
-            /// <summary>
-            /// Metoda vrátí reálnou souřadnici pro danou virtuální souřadnici a reálnou výšku.
-            /// Virtuální formát je v pixelech, ale hodnota 0 odpovídá DOLNÍMU okraji grafu.
-            /// Reálný formát je v pixelech, ale hodnota 0 odpovídá HORNÍMU okraji grafu.
-            /// Výstup má Begin = horní souřadnice Y = Top, End = dolní souřadnice Y = Bottom (ve WinForm souřadnicích)
-            /// Proto se převod opírá o reálnou velikost (realSize) = Height
-            /// </summary>
-            /// <param name="virtualRange"></param>
-            /// <param name="realSize"></param>
-            /// <returns></returns>
-            public Int32Range GetRealRange(Int32Range virtualRange, int realSize)
-            {
-                int bottomMargin = this._GraphProperties.BottomMargin;
-                int begin = realSize - bottomMargin - virtualRange.Begin;
-                int size = virtualRange.Size;
-                return Int32Range.CreateFromBeginSize(begin, size);
-            }
-            /// <summary>
-            /// Výška grafu v pixelech
-            /// </summary>
-            public int TotalPixelSize { get { return this._TotalPixelSize; } }
-            #endregion
-            #region Privátní metody a proměnné
-            /// <summary>
-            /// Metoda vrátí virtuální souřadnici jako float, pro zadanou logickou souřadnici.
-            /// Vrácená hodnota je rovna (GraphPixelHeight - 1) pro logicalY = this.UsedLogicalY.Begin (logický začátek osy Y je dole = ve Windows grafice větší souřadnice Y).
-            /// Pro logickou hodnotu this.UsedLogicalY.End je vrácen pixel = 0 (logický kladný konec osy je nahoře = ve Windows grafice menší souřadnice Y).
-            /// </summary>
-            /// <param name="logicalY"></param>
-            /// <returns></returns>
-            private float _GetVirtualPosition(float logicalY)
-            {
-                float result = (this._Calculator_Scale * (logicalY - this._Calculator_Offset));
-                return (result < 0f ? 0f : result);
-            }
-            /// <summary>
-            /// Metoda zajistí zarovnání výšky grafu (v pixelech) do patřičného rozmezí.
-            /// Využívá: rozmezí <see cref="GraphParameters"/>: <see cref="TimeGraphProperties.TotalHeightRange"/>, hodnoty Skin.Graph.TotalHeightMin a TotalHeightMax;
-            /// a dále využívá objekt <see cref="VisualParent"/> a jeho <see cref="IVisualParent.ClientHeight"/>
-            /// </summary>
-            /// <param name="size"></param>
-            /// <returns></returns>
-            private int _AlignTotalPixelSize(int size)
-            {
-                int result = size;
-
-                Int32NRange range = this._GraphProperties.TotalHeightRange;
-                if (range != null && range.IsReal)
-                    result = range.Align(result).Value;
-                else
-                {
-                    int min = Skin.Graph.TotalHeightMin;
-                    int max = Skin.Graph.TotalHeightMax;
-                    result = (result < min ? min : (result > max ? max : result));
-                }
-
-                IVisualParent visualParent = this._VisualParent;
-                if (visualParent != null)
-                {
-                    visualParent.ClientHeight = result;
-                    result = visualParent.ClientHeight;
-                }
-
-                return result;
-            }
-            /// <summary>
-            /// Majitel = graf
-            /// </summary>
-            private GTimeGraph _Owner;
-            /// <summary>
-            /// Vlastnosti grafu
-            /// </summary>
-            private TimeGraphProperties _GraphProperties { get { return this._Owner.GraphParameters; } }
-            /// <summary>
-            /// Instance objektu, jehož výšku může graf změnit i číst pro korektní přepočty svých vnitřních souřadnic.
-            /// Typicky se sem vkládá řádek grafu, instance třídy <see cref="Row"/>.
-            /// Graf nikdy nepracuje se šířkou parenta <see cref="IVisualParent.ClientWidth"/>.
-            /// </summary>
-            private IVisualParent _VisualParent { get { return this._Owner.VisualParent; } }
-            /// <summary>
-            /// true po úspěšné přípravě, false pokud objekt není připraven
-            /// </summary>
-            private bool _IsPrepared;
-            /// <summary>
-            /// Aktuálně použité rozmezí logických souřadnic na ose Y
-            /// </summary>
-            private Interval<float> _TotalLogicalRange;
-            /// <summary>
-            /// Úložiště hodnoty Aktuální výška dat celého grafu, v pixelech
-            /// </summary>
-            private int _TotalPixelSize;
-            /// <summary>
-            /// Offset pro kalkulátor Logical to Pixel Y
-            /// </summary>
-            private float _Calculator_Offset;
-            /// <summary>
-            /// Koeficient pro kalkulátor Logical to Pixel Y
-            /// </summary>
-            private float _Calculator_Scale;
-            #endregion
-        }
-        #endregion
         #region Bounds : souřadnice viditelných prvků
         /// <summary>
         /// Zajistí platnost souřadnic Bounds v grupách a jejich items
@@ -800,6 +820,7 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 this.CheckValidAllGroupList();
                 this.CheckValidTimeAxis();
+                this.CheckValidCoordinateYVirtual();
                 this.CheckValidCoordinateYReal();
                 this.CheckValidCoordinateX();
                 this.CheckValidBounds();
@@ -822,6 +843,15 @@ namespace Asol.Tools.WorkScheduler.Components
             this._Childs = new List<IInteractiveItem>();
             foreach (GTimeGraphGroup groupItem in this.VisibleGroupList)
                 this._Childs.Add(groupItem.GControl);
+        }
+        #endregion
+        #region Podpora pro získávání dat - Caption, ToolTip
+        internal void PrepareToolTip(GInteractiveChangeStateArgs e, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position)
+        {
+            e.ToolTipData.TitleText = "Tooltip " + position.ToString();
+            string eol = Environment.NewLine;
+            e.ToolTipData.InfoText = "ItemId: " + data.ItemId + eol +
+                "Layer: " + data.Layer.ToString();
         }
         #endregion
         #region Draw : vykreslení grafu
@@ -925,17 +955,22 @@ namespace Asol.Tools.WorkScheduler.Components
             if ((items & InvalidateItems.AllGroups) != 0)
             {
                 this._AllGroupList = null;
-                items |= (InvalidateItems.CoordinateX | InvalidateItems.CoordinateY | InvalidateItems.Bounds);
+                items |= (InvalidateItems.CoordinateX | InvalidateItems.CoordinateYReal);
             }
             if ((items & InvalidateItems.CoordinateX) != 0)
             {
                 this._IsValidCoordinateX = false;
-                items |= (InvalidateItems.Childs | InvalidateItems.Bounds);
+                items |= (InvalidateItems.Bounds | InvalidateItems.Childs);
             }
-            if ((items & InvalidateItems.CoordinateY) != 0)
+            if ((items & InvalidateItems.CoordinateYVirtual) != 0)
+            {
+                this._IsValidCoordinateYVirtual = false;
+                items |= (InvalidateItems.CoordinateYReal);
+            }
+            if ((items & InvalidateItems.CoordinateYReal) != 0)
             {
                 this._ValidatedHeight = 0;
-                items |= (InvalidateItems.Childs | InvalidateItems.Bounds);
+                items |= (InvalidateItems.Bounds | InvalidateItems.Childs);
             }
             if ((items & InvalidateItems.Bounds) != 0)
             {
@@ -965,15 +1000,24 @@ namespace Asol.Tools.WorkScheduler.Components
             /// </summary>
             CoordinateX = 1,
             /// <summary>
-            /// Souřadnice na ose Y, v reálných koordinátech.
-            /// Virtuální kordináty nelze invalidovat samostatně, je třeba invalidovat <see cref="AllGroups"/>.
+            /// Souřadnice na ose Y, ve virtuálních koordinátech.
+            /// Invalidace virtuálních souřadnic má smysl tehdy, když se změní nějaké parametry, na jejichž základě pracuje kalkulátor Y,
+            /// což je například <see cref="TimeGraphProperties.OneLineHeight"/>, nebo <see cref="TimeGraphProperties.TotalHeightRange"/>, atd.
+            /// Tedy hodnoty, které mohou ovlivnit určení jednotkové výšky grafu, nebo celkové výšky grafu v pixelech, 
+            /// a z toho důvodu tedy ovlivní změnu přepočtu logických jednotek na pixely.
             /// </summary>
-            CoordinateY = CoordinateX << 1,
+            CoordinateYVirtual = CoordinateX << 1,
+            /// <summary>
+            /// Souřadnice na ose Y, v reálných koordinátech.
+            /// Invalidace reálných souřadnic se provádí po změně výšky grafu, protože je nutno určit aktuální pozici položek grafu v pixelech Windows.Forms.
+            /// Rovněž se má invalidovat po změně <see cref="TimeGraphProperties.BottomMarginPixel"/>, tedy odsazení dolního okraje obsahu grafu od jeho fyzického okraje.
+            /// </summary>
+            CoordinateYReal = CoordinateYVirtual << 1,
             /// <summary>
             /// Seznam všech grup.
             /// Po této invalidaci se nově načtou všechny položky z pole položek grafů, provede se jejich třídění a grupování, nápočet logických hodnot Y a veškeré navazující výpočty.
             /// </summary>
-            AllGroups = CoordinateY << 1,
+            AllGroups = CoordinateYReal << 1,
             /// <summary>
             /// Souřadnice Bounds
             /// </summary>
@@ -987,7 +1031,8 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region ITimeInteractiveGraph members
         ITimeConvertor ITimeInteractiveGraph.TimeConvertor { get { return this._TimeConvertor; } set { this._TimeConvertor = value; this.Invalidate(InvalidateItems.CoordinateX); } }
-        int ITimeInteractiveGraph.UnitHeight { get { return this.GraphParameters.OneLineHeight.Value; } } 
+        int ITimeInteractiveGraph.UnitHeight { get { return this.GraphParameters.OneLineHeight.Value; } }
+        IVisualParent ITimeInteractiveGraph.VisualParent { get { return this.VisualParent; } set { this.VisualParent = value; } }
         #endregion
     }
     #region class GTimeGraphGroup : skupina jednoho nebo více prvků ITimeGraphItem, obsahující sumární čas Time a Max(Height) z položek
@@ -1232,9 +1277,9 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Childs, Interaktivita, Draw()
 
-        internal void PrepareToolTip(GInteractiveChangeStateArgs e, GGraphControlPosition position, ITimeGraphItem data)
+        internal void PrepareToolTip(GInteractiveChangeStateArgs e, ITimeGraphItem data, GGraphControlPosition position)
         {
-            e.ToolTipData.InfoText = "Tooltip ???";
+            this._ParentGraph.PrepareToolTip(e, this, data, position);
         }
 
         /// <summary>
@@ -1309,6 +1354,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this._Owner = data;
             this._Parent = parent;
             this._Group = group;
+            this._Position = position;
         }
         /// <summary>
         /// Vlastník tohoto grafického prvku = datový prvek grafu
@@ -1357,7 +1403,7 @@ namespace Asol.Tools.WorkScheduler.Components
         #region Interaktivita
         protected override void PrepareToolTip(GInteractiveChangeStateArgs e)
         {
-            this._Group.PrepareToolTip(e, this._Position, this._Owner);
+            this._Group.PrepareToolTip(e, this._Owner, this._Position);
         }
         #endregion
         #region Kreslení prvku
@@ -1526,10 +1572,18 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         private int? _OneLineHeight;
         /// <summary>
-        /// Dolní okraj = mezera pod dolním okrajem nejnižšího prvku grafu k dolnímu okraji controlu.
-        /// Výchozí hodnota = 1 pixel
+        /// Horní okraj = prostor nad nejvyšším prvkem grafu, který by měl být zobrazen jako prázdný, tak aby bylo vidět že nic dalšího už není.
+        /// V tomto prostoru (těsně pod souřadnicí Top) se provádí Drag & Drop prvků.
+        /// Hodnota je zadána v logických jednotkách, tedy v počtu standardních linek.
+        /// Výchozí hodnota = 1.0 linka, nelze zadat zápornou hodnotu.
         /// </summary>
-        public int BottomMargin { get { return this._BottomMargin; } set { this._BottomMargin = (value < 0 ? 0 : value); } } private int _BottomMargin = 1;
+        public float UpperSpaceLogical { get { return this._UpperSpaceLogical; } set { this._UpperSpaceLogical = (value < 0f ? 0f : value); } }
+        private float _UpperSpaceLogical = 1f;
+        /// <summary>
+        /// Dolní okraj = mezera pod dolním okrajem nejnižšího prvku grafu k dolnímu okraji controlu, v pixelech.
+        /// Výchozí hodnota = 1 pixel, nelze zadat zápornou hodnotu.
+        /// </summary>
+        public int BottomMarginPixel { get { return this._BottomMarginPixel; } set { this._BottomMarginPixel = (value < 0 ? 0 : value); } } private int _BottomMarginPixel = 1;
         /// <summary>
         /// Rozmezí výšky celého grafu, v pixelech.
         /// Výchozí hodnota je null, pak se použije rozmezí <see cref="Skin.Graph.DefaultTotalHeightMin"/> až <see cref="Skin.Graph.DefaultTotalHeightMax"/>
@@ -1561,7 +1615,6 @@ namespace Asol.Tools.WorkScheduler.Components
             set { float v = value; this._LogarithmicGraphDrawOuterShadow = (v < 0.0f ? 0.0f : (v > 1.0f ? 1.0f : v)); }
         }
         private float _LogarithmicGraphDrawOuterShadow;
-
     }
     #endregion
     #region Interface ITimeGraph, ITimeGraphItem, ITimeConvertor; enum TimeGraphAxisXMode
@@ -1572,6 +1625,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Instanci do této property plní ten, kdo ji zná.
         /// </summary>
         ITimeConvertor TimeConvertor { get; set; }
+        /// <summary>
+        /// Reference na objekt, který dovoluje grafu ovlivnit velikost svého parenta.
+        /// Po přepočtu výšky grafu může graf chtít nastavit výšku (i šířku?) svého hostitele tak, aby bylo zobrazeno vše, co je třeba.
+        /// </summary>
+        IVisualParent VisualParent { get; set; }
         /// <summary>
         /// Height (in pixels) for one unit of GTimeItem.Height
         /// </summary>

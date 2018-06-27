@@ -907,7 +907,8 @@ namespace Asol.Tools.WorkScheduler.Components
                     this.BoundsDragOrigin = null;
                     this.BoundsDragTarget = null;
                     this._CanDragCurrent = false;
-                    this.RepaintToLayers = this.DragDrawToLayers;
+                    this.Repaint();
+                    // this.RepaintToLayers = this.DragDrawToLayers;
                     this.DragThisOverEnd(e);
                     break;
             }

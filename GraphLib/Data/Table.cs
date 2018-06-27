@@ -1705,6 +1705,8 @@ namespace Asol.Tools.WorkScheduler.Data
         public static IEnumerable<Column> CreateFrom(System.Data.DataColumnCollection dataColumns)
         {
             if (dataColumns == null) return null;
+
+            // 1. Načíst data o sloupcích:
             List<Column> columnList = new List<Column>();
             foreach (System.Data.DataColumn dataColumn in dataColumns)
             {
@@ -1712,7 +1714,45 @@ namespace Asol.Tools.WorkScheduler.Data
                 if (column != null)
                     columnList.Add(column);
             }
+
+            // 2. Najít křížově uložené údaje o vztazích:
+            foreach (Column column in columnList.Where(c => c.ColumnProperties.ColumnContent == ColumnContentType.RelationRecordData))
+                SetRelationClassNumberToKeyColumn(column, columnList);
+
             return columnList;
+        }
+        /// <summary>
+        /// Pro daný sloupec, který obsahuje data vztaženého záznamu (jeho <see cref="ColumnProperties.ColumnContent"/> == <see cref="ColumnContentType.RelationRecordData"/>)
+        /// (pokud obsahuje číslo třídy záznamu) najde sloupec, který obsahuje číslo záznamu, a v případě potřeby do něj vloží číslo třídy.
+        /// </summary>
+        /// <param name="relationDataColumn"></param>
+        /// <param name="columnList"></param>
+        private static void SetRelationClassNumberToKeyColumn(Column relationDataColumn, List<Column> columnList)
+        {
+            if (relationDataColumn == null || !relationDataColumn.ColumnProperties.IsRelation || !relationDataColumn.ColumnProperties.RecordClassNumber.HasValue) return;
+
+            Column relationKeyColumn = GetRelationKeyColumn(relationDataColumn, columnList);
+            if (relationKeyColumn == null || !relationKeyColumn.ColumnProperties.IsRelation || relationKeyColumn.ColumnProperties.RecordClassNumber.HasValue) return;
+
+            relationKeyColumn.ColumnProperties.RecordClassNumber = relationDataColumn.ColumnProperties.RecordClassNumber;
+        }
+        /// <summary>
+        /// Metoda najde a vrátí sloupec, který nese ČÍSLO ZÁZNAMU k danému sloupci, který nese VIZUÁLNÍ DATA záznamu ve vztahu.
+        /// </summary>
+        /// <param name="relationDataColumn"></param>
+        /// <param name="columnList"></param>
+        /// <returns></returns>
+        private static Column GetRelationKeyColumn(Column relationDataColumn, List<Column> columnList)
+        {
+            if (relationDataColumn == null) return null;
+            Data.ColumnProperties columnDataProperties = relationDataColumn.ColumnProperties;
+            if (columnDataProperties.ColumnContent == ColumnContentType.RelationRecordId && columnDataProperties.RecordClassNumber.HasValue) return relationDataColumn;    // daný sloupec obsahuje číslo záznamu
+            if (columnDataProperties.ColumnContent != ColumnContentType.RelationRecordData) return null;
+
+            string relationColumnName = columnDataProperties.RelatedRecordColumnName;        // Název sloupce, který obsahuje číslo vztaženého záznamu
+            if (String.IsNullOrEmpty(relationColumnName)) return null;
+            Column relationKeyColumn = columnList.FirstOrDefault(c => String.Equals(c.ColumnName, relationColumnName, StringComparison.InvariantCultureIgnoreCase));
+            return relationKeyColumn;
         }
         /// <summary>
         /// Metoda vytvoří jeden sloupec <see cref="Column"/> na základě dat o sloupci z tabulky <see cref="System.Data.DataColumn"/>.
@@ -1887,7 +1927,6 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public Func<object, object, int> ValueComparator { get { return this._ValueComparator; } set { this._ValueComparator = value; } } private Func<object, object, int> _ValueComparator;
 
-
         /// <summary>
         /// Číslo třídy tohoto záznamu.
         /// U sloupce [0] jde o číslo třídy záznamů v tabulce, 
@@ -1959,7 +1998,8 @@ namespace Asol.Tools.WorkScheduler.Data
                 case "ObjectNumber":
                     return ColumnContentType.EntryId;
                 case "DataColumn":
-                    return ColumnContentType.UserData;
+                    bool isRelation = (extendedInfo.RelationNumber > 0 && extendedInfo.RelationClassNumber > 0);
+                    return (isRelation ? ColumnContentType.RelationRecordData : ColumnContentType.UserData);
                 case "RelationHelpfulColumn":
                     return ColumnContentType.RelationRecordId;
                 case "TotalCountHelpfulColumn":

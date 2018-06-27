@@ -1443,6 +1443,8 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                 graph.TimeConvertor = this.OwnerGTable.GetTimeConvertor(this.OwnerCell);
             if (graph.Parent == null)
                 graph.Parent = this; // this.OwnerGTable.GetInteractiveParent(this.OwnerCell.Row, this.OwnerCell);
+            if (graph.VisualParent == null)
+                graph.VisualParent = this.OwnerRow;
 
             return new IInteractiveItem[] { graph };
         }
