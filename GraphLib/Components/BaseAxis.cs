@@ -2215,7 +2215,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="bounds"></param>
         protected void DrawBackground(Graphics graphics, Rectangle bounds)
         {
-            GPainter.DrawAxisBackground(graphics, bounds, this.OrientationDraw, this.IsEnabled, this.CurrentState, this.BackColor, this.BackColor3DEffect);
+            GPainter.DrawAxisBackground(graphics, bounds, this.OrientationDraw, this.IsEnabled, this.InteractiveState, this.BackColor, this.BackColor3DEffect);
         }
         /// <summary>
         /// Draw Mouse point (a glare ellipse), when point location is stored in MouseOverRelativePoint or MouseDownRelativePoint (when HasValue)

@@ -917,7 +917,7 @@ namespace Asol.Tools.WorkScheduler.Components
             /// <summary>
             /// Interactive State of this item
             /// </summary>
-            public GInteractiveState ItemState { get { return (this.IsActiveChild ? this.CurrentState : (this.Owner.IsEnabled ? GInteractiveState.Enabled : GInteractiveState.Disabled)); } }
+            public GInteractiveState ItemState { get { return (this.IsActiveChild ? this.InteractiveState : (this.Owner.IsEnabled ? GInteractiveState.Enabled : GInteractiveState.Disabled)); } }
             /// <summary>
             /// true when this is dragged (CurrentState is LeftDrag or RightDrag)
             /// </summary>

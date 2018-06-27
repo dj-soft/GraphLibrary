@@ -1743,7 +1743,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         /// <param name="cell"></param>
         /// <returns></returns>
-        private ITimeConvertor GetTimeConvertor(Cell cell)
+        internal ITimeConvertor GetTimeConvertor(Cell cell)
         {
             if (cell != null && cell.Column != null && cell.Column.ColumnHeader != null && cell.Column.ColumnHeader.TimeConvertor != null)
                 return cell.Column.ColumnHeader.TimeConvertor;
@@ -1757,7 +1757,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="row"></param>
         /// <param name="cell"></param>
         /// <returns></returns>
-        private IInteractiveParent GetInteractiveParent(Row row, Cell cell)
+        internal IInteractiveParent GetInteractiveParent(Row row, Cell cell)
         {
             if (cell != null) return (IInteractiveParent)cell.Control;
             if (row != null) return (IInteractiveParent)row.Control;
@@ -1959,13 +1959,13 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
 
             return ratio;
         }
-        protected const float MORPH_RATIO_ACTIVE_CELL = 1.00f;
-        protected const float MORPH_RATIO_ACTIVE_ROW = 0.75f;
+        protected const float MORPH_RATIO_ACTIVE_CELL = 0.80f;
+        protected const float MORPH_RATIO_ACTIVE_ROW = 0.65f;
         protected const float MORPH_RATIO_MOUSEHOT_CELL = 0.25f;
         protected const float MORPH_RATIO_MOUSEHOT_ROW = 0.10f;
         protected const float MORPH_RATIO_ACTIVE_NOFOCUS = 0.25f;
         protected const float MORPH_RATIO_MOUSEHOT_NOFOCUS = 0.05f;
-        protected const float EFFECT_3D_ACTIVE_ROW = -0.45f;
+        protected const float EFFECT_3D_ACTIVE_ROW = 0.45f;
         protected const float EFFECT_3D_MOUSEHOT_ROW = 0.30f;
         #endregion
         #region Defaultní hodnoty

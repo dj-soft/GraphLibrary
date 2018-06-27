@@ -899,14 +899,14 @@ namespace Asol.Tools.WorkScheduler.Components
 
             if (e.DrawLayer == GInteractiveDrawLayer.Standard)
             {
-                if (this.CurrentState == GInteractiveState.LeftDrag)
+                if (this.InteractiveState == GInteractiveState.LeftDrag)
                     this._Draw(e, this._GetCurrentShadowBrush);
-                else if (this.CurrentState == GInteractiveState.MouseOver)
+                else if (this.InteractiveState == GInteractiveState.MouseOver)
                     this._Draw(e, this._GetCurrentMouseBrush);
                 else
                     this._Draw(e, this._GetCurrentStandardBrush);
             }
-            if (e.DrawLayer == GInteractiveDrawLayer.Interactive && this.CurrentState == GInteractiveState.LeftDrag)
+            if (e.DrawLayer == GInteractiveDrawLayer.Interactive && this.InteractiveState == GInteractiveState.LeftDrag)
             {
                 this._Draw(e, this._GetCurrentInteractiveBrush);
             }

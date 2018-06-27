@@ -517,12 +517,10 @@ namespace Asol.Tools.WorkScheduler.Components
             items.Add(_Splitter);
             return items;
         }
-        protected override void DrawStandard(GInteractiveDrawArgs e, System.Drawing.Rectangle boundsAbsolute)
+        protected override void Draw(GInteractiveDrawArgs e, System.Drawing.Rectangle boundsAbsolute, DrawItemMode drawMode)
         {
             this.CheckLayout(e.Graphics);
             this._SplitterCheckValue();
-
-            // base.DrawStandard(e, boundsAbsolute);
             this.DrawToolbarBackground(e.Graphics, null);
         }
         /// <summary>
@@ -770,11 +768,9 @@ namespace Asol.Tools.WorkScheduler.Components
         internal ComponentSize ToolbarSize { get { return this._Toolbar.ToolbarSize; } }
         #endregion
         #region InteractiveContainer : Interactivity, Draw
-        protected override void DrawStandard(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
+        protected override void Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
         {
-            this.Toolbar.DrawToolbarBackground(e.Graphics, boundsAbsolute);
-            // Not: base.DrawStandard(e, boundsAbsolute);
-
+            this.Toolbar.DrawToolbarBackground(e.Graphics, boundsAbsolute);    // Nebudeme volat bázovou metodu, ta stejně kreslí jen pozadí.
             this.DrawGroupTitle(e, boundsAbsolute);
         }
         internal void DrawGroupTitle(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
@@ -1279,7 +1275,7 @@ namespace Asol.Tools.WorkScheduler.Components
             bool drawBorders = forceBorder || (isEnabled && this.IsMouseDown);
 
             if (drawBackground || drawBorders)
-                GPainter.DrawButtonBase(e.Graphics, boundsAbsolute, Skin.ToolBar.ItemBackColor, this.CurrentState, System.Windows.Forms.Orientation.Horizontal, roundCorner, null, null, drawBackground, drawBorders, Skin.ToolBar.ItemBorderColor);
+                GPainter.DrawButtonBase(e.Graphics, boundsAbsolute, Skin.ToolBar.ItemBackColor, this.InteractiveState, System.Windows.Forms.Orientation.Horizontal, roundCorner, null, null, drawBackground, drawBorders, Skin.ToolBar.ItemBorderColor);
         }
         protected void DrawItemImage(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
         {
@@ -1305,7 +1301,7 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 Rectangle boundsTextAbsolute = this.BoundsText.ShiftBy(boundsAbsolute.Location);
                 FontInfo fontInfo = this.CurrentItemFont;
-                Color textColor = Skin.ModifyForeColorByState(Skin.ToolBar.TextColor, this.CurrentState);
+                Color textColor = Skin.ModifyForeColorByState(Skin.ToolBar.TextColor, this.InteractiveState);
                 GPainter.DrawString(e.Graphics, boundsTextAbsolute, text, textColor, fontInfo, ContentAlignment.MiddleCenter);
             }
         }
@@ -1342,7 +1338,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         #endregion
         #region InteractiveContainer : Interactivity, Draw
-        protected override void DrawStandard(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
+        protected override void Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
         {
             if (!this.IsVisible) return;
             switch (this.ItemType)

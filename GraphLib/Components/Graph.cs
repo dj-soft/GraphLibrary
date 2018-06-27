@@ -370,8 +370,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected void RecalculateTimeAxis()
         {
-            this._TimeAxisBegin = this._TimeConvertor.GetPixel(this._TimeConvertor.VisibleTime.Begin);
-            this._TimeAxisTicks = this._TimeConvertor.Ticks.Where(t => t.TickType == AxisTickType.BigLabel || t.TickType == AxisTickType.StdLabel || t.TickType == AxisTickType.BigTick).ToArray();
+            ITimeConvertor timeConvertor = this._TimeConvertor;
+            if (timeConvertor == null) return;
+            this._TimeAxisBegin = timeConvertor.GetPixel(timeConvertor.VisibleTime.Begin);
+            this._TimeAxisTicks = timeConvertor.Ticks.Where(t => t.TickType == AxisTickType.BigLabel || t.TickType == AxisTickType.StdLabel || t.TickType == AxisTickType.BigTick).ToArray();
             this._ValidatedAxisIdentity = this.TimeAxisIdentity;
             this.Invalidate(InvalidateItems.CoordinateX);
         }
@@ -419,6 +421,7 @@ namespace Asol.Tools.WorkScheduler.Components
             int height = this.Bounds.Height;
             this.AllGroupScan(groupItem => groupItem.CoordinateYReal = calculatorY.GetRealRange(groupItem.CoordinateYVirtual, height));
             this._ValidatedHeight = height;
+            this.Invalidate(InvalidateItems.Bounds);
         }
         /// <summary>
         /// Výška this grafu, pro kterou byly naposledy přepočteny souřadnice Y v poli <see cref="AllGroupList"/>.
@@ -442,8 +445,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected void RecalculateCoordinateX()
         {
             this._VisibleGroupList = new List<GTimeGraphGroup>();
-            ITimeConvertor timeConvertor = this._TimeConvertor;
-            if (timeConvertor == null) return;
+            if (this._TimeConvertor == null) return;
             TimeGraphTimeAxisMode timeAxisMode = this.GraphParameters.TimeAxisMode;
 
             using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "ItemsRecalculateVisibleList", ""))
@@ -476,6 +478,7 @@ namespace Asol.Tools.WorkScheduler.Components
 
                 scope.AddValues(counters, "Visual Layers Count: ", "Visual Groups Count: ", "Visual Items Count: ");
             }
+            this.Invalidate(InvalidateItems.Bounds);
         }
         /// <summary>
         /// Vrací true, pokud data v seznamu <see cref="VisibleGroupList"/> jsou platná.
@@ -486,9 +489,9 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             get
             {
-                if (this.VisibleGroupList == null) return false;
-                if (!this.ValidatedWidth.HasValue || this.ClientSize.Width != this.ValidatedWidth.Value) return false;
-                if (!this.ValidatedAxisMode.HasValue || this.GraphParameters.TimeAxisMode != this.ValidatedAxisMode.Value) return false;
+                if (this._VisibleGroupList == null) return false;
+                if (!this._ValidatedWidth.HasValue || this.ClientSize.Width != this._ValidatedWidth.Value) return false;
+                if (!this._ValidatedAxisMode.HasValue || this.GraphParameters.TimeAxisMode != this._ValidatedAxisMode.Value) return false;
                 return this._IsValidCoordinateX;
             }
         } private bool _IsValidCoordinateX;
@@ -670,9 +673,9 @@ namespace Asol.Tools.WorkScheduler.Components
             public Int32Range GetRealRange(Int32Range virtualRange, int realSize)
             {
                 int bottomMargin = this._GraphProperties.BottomMargin;
-                int top = realSize - bottomMargin - virtualRange.Begin;
+                int begin = realSize - bottomMargin - virtualRange.Begin;
                 int size = virtualRange.Size;
-                return new Int32Range(top, size);
+                return Int32Range.CreateFromBeginSize(begin, size);
             }
             /// <summary>
             /// Výška grafu v pixelech
@@ -759,6 +762,29 @@ namespace Asol.Tools.WorkScheduler.Components
             #endregion
         }
         #endregion
+        #region Bounds : souřadnice viditelných prvků
+        /// <summary>
+        /// Zajistí platnost souřadnic Bounds v grupách a jejich items
+        /// </summary>
+        protected void CheckValidBounds()
+        {
+            if (!this.IsValidBounds)
+                this.RecalculateBounds();
+        }
+        /// <summary>
+        /// Provede přepočet souřadnic Bounds v grupách a jejich items
+        /// </summary>
+        protected void RecalculateBounds()
+        {
+            foreach (GTimeGraphGroup groupItem in this.VisibleGroupList)
+                groupItem.PrepareBounds();
+            this._IsValidBounds = true;
+        }
+        /// <summary>
+        /// true pokud jsou platné souřadnice Bounds v grupách a jejich items
+        /// </summary>
+        protected bool IsValidBounds { get { return this._IsValidBounds; } } private bool _IsValidBounds;
+        #endregion
         #region Child items a kompletní validace
         /// <summary>
         /// Child prvky grafu = položky grafu, výhradně typu <see cref="GTimeGraphGroup"/>.
@@ -776,6 +802,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 this.CheckValidTimeAxis();
                 this.CheckValidCoordinateYReal();
                 this.CheckValidCoordinateX();
+                this.CheckValidBounds();
                 this.CheckValidChildList();
             }
         }
@@ -794,10 +821,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             this._Childs = new List<IInteractiveItem>();
             foreach (GTimeGraphGroup groupItem in this.VisibleGroupList)
-            {
-                groupItem.PrepareBounds();
                 this._Childs.Add(groupItem.GControl);
-            }
         }
         #endregion
         #region Draw : vykreslení grafu
@@ -869,6 +893,8 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             AxisTickType tickLevel = this.GraphParameters.TimeAxisVisibleTickLevel;
             if (tickLevel == AxisTickType.None) return;
+            VisualTick[] timeAxisTicks = this.TimeAxisTicks;
+            if (timeAxisTicks == null) return;
             int tickLevelN = (int)tickLevel;
 
             using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "PaintGrid", ""))
@@ -878,7 +904,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 int y1 = boundsAbsolute.Top;
                 int y2 = boundsAbsolute.Bottom - 1;
 
-                foreach (VisualTick tick in this.TimeAxisTicks)
+                foreach (VisualTick tick in timeAxisTicks)
                 {
                     if (((int)tick.TickType) < tickLevelN) continue;
 
@@ -899,16 +925,21 @@ namespace Asol.Tools.WorkScheduler.Components
             if ((items & InvalidateItems.AllGroups) != 0)
             {
                 this._AllGroupList = null;
-                items |= (InvalidateItems.CoordinateX | InvalidateItems.CoordinateY);
+                items |= (InvalidateItems.CoordinateX | InvalidateItems.CoordinateY | InvalidateItems.Bounds);
             }
             if ((items & InvalidateItems.CoordinateX) != 0)
             {
                 this._IsValidCoordinateX = false;
-                items |= InvalidateItems.Childs;
+                items |= (InvalidateItems.Childs | InvalidateItems.Bounds);
             }
             if ((items & InvalidateItems.CoordinateY) != 0)
             {
                 this._ValidatedHeight = 0;
+                items |= (InvalidateItems.Childs | InvalidateItems.Bounds);
+            }
+            if ((items & InvalidateItems.Bounds) != 0)
+            {
+                this._IsValidBounds = false;
                 items |= InvalidateItems.Childs;
             }
             if ((items & InvalidateItems.Childs) != 0)
@@ -943,6 +974,10 @@ namespace Asol.Tools.WorkScheduler.Components
             /// Po této invalidaci se nově načtou všechny položky z pole položek grafů, provede se jejich třídění a grupování, nápočet logických hodnot Y a veškeré navazující výpočty.
             /// </summary>
             AllGroups = CoordinateY << 1,
+            /// <summary>
+            /// Souřadnice Bounds
+            /// </summary>
+            Bounds = AllGroups << 1,
             /// <summary>
             /// Pole vizuálních Child prvků grafu.
             /// </summary>
@@ -1073,7 +1108,8 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 itemsCount++;
                 Int32Range absX = timeConvert(item.Time);                                // Vrací souřadnici X v koordinátech grafu
-                Int32Range relX = new Int32Range(absX.Begin - groupX.Begin, absX.Size);  // Získáme souřadnici X relativní k prvku Group, který je Parentem daného item
+                int relBegin = absX.Begin - groupX.Begin;
+                Int32Range relX = Int32Range.CreateFromBeginSize(relBegin, absX.Size);   // Získáme souřadnici X relativní k prvku Group, který je Parentem daného item
                 item.GControl.CoordinateX = relX;
             }
             this.InvalidateBounds();
@@ -1086,7 +1122,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             if (this.IsValidBounds) return;
 
-            Int32Range groupY = this.CoordinateYReal;
+            Int32Range groupY = this.CoordinateYVisual; // CoordinateYReal;
             this.GControl.Bounds = Int32Range.GetRectangle(this.GControl.CoordinateX, groupY);
 
             // Child prvky mají svoje souřadnice (Bounds) relativní k this prvku (který je jejich parentem), proto mají Y souřadnici { 0 až this.Y.Size }:
@@ -1096,6 +1132,20 @@ namespace Asol.Tools.WorkScheduler.Components
 
             this._IsValidBounds = true;
         }
+        protected Int32Range CoordinateYVisual
+        {
+            get
+            {
+                Int32Range yReal = this.CoordinateYReal;
+                int yDMax = (yReal.Size / 3);
+                int yDiff = this._FirstItem.Layer;
+                yDiff = ((yDiff < 0) ? 0 : (yDiff > yDMax ? yDMax : yDiff));
+                if (yDiff != 0)
+                    yReal = new Int32Range(yReal.Begin + 1 + yDiff, yReal.End - yDiff);
+                return yReal;
+            }
+        }
+
         /// <summary>
         /// Invaliduje platnost souřadnic Bounds
         /// </summary>
@@ -1186,7 +1236,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="e">Standardní data pro kreslení</param>
         /// <param name="boundsAbsolute">Absolutní souřadnice tohoto prvku</param>
-        public void Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
+        /// <param name="drawMode">Režim kreslení (má význam pro akce Drag & Drop)</param>
+        public void Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
         {
             if (!this.IsValidRealTime || this._FirstItem.Layer < 0 || this.ItemCount <= 1) return;
             Color? backColor = this.LinkBackColor;
@@ -1195,7 +1246,10 @@ namespace Asol.Tools.WorkScheduler.Components
                 backColor = (this.BackColor.HasValue ? this.BackColor.Value : Skin.Graph.ElementBackColor).Morph(Skin.Graph.ElementLinkBackColor);
             backColor = Color.FromArgb(128, backColor.Value);
             Color? borderColor = backColor;
-            this.GControl.Draw(e, boundsAbsolute, backColor, borderColor, - 1);
+
+            Rectangle boundsLink = boundsAbsolute.Enlarge(-1, -2, -1, -2);
+            GPainter.DrawEffect3D(e.Graphics, boundsLink, backColor.Value, System.Windows.Forms.Orientation.Horizontal, this.GControl.InteractiveState, force3D: false);
+         //   this.GControl.DrawItem(e, boundsAbsolute, drawMode, backColor, borderColor, - 1);
         }
         /// <summary>
         /// Porovná dvě instance <see cref="GTimeGraphGroup"/> podle <see cref="ITimeGraphItem.Order"/> ASC, <see cref="ITimeGraphItem.Time"/> ASC
@@ -1225,7 +1279,7 @@ namespace Asol.Tools.WorkScheduler.Components
         Color? ITimeGraphItem.LinkBackColor { get { return this.LinkBackColor; } }
         Color? ITimeGraphItem.BorderColor { get { return this.BorderColor; } }
         GTimeGraphControl ITimeGraphItem.GControl { get { return this.GControl; } set { this.GControl = value; } }
-        void ITimeGraphItem.Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute) { this.Draw(e, boundsAbsolute); }
+        void ITimeGraphItem.Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode) { this.Draw(e, boundsAbsolute, drawMode); }
         #endregion
     }
     #endregion
@@ -1235,14 +1289,16 @@ namespace Asol.Tools.WorkScheduler.Components
     /// Tento prvek je zobrazován ve dvou režimech: buď jako přímý child prvek vizuálního grafu, pak reprezentuje grupu prvků (i kdyby grupa měla jen jeden prvek),
     /// anebo jako child prvek této grupy, pak reprezentuje jeden konkrétní prvek grafu (GraphItem).
     /// </summary>
-    public class GTimeGraphControl : InteractiveObject, IOwnerProperty<ITimeGraphItem>
+    public class GTimeGraphControl : InteractiveDragObject, IOwnerProperty<ITimeGraphItem>
     {
+        #region Konstruktor, privátní proměnné
         /// <summary>
         /// Konstruktor
         /// </summary>
         /// <param name="owner">Prvek grafu, ten v sobě obsahuje data</param>
         /// <param name="parent">Parent prvku, GUI container</param>
         public GTimeGraphControl(ITimeGraphItem owner, IInteractiveParent parent)
+            : base()
         {
             this._Owner = owner;
             this._Parent = parent;
@@ -1255,6 +1311,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Parent tohoto grafického prvku = GUI prvek, v němž je tento grafický prvek hostován
         /// </summary>
         private IInteractiveParent _Parent;
+        #endregion
+        #region Veřejná data
         /// <summary>
         /// Souřadnice na ose X. Jednotkou jsou pixely.
         /// Tato osa je společná jak pro virtuální, tak pro reálné souřadnice.
@@ -1262,7 +1320,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public Int32Range CoordinateX { get; set; }
 
-        #region Child prvky
+        #endregion
+        #region Child prvky: přidávání, kolekce
         /// <summary>
         /// Child prvky, může být null (pro <see cref="GControl"/> v roli controlu jednotlivého <see cref="ITimeGraphItem"/>), 
         /// nebo může obsahovat vnořené prvky (pro <see cref="GControl"/> v roli controlu skupiny <see cref="GTimeGraphGroup"/>).
@@ -1280,15 +1339,24 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         private List<IInteractiveItem> _Childs;
         #endregion
+        #region Interaktivita
+
+        #endregion
+        #region Kreslení prvku
+        protected override void Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
+        {
+            this._Owner.Draw(e, boundsAbsolute, drawMode);
+            // base.Draw(e, boundsAbsolute, drawMode);
+        }
         /// <summary>
         /// Metoda je volaná pro vykreslení jedné položky grafu.
-        /// Implementátor může bez nejmenších obav převolat <see cref="GControl"/> : <see cref="GTimeGraphControl.Draw(GInteractiveDrawArgs, Rectangle)"/>
         /// </summary>
         /// <param name="e">Standardní data pro kreslení</param>
         /// <param name="boundsAbsolute">Absolutní souřadnice tohoto prvku</param>
-        public void Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
+        /// <param name="drawMode">Režim kreslení (má význam pro akce Drag & Drop)</param>
+        public void DrawItem(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
         {
-            this.Draw(e, boundsAbsolute, null, null, null);
+            this.DrawItem(e, boundsAbsolute, drawMode, null, null, null);
         }
         /// <summary>
         /// Metoda je volaná pro vykreslení prvku.
@@ -1296,13 +1364,13 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="e">Standardní data pro kreslení</param>
         /// <param name="boundsAbsolute">Absolutní souřadnice tohoto prvku</param>
+        /// <param name="drawMode">Režim kreslení (má význam pro akce Drag & Drop)</param>
         /// <param name="backColor">Explicitně definovaná barva pozadí</param>
         /// <param name="borderColor">Explicitně definovaná barva okraje</param>
         /// <param name="enlargeBounds">Změna rozměru Bounds ve všech směrech</param>
-        public void Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, Color? backColor, Color? borderColor, int? enlargeBounds)
+        public void DrawItem(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode, Color? backColor, Color? borderColor, int? enlargeBounds)
         {
             if (!boundsAbsolute.HasPixels()) return;
-
             if (enlargeBounds.HasValue)
             {
                 boundsAbsolute = boundsAbsolute.Enlarge(enlargeBounds.Value);
@@ -1340,6 +1408,11 @@ namespace Asol.Tools.WorkScheduler.Components
                 e.Graphics.DrawRectangle(Skin.Pen(borderColor.Value), boundsAbsolute);
             }
         }
+        /// <summary>
+        /// Volba, zda metoda <see cref="Repaint()"/> způsobí i vyvolání metody <see cref="Parent"/>.<see cref="IInteractiveParent.Repaint"/>.
+        /// </summary>
+        protected override RepaintParentMode RepaintParent { get { return RepaintParentMode.Always; } }
+        #endregion
     }
     #endregion
     #region class TimeGraphProperties : třída obsahující vlastnosti vykreslovaného grafu
@@ -1559,11 +1632,12 @@ namespace Asol.Tools.WorkScheduler.Components
         GTimeGraphControl GControl { get; set; }
         /// <summary>
         /// Metoda je volaná pro vykreslení jedné položky grafu.
-        /// Implementátor může bez nejmenších obav převolat <see cref="GControl"/> : <see cref="GTimeGraphControl.Draw(GInteractiveDrawArgs, Rectangle)"/>
+        /// Implementátor může bez nejmenších obav převolat <see cref="GControl"/> : <see cref="GTimeGraphControl.DrawItem(GInteractiveDrawArgs, Rectangle, DrawItemMode)"/>
         /// </summary>
         /// <param name="e">Standardní data pro kreslení</param>
         /// <param name="boundsAbsolute">Absolutní souřadnice tohoto prvku</param>
-        void Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute);
+        /// <param name="drawMode">Režim kreslení (má význam pro akce Drag & Drop)</param>
+        void Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode);
     }
     /// <summary>
     /// Interface, který umožní pracovat s časovou osou

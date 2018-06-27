@@ -822,7 +822,7 @@ namespace Asol.Tools.WorkScheduler.Components
             DragActionType dragAction = _GetDragActionForState(stateArgs.ChangeState);
             if (dragAction == DragActionType.None) return;
 
-            if (this._MouseDownAbsolutePoint.HasValue && (this._MouseCurrentAbsolutePoint.HasValue || dragAction == DragActionType.DragThisCancel))
+            if (this._MouseDownAbsolutePoint.HasValue && (this._MouseCurrentAbsolutePoint.HasValue || dragAction == DragActionType.DragThisCancel || dragAction == DragActionType.DragThisEnd))
             {
                 GDragActionArgs dragArgs = new GDragActionArgs(stateArgs, dragAction, this._MouseDownAbsolutePoint.Value, this._MouseCurrentAbsolutePoint);
                 item.DragAction(dragArgs);

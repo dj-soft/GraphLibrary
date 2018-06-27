@@ -171,29 +171,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="bounds"></param>
         /// <param name="color"></param>
         /// <param name="orientation"></param>
-        /// <param name="effect3D">Hodnota 3D efektu: 
-        /// kladná vytváří "nahoru zvednutý povrch" (tj. color1 = nahoře/vlevo je světlejší, color2 = dole/vpravo je tmavší),
-        /// kdežto záporná hodnota vytváří "dolů promáčknutý povrch".
-        /// Hodnota 1.00 vytvoří bílou a černou barvu, hodnota 0.10f vytvoří lehký 3D efekt, 0.50f poměrně silný efekt.
-        /// </param>  /// <param name="opacity"></param>
-        public static void DrawEffect3D(Graphics graphics, Rectangle bounds, Color color, Orientation orientation, float? effect3D)
+        /// <param name="interactiveState">Interaktvní stav, je z něj odvozena hodnota hodnota 3D efektu (pomocí metody  ).</param>
+        /// <param name="force3D">Vynutit 3D efekt i pro "klidový stav prvku" (<see cref="GInteractiveState.None"/> a <see cref="GInteractiveState.Enabled"/>)!</param>
+        /// <param name="opacity"></param>
+        public static void DrawEffect3D(Graphics graphics, Rectangle bounds, Color color, Orientation orientation, GInteractiveState? interactiveState, bool? force3D = false, Int32? opacity = null)
         {
-            _DrawEffect3D(graphics, bounds, color, orientation, effect3D, null);
-        }
-        /// <summary>
-        /// Vykreslí rectangle danou barvou, s 3D efektem v dané intenzitě a orientaci
-        /// </summary>
-        /// <param name="graphics"></param>
-        /// <param name="bounds"></param>
-        /// <param name="color"></param>
-        /// <param name="orientation"></param>
-        /// <param name="effect3D">Hodnota 3D efektu: 
-        /// kladná vytváří "nahoru zvednutý povrch" (tj. color1 = nahoře/vlevo je světlejší, color2 = dole/vpravo je tmavší),
-        /// kdežto záporná hodnota vytváří "dolů promáčknutý povrch".
-        /// Hodnota 1.00 vytvoří bílou a černou barvu, hodnota 0.10f vytvoří lehký 3D efekt, 0.50f poměrně silný efekt.
-        /// </param>  /// <param name="opacity"></param>
-        public static void DrawEffect3D(Graphics graphics, Rectangle bounds, Color color, Orientation orientation, float? effect3D, Int32? opacity)
-        {
+            float? effect3D = (interactiveState.HasValue ? (float?)GetEffect3D(interactiveState.Value, force3D) : (float?)null);
             _DrawEffect3D(graphics, bounds, color, orientation, effect3D, opacity);
         }
         /// <summary>
@@ -206,13 +189,56 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="effect3D">Hodnota 3D efektu: 
         /// kladná vytváří "nahoru zvednutý povrch" (tj. color1 = nahoře/vlevo je světlejší, color2 = dole/vpravo je tmavší),
         /// kdežto záporná hodnota vytváří "dolů promáčknutý povrch".
-        /// Hodnota 1.00 vytvoří bílou a černou barvu, hodnota 0.10f vytvoří lehký 3D efekt, 0.50f poměrně silný efekt.
-        /// </param> /// <param name="opacity"></param>
+        /// Hodnota 1.00 vytvoří bílou a černou barvu, hodnota 0.10f vytvoří lehký 3D efekt, 0.50f poměrně silný efekt.</param>  
+        /// <param name="opacity"></param>
+        public static void DrawEffect3D(Graphics graphics, Rectangle bounds, Color color, Orientation orientation, float? effect3D, Int32? opacity = null)
+        {
+            _DrawEffect3D(graphics, bounds, color, orientation, effect3D, opacity);
+        }
+        /// <summary>
+        /// Metoda vrátí hodnotu effect3D pro konkrétní interaktivní stav
+        /// </summary>
+        /// <param name="interactiveState"></param>
+        /// <param name="force3D">Vynutit 3D efekt i pro "klidový stav prvku" (<see cref="GInteractiveState.None"/> a <see cref="GInteractiveState.Enabled"/>)!</param>
+        /// <returns></returns>
+        public static float? GetEffect3D(GInteractiveState interactiveState, bool? force3D = false)
+        {
+            switch (interactiveState)
+            {
+                case GInteractiveState.Disabled: return 0f;
+                case GInteractiveState.None: return 0.25f;
+                case GInteractiveState.Enabled: return 0.25f;
+                case GInteractiveState.MouseOver: return 0.50f;
+                case GInteractiveState.LeftDown:
+                case GInteractiveState.RightDown: return -0.35f;
+                case GInteractiveState.LeftDrag:
+                case GInteractiveState.RightDrag: return -0.15f;
+            }
+            return null;
+        }
+        /// <summary>
+        /// Vykreslí rectangle danou barvou, s 3D efektem v dané intenzitě a orientaci
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="color"></param>
+        /// <param name="orientation"></param>
+        /// <param name="effect3D">Hodnota 3D efektu: 
+        /// kladná vytváří "nahoru zvednutý povrch" (tj. color1 = nahoře/vlevo je světlejší, color2 = dole/vpravo je tmavší),
+        /// kdežto záporná hodnota vytváří "dolů promáčknutý povrch".
+        /// Hodnota 1.00 vytvoří bílou a černou barvu, hodnota 0.10f vytvoří lehký 3D efekt, 0.50f poměrně silný efekt.</param> 
+        /// <param name="opacity"></param>
         private static void _DrawEffect3D(Graphics graphics, Rectangle bounds, Color color, Orientation orientation, float? effect3D, Int32? opacity)
         {
+            if (!bounds.HasPixels()) return;
             Color color1, color2;
-            if (CreateEffect3DColors(color, effect3D, out color1, out color2))
+            if (effect3D.HasValue && effect3D.Value != 0f && CreateEffect3DColors(color, effect3D, out color1, out color2))
             {   // 3D efekt:
+                if (opacity.HasValue)
+                {
+                    color1 = Color.FromArgb(opacity.Value, color1);
+                    color2 = Color.FromArgb(opacity.Value, color2);
+                }
                 using (Brush brush = Skin.CreateBrushForBackgroundGradient(bounds, orientation, color1, color2))
                 {
                     graphics.FillRectangle(brush, bounds);
@@ -220,6 +246,8 @@ namespace Asol.Tools.WorkScheduler.Components
             }
             else
             {   // Plná plochá barva:
+                if (opacity.HasValue)
+                    color = Color.FromArgb(opacity.Value, color);
                 graphics.FillRectangle(Skin.Brush(color), bounds);
             }
         }
@@ -673,7 +701,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 // 3D okraje jsou o 1 pixel před tím:
                 Rectangle boundsBorder = (lineColor.HasValue ? bounds.Enlarge(0, 0, -1, -1) : bounds);
                 RectangleSide borderSides = _GetHeaderBorderSides(side);
-                float? effect3D = _GetHeadersEffect3D(state);
+                float? effect3D = GetEffect3D(state, true);
                 DrawBorder(graphics, boundsBorder, borderSides, null, backColor, effect3D);
             }
 
@@ -701,26 +729,6 @@ namespace Asol.Tools.WorkScheduler.Components
                 case RectangleSide.None: return RectangleSide.None;
             }
             return RectangleSide.All;
-        }
-        /// <summary>
-        /// Metoda vrátí hodnotu effect3D pro konkrétní interaktivní stav
-        /// </summary>
-        /// <param name="state"></param>
-        /// <returns></returns>
-        private static float? _GetHeadersEffect3D(GInteractiveState state)
-        {
-            switch (state)
-            {
-                case GInteractiveState.Disabled: return 0f;
-                case GInteractiveState.None: return 0.25f;
-                case GInteractiveState.Enabled: return 0.25f;
-                case GInteractiveState.MouseOver: return 0.50f;
-                case GInteractiveState.LeftDown:
-                case GInteractiveState.RightDown: return -0.35f;
-                case GInteractiveState.LeftDrag:
-                case GInteractiveState.RightDrag: return -0.15f;
-            }
-            return null;
         }
         #endregion
         #region DrawWindow

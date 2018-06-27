@@ -975,10 +975,10 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual Color DefaultTableBackColor { get { return Color.DimGray; } }
         protected virtual Color DefaultRowBackColor { get { return Color.White; } }
         protected virtual Color DefaultRowTextColor { get { return Color.Black; } }
-        protected virtual Color DefaultSelectedRowBackColor { get { return Color.White.Morph(Color.LightBlue, 0.65f); } }
+        protected virtual Color DefaultSelectedRowBackColor { get { return Color.White.Morph(Color.CadetBlue, 0.45f); } }
         protected virtual Color DefaultSelectedRowTextColor { get { return Color.Black; } }
-        protected virtual Color DefaultActiveCellBackColor { get { return Color.White.Morph(Color.Blue, 0.75f); } }
-        protected virtual Color DefaultActiveCellTextColor { get { return Color.White; } }
+        protected virtual Color DefaultActiveCellBackColor { get { return Color.White.Morph(Color.CadetBlue, 0.25f); } }
+        protected virtual Color DefaultActiveCellTextColor { get { return Color.Black; } }
         protected virtual Color DefaultBorderLineColor { get { return Color.Gray; } }
         protected virtual BorderLinesType DefaultBorderLineType { get { return BorderLinesType.Horizontal3DSunken | BorderLinesType.VerticalSolid; } }
         protected virtual Image DefaultSortAscendingImage { get { return IconStandard.SortAsc; } }

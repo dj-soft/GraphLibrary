@@ -815,7 +815,7 @@ namespace Asol.Tools.WorkScheduler.Components
         private GTabPage[] _ChildItems;
         #endregion
         #region Draw, Interactivity
-        protected override void DrawStandard(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
+        protected override void Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
         {
             Color spaceColor = this.BackColor;                  // tam je default: Skin.TabHeader.SpaceColor;
             if (spaceColor.A > 0)
@@ -1107,7 +1107,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// true pokud this header je MouseActive
         /// </summary>
-        protected bool IsHotHeader { get { return this.CurrentState.IsMouseActive(); } }
+        protected bool IsHotHeader { get { return this.InteractiveState.IsMouseActive(); } }
         /// <summary>
         /// Vrací Font uvedený v this.TabHeader.Font,
         /// a který odpovídá aktuálnímu stavu (<see cref="IsActiveHeader"/>, <see cref="IsHotHeader"/>).
@@ -1167,7 +1167,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="e"></param>
         /// <param name="boundsAbsolute"></param>
-        protected override void DrawStandard(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
+        protected override void Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
         {
             this._DrawLayer = e.DrawLayer;
             GPainter.DrawTabHeaderItem(e.Graphics, boundsAbsolute, this);
@@ -1224,7 +1224,7 @@ namespace Asol.Tools.WorkScheduler.Components
         Color? ITabHeaderItemPaintData.BackColor { get { return this.BackColor; } }
         bool ITabHeaderItemPaintData.IsActive { get { return this.IsActiveHeader; } }
         FontInfo ITabHeaderItemPaintData.Font { get { return this.GetCurrentFont(); } }
-        GInteractiveState ITabHeaderItemPaintData.InteractiveState { get { return this.CurrentState; } }
+        GInteractiveState ITabHeaderItemPaintData.InteractiveState { get { return this.InteractiveState; } }
         Image ITabHeaderItemPaintData.Image { get { return this.Image; } }
         Rectangle ITabHeaderItemPaintData.ImageBounds { get { return this.ImageBounds; } }
         string ITabHeaderItemPaintData.Text { get { return this.Text; } }

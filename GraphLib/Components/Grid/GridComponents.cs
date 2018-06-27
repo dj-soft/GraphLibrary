@@ -68,26 +68,14 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         /// <param name="e"></param>
         /// <param name="boundsAbsolute"></param>
-        protected override void DrawStandard(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
+        protected override void Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
         {
             Application.App.Trace.Info(Application.TracePriority.Priority1_ElementaryTimeDebug, this.GetType().Name, "Draw", "Component", this.ToString(), "BoundsAbsolute: " + boundsAbsolute.ToString());
-
             if (!this.GraphicClip(e, boundsAbsolute)) return;                  // Není kam kreslit (oříznutí souřadnic vrátilo nulu)
 
+            bool isGhost = (drawMode.HasFlag(DrawItemMode.Ghost));
             int? opacity = (e.DrawLayer == GInteractiveDrawLayer.Standard ? (int?)null : (int?)128);
-            this.DrawContent(e, boundsAbsolute, false, opacity);
-        }
-        /// <summary>
-        /// Kreslí prvek jako ducha (může být jen naznačený obsah), při přetahování myší.
-        /// Může to být do vrstvy Standard i do jiné vrstvy, záleží na nastavení režimu Drag.
-        /// </summary>
-        /// <param name="e"></param>
-        /// <param name="boundsAbsolute"></param>
-        protected override void DrawAsGhost(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
-        {
-            if (!this.GraphicClip(e, boundsAbsolute)) return;                  // Není kam kreslit (oříznutí souřadnic vrátilo nulu)
-
-            this.DrawContent(e, boundsAbsolute, true, 128);
+            this.DrawContent(e, boundsAbsolute, isGhost, opacity);
         }
         /// <summary>
         /// Vykreslí podklad prostoru pro záhlaví.
@@ -95,11 +83,11 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         /// <param name="e"></param>
         /// <param name="boundsAbsolute"></param>
-        /// <param name="drawAsGhost"></param>
+        /// <param name="isGhost"></param>
         /// <param name="opacity"></param>
-        protected virtual void DrawContent(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
+        protected virtual void DrawContent(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool isGhost, int? opacity)
         {
-            if (drawAsGhost && e.DrawLayer == GInteractiveDrawLayer.Standard)
+            if (isGhost && e.DrawLayer == GInteractiveDrawLayer.Standard)
                 e.Graphics.FillRectangle(Brushes.DarkGray, boundsAbsolute);
         }
         /// <summary>
@@ -365,7 +353,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="opacity"></param>
         protected void DrawGridHeader(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
         {
-            GPainter.DrawGridHeader(e.Graphics, boundsAbsolute, RectangleSide.Top, Skin.Grid.HeaderBackColor, true, Skin.Grid.HeaderLineColor, this.CurrentState, System.Windows.Forms.Orientation.Horizontal, null, opacity);
+            GPainter.DrawGridHeader(e.Graphics, boundsAbsolute, RectangleSide.Top, Skin.Grid.HeaderBackColor, true, Skin.Grid.HeaderLineColor, this.InteractiveState, System.Windows.Forms.Orientation.Horizontal, null, opacity);
         }
         #endregion
     }
@@ -813,7 +801,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="opacity"></param>
         protected void DrawGridHeader(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
         {
-            GPainter.DrawGridHeader(e.Graphics, boundsAbsolute, RectangleSide.Top, Skin.Grid.HeaderBackColor, true, Skin.Grid.HeaderLineColor, this.CurrentState, System.Windows.Forms.Orientation.Horizontal, null, opacity);
+            GPainter.DrawGridHeader(e.Graphics, boundsAbsolute, RectangleSide.Top, Skin.Grid.HeaderBackColor, true, Skin.Grid.HeaderLineColor, this.InteractiveState, System.Windows.Forms.Orientation.Horizontal, null, opacity);
         }
         /// <summary>
         /// Do this záhlaví vykreslí ikonu třídění a titulkový text
@@ -1161,7 +1149,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="opacity"></param>
         protected void DrawGridHeader(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
         {
-            GPainter.DrawGridHeader(e.Graphics, boundsAbsolute, RectangleSide.Left, Skin.Grid.HeaderBackColor, true, Skin.Grid.HeaderLineColor, this.CurrentState, System.Windows.Forms.Orientation.Horizontal, null, opacity);
+            GPainter.DrawGridHeader(e.Graphics, boundsAbsolute, RectangleSide.Left, Skin.Grid.HeaderBackColor, true, Skin.Grid.HeaderLineColor, this.InteractiveState, System.Windows.Forms.Orientation.Horizontal, null, opacity);
         }
         /// <summary>
         /// Do this záhlaví podbarvení v situaci, kdy tento řádek je MouseHot
@@ -1233,8 +1221,19 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             switch (this.OwnerCell.ValueType)
             {
                 case TableValueType.ITimeInteractiveGraph:
-                    (this.OwnerCell.Value as ITimeInteractiveGraph).Bounds = this.Bounds.ClientBounds(this.ClientBorder);
+                    (this.OwnerCell.Value as ITimeInteractiveGraph).Bounds = this.ChildBounds;
                     break;
+            }
+        }
+        /// <summary>
+        /// Souřadnice pro Child objekty
+        /// </summary>
+        protected Rectangle ChildBounds
+        {
+            get
+            {
+                Rectangle childBounds = this.Bounds.ClientBounds(this.ClientBorder).Enlarge(0, 0, -1, -1);               // Child bounds musí být o 1 pixel menší na výšku i na šířku, kvůli GridLines
+                return childBounds;
             }
         }
         /// <summary>
@@ -1427,9 +1426,25 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         {
             bool hasTimeInteractiveGraph = (this.OwnerCell.ValueType == TableValueType.ITimeInteractiveGraph);
             if (hasTimeInteractiveGraph && this._Childs == null)
-                this._Childs = new IInteractiveItem[] { this.OwnerCell.Value as ITimeInteractiveGraph };
+                this._Childs = this.GetChildsITimeInteractiveGraph();
             else if (!hasTimeInteractiveGraph && this._Childs != null)
                 this._Childs = null;
+        }
+        /// <summary>
+        /// Metoda vrátí pole Child v případě, kdy typ hodnoty v buňce je <see cref="TableValueType.ITimeInteractiveGraph"/>.
+        /// Metoda zajistí, že graf, uložený jako Value v buňce <see cref="OwnerCell"/> bude korektně naplněn,
+        /// tzn. bude mít navázaný konvertor časové osy <see cref="ITimeInteractiveGraph.TimeConvertor"/> a bude mít nastavenho parenta <see cref="IInteractiveParent.Parent"/> = this.
+        /// </summary>
+        /// <returns></returns>
+        protected IInteractiveItem[] GetChildsITimeInteractiveGraph()
+        {
+            ITimeInteractiveGraph graph = this.OwnerCell.Value as ITimeInteractiveGraph;
+            if (graph.TimeConvertor == null)
+                graph.TimeConvertor = this.OwnerGTable.GetTimeConvertor(this.OwnerCell);
+            if (graph.Parent == null)
+                graph.Parent = this; // this.OwnerGTable.GetInteractiveParent(this.OwnerCell.Row, this.OwnerCell);
+
+            return new IInteractiveItem[] { graph };
         }
         #endregion
         #region Draw

@@ -271,9 +271,9 @@ namespace Asol.Tools.WorkScheduler.Components
             bool e = this.IsEnabledChildItemType(itemType);
             bool s = this.IsSelected;
             bool o = this.CanDragOnlySelected;
-            bool v = (this.CurrentState == GInteractiveState.MouseOver);
-            bool d = (this.CurrentState == GInteractiveState.LeftDown || this.CurrentState == GInteractiveState.RightDown);
-            bool g = (this.CurrentState == GInteractiveState.LeftDrag || this.CurrentState == GInteractiveState.RightDrag);
+            bool v = (this.InteractiveState == GInteractiveState.MouseOver);
+            bool d = (this.InteractiveState == GInteractiveState.LeftDown || this.InteractiveState == GInteractiveState.RightDown);
+            bool g = (this.InteractiveState == GInteractiveState.LeftDrag || this.InteractiveState == GInteractiveState.RightDrag);
             bool m = (v || d || g);
 
             switch (itemType)
@@ -372,7 +372,7 @@ namespace Asol.Tools.WorkScheduler.Components
             /// <summary>
             /// Interactive State of Owner item
             /// </summary>
-            public GInteractiveState ItemState { get { return (this.IsCurrentItem ? this.Owner.CurrentState : GInteractiveState.None); } }
+            public GInteractiveState ItemState { get { return (this.IsCurrentItem ? this.Owner.InteractiveState : GInteractiveState.None); } }
             /// <summary>
             /// Store new value to this.ActivePoint = { x, y } and this.Bounds from { ActivePoint, size }.
             /// </summary>
@@ -495,7 +495,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             if (childItem != null)
             {
-                this.CurrentState = e.TargetState;
+                this.InteractiveState = e.TargetState;
             }
             switch (e.ChangeState)
             {
@@ -649,20 +649,16 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Draw this item in standard mode
         /// </summary>
         /// <param name="e"></param>
-        protected override void DrawStandard(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
+        protected override void Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
         {
-            this.DrawStandardBackground(e, boundsAbsolute);
-            if (e.DrawLayer == GInteractiveDrawLayer.Interactive)
-                this.DrawChildItems(e);
-        }
-        /// <summary>
-        /// Draw this item as ghost
-        /// </summary>
-        /// <param name="e"></param>
-        protected override void DrawAsGhost(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
-        {
-            this.DrawGhostBackground(e, boundsAbsolute);
-            if (e.DrawLayer == GInteractiveDrawLayer.Interactive)
+            bool isGhost = (drawMode.HasFlag(DrawItemMode.Ghost));
+            if (!isGhost)
+                this.DrawStandardBackground(e, boundsAbsolute);
+            else
+                this.DrawGhostBackground(e, boundsAbsolute);
+
+            bool isTarget = (drawMode.HasFlag(DrawItemMode.DraggedBounds));
+            if (isTarget)
                 this.DrawChildItems(e);
         }
         /// <summary>
@@ -672,8 +668,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="bounds">Absolute bounds</param>
         protected virtual void DrawStandardBackground(GInteractiveDrawArgs e, Rectangle bounds)
         {
-            Point? point = ((this.CurrentState == GInteractiveState.MouseOver) ? this.CurrentMouseRelativePoint : (Point?)null);
-            GPainter.DrawAreaBase(e.Graphics, bounds, this.BackColor, this.CurrentState, Orientation.Horizontal, point, null);
+            Point? point = ((this.InteractiveState == GInteractiveState.MouseOver) ? this.CurrentMouseRelativePoint : (Point?)null);
+            GPainter.DrawAreaBase(e.Graphics, bounds, this.BackColor, this.InteractiveState, Orientation.Horizontal, point, null);
             GPainter.DrawString(e.Graphics, bounds, "GEditableArea", Color.Black, FontInfo.Default, ContentAlignment.MiddleCenter);
         }
         /// <summary>
@@ -698,7 +694,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 this.DrawSelection(e);
             }
 
-            if (this.CurrentState == GInteractiveState.MouseOver || this.CurrentState == GInteractiveState.LeftDown || this.CurrentState == GInteractiveState.LeftDrag)
+            if (this.InteractiveState == GInteractiveState.MouseOver || this.InteractiveState == GInteractiveState.LeftDown || this.InteractiveState == GInteractiveState.LeftDrag)
             {
                 this.ItemBorder.DrawChild(e);
                 this.ItemLeft.DrawChild(e);

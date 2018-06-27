@@ -1155,11 +1155,15 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         #region Podpora pro kreslení a interaktivitu
         /// <summary>
         /// Metoda je volaná pro vykreslení jedné položky grafu.
-        /// Implementátor může bez nejmenších obav převolat <see cref="GControl"/> : <see cref="GTimeGraphControl.Draw(GInteractiveDrawArgs, Rectangle)"/>
+        /// Implementátor může bez nejmenších obav převolat <see cref="GControl"/> : <see cref="GTimeGraphControl.DrawItem(GInteractiveDrawArgs, Rectangle, DrawItemMode)"/>
         /// </summary>
         /// <param name="e">Standardní data pro kreslení</param>
         /// <param name="boundsAbsolute">Absolutní souřadnice tohoto prvku</param>
-        protected void Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute) { this._GControl.Draw(e, boundsAbsolute); }
+        /// <param name="drawMode">Režim kreslení (má význam pro akce Drag & Drop)</param>
+        protected void Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
+        {
+            this._GControl.DrawItem(e, boundsAbsolute, drawMode);
+        }
         #endregion
         #region Explicitní implementace rozhraní ITimeGraphItem
         int ITimeGraphItem.ItemId { get { return this._ItemId; } } 
@@ -1175,7 +1179,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         Color? ITimeGraphItem.BorderColor { get { return this._BorderColor; } }
         Color? ITimeGraphItem.LinkBackColor { get { return this._LinkBackColor; } }
         GTimeGraphControl ITimeGraphItem.GControl { get { return this._GControl; } set { this._GControl = value; } }
-        void ITimeGraphItem.Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute) { this.Draw(e, boundsAbsolute); }
+        void ITimeGraphItem.Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode) { this.Draw(e, boundsAbsolute, drawMode); }
         #endregion
     }
     #endregion

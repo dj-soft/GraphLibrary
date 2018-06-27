@@ -176,7 +176,6 @@ namespace Asol.Tools.WorkScheduler.Components
             float b = GetMorph(root.B, other.B, morph);
             return GetColor(a, r, g, b);
         }
-
         /// <summary>
         /// Vrátí složku barvy vzniklou morphingem = interpolací.
         /// </summary>
@@ -260,6 +259,20 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             if (opacity.HasValue) return Color.FromArgb(opacity.Value, root);
             return root;
+        }
+        /// <summary>
+        /// Metoda vrátí novou instanci barvy this, kde její Alpha je nastavena na daný poměr (transparent) původní hodnoty.
+        /// Tedy zadáním například: <see cref="Color.BlueViolet"/>.<see cref="CreateTransparent(Color, float)"/>(0.75f) 
+        /// dojde k vytvoření a vrácení barvy s hodnotou Alpha = 75% = 192, od barvy BlueViolet (která je #FF8A2BE2), tedy výsledek bude #C08A2BE2.
+        /// </summary>
+        /// <param name="root"></param>
+        /// <param name="transparent"></param>
+        /// <returns></returns>
+        public static Color CreateTransparent(this Color root, float transparent)
+        {
+            int a = (int)(((float)root.A) * transparent);
+            a = (a < 0 ? 0 : (a > 255 ? 255 : 0));
+            return Color.FromArgb(a, root.R, root.G, root.B);
         }
         #endregion
         #region Point, PointF: Add/Sub
