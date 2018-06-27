@@ -670,7 +670,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         Color? ITimeGraphItem.LinkBackColor { get { return this.LinkBackColor; } }
         Color? ITimeGraphItem.BorderColor { get { return this.BorderColor; } }
         GTimeGraphControl ITimeGraphItem.GControl { get { return this.GControl; } set { this.GControl = value; } }
-        void ITimeGraphItem.Draw(TimeGraphItemDrawArgs drawArgs) { this.GControl.Draw(drawArgs); }
+        void ITimeGraphItem.Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute) { this.GControl.Draw(e, boundsAbsolute); }
         #endregion
     }
     #endregion
