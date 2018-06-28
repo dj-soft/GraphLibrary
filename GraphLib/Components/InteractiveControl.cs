@@ -1182,7 +1182,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         protected override void OnPaintLayers(LayeredPaintEventArgs e)
         {
-            using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "OnPaintLayers", ""))
+            using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "OnPaintLayers", "", "Bounds: " + this.Bounds))
             {
                 DrawRequest request = e.UserData as DrawRequest;
                 scope.AddItem("e.UserData: " + ((request == null) ? "null => Draw " : "Explicit request"));

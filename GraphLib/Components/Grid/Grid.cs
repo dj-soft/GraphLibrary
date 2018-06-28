@@ -81,7 +81,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 items |= InvalidateItem.GridTablesScroll | InvalidateItem.GridInnerBounds;
             bool isSameWidth = (lastClientSize.HasValue && lastClientSize.Value.Width == currentClientSize.Width);
             if (!isSameWidth)
-                items |= InvalidateItem.ColumnScroll | InvalidateItem.GridInnerBounds;
+                items |= InvalidateItem.GridColumnsScroll | InvalidateItem.GridInnerBounds;
 
             this.Invalidate(items);
 
@@ -1023,7 +1023,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 repaint = true;
                 callTables = true;
             }
-            if (items.HasFlag(InvalidateItem.GridColumnsScroll))
+            if ((items & (InvalidateItem.GridColumnsScroll | InvalidateItem.ColumnScroll)) != 0)
             {
                 this._ColumnsLayoutValid = false;
                 this._ChildArrayValid = false;

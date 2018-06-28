@@ -216,11 +216,16 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             Rectangle oldBounds = this._Bounds;
             Rectangle newBounds = bounds;
-            if (oldBounds == newBounds) return false;
-
-            this._Bounds = bounds;
-            this.CallActionsAfterBoundsChanged(oldBounds, newBounds, ref actions, eventSource);
-            return true;
+            bool isChange = (oldBounds != newBounds);
+            using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, this.GetType().Name, "SetBounds", "", "OldBounds: " + oldBounds, "NewBounds: " + newBounds))
+            {
+                if (isChange)
+                {
+                    this._Bounds = bounds;
+                    this.CallActionsAfterBoundsChanged(oldBounds, newBounds, ref actions, eventSource);
+                }
+            }
+            return isChange;
         }
         /// <summary>
         /// Call all actions after Bounds chaged.

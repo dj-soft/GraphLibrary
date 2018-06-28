@@ -397,9 +397,17 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private GGrid _GGrid;
         void _GControlSizeChanged(object sender, EventArgs e)
         {
-            Size size = _GControl.ClientSize;
-            _GGrid.Bounds = new Rectangle(3, 3, size.Width - 6, size.Height - 6);
+            var form = this._GControl.FindForm();
+            string state = "State: " + (form != null ? form.WindowState.ToString() : "NULL");
 
+            Size size = this._GControl.ClientSize;
+            Rectangle oldBounds = this._GGrid.Bounds;
+            Rectangle newBounds = new Rectangle(3, 3, size.Width - 6, size.Height - 6);
+
+            using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "MainControl", "SizeChanged", "", "OldBounds: " + oldBounds, "NewBounds: " + newBounds, state))
+            {
+                this._GGrid.Bounds = new Rectangle(3, 3, size.Width - 6, size.Height - 6);
+            }
         }
 
 
