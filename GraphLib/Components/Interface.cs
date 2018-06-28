@@ -99,13 +99,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         object UserData { get; set; }
         /// <summary>
-        /// Repaint item to layers after current operation. 
-        /// Layers are not combinable. 
-        /// Layer None is for invisible, but active items (item then has IsVisible = true, IsEnabled = true, but will not be really drawed).
+        /// Obsahuje vrstvy, do nichž se tento objekt kreslí standardně.
+        /// Tuto hodnotu vloží metoda <see cref="InteractiveObject.Repaint()"/> do <see cref="RepaintToLayers"/>.
+        /// Vrstva <see cref="GInteractiveDrawLayer.None"/> není vykreslována (objekt je tedy vždy neviditelný), ale na rozdíl od <see cref="IsVisible"/> je takový objekt interaktivní.
         /// </summary>
         GInteractiveDrawLayer StandardDrawToLayer { get; }
         /// <summary>
-        /// Repaint item to this layers after current operation. Layers are combinable. Layer None can be specified (item will be not repainted).
+        /// Obsahuje všechny vrstvy grafiky, do kterých chce být tento prvek právě nyní (při nejbližším kreslení) vykreslován.
+        /// Po vykreslení je nastaveno na <see cref="GInteractiveDrawLayer.None"/>.
         /// </summary>
         GInteractiveDrawLayer RepaintToLayers { get; set; }
         /// <summary>
@@ -117,21 +118,34 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         Boolean IsActiveAtAbsolutePoint(Point relativePoint);
         /// <summary>
-        /// This method is called after any interactive change
+        /// Tato metoda je volaná po každé interaktivní změně na prvku.
         /// </summary>
         /// <param name="e"></param>
         void AfterStateChanged(GInteractiveChangeStateArgs e);
         /// <summary>
-        /// this method is called on each drag action
+        /// Tato metoda je volaná postupně pro jednotlivé fáze akce Drag & Drop.
         /// </summary>
         /// <param name="e"></param>
         void DragAction(GDragActionArgs e);
         /// <summary>
-        /// Called to draw content of this item, and all its Childs.
-        /// Parent does not call directly Draw() method for my Childs, this is my responsibility.
+        /// Metoda je volaná pro vykreslení obsahu tohoto prvku.
+        /// Pokud prvek má nějaké potomstvo (Childs), pak se this prvek nestará o jejich vykreslení, to zajistí jádro.
+        /// Jádro detekuje naše <see cref="Childs"/>, a postupně volá jejich vykreslení (od prvního po poslední).
         /// </summary>
         /// <param name="e"></param>
         void Draw(GInteractiveDrawArgs e);
+        /// <summary>
+        /// Pokud je zde true, pak v procesu kreslení prvku je po standardním vykreslení this prvku <see cref="Draw(GInteractiveDrawArgs)"/> 
+        /// a po standardním vykreslení všech <see cref="Childs"/> prvků ještě vyvolána metoda <see cref="DrawOverChilds(GInteractiveDrawArgs)"/> pro this prvek.
+        /// </summary>
+        bool NeedDrawOverChilds { get; }
+        /// <summary>
+        /// Tato metoda je volaná pro prvek, který má nastaveno <see cref="NeedDrawOverChilds"/> == true, poté když tento prvek byl vykreslen, a následně byly vykresleny jeho <see cref="Childs"/>.
+        /// Umožňuje tedy kreslit "nad" svoje <see cref="Childs"/> (tj. počmárat je).
+        /// Tento postup se používá typicky jen pro zobrazení překryvného textu přes <see cref="Childs"/> prvky, které svůj text nenesou.
+        /// </summary>
+        /// <param name="e"></param>
+        void DrawOverChilds(GInteractiveDrawArgs e);
     }
     public interface IInteractiveParent
     {

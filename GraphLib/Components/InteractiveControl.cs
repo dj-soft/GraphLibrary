@@ -1408,13 +1408,7 @@ namespace Asol.Tools.WorkScheduler.Components
 
                     // Přidat prvek do seznamů pro patřičné vrstvy:
                     GInteractiveDrawLayer itemLayers = this.GetLayersToDrawItem(item, parentLayers);
-                    if (itemLayers.HasFlag(GInteractiveDrawLayer.Standard))
-                        this.StandardItems.Add(new DrawRequestItem(absoluteItemOffset, absoluteVisibleClip, item));
-                    if (itemLayers.HasFlag(GInteractiveDrawLayer.Interactive))
-                        this.InteractiveItems.Add(new DrawRequestItem(absoluteItemOffset, absoluteVisibleClip, item));
-                    if (itemLayers.HasFlag(GInteractiveDrawLayer.Dynamic))
-                        this.DynamicItems.Add(new DrawRequestItem(absoluteItemOffset, absoluteVisibleClip, item));
-
+                    this.AddItemToLayers(item, itemLayers, absoluteItemOffset, absoluteVisibleClip, false);
                     item.RepaintToLayers = GInteractiveDrawLayer.None;
 
                     // Pokud má prvek potomstvo, vyřešíme i to:
@@ -1426,6 +1420,9 @@ namespace Asol.Tools.WorkScheduler.Components
                         if (childItems.Length > 0)
                             this.FillFromChilds(absoluteItemOffset, absoluteVisibleClip, item, childItems, itemLayers);
                     }
+
+                    if (item.NeedDrawOverChilds)
+                        this.AddItemToLayers(item, itemLayers, absoluteItemOffset, absoluteVisibleClip, true);
                 }
             }
             /// <summary>
@@ -1475,17 +1472,35 @@ namespace Asol.Tools.WorkScheduler.Components
                 //  protože jinak by tam namísto prvku item byla díra!
                 return (itemLayers | parentLayers);
             }
+            /// <summary>
+            /// Zařadí daný prvek (item) do soupisů pro vykreslování pro zadané vrstvy (addToLayers).
+            /// </summary>
+            /// <param name="item"></param>
+            /// <param name="addToLayers"></param>
+            /// <param name="absoluteItemOffset"></param>
+            /// <param name="absoluteVisibleClip"></param>
+            /// <param name="drawOverChilds"></param>
+            private void AddItemToLayers(IInteractiveItem item, GInteractiveDrawLayer addToLayers, Point absoluteItemOffset, Rectangle absoluteVisibleClip, bool drawOverChilds)
+            {
+                if (addToLayers.HasFlag(GInteractiveDrawLayer.Standard))
+                    this.StandardItems.Add(new DrawRequestItem(absoluteItemOffset, absoluteVisibleClip, item, drawOverChilds));
+                if (addToLayers.HasFlag(GInteractiveDrawLayer.Interactive))
+                    this.InteractiveItems.Add(new DrawRequestItem(absoluteItemOffset, absoluteVisibleClip, item, drawOverChilds));
+                if (addToLayers.HasFlag(GInteractiveDrawLayer.Dynamic))
+                    this.DynamicItems.Add(new DrawRequestItem(absoluteItemOffset, absoluteVisibleClip, item, drawOverChilds));
+            }
         }
         /// <summary>
-        /// Data pro vykreslení jednoho interaktivního prvku
+        /// Data pro jedno vykreslení jednoho interaktivního prvku
         /// </summary>
         protected class DrawRequestItem
         {
-            public DrawRequestItem(Point absoluteItemOffset, Rectangle absoluteVisibleClip, IInteractiveItem item)
+            public DrawRequestItem(Point absoluteItemOffset, Rectangle absoluteVisibleClip, IInteractiveItem item, bool isDrawOverChilds)
             {
                 this.AbsoluteItemOffset = absoluteItemOffset;
                 this.AbsoluteVisibleClip = absoluteVisibleClip;
                 this.Item = item;
+                this.IsDrawOverChilds = isDrawOverChilds;
             }
             public override string ToString()
             {
@@ -1494,37 +1509,49 @@ namespace Asol.Tools.WorkScheduler.Components
             /// <summary>
             /// Absolutní souřadnice počátku, k nimž se vztahují relativní souřadnice (Bounds) this itemu
             /// </summary>
-            public Point AbsoluteItemOffset { get; set; }
+            public Point AbsoluteItemOffset { get; private set; }
             /// <summary>
             /// Souřadnice prostoru (absolutní = v koordinátech Controlu), v nichž může být tento item viditelný = prostor pro Clip grafiky.
             /// Jde o Intersect hodnot AbsoluteClientBounds ze všech Parentů, tedy "viditelný průnik", do něhož se má tento prvek zobrazit.
             /// Zde není zohledněna hodnota Item.Bounds: prvek Item se může vykreslit i mimo svoje souřadnice, když chce, ale vždy jen v prostoru daném jeho Parenty.
             /// Tedy: Může se pohybovat ve svém parentu (i mimo svoje Bounds), ale nesmí vyběhnout z parenta.
             /// </summary>
-            public Rectangle AbsoluteVisibleClip { get; set; }
+            public Rectangle AbsoluteVisibleClip { get; private set; }
             /// <summary>
             /// Prvek, který se bude vykreslovat
             /// </summary>
-            public IInteractiveItem Item { get; set; }
+            public IInteractiveItem Item { get; private set; }
+            /// <summary>
+            /// Obsahuje true, pokud tento požadavek je určen pro volání metody <see cref="IInteractiveItem.DrawOverChilds(GInteractiveDrawArgs)"/>.
+            /// Pokud je false, má se volat standardní metoda <see cref="IInteractiveItem.Draw(GInteractiveDrawArgs)"/>.
+            /// </summary>
+            public bool IsDrawOverChilds { get; private set; }
             /// <summary>
             /// Zajistí vykreslení prvku a návazné operace s prvkem
             /// </summary>
             /// <param name="e"></param>
             public void Draw(GInteractiveDrawArgs e)
             {
-                // Do prvku nastavíme absolutní souřadnice, kde je vykreslen - včetně oříznutí, jakožto jeho interaktivní souřadnice (kde je prvek interaktivní):
-                if (this.Item.IsInteractive)
-                {
-                    Rectangle absoluteBounds = this.Item.Bounds.Add(this.AbsoluteItemOffset);             // Absolutní Bounds prvku Item
-                    Rectangle absoluteInteractiveBounds = absoluteBounds.Add(this.Item.ActivePadding);    // Absolutní interaktivní souřadnice
-                    this.Item.AbsoluteInteractiveBounds = Rectangle.Intersect(absoluteInteractiveBounds, this.AbsoluteVisibleClip);  // Clip na zobrazené souřadnice
+                if (!this.IsDrawOverChilds)
+                {   // Standardní kreslení:
+                    // Do prvku nastavíme absolutní souřadnice, kde je vykreslen - včetně oříznutí, jakožto jeho interaktivní souřadnice (kde je prvek interaktivní):
+                    if (this.Item.IsInteractive)
+                    {
+                        Rectangle absoluteBounds = this.Item.Bounds.Add(this.AbsoluteItemOffset);             // Absolutní Bounds prvku Item
+                        Rectangle absoluteInteractiveBounds = absoluteBounds.Add(this.Item.ActivePadding);    // Absolutní interaktivní souřadnice
+                        this.Item.AbsoluteInteractiveBounds = Rectangle.Intersect(absoluteInteractiveBounds, this.AbsoluteVisibleClip);  // Clip na zobrazené souřadnice
+                    }
+
+                    // Prvek vykreslíme:
+                    this.Item.Draw(e);
+
+                    // V prvku resetujeme požadavek na kreslení do aktuální vrstvy:
+                    e.ResetLayerFlagForItem(this.Item);
                 }
-
-                // Prvek vykreslíme:
-                this.Item.Draw(e);
-
-                // V prvku resetujeme požadavek na kreslení do aktuální vrstvy:
-                e.ResetLayerFlagForItem(this.Item);
+                else
+                {   // Kreslení OverChilds:
+                    this.Item.DrawOverChilds(e);
+                }
             }
         }
         #endregion

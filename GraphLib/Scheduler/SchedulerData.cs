@@ -584,9 +584,16 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (this.TableRow != null)
                 throw new GraphLibDataException("Duplicitní zadání dat typu Row pro tabulku <" + this.TableName + ">.");
             this._TableRow = Table.CreateFrom(dataTable);
+            this._TableRow.OpenRecordForm += _TableRow_OpenRecordForm;
             if (this.TableRow.AllowPrimaryKey)
                 this.TableRow.HasPrimaryIndex = true;
         }
+
+        private void _TableRow_OpenRecordForm(object sender, GPropertyEventArgs<GId> e)
+        {
+            System.Windows.Forms.MessageBox.Show("Rád bych otevřel záznam " + e.Value.ToString());
+        }
+
         /// <summary>
         /// Metoda přidá data grafických prvků.
         /// </summary>

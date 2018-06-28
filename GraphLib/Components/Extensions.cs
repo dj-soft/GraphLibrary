@@ -203,7 +203,7 @@ namespace Asol.Tools.WorkScheduler.Components
             float rgb = 1.0f * (float)root.R +
                         1.4f * (float)root.G +
                         0.7f * (float)root.B;
-            return (rgb >= 310 ? Color.Black : Color.White);
+            return (rgb >= 395 ? Color.Black : Color.White);      // Součet složek je 0 až 790.5, střed kontrastu je 1/2 = 395
         }
         /// <summary>
         /// Vrátí barvu, která je kontrastní vůči barvě this.

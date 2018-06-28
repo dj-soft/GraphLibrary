@@ -1300,7 +1300,16 @@ namespace Asol.Tools.WorkScheduler.Components
 
             Rectangle boundsLink = boundsAbsolute.Enlarge(-1, -2, -1, -2);
             GPainter.DrawEffect3D(e.Graphics, boundsLink, backColor.Value, System.Windows.Forms.Orientation.Horizontal, this.GControl.InteractiveState, force3D: false);
-         //   this.GControl.DrawItem(e, boundsAbsolute, drawMode, backColor, borderColor, - 1);
+        }
+        /// <summary>
+        /// Metoda volaná pro vykreslování obsahu "Přes Child prvky"
+        /// </summary>
+        /// <param name="e"></param>
+        public void DrawOverChilds(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
+        {
+            string text = this.Time.ToString();
+            Color foreColor = this.GControl.BackColor.Contrast();
+            GPainter.DrawString(e.Graphics, boundsAbsolute, text, foreColor, FontInfo.CaptionBold, ContentAlignment.MiddleCenter);
         }
         /// <summary>
         /// Porovná dvě instance <see cref="GTimeGraphGroup"/> podle <see cref="ITimeGraphItem.Order"/> ASC, <see cref="ITimeGraphItem.Time"/> ASC
@@ -1380,7 +1389,29 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Hodnota 0 odpovídá prvnímu viditelnému pixelu vlevo.
         /// </summary>
         public Int32Range CoordinateX { get; set; }
-
+        /// <summary>
+        /// Barva pozadí tohoto prvku
+        /// </summary>
+        public override Color BackColor
+        {
+            get
+            {
+                if (this.BackColorUser.HasValue) return this.BackColorUser.Value;
+                if (this._Owner != null && this._Owner.BackColor.HasValue) return this._Owner.BackColor.Value;
+                return Skin.Graph.ElementBackColor;
+            }
+            set { }
+        }
+        public Color BorderColor
+        {
+            get
+            {
+                if (this.BorderColorUser.HasValue) return this.BorderColorUser.Value;
+                if (this._Owner != null && this._Owner.BorderColor.HasValue) return this._Owner.BorderColor.Value;
+                return Skin.Graph.ElementBorderColor;
+            }
+        }
+        public Color? BorderColorUser { get; set; }
         #endregion
         #region Child prvky: přidávání, kolekce
         /// <summary>
@@ -1410,7 +1441,19 @@ namespace Asol.Tools.WorkScheduler.Components
         protected override void Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
         {
             this._Owner.Draw(e, boundsAbsolute, drawMode);
-            // base.Draw(e, boundsAbsolute, drawMode);
+        }
+        /// <summary>
+        /// Vykreslování "Přes Child prvky": pokud this prvek vykresluje Grupu, pak ano!
+        /// </summary>
+        protected override bool NeedDrawOverChilds { get { return (this._Position == GGraphControlPosition.Group); } set { } }
+        /// <summary>
+        /// Metoda volaná pro vykreslování "Přes Child prvky": převolá se grupa.
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void DrawOverChilds(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
+        {
+            if (this._Position == GGraphControlPosition.Group)
+                this._Group.DrawOverChilds(e, boundsAbsolute, drawMode);
         }
         /// <summary>
         /// Metoda je volaná pro vykreslení jedné položky grafu.
@@ -1420,7 +1463,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="drawMode">Režim kreslení (má význam pro akce Drag & Drop)</param>
         public void DrawItem(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
         {
-            this.DrawItem(e, boundsAbsolute, drawMode, null, null, null);
+            this.DrawItem(e, boundsAbsolute, drawMode, null);
         }
         /// <summary>
         /// Metoda je volaná pro vykreslení prvku.
@@ -1432,44 +1475,36 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="backColor">Explicitně definovaná barva pozadí</param>
         /// <param name="borderColor">Explicitně definovaná barva okraje</param>
         /// <param name="enlargeBounds">Změna rozměru Bounds ve všech směrech</param>
-        public void DrawItem(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode, Color? backColor, Color? borderColor, int? enlargeBounds)
+        public void DrawItem(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode, int? enlargeBounds)
         {
-            if (!boundsAbsolute.HasPixels()) return;
+            if (boundsAbsolute.Height <= 0 || boundsAbsolute.Width < 0) return;
             if (enlargeBounds.HasValue)
-            {
                 boundsAbsolute = boundsAbsolute.Enlarge(enlargeBounds.Value);
-                if (boundsAbsolute.Width < 1)
-                    boundsAbsolute.Width = 1;
-            }
-            int w = boundsAbsolute.Width;
+            if (boundsAbsolute.Width < 1)
+                boundsAbsolute.Width = 1;
 
-            if (!backColor.HasValue)
-                backColor = (this._Owner.BackColor.HasValue ? this._Owner.BackColor.Value : Skin.Graph.ElementBackColor);
-
-            System.Drawing.Drawing2D.HatchStyle? backStyle = this._Owner.BackStyle;
-
-            if (!borderColor.HasValue)
-                borderColor = (this._Owner.BorderColor.HasValue ? this._Owner.BorderColor.Value : backColor.Value.Morph(Color.Black, 0.60f));
-
+            Color backColor = this.BackColor;
+            Color borderColor = this.BorderColor;
             if (boundsAbsolute.Width <= 2)
             {
-                e.Graphics.FillRectangle(Skin.Brush(borderColor.Value), boundsAbsolute);
+                e.Graphics.FillRectangle(Skin.Brush(borderColor), boundsAbsolute);
             }
             else
             {
+                System.Drawing.Drawing2D.HatchStyle? backStyle = this._Owner.BackStyle;
                 if (backStyle.HasValue)
                 {
-                    using (System.Drawing.Drawing2D.HatchBrush hb = new System.Drawing.Drawing2D.HatchBrush(backStyle.Value, backColor.Value, Color.Transparent))
+                    using (System.Drawing.Drawing2D.HatchBrush hb = new System.Drawing.Drawing2D.HatchBrush(backStyle.Value, backColor, Color.Transparent))
                     {
                         e.Graphics.FillRectangle(hb, boundsAbsolute);
                     }
                 }
                 else
                 {
-                    e.Graphics.FillRectangle(Skin.Brush(backColor.Value), boundsAbsolute);
+                    e.Graphics.FillRectangle(Skin.Brush(backColor), boundsAbsolute);
                 }
 
-                e.Graphics.DrawRectangle(Skin.Pen(borderColor.Value), boundsAbsolute);
+                e.Graphics.DrawRectangle(Skin.Pen(borderColor), boundsAbsolute);
             }
         }
         /// <summary>

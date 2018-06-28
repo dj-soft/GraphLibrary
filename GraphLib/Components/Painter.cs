@@ -550,7 +550,8 @@ namespace Asol.Tools.WorkScheduler.Components
             using (GraphicsUseText(graphics))
             {
                 Font font = fontInfo.Font;
-                StringFormat sFormat = new StringFormat(StringFormatFlags.LineLimit);
+                StringFormat sFormat = new StringFormat(StringFormatFlags.NoClip);
+                // sFormat = new StringFormat(StringFormatFlags.NoClip);
                 SizeF textSize = graphics.MeasureString(text, font, boundsLength, sFormat);
                 if (isVertical) textSize = textSize.Swap();               // Pro vertikální text převedu prostor textu "na výšku"
                 textArea = textSize.AlignTo(bounds, alignment, true);     // Zarovnám oblast textu do přiděleného prostoru dle zarovnání
