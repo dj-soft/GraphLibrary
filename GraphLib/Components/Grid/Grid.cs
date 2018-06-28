@@ -65,7 +65,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="newBounds"></param>
         protected void InvalidateByBoundsChanges(Rectangle newBounds)
         {
-            InvalidateItem items = InvalidateItem.None;
+            InvalidateItem items = InvalidateItem.Paint;
 
             // Změna umístění gridu:
             Rectangle? lastBounds = this._LastBounds;

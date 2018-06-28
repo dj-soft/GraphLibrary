@@ -404,13 +404,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             Rectangle oldBounds = this._GGrid.Bounds;
             Rectangle newBounds = new Rectangle(3, 3, size.Width - 6, size.Height - 6);
 
+            if (form.WindowState == System.Windows.Forms.FormWindowState.Maximized)
+            { }
+
             using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "MainControl", "SizeChanged", "", "OldBounds: " + oldBounds, "NewBounds: " + newBounds, state))
             {
                 this._GGrid.Bounds = new Rectangle(3, 3, size.Width - 6, size.Height - 6);
             }
         }
-
-
         #endregion
         #region Implementace IMainDataInternal
         #endregion

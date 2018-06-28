@@ -1532,6 +1532,9 @@ namespace Asol.Tools.WorkScheduler.Components
             /// <param name="e"></param>
             public void Draw(GInteractiveDrawArgs e)
             {
+                if (this.Item is GGrid || this.Item is Grid.GTable)
+                { }
+
                 if (!this.IsDrawOverChilds)
                 {   // Standardní kreslení:
                     // Do prvku nastavíme absolutní souřadnice, kde je vykreslen - včetně oříznutí, jakožto jeho interaktivní souřadnice (kde je prvek interaktivní):
