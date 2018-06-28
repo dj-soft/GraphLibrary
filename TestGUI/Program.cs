@@ -17,6 +17,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             Application.App.AppCompanyName = "Asseco Solutions";
             Application.App.AppProductName = "WorkScheduler";
 
+            Application.App.TracePriority = Application.TracePriority.Priority1_ElementaryTimeDebug;
+
            // Tests.TestLinq(6);
 
             // Asol.Tools.WorkScheduler.TestGUI

@@ -27,8 +27,11 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         {
             InitializeComponent();
             InitializeWorkScheduler();
-            this.StartPosition = FormStartPosition.CenterParent;
-            this.WindowState = FormWindowState.Maximized;
+            using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "PluginForm", "Initialize", "", "Setting Maximized"))
+            {
+                this.StartPosition = FormStartPosition.CenterParent;
+                this.WindowState = FormWindowState.Maximized;
+            }
         }
         /// <summary>
         /// Inicializace controlu Scheduleru
