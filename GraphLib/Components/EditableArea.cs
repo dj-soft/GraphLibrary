@@ -323,7 +323,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 this.ItemType = itemType;
                 this.OverCursorType = overCursorType;
                 this.DragCursorType = dragCursorType;
-                this.ActivePadding = new Padding(activeOverhead);
+                this.InteractivePadding = new Padding(activeOverhead);
             }
             public override string ToString()
             {

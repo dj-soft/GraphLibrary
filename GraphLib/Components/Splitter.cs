@@ -498,7 +498,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     this._Orientation = orientationNew.Value;
                     this._SplitterVisibleWidth = splitterVisibleWidthNew.Value;
                     this._SplitterActiveOverlap = splitterActiveOverlapNew.Value;
-                    this.ActivePadding = activeOverheadNew;
+                    this.InteractivePadding = activeOverheadNew;
 
                     // Akce v době provádění změny = posunu:
                     if (IsAction(actions, ProcessAction.CallChangingEvents))

@@ -1541,7 +1541,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     if (this.Item.IsInteractive)
                     {
                         Rectangle absoluteBounds = this.Item.Bounds.Add(this.AbsoluteItemOffset);             // Absolutní Bounds prvku Item
-                        Rectangle absoluteInteractiveBounds = absoluteBounds.Add(this.Item.ActivePadding);    // Absolutní interaktivní souřadnice
+                        Rectangle absoluteInteractiveBounds = absoluteBounds.Add(this.Item.InteractivePadding);    // Absolutní interaktivní souřadnice
                         this.Item.AbsoluteInteractiveBounds = Rectangle.Intersect(absoluteInteractiveBounds, this.AbsoluteVisibleClip);  // Clip na zobrazené souřadnice
                     }
 

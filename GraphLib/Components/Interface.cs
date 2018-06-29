@@ -33,10 +33,16 @@ namespace Asol.Tools.WorkScheduler.Components
         Rectangle Bounds { get; set; }
         /// <summary>
         /// Přídavek k this.Bounds, který určuje přesah aktivity tohoto prvku do jeho okolí.
+        /// <para/>
         /// Kladné hodnoty v Padding zvětšují aktivní plochu nad rámec this.Bounds, záporné aktivní plochu zmenšují.
+        /// <para/>
         /// Aktivní souřadnice prvku tedy jsou this.Bounds.Add(this.ActivePadding), kde Add() je extension metoda.
         /// </summary>
-        Padding? ActivePadding { get; set; }
+        Padding? InteractivePadding { get; set; }
+        /// <summary>
+        /// Okraje (dovnitř this prvku od <see cref="Bounds"/>), uvnitř těchto okrajů se nachází prostor pro klientské prvky.
+        /// </summary>
+        Padding? ClientBorder { get; set; }
         /// <summary>
         /// Absolutní souřadnice (vzhledem k Controlu Host), na kterých je tento prvek aktivní.
         /// Souřadnice ve výchozím stavu určuje proces vykreslování, kdy jsou určeny jak offset souřadnic (absolutní počátek parenta),

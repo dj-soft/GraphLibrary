@@ -83,7 +83,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Kladné hodnoty v Padding zvětšují aktivní plochu nad rámec this.Bounds, záporné aktivní plochu zmenšují.
         /// Aktivní souřadnice prvku tedy jsou this.Bounds.Add(this.ActivePadding), kde Add() je extension metoda.
         /// </summary>
-        public virtual Padding? ActivePadding
+        public virtual Padding? InteractivePadding
         {
             get { return this.__ActivePadding; }
             set
@@ -766,7 +766,7 @@ namespace Asol.Tools.WorkScheduler.Components
         // IInteractiveParent IInteractiveItem.Parent { get { return this.Parent; } set { this.Parent = value; } }
         IEnumerable<IInteractiveItem> IInteractiveItem.Childs { get { return this.Childs; } }
         Rectangle IInteractiveItem.Bounds { get { return this.Bounds; } set { this.Bounds = value; } }
-        Padding? IInteractiveItem.ActivePadding { get { return this.ActivePadding; } set { this.ActivePadding = value; } }
+        Padding? IInteractiveItem.InteractivePadding { get { return this.InteractivePadding; } set { this.InteractivePadding = value; } }
         Rectangle? IInteractiveItem.AbsoluteInteractiveBounds { get { return this.AbsoluteInteractiveBounds; } set { this.AbsoluteInteractiveBounds = value; } }
         Boolean IInteractiveItem.IsInteractive { get { return this.IsInteractive; } }
         Boolean IInteractiveItem.IsVisible { get { return this.IsVisible; } set { this.IsVisible = value; } }
