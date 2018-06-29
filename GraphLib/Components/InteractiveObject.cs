@@ -112,10 +112,11 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         /// <summary>
-        /// Inner border between this Bounds and Childs area.
-        /// Client area is (Bounds.Left + ClientBorder.Left, Bounds.Top + ClientBorder.Top, Bounds.Width - ClientBorder.Horizontal, Bounds.Height - ClientBorder.Vertical)
+        /// Vnitřní okraj mezi <see cref="Bounds"/> a prostorem, v němž se kreslí <see cref="Childs"/> prvky.
+        /// Typicky se používá pro vykreslení okraje this prvku (Border), do něhož se Child prvky nikdy nekreslí.
+        /// Kladné hodnoty reprezentují reálný okraj, záporné hodnoty by mohly povolit přesah <see cref="Childs"/> prvků ven z parenta (z this prvku).
         /// </summary>
-        public virtual Padding ClientBorder 
+        public virtual Padding? ClientBorder 
         {
             get { return this.__ClientBorder; }
             set
@@ -124,10 +125,9 @@ namespace Asol.Tools.WorkScheduler.Components
                 this.BoundsInvalidate();
             }
         }
-
         /// <summary>
-        /// Použitá barva pozadí.
-        /// Pokud <see cref="BackColorUser"/> bude null, použije se <see cref="DefaultBackColor"/>.
+        /// Aktuálně použitá barva pozadí.
+        /// Pokud <see cref="BackColorUser"/> bude null, použije se <see cref="DefaultBackColor"/>, což je Skin.Control.BackColor.
         /// Sem nelze setovat null.
         /// </summary>
         public virtual Color BackColor 
@@ -137,7 +137,8 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         /// <summary>
         /// Aktuálně vložená barva pozadí.
-        /// Lze vložit null, pak jako BackColor bude figurovat <see cref="DefaultBackColor"/>.
+        /// Zadaná hodnota má přednost před <see cref="DefaultBackColor"/>.
+        /// Lze vložit null, pak jako <see cref="BackColor"/> bude figurovat <see cref="DefaultBackColor"/>.
         /// </summary>
         public Color? BackColorUser
         {
@@ -150,19 +151,19 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected virtual Color DefaultBackColor { get { return Skin.Control.BackColor; } }
         /// <summary>
-        /// Libovolný popisný údaj
+        /// Libovolný popisný údaj, na funkci nemá vliv.
         /// </summary>
         public object Tag { get; set; }
         /// <summary>
-        /// Libovolný datový údaj
+        /// Libovolný datový údaj, na funkci nemá vliv.
         /// </summary>
         public object UserData { get; set; }
         /// <summary>
-        /// Order for this item
+        /// Z-Order pro tuto položku.
         /// </summary>
         public ZOrder ZOrder { get { return this.__ZOrder; } set { this.__ZOrder = value; } } private ZOrder __ZOrder = ZOrder.Standard;
         /// <summary>
-        /// Refresh whole control
+        /// Zajistí vykreslení this prvku včetně překreslení Host controlu.
         /// </summary>
         public virtual void Refresh()
         {
@@ -175,12 +176,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected virtual GInteractiveStyles Style { get { return this._Style; } set { this._Style = value; } } private GInteractiveStyles _Style = GInteractiveStyles.StandardMouseInteractivity;
         /// <summary>
-        /// true when this object has keyboard focus
-        /// </summary>
-        protected virtual bool HasFocus { get { return this._HasFocus; } set { this._HasFocus = value; } } private bool _HasFocus;
-
-        /// <summary>
-        /// Mode for drawing a ghost during Drag operation. Is converted from/to this.Style value.
+        /// Režim pro kreslení prvku v době Drag & Drop.
+        /// Je spojeno s hodnotami <see cref="Style"/>.
         /// </summary>
         protected DragDrawGhostMode DragDrawGhostMode
         {
@@ -201,6 +198,10 @@ namespace Asol.Tools.WorkScheduler.Components
                 this.Style = (GInteractiveStyles)storage;
             }
         }
+        /// <summary>
+        /// Obsahuje true, pokud this prvek má klávesový focus.
+        /// </summary>
+        protected virtual bool HasFocus { get { return this._HasFocus; } set { this._HasFocus = value; } } private bool _HasFocus;
         #endregion
         #region Bounds support
         /// <summary>
@@ -228,8 +229,13 @@ namespace Asol.Tools.WorkScheduler.Components
             return isChange;
         }
         /// <summary>
-        /// Call all actions after Bounds chaged.
-        /// Call: allways: SetBoundsAfterChange(); by actions: SetBoundsRecalcInnerData(); SetBoundsPrepareInnerItems(); CallBoundsChanged(); CallDrawRequest();
+        /// Vyvolá patřičné akce po změně <see cref="Bounds"/>.
+        /// Vždy zavolá: <see cref="SetBoundsAfterChange(Rectangle, Rectangle, ref ProcessAction, EventSourceType)"/>; 
+        /// a pak podle akcí specifikovaných v parametr actions: 
+        /// <see cref="SetBoundsRecalcInnerData(Rectangle, Rectangle, ref ProcessAction, EventSourceType)"/> a
+        /// <see cref="SetBoundsPrepareInnerItems(Rectangle, Rectangle, ref ProcessAction, EventSourceType)"/>, poté
+        /// <see cref="CallBoundsChanged(Rectangle, Rectangle, EventSourceType)"/> a
+        /// <see cref="CallDrawRequest(EventSourceType)"/>.
         /// </summary>
         /// <param name="oldBounds"></param>
         /// <param name="newBounds"></param>
@@ -248,7 +254,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 this.CallDrawRequest(eventSource);
         }
         /// <summary>
-        /// Is called after Bounds change, from SetBound() method, without any conditions (even if action is None).
+        /// Je voláno po změně souřadnic <see cref="Bounds"/>, z metody <see cref="SetBounds(Rectangle, ProcessAction, EventSourceType)"/>, bez dalších podmínke (tj. vždy po změně).
         /// </summary>
         /// <param name="oldBounds">Původní umístění, před změnou</param>
         /// <param name="newBounds">Nové umístění, po změnou. Používejme raději tuto hodnotu než this.Bounds</param>
@@ -257,8 +263,8 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual void SetBoundsAfterChange(Rectangle oldBounds, Rectangle newBounds, ref ProcessAction actions, EventSourceType eventSource)
         { }
         /// <summary>
-        /// Is called after Bounds change, from SetBound() method, only when action RecalcInnerData is specified.
-        /// Recalculate SubItems bounds after change this.Bounds.
+        /// Je voláno po změně souřadnic <see cref="Bounds"/>, z metody <see cref="SetBounds(Rectangle, ProcessAction, EventSourceType)"/>, pokud je specifikována akce <see cref="ProcessAction.RecalcInnerData"/>.
+        /// Účelem je přepočítat data závislí na souřadnicích.
         /// </summary>
         /// <param name="oldBounds">Původní umístění, před změnou</param>
         /// <param name="newBounds">Nové umístění, po změnou. Používejme raději tuto hodnotu než this.Bounds</param>
@@ -267,8 +273,8 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual void SetBoundsRecalcInnerData(Rectangle oldBounds, Rectangle newBounds, ref ProcessAction actions, EventSourceType eventSource)
         { }
         /// <summary>
-        /// Is called after Bounds change, from SetBound() method, only when action PrepareInnerItems is specified.
-        /// Recalculate SubItems bounds after change this.Bounds.
+        /// Je voláno po změně souřadnic <see cref="Bounds"/>, z metody <see cref="SetBounds(Rectangle, ProcessAction, EventSourceType)"/>, pokud je specifikována akce <see cref="ProcessAction.PrepareInnerItems"/>.
+        /// Účelem je přepočítat souřadnice vnořených závislých prvků.
         /// </summary>
         /// <param name="oldBounds">Původní umístění, před změnou</param>
         /// <param name="newBounds">Nové umístění, po změnou. Používejme raději tuto hodnotu než this.Bounds</param>
@@ -276,6 +282,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="eventSource">Zdroj této události</param>
         protected virtual void SetBoundsPrepareInnerItems(Rectangle oldBounds, Rectangle newBounds, ref ProcessAction actions, EventSourceType eventSource)
         { }
+
+
+
+
         /// <summary>
         /// Coordinates of this item (this.Bounds) in absolute value. This is: relative on Host control.
         /// </summary>
@@ -319,7 +329,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         private Rectangle __Bounds;
         private Rectangle? __BoundsClient;
-        private Padding __ClientBorder;
+        private Padding? __ClientBorder;
         private Padding? __ActivePadding;
         private Rectangle? __AbsoluteInteractiveBounds;
         #endregion
@@ -766,6 +776,7 @@ namespace Asol.Tools.WorkScheduler.Components
         // IInteractiveParent IInteractiveItem.Parent { get { return this.Parent; } set { this.Parent = value; } }
         IEnumerable<IInteractiveItem> IInteractiveItem.Childs { get { return this.Childs; } }
         Rectangle IInteractiveItem.Bounds { get { return this.Bounds; } set { this.Bounds = value; } }
+        Padding? IInteractiveItem.ClientBorder { get { return this.ClientBorder; } set { this.ClientBorder = value; } }
         Padding? IInteractiveItem.InteractivePadding { get { return this.InteractivePadding; } set { this.InteractivePadding = value; } }
         Rectangle? IInteractiveItem.AbsoluteInteractiveBounds { get { return this.AbsoluteInteractiveBounds; } set { this.AbsoluteInteractiveBounds = value; } }
         Boolean IInteractiveItem.IsInteractive { get { return this.IsInteractive; } }
