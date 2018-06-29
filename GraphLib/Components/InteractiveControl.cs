@@ -988,9 +988,9 @@ namespace Asol.Tools.WorkScheduler.Components
         private Size _DragStartSize;
         #endregion
         #endregion
-        #region ReDraw control after interactive action (transform data from Mouse and Keyboard response to Draw)
+        #region Přenesení informací z interaktivních metod do překreslení části controlu (vizuální reakce na interaktivní události)
         /// <summary>
-        /// Init variables for requests to drawing from interactive methods
+        /// Inicializace proměnných (před interaktivními akcemi) pro zachycení požadavků interaktivních akcí na následné překreslení controlu
         /// </summary>
         private void _InteractiveDrawInit(MouseEventArgs e)
         {
@@ -1004,7 +1004,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this._DrawState = InteractiveDrawState.InteractiveEvent;
         }
         /// <summary>
-        /// Store request to drawing from one interactive event
+        /// Uložení požadavků na překreslení controlu po provedení jedné interaktivní události
         /// </summary>
         /// <param name="e"></param>
         private void _InteractiveDrawStore(GInteractiveChangeStateArgs e)
@@ -1012,20 +1012,22 @@ namespace Asol.Tools.WorkScheduler.Components
             this._InteractiveDrawStore(this._MouseCurrentAbsolutePoint, e);
         }
         /// <summary>
-        /// Store request to drawing from one interactive event
+        /// Uložení požadavků na překreslení controlu po provedení jedné interaktivní události
         /// </summary>
         /// <param name="toolTipPoint"></param>
         /// <param name="e"></param>
         private void _InteractiveDrawStore(Point? toolTipPoint, GInteractiveChangeStateArgs e)
         {
             this._ToolTipSet(toolTipPoint, e);
+            // Pokud jde po sobě více interaktivních událostí, pak typ kurzoru přebíráme z poslední z nich, která kurzor deklarovala:
+            // Typická sekvence je: Item1.MouseLeave (Cursor = Default), Item2.MouseEnter (Cursor = VSplit).
             if (e.RequiredCursorType.HasValue)
-                this._MouseCursorType = e.RequiredCursorType;        // When multiple events occurs, valid CursorType is from last event. Typically sequence is: Item1.MouseLeave (Cursor = Default), Item2.MouseEnter (Cursor = VSplit).
+                this._MouseCursorType = e.RequiredCursorType;
             if (e.RepaintAllItems)
                 this.RepaintAllItems = true;
         }
         /// <summary>
-        /// Call Draw, if there are any request.
+        /// Vyvolání Draw pro zachycené požadavky po dokončení interaktivních událostí
         /// </summary>
         private void _InteractiveDrawRun()
         {
@@ -1374,6 +1376,8 @@ namespace Asol.Tools.WorkScheduler.Components
             /// <param name="interactive">true = provádí se interaktivní vykreslení</param>
             internal void Fill(Rectangle absoluteVisibleClip, IInteractiveParent parent, IEnumerable<IInteractiveItem> items, bool drawAllItems, bool interactive)
             {
+                // Tady se bude používat BoundsSpider !!!
+                BoundsSpider spider = BoundsSpider.CreateForItem
                 using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "DrawRequest", "Fill", ""))
                 {
                     this.InteractiveMode = interactive;
