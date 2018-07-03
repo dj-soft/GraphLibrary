@@ -1118,7 +1118,7 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
     }
     #endregion
-    #region class InteractiveValue : abstract ancestor for iteractive objects with Value and ValieRange properties
+    #region class InteractiveValue : abstract ancestor for iteractive objects with Value and ValueRange properties
     /// <summary>
     /// InteractiveValue : abstract ancestor for iteractive objects with Value and ValueRange properties
     /// </summary>

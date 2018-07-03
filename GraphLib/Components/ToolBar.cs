@@ -517,20 +517,27 @@ namespace Asol.Tools.WorkScheduler.Components
             items.Add(_Splitter);
             return items;
         }
-        protected override void Draw(GInteractiveDrawArgs e, System.Drawing.Rectangle boundsAbsolute, DrawItemMode drawMode)
+        /// <summary>
+        /// Vykreslí Toolbar
+        /// </summary>
+        /// <param name="e">Data pro kreslení</param>
+        /// <param name="absoluteBounds">Absolutní souřadnice tohoto prvku, sem by se mělo fyzicky kreslit</param>
+        /// <param name="absoluteVisibleBounds">Absolutní souřadnice tohoto prvku, oříznuté do viditelné oblasti.</param>
+        /// <param name="drawMode">Režim kreslení (pomáhá řešit Drag & Drop procesy)</param>
+        protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
         {
             this.CheckLayout(e.Graphics);
             this._SplitterCheckValue();
-            this.DrawToolbarBackground(e.Graphics, null);
+            this.DrawToolbarBackground(e.Graphics, absoluteBounds, null);
         }
         /// <summary>
         /// Draw background for toolbar. Can be called from GToolbarGroup.
         /// </summary>
         /// <param name="graphics"></param>
         /// <param name="boundsDraw"></param>
-        internal void DrawToolbarBackground(Graphics graphics, Rectangle? boundsDraw)
+        internal void DrawToolbarBackground(Graphics graphics, Rectangle absoluteBounds, Rectangle? boundsDraw)
         {
-            Rectangle toolbarBounds = this.BoundsAbsolute;
+            Rectangle toolbarBounds = absoluteBounds;
             if (boundsDraw.HasValue)
             {
                 toolbarBounds.X = boundsDraw.Value.X;
@@ -768,12 +775,19 @@ namespace Asol.Tools.WorkScheduler.Components
         internal ComponentSize ToolbarSize { get { return this._Toolbar.ToolbarSize; } }
         #endregion
         #region InteractiveContainer : Interactivity, Draw
-        protected override void Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
+        /// <summary>
+        /// Vykreslí grupu
+        /// </summary>
+        /// <param name="e">Data pro kreslení</param>
+        /// <param name="absoluteBounds">Absolutní souřadnice tohoto prvku, sem by se mělo fyzicky kreslit</param>
+        /// <param name="absoluteVisibleBounds">Absolutní souřadnice tohoto prvku, oříznuté do viditelné oblasti.</param>
+        /// <param name="drawMode">Režim kreslení (pomáhá řešit Drag & Drop procesy)</param>
+        protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
         {
-            this.Toolbar.DrawToolbarBackground(e.Graphics, boundsAbsolute);    // Nebudeme volat bázovou metodu, ta stejně kreslí jen pozadí.
-            this.DrawGroupTitle(e, boundsAbsolute);
+            this.Toolbar.DrawToolbarBackground(e.Graphics, absoluteBounds, absoluteBounds);    // Nebudeme volat bázovou metodu, ta stejně kreslí jen pozadí.
+            this.DrawGroupTitle(e, absoluteBounds);
         }
-        internal void DrawGroupTitle(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
+        internal void DrawGroupTitle(GInteractiveDrawArgs e, Rectangle absoluteBounds)
         {
             GToolBar.LayoutSettingTBarInfo tBarSetting = this.TBarSetting;
             Rectangle tb = tBarSetting.TitleBounds;
@@ -1338,25 +1352,32 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         #endregion
         #region InteractiveContainer : Interactivity, Draw
-        protected override void Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
+        /// <summary>
+        /// Vykreslí jeden prvek
+        /// </summary>
+        /// <param name="e">Data pro kreslení</param>
+        /// <param name="absoluteBounds">Absolutní souřadnice tohoto prvku, sem by se mělo fyzicky kreslit</param>
+        /// <param name="absoluteVisibleBounds">Absolutní souřadnice tohoto prvku, oříznuté do viditelné oblasti.</param>
+        /// <param name="drawMode">Režim kreslení (pomáhá řešit Drag & Drop procesy)</param>
+        protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
         {
             if (!this.IsVisible) return;
             switch (this.ItemType)
             {
                 case FunctionGlobalItemType.Separator:
-                    this.DrawStandardSeparator(e, boundsAbsolute);
+                    this.DrawStandardSeparator(e, absoluteBounds);
                     break;
                 case FunctionGlobalItemType.Label:
-                    this.DrawStandardLabel(e, boundsAbsolute);
+                    this.DrawStandardLabel(e, absoluteBounds);
                     break;
                 case FunctionGlobalItemType.Button:
-                    this.DrawStandardButton(e, boundsAbsolute);
+                    this.DrawStandardButton(e, absoluteBounds);
                     break;
                 case FunctionGlobalItemType.ComboBox:
-                    this.DrawStandardComboBox(e, boundsAbsolute);
+                    this.DrawStandardComboBox(e, absoluteBounds);
                     break;
                 case FunctionGlobalItemType.Image:
-                    this.DrawStandardImage(e, boundsAbsolute);
+                    this.DrawStandardImage(e, absoluteBounds);
                     break;
             }
         }
