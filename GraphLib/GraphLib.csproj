@@ -70,7 +70,7 @@
     <Compile Include="Application\Zoom.cs" />
     <Compile Include="Components\BaseAxis.cs" />
     <Compile Include="Components\BitStorage.cs" />
-    <Compile Include="Components\BoundsSpider.cs" />
+    <Compile Include="Components\BoundsInfo.cs" />
     <Compile Include="Components\ColorPalette.cs" />
     <Compile Include="Components\FontInfo.cs" />
     <Compile Include="Components\Graph.cs" />

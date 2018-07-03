@@ -1899,7 +1899,7 @@ namespace Asol.Tools.WorkScheduler.Components
             return (state == GInteractiveState.LeftDown || state == GInteractiveState.RightDown);
         }
         #endregion
-        #region Rectangle a Padding: Rectangle.Add(), Rectangle.Sub(Padding), Rectangle.ClientBounds(Padding)
+        #region Rectangle a Padding: Rectangle.Add(), Rectangle.Sub(Padding)
         /// <summary>
         /// Vrací vnitřní prostor v this Rectangle, po odečtení daných okrajů.
         /// Pokud okraje (padding) jsou null nebo prázdné, pak vrací výchozí souřadnice.
@@ -1968,21 +1968,107 @@ namespace Asol.Tools.WorkScheduler.Components
             if (h < 0) h = 0;
             return new Rectangle(l, t, w, h);
         }
+        #endregion
+        #region Size a Padding: Size.Add(), Size.Sub(Padding)
         /// <summary>
-        /// Metoda vrátí souřadnice Child prvku, který bude umístěn relativně v rámci this prostoru se zohledněním Padding.
-        /// Pokud bounds = { 100, 60, 300, 40 } a padding má All = 3, pak výsledek bude { 3, 3, 294, 34 }.
-        /// Tedy X a Y bude začínat na pozici 3 px, a šířka a výška klientského prostoru bude o (2*3) pixely menší než je this.Bounds.
+        /// Vrací vnitřní velikost v this Size, po odečtení daných okrajů.
+        /// Pokud okraje (padding) jsou null nebo prázdné, pak vrací výchozí velikost.
+        /// Jinak vrací: (this.Width - padding.Horizontal, this.Height - padding.Vertical).
+        /// Pokud by výsledná šířka nebo výška byla záporná, pak použije hodnotu 0.
         /// </summary>
-        /// <param name="bounds"></param>
+        /// <param name="size"></param>
         /// <param name="padding"></param>
         /// <returns></returns>
-        public static Rectangle ClientBounds(this Rectangle bounds, Padding padding)
+        public static Size Sub(this Size size, Padding? padding)
         {
-            int l = padding.Left;
-            int t = padding.Top;
-            int w = bounds.Width - padding.Horizontal;
-            int h = bounds.Height - padding.Vertical;
-            return new Rectangle(l, t, w, h);
+            if (!padding.HasValue) return size;
+            return Sub(size, padding.Value);
+        }
+        /// <summary>
+        /// Vrací vnitřní velikost v this Size, po odečtení daných okrajů.
+        /// Pokud okraje (padding) jsou prázdné, pak vrací výchozí velikost.
+        /// Jinak vrací: (this.Width - padding.Horizontal, this.Height - padding.Vertical).
+        /// Pokud by výsledná šířka nebo výška byla záporná, pak použije hodnotu 0.
+        /// </summary>
+        /// <param name="size"></param>
+        /// <param name="padding"></param>
+        /// <returns></returns>
+        public static Size Sub(this Size size, Padding padding)
+        {
+            if (padding.All == 0) return size;
+            int w = size.Width - padding.Horizontal;
+            if (w < 0) w = 0;
+            int h = size.Height - padding.Vertical;
+            if (h < 0) h = 0;
+            return new Size(w, h);
+        }
+        /// <summary>
+        /// Vrací vnitřní velikost v this Size, po odečtení daných okrajů.
+        /// Pokud okraje (padding) jsou prázdné, pak vrací výchozí velikost.
+        /// Jinak vrací: (this.Width - horizontal, this.Height - vertical).
+        /// Pokud by výsledná šířka nebo výška byla záporná, pak použije hodnotu 0.
+        /// </summary>
+        /// <param name="size"></param>
+        /// <param name="horizontal"></param>
+        /// <param name="vertical"></param>
+        /// <returns></returns>
+        public static Size Sub(this Size size, int horizontal, int vertical)
+        {
+            int w = size.Width - horizontal;
+            if (w < 0) w = 0;
+            int h = size.Height - vertical;
+            if (h < 0) h = 0;
+            return new Size(w, h);
+        }
+        /// <summary>
+        /// Vrací vnější velikost okolo this Size, po přičtení daných okrajů.
+        /// Pokud okraje (padding) jsou null nebo prázdné, pak vrací výchozí velikost.
+        /// Jinak vrací: (this.Width + padding.Horizontal, this.Height + padding.Vertical).
+        /// Pokud by výsledná šířka nebo výška byla záporná, pak použije hodnotu 0.
+        /// </summary>
+        /// <param name="size"></param>
+        /// <param name="padding"></param>
+        /// <returns></returns>
+        public static Size Add(this Size size, Padding? padding)
+        {
+            if (!padding.HasValue) return size;
+            return Add(size, padding.Value);
+        }
+        /// <summary>
+        /// Vrací vnější velikost okolo this Size, po přičtení daných okrajů.
+        /// Pokud okraje (padding) jsou prázdné, pak vrací výchozí velikost.
+        /// Jinak vrací: (this.Width + padding.Horizontal, this.Height + padding.Vertical).
+        /// Pokud by výsledná šířka nebo výška byla záporná, pak použije hodnotu 0.
+        /// </summary>
+        /// <param name="size"></param>
+        /// <param name="padding"></param>
+        /// <returns></returns>
+        public static Size Add(this Size size, Padding padding)
+        {
+            if (padding.All == 0) return size;
+            int w = size.Width + padding.Horizontal;
+            if (w < 0) w = 0;
+            int h = size.Height + padding.Vertical;
+            if (h < 0) h = 0;
+            return new Size(w, h);
+        }
+        /// <summary>
+        /// Vrací vnitřní velikost v this Size, po odečtení daných okrajů.
+        /// Pokud okraje (padding) jsou prázdné, pak vrací výchozí velikost.
+        /// Jinak vrací: (this.Width + horizontal, this.Height + vertical).
+        /// Pokud by výsledná šířka nebo výška byla záporná, pak použije hodnotu 0.
+        /// </summary>
+        /// <param name="size"></param>
+        /// <param name="horizontal"></param>
+        /// <param name="vertical"></param>
+        /// <returns></returns>
+        public static Size Add(this Size size, int horizontal, int vertical)
+        {
+            int w = size.Width + horizontal;
+            if (w < 0) w = 0;
+            int h = size.Height + vertical;
+            if (h < 0) h = 0;
+            return new Size(w, h);
         }
         #endregion
         #region Font: Modify

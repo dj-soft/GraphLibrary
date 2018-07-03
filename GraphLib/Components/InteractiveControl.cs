@@ -1377,13 +1377,12 @@ namespace Asol.Tools.WorkScheduler.Components
             internal void Fill(Size clientSize, IInteractiveParent parent, IEnumerable<IInteractiveItem> items, bool drawAllItems, bool interactive)
             {
                 // Tady se bude používat BoundsSpider !!!
-                qqq;
-                BoundsSpider boundsSpider = BoundsSpider.CreateForParent(clientSize);
+                BoundsInfo boundsInfo = BoundsInfo.CreateForParent(clientSize);
                 Rectangle absoluteVisibleClip = new Rectangle(0, 0, clientSize.Width, clientSize.Height);
                 using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "DrawRequest", "Fill", ""))
                 {
                     this.InteractiveMode = interactive;
-                    this.FillFromItems(new Point(0, 0), absoluteVisibleClip, boundsSpider, parent, items, GInteractiveDrawLayer.None);
+                    this.FillFromItems(new Point(0, 0), absoluteVisibleClip, boundsInfo, parent, items, GInteractiveDrawLayer.None);
                     scope.AddItem("StandardItems.Count: " + this.StandardItems.Count.ToString());
                     scope.AddItem("InteractiveItems.Count: " + this.InteractiveItems.Count.ToString());
                     scope.AddItem("DynamicItems.Count: " + this.DynamicItems.Count.ToString());
@@ -1396,10 +1395,11 @@ namespace Asol.Tools.WorkScheduler.Components
             /// </summary>
             /// <param name="absoluteItemOffset">Absolutní souřadnice počátku (absolutní = v koordinátech Controlu), k nimž se vztahují souřadnice item.Bounds</param>
             /// <param name="absoluteVisibleClip">Absolutní souřadnice prostoru (absolutní = v koordinátech Controlu), v nichž může být item viditelný = prostor pro Clip grafiky</param>
+            /// <param name="boundsInfo">Souřadný systém, který platí pro prvky z parametru "items"</param>
             /// <param name="parent">Parent prvků</param>
             /// <param name="items">Prvky k vykreslení</param>
             /// <param name="parentLayers">Vrstvy k vykreslení</param>
-            private void FillFromItems(Point absoluteItemOffset, Rectangle absoluteVisibleClip, BoundsSpider boundsSpider, IInteractiveParent parent, IEnumerable<IInteractiveItem> items, GInteractiveDrawLayer parentLayers)
+            private void FillFromItems(Point absoluteItemOffset, Rectangle absoluteVisibleClip, BoundsInfo boundsInfo, IInteractiveParent parent, IEnumerable<IInteractiveItem> items, GInteractiveDrawLayer parentLayers)
             {
                 foreach (IInteractiveItem item in items)
                 {
@@ -1414,11 +1414,11 @@ namespace Asol.Tools.WorkScheduler.Components
                     this.ProcessedItems.Add(item.Id, item);
 
                     // Prvek vložíme do Spidera, aby nám mohl počítat jeho souřadnice:
-                    boundsSpider.CurrentItem = item;
+                    boundsInfo.CurrentItem = item;
 
                     // Přidat prvek do seznamů pro patřičné vrstvy:
                     GInteractiveDrawLayer itemLayers = this.GetLayersToDrawItem(item, parentLayers);
-                    this.AddItemToLayers(item, itemLayers, absoluteItemOffset, absoluteVisibleClip, boundsSpider, false);
+                    this.AddItemToLayers(item, itemLayers, absoluteItemOffset, absoluteVisibleClip, boundsInfo, false);
                     item.RepaintToLayers = GInteractiveDrawLayer.None;
 
                     // Pokud má prvek potomstvo, vyřešíme i to:
@@ -1429,13 +1429,13 @@ namespace Asol.Tools.WorkScheduler.Components
                         IInteractiveItem[] childItems = childs.ToArray();
                         if (childItems.Length > 0)
                         {
-                            BoundsSpider childSpider = boundsSpider.CurrentChildsSpider;
-                            this.FillFromChilds(absoluteItemOffset, absoluteVisibleClip, childSpider, item, childItems, itemLayers);
+                            BoundsInfo boundsInfoChilds = boundsInfo.CurrentChildsSpider;          // Souřadný systém, který platí uvnitř aktuálního prvku "item" = ten platí pro všechny jeho Childs prvky
+                            this.FillFromChilds(absoluteItemOffset, absoluteVisibleClip, boundsInfoChilds, item, childItems, itemLayers);
                         }
                     }
 
                     if (item.NeedDrawOverChilds)
-                        this.AddItemToLayers(item, itemLayers, absoluteItemOffset, absoluteVisibleClip, boundsSpider, true);
+                        this.AddItemToLayers(item, itemLayers, absoluteItemOffset, absoluteVisibleClip, boundsInfo, true);
                 }
             }
             /// <summary>
@@ -1444,8 +1444,9 @@ namespace Asol.Tools.WorkScheduler.Components
             /// <param name="absoluteItemOffset">Absolutní souřadnice počátku, k nimž se vztahují souřadnice this itemu</param>
             /// <param name="absoluteVisibleClip">Souřadnice prostoru (absolutní = v koordinátech Controlu), v nichž může být item viditelný = prostor pro Clip grafiky</param>
             /// <param name="parent">Prvek, který je Parentem daných Childs</param>
+            /// <param name="boundsInfoChilds"></param>
             /// <param name="childs">prvky, které mají být vykresleny v rámci tohoto parenta</param>
-            private void FillFromChilds(Point absoluteItemOffset, Rectangle absoluteVisibleClip, BoundsSpider childSpider, IInteractiveItem parent, IInteractiveItem[] childs, GInteractiveDrawLayer itemLayers)
+            private void FillFromChilds(Point absoluteItemOffset, Rectangle absoluteVisibleClip, BoundsInfo boundsInfoChilds, IInteractiveItem parent, IInteractiveItem[] childs, GInteractiveDrawLayer itemLayers)
             {
                 if (parent == null || childs == null) return;
 
@@ -1462,7 +1463,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 Rectangle absoluteChildsVisibleClip = Rectangle.Intersect(absoluteVisibleClip, itemAbsoluteBounds);
 
                 // Čistokrevná rekurze:
-                this.FillFromItems(absoluteChildsOffset, absoluteChildsVisibleClip, childSpider, parent, childs, itemLayers);
+                this.FillFromItems(absoluteChildsOffset, absoluteChildsVisibleClip, boundsInfoChilds, parent, childs, itemLayers);
             }
             /// <summary>
             /// Vrací vrstvy, do kterých má být vykreslen daný prvek, s přihlédnutím k tomu, do jakých vrstev se kreslí jeho parent,
@@ -1493,7 +1494,7 @@ namespace Asol.Tools.WorkScheduler.Components
             /// <param name="absoluteItemOffset"></param>
             /// <param name="absoluteVisibleClip"></param>
             /// <param name="drawOverChilds"></param>
-            private void AddItemToLayers(IInteractiveItem item, GInteractiveDrawLayer addToLayers, Point absoluteItemOffset, Rectangle absoluteVisibleClip, BoundsSpider boundsSpider, bool drawOverChilds)
+            private void AddItemToLayers(IInteractiveItem item, GInteractiveDrawLayer addToLayers, Point absoluteItemOffset, Rectangle absoluteVisibleClip, BoundsInfo boundsSpider, bool drawOverChilds)
             {
                 if (addToLayers.HasFlag(GInteractiveDrawLayer.Standard))
                     this.StandardItems.Add(new DrawRequestItem(absoluteItemOffset, absoluteVisibleClip, item, drawOverChilds));
