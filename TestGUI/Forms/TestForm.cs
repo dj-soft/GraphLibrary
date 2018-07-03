@@ -249,20 +249,27 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         }
         #endregion
         #region Draw
-        protected override void Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
+        /// <summary>
+        /// Vykreslí prvek
+        /// </summary>
+        /// <param name="e">Data pro kreslení</param>
+        /// <param name="absoluteBounds">Absolutní souřadnice tohoto prvku, sem by se mělo fyzicky kreslit</param>
+        /// <param name="absoluteVisibleBounds">Absolutní souřadnice tohoto prvku, oříznuté do viditelné oblasti.</param>
+        /// <param name="drawMode">Režim kreslení (pomáhá řešit Drag & Drop procesy)</param>
+        protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
         {
             bool isGhost = (drawMode.HasFlag(DrawItemMode.Ghost));
             if (!isGhost)
-                GPainter.DrawButtonBase(e.Graphics, boundsAbsolute, this.Color, this.InteractiveState, Orientation.Horizontal, this.MouseCenter, null);
+                GPainter.DrawButtonBase(e.Graphics, absoluteBounds, this.Color, this.InteractiveState, Orientation.Horizontal, this.MouseCenter, null);
             else
-                this._DrawNative(e, boundsAbsolute);
+                this._DrawNative(e, absoluteBounds);
         }
         
-        private void _DrawNative(GInteractiveDrawArgs e, Rectangle bounds)
+        private void _DrawNative(GInteractiveDrawArgs e, Rectangle absoluteBounds)
         {
             if (this.MouseCenter.HasValue)
             {
-                Rectangle r = bounds;
+                Rectangle r = absoluteBounds;
                 Point[] pts = new Point[]
                     {
                         new Point(r.Left, r.Top), 
@@ -276,7 +283,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                     p.CenterPoint = new PointF(r.X + this.MouseCenter.Value.X, r.Y + this.MouseCenter.Value.Y);
                     p.CenterColor = Color.White;
                     p.SurroundColors = new Color[] { this.Color, this.Color, this.Color, this.Color, this.Color };
-                    e.Graphics.FillRectangle(p, bounds);
+                    e.Graphics.FillRectangle(p, absoluteBounds);
                 }
             }
             else if (this.IsDragged)
@@ -290,17 +297,17 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 }
                 else
                 {   // Kreslím objekt, který je přemísťován, do horní = interaktivní vrstvy = jeho nové umístění:
-                    using (System.Drawing.Drawing2D.LinearGradientBrush b = new System.Drawing.Drawing2D.LinearGradientBrush(bounds, this.Color, Color.White, this.Angle))
+                    using (System.Drawing.Drawing2D.LinearGradientBrush b = new System.Drawing.Drawing2D.LinearGradientBrush(absoluteBounds, this.Color, Color.White, this.Angle))
                     {
-                        e.Graphics.FillRectangle(b, bounds);
+                        e.Graphics.FillRectangle(b, absoluteBounds);
                     }
                 }
             }
             else
             {   // Normální objekt:
-                using (System.Drawing.Drawing2D.LinearGradientBrush b = new System.Drawing.Drawing2D.LinearGradientBrush(bounds, this.Color, Color.White, this.Angle))
+                using (System.Drawing.Drawing2D.LinearGradientBrush b = new System.Drawing.Drawing2D.LinearGradientBrush(absoluteBounds, this.Color, Color.White, this.Angle))
                 {
-                    e.Graphics.FillRectangle(b, bounds);
+                    e.Graphics.FillRectangle(b, absoluteBounds);
                 }
             }
         }
