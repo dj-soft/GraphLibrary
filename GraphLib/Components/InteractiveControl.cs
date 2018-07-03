@@ -1377,6 +1377,7 @@ namespace Asol.Tools.WorkScheduler.Components
             internal void Fill(Size clientSize, IInteractiveParent parent, IEnumerable<IInteractiveItem> items, bool drawAllItems, bool interactive)
             {
                 // Tady se bude používat BoundsSpider !!!
+                qqq;
                 BoundsSpider boundsSpider = BoundsSpider.CreateForParent(clientSize);
                 Rectangle absoluteVisibleClip = new Rectangle(0, 0, clientSize.Width, clientSize.Height);
                 using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "DrawRequest", "Fill", ""))
