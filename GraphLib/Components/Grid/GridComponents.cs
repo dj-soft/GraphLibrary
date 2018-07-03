@@ -1232,7 +1232,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         {
             get
             {
-                Rectangle childBounds = this.Bounds.ClientBounds(this.ClientBorder).Enlarge(0, 0, -1, -1);               // Child bounds musí být o 1 pixel menší na výšku i na šířku, kvůli GridLines
+                Rectangle childBounds = BoundsSpider.GetChildBounds(this).Enlarge(0, 0, -1, -1);   // Child bounds musí být o 1 pixel menší na výšku i na šířku, kvůli GridLines
                 return childBounds;
             }
         }
