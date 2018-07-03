@@ -815,36 +815,43 @@ namespace Asol.Tools.WorkScheduler.Components
         private GTabPage[] _ChildItems;
         #endregion
         #region Draw, Interactivity
-        protected override void Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
+        /// <summary>
+        /// Vykreslí TabHeader
+        /// </summary>
+        /// <param name="e">Kreslící argument</param>
+        /// <param name="absoluteBounds">Absolutní souřadnice tohoto prvku, sem by se mělo fyzicky kreslit</param>
+        /// <param name="absoluteVisibleBounds">Absolutní souřadnice tohoto prvku, oříznuté do viditelné oblasti.</param>
+        /// <param name="drawMode">Režim kreslení (pomáhá řešit Drag & Drop procesy)</param>
+        protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
         {
             Color spaceColor = this.BackColor;                  // tam je default: Skin.TabHeader.SpaceColor;
             if (spaceColor.A > 0)
-                e.Graphics.FillRectangle(Skin.Brush(spaceColor), boundsAbsolute);
+                e.Graphics.FillRectangle(Skin.Brush(spaceColor), absoluteBounds);
 
-            this.DrawHeaderLine(e, boundsAbsolute);
+            this.DrawHeaderLine(e, absoluteBounds);
         }
         /// <summary>
         /// Vykreslí linku "pod" všemi položkami záhlaví, odděluje záhlaví a data.
         /// Aktivní záhlaví pak tuto linku zruší svým pozadím.
         /// </summary>
         /// <param name="e"></param>
-        /// <param name="boundsAbsolute"></param>
-        protected void DrawHeaderLine(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
+        /// <param name="absoluteBounds"></param>
+        protected void DrawHeaderLine(GInteractiveDrawArgs e, Rectangle absoluteBounds)
         {
             Rectangle line = Rectangle.Empty;
             switch (this.Position)
             {
                 case RectangleSide.Top:
-                    line = new Rectangle(boundsAbsolute.X, boundsAbsolute.Bottom - 2, boundsAbsolute.Width, 2);
+                    line = new Rectangle(absoluteBounds.X, absoluteBounds.Bottom - 2, absoluteBounds.Width, 2);
                     break;
                 case RectangleSide.Right:
-                    line = new Rectangle(boundsAbsolute.X, boundsAbsolute.Y, 2, boundsAbsolute.Height);
+                    line = new Rectangle(absoluteBounds.X, absoluteBounds.Y, 2, absoluteBounds.Height);
                     break;
                 case RectangleSide.Bottom:
-                    line = new Rectangle(boundsAbsolute.X, boundsAbsolute.Y, boundsAbsolute.Width, 2);
+                    line = new Rectangle(absoluteBounds.X, absoluteBounds.Y, absoluteBounds.Width, 2);
                     break;
                 case RectangleSide.Left:
-                    line = new Rectangle(boundsAbsolute.Right - 2, boundsAbsolute.Y, 2, boundsAbsolute.Height);
+                    line = new Rectangle(absoluteBounds.Right - 2, absoluteBounds.Y, 2, absoluteBounds.Height);
                     break;
             }
             if (!line.HasPixels()) return;
@@ -1165,12 +1172,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Zajistí standardní vykreslení záhlaví
         /// </summary>
-        /// <param name="e"></param>
-        /// <param name="boundsAbsolute"></param>
-        protected override void Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
+        /// <param name="e">Data pro kreslení</param>
+        /// <param name="absoluteBounds">Absolutní souřadnice tohoto prvku, sem by se mělo fyzicky kreslit</param>
+        /// <param name="absoluteVisibleBounds">Absolutní souřadnice tohoto prvku, oříznuté do viditelné oblasti.</param>
+        /// <param name="drawMode">Režim kreslení (pomáhá řešit Drag & Drop procesy)</param>
+        protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)  
         {
             this._DrawLayer = e.DrawLayer;
-            GPainter.DrawTabHeaderItem(e.Graphics, boundsAbsolute, this);
+            GPainter.DrawTabHeaderItem(e.Graphics, absoluteBounds, this);
         }
         /// <summary>
         /// Zajistí vyvolání háčku <see cref="OnTabHeaderPaintBackGround(Graphics, Rectangle)"/> a eventu <see cref="TabPagePaintBackGround"/>.

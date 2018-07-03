@@ -2186,25 +2186,26 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Draw current size axis to specified graphic.
         /// Coordinates are this.Area.
         /// </summary>
-        /// <param name="e"></param>
-        protected override void Draw(GInteractiveDrawArgs e)
+        /// <param name="e">Data pro kreslení</param>
+        /// <param name="absoluteBounds">Absolutní souřadnice tohoto prvku, sem by se mělo fyzicky kreslit</param>
+        /// <param name="absoluteVisibleBounds">Absolutní souřadnice tohoto prvku, oříznuté do viditelné oblasti.</param>
+        protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds)
         {
-            e.GraphicsClipWith(this.BoundsAbsolute);
+            e.GraphicsClipWith(absoluteBounds);
 
             if (this.IsBoundsValid && this.IsVisualValid && this.IsValueValid && !this.IsScaleValid)
                 this.CalculateRequiredEntities();
 
-            Rectangle bounds = this.BoundsAbsolute;
             if (this.IsBoundsValid && this.IsAxisValid && e.DrawLayer == GInteractiveDrawLayer.Standard)
             {
                 this.CalculateRequiredEntities();
-                Rectangle clip = e.GetClip(bounds);
+                Rectangle clip = e.GetClip(absoluteBounds);
                 using (GPainter.GraphicsUseText(e.Graphics, clip))
                 {
-                    this.DrawBackground(e.Graphics, bounds);
-                    this.DrawMousePoint(e.Graphics, bounds);
-                    this.DrawTicks(e.Graphics, bounds);
-                    this.DrawArrangementInfo(e.Graphics, bounds);
+                    this.DrawBackground(e.Graphics, absoluteBounds);
+                    this.DrawMousePoint(e.Graphics, absoluteBounds);
+                    this.DrawTicks(e.Graphics, absoluteBounds);
+                    this.DrawArrangementInfo(e.Graphics, absoluteBounds);
                 }
             }
         }
@@ -2212,10 +2213,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Draw background of axis
         /// </summary>
         /// <param name="graphics"></param>
-        /// <param name="bounds"></param>
-        protected void DrawBackground(Graphics graphics, Rectangle bounds)
+        /// <param name="absoluteBounds"></param>
+        protected void DrawBackground(Graphics graphics, Rectangle absoluteBounds)
         {
-            GPainter.DrawAxisBackground(graphics, bounds, this.OrientationDraw, this.IsEnabled, this.InteractiveState, this.BackColor, this.BackColor3DEffect);
+            GPainter.DrawAxisBackground(graphics, absoluteBounds, this.OrientationDraw, this.IsEnabled, this.InteractiveState, this.BackColor, this.BackColor3DEffect);
         }
         /// <summary>
         /// Draw Mouse point (a glare ellipse), when point location is stored in MouseOverRelativePoint or MouseDownRelativePoint (when HasValue)

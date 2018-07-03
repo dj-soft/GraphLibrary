@@ -111,53 +111,53 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Draw button base (background and border, by state)
         /// </summary>
         /// <param name="graphics"></param>
-        /// <param name="bounds"></param>
+        /// <param name="absoluteBounds"></param>
         /// <param name="color"></param>
         /// <param name="opacity"></param>
-        public static void DrawAreaBase(Graphics graphics, Rectangle bounds, Color color, Orientation orientation, Point? point, Int32? opacity)
+        public static void DrawAreaBase(Graphics graphics, Rectangle absoluteBounds, Color color, Orientation orientation, Point? point, Int32? opacity)
         {
-            DrawAreaBase(graphics, bounds, color, GInteractiveState.Enabled, orientation, point, opacity, 0);
+            DrawAreaBase(graphics, absoluteBounds, color, GInteractiveState.Enabled, orientation, point, opacity, 0);
         }
         /// <summary>
         /// Draw button base (background and border, by state)
         /// </summary>
         /// <param name="graphics"></param>
-        /// <param name="bounds"></param>
+        /// <param name="absoluteBounds"></param>
         /// <param name="color"></param>
         /// <param name="opacity"></param>
-        public static void DrawAreaBase(Graphics graphics, Rectangle bounds, Color color, Orientation orientation, Point? point, Int32? opacity, int roundCorner)
+        public static void DrawAreaBase(Graphics graphics, Rectangle absoluteBounds, Color color, Orientation orientation, Point? point, Int32? opacity, int roundCorner)
         {
-            DrawAreaBase(graphics, bounds, color, GInteractiveState.Enabled, orientation, point, opacity, roundCorner);
+            DrawAreaBase(graphics, absoluteBounds, color, GInteractiveState.Enabled, orientation, point, opacity, roundCorner);
         }
         /// <summary>
         /// Draw button base (background and border, by state)
         /// </summary>
         /// <param name="graphics"></param>
-        /// <param name="bounds"></param>
+        /// <param name="absoluteBounds"></param>
         /// <param name="color"></param>
         /// <param name="state"></param>
         /// <param name="opacity"></param>
-        public static void DrawAreaBase(Graphics graphics, Rectangle bounds, Color color, GInteractiveState state, Orientation orientation, Point? point, Int32? opacity)
+        public static void DrawAreaBase(Graphics graphics, Rectangle absoluteBounds, Color color, GInteractiveState state, Orientation orientation, Point? point, Int32? opacity)
         {
-            if (bounds.Width <= 0 || bounds.Height <= 0) return;
-            DrawAreaBase(graphics, bounds, color, state, orientation, point, opacity, 0);
+            if (absoluteBounds.Width <= 0 || absoluteBounds.Height <= 0) return;
+            DrawAreaBase(graphics, absoluteBounds, color, state, orientation, point, opacity, 0);
         }
         /// <summary>
         /// Draw button base (background and border, by state)
         /// </summary>
         /// <param name="graphics"></param>
-        /// <param name="bounds"></param>
+        /// <param name="absoluteBounds"></param>
         /// <param name="color"></param>
         /// <param name="state"></param>
         /// <param name="opacity"></param>
-        public static void DrawAreaBase(Graphics graphics, Rectangle bounds, Color color, GInteractiveState state, Orientation orientation, Point? point, Int32? opacity, int roundCorner)
+        public static void DrawAreaBase(Graphics graphics, Rectangle absoluteBounds, Color color, GInteractiveState state, Orientation orientation, Point? point, Int32? opacity, int roundCorner)
         {
-            if (bounds.Width <= 0 || bounds.Height <= 0) return;
+            if (absoluteBounds.Width <= 0 || absoluteBounds.Height <= 0) return;
 
             int roundX = roundCorner;
             int roundY = roundCorner;
-            using (GraphicsPath path = CreatePathRoundRectangle(bounds, roundX, roundY))
-            using (Brush brush = Skin.CreateBrushForBackground(bounds, orientation, state, true, color, opacity, point))
+            using (GraphicsPath path = CreatePathRoundRectangle(absoluteBounds, roundX, roundY))
+            using (Brush brush = Skin.CreateBrushForBackground(absoluteBounds, orientation, state, true, color, opacity, point))
             {
                 graphics.FillPath(brush, path);
             }
@@ -1088,16 +1088,16 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Vykreslí ScrollBar
         /// </summary>
         /// <param name="graphics"></param>
-        /// <param name="bounds"></param>
+        /// <param name="absoluteBounds"></param>
         /// <param name="scrollBar"></param>
-        public static void DrawScrollBar(Graphics graphics, Rectangle bounds, IScrollBarPaintData scrollBar)
+        public static void DrawScrollBar(Graphics graphics, Rectangle absoluteBounds, IScrollBarPaintData scrollBar)
         {
-            Point location = bounds.Location;
+            Point location = absoluteBounds.Location;
             Orientation orientation = scrollBar.Orientation;
             bool isEnabled = scrollBar.IsEnabled;
 
             // Pozadí:
-            _DrawScrollBarBack(graphics, bounds, orientation, isEnabled, scrollBar.ScrollBarBackColor);
+            _DrawScrollBarBack(graphics, absoluteBounds, orientation, isEnabled, scrollBar.ScrollBarBackColor);
 
             // Prostor Data (mezi Min a Max buttonem, pod Thumbem), plus UserDataDraw method:
             _DrawScrollBarData(graphics, scrollBar.DataAreaBounds.Add(location), orientation, isEnabled, scrollBar.ScrollBarBackColor, scrollBar.UserDataDraw);
@@ -1199,39 +1199,39 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         #endregion
         #region DrawTabHeader
-        public static void DrawTabHeaderItem(Graphics graphics, Rectangle bounds, ITabHeaderItemPaintData tabHeader)
+        public static void DrawTabHeaderItem(Graphics graphics, Rectangle absoluteBounds, ITabHeaderItemPaintData tabHeader)
         {
             Rectangle? backArea, lineArea, lightArea, darkArea;
-            _DrawTabHeaderItemGetArea(bounds, tabHeader, out backArea, out lineArea, out lightArea, out darkArea);
+            _DrawTabHeaderItemGetArea(absoluteBounds, tabHeader, out backArea, out lineArea, out lightArea, out darkArea);
             MatrixTransformationType transformation = _DrawTabHeaderGetTransformation(tabHeader.Position);
 
-            _DrawTabHeaderItemBackground(graphics, bounds, tabHeader, backArea, lineArea, lightArea, darkArea, transformation);
-            _DrawTabHeaderItemUserDraw(graphics, bounds, tabHeader, backArea, lineArea, lightArea, darkArea, transformation);
-            _DrawTabHeaderItemImage(graphics, bounds, tabHeader, backArea, lineArea, lightArea, darkArea, transformation);
-            _DrawTabHeaderItemText(graphics, bounds, tabHeader, backArea, lineArea, lightArea, darkArea, transformation);
-            _DrawTabHeaderItemCloseButton(graphics, bounds, tabHeader, backArea, lineArea, lightArea, darkArea, transformation);
-            _DrawTabHeaderItemLines(graphics, bounds, tabHeader, backArea, lineArea, lightArea, darkArea, transformation);
+            _DrawTabHeaderItemBackground(graphics, absoluteBounds, tabHeader, backArea, lineArea, lightArea, darkArea, transformation);
+            _DrawTabHeaderItemUserDraw(graphics, absoluteBounds, tabHeader, backArea, lineArea, lightArea, darkArea, transformation);
+            _DrawTabHeaderItemImage(graphics, absoluteBounds, tabHeader, backArea, lineArea, lightArea, darkArea, transformation);
+            _DrawTabHeaderItemText(graphics, absoluteBounds, tabHeader, backArea, lineArea, lightArea, darkArea, transformation);
+            _DrawTabHeaderItemCloseButton(graphics, absoluteBounds, tabHeader, backArea, lineArea, lightArea, darkArea, transformation);
+            _DrawTabHeaderItemLines(graphics, absoluteBounds, tabHeader, backArea, lineArea, lightArea, darkArea, transformation);
         }
         /// <summary>
         /// Určí souřadnice jednotlivých prostor (pozadí a linky)
         /// </summary>
-        /// <param name="bounds"></param>
+        /// <param name="absoluteBounds"></param>
         /// <param name="tabHeader"></param>
         /// <param name="backArea"></param>
         /// <param name="lineArea"></param>
         /// <param name="lightArea"></param>
         /// <param name="darkArea"></param>
-        private static void _DrawTabHeaderItemGetArea(Rectangle bounds, ITabHeaderItemPaintData tabHeader, out Rectangle? backArea, out Rectangle? lineArea, out Rectangle? lightArea, out Rectangle? darkArea)
+        private static void _DrawTabHeaderItemGetArea(Rectangle absoluteBounds, ITabHeaderItemPaintData tabHeader, out Rectangle? backArea, out Rectangle? lineArea, out Rectangle? lightArea, out Rectangle? darkArea)
         {
             backArea = null;
             lineArea = null;
             lightArea = null;
             darkArea = null;
 
-            int x = bounds.X;
-            int y = bounds.Y;
-            int w = bounds.Width;
-            int h = bounds.Height;
+            int x = absoluteBounds.X;
+            int y = absoluteBounds.Y;
+            int w = absoluteBounds.Width;
+            int h = absoluteBounds.Height;
 
             bool isActive = tabHeader.IsActive;                      // Aktivní záhlaví: má linku, prostor backArea jde až dolů, ale nemá light a dark area
             bool isHot = tabHeader.InteractiveState.IsMouseActive(); // Hot záhlaví: má linku, prostor backArea nejde až dolů, má light a dark area
@@ -1272,14 +1272,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Vykreslí pozadí (nikoli linky okolo něj).
         /// </summary>
         /// <param name="graphics">Grafika</param>
-        /// <param name="bounds">Souřadnice celého headeru</param>
+        /// <param name="absoluteBounds">Souřadnice celého headeru</param>
         /// <param name="tabHeader">Data headeru</param>
         /// <param name="backArea">Souřadnice pouze pozadí</param>
         /// <param name="lineArea">Souřadnice linky naznačující aktivitu (pro pozici Top je to vodorovná linka nahoře)</param>
         /// <param name="lightArea">Souřadnice světlé boční linky na začátku headeru (pro pozici Top je to svislá linka vlevo)</param>
         /// <param name="darkArea">Souřadnice tmavé boční linky na konci headeru (pro pozici Top je to svislá linka vpravo)</param>
         /// <param name="transformation">Transformace ze standardní orientace (<see cref="RectangleSide.Top"/>) na aktuální stav (dle <see cref="ITabHeaderItemPaintData.Position"/>)</param>
-        private static void _DrawTabHeaderItemBackground(Graphics graphics, Rectangle bounds, ITabHeaderItemPaintData tabHeader, Rectangle? backArea, Rectangle? lineArea, Rectangle? lightArea, Rectangle? darkArea, MatrixTransformationType transformation)
+        private static void _DrawTabHeaderItemBackground(Graphics graphics, Rectangle absoluteBounds, ITabHeaderItemPaintData tabHeader, Rectangle? backArea, Rectangle? lineArea, Rectangle? lightArea, Rectangle? darkArea, MatrixTransformationType transformation)
         {
             if (backArea.HasValue)
             {
@@ -1297,14 +1297,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Zavolá UserDataDraw
         /// </summary>
         /// <param name="graphics">Grafika</param>
-        /// <param name="bounds">Souřadnice celého headeru</param>
+        /// <param name="absoluteBounds">Souřadnice celého headeru</param>
         /// <param name="tabHeader">Data headeru</param>
         /// <param name="backArea">Souřadnice pouze pozadí</param>
         /// <param name="lineArea">Souřadnice linky naznačující aktivitu (pro pozici Top je to vodorovná linka nahoře)</param>
         /// <param name="lightArea">Souřadnice světlé boční linky na začátku headeru (pro pozici Top je to svislá linka vlevo)</param>
         /// <param name="darkArea">Souřadnice tmavé boční linky na konci headeru (pro pozici Top je to svislá linka vpravo)</param>
         /// <param name="transformation">Transformace ze standardní orientace (<see cref="RectangleSide.Top"/>) na aktuální stav (dle <see cref="ITabHeaderItemPaintData.Position"/>)</param>
-        private static void _DrawTabHeaderItemUserDraw(Graphics graphics, Rectangle bounds, ITabHeaderItemPaintData tabHeader, Rectangle? backArea, Rectangle? lineArea, Rectangle? lightArea, Rectangle? darkArea, MatrixTransformationType transformation)
+        private static void _DrawTabHeaderItemUserDraw(Graphics graphics, Rectangle absoluteBounds, ITabHeaderItemPaintData tabHeader, Rectangle? backArea, Rectangle? lineArea, Rectangle? lightArea, Rectangle? darkArea, MatrixTransformationType transformation)
         {
             if (backArea.HasValue)
             {
@@ -1315,17 +1315,17 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Vykreslí Image (ikonka před textem)
         /// </summary>
         /// <param name="graphics">Grafika</param>
-        /// <param name="bounds">Souřadnice celého headeru</param>
+        /// <param name="absoluteBounds">Souřadnice celého headeru</param>
         /// <param name="tabHeader">Data headeru</param>
         /// <param name="backArea">Souřadnice pouze pozadí</param>
         /// <param name="lineArea">Souřadnice linky naznačující aktivitu (pro pozici Top je to vodorovná linka nahoře)</param>
         /// <param name="lightArea">Souřadnice světlé boční linky na začátku headeru (pro pozici Top je to svislá linka vlevo)</param>
         /// <param name="darkArea">Souřadnice tmavé boční linky na konci headeru (pro pozici Top je to svislá linka vpravo)</param>
         /// <param name="transformation">Transformace ze standardní orientace (<see cref="RectangleSide.Top"/>) na aktuální stav (dle <see cref="ITabHeaderItemPaintData.Position"/>)</param>
-        private static void _DrawTabHeaderItemImage(Graphics graphics, Rectangle bounds, ITabHeaderItemPaintData tabHeader, Rectangle? backArea, Rectangle? lineArea, Rectangle? lightArea, Rectangle? darkArea, MatrixTransformationType transformation)
+        private static void _DrawTabHeaderItemImage(Graphics graphics, Rectangle absoluteBounds, ITabHeaderItemPaintData tabHeader, Rectangle? backArea, Rectangle? lineArea, Rectangle? lightArea, Rectangle? darkArea, MatrixTransformationType transformation)
         {
             if (tabHeader.Image == null) return;
-            Rectangle imageBounds = tabHeader.ImageBounds.Add(bounds.Location);
+            Rectangle imageBounds = tabHeader.ImageBounds.Add(absoluteBounds.Location);
             bool isVertical = (tabHeader.Position == RectangleSide.Left || tabHeader.Position == RectangleSide.Right);
             if (!isVertical)
             {   // Vodorovná orientace = bez převracení:
@@ -1344,16 +1344,16 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Vykreslí text záhlaví
         /// </summary>
         /// <param name="graphics">Grafika</param>
-        /// <param name="bounds">Souřadnice celého headeru</param>
+        /// <param name="absoluteBounds">Souřadnice celého headeru</param>
         /// <param name="tabHeader">Data headeru</param>
         /// <param name="backArea">Souřadnice pouze pozadí</param>
         /// <param name="lineArea">Souřadnice linky naznačující aktivitu (pro pozici Top je to vodorovná linka nahoře)</param>
         /// <param name="lightArea">Souřadnice světlé boční linky na začátku headeru (pro pozici Top je to svislá linka vlevo)</param>
         /// <param name="darkArea">Souřadnice tmavé boční linky na konci headeru (pro pozici Top je to svislá linka vpravo)</param>
         /// <param name="transformation">Transformace ze standardní orientace (<see cref="RectangleSide.Top"/>) na aktuální stav (dle <see cref="ITabHeaderItemPaintData.Position"/>)</param>
-        private static void _DrawTabHeaderItemText(Graphics graphics, Rectangle bounds, ITabHeaderItemPaintData tabHeader, Rectangle? backArea, Rectangle? lineArea, Rectangle? lightArea, Rectangle? darkArea, MatrixTransformationType transformation)
+        private static void _DrawTabHeaderItemText(Graphics graphics, Rectangle absoluteBounds, ITabHeaderItemPaintData tabHeader, Rectangle? backArea, Rectangle? lineArea, Rectangle? lightArea, Rectangle? darkArea, MatrixTransformationType transformation)
         {
-            Rectangle textBounds = tabHeader.TextBounds.Add(bounds.Location);
+            Rectangle textBounds = tabHeader.TextBounds.Add(absoluteBounds.Location);
             bool isActive = tabHeader.IsActive;
             Color textColor = (isActive ? Skin.TabHeader.TextColorActive : Skin.TabHeader.TextColor);
             GPainter.DrawString(graphics, textBounds, tabHeader.Text, textColor, tabHeader.Font, ContentAlignment.MiddleCenter, transformation);
@@ -1362,27 +1362,27 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Vykreslí CloseButton, pokud má být viditelný
         /// </summary>
         /// <param name="graphics">Grafika</param>
-        /// <param name="bounds">Souřadnice celého headeru</param>
+        /// <param name="absoluteBounds">Souřadnice celého headeru</param>
         /// <param name="tabHeader">Data headeru</param>
         /// <param name="backArea">Souřadnice pouze pozadí</param>
         /// <param name="lineArea">Souřadnice linky naznačující aktivitu (pro pozici Top je to vodorovná linka nahoře)</param>
         /// <param name="lightArea">Souřadnice světlé boční linky na začátku headeru (pro pozici Top je to svislá linka vlevo)</param>
         /// <param name="darkArea">Souřadnice tmavé boční linky na konci headeru (pro pozici Top je to svislá linka vpravo)</param>
         /// <param name="transformation">Transformace ze standardní orientace (<see cref="RectangleSide.Top"/>) na aktuální stav (dle <see cref="ITabHeaderItemPaintData.Position"/>)</param>
-        private static void _DrawTabHeaderItemCloseButton(Graphics graphics, Rectangle bounds, ITabHeaderItemPaintData tabHeader, Rectangle? backArea, Rectangle? lineArea, Rectangle? lightArea, Rectangle? darkArea, MatrixTransformationType transformation)
+        private static void _DrawTabHeaderItemCloseButton(Graphics graphics, Rectangle absoluteBounds, ITabHeaderItemPaintData tabHeader, Rectangle? backArea, Rectangle? lineArea, Rectangle? lightArea, Rectangle? darkArea, MatrixTransformationType transformation)
         { }
         /// <summary>
         /// Vykreslí všechny linky kolem kolem headeru
         /// </summary>
         /// <param name="graphics">Grafika</param>
-        /// <param name="bounds">Souřadnice celého headeru</param>
+        /// <param name="absoluteBounds">Souřadnice celého headeru</param>
         /// <param name="tabHeader">Data headeru</param>
         /// <param name="backArea">Souřadnice pouze pozadí</param>
         /// <param name="lineArea">Souřadnice linky naznačující aktivitu (pro pozici Top je to vodorovná linka nahoře)</param>
         /// <param name="lightArea">Souřadnice světlé boční linky na začátku headeru (pro pozici Top je to svislá linka vlevo)</param>
         /// <param name="darkArea">Souřadnice tmavé boční linky na konci headeru (pro pozici Top je to svislá linka vpravo)</param>
         /// <param name="transformation">Transformace ze standardní orientace (<see cref="RectangleSide.Top"/>) na aktuální stav (dle <see cref="ITabHeaderItemPaintData.Position"/>)</param>
-        private static void _DrawTabHeaderItemLines(Graphics graphics, Rectangle bounds, ITabHeaderItemPaintData tabHeader, Rectangle? backArea, Rectangle? lineArea, Rectangle? lightArea, Rectangle? darkArea, MatrixTransformationType transformation)
+        private static void _DrawTabHeaderItemLines(Graphics graphics, Rectangle absoluteBounds, ITabHeaderItemPaintData tabHeader, Rectangle? backArea, Rectangle? lineArea, Rectangle? lightArea, Rectangle? darkArea, MatrixTransformationType transformation)
         {
             bool isActive = tabHeader.IsActive;
             bool isHot = tabHeader.InteractiveState.IsMouseActive();

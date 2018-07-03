@@ -960,10 +960,12 @@ namespace Asol.Tools.WorkScheduler.Components
             /// <summary>
             /// Metoda má vykreslit obsah this prvku.
             /// </summary>
-            /// <param name="e"></param>
-            protected override void Draw(GInteractiveDrawArgs e)
+            /// <param name="e">Kreslící argument</param>
+            /// <param name="absoluteBounds">Absolutní souřadnice tohoto prvku, sem by se mělo fyzicky kreslit</param>
+            /// <param name="absoluteVisibleBounds">Absolutní souřadnice tohoto prvku, oříznuté do viditelné oblasti.</param>
+            protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds)
             {
-                // This instance (GScrollbar.ChildItem) is not drawed by system, but as part of Scrollbar:
+                // ChildItem se nevykresluje sám, je vykreslen v rámci celého Scrollbaru, pomocí GPainteru.
                 //   base.Draw(e);
             }
         }
@@ -1140,15 +1142,16 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Draw this scrollbar
         /// </summary>
-        /// <param name="e"></param>
-        protected override void Draw(GInteractiveDrawArgs e)
+        /// <param name="e">Kreslící argument</param>
+        /// <param name="absoluteBounds">Absolutní souřadnice tohoto prvku, sem by se mělo fyzicky kreslit</param>
+        /// <param name="absoluteVisibleBounds">Absolutní souřadnice tohoto prvku, oříznuté do viditelné oblasti.</param>
+        protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds)
         {
             this.CurrentDrawLayer = e.DrawLayer;
-            Rectangle bounds = this.BoundsAbsolute;
             if (this.ChildItemsCalculate(false))
-                GPainter.DrawScrollBar(e.Graphics, bounds, this as IScrollBarPaintData);
+                GPainter.DrawScrollBar(e.Graphics, absoluteBounds, this as IScrollBarPaintData);
             else
-                GPainter.DrawAreaBase(e.Graphics, bounds, Skin.ScrollBar.BackColorArea, this.Orientation, null, null);
+                GPainter.DrawAreaBase(e.Graphics, absoluteBounds, Skin.ScrollBar.BackColorArea, this.Orientation, null, null);
         }
         protected override Color DefaultBackColor { get { return Skin.ScrollBar.BackColorArea; } }
         /// <summary>

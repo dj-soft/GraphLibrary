@@ -1130,11 +1130,17 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         #endregion
         #region Draw
-        protected override void Draw(GInteractiveDrawArgs e)
+        /// <summary>
+        /// Vykreslí this <see cref="GGrid"/>
+        /// </summary>
+        /// <param name="e">Kreslící argument</param>
+        /// <param name="absoluteBounds">Absolutní souřadnice tohoto prvku, sem by se mělo fyzicky kreslit</param>
+        /// <param name="absoluteVisibleBounds">Absolutní souřadnice tohoto prvku, oříznuté do viditelné oblasti.</param>
+        protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds)
         {
             // GGrid sám o sobě se nevykresluje, leda v situaci kdy nemá žádnou tabulku:
             if (this.TablesCount == 0)
-                base.Draw(e);
+                base.Draw(e, absoluteBounds, absoluteVisibleBounds);
             else
                 this.DrawVoidAreas(e);
         }

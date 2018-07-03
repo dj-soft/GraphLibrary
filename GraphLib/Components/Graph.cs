@@ -858,15 +858,16 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Systémové kreslení grafu
         /// </summary>
-        /// <param name="e"></param>
-        protected override void Draw(GInteractiveDrawArgs e)
+        /// <param name="e">Kreslící argument</param>
+        /// <param name="absoluteBounds">Absolutní souřadnice tohoto prvku, sem by se mělo fyzicky kreslit</param>
+        /// <param name="absoluteVisibleBounds">Absolutní souřadnice tohoto prvku, oříznuté do viditelné oblasti.</param>
+        protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds)
         {
-            Rectangle boundsAbsolute = this.BoundsAbsolute;
-            this.DrawBackground(e, boundsAbsolute);
+            this.DrawBackground(e, absoluteBounds);
             using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "Draw", ""))
             {
-                e.GraphicsClipWith(boundsAbsolute);
-                this.DrawTicks(e, boundsAbsolute);
+                e.GraphicsClipWith(absoluteBounds);
+                this.DrawTicks(e, absoluteBounds);
                 // Vykreslení jednotlivých položek grafu neřídí graf, ale systém. 
                 // Bude postupně volat kreslení všech mých Child items, což jsou GTimeGraphGroup.GControl, bude volat jejich metodu Draw(GInteractiveDrawArgs).
                 // Tato metoda (v třídě GTimeGraphControl) vyvolá kreslící metodu svého Ownera: ITimeGraphItem.Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute).
@@ -877,13 +878,13 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Metoda umožní udělat něco s pozadím grafu.
         /// </summary>
         /// <param name="e"></param>
-        /// <param name="boundsAbsolute"></param>
-        protected virtual void DrawBackground(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
+        /// <param name="absoluteBounds"></param>
+        protected virtual void DrawBackground(GInteractiveDrawArgs e, Rectangle absoluteBounds)
         {
             switch (this.GraphParameters.TimeAxisMode)
             {
                 case TimeGraphTimeAxisMode.LogarithmicScale:
-                    this.DrawBackgroundLogarithmic(e, boundsAbsolute);
+                    this.DrawBackgroundLogarithmic(e, absoluteBounds);
                     break;
             }
         }
@@ -892,24 +893,24 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Vykreslí se šedý přechod na logaritmických okrajích.
         /// </summary>
         /// <param name="e"></param>
-        /// <param name="boundsAbsolute"></param>
-        protected virtual void DrawBackgroundLogarithmic(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
+        /// <param name="absoluteBounds"></param>
+        protected virtual void DrawBackgroundLogarithmic(GInteractiveDrawArgs e, Rectangle absoluteBounds)
         {
             float shadow = this.GraphParameters.LogarithmicGraphDrawOuterShadow;
             if (shadow <= 0f) return;
             int alpha = (int)(255f * shadow);
             Color color1 = Color.FromArgb(0, 0, 0, 0);
             Color color2 = Color.FromArgb(alpha, 0, 0, 0);
-            int width = (int)(((1f - this.GraphParameters.LogarithmicRatio) / 2f) * (float)boundsAbsolute.Width);
+            int width = (int)(((1f - this.GraphParameters.LogarithmicRatio) / 2f) * (float)absoluteBounds.Width);
 
-            Rectangle leftBounds = new Rectangle(boundsAbsolute.X, boundsAbsolute.Y, width, boundsAbsolute.Height);
+            Rectangle leftBounds = new Rectangle(absoluteBounds.X, absoluteBounds.Y, width, absoluteBounds.Height);
             Rectangle leftBoundsG = leftBounds.Enlarge(1, 0, 0, 1);                      // To je úchylka WinFormů
             using (System.Drawing.Drawing2D.LinearGradientBrush lgb = new System.Drawing.Drawing2D.LinearGradientBrush(leftBoundsG, color2, color1, 00f))
             {
                 e.Graphics.FillRectangle(lgb, leftBounds);
             }
 
-            Rectangle rightBounds = new Rectangle(boundsAbsolute.Right - width, boundsAbsolute.Y, width, boundsAbsolute.Height);
+            Rectangle rightBounds = new Rectangle(absoluteBounds.Right - width, absoluteBounds.Y, width, absoluteBounds.Height);
             Rectangle rightBoundsG = rightBounds.Enlarge(1, 0, 0, 1);                    // To je úchylka WinFormů
             using (System.Drawing.Drawing2D.LinearGradientBrush rgb = new System.Drawing.Drawing2D.LinearGradientBrush(rightBoundsG, color2, color1, 180f))
             {
@@ -919,7 +920,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Vykreslí všechny Ticky = časové značky, pokud se mají kreslit.
         /// </summary>
-        protected void DrawTicks(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
+        protected void DrawTicks(GInteractiveDrawArgs e, Rectangle absoluteBounds)
         {
             AxisTickType tickLevel = this.GraphParameters.TimeAxisVisibleTickLevel;
             if (tickLevel == AxisTickType.None) return;
@@ -930,9 +931,9 @@ namespace Asol.Tools.WorkScheduler.Components
             using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "PaintGrid", ""))
             {
                 int x;
-                int x0 = boundsAbsolute.X + this.TimeAxisBegin;
-                int y1 = boundsAbsolute.Top;
-                int y2 = boundsAbsolute.Bottom - 1;
+                int x0 = absoluteBounds.X + this.TimeAxisBegin;
+                int y1 = absoluteBounds.Top;
+                int y2 = absoluteBounds.Bottom - 1;
 
                 foreach (VisualTick tick in timeAxisTicks)
                 {
@@ -1438,9 +1439,16 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         #endregion
         #region Kreslení prvku
-        protected override void Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
+        /// <summary>
+        /// Vykreslí this prvek
+        /// </summary>
+        /// <param name="e">Data pro kreslení</param>
+        /// <param name="absoluteBounds">Absolutní souřadnice tohoto prvku, sem by se mělo fyzicky kreslit</param>
+        /// <param name="absoluteVisibleBounds">Absolutní souřadnice tohoto prvku, oříznuté do viditelné oblasti.</param>
+        /// <param name="drawMode">Režim kreslení (pomáhá řešit Drag & Drop procesy)</param>
+        protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
         {
-            this._Owner.Draw(e, boundsAbsolute, drawMode);
+            this._Owner.Draw(e, absoluteBounds, drawMode);
         }
         /// <summary>
         /// Vykreslování "Přes Child prvky": pokud this prvek vykresluje Grupu, pak ano!
@@ -1764,9 +1772,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Implementátor může bez nejmenších obav převolat <see cref="GControl"/> : <see cref="GTimeGraphControl.DrawItem(GInteractiveDrawArgs, Rectangle, DrawItemMode)"/>
         /// </summary>
         /// <param name="e">Standardní data pro kreslení</param>
-        /// <param name="boundsAbsolute">Absolutní souřadnice tohoto prvku</param>
+        /// <param name="absoluteBounds">Absolutní souřadnice tohoto prvku</param>
         /// <param name="drawMode">Režim kreslení (má význam pro akce Drag & Drop)</param>
-        void Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode);
+        void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, DrawItemMode drawMode);
     }
     /// <summary>
     /// Interface, který umožní pracovat s časovou osou

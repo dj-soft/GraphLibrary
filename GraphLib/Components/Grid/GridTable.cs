@@ -1503,24 +1503,28 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         }
         #endregion
         #region Draw : kreslení vlastní tabulky
-        protected override void Draw(GInteractiveDrawArgs e)
+        /// <summary>
+        /// Vykreslí tabulku
+        /// </summary>
+        /// <param name="e">Kreslící argument</param>
+        /// <param name="absoluteBounds">Absolutní souřadnice tohoto prvku, sem by se mělo fyzicky kreslit</param>
+        /// <param name="absoluteVisibleBounds">Absolutní souřadnice tohoto prvku, oříznuté do viditelné oblasti.</param>
+        protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds)
         {
-            this.GraphicClip(e);
-            base.Draw(e);
-
+            this.GraphicClip(e, absoluteBounds, absoluteVisibleBounds);
+            base.Draw(e, absoluteBounds, absoluteVisibleBounds);
             // Všechno ostatní (záhlaví sloupců, řádky, scrollbary, splittery) si malují Childs samy.
         }
-        protected bool GraphicClip(GInteractiveDrawArgs e)
+        protected bool GraphicClip(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds)
         {
             // Ořezáváme jen při kreslení do vrstvy Standard, jinak ne:
             if (e.DrawLayer != GInteractiveDrawLayer.Standard) return true;
 
             // Prostor pro oblast tabulky, se zohledněním souřadnic určených pro prostor tabulek v rámci Gridu:
-            Rectangle boundsAbsolute = this.BoundsAbsolute;
             Rectangle areaAbsoluteBounds = this.GetAbsoluteBoundsForArea(TableAreaType.Table, true);
 
             // Prostor pro aktuální prvek = intersect se souřadnicemi prvku:
-            Rectangle controlBounds = Rectangle.Intersect(areaAbsoluteBounds, boundsAbsolute);
+            Rectangle controlBounds = Rectangle.Intersect(areaAbsoluteBounds, absoluteBounds);
             if (!controlBounds.HasPixels()) return false;
 
             // Prostor po oříznutí s aktuálním Clipem v grafice:

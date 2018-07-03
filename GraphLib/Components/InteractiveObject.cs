@@ -404,13 +404,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected virtual bool NeedDrawOverChilds { get; set; }
         /// <summary>
-        /// Tato metoda je volaná pro prvek, který má nastaveno <see cref="NeedDrawOverChilds"/> == true, poté když tento prvek byl vykreslen, a následně byly vykresleny jeho <see cref="Childs"/>.
-        /// Umožňuje tedy kreslit "nad" svoje <see cref="Childs"/> (tj. počmárat je).
-        /// Tento postup se používá typicky jen pro zobrazení překryvného textu přes <see cref="Childs"/> prvky, které svůj text nenesou.
-        /// </summary>
-        /// <param name="e"></param>
-        protected virtual void DrawOverChilds(GInteractiveDrawArgs e) { }
-        /// <summary>
         /// Zajistí, že this prvek bude standardně vykreslen včetně všech svých <see cref="Childs"/>.
         /// </summary>
         /// <param name="item"></param>
@@ -585,25 +578,37 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Výchozí metoda pro kreslení prvku, volaná z jádra systému.
         /// Třída <see cref="InteractiveObject"/> vyvolá metodu <see cref="Draw(GInteractiveDrawArgs, Rectangle, DrawItemMode)"/>.
         /// </summary>
-        /// <param name="e"></param>
-        protected virtual void Draw(GInteractiveDrawArgs e)
+        /// <param name="e">Kreslící argument</param>
+        /// <param name="absoluteBounds">Absolutní souřadnice tohoto prvku, sem by se mělo fyzicky kreslit</param>
+        /// <param name="absoluteVisibleBounds">Absolutní souřadnice tohoto prvku, oříznuté do viditelné oblasti.</param>
+        protected virtual void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds)
         {
-            this.Draw(e, this.BoundsAbsolute, DrawItemMode.Standard);
+            this.Draw(e, absoluteBounds, absoluteVisibleBounds, DrawItemMode.Standard);
         }
+        /// <summary>
+        /// Tato metoda je volaná pro prvek, který má nastaveno <see cref="NeedDrawOverChilds"/> == true, poté když tento prvek byl vykreslen, a následně byly vykresleny jeho <see cref="Childs"/>.
+        /// Umožňuje tedy kreslit "nad" svoje <see cref="Childs"/> (tj. počmárat je).
+        /// Tento postup se používá typicky jen pro zobrazení překryvného textu přes <see cref="Childs"/> prvky, které svůj text nenesou.
+        /// </summary>
+        /// <param name="e">Kreslící argument</param>
+        /// <param name="absoluteBounds">Absolutní souřadnice tohoto prvku, sem by se mělo fyzicky kreslit</param>
+        /// <param name="absoluteVisibleBounds">Absolutní souřadnice tohoto prvku, oříznuté do viditelné oblasti.</param>
+        protected virtual void DrawOverChilds(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds) { }
         /// <summary>
         /// Metoda pro standardní vykreslení prvku.
         /// Bázová třída <see cref="InteractiveObject"/> v této metodě pouze vykreslí svůj prostor barvou pozadí <see cref="BackColor"/>.
         /// Pokud je předán režim kreslení drawMode, obsahující příznak <see cref="DrawItemMode.Ghost"/>, pak je barva pozadí modifikována tak, že její Alpha je 75% původního Alpha.
         /// </summary>
         /// <param name="e">Data pro kreslení</param>
-        /// <param name="boundsAbsolute">Absolutní souřadnice pro kreslení (pomáhá řešit Drag & Drop procesy)</param>
+        /// <param name="absoluteBounds">Absolutní souřadnice tohoto prvku, sem by se mělo fyzicky kreslit</param>
+        /// <param name="absoluteVisibleBounds">Absolutní souřadnice tohoto prvku, oříznuté do viditelné oblasti.</param>
         /// <param name="drawMode">Režim kreslení (pomáhá řešit Drag & Drop procesy)</param>
-        protected virtual void Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
+        protected virtual void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
         {
             Color backColor = this.BackColor;
             if (drawMode.HasFlag(DrawItemMode.Ghost))
                 backColor = backColor.CreateTransparent(0.75f);
-            e.Graphics.FillRectangle(Skin.Brush(backColor), boundsAbsolute);
+            e.Graphics.FillRectangle(Skin.Brush(backColor), absoluteBounds);
         }
         /// <summary>
         /// Metoda pro vykreslení prvku "OverChilds".
@@ -787,7 +792,6 @@ namespace Asol.Tools.WorkScheduler.Components
         GInteractiveDrawLayer IInteractiveItem.StandardDrawToLayer { get { return this.StandardDrawToLayer; } }
         GInteractiveDrawLayer IInteractiveItem.RepaintToLayers { get { return this.RepaintToLayers; } set { this.RepaintToLayers = value; } }
         bool IInteractiveItem.NeedDrawOverChilds { get { return this.NeedDrawOverChilds; } }
-        void IInteractiveItem.DrawOverChilds(GInteractiveDrawArgs e) { this.DrawOverChilds(e); }
         Boolean IInteractiveItem.IsActiveAtAbsolutePoint(Point absolutePoint) { return this.IsActiveAtAbsolutePoint(absolutePoint); }
         void IInteractiveItem.AfterStateChanged(GInteractiveChangeStateArgs e)
         {
@@ -796,7 +800,8 @@ namespace Asol.Tools.WorkScheduler.Components
             this.AfterStateChanged(e);
         }
         void IInteractiveItem.DragAction(GDragActionArgs e) { this.DragAction(e); }
-        void IInteractiveItem.Draw(GInteractiveDrawArgs e) { this.Draw(e); }
+        void IInteractiveItem.Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds) { this.Draw(e, absoluteBounds, absoluteVisibleBounds); }
+        void IInteractiveItem.DrawOverChilds(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds) { this.DrawOverChilds(e, absoluteBounds, absoluteVisibleBounds); }
 
         UInt32 IInteractiveParent.Id { get { return this._Id; } }
         GInteractiveControl IInteractiveParent.Host { get { return this.Host; } }
@@ -1022,24 +1027,28 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Metoda řeší kreslení prvku, který může být v procesu Drag & Drop
         /// </summary>
-        /// <param name="e"></param>
-        protected override void Draw(GInteractiveDrawArgs e)
+        /// <param name="e">Data pro kreslení</param>
+        /// <param name="absoluteBounds">Absolutní souřadnice tohoto prvku, sem by se mělo fyzicky kreslit</param>
+        /// <param name="absoluteVisibleBounds">Absolutní souřadnice tohoto prvku, oříznuté do viditelné oblasti.</param>
+        protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds)
         {
-            Rectangle boundsAbsolute;
+            Rectangle absoluteBoundsDraw;
             DrawItemMode drawMode;
-            if (this.PrepareDrawDataByDragData(e.DrawLayer, out boundsAbsolute, out drawMode))
-                this.Draw(e, boundsAbsolute, drawMode);
+            if (this.PrepareDrawDataByDragData(e.DrawLayer, absoluteBounds, out absoluteBoundsDraw, out drawMode))
+                this.Draw(e, absoluteBoundsDraw, absoluteVisibleBounds, drawMode);
         }
         /// <summary>
         /// Kreslení "OverChilds"
         /// </summary>
-        /// <param name="e"></param>
-        protected override void DrawOverChilds(GInteractiveDrawArgs e)
+        /// <param name="e">Data pro kreslení</param>
+        /// <param name="absoluteBounds">Absolutní souřadnice tohoto prvku, sem by se mělo fyzicky kreslit</param>
+        /// <param name="absoluteVisibleBounds">Absolutní souřadnice tohoto prvku, oříznuté do viditelné oblasti.</param>
+        protected override void DrawOverChilds(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds)
         {
-            Rectangle boundsAbsolute;
+            Rectangle absoluteBoundsDraw;
             DrawItemMode drawMode;
-            if (this.PrepareDrawDataByDragData(e.DrawLayer, out boundsAbsolute, out drawMode))
-                this.DrawOverChilds(e, boundsAbsolute, drawMode);
+            if (this.PrepareDrawDataByDragData(e.DrawLayer, absoluteBounds, out absoluteBoundsDraw, out drawMode))
+                this.DrawOverChilds(e, absoluteBoundsDraw, drawMode);
         }
         /// <summary>
         /// Tato metoda určí souřadnice, kam se má objekt vykreslit, a režim kreslení (Standard, Ghost), pro aktuální situaci objektu.
@@ -1054,12 +1063,15 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <para/>
         /// Pokud chce potomek kreslit prvek v době přetahování jinam, může tuto metodu přepsat.
         /// </summary>
-        /// <param name="e"></param>
-        protected virtual bool PrepareDrawDataByDragData(GInteractiveDrawLayer currentLayer, out Rectangle boundsAbsolute, out DrawItemMode drawMode)
+        /// <param name="currentLayer">Vrstva, která se nyní kreslí</param>
+        /// <param name="absoluteBoundsItem">Vstup: Absolutní souřadnice prvku, běžná (odvozená od <see cref="IInteractiveItem.Bounds"/>)</param>
+        /// <param name="absoluteBoundsDraw">Výstup: Absolutní souřadnice, kam se bude prvek vykreslovat (souvisí s procesem Drag & Drop)</param>
+        /// <param name="drawMode">Režim kreslení prvku v aktuální situaci</param>
+        protected virtual bool PrepareDrawDataByDragData(GInteractiveDrawLayer currentLayer, Rectangle absoluteBoundsItem, out Rectangle absoluteBoundsDraw, out DrawItemMode drawMode)
         {
             bool ghostInOriginalBounds = ((this.Style & GInteractiveStyles.DragDrawGhostOriginal) != 0);
             bool ghostInDraggedBounds = ((this.Style & GInteractiveStyles.DragDrawGhostInteractive) != 0);
-            boundsAbsolute = Rectangle.Empty;
+            absoluteBoundsDraw = Rectangle.Empty;
             drawMode = DrawItemMode.InDragProcess;
             bool runDraw = true;
 
@@ -1067,7 +1079,7 @@ namespace Asol.Tools.WorkScheduler.Components
             {   // Aktuálně PROBÍHÁ Drag & Drop:
                 if (currentLayer == GInteractiveDrawLayer.Standard)
                 {   // Nyní kreslíme do vrstvy Standard, tedy kreslíme do výchozích souřadnic BoundsDragOrigin:
-                    boundsAbsolute = this.GetAbsoluteBounds(this.BoundsDragOrigin.Value);
+                    absoluteBoundsDraw = this.GetAbsoluteBounds(this.BoundsDragOrigin.Value);
                     drawMode |= DrawItemMode.OriginalBounds;
                     if (ghostInOriginalBounds)
                         // Máme styl DragDrawGhostOriginal, takže na originální souřadnice (tj. do standardní vrtsvy) máme vykreslit Ghost:
@@ -1083,7 +1095,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 }
                 else if (currentLayer == GInteractiveDrawLayer.Interactive)
                 {   // Nyní kreslíme do vrstvy Interactive, tedy kreslíme do cílových souřadnic BoundsDragTarget:
-                    boundsAbsolute = this.GetAbsoluteBounds(this.BoundsDragTarget.Value);
+                    absoluteBoundsDraw = this.GetAbsoluteBounds(this.BoundsDragTarget.Value);
                     drawMode |= DrawItemMode.DraggedBounds;
                     if (ghostInDraggedBounds)
                         // Máme styl DragDrawGhostInteractive, takže na cílové souřadnice (tj. do interaktivní vrstvy) máme vykreslit Ghost:
@@ -1098,7 +1110,7 @@ namespace Asol.Tools.WorkScheduler.Components
             }
             else
             {   // Aktuálně NEPROBÍHÁ Drag & Drop:
-                boundsAbsolute = this.BoundsAbsolute;
+                absoluteBoundsDraw = absoluteBoundsItem;
                 drawMode = DrawItemMode.Standard;
             }
             return runDraw;

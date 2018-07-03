@@ -452,8 +452,10 @@ namespace Asol.Tools.WorkScheduler.Components
             /// Called to draw content of this item.
             /// This instance (GScrollbar.ChildItem) is not drawed by system, but as part of Scrollbar.
             /// </summary>
-            /// <param name="e"></param>
-            protected override void Draw(GInteractiveDrawArgs e)
+            /// <param name="e">Data pro kreslení</param>
+            /// <param name="absoluteBounds">Absolutní souřadnice tohoto prvku, sem by se mělo fyzicky kreslit</param>
+            /// <param name="absoluteVisibleBounds">Absolutní souřadnice tohoto prvku, oříznuté do viditelné oblasti.</param>
+            protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds)
             {
                 // This instance (GMovableItem.ChildItem) is not drawed by system, but as part of GMovableItem:
                 //   base.Draw(e);
@@ -648,14 +650,17 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Draw this item in standard mode
         /// </summary>
-        /// <param name="e"></param>
-        protected override void Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
+        /// <param name="e">Data pro kreslení</param>
+        /// <param name="absoluteBounds">Absolutní souřadnice tohoto prvku, sem by se mělo fyzicky kreslit</param>
+        /// <param name="absoluteVisibleBounds">Absolutní souřadnice tohoto prvku, oříznuté do viditelné oblasti.</param>
+        /// <param name="drawMode">Režim kreslení (pomáhá řešit Drag & Drop procesy)</param>
+        protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
         {
             bool isGhost = (drawMode.HasFlag(DrawItemMode.Ghost));
             if (!isGhost)
-                this.DrawStandardBackground(e, boundsAbsolute);
+                this.DrawStandardBackground(e, absoluteBounds);
             else
-                this.DrawGhostBackground(e, boundsAbsolute);
+                this.DrawGhostBackground(e, absoluteBounds);
 
             bool isTarget = (drawMode.HasFlag(DrawItemMode.DraggedBounds));
             if (isTarget)

@@ -138,10 +138,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Pokud prvek má nějaké potomstvo (Childs), pak se this prvek nestará o jejich vykreslení, to zajistí jádro.
         /// Jádro detekuje naše <see cref="Childs"/>, a postupně volá jejich vykreslení (od prvního po poslední).
         /// </summary>
-        /// <param name="e"></param>
-        void Draw(GInteractiveDrawArgs e);
+        /// <param name="e">Kreslící argument</param>
+        /// <param name="absoluteBounds">Absolutní souřadnice tohoto prvku, sem by se mělo fyzicky kreslit</param>
+        /// <param name="absoluteVisibleBounds">Absolutní souřadnice tohoto prvku, oříznuté do viditelné oblasti.</param>
+        void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds);
         /// <summary>
-        /// Pokud je zde true, pak v procesu kreslení prvku je po standardním vykreslení this prvku <see cref="Draw(GInteractiveDrawArgs)"/> 
+        /// Pokud je zde true, pak v procesu kreslení prvku je po standardním vykreslení this prvku <see cref="Draw(GInteractiveDrawArgs, Rectangle, Rectangle)"/> 
         /// a po standardním vykreslení všech <see cref="Childs"/> prvků ještě vyvolána metoda <see cref="DrawOverChilds(GInteractiveDrawArgs)"/> pro this prvek.
         /// </summary>
         bool NeedDrawOverChilds { get; }
@@ -150,8 +152,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Umožňuje tedy kreslit "nad" svoje <see cref="Childs"/> (tj. počmárat je).
         /// Tento postup se používá typicky jen pro zobrazení překryvného textu přes <see cref="Childs"/> prvky, které svůj text nenesou.
         /// </summary>
-        /// <param name="e"></param>
-        void DrawOverChilds(GInteractiveDrawArgs e);
+        /// <param name="e">Kreslící argument</param>
+        /// <param name="absoluteBounds">Absolutní souřadnice tohoto prvku, sem by se mělo fyzicky kreslit</param>
+        /// <param name="absoluteVisibleBounds">Absolutní souřadnice tohoto prvku, oříznuté do viditelné oblasti.</param>
+        void DrawOverChilds(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds);
     }
     public interface IInteractiveParent
     {

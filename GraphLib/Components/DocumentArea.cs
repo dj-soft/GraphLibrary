@@ -55,18 +55,19 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Draw current size axis to specified graphic.
         /// Coordinates are this.Area.
         /// </summary>
-        /// <param name="e"></param>
-        protected override void Draw(GInteractiveDrawArgs e)
+        /// <param name="e">Data pro kreslení</param>
+        /// <param name="absoluteBounds">Absolutní souřadnice tohoto prvku, sem by se mělo fyzicky kreslit</param>
+        /// <param name="absoluteVisibleBounds">Absolutní souřadnice tohoto prvku, oříznuté do viditelné oblasti.</param>
+        protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds)
         {
             if (e.DrawLayer == GInteractiveDrawLayer.Standard)
             {
                 try
                 {
-                    Rectangle bounds = this.BoundsAbsolute;
-                    e.Graphics.SetClip(bounds);
-                    this._PaintBackground(e.Graphics, bounds);
-                    this.PaintSheet(e.Graphics, bounds);
-                    base.Draw(e);
+                    e.Graphics.SetClip(absoluteBounds);
+                    this._PaintBackground(e.Graphics, absoluteBounds);
+                    this.PaintSheet(e.Graphics, absoluteBounds);
+                    base.Draw(e, absoluteBounds, absoluteVisibleBounds);
                 }
                 finally
                 {

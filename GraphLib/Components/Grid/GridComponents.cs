@@ -68,14 +68,14 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         /// <param name="e"></param>
         /// <param name="boundsAbsolute"></param>
-        protected override void Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
+        protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
         {
-            Application.App.Trace.Info(Application.TracePriority.Priority1_ElementaryTimeDebug, this.GetType().Name, "Draw", "Component", this.ToString(), "BoundsAbsolute: " + boundsAbsolute.ToString());
-            if (!this.GraphicClip(e, boundsAbsolute)) return;                  // Není kam kreslit (oříznutí souřadnic vrátilo nulu)
+            Application.App.Trace.Info(Application.TracePriority.Priority1_ElementaryTimeDebug, this.GetType().Name, "Draw", "Component", this.ToString(), "BoundsAbsolute: " + absoluteBounds.ToString());
+            if (!this.GraphicClip(e, absoluteBounds)) return;                  // Není kam kreslit (oříznutí souřadnic vrátilo nulu)
 
             bool isGhost = (drawMode.HasFlag(DrawItemMode.Ghost));
             int? opacity = (e.DrawLayer == GInteractiveDrawLayer.Standard ? (int?)null : (int?)128);
-            this.DrawContent(e, boundsAbsolute, isGhost, opacity);
+            this.DrawContent(e, absoluteBounds, isGhost, opacity);
         }
         /// <summary>
         /// Vykreslí podklad prostoru pro záhlaví.

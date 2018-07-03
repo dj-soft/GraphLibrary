@@ -890,60 +890,65 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         #endregion
         #region Draw
-        protected override void Draw(GInteractiveDrawArgs e)
+        /// <summary>
+        /// Vykreslí Splitter
+        /// </summary>
+        /// <param name="e">Kreslící argument</param>
+        /// <param name="absoluteBounds">Absolutní souřadnice tohoto prvku, sem by se mělo fyzicky kreslit</param>
+        /// <param name="absoluteVisibleBounds">Absolutní souřadnice tohoto prvku, oříznuté do viditelné oblasti.</param>
+        protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds)
         {
             if (!this.IsVisible || this._SplitterVisibleWidth <= 0) return;
  
-            Size size = this.Bounds.Size;
+            Size size = absoluteBounds.Size;
             if (size.Width <= 0 || size.Height <= 0) return;
 
             if (e.DrawLayer == GInteractiveDrawLayer.Standard)
             {
                 if (this.InteractiveState == GInteractiveState.LeftDrag)
-                    this._Draw(e, this._GetCurrentShadowBrush);
+                    this._Draw(e, absoluteBounds, this._GetCurrentShadowBrush);
                 else if (this.InteractiveState == GInteractiveState.MouseOver)
-                    this._Draw(e, this._GetCurrentMouseBrush);
+                    this._Draw(e, absoluteBounds, this._GetCurrentMouseBrush);
                 else
-                    this._Draw(e, this._GetCurrentStandardBrush);
+                    this._Draw(e, absoluteBounds, this._GetCurrentStandardBrush);
             }
             if (e.DrawLayer == GInteractiveDrawLayer.Interactive && this.InteractiveState == GInteractiveState.LeftDrag)
             {
-                this._Draw(e, this._GetCurrentInteractiveBrush);
+                this._Draw(e, absoluteBounds, this._GetCurrentInteractiveBrush);
             }
         }
-        private void _Draw(GInteractiveDrawArgs e, Func<Brush> brushCreator)
+        private void _Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Func<Rectangle, Brush> brushCreator)
         {
-            using (Brush b = brushCreator())
+            using (Brush b = brushCreator(absoluteBounds))
             {
-                Rectangle bounds = this.BoundsAbsolute;
-                e.Graphics.FillRectangle(b, bounds);
+                e.Graphics.FillRectangle(b, absoluteBounds);
             }
         }
-        private Brush _GetCurrentStandardBrush()
+        private Brush _GetCurrentStandardBrush(Rectangle absoluteBounds)
         {
             float angle = (this._IsHorizontal ? -90f : 180f);
-            System.Drawing.Drawing2D.LinearGradientBrush b = new System.Drawing.Drawing2D.LinearGradientBrush(this.BoundsAbsolute, Color.DimGray, Color.LightGray, angle);
+            System.Drawing.Drawing2D.LinearGradientBrush b = new System.Drawing.Drawing2D.LinearGradientBrush(absoluteBounds, Color.DimGray, Color.LightGray, angle);
             b.SetSigmaBellShape(0.4f);
             return b;
         }
-        private Brush _GetCurrentMouseBrush()
+        private Brush _GetCurrentMouseBrush(Rectangle absoluteBounds)
         {
             float angle = (this._IsHorizontal ? -90f : 180f) + 180f;
-            System.Drawing.Drawing2D.LinearGradientBrush b = new System.Drawing.Drawing2D.LinearGradientBrush(this.BoundsAbsolute, Color.Gray, Color.White, angle);
+            System.Drawing.Drawing2D.LinearGradientBrush b = new System.Drawing.Drawing2D.LinearGradientBrush(absoluteBounds, Color.Gray, Color.White, angle);
             b.SetSigmaBellShape(0.5f, 0.25f);
             return b;
         }
-        private Brush _GetCurrentInteractiveBrush()
+        private Brush _GetCurrentInteractiveBrush(Rectangle absoluteBounds)
         {
             float angle = (this._IsHorizontal ? -90f : 180f);
-            System.Drawing.Drawing2D.LinearGradientBrush b = new System.Drawing.Drawing2D.LinearGradientBrush(this.BoundsAbsolute, Color.Gray, Color.LightYellow, angle);
+            System.Drawing.Drawing2D.LinearGradientBrush b = new System.Drawing.Drawing2D.LinearGradientBrush(absoluteBounds, Color.Gray, Color.LightYellow, angle);
             b.SetSigmaBellShape(0.5f);
             return b;
         }
-        private Brush _GetCurrentShadowBrush()
+        private Brush _GetCurrentShadowBrush(Rectangle absoluteBounds)
         {
             float angle = (this._IsHorizontal ? -90f : 180f);
-            System.Drawing.Drawing2D.LinearGradientBrush b = new System.Drawing.Drawing2D.LinearGradientBrush(this.BoundsAbsolute, Color.Gray, Color.White, angle);
+            System.Drawing.Drawing2D.LinearGradientBrush b = new System.Drawing.Drawing2D.LinearGradientBrush(absoluteBounds, Color.Gray, Color.White, angle);
             b.SetSigmaBellShape(0.5f, 0.25f);
             return b;
         }

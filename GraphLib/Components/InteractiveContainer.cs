@@ -145,10 +145,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// InteractiveContainer.Draw(): call PaintBackground
         /// </summary>
         /// <param name="e"></param>
-        protected override void Draw(GInteractiveDrawArgs e)
+        protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds)
         {
             this.PaintBackground(e);
-            base.Draw(e);
+            base.Draw(e, absoluteBounds, absoluteVisibleBounds);
         }
         protected virtual void PaintBackground(GInteractiveDrawArgs e)
         {
