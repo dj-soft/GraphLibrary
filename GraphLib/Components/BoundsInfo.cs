@@ -42,35 +42,15 @@ namespace Asol.Tools.WorkScheduler.Components
             return spider;
         }
         /// <summary>
-        /// Vrátí instanci třídy <see cref="BoundsInfo"/> pro daný control (pro jeho velikost)
-        /// </summary>
-        /// <param name="parent"></param>
-        /// <returns></returns>
-        public static BoundsInfo CreateForParent(GInteractiveControl control)
-        {
-            BoundsInfo spider = new BoundsInfo(0, 0, 0, 0, control.ClientSize);
-            return spider;
-        }
-        /// <summary>
         /// Vrátí instanci třídy <see cref="BoundsInfo"/> pro daný control
         /// </summary>
         /// <param name="item"></param>
         /// <param name="absOriginPoint"></param>
         /// <param name="absVisibleBounds"></param>
         /// <returns></returns>
-        public static BoundsInfo CreateForParent(Point absOriginPoint, Rectangle absVisibleBounds)
+        private static BoundsInfo CreateForParent(Point absOriginPoint, Rectangle absVisibleBounds)
         {
             BoundsInfo spider = new BoundsInfo(absOriginPoint.X, absOriginPoint.Y, absVisibleBounds.X, absVisibleBounds.Y, absVisibleBounds.Right, absVisibleBounds.Bottom);
-            return spider;
-        }
-        /// <summary>
-        /// Vrátí instanci třídy <see cref="BoundsInfo"/> pro daného parenta
-        /// </summary>
-        /// <param name="parent"></param>
-        /// <returns></returns>
-        public static BoundsInfo CreateForParent(IInteractiveParent parent)
-        {
-            BoundsInfo spider = new BoundsInfo(0, 0, parent.BoundsClient);
             return spider;
         }
         /// <summary>
@@ -188,7 +168,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Obsahuje nový objekt <see cref="BoundsInfo"/>, který bude určovat souřadnice pro Childs prvky uvnitř aktuálního prvku <see cref="CurrentItem"/>.
         /// Aktuální (=this) objekt <see cref="BoundsInfo"/> určuje souřadnice pro <see cref="CurrentItem"/>, ale ne pro jeho Childs.
         /// </summary>
-        public BoundsInfo CurrentChildsSpider { get { if (!this._UseCache || this._CurrentChildsSpider == null) this._CurrentChildsSpider = this._GetChildsSpider(this.CurrentItem, this.CurrentAbsChildsOrigin, this.CurrentAbsVisibleBounds); return this._CurrentChildsSpider; } }
+        public BoundsInfo CurrentChildsSpider { get { if (!this._UseCache || this._CurrentChildsSpider == null) this._CurrentChildsSpider = _GetChildsSpider(this.CurrentAbsChildsOrigin, this.CurrentAbsVisibleBounds); return this._CurrentChildsSpider; } }
 
         /// <summary>
         /// Resetuje cache výsledných hodnot pro prvek <see cref="_CurrentItem"/>
@@ -326,19 +306,16 @@ namespace Asol.Tools.WorkScheduler.Components
 
             Point originPoint = this.GetAbsChildsOrigin(item);
             Rectangle clientVisibleBounds = this.GetAbsChildsVisibleBounds(item);
-            return BoundsInfo.CreateForParent(originPoint, clientVisibleBounds);
+            return _GetChildsSpider(originPoint, clientVisibleBounds);
         }
         /// <summary>
         /// Metoda vrátí nový objekt <see cref="BoundsInfo"/>, který bude určovat souřadnice pro Childs prvky uvnitř daného prvku.
         /// Aktuální (=this) objekt <see cref="BoundsInfo"/> určuje souřadnice pro daný prvku, ale ne pro jeho Childs.
         /// </summary>
-        /// <param name="item"></param>
         /// <param name="originPoint"></param>
         /// <param name="clientVisibleBounds"></param>
-        private BoundsInfo _GetChildsSpider(IInteractiveItem item, Point originPoint, Rectangle clientVisibleBounds)
+        private static BoundsInfo _GetChildsSpider(Point originPoint, Rectangle clientVisibleBounds)
         {
-            CheckItem(item, "ChildsSpider");
-
             return BoundsInfo.CreateForParent(originPoint, clientVisibleBounds);
         }
         /// <summary>
@@ -381,6 +358,86 @@ namespace Asol.Tools.WorkScheduler.Components
                 throw new Application.GraphLibCodeException("Nelze provést akci BoundsSpider." + action + "(), dodaný prvek je null.");
         }
         #endregion
+        #endregion
+        #region Metody pro směr Child to Parent
+        /// <summary>
+        /// Pro daný prvek určí a vrátí jeho souřadný systém.
+        /// Jde tedy o systém, v němž se daný prvek pohybuje, nikoli o systém který poskytuje svým Childs prvkům.
+        /// Daný prvek bude umístěn do property <see cref="BoundsInfo.CurrentItem"/>, a v ostatních properties vráceného systému budou k dispozici jeho jednotlivé koordináty
+        /// (např. <see cref="BoundsInfo.CurrentAbsBounds"/> bude obsahovat absolutní souřadnice daného prvku).
+        /// </summary>
+        /// <param name="currentItem"></param>
+        /// <returns></returns>
+        public static BoundsInfo CreateForChild(IInteractiveItem currentItem)
+        {
+            CheckItem(currentItem, "CreateForChild");
+            currentItem.Parent.ClientSize
+
+            // Nejprve budu procházet Parent prvky daného prvku, budu střádat AbsOffset a Visible area, dokud nenajdu Top parenta = vizuální control:
+
+
+
+        }
+
+        // dřívější Extension metody na podobné téma:
+
+        /// <summary>
+        /// Returns absolute client area bounds = this.GetAbsoluteVisibleBounds(), reduced by this.ClientBorder
+        /// (=item.Bounds.GetClientBounds(item.ClientBorder))
+        /// </summary>
+        /// <param name="item">current IInteractiveItem item</param>
+        /// <returns></returns>
+        public static Rectangle GetAbsoluteClientArea(this IInteractiveItem item)
+        {
+            Point location = item.GetAbsoluteOriginPoint();
+            Rectangle boundsClient = item.BoundsClient;
+            return boundsClient.Add(location);
+        }
+        /// <summary>
+        /// Vrátí absolutní souřadnice prostoru, v němž je daný prvek umístěn.
+        /// Jde o prostor parenta 
+        /// Returns absolute coordinates of area, in which this item is contained.
+        /// If this item has no parent, then return { 0, 0, Host.Width, Host.Height }.
+        /// Otherwise return absolute coordinates of this.Parent client area.
+        /// When item.Bounds has Location { 0, 0 }, then its absolute location (on Host area) will be on result.Location.
+        /// </summary>
+        /// <param name="item">current IInteractiveItem item</param>
+        /// <returns></returns>
+        public static Rectangle GetAbsoluteOriginArea(this IInteractiveItem item)
+        {
+            if (item.Parent == null) return new Rectangle(0, 0, 4096, 4096);          // Pokud dosud není vložen Parent, pak prostor je "neomezený".
+
+            Point location = item.GetAbsoluteOriginPoint();
+            Size size = item.Parent.BoundsClient.Size;
+            return new Rectangle(location, size);
+        }
+        /// <summary>
+        /// Vrátí absolutní souřadnice (tj. v koordinátech Host controlu) bodu, na němž leží počátek this prvku (tj. IInteractiveItem.Bounds.Location).
+        /// Pokud daný prvek nemá Parenta, pak vrací bod {0,0}.
+        /// </summary>
+        /// <param name="item">current IInteractiveItem item</param>
+        /// <returns></returns>
+        public static Point GetAbsoluteOriginPoint(this IInteractiveItem item)
+        {
+            int x = 0;
+            int y = 0;
+            if (item != null)
+            {   // Prvek je zadán, budeme procházet řetěz prvků počínaje daným item:
+                IInteractiveParent i = item;
+                // Ať se nezacyklíme:
+                Dictionary<uint, object> scanned = new Dictionary<uint, object>();
+                scanned.Add(i.Id, null);
+                while (i.Parent != null)
+                {
+                    i = i.Parent;
+                    if (scanned.ContainsKey(i.Id)) break;            // Cyklíme? Padáme!
+                    Rectangle parentBounds = i.BoundsClient;
+                    x += parentBounds.X;
+                    y += parentBounds.Y;
+                }
+            }
+            return new Point(x, y);
+        }
         #endregion
     }
 }

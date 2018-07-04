@@ -168,10 +168,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         GInteractiveControl Host { get; }
         /// <summary>
-        /// Parent tohoto prvku. Může být null, pokud this je hostován přímo v controlu GInteractiveControl.
-        /// Parent je typicky typu IInteractiveContainer.
+        /// Parent tohoto prvku. Může to být i přímo control GInteractiveControl.
+        /// Pouze v případě, kdy this je <see cref="GInteractiveControl"/>, pak <see cref="Parent"/> je null.
         /// </summary>
         IInteractiveParent Parent { get; set; }
+        /// <summary>
+        /// Velikost prostoru pro Childs prvky
+        /// </summary>
+        Size ClientSize { get; }
         /// <summary>
         /// Souřadnice prostoru, který je vyhrazen pro <see cref="Childs"/> prvky obsažené v this prvku.
         /// Souřadnice jsou relativní vzhledem <see cref="Bounds"/>.

@@ -2134,10 +2134,10 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Implementace IInteractiveParent : on totiž GInteractiveControl je umístěn jako Parent ve svých IInteractiveItem
         UInt32 IInteractiveParent.Id { get { return 0; } }
-        GInteractiveControl IInteractiveParent.Host { get { return null; } }
+        GInteractiveControl IInteractiveParent.Host { get { return this; } }
         IInteractiveParent IInteractiveParent.Parent { get { return null; } set { } }
         GInteractiveStyles IInteractiveParent.Style { get { return GInteractiveStyles.None; } }
-        Rectangle IInteractiveParent.BoundsClient { get { return this.ClientRectangle; } }
+        Size IInteractiveParent.ClientSize { get { return this.ClientSize; } }
         void IInteractiveParent.Repaint() { this.Repaint(); }
         #endregion
     }
