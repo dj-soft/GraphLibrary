@@ -371,7 +371,28 @@ namespace Asol.Tools.WorkScheduler.Components
         public static BoundsInfo CreateForChild(IInteractiveItem currentItem)
         {
             CheckItem(currentItem, "CreateForChild");
-            currentItem.Parent.ClientSize
+
+            Dictionary<uint, object> scanned = new Dictionary<uint, object>();
+
+            int originX = 0;
+            int originY = 0;
+            int visibleL = 0;
+            int visibleT = 0;
+            int visibleR = 16380;
+            int visibleB = 16380;
+
+            IInteractiveItem i = currentItem;
+            scanned.Add(i.Id, null);
+            while (i.Parent != null)
+            {
+                i = i.Parent;
+                if (scanned.ContainsKey(i.Id)) break;            // Cyklíme? Padáme!
+                Rectangle parentBounds = i.BoundsClient;
+                x += parentBounds.X;
+                y += parentBounds.Y;
+            }
+
+            currentItem.Parent.ClientSize;
 
             // Nejprve budu procházet Parent prvky daného prvku, budu střádat AbsOffset a Visible area, dokud nenajdu Top parenta = vizuální control:
 
