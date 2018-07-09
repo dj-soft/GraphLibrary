@@ -486,7 +486,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             if (e != null)
             {
-                GCurrentItem gci = this.FindItemAtPoint(e.Location, true);
+                GActiveItem gci = this.FindItemAtPoint(e.Location, true);
                 this._ItemMouseExchange(this._MouseCurrentItem, gci, this._MouseCurrentRelativePoint);
                 this._ToolTipMouseMove(this._MouseCurrentAbsolutePoint);
             }
@@ -499,7 +499,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         private void _MouseFell(MouseEventArgs e)
         {
-            GCurrentItem gci = this.FindItemAtPoint(e.Location);
+            GActiveItem gci = this.FindItemAtPoint(e.Location);
 
             this._ItemMouseExchange(this._MouseCurrentItem, gci, this._MouseCurrentRelativePoint);
             this._ItemKeyboardExchange(this._KeyboardCurrentItem, gci.Item, false);
@@ -515,14 +515,14 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             if (this._MouseCurrentItem != null)
             {
-                this._MouseCurrentItem.EventCurrentTime = DateTime.Now;
+                this._MouseCurrentItem.CurrentTime = DateTime.Now;
                 this._MouseCurrentRelativePoint = this._GetRelativePointToCurrentItem(e.Location);
                 this._ItemMouseCallStateChangedEvent(this._MouseCurrentItem, GInteractiveChangeState.LeftUp, this._MouseCurrentRelativePoint, null);
-                if (this._MouseCurrentItem.CanDoubleClick && GCurrentItem.IsDoubleClick(this._MouseClickedItem, this._MouseCurrentItem))
+                if (this._MouseCurrentItem.CanDoubleClick && GActiveItem.IsDoubleClick(this._MouseClickedItem, this._MouseCurrentItem))
                 {
                     this._ItemMouseCallStateChangedEvent(this._MouseCurrentItem, GInteractiveChangeState.LeftDoubleClick, this._MouseCurrentRelativePoint, null);
                 }
-                else if (this._MouseCurrentItem.CanLongClick && GCurrentItem.IsLongClick(this._MouseDownTime, this._MouseCurrentItem))
+                else if (this._MouseCurrentItem.CanLongClick && GActiveItem.IsLongClick(this._MouseDownTime, this._MouseCurrentItem))
                 {
                     this._ItemMouseCallStateChangedEvent(this._MouseCurrentItem, GInteractiveChangeState.LeftLongClick, this._MouseCurrentRelativePoint, null);
                 }
@@ -540,7 +540,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this._MouseCurrentRelativePoint = _GetRelativePoint(this._MouseDownAbsolutePoint.Value, this._MouseCurrentItem);
             if (this._MouseCurrentItem.CanDrag)
             {
-                this._MouseCurrentItem.EventCurrentTime = DateTime.Now; 
+                this._MouseCurrentItem.CurrentTime = DateTime.Now; 
                 this._MouseDraggedItem = this._MouseCurrentItem;
                 this._MouseDraggedItemOriginBounds = this._MouseCurrentItem.Item.Bounds;
                 Point? userDragPoint = null;
@@ -555,7 +555,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             if (this._MouseDraggedItem != null && this._MouseCurrentItem.CanDrag)
             {
-                this._MouseCurrentItem.EventCurrentTime = DateTime.Now;
+                this._MouseCurrentItem.CurrentTime = DateTime.Now;
                 Point? userDragPoint = null;
                 if (this._UserDragPointOffset.HasValue)
                     userDragPoint = e.Location.Add(this._UserDragPointOffset.Value);
@@ -569,7 +569,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             if (this._MouseDraggedItem != null && this._MouseCurrentItem.CanDrag)
             {
-                this._MouseCurrentItem.EventCurrentTime = DateTime.Now;
+                this._MouseCurrentItem.CurrentTime = DateTime.Now;
                 Point? userDragPoint = null;
                 this._ItemMouseCallStateChangedEvent(this._MouseCurrentItem, GInteractiveChangeState.LeftDragCancel, null, null, ref userDragPoint);
                 this._ItemMouseCallStateChangedEvent(this._MouseCurrentItem, GInteractiveChangeState.LeftDragEnd, null, null);
@@ -585,7 +585,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this._ItemMouseCallStateChangedEvent(this._MouseCurrentItem, GInteractiveChangeState.LeftUp, this._MouseCurrentRelativePoint, null);
             if (this._MouseDraggedItem != null && this._MouseCurrentItem.CanDrag)
             {
-                this._MouseCurrentItem.EventCurrentTime = DateTime.Now;
+                this._MouseCurrentItem.CurrentTime = DateTime.Now;
                 this._ItemMouseCallStateChangedEvent(this._MouseCurrentItem, GInteractiveChangeState.LeftDragDone, this._MouseCurrentRelativePoint, null);
                 this._ItemMouseCallStateChangedEvent(this._MouseCurrentItem, GInteractiveChangeState.LeftDragEnd, null, null);
             }
@@ -594,7 +594,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         private void _MouseOneWheel(MouseEventArgs e)
         {
-            GCurrentItem gci = this.FindItemAtPoint(e.Location);
+            GActiveItem gci = this.FindItemAtPoint(e.Location);
             this._ItemMouseExchange(this._MouseCurrentItem, gci, this._MouseCurrentRelativePoint);
             GInteractiveChangeState change = (e.Delta > 0 ? GInteractiveChangeState.WheelUp : GInteractiveChangeState.WheelDown);
             this._ItemMouseCallStateChangedEvent(this._MouseCurrentItem, change, this._MouseCurrentRelativePoint, null);
@@ -735,7 +735,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="gcItemPrev"></param>
         /// <param name="gcItemNext"></param>
-        private void _ItemMouseExchange(GCurrentItem gcItemPrev, GCurrentItem gcItemNext)
+        private void _ItemMouseExchange(GActiveItem gcItemPrev, GActiveItem gcItemNext)
         {
             this._ItemMouseExchange(gcItemPrev, gcItemNext, null);
         }
@@ -744,10 +744,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="gcItemPrev"></param>
         /// <param name="gcItemNext"></param>
-        private void _ItemMouseExchange(GCurrentItem gcItemPrev, GCurrentItem gcItemNext, Point? mouseRelativePoint)
+        private void _ItemMouseExchange(GActiveItem gcItemPrev, GActiveItem gcItemNext, Point? mouseRelativePoint)
         {
             List<IInteractiveItem> leaveList, enterList;
-            GCurrentItem.MapExchange(gcItemPrev, gcItemNext, out leaveList, out enterList);
+            GActiveItem.MapExchange(gcItemPrev, gcItemNext, out leaveList, out enterList);
 
             foreach (IInteractiveItem item in leaveList)
                 this._ItemMouseCallStateChangedEvent(gcItemPrev, item, GInteractiveChangeState.MouseLeave);
@@ -765,7 +765,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="gcItem"></param>
         /// <param name="state"></param>
-        private void _ItemMouseCallStateChangedEvent(GCurrentItem gcItem, GInteractiveChangeState change, Point? mouseRelativePoint, Rectangle? dragToArea)
+        private void _ItemMouseCallStateChangedEvent(GActiveItem gcItem, GInteractiveChangeState change, Point? mouseRelativePoint, Rectangle? dragToArea)
         {
             Point? userDragPoint = null;
             this._ItemMouseCallStateChangedEvent(gcItem, change, mouseRelativePoint, dragToArea, ref userDragPoint);
@@ -775,14 +775,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="gcItem">Current item under mouse</param>
         /// <param name="change">Change of state, independently on MouseButton (i.e. LeftDown, in situation where is pressed Right Mouse button). Real change state is detected in this method, with _GetStateForCurrentButton() method.</param>
-        private void _ItemMouseCallStateChangedEvent(GCurrentItem gcItem, GInteractiveChangeState change, Point? mouseRelativePoint, Rectangle? dragToArea, ref Point? userDragPoint)
+        private void _ItemMouseCallStateChangedEvent(GActiveItem gcItem, GInteractiveChangeState change, Point? mouseRelativePoint, Rectangle? dragToArea, ref Point? userDragPoint)
         {
             GInteractiveChangeState realChange = this._GetStateForCurrentMouseButton(change, gcItem.IsEnabled);
-            GInteractiveState state = (gcItem.ExistsItem ? _GetStateAfterChange(realChange, gcItem.Item.IsEnabled) : GInteractiveState.Disabled);
-            GInteractiveChangeStateArgs stateArgs = new GInteractiveChangeStateArgs(gcItem.ExistsItem, gcItem.Item, realChange, state, this.FindIItemAtPoint, this._MouseCurrentAbsolutePoint, mouseRelativePoint, this._MouseDraggedItemOriginBounds, dragToArea);
+            GInteractiveState state = (gcItem.HasItem ? _GetStateAfterChange(realChange, gcItem.Item.IsEnabled) : GInteractiveState.Disabled);
+            GInteractiveChangeStateArgs stateArgs = new GInteractiveChangeStateArgs(gcItem.HasItem, gcItem.Item, realChange, state, this.FindIItemAtPoint, this._MouseCurrentAbsolutePoint, mouseRelativePoint, this._MouseDraggedItemOriginBounds, dragToArea);
             stateArgs.UserDragPoint = userDragPoint;
 
-            if (gcItem.ExistsItem)
+            if (gcItem.HasItem)
             {
                 gcItem.Item.AfterStateChanged(stateArgs);
                 this._ItemMouseCallDragEvent(gcItem.Item, stateArgs);
@@ -801,7 +801,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="gci"></param>
         /// <param name="item"></param>
         /// <param name="change"></param>
-        private void _ItemMouseCallStateChangedEvent(GCurrentItem gci, IInteractiveItem item, GInteractiveChangeState change)
+        private void _ItemMouseCallStateChangedEvent(GActiveItem gci, IInteractiveItem item, GInteractiveChangeState change)
         {
             GInteractiveChangeState realChange = this._GetStateForCurrentMouseButton(change, item.IsEnabled);
             GInteractiveChangeStateArgs stateArgs = new GInteractiveChangeStateArgs(true, item, realChange, _GetStateAfterChange(realChange, item.IsEnabled), this.FindIItemAtPoint);
@@ -862,20 +862,20 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Search and return an topmost interactive item on specified point.
         /// Accept disabled items (by parameter withDisabled).
         /// </summary>
-        /// <param name="point"></param>
+        /// <param name="mouseAbsolutePoint"></param>
         /// <param name="withDisabled"></param>
         /// <returns></returns>
-        protected IInteractiveItem FindIItemAtPoint(Point point, bool withDisabled)
+        protected IInteractiveItem FindIItemAtPoint(Point mouseAbsolutePoint, bool withDisabled)
         {
-            GCurrentItem gci = GCurrentItem.FindItemAtPoint(this.ItemsList, null, point, withDisabled);
-            return (gci.ExistsItem ? gci.Item : null);
+            GActiveItem gci = GActiveItem.FindItemAtPoint(this.ClientSize, this.ItemsList, null, mouseAbsolutePoint, withDisabled);
+            return (gci.HasItem ? gci.Item : null);
         }
         /// <summary>
         /// Returns a new GCurrentItem object for topmost interactive item on specified point
         /// </summary>
         /// <param name="point"></param>
         /// <returns></returns>
-        protected GCurrentItem FindItemAtPoint(Point point)
+        protected GActiveItem FindItemAtPoint(Point point)
         {
             return this.FindItemAtPoint(point, false);
         }
@@ -884,11 +884,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="point"></param>
         /// <returns></returns>
-        protected GCurrentItem FindItemAtPoint(Point point, bool withDisabled)
+        protected GActiveItem FindItemAtPoint(Point point, bool withDisabled)
         {
-            GCurrentItem gci = (this._ProgressItem.IsVisible
-                ? GCurrentItem.FindItemAtPoint(this.ItemsList, this._MouseCurrentItem, point, withDisabled, this._ProgressItem)
-                : GCurrentItem.FindItemAtPoint(this.ItemsList, this._MouseCurrentItem, point, withDisabled));
+            GActiveItem gci = (this._ProgressItem.IsVisible
+                ? GActiveItem.FindItemAtPoint(this.ClientSize, this.ItemsList, this._MouseCurrentItem, point, withDisabled, this._ProgressItem)
+                : GActiveItem.FindItemAtPoint(this.ClientSize, this.ItemsList, this._MouseCurrentItem, point, withDisabled));
 
             this._MouseCurrentRelativePoint = _GetRelativePoint(point, gci);
             return gci;
@@ -911,7 +911,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="point"></param>
         /// <returns></returns>
-        protected static Point? _GetRelativePoint(Point point, GCurrentItem gCurrentItem)
+        protected static Point? _GetRelativePoint(Point point, GActiveItem gCurrentItem)
         {
             return (gCurrentItem == null ? (Point?)null : (Point?)gCurrentItem.GetRelativePointToCurrentItem(point));
         }
@@ -943,15 +943,15 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Current item with any mouse-interaction, can be null
         /// </summary>
-        private GCurrentItem _MouseCurrentItem;
+        private GActiveItem _MouseCurrentItem;
         /// <summary>
         /// Current item, which is dragged (from _MouseDragBegin(), through _MouseDragMove() to _MouseDragCancel() or _MouseDragEnd().
         /// </summary>
-        private GCurrentItem _MouseDraggedItem;
+        private GActiveItem _MouseDraggedItem;
         /// <summary>
         /// Item, which was last clicked.
         /// </summary>
-        private GCurrentItem _MouseClickedItem;
+        private GActiveItem _MouseClickedItem;
         /// <summary>
         /// Origin Bounds of Current Item, from where is dragged.
         /// Is present in args to all Mouse events.
@@ -2142,50 +2142,59 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
     }
     #endregion
-    #region class GCurrentItem : Working class for search current IInteractiveItem (and list of its Parents)
+    #region class GActiveItem : Pracovní třída pro vyhledání prvku <see cref="IInteractiveItem"/> a seznamu jeho parentů
     /// <summary>
-    /// GCurrentItem : Working class for search current IInteractiveItem (and list of its Parents)
+    /// GActiveItem : Pracovní třída pro vyhledání prvku <see cref="IInteractiveItem"/> a seznamu jeho parentů
     /// </summary>
-    public class GCurrentItem
+    public class GActiveItem
     {
-        #region Constructor, basic properties
-        private GCurrentItem(Point mousePoint)
+        #region Konstruktor, základní proměnné
+        private GActiveItem(Point mouseAbsolutePoint)
         {
-            this.FoundItemList = new List<FindItemPoint>();
-            this.MousePoint = mousePoint;
-            this.ItemBeginTime = DateTime.Now;
-            this.EventCurrentTime = this.ItemBeginTime;
+            this.Items = new List<FindItemPoint>();
+            this.MouseAbsolutePoint = mouseAbsolutePoint;
+            this.BeginTime = DateTime.Now;
+            this.CurrentTime = this.BeginTime;
         }
         /// <summary>
-        /// List of chain found items from root up to CurrentItem.
-        /// At first index is item at root. CurrentItem is last item of this list.
+        /// Soupis všech prvků, nalezených v této instanci.
+        /// Na první pozici [0] je první prvek nejblíže <see cref="GInteractiveControl"/>,
+        /// na poslední pozici je nejvyšší prvek.
         /// </summary>
-        public List<FindItemPoint> FoundItemList { get; protected set; }
+        public List<FindItemPoint> Items { get; protected set; }
         /// <summary>
-        /// true when any item is found
+        /// Nalezený prvek, kompletní údaje
         /// </summary>
-        public bool ExistsItem { get { return (this.FoundItemList.Count > 0); } }
+        protected FindItemPoint FindItem { get { return (this.HasItem ? this.Items[this.Items.Count - 1] : null); } }
         /// <summary>
-        /// Found item
+        /// Nalezený prvek <see cref="IInteractiveItem"/>
         /// </summary>
-        public IInteractiveItem Item { get { return (this.ExistsItem ? this.FoundItemList[this.FoundItemList.Count - 1].Item : null);} }
+        public IInteractiveItem Item { get { return (this.HasItem ? this.Items[this.Items.Count - 1].Item : null); } }
+        /// <summary>
+        /// Obsahuje true, pokud je nějaký prvek nalezen.
+        /// Pak je tento prvek dostupný v <see cref="Item"/>.
+        /// </summary>
+        public bool HasItem { get { return (this.Items.Count > 0); } }
         /// <summary>
         /// Absolute coordinates of item in coordinate system of Control
         /// </summary>
-        public Point? CurrentItemLocation { get { return (this.ExistsItem ? (Point?)this.FoundItemList[this.FoundItemList.Count - 1].ItemAbsoluteLocation : (Point?)null); } }
+        public Point? CurrentItemLocation { get { return (this.HasItem ? (Point?)this.Items[this.Items.Count - 1].ItemAbsoluteLocation : (Point?)null); } }
         /// <summary>
         /// Relative coordinates of mouse in coordinate system of CurrentItem
         /// </summary>
-        public Point? CurrentItemMouseRelativePoint { get { return (this.ExistsItem ? (Point?)this.FoundItemList[this.FoundItemList.Count - 1].RelativeMousePoint : (Point?)null); } }
-        public Point MousePoint { get; protected set; }
+        public Point? CurrentItemMouseRelativePoint { get { return (this.HasItem ? (Point?)this.Items[this.Items.Count - 1].RelativeMousePoint : (Point?)null); } }
         /// <summary>
-        /// Time when GCurrentItem was created (=first event of this item)
+        /// Pozice myši v absolutních souřadnicích controlu <see cref="GInteractiveControl"/>
         /// </summary>
-        public DateTime ItemBeginTime { get; protected set; }
+        public Point MouseAbsolutePoint { get; protected set; }
         /// <summary>
-        /// Time of current event
+        /// Čas prvního eventu (když byla instance <see cref="GActiveItem"/> vytvořena)
         /// </summary>
-        public DateTime EventCurrentTime { get; set; }
+        public DateTime BeginTime { get; protected set; }
+        /// <summary>
+        /// Čas právě probíhajícího eventu
+        /// </summary>
+        public DateTime CurrentTime { get; set; }
         #endregion
         #region Property from this.CurrentItem.Style, IsEnabled, IsVisible
         /// <summary>
@@ -2219,14 +2228,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Current item is not null and IsEnabled?
         /// </summary>
-        public bool IsEnabled { get { return (this.ExistsItem && this.Item.IsEnabled); } }
+        public bool IsEnabled { get { return (this.HasItem && this.Item.IsEnabled); } }
         /// <summary>
         /// Current item is not null and IsVisible?
         /// </summary>
-        public bool IsVisible { get { return (this.ExistsItem && this.Item.IsVisible); } }
+        public bool IsVisible { get { return (this.HasItem && this.Item.IsVisible); } }
         private bool _HasStyle(GInteractiveStyles style)
         {
-            return (this.ExistsItem && ((this.Item.Style & style) != 0));
+            return (this.HasItem && ((this.Item.Style & style) != 0));
         }
         #endregion
         #region FindItem, MapExchange
@@ -2235,86 +2244,90 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Prefered current item above other items.
         /// Accept disabled items (by parameter withDisabled).
         /// </summary>
-        /// <param name="point"></param>
+        /// <param name="mouseAbsolutePoint"></param>
         /// <returns></returns>
-        public static GCurrentItem FindItemAtPoint(List<IInteractiveItem> list, GCurrentItem prevItem, Point point, bool withDisabled, params IInteractiveItem[] priorityItems)
+        public static GActiveItem FindItemAtPoint(Size hostSize, List<IInteractiveItem> items, GActiveItem prevItem, Point mouseAbsolutePoint, bool withDisabled, params IInteractiveItem[] priorityItems)
         {
-            return _FindItemAtPoint(list, prevItem, point, withDisabled, priorityItems);
+            return _FindItemAtPoint(hostSize, items, prevItem, mouseAbsolutePoint, withDisabled, priorityItems);
         }
         /// <summary>
         /// Returns a new GCurrentItem object for topmost interactive item on specified point
         /// Prefered current item above other items.
         /// Accept disabled items (by parameter withDisabled).
         /// </summary>
-        /// <param name="point"></param>
+        /// <param name="mouseAbsolutePoint"></param>
         /// <returns></returns>
-        private static GCurrentItem _FindItemAtPoint(List<IInteractiveItem> list, GCurrentItem prevItem, Point point, bool withDisabled, IInteractiveItem[] priorityItems)
+        private static GActiveItem _FindItemAtPoint(Size hostSize, List<IInteractiveItem> itemList, GActiveItem prevItem, Point mouseAbsolutePoint, bool withDisabled, IInteractiveItem[] priorityItems)
         {
-            GCurrentItem currItem = new GCurrentItem(point);
-
-            if (priorityItems != null && priorityItems.Length > 0)
-            {
-                list = new List<IInteractiveItem>(list);
-                list.AddRange(priorityItems);
-            }
-
-            // Search for current item: when have an existing current item (currentItem) then search for its FoundItemList preferred:
-            IInteractiveItem[] items = list.ToArray();
-            List<FindItemPoint> foundList = new List<FindItemPoint>();
-            if (prevItem != null && prevItem.ExistsItem)
-                foundList = _TryFindChildItemAtPoint(items, point, withDisabled, prevItem.FoundItemList);
-            else
-                foundList = _TryFindChildItemAtPoint(items, point, withDisabled, null);
-
-            currItem.FoundItemList.AddRange(foundList);
-
+            GActiveItem currItem = new GActiveItem(mouseAbsolutePoint);
+            IInteractiveItem[] items = _CreateJoinItems(itemList, priorityItems);
+            List<FindItemPoint> holdList = ((prevItem != null && prevItem.HasItem) ? prevItem.Items : null);
+            currItem._FindItemAtPoint(hostSize, items, mouseAbsolutePoint, withDisabled, holdList);
             return currItem;
         }
         /// <summary>
-        /// Search for item at specified point in list of items:
-        /// item must be visible, must be active at point, and can be enabled, by parametrer withDisabled.
-        /// If satisfactory item is IInteractiveContainer, then search continue in its ItemList.
-        /// Lists are searched in order from last item to first.
+        /// Vrátí seznam položek první úrovně k scanování
+        /// </summary>
+        /// <param name="itemList"></param>
+        /// <param name="priorityItems"></param>
+        /// <returns></returns>
+        private static IInteractiveItem[] _CreateJoinItems(List<IInteractiveItem> itemList, IInteractiveItem[] priorityItems)
+        {
+            List<IInteractiveItem> joinList = new List<IInteractiveItem>();
+            if (itemList != null && itemList.Count > 0)
+                joinList.AddRange(itemList);
+            if (priorityItems != null && priorityItems.Length > 0)
+                joinList.AddRange(priorityItems);
+            return itemList.ToArray();
+        }
+        /// <summary>
+        /// Hledá prvek, který je aktivní na dané souřadnici v daném seznamu prvků.
+        /// Prvek musí být viditelný, musí být (enabled nebo se hledají i non-enabled prvky), musí být aktivní na dané souřadnici.
+        /// Metoda prohledává stejným způsobem i Child prvky nalezeného prvku, pokud existují.
         /// </summary>
         /// <param name="items"></param>
-        /// <param name="absolutePoint"></param>
+        /// <param name="mouseAbsolutePoint"></param>
         /// <param name="withDisabled"></param>
-        /// <param name="resultList"></param>
+        /// <param name="holdList"></param>
         /// <returns></returns>
-        private static List<FindItemPoint> _TryFindChildItemAtPoint(IInteractiveItem[] items, Point absolutePoint, bool withDisabled, List<FindItemPoint> preferList)
+        private void _FindItemAtPoint(Size hostSize, IInteractiveItem[] items, Point mouseAbsolutePoint, bool withDisabled, List<FindItemPoint> holdList)
         {
-            List<FindItemPoint> resultList = new List<FindItemPoint>();
-            Queue<FindItemPoint> preferredQueue = (preferList == null ? null : new Queue<FindItemPoint>(preferList));       // Chain of preferred items
+            List<FindItemPoint> foundList = new List<FindItemPoint>();
+            Dictionary<uint, IInteractiveItem> scanDict = new Dictionary<uint, IInteractiveItem>();
+            Queue<FindItemPoint> holdQueue = (holdList == null ? null : new Queue<FindItemPoint>(holdList));       // Fronta "přidržených" prvků (od posledně)
+            BoundsInfo boundsInfo = BoundsInfo.CreateForParent(hostSize);
             bool run = true;
             while (run)
             {
                 run = false;
                 bool isFound = false;
                 IInteractiveItem foundItem = null;
-                if (preferredQueue != null && preferredQueue.Count > 0)
-                {   // Máme hledat nejprve v preferovaných prvcích?
-                    FindItemPoint fip = preferredQueue.Dequeue();
+                if (holdQueue != null && holdQueue.Count > 0)
+                {   // Máme hledat nejprve v "přidržených" prvcích?
+                    FindItemPoint fip = holdQueue.Dequeue();
                     if (fip.Item.HoldMouse)
                     {
-                        isFound = _TryFindIndexOfItem(items, absolutePoint, withDisabled, fip.Item, out foundItem);
+                        isFound = _TryFindItemInList(items, mouseAbsolutePoint, withDisabled, fip.Item, out foundItem);
                         if (!isFound)
-                            preferredQueue.Clear();
+                            holdQueue.Clear();
                     }
                 }
                 if (!isFound)
-                    // Hledáme mimo preferované prvky, pouze podle souřadnice myši:
-                    isFound = _TryFindIndexOfItem(items, absolutePoint, withDisabled, null, out foundItem);
+                    // Hledáme mimo "přidržené" prvky, pouze podle souřadnice myši:
+                    isFound = _TryFindItemInList(items, mouseAbsolutePoint, withDisabled, null, out foundItem);
                
                 if (isFound)
                 {   // Našli jsme prvek:
                     // Pokud jsme se zacyklili => skončíme chybou:
-                    if (resultList.Any(iii => Object.ReferenceEquals(iii.Item, foundItem)))
-                        throw new GraphLibCodeException("Při hledání vnořených vizuálních prvků v GCurrentItem došlo k zacyklení položek v seznamech IInteractiveItem.");
+                    if (_IsCycled(foundItem, scanDict, foundList))
+                        throw new GraphLibCodeException("Při hledání vnořených vizuálních prvků v GActiveItem došlo k zacyklení položek v seznamech IInteractiveItem.");
+
+                    boundsInfo.CurrentItem = foundItem;
 
                     // Určíme relativní pozici myši vůči prvku, to se někdy hodí:
                     Point itemAbsolutePoint = foundItem.GetAbsoluteVisibleBounds().Location;
-                    Point relativeMousePoint = absolutePoint.Sub(itemAbsolutePoint);                         // Relativní souřadnici pouze vložíme do FindItemPoint, ale pro hledání používáme stále absolutní souřadnici...
-                    resultList.Add(new FindItemPoint(foundItem, itemAbsolutePoint, relativeMousePoint));
+                    Point relativeMousePoint = mouseAbsolutePoint.Sub(itemAbsolutePoint);                         // Relativní souřadnici pouze vložíme do FindItemPoint, ale pro hledání používáme stále absolutní souřadnici...
+                    foundList.Add(new FindItemPoint(foundItem, itemAbsolutePoint, relativeMousePoint));
 
                     // Pokud prvek má Childs, projdeme je taky v další smyčce.
                     // Nemusíme řešit posun relativních souřadnic myši, jedeme stále v absolutních:
@@ -2326,7 +2339,27 @@ namespace Asol.Tools.WorkScheduler.Components
                     }
                 }
             }
-            return resultList;
+
+            if (foundList != null)
+                this.Items.AddRange(foundList);
+        }
+        /// <summary>
+        /// Vrátí true, pokud daný prvek (foundItem) najde v scanDict podle kladného Id, anebo jej najde podle <see cref="Object.ReferenceEquals(object, object)"/> v foundList.
+        /// Pokud má prvek kladné Id a v scanDict, pak jej do scanDict přidá a vrací false (pak neřeší hledání v foundList).
+        /// </summary>
+        /// <param name="foundItem"></param>
+        /// <param name="scanDict"></param>
+        /// <param name="foundList"></param>
+        /// <returns></returns>
+        private bool _IsCycled(IInteractiveItem foundItem, Dictionary<uint, IInteractiveItem> scanDict, List<FindItemPoint> foundList)
+        {
+            if (foundItem.Id > 0)
+            {
+                if (scanDict.ContainsKey(foundItem.Id)) return true;
+                scanDict.Add(foundItem.Id, foundItem);
+                return false;
+            }
+            return foundList.Any(i => Object.ReferenceEquals(i.Item, foundItem));
         }
         /// <summary>
         /// Hledá v daném poli od konce prvek, který je aktivní na dané absolutní souřadnici.
@@ -2335,13 +2368,13 @@ namespace Asol.Tools.WorkScheduler.Components
         /// a prvek musí být interaktivní na dané souřadnici.
         /// Výstup: true pokud je nalezeno (pak je nalezený prvek uložen v out parametru foundItem).
         /// </summary>
-        /// <param name="list"></param>
+        /// <param name="items"></param>
         /// <param name="absolutePoint"></param>
         /// <param name="withDisabled"></param>
         /// <param name="preferredItem"></param>
         /// <param name="foundItem"></param>
         /// <returns></returns>
-        private static bool _TryFindIndexOfItem(IInteractiveItem[] items, Point absolutePoint, bool withDisabled, IInteractiveItem preferredItem, out IInteractiveItem foundItem)
+        private static bool _TryFindItemInList(IInteractiveItem[] items, Point absolutePoint, bool withDisabled, IInteractiveItem preferredItem, out IInteractiveItem foundItem)
         {
             for (int idx = items.Length - 1; idx >= 0; idx--)
             {   // Hledáme v poli prvků od konce = vizuálně od nejvýše vykresleného prvku:
@@ -2365,7 +2398,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         public Point? GetRelativePointToCurrentItem(Point point)
         {
-            return (this.ExistsItem ? (Point?)point.Sub(this.CurrentItemLocation.Value) : (Point?)null);
+            return (this.HasItem ? (Point?)point.Sub(this.CurrentItemLocation.Value) : (Point?)null);
         }
         /// <summary>
         /// Create maps for calling events MouseLeave, MouseLeaveSubItem, MouseEnter, MouseEnterSubItem.
@@ -2374,7 +2407,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="next"></param>
         /// <param name="leaveList"></param>
         /// <param name="enterList"></param>
-        public static void MapExchange(GCurrentItem prev, GCurrentItem next, out List<IInteractiveItem> leaveList, out List<IInteractiveItem> enterList)
+        public static void MapExchange(GActiveItem prev, GActiveItem next, out List<IInteractiveItem> leaveList, out List<IInteractiveItem> enterList)
         {
             leaveList = new List<IInteractiveItem>();
             enterList = new List<IInteractiveItem>();
@@ -2382,13 +2415,13 @@ namespace Asol.Tools.WorkScheduler.Components
             if (prev == null && next == null) return;
 
             // Search for topmost index in booth arrays (prev.FoundItemList and next.FoundItemList), where is identical object:
-            int prevCnt = (prev == null ? 0 : prev.FoundItemList.Count);
-            int nextCnt = (next == null ? 0 : next.FoundItemList.Count);
+            int prevCnt = (prev == null ? 0 : prev.Items.Count);
+            int nextCnt = (next == null ? 0 : next.Items.Count);
             int commonCnt = (prevCnt < nextCnt ? prevCnt : nextCnt);           // Common count of both list (smallest Count from prev and next lists)
             int commonObjectIdx = -1;
             for (int i = 0; i < commonCnt; i++)
             {
-                if (Object.ReferenceEquals(prev.FoundItemList[i].Item, next.FoundItemList[i].Item))
+                if (Object.ReferenceEquals(prev.Items[i].Item, next.Items[i].Item))
                     commonObjectIdx = i;         // On index (i) is equal object in list prev and next: we search for topmost index...
                 else
                     break;                       // On index (i) is in list prev and next another object: we ending this search.
@@ -2404,11 +2437,11 @@ namespace Asol.Tools.WorkScheduler.Components
             int firstDiffIdx = commonObjectIdx + 1;
             // MouseLeave items from last index in prev, to item at [commonObjectIdx+1] (fill "MouseLeave" list):
             for (int i = prevLastIdx; i >= firstDiffIdx; i--)
-                leaveList.Add(prev.FoundItemList[i].Item);
+                leaveList.Add(prev.Items[i].Item);
 
             // MouseEnter items in next, from [commonObjectIdx+1] to last index (fill "MouseEnter" list):
             for (int i = firstDiffIdx; i <= nextLastIdx; i++)
-                enterList.Add(next.FoundItemList[i].Item);
+                enterList.Add(next.Items[i].Item);
         }
         #region class FindItemPoint : Informace o jednom nalezeném prvku a relativní poloze myši
         /// <summary>
@@ -2416,16 +2449,20 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public class FindItemPoint
         {
-            public FindItemPoint(IInteractiveItem item, Point itemLocation, Point relativeMousePoint)
+            public FindItemPoint(IInteractiveItem item, BoundsInfo boundsInfo, Point relativeMousePoint)
             {
                 this.Item = item;
-                this.ItemAbsoluteLocation = itemLocation;
+                this.BoundsInfo = boundsInfo;
                 this.RelativeMousePoint = relativeMousePoint;
             }
             /// <summary>
             /// Nalezený prvek
             /// </summary>
             public IInteractiveItem Item { get; private set; }
+            /// <summary>
+            /// Souřadný systém nalezeného prvku
+            /// </summary>
+            public BoundsInfo BoundsInfo { get; private set; }
             /// <summary>
             /// Souřadnice prvku v Controlu, absolutní
             /// </summary>
@@ -2443,9 +2480,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="item"></param>
         /// <returns></returns>
-        public static bool HasItem(GCurrentItem item)
+        public static bool ContainItem(GActiveItem item)
         {
-            return (item != null && item.ExistsItem);
+            return (item != null && item.HasItem);
         }
         /// <summary>
         /// Return true, when is change between prev a next.
@@ -2454,10 +2491,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="prev"></param>
         /// <param name="next"></param>
         /// <returns></returns>
-        public static bool IsExchange(GCurrentItem prev, GCurrentItem next)
+        public static bool IsExchange(GActiveItem prev, GActiveItem next)
         {
-            bool phi = GCurrentItem.HasItem(prev);
-            bool nhi = GCurrentItem.HasItem(next);
+            bool phi = GActiveItem.ContainItem(prev);
+            bool nhi = GActiveItem.ContainItem(next);
             if (phi && nhi) return !Object.ReferenceEquals(prev.Item, next.Item);       // from item A to item B
             if (!phi && !nhi) return false;            // from None to None
             return true;                               // from object to none, or from none to object
@@ -2469,14 +2506,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="lastItem"></param>
         /// <param name="currItem"></param>
         /// <returns></returns>
-        public static bool IsDoubleClick(GCurrentItem lastItem, GCurrentItem currItem)
+        public static bool IsDoubleClick(GActiveItem lastItem, GActiveItem currItem)
         {
             if (lastItem == null || currItem == null) return false;
-            if (!lastItem.ExistsItem || !currItem.ExistsItem) return false;
+            if (!lastItem.HasItem || !currItem.HasItem) return false;
             if (!currItem.CanDoubleClick) return false;
             if (!Object.ReferenceEquals(lastItem.Item, currItem.Item)) return false;
-            TimeSpan time = currItem.EventCurrentTime.Subtract(lastItem.ItemBeginTime);
-            return IsDoubleClick(lastItem.MousePoint, currItem.MousePoint, time);
+            TimeSpan time = currItem.CurrentTime.Subtract(lastItem.BeginTime);
+            return IsDoubleClick(lastItem.MouseAbsolutePoint, currItem.MouseAbsolutePoint, time);
         }
         /// <summary>
         /// Return true, when second mouse click (at point2), which is (time) after first click (at point1) is DoubleClick.
@@ -2497,12 +2534,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="downTime"></param>
         /// <param name="currItem"></param>
         /// <returns></returns>
-        public static bool IsLongClick(DateTime? downTime, GCurrentItem currItem)
+        public static bool IsLongClick(DateTime? downTime, GActiveItem currItem)
         {
             DateTime now = DateTime.Now;
-            if (!downTime.HasValue || currItem == null || !currItem.ExistsItem) return false;
+            if (!downTime.HasValue || currItem == null || !currItem.HasItem) return false;
             if (!currItem.CanLongClick) return false;
-            TimeSpan time = currItem.EventCurrentTime.Subtract(downTime.Value);
+            TimeSpan time = currItem.CurrentTime.Subtract(downTime.Value);
             return IsLongClick(time);
         }
         /// <summary>

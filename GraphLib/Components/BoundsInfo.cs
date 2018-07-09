@@ -38,8 +38,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         public static BoundsInfo CreateForParent(Size clientSize)
         {
-            BoundsInfo spider = new BoundsInfo(0, 0, 0, 0, clientSize);
-            return spider;
+            return new BoundsInfo(0, 0, 0, 0, clientSize);
         }
         /// <summary>
         /// Vrátí instanci třídy <see cref="BoundsInfo"/> pro daný control
@@ -50,8 +49,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         private static BoundsInfo CreateForParent(Point absOriginPoint, Rectangle absVisibleBounds)
         {
-            BoundsInfo spider = new BoundsInfo(absOriginPoint.X, absOriginPoint.Y, absVisibleBounds.X, absVisibleBounds.Y, absVisibleBounds.Right, absVisibleBounds.Bottom);
-            return spider;
+            return new BoundsInfo(absOriginPoint.X, absOriginPoint.Y, absVisibleBounds.X, absVisibleBounds.Y, absVisibleBounds.Right, absVisibleBounds.Bottom);
         }
         /// <summary>
         /// Konstruktor, dostává absolutní souřadnice počátku a absolutní souřadnice viditelného prostoru ve formě Rectangle.
