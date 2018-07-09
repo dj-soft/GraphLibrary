@@ -372,35 +372,61 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             CheckItem(currentItem, "CreateForChild");
 
+            // Nejprve projdu postupně všechny parenty daného prvku, až najdu poslední (=nejzákladnější) z nich, a nastřádám si pole jejich souřadnic:
+            List<Rectangle> boundsList = new List<Rectangle>();
+            IInteractiveParent item = currentItem;
             Dictionary<uint, object> scanned = new Dictionary<uint, object>();
-
-            int originX = 0;
-            int originY = 0;
-            int visibleL = 0;
-            int visibleT = 0;
-            int visibleR = 16380;
-            int visibleB = 16380;
-
-            IInteractiveItem i = currentItem;
-            scanned.Add(i.Id, null);
-            while (i.Parent != null)
+            scanned.Add(item.Id, null);
+            while (item.Parent != null)
             {
-                i = i.Parent;
-                if (scanned.ContainsKey(i.Id)) break;            // Cyklíme? Padáme!
-                Rectangle parentBounds = i.BoundsClient;
-                x += parentBounds.X;
-                y += parentBounds.Y;
+                IInteractiveParent parent = item.Parent;
+                if (parent == null) break;                           // Konec.
+                if (scanned.ContainsKey(item.Id)) break;             // Zacyklení.
+                scanned.Add(item.Id, null);
+                boundsList.Add(GetParentClientBounds(parent));
+                item = parent;
             }
 
-            currentItem.Parent.ClientSize;
+            // Nyní projdu prvky v jejich nativním pořadí = od základního (root) až k parentovi našeho prvku currentItem, a nastřádám si souřadnice Origin a Visible:
+            int x = 0;
+            int y = 0;
+            int l = 0;
+            int t = 0;
+            int r = 16380;
+            int b = 16380;
 
-            // Nejprve budu procházet Parent prvky daného prvku, budu střádat AbsOffset a Visible area, dokud nenajdu Top parenta = vizuální control:
+            for (int i = boundsList.Count - 1; i >= 0; i--)
+            {   // Pole boundsList procházíme od posledního prvku, neboť tam je root control:
+                Rectangle relBounds = boundsList[i];
+                Rectangle absBounds = relBounds.Add(x, y);
+                x = absBounds.X;
+                y = absBounds.Y;
+                if (l < absBounds.Left) l = absBounds.Left;
+                if (t < absBounds.Top) t = absBounds.Top;
+                if (r < absBounds.Right) r = absBounds.Right;
+                if (b < absBounds.Bottom) b = absBounds.Bottom;
+            }
 
-
-
+            return new BoundsInfo(x, y, l, t, r, b);
+        }
+        /// <summary>
+        /// Vrátí rectangle, který reprezentuje souřadnice klientského prostoru, v rámci daného parenta
+        /// </summary>
+        /// <param name="parent"></param>
+        /// <returns></returns>
+        protected static Rectangle GetParentClientBounds(IInteractiveParent parent)
+        {
+            if (parent is IInteractiveItem)
+            {
+                IInteractiveItem item = parent as IInteractiveItem;
+                return item.Bounds.Sub(item.ClientBorder);
+            }
+            return new Rectangle(new Point(0, 0), parent.ClientSize);
         }
 
-        // dřívější Extension metody na podobné téma:
+
+
+        /* dřívější Extension metody na podobné téma:
 
         /// <summary>
         /// Returns absolute client area bounds = this.GetAbsoluteVisibleBounds(), reduced by this.ClientBorder
@@ -459,6 +485,7 @@ namespace Asol.Tools.WorkScheduler.Components
             }
             return new Point(x, y);
         }
+        */
         #endregion
     }
 }

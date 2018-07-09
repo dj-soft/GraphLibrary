@@ -292,7 +292,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public virtual Rectangle BoundsAbsolute
         {
             get { return this.GetAbsoluteVisibleBounds(); }
-            protected set { this.SetAbsoluteVisibleBounds(value); }
+            // protected set { this.SetAbsoluteVisibleBounds(value); }
         }
         /// <summary>
         /// Relative coordinates for Child items. Is relative to this.Parent, this is similarly to this.Bounds.
@@ -807,6 +807,7 @@ namespace Asol.Tools.WorkScheduler.Components
         GInteractiveControl IInteractiveParent.Host { get { return this.Host; } }
         IInteractiveParent IInteractiveParent.Parent { get { return this.Parent; } set { this.Parent = value; } }
         GInteractiveStyles IInteractiveParent.Style { get { return this.Style; } }
+        Size IInteractiveParent.ClientSize { get { return this.BoundsClient.Size; } }
         Rectangle IInteractiveParent.BoundsClient { get { return this.BoundsClient; } }
         void IInteractiveParent.Repaint() { this.Repaint(); }
         #endregion
