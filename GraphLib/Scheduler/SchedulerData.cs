@@ -52,14 +52,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             }
         }
         /// <summary>
-        /// Metoda zajistí provedení finalizace dat po jejich kompletním načtení.
-        /// </summary>
-        protected void _LoadDataFinalise()
-        {
-            this._LoadDataDeclarationFinalise();
-            this._LoadDataGraphTableFinalise();
-        }
-        /// <summary>
         /// 
         /// </summary>
         /// <param name="key"></param>
@@ -76,6 +68,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             {   // Tabulka s daty:
                 this._LoadDataGraphTable(data, tableName, tableType);
             }
+        }
+        /// <summary>
+        /// Metoda zajistí provedení finalizace dat po jejich kompletním načtení.
+        /// </summary>
+        protected void _LoadDataFinalise()
+        {
+            this._LoadDataDeclarationFinalise();
+            this._LoadDataGraphTableFinalise();
         }
         #region Deklarace dat
         /// <summary>
@@ -688,7 +688,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.TableRowGraphColumn = graphColumn;
 
             foreach (Row row in this.TableRow.Rows)
-                row[graphColumn].Value = new GTimeGraph();
+                row[graphColumn].Value = this.CreateGTimeGraph(true);
         }
         /// <summary>
         /// Připraví do tabulky <see cref="TableRow"/> data (nastavení) pro graf, který se zobrazuje na pozadí,
@@ -701,7 +701,18 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.TableRow.GraphParameters.TimeAxisVisibleTickLevel = AxisTickType.BigTick;
 
             foreach (Row row in this.TableRow.Rows)
-                row.BackgroundValue = new GTimeGraph();
+                row.BackgroundValue = this.CreateGTimeGraph(false);
+        }
+        /// <summary>
+        /// Vytvoří a vrátí new instanci grafu (třída <see cref="GTimeGraph"/>), kompletně připravenou k práci, ale bez položek (ty se dodávají později).
+        /// </summary>
+        /// <returns></returns>
+        protected GTimeGraph CreateGTimeGraph(bool isFullInteractive)
+        {
+            GTimeGraph graph = new GTimeGraph();
+            
+
+            return graph;
         }
         /// <summary>
         /// Metoda zajistí vložení všech načtených položek grafů do odpovídajících grafů v tabulce TableRow.

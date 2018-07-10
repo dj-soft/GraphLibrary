@@ -846,6 +846,10 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         #endregion
         #region Podpora pro získávání dat - Caption, ToolTip
+        internal string GetCaptionText(GInteractiveDrawArgs e, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position, Rectangle boundsAbsolute, Rectangle boundsVisibleAbsolute)
+        {
+            return data.Time.ToString();
+        }
         internal void PrepareToolTip(GInteractiveChangeStateArgs e, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position)
         {
             e.ToolTipData.TitleText = "Tooltip " + position.ToString();
@@ -944,6 +948,10 @@ namespace Asol.Tools.WorkScheduler.Components
                 }
             }
         }
+        /// <summary>
+        /// Pokud se překresluje graf, má se překreslit i jeho Parent
+        /// </summary>
+        protected override RepaintParentMode RepaintParent { get { return RepaintParentMode.Always; } }
         #endregion
         #region Invalidace je řešená jedním vstupním bodem
         /// <summary>
@@ -1277,12 +1285,16 @@ namespace Asol.Tools.WorkScheduler.Components
         public GTimeGraphControl GControl { get; set; }
         #endregion
         #region Childs, Interaktivita, Draw()
-
+        /// <summary>
+        /// Metoda zajistí přípravu ToolTipu pro daný prvek (data) na dané pozici (position).
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="data"></param>
+        /// <param name="position"></param>
         internal void PrepareToolTip(GInteractiveChangeStateArgs e, ITimeGraphItem data, GGraphControlPosition position)
         {
             this._ParentGraph.PrepareToolTip(e, this, data, position);
         }
-
         /// <summary>
         /// Vykreslí tuto grupu. Kreslí pouze pokud obsahuje více než 1 prvek, a pokud vrstva <see cref="ITimeGraphItem.Layer"/> je nula nebo kladná (pro záporné vrstvy se nekreslí).
         /// </summary>
@@ -1292,6 +1304,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public void Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
         {
             if (!this.IsValidRealTime || this._FirstItem.Layer < 0 || this.ItemCount <= 1) return;
+
             Color? backColor = this.LinkBackColor;
             if (!backColor.HasValue)
                 // Nemáme explicitně danou barvu linky => odvodíme ji z barvy pozadí prvku + morphing:
@@ -1308,7 +1321,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         public void DrawOverChilds(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
         {
-            string text = this.Time.ToString();
+            Rectangle boundsVisibleAbsolute = Rectangle.Intersect(e.AbsoluteVisibleClip, boundsAbsolute);
+            string text = this._ParentGraph.GetCaptionText(e, this, this, GGraphControlPosition.Group, boundsAbsolute, boundsVisibleAbsolute);
             Color foreColor = this.GControl.BackColor.Contrast();
             GPainter.DrawString(e.Graphics, boundsAbsolute, text, foreColor, FontInfo.CaptionBold, ContentAlignment.MiddleCenter);
         }
