@@ -120,7 +120,6 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
 
             // Pokud aktuální Clip je viditelný, pak jeho hodnota určuje souřadnice, kde je prvek interaktivní:
             bool isVisible = !e.IsVisibleClipEmpty;
-            this.AbsoluteInteractiveBounds = (isVisible ? (Rectangle?)e.AbsoluteVisibleClip : (Rectangle?)null);
 
             return isVisible;
         }
@@ -651,9 +650,12 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <summary>
         /// Najde sloupce ležící před a za místem, kam bychom rádi vložili this sloupec v procesu přetahování.
         /// </summary>
+        /// <param name="e"></param>
         /// <param name="boundsAbsolute"></param>
         /// <param name="prevColumn"></param>
+        /// <param name="prevMark"></param>
         /// <param name="nextColumn"></param>
+        /// <param name="nextMark"></param>
         private void _DragThisSearchHeaders(GDragActionArgs e, Rectangle boundsAbsolute, out Column prevColumn, out int prevMark, out Column nextColumn, out int nextMark)
         {
             prevColumn = null;
@@ -670,7 +672,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             if (count == 0) return;
 
             // Určím souřadnici myši ve směru X, relativně k tabulce (protože relativně k tabulce jsou určeny souřadnice sloupců):
-            int mouseX = this.OwnerGTable.GetRelativePoint(e.MouseCurrentAbsolutePoint).Value.X;
+            int mouseX = BoundsInfo.GetRelativePointInContainer(this.OwnerGTable, e.MouseCurrentAbsolutePoint.Value).X;
 
             // Najdu sloupec, nad kterým se aktuálně pohybuje myš v ose X:
             int index = -1;

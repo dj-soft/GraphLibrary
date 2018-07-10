@@ -43,6 +43,18 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         #endregion
         #region Rozmístění vnitřních prvků gridu - souřadnice pro prostor tabulek a scrollbarů
+        public override Rectangle Bounds
+        {
+            get
+            {
+                return base.Bounds;
+            }
+
+            set
+            {
+                base.Bounds = value;
+            }
+        }
         /// <summary>
         /// Je voláno po změně Bounds, z metody SetBound(), pokud je vyžadována akce PrepareInnerItems.
         /// Přepočte umístění vnitřních prvků objektu, podle rozměrů this.BoundsClient.Size
@@ -1152,11 +1164,11 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             Rectangle bounds1 = this.GridVoidBounds1;
             if (bounds1.HasPixels())
-                GPainter.DrawRectangle(e.Graphics, this.GetAbsoluteBounds(bounds1), Color.Violet);
+            { /* GPainter.DrawRectangle(e.Graphics, this.GetAbsoluteBounds(bounds1), Color.Violet); */ }
 
             Rectangle bounds2 = this.GridVoidBounds2;
             if (bounds2.HasPixels())
-                GPainter.DrawRectangle(e.Graphics, this.GetAbsoluteBounds(bounds2), Color.Violet); // this.BackColor);
+            { /*    GPainter.DrawRectangle(e.Graphics, this.GetAbsoluteBounds(bounds2), Color.Violet); // this.BackColor); */ }
         }
         #endregion
         #region Defaultní hodnoty
@@ -1483,6 +1495,21 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public int DataSizeAddSpace { get { return this._DataSizeAddSpace; } set { this._DataSizeAddSpace = value; } } private int _DataSizeAddSpace;
         /// <summary>
+        /// Obsahuje počet pixelů, které se "přidávají" k DataSize, tj. obsahuje hodnotu z <see cref="DataSizeAddSpace"/>.
+        /// Pokud by ale <see cref="DataSizeAddSpace"/> obsahovalo záporné číslo (tj. obsahuje počet datových pixelů v horní části poslední obrazovky dat),
+        /// pak tato property <see cref="DataSizeBottomPixels"/> obsahuje "aktuální počet dolních pixelů" vypočtený z <see cref="VisualSize"/> mínus záporná hodnota <see cref="DataSizeAddSpace"/>.
+        /// </summary>
+        protected int DataSizeBottomPixels
+        {
+            get
+            {
+                int space = this._DataSizeAddSpace;
+                if (space < 0) space = this.VisualSize + space;
+                if (space < 0) space = 0;
+                return space;
+            }
+        }
+        /// <summary>
         /// Velikost vizuální rezervy při scrolování dat do viditelné oblasti (metoda ScrollDataToVisible()).
         /// Jde o počet pixelů před / za aktivním datovým prvkem, které se zobrazují ve viditelném prostoru proto, 
         /// aby uživatel dostal podvědomou informaci, že aktivní prvek ještě není první / poslední v řadě, ale že před / za ním jsou ještě nějaké další prvky.
@@ -1500,7 +1527,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public static int DefaultDataVisibleReserve { get { return 12; } }
         #endregion
-        #region Přepočty datových a vizuálních souřadnic, scrollování dat do viditelné oblasti
+        #region Přepočty datových a vizuálních souřadnic, scrollování dat do viditelné oblasti, obecné scrollování dat
         /// <summary>
         /// Vrátí vizuální pozici (odpovídající aktuálnímu controlu) pro danou logickou (datovou) pozici.
         /// Vrací tedy danou pozici (dataPosition + VisualFirstPixel - DataFirstPixel).
@@ -1608,6 +1635,29 @@ namespace Asol.Tools.WorkScheduler.Components
 
             this.DataFirstPixel = dataFirstPixel;
             return true;
+        }
+        /// <summary>
+        /// Metoda posune obsah dat o daný poměr zobrazené části.
+        /// Například pro svislý scrollbar : 
+        /// Hodnota ratio = +1.0 posune obsah "dolů" o celou stránku = na prvním pixelu nahoře bude po této změně ten pixel, který byl před změnou umístěn dole pod posledním viditelným pixelem.
+        /// Hodnota ratio = -0.333 posune obsah "nahoru" o třetinu stránky.
+        /// Metoda vrací true, pokud došlo ke změně.
+        /// </summary>
+        /// <param name="ratio"></param>
+        public bool ScrollDataByRatio(decimal ratio)
+        {
+            int dLast = this.DataSize + this.DataSizeBottomPixels;             // Hodnota posledního datového pixelu, pro který má být alokováno místo
+            int vSize = this.VisualSize;
+            int shift = (int)(Math.Round(((decimal)vSize) * ratio, 0));        // Posun v pixelech
+            int first = this.DataFirstPixel + shift;                           // První viditelný datový pixel po posunu
+            if ((first + vSize) > dLast)                                       // Pokud po posunu by poslední viditelný pixel byl větší, než dLast...
+                first = dLast - vSize;                                         //  ... pak první viditelný pixel bude takový, aby i ten poslední vyhovoval.
+            if (first < 0) first = 0;
+
+            bool isChange = (first != this.DataFirstPixel);
+            if (isChange)
+                this.DataFirstPixel = first;
+            return isChange;
         }
         #endregion
         #region IScrollBarData

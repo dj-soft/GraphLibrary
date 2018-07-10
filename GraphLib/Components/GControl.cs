@@ -27,8 +27,6 @@ namespace Asol.Tools.WorkScheduler.Components
             this._PrepareBufferForSize(this.Size);
             
             this.SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.SupportsTransparentBackColor | ControlStyles.OptimizedDoubleBuffer, true);
-            this.Resize += new EventHandler(this._Resize);
-            this.Paint += new PaintEventHandler(this._Paint);
         }
         /// <summary>
         /// Prepare _BuffGraphContent and _BuffGraphics for specified size
@@ -64,6 +62,35 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         /// <summary>
+        /// Změna velikosti
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnSizeChanged(EventArgs e)
+        {
+            base.OnSizeChanged(e);
+            this._Resize(e);
+        }
+        /// <summary>
+        /// Handler události OnResize: zajistí přípravu nového bufferu, vyvolání kreslení do bufferu, a zobrazení dat z bufferu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _Resize(EventArgs e)
+        {
+            if (!this.ReallyCanDraw) return;
+            this._PrepareBufferForSize(this.Size);
+            this._Draw();
+        }
+        /// <summary>
+        /// Překreslení
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            base.OnPaint(e);
+            this._Paint(e);
+        }
+        /// <summary>
         /// Fyzický Paint.
         /// Probíhá kdykoliv, když potřebuje okno překreslit.
         /// Aplikační logiku k tomu nepotřebuje, obrázek pro vykreslení má připravený v bufferu. Jen jej přesune na obrazovku.
@@ -71,22 +98,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _Paint(object sender, PaintEventArgs e)
+        private void _Paint(PaintEventArgs e)
         {
             if (this.PendingFullDraw)
                 this.Draw();
             this._BuffGraphics.Render(e.Graphics);
-        }
-        /// <summary>
-        /// Handler události OnResize: zajistí přípravu nového bufferu, vyvolání kreslení do bufferu, a zobrazení dat z bufferu
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _Resize(object sender, EventArgs e)
-        {
-            if (!this.ReallyCanDraw) return;
-            this._PrepareBufferForSize(this.Size);
-            this._Draw();
         }
         /// <summary>
         /// Content of buffered graphics
@@ -228,30 +244,38 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             this._LayerList = new List<GraphicLayer>();
             this.LayerCount = 1;
-            this.Resize += new EventHandler(_Resize);
-            this.Paint += new PaintEventHandler(_Paint);
             this.SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.SupportsTransparentBackColor | ControlStyles.OptimizedDoubleBuffer, true);
             this.ResizeRedraw = true;
         }
         /// <summary>
-        /// Nativní událost okna při změně velikosti.
+        /// Změna velikosti controlu
         /// </summary>
-        /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _Resize(object sender, EventArgs e)
+        protected override void OnSizeChanged(EventArgs e)
         {
+            base.OnSizeChanged(e);               // WinForm kód: zde proběhnou volání eventhandlerů Resize i SizeChanged (v tomto pořadí)
+
             this._OnResizeControl();
             this._ResizeLayers(false);
             this.Draw();
         }
         /// <summary>
-        /// Nativní událost okna, když chce překreslit svůj obsah.
+        /// Vykreslení controlu
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            base.OnPaint(e);                     // WinForm kód: zde proběhnou volání eventhandleru Paint
+
+            this._Paint(e);
+        }
+        /// <summary>
+        /// Voláno z metody <see cref="OnPaint(PaintEventArgs)"/>, když chce control překreslit svůj obsah.
         /// Obsah se vezme z bufferovaných vrstev a vykreslí do předané grafiky.
         /// Není k tomu vyvolaná aplikační logika.
         /// </summary>
-        /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _Paint(object sender, PaintEventArgs e)
+        private void _Paint(PaintEventArgs e)
         {
             if (this.PendingFullDraw)
                 this.Draw();

@@ -400,7 +400,15 @@ namespace Asol.Tools.WorkScheduler.Components
             /// </summary>
             public int PixelPerModule { get; private set; }
             public Rectangle ToolbarBounds { get; private set; }
+            /// <summary>
+            /// Souřadnice prostoru Content, ale pouze na ose Y.
+            /// Souřadnice na ose X jsou převzaty z grupy.
+            /// </summary>
             public Rectangle ContentBounds { get; private set; }
+            /// <summary>
+            /// Souřadnice prostoru Title, ale pouze na ose Y.
+            /// Souřadnice na ose X jsou převzaty z grupy.
+            /// </summary>
             public Rectangle TitleBounds { get; private set; }
             public float TitleZoom { get; private set; }
             public FontInfo TitleFont { get { return FontInfo.CaptionSmall.GetZoom(this.TitleZoom); } }
@@ -791,8 +799,8 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             GToolBar.LayoutSettingTBarInfo tBarSetting = this.TBarSetting;
             Rectangle tb = tBarSetting.TitleBounds;
-            Rectangle titleBounds = new Rectangle(this.Bounds.X, tb.Y, this.Bounds.Width - 4, tb.Height);
-            Rectangle titleAbsoluteBounds = this.GetAbsoluteBounds(titleBounds);
+            int dy = absoluteBounds.Y - this.Bounds.Y;
+            Rectangle titleAbsoluteBounds = new Rectangle(absoluteBounds.X + 1, dy + tb.Y, absoluteBounds.Width - 3, tb.Height);
 
             if (this.IsMouseActive)
                 GPainter.DrawAreaBase(e.Graphics, titleAbsoluteBounds, Skin.ToolBar.TitleBackColor, GInteractiveState.Enabled, System.Windows.Forms.Orientation.Horizontal, null, null);

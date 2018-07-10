@@ -86,30 +86,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public virtual Padding? InteractivePadding
         {
             get { return this.__ActivePadding; }
-            set
-            {
-                this.__ActivePadding = value;
-                this.BoundsInvalidate();
-            }
-        }
-        /// <summary>
-        /// Absolutní souřadnice (vzhledem k Controlu Host), na kterých je tento prvek aktivní.
-        /// Souřadnice ve výchozím stavu určuje proces vykreslování, kdy jsou určeny jak offset souřadnic (absolutní počátek parenta),
-        /// tak je určen Intersect viditelných oblastí ze všech parentů = tím je dán vizuální Clip, do něhož se prvek promítá.
-        /// Tato hodnota je při vykreslování uložena do this.AbsoluteInteractiveBounds.
-        /// Následně při testech interaktivity (hledání prvku pod myší) je tato souřadnice využívána.
-        /// Prvek sám může ve své metodě Draw() nastavit hodnotu AbsoluteInteractiveBounds jinak, nebo může nastavit null = prvek není aktivní.
-        /// Tyto souřadnice by neměly být dopočítávány, prostě jsou uloženy a testovány.
-        /// </summary>
-        public virtual Rectangle? AbsoluteInteractiveBounds
-        {
-            get { return this.__AbsoluteInteractiveBounds; }
-            set
-            {
-                if (this.GetType().Name == "GRow")
-                { }
-                this.__AbsoluteInteractiveBounds = value;
-            }
+            set { this.__ActivePadding = value; }
         }
         /// <summary>
         /// Vnitřní okraj mezi <see cref="Bounds"/> a prostorem, v němž se kreslí <see cref="Childs"/> prvky.
@@ -119,11 +96,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public virtual Padding? ClientBorder 
         {
             get { return this.__ClientBorder; }
-            set
-            {
-                this.__ClientBorder = value;
-                this.BoundsInvalidate();
-            }
+            set { this.__ClientBorder = value; }
         }
         /// <summary>
         /// Aktuálně použitá barva pozadí.
@@ -282,42 +255,21 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="eventSource">Zdroj této události</param>
         protected virtual void SetBoundsPrepareInnerItems(Rectangle oldBounds, Rectangle newBounds, ref ProcessAction actions, EventSourceType eventSource)
         { }
-
-
-
-
         /// <summary>
-        /// Coordinates of this item (this.Bounds) in absolute value. This is: relative on Host control.
+        /// Souřadnice this prvku převedené do absolutní hodnoty.
         /// </summary>
         public virtual Rectangle BoundsAbsolute
         {
-            get { return this.GetAbsoluteVisibleBounds(); }
-            // protected set { this.SetAbsoluteVisibleBounds(value); }
+            get
+            {
+                BoundsInfo boundsInfo = BoundsInfo.CreateForChild(this);
+                return boundsInfo.CurrentAbsBounds;
+            }
         }
         /// <summary>
-        /// Relative coordinates for Child items. Is relative to this.Parent, this is similarly to this.Bounds.
-        /// BoundsActive = Bounds + (to inner) ClientBorder
+        /// Velikost prostoru pro klienty = <see cref="IInteractiveItem.Bounds"/>.Sub(<see cref="IInteractiveItem.ClientBorder"/>).Size
         /// </summary>
-        protected virtual Rectangle BoundsClient { get { this.BoundsCheck(); return this.__BoundsClient.Value; } }
-        /// <summary>
-        /// Relative size of area for Child items.
-        /// </summary>
-        protected virtual Size ClientSize { get { this.BoundsCheck(); return this.__BoundsClient.Value.Size; } }
-        /// <summary>
-        /// Invalidate private cache dependent on _Bounds value.
-        /// </summary>
-        protected void BoundsInvalidate()
-        {
-            this.__BoundsClient = null;
-        }
-        /// <summary>
-        /// Ensure valid values in __BoundsActive and __BoundsClient.
-        /// </summary>
-        protected void BoundsCheck()
-        {
-            if (!this.__BoundsClient.HasValue)
-                this.__BoundsClient = this.__Bounds.Sub(this.__ClientBorder);
-        }
+        protected virtual Size ClientSize { get { return this.Bounds.Sub(this.ClientBorder).Size; } }
         /// <summary>
         /// Private accessor for Bounds value.
         /// Setting a value calls BoundsInvalidate().
@@ -325,10 +277,9 @@ namespace Asol.Tools.WorkScheduler.Components
         protected Rectangle _Bounds
         {
             get { return this.__Bounds; }
-            set { this.__Bounds = value; this.BoundsInvalidate(); }
+            set { this.__Bounds = value; }
         }
         private Rectangle __Bounds;
-        private Rectangle? __BoundsClient;
         private Padding? __ClientBorder;
         private Padding? __ActivePadding;
         private Rectangle? __AbsoluteInteractiveBounds;
@@ -378,17 +329,15 @@ namespace Asol.Tools.WorkScheduler.Components
         #region Protected, virtual properties (for IInteractiveItem support)
         /// <summary>
         /// Vrátí true, pokud daný prvek je aktivní na dané souřadnici.
-        /// Souřadnice je v koordinátech Controlu, tedy z hlediska prvku jde o souřadnici srovnatelnou s AbsoluteInteractiveBounds.
+        /// Souřadnice je v koordinátech Parenta prvku, je tedy srovnatelná s <see cref="IInteractiveItem.Bounds"/>.
         /// Pokud prvek má nepravidelný tvar, musí testovat tento tvar v této své metodě explicitně.
         /// </summary>
-        /// <param name="absolutePoint">Point v Controlu (=this.Host), v jeho souřadném systému</param>
+        /// <param name="relativePoint">Bod, který testujeme, v koordinátech srovnatelných s <see cref="IInteractiveItem.Bounds"/></param>
         /// <returns></returns>
-        protected virtual Boolean IsActiveAtAbsolutePoint(Point absolutePoint)
+        protected virtual Boolean IsActiveAtPoint(Point relativePoint)
         {
-            Rectangle? aib = this.AbsoluteInteractiveBounds;
-            if ((!aib.HasValue) || (!aib.Value.HasPixels())) return false;
-
-            return aib.Value.Contains(absolutePoint);
+            Rectangle bounds = this.Bounds.Add(this.InteractivePadding);       // Relativní souřadnice this prvku, zvětšené o interaktivní přesah
+            return bounds.Contains(relativePoint);
         }
         /// <summary>
         /// Repaint item to layers after current operation. Layers are not combinable. Layer None is for invisible, but active items.
@@ -776,14 +725,10 @@ namespace Asol.Tools.WorkScheduler.Components
         protected InteractiveProperties Is { get { if (this._Is == null) this._Is = new InteractiveProperties(); return this._Is; } } private InteractiveProperties _Is;
         #endregion
         #region IInteractiveItem + IInteractiveParent members
-        // UInt32 IInteractiveItem.Id { get { return this._Id; } }
-        // GInteractiveControl IInteractiveItem.Host { get { return this.Host; } set { this.Host = value; } }
-        // IInteractiveParent IInteractiveItem.Parent { get { return this.Parent; } set { this.Parent = value; } }
         IEnumerable<IInteractiveItem> IInteractiveItem.Childs { get { return this.Childs; } }
         Rectangle IInteractiveItem.Bounds { get { return this.Bounds; } set { this.Bounds = value; } }
         Padding? IInteractiveItem.ClientBorder { get { return this.ClientBorder; } set { this.ClientBorder = value; } }
         Padding? IInteractiveItem.InteractivePadding { get { return this.InteractivePadding; } set { this.InteractivePadding = value; } }
-        Rectangle? IInteractiveItem.AbsoluteInteractiveBounds { get { return this.AbsoluteInteractiveBounds; } set { this.AbsoluteInteractiveBounds = value; } }
         Boolean IInteractiveItem.IsInteractive { get { return this.IsInteractive; } }
         Boolean IInteractiveItem.IsVisible { get { return this.IsVisible; } set { this.IsVisible = value; } }
         Boolean IInteractiveItem.IsEnabled { get { return this.IsEnabled; } }
@@ -792,7 +737,7 @@ namespace Asol.Tools.WorkScheduler.Components
         GInteractiveDrawLayer IInteractiveItem.StandardDrawToLayer { get { return this.StandardDrawToLayer; } }
         GInteractiveDrawLayer IInteractiveItem.RepaintToLayers { get { return this.RepaintToLayers; } set { this.RepaintToLayers = value; } }
         bool IInteractiveItem.NeedDrawOverChilds { get { return this.NeedDrawOverChilds; } }
-        Boolean IInteractiveItem.IsActiveAtAbsolutePoint(Point absolutePoint) { return this.IsActiveAtAbsolutePoint(absolutePoint); }
+        Boolean IInteractiveItem.IsActiveAtPoint(Point relativePoint) { return this.IsActiveAtPoint(relativePoint); }
         void IInteractiveItem.AfterStateChanged(GInteractiveChangeStateArgs e)
         {
             this.InteractiveState = e.TargetState;
@@ -807,8 +752,7 @@ namespace Asol.Tools.WorkScheduler.Components
         GInteractiveControl IInteractiveParent.Host { get { return this.Host; } }
         IInteractiveParent IInteractiveParent.Parent { get { return this.Parent; } set { this.Parent = value; } }
         GInteractiveStyles IInteractiveParent.Style { get { return this.Style; } }
-        Size IInteractiveParent.ClientSize { get { return this.BoundsClient.Size; } }
-        Rectangle IInteractiveParent.BoundsClient { get { return this.BoundsClient; } }
+        Size IInteractiveParent.ClientSize { get { return this.ClientSize; } }
         void IInteractiveParent.Repaint() { this.Repaint(); }
         #endregion
         #region Basic members
@@ -1080,23 +1024,23 @@ namespace Asol.Tools.WorkScheduler.Components
             {   // Aktuálně PROBÍHÁ Drag & Drop:
                 if (currentLayer == GInteractiveDrawLayer.Standard)
                 {   // Nyní kreslíme do vrstvy Standard, tedy kreslíme do výchozích souřadnic BoundsDragOrigin:
-                    absoluteBoundsDraw = this.GetAbsoluteBounds(this.BoundsDragOrigin.Value);
+                    absoluteBoundsDraw = BoundsInfo.GetAbsoluteBoundsInContainer(this.Parent, this.BoundsDragOrigin.Value);
                     drawMode |= DrawItemMode.OriginalBounds;
                     if (ghostInOriginalBounds)
-                        // Máme styl DragDrawGhostOriginal, takže na originální souřadnice (tj. do standardní vrtsvy) máme vykreslit Ghost:
+                        // Máme styl DragDrawGhostOriginal, takže na originální souřadnice (tj. do standardní vrstvy) máme vykreslit Ghost:
                         drawMode |= DrawItemMode.Ghost;
                     else if (ghostInDraggedBounds)
-                        // Máme styl DragDrawGhostInteractive, takže na originální souřadnice (tj. do standardní vrtsvy) máme vykreslit Standard:
+                        // Máme styl DragDrawGhostInteractive, takže na originální souřadnice (tj. do standardní vrstvy) máme vykreslit Standard:
                         drawMode |= DrawItemMode.Standard;
                     else
                         // Pokud není specifikován ani jeden styl (DragDrawGhostOriginal ani DragDrawGhostInteractive),
                         //  pak v procesu Drag & Drop nebude do standardní vrstvy kresleno nic (objekt se skutečně ihned odsouvá jinam).
-                        //  Objekt bude kreslen jako Standard do vrstvy Interactive na souřadnice Target.
+                        //  Objekt bude kreslen jako Standard pouze do vrstvy Interactive, na souřadnice Target.
                         runDraw = false;
                 }
                 else if (currentLayer == GInteractiveDrawLayer.Interactive)
                 {   // Nyní kreslíme do vrstvy Interactive, tedy kreslíme do cílových souřadnic BoundsDragTarget:
-                    absoluteBoundsDraw = this.GetAbsoluteBounds(this.BoundsDragTarget.Value);
+                    absoluteBoundsDraw = BoundsInfo.GetAbsoluteBoundsInContainer(this.Parent, this.BoundsDragTarget.Value);
                     drawMode |= DrawItemMode.DraggedBounds;
                     if (ghostInDraggedBounds)
                         // Máme styl DragDrawGhostInteractive, takže na cílové souřadnice (tj. do interaktivní vrstvy) máme vykreslit Ghost:

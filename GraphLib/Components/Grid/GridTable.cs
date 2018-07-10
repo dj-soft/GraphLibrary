@@ -614,11 +614,38 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         internal bool ProcessRowAction(InteractivePositionAction action)
         {
             bool isProcessed = false;
-            // this.
+            int rowCount = this.Rows.Length;
+            int? activeRowIndex = this.ActiveRowIndex;
             switch (action)
             {
                 case InteractivePositionAction.FirstRow:
+                    this.ActiveRowIndex = 0;
+                    isProcessed = true;
+                    break;
+                case InteractivePositionAction.LastRow:
+                    this.ActiveRowIndex = rowCount - 1;
+                    isProcessed = true;
+                    break;
+                case InteractivePositionAction.RowDown:
+                    this.ActiveRowIndex = ((activeRowIndex.HasValue && activeRowIndex.Value < (rowCount - 1)) ? activeRowIndex.Value + 1 : (rowCount - 1));
+                    isProcessed = true;
+                    break;
+                case InteractivePositionAction.RowUp:
+                    this.ActiveRowIndex = ((activeRowIndex.HasValue && activeRowIndex.Value > 0) ? activeRowIndex.Value - 1 : 0);
+                    isProcessed = true;
+                    break;
+                case InteractivePositionAction.PageUp:
 
+                case InteractivePositionAction.PageDown:
+                    isProcessed = true;
+                    break;
+
+                case InteractivePositionAction.WheelUp:
+                    this.ScrollRowsByRatio(-0.20m);
+                    isProcessed = true;
+                    break;
+                case InteractivePositionAction.WheelDown:
+                    this.ScrollRowsByRatio(0.20m);
                     isProcessed = true;
                     break;
 
@@ -740,6 +767,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         #region Active Row, Cell = řádek a buňka aktivní (po kliknutí, s kurzorem)
         /// <summary>
         /// Aktuální aktivní řádek = ten, který by měl focus, když by focus (this.HasFocus) měla aktuální tabulka.
+        /// Lze setovat hodnotu, daný řádek BUDE nascrollován do viditelné oblasti (na rozdíl od property <see cref="ActiveRowSilent"/>).
         /// </summary>
         public Row ActiveRow
         {
@@ -747,7 +775,18 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             set { this.SetActiveRow(value, EventSourceType.ApplicationCode, true); }
         }
         /// <summary>
+        /// Aktuální aktivní řádek = ten, který by měl focus, když by focus (this.HasFocus) měla aktuální tabulka.
+        /// Lze setovat hodnotu, daný řádek NEBUDE nascrollován do viditelné oblasti (na rozdíl od property <see cref="ActiveRow"/>).
+        /// </summary>
+        public Row ActiveRowSilent
+        {
+            get { return this._ActiveRow; }
+            set { this.SetActiveRow(value, EventSourceType.ApplicationCode, false); }
+        }
+        /// <summary>
         /// Index aktivního řádku <see cref="ActiveRow"/> = ten, který by měl focus, když by focus (this.HasFocus) měla aktuální tabulka.
+        /// Lze setovat hodnotu: pokud hodnota odpovídá nějakému existujícímu řádku, bude tento řádek aktivován. 
+        /// Rovněž BUDE nascrollován do viditelné oblasti (na rozdíl od property <see cref="ActiveRowIndexSilent"/>).
         /// </summary>
         public int? ActiveRowIndex
         {
@@ -765,6 +804,29 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                 if (idx.HasValue && idx.Value >= 0 && idx.Value < this._Rows.Count)
                     row = this._Rows[idx.Value];
                 this.ActiveRow = row;
+            }
+        }
+        /// <summary>
+        /// Index aktivního řádku <see cref="ActiveRow"/> = ten, který by měl focus, když by focus (this.HasFocus) měla aktuální tabulka.
+        /// Lze setovat hodnotu: pokud hodnota odpovídá nějakému existujícímu řádku, bude tento řádek aktivován. 
+        /// Rovněž NEBUDE nascrollován do viditelné oblasti (na rozdíl od property <see cref="ActiveRowIndex"/>).
+        /// </summary>
+        public int? ActiveRowIndexSilent
+        {
+            get
+            {
+                Row row = this.ActiveRow;
+                if (row == null) return null;
+                int index = this._Rows.FindIndex(r => Object.ReferenceEquals(r, row));
+                return (index >= 0 ? (int?)index : (int?)null);
+            }
+            set
+            {
+                Row row = null;
+                int? idx = value;
+                if (idx.HasValue && idx.Value >= 0 && idx.Value < this._Rows.Count)
+                    row = this._Rows[idx.Value];
+                this.ActiveRowSilent = row;
             }
         }
         /// <summary>
@@ -890,7 +952,24 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             ISequenceLayout isl = row as ISequenceLayout;
             bool isChange = this.RowsPositions.ScrollDataToVisible(isl);
             if (isChange)
-                this.Invalidate(InvalidateItem.RowScroll);
+                this.ScrollRowsReload();
+        }
+        /// <summary>
+        /// Posune obsah řádků nahoru nebo dolů o poměrou část aktuálně viditelné stránky.
+        /// Hodnota ratio = +1.0 posune obsah "dolů" o celou stránku = na prvním pixelu nahoře bude po této změně ten pixel, který byl před změnou umístěn dole pod posledním viditelným pixelem.
+        /// Hodnota ratio = -0.333 posune obsah "nahoru" o třetinu stránky.
+        /// </summary>
+        /// <param name="ratio"></param>
+        protected void ScrollRowsByRatio(decimal ratio)
+        {
+            bool isChange = this.RowsPositions.ScrollDataByRatio(ratio);
+            if (isChange)
+                this.ScrollRowsReload();
+        }
+        protected void ScrollRowsReload()
+        {
+            this.Invalidate(InvalidateItem.RowScroll);
+            // Nastaví _RowsScrollBarDataValid = false;
         }
         /// <summary>
         /// Nastaví daný sloupec tak, aby byl viditelný = tj. zcela, ne jen zčásti (pokud to jen trochu jde).
@@ -970,7 +1049,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             }
 
             if ((items & (InvalidateItem.ColumnHeader)) != 0)
-            {   // Po změně vnitřního uspořádání (vlivem změny rozměrů, nebo vlivem posunu vnitřních splitterů) (RowHeader, ColumnHeader):
+            {   // Po změně vnitřního uspořádání (vlivem změny rozměrů, nebo vlivem posunu vnitřních splitterů) (ColumnHeader):
                 this._TableInnerLayoutValid = false;
                 this._VisibleColumns = null;
                 this._VisibleRows = null;
@@ -1021,6 +1100,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             if ((items & (InvalidateItem.RowScroll)) != 0)
             {   // Po scrollu řádků: zrušíme pole viditelných řádků, vygeneruje se znovu:
                 this._VisibleRows = null;
+                this._RowsScrollBarDataValid = false;
                 this._ChildArrayValid = false;
                 items |= InvalidateItem.Paint;
             }
@@ -1354,6 +1434,14 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
 
             switch (e.ChangeState)
             {
+                case GInteractiveChangeState.KeyboardFocusEnter:
+                case GInteractiveChangeState.KeyboardFocusLeave:
+                    break;
+                case GInteractiveChangeState.WheelUp:
+                case GInteractiveChangeState.WheelDown:
+                    InteractivePositionAction action = (e.ChangeState == GInteractiveChangeState.WheelUp ? InteractivePositionAction.WheelUp : InteractivePositionAction.WheelDown);
+                    e.ActionIsSolved = this.ProcessRowAction(action);
+                    break;
                 case GInteractiveChangeState.KeyboardPreviewKeyDown:           // Sem chodí i klávesy Kurzor, Tab
                     this.KeyboardPreviewKeyDown(e);        // Pokud se ani Cell, a ani Row nepřihlásí ke zpracování Keyboard událostí, musí to provést Table.
                     break;
@@ -1367,7 +1455,11 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         {
             InteractivePositionAction action = e.KeyboardPreviewArgs.GetInteractiveAction();
             if (action != InteractivePositionAction.None)
-                e.KeyboardPreviewArgs.IsInputKey = this.ProcessRowAction(action);
+            {
+                bool isProcessed = this.ProcessRowAction(action);
+                e.KeyboardPreviewArgs.IsInputKey = isProcessed;
+                e.ActionIsSolved = isProcessed;
+            }
         }
         /// <summary>
         /// Jakmile myš opouští tabulku, pak resetuje informaci o HotRow a HotCell:
@@ -1534,7 +1626,6 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
 
             // Pokud aktuální Clip je viditelný, pak jeho hodnota určuje souřadnice, kde je prvek interaktivní:
             bool isVisible = !e.IsVisibleClipEmpty;
-            this.AbsoluteInteractiveBounds = (isVisible ? (Rectangle?)e.AbsoluteVisibleClip : (Rectangle?)null);
 
             return isVisible;
         }

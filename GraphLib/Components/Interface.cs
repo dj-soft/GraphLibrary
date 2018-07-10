@@ -44,16 +44,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         Padding? ClientBorder { get; set; }
         /// <summary>
-        /// Absolutní souřadnice (vzhledem k Controlu Host), na kterých je tento prvek aktivní.
-        /// Souřadnice ve výchozím stavu určuje proces vykreslování, kdy jsou určeny jak offset souřadnic (absolutní počátek parenta),
-        /// tak je určen Intersect viditelných oblastí ze všech parentů = tím je dán vizuální Clip, do něhož se prvek promítá.
-        /// Tato hodnota je při vykreslování uložena do this.AbsoluteInteractiveBounds.
-        /// Následně při testech interaktivity (hledání prvku pod myší) je tato souřadnice využívána.
-        /// Prvek sám může ve své metodě Draw() nastavit hodnotu AbsoluteInteractiveBounds jinak, nebo může nastavit null = prvek není aktivní.
-        /// Tyto souřadnice by neměly být dopočítávány, prostě jsou uloženy a testovány.
-        /// </summary>
-        Rectangle? AbsoluteInteractiveBounds { get; set; }
-        /// <summary>
         /// Pole mých vlastních potomků. Jejich Parentem je this.
         /// Jejich souřadnice jsou relativní ke zdejšímu souřadnému systému.
         /// This is: where this.ActiveBounds.Location is {200, 100} and child.ActiveBounds.Location is {10, 40}, then child is on Point {210, 140}.
@@ -122,7 +112,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="relativePoint">Bod, který testujeme, v koordinátech srovnatelných s <see cref="IInteractiveItem.Bounds"/></param>
         /// <returns></returns>
-        Boolean IsActiveAtAbsolutePoint(Point relativePoint);
+        Boolean IsActiveAtPoint(Point relativePoint);
         /// <summary>
         /// Tato metoda je volaná po každé interaktivní změně na prvku.
         /// </summary>
@@ -176,11 +166,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Velikost prostoru pro Childs prvky
         /// </summary>
         Size ClientSize { get; }
-        /// <summary>
-        /// Souřadnice prostoru, který je vyhrazen pro <see cref="Childs"/> prvky obsažené v this prvku.
-        /// Souřadnice jsou relativní vzhledem <see cref="Bounds"/>.
-        /// </summary>
-        Rectangle BoundsClient { get; }
         /// <summary>
         /// Interaktivní styl = dostupné chování objektu
         /// </summary>
@@ -262,167 +247,6 @@ namespace Asol.Tools.WorkScheduler.Components
         public const UInt32 BitHoldMouse = 0x0008;
         public const UInt32 BitSelected = 0x0010;
         public const UInt32 BitSuppressEvents = 0x0040;
-    }
-    #endregion
-    #region class InteractiveItemExtensions : Extensions for IInteractiveItem
-    /// <summary>
-    /// InteractiveItemExtensions : Extensions for IInteractiveItem
-    /// </summary>
-    public static class InteractiveItemExtensions
-    {
-        #region IInteractiveItem
-        /// <summary>
-        /// Returns absolute visible bounds of this item (in Host control), via its parents hierarchy
-        /// (this.Bounds + this.Parent.GetRelativeClientArea().Location + ... + this.Parent.Parent.Parent....GetRelativeClientArea().Location)
-        /// </summary>
-        /// <param name="item">current IInteractiveItem item</param>
-        /// <returns></returns>
-        public static Rectangle GetAbsoluteVisibleBounds(this IInteractiveItem item)
-        {
-            Rectangle bounds = item.Bounds;
-            Point origin = item.GetAbsoluteOriginPoint();
-            return bounds.Add(origin);
-        }
-        /// <summary>
-        /// Store this.Bounds = (absoluteVisibleBounds - this.Parent.AbsoluteVisibleBounds)
-        /// </summary>
-        /// <param name="item">current IInteractiveItem item</param>
-        /// <param name="absoluteVisibleBounds">Value in absolute coordinates</param>
-        /// <returns></returns>
-        public static void SetAbsoluteVisibleBounds(this IInteractiveItem item, Rectangle absoluteVisibleBounds)
-        {
-            Point origin = item.GetAbsoluteOriginPoint();
-            item.Bounds = absoluteVisibleBounds.Sub(origin);
-        }
-        /// <summary>
-        /// Returns absolute visible bounds of this item (in Host control), via its parents hierarchy
-        /// (this.Bounds + this.Parent.GetRelativeClientArea().Location + ... + this.Parent.Parent.Parent....GetRelativeClientArea().Location)
-        /// </summary>
-        /// <param name="item">current IInteractiveItem item</param>
-        /// <param name="bounds">explicitly specified bounds, in same coordinates as this.Bounds</param>
-        /// <returns></returns>
-        public static Rectangle GetAbsoluteBounds(this IInteractiveItem item, Rectangle bounds)
-        {
-            Point origin = item.GetAbsoluteOriginPoint();
-            return bounds.Add(origin);
-        }
-        /// <summary>
-        /// Returns absolute visible bounds of this item (in Host control), via its parents hierarchy
-        /// (this.Bounds + this.Parent.GetRelativeClientArea().Location + ... + this.Parent.Parent.Parent....GetRelativeClientArea().Location)
-        /// </summary>
-        /// <param name="item">current IInteractiveItem item</param>
-        /// <param name="bounds">explicitly specified bounds, in same coordinates as this.Bounds</param>
-        /// <returns></returns>
-        public static Rectangle? GetAbsoluteBounds(this IInteractiveItem item, Rectangle? bounds)
-        {
-            if (!bounds.HasValue) return null;
-            Point origin = item.GetAbsoluteOriginPoint();
-            return bounds.Value.Add(origin);
-        }
-        /// <summary>
-        /// Returns relative visible point of this item (in Host control), via its parents hierarchy
-        /// </summary>
-        /// <param name="item">current IInteractiveItem item</param>
-        /// <param name="absolutePoint">explicitly specified point, in coordinates of Host (absolute)</param>
-        /// <returns></returns>
-        public static Point GetRelativePoint(this IInteractiveItem item, Point absolutePoint)
-        {
-            Point origin = item.GetAbsoluteOriginPoint();
-            return absolutePoint.Sub(origin);
-        }
-        /// <summary>
-        /// Returns relative visible point of this item (in Host control), via its parents hierarchy
-        /// </summary>
-        /// <param name="item">current IInteractiveItem item</param>
-        /// <param name="absolutePoint">explicitly specified bounds, in coordinates of Host (absolute)</param>
-        /// <returns></returns>
-        public static Point? GetRelativePoint(this IInteractiveItem item, Point? absolutePoint)
-        {
-            if (!absolutePoint.HasValue) return null;
-            Point origin = item.GetAbsoluteOriginPoint();
-            return absolutePoint.Value.Sub(origin);
-        }
-        /// <summary>
-        /// Returns relative visible bounds of this item (in Host control), via its parents hierarchy
-        /// </summary>
-        /// <param name="item">current IInteractiveItem item</param>
-        /// <param name="absoluteBounds">explicitly specified bounds, in coordinates of Host (absolute)</param>
-        /// <returns></returns>
-        public static Rectangle GetRelativeBounds(this IInteractiveItem item, Rectangle absoluteBounds)
-        {
-            Point origin = item.GetAbsoluteOriginPoint();
-            return absoluteBounds.Sub(origin);
-        }
-        /// <summary>
-        /// Returns relative visible bounds of this item (in Host control), via its parents hierarchy
-        /// </summary>
-        /// <param name="item">current IInteractiveItem item</param>
-        /// <param name="absoluteBounds">explicitly specified bounds, in coordinates of Host (absolute)</param>
-        /// <returns></returns>
-        public static Rectangle? GetRelativeBounds(this IInteractiveItem item, Rectangle? absoluteBounds)
-        {
-            if (!absoluteBounds.HasValue) return null;
-            Point origin = item.GetAbsoluteOriginPoint();
-            return absoluteBounds.Value.Sub(origin);
-        }
-        /// <summary>
-        /// Returns absolute client area bounds = this.GetAbsoluteVisibleBounds(), reduced by this.ClientBorder
-        /// (=item.Bounds.GetClientBounds(item.ClientBorder))
-        /// </summary>
-        /// <param name="item">current IInteractiveItem item</param>
-        /// <returns></returns>
-        public static Rectangle GetAbsoluteClientArea(this IInteractiveItem item)
-        {
-            Point location = item.GetAbsoluteOriginPoint();
-            Rectangle boundsClient = item.BoundsClient;
-            return boundsClient.Add(location);
-        }
-        /// <summary>
-        /// Vrátí absolutní souřadnice prostoru, v němž je daný prvek umístěn.
-        /// Jde o prostor parenta 
-        /// Returns absolute coordinates of area, in which this item is contained.
-        /// If this item has no parent, then return { 0, 0, Host.Width, Host.Height }.
-        /// Otherwise return absolute coordinates of this.Parent client area.
-        /// When item.Bounds has Location { 0, 0 }, then its absolute location (on Host area) will be on result.Location.
-        /// </summary>
-        /// <param name="item">current IInteractiveItem item</param>
-        /// <returns></returns>
-        public static Rectangle GetAbsoluteOriginArea(this IInteractiveItem item)
-        {
-            if (item.Parent == null) return new Rectangle(0, 0, 4096, 4096);          // Pokud dosud není vložen Parent, pak prostor je "neomezený".
-
-            Point location = item.GetAbsoluteOriginPoint();
-            Size size = item.Parent.BoundsClient.Size;
-            return new Rectangle(location, size);
-        }
-        /// <summary>
-        /// Vrátí absolutní souřadnice (tj. v koordinátech Host controlu) bodu, na němž leží počátek this prvku (tj. IInteractiveItem.Bounds.Location).
-        /// Pokud daný prvek nemá Parenta, pak vrací bod {0,0}.
-        /// </summary>
-        /// <param name="item">current IInteractiveItem item</param>
-        /// <returns></returns>
-        public static Point GetAbsoluteOriginPoint(this IInteractiveItem item)
-        {
-            int x = 0;
-            int y = 0;
-            if (item != null)
-            {   // Prvek je zadán, budeme procházet řetěz prvků počínaje daným item:
-                IInteractiveParent i = item;
-                // Ať se nezacyklíme:
-                Dictionary<uint, object> scanned = new Dictionary<uint, object>();
-                scanned.Add(i.Id, null);
-                while (i.Parent != null)
-                {
-                    i = i.Parent;
-                    if (scanned.ContainsKey(i.Id)) break;            // Cyklíme? Padáme!
-                    Rectangle parentBounds = i.BoundsClient;
-                    x += parentBounds.X;
-                    y += parentBounds.Y;
-                }
-            }
-            return new Point(x, y);
-        }
-        #endregion
     }
     #endregion
     #region Delegates and EventArgs
@@ -630,6 +454,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this.KeyboardPreviewArgs = null;
             this.KeyboardEventArgs = null;
             this.KeyboardPressEventArgs = null;
+            this.ActionIsSolved = false;
         }
         #endregion
         #region Input properties (read-only)
@@ -775,6 +600,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Obsahuje true pokud <see cref="ToolTipData"/> obsahuje platná data pro vykreslení tooltipu.
         /// </summary>
         public bool ToolTipIsValid { get { return (this._ToolTipData != null && this._ToolTipData.IsValid); } }
+        /// <summary>
+        /// Metoda by měla nastavit true, pokud danou operaci vyřeší.
+        /// Při akci typu <see cref="GInteractiveChangeState.WheelUp"/> a <see cref="GInteractiveChangeState.WheelDown"/> se testuje, zda <see cref="ActionIsSolved"/> je true.
+        /// Pokud není, pak se stejná událost pošle i do Parent objektů.
+        /// </summary>
+        public bool ActionIsSolved { get; set; }
         #endregion
     }
     /// <summary>

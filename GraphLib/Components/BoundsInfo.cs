@@ -350,16 +350,16 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="item"></param>
         /// <param name="action"></param>
-        protected static void CheckItem(IInteractiveItem item, string action)
+        protected static void CheckItem(IInteractiveParent item, string action)
         {
             if (item == null)
-                throw new Application.GraphLibCodeException("Nelze provést akci BoundsSpider." + action + "(), dodaný prvek je null.");
+                throw new Application.GraphLibCodeException("Nelze provést akci BoundsInfo." + action + "(), dodaný prvek je null.");
         }
         #endregion
         #endregion
         #region Metody pro směr Child to Parent
         /// <summary>
-        /// Pro daný prvek určí a vrátí jeho souřadný systém.
+        /// Pro daný prvek (který je na pozici Child) určí a vrátí souřadný systém, v kterém se pohybuje.
         /// Jde tedy o systém, v němž se daný prvek pohybuje, nikoli o systém který poskytuje svým Childs prvkům.
         /// Daný prvek bude umístěn do property <see cref="BoundsInfo.CurrentItem"/>, a v ostatních properties vráceného systému budou k dispozici jeho jednotlivé koordináty
         /// (např. <see cref="BoundsInfo.CurrentAbsBounds"/> bude obsahovat absolutní souřadnice daného prvku).
@@ -369,23 +369,36 @@ namespace Asol.Tools.WorkScheduler.Components
         public static BoundsInfo CreateForChild(IInteractiveItem currentItem)
         {
             CheckItem(currentItem, "CreateForChild");
-
-            // Nejprve projdu postupně všechny parenty daného prvku, až najdu poslední (=nejzákladnější) z nich, a nastřádám si pole jejich souřadnic:
+            return _CreateForItem(currentItem, false);
+        }
+        /// <summary>
+        /// Pro daný prvek určí a vrátí jeho vlastní souřadný systém, který poskytuje svým Childs.
+        /// Jde tedy o systém, do jehož <see cref="CurrentItem"/> lze vložit kterýkoli jeho Childs, a systém bude vracet jeho souřadnice.
+        /// Vrácený prvek má property <see cref="BoundsInfo.CurrentItem"/> neobsazenou.
+        /// </summary>
+        /// <param name="currentContainer"></param>
+        /// <returns></returns>
+        public static BoundsInfo CreateForContainer(IInteractiveParent currentContainer)
+        {
+            CheckItem(currentContainer, "CreateForContainer");
+            return _CreateForItem(currentContainer, true);
+        }
+        private static BoundsInfo _CreateForItem(IInteractiveParent forItem, bool asContainer)
+        { 
+            // Nejprve projdu postupně všechny parenty daného prvku, zpětně, až najdu poslední (=nejzákladnější) z nich, a nastřádám si pole jejich souřadnic:
             List<Rectangle> boundsList = new List<Rectangle>();
-            IInteractiveParent item = currentItem;
+            IInteractiveParent item = (asContainer ? forItem : forItem.Parent);
             Dictionary<uint, object> scanned = new Dictionary<uint, object>();
-            scanned.Add(item.Id, null);
-            while (item.Parent != null)
+            while (item != null)
             {
-                IInteractiveParent parent = item.Parent;
-                if (parent == null) break;                           // Konec.
-                if (scanned.ContainsKey(item.Id)) break;             // Zacyklení.
+                if (scanned.ContainsKey(item.Id)) break;   // Zacyklení.
                 scanned.Add(item.Id, null);
-                boundsList.Add(GetParentClientBounds(parent));
-                item = parent;
+                boundsList.Add(GetParentClientBounds(item));
+                item = item.Parent;                        // Krok na dalšího parenta
             }
 
-            // Nyní projdu prvky v jejich nativním pořadí = od základního (root) až k parentovi našeho prvku currentItem, a nastřádám si souřadnice Origin a Visible:
+            // Nyní projdu prvky v jejich grafickém pořadí = podle hierarchie od základního (root) až k parentovi našeho prvku currentItem (tento currentItem tam není!),
+            //  a nastřádám si souřadnice Origin a Visible:
             int x = 0;
             int y = 0;
             int l = 0;
@@ -394,7 +407,7 @@ namespace Asol.Tools.WorkScheduler.Components
             int b = 16380;
 
             for (int i = boundsList.Count - 1; i >= 0; i--)
-            {   // Pole boundsList procházíme od posledního prvku, neboť tam je root control:
+            {   // Pole boundsList procházíme od posledního prvku, neboť tam je umístěn root Control:
                 Rectangle relBounds = boundsList[i];
                 Rectangle absBounds = relBounds.Add(x, y);
                 x = absBounds.X;
@@ -405,21 +418,11 @@ namespace Asol.Tools.WorkScheduler.Components
                 if (b < absBounds.Bottom) b = absBounds.Bottom;
             }
 
-            return new BoundsInfo(x, y, l, t, r, b);
-        }
-        /// <summary>
-        /// Vrátí rectangle, který reprezentuje souřadnice klientského prostoru, v rámci daného parenta
-        /// </summary>
-        /// <param name="parent"></param>
-        /// <returns></returns>
-        protected static Rectangle GetParentClientBounds(IInteractiveParent parent)
-        {
-            if (parent is IInteractiveItem)
-            {
-                IInteractiveItem item = parent as IInteractiveItem;
-                return item.Bounds.Sub(item.ClientBorder);
-            }
-            return new Rectangle(new Point(0, 0), parent.ClientSize);
+            // Výsledek bude mít nastaveny koordináty (Origin a Visible), a bude mít vložený CurrentItem (pokud je metoda volaná pro Item):
+            BoundsInfo boundsInfo = new BoundsInfo(x, y, l, t, r, b);
+            if (!asContainer && forItem is IInteractiveItem)
+                boundsInfo.CurrentItem = forItem as IInteractiveItem;
+            return boundsInfo;
         }
 
 
@@ -484,6 +487,60 @@ namespace Asol.Tools.WorkScheduler.Components
             return new Point(x, y);
         }
         */
+        #endregion
+        #region Statické metody
+        /// <summary>
+        /// Metoda vrátí absolutní souřadnice daného objektu.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        public static Rectangle GetAbsoluteBounds(IInteractiveItem item)
+        {
+            BoundsInfo boundsInfo = BoundsInfo.CreateForChild(item);
+            return boundsInfo.CurrentAbsBounds;
+        }
+        /// <summary>
+        /// Metoda vrátí absolutní souřadnice prostoru, který je zadán jako relativní souřadnice v daném containeru.
+        /// Pokud tedy například daný container je umístěn na (absolutní) souřadnici Bounds = { 100,20,200,50 }, a dané relativní souřadnice jsou { 5,5,10,10 },
+        /// pak výsledné absolutní souřadnice jsou { 105,25,10,10 }.
+        /// </summary>
+        /// <param name="container"></param>
+        /// <param name="relativeBounds"></param>
+        /// <returns></returns>
+        public static Rectangle GetAbsoluteBoundsInContainer(IInteractiveParent container, Rectangle relativeBounds)
+        {
+            if (container == null) return relativeBounds;
+            BoundsInfo boundsInfo = BoundsInfo.CreateForContainer(container);
+            return relativeBounds.Add(boundsInfo.AbsOrigin);
+        }
+        /// <summary>
+        /// Metoda vrací relativní souřadnici bodu v daném containeru pro danou absolutní souřadnici.
+        /// Metoda určí souřadný systém <see cref="BoundsInfo"/> uvnitř daného containeru, 
+        /// získá jeho <see cref="BoundsInfo.AbsOrigin"/>, a vrátí rozdíl.
+        /// </summary>
+        /// <param name="container"></param>
+        /// <param name="absolutePoint"></param>
+        /// <returns></returns>
+        public static Point GetRelativePointInContainer(IInteractiveParent container, Point absolutePoint)
+        {
+            if (container == null) return absolutePoint;
+            BoundsInfo boundsInfo = BoundsInfo.CreateForContainer(container);
+            return absolutePoint.Sub(boundsInfo.AbsOrigin);
+        }
+        /// <summary>
+        /// Vrátí rectangle, který reprezentuje souřadnice klientského prostoru, v rámci daného parenta
+        /// </summary>
+        /// <param name="parent"></param>
+        /// <returns></returns>
+        protected static Rectangle GetParentClientBounds(IInteractiveParent parent)
+        {
+            if (parent is IInteractiveItem)
+            {
+                IInteractiveItem item = parent as IInteractiveItem;
+                return item.Bounds.Sub(item.ClientBorder);
+            }
+            return new Rectangle(new Point(0, 0), parent.ClientSize);
+        }
         #endregion
     }
 }
