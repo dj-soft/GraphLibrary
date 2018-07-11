@@ -6,6 +6,8 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
+using Asol.Tools.WorkScheduler.Data;
+using Asol.Tools.WorkScheduler.Scheduler;
 
 namespace Asol.Tools.WorkScheduler.TestGUI
 {
@@ -101,7 +103,15 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         }
         #endregion
         #region Implementace Scheduler.IAppHost
-
+        /// <summary>
+        /// Tato metoda zajistí otevření formuláře daného záznamu.
+        /// Pouze převolá odpovídající metodu v <see cref="MainData"/>.
+        /// </summary>
+        /// <param name="recordGId"></param>
+        void Scheduler.IAppHost.RunOpenRecordForm(GId recordGId)
+        {
+            System.Windows.Forms.MessageBox.Show("Rád bych otevřel záznam " + recordGId.ToString() + ";\r\n ale jsem jen testovací formulář.");
+        }
         #endregion
     }
 }

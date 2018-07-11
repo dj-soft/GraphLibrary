@@ -9,6 +9,7 @@ using System.Windows.Forms;
 
 using Asol.Tools.WorkScheduler.Data;
 using Asol.Tools.WorkScheduler.Components;
+using Asol.Tools.WorkScheduler.Components.Graph;
 
 namespace Asol.Tools.WorkScheduler.TestGUI
 {
