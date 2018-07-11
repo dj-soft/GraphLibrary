@@ -419,19 +419,59 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             }
         }
         #endregion
+        #region Kontextové menu
+        protected ToolStripDropDownMenu CreateContextMenu(DataGraphItem graphItem)
+        {
+            if (graphItem == null) return null;
+
+            DataDeclaration dataDeclaration;
+            // this.TryGetDataDeclaration()
+            var fd = this.DeclarationDict.FirstOrDefault();
+
+            ToolStripDropDownMenu menu = new ToolStripDropDownMenu();
+
+            ToolStripMenuItem menuItem = new ToolStripMenuItem("Změnit čas události", IconStandard.BulletPink16);
+            menuItem.Tag = 1234;
+            menu.Items.Add(menuItem);
+            menu.Items.Add("Přidej stav kapacit");
+            menu.Items.Add("Přidej další pracovní linku");
+            menu.Items.Add("Změnit čas směny");
+            menu.ItemClicked += ContextMenuItemClicked;
+            return menu;
+        }
+
+        private void ContextMenuItemClicked(object sender, ToolStripItemClickedEventArgs e)
+        {
+            ToolStripDropDownMenu menu = sender as ToolStripDropDownMenu;
+            if (menu != null) menu.Hide();
+
+            if (this._HasHost)
+                this._AppHost.RunOpenRecordForm(null);
+            else
+                System.Windows.Forms.MessageBox.Show("Rád bych provedl funkci " + e.ClickedItem.Text + ",\r\n ale není zadán datový hostitel.");
+        }
+        #endregion
         #region Implementace IMainDataInternal
-        /// <summary>
-        /// Tato metoda zajistí otevření formuláře daného záznamu.
-        /// Pouze převolá odpovídající metodu v <see cref="MainData"/>.
-        /// </summary>
-        /// <param name="recordGId"></param>
-        void IMainDataInternal.RunOpenRecordForm(GId recordGId)
+        protected void RunOpenRecordForm(GId recordGId)
         {
             if (this._HasHost)
                 this._AppHost.RunOpenRecordForm(recordGId);
             else
                 System.Windows.Forms.MessageBox.Show("Rád bych otevřel záznam " + recordGId.ToString() + ",\r\n ale není zadán datový hostitel.");
         }
+        /// <summary>
+        /// Tato metoda zajistí otevření formuláře daného záznamu.
+        /// Pouze převolá odpovídající metodu v <see cref="MainData"/>.
+        /// </summary>
+        /// <param name="recordGId"></param>
+        void IMainDataInternal.RunOpenRecordForm(GId recordGId) { this.RunOpenRecordForm(recordGId); }
+        /// <summary>
+        /// Metoda pro daný prvek připraví a vrátí kontextové menu.
+        /// </summary>
+        /// <param name="graphItem"></param>
+        /// <returns></returns>
+        ToolStripDropDownMenu IMainDataInternal.CreateContextMenu(DataGraphItem graphItem) { return this.CreateContextMenu(graphItem); }
+
         #endregion
     }
     /// <summary>
@@ -440,10 +480,16 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     public interface IMainDataInternal
     {
         /// <summary>
-        /// Metoda, která zajistí otevření formuláře daného záznamu
+        /// Metoda, která zajistí otevření formuláře daného záznamu.
         /// </summary>
         /// <param name="recordGId">Identifikátor záznamu</param>
         void RunOpenRecordForm(GId recordGId);
+        /// <summary>
+        /// Metoda pro daný prvek připraví a vrátí kontextové menu.
+        /// </summary>
+        /// <param name="graphItem"></param>
+        /// <returns></returns>
+        ToolStripDropDownMenu CreateContextMenu(DataGraphItem graphItem);
     }
     #endregion
     #region class DataDeclaration : deklarace dat, předaná z volajícího do pluginu, definuje rozsah dat a funkcí
@@ -1104,11 +1150,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <returns></returns>
         protected ToolStripDropDownMenu GetContextMenuForItem(ItemActionArgs args)
         {
-            ToolStripDropDownMenu menu = new ToolStripDropDownMenu();
-            menu.Items.Add("Přidej stav kapacit");
-            menu.Items.Add("Přidej další pracovní linku");
-            menu.Items.Add("Změnit čas směny");
-            return menu;
+            DataGraphItem graphItem = this.GetActionGraphItem(args);                     // Prvek, na nějž se kliklo
+            return this.IMainData.CreateContextMenu(graphItem);
         }
         /// <summary>
         /// Uživatel dal doubleclick na grafický prvek
