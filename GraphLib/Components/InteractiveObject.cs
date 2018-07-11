@@ -459,6 +459,11 @@ namespace Asol.Tools.WorkScheduler.Components
                     this.Repaint();
                     this.AfterStateChangedRightClick(e);
                     break;
+                case GInteractiveChangeState.WheelUp:
+                case GInteractiveChangeState.WheelDown:
+                    this.AfterStateChangedWheel(e);
+                    break;
+
             }
         }
         /// <summary>
@@ -510,6 +515,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="e"></param>
         protected virtual void AfterStateChangedRightClick(GInteractiveChangeStateArgs e) { }
+        /// <summary>
+        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = WheelUp i WhellDown
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void AfterStateChangedWheel(GInteractiveChangeStateArgs e) { }
         /// <summary>
         /// Metoda je volána v události MouseEnter, a jejím úkolem je připravit data pro ToolTip.
         /// Metoda je volána poté, kdy byla volána metoda <see cref="AfterStateChangedMouseEnter"/>.

@@ -176,7 +176,7 @@ namespace Asol.Tools.WorkScheduler.Components
         void Repaint();
     }
     /// <summary>
-    /// Interface, který umožní child prvku číst a měnit rozměry některého sého hostitele.
+    /// Interface, který umožní child prvku číst a měnit rozměry některého svého hostitele.
     /// Technicky to nemusí být jeho přímý Parent ve smyslu vztahu Parent - Child, může to být i Parent jeho Parenta.
     /// Praktické využití je mezi grafem umístěným v buňce Gridu, kde jeho IVisualParent může být řádek (a nikoli buňka).
     /// Interface pak dovoluje grafu požádat o změnu výšky řádku (setováním <see cref="IVisualParent.ClientHeight"/>, 

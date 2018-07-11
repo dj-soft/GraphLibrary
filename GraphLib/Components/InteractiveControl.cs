@@ -1117,7 +1117,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         private bool _RepaintAllItems;
         #endregion
-        #region Support for ToolTip
+        #region Podpora pro ToolTip
         /// <summary>
         /// Initialize Tooltip object
         /// </summary>
@@ -1178,7 +1178,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         private bool _ToolTipNeedAnimation { get { return (this._ToolTip != null && this._ToolTip.NeedAnimation); } }
         #endregion
-        #region Support for Progress
+        #region Podpora pro Progress
         /// <summary>
         /// Data ukazatele postupu
         /// </summary>

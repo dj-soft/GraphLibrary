@@ -415,4 +415,80 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
     }
     #endregion
+    #region Interface ITimeConvertor
+    /// <summary>
+    /// ITimeConvertor : Interface, který umožní pracovat s časovou osou
+    /// </summary>
+    public interface ITimeConvertor
+    {
+        /// <summary>
+        /// Identita časového a vizuálního prostoru.
+        /// Časový prostor popisuje rozmezí času (Begin a End) s maximální přesností.
+        /// Vizuální prostor popisuje počet pixelů velikosti osy (pro osu Horizontal = Width), ale nikoli její pixel počátku (Left).
+        /// </summary>
+        string Identity { get; }
+        /// <summary>
+        /// Aktuálně zobrazený interval data a času
+        /// </summary>
+        TimeRange VisibleTime { get; }
+        /// <summary>
+        /// Obsahuje všechny aktuální ticky na časové ose.
+        /// </summary>
+        VisualTick[] Ticks { get; }
+        /// <summary>
+        /// Vrátí relativní pixel, na kterém se nachází daný čas.
+        /// </summary>
+        /// <param name="time">Čas, jehož pozici hledáme</param>
+        /// <returns></returns>
+        int GetPixel(DateTime? time);
+        /// <summary>
+        /// Vrátí pozici, na které se nachází daný časový úsek na aktuální časové ose.
+        /// </summary>
+        /// <param name="timeRange"></param>
+        /// <returns></returns>
+        Int32Range GetPixelRange(TimeRange timeRange);
+        /// <summary>
+        /// Vrátí relativní pixel, na kterém se nachází daný čas.
+        /// Vrací pixel pro jinou velikost prostoru, než jakou má aktuální TimeAxis, kdy cílová velikost je dána parametrem targetSize.
+        /// Jinými slovy: pokud na reálné časové ose máme zobrazeno rozmezí (numerický příklad): 40 - 80,
+        /// pak <see cref="GetProportionalPixel(DateTime?, int)"/> pro hodnotu time = 50 a targetSize = 100 vrátí hodnotu 25.
+        /// Proč? Protože: požadovaná hodnota 50 se nachází na pozici 0.25 časové osy (40 - 80), a odpovídající pozice v cílovém prostoru (100 pixelů) je 25.
+        /// </summary>
+        /// <param name="time">Čas, jehož pozici hledáme</param>
+        /// <param name="targetSize">Cílový prostor, do něhož máme promítnout viditelný prostor na ose</param>
+        /// <returns></returns>
+        int GetProportionalPixel(DateTime? time, int targetSize);
+        /// <summary>
+        /// Vrátí pozici, na které se nachází daný časový úsek v daném cílovém prostoru.
+        /// </summary>
+        /// <param name="timeRange"></param>
+        /// <returns></returns>
+        Int32Range GetProportionalPixelRange(TimeRange timeRange, int targetSize);
+        /// <summary>
+        /// Vrátí relativní pixel, na kterém se nachází daný čas.
+        /// Vrací pixel na logaritmické časové ose, kde střední část prostoru (z parametru "size") je proporcionální (její velikost je dána hodnotou "ratio"),
+        /// a okrajové části jsou logaritmické, takže do daného prostoru "size" se promítnou úplně všechny časy, jen v těch okrajových částech budou zahuštěné.
+        /// </summary>
+        /// <param name="time">Čas, jehož pozici hledáme</param>
+        /// <param name="targetSize">Cílový prostor, do něhož máme promítnout viditelný prostor na ose</param>
+        /// <param name="proportionalRatio">Relativní část prostoru "size", v němž je čas proporcionální (lineární). Povolené hodnoty jsou 0.4 až 0.9</param>
+        /// <returns></returns>
+        int GetLogarithmicPixel(DateTime? time, int targetSize, float proportionalRatio);
+        /// <summary>
+        /// Vrátí pozici, na které se nachází daný časový úsek v daném cílovém prostoru, v logaritmickém měřítku.
+        /// Vrací pixel na logaritmické časové ose, kde střední část prostoru (z parametru "size") je proporcionální (její velikost je dána hodnotou "ratio"),
+        /// a okrajové části jsou logaritmické, takže do daného prostoru "size" se promítnou úplně všechny časy, jen v těch okrajových částech budou zahuštěné.
+        /// </summary>
+        /// <param name="timeRange"></param>
+        /// <param name="targetSize">Cílový prostor, do něhož máme promítnout viditelný prostor na ose</param>
+        /// <param name="proportionalRatio">Relativní část prostoru "size", v němž je čas proporcionální (lineární). Povolené hodnoty jsou 0.4 až 0.9</param>
+        /// <returns></returns>
+        Int32Range GetLogarithmicPixelRange(TimeRange timeRange, int targetSize, float proportionalRatio);
+
+        /// <summary>
+        /// Event vyvolaný po každé změně hodnoty <see cref="VisibleTime"/>
+        /// </summary>
+        event GPropertyChangedHandler<TimeRange> VisibleTimeChanged;
+    }
+    #endregion
 }

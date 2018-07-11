@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Data;
+using System.Drawing;
 
 using Asol.Tools.WorkScheduler.Data;
 using Asol.Tools.WorkScheduler.Application;
-using Asol.Tools.WorkScheduler.Components;
 using Asol.Tools.WorkScheduler.Services;
-using System.Drawing;
+using Asol.Tools.WorkScheduler.Components;
+using Asol.Tools.WorkScheduler.Components.Graph;
+using System.Windows.Forms;
 
 namespace Asol.Tools.WorkScheduler.Scheduler
 {
@@ -23,6 +25,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             this._AppHost = host;
         }
+        /// <summary>
+        /// Obsahuje, true pokud máme vztah na datového hostitele
+        /// </summary>
+        private bool _HasHost { get { return (this._AppHost != null); } }
+        /// <summary>
+        /// Datový hostitel
+        /// </summary>
         private Scheduler.IAppHost _AppHost;
         #endregion
         #region Načítání a analýza dodaných dat
@@ -411,10 +420,31 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         }
         #endregion
         #region Implementace IMainDataInternal
+        /// <summary>
+        /// Tato metoda zajistí otevření formuláře daného záznamu.
+        /// Pouze převolá odpovídající metodu v <see cref="MainData"/>.
+        /// </summary>
+        /// <param name="recordGId"></param>
+        void IMainDataInternal.RunOpenRecordForm(GId recordGId)
+        {
+            if (this._HasHost)
+                this._AppHost.RunOpenRecordForm(recordGId);
+            else
+                System.Windows.Forms.MessageBox.Show("Rád bych otevřel záznam " + recordGId.ToString() + ",\r\n ale není zadán datový hostitel.");
+        }
         #endregion
     }
+    /// <summary>
+    /// Interface pro zpřístupnění vnitřních metod třídy <see cref="MainData"/>
+    /// </summary>
     public interface IMainDataInternal
-    { }
+    {
+        /// <summary>
+        /// Metoda, která zajistí otevření formuláře daného záznamu
+        /// </summary>
+        /// <param name="recordGId">Identifikátor záznamu</param>
+        void RunOpenRecordForm(GId recordGId);
+    }
     #endregion
     #region class DataDeclaration : deklarace dat, předaná z volajícího do pluginu, definuje rozsah dat a funkcí
     /// <summary>
@@ -520,7 +550,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     /// <summary>
     /// DataGraphTable : obsah dat jedné logické tabulky: shrnuje v sobě fyzické řádky, položky grafů, vztahy položek grafů a popisky položek grafů
     /// </summary>
-    public class DataGraphTable : IDataGraphTableInternal
+    public class DataGraphTable : IDataGraphTableInternal, ITimeGraphDataSource
     {
         #region Konstrukce, postupné vkládání dat z tabulek, včetně finalizace
         /// <summary>
@@ -535,13 +565,17 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.DataDeclaration = dataDeclaration;
             this.DataGraphProperties = DataGraphProperties.CreateFrom(this, this.DataDeclaration.Data);
             this._TableRow = null;
-            this._TableItemList = new List<Table>();
+            this._TableInfoList = new List<Table>();
             this._IdDictInit();
         }
         /// <summary>
         /// Vlastník = instance třídy <see cref="Scheduler.MainData"/>
         /// </summary>
         internal MainData MainData { get; private set; }
+        /// <summary>
+        /// Vlastník přetypovaný na IMainDataInternal
+        /// </summary>
+        protected IMainDataInternal IMainData { get { return (this.MainData as IMainDataInternal); } }
         /// <summary>
         /// Název této tabulky
         /// </summary>
@@ -594,12 +628,15 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (this.TableRow.AllowPrimaryKey)
                 this.TableRow.HasPrimaryIndex = true;
         }
-
+        /// <summary>
+        /// Obsluha události, kdy tabulka sama (řádek nebo statický vztah) chce otevírat záznam
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void _TableRow_OpenRecordForm(object sender, GPropertyEventArgs<GId> e)
         {
-            System.Windows.Forms.MessageBox.Show("Rád bych otevřel záznam " + e.Value.ToString());
+            this.RunOpenRecordForm(e.Value);
         }
-
         /// <summary>
         /// Metoda přidá data grafických prvků.
         /// </summary>
@@ -628,7 +665,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (!table.AllowPrimaryKey)
                 throw new GraphLibDataException("Data typu Item pro tabulku <" + this.TableName + "> nepodporují PrimaryKey.");
             table.HasPrimaryIndex = true;
-            this._TableItemList.Add(table);
+            this._TableInfoList.Add(table);
         }
         /// <summary>
         /// Finalizuje dosud načtená data. Další data se již načítat nebudou.
@@ -667,28 +704,30 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         }
         /// <summary>
         /// Připraví do tabulky <see cref="TableRow"/> nový sloupec pro graf, nastaví vlastnosti sloupce i grafu,
-        /// a do každého řádku této tabulky vloží (do tohoto sloupce) nový <see cref="GTimeGraph"/>.
+        /// a do každého řádku této tabulky vloží (do tohoto nového sloupce) nový <see cref="GTimeGraph"/>.
         /// </summary>
         protected void CreateGraphLastColumn()
         {
             Column graphColumn = new Column("__time__graph__");
-           
+
             graphColumn.ColumnProperties.AllowColumnResize = true;
             graphColumn.ColumnProperties.AllowColumnSortByClick = false;
             graphColumn.ColumnProperties.AutoWidth = true;
             graphColumn.ColumnProperties.ColumnContent = ColumnContentType.TimeGraph;
             graphColumn.ColumnProperties.IsVisible = true;
             graphColumn.ColumnProperties.WidthMininum = 250;
-            
+
             graphColumn.GraphParameters = new TimeGraphProperties();
             graphColumn.GraphParameters.TimeAxisMode = TimeGraphTimeAxisMode.Standard;
             graphColumn.GraphParameters.TimeAxisVisibleTickLevel = AxisTickType.StdTick;
+            graphColumn.GraphParameters.InitialResizeMode = AxisResizeContentMode.ChangeScale;
+            graphColumn.GraphParameters.InitialValue = this.CreateInitialTimeRange();
+            graphColumn.GraphParameters.InteractiveChangeMode = AxisInteractiveChangeMode.Shift;
 
             this.TableRow.Columns.Add(graphColumn);
             this.TableRowGraphColumn = graphColumn;
 
-            foreach (Row row in this.TableRow.Rows)
-                row[graphColumn].Value = this.CreateGTimeGraph(true);
+            this.AddTimeGraphToRows();
         }
         /// <summary>
         /// Připraví do tabulky <see cref="TableRow"/> data (nastavení) pro graf, který se zobrazuje na pozadí,
@@ -700,8 +739,51 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.TableRow.GraphParameters.TimeAxisMode = this.TimeAxisMode;
             this.TableRow.GraphParameters.TimeAxisVisibleTickLevel = AxisTickType.BigTick;
 
+            this.AddTimeGraphToRows();
+        }
+        /// <summary>
+        /// Metoda zajistí, že všechny řádky v tabulce <see cref="TableRow"/> budou mít korektně vytvořený graf,
+        /// a to buď ve sloupci <see cref="TableRowGraphColumn"/>, anebo jako <see cref="Row.BackgroundValue"/>.
+        /// Pokud již graf je vytvořen, nebude vytvářet nový.
+        /// </summary>
+        protected void AddTimeGraphToRows()
+        {
+            Column graphColumn = this.TableRowGraphColumn;
             foreach (Row row in this.TableRow.Rows)
-                row.BackgroundValue = this.CreateGTimeGraph(false);
+                this.AddTimeGraphToRow(row, graphColumn);
+        }
+        /// <summary>
+        /// Metoda zajistí, že daný řádek bude mít korektně vytvořený graf,
+        /// a to buď ve sloupci <see cref="TableRowGraphColumn"/>, anebo jako <see cref="Row.BackgroundValue"/>.
+        /// </summary>
+        /// <param name="row"></param>
+        /// <param name="graphColumn"></param>
+        protected void AddTimeGraphToRow(Row row, Column graphColumn)
+        {
+            if (graphColumn != null)
+            {
+                Cell graphCell = row[graphColumn];
+                if (graphCell.ValueType != TableValueType.ITimeInteractiveGraph)
+                    graphCell.Value = this.CreateGTimeGraph(true);
+            }
+            else
+            {
+                if (row.BackgroundValueType != TableValueType.ITimeInteractiveGraph)
+                    row.BackgroundValue = this.CreateGTimeGraph(false);
+            }
+        }
+        /// <summary>
+        /// Vrátí časový interval, který se má zobrazit jako výchozí v grafu.
+        /// </summary>
+        /// <returns></returns>
+        protected TimeRange CreateInitialTimeRange()
+        {
+            DateTime now = DateTime.Now;
+            int dow = (now.DayOfWeek == DayOfWeek.Sunday ? 6 : ((int)now.DayOfWeek) - 1);
+            DateTime begin = new DateTime(now.Year, now.Month, now.Day).AddDays(-dow);
+            DateTime end = begin.AddDays(7d);
+            double add = 6d;
+            return new TimeRange(begin.AddHours(-add), end.AddHours(add));
         }
         /// <summary>
         /// Vytvoří a vrátí new instanci grafu (třída <see cref="GTimeGraph"/>), kompletně připravenou k práci, ale bez položek (ty se dodávají později).
@@ -710,8 +792,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         protected GTimeGraph CreateGTimeGraph(bool isFullInteractive)
         {
             GTimeGraph graph = new GTimeGraph();
-            
-
+            graph.DataSource = this;
             return graph;
         }
         /// <summary>
@@ -747,7 +828,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="timeGraph"></param>
         /// <returns></returns>
         protected bool TryGetGraphForItem(DataGraphItem graphItem, out GTimeGraph timeGraph)
-        { 
+        {
             timeGraph = null;
             Row row;
             if (graphItem.ParentGId == null || !this.TableRow.TryGetRowOnPrimaryKey(graphItem.ParentGId, out row)) return false;
@@ -772,12 +853,12 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             get
             {
                 DataGraphPositionType graphPosition = this.GraphPosition;
-                return (graphPosition == DataGraphPositionType.InLastColumn || 
+                return (graphPosition == DataGraphPositionType.InLastColumn ||
                         graphPosition == DataGraphPositionType.OnBackgroundProportional ||
                         graphPosition == DataGraphPositionType.OnBackgroundLogarithmic);
             }
         }
-         /// <summary>
+        /// <summary>
         /// Režim časové osy v grafu, podle zadání v deklaraci
         /// </summary>
         protected TimeGraphTimeAxisMode TimeAxisMode
@@ -826,12 +907,57 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Dictionary pro vyhledání prvku grafu podle jeho GId. Primární úložiště položek grafů.
         /// </summary>
         protected Dictionary<GId, DataGraphItem> _GraphItemDict;
-    
+        #endregion
+        #region Textové informace pro položky grafů - tabulka TableInfoList a její obsluha
         /// <summary>
-        /// Tabulky s inforacemi = popisky pro poožky grafů.
+        /// Metoda se pokusí najít první řádek z tabulky INFO, obsahující textové informace pro daný prvek.
+        /// Může vrátit NULL.
         /// </summary>
-        public List<Table> TableItemList { get { return this._TableItemList; } }
-        protected List<Table> _TableItemList;
+        /// <param name="graphItem"></param>
+        /// <returns></returns>
+        protected Row GetTableInfoRow(DataGraphItem graphItem)
+        {
+            if (graphItem == null) return null;
+            return this.GetTableInfoRow(graphItem.ItemGId, graphItem.GroupGId, graphItem.DataGId, graphItem.ParentGId);
+        }
+        /// <summary>
+        /// Metoda se pokusí najít první řádek z tabulky INFO, obsahující textové informace pro některý GID.
+        /// Může vrátit NULL.
+        /// </summary>
+        /// <param name="gids"></param>
+        /// <returns></returns>
+        protected Row GetTableInfoRow(params GId[] gids)
+        {
+            foreach (GId gId in gids)
+            {
+                Row row = this.GetTableInfoRowForGId(gId);
+                if (row != null) return row;
+            }
+            return null;
+        }
+        /// <summary>
+        /// Metoda se pokusí najít první řádek z tabulky INFO, obsahující textové informace pro daný GID.
+        /// Může vrátit NULL.
+        /// </summary>
+        /// <param name="gId"></param>
+        /// <returns></returns>
+        protected Row GetTableInfoRowForGId(GId gId)
+        {
+            if (gId == null) return null;
+
+            foreach (Table table in this._TableInfoList)
+            {
+                Row row;
+                if (table.TryGetRowOnPrimaryKey(gId, out row))
+                    return row;
+            }
+            return null;
+        }
+        /// <summary>
+        /// Tabulky s informacemi = popisky pro položky grafů.
+        /// </summary>
+        public List<Table> TableInfoList { get { return this._TableInfoList; } }
+        protected List<Table> _TableInfoList;
         #endregion
         #region Správa ID, GId a objektů grafů
         /// <summary>
@@ -927,6 +1053,93 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         DataGraphItem IDataGraphTableInternal.GetGraphItem(int id) { return this.GetGraphItem(id); }
         DataGraphItem IDataGraphTableInternal.GetGraphItem(GId gId) { return this.GetGraphItem(gId); }
         #endregion
+        #endregion
+        #region Komunikace s hlavním zdrojem dat (MainData)
+        /// <summary>
+        /// Tato metoda zajistí otevření formuláře daného záznamu.
+        /// Pouze převolá odpovídající metodu v <see cref="MainData"/>.
+        /// </summary>
+        /// <param name="recordGId"></param>
+        protected void RunOpenRecordForm(GId recordGId)
+        {
+            if (this.MainData != null)
+                this.IMainData.RunOpenRecordForm(recordGId);
+        }
+        #endregion
+        #region Implementace ITimeGraphDataSource: Zdroj dat pro grafy
+        /// <summary>
+        /// Připraví tooltip pro položku grafu
+        /// </summary>
+        /// <param name="args"></param>
+        protected void GraphItemPrepareToolTip(CreateToolTipArgs args)
+        {
+            DataGraphItem graphItem = this.GetActionGraphItem(args);
+            if (graphItem == null) return;
+
+            Row infoRow = this.GetTableInfoRow(graphItem);
+            if (infoRow == null) return;
+
+            GId recordGId = infoRow.RecordGId;
+            args.ToolTipData.TitleText = (recordGId != null ? recordGId.ClassName : "INFORMACE O POLOŽCE");
+
+            StringBuilder sb = new StringBuilder();
+            foreach (Column column in infoRow.Table.Columns)
+            {
+                if (!column.ColumnProperties.IsVisible) continue;
+                Cell cell = infoRow[column];
+                if (cell.ValueType == TableValueType.Text)
+                    sb.AppendLine(column.ColumnProperties.Title + "\t" + cell.Value);
+            }
+            string text = sb.ToString();
+            args.ToolTipData.InfoText = text;
+            args.ToolTipData.AnimationFadeInTime = TimeSpan.FromMilliseconds(100);
+            args.ToolTipData.AnimationShowTime = TimeSpan.FromMilliseconds(100 * text.Length);        // 1 sekunda na přečtení 10 znaků
+            args.ToolTipData.AnimationFadeOutTime = TimeSpan.FromMilliseconds(10 * text.Length);
+            args.ToolTipData.InfoUseTabs = true;
+        }
+        /// <summary>
+        /// Uživatel chce vidět kontextové menu na daném prvku
+        /// </summary>
+        /// <param name="args"></param>
+        /// <returns></returns>
+        protected ToolStripDropDownMenu GetContextMenuForItem(ItemActionArgs args)
+        {
+            ToolStripDropDownMenu menu = new ToolStripDropDownMenu();
+            menu.Items.Add("Přidej stav kapacit");
+            menu.Items.Add("Přidej další pracovní linku");
+            menu.Items.Add("Změnit čas směny");
+            return menu;
+        }
+        /// <summary>
+        /// Uživatel dal doubleclick na grafický prvek
+        /// </summary>
+        /// <param name="args"></param>
+        protected void GraphItemDoubleClick(ItemActionArgs args)
+        {
+            if (args.ModifierKeys == Keys.Control)
+            {   // Akce typu Ctrl+DoubleClick na grafickém prvku si žádá otevření formuláře:
+                DataGraphItem graphItem = this.GetActionGraphItem(args);
+                if (graphItem != null)
+                    this.RunOpenRecordForm(graphItem.DataGId);
+            }
+        }
+        /// <summary>
+        /// Metoda najde a vrátí grafický prvek zdejší třídy <see cref="DataGraphItem"/> pro daný interaktivní prvek.
+        /// </summary>
+        /// <param name="args"></param>
+        /// <returns></returns>
+        protected DataGraphItem GetActionGraphItem(ItemArgs args)
+        {
+            int itemId = (args.CurrentItem != null ? args.CurrentItem.ItemId : (args.GroupedItems.Length > 0 ? args.GroupedItems[0].ItemId : 0));
+            if (itemId <= 0) return null;
+            return this.GetGraphItem(itemId);
+        }
+        void ITimeGraphDataSource.CreateText(CreateTextArgs args) { }
+        void ITimeGraphDataSource.CreateToolTip(CreateToolTipArgs args) { this.GraphItemPrepareToolTip(args); }
+        void ITimeGraphDataSource.ItemRightClick(ItemActionArgs args) { args.ContextMenu = this.GetContextMenuForItem(args); }
+        void ITimeGraphDataSource.ItemDoubleClick(ItemActionArgs args) { this.GraphItemDoubleClick(args); }
+        void ITimeGraphDataSource.ItemLongClick(ItemActionArgs args) { }
+        void ITimeGraphDataSource.ItemChange(ItemChangeArgs args) { }
         #endregion
     }
     /// <summary>
@@ -1292,7 +1505,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     /// interface IAppHost : požadavky na objekt, který hraje roli hostitele Scheduleru.
     /// </summary>
     public interface IAppHost
-    { }
+    {
+        /// <summary>
+        /// Metoda, která zajistí otevření formuláře daného záznamu
+        /// </summary>
+        /// <param name="recordGId">Identifikátor záznamu</param>
+        void RunOpenRecordForm(GId recordGId);
+    }
     #endregion
     #region enumy : DataTableType, DataTargetType, DataContentType
     /// <summary>

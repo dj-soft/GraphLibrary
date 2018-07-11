@@ -94,6 +94,16 @@ namespace Asol.Tools.WorkScheduler.Data
             return rows;
         }
         /// <summary>
+        /// Rozdělí daný string na pole polí, při použití standardních oddělovačů formátu CSV: 
+        /// sloupce jsou odděleny TAB, řádky jsou odděleny Cr a/nebo Lf.
+        /// </summary>
+        /// <param name="text">Vstupující text. Obsahuje řádky, a v řádku obsahuje prvky oddělené daným stringem.</param>
+        /// <returns></returns>
+        public static string[][] ToTableCsv(this string text)
+        {
+            return text.ToTable("\r\n", "\t", false, false);
+        }
+        /// <summary>
         /// Rozdělí daný string na pole polí, kdy lze zadat oddělovač řádků a oddělovač sloupců.
         /// </summary>
         /// <param name="text">Vstupující text. Obsahuje řádky, a v řádku obsahuje prvky oddělené daným stringem.</param>

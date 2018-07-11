@@ -6,7 +6,7 @@ using System.Drawing;
 using Asol.Tools.WorkScheduler.Data;
 using Asol.Tools.WorkScheduler.Application;
 
-namespace Asol.Tools.WorkScheduler.Components
+namespace Asol.Tools.WorkScheduler.Components.Graph
 {
     // Prvek GTimeGraph je tak líný, jako by to odkoukal od GGridu a GTable.
     // Na veškeré vstupní změny reaguje líně, jenom si poznamená: "tohle nebo tamto je od teď neplatné"
@@ -69,6 +69,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="sender"></param>
         /// <param name="args"></param>
         private void _ItemList_ItemAddAfter(object sender, EList<ITimeGraphItem>.EListAfterEventArgs args) { this.Invalidate(InvalidateItems.AllGroups); }
+        /// <summary>
+        /// Zdroj dat, nepovinný
+        /// </summary>
+        private ITimeGraphDataSource _DataSource;
         #endregion
         #region GUI grafu : GraphParameters
         /// <summary>
@@ -845,18 +849,130 @@ namespace Asol.Tools.WorkScheduler.Components
                 this._Childs.Add(groupItem.GControl);
         }
         #endregion
-        #region Podpora pro získávání dat - Caption, ToolTip
-        internal string GetCaptionText(GInteractiveDrawArgs e, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position, Rectangle boundsAbsolute, Rectangle boundsVisibleAbsolute)
+        #region Komunikace s datovým zdrojem: Caption, ToolTip, DoubleClick, LongClick
+        /// <summary>
+        /// Metoda získá text, který se bude vykreslovat do prvku
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="group"></param>
+        /// <param name="data"></param>
+        /// <param name="position"></param>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="boundsVisibleAbsolute"></param>
+        /// <returns></returns>
+        internal string GraphItemGetCaptionText(GInteractiveDrawArgs e, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position, Rectangle boundsAbsolute, Rectangle boundsVisibleAbsolute)
         {
-            return data.Time.ToString();
+            string text = null;
+            if (this.HasDataSource)
+            {
+                CreateTextArgs args = new CreateTextArgs();
+                this.DataSource.CreateText(args);
+            }
+            else
+            {
+                text = data.Time.Text;
+            }
+            return text;
         }
-        internal void PrepareToolTip(GInteractiveChangeStateArgs e, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position)
+        /// <summary>
+        /// Metoda pipraví tooltip pro prvek
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="group"></param>
+        /// <param name="data"></param>
+        /// <param name="position"></param>
+        internal void GraphItemPrepareToolTip(GInteractiveChangeStateArgs e, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position)
         {
-            e.ToolTipData.TitleText = "Tooltip " + position.ToString();
-            string eol = Environment.NewLine;
-            e.ToolTipData.InfoText = "ItemId: " + data.ItemId + eol +
-                "Layer: " + data.Layer.ToString();
+            if (this.HasDataSource)
+            {
+                CreateToolTipArgs args = new CreateToolTipArgs(e, group, data, position);
+                this.DataSource.CreateToolTip(args);
+            }
+            else
+            {
+                e.ToolTipData.TitleText = "Tooltip " + position.ToString();
+                string eol = Environment.NewLine;
+                e.ToolTipData.InfoText = "ItemId: " + data.ItemId + eol +
+                    "Layer: " + data.Layer.ToString();
+            }
         }
+        /// <summary>
+        /// Metoda zajistí zpracování události RightCLick na grafickém prvku (data) na dané pozici (position).
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="data"></param>
+        /// <param name="position"></param>
+        internal void GraphItemRightClick(GInteractiveChangeStateArgs e, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position)
+        {
+            if (!this.HasDataSource) return;
+
+            ItemActionArgs args = new ItemActionArgs(e, group, data, position);
+            this.DataSource.ItemRightClick(args);
+            if (args.ContextMenu != null)
+                this.GraphItemShowContextMenu(e, args.ContextMenu);
+        }
+        /// <summary>
+        /// Rozsvítí dané kontextové menu v přiměřené pozici
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="contextMenu"></param>
+        protected void GraphItemShowContextMenu(GInteractiveChangeStateArgs e, System.Windows.Forms.ToolStripDropDownMenu contextMenu)
+        {
+            var host = this.Host;
+            if (host == null) return;
+
+            Point point = this.GetPointForMenu(e);
+            contextMenu.Show(host, point, System.Windows.Forms.ToolStripDropDownDirection.BelowRight);
+        }
+        /// <summary>
+        /// Vrátí referenční bod, u kterého by se mělo rozsvítit kontextové menu
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
+        protected Point GetPointForMenu(GInteractiveChangeStateArgs e)
+        {
+            if (e.MouseAbsolutePoint.HasValue) return e.MouseAbsolutePoint.Value.Add(-20, 5);
+            if (e.ExistsItem)
+            {
+                Rectangle absBounds = BoundsInfo.GetAbsoluteBounds(e.CurrentItem);
+                return new Point(absBounds.X, absBounds.Bottom);
+            }
+            return System.Windows.Forms.Control.MousePosition;
+        }
+        /// <summary>
+        /// Metoda zajistí zpracování události LeftDoubleCLick na grafickém prvku (data) na dané pozici (position).
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="data"></param>
+        /// <param name="position"></param>
+        internal void GraphItemLeftDoubleClick(GInteractiveChangeStateArgs e, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position)
+        {
+            if (!this.HasDataSource) return;
+
+            ItemActionArgs args = new ItemActionArgs(e, group, data, position);
+            this.DataSource.ItemDoubleClick(args);
+        }
+        /// <summary>
+        /// Metoda zajistí zpracování události LeftLongCLick na grafickém prvku (data) na dané pozici (position).
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="data"></param>
+        /// <param name="position"></param>
+        internal void GraphItemLeftLongClick(GInteractiveChangeStateArgs e, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position)
+        {
+            if (!this.HasDataSource) return;
+
+            ItemActionArgs args = new ItemActionArgs(e, group, data, position);
+            this.DataSource.ItemLongClick(args);
+        }
+        /// <summary>
+        /// true pokud máme datový zdroj
+        /// </summary>
+        protected bool HasDataSource { get { return (this._DataSource != null); } }
+        /// <summary>
+        /// Datový zdroj grafu
+        /// </summary>
+        public ITimeGraphDataSource DataSource { get { return this._DataSource; } set { this._DataSource = value; } }
         #endregion
         #region Draw : vykreslení grafu
         /// <summary>
@@ -1291,10 +1407,42 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         /// <param name="data"></param>
         /// <param name="position"></param>
-        internal void PrepareToolTip(GInteractiveChangeStateArgs e, ITimeGraphItem data, GGraphControlPosition position)
+        internal void GraphItemPrepareToolTip(GInteractiveChangeStateArgs e, ITimeGraphItem data, GGraphControlPosition position)
         {
-            this._ParentGraph.PrepareToolTip(e, this, data, position);
+            this._ParentGraph.GraphItemPrepareToolTip(e, this, data, position);
         }
+
+        /// <summary>
+        /// Metoda zajistí zpracování události RightCLick na grafickém prvku (data) na dané pozici (position).
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="data"></param>
+        /// <param name="position"></param>
+        internal void GraphItemRightClick(GInteractiveChangeStateArgs e, ITimeGraphItem data, GGraphControlPosition position)
+        {
+            this._ParentGraph.GraphItemRightClick(e, this, data, position);
+        }
+        /// <summary>
+        /// Metoda zajistí zpracování události LeftDoubleCLick na grafickém prvku (data) na dané pozici (position).
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="data"></param>
+        /// <param name="position"></param>
+        internal void GraphItemLeftDoubleClick(GInteractiveChangeStateArgs e, ITimeGraphItem data, GGraphControlPosition position)
+        {
+            this._ParentGraph.GraphItemLeftDoubleClick(e, this, data, position);
+        }
+        /// <summary>
+        /// Metoda zajistí zpracování události LeftLongCLick na grafickém prvku (data) na dané pozici (position).
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="data"></param>
+        /// <param name="position"></param>
+        internal void GraphItemLeftLongClick(GInteractiveChangeStateArgs e, ITimeGraphItem data, GGraphControlPosition position)
+        {
+            this._ParentGraph.GraphItemLeftLongClick(e, this, data, position);
+        }
+
         /// <summary>
         /// Vykreslí tuto grupu. Kreslí pouze pokud obsahuje více než 1 prvek, a pokud vrstva <see cref="ITimeGraphItem.Layer"/> je nula nebo kladná (pro záporné vrstvy se nekreslí).
         /// </summary>
@@ -1322,7 +1470,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public void DrawOverChilds(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
         {
             Rectangle boundsVisibleAbsolute = Rectangle.Intersect(e.AbsoluteVisibleClip, boundsAbsolute);
-            string text = this._ParentGraph.GetCaptionText(e, this, this, GGraphControlPosition.Group, boundsAbsolute, boundsVisibleAbsolute);
+            string text = this._ParentGraph.GraphItemGetCaptionText(e, this, this, GGraphControlPosition.Group, boundsAbsolute, boundsVisibleAbsolute);
             Color foreColor = this.GControl.BackColor.Contrast();
             GPainter.DrawString(e.Graphics, boundsAbsolute, text, foreColor, FontInfo.CaptionBold, ContentAlignment.MiddleCenter);
         }
@@ -1449,7 +1597,19 @@ namespace Asol.Tools.WorkScheduler.Components
         #region Interaktivita
         protected override void PrepareToolTip(GInteractiveChangeStateArgs e)
         {
-            this._Group.PrepareToolTip(e, this._Owner, this._Position);
+            this._Group.GraphItemPrepareToolTip(e, this._Owner, this._Position);
+        }
+        protected override void AfterStateChangedRightClick(GInteractiveChangeStateArgs e)
+        {
+            this._Group.GraphItemRightClick(e, this._Owner, this._Position);
+        }
+        protected override void AfterStateChangedLeftDoubleClick(GInteractiveChangeStateArgs e)
+        {
+            this._Group.GraphItemLeftDoubleClick(e, this._Owner, this._Position);
+        }
+        protected override void AfterStateChangedLeftLongClick(GInteractiveChangeStateArgs e)
+        {
+            this._Group.GraphItemLeftLongClick(e, this._Owner, this._Position);
         }
         #endregion
         #region Kreslení prvku
@@ -1489,7 +1649,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         /// <summary>
         /// Metoda je volaná pro vykreslení prvku.
-        /// Implementátor může bez nejmenších obav převolat <see cref="GControl"/>.<see cref="GTimeGraphControl.Draw(TimeGraphItemDrawArgs)"/> Draw
+        /// Implementátor může bez nejmenších obav převolat <see cref="GControl"/>.<see cref="GTimeGraphControl.DrawItem(GInteractiveDrawArgs, Rectangle, DrawItemMode, int?)"/> Draw
         /// </summary>
         /// <param name="e">Standardní data pro kreslení</param>
         /// <param name="boundsAbsolute">Absolutní souřadnice tohoto prvku</param>
@@ -1578,7 +1738,24 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Režim zobrazování času na ose X
         /// </summary>
-        public TimeGraphTimeAxisMode TimeAxisMode { get { return this._TimeAxisMode; } set { this._TimeAxisMode = value; } } private TimeGraphTimeAxisMode _TimeAxisMode;
+        public TimeGraphTimeAxisMode TimeAxisMode { get { return this._TimeAxisMode; } set { this._TimeAxisMode = value; } }
+        private TimeGraphTimeAxisMode _TimeAxisMode;
+        /// <summary>
+        /// Režim chování při změně velikosti: zachovat měřítko a změnit hodnotu End, nebo zachovat hoídnotu End a změnit měřítko?
+        /// </summary>
+        public AxisResizeContentMode? InitialResizeMode { get { return this._InitialResizeMode; } set { this._InitialResizeMode = value; } }
+        private AxisResizeContentMode? _InitialResizeMode;
+        /// <summary>
+        /// Výchozí zobrazovaná hodnota
+        /// </summary>
+        public TimeRange InitialValue { get { return this._InitialValue; } set { this._InitialValue = value; } }
+        private TimeRange _InitialValue;
+        /// <summary>
+        /// Možnosti uživatele změnit zobrazený rozsah anebo měřítko
+        /// </summary>
+        public virtual AxisInteractiveChangeMode? InteractiveChangeMode { get { return this._InteractiveChangeMode; } set { this._InteractiveChangeMode = value; } }
+        protected AxisInteractiveChangeMode? _InteractiveChangeMode;
+
         /// <summary>
         /// Hladina ticků, které se budou v grafu zobrazovat.
         /// None = žádné.
@@ -1641,6 +1818,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Výchozí hodnota = 1 pixel, nelze zadat zápornou hodnotu.
         /// </summary>
         public int BottomMarginPixel { get { return this._BottomMarginPixel; } set { this._BottomMarginPixel = (value < 0 ? 0 : value); } } private int _BottomMarginPixel = 1;
+
         /// <summary>
         /// Rozmezí výšky celého grafu, v pixelech.
         /// Výchozí hodnota je null, pak se použije rozmezí <see cref="Skin.Graph.DefaultTotalHeightMin"/> až <see cref="Skin.Graph.DefaultTotalHeightMax"/>
@@ -1674,7 +1852,7 @@ namespace Asol.Tools.WorkScheduler.Components
         private float _LogarithmicGraphDrawOuterShadow;
     }
     #endregion
-    #region Interface ITimeInteractiveGraph, ITimeGraph, ITimeGraphItem, ITimeConvertor; enum TimeGraphAxisXMode
+    #region Interface ITimeInteractiveGraph, ITimeGraph, ITimeGraphItem; enum TimeGraphAxisXMode
     /// <summary>
     /// Deklarace grafu, který má časovou osu a je interaktivní
     /// </summary>
@@ -1796,80 +1974,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="drawMode">Režim kreslení (má význam pro akce Drag & Drop)</param>
         void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, DrawItemMode drawMode);
     }
-    /// <summary>
-    /// Interface, který umožní pracovat s časovou osou
-    /// </summary>
-    public interface ITimeConvertor
-    {
-        /// <summary>
-        /// Identita časového a vizuálního prostoru.
-        /// Časový prostor popisuje rozmezí času (Begin a End) s maximální přesností.
-        /// Vizuální prostor popisuje počet pixelů velikosti osy (pro osu Horizontal = Width), ale nikoli její pixel počátku (Left).
-        /// </summary>
-        string Identity { get; }
-        /// <summary>
-        /// Aktuálně zobrazený interval data a času
-        /// </summary>
-        TimeRange VisibleTime { get; }
-        /// <summary>
-        /// Obsahuje všechny aktuální ticky na časové ose.
-        /// </summary>
-        VisualTick[] Ticks { get; }
-        /// <summary>
-        /// Vrátí relativní pixel, na kterém se nachází daný čas.
-        /// </summary>
-        /// <param name="time">Čas, jehož pozici hledáme</param>
-        /// <returns></returns>
-        int GetPixel(DateTime? time);
-        /// <summary>
-        /// Vrátí pozici, na které se nachází daný časový úsek na aktuální časové ose.
-        /// </summary>
-        /// <param name="timeRange"></param>
-        /// <returns></returns>
-        Int32Range GetPixelRange(TimeRange timeRange);
-        /// <summary>
-        /// Vrátí relativní pixel, na kterém se nachází daný čas.
-        /// Vrací pixel pro jinou velikost prostoru, než jakou má aktuální TimeAxis, kdy cílová velikost je dána parametrem targetSize.
-        /// Jinými slovy: pokud na reálné časové ose máme zobrazeno rozmezí (numerický příklad): 40 - 80,
-        /// pak <see cref="GetProportionalPixel(DateTime?, int)"/> pro hodnotu time = 50 a targetSize = 100 vrátí hodnotu 25.
-        /// Proč? Protože: požadovaná hodnota 50 se nachází na pozici 0.25 časové osy (40 - 80), a odpovídající pozice v cílovém prostoru (100 pixelů) je 25.
-        /// </summary>
-        /// <param name="time">Čas, jehož pozici hledáme</param>
-        /// <param name="targetSize">Cílový prostor, do něhož máme promítnout viditelný prostor na ose</param>
-        /// <returns></returns>
-        int GetProportionalPixel(DateTime? time, int targetSize);
-        /// <summary>
-        /// Vrátí pozici, na které se nachází daný časový úsek v daném cílovém prostoru.
-        /// </summary>
-        /// <param name="timeRange"></param>
-        /// <returns></returns>
-        Int32Range GetProportionalPixelRange(TimeRange timeRange, int targetSize);
-        /// <summary>
-        /// Vrátí relativní pixel, na kterém se nachází daný čas.
-        /// Vrací pixel na logaritmické časové ose, kde střední část prostoru (z parametru "size") je proporcionální (její velikost je dána hodnotou "ratio"),
-        /// a okrajové části jsou logaritmické, takže do daného prostoru "size" se promítnou úplně všechny časy, jen v těch okrajových částech budou zahuštěné.
-        /// </summary>
-        /// <param name="time">Čas, jehož pozici hledáme</param>
-        /// <param name="targetSize">Cílový prostor, do něhož máme promítnout viditelný prostor na ose</param>
-        /// <param name="proportionalRatio">Relativní část prostoru "size", v němž je čas proporcionální (lineární). Povolené hodnoty jsou 0.4 až 0.9</param>
-        /// <returns></returns>
-        int GetLogarithmicPixel(DateTime? time, int targetSize, float proportionalRatio);
-        /// <summary>
-        /// Vrátí pozici, na které se nachází daný časový úsek v daném cílovém prostoru, v logaritmickém měřítku.
-        /// Vrací pixel na logaritmické časové ose, kde střední část prostoru (z parametru "size") je proporcionální (její velikost je dána hodnotou "ratio"),
-        /// a okrajové části jsou logaritmické, takže do daného prostoru "size" se promítnou úplně všechny časy, jen v těch okrajových částech budou zahuštěné.
-        /// </summary>
-        /// <param name="timeRange"></param>
-        /// <param name="targetSize">Cílový prostor, do něhož máme promítnout viditelný prostor na ose</param>
-        /// <param name="proportionalRatio">Relativní část prostoru "size", v němž je čas proporcionální (lineární). Povolené hodnoty jsou 0.4 až 0.9</param>
-        /// <returns></returns>
-        Int32Range GetLogarithmicPixelRange(TimeRange timeRange, int targetSize, float proportionalRatio);
-
-        /// <summary>
-        /// Event vyvolaný po každé změně hodnoty <see cref="VisibleTime"/>
-        /// </summary>
-        event GPropertyChangedHandler<TimeRange> VisibleTimeChanged;
-    }
+ 
     /// <summary>
     /// Režim přepočtu DateTime na osu X.
     /// </summary>
@@ -1949,84 +2054,140 @@ namespace Asol.Tools.WorkScheduler.Components
     /// </summary>
     public interface ITimeGraphDataSource
     {
-        void CreateText();
-        void CreateToolTip();
-        void ItemDoubleClick();
+        void CreateText(CreateTextArgs args);
+        void CreateToolTip(CreateToolTipArgs args);
+        void ItemRightClick(ItemActionArgs args);
+        void ItemDoubleClick(ItemActionArgs args);
+        void ItemLongClick(ItemActionArgs args);
+        void ItemChange(ItemChangeArgs args);
     }
-    public class 
-    #endregion
-
-    //    zrušit:
-    #region class TimeGraphItemDrawArgs : třída pro podporu vykreslování položek grafu
-    /// <summary>
-    /// TimeGraphItemDrawArgs : třída pro podporu vykreslování položek grafu.
-    /// Tato třída v sobě uchovává absolutní souřadnici grafu ve WinForm koordinátech, a standardní kreslící argument <see cref="GInteractiveDrawArgs"/>.
-    /// </summary>
-    public class TimeGraphItemDrawArgs : IDisposable
+    #region class CreateTextArgs : 
+    public class CreateTextArgs
     {
-        #region Constructor, private variables
-        /// <summary>
-        /// Konstruktor s předáním reference na control, který je parentem grafu.
-        /// </summary>
-        /// <param name="host"></param>
-        public TimeGraphItemDrawArgs(GInteractiveControl host)
-        {
-            this._Host = host;
-        }
-        /// <summary>
-        /// Připraví data do tohoto argumentu.
-        /// </summary>
-        /// <param name="drawArgs"></param>
-        /// <param name="graphBoundsAbsolute"></param>
-        /// <param name="timeConvertor"></param>
-        internal void Prepare(GInteractiveDrawArgs drawArgs, Rectangle graphBoundsAbsolute, ITimeConvertor timeConvertor)
-        {
-            this._DrawArgs = drawArgs;
-            this._GraphBoundsAbsolute = graphBoundsAbsolute;
-            this._TimeConvertor = timeConvertor;
-        }
-        private GInteractiveControl _Host;
-        private GInteractiveDrawArgs _DrawArgs;
-        private Rectangle _GraphBoundsAbsolute;
-        private ITimeConvertor _TimeConvertor;
-        void IDisposable.Dispose()
-        {
-            this._DrawSupportDispose();
-        }
-        #endregion
-        #region Public properties
-        /// <summary>
-        /// An Graphics object to draw on
-        /// </summary>
-        public Graphics Graphics { get { return this._DrawArgs.Graphics; } }
 
-        /// <summary>
-        /// Absolute bounds of Graph
-        /// </summary>
-        public Rectangle GraphBoundsAbsolute { get { return this._GraphBoundsAbsolute; } }
-        #endregion
-        #region Draw support
-        /// <summary>
-        /// Vrátí absolutní souřadnice v koordinátech Windows.Forms.Control z dodaných souřadnic Virtuálních.
-        /// Vrácené souřadnice mohou být mimo souřadnice grafu (pak budou oříznuty prostřednictvím Graphics.Clip).
-        /// </summary>
-        /// <param name="virtualBounds">Virtuální souřadnice prvku</param>
-        /// <param name="minimalWidth">Požadavek na minimální šířku prvku</param>
-        /// <returns></returns>
-        public Rectangle GetBoundsAbsolute(Rectangle virtualBounds, int minimalWidth)
-        {
-            int graphB = this._GraphBoundsAbsolute.Bottom - 1;
-            int graphX = this._GraphBoundsAbsolute.X;
-            Rectangle boundsAbsolute = new Rectangle(graphX + virtualBounds.X, graphB - virtualBounds.Y, virtualBounds.Width, virtualBounds.Height);
-            if (minimalWidth > 0 && boundsAbsolute.Width < minimalWidth)
-                boundsAbsolute.Width = minimalWidth;
-            return boundsAbsolute;
-        }
-        private void _DrawSupportDispose()
-        {
-        }
-        #endregion
     }
     #endregion
+    #region class CreateToolTipArgs : Argument obsahující data pro přípravu tooltipu pro určitý prvek
+    /// <summary>
+    /// CreateToolTipArgs : Argument obsahující data pro přípravu tooltipu pro určitý prvek
+    /// </summary>
+    public class CreateToolTipArgs : ItemInteractiveArgs
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="group"></param>
+        /// <param name="data"></param>
+        /// <param name="position"></param>
+        public CreateToolTipArgs(GInteractiveChangeStateArgs e, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position)
+            : base(e, group, data, position)
+        { }
+        /// <summary>
+        /// Data pro tooltip.
+        /// Tuto property lze setovat, nebo ji lze rovnou naplnit (je autoinicializační).
+        /// </summary>
+        public ToolTipData ToolTipData { get { return this.InteractiveArgs.ToolTipData; } set { this.InteractiveArgs.ToolTipData = value; } }
+    }
+    #endregion
+    #region class ItemActionArgs : Argument obsahující data prosté akce
+    /// <summary>
+    /// ItemActionArgs : Argument obsahující data prosté akce
+    /// </summary>
+    public class ItemActionArgs : ItemInteractiveArgs
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="group"></param>
+        /// <param name="data"></param>
+        /// <param name="position"></param>
+        public ItemActionArgs(GInteractiveChangeStateArgs e, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position)
+            : base(e, group, data, position)
+        { }
+        /// <summary>
+        /// Kontextové menu, které se má v místě kliknutí rozsvítit. Toto menu vytváří datový zdroj jako reakci na probíhající akci (typicky RightClick).
+        /// </summary>
+        public System.Windows.Forms.ToolStripDropDownMenu ContextMenu { get; set; }
+    }
+    #endregion
+    #region class ItemChangeArgs : Argument obsahující data akce se změnou prvku (přesun)
+    /// <summary>
+    /// ItemChangeArgs : Argument obsahující data akce se změnou prvku (přesun)
+    /// </summary>
+    public class ItemChangeArgs
+    {
 
+    }
+    #endregion
+    #region class ItemInteractiveArgs : Bázová třída pro všechny argumenty interaktivních metod, které jsou postaveny nad grupou prvků grafu a nad jedním prvek z této grupy
+    /// <summary>
+    /// ItemInteractiveArgs : Bázová třída pro všechny argumenty interaktivních metod, které jsou postaveny nad grupou prvků grafu a nad jedním prvek z této grupy
+    /// </summary>
+    public abstract class ItemInteractiveArgs : ItemArgs
+    {
+        public ItemInteractiveArgs(GInteractiveChangeStateArgs e, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position)
+            : base(group, data, position)
+        {
+            this.InteractiveArgs = e;
+        }
+        /// <summary>
+        /// Interaktivní argument
+        /// </summary>
+        protected GInteractiveChangeStateArgs InteractiveArgs { get; private set; }
+        /// <summary>
+        /// Typ interaktivní akce
+        /// </summary>
+        public GInteractiveChangeState ActionType { get { return this.InteractiveArgs.ChangeState; } }
+        /// <summary>
+        /// Absolutní pozice myši v okamžiku vzniku akce
+        /// </summary>
+        public Point? ActionPoint { get { return this.InteractiveArgs.MouseAbsolutePoint; } }
+        /// <summary>
+        /// Modifier keys v době vzniku akce (Ctrl, Shift, Alt)
+        /// </summary>
+        public System.Windows.Forms.Keys ModifierKeys { get { return this.InteractiveArgs.ModifierKeys; } }
+    }
+    #endregion
+    #region class ItemArgs : Bázová třída pro všechny argumenty, které jsou postaveny nad grupou prvků grafu a nad jedním prvek z této grupy
+    /// <summary>
+    /// ItemArgs : Bázová třída pro všechny argumenty, které jsou postaveny nad grupou prvků grafu a nad jedním prvek z této grupy
+    /// </summary>
+    public abstract class ItemArgs
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="group"></param>
+        /// <param name="data"></param>
+        /// <param name="position"></param>
+        public ItemArgs(GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position)
+        {
+            this.Group = group;
+            this.CurrentItem = (position == GGraphControlPosition.Item ? data : null);
+            this.Position = position;
+        }
+        /// <summary>
+        /// Grupa položek
+        /// </summary>
+        protected GTimeGraphGroup Group { get; set; }
+        /// <summary>
+        /// Přímo ten prvek, jehož se týká akce (na který bylo kliknuto).
+        /// Může být null, pokud se akce týká skupiny prvků = bylo kliknuto na "spojovací linii mezi prvky".
+        /// Pak je třeba vyhodnotit prvky v <see cref="GroupedItems"/>.
+        /// </summary>
+        public ITimeGraphItem CurrentItem { get; protected set; }
+        /// <summary>
+        /// Skupina prvků, jejíhož člena se akce týká, nebo jejíž spojovací linie se akce týká.
+        /// Nikdy není null, vždy obsahuje alespoň jeden prvek.
+        /// </summary>
+        public ITimeGraphItem[] GroupedItems { get { return this.Group.Items; } }
+        /// <summary>
+        /// Typ prvku, kterého se akce týká (Item / Group).
+        /// </summary>
+        public GGraphControlPosition Position { get; protected set; }
+    }
+    #endregion
+    #endregion
 }

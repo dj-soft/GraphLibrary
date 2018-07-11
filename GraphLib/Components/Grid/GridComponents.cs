@@ -486,16 +486,39 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// Inicializace časové osy - nic neprovede, protože TimeAxis se vytváří On-Demand podle nastavení OwnerColumnu, v TimeAxis.get()
         /// </summary>
         protected void _TimeAxisInit() { /* TimeAxis je On-Demand, netřeba řešit inicializaci */ }
+        /// <summary>
+        /// Zajišťuje on-demand inicializaci objektu <see cref="_TimeAxis"/>
+        /// </summary>
         private void _TimeAxisCheck()
         {
             if (this._TimeAxis != null) return;
 
             this._TimeAxis = new GTimeAxis();
-            this._TimeAxis.ResizeContentMode = AxisResizeContentMode.ChangeScale;
-
+            Components.Graph.TimeGraphProperties graphParameters = this.OwnerColumn.GraphParameters;
+            if (graphParameters != null)
+            {
+                this._TimeAxis.ResizeContentMode = (graphParameters.InitialResizeMode.HasValue ? graphParameters.InitialResizeMode.Value : AxisResizeContentMode.ChangeValueEnd);
+                this._TimeAxis.Value = (graphParameters.InitialValue != null ? graphParameters.InitialValue : _TimeAxisInitialValue);
+                this._TimeAxis.InteractiveChangeMode = (graphParameters.InteractiveChangeMode.HasValue ? graphParameters.InteractiveChangeMode.Value : AxisInteractiveChangeMode.All);
+            }
             ((IInteractiveItem)this._TimeAxis).Parent = this;
             this._TimeAxis.ValueChanging += _TimeAxis_ValueChange;
             this._TimeAxis.ValueChanged += _TimeAxis_ValueChange;
+        }
+        /// <summary>
+        /// Výchozí hodnota pro zobrazený úsek na časové ose, pokud nebude specifikováno jinak (v <see cref="Components.Graph.TimeGraphProperties.InitialValue"/>)
+        /// </summary>
+        private static TimeRange _TimeAxisInitialValue
+        {
+            get
+            {
+                DateTime now = DateTime.Now;
+                int dow = (now.DayOfWeek == DayOfWeek.Sunday ? 6 : ((int)now.DayOfWeek) - 1);
+                DateTime begin = new DateTime(now.Year, now.Month, now.Day).AddDays(-dow);
+                DateTime end = begin.AddDays(7d);
+                double add = 6d;
+                return new TimeRange(begin.AddHours(-add), end.AddHours(add));
+            }
         }
         /// <summary>
         /// Eventhandler události při/po změně ValueChanging nebo ValueChanged.
@@ -562,6 +585,15 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         private List<IInteractiveItem> _ChildList;
         #endregion
         #region Interaktivita
+        /// <summary>
+        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = WheelUp i WhellDown.
+        /// ColumnHeader tuto událost osobně neřeší, ale oznámí že ji nebude řešit ani parent (nastaví <see cref="GInteractiveChangeStateArgs.ActionIsSolved"/> = true).
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void AfterStateChangedWheel(GInteractiveChangeStateArgs e)
+        {
+            e.ActionIsSolved = true;
+        }
         /// <summary>
         /// Metoda je volána v události MouseEnter, a jejím úkolem je přpravit data pro ToolTip.
         /// Zobrazení ToolTipu zajišťuje jádro.
@@ -1223,7 +1255,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             switch (this.OwnerCell.ValueType)
             {
                 case TableValueType.ITimeInteractiveGraph:
-                    (this.OwnerCell.Value as ITimeInteractiveGraph).Bounds = this.ChildBounds;
+                    (this.OwnerCell.Value as Components.Graph.ITimeInteractiveGraph).Bounds = this.ChildBounds;
                     break;
             }
         }
@@ -1441,7 +1473,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <returns></returns>
         protected IInteractiveItem[] GetChildsITimeInteractiveGraph()
         {
-            ITimeInteractiveGraph graph = this.OwnerCell.Value as ITimeInteractiveGraph;
+            Components.Graph.ITimeInteractiveGraph graph = this.OwnerCell.Value as Components.Graph.ITimeInteractiveGraph;
             if (graph.TimeConvertor == null)
                 graph.TimeConvertor = this.OwnerGTable.GetTimeConvertor(this.OwnerCell);
             if (graph.Parent == null)

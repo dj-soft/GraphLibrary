@@ -7,6 +7,8 @@ using System.Drawing;
 using System.ComponentModel;
 using System.Drawing.Drawing2D;
 
+using Asol.Tools.WorkScheduler.Data;
+
 namespace Asol.Tools.WorkScheduler.Components
 {
     #region class ToolTipItem : řídící objekt pro zobrazení ToolTipu na základě dat v ToolTipData
@@ -114,6 +116,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Info Text to ToolTip
         /// </summary>
         protected string InfoText { get { return (this.DataIsValid ? this._Data.InfoText : null); } }
+        /// <summary>
+        /// Pokud to textu <see cref="InfoText"/> bude vložen text obsahující znaky TAB a CR, 
+        /// pak nastavením <see cref="InfoUseTabs"/> na true bude text zobrazen jako tabulka.
+        /// </summary>
+        protected bool InfoUseTabs { get { return (this.DataIsValid ? this._Data.InfoUseTabs : false); } }
         /// <summary>
         /// Icon before Info Text to ToolTip
         /// </summary>
@@ -600,6 +607,13 @@ namespace Asol.Tools.WorkScheduler.Components
 
             }
         }
+        protected void DrawInfoText(Graphics graphics)
+        {
+            if (!this.InfoUseTabs)
+                graphics.DrawString(this.InfoText, this.InfoFont.Font, Skin.Brush(this.InfoFontColor), this._InfoBounds.Value);
+            else
+                this.DrawInfoTextTabs(graphics, this.InfoFont, this.InfoFontColor, this._InfoBounds.Value);
+        }
         #endregion
         #region TimerDraw
         /// <summary>
@@ -646,7 +660,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 }
                 if (this.InfoExist)
                 {
-                    graphics.DrawString(this.InfoText, this.InfoFont.Font, Skin.Brush(this.InfoFontColor), this._InfoBounds.Value);
+                    this.DrawInfoText(graphics);
                 }
                 if (this.ImageExist)
                 {
@@ -695,7 +709,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 }
                 if (this.InfoExist)
                 {
-                    graphics.DrawString(this.InfoText, this.InfoFont.Font, Skin.Brush(this.InfoFontColor), this._InfoBounds.Value);
+                    this.DrawInfoText(graphics);
                 }
                 if (this.ImageExist)
                 {
@@ -772,8 +786,8 @@ namespace Asol.Tools.WorkScheduler.Components
         protected void CalculateSize(Graphics graphics)
         {
             SizeF maxSize = this.ToolTipMaxSize;
-            Size titleSize = _CalculateOneTextSize(graphics, this.TitleText, this.TitleFont, maxSize, 0.15f);
-            Size textSize = _CalculateOneTextSize(graphics, this.InfoText, this.InfoFont, maxSize, 0.85f);
+            Size titleSize = _CalculateLineSize(graphics, this.TitleText, this.TitleFont, maxSize, 0.15f);
+            Size textSize = _CalculateInfoSize(graphics, this.InfoText, this.InfoUseTabs, this.InfoFont, maxSize, 0.85f);
             Size iconSize = _CalculateIconSize(this.Icon, IconMaxSize);
             Size imageSize = _CalculateIconSize(this.Image, ImageMaxSize);
             int titleWidth = (titleSize.Height > 0 ? titleSize.Width + 20 : 0);
@@ -806,12 +820,39 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="text"></param>
         /// <param name="font"></param>
         /// <returns></returns>
-        protected Size _CalculateOneTextSize(Graphics graphics, string text, FontInfo font, SizeF maxSize, float maxHeight)
+        protected Size _CalculateLineSize(Graphics graphics, string text, FontInfo font, SizeF maxSize, float maxHeight)
         {
             if (String.IsNullOrEmpty(text) || font == null) return Size.Empty;
             SizeF area = maxSize.Multiply(1f, maxHeight);
+            return _CalculateLineSize(graphics, text, font, area);
+        }
+        /// <summary>
+        /// Returns Size (Ceiling) of specified text with font on current Graphics.
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="text"></param>
+        /// <param name="font"></param>
+        /// <returns></returns>
+        protected Size _CalculateLineSize(Graphics graphics, string text, FontInfo font, SizeF area)
+        {
+            if (String.IsNullOrEmpty(text) || font == null) return Size.Empty;
             SizeF size = graphics.MeasureString(text, font.Font, area);
             return Size.Ceiling(size);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="text"></param>
+        /// <param name="font"></param>
+        /// <param name="maxSize"></param>
+        /// <param name="maxHeight"></param>
+        /// <returns></returns>
+        protected Size _CalculateInfoSize(Graphics graphics, string text, bool useTabs, FontInfo font, SizeF maxSize, float maxHeight)
+        {
+            return (useTabs ?
+                _CalculateTableSize(graphics, text, font, maxSize, maxHeight) :
+                _CalculateLineSize(graphics, text, font, maxSize, maxHeight));
         }
         /// <summary>
         /// Calculate size for icon, with maxSize
@@ -857,6 +898,159 @@ namespace Asol.Tools.WorkScheduler.Components
         protected static int GetSpace(int size1, int size2, int space)
         {
             return (size1 > 0 && size2 > 0 ? space : 0);
+        }
+        #endregion
+        #region Text ve formě tabulky (když InfoText obsahuje Tab a Cr, a InfoUseTabs je true)
+        /// <summary>
+        /// Metoda vypočítá velikost textové tabulky a současně uloží jednotlivé buňky tabulky do <see cref="InfoTextTable"/>.
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="text"></param>
+        /// <param name="font"></param>
+        /// <param name="maxSize"></param>
+        /// <param name="maxHeight"></param>
+        /// <returns></returns>
+        protected Size _CalculateTableSize(Graphics graphics, string text, FontInfo font, SizeF maxSize, float maxHeight)
+        {
+            SizeF maxArea = maxSize.Multiply(1f, maxHeight);
+
+            // Rozdělím text do CSV tabulky, a každý prvek změřím a uložím do pole array:
+            var textItems = text.ToTableCsv();
+            List<List<TextCell>> cellArray = new List<List<TextCell>>();
+            List<int> columnWidths = new List<int>();
+            foreach (string[] textRow in textItems)
+            {
+                List<TextCell> cellRow = new List<TextCell>();
+                int columnIndex = 0;
+                foreach (string textCell in textRow)
+                {
+                    Size size = _CalculateLineSize(graphics, textCell, font, maxArea);
+                    TextCell cellCell = new TextCell(textCell, size);
+                    cellRow.Add(cellCell);
+
+                    // Nastřádávám si Max(Width + 9) u každého sloupce  (9 = 2 × 3 pixely [okraje buňky] + 3 pixely [rezerva]):
+                    int width = size.Width + 9;
+                    if (columnWidths.Count <= columnIndex)
+                        columnWidths.Add(width);
+                    else if (columnWidths[columnIndex] < width)
+                        columnWidths[columnIndex] = width;
+                    columnIndex++;
+                }
+
+                // Uložíme pouze řádky, které obsahují alespoň jednu neprázdnou buňku:
+                if (cellRow.Count(c => !c.IsEmpty) > 0)
+                    cellArray.Add(cellRow);
+            }
+
+            // Nyní projdu prvky cellArray (pole má charakter tabulky), projdu jej společně s max šířkou sloupců (columnWidths) určím pozici pro každou buňku, a buňku vložm do resultu:
+            List<TextCell> cellList = new List<TextCell>();
+            int left = 0;
+            int top = 0;
+            int right = 0;
+            int bottom = 0;
+            foreach (List<TextCell> cellRow in cellArray)
+            {
+                int rowHeight = cellRow.Where(c => !c.IsEmpty).Max(c => c.TextSize.Height);      // Max(Výška) z buněk, které nejsou IsEmpty
+                if (rowHeight == 0) continue;
+                top = bottom;
+                left = 0;
+                int columnIndex = 0;
+                foreach (TextCell cellCell in cellRow)
+                {
+                    int columnWidth = columnWidths[columnIndex];
+                    if (!cellCell.IsEmpty)
+                    {
+                        cellCell.Bounds = new Rectangle(left + 3, top, columnWidth - 6, rowHeight);
+                        cellList.Add(cellCell);
+                    }
+                    left += columnWidth;
+                    columnIndex++;
+                }
+                if (right < left) right = left;
+                bottom = top + rowHeight;
+            }
+            this.InfoTextTable = cellList;
+
+            Size maximumSize = Size.Ceiling(maxArea);
+            Size contentSize = new Size(right, bottom);
+            if (contentSize.Width > maximumSize.Width) contentSize.Width = maximumSize.Width;
+            if (contentSize.Height > maximumSize.Height) contentSize.Height = maximumSize.Height;
+
+            return contentSize;
+        }
+        /// <summary>
+        /// Metoda vykreslí jednotlivé prvky pole textů <see cref="InfoTextTable"/>
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="font"></param>
+        /// <param name="color"></param>
+        /// <param name="bounds"></param>
+        protected void DrawInfoTextTabs(Graphics graphics, FontInfo font, Color color, Rectangle bounds)
+        {
+            if (this.InfoTextTable == null)
+            {   // Nouzová cesta:
+                GPainter.DrawString(graphics, bounds, this.InfoText, color, font, ContentAlignment.TopLeft);
+            }
+            else
+            {
+                foreach (TextCell cellCell in this.InfoTextTable)
+                    cellCell.Draw(graphics, font, color, bounds);
+            }
+        }
+        /// <summary>
+        /// Pole buněk textové tabulky.
+        /// Je naplněno tehdy, když vstupní text <see cref="InfoText"/> je zadán ve formě CSV, 
+        /// a je potvrzeno <see cref="InfoUseTabs"/> = true že se má text zobrazovat ve formě tabulky.
+        /// </summary>
+        protected List<TextCell> InfoTextTable { get; set; }
+        /// <summary>
+        /// Třída pro uložení jedné buňky textu
+        /// </summary>
+        protected class TextCell
+        {
+            public TextCell(string text, Size size)
+            {
+                this.Text = text;
+                this.TextSize = size;
+            }
+            /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns></returns>
+            public override string ToString()
+            {
+                return (IsEmpty ? "{Empty}" : this.Text + "; Bounds: " + this.Bounds.ToString());
+            }
+            /// <summary>
+            /// Obsahuje true, pokud <see cref="Text"/> je prázdný
+            /// </summary>
+            public bool IsEmpty { get { return String.IsNullOrEmpty(this.Text); } }
+            /// <summary>
+            /// Text v této buňce
+            /// </summary>
+            public string Text { get; protected set; }
+            /// <summary>
+            /// Vypočtená velikost textu
+            /// </summary>
+            public Size TextSize { get; protected set; }
+            /// <summary>
+            /// Souřadnice textu v tabulce, relativně k jejímu počátku
+            /// </summary>
+            public Rectangle Bounds { get; set; }
+            /// <summary>
+            /// Metoda vykreslí jednotlivé prvky pole textů <see cref="InfoTextTable"/>
+            /// </summary>
+            /// <param name="graphics"></param>
+            /// <param name="font"></param>
+            /// <param name="color"></param>
+            /// <param name="bounds"></param>
+            public void Draw(Graphics graphics, FontInfo font, Color color, Rectangle bounds)
+            {
+                if (this.IsEmpty) return;
+
+                Rectangle absoluteBounds = this.Bounds.Add(bounds.Location);
+                GPainter.DrawString(graphics, absoluteBounds, this.Text, color, font, ContentAlignment.MiddleLeft);
+            }
         }
         #endregion
         #region Paths for Title, Text, Total - for relative bounds (Location = 0, 0)
@@ -1273,6 +1467,7 @@ namespace Asol.Tools.WorkScheduler.Components
         System.Drawing.Imaging.ColorMatrix _ColorMatrix;
 
         #endregion
+        #region Statické konstanty
         /// <summary>
         /// Returns a Minimal Size for ToolTip, as constant (Width = 50px, Height = 17px)
         /// </summary>
@@ -1319,8 +1514,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Margin between ToolTip and ClientArea of Owner (control)
         /// </summary>
         protected static Size OuterMargin { get { return new Size(6, 6); } }
-        protected ToolTipPosition _Position;
-        protected enum ToolTipPosition { None, Above, Under }
+        #endregion
         #region Cache for calculated and prepared data
         /// <summary>
         /// Reset all private data non-dependent on position of tooltip (text sizes, fonts, pen brushes),
@@ -1390,6 +1584,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Info Text to ToolTip
         /// </summary>
         public string InfoText { get { return this._InfoText; } set { this._InfoText = value; } } private string _InfoText;
+        /// <summary>
+        /// Pokud to textu <see cref="InfoText"/> bude vložen text obsahující znaky TAB a CR, 
+        /// pak nastavením <see cref="InfoUseTabs"/> na true bude text zobrazen jako tabulka.
+        /// </summary>
+        public bool InfoUseTabs { get { return this._InfoUseTabs; } set { this._InfoUseTabs = value; } } private bool _InfoUseTabs;
         /// <summary>
         /// Icon before Info Text to ToolTip
         /// </summary>

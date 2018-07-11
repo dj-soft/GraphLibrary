@@ -350,6 +350,15 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         protected AxisResizeContentMode _ResizeContentMode = AxisResizeContentMode.ChangeValueEnd;
         /// <summary>
+        /// Možnosti uživatele změnit zobrazený rozsah anebo měřítko
+        /// </summary>
+        public virtual AxisInteractiveChangeMode InteractiveChangeMode
+        {
+            get { return this._InteractiveChangeMode; }
+            set { this._InteractiveChangeMode = value; }
+        }
+        protected AxisInteractiveChangeMode _InteractiveChangeMode = AxisInteractiveChangeMode.All;
+        /// <summary>
         /// Contains true, when is valid all: Value and Scale and Visual
         /// </summary>
         public bool IsValid { get { return this.IsAxisValid; } }
@@ -1941,7 +1950,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         #endregion
         #endregion
-        #region Interactive property and methods
+        #region Interaktivita osy - data a metody
         /// <summary>
         /// Interactive state of axis
         /// </summary>
@@ -1955,6 +1964,10 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             e.ToolTipData = null;
             TValue valueOld = this.Value;
+            bool canShift = (this.InteractiveChangeMode.HasFlag(AxisInteractiveChangeMode.Shift));
+            bool canZoom = (this.InteractiveChangeMode.HasFlag(AxisInteractiveChangeMode.Zoom));
+            bool isCtrl = e.ModifierKeys == Keys.Control;
+            bool isSolved = false;
             switch (e.ChangeState)
             {
                 case GInteractiveChangeState.MouseOver:
@@ -1971,29 +1984,46 @@ namespace Asol.Tools.WorkScheduler.Components
                     break;
                 case GInteractiveChangeState.LeftDown:
                     this._AxisState = AxisInteractiveState.MouseOver;
-                    this.MouseOverRelativePoint = null;
-                    this.MouseDownRelativePoint = e.MouseRelativePoint;
-                    this.RepaintToLayers = GInteractiveDrawLayer.Standard;
-                    e.ToolTipData.InfoText = this._CreateToolTip(e.MouseRelativePoint);
-                    this.PrepareToolTip(e);
+                    this._InteractiveOriginalValue = this.GetValue(valueOld);
+                    if ((!isCtrl && canShift) || (isCtrl && canZoom))
+                    {   // Může být Shift nebo Zoom:
+                        this.MouseOverRelativePoint = null;
+                        this.MouseDownRelativePoint = e.MouseRelativePoint;
+                        this.RepaintToLayers = GInteractiveDrawLayer.Standard;
+                        e.ToolTipData.InfoText = this._CreateToolTip(e.MouseRelativePoint);
+                        this.PrepareToolTip(e);
+                    }
+                    else
+                    {   // Nemůže být Shift nebo Zoom:
+                        e.ToolTipData.InfoText = this._CreateToolTip(e.MouseRelativePoint);
+                        this.PrepareToolTip(e);
+                    }
                     break;
                 case GInteractiveChangeState.LeftDragBegin:
-                    if ((Control.ModifierKeys & Keys.Control) == 0)
+                    if (!isCtrl)
                     {   // Shift:
-                        this._AxisState = AxisInteractiveState.DragMove;
-                        this._InteractiveShiftIsActive = true;
-                        this._InteractiveShiftOrigin = valueOld.Begin;
-                        e.UserDragPoint = this.Bounds.Location;
-                        e.RequiredCursorType = SysCursorType.Hand;
+                        if (canShift)
+                        {
+                            this._AxisState = AxisInteractiveState.DragMove;
+                            this._InteractiveShiftIsActive = true;
+                            this._InteractiveShiftOrigin = valueOld.Begin;
+                            e.UserDragPoint = this.Bounds.Location;
+                            e.RequiredCursorType = SysCursorType.Hand;
+                            isSolved = true;
+                        }
                     }
                     else
                     {   // Zoom:
-                        this._AxisState = AxisInteractiveState.DragZoom;
-                        this._InteractiveZoomIsActive = true;
-                        this._InteractiveZoomOrigin = this.GetValue(valueOld);
-                        this._InteractiveZoomCenter = this.CalculateTickForPixelRelative(e.MouseRelativePoint.Value);
-                        e.UserDragPoint = this.Bounds.Location;
-                        e.RequiredCursorType = ((this.OrientationDraw == System.Windows.Forms.Orientation.Horizontal) ? SysCursorType.SizeWE : SysCursorType.SizeNS);
+                        if (canZoom)
+                        {
+                            this._AxisState = AxisInteractiveState.DragZoom;
+                            this._InteractiveZoomIsActive = true;
+                            this._InteractiveZoomOrigin = this.GetValue(valueOld);
+                            this._InteractiveZoomCenter = this.CalculateTickForPixelRelative(e.MouseRelativePoint.Value);
+                            e.UserDragPoint = this.Bounds.Location;
+                            e.RequiredCursorType = ((this.OrientationDraw == System.Windows.Forms.Orientation.Horizontal) ? SysCursorType.SizeWE : SysCursorType.SizeNS);
+                            isSolved = true;
+                        }
                     }
                     break;
                 case GInteractiveChangeState.LeftDragMove:
@@ -2022,6 +2052,7 @@ namespace Asol.Tools.WorkScheduler.Components
                             }
                             if (this.MouseDownRelativePoint.HasValue)
                                 this.MouseDownRelativePoint = e.MouseRelativePoint.Value;
+                            isSolved = true;
                         }
                         else if (this._InteractiveZoomIsActive)
                         {   // Zoom:
@@ -2049,12 +2080,26 @@ namespace Asol.Tools.WorkScheduler.Components
                                 this.RepaintToLayers = GInteractiveDrawLayer.Standard;
                                 addToolTip += "; SetValue()";
                             }
+                            isSolved = true;
                         }
-                        e.ToolTipData.InfoText = this._CreateToolTip(valueNew); //  + addToolTip;
+                        if (isSolved)
+                        {
+                            e.ToolTipData.InfoText = this._CreateToolTip(valueNew); //  + addToolTip;
+                            this.PrepareToolTip(e);
+                        }
+                    }
+                    if (!isSolved)
+                    {   // Neproběhl ani Shift, ani Drag => budu se chovat, jako by to bylo MouseOver:
+                        this.MouseOverRelativePoint = e.MouseRelativePoint;
+                        this.RepaintToLayers = GInteractiveDrawLayer.Standard;   // Can not draw only "Interactive" layer, because _MouseOverPoint is drawed under Ticks, thus after draw "only" MousePoint is necessary draw ticks too...
+                        e.ToolTipData.InfoText = this._CreateToolTip(e.MouseRelativePoint);
                         this.PrepareToolTip(e);
                     }
                     break;
                 case GInteractiveChangeState.LeftDragCancel:
+                    TValue originalValue = this._InteractiveOriginalValue;
+                    this.SetValue(originalValue, ProcessAction.RecalcScale | ProcessAction.RecalcInnerData | ProcessAction.PrepareInnerItems | ProcessAction.CallDraw | ProcessAction.CallChangedEvents | ProcessAction.CallSynchronizeSlave, EventSourceType.InteractiveChanging | EventSourceType.InteractiveChanged | EventSourceType.ValueChange);
+                    this.RepaintToLayers = GInteractiveDrawLayer.Standard;
                     break;
                 case GInteractiveChangeState.LeftDragDone:
                     this._AxisState = AxisInteractiveState.MouseOver;
@@ -2088,35 +2133,44 @@ namespace Asol.Tools.WorkScheduler.Components
                 case GInteractiveChangeState.WheelUp:
                 case GInteractiveChangeState.WheelDown:
                     TValue value = this.Value;
-                    if (Control.ModifierKeys == Keys.None || Control.ModifierKeys == Keys.Shift)
-                    {   // Wheel alone or with Shift = Shift value:
-                        this._AxisState = AxisInteractiveState.DragMove;
-                        double shiftRatio = (Control.ModifierKeys == Keys.Shift ? 0.333d : 0.07d) * (e.ChangeState == GInteractiveChangeState.WheelUp ? 1d : -1d);
-                        TValue shiftValue = this.CalculateValueByShift(valueOld, shiftRatio, AxisTickType.Pixel);
-                        shiftValue = this.AlignValue(shiftValue);
-                        if (shiftValue != this._Value)
+                    if (!isCtrl)
+                    {   // Myší kolečko: samotné nebo se Shiftem = posun hodnoty:
+                        if (canShift)
                         {
-                            this.SetValue(shiftValue, ProcessAction.PrepareInnerItems | ProcessAction.CallDraw | ProcessAction.CallChangedEvents | ProcessAction.CallSynchronizeSlave, EventSourceType.InteractiveChanged | EventSourceType.ValueChange);
-                            this.RepaintToLayers = GInteractiveDrawLayer.Standard;
-                            e.ToolTipData.InfoText = this._CreateToolTip(valueOld);
-                            this.PrepareToolTip(e);
+                            this._AxisState = AxisInteractiveState.DragMove;
+                            double shiftRatio = (Control.ModifierKeys == Keys.Shift ? 0.333d : 0.07d) * (e.ChangeState == GInteractiveChangeState.WheelUp ? 1d : -1d);
+                            TValue shiftValue = this.CalculateValueByShift(valueOld, shiftRatio, AxisTickType.Pixel);
+                            shiftValue = this.AlignValue(shiftValue);
+                            if (shiftValue != this._Value)
+                            {
+                                this.SetValue(shiftValue, ProcessAction.PrepareInnerItems | ProcessAction.CallDraw | ProcessAction.CallChangedEvents | ProcessAction.CallSynchronizeSlave, EventSourceType.InteractiveChanged | EventSourceType.ValueChange);
+                                this.RepaintToLayers = GInteractiveDrawLayer.Standard;
+                                e.ToolTipData.InfoText = this._CreateToolTip(valueOld);
+                                this.PrepareToolTip(e);
+                            }
+                            this._AxisState = AxisInteractiveState.MouseOver;
                         }
                     }
                     else if (Control.ModifierKeys == Keys.Control)
-                    {   // Ctrl + Wheel = Zoom under mouse:
-                        this._AxisState = AxisInteractiveState.DragZoom;
-                        double zoomRatio = ((e.ChangeState == GInteractiveChangeState.WheelUp) ? 1d / 1.15d : 1.15d);
-                        TTick zoomCenter = this.CalculateTickForPixelRelative(e.MouseRelativePoint.Value);
-                        TValue zoomValue = this.CalculateValueByRatio(valueOld, zoomCenter, zoomRatio);
-                        zoomValue = this.AlignValue(zoomValue);
-                        if (zoomValue != this._Value)
+                    {   // Myší kolečko s Ctrl = Zoom hodnoty se středem pod myší:
+                        if (canZoom)
                         {
-                            this.SetValue(zoomValue, ProcessAction.RecalcScale | ProcessAction.RecalcInnerData | ProcessAction.PrepareInnerItems | ProcessAction.CallDraw | ProcessAction.CallChangedEvents | ProcessAction.CallSynchronizeSlave, EventSourceType.InteractiveChanged | EventSourceType.ValueChange);
-                            this.RepaintToLayers = GInteractiveDrawLayer.Standard;
-                            e.ToolTipData.InfoText = this._CreateToolTip(valueOld);
-                            this.PrepareToolTip(e);
+                            this._AxisState = AxisInteractiveState.DragZoom;
+                            double zoomRatio = ((e.ChangeState == GInteractiveChangeState.WheelUp) ? 1d / 1.15d : 1.15d);
+                            TTick zoomCenter = this.CalculateTickForPixelRelative(e.MouseRelativePoint.Value);
+                            TValue zoomValue = this.CalculateValueByRatio(valueOld, zoomCenter, zoomRatio);
+                            zoomValue = this.AlignValue(zoomValue);
+                            if (zoomValue != this._Value)
+                            {
+                                this.SetValue(zoomValue, ProcessAction.RecalcScale | ProcessAction.RecalcInnerData | ProcessAction.PrepareInnerItems | ProcessAction.CallDraw | ProcessAction.CallChangedEvents | ProcessAction.CallSynchronizeSlave, EventSourceType.InteractiveChanged | EventSourceType.ValueChange);
+                                this.RepaintToLayers = GInteractiveDrawLayer.Standard;
+                                e.ToolTipData.InfoText = this._CreateToolTip(valueOld);
+                                this.PrepareToolTip(e);
+                            }
+                            this._AxisState = AxisInteractiveState.MouseOver;
                         }
                     }
+                    e.ActionIsSolved = true;
                     break;
 
                 case GInteractiveChangeState.MouseLeave:
@@ -2150,6 +2204,11 @@ namespace Asol.Tools.WorkScheduler.Components
             TValue rounded = this.GetValue(this.ArrangementCurrent.RoundValueToTick(value.Begin, AxisTickType.Pixel), this.ArrangementCurrent.RoundValueToTick(value.End, AxisTickType.Pixel));
             return rounded.ToString();
         }
+        /// <summary>
+        /// Hodnota na ose v okamžiku, kdy se stiskla myš, před zahájením změn.
+        /// Lze ji použít v DragCancel.
+        /// </summary>
+        private TValue _InteractiveOriginalValue;
         /// <summary>
         /// Value of Axis.Begin at time, where Shift started
         /// </summary>
@@ -3113,6 +3172,29 @@ namespace Asol.Tools.WorkScheduler.Components
         /// ale upraví se měřítko tak, že osa bude zobrazovat více detailů (z měřítka 1:1 bude 2:1).
         /// </summary>
         ChangeScale
+    }
+    /// <summary>
+    /// Režim, jak může uživatel interaktivně (myší) měnit hodnotu na ose.
+    /// </summary>
+    [Flags]
+    public enum AxisInteractiveChangeMode
+    {
+        /// <summary>
+        /// Uživatel interaktivně (myší) NESMÍ měnit hodnotu na ose ani posunutím, ani změnou měřítka.
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Uživatel interaktivně (myší) SMÍ měnit hodnotu na ose posunutím.
+        /// </summary>
+        Shift = 1,
+        /// <summary>
+        /// Uživatel interaktivně (myší) SMÍ měnit hodnotu na ose změnou měřítka.
+        /// </summary>
+        Zoom = 2,
+        /// <summary>
+        /// Uživatel interaktivně (myší) SMÍ měnit hodnotu na ose jak posunutím, tak i změnou měřítka.
+        /// </summary>
+        All = Shift | Zoom
     }
     #endregion
 }

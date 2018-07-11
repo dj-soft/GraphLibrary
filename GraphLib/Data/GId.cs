@@ -31,6 +31,10 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public int RecordId { get; private set; }
         /// <summary>
+        /// Název třídy záznamu
+        /// </summary>
+        public string ClassName { get { return Scheduler.GreenClasses.GetClassName(this.ClassId); } }
+        /// <summary>
         /// Privátní uložený hashcode
         /// </summary>
         private int HashCode { get; set; }
@@ -45,7 +49,6 @@ namespace Asol.Tools.WorkScheduler.Data
             string name = Scheduler.GreenClasses.GetClassName(this.ClassId);
             return "C:" + this.ClassId + "; R:" + this.RecordId + (name == null ? "" : "; \"" + name + "\"");
         }
-       
         /// <summary>
         /// GetHashCode()
         /// </summary>

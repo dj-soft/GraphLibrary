@@ -1655,10 +1655,10 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                     this.DrawIDrawItem(e, boundsAbsolute, row, cell, value as IDrawItem);
                     break;
                 case TableValueType.ITimeInteractiveGraph:
-                    this.DrawContentInteractiveTimeGraph(e, boundsAbsolute, row, cell, value as ITimeInteractiveGraph);
+                    this.DrawContentInteractiveTimeGraph(e, boundsAbsolute, row, cell, value as Components.Graph.ITimeInteractiveGraph);
                     break;
                 case TableValueType.ITimeGraph:
-                    this.DrawContentTimeGraph(e, boundsAbsolute, row, cell, value as ITimeGraph);
+                    this.DrawContentTimeGraph(e, boundsAbsolute, row, cell, value as Components.Graph.ITimeGraph);
                     break;
                 case TableValueType.Image:
                     this.DrawContentImage(e, boundsAbsolute, row, cell, value as Image);
@@ -1759,7 +1759,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="e"></param>
         /// <param name="boundsAbsolute"></param>
         /// <param name="graph"></param>
-        private void DrawContentInteractiveTimeGraph(GInteractiveDrawArgs e, Rectangle boundsAbsolute, Row row, Cell cell, ITimeInteractiveGraph graph)
+        private void DrawContentInteractiveTimeGraph(GInteractiveDrawArgs e, Rectangle boundsAbsolute, Row row, Cell cell, Components.Graph.ITimeInteractiveGraph graph)
         {
             this.DrawRowBackColor(e, boundsAbsolute, row, cell);     // Co s pozadím pod grafem?
 
@@ -1783,7 +1783,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="e"></param>
         /// <param name="boundsAbsolute"></param>
         /// <param name="graph"></param>
-        private void DrawContentTimeGraph(GInteractiveDrawArgs e, Rectangle boundsAbsolute, Row row, Cell cell, ITimeGraph graph)
+        private void DrawContentTimeGraph(GInteractiveDrawArgs e, Rectangle boundsAbsolute, Row row, Cell cell, Components.Graph.ITimeGraph graph)
         {
             this.DrawRowBackColor(e, boundsAbsolute, row, cell);     // Co s pozadím pod grafem?
 
