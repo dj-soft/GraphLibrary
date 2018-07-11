@@ -112,6 +112,12 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         {
             System.Windows.Forms.MessageBox.Show("Rád bych otevřel záznam " + recordGId.ToString() + ";\r\n ale jsem jen testovací formulář.");
         }
+        /// <summary>
+        /// Metoda, která zajistí provedení dané funkce
+        /// </summary>
+        /// <param name="args"></param>
+        void Scheduler.IAppHost.RunContextFunction(Scheduler. ItemActionArgs args);
+
         #endregion
     }
 }
