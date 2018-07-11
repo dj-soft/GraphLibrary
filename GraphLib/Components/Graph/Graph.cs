@@ -1674,7 +1674,10 @@ namespace Asol.Tools.WorkScheduler.Components
         private float _LogarithmicGraphDrawOuterShadow;
     }
     #endregion
-    #region Interface ITimeGraph, ITimeGraphItem, ITimeConvertor; enum TimeGraphAxisXMode
+    #region Interface ITimeInteractiveGraph, ITimeGraph, ITimeGraphItem, ITimeConvertor; enum TimeGraphAxisXMode
+    /// <summary>
+    /// Deklarace grafu, který má časovou osu a je interaktivní
+    /// </summary>
     public interface ITimeInteractiveGraph : IInteractiveItem
     {
         /// <summary>
@@ -1692,6 +1695,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         int UnitHeight { get; }
     }
+    /// <summary>
+    /// Deklarace grafu, který má časovou osu a není interaktivní
+    /// </summary>
     public interface ITimeGraph
     {
         /// <summary>
@@ -1937,7 +1943,18 @@ namespace Asol.Tools.WorkScheduler.Components
         Rectangle
     }
     #endregion
-
+    #region Interface ITimeGraphDataSource a příslušné třídy argumentů
+    /// <summary>
+    /// Deklarace zdroje dat pro graf
+    /// </summary>
+    public interface ITimeGraphDataSource
+    {
+        void CreateText();
+        void CreateToolTip();
+        void ItemDoubleClick();
+    }
+    public class 
+    #endregion
 
     //    zrušit:
     #region class TimeGraphItemDrawArgs : třída pro podporu vykreslování položek grafu
