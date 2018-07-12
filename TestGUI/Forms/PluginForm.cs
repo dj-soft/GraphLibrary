@@ -19,7 +19,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
     /// získání GUI controlu z WorkScheduler a jeho vložení do formuláře.
     /// Dále tento Form simuluje datovou základnu pro volání funkcí z WorkScheduler do Hosta.
     /// </summary>
-    public partial class PluginForm : Form, Scheduler.IAppHost
+    public partial class PluginForm : Form, IAppHost
     {
         #region Inicializace, tvorba GUI controlu z dodaných dat
         /// <summary>
@@ -50,7 +50,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             {
                 using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority3_BellowNormal, "PluginForm", "InitializeWorkScheduler", ""))
                 {
-                    this.MainData = new Scheduler.MainData(this as Scheduler.IAppHost);
+                    this.MainData = new Scheduler.MainData(this as IAppHost);
                     this.MainData.LoadData(dataPack);
                     this.MainControl = this.MainData.CreateGui();
                     this.Controls.Add(this.MainControl);
@@ -108,15 +108,18 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// Pouze převolá odpovídající metodu v <see cref="MainData"/>.
         /// </summary>
         /// <param name="recordGId"></param>
-        void Scheduler.IAppHost.RunOpenRecordForm(GId recordGId)
+        void IAppHost.RunOpenRecordForm(GId recordGId)
         {
             System.Windows.Forms.MessageBox.Show("Rád bych otevřel záznam " + recordGId.ToString() + ";\r\n ale jsem jen testovací formulář.");
         }
         /// <summary>
         /// Metoda, která zajistí provedení dané funkce
         /// </summary>
-        /// <param name="args"></param>
-        void Scheduler.IAppHost.RunContextFunction(Scheduler. ItemActionArgs args);
+        /// <param name="runArgs"></param>
+        void IAppHost.RunContextFunction(RunContextFunctionArgs runArgs)
+        {
+            System.Windows.Forms.MessageBox.Show("Rád bych provedl funkci " + runArgs.MenuItemText + ";\r\n ale jsem jen testovací formulář.");
+        }
 
         #endregion
     }
