@@ -4,13 +4,13 @@ using System.Linq;
 using System.Text;
 using System.Data;
 using System.Drawing;
+using System.Windows.Forms;
 
 using Asol.Tools.WorkScheduler.Data;
 using Asol.Tools.WorkScheduler.Application;
 using Asol.Tools.WorkScheduler.Services;
 using Asol.Tools.WorkScheduler.Components;
 using Asol.Tools.WorkScheduler.Components.Graph;
-using System.Windows.Forms;
 
 namespace Asol.Tools.WorkScheduler.Scheduler
 {
@@ -21,7 +21,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     public class MainData : IMainDataInternal
     {
         #region Konstrukce a proměnné
-        public MainData(Scheduler.IAppHost host)
+        public MainData(IAppHost host)
         {
             this._AppHost = host;
         }
@@ -32,7 +32,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Datový hostitel
         /// </summary>
-        private Scheduler.IAppHost _AppHost;
+        private IAppHost _AppHost;
         #endregion
         #region Načítání a analýza dodaných dat
         /// <summary>
@@ -422,20 +422,35 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         #region Kontextové menu
         protected ToolStripDropDownMenu CreateContextMenu(DataGraphItem graphItem, ItemActionArgs args)
         {
-            if (graphItem == null) return null;
-
             DataDeclaration dataDeclaration;
             // this.TryGetDataDeclaration()
             var fd = this.DeclarationDict.FirstOrDefault();
 
             ToolStripDropDownMenu menu = new ToolStripDropDownMenu();
+            menu.Text = "nabídka funkcí";
+            menu.DropShadowEnabled = true;
+            menu.RenderMode = ToolStripRenderMode.System;
+            menu.Tag = args;
 
-            ToolStripMenuItem menuItem = new ToolStripMenuItem("Změnit čas události", IconStandard.BulletPink16);
-            menuItem.Tag = args;
-            menu.Items.Add(menuItem);
-            menu.Items.Add("Přidej stav kapacit");
+            ToolStripLabel menuTitle = new ToolStripLabel("NABÍDKA FUNKCÍ");
+            // menuTitle.BackColor = Color.DarkBlue;
+            menu.Items.Add(menuTitle);
+
+            menu.Items.Add(new ToolStripSeparator());
+
+            ToolStripMenuItem menuItem = new ToolStripMenuItem("Změnit čas události", IconStandard.BulletBlue16);
+            menuItem.Tag = "Změna času";
+            if (graphItem != null)
+                menu.Items.Add(menuItem);
+
+            if (graphItem == null)
+                menu.Items.Add("Přidej stav kapacit");
+
             menu.Items.Add("Přidej další pracovní linku");
-            menu.Items.Add("Změnit čas směny");
+
+            if (graphItem != null)
+                menu.Items.Add("Změnit čas směny");
+
             menu.ItemClicked += ContextMenuItemClicked;
             return menu;
         }
@@ -443,14 +458,23 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private void ContextMenuItemClicked(object sender, ToolStripItemClickedEventArgs e)
         {
             ToolStripDropDownMenu menu = sender as ToolStripDropDownMenu;
-            if (menu != null) menu.Hide();
+            if (menu == null) return;
+            menu.Hide();
+            ItemActionArgs itemArgs = menu.Tag as ItemActionArgs;
 
-            ItemActionArgs args = e.ClickedItem.Tag as ItemActionArgs;
+            string funcArgs = e.ClickedItem.Tag as string;
 
+            RunContextFunctionArgs runArgs = new RunContextFunctionArgs()
+            {
+                GraphItemArgs = itemArgs,
+                MenuItemText = funcArgs
+            };
             if (this._HasHost)
-                this._AppHost.RunContextFunction(args);
+            {
+                this._AppHost.RunContextFunction(runArgs);
+            }
             else
-                System.Windows.Forms.MessageBox.Show("Rád bych provedl funkci " + e.ClickedItem.Text + ",\r\n ale není zadán datový hostitel.");
+                System.Windows.Forms.MessageBox.Show("Rád bych provedl funkci " + runArgs.MenuItemText + ",\r\n ale není zadán datový hostitel.");
         }
         #endregion
         #region Implementace IMainDataInternal
@@ -1147,6 +1171,15 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             args.ToolTipData.InfoUseTabs = true;
         }
         /// <summary>
+        /// Uživatel chce vidět kontextové menu na daném grafu
+        /// </summary>
+        /// <param name="args"></param>
+        /// <returns></returns>
+        protected ToolStripDropDownMenu GetContextMenuForGraph(ItemActionArgs args)
+        {
+            return this.IMainData.CreateContextMenu(null, args);
+        }
+        /// <summary>
         /// Uživatel chce vidět kontextové menu na daném prvku
         /// </summary>
         /// <param name="args"></param>
@@ -1182,6 +1215,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         }
         void ITimeGraphDataSource.CreateText(CreateTextArgs args) { }
         void ITimeGraphDataSource.CreateToolTip(CreateToolTipArgs args) { this.GraphItemPrepareToolTip(args); }
+        void ITimeGraphDataSource.GraphRightClick(ItemActionArgs args) { args.ContextMenu = this.GetContextMenuForGraph(args); }
         void ITimeGraphDataSource.ItemRightClick(ItemActionArgs args) { args.ContextMenu = this.GetContextMenuForItem(args); }
         void ITimeGraphDataSource.ItemDoubleClick(ItemActionArgs args) { this.GraphItemDoubleClick(args); }
         void ITimeGraphDataSource.ItemLongClick(ItemActionArgs args) { }
@@ -1544,24 +1578,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         public int? RowLineHeightMax { get; private set; }
 
         #endregion
-    }
-    #endregion
-    #region interface IAppHost : požadavky na objekt, který hraje roli hostitele Scheduleru.
-    /// <summary>
-    /// interface IAppHost : požadavky na objekt, který hraje roli hostitele Scheduleru.
-    /// </summary>
-    public interface IAppHost
-    {
-        /// <summary>
-        /// Metoda, která zajistí otevření formuláře daného záznamu
-        /// </summary>
-        /// <param name="recordGId">Identifikátor záznamu</param>
-        void RunOpenRecordForm(GId recordGId);
-        /// <summary>
-        /// Metoda, která zajistí provedení dané funkce
-        /// </summary>
-        /// <param name="args"></param>
-        void RunContextFunction(ItemActionArgs args);
     }
     #endregion
     #region enumy : DataTableType, DataTargetType, DataContentType

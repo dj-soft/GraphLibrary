@@ -974,6 +974,21 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         public ITimeGraphDataSource DataSource { get { return this._DataSource; } set { this._DataSource = value; } }
         #endregion
+        #region Interaktivita vlastního grafu (prostor bez prvků)
+        /// <summary>
+        /// Pravá myš na ploše grafu
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void AfterStateChangedRightClick(GInteractiveChangeStateArgs e)
+        {
+            if (!this.HasDataSource) return;
+
+            ItemActionArgs args = new ItemActionArgs(e, null, null, GGraphControlPosition.None);
+            this.DataSource.GraphRightClick(args);
+            if (args.ContextMenu != null)
+                this.GraphItemShowContextMenu(e, args.ContextMenu);
+        }
+        #endregion
         #region Draw : vykreslení grafu
         /// <summary>
         /// Systémové kreslení grafu
@@ -2056,6 +2071,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
     {
         void CreateText(CreateTextArgs args);
         void CreateToolTip(CreateToolTipArgs args);
+        void GraphRightClick(ItemActionArgs args);
         void ItemRightClick(ItemActionArgs args);
         void ItemDoubleClick(ItemActionArgs args);
         void ItemLongClick(ItemActionArgs args);
