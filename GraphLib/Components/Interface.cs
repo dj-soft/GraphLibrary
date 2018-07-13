@@ -75,6 +75,21 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         Boolean IsEnabled { get; }
         /// <summary>
+        /// Pokud je true, pak tento prvek může být vybrán = selectován (Click myší, nebo Ctrl+Click myší, nebo zarámováním).
+        /// Hodnota, zda je prvek vybrán je vložena do property <see cref="IsSelected"/>.
+        /// </summary>
+        Boolean IsSelectable { get; }
+        /// <summary>
+        /// Do této property je vkládáno true po výběru prvku, a false po zrušení výběru.
+        /// </summary>
+        Boolean IsSelected { get; set; }
+        /// <summary>
+        /// Pokud je true, pak tažení myší na tomto prvku nebude interpretováno jako Drag & Drop, ale jako SelectArea.
+        /// Tzn. zahájení akce (Mouse Down + Mouse Move) zahájí SelectArea akci (namísto Drag Drop), začne se vykreslovat SelectFrame (do Interactive vrstvy),
+        /// a začnou se vybírat controly spadající do výběru (které mají <see cref="IsSelectable"/> == true).
+        /// </summary>
+        Boolean IsSelectParent { get; }
+        /// <summary>
         /// Hold a mouse attention.
         /// When a item is drawed to Interactive layer (in MouseOver, MouseDrag and in other active states), this is: above other subitem, 
         /// then is advisable "hold mouse attention" for this item before other items.
@@ -223,13 +238,21 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public bool Enabled { get { return this.GetBitValue(BitEnabled); } set { this.SetBitValue(BitEnabled, value); } }
         /// <summary>
+        /// Lze selectovat?
+        /// </summary>
+        public virtual bool IsSelectable { get { return this.GetBitValue(BitSelectable); } set { this.SetBitValue(BitSelectable, value); } }
+        /// <summary>
+        /// Je aktuálně selectován?
+        /// </summary>
+        public virtual bool IsSelected { get { return this.GetBitValue(BitSelected); } set { this.SetBitValue(BitSelected, value); } }
+        /// <summary>
+        /// Může zahájit akci SelectFrame?
+        /// </summary>
+        public virtual bool IsSelectParent { get { return this.GetBitValue(BitSelectParent); } set { this.SetBitValue(BitSelectParent, value); } }
+        /// <summary>
         /// Hold mouse?
         /// </summary>
         public bool HoldMouse { get { return this.GetBitValue(BitHoldMouse); } set { this.SetBitValue(BitHoldMouse, value); } }
-        /// <summary>
-        /// Selected?
-        /// </summary>
-        public bool Selected { get { return this.GetBitValue(BitSelected); } set { this.SetBitValue(BitSelected, value); } }
         /// <summary>
         /// Suppressed events?
         /// </summary>
@@ -244,9 +267,11 @@ namespace Asol.Tools.WorkScheduler.Components
         public const UInt32 BitInteractive = 0x0001;
         public const UInt32 BitVisible = 0x0002;
         public const UInt32 BitEnabled = 0x0004;
-        public const UInt32 BitHoldMouse = 0x0008;
-        public const UInt32 BitSelected = 0x0010;
-        public const UInt32 BitSuppressEvents = 0x0040;
+        public const UInt32 BitSelectable = 0x0010;
+        public const UInt32 BitSelected = 0x0020;
+        public const UInt32 BitSelectParent = 0x0040;
+        public const UInt32 BitHoldMouse = 0x0100;
+        public const UInt32 BitSuppressEvents = 0x1000;
     }
     #endregion
     #region Delegates and EventArgs

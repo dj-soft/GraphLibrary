@@ -639,7 +639,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.DataGraphProperties = DataGraphProperties.CreateFrom(this, this.DataDeclaration.Data);
             this._TableRow = null;
             this._TableInfoList = new List<Table>();
-            this._IdDictInit();
+            this._GIdIndex = new Index<GId>(IndexScopeType.TKeyType);
+            this._GraphItemDict = new Dictionary<GId, DataGraphItem>();
         }
         /// <summary>
         /// Vlastník = instance třídy <see cref="Scheduler.MainData"/>
@@ -833,16 +834,17 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="graphColumn"></param>
         protected void AddTimeGraphToRow(Row row, Column graphColumn)
         {
+            GId rowGId = row.RecordGId;
             if (graphColumn != null)
             {
                 Cell graphCell = row[graphColumn];
                 if (graphCell.ValueType != TableValueType.ITimeInteractiveGraph)
-                    graphCell.Value = this.CreateGTimeGraph(true);
+                    graphCell.Value = this.CreateGTimeGraph(rowGId, true);
             }
             else
             {
                 if (row.BackgroundValueType != TableValueType.ITimeInteractiveGraph)
-                    row.BackgroundValue = this.CreateGTimeGraph(false);
+                    row.BackgroundValue = this.CreateGTimeGraph(rowGId, false);
             }
         }
         /// <summary>
@@ -860,12 +862,16 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         }
         /// <summary>
         /// Vytvoří a vrátí new instanci grafu (třída <see cref="GTimeGraph"/>), kompletně připravenou k práci, ale bez položek (ty se dodávají později).
+        /// Do instance grafu se vepíše její <see cref="GTimeGraph.GraphId"/> = index odpovídající danému GId řádku (parametr "rowGId").
         /// </summary>
+        /// <param name="rowGId"></param>
+        /// <param name="isFullInteractive"></param>
         /// <returns></returns>
-        protected GTimeGraph CreateGTimeGraph(bool isFullInteractive)
+        protected GTimeGraph CreateGTimeGraph(GId rowGId, bool isFullInteractive)
         {
             GTimeGraph graph = new GTimeGraph();
             graph.DataSource = this;
+            graph.GraphId = this.GetId(rowGId);
             return graph;
         }
         /// <summary>
@@ -977,6 +983,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         public IEnumerable<DataGraphItem> GraphItems { get { return this._GraphItemDict.Values; } }
         /// <summary>
+        /// Index pro obousměrnou konverzi Int32 - GId
+        /// </summary>
+        protected Index<GId> _GIdIndex;
+        /// <summary>
         /// Dictionary pro vyhledání prvku grafu podle jeho GId. Primární úložiště položek grafů.
         /// </summary>
         protected Dictionary<GId, DataGraphItem> _GraphItemDict;
@@ -1032,7 +1042,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         public List<Table> TableInfoList { get { return this._TableInfoList; } }
         protected List<Table> _TableInfoList;
         #endregion
-        #region Správa ID, GId a objektů grafů
+        #region Správa indexů GId a objektů grafů
         /// <summary>
         /// Metoda vrátí Int32 ID pro daný <see cref="GId"/>.
         /// Pro opakovaný požadavek na tentýž <see cref="GId"/> vrací shodnou hodnotu ID.
@@ -1044,13 +1054,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         protected int GetId(GId gId)
         {
             if (gId == null) return 0;
-            int id;
-            if (this._GIdIdDict.TryGetValue(gId, out id)) return id;
-
-            id = this._IdNext++;
-            this._GIdIdDict.Add(gId, id);
-            this._IdGIdDict.Add(id, gId);
-            return id;
+            return this._GIdIndex.GetIndex(gId);
         }
         /// <summary>
         /// Pro daný ID vrátí <see cref="GId"/>, ale pouze pokud byl přidělen v metodě <see cref="GetId(GId)"/>.
@@ -1061,7 +1065,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             if (id == 0) return null;
             GId gId;
-            if (!this._IdGIdDict.TryGetValue(id, out gId)) return null;
+            if (!this._GIdIndex.TryGetKey(id, out gId)) return null;
             return gId;
         }
         /// <summary>
@@ -1097,29 +1101,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (!this._GraphItemDict.TryGetValue(gId, out dataGraphItem)) return null;
             return dataGraphItem;
         }
-        /// <summary>
-        /// Inicializace objektů pro převody <see cref="GId"/> na Int32 atd
-        /// </summary>
-        private void _IdDictInit()
-        {
-            this._GIdIdDict = new Dictionary<GId, int>();
-            this._IdGIdDict = new Dictionary<int, GId>();
-            this._GraphItemDict = new Dictionary<GId, DataGraphItem>();
-            this._IdNext = 1;
-        }
-        /// <summary>
-        /// Dictionary pro převod <see cref="GId"/> na Int32
-        /// </summary>
-        private Dictionary<GId, int> _GIdIdDict;
-        /// <summary>
-        /// Dictionary pro převod Int32 na <see cref="GId"/>
-        /// </summary>
-        private Dictionary<int, GId> _IdGIdDict;
-        /// <summary>
-        /// ID pro následující nový prvek.
-        /// Výchozí je 1, protože ID s hodnotou 0 značí nepřidělené ID.
-        /// </summary>
-        private int _IdNext;
         #region Explicitní implementace IDataGraphTableInternal
         int IDataGraphTableInternal.GetId(GId gId) { return this.GetId(gId); }
         GId IDataGraphTableInternal.GetGId(int id) { return this.GetGId(id); }

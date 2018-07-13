@@ -120,12 +120,6 @@ namespace Asol.Tools.WorkScheduler.Components
             this.BackColor = Skin.Button.BackColor;
             this.ChildItemsInit();
         }
-        #region Public properties and events
-        /// <summary>
-        /// Is this item selected?
-        /// </summary>
-        public virtual bool IsSelected { get { return this.Is.Selected; } set { this.Is.Selected = value; } }
-        #endregion
         #region Dragging - Move and Resize
         /// <summary>
         /// Mode for drawing a ghost during Drag operation

@@ -726,6 +726,21 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public virtual bool IsEnabled { get { return this.Is.Enabled; } set { this.Is.Enabled = value; } }
         /// <summary>
+        /// Pokud je true, pak tento prvek může být vybrán = selectován (Click myší, nebo Ctrl+Click myší, nebo zarámováním).
+        /// Hodnota, zda je prvek vybrán je vložena do property <see cref="IsSelected"/>.
+        /// </summary>
+        public virtual bool IsSelectable { get { return this.Is.IsSelectable; } set { this.Is.IsSelectable = value; } }
+        /// <summary>
+        /// Do této property je vkládáno true po výběru prvku, a false po zrušení výběru.
+        /// </summary>
+        public virtual bool IsSelected { get { return this.Is.IsSelected; } set { this.Is.IsSelected = value; } }
+        /// <summary>
+        /// Pokud je true, pak tažení myší na tomto prvku nebude interpretováno jako Drag & Drop, ale jako SelectArea.
+        /// Tzn. zahájení akce (Mouse Down + Mouse Move) zahájí SelectArea akci (namísto Drag Drop), začne se vykreslovat SelectFrame (do Interactive vrstvy),
+        /// a začnou se vybírat controly spadající do výběru (které mají <see cref="IsSelectable"/> == true).
+        /// </summary>
+        public virtual bool IsSelectParent { get { return this.Is.IsSelectParent; } set { this.Is.IsSelectParent = value; } }
+        /// <summary>
         /// Is HoldMouse?
         /// </summary>
         public virtual bool IsHoldMouse { get { return this.Is.HoldMouse; } set { this.Is.HoldMouse = value; } }
@@ -742,6 +757,9 @@ namespace Asol.Tools.WorkScheduler.Components
         Boolean IInteractiveItem.IsInteractive { get { return this.IsInteractive; } }
         Boolean IInteractiveItem.IsVisible { get { return this.IsVisible; } set { this.IsVisible = value; } }
         Boolean IInteractiveItem.IsEnabled { get { return this.IsEnabled; } }
+        Boolean IInteractiveItem.IsSelectable { get { return this.IsSelectable; } }
+        Boolean IInteractiveItem.IsSelected { get { return this.IsSelected; } set { this.IsSelected = value; } }
+        Boolean IInteractiveItem.IsSelectParent { get { return this.IsSelectParent; } }
         Boolean IInteractiveItem.HoldMouse { get { return this.IsHoldMouse; } }
         ZOrder IInteractiveItem.ZOrder { get { return this.ZOrder; } }
         GInteractiveDrawLayer IInteractiveItem.StandardDrawToLayer { get { return this.StandardDrawToLayer; } }

@@ -351,7 +351,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         private void _OnMouseMove(MouseEventArgs e)
         {
-            using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "MouseMove", ""))
+            using (ITraceScope scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "MouseMove", ""))
             {
                 try
                 {
@@ -369,28 +369,9 @@ namespace Asol.Tools.WorkScheduler.Components
                     }
                     else
                     {   // Myš má zmáčknutý nějaký čudlík, a pohybuje se:
-                        MouseMoveDragState dragState = this._GetMouseMoveDragState(e.Location);
-                        if (dragState == MouseMoveDragState.Start)
-                        {   // Drag & Drop by rád začal => zjistíme, zda na aktuální pozici existuje prvek, který by bylo možno přetahovat:
-                            if (this._MouseCurrentItem.SearchForDraggableItem())
-                            {   // Našli jsme nějaký prvek, který je ochotný s sebou nechat vláčet (podporuje Drag & Drop):
-                                // Myš se právě nyní pohnula z "Silent zone" (oblast okolo místa, kde byla myš zmáčknuta) => Drag & Drop začíná:
-                                this._MouseDragBegin(e);
-                                this._MouseDragMove(e);
-                                scope.Result = "MouseDragBeginMove";
-                            }
-                            else
-                            {   // Neexistuje prvek vhodný pro Drag & Drop => nastavíme stav Cancel:
-                                dragState = MouseMoveDragState.None;
-                                this._CurrentMouseDragOffset = null;
-                                this._CurrentMouseDragCanceled = true;
-                            }
-                        }
-                        if (dragState == MouseMoveDragState.Drag)
-                        {   // Nyní probíhá rutinní Drag:
-                            this._MouseDragMove(e);
-                            scope.Result = "MouseDragMove";
-                        }
+                        this._OnMouseDrag(e, scope);
+
+                       
                     }
                 }
                 finally
@@ -399,6 +380,57 @@ namespace Asol.Tools.WorkScheduler.Components
                 }
             }
         }
+        /// <summary>
+        /// Myš je zmáčknutá a pohybuje se. Může to být Select, může to být Drag, může to být Nic...
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="scope"></param>
+        private void _OnMouseDrag(MouseEventArgs e, ITraceScope scope)
+        {
+            qqq;
+
+            MouseMoveDragState dragState = this._GetMouseMoveDragState(e.Location);
+            if (dragState == MouseMoveDragState.Start)
+            {   // Drag & Drop by rád začal => zjistíme, zda na aktuální pozici existuje prvek, který by bylo možno přetahovat:
+                if (this._MouseCurrentItem.SearchForDraggableItem())
+                {   // Našli jsme nějaký prvek, který je ochotný s sebou nechat vláčet (podporuje Drag & Drop):
+                    // Myš se právě nyní pohnula z "Silent zone" (oblast okolo místa, kde byla myš zmáčknuta) => Drag & Drop začíná:
+                    this._MouseDragBegin(e);
+                    this._MouseDragMove(e);
+                    scope.Result = "MouseDragBeginMove";
+                }
+                else
+                {   // Neexistuje prvek vhodný pro Drag & Drop => nastavíme stav Cancel:
+                    dragState = MouseMoveDragState.None;
+                    this._CurrentMouseDragOffset = null;
+                    this._CurrentMouseDragCanceled = true;
+                }
+            }
+            if (dragState == MouseMoveDragState.Drag)
+            {   // Nyní probíhá rutinní Drag:
+                this._MouseDragMove(e);
+                scope.Result = "MouseDragMove";
+            }
+
+
+        }
+        /// <summary>
+        /// Metoda určí, v jakém stavu je nyní proces Drag na základě aktuálního pohybu myši.
+        /// Reaguje na hodnoty: <see cref="_CurrentMouseDragCanceled"/>, <see cref="_MouseDragStartBounds"/> a na pozici myši v parametru mousePoint.
+        /// </summary>
+        /// <param name="mousePoint"></param>
+        /// <returns></returns>
+        protected MouseMoveDragState _GetMouseMoveDragState(Point mousePoint)
+        {
+            if (this._CurrentMouseDragCanceled) return MouseMoveDragState.None;                         // Proces Drag & Drop probíhal, ale byl stornován (klávesou Escape)
+            if (!this._MouseDragStartBounds.HasValue) return MouseMoveDragState.Drag;                   // Silent zone kolem bodu MouseDown už je zrušena, takže nyní probíhá Drag
+            if (this._MouseDragStartBounds.Value.Contains(mousePoint)) return MouseMoveDragState.Wait;  // Pozice myši je stále uvnitř Silent zone => čekáme na nějaký větší pohyb
+            return MouseMoveDragState.Start;
+        }
+        /// <summary>
+        /// Stavy procesu Drag na základě pohybu myši a stavu controlu
+        /// </summary>
+        protected enum MouseMoveDragState { None, Wait, Start, Drag }
         protected override void OnMouseDown(MouseEventArgs e)
         {
             this._OnMouseDown(e);
@@ -486,23 +518,6 @@ namespace Asol.Tools.WorkScheduler.Components
                 }
             }
         }
-        /// <summary>
-        /// Metoda určí, v jakém stavu je nyní proces Drag na základě aktuálního pohybu myši.
-        /// Reaguje na hodnoty: <see cref="_CurrentMouseDragCanceled"/>, <see cref="_MouseDragStartBounds"/> a na pozici myši v parametru mousePoint.
-        /// </summary>
-        /// <param name="mousePoint"></param>
-        /// <returns></returns>
-        protected MouseMoveDragState _GetMouseMoveDragState(Point mousePoint)
-        {
-            if (this._CurrentMouseDragCanceled) return MouseMoveDragState.None;                         // Proces Drag & Drop probíhal, ale byl stornován (klávesou Escape)
-            if (!this._MouseDragStartBounds.HasValue) return MouseMoveDragState.Drag;                   // Silent zone kolem bodu MouseDown už je zrušena, takže nyní probíhá Drag
-            if (this._MouseDragStartBounds.Value.Contains(mousePoint)) return MouseMoveDragState.Wait;  // Pozice myši je stále uvnitř Silent zone => čekáme na nějaký větší pohyb
-            return MouseMoveDragState.Start;
-        }
-        /// <summary>
-        /// Stavy procesu Drag na základě pohybu myši a stavu controlu
-        /// </summary>
-        protected enum MouseMoveDragState { None, Wait, Start, Drag }
         #endregion
         #region Řízení konkrétních aktivit myši, již rozčleněné s podporou Drag & Drop, volání základních interaktivních metod
         /// <summary>
