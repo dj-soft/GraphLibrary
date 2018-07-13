@@ -24,12 +24,6 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
          b) Pokud dojde ke změně výšky (this.Bounds.Height), detekuje to koordinát Y (CheckValidCoordinateY() na základě 
 
 
-
-
-
-
-
-
     */
 
 
@@ -57,6 +51,11 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Všechny prvky grafu (časové úseky)
         /// </summary>
         public EList<ITimeGraphItem> ItemList { get { return this._ItemList; } } private EList<ITimeGraphItem> _ItemList;
+        /// <summary>
+        /// ID tohoto grafu. Hodnotu nastavuje aplikační kód dle své potřeby, hodnota je vkládána do identifikátorů odesílaných do handlerů událostí v grafu.
+        /// Graf sám o sobě tuto hodnotu nepotřebuje.
+        /// </summary>
+        public int GraphId { get; set; }
         /// <summary>
         /// Eventhandler události: z <see cref="ItemList"/> byla odebrána položka
         /// </summary>

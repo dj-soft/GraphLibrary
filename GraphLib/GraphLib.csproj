@@ -88,6 +88,7 @@
     <Compile Include="Components\ToolBar.cs" />
     <Compile Include="Components\ToolTip.cs" />
     <Compile Include="Data\GId.cs" />
+    <Compile Include="Data\Index.cs" />
     <Compile Include="Data\Interface.cs" />
     <Compile Include="Data\TypeArray.cs" />
     <Compile Include="Localizable\Text.cs" />
