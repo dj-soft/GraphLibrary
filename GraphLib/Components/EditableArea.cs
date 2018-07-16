@@ -514,7 +514,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 case GInteractiveChangeState.MouseOver:
                     this.RepaintToLayers = GInteractiveDrawLayer.Standard;
                     break;
-                case GInteractiveChangeState.LeftDragBegin:
+                case GInteractiveChangeState.LeftDragMoveBegin:
                     if (childItem != null && childItem.CanDrag)
                     {
                         this.BoundsDragOrigin = this.Bounds;
@@ -525,7 +525,7 @@ namespace Asol.Tools.WorkScheduler.Components
                         e.UserDragPoint = this.Bounds.Location.Add(childItem.ActivePoint);
                     }
                     break;
-                case GInteractiveChangeState.LeftDragMove:
+                case GInteractiveChangeState.LeftDragMoveStep:
                     if (this.ActiveChild != null && this.ActiveChild.CanDrag && e.UserDragPoint.HasValue)
                     {
                         this.RepaintToLayers |= GInteractiveDrawLayer.Interactive;
@@ -537,7 +537,7 @@ namespace Asol.Tools.WorkScheduler.Components
                         this.CallBoundsChanged(oldBounds, newBounds, EventSourceType.InteractiveChanging | EventSourceType.BoundsChange);
                     }
                     break;
-                case GInteractiveChangeState.LeftDragCancel:
+                case GInteractiveChangeState.LeftDragMoveCancel:
 
                     if (this.BoundsDragOrigin.HasValue)
                     {
@@ -547,7 +547,7 @@ namespace Asol.Tools.WorkScheduler.Components
                         this.RepaintToLayers = GInteractiveDrawLayer.Standard;
                     }
                     break;
-                case GInteractiveChangeState.LeftDragDone:
+                case GInteractiveChangeState.LeftDragMoveDone:
                     if (this.ActiveChild != null && this.ActiveChild.CanDrag)
                     {
                         Rectangle newBounds = this.Bounds;
@@ -556,7 +556,7 @@ namespace Asol.Tools.WorkScheduler.Components
                         this.RepaintToLayers = GInteractiveDrawLayer.Standard;
                     }
                     break;
-                case GInteractiveChangeState.LeftDragEnd:
+                case GInteractiveChangeState.LeftDragMoveEnd:
                     this.BoundsDragOrigin = null;
                     if (childItem != null)
                         e.RequiredCursorType = childItem.OverCursorType;

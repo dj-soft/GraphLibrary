@@ -1999,7 +1999,7 @@ namespace Asol.Tools.WorkScheduler.Components
                         this.PrepareToolTip(e);
                     }
                     break;
-                case GInteractiveChangeState.LeftDragBegin:
+                case GInteractiveChangeState.LeftDragMoveBegin:
                     if (!isCtrl)
                     {   // Shift:
                         if (canShift)
@@ -2026,7 +2026,7 @@ namespace Asol.Tools.WorkScheduler.Components
                         }
                     }
                     break;
-                case GInteractiveChangeState.LeftDragMove:
+                case GInteractiveChangeState.LeftDragMoveStep:
                     if (e.UserDragPoint.HasValue)
                     {
                         Point shiftPixel = this.Bounds.Location.Sub(e.UserDragPoint.Value);                            // Distance of shift in number of pixels (as Point {X:Y}, in booth direction): positive value = left/up, negative value = right/down
@@ -2096,15 +2096,15 @@ namespace Asol.Tools.WorkScheduler.Components
                         this.PrepareToolTip(e);
                     }
                     break;
-                case GInteractiveChangeState.LeftDragCancel:
+                case GInteractiveChangeState.LeftDragMoveCancel:
                     TValue originalValue = this._InteractiveOriginalValue;
                     this.SetValue(originalValue, ProcessAction.RecalcScale | ProcessAction.RecalcInnerData | ProcessAction.PrepareInnerItems | ProcessAction.CallDraw | ProcessAction.CallChangedEvents | ProcessAction.CallSynchronizeSlave, EventSourceType.InteractiveChanging | EventSourceType.InteractiveChanged | EventSourceType.ValueChange);
                     this.RepaintToLayers = GInteractiveDrawLayer.Standard;
                     break;
-                case GInteractiveChangeState.LeftDragDone:
+                case GInteractiveChangeState.LeftDragMoveDone:
                     this._AxisState = AxisInteractiveState.MouseOver;
                     break;
-                case GInteractiveChangeState.LeftDragEnd:
+                case GInteractiveChangeState.LeftDragMoveEnd:
                     this._AxisState = AxisInteractiveState.MouseOver;
                     this._InteractiveShiftIsActive = false;
                     this._InteractiveZoomIsActive = false;

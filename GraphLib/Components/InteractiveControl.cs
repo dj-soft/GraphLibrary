@@ -151,12 +151,21 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         private void _OnKeyDown(KeyEventArgs e)
         {
-            if (this._MouseDraggedItem != null && e.KeyCode == Keys.Escape)
+            if (e.KeyCode == Keys.Escape && ((this._MouseDragState == MouseMoveDragState.DragMove && this._MouseDragMoveItem != null) || this._MouseDragState == MouseMoveDragState.DragFrame))
             {   // When we have Dragged Item, and Escape is pressed, then perform Cancel for current Drag operation:
                 using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "KeyDown_DragCancel", ""))
                 {
-                    this._MouseDragCancel();
-                    this._InteractiveDrawRun();
+                    switch (this._MouseDragState)
+                    {
+                        case MouseMoveDragState.DragMove:
+                            this._MouseDragMoveCancel();
+                            this._InteractiveDrawRun();
+                            break;
+                        case MouseMoveDragState.DragFrame:
+                            this._MouseDragFrameCancel();
+                            this._InteractiveDrawRun();
+                            break;
+                    }
                 }
             }
             else if (this._KeyboardCurrentItemCanKeyboard)
@@ -320,7 +329,7 @@ namespace Asol.Tools.WorkScheduler.Components
         private void _MouseEventsInit()
         {
             this._MouseCurrentItem = null;
-            this._MouseDraggedItem = null;
+            this._MouseDragMoveItem = null;
             this._DragStartSize = SystemInformation.DragSize;
         }
         #region Obsluha override metod (z WinForm.Control) pro myš
@@ -368,10 +377,8 @@ namespace Asol.Tools.WorkScheduler.Components
                         scope.Result = "MouseOver";
                     }
                     else
-                    {   // Myš má zmáčknutý nějaký čudlík, a pohybuje se:
+                    {   // Myš má zmáčknutý nějaký čudlík, a pohybuje se => tam je možností vícero:
                         this._OnMouseDrag(e, scope);
-
-                       
                     }
                 }
                 finally
@@ -387,32 +394,55 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="scope"></param>
         private void _OnMouseDrag(MouseEventArgs e, ITraceScope scope)
         {
-            qqq;
-
             MouseMoveDragState dragState = this._GetMouseMoveDragState(e.Location);
-            if (dragState == MouseMoveDragState.Start)
-            {   // Drag & Drop by rád začal => zjistíme, zda na aktuální pozici existuje prvek, který by bylo možno přetahovat:
-                if (this._MouseCurrentItem.SearchForDraggableItem())
-                {   // Našli jsme nějaký prvek, který je ochotný s sebou nechat vláčet (podporuje Drag & Drop):
-                    // Myš se právě nyní pohnula z "Silent zone" (oblast okolo místa, kde byla myš zmáčknuta) => Drag & Drop začíná:
-                    this._MouseDragBegin(e);
-                    this._MouseDragMove(e);
-                    scope.Result = "MouseDragBeginMove";
-                }
-                else
-                {   // Neexistuje prvek vhodný pro Drag & Drop => nastavíme stav Cancel:
-                    dragState = MouseMoveDragState.None;
-                    this._CurrentMouseDragOffset = null;
-                    this._CurrentMouseDragCanceled = true;
-                }
-            }
-            if (dragState == MouseMoveDragState.Drag)
-            {   // Nyní probíhá rutinní Drag:
-                this._MouseDragMove(e);
-                scope.Result = "MouseDragMove";
-            }
+            switch (dragState)
+            {
+                case MouseMoveDragState.Start:
+                    // Nyní začíná pohyb myši mimo výchozí prostor, musíme rozhodnout co to bude:
+                    this._MouseDragStartDetect(e, scope);
+                    break;
 
+                case MouseMoveDragState.DragMove:
+                    // Nyní probíhá rutinní Drag:
+                    this._MouseDragMoveStep(e);
+                    scope.Result = "MouseDragMoveStep";
+                    break;
 
+                case MouseMoveDragState.DragFrame:
+                    // Nyní probíhá rutinní Frame:
+                    this._MouseDragFrameStep(e);
+                    scope.Result = "MouseDragFrameStep";
+                    break;
+            }
+        }
+        /// <summary>
+        /// Myš je zmáčknutá a pohybuje se. Může to být Select, může to být Drag, může to být Nic...
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="scope"></param>
+        private void _MouseDragStartDetect(MouseEventArgs e, ITraceScope scope)
+        {
+            if (this._MouseCurrentItem.CanFrameSelect)
+            {   // Aktuální prvek podporuje Select pomocí Frame (tzn. má vlastnost <see cref="IInteractiveItem.IsSelectParent"/>)
+                this._MouseDragState = MouseMoveDragState.DragFrame;
+                this._MouseDragFrameBegin(e);
+                this._MouseDragFrameStep(e);
+                scope.Result = "MouseDragFrameBegin";
+            }
+            else if (this._MouseCurrentItem.SearchForDraggableItem())
+            {   // Našli jsme nějaký prvek, který je ochotný s sebou nechat vláčet (podporuje Drag & Drop):
+                // Myš se právě nyní pohnula z "Silent zone" (oblast okolo místa, kde byla myš zmáčknuta) => Drag & Drop začíná:
+                this._MouseDragState = MouseMoveDragState.DragMove;
+                this._MouseDragMoveBegin(e);
+                this._MouseDragMoveStep(e);
+                scope.Result = "MouseDragMoveBegin";
+            }
+            else
+            {   // Neexistuje prvek vhodný pro Drag & Drop => nastavíme stav Cancel:
+                this._MouseDragState = MouseMoveDragState.None;
+                this._MouseDragMoveItemOffset = null;
+                this._CurrentMouseDragCanceled = true;
+            }
         }
         /// <summary>
         /// Metoda určí, v jakém stavu je nyní proces Drag na základě aktuálního pohybu myši.
@@ -422,15 +452,49 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         protected MouseMoveDragState _GetMouseMoveDragState(Point mousePoint)
         {
-            if (this._CurrentMouseDragCanceled) return MouseMoveDragState.None;                         // Proces Drag & Drop probíhal, ale byl stornován (klávesou Escape)
-            if (!this._MouseDragStartBounds.HasValue) return MouseMoveDragState.Drag;                   // Silent zone kolem bodu MouseDown už je zrušena, takže nyní probíhá Drag
-            if (this._MouseDragStartBounds.Value.Contains(mousePoint)) return MouseMoveDragState.Wait;  // Pozice myši je stále uvnitř Silent zone => čekáme na nějaký větší pohyb
+            // Pokud byl dán Cancel, pak bez ohledu na další vracím None:
+            if (this._CurrentMouseDragCanceled) return MouseMoveDragState.None;          // Proces Drag & Drop probíhal, ale byl stornován (klávesou Escape)
+
+            // Pokud control již rozhodl o stavu, pak jej vrátíme bez dalšího zkoumání:
+            MouseMoveDragState state = this._MouseDragState;
+            if (state == MouseMoveDragState.DragMove || state == MouseMoveDragState.DragFrame) return state;
+
+            // Dosud nebylo o stavu rozhodnuto, detekujeme pozici myši vzhledem k výchozímu bodu:
+            Rectangle? startBounds = this._MouseDragStartBounds;
+            if (startBounds.HasValue && startBounds.Value.Contains(mousePoint))          // Pozice myši je stále uvnitř Silent zone => čekáme na nějaký větší pohyb
+                return MouseMoveDragState.Wait;
+
             return MouseMoveDragState.Start;
         }
         /// <summary>
         /// Stavy procesu Drag na základě pohybu myši a stavu controlu
         /// </summary>
-        protected enum MouseMoveDragState { None, Wait, Start, Drag }
+        protected enum MouseMoveDragState
+        {
+            /// <summary>
+            /// Aktuální situace nemá nic společného s MouseDrag, typicky: myš není zmáčknutá
+            /// </summary>
+            None,
+            /// <summary>
+            /// Myš je zmáčknutá, ale její souřadnice jsou uvnitř prostoru v němž se malé pohybi myši ignorují
+            /// </summary>
+            Wait,
+            /// <summary>
+            /// Myš je zmáčknutá, pohybuje se a právě nyní se dostala mimo prostor odpovídající hodnotě <see cref="Wait"/>.
+            /// Aplikace nyní musí určit, zda se jedná o akci <see cref="DragMove"/>, nebo 
+            /// </summary>
+            Start,
+            /// <summary>
+            /// Myš je zmáčknutá a pohybuje se, již je mimo startovní prostor,
+            /// a aplikace se rozhodla pro přetahování určitého objektu pomocí myši (DragMove : Drag & Drop).
+            /// </summary>
+            DragMove,
+            /// <summary>
+            /// Myš je zmáčknutá a pohybuje se, již je mimo startovní prostor,
+            /// a aplikace se rozhodla pro rámování části prostoru pomocí myši a následné selectování vhodných objektů.
+            /// </summary>
+            DragFrame
+        }
         protected override void OnMouseDown(MouseEventArgs e)
         {
             this._OnMouseDown(e);
@@ -465,8 +529,10 @@ namespace Asol.Tools.WorkScheduler.Components
                     this._InteractiveDrawInit(e);
                     if (this._CurrentMouseDragCanceled)
                         this._MouseDownReset();
-                    else if (this._CurrentMouseDragOffset.HasValue)
-                        this._MouseDragDone(e);
+                    else if (this._MouseDragState == MouseMoveDragState.DragMove)
+                        this._MouseDragMoveDone(e);
+                    else if (this._MouseDragState == MouseMoveDragState.DragFrame)
+                        this._MouseDragFrameDone(e);
                     else
                         this._MouseRaise(e);
                 }
@@ -519,7 +585,7 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         #endregion
-        #region Řízení konkrétních aktivit myši, již rozčleněné s podporou Drag & Drop, volání základních interaktivních metod
+        #region Řízení konkrétních aktivit myši, již rozčleněné; volání jednoduchých interaktivních metod (Over, Fell, Raise, Whell)
         /// <summary>
         /// Tato akce se volá výhradně když se myš pohybuje bez Drag & Drop = bez stisknutého tlačítka
         /// </summary>
@@ -550,7 +616,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this._MouseDownTime = DateTime.Now;
             this._MouseDownButtons = e.Button;
             this._MouseDragStartBounds = e.Location.CreateRectangleFromCenter(this._DragStartSize);
-            this._CurrentMouseDragOffset = null;
+            this._MouseDragMoveItemOffset = null;
             this._ItemMouseCallStateChangedEvent(this._MouseCurrentItem, GInteractiveChangeState.LeftDown, this._MouseCurrentRelativePoint, null);
         }
         private void _MouseRaise(MouseEventArgs e)
@@ -576,64 +642,6 @@ namespace Asol.Tools.WorkScheduler.Components
             }
             this._MouseDownReset();
         }
-        private void _MouseDragBegin(MouseEventArgs e)
-        {
-            // Relative position of mouse on MouseDown, not current position (after mouse moved out from _CurrentMouseDragStart)
-            this._MouseCurrentRelativePoint = _GetRelativePoint(this._MouseDownAbsolutePoint.Value, this._MouseCurrentItem);
-            if (this._MouseCurrentItem.CanDrag)
-            {
-                this._MouseCurrentItem.CurrentTime = DateTime.Now; 
-                this._MouseDraggedItem = this._MouseCurrentItem;
-                this._MouseDraggedItemOriginBounds = this._MouseCurrentItem.ActiveItem.Bounds;
-                Point? userDragPoint = null;
-                this._ItemMouseCallStateChangedEvent(this._MouseCurrentItem, GInteractiveChangeState.LeftDragBegin, this._MouseCurrentRelativePoint, null, ref userDragPoint);
-                if (userDragPoint.HasValue)
-                    this._UserDragPointOffset = userDragPoint.Value.Sub(this._MouseDownAbsolutePoint.Value);
-            }
-            this._CurrentMouseDragOffset = this._GetRelativePointToCurrentItem(this._MouseDownAbsolutePoint.Value);
-            this._MouseDragStartBounds = null;
-        }
-        private void _MouseDragMove(MouseEventArgs e)
-        {
-            if (this._MouseDraggedItem != null && this._MouseCurrentItem.CanDrag)
-            {
-                this._MouseCurrentItem.CurrentTime = DateTime.Now;
-                Point? userDragPoint = null;
-                if (this._UserDragPointOffset.HasValue)
-                    userDragPoint = e.Location.Add(this._UserDragPointOffset.Value);
-                this._MouseCurrentRelativePoint = _GetRelativePoint(e.Location, this._MouseCurrentItem);
-                Point shift = e.Location.Sub(this._MouseDownAbsolutePoint.Value);
-                Rectangle dragToBounds = this._MouseDraggedItemOriginBounds.Value.ShiftBy(shift);
-                this._ItemMouseCallStateChangedEvent(this._MouseCurrentItem, GInteractiveChangeState.LeftDragMove, this._MouseCurrentRelativePoint, dragToBounds, ref userDragPoint);
-            }
-        }
-        private void _MouseDragCancel()
-        {
-            if (this._MouseDraggedItem != null && this._MouseCurrentItem.CanDrag)
-            {
-                this._MouseCurrentItem.CurrentTime = DateTime.Now;
-                Point? userDragPoint = null;
-                this._ItemMouseCallStateChangedEvent(this._MouseCurrentItem, GInteractiveChangeState.LeftDragCancel, null, null, ref userDragPoint);
-                this._ItemMouseCallStateChangedEvent(this._MouseCurrentItem, GInteractiveChangeState.LeftDragEnd, null, null);
-                this._RepaintAllItems = true;
-                this._MouseDraggedItem = null;
-            }
-            this._CurrentMouseDragOffset = null;              // on primary handler _MouseUp() will be called _MouseRaise(), instead of _MouseDragDone()!  In _MouseDragDone() will be called _MouseDownReset().
-            this._CurrentMouseDragCanceled = true;
-        }
-        private void _MouseDragDone(MouseEventArgs e)
-        {
-            this._MouseCurrentRelativePoint = _GetRelativePoint(e.Location, this._MouseCurrentItem);
-            this._ItemMouseCallStateChangedEvent(this._MouseCurrentItem, GInteractiveChangeState.LeftUp, this._MouseCurrentRelativePoint, null);
-            if (this._MouseDraggedItem != null && this._MouseCurrentItem.CanDrag)
-            {
-                this._MouseCurrentItem.CurrentTime = DateTime.Now;
-                this._ItemMouseCallStateChangedEvent(this._MouseCurrentItem, GInteractiveChangeState.LeftDragDone, this._MouseCurrentRelativePoint, null);
-                this._ItemMouseCallStateChangedEvent(this._MouseCurrentItem, GInteractiveChangeState.LeftDragEnd, null, null);
-            }
-            this._MouseDraggedItem = null;
-            this._MouseDownReset();
-        }
         private void _MouseOneWheel(MouseEventArgs e)
         {
             GActivePosition gci = this.FindActivePositionAtPoint(e.Location, false);
@@ -642,7 +650,207 @@ namespace Asol.Tools.WorkScheduler.Components
             this._ItemMouseCallStateChangedEvent(this._MouseCurrentItem, change, this._MouseCurrentRelativePoint, null, true);   // ,,, true => opakovat volání akce, dokud ji některý prvek v hierarchii nevyřeší.
         }
         #endregion
-        #region Podpůrné metody pro akce myši
+        #region Řízení procesu MouseDragMove = přesouvání prvku Drag & Drop
+        private void _MouseDragMoveBegin(MouseEventArgs e)
+        {
+            // Relativní pozice myši v okamžiku MouseDown, nikoli aktuální pozice (ta už je mimo prostor _CurrentMouseDragStart):
+            this._MouseCurrentRelativePoint = _GetRelativePoint(this._MouseDownAbsolutePoint.Value, this._MouseCurrentItem);
+            if (this._MouseCurrentItem.CanDrag)
+            {
+                this._MouseCurrentItem.CurrentTime = DateTime.Now; 
+                this._MouseDragMoveItem = this._MouseCurrentItem;
+                this._MouseDragMoveItemOriginBounds = this._MouseCurrentItem.ActiveItem.Bounds;
+                Point? userDragPoint = null;
+                this._ItemMouseCallStateChangedEvent(this._MouseCurrentItem, GInteractiveChangeState.LeftDragMoveBegin, this._MouseCurrentRelativePoint, null, ref userDragPoint);
+                if (userDragPoint.HasValue)
+                    this._UserDragPointOffset = userDragPoint.Value.Sub(this._MouseDownAbsolutePoint.Value);
+            }
+            this._MouseDragMoveItemOffset = this._GetRelativePointToCurrentItem(this._MouseDownAbsolutePoint.Value);
+            this._MouseDragStartBounds = null;
+        }
+        private void _MouseDragMoveStep(MouseEventArgs e)
+        {
+            if (this._MouseDragMoveItem != null && this._MouseCurrentItem.CanDrag)
+            {
+                this._MouseCurrentItem.CurrentTime = DateTime.Now;
+                Point? userDragPoint = null;
+                if (this._UserDragPointOffset.HasValue)
+                    userDragPoint = e.Location.Add(this._UserDragPointOffset.Value);
+                this._MouseCurrentRelativePoint = _GetRelativePoint(e.Location, this._MouseCurrentItem);
+                Point shift = e.Location.Sub(this._MouseDownAbsolutePoint.Value);
+                Rectangle dragToBounds = this._MouseDragMoveItemOriginBounds.Value.ShiftBy(shift);
+                this._ItemMouseCallStateChangedEvent(this._MouseCurrentItem, GInteractiveChangeState.LeftDragMoveStep, this._MouseCurrentRelativePoint, dragToBounds, ref userDragPoint);
+            }
+        }
+        private void _MouseDragMoveCancel()
+        {
+            if (this._MouseDragMoveItem != null && this._MouseCurrentItem.CanDrag)
+            {
+                this._MouseCurrentItem.CurrentTime = DateTime.Now;
+                Point? userDragPoint = null;
+                this._ItemMouseCallStateChangedEvent(this._MouseCurrentItem, GInteractiveChangeState.LeftDragMoveCancel, null, null, ref userDragPoint);
+                this._ItemMouseCallStateChangedEvent(this._MouseCurrentItem, GInteractiveChangeState.LeftDragMoveEnd, null, null);
+                this._RepaintAllItems = true;
+                this._MouseDragMoveItem = null;
+            }
+            this._MouseDragMoveItemOffset = null;              // on primary handler _MouseUp() will be called _MouseRaise(), instead of _MouseDragDone()!  In _MouseDragDone() will be called _MouseDownReset().
+            this._CurrentMouseDragCanceled = true;
+        }
+        private void _MouseDragMoveDone(MouseEventArgs e)
+        {
+            this._MouseCurrentRelativePoint = _GetRelativePoint(e.Location, this._MouseCurrentItem);
+            this._ItemMouseCallStateChangedEvent(this._MouseCurrentItem, GInteractiveChangeState.LeftUp, this._MouseCurrentRelativePoint, null);
+            if (this._MouseDragMoveItem != null && this._MouseCurrentItem.CanDrag)
+            {
+                this._MouseCurrentItem.CurrentTime = DateTime.Now;
+                this._ItemMouseCallStateChangedEvent(this._MouseCurrentItem, GInteractiveChangeState.LeftDragMoveDone, this._MouseCurrentRelativePoint, null);
+                this._ItemMouseCallStateChangedEvent(this._MouseCurrentItem, GInteractiveChangeState.LeftDragMoveEnd, null, null);
+            }
+            this._MouseDragMoveItem = null;
+            this._MouseDragState = MouseMoveDragState.None;
+            this._MouseDownReset();
+        }
+        /// <summary>
+        /// Stav procesu MouseDrag
+        /// </summary>
+        private MouseMoveDragState _MouseDragState { get; set; }
+        /// <summary>
+        /// Prostor okolo bodu <see cref="_MouseDownAbsolutePoint"/>, který reprezentuje "mrtvou zónu":
+        /// Pokud se stiskne myš, pak se vygeneruje tato souřadnice <see cref="_MouseDragStartBounds"/>. 
+        /// Pokud se nadále myš drží v této souřadnici, nebere se to jako pohyb myši (nevolají se eventy MouseDrag).
+        /// Pokud je ale myš stisknutá, a její souřadnice již vyběhnou z tohoto prostoru, bere se to jako proces Drag.
+        /// </summary>
+        private Rectangle? _MouseDragStartBounds { get; set; }
+        /// <summary>
+        /// Prvek, který je aktuálně přetahován (DragMove):
+        /// Sekvence událostí je: _MouseDragBegin(), _MouseDragMove() _MouseDragCancel() nebo _MouseDragEnd().
+        /// </summary>
+        private GActivePosition _MouseDragMoveItem { get; set; }
+        /// <summary>
+        /// Původní souřadnice <see cref="IInteractiveItem.Bounds"/> prvku, který je aktuálně přetahován <see cref="_MouseDragMoveItem"/>.
+        /// Tato hodnota je předávána do eventů MouseDragMove.
+        /// Hodnota je vložena v události MouseDragBegin.
+        /// </summary>
+        private Rectangle? _MouseDragMoveItemOriginBounds { get; set; }
+        /// <summary>
+        /// Offset (=relativní vzdálenost pohybu) mezi pozicí myši na začátku procesu DragMove a její aktuální pozicí.
+        /// Používá se pro výpočet cílové souřadnice prvku v procesu DragMove.
+        /// </summary>
+        private Point? _MouseDragMoveItemOffset { get; set; }
+        /// <summary>
+        /// Obsahuje true po požadavku Cancel v procesu DragMove.
+        /// Nastavuje se v <see cref="_MouseDragMoveCancel"/>, resetuje se v <see cref="_MouseDownReset"/>.
+        /// Pokud je true, pak událost <see cref="OnMouseMove(MouseEventArgs)"/> neřeší nic okolo procesu DragMove.
+        /// Na konci procesu Drag se nevola MouseDragDone, ale jen MouseRaise.
+        /// </summary>
+        private bool _CurrentMouseDragCanceled { get; set; }
+        /// <summary>
+        /// Offset of UserDragPoint (from event DragBegin) relative to _CurrentMouseDownLocation (in control coordinates).
+        /// This offset will be added to MouseLocation (in control coordinates) during drag, and sent to DragMove events.
+        /// </summary>
+        private Point? _UserDragPointOffset { get; set; }
+        /// <summary>
+        /// Prvek, který je Parentem aktuální akce DragFrame.
+        /// </summary>
+        private GActivePosition _MouseDragFrameItem { get; set; }
+
+        #endregion
+        #region Řízení procesu MouseDragFrame = výběr prvků zarámováním, včetně vykreslení
+        private void _MouseDragFrameBegin(MouseEventArgs e)
+        {
+            // Relativní pozice myši v okamžiku MouseDown, nikoli aktuální pozice (ta už je mimo prostor _CurrentMouseDragStart):
+            this._MouseCurrentRelativePoint = _GetRelativePoint(this._MouseDownAbsolutePoint.Value, this._MouseCurrentItem);
+            if (this._MouseCurrentItem.CanFrameSelect)
+            {
+                this._MouseCurrentItem.CurrentTime = DateTime.Now;
+                this._MouseDragFrameItem = this._MouseCurrentItem;
+                Rectangle? frameWorkArea;
+                this._ItemMouseCallStateChangedEvent(this._MouseCurrentItem, GInteractiveChangeState.LeftDragFrameBegin, this._MouseCurrentRelativePoint, out frameWorkArea);
+                this._MouseDragFrameWorkArea = frameWorkArea;
+            }
+            this._MouseDragStartBounds = null;
+        }
+        private void _MouseDragFrameStep(MouseEventArgs e)
+        {
+            if (!this._MouseDownAbsolutePoint.HasValue) return;
+            Rectangle frameBounds = DrawingExtensions.FromPoints(this._MouseDownAbsolutePoint.Value, e.Location);
+            if (this._MouseDragFrameWorkArea.HasValue)
+                frameBounds = Rectangle.Intersect(this._MouseDragFrameWorkArea.Value, frameBounds);
+
+            this._MouseDragFrameCurrentBounds = frameBounds;
+
+            Tuple<IInteractiveItem, Rectangle>[] items = GActivePosition.FindItemsAtBounds(this.ClientSize, this.ItemsList, frameBounds,
+                _MouseDragFrameFilterScan, 
+                _MouseDragFrameFilterAccept
+                );
+
+            if (items.Length > 0)
+            {
+
+            }
+        }
+        /// <summary>
+        /// Metoda vrací true, pokud daný prvek může být scanován co do jeho Childs prvků
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="itemAbsoluteBounds"></param>
+        /// <returns></returns>
+        private bool _MouseDragFrameFilterScan(IInteractiveItem item, Rectangle itemAbsoluteBounds)
+        {
+            return (item.IsVisible && item.IsEnabled);
+        }
+        /// <summary>
+        /// Metoda vrací true, pokud daný prvek má být akceptován do výstupního pole DragFrame
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="itemAbsoluteBounds"></param>
+        /// <returns></returns>
+        private bool _MouseDragFrameFilterAccept(IInteractiveItem item, Rectangle itemAbsoluteBounds)
+        {
+            return (item.IsVisible && item.IsEnabled && item.IsSelectable);
+        }
+        private void _MouseDragFrameCancel()
+        {
+
+        }
+        /// <summary>
+        /// Obsahuje true, pokud se má kreslit FrameBounds = oblast selectování (<see cref="_MouseDragFrameCurrentBounds"/>).
+        /// </summary>
+        private bool _NeedDrawFrameBounds { get { return (this._MouseDragFrameCurrentBounds.HasValue && this._MouseDragFrameCurrentBounds.Value.HasPixels()); } }
+        /// <summary>
+        /// Zajistí vykreslení oblasti FrameSelect
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="layer"></param>
+        private void _PaintFrameBounds(Graphics graphics, GInteractiveDrawLayer layer)
+        {
+            graphics.DrawRectangle(Pens.Black, this._MouseDragFrameCurrentBounds.Value);
+        }
+        private void _MouseDragFrameDone(MouseEventArgs e)
+        {
+
+
+            this._MouseDragFrameCurrentBounds = null;
+            this._MouseDragState = MouseMoveDragState.None;
+            this._MouseDownReset();
+        }
+        /// <summary>
+        /// Souřadnice prostoru, do něhož má být omezen proces DragFrame.
+        /// Prostor deklaruje prvek Parent na začátku procesu DragFrame ve své události .
+        /// Následný proces DragFrame pak ořezává reálně zadaný prostor selectovaný pohybem myši pouze do této oblasti.
+        /// Může být null, pak nebude prostor omezen.
+        /// </summary>
+        private Rectangle? _MouseDragFrameWorkArea { get; set; }
+        /// <summary>
+        /// Souřadnice prostoru, který je aktuálně zarámován v režimu DragFrame.
+        /// Měl by být vykreslen do Interactive vrstvy grafiky.
+        /// Pokud je null, pak se nekreslí.
+        /// </summary>
+        private Rectangle? _MouseDragFrameCurrentBounds { get; set; }
+
+
+        #endregion
+        #region Metody pro volání interaktivních metod na prvcích IInteractiveItem.AfterStateChanged() atd
         /// <summary>
         /// Return change state for current mousebutton (_CurrentMouseDownButtons), for change specified for left button.
         /// When no button pressed, or state is not button-dependent, then unchanged state is returned.
@@ -674,21 +882,6 @@ namespace Asol.Tools.WorkScheduler.Components
                     case GInteractiveChangeState.LeftDown:
                     case GInteractiveChangeState.RightDown:
                         return (right ? GInteractiveChangeState.RightDown : GInteractiveChangeState.LeftDown);
-                    case GInteractiveChangeState.LeftDragBegin:
-                    case GInteractiveChangeState.RightDragBegin:
-                        return (right ? GInteractiveChangeState.RightDragBegin : GInteractiveChangeState.LeftDragBegin);
-                    case GInteractiveChangeState.LeftDragMove:
-                    case GInteractiveChangeState.RightDragMove:
-                        return (right ? GInteractiveChangeState.RightDragMove : GInteractiveChangeState.LeftDragMove);
-                    case GInteractiveChangeState.LeftDragCancel:
-                    case GInteractiveChangeState.RightDragCancel:
-                        return (right ? GInteractiveChangeState.RightDragCancel : GInteractiveChangeState.LeftDragCancel);
-                    case GInteractiveChangeState.LeftDragDone:
-                    case GInteractiveChangeState.RightDragDone:
-                        return (right ? GInteractiveChangeState.RightDragDone : GInteractiveChangeState.LeftDragDone);
-                    case GInteractiveChangeState.LeftDragEnd:
-                    case GInteractiveChangeState.RightDragEnd:
-                        return (right ? GInteractiveChangeState.RightDragEnd : GInteractiveChangeState.LeftDragEnd);
                     case GInteractiveChangeState.LeftUp:
                     case GInteractiveChangeState.RightUp:
                         return (right ? GInteractiveChangeState.RightUp : GInteractiveChangeState.LeftUp);
@@ -701,6 +894,32 @@ namespace Asol.Tools.WorkScheduler.Components
                     case GInteractiveChangeState.LeftDoubleClick:
                     case GInteractiveChangeState.RightDoubleClick:
                         return (right ? GInteractiveChangeState.RightDoubleClick : GInteractiveChangeState.LeftDoubleClick);
+
+                    case GInteractiveChangeState.LeftDragMoveBegin:
+                    case GInteractiveChangeState.RightDragMoveBegin:
+                        return (right ? GInteractiveChangeState.RightDragMoveBegin : GInteractiveChangeState.LeftDragMoveBegin);
+                    case GInteractiveChangeState.LeftDragMoveStep:
+                    case GInteractiveChangeState.RightDragMoveStep:
+                        return (right ? GInteractiveChangeState.RightDragMoveStep : GInteractiveChangeState.LeftDragMoveStep);
+                    case GInteractiveChangeState.LeftDragMoveCancel:
+                    case GInteractiveChangeState.RightDragMoveCancel:
+                        return (right ? GInteractiveChangeState.RightDragMoveCancel : GInteractiveChangeState.LeftDragMoveCancel);
+                    case GInteractiveChangeState.LeftDragMoveDone:
+                    case GInteractiveChangeState.RightDragMoveDone:
+                        return (right ? GInteractiveChangeState.RightDragMoveDone : GInteractiveChangeState.LeftDragMoveDone);
+                    case GInteractiveChangeState.LeftDragMoveEnd:
+                    case GInteractiveChangeState.RightDragMoveEnd:
+                        return (right ? GInteractiveChangeState.RightDragMoveEnd : GInteractiveChangeState.LeftDragMoveEnd);
+
+                    case GInteractiveChangeState.LeftDragFrameBegin:
+                    case GInteractiveChangeState.RightDragFrameBegin:
+                        return (right ? GInteractiveChangeState.RightDragFrameBegin : GInteractiveChangeState.LeftDragFrameBegin);
+                    case GInteractiveChangeState.LeftDragFrameSelect:
+                    case GInteractiveChangeState.RightDragFrameSelect:
+                        return (right ? GInteractiveChangeState.RightDragFrameSelect : GInteractiveChangeState.LeftDragFrameSelect);
+                    case GInteractiveChangeState.LeftDragFrameDone:
+                    case GInteractiveChangeState.RightDragFrameDone:
+                        return (right ? GInteractiveChangeState.RightDragFrameDone : GInteractiveChangeState.LeftDragFrameDone);
                 }
             }
             return state;
@@ -721,21 +940,27 @@ namespace Asol.Tools.WorkScheduler.Components
                 case GInteractiveChangeState.MouseOverDisabled: return GInteractiveState.MouseOver;
                 case GInteractiveChangeState.MouseLeave: return GInteractiveState.Enabled;
                 case GInteractiveChangeState.LeftDown: return GInteractiveState.LeftDown;
-                case GInteractiveChangeState.LeftDragBegin: return GInteractiveState.LeftDrag;
-                case GInteractiveChangeState.LeftDragMove: return GInteractiveState.LeftDrag;
-                case GInteractiveChangeState.LeftDragCancel: return GInteractiveState.MouseOver;
-                case GInteractiveChangeState.LeftDragDone: return GInteractiveState.MouseOver;
-                case GInteractiveChangeState.LeftDragEnd: return GInteractiveState.MouseOver;
+                case GInteractiveChangeState.LeftDragMoveBegin: return GInteractiveState.LeftDrag;
+                case GInteractiveChangeState.LeftDragMoveStep: return GInteractiveState.LeftDrag;
+                case GInteractiveChangeState.LeftDragMoveCancel: return GInteractiveState.MouseOver;
+                case GInteractiveChangeState.LeftDragMoveDone: return GInteractiveState.MouseOver;
+                case GInteractiveChangeState.LeftDragMoveEnd: return GInteractiveState.MouseOver;
+                case GInteractiveChangeState.LeftDragFrameBegin: return GInteractiveState.LeftFrame;
+                case GInteractiveChangeState.LeftDragFrameSelect: return GInteractiveState.LeftFrame;
+                case GInteractiveChangeState.LeftDragFrameDone: return GInteractiveState.MouseOver;
                 case GInteractiveChangeState.LeftUp: return GInteractiveState.MouseOver;
                 case GInteractiveChangeState.LeftClick: return GInteractiveState.MouseOver;
                 case GInteractiveChangeState.LeftLongClick: return GInteractiveState.MouseOver;
                 case GInteractiveChangeState.LeftDoubleClick: return GInteractiveState.MouseOver;
                 case GInteractiveChangeState.RightDown: return GInteractiveState.RightDown;
-                case GInteractiveChangeState.RightDragBegin: return GInteractiveState.RightDrag;
-                case GInteractiveChangeState.RightDragMove: return GInteractiveState.RightDrag;
-                case GInteractiveChangeState.RightDragCancel: return GInteractiveState.MouseOver;
-                case GInteractiveChangeState.RightDragDone: return GInteractiveState.MouseOver;
-                case GInteractiveChangeState.RightDragEnd: return GInteractiveState.MouseOver;
+                case GInteractiveChangeState.RightDragMoveBegin: return GInteractiveState.RightDrag;
+                case GInteractiveChangeState.RightDragMoveStep: return GInteractiveState.RightDrag;
+                case GInteractiveChangeState.RightDragMoveCancel: return GInteractiveState.MouseOver;
+                case GInteractiveChangeState.RightDragMoveDone: return GInteractiveState.MouseOver;
+                case GInteractiveChangeState.RightDragMoveEnd: return GInteractiveState.MouseOver;
+                case GInteractiveChangeState.RightDragFrameBegin: return GInteractiveState.RightFrame;
+                case GInteractiveChangeState.RightDragFrameSelect: return GInteractiveState.RightFrame;
+                case GInteractiveChangeState.RightDragFrameDone: return GInteractiveState.MouseOver;
                 case GInteractiveChangeState.RightUp: return GInteractiveState.MouseOver;
                 case GInteractiveChangeState.RightClick: return GInteractiveState.MouseOver;
                 case GInteractiveChangeState.RightLongClick: return GInteractiveState.MouseOver;
@@ -759,16 +984,16 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             switch (change)
             {
-                case GInteractiveChangeState.LeftDragBegin: return DragActionType.DragThisStart;
-                case GInteractiveChangeState.LeftDragMove: return DragActionType.DragThisMove;
-                case GInteractiveChangeState.LeftDragCancel: return DragActionType.DragThisCancel;
-                case GInteractiveChangeState.LeftDragDone: return DragActionType.DragThisDrop;
-                case GInteractiveChangeState.LeftDragEnd: return DragActionType.DragThisEnd;
-                case GInteractiveChangeState.RightDragBegin: return DragActionType.DragThisStart;
-                case GInteractiveChangeState.RightDragMove: return DragActionType.DragThisMove;
-                case GInteractiveChangeState.RightDragCancel: return DragActionType.DragThisCancel;
-                case GInteractiveChangeState.RightDragDone: return DragActionType.DragThisDrop;
-                case GInteractiveChangeState.RightDragEnd: return DragActionType.DragThisEnd;
+                case GInteractiveChangeState.LeftDragMoveBegin: return DragActionType.DragThisStart;
+                case GInteractiveChangeState.LeftDragMoveStep: return DragActionType.DragThisMove;
+                case GInteractiveChangeState.LeftDragMoveCancel: return DragActionType.DragThisCancel;
+                case GInteractiveChangeState.LeftDragMoveDone: return DragActionType.DragThisDrop;
+                case GInteractiveChangeState.LeftDragMoveEnd: return DragActionType.DragThisEnd;
+                case GInteractiveChangeState.RightDragMoveBegin: return DragActionType.DragThisStart;
+                case GInteractiveChangeState.RightDragMoveStep: return DragActionType.DragThisMove;
+                case GInteractiveChangeState.RightDragMoveCancel: return DragActionType.DragThisCancel;
+                case GInteractiveChangeState.RightDragMoveDone: return DragActionType.DragThisDrop;
+                case GInteractiveChangeState.RightDragMoveEnd: return DragActionType.DragThisEnd;
             }
             return DragActionType.None;
         }
@@ -810,7 +1035,19 @@ namespace Asol.Tools.WorkScheduler.Components
         private void _ItemMouseCallStateChangedEvent(GActivePosition gcItem, GInteractiveChangeState change, Point? mouseRelativePoint, Rectangle? dragToArea)
         {
             Point? userDragPoint = null;
-            this._ItemMouseCallStateChangedEvent(gcItem, change, mouseRelativePoint, dragToArea, false, ref userDragPoint);
+            Rectangle? frameWorkArea;
+            this._ItemMouseCallStateChangedEvent(gcItem, change, mouseRelativePoint, dragToArea, false, ref userDragPoint, out frameWorkArea);
+        }
+        /// <summary>
+        /// Call interactive event for specified item and change.
+        /// </summary>
+        /// <param name="gcItem"></param>
+        /// <param name="state"></param>
+        private void _ItemMouseCallStateChangedEvent(GActivePosition gcItem, GInteractiveChangeState change, Point? mouseRelativePoint, out Rectangle? frameWorkArea)
+        {
+            Rectangle? dragToArea = null;
+            Point? userDragPoint = null;
+            this._ItemMouseCallStateChangedEvent(gcItem, change, mouseRelativePoint, dragToArea, false, ref userDragPoint, out frameWorkArea);
         }
         /// <summary>
         /// Call interactive event for specified item and change.
@@ -820,7 +1057,8 @@ namespace Asol.Tools.WorkScheduler.Components
         private void _ItemMouseCallStateChangedEvent(GActivePosition gcItem, GInteractiveChangeState change, Point? mouseRelativePoint, Rectangle? dragToArea, bool recurseToSolver)
         {
             Point? userDragPoint = null;
-            this._ItemMouseCallStateChangedEvent(gcItem, change, mouseRelativePoint, dragToArea, recurseToSolver, ref userDragPoint);
+            Rectangle? frameWorkArea;
+            this._ItemMouseCallStateChangedEvent(gcItem, change, mouseRelativePoint, dragToArea, recurseToSolver, ref userDragPoint, out frameWorkArea);
         }
         /// <summary>
         /// Call interactive event for specified item and change.
@@ -829,24 +1067,30 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="change">Change of state, independently on MouseButton (i.e. LeftDown, in situation where is pressed Right Mouse button). Real change state is detected in this method, with _GetStateForCurrentButton() method.</param>
         private void _ItemMouseCallStateChangedEvent(GActivePosition gcItem, GInteractiveChangeState change, Point? mouseRelativePoint, Rectangle? dragToArea, ref Point? userDragPoint)
         {
-            this._ItemMouseCallStateChangedEvent(gcItem, change, mouseRelativePoint, dragToArea, false, ref userDragPoint);
+            Rectangle? frameWorkArea;
+            this._ItemMouseCallStateChangedEvent(gcItem, change, mouseRelativePoint, dragToArea, false, ref userDragPoint, out frameWorkArea);
         }
         /// <summary>
-        /// Call interactive event for specified item and change.
+        /// Metoda zavolá klíčovou událost <see cref="IInteractiveItem.AfterStateChanged(GInteractiveChangeStateArgs)"/> pro aktivní prvek dle parametru "item".
+        /// Podle potřeby (podle typu akce) vyvolá i událost <see cref="IInteractiveItem.DragAction(GDragActionArgs)"/> .
+        /// Je použito pouze pro většinu eventů.
         /// </summary>
         /// <param name="gcItem">Current item under mouse</param>
         /// <param name="change">Change of state, independently on MouseButton (i.e. LeftDown, in situation where is pressed Right Mouse button). Real change state is detected in this method, with _GetStateForCurrentButton() method.</param>
-        private void _ItemMouseCallStateChangedEvent(GActivePosition gcItem, GInteractiveChangeState change, Point? mouseRelativePoint, Rectangle? dragToArea, bool recurseToSolver, ref Point? userDragPoint)
+        private void _ItemMouseCallStateChangedEvent(GActivePosition gcItem, GInteractiveChangeState change, Point? mouseRelativePoint, Rectangle? dragToArea, 
+            bool recurseToSolver, ref Point? userDragPoint, out Rectangle? frameWorkArea)
         {
+            frameWorkArea = null;
             GInteractiveChangeState realChange = this._GetStateForCurrentMouseButton(change, gcItem.IsEnabled);
             GInteractiveState state = (gcItem.HasItem ? _GetStateAfterChange(realChange, gcItem.ActiveItem.IsEnabled) : GInteractiveState.Disabled);
-            GInteractiveChangeStateArgs stateArgs = new GInteractiveChangeStateArgs(gcItem.HasItem, gcItem.ActiveItem, realChange, state, this.FindNewItemAtPoint, this._MouseCurrentAbsolutePoint, mouseRelativePoint, this._MouseDraggedItemOriginBounds, dragToArea);
+            GInteractiveChangeStateArgs stateArgs = new GInteractiveChangeStateArgs(gcItem.HasItem, gcItem.ActiveItem, realChange, state, this.FindNewItemAtPoint, this._MouseCurrentAbsolutePoint, mouseRelativePoint, this._MouseDragMoveItemOriginBounds, dragToArea);
             stateArgs.UserDragPoint = userDragPoint;
 
             if (gcItem.HasItem)
             {
                 gcItem.CallAfterStateChanged(stateArgs, recurseToSolver);
                 this._ItemMouseCallDragEvent(gcItem.ActiveItem, stateArgs);
+                frameWorkArea = stateArgs.DragFrameWorkArea;
             }
 
             this._CallInteractiveStateChanged(stateArgs);
@@ -856,8 +1100,9 @@ namespace Asol.Tools.WorkScheduler.Components
             userDragPoint = stateArgs.UserDragPoint;
         }
         /// <summary>
-        /// Call interactive event for specified item and change.
-        /// Is used for MouseEnter and MouseLeave events only.
+        /// Metoda zavolá klíčovou událost <see cref="IInteractiveItem.AfterStateChanged(GInteractiveChangeStateArgs)"/> pro aktivní prvek dle parametru "item".
+        /// Podle potřeby (podle typu akce) vyvolá i událost <see cref="IInteractiveItem.DragAction(GDragActionArgs)"/> .
+        /// Je použito pouze pro eventy MouseEnter a MouseLeave.
         /// </summary>
         /// <param name="gci"></param>
         /// <param name="item"></param>
@@ -869,7 +1114,7 @@ namespace Asol.Tools.WorkScheduler.Components
             stateArgs.UserDragPoint = null;
 
             item.AfterStateChanged(stateArgs);
-            this._ItemMouseCallDragEvent(item, stateArgs);           // probably does not call DragAction(), because ChangeState is MouseEnter and MouseLeave.
+            this._ItemMouseCallDragEvent(item, stateArgs);
 
             this._CallInteractiveStateChanged(stateArgs);
             this._InteractiveDrawStore(stateArgs);
@@ -899,13 +1144,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         private void _MouseDownReset()
         {
+            this._MouseDragState = MouseMoveDragState.None;
             this._MouseDownAbsolutePoint = null;
             this._MouseDownTime = null;
             this._MouseDownButtons = null;
             this._MouseDragStartBounds = null;
-            this._CurrentMouseDragOffset = null;
+            this._MouseDragMoveItemOffset = null;
             this._CurrentMouseDragCanceled = false;
-            this._MouseDraggedItemOriginBounds = null;
+            this._MouseDragMoveItemOriginBounds = null;
             this._UserDragPointOffset = null;
         }
         /// <summary>
@@ -980,72 +1226,37 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Coordinates of mouse, in control coordinates (=Absolute), current coordinates (in current event).
         /// </summary>
-        private Point? _MouseCurrentAbsolutePoint;
+        private Point? _MouseCurrentAbsolutePoint { get; set; }
         /// <summary>
         /// Time in which were mouse down in MouseDown event (for LongClick detection)
         /// </summary>
-        private DateTime? _MouseDownTime;
+        private DateTime? _MouseDownTime { get; set; }
         /// <summary>
         /// Coordinates of mouse, in control coordinates (=Absolute), where mouse-down event occurs.
         /// </summary>
-        private Point? _MouseDownAbsolutePoint;
+        private Point? _MouseDownAbsolutePoint { get; set; }
         /// <summary>
         /// Buttons which were down in MouseDown event
         /// </summary>
-        private MouseButtons? _MouseDownButtons;
-        /// <summary>
-        /// Area around MouseDown.Point, in which is MouseMove ignored.
-        /// Is set in MouseDown handler, is tested in MouseMove handler. When mouse location (during MouseMove) is in this area, then is not called MouseDrag event.
-        /// When Mouse location is out of this area, then MouseDrag begin.
-        /// Is reset at end of MouseDragBegin handler.
-        /// </summary>
-        private Rectangle? _MouseDragStartBounds;
+        private MouseButtons? _MouseDownButtons { get; set; }
         /// <summary>
         /// Current item with any mouse-interaction, can be null
         /// </summary>
-        private GActivePosition _MouseCurrentItem;
-        /// <summary>
-        /// Current item, which is dragged (from _MouseDragBegin(), through _MouseDragMove() to _MouseDragCancel() or _MouseDragEnd().
-        /// </summary>
-        private GActivePosition _MouseDraggedItem;
+        private GActivePosition _MouseCurrentItem { get; set; }
         /// <summary>
         /// Item, which was last clicked.
         /// </summary>
-        private GActivePosition _MouseClickedItem;
-        /// <summary>
-        /// Origin Bounds of Current Item, from where is dragged.
-        /// Is present in args to all Mouse events.
-        /// Is set in MouseDragBegin handler, is store to args, and is reset at end of MouseDown actions (in _MouseDownReset() method).
-        /// </summary>
-        private Rectangle? _MouseDraggedItemOriginBounds;
-        
+        private GActivePosition _MouseClickedItem { get; set; }
         /// <summary>
         /// Coordinates of mouse, relative to current interactive item bounds.
         /// </summary>
-        private Point? _MouseCurrentRelativePoint;
+        private Point? _MouseCurrentRelativePoint { get; set; }
+
         /// <summary>
-        /// Offset (=relative distance) between Mouse Location (during Drag Begin event) and current item location (its Bounds).
-        /// Is stored in MouseDragBegin event. Is reset in _MouseFell() and _MouseDownReset(), 
-        /// is used for calculation of DragToBounds value during MouseDragMove event.
+        /// Velikost oblasti <see cref="_MouseDragStartBounds"/> = "No-Drag zone", kde se ignoruje pohyb myši na začátku procesu Drag.
+        /// Je nastaven na hodnotu <see cref="SystemInformation.DragSize"/>, ale může být upraven.
         /// </summary>
-        private Point? _CurrentMouseDragOffset;
-        /// <summary>
-        /// true after Cancel during MouseDrag. 
-        /// Set in _MouseDragCancel(), reset in _MouseDownReset() methods.
-        /// When true, then _MouseMove() does not call MouseDragBegin and MouseDragMove handlers.
-        /// When true, then _MouseUp() does not call _MouseDragDone(), but call _MouseRaise() handler.
-        /// </summary>
-        private bool _CurrentMouseDragCanceled;
-        /// <summary>
-        /// Offset of UserDragPoint (from event DragBegin) relative to _CurrentMouseDownLocation (in control coordinates).
-        /// This offset will be added to MouseLocation (in control coordinates) during drag, and sent to DragMove events.
-        /// </summary>
-        private Point? _UserDragPointOffset;
-        /// <summary>
-        /// Size for calculation "No-Drag zone", where MouseMove (with Mouse-Down) is ignored, before MouseDragStart is called.
-        /// Is equal do SystemInformation.DragSize, but can be varied.
-        /// </summary>
-        private Size _DragStartSize;
+        private Size _DragStartSize { get; set; }
         #endregion
         #endregion
         #region Přenesení informací z interaktivních metod do překreslení části controlu (vizuální reakce na interaktivní události)
@@ -1091,7 +1302,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         private void _InteractiveDrawRun()
         {
-            DrawRequest request = new DrawRequest(this._RepaintAllItems, this._ToolTip, this._ProgressItem);
+            DrawRequest request = new DrawRequest(this._RepaintAllItems, this._NeedDrawFrameBounds, this._ToolTip, this._ProgressItem);
             request.Fill(this.ClientSize, this, this.ItemsList, this.PendingFullDraw, true);
             if (request.NeedAnyDraw)
             {
@@ -1210,7 +1421,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         private void _ProgressDrawRun()
         {
-            DrawRequest request = new DrawRequest(false, this._ToolTip, this._ProgressItem);
+            DrawRequest request = new DrawRequest(false, this._NeedDrawFrameBounds, this._ToolTip, this._ProgressItem);
             if (request.NeedAnyDraw)
             {
                 using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "ProgressDrawRun", ""))
@@ -1250,7 +1461,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 scope.AddItem("e.UserData: " + ((request == null) ? "null => Draw " : "Explicit request"));
                 if (request == null)
                 {   // Explicit request not specified, we will draw all items:
-                    request = new DrawRequest(true, this._ToolTip, this._ProgressItem);
+                    request = new DrawRequest(true, this._NeedDrawFrameBounds, this._ToolTip, this._ProgressItem);
                     request.Fill(this.ClientSize, this, this.ItemsList, true, false);
                 }
 
@@ -1272,17 +1483,26 @@ namespace Asol.Tools.WorkScheduler.Components
                 if (request.NeedDynDraw)
                 {
                     e.CopyContentOfLayer(e.ValidLayer, 2);
-                    this._PaintItems(e.GraphicsForLayer(2), request.DynamicItems, GInteractiveDrawLayer.Dynamic);
-                    scope.AddItem("Layer Dynamic, Items: " + request.DynamicItems.Count.ToString());
+                    Graphics graphics2 = e.GraphicsForLayer(2);
+                    if (request.DynamicItems.Count > 0)
+                    {
+                        this._PaintItems(graphics2, request.DynamicItems, GInteractiveDrawLayer.Dynamic);
+                        scope.AddItem("Layer Dynamic, Items: " + request.DynamicItems.Count.ToString());
+                    }
+                    if (request.DrawFrameSelect)
+                    {
+                        this._PaintFrameBounds(graphics2, GInteractiveDrawLayer.Dynamic);
+                    }
                 }
 
                 if (this._ProgressItem.IsVisible || this._ToolTip.NeedDraw)
                 {
                     e.CopyContentOfLayer(e.ValidLayer, 3);
+                    Graphics graphics3 = e.GraphicsForLayer(3);
                     if (this._ProgressItem.IsVisible)
-                        this._ProgressItem.Draw(e.GraphicsForLayer(3));
+                        this._ProgressItem.Draw(graphics3);
                     if (this._ToolTip.NeedDraw)
-                        this._ToolTip.Draw(e.GraphicsForLayer(3));
+                        this._ToolTip.Draw(graphics3);
                     scope.AddItem("Layer ToolTip");
                 }
 
@@ -1378,10 +1598,11 @@ namespace Asol.Tools.WorkScheduler.Components
                 this.DynamicItems = new List<DrawRequestItem>();
                 this.DrawAllItems = false;
             }
-            public DrawRequest(bool drawAllItems, ToolTipItem toolTipItem, ProgressItem progressItem)
+            public DrawRequest(bool drawAllItems, bool drawFrameSelect, ToolTipItem toolTipItem, ProgressItem progressItem)
                 : this()
             {
                 this.DrawAllItems = drawAllItems;
+                this.DrawFrameSelect = drawFrameSelect;
                 this.DrawToolTip = (toolTipItem != null && toolTipItem.NeedDraw);
                 this.DrawProgress = (progressItem != null && progressItem.IsVisible);
             }
@@ -1407,6 +1628,10 @@ namespace Asol.Tools.WorkScheduler.Components
             /// </summary>
             public bool DrawAllItems { get; private set; }
             /// <summary>
+            /// Obsahuje true, pokud je požadavek na vykreslení FrameSelect obdélníku (kreslín se do vrstvy Dynamic)
+            /// </summary>
+            public bool DrawFrameSelect { get; private set; }
+            /// <summary>
             /// true when ToolTip need draw
             /// </summary>
             public bool DrawToolTip { get; private set; }
@@ -1418,9 +1643,21 @@ namespace Asol.Tools.WorkScheduler.Components
             /// true when draw in Interactive mode
             /// </summary>
             public bool InteractiveMode { get; set; }
+            /// <summary>
+            /// Obsahuje true, pokud je požadavek na kreslení do vrstvy Standard.
+            /// Tedy máme nějaké prvky v poli <see cref="StandardItems"/>.
+            /// </summary>
             public bool NeedStdDraw { get { return (this.StandardItems.Count > 0); } }
+            /// <summary>
+            /// Obsahuje true, pokud je požadavek na kreslení do vrstvy Interactive.
+            /// Tedy máme nějaké prvky v poli <see cref="InteractiveItems"/>.
+            /// </summary>
             public bool NeedIntDraw { get { return (this.InteractiveItems.Count > 0); } }
-            public bool NeedDynDraw { get { return (this.DynamicItems.Count > 0); } }
+            /// <summary>
+            /// Obsahuje true, pokud je požadavek na kreslení do vrstvy Dynamic.
+            /// Tedy máme nějaké prvky v poli <see cref="DynamicItems"/>, anebo je nastaveno <see cref="DrawFrameSelect"/> == true.
+            /// </summary>
+            public bool NeedDynDraw { get { return (this.DynamicItems.Count > 0 || this.DrawFrameSelect); } }
             /// <summary>
             /// true when need any draw (Standard, Interactive, Dynamic, ToolTip)
             /// </summary>
@@ -2096,7 +2333,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <remarks>Run only in GUI thread</remarks>
         private void _BackThreadRunDrawGui()
         {
-            DrawRequest request = new DrawRequest(false, this._ToolTip, null);
+            DrawRequest request = new DrawRequest(false, this._NeedDrawFrameBounds, this._ToolTip, null);
             request.InteractiveMode = true;
             this.Draw(request);
         }
@@ -2261,6 +2498,11 @@ namespace Asol.Tools.WorkScheduler.Components
         public DateTime CurrentTime { get; set; }
         #endregion
         #region Property from this.CurrentItem.Style, IsEnabled, IsVisible
+        /// <summary>
+        /// true pokud aktuální prvek má nastaveno (<see cref="IInteractiveItem.IsSelectParent"/> == true), 
+        /// tzn. je to prvek, který umožňuje provádět "na sobě" výběr svých Childs pomocí MouseFrame selectování
+        /// </summary>
+        internal bool CanFrameSelect { get { return (this.HasItem && this.ActiveItem.IsSelectParent); } }
         /// <summary>
         /// Metoda najde v this objektu prvek, který podporuje Drag & Drop.
         /// Hledá počínaje od prvku <see cref="ActiveItem"/> (navrchu), a pokud ten nepodporuje Drag & Drop, tak hledá směrem k jeho Parentům.
@@ -2561,12 +2803,73 @@ namespace Asol.Tools.WorkScheduler.Components
             return (this.HasItem ? (Point?)absolutePoint.Sub(this.ActiveItemAbsBounds.Value.Location) : (Point?)null);
         }
         #endregion
+        #region Vyhledání sady prvků
+        /// <summary>
+        /// Metoda najde a vrátí prvky, které se nacházejí na daných souřadnicích, a které vyhovují daným filtrům.
+        /// </summary>
+        /// <param name="items"></param>
+        /// <param name="frameBounds"></param>
+        /// <param name="filterScan"></param>
+        /// <param name="filterAccept"></param>
+        /// <returns></returns>
+        public static Tuple<IInteractiveItem, Rectangle>[] FindItemsAtBounds(Size hostSize, List<IInteractiveItem> items, Rectangle frameBounds, Func<IInteractiveItem, Rectangle, bool> filterScan, Func<IInteractiveItem, Rectangle, bool> filterAccept)
+        {
+            BoundsInfo boundsInfo = BoundsInfo.CreateForParent(hostSize);
+
+            bool hasFilterScan = (filterScan != null);
+            bool hasFilterAccept = (filterAccept != null);
+
+            List<Tuple<IInteractiveItem, Rectangle>> resultList = new List<Tuple<IInteractiveItem, Rectangle>>();
+            Dictionary<uint, IInteractiveItem> scanDict = new Dictionary<uint, IInteractiveItem>();
+            Queue<Tuple<BoundsInfo, IEnumerable<IInteractiveItem>>> scanQueue = new Queue<Tuple<BoundsInfo, IEnumerable<IInteractiveItem>>>();
+            scanQueue.Enqueue(new Tuple<BoundsInfo, IEnumerable<IInteractiveItem>>(boundsInfo, items));
+            while (scanQueue.Count > 0)
+            {
+                Tuple<BoundsInfo, IEnumerable<IInteractiveItem>> workItem = scanQueue.Dequeue();
+                BoundsInfo currentBoundsInfo = workItem.Item1;
+                IEnumerable<IInteractiveItem> currentItemList = workItem.Item2;
+                if (currentItemList == null) continue;
+
+                foreach (IInteractiveItem currentItem in currentItemList)
+                {
+                    if (scanDict.ContainsKey(currentItem.Id)) continue;
+                    scanDict.Add(currentItem.Id, currentItem);
+
+                    currentBoundsInfo.CurrentItem = currentItem;
+                    Rectangle currentItemBounds = currentBoundsInfo.CurrentAbsBounds;
+                    if (!frameBounds.IntersectsWith(currentItemBounds)) continue;
+
+                    if ((!hasFilterScan || (hasFilterScan && filterScan(currentItem, currentItemBounds))))
+                    {
+                        IEnumerable<IInteractiveItem> currentChilds = currentItem.Childs;
+                        if (currentChilds != null)
+                            scanQueue.Enqueue(new Tuple<BoundsInfo, IEnumerable<IInteractiveItem>>(currentBoundsInfo.CurrentChildsSpider, currentChilds));
+                    }
+
+                    if (!hasFilterAccept || (hasFilterAccept && filterAccept(currentItem, currentItemBounds)))
+                        resultList.Add(new Tuple<IInteractiveItem, Rectangle>(currentItem, currentItemBounds));
+                }
+            }
+            return resultList.ToArray();
+        }
+        #endregion
         #region class GActiveItem : Informace o jednom nalezeném prvku a jeho souřadném systému
         /// <summary>
         /// GActiveItem : Informace o jednom nalezeném prvku a jeho souřadném systému
         /// </summary>
         public class GActiveItem
         {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="item"></param>
+            /// <param name="boundsInfo"></param>
+            public GActiveItem(IInteractiveItem item, BoundsInfo boundsInfo)
+            {
+                this.Owner = null;
+                this.Item = item;
+                this.BoundsInfo = boundsInfo;
+            }
             /// <summary>
             /// Konstruktor
             /// </summary>

@@ -582,6 +582,8 @@ namespace Asol.Tools.WorkScheduler.Components
                 case GInteractiveState.MouseOver: return this.BackHot;
                 case GInteractiveState.LeftDown:
                 case GInteractiveState.RightDown:
+                case GInteractiveState.LeftFrame:
+                case GInteractiveState.RightFrame:
                 case GInteractiveState.LeftDrag:
                 case GInteractiveState.RightDrag: return this.BackDown;
             }
@@ -600,6 +602,8 @@ namespace Asol.Tools.WorkScheduler.Components
                 case GInteractiveState.MouseOver: return this.ForeHot;
                 case GInteractiveState.LeftDown: 
                 case GInteractiveState.RightDown:
+                case GInteractiveState.LeftFrame:
+                case GInteractiveState.RightFrame:
                 case GInteractiveState.LeftDrag:
                 case GInteractiveState.RightDrag: return this.ForeDown;
             }

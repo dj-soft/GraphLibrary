@@ -371,21 +371,27 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected virtual RepaintParentMode RepaintParent { get { return RepaintParentMode.None; } }
         /// <summary>
-        /// Current (new) state of item (after this event, not before it).
+        /// Aktuální stav tohoto objektu po dokončení aktuálního eventu (ne před ním)
         /// </summary>
         public GInteractiveState InteractiveState { get { return (this.IsEnabled ? this._InteractiveState : GInteractiveState.Disabled); } protected set { this._InteractiveState = value; } } private GInteractiveState _InteractiveState;
         /// <summary>
-        /// true when this is dragged (CurrentState is LeftDrag or RightDrag)
+        /// Obsahuje true, pokud this objekt je nyní přemisťován akcí DragMove 
+        /// (<see cref="InteractiveState"/> je <see cref="GInteractiveState.LeftDrag"/> nebo <see cref="GInteractiveState.RightDrag"/>)
         /// </summary>
         protected bool IsDragged { get { return this.IsInInteractiveState(GInteractiveState.LeftDrag, GInteractiveState.RightDrag); } }
         /// <summary>
+        /// Obsahuje true, pokud na this objektu začal výběr DragFrame 
+        /// (<see cref="InteractiveState"/> je <see cref="GInteractiveState.LeftFrame"/> nebo <see cref="GInteractiveState.RightFrame"/>)
+        /// </summary>
+        protected bool IsFrameParent { get { return this.IsInInteractiveState(GInteractiveState.LeftFrame, GInteractiveState.RightFrame); } }
+        /// <summary>
         /// true when this has mouse (CurrentState is MouseOver, LeftDown, RightDown, LeftDrag or RightDrag)
         /// </summary>
-        protected bool IsMouseActive { get { return this.IsInInteractiveState(GInteractiveState.MouseOver, GInteractiveState.LeftDown, GInteractiveState.RightDown, GInteractiveState.LeftDrag, GInteractiveState.RightDrag); } }
+        protected bool IsMouseActive { get { return this.IsInInteractiveState(GInteractiveState.MouseOver, GInteractiveState.LeftDown, GInteractiveState.RightDown, GInteractiveState.LeftDrag, GInteractiveState.RightDrag, GInteractiveState.LeftFrame, GInteractiveState.RightFrame); } }
         /// <summary>
         /// true when this has mouse down (CurrentState is LeftDown, RightDown, LeftDrag or RightDrag)
         /// </summary>
-        protected bool IsMouseDown { get { return this.IsInInteractiveState(GInteractiveState.LeftDown, GInteractiveState.RightDown, GInteractiveState.LeftDrag, GInteractiveState.RightDrag); } }
+        protected bool IsMouseDown { get { return this.IsInInteractiveState(GInteractiveState.LeftDown, GInteractiveState.RightDown, GInteractiveState.LeftDrag, GInteractiveState.RightDrag, GInteractiveState.LeftFrame, GInteractiveState.RightFrame); } }
         /// <summary>
         /// Returns true when this.CurrentState is any from specified states.
         /// </summary>
@@ -463,7 +469,18 @@ namespace Asol.Tools.WorkScheduler.Components
                 case GInteractiveChangeState.WheelDown:
                     this.AfterStateChangedWheel(e);
                     break;
-
+                case GInteractiveChangeState.LeftDragFrameBegin:
+                case GInteractiveChangeState.RightDragFrameBegin:
+                    this.AfterStateChangedDragFrameBegin(e);
+                    break;
+                case GInteractiveChangeState.LeftDragFrameSelect:
+                case GInteractiveChangeState.RightDragFrameSelect:
+                    this.AfterStateChangedDragFrameSelect(e);
+                    break;
+                case GInteractiveChangeState.LeftDragFrameDone:
+                case GInteractiveChangeState.RightDragFrameDone:
+                    this.AfterStateChangedDragFrameDone(e);
+                    break;
             }
         }
         /// <summary>
@@ -520,6 +537,27 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="e"></param>
         protected virtual void AfterStateChangedWheel(GInteractiveChangeStateArgs e) { }
+        /// <summary>
+        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = LeftDragFrameBegin i RightDragFrameBegin.
+        /// Tato metoda se volá pro objekt, na němž akce DragFrame začíná (objekt má <see cref="IInteractiveItem.IsSelectParent"/> == true),
+        /// a nyní na něm byla zmáčknutá myš a začíná se označovat oblast výběru.
+        /// Objekt může omezit rozsah oblasti tak, že nastaví do argumentu e hodnotu <see cref="GInteractiveChangeStateArgs.DragFrameWorkArea"/> na požadovanou oblast.
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void AfterStateChangedDragFrameBegin(GInteractiveChangeStateArgs e) { }
+        /// <summary>
+        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = LeftDragFrameSelect i RightDragFrameSelect.
+        /// Metoda se volá do jednotlivých objektů, které by měly být selectovány.
+        /// Objekt by si měl sám nastavit <see cref="IInteractiveItem.IsSelected"/> = true; a nejspíš i zajistit překreslení: <see cref="InteractiveObject.Repaint()"/>.
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void AfterStateChangedDragFrameSelect(GInteractiveChangeStateArgs e) { }
+        /// <summary>
+        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = LeftDragFrameDone i RightDragFrameDone.
+        /// Tato metoda se volá pro objekt, na němž akce DragFrame začala (dříve proběhla akce <see cref="GInteractiveChangeState.LeftDragFrameBegin"/> nebo <see cref="GInteractiveChangeState.RightDragFrameBegin"/>).
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void AfterStateChangedDragFrameDone(GInteractiveChangeStateArgs e) { }
         /// <summary>
         /// Metoda je volána v události MouseEnter, a jejím úkolem je připravit data pro ToolTip.
         /// Metoda je volána poté, kdy byla volána metoda <see cref="AfterStateChangedMouseEnter"/>.
@@ -579,7 +617,8 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual void DrawOverChilds(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
         { }
         #endregion
-        #region Common support: modify value of ProcessAction: IsAction(), AddActions(), RemoveActions(), LeaveOnlyActions()
+        #region Obecná podpora potomků 
+        #region Práce s hodnotami ProcessAction (protected static) : IsAction(), AddActions(), RemoveActions(), LeaveOnlyActions()
         /// <summary>
         /// Returns true, when (action) contains any from specified values (actions).
         /// Returns false, when none.
@@ -638,6 +677,8 @@ namespace Asol.Tools.WorkScheduler.Components
                 sum |= (int)one;
             return (ProcessAction)(actions & (ProcessAction)sum);
         }
+        #endregion
+        #region Práce s hodnotami EventSourceType (protected static) : IsEventSource(); podpora pro RepaintItems(IEnumerable)
         /// <summary>
         /// Returns true, when (source) contains any from specified values (sources).
         /// Returns false, when none.
@@ -664,6 +705,38 @@ namespace Asol.Tools.WorkScheduler.Components
                 if (item != null)
                     item.Repaint();
         }
+        #endregion
+        #region Instanční podpora, protected
+        /// <summary>
+        /// Metoda vyhledá nejbližšího parenta daného typu.
+        /// Může vrátit null.
+        /// Sebe sama netestuje!
+        /// </summary>
+        /// <param name="parentType"></param>
+        /// <returns></returns>
+        protected IInteractiveParent SearchForParent(Type parentType)
+        {
+            return this.SearchForParent(i => (i.GetType() == parentType));
+        }
+        /// <summary>
+        /// Metoda vyhledá nejbližšího parenta, vyhovujícího danému filtru.
+        /// Může vrátit null.
+        /// Sebe sama netestuje!
+        /// </summary>
+        /// <param name="filter"></param>
+        /// <returns></returns>
+        protected IInteractiveParent SearchForParent(Func<IInteractiveParent,bool> filter)
+        {
+            IInteractiveParent parent = this.Parent;
+            while (parent != null)
+            {
+                if (Object.ReferenceEquals(parent, this)) return null;         // Zacyklení
+                if (filter(parent)) return parent;                             // Úspěch
+                parent = parent.Parent;                                        // O level dál
+            }
+            return null;                                                       // Neúspěch
+        }
+        #endregion
         #endregion
         #region Suppress events
         /// <summary>

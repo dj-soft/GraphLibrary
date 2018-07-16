@@ -505,6 +505,8 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 case GInteractiveState.None:
                 case GInteractiveState.Enabled:
+                case GInteractiveState.LeftFrame:
+                case GInteractiveState.RightFrame:
                     colorF = color;
                     break;
                 case GInteractiveState.Disabled:
@@ -547,6 +549,8 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 case GInteractiveState.None:
                 case GInteractiveState.Enabled:
+                case GInteractiveState.LeftFrame:
+                case GInteractiveState.RightFrame:
                     color1 = color;
                     color2 = color;
                     if (modifyStateNone)

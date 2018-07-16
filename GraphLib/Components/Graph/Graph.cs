@@ -26,7 +26,6 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
 
     */
 
-
     /// <summary>
     /// Graf na časové ose
     /// </summary>
@@ -46,6 +45,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             this._ItemList = new EList<ITimeGraphItem>();
             this._ItemList.ItemAddAfter += new EList<ITimeGraphItem>.EListEventAfterHandler(_ItemList_ItemAddAfter);
             this._ItemList.ItemRemoveAfter += new EList<ITimeGraphItem>.EListEventAfterHandler(_ItemList_ItemRemoveAfter);
+            this.IsSelectParent = true;
         }
         /// <summary>
         /// Všechny prvky grafu (časové úseky)
@@ -988,6 +988,18 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 this.GraphItemShowContextMenu(e, args.ContextMenu);
         }
         #endregion
+        #region Podpora pro Selectování DragFrame
+        protected override void AfterStateChangedDragFrameBegin(GInteractiveChangeStateArgs e)
+        {
+            Grid.GTable table = this.SearchForParent(typeof(Grid.GTable)) as Grid.GTable;
+            if (table != null)
+                this.SetFrameAreaByGTable(e, table);
+        }
+        protected void SetFrameAreaByGTable(GInteractiveChangeStateArgs e, Grid.GTable table)
+        {
+            e.DragFrameWorkArea = table.GetAbsoluteBoundsForArea(Grid.TableAreaType.RowData);
+        }
+        #endregion
         #region Draw : vykreslení grafu
         /// <summary>
         /// Systémové kreslení grafu
@@ -1541,6 +1553,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             this._Parent = parent;
             this._Group = group;
             this._Position = position;
+            this.IsSelectable = true;
         }
         /// <summary>
         /// Vlastník tohoto grafického prvku = datový prvek grafu

@@ -436,8 +436,8 @@ namespace Asol.Tools.WorkScheduler.Components
             this.SearchItemMethod = searchItemMethod;
             this.MouseAbsolutePoint = mouseAbsolutePoint;
             this.MouseRelativePoint = mouseRelativePoint;
-            this.DragOriginBounds = dragOriginBounds;
-            this.DragToBounds = dragToBounds;
+            this.DragMoveOriginBounds = dragOriginBounds;
+            this.DragMoveToBounds = dragToBounds;
         }
         /// <summary>
         /// Konstruktor
@@ -473,8 +473,8 @@ namespace Asol.Tools.WorkScheduler.Components
             this.SearchItemMethod = null;
             this.MouseAbsolutePoint = null;
             this.MouseRelativePoint = null;
-            this.DragOriginBounds = null;
-            this.DragToBounds = null;
+            this.DragMoveOriginBounds = null;
+            this.DragMoveToBounds = null;
             this.ModifierKeys = System.Windows.Forms.Control.ModifierKeys;
             this.KeyboardPreviewArgs = null;
             this.KeyboardEventArgs = null;
@@ -518,12 +518,18 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Origin area (Bounds of current item) before current Drag operation begun (in DragMove event)
         /// </summary>
-        public Rectangle? DragOriginBounds { get; protected set; }
+        public Rectangle? DragMoveOriginBounds { get; protected set; }
         /// <summary>
         /// Target area during Drag operation (in DragMove event) calculated from DragOriginBounds and mouse move (without limitations).
         /// Real target bounds can be other than this unlimited bounds.
         /// </summary>
-        public Rectangle? DragToBounds { get; protected set; }
+        public Rectangle? DragMoveToBounds { get; protected set; }
+        /// <summary>
+        /// Prostor, ve kterém může probíhat výběr pomocí zarámování (DragFrame).
+        /// Prostor je smysluplné nastavit pouze v eventu, kdy <see cref="ChangeState"/> == <see cref="GInteractiveChangeState.LeftDragFrameBegin"/> (nebo <see cref="GInteractiveChangeState.RightDragFrameBegin"/>.
+        /// V jiných eventech jej sice lze nastavit, ale hodnota bude zahozena.
+        /// </summary>
+        public Rectangle? DragFrameWorkArea { get; set; }
         /// <summary>
         /// Stav kláves v okamžiku události, včetně události myši
         /// </summary>
@@ -660,12 +666,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Origin area (Bounds of current item) before current Drag operation begun (in DragMove event)
         /// </summary>
-        public Rectangle? DragOriginBounds { get { return this._ChangeArgs.DragOriginBounds; } }
+        public Rectangle? DragOriginBounds { get { return this._ChangeArgs.DragMoveOriginBounds; } }
         /// <summary>
         /// Target area during Drag operation (in DragMove event) calculated from DragOriginBounds and mouse move (without limitations).
         /// Real target bounds can be other than this unlimited bounds.
         /// </summary>
-        public Rectangle? DragToBounds { get { return this._ChangeArgs.DragToBounds; } }
+        public Rectangle? DragToBounds { get { return this._ChangeArgs.DragMoveToBounds; } }
 
         /// <summary>
         /// Type of action (drag this object, or drag another object over this object)
@@ -1015,7 +1021,15 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Dragging by right mouse button
         /// </summary>
-        RightDrag
+        RightDrag,
+        /// <summary>
+        /// Označování FrameSelect levou myší
+        /// </summary>
+        LeftFrame,
+        /// <summary>
+        /// Označování FrameSelect pravou myší
+        /// </summary>
+        RightFrame
     }
     /// <summary>
     /// State and Change of state by mouse activity, this is: static state and change of state from one static state to another.
@@ -1033,61 +1047,77 @@ namespace Asol.Tools.WorkScheduler.Components
         MouseEnterSubItem,
         MouseLeaveSubItem,
         LeftDown,
-        LeftDragBegin,
-        /// <summary>
-        /// Called on every pixel during Left-MouseDrag action.
-        /// </summary>
-        LeftDragMove,
-        /// <summary>
-        /// Called on Escape key during Left-MouseDrag action.
-        /// Item must be positioned on Original location.
-        /// Original Bounds are present in args.
-        /// After this event will be called event LeftDragEnd (immediatelly), but does not call LeftUp event.
-        /// </summary>
-        LeftDragCancel,
-        /// <summary>
-        /// Called on MouseUp on Commit after Left-MouseDrag action.
-        /// Item is now moved to new location.
-        /// After this event will be called event LeftDragEnd (immediatelly), but does not call LeftUp event.
-        /// </summary>
-        LeftDragDone,
-        /// <summary>
-        /// Called on MouseUp after Left-MouseDrag action.
-        /// Is called after LeftDragDone (=OK) and after LeftDragCancel (=Cancel).
-        /// </summary>
-        LeftDragEnd,
         LeftUp,
         LeftClick,
         LeftLongClick,
         LeftDoubleClick,
+
+        /// <summary>
+        /// Událost je volána v okamžiku, kdy je jisté, že začíná akce DragMove na levé myši.
+        /// </summary>
+        LeftDragMoveBegin,
+        /// <summary>
+        /// Událost je volána po každém kroku pohybu DragMove.
+        /// </summary>
+        LeftDragMoveStep,
+        /// <summary>
+        /// Událost je volána po stisknutí Escape v procesu DragMove.
+        /// Prvek se bude vracet na svoji původní pozici (ta je předána v args).
+        /// Po tomto eventu bude volán event LeftDragEnd (immediatelly), ale nebude volán event LeftUp.
+        /// </summary>
+        LeftDragMoveCancel,
+        /// <summary>
+        /// Událost je volána na konci procesu DragMove, po zvednutí myši, pokud nedošlo k Cancel.
+        /// Prvek je nyní umístěn na novou pozici.
+        /// Po tomto eventu bude volán event LeftDragEnd (immediatelly), ale nebude volán event LeftUp.
+        /// </summary>
+        LeftDragMoveDone,
+        /// <summary>
+        /// Událost je volána na konci procesu DragMove, a to jak po Cancel, tak po Done.
+        /// Úkolem je provedení společného úklidu po DragMove procesu.
+        /// </summary>
+        LeftDragMoveEnd,
+
+        LeftDragFrameBegin,
+        LeftDragFrameSelect,
+        LeftDragFrameDone,
+
         RightDown,
-        RightDragBegin,
-        /// <summary>
-        /// Called on every pixel during Right-MouseDrag action.
-        /// </summary>
-        RightDragMove,
-        /// <summary>
-        /// Called on Escape key during Right-MouseDrag action.
-        /// Item must be positioned on Original location.
-        /// Original Bounds are present in args.
-        /// After this event will be called event RightDragEnd (immediatelly), but does not call RightUp event.
-        /// </summary>
-        RightDragCancel,
-        /// <summary>
-        /// Called on MouseUp on Commit after Right-MouseDrag action.
-        /// Item is now moved to new location.
-        /// After this event will be called event RightDragEnd (immediatelly), but does not call RightUp event.
-        /// </summary>
-        RightDragDone,
-        /// <summary>
-        /// Called on MouseUp after Right-MouseDrag action.
-        /// Is called after RightDragDone (=OK) and after RightDragCancel (=Cancel).
-        /// </summary>
-        RightDragEnd,
         RightUp,
         RightClick,
         RightLongClick,
         RightDoubleClick,
+
+        /// <summary>
+        /// Událost je volána v okamžiku, kdy je jisté, že začíná akce DragMove na pravé myši.
+        /// </summary>
+        RightDragMoveBegin,
+        /// <summary>
+        /// Událost je volána po každém kroku pohybu DragMove.
+        /// </summary>
+        RightDragMoveStep,
+        /// <summary>
+        /// Událost je volána po stisknutí Escape v procesu DragMove.
+        /// Prvek se bude vracet na svoji původní pozici (ta je předána v args).
+        /// Po tomto eventu bude volán event RightDragEnd (immediatelly), ale nebude volán event RightUp.
+        /// </summary>
+        RightDragMoveCancel,
+        /// <summary>
+        /// Událost je volána na konci procesu DragMove, po zvednutí myši, pokud nedošlo k Cancel.
+        /// Prvek je nyní umístěn na novou pozici.
+        /// Po tomto eventu bude volán event RightDragEnd (immediatelly), ale nebude volán event RightUp.
+        /// </summary>
+        RightDragMoveDone,
+        /// <summary>
+        /// Událost je volána na konci procesu DragMove, a to jak po Cancel, tak po Done.
+        /// Úkolem je provedení společného úklidu po DragMove procesu.
+        /// </summary>
+        RightDragMoveEnd,
+
+        RightDragFrameBegin,
+        RightDragFrameSelect,
+        RightDragFrameDone,
+
         KeyboardFocusEnter,
         KeyboardPreviewKeyDown,
         KeyboardKeyDown,

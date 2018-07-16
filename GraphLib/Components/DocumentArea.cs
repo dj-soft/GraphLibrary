@@ -41,7 +41,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         protected override void AfterStateChanged(GInteractiveChangeStateArgs e)
         {
-            if (e.ChangeState == GInteractiveChangeState.LeftDragMove)
+            if (e.ChangeState == GInteractiveChangeState.LeftDragMoveStep)
             { }
         }
         #endregion

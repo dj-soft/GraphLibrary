@@ -844,12 +844,12 @@ namespace Asol.Tools.WorkScheduler.Components
                     this.RepaintToLayers = GInteractiveDrawLayer.Standard;
                     break;
 
-                case GInteractiveChangeState.LeftDragBegin:
+                case GInteractiveChangeState.LeftDragMoveBegin:
                     this._LocationOriginal = this.Value;
                     e.UserDragPoint = new Point(this.Value, this.Value);
                     this.RepaintToLayers = GInteractiveDrawLayer.Standard;
                     break;
-                case GInteractiveChangeState.LeftDragMove:
+                case GInteractiveChangeState.LeftDragMoveStep:
                     if (e.UserDragPoint.HasValue)
                     {
                         int location = this._GetValue(e.UserDragPoint.Value, this.Orientation);
@@ -858,7 +858,7 @@ namespace Asol.Tools.WorkScheduler.Components
                             DragResponseType.InDragMove, ProcessAction.DragValueActions, EventSourceType.ValueChanging | EventSourceType.ApplicationCode);
                     }
                     break;
-                case GInteractiveChangeState.LeftDragCancel:
+                case GInteractiveChangeState.LeftDragMoveCancel:
                     if (this._LocationOriginal.HasValue)
                     {
                         int location = this._GetValue(this._LocationOriginal.Value, this.Orientation);
@@ -866,12 +866,12 @@ namespace Asol.Tools.WorkScheduler.Components
                         repaintParent = this.SetSplitter(null, location, null, null, null, null, null, DragResponseType.AfterDragEnd);
                     }
                     break;
-                case GInteractiveChangeState.LeftDragDone:
+                case GInteractiveChangeState.LeftDragMoveDone:
                     // To call "ValueChanged" events we must accept "_LocationOriginal" as LocationOriginal:
                     // e.RepaintAllItems =  ...
                     repaintParent = this.SetSplitter(null, this.Value, null, null, null, null, this._LocationOriginal, DragResponseType.AfterDragEnd);
                     break;
-                case GInteractiveChangeState.LeftDragEnd:
+                case GInteractiveChangeState.LeftDragMoveEnd:
                     this._LocationOriginal = null;
                     break;
                 case GInteractiveChangeState.MouseLeave:

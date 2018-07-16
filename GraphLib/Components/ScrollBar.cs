@@ -1034,7 +1034,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 case GInteractiveChangeState.LeftClick:
                     this.RepaintToLayers = GInteractiveDrawLayer.Standard;
                     break;
-                case GInteractiveChangeState.LeftDragBegin:
+                case GInteractiveChangeState.LeftDragMoveBegin:
                     if (childItem != null && childItem.CanDrag)
                     {
                         this.ActiveChild = childItem;
@@ -1043,7 +1043,7 @@ namespace Asol.Tools.WorkScheduler.Components
                         e.UserDragPoint = childItem.Bounds.Location;
                     }
                     break;
-                case GInteractiveChangeState.LeftDragMove:
+                case GInteractiveChangeState.LeftDragMoveStep:
                     if (this.ActiveChild != null && this.ActiveChild.CanDrag && e.UserDragPoint.HasValue)
                     {
                         switch (this.Orientation)
@@ -1057,9 +1057,9 @@ namespace Asol.Tools.WorkScheduler.Components
                         }
                     }
                     break;
-                case GInteractiveChangeState.LeftDragCancel:
+                case GInteractiveChangeState.LeftDragMoveCancel:
                     break;
-                case GInteractiveChangeState.LeftDragDone:
+                case GInteractiveChangeState.LeftDragMoveDone:
                     if (this.ActiveChild != null && this.ActiveChild.CanDrag)
                     {
                         e.RepaintAllItems = true;

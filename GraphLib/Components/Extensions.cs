@@ -1887,7 +1887,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         public static bool IsMouseActive(this GInteractiveState state)
         {
-            return (state == GInteractiveState.MouseOver || state == GInteractiveState.LeftDown || state == GInteractiveState.LeftDrag || state == GInteractiveState.RightDown || state == GInteractiveState.RightDrag);
+            return (state == GInteractiveState.MouseOver || 
+                state == GInteractiveState.LeftDown || state == GInteractiveState.RightDown ||
+                state == GInteractiveState.LeftDrag || state == GInteractiveState.RightDrag ||
+                state == GInteractiveState.LeftFrame || state == GInteractiveState.RightFrame);
         }
         /// <summary>
         /// Vrací true, pokud interaktivní stav je jeden z: LeftDown, RightDown.

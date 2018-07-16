@@ -207,6 +207,8 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 case GInteractiveState.Disabled: return 0f;
                 case GInteractiveState.None: return 0.25f;
+                case GInteractiveState.LeftFrame:
+                case GInteractiveState.RightFrame:
                 case GInteractiveState.Enabled: return 0.25f;
                 case GInteractiveState.MouseOver: return 0.50f;
                 case GInteractiveState.LeftDown:
@@ -2505,6 +2507,8 @@ namespace Asol.Tools.WorkScheduler.Components
             switch (state)
             {
                 case GInteractiveState.None: return InteractiveClipStandardBrush;
+                case GInteractiveState.LeftFrame:
+                case GInteractiveState.RightFrame:
                 case GInteractiveState.Enabled: return InteractiveClipStandardBrush;
                 case GInteractiveState.Disabled: return InteractiveClipDisabledBrush;
                 case GInteractiveState.MouseOver: return InteractiveClipMouseBrush;
