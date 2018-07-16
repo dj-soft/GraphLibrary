@@ -198,7 +198,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                     this.RepaintToLayers = GInteractiveDrawLayer.Standard;
                     e.ToolTipData.InfoText = toolText;
                     break;
-                case GInteractiveChangeState.LeftDragBegin:
+                case GInteractiveChangeState.LeftDragMoveBegin:
                     this.MouseCenter = null;
                     this.Angle = 0f;
                     this.OriginalBounds = this.Bounds;
@@ -207,12 +207,12 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                     e.RequiredCursorType = SysCursorType.SizeAll;
                     e.ToolTipData.InfoText = toolText;
                     break;
-                case GInteractiveChangeState.LeftDragMove:
-                    this.Bounds = e.DragToBounds.Value;
+                case GInteractiveChangeState.LeftDragMoveStep:
+                    this.Bounds = e.DragMoveToBounds.Value;
                     this.RepaintToLayers = GInteractiveDrawLayer.Interactive;
                     e.ToolTipData.InfoText = toolText;
                     break;
-                case GInteractiveChangeState.LeftDragCancel:
+                case GInteractiveChangeState.LeftDragMoveCancel:
                     if (this.OriginalBounds.HasValue)
                     {
                         Rectangle oldBounds = this.Bounds;
@@ -221,7 +221,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                         this.RepaintToLayers = GInteractiveDrawLayer.Standard;
                     }
                     break;
-                case GInteractiveChangeState.LeftDragDone:
+                case GInteractiveChangeState.LeftDragMoveDone:
                     this.Angle = 270f;
                     this.OriginalBounds = null;
                     e.RepaintAllItems = true;
@@ -229,7 +229,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                     e.ToolTipData.InfoText = toolText;
                     // this.RepaintToLayers = GInteractiveDrawLayer.Standard;
                     break;
-                case GInteractiveChangeState.LeftDragEnd:
+                case GInteractiveChangeState.LeftDragMoveEnd:
                     this.OriginalBounds = null;
                     e.RequiredCursorType = null;
                     e.RepaintAllItems = true;
