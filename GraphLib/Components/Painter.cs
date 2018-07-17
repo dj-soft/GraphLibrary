@@ -163,6 +163,18 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         #endregion
+        #region DrawFrameSelect
+        /// <summary>
+        /// Vykreslí FrameSelect obdélník
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        public static void DrawFrameSelect(Graphics graphics, Rectangle bounds)
+        {
+            graphics.FillRectangle(Skin.Brush(Skin.Control.FrameSelectBackColor), bounds);
+            graphics.DrawRectangle(Skin.Pen(Skin.Control.FrameSelectLineColor, DashStyle.Dot), bounds);
+        }
+        #endregion
         #region DrawEffect3D
         /// <summary>
         /// Vykreslí rectangle danou barvou, s 3D efektem v dané intenzitě a orientaci

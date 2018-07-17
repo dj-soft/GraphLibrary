@@ -227,6 +227,74 @@ namespace Asol.Tools.WorkScheduler.Data
             // Máme oba okolní prvky, vrátím ten který má přednost podle parametru nearestSide:
             return ((nearestSide == Direction.Positive) ? nextItem : prevItem);
         }
+        /// <summary>
+        /// Metoda dostává dvě pole prvků stejného typu: this = collectionNew = nové prvky, a collectionOld = staré prvky.
+        /// Dále dostává selector klíče (který z prvku pole najde a vrátí jeho unique klíč.
+        /// Metoda z těchto dat najde prvky, které jsou nové (tj. jsou v poli collectionNew, ale nejsou v collectionOld), a ty vloží do out pole newItems,
+        /// a pak najde prvky, které jsou staré (tj. jsou v poli collectionOld, ale už nejsou v collectionNew), a ty vloží do out pole oldItems.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="TKey"></typeparam>
+        /// <param name="collectionNew"></param>
+        /// <param name="collectionOld"></param>
+        /// <param name="keySelector"></param>
+        /// <param name="newItems"></param>
+        /// <param name="oldItems"></param>
+        public static void GetDifferentialArray<T, TKey>(this IEnumerable<T> collectionNew, IEnumerable<T> collectionOld, Func<T, TKey> keySelector, out T[] newItems, out T[] oldItems)
+        {
+            Dictionary<TKey, T> newDict = collectionNew.GetDictionary(keySelector, true);
+            Dictionary<TKey, T> oldDict = collectionOld.GetDictionary(keySelector, true);
+
+            newItems = newDict.GetNewValues(oldDict);
+            oldItems = oldDict.GetNewValues(newDict);
+        }
+        /// <summary>
+        /// Metoda vrátí souhrn prvků, které jsou přítomny v this (currentValues), ale nejsou přítomny v předchozím stavu (oldValues).
+        /// Porovnání se provádí pomocí klíče v Dictionary.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="TKey"></typeparam>
+        /// <param name="currentValues"></param>
+        /// <param name="oldValues"></param>
+        /// <returns></returns>
+        public static TValue[] GetNewValues<TKey, TValue>(this Dictionary<TKey, TValue> currentValues, Dictionary<TKey, TValue> oldValues)
+        {
+            TValue[] newValues = null;
+            if (currentValues != null)
+            {
+                if (oldValues != null)
+                    newValues = currentValues.Where(kvp => !oldValues.ContainsKey(kvp.Key)).Select(kvp => kvp.Value).ToArray();
+                else
+                    newValues = currentValues.Values.ToArray();
+            }
+            return newValues;
+        }
+        /// <summary>
+        /// Metoda vrací Dictionary z daných dat, s pomocí keySelectoru.
+        /// Umožňuje řídit přeskakování duplicit.
+        /// </summary>
+        /// <typeparam name="TKey"></typeparam>
+        /// <typeparam name="TValue"></typeparam>
+        /// <param name="collection"></param>
+        /// <param name="keySelector"></param>
+        /// <param name="skipDuplicityItems"></param>
+        /// <returns></returns>
+        public static Dictionary<TKey, TValue> GetDictionary<TKey, TValue>(this IEnumerable<TValue> collection, Func<TValue, TKey> keySelector, bool skipDuplicityItems)
+        {
+            Dictionary<TKey, TValue> dictionary = new Dictionary<TKey, TValue>();
+            if (collection != null)
+            {
+                foreach (TValue value in collection)
+                {
+                    TKey key = keySelector(value);
+                    if (!skipDuplicityItems)
+                        dictionary.Add(key, value);             // Pokud daný klíč už je v Dictionary, dojde k chybě.
+                    else if (!dictionary.ContainsKey(key))
+                        dictionary.Add(key, value);             // Přeskočit duplicitní položky: přidáváme položku jen když dosud nemáme klíč.
+                }
+            }
+            return dictionary;
+        }
         #endregion
         #region List<T>
         /// <summary>

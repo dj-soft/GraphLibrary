@@ -991,13 +991,16 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         #region Podpora pro Selectování DragFrame
         protected override void AfterStateChangedDragFrameBegin(GInteractiveChangeStateArgs e)
         {
-            Grid.GTable table = this.SearchForParent(typeof(Grid.GTable)) as Grid.GTable;
-            if (table != null)
-                this.SetFrameAreaByGTable(e, table);
+            Rectangle dragFrameWorkArea = this.BoundsAbsolute;
+            this.DragFrameWorkAreaModifyByTable(e, ref dragFrameWorkArea);
+            e.DragFrameWorkArea = dragFrameWorkArea;
         }
-        protected void SetFrameAreaByGTable(GInteractiveChangeStateArgs e, Grid.GTable table)
+        protected void DragFrameWorkAreaModifyByTable(GInteractiveChangeStateArgs e, ref Rectangle dragFrameWorkArea)
         {
-            e.DragFrameWorkArea = table.GetAbsoluteBoundsForArea(Grid.TableAreaType.RowData);
+            Grid.GTable table = this.SearchForParent(typeof(Grid.GTable)) as Grid.GTable;
+            if (table == null) return;
+            Rectangle tableRowArea = table.GetAbsoluteBoundsForArea(Grid.TableAreaType.RowData);
+            dragFrameWorkArea = new Rectangle(dragFrameWorkArea.X, tableRowArea.Y, dragFrameWorkArea.Width, tableRowArea.Height);
         }
         #endregion
         #region Draw : vykreslení grafu
@@ -1638,6 +1641,20 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             this._Group.GraphItemLeftLongClick(e, this._Owner, this._Position);
         }
+        public override bool IsSelected
+        {
+            get { return base.IsSelected; }
+            set
+            {
+                bool oldValue = base.IsSelected;
+                bool newValue = value;
+                if (oldValue != newValue)
+                {
+                    base.IsSelected = newValue;
+                    this.Repaint();
+                }
+            }
+        }
         #endregion
         #region Kreslení prvku
         /// <summary>
@@ -1694,6 +1711,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
 
             Color backColor = this.BackColor;
             Color borderColor = this.BorderColor;
+            if (this.IsSelected) borderColor = Color.DarkGreen;
+            int lineWidth = (this.IsSelected ? 2 : 1);
             if (boundsAbsolute.Width <= 2)
             {
                 e.Graphics.FillRectangle(Skin.Brush(borderColor), boundsAbsolute);
@@ -1713,7 +1732,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                     e.Graphics.FillRectangle(Skin.Brush(backColor), boundsAbsolute);
                 }
 
-                e.Graphics.DrawRectangle(Skin.Pen(borderColor), boundsAbsolute);
+                Rectangle boundsLineAbsolute = boundsAbsolute.Enlarge(1 - lineWidth, 1 - lineWidth, -lineWidth, -lineWidth);
+                e.Graphics.DrawRectangle(Skin.Pen(borderColor, (float)lineWidth), boundsLineAbsolute);
             }
         }
         /// <summary>

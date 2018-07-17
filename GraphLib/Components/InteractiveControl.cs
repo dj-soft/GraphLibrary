@@ -6,7 +6,9 @@ using System.Windows.Forms;
 using System.Drawing;
 using System.ComponentModel;
 using System.Drawing.Drawing2D;
+
 using Asol.Tools.WorkScheduler.Application;
+using Asol.Tools.WorkScheduler.Data;
 
 namespace Asol.Tools.WorkScheduler.Components
 {
@@ -764,6 +766,7 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 this._MouseCurrentItem.CurrentTime = DateTime.Now;
                 this._MouseDragFrameItem = this._MouseCurrentItem;
+                this._MouseDragFrameSelectedItems = new IInteractiveItem[0];
                 Rectangle? frameWorkArea;
                 this._ItemMouseCallStateChangedEvent(this._MouseCurrentItem, GInteractiveChangeState.LeftDragFrameBegin, this._MouseCurrentRelativePoint, out frameWorkArea);
                 this._MouseDragFrameWorkArea = frameWorkArea;
@@ -780,22 +783,29 @@ namespace Asol.Tools.WorkScheduler.Components
             this._MouseDragFrameCurrentBounds = frameBounds;
 
             Tuple<IInteractiveItem, Rectangle>[] items = GActivePosition.FindItemsAtBounds(this.ClientSize, this.ItemsList, frameBounds,
-                _MouseDragFrameFilterScan, 
-                _MouseDragFrameFilterAccept
+                (i, b) => _MouseDragFrameFilterScan(i, b, frameBounds),
+                (i, b) => _MouseDragFrameFilterAccept(i, b, frameBounds)
                 );
 
-            if (items.Length > 0)
-            {
+            IInteractiveItem[] currentFrameSelectedItems = items.Select(i => i.Item1).ToArray();
+            IInteractiveItem[] newItems, oldItems;
+            currentFrameSelectedItems.GetDifferentialArray(this._MouseDragFrameSelectedItems, i => i.Id, out newItems, out oldItems);
 
-            }
+            foreach (IInteractiveItem newItem in newItems)
+                newItem.IsSelected = newItem.IsSelectable;
+
+            foreach (IInteractiveItem oldItem in oldItems)
+                oldItem.IsSelected = false;
+
+            this._MouseDragFrameSelectedItems = currentFrameSelectedItems;
         }
         /// <summary>
         /// Metoda vrací true, pokud daný prvek může být scanován co do jeho Childs prvků
         /// </summary>
         /// <param name="item"></param>
-        /// <param name="itemAbsoluteBounds"></param>
+        /// <param name="itemAbsoluteVisibleBounds"></param>
         /// <returns></returns>
-        private bool _MouseDragFrameFilterScan(IInteractiveItem item, Rectangle itemAbsoluteBounds)
+        private bool _MouseDragFrameFilterScan(IInteractiveItem item, Rectangle itemAbsoluteVisibleBounds, Rectangle frameBounds)
         {
             return (item.IsVisible && item.IsEnabled);
         }
@@ -803,15 +813,28 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Metoda vrací true, pokud daný prvek má být akceptován do výstupního pole DragFrame
         /// </summary>
         /// <param name="item"></param>
-        /// <param name="itemAbsoluteBounds"></param>
+        /// <param name="itemAbsoluteVisibleBounds"></param>
         /// <returns></returns>
-        private bool _MouseDragFrameFilterAccept(IInteractiveItem item, Rectangle itemAbsoluteBounds)
+        private bool _MouseDragFrameFilterAccept(IInteractiveItem item, Rectangle itemAbsoluteVisibleBounds, Rectangle frameBounds)
         {
-            return (item.IsVisible && item.IsEnabled && item.IsSelectable);
+            if (!(item.IsVisible && item.IsEnabled && item.IsSelectable)) return false;
+            int itemPixels = itemAbsoluteVisibleBounds.GetArea();
+            Rectangle selectedBounds = Rectangle.Intersect(itemAbsoluteVisibleBounds, frameBounds);
+            int selectedPixels = selectedBounds.GetArea();
+            float selectedRatio = (itemPixels <= 0 ? 1f : ((float)selectedPixels / (float)itemPixels));
+            return (selectedRatio >= 0.25f);
         }
         private void _MouseDragFrameCancel()
         {
 
+        }
+        private void _MouseDragFrameDone(MouseEventArgs e)
+        {
+
+
+            this._MouseDragFrameCurrentBounds = null;
+            this._MouseDragState = MouseMoveDragState.None;
+            this._MouseDownReset();
         }
         /// <summary>
         /// Obsahuje true, pokud se má kreslit FrameBounds = oblast selectování (<see cref="_MouseDragFrameCurrentBounds"/>).
@@ -824,16 +847,13 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="layer"></param>
         private void _PaintFrameBounds(Graphics graphics, GInteractiveDrawLayer layer)
         {
-            graphics.DrawRectangle(Pens.Black, this._MouseDragFrameCurrentBounds.Value);
+            GPainter.DrawFrameSelect(graphics, this._MouseDragFrameCurrentBounds.Value);
         }
-        private void _MouseDragFrameDone(MouseEventArgs e)
-        {
-
-
-            this._MouseDragFrameCurrentBounds = null;
-            this._MouseDragState = MouseMoveDragState.None;
-            this._MouseDownReset();
-        }
+        /// <summary>
+        /// Pole prvků, které jsou aktuálně vybrány prostřednictvím DragFrame.
+        /// Mimo proces DragFrame je null.
+        /// </summary>
+        private IInteractiveItem[] _MouseDragFrameSelectedItems;
         /// <summary>
         /// Souřadnice prostoru, do něhož má být omezen proces DragFrame.
         /// Prostor deklaruje prvek Parent na začátku procesu DragFrame ve své události .
@@ -2834,19 +2854,21 @@ namespace Asol.Tools.WorkScheduler.Components
                 {
                     if (scanDict.ContainsKey(currentItem.Id)) continue;
                     scanDict.Add(currentItem.Id, currentItem);
+                    if (!currentItem.IsVisible || !currentItem.IsEnabled) continue;
 
                     currentBoundsInfo.CurrentItem = currentItem;
-                    Rectangle currentItemBounds = currentBoundsInfo.CurrentAbsBounds;
+                    Rectangle currentItemBounds = currentBoundsInfo.CurrentAbsVisibleBounds;
                     if (!frameBounds.IntersectsWith(currentItemBounds)) continue;
 
                     if ((!hasFilterScan || (hasFilterScan && filterScan(currentItem, currentItemBounds))))
-                    {
+                    {   // Scanovat prvek do hloubky:
                         IEnumerable<IInteractiveItem> currentChilds = currentItem.Childs;
                         if (currentChilds != null)
                             scanQueue.Enqueue(new Tuple<BoundsInfo, IEnumerable<IInteractiveItem>>(currentBoundsInfo.CurrentChildsSpider, currentChilds));
                     }
 
                     if (!hasFilterAccept || (hasFilterAccept && filterAccept(currentItem, currentItemBounds)))
+                        // Akceptovat prvek do výběru:
                         resultList.Add(new Tuple<IInteractiveItem, Rectangle>(currentItem, currentItemBounds));
                 }
             }
