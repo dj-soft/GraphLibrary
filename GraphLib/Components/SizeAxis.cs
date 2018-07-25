@@ -13,7 +13,7 @@ namespace Asol.Tools.WorkScheduler.Components
     /// GSizeAxis : 
     /// </summary>
     public class GSizeAxis 
-        : GBaseAxis<Decimal?, Decimal?, SizeRange>
+        : GBaseAxis<Decimal?, Decimal?, DecimalNRange>
     {
         /// <summary>
         /// Konstruktor s parentem
@@ -27,9 +27,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Initial value for new axis
         /// </summary>
-        protected override SizeRange InitialValue
+        protected override DecimalNRange InitialValue
         {
-            get { return new SizeRange(0m, 1m); }
+            get { return new DecimalNRange(0m, 1m); }
         }
         /// <summary>
         /// Returns a new instance of TValue for specified begin and end of interval.
@@ -37,9 +37,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="begin">Value of Begin interval</param>
         /// <param name="end">Value of End interval</param>
         /// <returns></returns>
-        protected override SizeRange GetValue(Decimal? begin, Decimal? end)
+        protected override DecimalNRange GetValue(Decimal? begin, Decimal? end)
         {
-            return new SizeRange(begin, end);
+            return new DecimalNRange(begin, end);
         }
         /// <summary>
         /// Returns a decimal number of units for specified interval.
@@ -107,7 +107,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         protected override decimal? RoundTickToInterval(decimal? value, decimal? interval, RoundMode roundMode)
         {
-            return (value.HasValue && interval.HasValue ? (decimal?)SizeRange.RoundValue(value.Value, interval.Value, roundMode) : (decimal?)null);
+            return (value.HasValue && interval.HasValue ? (decimal?)DecimalNRange.RoundValue(value.Value, interval.Value, roundMode) : (decimal?)null);
         }
         /// <summary>
         /// Axis class here declared items (ArrangementOne) for use in Axis.

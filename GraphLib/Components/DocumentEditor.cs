@@ -27,10 +27,10 @@ namespace Asol.Tools.WorkScheduler.Components
             this.DocumentArea = new GDocumentArea() { DocumentSize = new SizeD(149, 210) };
             this.AxisH = new GSizeAxis() { Orientation = AxisOrientation.Top };
             this.SplitterH = new GSplitter() { Orientation = Orientation.Horizontal, SplitterActiveOverlap = 2, ValueRange = new Int32NRange(18, 60) };
-            this.ScrollH = new GScrollBar() { Orientation = Orientation.Horizontal, ValueTotal = new SizeRange(-25m, 235m), Value = new SizeRange(50, 200) };
+            this.ScrollH = new GScrollBar() { Orientation = Orientation.Horizontal, ValueTotal = new DecimalNRange(-25m, 235m), Value = new DecimalNRange(50, 200) };
             this.AxisV = new GSizeAxis() { Orientation = AxisOrientation.LeftDown };
             this.SplitterV = new GSplitter() { Orientation = Orientation.Vertical, SplitterActiveOverlap = 2, ValueRange = new Int32NRange(30, 90) };
-            this.ScrollV = new GScrollBar() { Orientation = Orientation.Vertical, ValueTotal = new SizeRange(-25m, 315m), Value = new SizeRange(50, 250) };
+            this.ScrollV = new GScrollBar() { Orientation = Orientation.Vertical, ValueTotal = new DecimalNRange(-25m, 315m), Value = new DecimalNRange(50, 250) };
 
             this.SplitterHPos = 30;
             this.SplitterVPos = 50;
@@ -42,10 +42,10 @@ namespace Asol.Tools.WorkScheduler.Components
 
             this.SplitterH.ValueChanged += new GPropertyChangedHandler<int>(SplitterH_LocationChanging);
             this.SplitterV.ValueChanged += new GPropertyChangedHandler<int>(SplitterV_LocationChanging);
-            this.AxisH.ValueChanged += new GPropertyChangedHandler<SizeRange>(AxisH_ValueChanged);
-            this.AxisV.ValueChanged += new GPropertyChangedHandler<SizeRange>(AxisV_ValueChanged);
-            this.ScrollH.ValueChanged += new GPropertyChangedHandler<SizeRange>(ScrollH_ValueChanged);
-            this.ScrollV.ValueChanged += new GPropertyChangedHandler<SizeRange>(ScrollV_ValueChanged);
+            this.AxisH.ValueChanged += new GPropertyChangedHandler<DecimalNRange>(AxisH_ValueChanged);
+            this.AxisV.ValueChanged += new GPropertyChangedHandler<DecimalNRange>(AxisV_ValueChanged);
+            this.ScrollH.ValueChanged += new GPropertyChangedHandler<DecimalNRange>(ScrollH_ValueChanged);
+            this.ScrollV.ValueChanged += new GPropertyChangedHandler<DecimalNRange>(ScrollV_ValueChanged);
             this.DocumentArea.MaximalBoundsChanged += new EventHandler(DocumentArea_MaximalBoundsChanged);
 
             this.AddItems(DocumentArea, AxisH, ScrollH, AxisV, ScrollV, SplitterH, SplitterV);
@@ -95,15 +95,15 @@ namespace Asol.Tools.WorkScheduler.Components
                 RectangleD max = this.DocumentArea.MaximalBounds;
                 if (max.Width <= 0m || max.Height <= 0m) return;
 
-                SizeRange maxH = new SizeRange(max.Left, max.Right);
+                DecimalNRange maxH = new DecimalNRange(max.Left, max.Right);
                 this.AxisH.ValueLimit = maxH.Clone;
                 this.ScrollH.ValueTotal = maxH.Clone;
 
-                SizeRange maxV = new SizeRange(max.Top, max.Bottom);
+                DecimalNRange maxV = new DecimalNRange(max.Top, max.Bottom);
                 this.AxisV.ValueLimit = maxV.Clone;
                 this.ScrollV.ValueTotal = maxV.Clone;
 
-                SizeRange value;
+                DecimalNRange value;
                 if (MustChangeValue(this.AxisH.Value, maxH, force, out value)) this.AxisH.Value = value;
                 if (MustChangeValue(this.ScrollH.Value, maxH, force, out value)) this.ScrollH.Value = value;
                 if (MustChangeValue(this.AxisV.Value, maxV, force, out value)) this.AxisV.Value = value;
@@ -118,7 +118,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="maxValue"></param>
         /// <param name="newValue"></param>
         /// <returns></returns>
-        private bool MustChangeValue(SizeRange currentValue, SizeRange maxValue, bool force, out SizeRange newValue)
+        private bool MustChangeValue(DecimalNRange currentValue, DecimalNRange maxValue, bool force, out DecimalNRange newValue)
         {
             newValue = null;
             if (!currentValue.IsFilled || !maxValue.IsFilled) return false;
@@ -138,7 +138,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             this.ComponentLayout();
         }
-        private void AxisH_ValueChanged(object sender, GPropertyChangeArgs<SizeRange> e)
+        private void AxisH_ValueChanged(object sender, GPropertyChangeArgs<DecimalNRange> e)
         {
             if (this._SuppressEvents) return;
             using (_SuppressedEvents.Scope(this))
@@ -149,7 +149,7 @@ namespace Asol.Tools.WorkScheduler.Components
             }
             this.Draw();
         }
-        private void AxisV_ValueChanged(object sender, GPropertyChangeArgs<SizeRange> e)
+        private void AxisV_ValueChanged(object sender, GPropertyChangeArgs<DecimalNRange> e)
         {
             if (this._SuppressEvents) return;
             using (_SuppressedEvents.Scope(this))
@@ -160,7 +160,7 @@ namespace Asol.Tools.WorkScheduler.Components
             }
             this.Draw();
         }
-        private void ScrollH_ValueChanged(object sender, GPropertyChangeArgs<SizeRange> e)
+        private void ScrollH_ValueChanged(object sender, GPropertyChangeArgs<DecimalNRange> e)
         {
             if (this._SuppressEvents) return;
             using (_SuppressedEvents.Scope(this))
@@ -169,7 +169,7 @@ namespace Asol.Tools.WorkScheduler.Components
             }
             this.Draw();
         }
-        private void ScrollV_ValueChanged(object sender, GPropertyChangeArgs<SizeRange> e)
+        private void ScrollV_ValueChanged(object sender, GPropertyChangeArgs<DecimalNRange> e)
         {
             if (this._SuppressEvents) return;
             using (_SuppressedEvents.Scope(this))

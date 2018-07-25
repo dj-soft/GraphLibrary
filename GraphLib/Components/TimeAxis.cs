@@ -395,7 +395,7 @@ namespace Asol.Tools.WorkScheduler.Components
             decimal size = (decimal)targetSize;
             decimal result = 0m;
             decimal proportional = (proportionalRatio < 0.4f ? 0.4m : (proportionalRatio > 0.9f ? 0.9m : (decimal)proportionalRatio));
-            SizeRange linearRange = SizeRange.CreateFromBeginSize(((1m - proportional) / 2) * size, proportional * size);
+            DecimalNRange linearRange = DecimalNRange.CreateFromBeginSize(((1m - proportional) / 2) * size, proportional * size);
             decimal targetPixelRatio = (axisPosition.Value / axisSize);   // Pozice daného time na časové ose: 
             if (targetPixelRatio >= 0m && targetPixelRatio <= 1m)
             {   // Hodnoty 0-1 jsou "uvnitř" = v lineární části:

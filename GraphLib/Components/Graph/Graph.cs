@@ -884,7 +884,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             if (this.HasDataSource)
             {
-                CreateToolTipArgs args = new CreateToolTipArgs(e, group, data, position);
+                CreateToolTipArgs args = new CreateToolTipArgs(e, this, group, data, position);
                 this.DataSource.CreateToolTip(args);
             }
             else
@@ -905,7 +905,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             if (!this.HasDataSource) return;
 
-            ItemActionArgs args = new ItemActionArgs(e, group, data, position);
+            ItemActionArgs args = new ItemActionArgs(e, this, group, data, position);
             this.DataSource.ItemRightClick(args);
             if (args.ContextMenu != null)
                 this.GraphItemShowContextMenu(e, args.ContextMenu);
@@ -948,7 +948,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             if (!this.HasDataSource) return;
 
-            ItemActionArgs args = new ItemActionArgs(e, group, data, position);
+            ItemActionArgs args = new ItemActionArgs(e, this, group, data, position);
             this.DataSource.ItemDoubleClick(args);
         }
         /// <summary>
@@ -961,7 +961,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             if (!this.HasDataSource) return;
 
-            ItemActionArgs args = new ItemActionArgs(e, group, data, position);
+            ItemActionArgs args = new ItemActionArgs(e, this, group, data, position);
             this.DataSource.ItemLongClick(args);
         }
         /// <summary>
@@ -982,7 +982,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             if (!this.HasDataSource) return;
 
-            ItemActionArgs args = new ItemActionArgs(e, null, null, GGraphControlPosition.None);
+            ItemActionArgs args = new ItemActionArgs(e, this, null, null, GGraphControlPosition.None);
             this.DataSource.GraphRightClick(args);
             if (args.ContextMenu != null)
                 this.GraphItemShowContextMenu(e, args.ContextMenu);
@@ -2128,8 +2128,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="group"></param>
         /// <param name="data"></param>
         /// <param name="position"></param>
-        public CreateToolTipArgs(GInteractiveChangeStateArgs e, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position)
-            : base(e, group, data, position)
+        public CreateToolTipArgs(GInteractiveChangeStateArgs e, GTimeGraph graph, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position)
+            : base(e, graph, group, data, position)
         { }
         /// <summary>
         /// Data pro tooltip.
@@ -2148,11 +2148,12 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Konstruktor
         /// </summary>
         /// <param name="e"></param>
+        /// <param name="graph"></param>
         /// <param name="group"></param>
         /// <param name="data"></param>
         /// <param name="position"></param>
-        public ItemActionArgs(GInteractiveChangeStateArgs e, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position)
-            : base(e, group, data, position)
+        public ItemActionArgs(GInteractiveChangeStateArgs e, GTimeGraph graph, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position)
+            : base(e, graph, group, data, position)
         { }
         /// <summary>
         /// Kontextové menu, které se má v místě kliknutí rozsvítit. Toto menu vytváří datový zdroj jako reakci na probíhající akci (typicky RightClick).
@@ -2175,8 +2176,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
     /// </summary>
     public abstract class ItemInteractiveArgs : ItemArgs
     {
-        public ItemInteractiveArgs(GInteractiveChangeStateArgs e, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position)
-            : base(group, data, position)
+        public ItemInteractiveArgs(GInteractiveChangeStateArgs e, GTimeGraph graph, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position)
+            : base(graph, group, data, position)
         {
             this.InteractiveArgs = e;
         }
@@ -2210,12 +2211,17 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="group"></param>
         /// <param name="data"></param>
         /// <param name="position"></param>
-        public ItemArgs(GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position)
+        public ItemArgs(GTimeGraph graph, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position)
         {
+            this.Graph = graph;
             this.Group = group;
             this.CurrentItem = (position == GGraphControlPosition.Item ? data : null);
             this.Position = position;
         }
+        /// <summary>
+        /// Graf, v němž došlo k události
+        /// </summary>
+        public GTimeGraph Graph { get; protected set; }
         /// <summary>
         /// Grupa položek
         /// </summary>

@@ -596,8 +596,8 @@ namespace Asol.Tools.WorkScheduler.Components
             this._TablesAutoSize = ImplicitAutoSizeType.FirstItem;
 
             this._TablesScrollBar = new GScrollBar() { Orientation = System.Windows.Forms.Orientation.Vertical };
-            this._TablesScrollBar.ValueChanging += new GPropertyChangedHandler<SizeRange>(TablesScrollBar_ValueChange);
-            this._TablesScrollBar.ValueChanged += new GPropertyChangedHandler<SizeRange>(TablesScrollBar_ValueChange);
+            this._TablesScrollBar.ValueChanging += new GPropertyChangedHandler<DecimalNRange>(TablesScrollBar_ValueChange);
+            this._TablesScrollBar.ValueChanged += new GPropertyChangedHandler<DecimalNRange>(TablesScrollBar_ValueChange);
         }
         /// <summary>
         /// Řídící prvek pro Pozice tabulek
@@ -666,7 +666,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void TablesScrollBar_ValueChange(object sender, GPropertyChangeArgs<SizeRange> e)
+        private void TablesScrollBar_ValueChange(object sender, GPropertyChangeArgs<DecimalNRange> e)
         {
             int offset = (int)this.TablesScrollBar.Value.Begin.Value;
             if (offset == this.TablesPositions.DataFirstPixel) return;
@@ -806,8 +806,8 @@ namespace Asol.Tools.WorkScheduler.Components
             this._ColumnsPositions = new GridPosition(GGrid.DefaultRowHeaderWidth, 28, this._ColumnPositionGetVisualSize, this._ColumnPositionGetDataSize);
 
             this._ColumnsScrollBar = new GScrollBar() { Orientation = System.Windows.Forms.Orientation.Horizontal };
-            this._ColumnsScrollBar.ValueChanging += new GPropertyChangedHandler<SizeRange>(ColumnsScrollBar_ValueChange);
-            this._ColumnsScrollBar.ValueChanged += new GPropertyChangedHandler<SizeRange>(ColumnsScrollBar_ValueChange);
+            this._ColumnsScrollBar.ValueChanging += new GPropertyChangedHandler<DecimalNRange>(ColumnsScrollBar_ValueChange);
+            this._ColumnsScrollBar.ValueChanged += new GPropertyChangedHandler<DecimalNRange>(ColumnsScrollBar_ValueChange);
         }
         /// <summary>
         /// Řídící prvek pro Pozice sloupců
@@ -854,7 +854,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void ColumnsScrollBar_ValueChange(object sender, GPropertyChangeArgs<SizeRange> e)
+        private void ColumnsScrollBar_ValueChange(object sender, GPropertyChangeArgs<DecimalNRange> e)
         {
             int offset = (int)this.ColumnsScrollBar.Value.Begin.Value;
             if (offset == this.ColumnsPositions.DataFirstPixel) return;

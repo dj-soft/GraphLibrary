@@ -517,8 +517,8 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             this._RowsPositions = new GridPosition(DefaultColumnHeaderHeight, 50, this._RowsPositionGetVisualSize, this._RowsPositionGetDataSize, this._GetVisualFirstPixel, this._SetVisualFirstPixel);
 
             this._RowsScrollBar = new GScrollBar() { Orientation = System.Windows.Forms.Orientation.Vertical };
-            this._RowsScrollBar.ValueChanging += new GPropertyChangedHandler<SizeRange>(RowsScrollBar_ValueChange);
-            this._RowsScrollBar.ValueChanged += new GPropertyChangedHandler<SizeRange>(RowsScrollBar_ValueChange);
+            this._RowsScrollBar.ValueChanging += new GPropertyChangedHandler<DecimalNRange>(RowsScrollBar_ValueChange);
+            this._RowsScrollBar.ValueChanged += new GPropertyChangedHandler<DecimalNRange>(RowsScrollBar_ValueChange);
         }
         /// <summary>
         /// Řídící prvek pro Pozice řádků
@@ -566,7 +566,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void RowsScrollBar_ValueChange(object sender, GPropertyChangeArgs<SizeRange> e)
+        private void RowsScrollBar_ValueChange(object sender, GPropertyChangeArgs<DecimalNRange> e)
         {
             int offset = (int)this.RowsScrollBar.Value.Begin.Value;
             if (offset == this.RowsPositions.DataFirstPixel) return;

@@ -63,7 +63,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Logická hodnota.
         /// Lze ji chápat jako první a poslední pixel dokumentu, který bude zobrazen jako první ve viditelné oblasti Controlu.
         /// </summary>
-        public SizeRange Value
+        public DecimalNRange Value
         {
             get { return this._Value; }
             set { this.SetValue(value, ProcessAction.All, EventSourceType.ValueChange | EventSourceType.ApplicationCode); }
@@ -73,7 +73,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Lze ji chápat jako první a poslední pixel dokumentu, který bude zobrazen jako první ve viditelné oblasti Controlu.
         /// Silent = vložení hodnoty do této property nespustí událost ValueChanged.
         /// </summary>
-        protected SizeRange ValueSilent
+        protected DecimalNRange ValueSilent
         {
             get { return this._Value; }
             set { this.SetValue(value, ProcessAction.SilentValueActions, EventSourceType.ValueChange | EventSourceType.ApplicationCode); }
@@ -83,7 +83,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Lze ji chápat jako první a poslední pixel dokumentu, který bude zobrazen jako první ve viditelné oblasti Controlu.
         /// Drag = vložení hodnoty do této property nevede k přepočtu vnitřních souřadnic = pozice thumbu, protože ta je právě zdrojem akce.
         /// </summary>
-        protected SizeRange ValueDrag
+        protected DecimalNRange ValueDrag
         {
             get { return this._Value; }
             set { this.SetValue(value, ProcessAction.DragValueActions, EventSourceType.ValueChanging | EventSourceType.ApplicationCode); }
@@ -92,13 +92,13 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Logická velikost.
         /// Lze ji chápat jako celkový rozsah pixelů dokumentu, který je zobrazován ve viditelné oblasti Controlu.
         /// </summary>
-        public SizeRange ValueTotal
+        public DecimalNRange ValueTotal
         {
             get { return this._ValueTotal; }
             set { this.SetValueTotal(value, ProcessAction.All, EventSourceType.ValueRangeChange | EventSourceType.ApplicationCode); }
         }
-        private SizeRange _Value;
-        private SizeRange _ValueTotal;
+        private DecimalNRange _Value;
+        private DecimalNRange _ValueTotal;
         private bool _ValueIsValid;
         /// <summary>
         /// Poměrná hodnota pro malý posun, tj. když je kliknuto na horní/dolní šipku.
@@ -194,8 +194,8 @@ namespace Asol.Tools.WorkScheduler.Components
                 if (addSpace > (visualSize - 10)) addSpace = visualSize - 10;
                 dataSize += addSpace;
 
-                this.ValueTotal = new SizeRange(0, dataSize);
-                this.Value = new SizeRange(dataBegin, dataBegin + visualSize);
+                this.ValueTotal = new DecimalNRange(0, dataSize);
+                this.Value = new DecimalNRange(dataBegin, dataBegin + visualSize);
                 this.IsEnabled = (dataSize > visualSize);
             }
         }
@@ -280,11 +280,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="scroll"></param>
         /// <param name="callInnerReset"></param>
         /// <param name="callEvents"></param>
-        protected void SetValue(SizeRange value, ProcessAction actions, EventSourceType eventSource)
+        protected void SetValue(DecimalNRange value, ProcessAction actions, EventSourceType eventSource)
         {
             if (value == null) return;
-            SizeRange oldValue = this._Value;
-            SizeRange newValue = value;
+            DecimalNRange oldValue = this._Value;
+            DecimalNRange newValue = value;
             if (IsAction(actions, ProcessAction.RecalcValue))
                 newValue = this.ValueAlign(newValue);
 
@@ -310,11 +310,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="scroll"></param>
         /// <param name="callInnerReset"></param>
         /// <param name="callEvents"></param>
-        protected void SetValueTotal(SizeRange valueTotal, ProcessAction actions, EventSourceType eventSource)
+        protected void SetValueTotal(DecimalNRange valueTotal, ProcessAction actions, EventSourceType eventSource)
         {
             if (valueTotal == null) return;
-            SizeRange oldValueTotal = this._ValueTotal;
-            SizeRange newValueTotal = valueTotal;
+            DecimalNRange oldValueTotal = this._ValueTotal;
+            DecimalNRange newValueTotal = valueTotal;
             if (oldValueTotal != null && newValueTotal == oldValueTotal) return;    // No change = no reactions.
 
             this._ValueTotal = newValueTotal;
@@ -333,9 +333,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        protected SizeRange ValueAlign(SizeRange value)
+        protected DecimalNRange ValueAlign(DecimalNRange value)
         {
-            SizeRange valueTotal = this.ValueTotal;
+            DecimalNRange valueTotal = this.ValueTotal;
             if (value == null || valueTotal == null) return value;
             if (!value.IsFilled || !valueTotal.IsFilled) return value;
             if (value.Size.Value <= 0m) return value;
@@ -355,16 +355,16 @@ namespace Asol.Tools.WorkScheduler.Components
                 }
             }
 
-            return SizeRange.CreateFromBeginSize(begin, size);
+            return DecimalNRange.CreateFromBeginSize(begin, size);
         }
         #endregion
         #region Raise events (ValueChanged, ValueRangeChanged, ScaleChanged, ScaleRangeChanged, AreaChanged, DrawRequest)
         /// <summary>
         /// Vyvolá metodu OnValueChanging() a event ValueChanging
         /// </summary>
-        protected void CallValueChanging(SizeRange oldValue, SizeRange newValue, EventSourceType eventSource)
+        protected void CallValueChanging(DecimalNRange oldValue, DecimalNRange newValue, EventSourceType eventSource)
         {
-            GPropertyChangeArgs<SizeRange> args = new GPropertyChangeArgs<SizeRange>(oldValue, newValue, eventSource);
+            GPropertyChangeArgs<DecimalNRange> args = new GPropertyChangeArgs<DecimalNRange>(oldValue, newValue, eventSource);
             this.OnValueChanging(args);
             if (!this.IsSuppressedEvent && this.ValueChanging != null)
                 this.ValueChanging(this, args);
@@ -372,18 +372,18 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Háček volaný v průběhu interaktivní změny hodnoty <see cref="Value"/>
         /// </summary>
-        protected virtual void OnValueChanging(GPropertyChangeArgs<SizeRange> args) { }
+        protected virtual void OnValueChanging(GPropertyChangeArgs<DecimalNRange> args) { }
         /// <summary>
         /// Event volaný v průběhu interaktivní změny hodnoty <see cref="Value"/>
         /// </summary>
-        public event GPropertyChangedHandler<SizeRange> ValueChanging;
+        public event GPropertyChangedHandler<DecimalNRange> ValueChanging;
 
         /// <summary>
         /// Vyvolá metodu OnValueChanged() a event ValueChanged
         /// </summary>
-        protected void CallValueChanged(SizeRange oldValue, SizeRange newValue, EventSourceType eventSource)
+        protected void CallValueChanged(DecimalNRange oldValue, DecimalNRange newValue, EventSourceType eventSource)
         {
-            GPropertyChangeArgs<SizeRange> args = new GPropertyChangeArgs<SizeRange>(oldValue, newValue, eventSource);
+            GPropertyChangeArgs<DecimalNRange> args = new GPropertyChangeArgs<DecimalNRange>(oldValue, newValue, eventSource);
             this.OnValueChanged(args);
             if (!this.IsSuppressedEvent && this.ValueChanged != null)
                 this.ValueChanged(this, args);
@@ -391,18 +391,18 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Háček volaný po skončení změny hodnoty <see cref="Value"/>
         /// </summary>
-        protected virtual void OnValueChanged(GPropertyChangeArgs<SizeRange> args) { }
+        protected virtual void OnValueChanged(GPropertyChangeArgs<DecimalNRange> args) { }
         /// <summary>
         /// Event volaný po skončení změny hodnoty <see cref="Value"/>
         /// </summary>
-        public event GPropertyChangedHandler<SizeRange> ValueChanged;
+        public event GPropertyChangedHandler<DecimalNRange> ValueChanged;
 
         /// <summary>
         /// Vyvolá metodu OnValueTotalChanged() a event ValueTotalChanged
         /// </summary>
-        protected void CallValueTotalChanged(SizeRange oldValue, SizeRange newValue, EventSourceType eventSource)
+        protected void CallValueTotalChanged(DecimalNRange oldValue, DecimalNRange newValue, EventSourceType eventSource)
         {
-            GPropertyChangeArgs<SizeRange> args = new GPropertyChangeArgs<SizeRange>(oldValue, newValue, eventSource);
+            GPropertyChangeArgs<DecimalNRange> args = new GPropertyChangeArgs<DecimalNRange>(oldValue, newValue, eventSource);
             this.OnValueTotalChanged(args);
             if (!this.IsSuppressedEvent && this.ValueTotalChanged != null)
                 this.ValueTotalChanged(this, args);
@@ -410,11 +410,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Háček volaný po skončení změny hodnoty <see cref="ValueTotal"/>
         /// </summary>
-        protected virtual void OnValueTotalChanged(GPropertyChangeArgs<SizeRange> args) { }
+        protected virtual void OnValueTotalChanged(GPropertyChangeArgs<DecimalNRange> args) { }
         /// <summary>
         /// Event on this.Value changes
         /// </summary>
-        public event GPropertyChangedHandler<SizeRange> ValueTotalChanged;
+        public event GPropertyChangedHandler<DecimalNRange> ValueTotalChanged;
 
         /// <summary>
         /// Call method OnOrientationChanged() and event OrientationChanged
@@ -461,11 +461,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="value"></param>
         /// <param name="roundToInt"></param>
         /// <returns></returns>
-        private SizeRange _GetPixelFromValue(SizeRange value, bool roundToInt)
+        private DecimalNRange _GetPixelFromValue(DecimalNRange value, bool roundToInt)
         {
             decimal begin = _GetPixelFromValue(value.Begin.Value, roundToInt);
             decimal size = _GetPixelDistanceFromValue(value.Size.Value, roundToInt);
-            return SizeRange.CreateFromBeginSize(begin, size);
+            return DecimalNRange.CreateFromBeginSize(begin, size);
         }
         /// <summary>
         /// Return SizeRange in pixels from value (booth in absolute coordinates)
@@ -473,11 +473,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="value"></param>
         /// <param name="roundToInt"></param>
         /// <returns></returns>
-        private SizeRange _GetValueFromPixel(SizeRange value)
+        private DecimalNRange _GetValueFromPixel(DecimalNRange value)
         {
             decimal begin = _GetValueFromPixel(value.Begin.Value);
             decimal size = _GetValueDistanceFromPixel(value.Size.Value);
-            return SizeRange.CreateFromBeginSize(begin, size);
+            return DecimalNRange.CreateFromBeginSize(begin, size);
         }
         /// <summary>
         /// Return absolute pixel for specified absolute value.
@@ -579,7 +579,7 @@ namespace Asol.Tools.WorkScheduler.Components
             int begin = 0;
             int size = r.Height;
 
-            SizeRange dataTotal = this.ChildDataTotal;
+            DecimalNRange dataTotal = this.ChildDataTotal;
             this.ChildItemAllArea.Bounds = new Rectangle((int)dataTotal.Begin.Value, begin, (int)dataTotal.Size.Value, size);
             this.ChildItemDataArea.Bounds = new Rectangle((int)dataTotal.Begin.Value, begin, (int)dataTotal.Size.Value, size);
 
@@ -591,7 +591,7 @@ namespace Asol.Tools.WorkScheduler.Components
 
             if (this._ValueIsValid)
             {
-                SizeRange dataThumb = this.ChildDataThumb;
+                DecimalNRange dataThumb = this.ChildDataThumb;
                 this.ChildItemMinArea.Bounds = new Rectangle((int)dataTotal.Begin.Value, begin, (int)(dataThumb.Begin.Value - dataTotal.Begin.Value), size);
                 this.ChildItemMaxArea.Bounds = new Rectangle((int)dataThumb.End.Value, begin, (int)(dataTotal.End.Value - dataThumb.End.Value), size);
                 this.ChildItemThumb.Bounds = new Rectangle((int)dataThumb.Begin.Value, begin, (int)dataThumb.Size.Value, size);
@@ -616,7 +616,7 @@ namespace Asol.Tools.WorkScheduler.Components
             int begin = 0;
             int size = r.Width;
 
-            SizeRange dataTotal = this.ChildDataTotal;
+            DecimalNRange dataTotal = this.ChildDataTotal;
             this.ChildItemAllArea.Bounds = new Rectangle(begin, (int)dataTotal.Begin.Value, size, (int)dataTotal.Size.Value);
             this.ChildItemDataArea.Bounds = new Rectangle(begin, (int)dataTotal.Begin.Value, size, (int)dataTotal.Size.Value);
 
@@ -628,7 +628,7 @@ namespace Asol.Tools.WorkScheduler.Components
 
             if (this._ValueIsValid)
             {
-                SizeRange dataThumb = this.ChildDataThumb;
+                DecimalNRange dataThumb = this.ChildDataThumb;
                 this.ChildItemMinArea.Bounds = new Rectangle(begin, (int)dataTotal.Begin.Value, size, (int)(this.ChildDataValue.Center.Value - dataTotal.Begin.Value));
                 this.ChildItemMaxArea.Bounds = new Rectangle(begin, (int)this.ChildDataValue.Center.Value, size, (int)(dataTotal.End.Value - this.ChildDataValue.Center.Value));
                 this.ChildItemThumb.Bounds = new Rectangle(begin, (int)dataThumb.Begin.Value, size, (int)dataThumb.Size.Value);
@@ -664,13 +664,13 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             this.ChildPixelsReset();
             buttonLength = 0;
-            SizeRange value = this._Value;
-            SizeRange valueTotal = this._ValueTotal;
+            DecimalNRange value = this._Value;
+            DecimalNRange valueTotal = this._ValueTotal;
             if (valueTotal == null || !valueTotal.IsFilled) return false;
             this._ValueIsValid = (value != null && value.IsFilled && value.Size > 0m);
             if (length < 10) return false;
             buttonLength = ChildPixelsCalculateMinMaxLength(length, width);                        // Délka buttonu Min a Max
-            this.ChildDataTotal = SizeRange.CreateFromBeginSize(begin + buttonLength, length - (2 * buttonLength));
+            this.ChildDataTotal = DecimalNRange.CreateFromBeginSize(begin + buttonLength, length - (2 * buttonLength));
             this.ChildDataTrack = this.ChildDataTotal.Clone;
             this.ChildDataScale = valueTotal.Size.Value / this.ChildDataTrack.Size.Value;
             if (this._ValueIsValid)
@@ -686,10 +686,10 @@ namespace Asol.Tools.WorkScheduler.Components
                 else
                 {   // Vypočtená velikost Thumbu je příliš malá, musíme Thumb zvětšit na minimální velikost, a vyřešit ty vzniklé disproporce:
                     this.ChildDataThumbOffset = (minThumbSize - this.ChildDataValue.Size.Value) / 2m;
-                    this.ChildDataTrack = new SizeRange(this.ChildDataTotal.Begin.Value + this.ChildDataThumbOffset, this.ChildDataTotal.End.Value - this.ChildDataThumbOffset);
+                    this.ChildDataTrack = new DecimalNRange(this.ChildDataTotal.Begin.Value + this.ChildDataThumbOffset, this.ChildDataTotal.End.Value - this.ChildDataThumbOffset);
                     this.ChildDataScale = valueTotal.Size.Value / this.ChildDataTrack.Size.Value;
                     this.ChildDataValue = this._GetPixelFromValue(value, false);
-                    this.ChildDataThumb = new SizeRange(this.ChildDataValue.Begin.Value - this.ChildDataThumbOffset, this.ChildDataValue.End.Value + this.ChildDataThumbOffset);
+                    this.ChildDataThumb = new DecimalNRange(this.ChildDataValue.Begin.Value - this.ChildDataThumbOffset, this.ChildDataValue.End.Value + this.ChildDataThumbOffset);
                 }
                 this.ChildItemMinArrow.IsEnabled = true;
                 this.ChildItemMaxArrow.IsEnabled = true;
@@ -697,7 +697,7 @@ namespace Asol.Tools.WorkScheduler.Components
             else
             {   // Hodnota Value je nesprávná (její Size je 0 nebo záporná):
                 //  V tomto případě se nebude vykreslovat Thumb a ani datové oblasti
-                this.ChildDataValue = new SizeRange(0m, 0m);
+                this.ChildDataValue = new DecimalNRange(0m, 0m);
                 this.ChildDataThumbOffset = 0m;
                 this.ChildDataThumb = this.ChildDataValue.Clone;
                 this.ChildItemMinArrow.IsEnabled = false;
@@ -707,7 +707,7 @@ namespace Asol.Tools.WorkScheduler.Components
             decimal thumbBegin = this.ChildDataThumb.Begin.Value;
             decimal roundBegin = Math.Round(this.ChildDataThumb.Begin.Value, 0);
             decimal roundSize = Math.Round(this.ChildDataThumb.Size.Value, 0);
-            this.ChildDataThumb = SizeRange.CreateFromBeginSize(roundBegin, roundSize);
+            this.ChildDataThumb = DecimalNRange.CreateFromBeginSize(roundBegin, roundSize);
 
             // Hezký úmysl, ale musely by se předělat metody CalculateBoundsInteractiveDragH() a CalculateBoundsInteractiveDragV() tak, aby ... co vlastně? No, jednoduše to nefungovalo.
             // this._PixelThumbOffset += (thumbBegin - roundBegin);    
@@ -755,28 +755,28 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Není určeno pro kalkulace, pouze pro interaktivitu a kreslení.
         /// Obsahuje Integer čísla bez desetinné části.
         /// </summary>
-        private SizeRange ChildDataTotal;
+        private DecimalNRange ChildDataTotal;
         /// <summary>
         /// Range of pixel of theoretical thumb position.
         /// Theoretical value, for calculations.
         /// Real thumb can be bigger.
         /// Decimal numbers (with fractions).
         /// </summary>
-        private SizeRange ChildDataValue;
+        private DecimalNRange ChildDataValue;
         /// <summary>
         /// Range of pixel of real thumb position.
         /// When theoretical value in this._Pixel has .Size small than 8 pixel, then _PixelThumb has size 8 pixel, and is "shifted" = centered around this._Pixel.
         /// Not for calculations, only for InnerArea (interactivity and paint).
         /// Integer numbers (as decimal, but without fractions).
         /// </summary>
-        private SizeRange ChildDataThumb;
+        private DecimalNRange ChildDataThumb;
         /// <summary>
         /// Area for scrolling of theoretical thumb (this._Pixel).
         /// When theoretical value in this._Pixel has .Size small than 8 pixel, and _PixelThumb is inflate, then usable area for track is smaller (about this inflate).
         /// Theoretical value, for calculations.
         /// Decimal numbers (with fractions).
         /// </summary>
-        private SizeRange ChildDataTrack;
+        private DecimalNRange ChildDataTrack;
         /// <summary>
         /// Offset = (this._Pixel.Begin - this._PixelThumb.Begin).
         /// For interactive change (Thumb.Dragging), where are from physical coordinates of thumb (_PixelThumb) calculated theoretical position (_Pixel).
@@ -1082,7 +1082,7 @@ namespace Asol.Tools.WorkScheduler.Components
             decimal change = subItem.CurrentChangeValue;
             if (change == 0m) return;
             decimal begin = this._Value.Begin.Value + change;
-            SizeRange value = SizeRange.CreateFromBeginSize(begin, this._Value.Size.Value);
+            DecimalNRange value = DecimalNRange.CreateFromBeginSize(begin, this._Value.Size.Value);
             this.SetValue(value, ProcessAction.All, EventSourceType.InteractiveChanged);
         }
         /// <summary>
@@ -1131,7 +1131,7 @@ namespace Asol.Tools.WorkScheduler.Components
 
             decimal pixel = thumb + this.ChildDataThumbOffset;
             decimal begin = this._GetValueFromPixel(pixel);
-            this.ValueDrag = SizeRange.CreateFromBeginSize(begin, this._Value.Size.Value);
+            this.ValueDrag = DecimalNRange.CreateFromBeginSize(begin, this._Value.Size.Value);
 
             return (int)thumb;
         }

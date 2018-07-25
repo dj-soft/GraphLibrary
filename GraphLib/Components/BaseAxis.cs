@@ -49,7 +49,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             this._Value = this.InitialValue;                // nebudeme dávat : GetValue(default(TTick), default(TTick)), potomek může mít jiný názor
             this._ValueHelper = this.GetValue(default(TTick), default(TTick));
-            this._ScaleHelper = new SizeRange();
+            this._ScaleHelper = new DecimalNRange();
         }
         /// <summary>
         /// Pomocná instance pro interval hodnot (typicky TimeRange nebo SizeRange), pro provádění výpočtů na ose
@@ -58,7 +58,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Pomocná instance pro interval SizeRange class, pro přepočty měřítka na ose
         /// </summary>
-        private SizeRange _ScaleHelper;
+        private DecimalNRange _ScaleHelper;
         /// <summary>
         /// Metoda volaná na konci konstruktoru, kdy jsou již všechny údaje v BaseAxis připravené.
         /// Potomek si připraví svoje data nad rámec BaseRange. Volání bázové metody není nutné.
@@ -149,21 +149,21 @@ namespace Asol.Tools.WorkScheduler.Components
         /// End = pixel on which axis beginning (Right, Bottom, Top);
         /// Size = number of pixels (positive or negative value).
         /// </summary>
-        protected SizeRange PixelRelativeRange
+        protected DecimalNRange PixelRelativeRange
         {
             get
             {
                 Rectangle b = this.Bounds;
                 switch (this.OrientationCurrent)
                 {
-                    case AxisOrientation.Top: return new SizeRange(b.Left, b.Right);
-                    case AxisOrientation.LeftUp: return new SizeRange(b.Bottom, b.Top);
-                    case AxisOrientation.LeftDown: return new SizeRange(b.Top, b.Bottom);
-                    case AxisOrientation.RightUp: return new SizeRange(b.Bottom, b.Top);
-                    case AxisOrientation.RightDown: return new SizeRange(b.Top, b.Bottom);
+                    case AxisOrientation.Top: return new DecimalNRange(b.Left, b.Right);
+                    case AxisOrientation.LeftUp: return new DecimalNRange(b.Bottom, b.Top);
+                    case AxisOrientation.LeftDown: return new DecimalNRange(b.Top, b.Bottom);
+                    case AxisOrientation.RightUp: return new DecimalNRange(b.Bottom, b.Top);
+                    case AxisOrientation.RightDown: return new DecimalNRange(b.Top, b.Bottom);
                     case AxisOrientation.Bottom: 
                     default:
-                        return new SizeRange(b.Left, b.Right);
+                        return new DecimalNRange(b.Left, b.Right);
                 }
             }
         }
@@ -330,7 +330,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// ScaleRange can contains booth values (Begin and End), or one value (then Scale will be limited only with filled value).
         /// Setting ScaleRange can cause change in Scale value (when Scale not comply new ScaleRange), and then there is a change in the value of Value on Axis. 
         /// </summary>
-        public SizeRange ScaleLimit
+        public DecimalNRange ScaleLimit
         {
             get { return this._ScaleLimit; }
             set { this.SetScaleLimit(value, ProcessAction.All, EventSourceType.ValueRangeChange | EventSourceType.ApplicationCode); }
@@ -338,7 +338,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Current ScaleLimit value
         /// </summary>
-        private SizeRange _ScaleLimit;
+        private DecimalNRange _ScaleLimit;
         /// <summary>
         /// Režim změny obsahu po změně rozměru.
         /// Výchozí režim je ChangeValueEnd.
@@ -1050,10 +1050,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="scale"></param>
         /// <param name="actions">Actions to be taken</param>
         /// <param name="eventSource">Source of this event, will be send to event handlers</param>
-        internal void SetScaleLimit(SizeRange scaleRange, ProcessAction actions, EventSourceType eventSource)
+        internal void SetScaleLimit(DecimalNRange scaleRange, ProcessAction actions, EventSourceType eventSource)
         {
-            SizeRange oldScaleRange = this._ScaleLimit;
-            SizeRange newScaleRange = scaleRange;
+            DecimalNRange oldScaleRange = this._ScaleLimit;
+            DecimalNRange newScaleRange = scaleRange;
             if (this.IsEqual(oldScaleRange, newScaleRange)) return;  // No change = no reactions.
 
             this._ScaleLimit = newScaleRange;
@@ -1373,7 +1373,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="a"></param>
         /// <param name="b"></param>
         /// <returns></returns>
-        protected bool IsEqual(SizeRange a, SizeRange b)
+        protected bool IsEqual(DecimalNRange a, DecimalNRange b)
         {
             return this._ScaleHelper.IsEqual(a, b);
         }
@@ -2431,9 +2431,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Call method OnScaleRangeChanged() and event ScaleRangeChanged
         /// </summary>
-        protected void CallScaleLimitChanged(SizeRange oldValue, SizeRange newValue, EventSourceType eventSource)
+        protected void CallScaleLimitChanged(DecimalNRange oldValue, DecimalNRange newValue, EventSourceType eventSource)
         {
-            GPropertyChangeArgs<SizeRange> args = new GPropertyChangeArgs<SizeRange>(oldValue, newValue, eventSource);
+            GPropertyChangeArgs<DecimalNRange> args = new GPropertyChangeArgs<DecimalNRange>(oldValue, newValue, eventSource);
             this.OnScaleLimitChanged(args);
             if (!this.IsSuppressedEvent && this.ScaleLimitChanged != null)
                 this.ScaleLimitChanged(this, args);
@@ -2441,11 +2441,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Occured after change ScaleRange value
         /// </summary>
-        protected virtual void OnScaleLimitChanged(GPropertyChangeArgs<SizeRange> args) { }
+        protected virtual void OnScaleLimitChanged(GPropertyChangeArgs<DecimalNRange> args) { }
         /// <summary>
         /// Event on this.ScaleRange changes
         /// </summary>
-        public event GPropertyChangedHandler<SizeRange> ScaleLimitChanged;
+        public event GPropertyChangedHandler<DecimalNRange> ScaleLimitChanged;
 
         /// <summary>
         /// Call method OnArrangementChanged() and event ArrangementChanged

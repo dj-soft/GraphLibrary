@@ -7,40 +7,40 @@ using System.Drawing;
 
 namespace Asol.Tools.WorkScheduler.Data
 {
-    #region SizeRange = BaseRange<Decimal?, Decimal?>
+    #region DecimalNRange = BaseRange<Decimal?, Decimal?>
     /// <summary>
-    /// Size range (Begin, End), with Decimal? Ticks and Decimal? Size
+    /// DecimalNRange = rozmezí hodnot, kde Begin, End a Size jsou Decimal?
     /// </summary>
-    public class SizeRange : BaseRange<Decimal?, Decimal?>
+    public class DecimalNRange : BaseRange<Decimal?, Decimal?>
     {
         #region Constructors, Visualiser, Helper
-        public SizeRange() : base() { }
-        public SizeRange(Decimal? begin, Decimal? end) : base(begin, end) { }
+        public DecimalNRange() : base() { }
+        public DecimalNRange(Decimal? begin, Decimal? end) : base(begin, end) { }
         /// <summary>
         /// Allways returns a new instance of SizeRange, containing empty values
         /// </summary>
-        public static SizeRange Empty { get { return new SizeRange(); } }
+        public static DecimalNRange Empty { get { return new DecimalNRange(); } }
         /// <summary>
         /// Allways returns a new instance of SizeRange, containing current values from this instance
         /// </summary>
-        public SizeRange Clone { get { return new SizeRange(this.Begin, this.End); } }
+        public DecimalNRange Clone { get { return new DecimalNRange(this.Begin, this.End); } }
         /// <summary>
         /// Create interval from begin and time (size). Booth must be defined.
         /// </summary>
         /// <param name="begin"></param>
         /// <param name="size"></param>
-        public static SizeRange CreateFromBeginSize(Decimal begin, Decimal size)
+        public static DecimalNRange CreateFromBeginSize(Decimal begin, Decimal size)
         {
-            return new SizeRange(begin, begin + (decimal)size);
+            return new DecimalNRange(begin, begin + (decimal)size);
         }
         /// <summary>
         /// Create interval from time (duration) and end. Booth must be defined.
         /// </summary>
         /// <param name="size"></param>
         /// <param name="end"></param>
-        public static SizeRange CreateFromSizeEnd(Decimal size, Decimal end)
+        public static DecimalNRange CreateFromSizeEnd(Decimal size, Decimal end)
         {
-            return new SizeRange(end - (decimal)size, end);
+            return new DecimalNRange(end - (decimal)size, end);
         }
         /// <summary>
         /// Contains a textual form of this interval
@@ -64,7 +64,7 @@ namespace Asol.Tools.WorkScheduler.Data
         }
         public override bool Equals(object obj)
         {
-            return Helper.IsEqual(this, (obj as SizeRange));
+            return Helper.IsEqual(this, (obj as DecimalNRange));
         }
         public override string ToString()
         {
@@ -73,26 +73,26 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// Help object: singleton empty instance, for access to base instantial methods
         /// </summary>
-        protected static SizeRange Helper { get { if (((object)_Helper) == null) _Helper = new SizeRange(); return _Helper; } } private static SizeRange _Helper;
+        protected static DecimalNRange Helper { get { if (((object)_Helper) == null) _Helper = new DecimalNRange(); return _Helper; } } private static DecimalNRange _Helper;
         #endregion
         #region Operators
-        public static SizeRange operator *(SizeRange a, SizeRange b)
+        public static DecimalNRange operator *(DecimalNRange a, DecimalNRange b)
         {
             Decimal? begin, end;
             Helper.PrepareIntersect(a, b, out begin, out end);
-            return new SizeRange(begin, end);
+            return new DecimalNRange(begin, end);
         }
-        public static SizeRange operator +(SizeRange a, SizeRange b)
+        public static DecimalNRange operator +(DecimalNRange a, DecimalNRange b)
         {
             Decimal? begin, end;
             Helper.PrepareUnion(a, b, out begin, out end);
-            return new SizeRange(begin, end);
+            return new DecimalNRange(begin, end);
         }
-        public static bool operator ==(SizeRange a, SizeRange b)
+        public static bool operator ==(DecimalNRange a, DecimalNRange b)
         {
             return Helper.IsEqual(a, b);
         }
-        public static bool operator !=(SizeRange a, SizeRange b)
+        public static bool operator !=(DecimalNRange a, DecimalNRange b)
         {
             return !Helper.IsEqual(a, b);
         }
@@ -104,11 +104,11 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="center"></param>
         /// <param name="ratio"></param>
         /// <returns></returns>
-        public SizeRange ZoomToRatio(Decimal center, double ratio)
+        public DecimalNRange ZoomToRatio(Decimal center, double ratio)
         {
             Decimal? begin, end;
             this.PrepareZoomToRatio(center, (decimal)ratio, out begin, out end);
-            return new SizeRange(begin, end);
+            return new DecimalNRange(begin, end);
         }
         /// <summary>
         /// Returns a new instance created from current instance, which Time is (ratio * this.Time) and center of zooming is on specified date.
@@ -116,11 +116,11 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="center"></param>
         /// <param name="ratio"></param>
         /// <returns></returns>
-        public SizeRange ZoomToRatio(Decimal center, decimal ratio)
+        public DecimalNRange ZoomToRatio(Decimal center, decimal ratio)
         {
             Decimal? begin, end;
             this.PrepareZoomToRatio(center, ratio, out begin, out end);
-            return new SizeRange(begin, end);
+            return new DecimalNRange(begin, end);
         }
         /// <summary>
         /// Returns a new instance created from current instance, which Time is specified and center of zooming is on specified date.
@@ -128,11 +128,11 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="center"></param>
         /// <param name="time"></param>
         /// <returns></returns>
-        public SizeRange ZoomToSize(Decimal center, decimal size)
+        public DecimalNRange ZoomToSize(Decimal center, decimal size)
         {
             Decimal? begin, end;
             this.PrepareZoomToSizeOnCenterPoint(center, size, out begin, out end);
-            return new SizeRange(begin, end);
+            return new DecimalNRange(begin, end);
         }
         /// <summary>
         /// Returns a new instance created from current instance, which Time is (ratio * this.Time) and center of zooming is on specified relative position.
@@ -140,11 +140,11 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="relativePivot"></param>
         /// <param name="ratio"></param>
         /// <returns></returns>
-        public SizeRange ZoomToSize(double relativePivot, Decimal? size)
+        public DecimalNRange ZoomToSize(double relativePivot, Decimal? size)
         {
             Decimal? begin, end;
             this.PrepareZoomToSizeOnRelativePivot((decimal)relativePivot, size, out begin, out end);
-            return new SizeRange(begin, end);
+            return new DecimalNRange(begin, end);
         }
         /// <summary>
         /// Returns a date on relative position (where 0 = Begin, 1 = End). Center of interval is on position 0.5d.
@@ -194,7 +194,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="a"></param>
         /// <param name="b"></param>
         /// <returns></returns>
-        public static bool Equal(SizeRange a, SizeRange b)
+        public static bool Equal(DecimalNRange a, DecimalNRange b)
         {
             return Helper.IsEqual(a, b);
         }
@@ -249,6 +249,241 @@ namespace Asol.Tools.WorkScheduler.Data
         protected override string TSizeToText(decimal? size)
         {
             return (size.HasValue ? size.Value.ToString() : "");
+        }
+        #endregion
+    }
+    #endregion
+    #region DecimalRange = BaseRange<Decimal, Decimal>
+    /// <summary>
+    /// <see cref="DecimalRange"/> = rozmezí hodnot, kde Begin, End a Size jsou Decimal
+    /// </summary>
+    public class DecimalRange : BaseRange<Decimal, Decimal>
+    {
+        #region Constructors, Visualiser, Helper
+        public DecimalRange() : base() { }
+        public DecimalRange(Decimal begin, Decimal end) : base(begin, end) { }
+        /// <summary>
+        /// Allways returns a new instance of <see cref="DecimalRange"/>, containing empty values
+        /// </summary>
+        public static DecimalRange Empty { get { return new DecimalRange(); } }
+        /// <summary>
+        /// Allways returns a new instance of <see cref="DecimalRange"/>, containing current values from this instance
+        /// </summary>
+        public DecimalRange Clone { get { return new DecimalRange(this.Begin, this.End); } }
+        /// <summary>
+        /// Create interval from begin and time (size). Booth must be defined.
+        /// </summary>
+        /// <param name="begin"></param>
+        /// <param name="size"></param>
+        public static DecimalRange CreateFromBeginSize(Decimal begin, Decimal size)
+        {
+            return new DecimalRange(begin, begin + (decimal)size);
+        }
+        /// <summary>
+        /// Create interval from time (duration) and end. Booth must be defined.
+        /// </summary>
+        /// <param name="size"></param>
+        /// <param name="end"></param>
+        public static DecimalRange CreateFromSizeEnd(Decimal size, Decimal end)
+        {
+            return new DecimalRange(end - (decimal)size, end);
+        }
+        /// <summary>
+        /// Contains a textual form of this interval
+        /// </summary>
+        public string Text
+        {
+            get
+            {
+                return this.Begin.ToString() + " ÷ " + this.End.ToString();
+            }
+        }
+        public override int GetHashCode()
+        {
+            return this.HashCode;
+        }
+        public override bool Equals(object obj)
+        {
+            return Helper.IsEqual(this, (obj as DecimalRange));
+        }
+        public override string ToString()
+        {
+            return this.Text;
+        }
+        /// <summary>
+        /// Help object: singleton empty instance, for access to base instantial methods
+        /// </summary>
+        protected static DecimalRange Helper { get { if (((object)_Helper) == null) _Helper = new DecimalRange(); return _Helper; } }
+        private static DecimalRange _Helper;
+        #endregion
+        #region Operators
+        public static DecimalRange operator *(DecimalRange a, DecimalRange b)
+        {
+            Decimal begin, end;
+            Helper.PrepareIntersect(a, b, out begin, out end);
+            return new DecimalRange(begin, end);
+        }
+        public static DecimalRange operator +(DecimalRange a, DecimalRange b)
+        {
+            Decimal begin, end;
+            Helper.PrepareUnion(a, b, out begin, out end);
+            return new DecimalRange(begin, end);
+        }
+        public static bool operator ==(DecimalRange a, DecimalRange b)
+        {
+            return Helper.IsEqual(a, b);
+        }
+        public static bool operator !=(DecimalRange a, DecimalRange b)
+        {
+            return !Helper.IsEqual(a, b);
+        }
+        #endregion
+        #region Public methods - Zoom
+        /// <summary>
+        /// Returns a new instance created from current instance, which Time is (ratio * this.Time) and center of zooming is on specified date.
+        /// </summary>
+        /// <param name="center"></param>
+        /// <param name="ratio"></param>
+        /// <returns></returns>
+        public DecimalRange ZoomToRatio(Decimal center, double ratio)
+        {
+            Decimal begin, end;
+            this.PrepareZoomToRatio(center, (decimal)ratio, out begin, out end);
+            return new DecimalRange(begin, end);
+        }
+        /// <summary>
+        /// Returns a new instance created from current instance, which Time is (ratio * this.Time) and center of zooming is on specified date.
+        /// </summary>
+        /// <param name="center"></param>
+        /// <param name="ratio"></param>
+        /// <returns></returns>
+        public DecimalRange ZoomToRatio(Decimal center, decimal ratio)
+        {
+            Decimal begin, end;
+            this.PrepareZoomToRatio(center, ratio, out begin, out end);
+            return new DecimalRange(begin, end);
+        }
+        /// <summary>
+        /// Returns a new instance created from current instance, which Time is specified and center of zooming is on specified date.
+        /// </summary>
+        /// <param name="center"></param>
+        /// <param name="time"></param>
+        /// <returns></returns>
+        public DecimalRange ZoomToSize(Decimal center, decimal size)
+        {
+            Decimal begin, end;
+            this.PrepareZoomToSizeOnCenterPoint(center, size, out begin, out end);
+            return new DecimalRange(begin, end);
+        }
+        /// <summary>
+        /// Returns a new instance created from current instance, which Time is (ratio * this.Time) and center of zooming is on specified relative position.
+        /// </summary>
+        /// <param name="relativePivot"></param>
+        /// <param name="ratio"></param>
+        /// <returns></returns>
+        public DecimalRange ZoomToSize(double relativePivot, Decimal size)
+        {
+            Decimal begin, end;
+            this.PrepareZoomToSizeOnRelativePivot((decimal)relativePivot, size, out begin, out end);
+            return new DecimalRange(begin, end);
+        }
+        /// <summary>
+        /// Returns a date on relative position (where 0 = Begin, 1 = End). Center of interval is on position 0.5d.
+        /// When this is not filled, return null.
+        /// </summary>
+        /// <param name="relativePosition"></param>
+        /// <returns></returns>
+        public Decimal GetValueAt(double relativePosition)
+        {
+            return this.GetValueAtRelativePosition((decimal)relativePosition);
+        }
+        #endregion
+        #region Static services - Round and Equal
+        /// <summary>
+        /// Round specified Decimal value to nearest whole value in specified interval.
+        /// In example, origin = 16518.354 round = 5.00, mode = Floor; result = 16515.000
+        /// </summary>
+        /// <param name="origin">Original Decimal</param>
+        /// <param name="round">Round divisor (amount, to which will be original Decimal rounded)</param>
+        /// <param name="mode">Round mode</param>
+        /// <returns>Rounded Decimal</returns>
+        public static Decimal RoundValue(Decimal origin, Decimal round, RoundMode mode)
+        {
+            Decimal result = origin;
+            if (round > 0m)
+            {
+                Decimal count = origin / round;
+                switch (mode)
+                {
+                    case RoundMode.Floor:
+                        count = Math.Floor(count);
+                        break;
+                    case RoundMode.Math:
+                        count = Math.Round(count, 0, MidpointRounding.AwayFromZero);
+                        break;
+                    case RoundMode.Ceiling:
+                        count = Math.Ceiling(count);
+                        break;
+                }
+                result = count * round;
+            }
+            return result;
+        }
+        /// <summary>
+        /// Return true, when two instance has equal values
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static bool Equal(DecimalRange a, DecimalRange b)
+        {
+            return Helper.IsEqual(a, b);
+        }
+        #endregion
+        #region Abstract member override
+        public override bool IsEmptyEdge(Decimal value)
+        {
+            return false;
+        }
+        public override bool IsEmptySize(Decimal value)
+        {
+            return false;
+        }
+        public override int CompareEdge(Decimal a, Decimal b)
+        {
+            return a.CompareTo(b);
+        }
+        public override int CompareSize(Decimal a, Decimal b)
+        {
+            return a.CompareTo(b);
+        }
+        public override Decimal Add(Decimal begin, Decimal size)
+        {
+            return begin + size;
+        }
+        public override Decimal SubEdge(Decimal a, Decimal b)
+        {
+            return a - b;
+        }
+        public override Decimal SubSize(Decimal a, Decimal b)
+        {
+            return a - b;
+        }
+        public override Decimal Multiply(Decimal size, decimal ratio)
+        {
+            return size * ratio;
+        }
+        public override decimal Divide(Decimal a, Decimal b)
+        {
+            return ((b != 0m) ? (a / b) : 0m);
+        }
+        protected override string TTickToText(Decimal tick)
+        {
+            return tick.ToString();
+        }
+        protected override string TSizeToText(Decimal size)
+        {
+            return size.ToString();
         }
         #endregion
     }
