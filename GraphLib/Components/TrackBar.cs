@@ -23,6 +23,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this._Visualiser = new LinearTrackBar(System.Windows.Forms.Orientation.Horizontal);
             this._VisualiserType = TrackBarVisualiserType.LinearHorizontal;
             this.Style = this.Style | GInteractiveStyles.CallMouseOver;
+            this.BackColor = Skin.TrackBar.BackColorTrack;
         }
         #endregion
         #region Data : Value, ValueTotal
@@ -53,6 +54,10 @@ namespace Asol.Tools.WorkScheduler.Components
             set { this.SetValue(value, ProcessAction.DragValueActions, EventSourceType.ValueChanging | EventSourceType.ApplicationCode); }
         }
         /// <summary>
+        /// Hodnota <see cref="Value"/>, která byla v objektu na počátku akce DragMove. Mimo proces DragMove je null.
+        /// </summary>
+        protected Decimal? ValueDragOriginal { get; set; }
+        /// <summary>
         /// Celkový rozsah pro nastavitelnou hodnotu.
         /// Hodnota <see cref="Value"/> může nabývat obou mezí, jak dolní tak horní, včetně.
         /// Výchozí rozsah je 0 až 1.
@@ -61,6 +66,17 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             get { return this._ValueTotal; }
             set { this.SetValueTotal(value, ProcessAction.All, EventSourceType.ValueRangeChange | EventSourceType.ApplicationCode); }
+        }
+        /// <summary>
+        /// Počet kreslených ticků.
+        /// Přesněji = počet úseků TrackBaru, oddělených Ticky.
+        /// Pokud je tedy <see cref="TickCount"/> == 2, pak je vykreslen počáteční a koncový bod TrackBaru, a mezi nimi jeden Tick, oddělující 2 úseky.
+        /// Výchozí rozsah je null = nekreslí se.
+        /// </summary>
+        public Int32? TickCount
+        {
+            get { return this._TickCount; }
+            set { this._TickCount = value; this.Repaint(); }
         }
         /// <summary>
         /// Uloží danou hodnotu do this._Value.
@@ -129,6 +145,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         private Decimal _Value;
         private DecimalRange _ValueTotal;
+        private Int32? _TickCount;
         #endregion
         #region Volání událostí z this (ValueChanging, ValueChanged, ValueTotalChanged, DrawRequest)
         /// <summary>
@@ -351,109 +368,66 @@ namespace Asol.Tools.WorkScheduler.Components
                 switch (e.ChangeState)
                 {
                     case GInteractiveChangeState.MouseOver:
-                        this.MousePoint = e.MouseAbsolutePoint;
+                        this.MouseOverPoint = e.MouseAbsolutePoint;
                         this.TrackBar.Repaint();
                         break;
                     case GInteractiveChangeState.LeftDown:
                         break;
                     case GInteractiveChangeState.LeftDragMoveBegin:
-                        this.MousePoint = e.MouseAbsolutePoint;
+                        this.TrackBar.ValueDragOriginal = this.TrackBar.Value;
+                        this.MouseOverPoint = null;
+                        this.MouseDragPoint = e.MouseAbsolutePoint;
                         this.TrackBar.Repaint();
                         break;
                     case GInteractiveChangeState.LeftDragMoveStep:
-                        this.MousePoint = e.MouseAbsolutePoint;
+                        this.MouseDragPoint = e.MouseAbsolutePoint;
+                        if (this.MouseDragPoint.HasValue)
+                            this.TrackBar.ValueDrag = this.GetValueForPoint(this.MouseDragPoint.Value);
+                        this.TrackBar.Repaint();
+                        break;
+                    case GInteractiveChangeState.LeftDragMoveDone:
+                        this.TrackBar.ValueDragOriginal = null;
+                        this.MouseDragPoint = null;
                         this.TrackBar.Repaint();
                         break;
                     case GInteractiveChangeState.MouseLeave:
-                        this.MousePoint = null;
+                        this.MouseOverPoint = null;
+                        this.MouseDragPoint = null;
                         this.TrackBar.Repaint();
                         break;
                 }
             }
-            protected Point? MousePoint { get; set; }
+            protected Decimal GetValueForPoint(Point point)
+            { }
+            protected Point GetPointForValue(Decimal value)
+            { }
+            protected Point? MouseOverPoint { get; set; }
+            protected Point? MouseDragPoint { get; set; }
             protected void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
             {
+                Rectangle trackBounds = absoluteBounds.Enlarge(-6, -5, -7, -5);
+                GPainter.DrawTrackTicks(e.Graphics, trackBounds, System.Windows.Forms.Orientation.Horizontal, this.TrackBar.TickCount);
+
                 decimal value = this.TrackBar.Value;
                 DecimalRange range = this.TrackBar.ValueTotal;
 
-                Rectangle trackBounds = absoluteBounds.Enlarge(-6, -5, -7, -5);
-                Point trackCenter = trackBounds.Center();
-                Pen pen;
 
-                if (range.Size > 0m)
+                int cy = trackBounds.Center().Y;
+
+                Point valueCenter = new Point(this.MouseDragPoint.HasValue ? this.MouseDragPoint.Value.X : (int)(trackBounds.X + trackBounds.Width / 3), cy);
+                GPainter.DrawTrackPointer(e.Graphics, valueCenter, new Size(14, 16), this.TrackBar.InteractiveState, TrackPointerType.OneSide, RectangleSide.None);
+                
+                decimal? ratio = range.GetRelativePositionAtValue(value);
+                if (this.MouseOverPoint.HasValue)
                 {
-                    pen = Skin.Pen(Color.DarkGray);
-                    decimal ticks = 10m;
-                    decimal step = range.Size / ticks;
-                    decimal width = trackBounds.Width;
-                    int y0 = trackBounds.Y + 2;
-                    int y1 = trackBounds.Bottom - 2;
-                    for (decimal tick = range.Begin; tick <= range.End; tick += step)
+
+                    Color pointColor = (this.TrackBar.IsInInteractiveState(GInteractiveState.LeftDown, GInteractiveState.LeftDrag) ? Color.BlueViolet : Color.DimGray);
+                    using (GPainter.GraphicsUseSmooth(e.Graphics))
                     {
-                        int x = trackBounds.X + (int)(Math.Round((range.GetRelativePositionAtValue(tick).Value * width), 0));
-                        e.Graphics.DrawLine(pen, x, y0, x, y1);
+                        e.Graphics.FillEllipse(Skin.Brush(pointColor), this.MouseOverPoint.Value.CreateRectangleFromCenter(8));
                     }
                 }
 
-                pen = Skin.Pen(Color.DarkGray);
-                e.Graphics.DrawLine(pen, trackBounds.X, trackBounds.Y, trackBounds.X, trackBounds.Bottom);
-                e.Graphics.DrawLine(pen, trackBounds.Right, trackBounds.Y, trackBounds.Right, trackBounds.Bottom);
-
-                e.Graphics.DrawLine(pen, trackBounds.X, trackCenter.Y - 1, trackBounds.Right, trackCenter.Y - 1);
-                e.Graphics.DrawLine(pen, trackBounds.X, trackCenter.Y + 1, trackBounds.Right, trackCenter.Y + 1);
-
-                pen = Skin.Pen(Color.Gray);
-                e.Graphics.DrawLine(pen, trackBounds.X + 1, trackCenter.Y + 0, trackBounds.Right, trackCenter.Y + 0);
-
-                using (GPainter.GraphicsUseSmooth(e.Graphics))
-                {
-                    Point valueCenter = new Point(this.MousePoint.HasValue ? this.MousePoint.Value.X : (int)(trackBounds.X + trackBounds.Width / 3), trackCenter.Y);
-                    int cx = valueCenter.X;
-                    int cy = valueCenter.Y;
-                    int dx1 = 6;             // X pro pozice: 10 h, 8 h, 4 h, 2 h, 10 h
-                    int dx2 = 6;             // X pro pozice: 9 h, 3 h
-                    int dx3 = 3;             // X pro pozice: 7 h, 5 h, 1 h, 11 h
-                    int dy1 = 5;             // Y pro pozice: 10 h, 8 h, 4 h, 2 h, 10 h
-                    int dy2 = 7;             // Y pro pozice: 7 h, 5 h, 1 h, 11 h
-                    int dy3 = 6;             // Y pro pozice: 6 h, 12 h
-                    System.Drawing.Drawing2D.GraphicsPath gp = new System.Drawing.Drawing2D.GraphicsPath();
-                    gp.AddLines(new Point[]
-                    {   // Souřadnic je 12 jako hodin na ciferníku :
-                        new Point(cx - dx1, cy - dy1),         // 10 h
-                        new Point(cx - dx2, cy),               //  9 h
-                        new Point(cx - dx1, cy + dy1),         //  8 h
-                        new Point(cx - dx3, cy + dy2),         //  7 h
-                        new Point(cx, cy + dy3),               //  6 h
-                        new Point(cx + dx3, cy + dy2),         //  5 h
-                        new Point(cx + dx1, cy + dy1),         //  4 h
-                        new Point(cx + dx2, cy),               //  3 h
-                        new Point(cx + dx1, cy - dy1),         //  2 h
-                        new Point(cx + dx3, cy - dy2),         //  1 h
-                        new Point(cx, cy - dy3),               // 12 h
-                        new Point(cx - dx3, cy - dy2),         // 11 h
-                        new Point(cx - dx1, cy - dy1)          // 10 h
-                    });
-                    gp.CloseFigure();
-
-                    gp.AddLines(new Point[] { new Point(cx - 1, cy - 3), new Point(cx - 1, cy + 3) });
-                    gp.CloseFigure();
-
-                    gp.AddLines(new Point[] { new Point(cx + 1, cy - 3), new Point(cx + 1, cy + 3) });
-                    gp.CloseFigure();
-
-                    e.Graphics.FillPath(Skin.Brush(Color.LightBlue), gp);
-                    pen = Skin.Pen(Color.DarkBlue);
-                    e.Graphics.DrawPath(pen, gp);
-
-
-                    decimal? ratio = range.GetRelativePositionAtValue(value);
-                    if (this.MousePoint.HasValue)
-                    {
-
-                        Color pointColor = (this.TrackBar.IsInInteractiveState(GInteractiveState.LeftDown, GInteractiveState.LeftDrag) ? Color.BlueViolet : Color.DimGray);
-                        e.Graphics.FillEllipse(Skin.Brush(pointColor), this.MousePoint.Value.CreateRectangleFromCenter(5));
-                    }
-                }
             }
 
             GTrackBar ITrackBarVisualiser.TrackBar { get { return this.TrackBar; } set { this.TrackBar = value; } }

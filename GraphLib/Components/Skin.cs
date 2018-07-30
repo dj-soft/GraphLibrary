@@ -57,6 +57,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public static SkinScrollBarSet ScrollBar { get { return Instance._ScrollBar; } }
         /// <summary>
+        /// Barvy pro TrackBar
+        /// </summary>
+        public static SkinTrackBarSet TrackBar { get { return Instance._TrackBar; } }
+        /// <summary>
         /// Color items for progress (BackColorWindow, TextColorWindow, BackColorProgress, DataColorProgress, TextColorProgress)
         /// </summary>
         public static SkinProgressSet Progress { get { return Instance._Progress; } }
@@ -105,6 +109,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this._Button = new SkinButtonSet(this, "Button");
             this._TabHeader = new SkinTabHeaderSet(this, "TabHeader");
             this._ScrollBar = new SkinScrollBarSet(this, "ScrollBar");
+            this._TrackBar = new SkinTrackBarSet(this, "TrackBar");
             this._Progress = new SkinProgressSet(this, "Progress");
             this._Axis = new SkinAxisSet(this, "Axis");
             this._Grid = new SkinGridSet(this, "Grid");
@@ -129,6 +134,7 @@ namespace Asol.Tools.WorkScheduler.Components
         private SkinButtonSet _Button;
         private SkinTabHeaderSet _TabHeader;
         private SkinScrollBarSet _ScrollBar;
+        private SkinTrackBarSet _TrackBar;
         private SkinProgressSet _Progress;
         private SkinAxisSet _Axis;
         private SkinGridSet _Grid;
@@ -708,6 +714,24 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual Color DefaultEffect3DLight { get { return Color.White; } }
         protected virtual float DefaultEffect3DRatio { get { return 0.40f; } }
         #endregion
+        #region Servis
+        public Color GetColor3DBorderLight(Color borderColor)
+        {
+            return borderColor.Morph(this.Effect3DLight, this.Effect3DRatio);
+        }
+        public Color GetColor3DBorderLight(Color borderColor, float ratio)
+        {
+            return borderColor.Morph(this.Effect3DLight, ratio);
+        }
+        public Color GetColor3DBorderDark(Color borderColor)
+        {
+            return borderColor.Morph(this.Effect3DDark, this.Effect3DRatio);
+        }
+        public Color GetColor3DBorderDark(Color borderColor, float ratio)
+        {
+            return borderColor.Morph(this.Effect3DDark, ratio);
+        }
+        #endregion
     }
     /// <summary>
     /// Skin set for Shadow.
@@ -885,6 +909,32 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual Color DefaultBackColorArea { get { return Color.FromArgb(255, 160, 160, 176); } }
         protected virtual Color DefaultBackColorButton { get { return Color.FromArgb(255, 216, 216, 216); } }
         protected virtual Color DefaultTextColor { get { return Color.Black; } }
+        #endregion
+    }
+    /// <summary>
+    /// Skin set for TrackBar.
+    /// Has colors: BackColorTrack; LineColorTrack; BackColorButton, LineColorButton;
+    /// </summary>
+    public class SkinTrackBarSet : SkinSet
+    {
+        #region Internal and private
+        internal SkinTrackBarSet(Skin owner, string skinSetKey)
+            : base(owner, skinSetKey)
+        { }
+        #endregion
+        #region Public colors
+        public Color BackColorTrack { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorTrack", DefaultBackColorTrack); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorTrack", value); } }
+        public Color LineColorTrack { get { return this._Owner.GetValue(this._SkinSetKey, "LineColorTrack", DefaultLineColorTrack); } set { this._Owner.SetValue(this._SkinSetKey, "LineColorTrack", value); } }
+        public Color LineColorTick { get { return this._Owner.GetValue(this._SkinSetKey, "LineColorTick", DefaultLineColorTick); } set { this._Owner.SetValue(this._SkinSetKey, "LineColorTick", value); } }
+        public Color BackColorButton { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorButton", DefaultBackColorButton); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorButton", value); } }
+        public Color LineColorButton { get { return this._Owner.GetValue(this._SkinSetKey, "LineColorButton", DefaultLineColorButton); } set { this._Owner.SetValue(this._SkinSetKey, "LineColorButton", value); } }
+        #endregion
+        #region Default colors
+        protected virtual Color DefaultBackColorTrack { get { return Color.FromArgb(255, 180, 180, 192); } }
+        protected virtual Color DefaultLineColorTrack { get { return Color.FromArgb(255, 64, 64, 64); } }
+        protected virtual Color DefaultLineColorTick { get { return Color.FromArgb(255, 160, 160, 168); } }
+        protected virtual Color DefaultBackColorButton { get { return Color.FromArgb(255, 224, 224, 240); } }
+        protected virtual Color DefaultLineColorButton { get { return Color.FromArgb(255, 80, 80, 96); } }
         #endregion
     }
     /// <summary>

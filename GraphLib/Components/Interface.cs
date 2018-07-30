@@ -1053,11 +1053,18 @@ namespace Asol.Tools.WorkScheduler.Components
         LeftDoubleClick,
 
         /// <summary>
-        /// Událost je volána v okamžiku, kdy je jisté, že začíná akce DragMove na levé myši.
+        /// Událost je volána v okamžiku, kdy je jisté, že začíná proces DragMove na levé myši.
+        /// Ihned po této události je volána událost <see cref="LeftDragMoveStep"/>.
+        /// Tato událost je volána i následně při každém zaregistrovaném pohybu myši.
+        /// Akce DragMove může být ukončena událostí <see cref="LeftDragMoveDone"/> (při běžném puštění myši), anebo <see cref="LeftDragMoveCancel"/> při stisku Escape.
+        /// Na závěr je vždy vyvolána událost <see cref="LeftDragMoveEnd"/>.
         /// </summary>
         LeftDragMoveBegin,
         /// <summary>
-        /// Událost je volána po každém kroku pohybu DragMove.
+        /// Událost je volána po každém kroku pohybu myši při procesu DragMove.
+        /// Před tím je vyvolána událost <see cref="LeftDragMoveBegin"/>.
+        /// Akce DragMove může být ukončena událostí <see cref="LeftDragMoveDone"/> (při běžném puštění myši), anebo <see cref="LeftDragMoveCancel"/> při stisku Escape.
+        /// Na závěr je vždy vyvolána událost <see cref="LeftDragMoveEnd"/>.
         /// </summary>
         LeftDragMoveStep,
         /// <summary>
@@ -1069,11 +1076,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Událost je volána na konci procesu DragMove, po zvednutí myši, pokud nedošlo k Cancel.
         /// Prvek je nyní umístěn na novou pozici.
-        /// Po tomto eventu bude volán event LeftDragEnd (immediatelly), ale nebude volán event LeftUp.
+        /// Po tomto eventu bude volán event <see cref="LeftDragMoveEnd"/> (okamžitě), ale nebude volán event LeftUp.
         /// </summary>
         LeftDragMoveDone,
         /// <summary>
-        /// Událost je volána na konci procesu DragMove, a to jak po Cancel, tak po Done.
+        /// Událost je volána na konci procesu DragMove, a to jak po <see cref="LeftDragMoveDone"/>, tak po <see cref="LeftDragMoveCancel"/>.
         /// Úkolem je provedení společného úklidu po DragMove procesu.
         /// </summary>
         LeftDragMoveEnd,

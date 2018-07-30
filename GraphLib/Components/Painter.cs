@@ -19,7 +19,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="graphics"></param>
         /// <param name="bounds"></param>
         /// <param name="backColor"></param>
-        public static void DrawRectangle(Graphics graphics, Rectangle bounds, Color backColor)
+        internal static void DrawRectangle(Graphics graphics, Rectangle bounds, Color backColor)
         {
             graphics.FillRectangle(Skin.Brush(backColor), bounds);
         }
@@ -39,7 +39,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// kdežto záporná hodnota vytváří "dolů promáčknutý povrch".
         /// Hodnota 1.00 vytvoří bílou a černou barvu, hodnota 0.10f vytvoří lehký 3D efekt, 0.50f poměrně silný efekt.
         /// </param>
-        public static void DrawBorder(Graphics graphics, Rectangle bounds, RectangleSide sides, DashStyle? dashStyle, Color lineColor, float? effect3D)
+        internal static void DrawBorder(Graphics graphics, Rectangle bounds, RectangleSide sides, DashStyle? dashStyle, Color lineColor, float? effect3D)
         {
             Color? colorTop = lineColor;
             Color? colorRight = lineColor;
@@ -73,7 +73,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="bounds"></param>
         /// <param name="sides"></param>
         /// <param name="dashStyle"></param>
-        public static void DrawBorder(Graphics graphics, Rectangle bounds, RectangleSide sides, DashStyle? dashStyle, Color? colorTop, Color? colorRight, Color? colorBottom, Color? colorLeft)
+        internal static void DrawBorder(Graphics graphics, Rectangle bounds, RectangleSide sides, DashStyle? dashStyle, Color? colorTop, Color? colorRight, Color? colorBottom, Color? colorLeft)
         {
             int x0 = bounds.X;
             int y0 = bounds.Y;
@@ -114,7 +114,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="absoluteBounds"></param>
         /// <param name="color"></param>
         /// <param name="opacity"></param>
-        public static void DrawAreaBase(Graphics graphics, Rectangle absoluteBounds, Color color, Orientation orientation, Point? point, Int32? opacity)
+        internal static void DrawAreaBase(Graphics graphics, Rectangle absoluteBounds, Color color, Orientation orientation, Point? point, Int32? opacity)
         {
             DrawAreaBase(graphics, absoluteBounds, color, GInteractiveState.Enabled, orientation, point, opacity, 0);
         }
@@ -125,7 +125,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="absoluteBounds"></param>
         /// <param name="color"></param>
         /// <param name="opacity"></param>
-        public static void DrawAreaBase(Graphics graphics, Rectangle absoluteBounds, Color color, Orientation orientation, Point? point, Int32? opacity, int roundCorner)
+        internal static void DrawAreaBase(Graphics graphics, Rectangle absoluteBounds, Color color, Orientation orientation, Point? point, Int32? opacity, int roundCorner)
         {
             DrawAreaBase(graphics, absoluteBounds, color, GInteractiveState.Enabled, orientation, point, opacity, roundCorner);
         }
@@ -137,7 +137,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="color"></param>
         /// <param name="state"></param>
         /// <param name="opacity"></param>
-        public static void DrawAreaBase(Graphics graphics, Rectangle absoluteBounds, Color color, GInteractiveState state, Orientation orientation, Point? point, Int32? opacity)
+        internal static void DrawAreaBase(Graphics graphics, Rectangle absoluteBounds, Color color, GInteractiveState state, Orientation orientation, Point? point, Int32? opacity)
         {
             if (absoluteBounds.Width <= 0 || absoluteBounds.Height <= 0) return;
             DrawAreaBase(graphics, absoluteBounds, color, state, orientation, point, opacity, 0);
@@ -150,7 +150,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="color"></param>
         /// <param name="state"></param>
         /// <param name="opacity"></param>
-        public static void DrawAreaBase(Graphics graphics, Rectangle absoluteBounds, Color color, GInteractiveState state, Orientation orientation, Point? point, Int32? opacity, int roundCorner)
+        internal static void DrawAreaBase(Graphics graphics, Rectangle absoluteBounds, Color color, GInteractiveState state, Orientation orientation, Point? point, Int32? opacity, int roundCorner)
         {
             if (absoluteBounds.Width <= 0 || absoluteBounds.Height <= 0) return;
 
@@ -169,7 +169,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="graphics"></param>
         /// <param name="bounds"></param>
-        public static void DrawFrameSelect(Graphics graphics, Rectangle bounds)
+        internal static void DrawFrameSelect(Graphics graphics, Rectangle bounds)
         {
             graphics.FillRectangle(Skin.Brush(Skin.Control.FrameSelectBackColor), bounds);
             graphics.DrawRectangle(Skin.Pen(Skin.Control.FrameSelectLineColor, DashStyle.Dot), bounds);
@@ -186,7 +186,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="interactiveState">Interaktvní stav, je z něj odvozena hodnota hodnota 3D efektu (pomocí metody  ).</param>
         /// <param name="force3D">Vynutit 3D efekt i pro "klidový stav prvku" (<see cref="GInteractiveState.None"/> a <see cref="GInteractiveState.Enabled"/>)!</param>
         /// <param name="opacity"></param>
-        public static void DrawEffect3D(Graphics graphics, Rectangle bounds, Color color, Orientation orientation, GInteractiveState? interactiveState, bool? force3D = false, Int32? opacity = null)
+        internal static void DrawEffect3D(Graphics graphics, Rectangle bounds, Color color, Orientation orientation, GInteractiveState? interactiveState, bool? force3D = false, Int32? opacity = null)
         {
             float? effect3D = (interactiveState.HasValue ? (float?)GetEffect3D(interactiveState.Value, force3D) : (float?)null);
             _DrawEffect3D(graphics, bounds, color, orientation, effect3D, opacity);
@@ -203,7 +203,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// kdežto záporná hodnota vytváří "dolů promáčknutý povrch".
         /// Hodnota 1.00 vytvoří bílou a černou barvu, hodnota 0.10f vytvoří lehký 3D efekt, 0.50f poměrně silný efekt.</param>  
         /// <param name="opacity"></param>
-        public static void DrawEffect3D(Graphics graphics, Rectangle bounds, Color color, Orientation orientation, float? effect3D, Int32? opacity = null)
+        internal static void DrawEffect3D(Graphics graphics, Rectangle bounds, Color color, Orientation orientation, float? effect3D, Int32? opacity = null)
         {
             _DrawEffect3D(graphics, bounds, color, orientation, effect3D, opacity);
         }
@@ -213,7 +213,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="interactiveState"></param>
         /// <param name="force3D">Vynutit 3D efekt i pro "klidový stav prvku" (<see cref="GInteractiveState.None"/> a <see cref="GInteractiveState.Enabled"/>)!</param>
         /// <returns></returns>
-        public static float? GetEffect3D(GInteractiveState interactiveState, bool? force3D = false)
+        internal static float? GetEffect3D(GInteractiveState interactiveState, bool? force3D = false)
         {
             switch (interactiveState)
             {
@@ -279,7 +279,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="color1">Barva nahoře/vlevo</param>
         /// <param name="color2">Barva dole/vpravo</param>
         /// <returns></returns>
-        public static bool CreateEffect3DColors(Color color, float? effect3D, out Color color1, out Color color2)
+        internal static bool CreateEffect3DColors(Color color, float? effect3D, out Color color1, out Color color2)
         {
             color1 = color;
             color2 = color;
@@ -308,7 +308,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="bounds"></param>
         /// <param name="color"></param>
         /// <param name="opacity"></param>
-        public static void DrawButtonBase(Graphics graphics, Rectangle bounds, Color color, Orientation orientation, Point? point, Int32? opacity)
+        internal static void DrawButtonBase(Graphics graphics, Rectangle bounds, Color color, Orientation orientation, Point? point, Int32? opacity)
         {
             _DrawButtonBase(graphics, bounds, color, GInteractiveState.Enabled, orientation, 2, point, opacity, true, true, null);
         }
@@ -319,7 +319,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="bounds"></param>
         /// <param name="color"></param>
         /// <param name="opacity"></param>
-        public static void DrawButtonBase(Graphics graphics, Rectangle bounds, Color color, Orientation orientation, int roundCorner, Point? point, Int32? opacity)
+        internal static void DrawButtonBase(Graphics graphics, Rectangle bounds, Color color, Orientation orientation, int roundCorner, Point? point, Int32? opacity)
         {
             _DrawButtonBase(graphics, bounds, color, GInteractiveState.Enabled, orientation, roundCorner, point, opacity, true, true, null);
         }
@@ -331,7 +331,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="color"></param>
         /// <param name="state"></param>
         /// <param name="opacity"></param>
-        public static void DrawButtonBase(Graphics graphics, Rectangle bounds, Color color, GInteractiveState state, Orientation orientation, Point? point, Int32? opacity)
+        internal static void DrawButtonBase(Graphics graphics, Rectangle bounds, Color color, GInteractiveState state, Orientation orientation, Point? point, Int32? opacity)
         {
             _DrawButtonBase(graphics, bounds, color, state, orientation, 2, point, opacity, true, true, null);
         }
@@ -343,7 +343,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="color"></param>
         /// <param name="state"></param>
         /// <param name="opacity"></param>
-        public static void DrawButtonBase(Graphics graphics, Rectangle bounds, Color color, GInteractiveState state, Orientation orientation, int roundCorner, Point? point, Int32? opacity)
+        internal static void DrawButtonBase(Graphics graphics, Rectangle bounds, Color color, GInteractiveState state, Orientation orientation, int roundCorner, Point? point, Int32? opacity)
         {
             _DrawButtonBase(graphics, bounds, color, state, orientation, roundCorner, point, opacity, true, true, null);
         }
@@ -355,7 +355,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="color"></param>
         /// <param name="state"></param>
         /// <param name="opacity"></param>
-        public static void DrawButtonBase(Graphics graphics, Rectangle bounds, Color color, GInteractiveState state, Orientation orientation, int roundCorner, Point? point, Int32? opacity, bool drawBackground, bool drawBorders)
+        internal static void DrawButtonBase(Graphics graphics, Rectangle bounds, Color color, GInteractiveState state, Orientation orientation, int roundCorner, Point? point, Int32? opacity, bool drawBackground, bool drawBorders)
         {
             _DrawButtonBase(graphics, bounds, color, state, orientation, roundCorner, point, opacity, drawBackground, drawBorders, null);
         }
@@ -367,7 +367,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="color"></param>
         /// <param name="state"></param>
         /// <param name="opacity"></param>
-        public static void DrawButtonBase(Graphics graphics, Rectangle bounds, Color color, GInteractiveState state, Orientation orientation, int roundCorner, Point? point, Int32? opacity, bool drawBackground, bool drawBorders, Color colorBorder)
+        internal static void DrawButtonBase(Graphics graphics, Rectangle bounds, Color color, GInteractiveState state, Orientation orientation, int roundCorner, Point? point, Int32? opacity, bool drawBackground, bool drawBorders, Color colorBorder)
         {
             _DrawButtonBase(graphics, bounds, color, state, orientation, roundCorner, point, opacity, drawBackground, drawBorders, colorBorder);
         }
@@ -426,7 +426,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="color"></param>
         /// <param name="fontInfo"></param>
         /// <param name="alignment"></param>
-        public static void DrawString(Graphics graphics, Rectangle bounds, string text, Color color, FontInfo fontInfo, ContentAlignment alignment)
+        internal static void DrawString(Graphics graphics, Rectangle bounds, string text, Color color, FontInfo fontInfo, ContentAlignment alignment)
         {
             Rectangle textArea;
             _DrawString(graphics, bounds, text, null, color, fontInfo, alignment, MatrixTransformationType.NoTransform, null, out textArea);
@@ -441,7 +441,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="fontInfo"></param>
         /// <param name="alignment"></param>
         /// <param name="transformation"></param>
-        public static void DrawString(Graphics graphics, Rectangle bounds, string text, Color color, FontInfo fontInfo, ContentAlignment alignment, MatrixTransformationType transformation)
+        internal static void DrawString(Graphics graphics, Rectangle bounds, string text, Color color, FontInfo fontInfo, ContentAlignment alignment, MatrixTransformationType transformation)
         {
             Rectangle textArea;
             _DrawString(graphics, bounds, text, null, color, fontInfo, alignment, transformation, null, out textArea);
@@ -455,7 +455,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="color"></param>
         /// <param name="fontInfo"></param>
         /// <param name="alignment"></param>
-        public static void DrawString(Graphics graphics, Rectangle bounds, string text, Color color, FontInfo fontInfo, ContentAlignment alignment, Action<Rectangle> drawBackground)
+        internal static void DrawString(Graphics graphics, Rectangle bounds, string text, Color color, FontInfo fontInfo, ContentAlignment alignment, Action<Rectangle> drawBackground)
         {
             Rectangle textArea;
             _DrawString(graphics, bounds, text, null, color, fontInfo, alignment, MatrixTransformationType.NoTransform, drawBackground, out textArea);
@@ -469,7 +469,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="color"></param>
         /// <param name="fontInfo"></param>
         /// <param name="alignment"></param>
-        public static void DrawString(Graphics graphics, Rectangle bounds, string text, Brush brush, FontInfo fontInfo, ContentAlignment alignment)
+        internal static void DrawString(Graphics graphics, Rectangle bounds, string text, Brush brush, FontInfo fontInfo, ContentAlignment alignment)
         {
             Rectangle textArea;
             _DrawString(graphics, bounds, text, brush, null, fontInfo, alignment, MatrixTransformationType.NoTransform, null, out textArea);
@@ -483,7 +483,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="color"></param>
         /// <param name="fontInfo"></param>
         /// <param name="alignment"></param>
-        public static void DrawString(Graphics graphics, Rectangle bounds, string text, Brush brush, FontInfo fontInfo, ContentAlignment alignment, Action<Rectangle> drawBackground)
+        internal static void DrawString(Graphics graphics, Rectangle bounds, string text, Brush brush, FontInfo fontInfo, ContentAlignment alignment, Action<Rectangle> drawBackground)
         {
             Rectangle textArea;
             _DrawString(graphics, bounds, text, brush, null, fontInfo, alignment, MatrixTransformationType.NoTransform, drawBackground, out textArea);
@@ -497,7 +497,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="color"></param>
         /// <param name="fontInfo"></param>
         /// <param name="alignment"></param>
-        public static void DrawString(Graphics graphics, Rectangle bounds, string text, Color color, FontInfo fontInfo, ContentAlignment alignment, out Rectangle textArea)
+        internal static void DrawString(Graphics graphics, Rectangle bounds, string text, Color color, FontInfo fontInfo, ContentAlignment alignment, out Rectangle textArea)
         {
             _DrawString(graphics, bounds, text, null, color, fontInfo, alignment, MatrixTransformationType.NoTransform, null, out textArea);
         }
@@ -510,7 +510,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="color"></param>
         /// <param name="fontInfo"></param>
         /// <param name="alignment"></param>
-        public static void DrawString(Graphics graphics, Rectangle bounds, string text, Color color, FontInfo fontInfo, ContentAlignment alignment, Action<Rectangle> drawBackground, out Rectangle textArea)
+        internal static void DrawString(Graphics graphics, Rectangle bounds, string text, Color color, FontInfo fontInfo, ContentAlignment alignment, Action<Rectangle> drawBackground, out Rectangle textArea)
         {
             _DrawString(graphics, bounds, text, null, color, fontInfo, alignment, MatrixTransformationType.NoTransform, drawBackground, out textArea);
         }
@@ -523,7 +523,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="color"></param>
         /// <param name="fontInfo"></param>
         /// <param name="alignment"></param>
-        public static void DrawString(Graphics graphics, Rectangle bounds, string text, Brush brush, FontInfo fontInfo, ContentAlignment alignment, out Rectangle textArea)
+        internal static void DrawString(Graphics graphics, Rectangle bounds, string text, Brush brush, FontInfo fontInfo, ContentAlignment alignment, out Rectangle textArea)
         {
             _DrawString(graphics, bounds, text, brush, null, fontInfo, alignment, MatrixTransformationType.NoTransform, null, out textArea);
         }
@@ -536,7 +536,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="color"></param>
         /// <param name="fontInfo"></param>
         /// <param name="alignment"></param>
-        public static void DrawString(Graphics graphics, Rectangle bounds, string text, Brush brush, FontInfo fontInfo, ContentAlignment alignment, Action<Rectangle> drawBackground, out Rectangle textArea)
+        internal static void DrawString(Graphics graphics, Rectangle bounds, string text, Brush brush, FontInfo fontInfo, ContentAlignment alignment, Action<Rectangle> drawBackground, out Rectangle textArea)
         {
              _DrawString(graphics, bounds, text, brush, null, fontInfo, alignment, MatrixTransformationType.NoTransform, drawBackground, out textArea);
         }
@@ -602,7 +602,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="text"></param>
         /// <param name="fontInfo"></param>
         /// <returns></returns>
-        public static Size MeasureString(string text, FontInfo fontInfo)
+        internal static Size MeasureString(string text, FontInfo fontInfo)
         {
             if (String.IsNullOrEmpty(text)) return new Size(0, 0);
 
@@ -619,7 +619,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="text"></param>
         /// <param name="fontInfo"></param>
         /// <returns></returns>
-        public static Size MeasureString(Graphics graphics, string text, FontInfo fontInfo)
+        internal static Size MeasureString(Graphics graphics, string text, FontInfo fontInfo)
         {
             if (String.IsNullOrEmpty(text)) return new Size(0, 0);
             if (graphics == null) return MeasureString(text, fontInfo);
@@ -631,29 +631,29 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         #endregion
         #region DrawRadiance
-        public static void DrawRadiance(Graphics graphics, Point center, Color centerColor)
+        internal static void DrawRadiance(Graphics graphics, Point center, Color centerColor)
         {
             DrawRadiance(graphics, center, null, centerColor);
         }
-        public static void DrawRadiance(Graphics graphics, Point center, Rectangle? clipBounds, Color centerColor)
+        internal static void DrawRadiance(Graphics graphics, Point center, Rectangle? clipBounds, Color centerColor)
         {
             Rectangle bounds = center.CreateRectangleFromCenter(new Size(45, 30));
             DrawRadiance(graphics, bounds, clipBounds, centerColor);
         }
-        public static void DrawRadiance(Graphics graphics, Point center, Size size, Color centerColor)
+        internal static void DrawRadiance(Graphics graphics, Point center, Size size, Color centerColor)
         {
             DrawRadiance(graphics, center, size, null, centerColor);
         }
-        public static void DrawRadiance(Graphics graphics, Point center, Size size, Rectangle? clipBounds, Color centerColor)
+        internal static void DrawRadiance(Graphics graphics, Point center, Size size, Rectangle? clipBounds, Color centerColor)
         {
             Rectangle bounds = center.CreateRectangleFromCenter(size);
             DrawRadiance(graphics, bounds, clipBounds, centerColor);
         }
-        public static void DrawRadiance(Graphics graphics, Rectangle bounds, Color centerColor)
+        internal static void DrawRadiance(Graphics graphics, Rectangle bounds, Color centerColor)
         {
             DrawRadiance(graphics, bounds, null, centerColor);
         }
-        public static void DrawRadiance(Graphics graphics, Rectangle bounds, Rectangle? clipBounds, Color centerColor)
+        internal static void DrawRadiance(Graphics graphics, Rectangle bounds, Rectangle? clipBounds, Color centerColor)
         {
             using (System.Drawing.Drawing2D.GraphicsPath p = new System.Drawing.Drawing2D.GraphicsPath())
             {
@@ -687,7 +687,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="color"></param>
         /// <param name="state"></param>
         /// <param name="opacity"></param>
-        public static void DrawGridHeader(Graphics graphics, Rectangle bounds, RectangleSide side, Color backColor, bool draw3D, Color? lineColor, GInteractiveState state, Orientation orientation, Point? relativePoint, Int32? opacity)
+        internal static void DrawGridHeader(Graphics graphics, Rectangle bounds, RectangleSide side, Color backColor, bool draw3D, Color? lineColor, GInteractiveState state, Orientation orientation, Point? relativePoint, Int32? opacity)
         {
             _DrawGridHeader(graphics, bounds, side, backColor, draw3D, lineColor, state, orientation, relativePoint, opacity);
         }
@@ -747,11 +747,11 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         #endregion
         #region DrawWindow
-        public static void DrawWindow(Graphics graphics, Rectangle bounds, Color color, Orientation orientation, Int32? opacity)
+        internal static void DrawWindow(Graphics graphics, Rectangle bounds, Color color, Orientation orientation, Int32? opacity)
         {
             _DrawWindow(graphics, bounds, color, orientation, opacity, null, null);
         }
-        public static void DrawWindow(Graphics graphics, Rectangle bounds, Color color, Orientation orientation, Int32? opacity, Int32? borderX, Int32? borderY)
+        internal static void DrawWindow(Graphics graphics, Rectangle bounds, Color color, Orientation orientation, Int32? opacity, Int32? borderX, Int32? borderY)
         {
             _DrawWindow(graphics, bounds, color, orientation, opacity, borderX, borderY);
         }
@@ -936,6 +936,413 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         #endregion
+        #region DrawTrackTicks
+        internal static void DrawTrackTicks(Graphics graphics, Rectangle bounds, Orientation orientation, int? tickNumber = null)
+        {
+            switch (orientation)
+            {
+                case Orientation.Horizontal:
+                    _DrawTrackTicksHorizontal(graphics, bounds, tickNumber);
+                    break;
+                case Orientation.Vertical:
+                    _DrawTrackTicksVertical(graphics, bounds, tickNumber);
+                    break;
+            }
+        }
+        private static void _DrawTrackTicksHorizontal(Graphics graphics, Rectangle bounds, int? tickNumber)
+        {
+            Point trackCenter = bounds.Center();
+            int x0 = bounds.X;
+            int x9 = bounds.Right - 1;
+            int y0 = bounds.Y;
+            int y1 = y0 + 2;
+            int y5 = bounds.Center().Y;
+            int y4 = y5 - 1;
+            int y6 = y5 + 1;
+            int y9 = bounds.Bottom - 1;
+            int y8 = y9 - 2;
+
+            Color colorTrack = Skin.TrackBar.LineColorTrack;
+            Color colorTick = Skin.TrackBar.LineColorTick;
+            Pen pen = Skin.Pen(colorTick);
+            if (tickNumber.HasValue && tickNumber.Value > 0)
+            {
+                decimal length = bounds.Width;
+                decimal step = length / (int)tickNumber.Value;
+                if (step < 3m) step = 3m;
+                for (decimal tick = bounds.X; tick < x9; tick += step)
+                {
+                    int x = (int)Math.Round(tick, 0);
+                    graphics.DrawLine(pen, x, y1, x, y8);
+                }
+            }
+
+            pen = Skin.Pen(colorTick);
+            graphics.DrawLine(pen, x0, y4, x9, y4);
+            graphics.DrawLine(pen, x0, y6, x9, y6);
+
+            pen = Skin.Pen(colorTrack);
+            graphics.DrawLine(pen, x0, y0, x0, y9);
+            graphics.DrawLine(pen, x9, y0, x9, y9);
+            graphics.DrawLine(pen, x0, y5, x9, y5);
+        }
+        private static void _DrawTrackTicksVertical(Graphics graphics, Rectangle bounds, int? tickNumber = null)
+        {
+
+        }
+        #endregion
+        #region DrawTrackPointer
+        internal static void DrawTrackPointer(Graphics graphics, Rectangle bounds, GInteractiveState state, TrackPointerType pointerType, RectangleSide pointerSide)
+        {
+            DrawTrackPointer(graphics, bounds.Center(), bounds.Size, state, pointerType, pointerSide);
+        }
+        internal static void DrawTrackPointer(Graphics graphics, Point center, Size size, GInteractiveState state, TrackPointerType pointerType, RectangleSide pointerSide, int? opacity = null)
+        {
+            Orientation orientation = ((pointerSide.HasFlag(RectangleSide.Top) || pointerSide.HasFlag(RectangleSide.Bottom)) ? Orientation.Horizontal : Orientation.Vertical);
+            GraphicSetting graphicSetting;
+
+            if (true)
+            {
+                using (GraphicsPath path = GPainter.CreatePathTrackPointer(center, size, pointerType, pointerSide, GraphicsPathPart.FilledArea, out graphicSetting))
+                {
+                    Rectangle bounds = center.CreateRectangleFromCenter(size);
+                    using (Brush brush = Skin.CreateBrushForBackground(bounds, orientation, state, Skin.TrackBar.BackColorButton))
+                    using (GPainter.GraphicsUse(graphics, graphicSetting))
+                    {
+                        graphics.FillPath(brush, path);
+                    }
+                }
+            }
+            if (true)
+            {
+                using (GraphicsPath path = GPainter.CreatePathTrackPointer(center, size, pointerType, pointerSide, GraphicsPathPart.LightBorder, out graphicSetting))
+                {
+                    Color lightBorder = Skin.Modifiers.GetColor3DBorderLight(Skin.TrackBar.LineColorButton);
+                    using (GPainter.GraphicsUse(graphics, graphicSetting))
+                    {
+                        graphics.DrawPath(Skin.Pen(lightBorder), path);
+                    }
+                }
+            }
+            if (true)
+            {
+                using (GraphicsPath path = GPainter.CreatePathTrackPointer(center, size, pointerType, pointerSide, GraphicsPathPart.DarkBorder, out graphicSetting))
+                {
+                    Color darkBorder = Skin.Modifiers.GetColor3DBorderDark(Skin.TrackBar.LineColorButton);
+                    using (GPainter.GraphicsUse(graphics, graphicSetting))
+                    {
+                        graphics.DrawPath(Skin.Pen(darkBorder), path);
+                    }
+                }
+            }
+        }
+        /// <summary>
+        /// Vrátí GraphicsPath pro definovaný tvar, k danému středu a velikosti.
+        /// Vrátí null pro malé rozměry (menší než 8 px) anebo pro typ pointerType = <see cref="TrackPointerType.None"/>.
+        /// </summary>
+        /// <returns></returns>
+        internal static GraphicsPath CreatePathTrackPointer(Point center, Size size, TrackPointerType pointerType, RectangleSide pointerSide, GraphicsPathPart pathPart)
+        {
+            GraphicSetting graphicSetting;
+            return CreatePathTrackPointer(center, size, pointerType, pointerSide, pathPart, out graphicSetting);
+        }
+        /// <summary>
+        /// Vrátí GraphicsPath pro definovaný tvar, k danému středu a velikosti.
+        /// Vrátí null pro malé rozměry (menší než 8 px) anebo pro typ pointerType = <see cref="TrackPointerType.None"/>.
+        /// Vloží optimální GraphicSetting pro kreslení tohoto tvaru do out parametru graphicSetting.
+        /// </summary>
+        /// <param name="center"></param>
+        /// <param name="size"></param>
+        /// <param name="pointerType"></param>
+        /// <param name="pointerSide"></param>
+        /// <param name="graphicSetting"></param>
+        /// <returns></returns>
+        internal static GraphicsPath CreatePathTrackPointer(Point center, Size size, TrackPointerType pointerType, RectangleSide pointerSide, GraphicsPathPart pathPart, out GraphicSetting graphicSetting)
+        {
+            graphicSetting = GraphicSetting.None;
+            if (pointerType == TrackPointerType.None) return null;
+            if (pathPart == GraphicsPathPart.None) return null;
+            if (size.Width < 8 || size.Height < 8) return null;
+            bool isVertical = _CreatePathTrackPointerIsVertical(pointerSide, size);
+            switch (pointerType)
+            {
+                case TrackPointerType.OneSide: return (isVertical ?
+                        _CreatePathTrackPointerOneSideVertical(center, size, pointerSide, pathPart, out graphicSetting) :
+                        _CreatePathTrackPointerOneSideHorizontal(center, size, pointerSide, pathPart, out graphicSetting));
+                case TrackPointerType.DoubleSide:
+                    return (isVertical ?
+                        _CreatePathTrackPointerDoubleSideVertical(center, size, pointerSide, pathPart, out graphicSetting) :
+                        _CreatePathTrackPointerDoubleSideHorizontal(center, size, pointerSide, pathPart, out graphicSetting));
+                case TrackPointerType.HiFi:
+                    return (isVertical ?
+                        _CreatePathTrackPointerHiFiVertical(center, size, pointerSide, pathPart, out graphicSetting) :
+                        _CreatePathTrackPointerHiFiHorizontal(center, size, pointerSide, pathPart, out graphicSetting));
+            }
+            return null;
+        }
+        /// <summary>
+        /// Vrátí true, pokud orientace pointeru je svislá (tzn. jezdí zleva doprava, a ukazuje nahoru nebo dolů)
+        /// </summary>
+        /// <param name="pointerSide"></param>
+        /// <param name="size"></param>
+        /// <returns></returns>
+        private static bool _CreatePathTrackPointerIsVertical(RectangleSide pointerSide, Size size)
+        {
+            if (pointerSide.HasFlag(RectangleSide.Top) || pointerSide.HasFlag(RectangleSide.Bottom)) return true;
+            if (pointerSide.HasFlag(RectangleSide.Left) || pointerSide.HasFlag(RectangleSide.Right)) return false;
+            return (size.Height > size.Width);
+        }
+        private static GraphicsPath _CreatePathTrackPointerOneSideVertical(Point center, Size size, RectangleSide pointerSide, GraphicsPathPart pathPart, out GraphicSetting graphicSetting)
+        {
+            bool addSimple = pathPart.HasFlag(GraphicsPathPart.SimpleBorder);
+            bool addLight = pathPart.HasFlag(GraphicsPathPart.LightBorder);
+            bool addDark = pathPart.HasFlag(GraphicsPathPart.DarkBorder);
+            bool isFill = pathPart.HasFlag(GraphicsPathPart.FilledArea);
+            bool sideTL = pointerSide.HasFlag(RectangleSide.Top);
+            bool sideBR = pointerSide.HasFlag(RectangleSide.Bottom);
+
+            int cx = center.X;
+            int cy = center.Y;
+
+            int lf = size.Height;                // Plná délka pointeru = výška daného prostoru
+            int sf = size.Width;                 // Plná šířka pointeru = šířka daného prostoru
+            int sm = lf / 2;                     // Nejvyšší použitelná šíře pointeru = 1/2 délky (výšky)
+            if (sf > sm) sf = sm;
+
+            int s3 = sf / 2;                     // Polo-šířka pointeru (vzdálenost boku od středu na ose S (vertical = X)
+            int s2 = s3 - 1;
+
+            int l3 = lf / 2;                     // Vzdálenost špičky pointeru od středu, na ose L (vertical = Y)
+            int l2 = l3 - 1;
+            int l1 = l3 - s3;                    // Pozice konce šipky
+
+            GraphicsPath path = new GraphicsPath();
+
+            path.StartFigure();
+            if (addSimple || addLight || isFill)
+            {   // Světlá část = vlevo a nahoře:
+                path.AddLines(new Point[]
+                {
+                    new Point(cx - s3, cy + (sideBR ? l1 : l2)),
+                    new Point(cx - s3, cy - (sideTL ? l1 : l2)),
+                    new Point(cx - (sideTL ? 0 : s2), cy - l3),
+                    new Point(cx + (sideTL ? 0 : s2), cy - l3),
+                    new Point(cx + s3, cy - (sideTL ? l1 : l2))
+                });
+            }
+            if (addSimple || addDark || isFill)
+            {   // Tmavá část = vpravo a dole:
+                path.AddLines(new Point[]
+                {
+                    new Point(cx + s3, cy - (sideTL ? l1 : l2)),
+                    new Point(cx + s3, cy + (sideBR ? l1 : l2)),
+                    new Point(cx + (sideBR ? 0 : s2), cy + l3),
+                    new Point(cx - (sideBR ? 0 : s2), cy + l3),
+                    new Point(cx - s3, cy + (sideBR ? l1 : l2))
+                });
+            }
+            if (isFill)
+                path.CloseFigure();
+
+            if (!isFill)
+            {
+                int lt = cy - l1 + (sideTL ? 1 : 0);
+                int lb = cy + l1 - (sideBR ? 1 : 0);
+                bool isDouble = (s3 > 3);
+                if (addSimple)
+                {   // Jednoduché linky:
+                    if (isDouble)
+                        _CreatePathTrackPointerOneSideVerticalLines(path, lt, lb, cx - 1, cx + 1);
+                    else
+                        _CreatePathTrackPointerOneSideVerticalLines(path, lt, lb, cx);
+                }
+                if (addLight)
+                {   // Pouze světlá část (tj. ne výplň) = svislé linky více vlevo:
+                    if (isDouble)
+                        _CreatePathTrackPointerOneSideVerticalLines(path, lt, lb, cx - 2, cx + 1);
+                    // else
+                    //     _CreatePathTrackPointerOneSideVerticalLines(path, lt, lb, cx - 1);
+                }
+                if (addDark)
+                {   // Pouze tmavá část (tj. ne výplň) = tmavé linky více vpravo:
+                    if (isDouble)
+                        _CreatePathTrackPointerOneSideVerticalLines(path, lt, lb, cx - 1, cx + 2);
+                    else
+                        _CreatePathTrackPointerOneSideVerticalLines(path, lt, lb, cx + 0);
+                }
+            }
+
+            graphicSetting = GraphicSetting.Sharp;
+            return path;
+        }
+        private static void _CreatePathTrackPointerOneSideVerticalLines(GraphicsPath path, int yt, int yb, params int[] xs)
+        {
+            foreach (int x in xs)
+            {
+                path.StartFigure();
+                path.AddLines(new Point[] { new Point(x, yt), new Point(x, yb) });
+                path.CloseFigure();
+            }
+        }
+        private static GraphicsPath _CreatePathTrackPointerOneSideHorizontal(Point center, Size size, RectangleSide pointerSide, GraphicsPathPart pathPart, out GraphicSetting graphicSetting)
+        {
+            GraphicsPath path = new GraphicsPath();
+            graphicSetting = GraphicSetting.Smooth;
+            return path;
+        }
+        private static GraphicsPath _CreatePathTrackPointerDoubleSideVertical(Point center, Size size, RectangleSide pointerSide, GraphicsPathPart pathPart, out GraphicSetting graphicSetting)
+        {
+            GraphicsPath path = new GraphicsPath();
+            graphicSetting = GraphicSetting.Smooth;
+            return path;
+        }
+        private static GraphicsPath _CreatePathTrackPointerDoubleSideHorizontal(Point center, Size size, RectangleSide pointerSide, GraphicsPathPart pathPart, out GraphicSetting graphicSetting)
+        {
+            GraphicsPath path = new GraphicsPath();
+            graphicSetting = GraphicSetting.Smooth;
+            return path;
+        }
+        private static GraphicsPath _CreatePathTrackPointerHiFiVertical(Point center, Size size, RectangleSide pointerSide, GraphicsPathPart pathPart, out GraphicSetting graphicSetting)
+        {
+            GraphicsPath path = new GraphicsPath();
+            graphicSetting = GraphicSetting.Smooth;
+            return path;
+
+        }
+        private static GraphicsPath _CreatePathTrackPointerHiFiHorizontal(Point center, Size size, RectangleSide pointerSide, GraphicsPathPart pathPart, out GraphicSetting graphicSetting)
+        {
+            GraphicsPath path = new GraphicsPath();
+            graphicSetting = GraphicSetting.Smooth;
+            return path;
+            /*
+            int cx = center.X;
+            int cy = center.Y;
+            int dx1 = 6;             // X pro pozice: 10 h, 8 h, 4 h, 2 h, 10 h
+            int dx2 = 6;             // X pro pozice: 9 h, 3 h
+            int dx3 = 3;             // X pro pozice: 7 h, 5 h, 1 h, 11 h
+            int dy1 = 5;             // Y pro pozice: 10 h, 8 h, 4 h, 2 h, 10 h
+            int dy2 = 7;             // Y pro pozice: 7 h, 5 h, 1 h, 11 h
+            int dy3 = 6;             // Y pro pozice: 6 h, 12 h
+            System.Drawing.Drawing2D.GraphicsPath gp = new System.Drawing.Drawing2D.GraphicsPath();
+            gp.AddLines(new Point[]
+            {   // Souřadnic je 12 jako hodin na ciferníku :
+                        new Point(cx - dx1, cy - dy1),         // 10 h
+                        new Point(cx - dx2, cy),               //  9 h
+                        new Point(cx - dx1, cy + dy1),         //  8 h
+                        new Point(cx - dx3, cy + dy2),         //  7 h
+                        new Point(cx, cy + dy3),               //  6 h
+                        new Point(cx + dx3, cy + dy2),         //  5 h
+                        new Point(cx + dx1, cy + dy1),         //  4 h
+                        new Point(cx + dx2, cy),               //  3 h
+                        new Point(cx + dx1, cy - dy1),         //  2 h
+                        new Point(cx + dx3, cy - dy2),         //  1 h
+                        new Point(cx, cy - dy3),               // 12 h
+                        new Point(cx - dx3, cy - dy2),         // 11 h
+                        new Point(cx - dx1, cy - dy1)          // 10 h
+            });
+            gp.CloseFigure();
+
+            gp.AddLines(new Point[] { new Point(cx - 1, cy - 3), new Point(cx - 1, cy + 3) });
+            gp.CloseFigure();
+
+            gp.AddLines(new Point[] { new Point(cx + 1, cy - 3), new Point(cx + 1, cy + 3) });
+            gp.CloseFigure();
+
+            e.Graphics.FillPath(Skin.Brush(Color.LightBlue), gp);
+            */
+        }
+
+        /*
+        private static GraphicsPath _CreatePathLinearShapeLeftArrow(Rectangle bounds, out GraphicSetting graphicSetting)
+        {
+            int h = (((bounds.Height + 1) / 2) - 1);        // Y pixels/2     4       5       9
+            int c = ((bounds.Width + 1) / 2);               // X center       5       6      10
+            int x = c - ((2 * h) / 3);                      // X left         3
+            GraphicsPath path = new GraphicsPath();         // Examples for: 10px    11px    19px
+            path.AddLine(x + h, 0, x, h);
+            path.AddLine(x, h, x + h, h + h);
+            _ShiftPath(path, bounds.Location);
+            graphicSetting = GraphicSetting.Smooth;
+            return path;
+        }
+        private static GraphicsPath _CreatePathLinearShapeUpArrow(Rectangle bounds, out GraphicSetting graphicSetting)
+        {
+            int w = (((bounds.Width + 1) / 2) - 1);         // X pixels/2     4       5       9
+            int c = (((bounds.Height + 1) / 2) - 1);        // Y center       5       6      10
+            int y = c - ((2 * w) / 3);                      // Y top          3
+            GraphicsPath path = new GraphicsPath();         // Examples for: 10px    11px    19px
+            path.AddLine(0, y + w, w, y);
+            path.AddLine(w, y, w + w, y + w);
+            _ShiftPath(path, bounds.Location);
+            graphicSetting = GraphicSetting.Smooth;
+            return path;
+        }
+        private static GraphicsPath _CreatePathLinearShapeRightArrow(Rectangle bounds, out GraphicSetting graphicSetting)
+        {
+            int h = (((bounds.Height + 1) / 2) - 1);        // Y pixels/2     4       5       9
+            int c = ((bounds.Width + 1) / 2);               // X center       5       6      10
+            int x = c + ((2 * h) / 3);                      // X right        3
+            GraphicsPath path = new GraphicsPath();         // Examples for: 10px    11px    19px
+            path.AddLine(x - h, 0, x, h);
+            path.AddLine(x, h, x - h, h + h);
+            _ShiftPath(path, bounds.Location);
+            graphicSetting = GraphicSetting.Smooth;
+            return path;
+        }
+        private static GraphicsPath _CreatePathLinearShapeDownArrow(Rectangle bounds, out GraphicSetting graphicSetting)
+        {
+            int w = (((bounds.Width + 1) / 2) - 1);         // X pixels/2     4       5       9
+            int c = ((bounds.Height + 1) / 2);              // Y center       5       6      10
+            int y = c + ((2 * w) / 3);                      // Y bottom       3
+            GraphicsPath path = new GraphicsPath();         // Examples for: 10px    11px    19px
+            path.AddLine(0, y - w, w, y);
+            path.AddLine(w, y, w + w, y - w);
+            _ShiftPath(path, bounds.Location);
+            graphicSetting = GraphicSetting.Smooth;
+            return path;
+        }
+        private static GraphicsPath _CreatePathLinearShapeHorizontalLines(Rectangle bounds, out GraphicSetting graphicSetting)
+        {
+            int ch = ((bounds.Height + 1) / 2);
+            int h = (ch - 1);
+            int cl = ((bounds.Width + 1) / 2);
+            GraphicsPath path = new GraphicsPath();         // Examples for: 10px    11px    19px
+            path.AddLine(cl - 4, ch - h + 1, cl - 4, ch + h - 2);
+            path.CloseFigure();
+            path.AddLine(cl - 2, ch - h, cl - 2, ch + h - 1);
+            path.CloseFigure();
+            path.AddLine(cl + 0, ch - h, cl + 0, ch + h - 1);
+            path.CloseFigure();
+            path.AddLine(cl + 2, ch - h, cl + 2, ch + h - 1);
+            path.CloseFigure();
+            path.AddLine(cl + 4, ch - h + 1, cl + 4, ch + h - 2);
+            path.CloseFigure();
+            _ShiftPath(path, bounds.Location);
+            graphicSetting = GraphicSetting.Sharp;
+            return path;
+        }
+        private static GraphicsPath _CreatePathLinearShapeVerticalLines(Rectangle bounds, out GraphicSetting graphicSetting)
+        {
+            int ch = ((bounds.Width + 1) / 2);
+            int h = (ch - 1);
+            int cl = ((bounds.Height + 1) / 2);
+            GraphicsPath path = new GraphicsPath();         // Examples for: 10px    11px    19px
+            path.AddLine(ch - h + 1, cl - 4, ch + h - 2, cl - 4);
+            path.CloseFigure();
+            path.AddLine(ch - h, cl - 2, ch + h - 1, cl - 2);
+            path.CloseFigure();
+            path.AddLine(ch - h, cl + 0, ch + h - 1, cl + 0);
+            path.CloseFigure();
+            path.AddLine(ch - h, cl + 2, ch + h - 1, cl + 2);
+            path.CloseFigure();
+            path.AddLine(ch - h + 1, cl + 4, ch + h - 2, cl + 4);
+            path.CloseFigure();
+            _ShiftPath(path, bounds.Location);
+            graphicSetting = GraphicSetting.Sharp;
+            return path;
+        }
+        */
+        #endregion
         #region DrawImage
         /// <summary>
         /// Vykreslí daný Image
@@ -944,7 +1351,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="bounds"></param>
         /// <param name="image"></param>
         /// <param name="alignment"></param>
-        public static void DrawImage(Graphics graphics, Rectangle bounds, Image image, ContentAlignment alignment)
+        internal static void DrawImage(Graphics graphics, Rectangle bounds, Image image, ContentAlignment alignment)
         {
             _DrawImage(graphics, bounds, image, null, alignment);
         }
@@ -956,7 +1363,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="image"></param>
         /// <param name="isEnabled"></param>
         /// <param name="alignment"></param>
-        public static void DrawImage(Graphics graphics, Rectangle bounds, Image image, bool isEnabled, ContentAlignment alignment)
+        internal static void DrawImage(Graphics graphics, Rectangle bounds, Image image, bool isEnabled, ContentAlignment alignment)
         {
             System.Drawing.Imaging.ColorMatrix colorMatrix = (!isEnabled  ? CreateColorMatrixGray(0.75f, 0.25f) : null);
             _DrawImage(graphics, bounds, image, colorMatrix, alignment);
@@ -969,7 +1376,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="image"></param>
         /// <param name="state"></param>
         /// <param name="alignment"></param>
-        public static void DrawImage(Graphics graphics, Rectangle bounds, Image image, GInteractiveState? state, ContentAlignment alignment)
+        internal static void DrawImage(Graphics graphics, Rectangle bounds, Image image, GInteractiveState? state, ContentAlignment alignment)
         {
             System.Drawing.Imaging.ColorMatrix colorMatrix = ((state.HasValue && state.Value != GInteractiveState.Enabled) ? CreateColorMatrixForState(state.Value) : null);
             _DrawImage(graphics, bounds, image, colorMatrix, alignment);
@@ -1005,7 +1412,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="state"></param>
         /// <param name="color"></param>
         /// <param name="morph"></param>
-        public static void DrawAxisBackground(Graphics graphics, Rectangle bounds, Orientation orientation, bool enabled, GInteractiveState state, Color color, float morph)
+        internal static void DrawAxisBackground(Graphics graphics, Rectangle bounds, Orientation orientation, bool enabled, GInteractiveState state, Color color, float morph)
         {
             if (!enabled)
                 state = GInteractiveState.Disabled;
@@ -1025,7 +1432,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="lineColorMain"></param>
         /// <param name="lineColorSmall"></param>
         /// <param name="showSmallSize"></param>
-        public static void DrawAxisTick(Graphics graphics, AxisTickType tickLevel, int x0, int y0, int x1, int y1, Color lineColorMain, Color lineColorSmall, bool showSmallSize)
+        internal static void DrawAxisTick(Graphics graphics, AxisTickType tickLevel, int x0, int y0, int x1, int y1, Color lineColorMain, Color lineColorSmall, bool showSmallSize)
         {
             Pen pen = null;
             bool std = !showSmallSize;
@@ -1053,7 +1460,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 graphics.DrawLine(pen, x0, y0, x1, y1);
         }
         #endregion
-        #region DrawRelation
+        #region DrawRelationGrid
         /// <summary>
         /// Metoda vykreslí linku na spodním okraji daného prostoru, podle pravidel pro Grid
         /// </summary>
@@ -1062,7 +1469,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="color"></param>
         /// <param name="width"></param>
         /// <param name="fading"></param>
-        public static void DrawRelationGrid(Graphics graphics, Rectangle bounds, Color? color = null, int? width = null, float? fading = null)
+        internal static void DrawRelationGrid(Graphics graphics, Rectangle bounds, Color? color = null, int? width = null, float? fading = null)
         {
             int w = (width.HasValue ? width.Value : Skin.Relation.LineHeightInGrid);
             Color c = (color.HasValue ? color.Value : Skin.Relation.LineColorInGrid);
@@ -1104,7 +1511,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="graphics"></param>
         /// <param name="absoluteBounds"></param>
         /// <param name="scrollBar"></param>
-        public static void DrawScrollBar(Graphics graphics, Rectangle absoluteBounds, IScrollBarPaintData scrollBar)
+        internal static void DrawScrollBar(Graphics graphics, Rectangle absoluteBounds, IScrollBarPaintData scrollBar)
         {
             Point location = absoluteBounds.Location;
             Orientation orientation = scrollBar.Orientation;
@@ -1213,7 +1620,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         #endregion
         #region DrawTabHeader
-        public static void DrawTabHeaderItem(Graphics graphics, Rectangle absoluteBounds, ITabHeaderItemPaintData tabHeader)
+        internal static void DrawTabHeaderItem(Graphics graphics, Rectangle absoluteBounds, ITabHeaderItemPaintData tabHeader)
         {
             Rectangle? backArea, lineArea, lightArea, darkArea;
             _DrawTabHeaderItemGetArea(absoluteBounds, tabHeader, out backArea, out lineArea, out lightArea, out darkArea);
@@ -1436,15 +1843,15 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         #endregion
         #region DrawShadow
-        public static void DrawShadow(Graphics graphics, Rectangle bounds)
+        internal static void DrawShadow(Graphics graphics, Rectangle bounds)
         {
             _DrawShadow(graphics, bounds, 5, false);
         }
-        public static void DrawShadow(Graphics graphics, Rectangle bounds, int size)
+        internal static void DrawShadow(Graphics graphics, Rectangle bounds, int size)
         {
             _DrawShadow(graphics, bounds, size, false);
         }
-        public static void DrawShadow(Graphics graphics, Rectangle bounds, int size, bool inner)
+        internal static void DrawShadow(Graphics graphics, Rectangle bounds, int size, bool inner)
         {
             _DrawShadow(graphics, bounds, size, inner);
         }
@@ -1547,7 +1954,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="transformation">Typ transformace</param>
         /// <param name="area">Prostor, který se má transformovat okolo svého středu</param>
         /// <returns>Matrix, který zajistí transformaci</returns>
-        public static Matrix GetMatrix(MatrixTransformationType transformation, RectangleF area)
+        internal static Matrix GetMatrix(MatrixTransformationType transformation, RectangleF area)
         {
             return GetMatrix(transformation, new PointF(area.X + area.Width / 2F, area.Y + area.Height / 2F));
         }
@@ -1558,7 +1965,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="transformation">Typ transformace</param>
         /// <param name="center">Bod, okolo kterého se bude tvar transformovat</param>
         /// <returns>Matrix, který zajistí transformaci</returns>
-        public static Matrix GetMatrix(MatrixTransformationType transformation, PointF center)
+        internal static Matrix GetMatrix(MatrixTransformationType transformation, PointF center)
         {
             switch (transformation)
             {
@@ -1691,7 +2098,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="rectangle"></param>
         /// <param name="matrix"></param>
         /// <returns></returns>
-        public static Rectangle Transform(Rectangle rectangle, Matrix matrix)
+        internal static Rectangle Transform(Rectangle rectangle, Matrix matrix)
         {
             // Matrix umí transformovat sady bodů, tak mu dva připravíme, přetransformujeme, a z nich vytvoříme výsledný čtyřúhelník:
             Point[] data = new Point[] {
@@ -1710,7 +2117,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="a">Jeden bod</param>
         /// <param name="b">Druhý bod</param>
         /// <returns>Prostor daný dvěma body</returns>
-        public static Rectangle RectangleFromTwoPoint(Point a, Point b)
+        internal static Rectangle RectangleFromTwoPoint(Point a, Point b)
         {
             if (a.X == b.X || a.Y == b.Y) return Rectangle.Empty;           // Nulová výška / šířka => Empty
             return Rectangle.FromLTRB(
@@ -1726,7 +2133,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="alpha"></param>
         /// <returns></returns>
-        public static System.Drawing.Imaging.ColorMatrix CreateColorMatrixAlpha(float alpha)
+        internal static System.Drawing.Imaging.ColorMatrix CreateColorMatrixAlpha(float alpha)
         {
             System.Drawing.Imaging.ColorMatrix colorMatrix = new System.Drawing.Imaging.ColorMatrix();
             colorMatrix.Matrix33 = alpha;                       // Alpha channel: when input Alpha is 1 (full opacity, no transparent), then output Alpha will be (alpha) = input Alpha * (alpha)
@@ -1738,7 +2145,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="gray"></param>
         /// <param name="light"></param>
         /// <returns></returns>
-        public static System.Drawing.Imaging.ColorMatrix CreateColorMatrixGray(float gray, float light)
+        internal static System.Drawing.Imaging.ColorMatrix CreateColorMatrixGray(float gray, float light)
         {
             float gr = (gray < 0f ? 0f : (gray > 1f ? 1f : gray));   // gray v rozmezí 0 až 1
             float li = (light < 0f ? 0f : (light > 1f ? 1f : light));// light v rozmezí 0 až 1
@@ -1758,7 +2165,7 @@ namespace Asol.Tools.WorkScheduler.Components
             System.Drawing.Imaging.ColorMatrix colorMatrix = new System.Drawing.Imaging.ColorMatrix(elements);
             return colorMatrix;
         }
-        public static System.Drawing.Imaging.ColorMatrix CreateColorMatrixForState(GInteractiveState state)
+        internal static System.Drawing.Imaging.ColorMatrix CreateColorMatrixForState(GInteractiveState state)
         {
             float z = 0f;
             float o = 1.0f;
@@ -1785,7 +2192,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="roundX"></param>
         /// <param name="roundY"></param>
         /// <returns></returns>
-        public static GraphicsPath CreatePathRoundRectangle(Rectangle bounds, int roundX, int roundY)
+        internal static GraphicsPath CreatePathRoundRectangle(Rectangle bounds, int roundX, int roundY)
         {
             return CreatePathRoundRectangle(bounds, roundX, roundY, null, false, null);
         }
@@ -1796,7 +2203,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="roundX"></param>
         /// <param name="roundY"></param>
         /// <returns></returns>
-        public static GraphicsPath CreatePathRoundRectangle(Rectangle bounds, int roundX, int roundY, RelativePosition positions)
+        internal static GraphicsPath CreatePathRoundRectangle(Rectangle bounds, int roundX, int roundY, RelativePosition positions)
         {
             return CreatePathRoundRectangle(bounds, roundX, roundY, p => ((p & positions) != 0), false, null);
         }
@@ -1807,7 +2214,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="roundX"></param>
         /// <param name="roundY"></param>
         /// <returns></returns>
-        public static GraphicsPath CreatePathRoundRectangle(Rectangle bounds, int roundX, int roundY, RelativePosition positions, bool joinBroken)
+        internal static GraphicsPath CreatePathRoundRectangle(Rectangle bounds, int roundX, int roundY, RelativePosition positions, bool joinBroken)
         {
             return CreatePathRoundRectangle(bounds, roundX, roundY, p => ((p & positions) != 0), joinBroken, null);
         }
@@ -1818,7 +2225,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="roundX"></param>
         /// <param name="roundY"></param>
         /// <returns></returns>
-        public static GraphicsPath CreatePathRoundRectangle(Rectangle bounds, int roundX, int roundY, Func<RelativePosition, bool> partSelector)
+        internal static GraphicsPath CreatePathRoundRectangle(Rectangle bounds, int roundX, int roundY, Func<RelativePosition, bool> partSelector)
         {
             return CreatePathRoundRectangle(bounds, roundX, roundY, partSelector, false, null);
         }
@@ -1829,7 +2236,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="roundX"></param>
         /// <param name="roundY"></param>
         /// <returns></returns>
-        public static GraphicsPath CreatePathRoundRectangle(Rectangle bounds, int roundX, int roundY, Func<RelativePosition, bool> partSelector, bool joinBroken)
+        internal static GraphicsPath CreatePathRoundRectangle(Rectangle bounds, int roundX, int roundY, Func<RelativePosition, bool> partSelector, bool joinBroken)
         {
             return CreatePathRoundRectangle(bounds, roundX, roundY, partSelector, joinBroken, null);
         }
@@ -1840,7 +2247,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="roundX"></param>
         /// <param name="roundY"></param>
         /// <returns></returns>
-        public static GraphicsPath CreatePathRoundRectangle(Rectangle bounds, int roundX, int roundY, Action<GraphicsPath, RelativePosition, Point, Point> lineHandler)
+        internal static GraphicsPath CreatePathRoundRectangle(Rectangle bounds, int roundX, int roundY, Action<GraphicsPath, RelativePosition, Point, Point> lineHandler)
         {
             return CreatePathRoundRectangle(bounds, roundX, roundY, null, false, lineHandler);
         }
@@ -1851,7 +2258,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="roundX"></param>
         /// <param name="roundY"></param>
         /// <returns></returns>
-        public static GraphicsPath CreatePathRoundRectangle(Rectangle bounds, int roundX, int roundY, Func<RelativePosition, bool> partSelector, Action<GraphicsPath, RelativePosition, Point, Point> lineHandler)
+        internal static GraphicsPath CreatePathRoundRectangle(Rectangle bounds, int roundX, int roundY, Func<RelativePosition, bool> partSelector, Action<GraphicsPath, RelativePosition, Point, Point> lineHandler)
         {
             return CreatePathRoundRectangle(bounds, roundX, roundY, partSelector, false, lineHandler);
         }
@@ -1862,7 +2269,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="roundX"></param>
         /// <param name="roundY"></param>
         /// <returns></returns>
-        public static GraphicsPath CreatePathRoundRectangle(Rectangle bounds, int roundX, int roundY, Func<RelativePosition, bool> partSelector, bool joinBroken, Action<GraphicsPath, RelativePosition, Point, Point> lineHandler)
+        internal static GraphicsPath CreatePathRoundRectangle(Rectangle bounds, int roundX, int roundY, Func<RelativePosition, bool> partSelector, bool joinBroken, Action<GraphicsPath, RelativePosition, Point, Point> lineHandler)
         {
             GraphicsPath gp = new GraphicsPath();
 
@@ -1976,7 +2383,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="roundY"></param>
         /// <param name="target"></param>
         /// <returns></returns>
-        public static GraphicsPath CreatePathRoundRectangleWithArrow(Rectangle bounds, int roundX, int roundY, Point target)
+        internal static GraphicsPath CreatePathRoundRectangleWithArrow(Rectangle bounds, int roundX, int roundY, Point target)
         {
             RelativePosition position = FindTargetRelativePosition(target, bounds, roundX + 7, roundY + 7);
             return CreatePathRoundRectangle(bounds, roundX, roundY, (gp, lp, p0, p1) => _AddLineWithArrow(gp, lp, p0, p1, position));
@@ -1992,7 +2399,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="target"></param>
         /// <param name="bounds"></param>
         /// <returns></returns>
-        public static RelativePosition FindTargetRelativePosition(Point target, Rectangle bounds)
+        internal static RelativePosition FindTargetRelativePosition(Point target, Rectangle bounds)
         {
             return FindTargetRelativePosition(target, bounds, 0, 0);
         }
@@ -2005,7 +2412,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="borderX"></param>
         /// <param name="borderY"></param>
         /// <returns></returns>
-        public static RelativePosition FindTargetRelativePosition(Point target, Rectangle bounds, int borderX, int borderY)
+        internal static RelativePosition FindTargetRelativePosition(Point target, Rectangle bounds, int borderX, int borderY)
         {
             if (bounds.Contains(target)) return RelativePosition.Inside;
             
@@ -2061,7 +2468,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="area"></param>
         /// <param name="border"></param>
         /// <returns></returns>
-        public static GraphicsPath CreatePathLinearShape(LinearShapeType shape, Rectangle area, int border)
+        internal static GraphicsPath CreatePathLinearShape(LinearShapeType shape, Rectangle area, int border)
         {
             GraphicSetting graphicSetting;
             return CreatePathLinearShape(shape, area, border, out graphicSetting);
@@ -2077,7 +2484,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="border"></param>
         /// <param name="graphicSetting"></param>
         /// <returns></returns>
-        public static GraphicsPath CreatePathLinearShape(LinearShapeType shape, Rectangle area, int border, out GraphicSetting graphicSetting)
+        internal static GraphicsPath CreatePathLinearShape(LinearShapeType shape, Rectangle area, int border, out GraphicSetting graphicSetting)
         {
             graphicSetting = GraphicSetting.None;
             if (shape == LinearShapeType.None) return null;
@@ -2184,7 +2591,6 @@ namespace Asol.Tools.WorkScheduler.Components
             graphicSetting = GraphicSetting.Sharp;
             return path;
         }
-
         private static void _ShiftPath(GraphicsPath path, Point point)
         {
             Matrix matrix = new Matrix();
@@ -2199,7 +2605,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="innerArea"></param>
         /// <param name="distance"></param>
         /// <returns></returns>
-        public static Rectangle CreateEllipseAroundRectangle(Rectangle innerArea, int distance)
+        internal static Rectangle CreateEllipseAroundRectangle(Rectangle innerArea, int distance)
         {
             double ew = (double)innerArea.Width;
             if (ew < 10d) ew = 10d;
@@ -2222,7 +2628,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="graphics"></param>
         /// <returns></returns>
-        public static GraphicsState GraphicsSet(Graphics graphics, GraphicSetting graphicSetting)
+        internal static GraphicsState GraphicsSet(Graphics graphics, GraphicSetting graphicSetting)
         {
             switch (graphicSetting)
             {
@@ -2241,7 +2647,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="graphics"></param>
         /// <returns></returns>
-        public static GraphicsState GraphicsSetSmooth(Graphics graphics)
+        internal static GraphicsState GraphicsSetSmooth(Graphics graphics)
         {
             GraphicsState state = graphics.Save();
             _GraphicsSetSmooth(graphics);
@@ -2255,7 +2661,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="graphics"></param>
         /// <returns></returns>
-        public static GraphicsState GraphicsSetText(Graphics graphics)
+        internal static GraphicsState GraphicsSetText(Graphics graphics)
         {
             GraphicsState state = graphics.Save();
             _GraphicsSetText(graphics);
@@ -2269,7 +2675,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="graphics"></param>
         /// <returns></returns>
-        public static GraphicsState GraphicsSetSharp(Graphics graphics)
+        internal static GraphicsState GraphicsSetSharp(Graphics graphics)
         {
             GraphicsState state = graphics.Save();
             _GraphicsSetSharp(graphics);
@@ -2283,7 +2689,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="graphics"></param>
         /// <returns></returns>
-        public static IDisposable GraphicsUse(Graphics graphics, GraphicSetting graphicSetting)
+        internal static IDisposable GraphicsUse(Graphics graphics, GraphicSetting graphicSetting)
         {
             switch (graphicSetting)
             {
@@ -2303,7 +2709,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="graphics"></param>
         /// <returns></returns>
-        public static IDisposable GraphicsUse(Graphics graphics, Rectangle setClip, GraphicSetting graphicSetting)
+        internal static IDisposable GraphicsUse(Graphics graphics, Rectangle setClip, GraphicSetting graphicSetting)
         {
             switch (graphicSetting)
             {
@@ -2322,7 +2728,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="graphics"></param>
         /// <returns></returns>
-        public static IDisposable GraphicsUseSmooth(Graphics graphics)
+        internal static IDisposable GraphicsUseSmooth(Graphics graphics)
         {
             IDisposable state = new GraphicsStateRestore(graphics);
             _GraphicsSetSmooth(graphics);
@@ -2337,7 +2743,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="graphics"></param>
         /// <returns></returns>
-        public static IDisposable GraphicsUseSmooth(Graphics graphics, Rectangle setClip)
+        internal static IDisposable GraphicsUseSmooth(Graphics graphics, Rectangle setClip)
         {
             IDisposable state = new GraphicsStateRestore(graphics, setClip);
             graphics.SetClip(setClip);
@@ -2352,7 +2758,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="graphics"></param>
         /// <returns></returns>
-        public static IDisposable GraphicsUseText(Graphics graphics)
+        internal static IDisposable GraphicsUseText(Graphics graphics)
         {
             IDisposable state = new GraphicsStateRestore(graphics);
             _GraphicsSetText(graphics);
@@ -2367,7 +2773,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="graphics"></param>
         /// <returns></returns>
-        public static IDisposable GraphicsUseText(Graphics graphics, Rectangle setClip)
+        internal static IDisposable GraphicsUseText(Graphics graphics, Rectangle setClip)
         {
             IDisposable state = new GraphicsStateRestore(graphics, setClip);
             graphics.SetClip(setClip);
@@ -2382,7 +2788,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="graphics"></param>
         /// <returns></returns>
-        public static IDisposable GraphicsUseSharp(Graphics graphics)
+        internal static IDisposable GraphicsUseSharp(Graphics graphics)
         {
             IDisposable state = new GraphicsStateRestore(graphics);
             _GraphicsSetSharp(graphics);
@@ -2397,7 +2803,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="graphics"></param>
         /// <returns></returns>
-        public static IDisposable GraphicsUseSharp(Graphics graphics, Rectangle setClip)
+        internal static IDisposable GraphicsUseSharp(Graphics graphics, Rectangle setClip)
         {
             IDisposable state = new GraphicsStateRestore(graphics, setClip);
             graphics.SetClip(setClip);
@@ -2411,7 +2817,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="graphics"></param>
         /// <param name="setClip"></param>
         /// <returns></returns>
-        public static IDisposable GraphicsClip(Graphics graphics, Rectangle setClip)
+        internal static IDisposable GraphicsClip(Graphics graphics, Rectangle setClip)
         {
             IDisposable state = new GraphicsStateRestore(graphics, setClip);
             graphics.SetClip(setClip);
@@ -2514,7 +2920,7 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #endregion
         #region Static property, containing standardised graphic tools
-        public static Brush InteractiveClipBrushForState(GInteractiveState state)
+        internal static Brush InteractiveClipBrushForState(GInteractiveState state)
         {
             switch (state)
             {
@@ -2531,7 +2937,7 @@ namespace Asol.Tools.WorkScheduler.Components
             }
             return InteractiveClipStandardBrush;
         }
-        public static Brush InteractiveClipStandardBrush
+        internal static Brush InteractiveClipStandardBrush
         {
             get
             {
@@ -2540,7 +2946,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 return _InteractiveClipStandardBrush;
             }
         } private static Brush _InteractiveClipStandardBrush;
-        public static Brush InteractiveClipDisabledBrush
+        internal static Brush InteractiveClipDisabledBrush
         {
             get
             {
@@ -2549,7 +2955,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 return _InteractiveClipDisabledBrush;
             }
         } private static Brush _InteractiveClipDisabledBrush;
-        public static Brush InteractiveClipMouseBrush
+        internal static Brush InteractiveClipMouseBrush
         {
             get
             {
@@ -2558,7 +2964,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 return _InteractiveClipMouseBrush;
             }
         } private static Brush _InteractiveClipMouseBrush;
-        public static Brush InteractiveClipDownBrush
+        internal static Brush InteractiveClipDownBrush
         {
             get
             {
@@ -2567,7 +2973,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 return _InteractiveClipDownBrush;
             }
         } private static Brush _InteractiveClipDownBrush;
-        public static Brush InteractiveClipDragBrush
+        internal static Brush InteractiveClipDragBrush
         {
             get
             {
@@ -2576,11 +2982,11 @@ namespace Asol.Tools.WorkScheduler.Components
                 return _InteractiveClipDragBrush;
             }
         } private static Brush _InteractiveClipDragBrush;
-        public static Color InteractiveClipStandardColor { get { return Color.DimGray; } }
-        public static Color InteractiveClipDisabledColor { get { return Color.DimGray; } }
-        public static Color InteractiveClipMouseColor { get { return Color.BlueViolet; } }
-        public static Color InteractiveClipDownColor { get { return Color.Black; } }
-        public static Color InteractiveClipDragColor { get { return Color.Blue; } }
+        internal static Color InteractiveClipStandardColor { get { return Color.DimGray; } }
+        internal static Color InteractiveClipDisabledColor { get { return Color.DimGray; } }
+        internal static Color InteractiveClipMouseColor { get { return Color.BlueViolet; } }
+        internal static Color InteractiveClipDownColor { get { return Color.Black; } }
+        internal static Color InteractiveClipDragColor { get { return Color.Blue; } }
         #endregion
     }
     #region interface IScrollBarPaintData : Interface pro vykreslení komplexní struktury Scrollbaru
@@ -2677,6 +3083,22 @@ namespace Asol.Tools.WorkScheduler.Components
         DownArrow,
         HorizontalLines,
         VerticalLines
+    }
+    internal enum TrackPointerType
+    {
+        None,
+        OneSide,
+        DoubleSide,
+        HiFi
+    }
+    [Flags]
+    internal enum GraphicsPathPart : int
+    {
+        None = 0,
+        SimpleBorder = 1,
+        LightBorder = 2,
+        DarkBorder = 4,
+        FilledArea = 8
     }
     /// <summary>
     /// Druhy transformací, pro které lze vygenerovat matrix v metodě GetMatrix(MatrixBasicTransformType).
