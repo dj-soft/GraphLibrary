@@ -398,9 +398,13 @@ namespace Asol.Tools.WorkScheduler.Components
                 }
             }
             protected Decimal GetValueForPoint(Point point)
-            { }
+            {
+                return 0m;
+            }
             protected Point GetPointForValue(Decimal value)
-            { }
+            {
+                return Point.Empty;
+            }
             protected Point? MouseOverPoint { get; set; }
             protected Point? MouseDragPoint { get; set; }
             protected void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)

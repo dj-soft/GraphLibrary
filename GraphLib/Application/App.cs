@@ -5,6 +5,8 @@ using System.Text;
 using Asol.Tools.WorkScheduler.Data;
 using System.Drawing;
 
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("ASOL.TestGUI")]
+
 namespace Asol.Tools.WorkScheduler.Application
 {
     /// <summary>
