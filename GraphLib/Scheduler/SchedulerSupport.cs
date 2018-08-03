@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.IO;
 using System.Data;
+using System.Drawing;
 
 namespace Asol.Tools.WorkScheduler.Scheduler
 {
@@ -401,8 +402,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             }
         }
         /// <summary>
-        /// Deserializuje tabulku. Z textu vrátí objekt DataTable. 
-        /// Text má být vytvořen metodou TableSerialize().
+        /// Deserializuje tabulku. Z textu vrátí objekt DataTable.
+        /// Vstupní text má být vytvořen metodou <see cref="TableSerialize(DataTable)"/>.
         /// Používají se o párové metody na instanci třídy DataTable : ReadXml() a WriteXml().
         /// Tato metoda při chybě hodí chybu, jinak vrátí Table. Nikdy nevrací null.
         /// </summary>
@@ -413,7 +414,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             return _TableDeserialize(data, false);
         }
         /// <summary>
-        /// Deserializuje tabulku. Z textu vytvoří objekt DataTable a vrátíé true.
+        /// Deserializuje tabulku. Z textu vytvoří objekt DataTable a vrátí true.
         /// Text má být vytvořen metodou TableSerialize().
         /// Používají se o párové metody na instanci třídy DataTable : ReadXml() a WriteXml().
         /// Tato metoda při chybě vrátí false a do out parametru table nechá null. Nikdy nehodí chybu.
@@ -427,7 +428,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             return (table != null);
         }
         /// <summary>
-        /// Deserializuje tabulku. Z textu vrátí objekt DataTable. 
+        /// Deserializuje tabulku. Z textu vrátí objekt DataTable.
         /// Text má být vytvořen metodou TableSerialize().
         /// Používají se o párové metody na instanci třídy DataTable : ReadXml() a WriteXml().
         /// Při chybě se chová podle parametru ignoreErrors.
@@ -460,6 +461,91 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (table == null && !ignoreErrors)
                 throw new ArgumentException(message);
             return table;
+        }
+        #endregion
+        #region Serializace a Deserializace Image
+        /// <summary>
+        /// Serializuje Image. Z objektu Image vrátí text (obsahuje obrázek ve formátu PNG, obsah byte[] převedený na text formátu Base64).
+        /// Text lze převést na tabulku metodou ImageDeserialize().
+        /// </summary>
+        /// <param name="image"></param>
+        /// <returns></returns>
+        public static string ImageSerialize(Image image)
+        {
+            if (image == null) return null;
+            try
+            {
+                string target = null;
+                using (System.IO.MemoryStream memoryStream = new MemoryStream())
+                {
+                    System.Drawing.Imaging.ImageFormat imageFormat = System.Drawing.Imaging.ImageFormat.Png;
+                    image.Save(memoryStream, imageFormat);
+                    byte[] outBuffer = memoryStream.ToArray();
+                    target = System.Convert.ToBase64String(outBuffer, Base64FormattingOptions.InsertLineBreaks);
+                }
+                return target;
+            }
+            catch (Exception exc)
+            {
+                throw new InvalidOperationException("Zadaný obrázek (Image) není možno serializovat do stringu. Při serializaci je hlášena chyba " + exc.Message + ".");
+            }
+        }
+        /// <summary>
+        /// Deserializuje obrázek. Z textu vrátí objekt Image.
+        /// Vstupní obrázek má být vytvořen metodou <see cref="ImageSerialize(Image)"/>.
+        /// Tato metoda při chybě hodí chybu, jinak vrátí Table. Nikdy nevrací null.
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        public static Image ImageDeserialize(string data)
+        {
+            return _ImageDeserialize(data, false);
+        }
+        /// <summary>
+        /// Deserializuje obrázek. Z textu vytvoří objekt Image a vrátí true.
+        /// Vstupní obrázek má být vytvořen metodou <see cref="ImageSerialize(Image)"/>.
+        /// Tato metoda při chybě vrátí false a do out parametru image nechá null. Nikdy nehodí chybu.
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        public static bool TryImageDeserialize(string data, out Image image)
+        {
+            image = _ImageDeserialize(data, true);
+            return (image != null);
+        }
+        /// <summary>
+        /// Deserializuje obrázek. Z textu vrátí objekt Image.
+        /// Vstupní obrázek má být vytvořen metodou <see cref="ImageSerialize(Image)"/>.
+        /// Při chybě se chová podle parametru ignoreErrors.
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="ignoreErrors"></param>
+        /// <returns></returns>
+        private static Image _ImageDeserialize(string data, bool ignoreErrors)
+        {
+            Image image = null;
+            string message = null;
+            if (String.IsNullOrEmpty(data))
+                message = "ImageDeserialize: Zadaný řetězec (data) není možno převést do formátu Image, řetězec je prázdný.";
+            else
+            {
+                try
+                {
+                    byte[] inpBuffer = System.Convert.FromBase64String(data);
+                    using (System.IO.MemoryStream inpStream = new MemoryStream(inpBuffer))
+                    {
+                        image = Image.FromStream(inpStream);
+                    }
+                }
+                catch (Exception exc)
+                {
+                    image = null;
+                    message = "ImageDeserialize: Zadaný řetězec (data) není možno převést do formátu Image. Při deserializaci je hlášena chyba " + exc.Message + ".";
+                }
+            }
+            if (image == null && !ignoreErrors)
+                throw new ArgumentException(message);
+            return image;
         }
         #endregion
         #region Komprimace a dekomprimace stringu

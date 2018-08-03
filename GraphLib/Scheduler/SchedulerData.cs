@@ -44,6 +44,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             try
             {
                 this.GraphTableDict = new Dictionary<string, DataGraphTable>();
+                this.ImageDict = new Dictionary<string, Image>();
                 using (var buffer = WorkSchedulerSupport.CreateDataBufferReader(dataPack))
                 {
                     while (!buffer.ReaderIsEnd)
@@ -61,21 +62,29 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             }
         }
         /// <summary>
-        /// 
+        /// Zajistí načtení jednoho bloku dat z datového balíčku.
+        /// Blok má svůj název (klíč = key) a obsah (data).
+        /// Měl by existovat blok s názvem "DataDeclaration" (jen jeden, obsahuje deklaraci GUI) 
+        /// a několik bloků s daty jednotlivých tabulek, název typicky "Table.workplace_table.Graph.1", jejich obsahem je DataTable.
+        /// Mohou existovat i bloky dodávající obrázky (název "Image.name"), jejich obsahem je bitmapa (ikony funkcí, tollbaru, aplikační obrázky, atd).
         /// </summary>
         /// <param name="key"></param>
         /// <param name="data"></param>
         private void _LoadDataOne(string key, string data)
         {
-            string tableName;
+            string itemName;
             DataTableType tableType;
             if (key == WorkSchedulerSupport.KEY_REQUEST_DATA_DECLARATION)
             {   // Deklarace dat:
                 this._LoadDataDeclaration(data);
             }
-            else if (IsKeyRequestTable(key, out tableName, out tableType))
+            else if (IsKeyRequestTable(key, out itemName, out tableType))
             {   // Tabulka s daty:
-                this._LoadDataGraphTable(data, tableName, tableType);
+                this._LoadDataGraphTable(data, itemName, tableType);
+            }
+            else if (IsKeyRequestImage(key, out itemName))
+            {   // Image:
+                this._LoadDataImage(data, itemName);
             }
         }
         /// <summary>
@@ -88,27 +97,15 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         }
         #region Deklarace dat
         /// <summary>
-        /// Metoda zkusí vrátit deklaraci dat pro danou tabulku
+        /// Metoda vrátí deklaraci dat pro tabulku daného názvu.
+        /// Může vrátit null, pokud v deklaraci nebyla uvedena tabulka daného názvu.
+        /// Název se hledá <see cref="StringComparison.InvariantCulture"/>, je tedy Case-Sensitive.
         /// </summary>
-        /// <param name="tableName">Název tabulky</param>
-        /// <param name="dataDeclaration"></param>
+        /// <param name="tableName"></param>
         /// <returns></returns>
-        protected bool TryGetDataDeclarationForTable(string tableName, out DataDeclaration dataDeclaration)
+        protected DataDeclaration SearchDataDeclarationForTable(string tableName)
         {
-            string key = DataDeclaration.GetKey(DataContentType.Table, tableName);
-            return this.TryGetDataDeclaration(key, out dataDeclaration);
-        }
-        /// <summary>
-        /// Metoda zkusí vrátit deklaraci dat s daným klíčem
-        /// </summary>
-        /// <param name="key">Klíč položky deklarace</param>
-        /// <param name="dataDeclaration"></param>
-        /// <returns></returns>
-        protected bool TryGetDataDeclaration(string key, out DataDeclaration dataDeclaration)
-        {
-            dataDeclaration = null;
-            if (String.IsNullOrEmpty(key)) return false;
-            return this.DeclarationDict.TryGetValue(key, out dataDeclaration);
+            return this.Declarations.FirstOrDefault(d => d.Content == DataContentType.Table && String.Equals(d.Name, tableName, StringComparison.InvariantCulture));
         }
         /// <summary>
         /// Načte informace, popisující deklaraci dat.
@@ -121,18 +118,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             DataTable dataTable = WorkSchedulerSupport.TableDeserialize(text);
             WorkSchedulerSupport.CheckTable(dataTable, WorkSchedulerSupport.DATA_DECLARATION_STRUCTURE);
 
-            Dictionary<string, DataDeclaration> declarationDict = new Dictionary<string, DataDeclaration>();
+            List<DataDeclaration> declarationList = new List<DataDeclaration>();
             foreach (DataRow row in dataTable.Rows)
             {
                 DataDeclaration declaration = DataDeclaration.CreateFrom(this, row);
                 if (declaration != null)
-                {
-                    string key = declaration.Key;
-                    if (!declarationDict.ContainsKey(key))
-                        declarationDict.Add(key, declaration);
-                }
+                    declarationList.Add(declaration);
             }
-            this.DeclarationDict = declarationDict;
+            this.Declarations = declarationList.ToArray();
         }
         /// <summary>
         /// Finalizuje informace, popisující deklaraci dat.
@@ -143,7 +136,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Deklarace dat = popis funkcí a tabulek
         /// </summary>
-        protected Dictionary<string, DataDeclaration> DeclarationDict { get; private set; }
+        protected DataDeclaration[] Declarations { get; private set; }
         #endregion
         #region Data tabulek
         /// <summary>
@@ -157,12 +150,16 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             DataGraphTable dataGraphTable;
             if (!this.GraphTableDict.TryGetValue(tableName, out dataGraphTable))
             {
-                DataDeclaration dataDeclaration;
-                this.TryGetDataDeclarationForTable(tableName, out dataDeclaration);
+                DataDeclaration dataDeclaration = this.SearchDataDeclarationForTable(tableName);
                 dataGraphTable = new DataGraphTable(this, tableName, dataDeclaration);
                 this.GraphTableDict.Add(tableName, dataGraphTable);
             }
-            dataGraphTable.AddTable(data, tableType);
+            try
+            {
+                dataGraphTable.AddTable(data, tableType);
+            }
+            catch (Exception)
+            { }
         }
         /// <summary>
         /// Finalizuje informace, popisující jednotlivé tabulky s daty.
@@ -201,6 +198,50 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Dictionary obsahující data jednotlivých tabulek
         /// </summary>
         protected Dictionary<string, DataGraphTable> GraphTableDict { get; private set; }
+        #endregion
+        #region Data obrázků
+
+        /// <summary>
+        /// Z dodaných dat (data) deserializuje Image a ten uloží pod danám názvem (imageName) do <see cref="ImageDict"/>.
+        /// Chyby odchytí a ignoruje.
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="imageName"></param>
+        private void _LoadDataImage(string data, string imageName)
+        {
+            if (String.IsNullOrEmpty(data) || String.IsNullOrEmpty(imageName)) return;
+            if (this.ImageDict.ContainsKey(imageName)) return;
+
+            try
+            {
+                Image image = WorkSchedulerSupport.ImageDeserialize(data);
+                this.ImageDict.Add(imageName, image);
+            }
+            catch (Exception)
+            { }
+        }
+        /// <summary>
+        /// Klíč z requestu typu "Image.imagename.cokoli dalšího" rozdělí na části, 
+        /// z nichž název obrázku (zde "imagename") uloží do out imageName.
+        /// Vrací true, pokud vstupující klíč obsahuje vyhovující data, nebo vrací false, pokud na vstupu je něco nerozpoznatelného.
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="imageName"></param>
+        /// <returns></returns>
+        protected static bool IsKeyRequestImage(string key, out string imageName)
+        {
+            imageName = null;
+            if (String.IsNullOrEmpty(key)) return false;
+            string[] parts = key.Split('.');
+            if (parts.Length < 2) return false;
+            if (parts[0] != "Image") return false;
+            imageName = parts[1];
+            return (!String.IsNullOrEmpty(imageName));
+        }
+        /// <summary>
+        /// Dictionary obsahující data jednotlivých obrázků
+        /// </summary>
+        protected Dictionary<string, Image> ImageDict { get; private set; }
         #endregion
         #endregion
         #region Konverze stringů a enumů
@@ -424,7 +465,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             DataDeclaration dataDeclaration;
             // this.TryGetDataDeclaration()
-            var fd = this.DeclarationDict.FirstOrDefault();
+            var fd = this.Declarations.FirstOrDefault();
 
             ToolStripDropDownMenu menu = new ToolStripDropDownMenu();
             menu.Text = "nabídka funkcí";
@@ -567,22 +608,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             return "Target: " + this.Target + "; Content: " + this.Content + "; Title: " + this.Title;
         }
-        /// <summary>
-        /// Vrátí stringový klíč pro dané hodnoty.
-        /// </summary>
-        /// <param name="content">Druh prvku</param>
-        /// <param name="name">Název prvku</param>
-        /// <returns></returns>
-        public static string GetKey(DataContentType content, string name)
-        {
-            return content.ToString() + ":" + (name == null ? "" : name.Replace(":", "."));
-        }
         #endregion
         #region Public data
-        /// <summary>
-        /// Obsahuje jednoznačný klíč této položky. Nesmějí existovat dvě položky v jedné deklaraci, které by měly shodný Key.
-        /// </summary>
-        public string Key { get { return GetKey(this.Content, this.Name); } }
         /// <summary>
         /// ID skupiny dat. Jedna skupina dat se vkládá do jednoho controlu <see cref="SchedulerPanel"/>, 
         /// může jich být více, pak hlavní control <see cref="MainControl"/> obsahuje více panelů.
