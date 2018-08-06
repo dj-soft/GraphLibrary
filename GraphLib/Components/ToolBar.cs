@@ -225,12 +225,28 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         /// <summary>
+        /// Metoda do this ToolBaru přidá dodanou grupu funkcí
+        /// </summary>
+        /// <param name="group"></param>
+        public void AddGroup(FunctionGlobalGroup group)
+        {
+            this._AddGToolbarGroup(GToolbarGroup.CreateFrom(this, group));
+        }
+        /// <summary>
+        /// Metoda do this ToolBaru přidá dodanou grupu funkcí
+        /// </summary>
+        /// <param name="group"></param>
+        public void AddGroups(IEnumerable<FunctionGlobalGroup> groups)
+        {
+            this._AddGuiGroups(groups);
+        }
+        /// <summary>
         /// Create GUI items (for Groups) and add it into this Items
         /// </summary>
-        /// <param name="groupList"></param>
-        private void _AddGuiGroups(List<FunctionGlobalGroup> groupList)
+        /// <param name="groups"></param>
+        private void _AddGuiGroups(IEnumerable<FunctionGlobalGroup> groups)
         {
-            foreach (FunctionGlobalGroup group in groupList)
+            foreach (FunctionGlobalGroup group in groups)
                 this._AddGToolbarGroup(GToolbarGroup.CreateFrom(this, group));
         }
         /// <summary>
@@ -553,6 +569,34 @@ namespace Asol.Tools.WorkScheduler.Components
             }
             GPainter.DrawAreaBase(graphics, toolbarBounds, Skin.ToolBar.BackColor, GInteractiveState.MouseOver, System.Windows.Forms.Orientation.Horizontal, null, null);
         }
+        /// <summary>
+        /// Tuto metodu volá interaktivní prvek po kliknutí na něj, úkolem je vyvolat event <see cref="GToolBar.ItemClicked"/>.
+        /// </summary>
+        /// <param name="dataGroup"></param>
+        /// <param name="activeItem"></param>
+        internal void OnItemClicked(FunctionGlobalGroup dataGroup, FunctionItem activeItem)
+        {
+            if (this.ItemClicked != null)
+                this.ItemClicked(this, new FunctionItemEventArgs(activeItem));
+        }
+        /// <summary>
+        /// Tuto metodu volá interaktivní prvek před načtením SubItems do itemu, úkolem je vyvolat event <see cref="GToolBar.ItemSubItemsEnumerateBefore"/>.
+        /// </summary>
+        /// <param name="dataGroup"></param>
+        /// <param name="activeItem"></param>
+        internal void OnItemSubItemsEnumerateBefore(FunctionGlobalGroup dataGroup, FunctionItem activeItem)
+        {
+            if (this.ItemSubItemsEnumerateBefore != null)
+                this.ItemSubItemsEnumerateBefore(this, new FunctionItemEventArgs(activeItem));
+        }
+        /// <summary>
+        /// Událost vyvolaná po kliknutí na určitý prvek ToolBaru
+        /// </summary>
+        public event FunctionItemEventHandler ItemClicked;
+        /// <summary>
+        /// Událost vyvolaná před rozbalením prvku, který může mít SubItems. Aplikaci nyní může zjistit, zda jsou aktuální.
+        /// </summary>
+        public event FunctionItemEventHandler ItemSubItemsEnumerateBefore;
         #endregion
     }
     #endregion
@@ -606,7 +650,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         private List<GToolbarItem> _ToolbarItemList;
         /// <summary>
-        /// Provider of functions in this group = Service of type IFunctionGlobal
+        /// Provider of functions in this group = Service of type IFunctionGlobal.
+        /// Může být null!
         /// </summary>
         public IFunctionProvider Provider { get { return this._DataGroup.Provider; } }
         /// <summary>
@@ -1346,6 +1391,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual void CallSubItemsEnumerateBefore(FunctionItem activeItem)
         {
             this._ToolbarGroup.DataGroup.OnSubItemsEnumerateBefore(activeItem);
+            this._ToolbarGroup.Toolbar.OnItemSubItemsEnumerateBefore(this._ToolbarGroup.DataGroup, activeItem);
         }
         protected virtual void CallItemAction()
         {
@@ -1357,6 +1403,7 @@ namespace Asol.Tools.WorkScheduler.Components
             if (activeItem.Parent != null)
                 activeItem.Parent.OnSubItemsClick(this._DataItem);
             activeItem.OnClick();
+            this._ToolbarGroup.Toolbar.OnItemClicked(this._ToolbarGroup.DataGroup, activeItem);
         }
         #endregion
         #region InteractiveContainer : Interactivity, Draw

@@ -112,20 +112,25 @@ namespace Asol.Tools.WorkScheduler.Services
     public class FunctionGlobalGroup
     {
         #region Properties
-        public FunctionGlobalGroup(IFunctionGlobal provider)
+        public FunctionGlobalGroup()
         {
             this._Id = App.GetNextId(typeof(FunctionGlobalGroup));
-            this.Provider = provider;
             this.IsLiable = true;
             this.IsVisible = true;
             this.LayoutWidth = 24;
+        }
+        public FunctionGlobalGroup(IFunctionGlobal provider)
+            : this()
+        {
+            this.Provider = provider;
         }
         /// <summary>
         /// ID of this group
         /// </summary>
         public int Id { get { return this._Id; } } private int _Id;
         /// <summary>
-        /// Owner of this group = Service of type IFunctionGlobal
+        /// Owner of this group = Service of type IFunctionGlobal.
+        /// Může být null!
         /// </summary>
         public IFunctionGlobal Provider { get; private set; }
         /// <summary>

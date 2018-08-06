@@ -263,6 +263,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public GTabPage[] TabItems { get { return this._TabHeader.Pages.Where(t => (t.Key != TabItemKeyCollapse)).ToArray(); } }
         /// <summary>
+        /// Počet TAB prvků
+        /// </summary>
+        public int TabCount { get { return this.TabItems.Length; } }
+        /// <summary>
         /// Režim zobrazování záhlaví
         /// </summary>
         public ShowTabHeaderMode TabHeaderMode

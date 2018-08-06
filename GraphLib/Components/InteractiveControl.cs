@@ -33,7 +33,7 @@ namespace Asol.Tools.WorkScheduler.Components
         private void Init()
         {
             this._ItemsList = new List<IInteractiveItem>();
-            this.SetStyle(ControlStyles.Selectable | ControlStyles.UserMouse, true);
+            this.SetStyle(ControlStyles.Selectable | ControlStyles.UserMouse | ControlStyles.ResizeRedraw, true);
             this._StopWatchInit();
             this._ToolTipInit();
             this._ProgressInit();

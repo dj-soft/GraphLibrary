@@ -16,14 +16,18 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     public class MainControl : GInteractiveControl
     {
         #region Konstruktor, inicializace, privátní proměnné grafiky
+        public MainControl(MainData mainData)
+            : this()
+        {
+            this._MainData = mainData;
+        }
         public MainControl()
         {
-            this.SetStyle(ControlStyles.ResizeRedraw, true);
             this._ToolBarInit();
-            this._TabDataInit();
-            this._InitData();
+            this._SchedulerPanelInit();
             this.CalculateLayout();
         }
+        private MainData _MainData;
         protected override void OnSizeChanged(EventArgs e)
         {
             base.OnSizeChanged(e);
@@ -36,237 +40,151 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             int y = 0;
             this._ToolBar.Bounds = new Rectangle(y, 0, size.Width, th);
             y = this._ToolBar.Bounds.Bottom + 1;
-            this._TabData.Bounds = new Rectangle(0, y, size.Width, size.Height - y);
+            this._TabContainer.Bounds = new Rectangle(0, y, size.Width, size.Height - y);
             this.Refresh();
         }
+        #endregion
+        #region Public rozhraní: vkládání tabulek a dalších dat
         /// <summary>
-        /// Instance všech Scheduler panelů
+        /// Vloží novou tabulku do controlu. Metoda sama nejlépe ví, kam ji zařadit, a udělá vše potřebné.
         /// </summary>
-        private SchedulerPanel[] _SchedulerPanels;
-        /// <summary>
-        /// Index aktuálního Scheduler panelu
-        /// </summary>
-        private int _CurrentSchedulerPanelIndex;
-        /// <summary>
-        /// true pokud se má zobrazovat záhlaví panelů, tzn. je více než jeden Scheduler panel (máme více než jeden DataSource)
-        /// </summary>
-        protected bool SelectPanelExists { get { return (this._SchedulerPanels != null && this._SchedulerPanels.Length > 1); } }
-        /// <summary>
-        /// true pokud aktuálně máme vybraný panel v <see cref="SchedulerPanelCurrent"/>
-        /// </summary>
-        protected bool SchedulerPanelExists { get { return (this._SchedulerPanels != null && this._CurrentSchedulerPanelIndex >= 0 && this._CurrentSchedulerPanelIndex < this._SchedulerPanels.Length); } }
-        /// <summary>
-        /// Aktuálně zobrazovaný Scheduler panel
-        /// </summary>
-        protected SchedulerPanel SchedulerPanelCurrent { get { return (this.SchedulerPanelExists ? this._SchedulerPanels[this._CurrentSchedulerPanelIndex] : null); } }
+        /// <param name="graphTable"></param>
+        public void AddGraphTable(DataGraphTable graphTable)
+        {
+            if (graphTable == null) return;
+            TabSchedulerPanelInfo tspInfo = this._TabSchedulerPanelPrepare(graphTable.DataDeclaration);
+            tspInfo.SchedulerPanel.AddTable(graphTable);
+        }
         #endregion
         #region ToolBar
+        public void AddToolBarGroup(FunctionGlobalGroup group)
+        {
+            this._ToolBar.AddGroup(group);
+        }
+        public void AddToolBarGroups(IEnumerable<FunctionGlobalGroup> groups)
+        {
+            this._ToolBar.AddGroups(groups);
+        }
         private void _ToolBarInit()
         {
             this._ToolBar = new GToolBar() { Bounds = new Rectangle(0, 0, 1024, 64) };
             this._ToolBar.ToolbarSizeChanged += _ToolBarSizeChanged;
             this.AddItem(this._ToolBar);
-
-            this._ToolBarLoad();
+            this._ToolBar.ItemClicked += _ToolBar_ItemClicked;
         }
+        /// <summary>
+        /// Tuto metodu volá interaktivní prvek (<see cref="GToolBar"/>) po kliknutí na něj, úkolem je vyvolat event <see cref="MainControl.ToolBarItemClicked"/>.
+        /// </summary>
+        /// <param name="dataGroup"></param>
+        /// <param name="activeItem"></param>
+        private void _ToolBar_ItemClicked(object sender, FunctionItemEventArgs args)
+        {
+            if (this.ToolBarItemClicked != null)
+                this.ToolBarItemClicked(this, args);
+        }
+        /// <summary>
+        /// Událost vyvolaná po kliknutí na určitý prvek ToolBaru
+        /// </summary>
+        public event FunctionItemEventHandler ToolBarItemClicked;
         private void _ToolBarSizeChanged(object sender, GPropertyChangeArgs<ComponentSize> e)
         {
             this.CalculateLayout();
-        }
-        /// <summary>
-        /// Naplní funkce do Toolbaru
-        /// </summary>
-        private void _ToolBarLoad()
-        {
-            this._ToolBar.FillFunctionGlobals();
         }
         /// <summary>
         /// Instance toolbaru
         /// </summary>
         private GToolBar _ToolBar;
         #endregion
-        #region TabHeader nad panely (pokud je více než jeden datový zdroj)
-        private void _TabDataInit()
+        #region Jednotlivé panely SchedulerPanel + TabContainer
+        private void _SchedulerPanelInit()
         {
-            this._TabData = new GTabContainer(this) { TabHeaderPosition = RectangleSide.Top, TabHeaderMode = ShowTabHeaderMode.Default };
-            this._TabData.ActivePageChanged += _TabDataActivePageChanged;
-            this.AddItem(this._TabData);
+            this._TabContainer = new GTabContainer(this) { TabHeaderPosition = RectangleSide.Top, TabHeaderMode = ShowTabHeaderMode.Default };
+            this._TabContainer.ActivePageChanged += _TabContainerActivePageChanged;
+            this.AddItem(this._TabContainer);
+
+            this._SchedulerPanelDict = new Dictionary<int, TabSchedulerPanelInfo>();
+            this._SchedulerPanelCurrentDataId = -1;
         }
+        /// <summary>
+        /// Najde / přidá a vrátí instanci TabSchedulerPanelInfo pro DataId dané tabulky.
+        /// </summary>
+        /// <param name="dataDeclaration"></param>
+        private TabSchedulerPanelInfo _TabSchedulerPanelPrepare(DataDeclaration dataDeclaration)
+        {
+            TabSchedulerPanelInfo tspInfo;
+            int dataId = dataDeclaration.DataId;
+            if (!this._SchedulerPanelDict.TryGetValue(dataId, out tspInfo))
+            {
+                int tabPageIndex = this._TabContainer.TabCount;
+                SchedulerPanel schedulerPanel = new SchedulerPanel(dataDeclaration);
+                GTabPage tabPage = this._TabContainer.AddTabItem(schedulerPanel, dataDeclaration.Title, toolTip: dataDeclaration.ToolTip, image: null);
+                tspInfo = new TabSchedulerPanelInfo(dataId, tabPageIndex, tabPage, schedulerPanel);
+                this._SchedulerPanelDict.Add(dataId, tspInfo);
+            }
+            return tspInfo;
+        }
+
+
         /// <summary>
         /// Po změně záložky, která reprezentuje komplexní GUI datového zdroje
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _TabDataActivePageChanged(object sender, GPropertyChangeArgs<GTabPage> e)
+        private void _TabContainerActivePageChanged(object sender, GPropertyChangeArgs<GTabPage> e)
         {
-            
-        }
-        /// <summary>
-        /// Přidá novou záložku do containeru <see cref="_TabData"/>
-        /// </summary>
-        /// <param name="panel"></param>
-        private GTabPage _TabDataAdd(SchedulerPanel panel)
-        {
-            this._TabData.AddItem(panel);
-            return this._TabData.AddTabItem(panel, panel.Title, toolTip: panel.ToolTip, image: panel.Icon);
+
         }
         /// <summary>
         /// Záložky s daty jednotlivých datových zdrojů
         /// </summary>
-        private GTabContainer _TabData;
+        private GTabContainer _TabContainer;
+        /// <summary>
+        /// Instance všech Scheduler panelů a na něj napojených dat.
+        /// Klíčem je DataId.
+        /// </summary>
+        private Dictionary<int, TabSchedulerPanelInfo> _SchedulerPanelDict;
+        /// <summary>
+        /// Index aktuálního Scheduler panelu
+        /// </summary>
+        private int _SchedulerPanelCurrentDataId;
+        /// <summary>
+        /// true pokud v <see cref="SchedulerPanelCurrent"/> je vybraný panel, false pokud není.
+        /// </summary>
+        protected bool SchedulerPanelExists { get { return (this._SchedulerPanelDict != null && this._SchedulerPanelCurrentDataId > 0 && this._SchedulerPanelDict.ContainsKey(this._SchedulerPanelCurrentDataId)); } }
+        /// <summary>
+        /// Aktuálně zobrazovaný Scheduler panel
+        /// </summary>
+        protected SchedulerPanel SchedulerPanelCurrent { get { return (this.SchedulerPanelExists ? this._SchedulerPanelDict[this._SchedulerPanelCurrentDataId].SchedulerPanel : null); } }
         #endregion
-        #region Datové zdroje
+        #region class TabSchedulerPanelInfo - třída obsaující data o jednom panelu pro jeden klíč DataId
         /// <summary>
-        /// Provede inicializaci datových zdrojů
+        /// TabSchedulerPanelInfo - třída obsaující data o jednom panelu pro jeden klíč DataId
         /// </summary>
-        private void _InitData()
+        protected class TabSchedulerPanelInfo
         {
-            this._PrepareData();
-            this._LoadData();
-        }
-        /// <summary>
-        /// Načte soupis dostupných datových zdrojů (=pluginy).
-        /// Z datových zdrojů získá popisky dat <see cref="DataDescriptor"/>.
-        /// Pro každý <see cref="DataDescriptor"/> založí jednu záložku v <see cref="_TabData"/>.
-        /// </summary>
-        private void _PrepareData()
-        {
-            List<DataSourcePanel> dataList = new List<DataSourcePanel>();
-            using (Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "MainControl", "GetDataSources", "GUIThread"))
+            public TabSchedulerPanelInfo(int dataId, int tabPageIndex, GTabPage gTabPage, SchedulerPanel schedulerPanel)
             {
-                var plugins = Application.App.GetPlugins(typeof(IDataSource));
-                foreach (object plugin in plugins)
-                {
-                    IDataSource source = plugin as IDataSource;
-                    if (source != null)
-                    {
-                        IEnumerable<DataDescriptor> dataDescriptors = this._GetDataPanel(source);
-                        foreach (DataDescriptor dataDescriptor in dataDescriptors)
-                        {
-                            SchedulerPanel panel = new SchedulerPanel(source, dataDescriptor);
-                            GTabPage page = this._TabDataAdd(panel);
-                            DataSourcePanel data = new DataSourcePanel(source, dataDescriptor, panel, page);
-                        }
-                    }
-                }
-            }
-            this._Data = dataList.ToArray();
-        }
-        /// <summary>
-        /// Pro daný datový zdroj vytvoří grafický panel (SchedulerPanel), pro panel vytvoří záložku v <see cref="_MainTabHeader"/>, 
-        /// panel vloží do this.Items a panel poté vrátí.
-        /// </summary>
-        /// <param name="dataSource"></param>
-        /// <returns></returns>
-        private IEnumerable<DataDescriptor> _GetDataPanel(IDataSource dataSource)
-        {
-            List<DataDescriptor> dataDescriptors = new List<DataDescriptor>();
-            try
-            {
-                DataSourceGetTablesRequest request = new DataSourceGetTablesRequest(null);
-                DataSourceGetTablesResponse response = dataSource.ProcessRequest(request) as DataSourceGetTablesResponse;
-                if (response != null && response.DataDescriptorList != null)
-                    dataDescriptors.AddRange(response.DataDescriptorList);
-
-                {
-                    foreach (DataDescriptor dataDescriptor in response.DataDescriptorList)
-                    {
-                        SchedulerPanel panel = new SchedulerPanel(dataSource, dataDescriptor);
-                        GTabPage page = this._TabDataAdd(panel);
-                    }
-                }
-            }
-            catch (Exception exc)
-            {
-                Type dataSourceType = dataSource.GetType();
-                string dataSourceName = dataSourceType.Namespace + "." + dataSourceType.Name;
-                Application.App.Trace.Exception(exc, "Error " + exc.Message + " in datasource " + dataSourceName + " on processing request: GetTables.");
-                dataDescriptors.Clear();
-            }
-            return dataDescriptors.ToArray();
-        }
-        /// <summary>
-        /// Metoda zajistí nastartování procesu načítání dat z datového zdroje (ze všech zdrojů) do jeho panelu, to vše na pozadí.
-        /// </summary>
-        private void _LoadData()
-        {
-            foreach (DataSourcePanel data in this._Data)
-                this._LoadDataOne(data);
-        }
-        /// <summary>
-        /// Nastartuje načítání dat pro jeden datový zdroj a jeden panel
-        /// </summary>
-        /// <param name="data"></param>
-        private void _LoadDataOne(DataSourcePanel data)
-        {
-            if (data.DataDescriptor.NeedLoadData)
-            {
-                DataSourceGetDataRequest request = new DataSourceGetDataRequest(null, data.DataPanel);
-                Application.App.ProcessRequestOnbackground<DataSourceGetDataRequest, DataSourceResponse>(data.DataSource.ProcessRequest, request, this._LoadDataOneResponse);
-            }
-        }
-        /// <summary>
-        /// Metoda je volána v threadu na pozadí, po dokončení zpracování požadavku <see cref="DataSourceGetDataRequest"/> v rámci datového zdroje.
-        /// Tato metoda má za úkol zajistit dokončení zpracování dat.
-        /// </summary>
-        /// <param name="request"></param>
-        /// <param name="response"></param>
-        private void _LoadDataOneResponse(DataSourceGetDataRequest request, DataSourceResponse response)
-        {
-
-        }
-        
-        /*
-        private void _ProcessResponseData(DataSourceGetDataRequest request, DataSourceResponse response)
-        {
-            if (this.InvokeRequired)
-            {
-                Application.App.TraceInfo(Application.TracePriority.Priority1_ElementaryTimeDebug, "MainControl", "ProcessResponseData", "WorkerThread", "InvokeGUI");
-                this.BeginInvoke(new Action<DataSourceGetDataRequest, DataSourceResponse>(this._ProcessResponseData), request, response);
-            }
-            else
-            {
-                using (Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "MainControl", "ProcessResponseData", "GUIThread"))
-                {
-                    
-
-
-                }
-            }
-        }
-        */
-        private DataSourcePanel[] _Data;
-        /// <summary>
-        /// Třída, která spojuje datový zdroj <see cref="IDataSource"/>, descriptor konkrétních dat <see cref="Scheduler.DataDescriptor"/>, 
-        /// jeho GUI <see cref="SchedulerPanel"/> a záložku, pod kterou je zobrazován <see cref="GTabPage"/>.
-        /// </summary>
-        protected class DataSourcePanel
-        {
-            public DataSourcePanel(IDataSource source, DataDescriptor dataDescriptor, SchedulerPanel panel, GTabPage page)
-            {
-                this.DataSource = source;
-                this.DataDescriptor = dataDescriptor;
-                this.DataPanel = panel;
-                this.Page = page;
+                this.DataId = dataId;
+                this.TabPageIndex = tabPageIndex;
+                this.GTabPage = gTabPage;
+                this.SchedulerPanel = schedulerPanel;
             }
             /// <summary>
-            /// Datový zdroj, který zde zobrazuje data.
-            /// Jeden datový zdroj může zobrazovat více dat, každá sada dat má svůj <see cref="Scheduler.DataDescriptor"/>, 
-            /// svůj <see cref="SchedulerPanel"/> a svoji záložku <see cref="GTabPage"/>.
+            /// DataId dat v tomto panelu
             /// </summary>
-            public IDataSource DataSource { get; private set; }
+            public int DataId { get; private set; }
             /// <summary>
-            /// Popisek dat. Tento popisovač vytvořil datový zdroj <see cref="DataSource"/>, tato data jsou zde obsažena a zobrazena.
+            /// Index záložky
             /// </summary>
-            public DataDescriptor DataDescriptor { get; private set; }
+            public int TabPageIndex { get; private set; }
             /// <summary>
-            /// GUI panel, který fyzicky zobrazuje data
+            /// Objekt záložky obsahující panel
             /// </summary>
-            public SchedulerPanel DataPanel { get; private set; }
+            public GTabPage GTabPage { get; private set; }
             /// <summary>
-            /// Záložka, pod kterou jsou tato data zobrazena.
+            /// Data panelu
             /// </summary>
-            public GTabPage Page { get; private set; }
+            public SchedulerPanel SchedulerPanel { get; private set; }
         }
         #endregion
     }

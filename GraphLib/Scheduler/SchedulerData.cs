@@ -18,7 +18,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     /// <summary>
     /// MainData : hlavní řídící prvek dat zobrazovaných v controlu <see cref="MainControl"/>.
     /// </summary>
-    public class MainData : IMainDataInternal
+    public class MainData : IMainDataInternal, IFunctionProvider
     {
         #region Konstrukce a proměnné
         public MainData(IAppHost host)
@@ -200,7 +200,27 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         protected Dictionary<string, DataGraphTable> GraphTableDict { get; private set; }
         #endregion
         #region Data obrázků
-
+        /// <summary>
+        /// Vrátí obrázek daného jména. Může dojít k chybě <see cref="System.ArgumentNullException"/> nebo <see cref="System.Collections.Generic.KeyNotFoundException"/>.
+        /// </summary>
+        /// <param name="imageName"></param>
+        /// <returns></returns>
+        protected Image GetImage(string imageName)
+        {
+            return this.ImageDict[imageName];
+        }
+        /// <summary>
+        /// Zkusí najít obrázek daného jména. Nedojde k chybě.
+        /// </summary>
+        /// <param name="imageName"></param>
+        /// <param name="image"></param>
+        /// <returns></returns>
+        protected bool TryGetImage(string imageName, out Image image)
+        {
+            image = null;
+            if (String.IsNullOrEmpty(imageName)) return false;
+            return this.ImageDict.TryGetValue(imageName, out image);
+        }
         /// <summary>
         /// Z dodaných dat (data) deserializuje Image a ten uloží pod danám názvem (imageName) do <see cref="ImageDict"/>.
         /// Chyby odchytí a ignoruje.
@@ -429,8 +449,37 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         }
         #endregion
         #region Tvorba GUI
-
         public System.Windows.Forms.Control CreateGui()
+        {
+            this._MainControl = new MainControl(this);
+            this._MainControl.ToolBarItemClicked += _MainControl_ToolBarItemClicked;
+            this._FillMainDataToolBar();
+            this._FillMainDataTables();
+            return this._MainControl;
+        }
+        /// <summary>
+        /// Naplní do <see cref="_MainControl"/> veškeré položky do ToolBaru
+        /// </summary>
+        protected void _FillMainDataToolBar()
+        {
+            List<FunctionGlobalGroup> groupList = this.CreateToolBarContent();
+            this._MainControl.AddToolBarGroups(groupList);
+        }
+        /// <summary>
+        /// Naplní do <see cref="_MainControl"/> veškeré tabulky
+        /// </summary>
+        protected void _FillMainDataTables()
+        {
+            foreach (var graphTable in this.GraphTableDict.Values)
+                this._MainControl.AddGraphTable(graphTable);
+        }
+        /// <summary>
+        /// Reference na hlavní GUI control
+        /// </summary>
+        protected MainControl _MainControl;
+        #endregion
+        #region Testovací GUI
+        public System.Windows.Forms.Control OldCreateGui()
         {
             this._GControl = new GInteractiveControl();
 
@@ -459,6 +508,60 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 this._GGrid.Bounds = new Rectangle(3, 3, size.Width - 6, size.Height - 6);
             }
         }
+        #endregion
+        #region ToolBar
+        /// <summary>
+        /// Metoda vrátí kompletní obsah ToolBaru. Tedy jak aplikační prvky, tak prvky z deklarace.
+        /// </summary>
+        /// <returns></returns>
+        protected List<FunctionGlobalGroup> CreateToolBarContent()
+        {
+            List<FunctionGlobalGroup> groupList = new List<FunctionGlobalGroup>();
+            this._AddToolBarContentApplication(groupList);
+            this._AddToolBarContentDeclaration(groupList);
+            return groupList;
+        }
+        /// <summary>
+        /// Do předaného soupisu prvků do ToolBaru přidá fixní položky aplikace
+        /// </summary>
+        /// <param name="groupList"></param>
+        protected void _AddToolBarContentApplication(List<FunctionGlobalGroup> groupList)
+        {
+            FunctionGlobalGroup group = new FunctionGlobalGroup(null);
+            group.Title = "ÚPRAVY";
+            group.Order = "A1";
+            group.ToolTipTitle = "Úpravy zadaných dat";
+
+            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Small, Image = Components.IconStandard.EditUndo, Text = "Zpět", IsEnabled = false, LayoutHint = LayoutHint.NextItemSkipToNextRow, UserData = "EditUndo" });
+            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Small, Image = Components.IconStandard.EditRedo, Text = "Vpřed", IsEnabled = true, UserData = "EditRedo" });
+            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Separator, Size = FunctionGlobalItemSize.Whole });
+            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Half, Image = Components.IconStandard.Refresh, Text = "Přenačíst", ToolTip = "Zruší všechny provedené změny a znovu načte data z databáze", IsEnabled = true, UserData = "Refresh" });
+            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Half, Image = Components.IconStandard.DocumentSave, Text = "Uložit", ToolTip = "Uloží všechny provedené změny do databáze", IsEnabled = false, UserData = "DocumentSave" });
+
+            groupList.Add(group);
+        }
+        /// <summary>
+        /// Do předaného soupisu prvků do ToolBaru přidá položky menu, dodané v datech = v deklaraci (<see cref="Declarations"/>).
+        /// </summary>
+        /// <param name="groupList"></param>
+        protected void _AddToolBarContentDeclaration(List<FunctionGlobalGroup> groupList)
+        {
+            foreach (var item in this.Declarations.Where(d => d.Content == DataContentType.Button))
+            {
+
+            }
+        }
+        /// <summary>
+        /// Obsluha události Click na ToolBaru
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _MainControl_ToolBarItemClicked(object sender, FunctionItemEventArgs args)
+        {
+            
+        }
+
+        PluginActivity IPlugin.Activity { get { return PluginActivity.Standard; } }
         #endregion
         #region Kontextové menu
         protected ToolStripDropDownMenu CreateContextMenu(DataGraphItem graphItem, ItemActionArgs args)
@@ -771,7 +874,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Finalizuje dosud načtená data. Další data se již načítat nebudou.
         /// </summary>
-        public void LoadFinalise()
+        internal void LoadFinalise()
         {
             if (this.DataDeclaration == null || this.TableRow == null)
                 return;
@@ -780,7 +883,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             {
                 this.CreateGraphs();
                 this.FillGraphItems();
-
             }
         }
         #endregion
@@ -1508,9 +1610,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         #endregion
     }
     #endregion
-    #region class DataGraphProperties : vlastnosti tabulky, popis chování atd
+    #region class DataGraphProperties : vlastnosti tabulky, popis chování atd - načteno z dodaných dat
     /// <summary>
-    /// DataGraphProperties : vlastnosti tabulky, popis chování atd
+    /// DataGraphProperties : vlastnosti tabulky, popis chování atd - načteno z dodaných dat
     /// </summary>
     public class DataGraphProperties
     {
@@ -1567,7 +1669,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         protected DataGraphTable DataGraphTable { get; private set; }
         #endregion
-        #region Pubic data
+        #region Public data
         /// <summary>
         /// Pozice grafu v tabulce
         /// </summary>
@@ -1617,12 +1719,33 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     /// </summary>
     public enum DataTargetType
     {
+        /// <summary>
+        /// Neurčeno
+        /// </summary>
         None,
-        Main,
+        /// <summary>
+        /// Funkce v toolbaru
+        /// </summary>
         ToolBar,
+        /// <summary>
+        /// Main = záhlaví panelu jedné verze dat
+        /// </summary>
+        Main,
+        /// <summary>
+        /// Tabulky v panelu vlevo
+        /// </summary>
         Task,
+        /// <summary>
+        /// Tabulky v hlavním panelu
+        /// </summary>
         Schedule,
+        /// <summary>
+        /// Tabulky v panelu vpravo
+        /// </summary>
         Source,
+        /// <summary>
+        /// Tabulky v panelu dole
+        /// </summary>
         Info
     }
     /// <summary>
@@ -1631,8 +1754,17 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     public enum DataContentType
     {
         None,
+        /// <summary>
+        /// Button = položka ToolBaru
+        /// </summary>
         Button,
+        /// <summary>
+        /// Table = tabulka
+        /// </summary>
         Table,
+        /// <summary>
+        /// Function = kontextová funkce
+        /// </summary>
         Function
     }
     /// <summary>
@@ -1658,238 +1790,4 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         OnBackgroundLogarithmic
     }
     #endregion
-
-
-
-
-    /// <summary>
-    /// Třída, která obsahuje veškerá data Scheduleru.
-    /// Současně představuje jak zdroj globálních funkcí do ToolBaru (IFunctionGlobal), tak i zdroj dat pro grafy v GUI (IDataSource).
-    /// </summary>
-    public class SchedulerData : IFunctionGlobal, IDataSource
-    {
-        #region Konstruktor a privátní data
-        public SchedulerData()
-        {
-            // Konstruktor vrátí new objekt, ale pouze pro použití jako Plugin.
-            // Pro plnohodnotné použití a permanentní životnost je určen singleton Data.
-            // Ten po vytvoření instance třídy SchedulerData navíc volá metodu Initialise(), která fyzicky naplní instanci potřebnými daty.
-        }
-        /// <summary>
-        /// Singleton, jediná instance obsahující reálná data datového zdroje
-        /// </summary>
-        public static SchedulerData Data
-        {
-            get
-            {
-                if (__Data == null)
-                {
-                    lock (__Lock)
-                    {
-                        if (__Data == null)
-                            __Data = CreateData();
-                    }
-                }
-                return __Data;
-            }
-        }
-        private static SchedulerData CreateData()
-        {
-            SchedulerData data = new SchedulerData();
-            data.Initialise();
-            return data;
-        }
-        private static SchedulerData __Data;
-        private static object __Lock = new object();
-        #endregion
-        #region Inicializace dat objektu, který se používá jako datová základna
-        /// <summary>
-        /// Inicializace dat Scheduleru
-        /// </summary>
-        protected void Initialise()
-        {
-        }
-        #endregion
-        #region implementace IFunctionGlobal a IDataSource
-        PluginActivity IPlugin.Activity { get { return PluginActivity.Standard; } }
-        /// <summary>
-        /// Vytvoří a vrátí sadu globálních funkcí pro this plugin
-        /// </summary>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        FunctionGlobalPrepareResponse IFunctionGlobal.PrepareGui(FunctionGlobalPrepareGuiRequest request)
-        {
-            return Data.PrepareGui(request);
-        }
-        /// <summary>
-        /// Metoda může prověřit funkce, vytvořené ostatními pluginy.
-        /// Kterýkoli plugin tak může nastavit FunctionGlobalGroup.IsVisible = false, 
-        /// nebo FunctionGlobalGroup.Items[].IsVisible nebo IsEnabled = false, a zajistit tak skrytí jakékoli funkce z jiné služby.
-        /// </summary>
-        /// <param name="request"></param>
-        void IFunctionGlobal.CheckGui(FunctionGlobalCheckGuiRequest request)
-        {
-            Data.CheckGui(request);
-        }
-        /// <summary>
-        /// Datový zdroj dostane jistý požadavek, a ten zpracuje a vrací data.
-        /// Formát požadavku a vrácené odpovědi je závislý na konkrétní situaci.
-        /// </summary>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        DataSourceResponse IDataSource.ProcessRequest(DataSourceRequest request)
-        {
-            return Data.ProcessRequest(request);
-        }
-        #endregion
-        #region Tvorba prvků GUI (ToolBar), obsluha událostí vyvolaných v Toolbaru (eventhandlery)
-        /// <summary>
-        /// Připraví GUI.
-        /// Běží v rámci Singletonu.
-        /// </summary>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        protected FunctionGlobalPrepareResponse PrepareGui(FunctionGlobalPrepareGuiRequest request)
-        {
-            this._ToolBar = request.ToolBar;
-
-            List<FunctionGlobalGroup> groups = new List<FunctionGlobalGroup>();
-            this._PrepareGuiEdit(groups);
-            this._PrepareGuiTime(groups);
-            this._PrepareGuiShow(groups);
-
-            FunctionGlobalPrepareResponse response = new FunctionGlobalPrepareResponse();
-            response.Items = groups.ToArray();
-            return response;
-        }
-        /// <summary>
-        /// Zkontroluje všechny vytvořené prvky GUI, tzn. i z ostatníh modulů
-        /// </summary>
-        /// <param name="request"></param>
-        protected void CheckGui(FunctionGlobalCheckGuiRequest request)
-        { }
-        #region Skupina Edit
-        private void _PrepareGuiEdit(List<FunctionGlobalGroup> groups)
-        {
-            FunctionGlobalGroup group = new FunctionGlobalGroup(this);
-            group.Title = "ÚPRAVY";
-            group.Order = "A1";
-            group.ToolTipTitle = "Úpravy zadaných dat";
-
-            this.ButtonUndo = new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Small, Image = Components.IconStandard.EditUndo, Text = "Zpět", IsEnabled = false, LayoutHint = LayoutHint.NextItemSkipToNextRow };
-            this.ButtonUndo.Click += ButtonUndo_Click;
-            this.ButtonRedo = new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Small, Image = Components.IconStandard.EditRedo, Text = "Vpřed", IsEnabled = true };
-            this.ButtonRedo.Click += ButtonRedo_Click;
-            this.ButtonReload = new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Half, Image = Components.IconStandard.Refresh, Text = "Přenačíst", ToolTip = "Zruší všechny provedené změny a znovu načte data z databáze", IsEnabled = true };
-            this.ButtonReload.Click += ButtonReload_Click;
-            this.ButtonSave = new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Half, Image = Components.IconStandard.DocumentSave, Text = "Uložit", ToolTip = "Uloží všechny provedené změny do databáze", IsEnabled = false };
-            this.ButtonSave.Click += ButtonSave_Click;
-
-            group.Items.Add(this.ButtonUndo);
-            group.Items.Add(this.ButtonRedo);
-            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Separator, Size = FunctionGlobalItemSize.Whole });
-            group.Items.Add(this.ButtonReload);
-            group.Items.Add(this.ButtonSave);
-
-            groups.Add(group);
-        }
-      
-        /// <summary>
-        /// Reference na objekt GToolBar, který reprezentuje hlavní toolbar aplikace.
-        /// </summary>
-        private GToolBar _ToolBar;
-        private void ButtonUndo_Click(object sender, FunctionItemEventArgs args) { }
-        private void ButtonRedo_Click(object sender, FunctionItemEventArgs args) { }
-        private void ButtonReload_Click(object sender, FunctionItemEventArgs args) { }
-        private void ButtonSave_Click(object sender, FunctionItemEventArgs args) { }
-
-        protected FunctionGlobalItem ButtonUndo;
-        protected FunctionGlobalItem ButtonRedo;
-        protected FunctionGlobalItem ButtonReload;
-        protected FunctionGlobalItem ButtonSave;
-        #endregion
-        #region Skupina : Řízení časové osy
-        private void _PrepareGuiTime(List<FunctionGlobalGroup> groups)
-        {
-            FunctionGlobalGroup group = new FunctionGlobalGroup(this);
-            group.Title = "ČASOVÁ OSA";
-            group.Order = "D1";
-            group.ToolTipTitle = "Řízení pohybu na časové ose";
-
-            this.ButtonTimeWeek5 = new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Half, Image = Components.IconStandard.EditUndo, Text = "Týden 5 (Po-Pá)", LayoutHint = LayoutHint.NextItemOnSameRow };
-            this.ButtonTimeWeek5.Click += ButtonTimeWeek5_Click;
-            this.ButtonTimeWeek7 = new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Half, Image = Components.IconStandard.EditRedo, Text = "Týden 7 (Po-Ne)", LayoutHint = LayoutHint.NextItemSkipToNextRow };
-            this.ButtonTimeWeek7.Click += ButtonTimeWeek7_Click;
-            this.ButtonTimePrev = new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Half, Image = Components.IconStandard.GoLeft, Text = "", ToolTip = "Zobrazí předchozí týden", ModuleWidth = 3, LayoutHint = LayoutHint.NextItemOnSameRow };
-            this.ButtonTimePrev.Click += ButtonTimePrev_Click;
-            this.ButtonTimeCurr = new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Half, Image = Components.IconStandard.DocumentSave, Text = "Jdi na dnešek", ToolTip = "Zobrazí aktuální týden", LayoutHint = LayoutHint.NextItemOnSameRow };
-            this.ButtonTimeCurr.Click += ButtonTimeCurr_Click;
-            this.ButtonTimeNext = new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Half, Image = Components.IconStandard.GoRight, Text = "", ToolTip = "Zobrazí následující týden", ModuleWidth = 3, LayoutHint = LayoutHint.NextItemSkipToNextTable };
-            this.ButtonTimeNext.Click += ButtonTimeNext_Click;
-
-            group.Items.Add(this.ButtonTimeWeek5);
-            group.Items.Add(this.ButtonTimeWeek7);
-            group.Items.Add(this.ButtonTimePrev);
-            group.Items.Add(this.ButtonTimeCurr);
-            group.Items.Add(this.ButtonTimeNext);
-            // group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Separator, Size = FunctionGlobalItemSize.Whole });
-
-            groups.Add(group);
-        }
-
-        private void ButtonTimeWeek5_Click(object sender, FunctionItemEventArgs args)
-        {
-            
-        }
-        private void ButtonTimeWeek7_Click(object sender, FunctionItemEventArgs args) { }
-        private void ButtonTimePrev_Click(object sender, FunctionItemEventArgs args) { }
-        private void ButtonTimeCurr_Click(object sender, FunctionItemEventArgs args) { }
-        private void ButtonTimeNext_Click(object sender, FunctionItemEventArgs args) { }
-        protected FunctionGlobalItem ButtonTimeWeek5;
-        protected FunctionGlobalItem ButtonTimeWeek7;
-        protected FunctionGlobalItem ButtonTimePrev;
-        protected FunctionGlobalItem ButtonTimeCurr;
-        protected FunctionGlobalItem ButtonTimeNext;
-        #endregion
-        #region Skupina Show
-        private void _PrepareGuiShow(List<FunctionGlobalGroup> groups)
-        { }
-
-        #endregion
-        #endregion
-        #region Zpracování požadavku z GUI vrstvy
-        protected DataSourceResponse ProcessRequest(DataSourceRequest request)
-        {
-            if (request == null) return null;
-            if (request is DataSourceGetTablesRequest) return this.ProcessRequestGetTables(request as DataSourceGetTablesRequest);
-           // if (request is DataSourceGetDataRequest) return this.ProcessRequestGetData(request as DataSourceGetDataRequest);
-
-            return null;
-        }
-        protected DataSourceResponse ProcessRequestGetTables(DataSourceGetTablesRequest request)
-        {
-            DataSourceGetTablesResponse response = new DataSourceGetTablesResponse(request);
-
-            DataDescriptor dataDescriptor = new DataDescriptor();
-            dataDescriptor.DataId = 123456;
-            dataDescriptor.Title = "Dílna LISY";
-            dataDescriptor.ToolTip = "Nabízí možnosti uspořádat práci na této dílně";
-
-            Table productOrders = new Table() { Title = "Výrobní příkazy" };
-            Table planItems = new Table() { Title = "Plán výroby" };
-            dataDescriptor.TaskTables = new Table[] { productOrders, planItems };
-
-            Table workPlaceSchedule = new Table();
-            Table workPlaceSource = new Table();
-            dataDescriptor.ScheduleTables = new Table[] { workPlaceSchedule, workPlaceSource };
-
-
-
-            response.DataDescriptorList.Add(dataDescriptor);
-
-
-            return response;
-        }
-        #endregion
-    }
 }

@@ -13,19 +13,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     /// <summary>
     /// Panel jedné Dílenské tabule: obsahuje všechny prvky pro zobrazení dat jedné verze plánu (potřebné <see cref="GTabContainer"/>, <see cref="GGrid"/>, <see cref="GSplitter"/>), ale neobsahuje <see cref="GToolBar"/>.
     /// Hlavní control <see cref="MainControl"/> se skládá z jednoho prvku <see cref="GToolBar"/> a z jednoho <see cref="GTabContainer"/>, 
-    /// který v sobě hostuje controly <see cref="SchedulerPanel"/>, jeden pro každou jednu zadanou verzi plánu.
+    /// který v sobě hostuje controly <see cref="SchedulerPanel"/>, jeden pro každou jednu zadanou verzi plánu (DataId).
     /// </summary>
     public class SchedulerPanel : InteractiveContainer, IInteractiveItem
     {
         #region Konstruktor, inicializace, privátní proměnné
-        public SchedulerPanel()
+        public SchedulerPanel(DataDeclaration dataDeclaration)
         {
-            this._InitComponents();
-        }
-        public SchedulerPanel(Services.IDataSource schedulerDataSource, DataDescriptor dataDescriptor)
-        {
-            this._DataSource = schedulerDataSource;
-            this._DataDescriptor = dataDescriptor;
+            this._DataDeclaration = dataDeclaration;
             this._InitComponents();
         }
         private void _InitComponents()
@@ -182,8 +177,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private GTabContainer _InfoContainer;
         private bool _IsInfoVisible;
         private bool _IsInfoEnabled;
-        private Services.IDataSource _DataSource;
-        private DataDescriptor _DataDescriptor;
+        private DataDeclaration _DataDeclaration;
         #endregion
         #region Child items
         protected override IEnumerable<IInteractiveItem> Childs { get { return this._GetChildList(); } }
@@ -206,7 +200,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private bool _IsChildValid;
         #endregion
         #region Public data
-        public Services.IDataSource SchedulerDataSource { get { return this._DataSource; } }
         /// <summary>
         /// Titulek celých dat, zobrazí se v TabHeaderu, pokud bude datových zdrojů více než 1
         /// </summary>
@@ -236,6 +229,37 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         public bool IsInfoEnabled { get { return this._IsInfoEnabled; } set { this._IsInfoEnabled = value; this.CalculateLayout(); } }
 
 
+        #endregion
+        #region Tabulky
+        /// <summary>
+        /// Do this panelu přidá další tabulku.
+        /// Pozici tabulky určí z <see cref="DataGraphTable.DataDeclaration"/> : <see cref="DataDeclaration.Target"/>
+        /// </summary>
+        /// <param name="graphTable"></param>
+        public void AddTable(DataGraphTable graphTable)
+        {
+            DataDeclaration dataDeclaration = graphTable.DataDeclaration;
+            DataTargetType target = dataDeclaration.Target;
+            switch (target)
+            {
+                case DataTargetType.Task:
+                    this.AddTableToTabs(graphTable, this._TaskContainer);
+                    break;
+                case DataTargetType.Schedule:
+                    this.AddTableToGrid(graphTable, this._SchedulerGrid);
+                    break;
+                case DataTargetType.Source:
+                    this.AddTableToTabs(graphTable, this._SourceContainer);
+                    break;
+                case DataTargetType.Info:
+                    this.AddTableToTabs(graphTable, this._InfoContainer);
+                    break;
+            }
+        }
+        private void AddTableToTabs(DataGraphTable graphTable, GTabContainer tabs)
+        { }
+        private void AddTableToGrid(DataGraphTable graphTable, GGrid grid)
+        { }
         #endregion
     }
 }
