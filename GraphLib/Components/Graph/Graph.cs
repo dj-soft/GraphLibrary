@@ -57,17 +57,17 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         public int GraphId { get; set; }
         /// <summary>
-        /// Eventhandler události: z <see cref="ItemList"/> byla odebrána položka
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="args"></param>
-        private void _ItemList_ItemRemoveAfter(object sender, EList<ITimeGraphItem>.EListAfterEventArgs args) { this.Invalidate(InvalidateItems.AllGroups); }
-        /// <summary>
         /// Eventhandler události: do <see cref="ItemList"/> byla přidána položka
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="args"></param>
-        private void _ItemList_ItemAddAfter(object sender, EList<ITimeGraphItem>.EListAfterEventArgs args) { this.Invalidate(InvalidateItems.AllGroups); }
+        private void _ItemList_ItemAddAfter(object sender, EList<ITimeGraphItem>.EListAfterEventArgs args) { args.Item.OwnerGraph = this; this.Invalidate(InvalidateItems.AllGroups); }
+        /// <summary>
+        /// Eventhandler události: z <see cref="ItemList"/> byla odebrána položka
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _ItemList_ItemRemoveAfter(object sender, EList<ITimeGraphItem>.EListAfterEventArgs args) { args.Item.OwnerGraph = null; this.Invalidate(InvalidateItems.AllGroups); }
         /// <summary>
         /// Zdroj dat, nepovinný
         /// </summary>
@@ -1236,6 +1236,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 if (item.Height > height) height = item.Height;
                 if (item.Time.Begin.HasValue && (!begin.HasValue || item.Time.Begin.Value < begin.Value)) begin = item.Time.Begin;
                 if (item.Time.End.HasValue && (!end.HasValue || item.Time.End.Value > end.Value)) end = item.Time.End;
+                item.OwnerGraph = parent;
             }
             this._Store(begin, end, height);
         }
@@ -1285,6 +1286,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         private GTimeGraph _ParentGraph;
         #endregion
         #region Privátní proměnné
+        private ITimeInteractiveGraph _OwnerGraph;
         private int _ItemId;
         private ITimeGraphItem _FirstItem;
         private ITimeGraphItem[] _Items;
@@ -1518,6 +1520,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         }
         #endregion
         #region explicit ITimeGraphItem members
+        ITimeInteractiveGraph ITimeGraphItem.OwnerGraph { get { return this._OwnerGraph; } set { this._OwnerGraph = value; } }
         int ITimeGraphItem.ItemId { get { return this._ItemId; } }
         int ITimeGraphItem.Layer { get { return this._FirstItem.Layer; } }
         int ITimeGraphItem.Level { get { return this._FirstItem.Level; } }
@@ -1946,6 +1949,10 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
     /// </summary>
     public interface ITimeGraphItem
     {
+        /// <summary>
+        /// Graf, v němž je prvek umístěn. Hodnotu vkládá sám graf v okamžiku vložení prvku / odebrání prvku z kolekce.
+        /// </summary>
+        ITimeInteractiveGraph OwnerGraph { get; set; }
         /// <summary>
         /// Jednoznačný identifikátor prvku
         /// </summary>

@@ -270,27 +270,48 @@ namespace Asol.Tools.WorkScheduler.Services
         /// <summary>
         /// Typ prvku GlobalItem
         /// </summary>
-        public FunctionGlobalItemType ItemType { get; set; }
+        public virtual FunctionGlobalItemType ItemType { get; set; }
         /// <summary>
         /// Velikost prvku na toolbaru, vzhledem k jeho výšce
         /// </summary>
-        public FunctionGlobalItemSize Size { get; set; }
+        public virtual FunctionGlobalItemSize Size { get; set; }
         /// <summary>
         /// Nápověda ke zpracování layoutu této položky
         /// </summary>
-        public LayoutHint LayoutHint { get; set; }
+        public virtual LayoutHint LayoutHint { get; set; }
         /// <summary>
         /// Explicitně požadovaná šířka prvku v počtu modulů
         /// </summary>
-        public int? ModuleWidth { get; set; }
+        public virtual int? ModuleWidth { get; set; }
     }
+    /// <summary>
+    /// Typ prvku na ToolBaru
+    /// </summary>
     public enum FunctionGlobalItemType
     {
+        /// <summary>
+        /// Nezadáno
+        /// </summary>
         None,
+        /// <summary>
+        /// Oddělovač podskupin v rámci jedné grupy
+        /// </summary>
         Separator,
+        /// <summary>
+        /// Textový popisek
+        /// </summary>
         Label,
+        /// <summary>
+        /// Tlačítko
+        /// </summary>
         Button,
+        /// <summary>
+        /// ComboBox
+        /// </summary>
         ComboBox,
+        /// <summary>
+        /// Obrázek
+        /// </summary>
         Image
     }
     /// <summary>
@@ -371,23 +392,23 @@ namespace Asol.Tools.WorkScheduler.Services
         /// <summary>
         /// Text of this item, localizable.
         /// </summary>
-        public TextLoc Text { get; set; }
+        public virtual TextLoc Text { get; set; }
         /// <summary>
         /// Current text of Text (localized) for this item
         /// </summary>
-        public string TextText { get { return (this.Text == null ? "" : this.Text.Text); } }
+        public virtual string TextText { get { return (this.Text == null ? "" : this.Text.Text); } }
         /// <summary>
         /// ToolTip for this item, localizable.
         /// </summary>
-        public TextLoc ToolTip { get; set; }
+        public virtual TextLoc ToolTip { get; set; }
         /// <summary>
         /// Current text of ToolTip (localized) for this item
         /// </summary>
-        public string ToolTipText { get { return (this.ToolTip == null ? "" : this.ToolTip.Text); } }
+        public virtual string ToolTipText { get { return (this.ToolTip == null ? "" : this.ToolTip.Text); } }
         /// <summary>
         /// Description of font. When is null, then FontInfo.Menu is used. Get allways return Clone of internal font.
         /// </summary>
-        public FontInfo Font { get { return (this._Font != null ? this._Font.Clone : null); } set { this._Font = (value != null ? value.Clone : null); } } private FontInfo _Font;
+        public virtual FontInfo Font { get { return (this._Font != null ? this._Font.Clone : null); } set { this._Font = (value != null ? value.Clone : null); } } private FontInfo _Font;
         /// <summary>
         /// Parent of this Item.
         /// Can be null.
@@ -396,31 +417,31 @@ namespace Asol.Tools.WorkScheduler.Services
         /// <summary>
         /// SubItem array (for ComboBox, SplitButton, and so on)
         /// </summary>
-        public EList<FunctionItem> SubItems { get { this._CheckSubItems(); return this._SubItems; } }
+        public virtual EList<FunctionItem> SubItems { get { this._CheckSubItems(); return this._SubItems; } }
         public void SubItemsInvalidate() { this._SubItemsValid = false; }
         /// <summary>
         /// Image for standard state
         /// </summary>
-        public Image Image { get; set; }
+        public virtual Image Image { get; set; }
         /// <summary>
         /// Set of images for all interactive states and Component sizes
         /// </summary>
-        public TypeArray<GInteractiveState, ComponentSize, Image> Images { get { if (this._Images == null) this._Images = new TypeArray<GInteractiveState, ComponentSize, Image>(); return this._Images; } }
+        public virtual TypeArray<GInteractiveState, ComponentSize, Image> Images { get { if (this._Images == null) this._Images = new TypeArray<GInteractiveState, ComponentSize, Image>(); return this._Images; } }
         private TypeArray<GInteractiveState, ComponentSize, Image> _Images = null;
         /// <summary>
         /// Is this item visible? Default = true
         /// </summary>
-        public bool IsVisible { get; set; }
+        public virtual bool IsVisible { get; set; }
         /// <summary>
         /// Is this item enabled? Default = true
         /// </summary>
-        public bool IsEnabled { get; set; }
+        public virtual bool IsEnabled { get; set; }
         /// <summary>
         /// Any Value for this function.
         /// For CheckButton + RadioButton: boolean true / false;
         /// For ComboBox: selected SubItem or null
         /// </summary>
-        public object Value { get; set; }
+        public virtual object Value { get; set; }
         /// <summary>
         /// Any UserData for this function
         /// </summary>

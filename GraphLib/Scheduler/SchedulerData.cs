@@ -33,6 +33,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Datový hostitel
         /// </summary>
         private IAppHost _AppHost;
+        PluginActivity IPlugin.Activity { get { return PluginActivity.Standard; } }
         #endregion
         #region Načítání a analýza dodaných dat
         /// <summary>
@@ -132,7 +133,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// V této době jsou načteny všechny datové tabulky (ale ty ještě neprošly finalizací).
         /// </summary>
         private void _LoadDataDeclarationFinalise()
-        { }
+        {
+            this._LoadToolBarButtonItems();
+            this._LoadContextMenuFunctionItems();
+        }
         /// <summary>
         /// Deklarace dat = popis funkcí a tabulek
         /// </summary>
@@ -311,6 +315,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (String.IsNullOrEmpty(text)) return DataContentType.None;
             switch (text)
             {
+                case WorkSchedulerSupport.GUI_CONTENT_PANEL: return DataContentType.Panel;
                 case WorkSchedulerSupport.GUI_CONTENT_BUTTON: return DataContentType.Button;
                 case WorkSchedulerSupport.GUI_CONTENT_TABLE: return DataContentType.Table;
                 case WorkSchedulerSupport.GUI_CONTENT_FUNCTION: return DataContentType.Function;
@@ -327,14 +332,17 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (String.IsNullOrEmpty(text)) return DataGraphPositionType.None;
             switch (text)
             {
-                case "None": return DataGraphPositionType.None;
+                case WorkSchedulerSupport.DATA_TABLE_POSITION_NONE: return DataGraphPositionType.None;
+
                 case "LastColumn":
-                case "InLastColumn": return DataGraphPositionType.InLastColumn;
+                case WorkSchedulerSupport.DATA_TABLE_POSITION_IN_LAST_COLUMN: return DataGraphPositionType.InLastColumn;
+
                 case "Background":
                 case "Proportional":
-                case "OnBackgroundProportional": return DataGraphPositionType.OnBackgroundProportional;
+                case WorkSchedulerSupport.DATA_TABLE_POSITION_BACKGROUND_PROPORTIONAL: return DataGraphPositionType.OnBackgroundProportional;
+
                 case "Logarithmic":
-                case "OnBackgroundLogarithmic": return DataGraphPositionType.OnBackgroundLogarithmic;
+                case WorkSchedulerSupport.DATA_TABLE_POSITION_BACKGROUND_LOGARITHMIC: return DataGraphPositionType.OnBackgroundLogarithmic;
             }
             return DataGraphPositionType.None;
         }
@@ -349,6 +357,22 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             Int32 number;
             if (String.IsNullOrEmpty(text)) return null;
             if (!Int32.TryParse(text, out number)) return null;
+            return number;
+        }
+        /// <summary>
+        /// Převede string obsahující číslo na Int32?.
+        /// Pokud nebude rozpoznáno, vrací se null.
+        /// Tato varianta provádí zarovnání do daných mezí.
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        public static Int32? GetInt32N(string text, Int32? minValue, Int32? maxValue)
+        {
+            Int32 number;
+            if (String.IsNullOrEmpty(text)) return null;
+            if (!Int32.TryParse(text, out number)) return null;
+            if (maxValue.HasValue && number > maxValue.Value) return maxValue;
+            if (minValue.HasValue && number < minValue.Value) return minValue;
             return number;
         }
         /// <summary>
@@ -447,6 +471,80 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (Enum.TryParse(text, true, out value)) return value;
             return null;
         }
+        /// <summary>
+        /// Vrátí velikost buttonu <see cref="FunctionGlobalItemSize"/>
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        public static FunctionGlobalItemSize GetFunctionItemSize(string text)
+        {
+            FunctionGlobalItemSize defaultSize = FunctionGlobalItemSize.Small;
+            if (String.IsNullOrEmpty(text)) return defaultSize;
+            string key = text.Trim().ToLower();
+            switch (key)
+            {
+                case "micro": return FunctionGlobalItemSize.Micro;
+                case "standard":
+                case "normal":
+                case "small": return FunctionGlobalItemSize.Small;
+                case "half": return FunctionGlobalItemSize.Half;
+                case "large": return FunctionGlobalItemSize.Large;
+                case "big":
+                case "whole": return FunctionGlobalItemSize.Whole;
+            }
+
+            Int32? value = MainData.GetInt32N(text, 1, 6);
+            if (!value.HasValue) return defaultSize;
+            switch (value.Value)
+            {
+                case 1: return FunctionGlobalItemSize.Micro;
+                case 2: return FunctionGlobalItemSize.Small;
+                case 3: return FunctionGlobalItemSize.Half;
+                case 4: return FunctionGlobalItemSize.Large;
+                case 5:
+                case 6: return FunctionGlobalItemSize.Whole;
+            }
+            return defaultSize;
+        }
+        /// <summary>
+        /// Vrátí daný text převedený do enumu LayoutHint.
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        public static LayoutHint GetToolBarLayoutHint(string text)
+        {
+            LayoutHint result = LayoutHint.Default;
+            if (String.IsNullOrEmpty(text)) return result;
+
+            // Textové hodnoty v této proměnné mají přesně odpovídat hodnotám enumu, proto zde není switch { }, ale Enum.TryParse() :
+            string[] items = text.Split(new char[] { ',', '|' }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (string item in items)
+            {
+                LayoutHint hint;
+                if (Enum.TryParse(item.Trim(), true, out hint))
+                    result |= hint;
+            }
+
+            return result;
+        }
+        /// <summary>
+        /// Daný řetězec rozdělí na jednotlivé prvky v místě daného oddělovače, a z prvků sestaví Dictionary, kde klíčem i hodnotou je string.
+        /// Duplicitní výskyty stejného textu nezpůsobí chybu.
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="delimiter"></param>
+        /// <returns></returns>
+        public static Dictionary<string, string> GetItemsAsDictionary(string text, params string[] delimiters)
+        {
+            Dictionary<string, string> result = new Dictionary<string, string>();
+            string[] items = text.Split(delimiters, StringSplitOptions.RemoveEmptyEntries);
+            foreach (string item in items)
+            {
+                if (!String.IsNullOrEmpty(item) && !result.ContainsKey(item))
+                    result.Add(item, item);
+            }
+            return result;
+        }
         #endregion
         #region Tvorba GUI
         public System.Windows.Forms.Control CreateGui()
@@ -511,6 +609,20 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         #endregion
         #region ToolBar
         /// <summary>
+        /// Z datové deklarace načte veškeré funkce pro veškere položky ToolBaru (provede jejich načtení a parsování dat).
+        /// </summary>
+        private void _LoadToolBarButtonItems()
+        {
+            List<ToolBarItem> toolBarItems = new List<ToolBarItem>();
+            foreach (DataDeclaration declaration in this.Declarations.Where(d => d.Content == DataContentType.Button))
+            {
+                ToolBarItem toolBarItem = ToolBarItem.Create(this, declaration);
+                if (toolBarItem != null)
+                    toolBarItems.Add(toolBarItem);
+            }
+            this._ToolBarItems = toolBarItems.ToArray();
+        }
+        /// <summary>
         /// Metoda vrátí kompletní obsah ToolBaru. Tedy jak aplikační prvky, tak prvky z deklarace.
         /// </summary>
         /// <returns></returns>
@@ -548,7 +660,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             foreach (var item in this.Declarations.Where(d => d.Content == DataContentType.Button))
             {
-
+                throw new GraphLibCodeException("Tohle se musí dodělat: Scheduler.MainData._AddToolBarContentDeclaration()");
             }
         }
         /// <summary>
@@ -560,13 +672,111 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             
         }
+        protected ToolBarItem[] _ToolBarItems;
+        /// <summary>
+        /// ContextFunctionItem : adapter mezi <see cref="DataDeclaration"/> pro typ obsahu = <see cref="DataContentType.Button"/>, a položku kontextového menu <see cref="FunctionGlobalItem"/>.
+        /// </summary>
+        protected class ToolBarItem : FunctionGlobalItem
+        {
+            #region Konstrukce, načtení dat
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="provider"></param>
+            /// <param name="declaration"></param>
+            protected ToolBarItem(IFunctionProvider provider, DataDeclaration declaration) : base(provider)
+            {
+                this._Declaration = declaration;
+            }
+            /// <summary>
+            /// Z této deklarace je funkce načtena
+            /// </summary>
+            private DataDeclaration _Declaration;
+            /// <summary>
+            /// Vytvoří a vrátí new instanci <see cref="ToolBarItem"/> pro data z deklarace <see cref="DataDeclaration"/>.
+            /// Může vrátit null pro neplatné zadání.
+            /// </summary>
+            /// <param name="provider"></param>
+            /// <param name="declaration"></param>
+            /// <returns></returns>
+            public static ToolBarItem Create(IFunctionProvider provider, DataDeclaration declaration)
+            {
+                if (provider == null || declaration == null) return null;
+                if (declaration.Content != DataContentType.Function) return null;
 
-        PluginActivity IPlugin.Activity { get { return PluginActivity.Standard; } }
+                ToolBarItem toolBarItem = new ToolBarItem(provider, declaration);
+                toolBarItem._LoadData(declaration.Data);
+                return toolBarItem;
+            }
+            /// <summary>
+            /// Načte data (=dodaný string, pocházející z <see cref="DataDeclaration.Data"/>).
+            /// Jednotlivé prvky uloží do <see cref="_TablesDict"/> a <see cref="_ClassesDict"/>.
+            /// </summary>
+            /// <param name="data"></param>
+            private void _LoadData(string data)
+            {
+                var items = data.ToKeyValues(";", ":", true, true);
+                foreach (var item in items)
+                {
+                    switch (item.Key)
+                    {
+                        case WorkSchedulerSupport.DATA_BUTTON_HEIGHT:
+                            this.Size = MainData.GetFunctionItemSize(item.Value);
+                            break;
+                        case WorkSchedulerSupport.DATA_BUTTON_WIDTH:
+                            this.ModuleWidth = MainData.GetInt32N(item.Value, 1, 24);
+                            break;
+                        case WorkSchedulerSupport.DATA_BUTTON_LAYOUT:
+                            this.LayoutHint = MainData.GetToolBarLayoutHint(item.Value);
+                            break;
+                    }
+                }
+            }
+            #endregion
+            #region Public property FunctionGlobalItem, načítané z DataDeclaration
+            /// <summary>
+            /// Text do funkce
+            /// </summary>
+            public override string TextText { get { return this._Declaration.Title; } }
+            /// <summary>
+            /// ToolTip k textu
+            /// </summary>
+            public override string ToolTipText { get { return this._Declaration.ToolTip; } }
+            /// <summary>
+            /// Obrázek
+            /// </summary>
+            public override Image Image { get { return null /* this._Declaration.Image */; } }
+            #endregion
+        }
         #endregion
         #region Kontextové menu
         protected ToolStripDropDownMenu CreateContextMenu(DataGraphItem graphItem, ItemActionArgs args)
         {
-            DataDeclaration dataDeclaration;
+            IEnumerable<FunctionItem> menuItems = this._GetContextMenuItems(graphItem, args);
+            System.Windows.Forms.ToolStripDropDownMenu toolStripMenu = FunctionItem.CreateDropDownMenuFrom(menuItems);
+            return toolStripMenu;
+        }
+        /// <summary>
+        /// Z datové deklarace načte veškeré funkce pro veškerá kontextová menu (provede jejich načtení a parsování dat).
+        /// Následně jakékoli použití kontextového menu načítá jejich patřičnou podmnožinu.
+        /// </summary>
+        private void _LoadContextMenuFunctionItems()
+        {
+            List<ContextFunctionItem> functions = new List<ContextFunctionItem>();
+            foreach (DataDeclaration declaration in this.Declarations.Where(d => d.Content == DataContentType.Function))
+            {
+                ContextFunctionItem funcItem = ContextFunctionItem.Create(this, declaration);
+                if (funcItem != null)
+                    functions.Add(funcItem);
+            }
+            this._ContextFunctions = functions.ToArray();
+        }
+        private IEnumerable<FunctionItem> _GetContextMenuItems(DataGraphItem graphItem, ItemActionArgs args)
+        {
+            // graphItem.GraphTable;
+            List<FunctionItem> menuItems = new List<FunctionItem>();
+
+                DataDeclaration dataDeclaration;
             // this.TryGetDataDeclaration()
             var fd = this.Declarations.FirstOrDefault();
 
@@ -596,7 +806,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 menu.Items.Add("Změnit čas směny");
 
             menu.ItemClicked += ContextMenuItemClicked;
-            return menu;
+            return menuItems;
         }
 
         private void ContextMenuItemClicked(object sender, ToolStripItemClickedEventArgs e)
@@ -619,6 +829,101 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             }
             else
                 System.Windows.Forms.MessageBox.Show("Rád bych provedl funkci " + runArgs.MenuItemText + ",\r\n ale není zadán datový hostitel.");
+        }
+        /// <summary>
+        /// Souhrn všech definovaných funkcí pro všechna kontextová menu v systému.
+        /// Souhrn je načten z <see cref="Declarations"/> v metodě <see cref="_LoadContextMenuFunctionItems()"/>, 
+        /// z tohoto souhrnu jsou následně vybírány funkce pro konkrétní situaci v metodě <see cref="_GetContextMenuItems(DataGraphItem, ItemActionArgs)"/>, 
+        /// a z nich je pak vytvořeno fyzické kontextové menu v metodě <see cref="CreateContextMenu(DataGraphItem, ItemActionArgs)"/>.
+        /// </summary>
+        protected ContextFunctionItem[] _ContextFunctions;
+        /// <summary>
+        /// ContextFunctionItem : adapter mezi <see cref="DataDeclaration"/> pro typ obsahu = <see cref="DataContentType.Function"/>, a položku kontextového menu <see cref="FunctionItem"/>.
+        /// </summary>
+        protected class ContextFunctionItem : FunctionItem
+        {
+            #region Konstrukce, načtení dat
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="provider"></param>
+            /// <param name="declaration"></param>
+            protected ContextFunctionItem(IFunctionProvider provider, DataDeclaration declaration) : base(provider)
+            {
+                this._Declaration = declaration;
+            }
+            /// <summary>
+            /// Z této deklarace je funkce načtena
+            /// </summary>
+            private DataDeclaration _Declaration;
+            /// <summary>
+            /// Vytvoří a vrátí new instanci <see cref="ContextFunctionItem"/> pro data z deklarace <see cref="DataDeclaration"/>.
+            /// Může vrátit null pro neplatné zadání.
+            /// </summary>
+            /// <param name="provider"></param>
+            /// <param name="declaration"></param>
+            /// <returns></returns>
+            public static ContextFunctionItem Create(IFunctionProvider provider, DataDeclaration declaration)
+            {
+                if (provider == null || declaration == null) return null;
+                if (declaration.Content != DataContentType.Function) return null;
+
+                ContextFunctionItem funcItem = new ContextFunctionItem(provider, declaration);
+                funcItem._LoadData(declaration.Data);
+                return funcItem;
+            }
+            /// <summary>
+            /// Načte data (=dodaný string, pocházející z <see cref="DataDeclaration.Data"/>).
+            /// Jednotlivé prvky uloží do <see cref="_TablesDict"/> a <see cref="_ClassesDict"/>.
+            /// </summary>
+            /// <param name="data"></param>
+            private void _LoadData(string data)
+            {
+                var items = data.ToKeyValues(";", ":", true, true);
+                foreach (var item in items)
+                {
+                    switch (item.Key)
+                    {
+                        case WorkSchedulerSupport.DATA_FUNCTION_TABLE_NAMES:
+                            this._TablesDict = MainData.GetItemsAsDictionary(item.Value, ",");
+                            break;
+                        case WorkSchedulerSupport.DATA_FUNCTION_CLASS_NUMBERS:
+                            this._ClassesDict = MainData.GetItemsAsDictionary(item.Value, ",");
+                            break;
+                    }
+                }
+            }
+            /// <summary>
+            /// Pro tyto tabulky je funkce zobrazována.
+            /// Může být null, pokud klíč "TableNames" není přítomen v <see cref="DataDeclaration.Data"/>.
+            /// </summary>
+            private Dictionary<string, string> _TablesDict;
+            /// <summary>
+            /// Pro tyto třídy je funkce zobrazována.
+            /// Může být null, pokud klíč "TableNames" není přítomen v <see cref="DataDeclaration.Data"/>.
+            /// </summary>
+            private Dictionary<string, string> _ClassesDict;
+            #endregion
+            #region Public property FunctionItem, načítané z DataDeclaration
+            /// <summary>
+            /// Text do funkce
+            /// </summary>
+            public override string TextText { get { return this._Declaration.Title; } }
+            /// <summary>
+            /// ToolTip k textu
+            /// </summary>
+            public override string ToolTipText { get { return this._Declaration.ToolTip; } }
+            /// <summary>
+            /// Obrázek
+            /// </summary>
+            public override Image Image { get { return null /* this._Declaration.Image */; } }
+            #endregion
+            #region Určení dostupnosti položky pro konkrétní situaci
+            public bool IsValidFor(string tableName, params int[] classNumbers)
+            {
+                return false;
+            }
+            #endregion
         }
         #endregion
         #region Implementace IMainDataInternal
@@ -1479,7 +1784,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         private DataGraphItem(DataGraphTable graphTable)
         {
-            this.GraphTable = graphTable;
+            this._GraphTable = graphTable;
         }
         /// <summary>
         /// Vizualizace
@@ -1494,9 +1799,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         protected MainData MainData { get { return this.GraphTable.MainData; } }
         /// <summary>
-        /// Vlastník = tabulka
+        /// Vlastník prvku = celá tabulka
         /// </summary>
-        protected DataGraphTable GraphTable { get; private set; }
+        private DataGraphTable _GraphTable;
+        private ITimeInteractiveGraph _OwnerGraph;
         private GId _ParentGId;
         private GId _ItemGId;
         private GId _GroupGId;
@@ -1516,6 +1822,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private GTimeGraphControl _GControl;
         #endregion
         #region Aplikační data - identifikátory atd
+        /// <summary>
+        /// Vlastník prvku grafu = tabulka s komplexními daty
+        /// </summary>
+        public DataGraphTable GraphTable { get { return this._GraphTable; } }
         /// <summary>
         /// Veřejný identifikátor MAJITELE PRVKU (obsahuje číslo třídy a číslo záznamu).
         /// Může jít o Kapacitní plánovací jednotku.
@@ -1593,6 +1903,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         }
         #endregion
         #region Explicitní implementace rozhraní ITimeGraphItem
+        ITimeInteractiveGraph ITimeGraphItem.OwnerGraph { get { return this._OwnerGraph; } set { this._OwnerGraph = value; } }
         int ITimeGraphItem.ItemId { get { return this._ItemId; } } 
         int ITimeGraphItem.GroupId { get { return this._GroupId; } } 
         int ITimeGraphItem.Layer { get { return this._Layer; } } 
@@ -1649,16 +1960,16 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             {
                 switch (item.Key)
                 {
-                    case "GraphPosition":
+                    case WorkSchedulerSupport.DATA_TABLE_GRAPH_POSITION:
                         this.GraphPosition = MainData.GetGraphPosition(item.Value);
                         break;
-                    case "LineHeight":
+                    case WorkSchedulerSupport.DATA_TABLE_GRAPH_LINE_HEIGHT:
                         this.GraphLineHeight = MainData.GetInt32N(item.Value);
                         break;
-                    case "MinHeight":
-                        this.RowLineHeightMax = MainData.GetInt32N(item.Value);
+                    case WorkSchedulerSupport.DATA_TABLE_GRAPH_MIN_HEIGHT:
+                        this.RowLineHeightMin = MainData.GetInt32N(item.Value);
                         break;
-                    case "MaxHeight":
+                    case WorkSchedulerSupport.DATA_TABLE_GRAPH_MAX_HEIGHT:
                         this.RowLineHeightMax = MainData.GetInt32N(item.Value);
                         break;
                 }
@@ -1753,7 +2064,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     /// </summary>
     public enum DataContentType
     {
+        /// <summary>
+        /// Neurčeno
+        /// </summary>
         None,
+        /// <summary>
+        /// Panel = záhlaví celé verze dat
+        /// </summary>
+        Panel,
         /// <summary>
         /// Button = položka ToolBaru
         /// </summary>

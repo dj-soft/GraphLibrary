@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.IO;
 using System.Data;
@@ -83,6 +82,27 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         public const string KEY_RESPONSE_RESULT_MESSAGE = "ResultMessage";
 
         /// <summary>
+        /// Název GUI obsahu: nic
+        /// </summary>
+        public const string GUI_CONTENT_NONE = "";
+        /// <summary>
+        /// Název GUI obsahu: Panel
+        /// </summary>
+        public const string GUI_CONTENT_PANEL = "panel";
+        /// <summary>
+        /// Název GUI obsahu: Button
+        /// </summary>
+        public const string GUI_CONTENT_BUTTON = "button";
+        /// <summary>
+        /// Název GUI obsahu: Table
+        /// </summary>
+        public const string GUI_CONTENT_TABLE = "table";
+        /// <summary>
+        /// Název GUI obsahu: Function
+        /// </summary>
+        public const string GUI_CONTENT_FUNCTION = "function";
+
+        /// <summary>
         /// Název GUI panelu: Main
         /// </summary>
         public const string GUI_TARGET_MAIN = "main";
@@ -106,22 +126,92 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Název GUI panelu: Info
         /// </summary>
         public const string GUI_TARGET_INFO = "info";
+
         /// <summary>
-        /// Název GUI obsahu: nic
+        /// Název proměnné v deklaraci TABLE v prvku DATA: proměnná určující pozici časového grafu
         /// </summary>
-        public const string GUI_CONTENT_NONE = "";
+        public const string DATA_TABLE_GRAPH_POSITION = "GraphPosition";
         /// <summary>
-        /// Název GUI obsahu: Button
+        /// Název hodnoty v deklaraci TABLE v prvku DATA: hodnota určující neexistující graf (pak není celá proměnná povinná)
         /// </summary>
-        public const string GUI_CONTENT_BUTTON = "button";
+        public const string DATA_TABLE_POSITION_NONE = "None";
         /// <summary>
-        /// Název GUI obsahu: Table
+        /// Název hodnoty v deklaraci TABLE v prvku DATA: hodnota určující graf umístěný v samostatném posledním sloupci tabulky
         /// </summary>
-        public const string GUI_CONTENT_TABLE = "table";
+        public const string DATA_TABLE_POSITION_IN_LAST_COLUMN = "InLastColumn";
         /// <summary>
-        /// Název GUI obsahu: Function
+        /// Název hodnoty v deklaraci TABLE v prvku DATA: hodnota určující graf zobrazený jako neinteraktivní pozadí řádku, s časovou osou proporcionální, shodnou se základní osou
         /// </summary>
-        public const string GUI_CONTENT_FUNCTION = "function";
+        public const string DATA_TABLE_POSITION_BACKGROUND_PROPORTIONAL = "OnBackgroundProportional";
+        /// <summary>
+        /// Název hodnoty v deklaraci TABLE v prvku DATA: hodnota určující graf zobrazený jako neinteraktivní pozadí řádku, s časovou osou logaritmickou, zobrazující prvky všech časů
+        /// </summary>
+        public const string DATA_TABLE_POSITION_BACKGROUND_LOGARITHMIC = "OnBackgroundLogarithmic";
+
+        /// <summary>
+        /// Název proměnné v deklaraci TABLE v prvku DATA: proměnná určující výšku jedné logické linky grafu v pixelech. Hodnota je Int32 v rozmezí  4 - 32 pixelů
+        /// </summary>
+        public const string DATA_TABLE_GRAPH_LINE_HEIGHT = "LineHeight";
+        /// <summary>
+        /// Název proměnné v deklaraci TABLE v prvku DATA: proměnná určující MINIMÁLNÍ výšku jednoho řádku s grafem, v pixelech. Hodnota je Int32 v rozmezí  15 - 320 pixelů
+        /// </summary>
+        public const string DATA_TABLE_GRAPH_MIN_HEIGHT = "MinHeight";
+        /// <summary>
+        /// Název proměnné v deklaraci TABLE v prvku DATA: proměnná určující MAXIMÁLNÍ výšku jednoho řádku s grafem, v pixelech. Hodnota je Int32 v rozmezí  15 - 320 pixelů
+        /// </summary>
+        public const string DATA_TABLE_GRAPH_MAX_HEIGHT = "MaxHeight";
+
+        /// <summary>
+        /// Název proměnné v deklaraci FUNCTION v prvku DATA: proměnná určující seznam tabulek (názvy oddělená čárkou), pro jejichž grafické prvky se má tato funkce nabízet. Typicky: workplace_table,source_table
+        /// </summary>
+        public const string DATA_FUNCTION_TABLE_NAMES = "TableNames";
+        /// <summary>
+        /// Název proměnné v deklaraci FUNCTION v prvku DATA: proměnná určující seznam tříd (čísla oddělená čárkou), pro jejichž grafické prvky se má tato funkce nabízet. Typicky: 1188,1190,1362
+        /// Pokud seznam bude obsahovat i číslo 0 (taková třída neexistuje), pak se tato funkce bude nabízet jako kontextové menu v celém řádku (tj. i v prostoru grafu, kde není žádný prvek).
+        /// Řádky, které obsahují graf "OnBackground" nikdy nenabízí kontextové funkce pro jednotlivé prvky dat, protože jde o "statické pozadí řádku", nikoli o pracovní prvek.
+        /// </summary>
+        public const string DATA_FUNCTION_CLASS_NUMBERS = "ClassNumbers";
+
+        /// <summary>
+        /// Název proměnné v deklaraci BUTTON v prvku DATA: proměnná určující výšku prvku v počtu jednotlivých modulů. Default = 2, povolené hodnoty: 1,2,3,4,6.
+        /// </summary>
+        public const string DATA_BUTTON_HEIGHT = "ButtonHeight";
+        /// <summary>
+        /// Název proměnné v deklaraci BUTTON v prvku DATA: proměnná určující šířku prvku v počtu jednotlivých modulů. Default = neurčeno, určí se podle velikosti textu a výšky HEIGHT.
+        /// Může sloužit ke zpřesnění layoutu.
+        /// </summary>
+        public const string DATA_BUTTON_WIDTH = "ButtonWidth";
+        /// <summary>
+        /// Název proměnné v deklaraci BUTTON v prvku DATA: proměnná určující chování generátoru layoutu, obsahuje jednotlivé texty DATA_BUTTON_LAYOUT_*, oddělené čárkou.
+        /// </summary>
+        public const string DATA_BUTTON_LAYOUT = "Layout";
+
+        // Tyto hodnoty musí exaktně odpovídat hodnotám enumu Asol.Tools.WorkScheduler.Components.LayoutHint, neboť jejich parsování se provádí na úrovni enumu (pouze s IgnoreCase = true):
+
+        /// <summary>
+        /// Hodnota proměnné LAYOUT v deklaraci BUTTON v prvku DATA: tento prvek musí být povinně v tom řádku, jako předešlý prvek.
+        /// </summary>
+        public const string DATA_BUTTON_LAYOUT_ThisItemOnSameRow = "ThisItemOnSameRow";
+        /// <summary>
+        /// Hodnota proměnné LAYOUT v deklaraci BUTTON v prvku DATA: tento prvek musí být povinně prvním na novém řádku.
+        /// </summary>
+        public const string DATA_BUTTON_LAYOUT_ThisItemSkipToNextRow = "ThisItemSkipToNextRow";
+        /// <summary>
+        /// Hodnota proměnné LAYOUT v deklaraci BUTTON v prvku DATA: tento prvek musí být povinně v novém bloku = první prvek v prvním řádku, jakoby za separátorem.
+        /// </summary>
+        public const string DATA_BUTTON_LAYOUT_ThisItemSkipToNextTable = "ThisItemSkipToNextTable";
+        /// <summary>
+        /// Hodnota proměnné LAYOUT v deklaraci BUTTON v prvku DATA: příští prvek musí být povinně v tom řádku, jako předešlý prvek. 
+        /// </summary>
+        public const string DATA_BUTTON_LAYOUT_NextItemOnSameRow = "NextItemOnSameRow";
+        /// <summary>
+        /// Hodnota proměnné LAYOUT v deklaraci BUTTON v prvku DATA: příští prvek musí být povinně prvním na novém řádku. 
+        /// </summary>
+        public const string DATA_BUTTON_LAYOUT_NextItemSkipToNextRow = "NextItemSkipToNextRow";
+        /// <summary>
+        /// Hodnota proměnné LAYOUT v deklaraci BUTTON v prvku DATA: příští prvek musí být povinně v novém bloku = první prvek v prvním řádku, jakoby za separátorem. 
+        /// </summary>
+        public const string DATA_BUTTON_LAYOUT_NextItemSkipToNextTable = "NextItemSkipToNextTable";
 
         #endregion
         #region Podpora tvorby tabulek a sloupců
