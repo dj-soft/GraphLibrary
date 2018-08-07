@@ -48,25 +48,33 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         public const string DATA_DECLARATION_STRUCTURE = "data_id int; target string; content string; name string; title string; tooltip string; image string; data string";
         /// <summary>
-        /// Key v Request: "Table.{{Name}}.Row"
+        /// Key v Request: "Table.{{DataId}}.{{Name}}.Row.{{Part}}"
         /// </summary>
-        public const string KEY_REQUEST_TABLE_ROW = "Table.{{Name}}.Row";
+        public const string KEY_REQUEST_TABLE_ROW = "Table.{{DataId}}.{{Name}}.Row.{{Part}}";
         /// <summary>
-        /// Key v Request: "Table.{{Name}}.Graph"
+        /// Key v Request: "Table.{{DataId}}.{{Name}}.Graph.{{Part}}"
         /// </summary>
-        public const string KEY_REQUEST_TABLE_GRAPH = "Table.{{Name}}.Graph";
+        public const string KEY_REQUEST_TABLE_GRAPH = "Table.{{DataId}}.{{Name}}.Graph.{{Part}}";
         /// <summary>
-        /// Key v Request: "Table.{{Name}}.Rel"
+        /// Key v Request: "Table.{{DataId}}.{{Name}}.Rel.{{Part}}"
         /// </summary>
-        public const string KEY_REQUEST_TABLE_REL = "Table.{{Name}}.Rel";
+        public const string KEY_REQUEST_TABLE_REL = "Table.{{DataId}}.{{Name}}.Rel.{{Part}}";
         /// <summary>
-        /// Key v Request: "Table.{{Name}}.Item"
+        /// Key v Request: "Table.{{DataId}}.{{Name}}.Item.{{Part}}"
         /// </summary>
-        public const string KEY_REQUEST_TABLE_ITEM = "Table.{{Name}}.Item";
+        public const string KEY_REQUEST_TABLE_ITEM = "Table.{{DataId}}.{{Name}}.Item.{{Part}}";
         /// <summary>
         /// Pattern v KEY_REQUEST_TABLE_???, na jehož místo se vloží název tabulky
         /// </summary>
         public const string KEY_REQUEST_PATTERN_TABLENAME = "{{Name}}";
+        /// <summary>
+        /// Pattern v KEY_REQUEST_TABLE_???, na jehož místo se vloží číslo verze dat
+        /// </summary>
+        public const string KEY_REQUEST_PATTERN_DATAID = "{{DataId}}";
+        /// <summary>
+        /// Pattern v KEY_REQUEST_TABLE_???, na jehož místo se vloží pořadové číslo tabulky
+        /// </summary>
+        public const string KEY_REQUEST_PATTERN_PART = "{{Part}}";
         /// <summary>
         /// Struktura tabulky "Table.Graph"
         /// </summary>
