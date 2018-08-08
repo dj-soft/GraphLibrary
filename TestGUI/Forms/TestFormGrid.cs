@@ -591,6 +591,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         {
             this._ItemId = Application.App.GetNextId(typeof(ITimeGraphItem));
         }
+        private ITimeInteractiveGraph _OwnerGraph;
         /// <summary>
         /// Jednoznačný identifikátor prvku
         /// </summary>
@@ -658,6 +659,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         public string ToolTip { get; set; }
         #endregion
         #region explicit ITimeGraphItem members
+        ITimeInteractiveGraph ITimeGraphItem.OwnerGraph { get { return this._OwnerGraph; } set { this._OwnerGraph = value; } }
         int ITimeGraphItem.ItemId { get { return this._ItemId; } }
         int ITimeGraphItem.Layer { get { return this.Layer; } }
         int ITimeGraphItem.Level { get { return this.Level; } }

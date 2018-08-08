@@ -80,21 +80,30 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             string fileName = null;
             using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority3_BellowNormal, "PluginForm", "SearchForDataPack", ""))
             {
-                string path = Application.App.GetAppLocalDataPath("Data");
-                System.IO.DirectoryInfo pathInfo = new System.IO.DirectoryInfo(path);
-                if (!pathInfo.Exists)
+                string appPath = Application.App.AppCodePath;                                                   // D:\Hobby\Csharp\GraphLibrary\bin
+                string fixFile = System.IO.Path.Combine(appPath, "..", "TestGUI", "Data_20180101_120000.dat");  // D:\Hobby\Csharp\GraphLibrary\TestGUI\Data_20180101_120000.dat
+                if (System.IO.File.Exists(fixFile))
                 {
-                    pathInfo.Create();
+                    fileName = fixFile;
                 }
                 else
                 {
-                    List<System.IO.FileInfo> fileList = pathInfo.GetFiles("Data_????????_??????.dat").ToList();
-                    int fileCount = fileList.Count;
-                    if (fileCount > 0)
+                    string path = Application.App.GetAppLocalDataPath("Data");
+                    System.IO.DirectoryInfo pathInfo = new System.IO.DirectoryInfo(path);
+                    if (!pathInfo.Exists)
                     {
-                        if (fileCount > 1)
-                            fileList.Sort((a, b) => DateTime.Compare(b.LastAccessTime, a.LastAccessTime));
-                        fileName = fileList[0].FullName;
+                        pathInfo.Create();
+                    }
+                    else
+                    {
+                        List<System.IO.FileInfo> fileList = pathInfo.GetFiles("Data_????????_??????.dat").ToList();
+                        int fileCount = fileList.Count;
+                        if (fileCount > 0)
+                        {
+                            if (fileCount > 1)
+                                fileList.Sort((a, b) => DateTime.Compare(b.LastAccessTime, a.LastAccessTime));
+                            fileName = fileList[0].FullName;
+                        }
                     }
                 }
                 scope.AddItem("DataFile: " + (fileName != null ? fileName : "NULL"));
