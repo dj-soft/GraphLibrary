@@ -85,12 +85,16 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <returns></returns>
         public static string[] ToLines(this string text, bool removeEmptyLines, bool trimRows)
         {
-            text = text
+            string[] rows = new string[0];
+            if (text != null)
+            {
+                text = text
                 .Replace("\r\n", "\r")
                 .Replace("\n", "\r");
-            string[] rows = text.Split(new char[] { '\r' }, (removeEmptyLines ? StringSplitOptions.RemoveEmptyEntries : StringSplitOptions.None));
-            if (trimRows)
-                rows = rows.Select(i => i.Trim()).ToArray();
+                rows = text.Split(new char[] { '\r' }, (removeEmptyLines ? StringSplitOptions.RemoveEmptyEntries : StringSplitOptions.None));
+                if (trimRows)
+                    rows = rows.Select(i => i.Trim()).ToArray();
+            }
             return rows;
         }
         /// <summary>
@@ -115,14 +119,17 @@ namespace Asol.Tools.WorkScheduler.Data
         public static string[][] ToTable(this string text, string rowSeparator, string itemSeparator, bool removeEmptyLines, bool trimItems)
         {
             List<string[]> result = new List<string[]>();
-            string[] lines = text.Split(new string[] { rowSeparator }, (removeEmptyLines ? StringSplitOptions.RemoveEmptyEntries : StringSplitOptions.None));
-            foreach (string line in lines)
+            if (text != null)
             {
-                string[] items = line.Split(new string[] { itemSeparator }, StringSplitOptions.None);
-                if (trimItems)
-                    result.Add(items.Select(s => s.Trim()).ToArray());
-                else
-                    result.Add(items);
+                string[] lines = text.Split(new string[] { rowSeparator }, (removeEmptyLines ? StringSplitOptions.RemoveEmptyEntries : StringSplitOptions.None));
+                foreach (string line in lines)
+                {
+                    string[] items = line.Split(new string[] { itemSeparator }, StringSplitOptions.None);
+                    if (trimItems)
+                        result.Add(items.Select(s => s.Trim()).ToArray());
+                    else
+                        result.Add(items);
+                }
             }
             return result.ToArray();
         }
@@ -137,26 +144,91 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <returns></returns>
         public static KeyValuePair<string, string>[] ToKeyValues(this string text, string rowSeparator, string itemSeparator, bool removeEmptyLines, bool trimItems)
         {
-            List<KeyValuePair<string, string>> result = new List<KeyValuePair<string,string>>();
-            int isl = itemSeparator.Length;
-            string[] lines = text.Split(new string[] { rowSeparator }, (removeEmptyLines ? StringSplitOptions.RemoveEmptyEntries : StringSplitOptions.None));
-            foreach (string line in lines)
+            List<KeyValuePair<string, string>> result = new List<KeyValuePair<string, string>>();
+            if (text != null)
             {
-                int pos = line.IndexOf(itemSeparator);
-                if (pos < 0)                          // Bez oddělovače
-                    result.Add(new KeyValuePair<string, string>(_ITrim(line, trimItems), null));
-                else if (pos == 0)                    // Oddělovač na první pozici
-                    result.Add(new KeyValuePair<string, string>("", _ITrim(line.Substring(isl), trimItems)));
-                else if (pos < (line.Length - isl))   // Oddělovač je uprostřed
-                    result.Add(new KeyValuePair<string, string>(_ITrim(line.Substring(0, pos), trimItems), _ITrim(line.Substring(pos + isl), trimItems)));
-                else if (pos == (line.Length - isl))  // Oddělovač je na konci
-                    result.Add(new KeyValuePair<string, string>(_ITrim(line.Substring(0, pos), trimItems), ""));
+                int isl = itemSeparator.Length;
+                string[] lines = text.Split(new string[] { rowSeparator }, (removeEmptyLines ? StringSplitOptions.RemoveEmptyEntries : StringSplitOptions.None));
+                foreach (string line in lines)
+                {
+                    int pos = line.IndexOf(itemSeparator);
+                    if (pos < 0)                          // Bez oddělovače
+                        result.Add(new KeyValuePair<string, string>(_ITrim(line, trimItems), null));
+                    else if (pos == 0)                    // Oddělovač na první pozici
+                        result.Add(new KeyValuePair<string, string>("", _ITrim(line.Substring(isl), trimItems)));
+                    else if (pos < (line.Length - isl))   // Oddělovač je uprostřed
+                        result.Add(new KeyValuePair<string, string>(_ITrim(line.Substring(0, pos), trimItems), _ITrim(line.Substring(pos + isl), trimItems)));
+                    else if (pos == (line.Length - isl))  // Oddělovač je na konci
+                        result.Add(new KeyValuePair<string, string>(_ITrim(line.Substring(0, pos), trimItems), ""));
+                }
             }
             return result.ToArray();
         }
         private static string _ITrim(string value, bool trim)
         {
             return (value == null ? null : (trim ? value.Trim() : value));
+        }
+        /// <summary>
+        /// Vrátí true, pokud daný text obsahuje pouze povolené znaky z druhého parametru.
+        /// Pokud je daný text (nebo povolené znaky) null nebo empty, vrací false.
+        /// Povolené znaky nesmí obsahovat duplicitu, jinak dojde k chybě.
+        /// Jakýkoli jeden nepovolený znak v textu vede k výsledku false.
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="enabledChars"></param>
+        /// <returns></returns>
+        public static bool ContainsOnlyEnabledChars(this string text, string enabledChars)
+        {
+            if (String.IsNullOrEmpty(text)) return false;
+            if (String.IsNullOrEmpty(enabledChars)) return false;
+            Dictionary<char, char> enabledDict = enabledChars.ToCharArray().ToDictionary(c => c);
+            return text.ToCharArray().All(c => enabledDict.ContainsKey(c));         // All()
+        }
+        /// <summary>
+        /// Vrátí true, pokud daný text obsahuje alespoň jeden ze zadaných znaků z druhého parametru.
+        /// Pokud je daný text (nebo povolené znaky) null nebo empty, vrací false.
+        /// Povolené znaky nesmí obsahovat duplicitu, jinak dojde k chybě.
+        /// Jakýkoli jeden hledaný znak v textu vede k výsledku true.
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="enabledChars"></param>
+        /// <returns></returns>
+        public static bool ContainsAnyFromChars(this string text, string enabledChars)
+        {
+            if (String.IsNullOrEmpty(text)) return false;
+            if (String.IsNullOrEmpty(enabledChars)) return false;
+            Dictionary<char, char> enabledDict = enabledChars.ToCharArray().ToDictionary(c => c);
+            return text.ToCharArray().Any(c => enabledDict.ContainsKey(c));         // Any()
+        }
+        /// <summary>
+        /// Vrátí true, pokud daný text vypadá jako číslo.
+        /// Číslo nemá obsahovat mezery ani jiné znaky kromě číslic.
+        /// Volitelně smí obsahovat na první pozici pomlčku = mínus, a volitelně smí obsahovat jednu desetinnou tečku.
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="enableNegative"></param>
+        /// <param name="enableDecimal"></param>
+        /// <returns></returns>
+        public static bool ContainsOnlyNumeric(this string text, bool enableNegative = false, bool enableDecimal = false)
+        {
+            if (String.IsNullOrEmpty(text)) return false;
+            string test = text;
+            if (test[0] == '-')
+            {   // Záporné číslo: pro nepovolené vrátím false, nebo odeberu mínus na počátku:
+                if (!enableNegative) return false;
+                test = test.Substring(1);
+                if (test.Length == 0) return false;
+                if (test.Contains('-')) return false;
+            }
+            int indexOfDot = test.IndexOf('.');
+            if (indexOfDot >= 0)
+            {   // Desetinné číslo: pro nepovolené vrátím false, nebo odeberu první nalezenou tečku:
+                if (!enableDecimal) return false;
+                test = test.Remove(indexOfDot, 1);
+                if (test.Length == 0) return false;
+                if (test.Contains('.')) return false;
+            }
+            return ContainsAnyFromChars(test, "0123456789");
         }
         #endregion
         #region IEnumerable

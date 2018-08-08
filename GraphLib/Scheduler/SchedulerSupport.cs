@@ -193,6 +193,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Název proměnné v deklaraci BUTTON v prvku DATA: proměnná určující chování generátoru layoutu, obsahuje jednotlivé texty DATA_BUTTON_LAYOUT_*, oddělené čárkou.
         /// </summary>
         public const string DATA_BUTTON_LAYOUT = "Layout";
+        /// <summary>
+        /// Název proměnné v deklaraci BUTTON v prvku DATA: proměnná obsahuje název grupy, v níž se button objeví.
+        /// Pokud nebude název zadán, pak se button objeví v implicitní grupě "FUNKCE".
+        /// </summary>
+        public const string DATA_BUTTON_GROUPNAME = "GroupName";
 
         // Tyto hodnoty musí exaktně odpovídat hodnotám enumu Asol.Tools.WorkScheduler.Components.LayoutHint, neboť jejich parsování se provádí na úrovni enumu (pouze s IgnoreCase = true):
 

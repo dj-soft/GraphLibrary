@@ -254,14 +254,16 @@ namespace Asol.Tools.WorkScheduler.Services
         /// <param name="provider"></param>
         public FunctionGlobalItem(IFunctionProvider provider)
             : base(provider)
-        { }
+        {
+            this.Size = FunctionGlobalItemSize.Half;
+        }
         /// <summary>
         /// Vizualizace
         /// </summary>
         /// <returns></returns>
         public override string ToString()
         {
-            return this.Text + "; Type: " + this.ItemType + "; Size: " + this.Size;
+            return this.TextText + "; Type: " + this.ItemType + "; Size: " + this.Size;
         }
         /// <summary>
         /// Skupina, do které patří tato položka
@@ -371,7 +373,7 @@ namespace Asol.Tools.WorkScheduler.Services
         }
         public override string ToString()
         {
-            return this.Text;
+            return this.TextText;
         }
         /// <summary>
         /// ID of this item
@@ -396,7 +398,7 @@ namespace Asol.Tools.WorkScheduler.Services
         /// <summary>
         /// Current text of Text (localized) for this item
         /// </summary>
-        public virtual string TextText { get { return (this.Text == null ? "" : this.Text.Text); } }
+        public virtual string TextText { get { return (this.Text != null ? this.Text.Text : ""); } }
         /// <summary>
         /// ToolTip for this item, localizable.
         /// </summary>
@@ -404,7 +406,7 @@ namespace Asol.Tools.WorkScheduler.Services
         /// <summary>
         /// Current text of ToolTip (localized) for this item
         /// </summary>
-        public virtual string ToolTipText { get { return (this.ToolTip == null ? "" : this.ToolTip.Text); } }
+        public virtual string ToolTipText { get { return (this.ToolTip != null ? this.ToolTip.Text : ""); } }
         /// <summary>
         /// Description of font. When is null, then FontInfo.Menu is used. Get allways return Clone of internal font.
         /// </summary>
@@ -418,6 +420,9 @@ namespace Asol.Tools.WorkScheduler.Services
         /// SubItem array (for ComboBox, SplitButton, and so on)
         /// </summary>
         public virtual EList<FunctionItem> SubItems { get { this._CheckSubItems(); return this._SubItems; } }
+        /// <summary>
+        /// Invaliduje pole SubItems. Načte se poté znovu.
+        /// </summary>
         public void SubItemsInvalidate() { this._SubItemsValid = false; }
         /// <summary>
         /// Image for standard state

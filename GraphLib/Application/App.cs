@@ -511,6 +511,23 @@ namespace Asol.Tools.WorkScheduler.Application
                 System.IO.Directory.CreateDirectory(path);
             return path;
         }
+        /// <summary>
+        /// Adresář, v němž je uložen kód aplikace
+        /// </summary>
+        public static string AppCodePath
+        {
+            get
+            {
+                App instance = Instance;
+                if (instance._AppCodePath == null)
+                {
+                    string file = System.Reflection.Assembly.GetExecutingAssembly().Location;
+                    instance._AppCodePath = System.IO.Path.GetDirectoryName(file);
+                }
+                return instance._AppCodePath;
+            }
+        }
+        private string _AppCodePath;
         #endregion
     }
     #region Exceptions : třídy výjimek používaných v GraphLibrary
