@@ -633,7 +633,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <summary>
         /// Režim editovatelnosti položky grafu
         /// </summary>
-        public GraphItemEditMode EditMode { get; set; }
+        public GraphItemBehaviorMode BehaviorMode { get; set; }
         /// <summary>
         /// Barva pozadí prvku.
         /// </summary>
@@ -667,7 +667,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         int ITimeGraphItem.GroupId { get { return this.GroupId; } }
         TimeRange ITimeGraphItem.Time { get { return this.Time; } }
         float ITimeGraphItem.Height { get { return this.Height; } }
-        GraphItemEditMode ITimeGraphItem.EditMode { get { return this.EditMode; } }
+        GraphItemBehaviorMode ITimeGraphItem.BehaviorMode { get { return this.BehaviorMode; } }
         Color? ITimeGraphItem.BackColor { get { return this.BackColor; } }
         System.Drawing.Drawing2D.HatchStyle? ITimeGraphItem.BackStyle { get { return null; } }
         Color? ITimeGraphItem.LinkBackColor { get { return this.LinkBackColor; } }
