@@ -226,6 +226,67 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         public const string DATA_BUTTON_LAYOUT_NextItemSkipToNextTable = "NextItemSkipToNextTable";
 
+        /// <summary>
+        /// Název proměnné EditMode v tabulce Graph v prvku DATA: proměnná, určující vlastnosti jednotlivého prvku grafu, obsahuje jednotlivé texty DATA_GRAPHITEM_EDITMODE_*, oddělené čárkou.
+        /// </summary>
+        public const string DATA_GRAPHITEM_EDITMODE = "EditMode";
+        /// <summary>
+        /// Název proměnné BackStyle v tabulce Graph v prvku DATA: proměnná, určující styl vykreslení pozadí jednotlivého prvku grafu. Váže se na enum <see cref="System.Drawing.Drawing2D.HatchStyle"/>.
+        /// </summary>
+        public const string DATA_GRAPHITEM_BACKSTYLE = "BackStyle";
+        /// <summary>
+        /// Název proměnné BorderColor v tabulce Graph v prvku DATA: proměnná, určující barvu orámování jednotlivého prvku grafu.
+        /// </summary>
+        public const string DATA_GRAPHITEM_BORDERCOLOR = "BorderColor";
+        /// <summary>
+        /// Hodnota proměnné EditMode v tabulce Graph v prvku DATA: Lze změnit délku času (roztáhnout šířku pomocí přesunutí začátku nebo konce)
+        /// </summary>
+        public const string DATA_GRAPHITEM_EDITMODE_ResizeTime = "ResizeTime";
+        /// <summary>
+        /// Hodnota proměnné EditMode v tabulce Graph v prvku DATA: Lze změnit výšku = obsazený prostor v grafu (roztáhnout výšku)
+        /// </summary>
+        public const string DATA_GRAPHITEM_EDITMODE_ResizeHeight = "ResizeHeight";
+        /// <summary>
+        /// Hodnota proměnné EditMode v tabulce Graph v prvku DATA: Lze přesunout položku grafu na ose X = čas doleva / doprava
+        /// </summary>
+        public const string DATA_GRAPHITEM_EDITMODE_MoveToAnotherTime = "MoveToAnotherTime";
+        /// <summary>
+        /// Hodnota proměnné EditMode v tabulce Graph v prvku DATA: Lze přesunout položku grafu na ose Y = na jiný řádek tabulky
+        /// </summary>
+        public const string DATA_GRAPHITEM_EDITMODE_MoveToAnotherRow = "MoveToAnotherRow";
+        /// <summary>
+        /// Hodnota proměnné EditMode v tabulce Graph v prvku DATA: Lze přesunout položku grafu do jiné tabulky
+        /// </summary>
+        public const string DATA_GRAPHITEM_EDITMODE_MoveToAnotherTable = "MoveToAnotherTable";
+        /// <summary>
+        /// Hodnota proměnné EditMode v tabulce Graph v prvku DATA: Zobrazit text v prvku při stavu MouseOver
+        /// </summary>
+        public const string DATA_GRAPHITEM_EDITMODE_ShowCaptionInMouseOver = "ShowCaptionInMouseOver";
+        /// <summary>
+        /// Hodnota proměnné EditMode v tabulce Graph v prvku DATA: Zobrazit text v prvku při stavu Selected
+        /// </summary>
+        public const string DATA_GRAPHITEM_EDITMODE_ShowCaptionInSelected = "ShowCaptionInSelected";
+        /// <summary>
+        /// Hodnota proměnné EditMode v tabulce Graph v prvku DATA: Zobrazit text v prvku vždy
+        /// </summary>
+        public const string DATA_GRAPHITEM_EDITMODE_ShowCaptionAllways = "ShowCaptionAllways";
+        /// <summary>
+        /// Hodnota proměnné EditMode v tabulce Graph v prvku DATA: Zobrazit ToolTip okamžitě po najetí myší na prvek (trochu brutus) a nechat svítit "skoro pořád"
+        /// </summary>
+        public const string DATA_GRAPHITEM_EDITMODE_ShowToolTipImmediatelly = "ShowToolTipImmediatelly";
+        /// <summary>
+        /// Hodnota proměnné EditMode v tabulce Graph v prvku DATA: Zobrazit ToolTip až nějaký čas po najetí myší, a po přiměřeném čase zhasnout.
+        /// </summary>
+        public const string DATA_GRAPHITEM_EDITMODE_ShowToolTipFadeIn = "ShowToolTipFadeIn";
+        /// <summary>
+        /// Hodnota proměnné EditMode v tabulce Graph v prvku DATA: Default pro pracovní čas = ResizeTime | MoveToAnotherTime | MoveToAnotherRow
+        /// </summary>
+        public const string DATA_GRAPHITEM_EDITMODE_DefaultWorkTime = "DefaultWorkTime";
+        /// <summary>
+        /// Hodnota proměnné EditMode v tabulce Graph v prvku DATA: Default pro text = ShowCaptionInMouseOver | ShowCaptionInSelected | ShowToolTipFadeIn
+        /// </summary>
+        public const string DATA_GRAPHITEM_EDITMODE_DefaultText = "DefaultText";
+
         #endregion
         #region Podpora tvorby tabulek a sloupců
         /// <summary>

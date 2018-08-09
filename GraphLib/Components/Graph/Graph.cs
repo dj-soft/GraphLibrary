@@ -874,7 +874,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             return text;
         }
         /// <summary>
-        /// Metoda pipraví tooltip pro prvek
+        /// Metoda připraví tooltip pro daný prvek
         /// </summary>
         /// <param name="e"></param>
         /// <param name="group"></param>
@@ -1183,6 +1183,22 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             Repaint = Childs << 1
         }
         #endregion
+        #region Obecná static podpora pro grafy
+        /// <summary>
+        /// Vrací true, pokud se v daném režimu chování a za daného stavu má zobrazovat Caption
+        /// </summary>
+        /// <param name="mode"></param>
+        /// <param name="state"></param>
+        /// <returns></returns>
+        internal static bool IsCaptionVisible(GraphItemBehaviorMode mode, GInteractiveState state, bool isSelected)
+        {
+            if (mode.HasFlag(GraphItemBehaviorMode.ShowCaptionAllways)) return true;
+            if (mode.HasFlag(GraphItemBehaviorMode.ShowCaptionInSelected) && isSelected) return true;
+            if (mode.HasFlag(GraphItemBehaviorMode.ShowCaptionInMouseOver))
+                return ((state & (GInteractiveState.FlagOver | GInteractiveState.FlagDown | GInteractiveState.FlagDrag | GInteractiveState.FlagFrame)) != 0);
+            return false;
+        }
+        #endregion
         #region ITimeInteractiveGraph members
         ITimeConvertor ITimeInteractiveGraph.TimeConvertor { get { return this._TimeConvertor; } set { this._TimeConvertor = value; this.Invalidate(InvalidateItems.CoordinateX); } }
         int ITimeInteractiveGraph.UnitHeight { get { return this.GraphParameters.OneLineHeight.Value; } }
@@ -1395,7 +1411,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Režim editovatelnosti položky grafu
         /// </summary>
-        public GraphItemEditMode EditMode { get { return this._FirstItem.EditMode; } }
+        public GraphItemBehaviorMode BehaviorMode { get { return this._FirstItem.BehaviorMode; } }
         /// <summary>
         /// Barva pozadí prvku.
         /// </summary>
@@ -1442,7 +1458,6 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             this._ParentGraph.GraphItemPrepareToolTip(e, this, data, position);
         }
-
         /// <summary>
         /// Metoda zajistí zpracování události RightCLick na grafickém prvku (data) na dané pozici (position).
         /// </summary>
@@ -1473,7 +1488,6 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             this._ParentGraph.GraphItemLeftLongClick(e, this, data, position);
         }
-
         /// <summary>
         /// Vykreslí tuto grupu. Kreslí pouze pokud obsahuje více než 1 prvek, a pokud vrstva <see cref="ITimeGraphItem.Layer"/> je nula nebo kladná (pro záporné vrstvy se nekreslí).
         /// </summary>
@@ -1495,16 +1509,66 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             GPainter.DrawEffect3D(e.Graphics, boundsLink, backColor.Value, System.Windows.Forms.Orientation.Horizontal, this.GControl.InteractiveState, force3D: false);
         }
         /// <summary>
-        /// Metoda volaná pro vykreslování obsahu "Přes Child prvky"
+        /// Metoda volaná pro vykreslování obsahu "Přes Child prvky".
         /// </summary>
         /// <param name="e"></param>
         public void DrawOverChilds(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
         {
+            if (!this.DrawTextInCurrentState) return;
             Rectangle boundsVisibleAbsolute = Rectangle.Intersect(e.AbsoluteVisibleClip, boundsAbsolute);
-            string text = this._ParentGraph.GraphItemGetCaptionText(e, this, this, GGraphControlPosition.Group, boundsAbsolute, boundsVisibleAbsolute);
-            Color foreColor = this.GControl.BackColor.Contrast();
-            GPainter.DrawString(e.Graphics, boundsAbsolute, text, foreColor, FontInfo.CaptionBold, ContentAlignment.MiddleCenter);
+
+            // Text pro aktuální velikost je pravděpodobně uložený v paměti, a pokud není tak jej explicitně zjistíme a do paměti uložíme:
+            string text = this.GetCaptionForSize(boundsAbsolute.Size);
+            if (text == null)
+            {   // Získáme text Caption z datového zdroje grafu:
+                text = this._ParentGraph.GraphItemGetCaptionText(e, this, this, GGraphControlPosition.Group, boundsAbsolute, boundsVisibleAbsolute);
+                this.SetCaptionForSize(boundsAbsolute.Size, text);
+            }
+
+            // Kreslit text:
+            if (!String.IsNullOrEmpty(text))
+            {
+                Color foreColor = this.GControl.BackColor.Contrast();
+                GPainter.DrawString(e.Graphics, boundsAbsolute, text, foreColor, FontInfo.CaptionBold, ContentAlignment.MiddleCenter);
+            }
         }
+        /// <summary>
+        /// Vrací true, pokud se v aktuálním stavu objektu má kreslit text.
+        /// To záleží na interaktivním stavu (MouseOver, Drag, Selected...) a na nastavení vlastností prvku grafu.
+        /// </summary>
+        protected bool DrawTextInCurrentState
+        {
+            get { return GTimeGraph.IsCaptionVisible(this._FirstItem.BehaviorMode, this.GControl.InteractiveState, (this.GControl.IsSelected || this._Items.Any(i => i.GControl.IsSelected))); }
+        }
+        /// <summary>
+        /// Vrátí text pro danou velikost textu, pokud si ji pro tuto velikost pamatujeme.
+        /// Vrací null, pokud pro danou velikost nemáme informaci.
+        /// Vrátí prázdný string, pokud si pamatujeme, že text nebyl vygenerován (aby se nemusel generovat znovu).
+        /// </summary>
+        /// <param name="size"></param>
+        /// <returns></returns>
+        protected string GetCaptionForSize(Size size)
+        {
+            return ((this._CaptionForSizeSize.HasValue && this._CaptionForSizeSize.Value == size) ? this._CaptionForSizeText : null);
+        }
+        /// <summary>
+        /// Uloží si danou velikost a jí odpovídající text (namísto null ukládá prázdný string).
+        /// </summary>
+        /// <param name="size"></param>
+        /// <param name="text"></param>
+        protected void SetCaptionForSize(Size size, string text)
+        {
+            this._CaptionForSizeSize = size;
+            this._CaptionForSizeText = (text != null ? text : "");
+        }
+        /// <summary>
+        /// Velikost prvku, pro kterou máme uložený text Caption v <see cref="_CaptionForSizeText"/>
+        /// </summary>
+        private Size? _CaptionForSizeSize;
+        /// <summary>
+        /// Text prvku, který je platný pro jeho velikost <see cref="_CaptionForSizeSize"/>
+        /// </summary>
+        private string _CaptionForSizeText;
         /// <summary>
         /// Porovná dvě instance <see cref="GTimeGraphGroup"/> podle <see cref="ITimeGraphItem.Order"/> ASC, <see cref="ITimeGraphItem.Time"/> ASC
         /// </summary>
@@ -1528,7 +1592,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         int ITimeGraphItem.GroupId { get { return this._FirstItem.GroupId; } }
         TimeRange ITimeGraphItem.Time { get { return this.Time; } }
         float ITimeGraphItem.Height { get { return this.Height; } }
-        GraphItemEditMode ITimeGraphItem.EditMode { get { return this.EditMode; } }
+        GraphItemBehaviorMode ITimeGraphItem.BehaviorMode { get { return this.BehaviorMode; } }
         Color? ITimeGraphItem.BackColor { get { return this.BackColor; } }
         System.Drawing.Drawing2D.HatchStyle? ITimeGraphItem.BackStyle { get { return this.BackStyle; } }
         Color? ITimeGraphItem.LinkBackColor { get { return this.LinkBackColor; } }
@@ -1991,9 +2055,9 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         float Height { get; }
         /// <summary>
-        /// Režim editovatelnosti položky grafu
+        /// Režim chování položky grafu (editovatelnost, texty, atd)
         /// </summary>
-        GraphItemEditMode EditMode { get; }
+        GraphItemBehaviorMode BehaviorMode { get; }
         /// <summary>
         /// Barva pozadí prvku.
         /// </summary>
@@ -2059,13 +2123,14 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         LogarithmicScale
     }
     /// <summary>
+    /// Režimy chování položky grafu. Zahrnují možnosti editace a možnosti zobrazování textu, tooltipu a vztahů.
     /// Editovatelnost položky grafu.
     /// </summary>
     [Flags]
-    public enum GraphItemEditMode
+    public enum GraphItemBehaviorMode : int
     {
         /// <summary>
-        /// Bez pohybu
+        /// Bez zadání
         /// </summary>
         None = 0,
         /// <summary>
@@ -2089,9 +2154,40 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         MoveToAnotherTable = 0x40,
         /// <summary>
-        /// Defaultní pro pracovní čas = <see cref="ResizeTime"/> | <see cref="MoveToAnotherTime"/> | <see cref="MoveToAnotherRow"/>
+        /// Zobrazit text v prvku při stavu MouseOver
+        /// Pokud nebude specifikována hodnota <see cref="ShowCaptionInMouseOver"/> ani <see cref="ShowCaptionInSelected"/> ani <see cref="ShowCaptionAllways"/>, nebude se zobrazovat text v prvku vůbec.
         /// </summary>
-        DefaultWorkTime = ResizeTime | MoveToAnotherTime | MoveToAnotherRow
+        ShowCaptionInMouseOver = 0x1000,
+        /// <summary>
+        /// Zobrazit text v prvku při stavu Selected
+        /// Pokud nebude specifikována hodnota <see cref="ShowCaptionInMouseOver"/> ani <see cref="ShowCaptionInSelected"/> ani <see cref="ShowCaptionAllways"/>, nebude se zobrazovat text v prvku vůbec.
+        /// </summary>
+        ShowCaptionInSelected = 0x2000,
+        /// <summary>
+        /// Zobrazit text v prvku vždy
+        /// Pokud nebude specifikována hodnota <see cref="ShowCaptionInMouseOver"/> ani <see cref="ShowCaptionInSelected"/> ani <see cref="ShowCaptionAllways"/>, nebude se zobrazovat text v prvku vůbec.
+        /// </summary>
+        ShowCaptionAllways = 0x8000,
+        /// <summary>
+        /// Zobrazit ToolTip okamžitě po najetí myší na prvek (trochu brutus) a nechat svítit "skoro pořád"
+        /// Pokud nebude specifikována hodnota <see cref="ShowToolTipImmediatelly"/> ani <see cref="ShowToolTipFadeIn"/>, nebude se zobrazovat ToolTip vůbec.
+        /// </summary>
+        ShowToolTipImmediatelly = 0x10000,
+        /// <summary>
+        /// Zobrazit ToolTip až nějaký čas po najetí myší, a po přiměřeném čase zhasnout.
+        /// Pokud nebude specifikována hodnota <see cref="ShowToolTipImmediatelly"/> ani <see cref="ShowToolTipFadeIn"/>, nebude se zobrazovat ToolTip vůbec.
+        /// </summary>
+        ShowToolTipFadeIn = 0x20000,
+        /// <summary>
+        /// Default pro pracovní čas = <see cref="ResizeTime"/> | <see cref="MoveToAnotherTime"/> | <see cref="MoveToAnotherRow"/>
+        /// </summary>
+        DefaultWorkTime = ResizeTime | MoveToAnotherTime | MoveToAnotherRow,
+        /// <summary>
+        /// Default pro text = <see cref="ShowCaptionInMouseOver"/> | <see cref="ShowCaptionInSelected"/> | <see cref="ShowToolTipFadeIn"/>
+        /// </summary>
+        DefaultText = ShowCaptionInMouseOver | ShowCaptionInSelected | ShowToolTipFadeIn
+
+
     }
     /// <summary>
     /// Tvar položky grafu

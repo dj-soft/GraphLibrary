@@ -988,8 +988,16 @@ namespace Asol.Tools.WorkScheduler.Components
     /// <summary>
     /// State of item by mouse activity. Not change of state (eg. Click, DragBegin and so on), only static status (Dragging, MouseDown, MouseOver, ...)
     /// </summary>
+    [Flags]
     public enum GInteractiveState
     {
+        FlagOver = 0x0010,
+        FlagDown = 0x0100,
+        FlagDrag = 0x0200,
+        FlagFrame = 0x0400,
+        FlagLeftMouse = 0x1000,
+        FlagMiddleMouse = 0x2000,
+        FlagRightMouse = 0x4000,
         /// <summary>
         /// Not defined - do not use in real algorithm
         /// </summary>
@@ -997,39 +1005,39 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Enabled, without mouse, but ready to activate
         /// </summary>
-        Enabled,
+        Enabled = 0x0001,
         /// <summary>
         /// Disabled, not mouse-active
         /// </summary>
-        Disabled,
+        Disabled = 0x0002,
         /// <summary>
         /// With mouse over
         /// </summary>
-        MouseOver,
+        MouseOver = FlagOver,
         /// <summary>
         /// With left mouse button down (not dragging)
         /// </summary>
-        LeftDown,
+        LeftDown = FlagLeftMouse | FlagDown,
         /// <summary>
         /// With right mouse button down (not dragging)
         /// </summary>
-        RightDown,
+        RightDown = FlagRightMouse | FlagDown,
         /// <summary>
         /// Dragging by left mouse button
         /// </summary>
-        LeftDrag,
+        LeftDrag = FlagLeftMouse | FlagDrag,
         /// <summary>
         /// Dragging by right mouse button
         /// </summary>
-        RightDrag,
+        RightDrag = FlagRightMouse | FlagDrag,
         /// <summary>
         /// Označování FrameSelect levou myší
         /// </summary>
-        LeftFrame,
+        LeftFrame = FlagLeftMouse | FlagFrame,
         /// <summary>
         /// Označování FrameSelect pravou myší
         /// </summary>
-        RightFrame
+        RightFrame = FlagRightMouse | FlagFrame
     }
     /// <summary>
     /// State and Change of state by mouse activity, this is: static state and change of state from one static state to another.

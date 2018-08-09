@@ -477,25 +477,25 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         private static Dictionary<string, Color?> _ColorDict;
         /// <summary>
-        /// Metoda vrátí <see cref="GraphItemEditMode"/> pro zadaný text.
-        /// Protože enum <see cref="GraphItemEditMode"/> může obsahovat součty hodnot, tak konverze akceptuje znaky "|" a "+" mezi jednotlivými názvy hodnot.
+        /// Metoda vrátí <see cref="GraphItemBehaviorMode"/> pro zadaný text.
+        /// Protože enum <see cref="GraphItemBehaviorMode"/> může obsahovat součty hodnot, tak konverze akceptuje znaky "|" a "+" mezi jednotlivými názvy hodnot.
         /// Vstup tedy může obsahovat: "ResizeTime + ResizeHeight + MoveToAnotherTime + MoveToAnotherRow" ("+" slouží jako oddělovač hodnot, mezery jsou odebrány).
-        /// Může vracet <see cref="GraphItemEditMode.None"/>, když vstup neobsahuje nic rozumného.
+        /// Může vracet <see cref="GraphItemBehaviorMode.None"/>, když vstup neobsahuje nic rozumného.
         /// </summary>
         /// <param name="text"></param>
         /// <returns></returns>
-        public static GraphItemEditMode GetEditMode(string text)
+        public static GraphItemBehaviorMode GetBehaviorMode(string text)
         {
-            GraphItemEditMode editMode = GraphItemEditMode.None;
-            if (String.IsNullOrEmpty(text)) return editMode;
+            GraphItemBehaviorMode behaviorMode = GraphItemBehaviorMode.None;
+            if (String.IsNullOrEmpty(text)) return behaviorMode;
             string[] names = text.Split("+|".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
             foreach (string name in names)
             {
-                GraphItemEditMode value;
+                GraphItemBehaviorMode value;
                 if (Enum.TryParse(name.Trim(), true, out value))
-                    editMode |= value;
+                    behaviorMode |= value;
             }
-            return editMode;
+            return behaviorMode;
         }
         /// <summary>
         /// Metoda vrátí styl výplně pozadí pro zadaný text.

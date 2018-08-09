@@ -708,14 +708,17 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 string key = item.Key.ToLower();
                 switch (key)
                 {
+                    case WorkSchedulerSupport.DATA_GRAPHITEM_EDITMODE:
                     case "editmode":
                     case "edit_mode":
-                        this._EditMode = Scheduler.MainData.GetEditMode(item.Value);
+                        this._BehaviorMode = Scheduler.MainData.GetBehaviorMode(item.Value);
                         break;
+                    case WorkSchedulerSupport.DATA_GRAPHITEM_BACKSTYLE:
                     case "backstyle":
                     case "back_style":
                         this._BackStyle = Scheduler.MainData.GetHatchStyle(item.Value);
                         break;
+                    case WorkSchedulerSupport.DATA_GRAPHITEM_BORDERCOLOR:
                     case "bordercolor":
                     case "border_color":
                         this._BorderColor = Scheduler.MainData.GetColor(item.Value);
@@ -733,11 +736,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             {
                 case GreenClasses.PlanUnitCCl:
                     this._BackStyle = System.Drawing.Drawing2D.HatchStyle.Percent25;
-                    this._EditMode = GraphItemEditMode.None;
+                    this._BehaviorMode = GraphItemBehaviorMode.None | GraphItemBehaviorMode.ShowToolTipFadeIn;
                     break;
                 case GreenClasses.PlanUnitCUnit:
                     this._BackStyle = null;
-                    this._EditMode = GraphItemEditMode.DefaultWorkTime;
+                    this._BehaviorMode = GraphItemBehaviorMode.DefaultWorkTime | GraphItemBehaviorMode.DefaultText;
                     break;
             }
         }
@@ -792,7 +795,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private int _Level;
         private int _Order;
         private float _Height;
-        private GraphItemEditMode _EditMode;
+        private GraphItemBehaviorMode _BehaviorMode;
         private TimeRange _Time;
         private Color? _BackColor;
         private System.Drawing.Drawing2D.HatchStyle? _BackStyle;
@@ -844,7 +847,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Režim editovatelnosti položky grafu
         /// </summary>
-        public GraphItemEditMode EditMode { get { return this._EditMode; } }
+        public GraphItemBehaviorMode EditMode { get { return this._BehaviorMode; } }
         /// <summary>
         /// Časový interval tohoto prvku
         /// </summary>
@@ -889,7 +892,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         int ITimeGraphItem.Level { get { return this._Level; } }
         int ITimeGraphItem.Order { get { return this._Order; } }
         float ITimeGraphItem.Height { get { return this._Height; } }
-        GraphItemEditMode ITimeGraphItem.EditMode { get { return this._EditMode; } }
+        GraphItemBehaviorMode ITimeGraphItem.BehaviorMode { get { return this._BehaviorMode; } }
         TimeRange ITimeGraphItem.Time { get { return this._Time; } }
         Color? ITimeGraphItem.BackColor { get { return this._BackColor; } }
         System.Drawing.Drawing2D.HatchStyle? ITimeGraphItem.BackStyle { get { return this._BackStyle; } }
