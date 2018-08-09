@@ -1010,7 +1010,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="graphItem"></param>
         /// <returns></returns>
         ToolStripDropDownMenu IMainDataInternal.CreateContextMenu(DataGraphItem graphItem, ItemActionArgs args) { return this.CreateContextMenu(graphItem, args); }
-
+        IEnumerable<DataDeclaration> IMainDataInternal.DataDeclarations { get { return this.Declarations; } }
         #endregion
     }
     /// <summary>
@@ -1030,6 +1030,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="args"></param>
         /// <returns></returns>
         ToolStripDropDownMenu CreateContextMenu(DataGraphItem graphItem, ItemActionArgs args);
+        /// <summary>
+        /// Souhrn všech deklarací dat
+        /// </summary>
+        IEnumerable<DataDeclaration> DataDeclarations { get; }
     }
     #endregion
     #region class DataDeclaration : deklarace dat, předaná z volajícího do pluginu, definuje rozsah dat a funkcí
@@ -1115,6 +1119,34 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Rozšiřující data, podle typu obsahu <see cref="Content"/>
         /// </summary>
         public string Data { get; private set; }
+        #endregion
+        #region Vyhledání nadřízených deklarací
+        /// <summary>
+        /// Najde a vrátí deklaraci dat typu <see cref="DataDeclaration.Target"/> == <see cref="DataTargetType.Main"/> 
+        /// pro shodnou verzi dat (<see cref="DataDeclaration.DataId"/>) pro jakou je platný this prvek.
+        /// Pokud takovou deklaraci nenajde, obsahue (vrací) null.
+        /// </summary>
+        public DataDeclaration MainDataDeclaration
+        {
+            get
+            {
+                if (!this._MainDataDeclarationValid)
+                {
+                    this._MainDataDeclaration = ((this.Target == DataTargetType.Main) ? this :
+                        ((IMainDataInternal)this.MainData).DataDeclarations.FirstOrDefault(d => (d.Target == DataTargetType.Main && d.DataId == this.DataId)));
+                    this._MainDataDeclarationValid = true;
+                }
+                return this._MainDataDeclaration;
+            }
+        }
+        /// <summary>
+        /// Platnost dat cache <see cref="_MainDataDeclaration"/>
+        /// </summary>
+        private bool _MainDataDeclarationValid;
+        /// <summary>
+        /// Cache dat pro property <see cref="MainDataDeclaration"/>
+        /// </summary>
+        private DataDeclaration _MainDataDeclaration;
         #endregion
     }
     #endregion

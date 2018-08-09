@@ -47,13 +47,15 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         #region Public rozhraní: vkládání tabulek a dalších dat
         /// <summary>
         /// Vloží novou tabulku do controlu. Metoda sama nejlépe ví, kam ji zařadit, a udělá vše potřebné.
+        /// Tzn. najde / vytvoří nový <see cref="SchedulerPanel"/> pro <see cref="DataGraphTable.DataId"/>, a do tohoto panelu vloží dodanou tabulku.
+        /// Panel postupuje obdobně: z dodané tabulky zjistí, kam patří (do kterého <see cref="DataGraphTable.tar"/>
         /// </summary>
         /// <param name="graphTable"></param>
         public void AddGraphTable(DataGraphTable graphTable)
         {
             if (graphTable == null) return;
             TabSchedulerPanelInfo tspInfo = this._TabSchedulerPanelPrepare(graphTable.DataDeclaration);
-            tspInfo.SchedulerPanel.AddTable(graphTable);
+            tspInfo.SchedulerPanel.AddGraphTable(graphTable);
         }
         #endregion
         #region ToolBar
@@ -108,16 +110,17 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Najde / přidá a vrátí instanci TabSchedulerPanelInfo pro DataId dané tabulky.
         /// </summary>
-        /// <param name="dataDeclaration"></param>
-        private TabSchedulerPanelInfo _TabSchedulerPanelPrepare(DataDeclaration dataDeclaration)
+        /// <param name="tableDataDeclaration"></param>
+        private TabSchedulerPanelInfo _TabSchedulerPanelPrepare(DataDeclaration tableDataDeclaration)
         {
             TabSchedulerPanelInfo tspInfo;
-            int dataId = dataDeclaration.DataId;
+            int dataId = tableDataDeclaration.DataId;
             if (!this._SchedulerPanelDict.TryGetValue(dataId, out tspInfo))
             {
+                DataDeclaration panelDataDeclaration = (tableDataDeclaration.MainDataDeclaration ?? tableDataDeclaration);
                 int tabPageIndex = this._TabContainer.TabCount;
-                SchedulerPanel schedulerPanel = new SchedulerPanel(dataDeclaration);
-                GTabPage tabPage = this._TabContainer.AddTabItem(schedulerPanel, dataDeclaration.Title, toolTip: dataDeclaration.ToolTip, image: null);
+                SchedulerPanel schedulerPanel = new SchedulerPanel(panelDataDeclaration);
+                GTabPage tabPage = this._TabContainer.AddTabItem(schedulerPanel, panelDataDeclaration.Title, toolTip: panelDataDeclaration.ToolTip, image: null);
                 tspInfo = new TabSchedulerPanelInfo(dataId, tabPageIndex, tabPage, schedulerPanel);
                 this._SchedulerPanelDict.Add(dataId, tspInfo);
             }

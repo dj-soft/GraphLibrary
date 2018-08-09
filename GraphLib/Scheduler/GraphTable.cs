@@ -50,6 +50,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         public Int32? DataId { get { return (this.DataDeclaration != null ? (Int32?)this.DataDeclaration.DataId : (Int32?)null); } }
         /// <summary>
+        /// Cílový prostor v panelu <see cref="SchedulerPanel"/> pro tuto položku deklarace
+        /// </summary>
+        public DataTargetType Target { get { return (this.DataDeclaration != null ? this.DataDeclaration.Target : DataTargetType.None); } }
+        /// <summary>
         /// Název této tabulky
         /// </summary>
         public string TableName { get; private set; }
@@ -162,7 +166,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <returns></returns>
         internal bool EqualsId(int? dataId, string tableName)
         {
-            if (!String.Equals(this.TableName, tableName, StringComparison.InvariantCulture)) return true;
+            if (!String.Equals(this.TableName, tableName, StringComparison.InvariantCulture)) return false;
             return (this.DataId == dataId);
         }
         #endregion

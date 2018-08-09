@@ -1271,7 +1271,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         NoTabHeader = 2,
         /// <summary>
-        /// Přidat <see cref="GTabPage"/> pro funkci Collapse, která zmenší prostor <see cref="GTabContainer"/> jen na lištu záhlaví <see cref="GTabHeader"/>.
+        /// Přidat jedno záhlaví <see cref="GTabPage"/> pro funkci Collapse, která po kliknutí zmenší prostor <see cref="GTabContainer"/> jen na lištu záhlaví <see cref="GTabHeader"/>.
         /// </summary>
         CollapseItem = 0x10
     }

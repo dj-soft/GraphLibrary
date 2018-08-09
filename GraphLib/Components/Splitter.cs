@@ -171,11 +171,8 @@ namespace Asol.Tools.WorkScheduler.Components
             set { this.SetSplitter(null, null, value, null, null, null, null, DragResponseType.AfterDragEnd); }
         }
         /// <summary>
-        /// Visible Width (for Vertical) / Height (for Horizontal) splitter.
-        /// Setting 0 cause same behavior as setting Invisible = true. 
-        /// Drawing of Invisible splitter is not performed, but splitter is still active. Can be placed over edge of two other Items.
-        /// For an Invisible splitter you must set ActiveOverhead to value greater than 0, to ensure non-zero mouse active area for splitter.
-        /// Returns 0 for Invisible splitter, value smaller than 0 returns as 0.
+        /// Viditelná šíře splitteru: pro Vertikální splitter = Width, pro Horizontální splitter = Height.
+        /// Nastavení hodnoty 0 způsobí, že splitter nebude zobrazován, ale stále může být aktivní (pokud má <see cref="SplitterActiveOverlap"/> kladné).
         /// <para/>
         /// Default value = 2;
         /// </summary>
@@ -184,6 +181,16 @@ namespace Asol.Tools.WorkScheduler.Components
             get { return (this._SplitterVisibleWidth < 0 ? 0 : this._SplitterVisibleWidth); }
             set { this.SetSplitter(null, null, null, value, null, null, null, DragResponseType.AfterDragEnd); }
         }
+        /// <summary>
+        /// Počet pixelů viditelné části splitteru, které jsou zobrazeny PŘED pixelem, který reprezentuje hodnotu <see cref="Value"/>.
+        /// Obsahuje <see cref="SplitterVisibleWidth"/> / 2, nebo 0.
+        /// </summary>
+        public int SplitterVisibleWidthBefore { get { int w = this._SplitterVisibleWidth; return (w > 0 ? w / 2 : 0); } }
+        /// <summary>
+        /// Počet pixelů viditelné části splitteru, které jsou zobrazeny ZA pixelem, který reprezentuje hodnotu <see cref="Value"/>.
+        /// Obsahuje <see cref="SplitterVisibleWidth"/> - <see cref="SplitterVisibleWidthBefore"/>, nebo 0.
+        /// </summary>
+        public int SplitterVisibleWidthAfter { get { int w = this._SplitterVisibleWidth; return (w > 0 ? w - (w / 2) : 0); } }
         /// <summary>
         /// Overhead of active zone of splitter over the Visible bounds. (Splitter is active in area bigger than VisibleBounds).
         /// Overhead value is used for booth active sides, for example ActiveOverhead = 2px on Vertical splitter cause, 
@@ -297,8 +304,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="silent">true = nevyvolávat eventy</param>
         public void LoadFrom(Rectangle bounds, int value, bool silent)
         {
-            bounds = _LoadFromGetBounds(bounds, this.Orientation, value);
-            this._LoadFrom(value, this.Orientation, this.SplitterVisibleWidth, this.SplitterActiveOverlap, bounds, silent);
+            Rectangle splitterBounds = CreateSplitetrBoundsFromAnyBounds(bounds, this.Orientation, value);
+            this._LoadFrom(value, this.Orientation, this.SplitterVisibleWidth, this.SplitterActiveOverlap, splitterBounds, silent);
         }
         /// <summary>
         /// LoadFrom : načtení klíčových dat = neaktivní souřadnice (=X pro vodorovný splitter, Y pro svislý) + aktivní hodnota (=Y pro vodorovný splitter, X pro svislý).
@@ -307,15 +314,45 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Tato varianta si hodnotu Value odvodí z dodaných souřadnic (bounds), z jejich odpovídající strany (side).
         /// Jako side lze zadat pouze hodnoty: Top, Right, Bottom, Left. Pokud bude zadaná kombinace, nebude určena hodnota Value, a nastaví se pouze 
         /// </summary>
-        /// <param name="bounds">Souřadnice, typicky objektu který je tímto splitterem řízen, Ze souřadnic se převezmou hodnoty v neaktivním směru, a hodnota na dané straně.</param>
+        /// <param name="nearBounds">Souřadnice, typicky objektu který je tímto splitterem řízen, Ze souřadnic se převezmou hodnoty v neaktivním směru, a hodnota na dané straně.</param>
         /// <param name="side">Strana souřadnic (bounds), na které je this splitter přilepený</param>
         /// <param name="silent">true = nevyvolávat eventy</param>
-        public void LoadFrom(Rectangle bounds, RectangleSide side, bool silent)
+        /// <param name="addWidth">Při výpočtu Value z dodaných souřadnic bounds odsadit i o odpovídající část šířky Splitteru <see cref="SplitterVisibleWidth"/>, default = true</param>
+        public void LoadFrom(Rectangle nearBounds, RectangleSide side, bool silent, bool addWidth = true)
         {
-            Int32? value = bounds.GetSide(side);
-            if (!value.HasValue) value = this.Value;
-            bounds = _LoadFromGetBounds(bounds, this.Orientation, value.Value);
-            this._LoadFrom(value, this.Orientation, this.SplitterVisibleWidth, this.SplitterActiveOverlap, bounds, silent);
+            int value = this.GetValueFromNearBounds(nearBounds, side, addWidth);
+            Rectangle splitterBounds = CreateSplitetrBoundsFromAnyBounds(nearBounds, this.Orientation, value);
+            this._LoadFrom(value, this.Orientation, this.SplitterVisibleWidth, this.SplitterActiveOverlap, splitterBounds, silent);
+        }
+        /// <summary>
+        /// Vrátí hodnotu, která by měla být Value pro tento Splitter, určenou ze souřadnic sousedního objektu.
+        /// Ze sousedního objektu najde hodnotu souřadnice pro danou stranu (Left, Top, atd).
+        /// Hodnotu posune o půl-šířku Splitetru (pokud parametr addWidth je true a šířka <see cref="SplitterVisibleWidth"/> je kladná):
+        /// Pro strany Left a Top vrací value - <see cref="SplitterVisibleWidthBefore"/>.
+        /// Pro strany Right a Bottom vrací value + <see cref="SplitterVisibleWidthAfter"/>.
+        /// </summary>
+        /// <param name="nearBounds"></param>
+        /// <param name="side"></param>
+        /// <param name="addWidth"></param>
+        /// <returns></returns>
+        protected int GetValueFromNearBounds(Rectangle nearBounds, RectangleSide side, bool addWidth)
+        {
+            Int32? value = nearBounds.GetSide(side);
+            if (!value.HasValue) return this.Value;
+
+            if (addWidth && this.SplitterVisibleWidth > 0)
+            {
+                switch (side)
+                {
+                    case RectangleSide.Left:
+                    case RectangleSide.Top:
+                        return value.Value - this.SplitterVisibleWidthBefore;
+                    case RectangleSide.Right:
+                    case RectangleSide.Bottom:
+                        return value.Value + this.SplitterVisibleWidthAfter;
+                }
+            }
+            return value.Value;
         }
         /// <summary>
         /// Vrátí souřadnice pro LoadFrom
@@ -324,7 +361,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="orientation"></param>
         /// <param name="value"></param>
         /// <returns></returns>
-        private static Rectangle _LoadFromGetBounds(Rectangle bounds, Orientation orientation, Int32 value)
+        protected static Rectangle CreateSplitetrBoundsFromAnyBounds(Rectangle bounds, Orientation orientation, Int32 value)
         {
             switch (orientation)
             {

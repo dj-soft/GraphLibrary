@@ -18,20 +18,23 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     public class SchedulerPanel : InteractiveContainer, IInteractiveItem
     {
         #region Konstruktor, inicializace, privátní proměnné
-        public SchedulerPanel(DataDeclaration dataDeclaration)
+        public SchedulerPanel(DataDeclaration panelDataDeclaration)
         {
-            this._DataDeclaration = dataDeclaration;
+            this._PanelDataDeclaration = panelDataDeclaration;
             this._InitComponents();
         }
+        /// <summary>
+        /// Vytvoří GUI objekty potřebné pro tento panel.
+        /// </summary>
         private void _InitComponents()
         {
-            this._TaskContainer = new GTabContainer(this) { TabHeaderPosition = RectangleSide.Left, TabHeaderMode = ShowTabHeaderMode.Default };
+            this._TaskContainer = new GTabContainer(this) { TabHeaderPosition = RectangleSide.Left, TabHeaderMode = ShowTabHeaderMode.CollapseItem };
             this._TaskSplitter = new GSplitter() { SplitterVisibleWidth = SplitterSize, SplitterActiveOverlap = 2, Orientation = Orientation.Vertical, Value = 300, BoundsNonActive = new Int32NRange(0, 200) };
             this._SchedulerGrid = new GGrid(this);
             this._SourceSplitter = new GSplitter() { SplitterVisibleWidth = SplitterSize, SplitterActiveOverlap = 2, Orientation = Orientation.Vertical, Value = 600, BoundsNonActive = new Int32NRange(0, 200) };
-            this._SourceContainer = new GTabContainer(this) { TabHeaderPosition = RectangleSide.Right, TabHeaderMode = ShowTabHeaderMode.Default };
+            this._SourceContainer = new GTabContainer(this) { TabHeaderPosition = RectangleSide.Right, TabHeaderMode = ShowTabHeaderMode.CollapseItem };
             this._InfoSplitter = new GSplitter() { SplitterVisibleWidth = SplitterSize, SplitterActiveOverlap = 2, Orientation = Orientation.Horizontal, Value = 300, BoundsNonActive = new Int32NRange(0, 600) };
-            this._InfoContainer = new GTabContainer(this) { TabHeaderPosition = RectangleSide.Bottom, TabHeaderMode = ShowTabHeaderMode.Default };
+            this._InfoContainer = new GTabContainer(this) { TabHeaderPosition = RectangleSide.Bottom, TabHeaderMode = ShowTabHeaderMode.CollapseItem };
 
             this.AddItem(this._TaskContainer);
             this.AddItem(this._TaskSplitter);
@@ -80,17 +83,17 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 int sp = SplitterSize / 2;                 // Prostor "před splitterem" = odsazení souřadnice Prev.End před souřadnicí Splitter.Value
                 int sn = SplitterSize - sp;                // Prostor "za splitterem" = odsazení souřadnice Next.Begin za souřadnicí Splitter.Value
 
-                int width = size.Width;
+                int width = size.Width - 2;
                 int maxw = width / 3;
-                int x0 = 0;
+                int x0 = 1;
                 int x3 = width;
 
-                this._IsTaskVisible = (this._IsTaskEnabled && width >= MinControlWidthForSideGrids);
+                this._IsTaskVisible = (this._IsTaskEnabled && this._TaskContainer.TabCount > 0 && width >= MinControlWidthForSideGrids);
                 int x1 = CalculateLayoutOne(this._IsTaskVisible, x0, this._TaskSplitter.Value, x0 + MinGridWidth, x0 + maxw);
 
                 this._IsSchedulerVisible = true;
 
-                this._IsSourceVisible = (this._IsSourceEnabled && width >= MinControlWidthForSideGrids);
+                this._IsSourceVisible = (this._IsSourceEnabled && this._SourceContainer.TabCount > 0 && width >= MinControlWidthForSideGrids);
                 int x2 = CalculateLayoutOne(this._IsSourceVisible, x3, this._SourceSplitter.Value, x3 - maxw, x3 - MinGridWidth);
 
                 int height = size.Height;
@@ -98,7 +101,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 int y0 = 0;
                 int y3 = size.Height;
 
-                this._IsInfoVisible = (this._IsInfoEnabled && height >= MinControlHeightForSideGrids);
+                this._IsInfoVisible = (this._IsInfoEnabled && this._InfoContainer.TabCount > 0 && height >= MinControlHeightForSideGrids);
                 int y2 = CalculateLayoutOne(this._IsInfoVisible, y3, this._InfoSplitter.Value, y3 - maxh, y3 - MinGridHeight);
 
                 bool isChangeChildItems = (this._TaskContainer.IsVisible != this._IsTaskVisible) ||
@@ -177,7 +180,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private GTabContainer _InfoContainer;
         private bool _IsInfoVisible;
         private bool _IsInfoEnabled;
-        private DataDeclaration _DataDeclaration;
+        private DataDeclaration _PanelDataDeclaration;
         #endregion
         #region Child items
         protected override IEnumerable<IInteractiveItem> Childs { get { return this._GetChildList(); } }
@@ -236,30 +239,50 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Pozici tabulky určí z <see cref="DataGraphTable.DataDeclaration"/> : <see cref="DataDeclaration.Target"/>
         /// </summary>
         /// <param name="graphTable"></param>
-        public void AddTable(DataGraphTable graphTable)
+        public void AddGraphTable(DataGraphTable graphTable)
         {
-            DataDeclaration dataDeclaration = graphTable.DataDeclaration;
-            DataTargetType target = dataDeclaration.Target;
+            DataTargetType target = graphTable.Target;
             switch (target)
             {
                 case DataTargetType.Task:
                     this.AddTableToTabs(graphTable, this._TaskContainer);
+                    this._IsTaskEnabled = (this._TaskContainer.TabCount > 0);
                     break;
                 case DataTargetType.Schedule:
                     this.AddTableToGrid(graphTable, this._SchedulerGrid);
                     break;
                 case DataTargetType.Source:
                     this.AddTableToTabs(graphTable, this._SourceContainer);
+                    this._IsSourceEnabled = (this._SourceContainer.TabCount > 0);
                     break;
                 case DataTargetType.Info:
                     this.AddTableToTabs(graphTable, this._InfoContainer);
+                    this._IsInfoEnabled = (this._InfoContainer.TabCount > 0);
                     break;
             }
         }
+        /// <summary>
+        /// Metoda zajistí, že do daného TabContaineru se přidá nová záložka, zobrazující danou tabulku.
+        /// </summary>
+        /// <param name="graphTable"></param>
+        /// <param name="tabs"></param>
         private void AddTableToTabs(DataGraphTable graphTable, GTabContainer tabs)
-        { }
+        {
+            if (graphTable == null || graphTable.TableRow == null) return;
+            GGrid grid = new GGrid();
+            grid.AddTable(graphTable.TableRow);
+            tabs.AddTabItem(grid, graphTable.DataDeclaration.Title, graphTable.DataDeclaration.ToolTip);
+        }
+        /// <summary>
+        /// Metoda zajistí, že do daného Gridu se přidá nová tabulka z dodaného objektu.
+        /// </summary>
+        /// <param name="graphTable"></param>
+        /// <param name="grid"></param>
         private void AddTableToGrid(DataGraphTable graphTable, GGrid grid)
-        { }
+        {
+            if (graphTable == null || graphTable.TableRow == null) return;
+            grid.AddTable(graphTable.TableRow);
+        }
         #endregion
     }
 }
