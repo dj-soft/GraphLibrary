@@ -854,22 +854,23 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         /// <param name="e"></param>
         /// <param name="group"></param>
-        /// <param name="data"></param>
+        /// <param name="dataItem"></param>
         /// <param name="position"></param>
         /// <param name="boundsAbsolute"></param>
         /// <param name="boundsVisibleAbsolute"></param>
         /// <returns></returns>
-        internal string GraphItemGetCaptionText(GInteractiveDrawArgs e, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position, Rectangle boundsAbsolute, Rectangle boundsVisibleAbsolute)
+        internal string GraphItemGetCaptionText(GInteractiveDrawArgs e, FontInfo fontInfo, GTimeGraphGroup group, ITimeGraphItem dataItem, GGraphControlPosition position, Rectangle boundsAbsolute, Rectangle boundsVisibleAbsolute)
         {
             string text = null;
             if (this.HasDataSource)
             {
-                CreateTextArgs args = new CreateTextArgs();
+                CreateTextArgs args = new CreateTextArgs(this, e, fontInfo, group, dataItem, position, boundsAbsolute, boundsVisibleAbsolute);
                 this.DataSource.CreateText(args);
+                text = args.Text;
             }
             else
             {
-                text = data.Time.Text;
+                text = dataItem.Time.Text;
             }
             return text;
         }
@@ -882,6 +883,11 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="position"></param>
         internal void GraphItemPrepareToolTip(GInteractiveChangeStateArgs e, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position)
         {
+            if (data == null) return;
+            bool isFadeIn = data.BehaviorMode.HasFlag(GraphItemBehaviorMode.ShowToolTipFadeIn);
+            bool isImmediatelly = data.BehaviorMode.HasFlag(GraphItemBehaviorMode.ShowToolTipImmediatelly);
+            if (!isFadeIn && !isImmediatelly) return;
+
             if (this.HasDataSource)
             {
                 CreateToolTipArgs args = new CreateToolTipArgs(e, this, group, data, position);
@@ -893,6 +899,21 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 string eol = Environment.NewLine;
                 e.ToolTipData.InfoText = "ItemId: " + data.ItemId + eol +
                     "Layer: " + data.Layer.ToString();
+            }
+
+            string text = (e.HasToolTipData ? e.ToolTipData.InfoText : null);
+            if (text != null)
+            {
+                if (isImmediatelly)
+                {
+                    e.ToolTipData.AnimationType = TooltipAnimationType.Instant;
+                }
+                else if (isFadeIn)
+                {
+                    e.ToolTipData.AnimationFadeInTime = TimeSpan.FromMilliseconds(100);
+                    e.ToolTipData.AnimationShowTime = TimeSpan.FromMilliseconds(100 * text.Length);     // 1 sekunda na přečtení 10 znaků
+                    e.ToolTipData.AnimationFadeOutTime = TimeSpan.FromMilliseconds(10 * text.Length);
+                }
             }
         }
         /// <summary>
@@ -1519,9 +1540,10 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
 
             // Text pro aktuální velikost je pravděpodobně uložený v paměti, a pokud není tak jej explicitně zjistíme a do paměti uložíme:
             string text = this.GetCaptionForSize(boundsAbsolute.Size);
+            FontInfo fontInfo = FontInfo.CaptionBold;
             if (text == null)
             {   // Získáme text Caption z datového zdroje grafu:
-                text = this._ParentGraph.GraphItemGetCaptionText(e, this, this, GGraphControlPosition.Group, boundsAbsolute, boundsVisibleAbsolute);
+                text = this._ParentGraph.GraphItemGetCaptionText(e, fontInfo, this, this._FirstItem, GGraphControlPosition.Group, boundsAbsolute, boundsVisibleAbsolute);
                 this.SetCaptionForSize(boundsAbsolute.Size, text);
             }
 
@@ -1529,7 +1551,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             if (!String.IsNullOrEmpty(text))
             {
                 Color foreColor = this.GControl.BackColor.Contrast();
-                GPainter.DrawString(e.Graphics, boundsAbsolute, text, foreColor, FontInfo.CaptionBold, ContentAlignment.MiddleCenter);
+                GPainter.DrawString(e.Graphics, boundsAbsolute, text, foreColor, fontInfo, ContentAlignment.MiddleCenter);
             }
         }
         /// <summary>
@@ -2213,9 +2235,58 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         void ItemChange(ItemChangeArgs args);
     }
     #region class CreateTextArgs : 
-    public class CreateTextArgs
+    public class CreateTextArgs : ItemArgs
     {
-
+        #region Konstrukce a proměnné
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="fontInfo"></param>
+        /// <param name="group"></param>
+        /// <param name="dataItem"></param>
+        /// <param name="position"></param>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="boundsVisibleAbsolute"></param>
+        public CreateTextArgs(GTimeGraph graph, GInteractiveDrawArgs e, FontInfo fontInfo, GTimeGraphGroup group, ITimeGraphItem dataItem, GGraphControlPosition position, Rectangle boundsAbsolute, Rectangle boundsVisibleAbsolute)
+            : base(graph, group, dataItem, position)
+        {
+            this._DrawArgs = e;
+            this._FontInfo = fontInfo;
+            this._BoundsAbsolute = boundsAbsolute;
+            this._BoundsVisibleAbsolute = boundsVisibleAbsolute;
+        }
+        private GInteractiveDrawArgs _DrawArgs;
+        private FontInfo _FontInfo;
+        private Rectangle _BoundsAbsolute;
+        private Rectangle _BoundsVisibleAbsolute;
+        private string _Text;
+        #endregion
+        #region Public data a metody
+        /// <summary>
+        /// Velikost prostoru pro text v grafickém prvku.
+        /// Nemusí být celý ve viditelném prostoru.
+        /// </summary>
+        public Size GraphItemSize { get { return this._BoundsAbsolute.Size; } }
+        /// <summary>
+        /// Písmo, kterým bude text zobrazen.
+        /// </summary>
+        public FontInfo Font { get { return this._FontInfo; } }
+        /// <summary>
+        /// Metoda vrátí rozměry, které bude potřebovat zadaný text v aktuálním zobrazení a fontu.
+        /// Metoda neukládá dodaný text do <see cref="CreateTextArgs.Text"/>, to musí zajistit datový zdroj.
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        public Size MeasureString(string text)
+        {
+            return GPainter.MeasureString(this._DrawArgs.Graphics, text, this.Font);
+        }
+        /// <summary>
+        /// Text, který se bude zobrazovat. Datový zdroj sem vloží vhodný text.
+        /// </summary>
+        public string Text { get { return this._Text; } set { this._Text = value; } }
+        #endregion
     }
     #endregion
     #region class CreateToolTipArgs : Argument obsahující data pro přípravu tooltipu pro určitý prvek

@@ -535,7 +535,43 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         #endregion
         #region Implementace ITimeGraphDataSource: Zdroj dat pro grafy
         /// <summary>
-        /// Připraví tooltip pro položku grafu
+        /// Připraví text pro položku grafu
+        /// </summary>
+        /// <param name="args"></param>
+        protected void GraphItemPrepareText(CreateTextArgs args)
+        {
+            DataGraphItem graphItem = this.GetActionGraphItem(args);
+            if (graphItem == null) return;
+
+            Row infoRow = this.GetTableInfoRow(graphItem);
+            if (infoRow == null) return;
+
+            string text = "";
+            int width = args.GraphItemSize.Width - 4;
+            foreach (Column column in infoRow.Table.Columns)
+            {
+                if (!column.ColumnProperties.IsVisible) continue;
+                Cell cell = infoRow[column];
+                if (cell.ValueType == TableValueType.Text && cell.Value != null)
+                {
+                    bool isEmpty = (text.Length == 0);
+                    string test = text + (isEmpty ? "" : " ") + cell.Value.ToString();
+                    if (isEmpty)
+                        text = test;
+                    else
+                    {
+                        Size size = args.MeasureString(test);
+                        if (size.Width <= width)
+                            text = test;
+                    }
+
+                }
+                args.Text = text;
+            }
+        }
+        /// <summary>
+        /// Připraví tooltip pro položku grafu.
+        /// Text je připraven jako tabulka: obsahuje řádky oddělené NewLine, a sloupce oddělené Tab.
         /// </summary>
         /// <param name="args"></param>
         protected void GraphItemPrepareToolTip(CreateToolTipArgs args)
@@ -559,9 +595,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             }
             string text = sb.ToString();
             args.ToolTipData.InfoText = text;
-            args.ToolTipData.AnimationFadeInTime = TimeSpan.FromMilliseconds(100);
-            args.ToolTipData.AnimationShowTime = TimeSpan.FromMilliseconds(100 * text.Length);     // 1 sekunda na přečtení 10 znaků
-            args.ToolTipData.AnimationFadeOutTime = TimeSpan.FromMilliseconds(10 * text.Length);
             args.ToolTipData.InfoUseTabs = true;
         }
         /// <summary>
@@ -607,7 +640,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (itemId <= 0) return null;
             return this.GetGraphItem(itemId);
         }
-        void ITimeGraphDataSource.CreateText(CreateTextArgs args) { }
+        void ITimeGraphDataSource.CreateText(CreateTextArgs args) { this.GraphItemPrepareText(args); }
         void ITimeGraphDataSource.CreateToolTip(CreateToolTipArgs args) { this.GraphItemPrepareToolTip(args); }
         void ITimeGraphDataSource.GraphRightClick(ItemActionArgs args) { args.ContextMenu = this.GetContextMenuForGraph(args); }
         void ITimeGraphDataSource.ItemRightClick(ItemActionArgs args) { args.ContextMenu = this.GetContextMenuForItem(args); }
@@ -705,7 +738,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             var items = data.ToKeyValues(";", ":", true, true);
             foreach (var item in items)
             {
-                string key = item.Key.ToLower();
+                string key = item.Key; // .ToLower();
                 switch (key)
                 {
                     case WorkSchedulerSupport.DATA_GRAPHITEM_EDITMODE:

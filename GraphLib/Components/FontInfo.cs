@@ -10,7 +10,9 @@ using System.Drawing.Drawing2D;
 namespace Asol.Tools.WorkScheduler.Components
 {
     /// <summary>
-    /// FontInfo : Font descriptor
+    /// FontInfo : Popisovač fontu. 
+    /// Obsahuje všechna data pro fyzické vytvoření fontu, ale na rozdíl od <see cref="System.Drawing.Font"/> jsou tato data editovatelná.
+    /// Dále obsahuje property <see cref="FontInfo.Font"/>, která vždy rycle vrátí reálný font, odpovídající aktuálním datům, který navíc pochází z cache (nesmí se Disposovat).
     /// </summary>
     public class FontInfo
     {
@@ -92,75 +94,75 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Predefined fonts
         /// <summary>
-        /// DefaultFont with small size. Allways return new instance.
+        /// DefaultFont with small size. Allways return new instance <see cref="FontInfo"/>.
         /// </summary>
         public static FontInfo DefaultSmall { get { return new FontInfo() { FontType = FontSetType.DefaultFont, RelativeSize = SizeSmall, Bold = false, Italic = false, Underline = false }; } }
         /// <summary>
-        /// DefaultFont with normal size. Allways return new instance.
+        /// DefaultFont with normal size. Allways return new instance <see cref="FontInfo"/>.
         /// </summary>
         public static FontInfo Default { get { return new FontInfo() { FontType = FontSetType.DefaultFont, RelativeSize = SizeStandard, Bold = false, Italic = false, Underline = false }; } }
         /// <summary>
-        /// DefaultFont with normal size, Bold. Allways return new instance.
+        /// DefaultFont with normal size, Bold. Allways return new instance <see cref="FontInfo"/>.
         /// </summary>
         public static FontInfo DefaultBold { get { return new FontInfo() { FontType = FontSetType.DefaultFont, RelativeSize = SizeStandard, Bold = true, Italic = false, Underline = false }; } }
         /// <summary>
-        /// DefaultFont with big size, Bold. Allways return new instance.
+        /// DefaultFont with big size, Bold. Allways return new instance <see cref="FontInfo"/>.
         /// </summary>
         public static FontInfo DefaultBoldBig { get { return new FontInfo() { FontType = FontSetType.DefaultFont, RelativeSize = SizeBig, Bold = true, Italic = false, Underline = false }; } }
         /// <summary>
-        /// DialogFont with normal size. Allways return new instance.
+        /// DialogFont with normal size. Allways return new instance <see cref="FontInfo"/>.
         /// </summary>
         public static FontInfo Dialog { get { return new FontInfo() { FontType = FontSetType.DialogFont, RelativeSize = SizeStandard, Bold = false, Italic = false, Underline = false }; } }
         /// <summary>
-        /// MenuFont with small size. Allways return new instance.
+        /// MenuFont with small size. Allways return new instance <see cref="FontInfo"/>.
         /// </summary>
         public static FontInfo MenuSmall { get { return new FontInfo() { FontType = FontSetType.MenuFont, RelativeSize = SizeSmall, Bold = false, Italic = false, Underline = false }; } }
         /// <summary>
-        /// MenuFont with normal size. Allways return new instance.
+        /// MenuFont with normal size. Allways return new instance <see cref="FontInfo"/>.
         /// </summary>
         public static FontInfo Menu { get { return new FontInfo() { FontType = FontSetType.MenuFont, RelativeSize = SizeStandard, Bold = false, Italic = false, Underline = false }; } }
         /// <summary>
-        /// MenuFont with normal size, Bold. Allways return new instance.
+        /// MenuFont with normal size, Bold. Allways return new instance <see cref="FontInfo"/>.
         /// </summary>
         public static FontInfo MenuBold { get { return new FontInfo() { FontType = FontSetType.MenuFont, RelativeSize = SizeStandard, Bold = true, Italic = false, Underline = false }; } }
         /// <summary>
-        /// CaptionFont with small size. Allways return new instance.
+        /// CaptionFont with small size. Allways return new instance <see cref="FontInfo"/>.
         /// </summary>
         public static FontInfo CaptionSmall { get { return new FontInfo() { FontType = FontSetType.CaptionFont, RelativeSize = SizeSmall, Bold = false, Italic = false, Underline = false }; } }
         /// <summary>
-        /// CaptionFont with small size, Bold. Allways return new instance.
+        /// CaptionFont with small size, Bold. Allways return new instance <see cref="FontInfo"/>.
         /// </summary>
         public static FontInfo CaptionSmallBold { get { return new FontInfo() { FontType = FontSetType.CaptionFont, RelativeSize = SizeSmall, Bold = true, Italic = false, Underline = false }; } }
         /// <summary>
-        /// CaptionFont with normal size. Allways return new instance.
+        /// CaptionFont with normal size. Allways return new instance <see cref="FontInfo"/>.
         /// </summary>
         public static FontInfo Caption { get { return new FontInfo() { FontType = FontSetType.CaptionFont, RelativeSize = SizeStandard, Bold = false, Italic = false, Underline = false }; } }
         /// <summary>
-        /// CaptionFont with normal size, Bold. Allways return new instance.
+        /// CaptionFont with normal size, Bold. Allways return new instance <see cref="FontInfo"/>.
         /// </summary>
         public static FontInfo CaptionBold { get { return new FontInfo() { FontType = FontSetType.CaptionFont, RelativeSize = SizeStandard, Bold = true, Italic = false, Underline = false }; } }
         /// <summary>
-        /// CaptionFont with big size, Bold. Allways return new instance.
+        /// CaptionFont with big size, Bold. Allways return new instance <see cref="FontInfo"/>.
         /// </summary>
         public static FontInfo CaptionBoldBig { get { return new FontInfo() { FontType = FontSetType.CaptionFont, RelativeSize = SizeBig, Bold = true, Italic = false, Underline = false }; } }
         /// <summary>
-        /// IconTitleFont with normal size. Allways return new instance.
+        /// IconTitleFont with normal size. Allways return new instance <see cref="FontInfo"/>.
         /// </summary>
         public static FontInfo IconTitle { get { return new FontInfo() { FontType = FontSetType.IconTitleFont, RelativeSize = SizeStandard, Bold = false, Italic = false, Underline = false }; } }
         /// <summary>
-        /// IconTitleFont with normal size, Bold. Allways return new instance.
+        /// IconTitleFont with normal size, Bold. Allways return new instance <see cref="FontInfo"/>.
         /// </summary>
         public static FontInfo IconTitleBold { get { return new FontInfo() { FontType = FontSetType.IconTitleFont, RelativeSize = SizeStandard, Bold = true, Italic = false, Underline = false }; } }
         /// <summary>
-        /// MessageBoxFont with normal size. Allways return new instance.
+        /// MessageBoxFont with normal size. Allways return new instance <see cref="FontInfo"/>.
         /// </summary>
         public static FontInfo MessageBox { get { return new FontInfo() { FontType = FontSetType.MessageBoxFont, RelativeSize = SizeStandard, Bold = false, Italic = false, Underline = false }; } }
         /// <summary>
-        /// SmallCaptionFont with normal size. Allways return new instance.
+        /// SmallCaptionFont with normal size. Allways return new instance <see cref="FontInfo"/>.
         /// </summary>
         public static FontInfo SmallCaption { get { return new FontInfo() { FontType = FontSetType.SmallCaptionFont, RelativeSize = SizeStandard, Bold = false, Italic = false, Underline = false }; } }
         /// <summary>
-        /// StatusFont with normal size. Allways return new instance.
+        /// StatusFont with normal size. Allways return new instance <see cref="FontInfo"/>.
         /// </summary>
         public static FontInfo Status { get { return new FontInfo() { FontType = FontSetType.StatusFont, RelativeSize = SizeStandard, Bold = false, Italic = false, Underline = false }; } }
         protected const int SizeSmall = 85;
