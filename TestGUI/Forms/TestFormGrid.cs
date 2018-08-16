@@ -326,7 +326,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             graph.GraphParameters.TotalHeightRange = new Int32NRange(35, 480);
 
             DateTime begin, end;
-            GTimeGraphItem item;
+            TestGraphItem item;
 
             // Layer -1 = time frame:
             int workLayer = -1;
@@ -337,7 +337,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 begin = workBegin.AddHours(6d);
                 end = workBegin.AddHours(14d);
 
-                item = new GTimeGraphItem();
+                item = new TestGraphItem();
                 item.Layer = workLayer;
                 item.Level = 0;
                 item.GroupId = item.ItemId;
@@ -348,7 +348,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 item.BorderColor = Color.Green;
                 graph.ItemList.Add(item);
 
-                item = new GTimeGraphItem();
+                item = new TestGraphItem();
                 item.Layer = workLayer;
                 item.Level = -1;
                 item.GroupId = item.ItemId;
@@ -364,7 +364,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 begin = workBegin.AddHours(14d);
                 end = workBegin.AddHours(22d);
 
-                item = new GTimeGraphItem();
+                item = new TestGraphItem();
                 item.Layer = workLayer;
                 item.Level = 0;
                 item.GroupId = item.ItemId;
@@ -375,7 +375,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 item.BorderColor = Color.Blue;
                 graph.ItemList.Add(item);
 
-                item = new GTimeGraphItem();
+                item = new TestGraphItem();
                 item.Layer = workLayer;
                 item.Level = -1;
                 item.GroupId = item.ItemId;
@@ -421,7 +421,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
                     string tooltip = "Událost " + i.ToString();
 
-                    item = new GTimeGraphItem();
+                    item = new TestGraphItem();
                     item.Layer = layer;
                     item.Level = level;
                     item.Order = order;
@@ -453,7 +453,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             */
 
             DateTime begin, end;
-            GTimeGraphItem item;
+            TestGraphItem item;
 
             // Směny:
             int workLayer = 0;
@@ -466,7 +466,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                     begin = workBegin.AddHours(6d);
                     end = workBegin.AddHours(14d);
 
-                    item = new GTimeGraphItem();
+                    item = new TestGraphItem();
                     item.Layer = workLayer;
                     item.Level = 0;
                     item.GroupId = item.ItemId;
@@ -493,7 +493,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 begin = start.AddMinutes(15 * Rand.Next(0, 14 * 24 * 4));
                 end = begin.AddMinutes(15 * Rand.Next(16, 5 * 24 * 4));
 
-                item = new GTimeGraphItem();
+                item = new TestGraphItem();
                 item.Layer = 1;
                 item.Level = 0;
                 item.Order = 0;
@@ -561,33 +561,14 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this.Close();
         }
     }
-    public class TextComparable : IComparable
-    {
-        public TextComparable() { }
-        public TextComparable(string text) { this.Text = text; this.Value = text; }
-        public TextComparable(string text, IComparable value) { this.Text = text; this.Value = value; }
-        public override string ToString()
-        {
-            return (this.Text == null ? "" : this.Text);
-        }
-        public string Text { get; set; }
-        public IComparable Value { get; set; }
-        int IComparable.CompareTo(object obj)
-        {
-            TextComparable other = obj as TextComparable;
-            if (other == null) return 1;
-            return this.Value.CompareTo(other.Value);
-        }
-    }
-
-    #region class GTimeGraphItem : Třída reprezentující jednu položku grafů. Jde o jednoduchou a funkční implementaci rozhraní ITimeGraphItem.
+    #region class TestGraphItem : Třída reprezentující jednu položku grafů. Jde o jednoduchou a funkční implementaci rozhraní ITimeGraphItem.
     /// <summary>
-    /// GTimeGraphItem : Třída reprezentující jednu položku grafů. Jde o jednoduchou a funkční implementaci rozhraní ITimeGraphItem.
+    /// TestGraphItem : Třída reprezentující jednu položku grafů. Jde o jednoduchou a funkční implementaci rozhraní ITimeGraphItem.
     /// </summary>
-    public class GTimeGraphItem : ITimeGraphItem
+    public class TestGraphItem : ITimeGraphItem
     {
         #region Public members
-        public GTimeGraphItem()
+        public TestGraphItem()
         {
             this._ItemId = Application.App.GetNextId(typeof(ITimeGraphItem));
         }
@@ -649,7 +630,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// Aplikační kód (implementační objekt <see cref="ITimeGraphItem"/> se o tuto property nemusí starat, řídící mechanismus sem vloží v případě potřeby new instanci.
         /// Implementátor pouze poskytuje úložiště pro tuto instanci.
         /// </summary>
-        public GTimeGraphItem GControl { get; set; }
+        public WorkScheduler.Components.Graph.GTimeGraphItem GControl { get; set; }
         /// <summary>
         /// Barva okraje (ohraničení) prvku.
         /// </summary>
@@ -672,10 +653,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         System.Drawing.Drawing2D.HatchStyle? ITimeGraphItem.BackStyle { get { return null; } }
         Color? ITimeGraphItem.LinkBackColor { get { return this.LinkBackColor; } }
         Color? ITimeGraphItem.BorderColor { get { return this.BorderColor; } }
-        GTimeGraphItem ITimeGraphItem.GControl { get { return this.GControl; } set { this.GControl = value; } }
+        WorkScheduler.Components.Graph.GTimeGraphItem ITimeGraphItem.GControl { get { return this.GControl; } set { this.GControl = value; } }
         void ITimeGraphItem.Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode) { this.GControl.DrawItem(e, boundsAbsolute, drawMode); }
         #endregion
     }
     #endregion
-
 }
