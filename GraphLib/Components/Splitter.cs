@@ -28,6 +28,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this._SplitterActiveOverlap = 1;
             this._DragResponse = DragResponseType.InDragMove;
             this._IsResizeToLinkItems = true;
+            this.IsDragEnabled = true;
         }
         /// <summary>
         /// ToString()

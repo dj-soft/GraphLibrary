@@ -90,6 +90,7 @@
     <Compile Include="Data\GId.cs" />
     <Compile Include="Data\Index.cs" />
     <Compile Include="Data\Interface.cs" />
+    <Compile Include="Data\Text.cs" />
     <Compile Include="Data\TypeArray.cs" />
     <Compile Include="Localizable\Text.cs" />
     <Compile Include="Parser\Analyser.cs" />

@@ -369,7 +369,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public static BoundsInfo CreateForChild(IInteractiveItem currentItem)
         {
             CheckItem(currentItem, "CreateForChild");
-            return _CreateForItem(currentItem, false);
+            return _CreateForItem(currentItem, false, GInteractiveDrawLayer.Standard);
         }
         /// <summary>
         /// Pro daný prvek určí a vrátí jeho vlastní souřadný systém, který poskytuje svým Childs.
@@ -381,9 +381,33 @@ namespace Asol.Tools.WorkScheduler.Components
         public static BoundsInfo CreateForContainer(IInteractiveParent currentContainer)
         {
             CheckItem(currentContainer, "CreateForContainer");
-            return _CreateForItem(currentContainer, true);
+            return _CreateForItem(currentContainer, true, GInteractiveDrawLayer.Standard);
         }
-        private static BoundsInfo _CreateForItem(IInteractiveParent forItem, bool asContainer)
+        /// <summary>
+        /// Pro daný prvek určí a vrátí jeho vlastní souřadný systém, který poskytuje svým Childs.
+        /// Jde tedy o systém, do jehož <see cref="CurrentItem"/> lze vložit kterýkoli jeho Childs, a systém bude vracet jeho souřadnice.
+        /// Vrácený prvek má property <see cref="BoundsInfo.CurrentItem"/> neobsazenou.
+        /// </summary>
+        /// <param name="currentContainer"></param>
+        /// <param name="currentLayer">Vrstva, jejíž souřadnice řešíme. Každý prvek může mít souřadnice různé podle toho, o kterou vrstvu se jedná. 
+        /// To je důsledek procesu Drag & Drop, kdy ve standardní vrstvě se prvek nachází na výchozích souřadnicích Bounds, 
+        /// ale ve vrstvě <see cref="GInteractiveDrawLayer.Interactive"/> je na souřadnicích Drag.</param>
+        /// <returns></returns>
+        public static BoundsInfo CreateForContainer(IInteractiveParent currentContainer, GInteractiveDrawLayer currentLayer)
+        {
+            CheckItem(currentContainer, "CreateForContainer");
+            return _CreateForItem(currentContainer, true, currentLayer);
+        }
+        /// <summary>
+        /// Vrací <see cref="BoundsInfo"/> pro daného parenta a danou vrstvu souřadnic
+        /// </summary>
+        /// <param name="forItem"></param>
+        /// <param name="asContainer"></param>
+        /// <param name="currentLayer">Vrstva, jejíž souřadnice řešíme. Každý prvek může mít souřadnice různé podle toho, o kterou vrstvu se jedná. 
+        /// To je důsledek procesu Drag & Drop, kdy ve standardní vrstvě se prvek nachází na výchozích souřadnicích Bounds, 
+        /// ale ve vrstvě <see cref="GInteractiveDrawLayer.Interactive"/> je na souřadnicích Drag.</param>
+        /// <returns></returns>
+        private static BoundsInfo _CreateForItem(IInteractiveParent forItem, bool asContainer, GInteractiveDrawLayer currentLayer)
         { 
             // Nejprve projdu postupně všechny parenty daného prvku, zpětně, až najdu poslední (=nejzákladnější) z nich, a nastřádám si pole jejich souřadnic:
             List<Rectangle> boundsList = new List<Rectangle>();
@@ -393,7 +417,7 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 if (scanned.ContainsKey(item.Id)) break;   // Zacyklení.
                 scanned.Add(item.Id, null);
-                boundsList.Add(GetParentClientBounds(item));
+                boundsList.Add(GetParentClientBounds(item, currentLayer));
                 item = item.Parent;                        // Krok na dalšího parenta
             }
 
@@ -424,69 +448,6 @@ namespace Asol.Tools.WorkScheduler.Components
                 boundsInfo.CurrentItem = forItem as IInteractiveItem;
             return boundsInfo;
         }
-
-
-
-        /* dřívější Extension metody na podobné téma:
-
-        /// <summary>
-        /// Returns absolute client area bounds = this.GetAbsoluteVisibleBounds(), reduced by this.ClientBorder
-        /// (=item.Bounds.GetClientBounds(item.ClientBorder))
-        /// </summary>
-        /// <param name="item">current IInteractiveItem item</param>
-        /// <returns></returns>
-        public static Rectangle GetAbsoluteClientArea(this IInteractiveItem item)
-        {
-            Point location = item.GetAbsoluteOriginPoint();
-            Rectangle boundsClient = item.BoundsClient;
-            return boundsClient.Add(location);
-        }
-        /// <summary>
-        /// Vrátí absolutní souřadnice prostoru, v němž je daný prvek umístěn.
-        /// Jde o prostor parenta 
-        /// Returns absolute coordinates of area, in which this item is contained.
-        /// If this item has no parent, then return { 0, 0, Host.Width, Host.Height }.
-        /// Otherwise return absolute coordinates of this.Parent client area.
-        /// When item.Bounds has Location { 0, 0 }, then its absolute location (on Host area) will be on result.Location.
-        /// </summary>
-        /// <param name="item">current IInteractiveItem item</param>
-        /// <returns></returns>
-        public static Rectangle GetAbsoluteOriginArea(this IInteractiveItem item)
-        {
-            if (item.Parent == null) return new Rectangle(0, 0, 4096, 4096);          // Pokud dosud není vložen Parent, pak prostor je "neomezený".
-
-            Point location = item.GetAbsoluteOriginPoint();
-            Size size = item.Parent.BoundsClient.Size;
-            return new Rectangle(location, size);
-        }
-        /// <summary>
-        /// Vrátí absolutní souřadnice (tj. v koordinátech Host controlu) bodu, na němž leží počátek this prvku (tj. IInteractiveItem.Bounds.Location).
-        /// Pokud daný prvek nemá Parenta, pak vrací bod {0,0}.
-        /// </summary>
-        /// <param name="item">current IInteractiveItem item</param>
-        /// <returns></returns>
-        public static Point GetAbsoluteOriginPoint(this IInteractiveItem item)
-        {
-            int x = 0;
-            int y = 0;
-            if (item != null)
-            {   // Prvek je zadán, budeme procházet řetěz prvků počínaje daným item:
-                IInteractiveParent i = item;
-                // Ať se nezacyklíme:
-                Dictionary<uint, object> scanned = new Dictionary<uint, object>();
-                scanned.Add(i.Id, null);
-                while (i.Parent != null)
-                {
-                    i = i.Parent;
-                    if (scanned.ContainsKey(i.Id)) break;            // Cyklíme? Padáme!
-                    Rectangle parentBounds = i.BoundsClient;
-                    x += parentBounds.X;
-                    y += parentBounds.Y;
-                }
-            }
-            return new Point(x, y);
-        }
-        */
         #endregion
         #region Statické metody
         /// <summary>
@@ -514,6 +475,23 @@ namespace Asol.Tools.WorkScheduler.Components
             return relativeBounds.Add(boundsInfo.AbsOrigin);
         }
         /// <summary>
+        /// Metoda vrátí absolutní souřadnice prostoru, který je zadán jako relativní souřadnice v daném containeru.
+        /// Pokud tedy například daný container je umístěn na (absolutní) souřadnici Bounds = { 100,20,200,50 }, a dané relativní souřadnice jsou { 5,5,10,10 },
+        /// pak výsledné absolutní souřadnice jsou { 105,25,10,10 }.
+        /// </summary>
+        /// <param name="container"></param>
+        /// <param name="relativeBounds"></param>
+        /// <param name="currentLayer">Vrstva, jejíž souřadnice řešíme. Každý prvek může mít souřadnice různé podle toho, o kterou vrstvu se jedná. 
+        /// To je důsledek procesu Drag & Drop, kdy ve standardní vrstvě se prvek nachází na výchozích souřadnicích Bounds, 
+        /// ale ve vrstvě <see cref="GInteractiveDrawLayer.Interactive"/> je na souřadnicích Drag.</param>
+        /// <returns></returns>
+        public static Rectangle GetAbsoluteBoundsInContainer(IInteractiveParent container, Rectangle relativeBounds, GInteractiveDrawLayer currentLayer)
+        {
+            if (container == null) return relativeBounds;
+            BoundsInfo boundsInfo = BoundsInfo.CreateForContainer(container, currentLayer);
+            return relativeBounds.Add(boundsInfo.AbsOrigin);
+        }
+        /// <summary>
         /// Metoda vrací relativní souřadnici bodu v daném containeru pro danou absolutní souřadnici.
         /// Metoda určí souřadný systém <see cref="BoundsInfo"/> uvnitř daného containeru, 
         /// získá jeho <see cref="BoundsInfo.AbsOrigin"/>, a vrátí rozdíl.
@@ -531,13 +509,19 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Vrátí rectangle, který reprezentuje souřadnice klientského prostoru, v rámci daného parenta
         /// </summary>
         /// <param name="parent"></param>
+        /// <param name="currentLayer">Vrstva, jejíž souřadnice řešíme. Každý prvek může mít souřadnice různé podle toho, o kterou vrstvu se jedná. 
+        /// To je důsledek procesu Drag & Drop, kdy ve standardní vrstvě se prvek nachází na výchozích souřadnicích Bounds, 
+        /// ale ve vrstvě <see cref="GInteractiveDrawLayer.Interactive"/> je na souřadnicích Drag.</param>
         /// <returns></returns>
-        protected static Rectangle GetParentClientBounds(IInteractiveParent parent)
+        protected static Rectangle GetParentClientBounds(IInteractiveParent parent, GInteractiveDrawLayer currentLayer)
         {
             if (parent is IInteractiveItem)
             {
                 IInteractiveItem item = parent as IInteractiveItem;
-                return item.Bounds.Sub(item.ClientBorder);
+                Rectangle bounds = item.Bounds;
+                if (currentLayer == GInteractiveDrawLayer.Interactive && item.BoundsInteractive.HasValue)
+                    bounds = item.BoundsInteractive.Value;
+                return bounds.Sub(item.ClientBorder);
             }
             return new Rectangle(new Point(0, 0), parent.ClientSize);
         }

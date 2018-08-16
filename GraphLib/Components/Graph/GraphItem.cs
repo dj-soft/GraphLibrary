@@ -103,11 +103,6 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         private List<IInteractiveItem> _Childs;
         #endregion
         #region Interaktivita
-        protected override void AfterStateChanged(GInteractiveChangeStateArgs e)
-        {
-            base.AfterStateChanged(e);
-            var state = this.InteractiveState;
-        }
         protected override void PrepareToolTip(GInteractiveChangeStateArgs e)
         {
             this._Group.GraphItemPrepareToolTip(e, this._Owner, this._Position);
@@ -151,8 +146,11 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         }
         protected override void DragThisOverBounds(GDragActionArgs e, Rectangle targetRelativeBounds)
         {
+            var item = e.FindItemAtPoint(e.MouseCurrentAbsolutePoint.Value);
+            var graph = SearchForParent(item, typeof(GTimeGraph));
+
+            targetRelativeBounds.Y = this.Bounds.Y;
             base.DragThisOverBounds(e, targetRelativeBounds);
-            DragId = this.Id;
         }
         protected override void DragThisDropToBounds(GDragActionArgs e, Rectangle boundsTarget)
         {
@@ -161,9 +159,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         protected override void DragThisOverEnd(GDragActionArgs e)
         {
             base.DragThisOverEnd(e);
-            DragId = 0;
         }
-        protected static uint DragId;
         #endregion
         #region Kreslení prvku
         /// <summary>
@@ -175,9 +171,6 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="drawMode">Režim kreslení (pomáhá řešit Drag & Drop procesy)</param>
         protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
         {
-            if (DragId == this.Id)
-            { }
-
             this._Owner.Draw(e, absoluteBounds, drawMode);
         }
         /// <summary>
@@ -215,13 +208,6 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="enlargeBounds">Změna rozměru Bounds ve všech směrech</param>
         public void DrawItem(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode, int? enlargeBounds)
         {
-            if (DragId == this.Id)
-            { }
-
-            if (this.IsDragged)
-            { }
-
-
             if (boundsAbsolute.Height <= 0 || boundsAbsolute.Width < 0) return;
             if (enlargeBounds.HasValue)
                 boundsAbsolute = boundsAbsolute.Enlarge(enlargeBounds.Value);

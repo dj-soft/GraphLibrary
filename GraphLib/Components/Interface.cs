@@ -14,23 +14,17 @@ namespace Asol.Tools.WorkScheduler.Components
     public interface IInteractiveItem : IInteractiveParent
     {
         /// <summary>
-        /// Jednoznačné ID of object. je přiřazeno v konstruktoru a nemění se po celý život instance.
-        /// </summary>
-        /// UInt32 Id { get; }
-        /// <summary>
-        /// Reference na Hosta, což je GrandParent všech prvků.
-        /// </summary>
-        /// GInteractiveControl Host { get; set; }
-        /// <summary>
-        /// Parent tohoto prvku. Může být null, pokud this je hostován přímo v controlu GInteractiveControl.
-        /// Parent je typicky typu IInteractiveContainer.
-        /// </summary>
-        /// IInteractiveParent Parent { get; set; }
-        /// <summary>
         /// Relativní souřadnice this prvku v rámci parenta.
-        /// Absolutní souřadnice mohou být určeny pomocí extension metody IInteractiveItem.GetAbsoluteVisibleBounds().
+        /// Toto jsou souřadnice objektu ve Standardní vrstvě.
+        /// Pokud je objekt přetahován na jiné místo, pak tyto souřadnice jsou v <see cref="BoundsInteractive"/>.
+        /// Absolutní souřadnice mohou být určeny pomocí třídy <see cref="BoundsInfo"/> metodou <see cref="BoundsInfo.GetAbsBounds(IInteractiveItem)"/>.
         /// </summary>
         Rectangle Bounds { get; set; }
+        /// <summary>
+        /// Relativní souřadnice this prvku v rámci parenta.
+        /// Toto jsou souřadnice objektu v Interaktivní vrstvě v době procesu Drag and Drop.
+        /// </summary>
+        Rectangle? BoundsInteractive { get; }
         /// <summary>
         /// Přídavek k this.Bounds, který určuje přesah aktivity tohoto prvku do jeho okolí.
         /// <para/>
@@ -50,22 +44,13 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         IEnumerable<IInteractiveItem> Childs { get; }
         /// <summary>
-        /// Souřadnice prostoru, který je vyhrazen pro <see cref="Childs"/> prvky obsažené v this prvku.
-        /// Souřadnice jsou relativní vzhledem <see cref="Bounds"/>.
-        /// </summary>
-        /// Rectangle BoundsClient { get; }
-        /// <summary>
-        /// Interaktivní styl = dostupné chování objektu
-        /// </summary>
-        /// GInteractiveStyles Style { get; }
-        /// <summary>
-        /// Is item currently interactive?
-        /// When true, then item can be found by mouse, and can be activate by mouse events.
+        /// Je prvek interaktivní?
+        /// Pokud je true, pak prvek může být nalezen a aktivován myší.
         /// </summary>
         Boolean IsInteractive { get; }
         /// <summary>
-        /// Is item currently visible?
-        /// When true, then item can be Drawed.
+        /// Je prvek viditelný?
+        /// Pokud je true, pak prvek bude vykreslován.
         /// </summary>
         Boolean IsVisible { get; set; }
         /// <summary>

@@ -1891,7 +1891,6 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="drawMode">Režim kreslení (má význam pro akce Drag & Drop)</param>
         void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, DrawItemMode drawMode);
     }
- 
     /// <summary>
     /// Režim přepočtu DateTime na osu X.
     /// </summary>

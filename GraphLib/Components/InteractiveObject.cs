@@ -161,7 +161,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 if (style.HasFlag(GInteractiveStyles.DragDrawGhostOriginal)) return DragDrawGhostMode.DragWithGhostAtOriginal;
                 return DragDrawGhostMode.DragOnlyStandard; 
             }
-            set 
+            set
             {
                 int storage = (int)this.Style;
                 bool ghostInteractive = (value == DragDrawGhostMode.DragWithGhostOnInteractive);
@@ -171,6 +171,12 @@ namespace Asol.Tools.WorkScheduler.Components
                 this.Style = (GInteractiveStyles)storage;
             }
         }
+        /// <summary>
+        /// Relativní souřadnice this prvku v rámci parenta.
+        /// Toto jsou souřadnice objektu v Interaktivní vrstvě v době procesu Drag and Drop.
+        /// Třída <see cref="InteractiveObject"/> tuto property implementuje, ale nevyužívá; to nechává na potomstvu.
+        /// </summary>
+        protected virtual Rectangle? BoundsInteractive { get { return this._BoundsInteractive; } set { this._BoundsInteractive = value; } } private Rectangle? _BoundsInteractive;
         /// <summary>
         /// Obsahuje true, pokud this prvek má klávesový focus.
         /// </summary>
@@ -728,7 +734,18 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         protected IInteractiveParent SearchForParent(Type parentType)
         {
-            return this.SearchForParent(i => (i.GetType() == parentType));
+            return SearchForParent(this, parentType);
+        }
+        /// <summary>
+        /// Metoda vyhledá nejbližšího parenta daného typu.
+        /// Může vrátit null.
+        /// Sebe sama netestuje!
+        /// </summary>
+        /// <param name="parentType"></param>
+        /// <returns></returns>
+        protected static IInteractiveParent SearchForParent(IInteractiveItem item, Type parentType)
+        {
+            return SearchForParent(item, i => (i.GetType() == parentType));
         }
         /// <summary>
         /// Metoda vyhledá nejbližšího parenta, vyhovujícího danému filtru.
@@ -739,10 +756,22 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         protected IInteractiveParent SearchForParent(Func<IInteractiveParent,bool> filter)
         {
-            IInteractiveParent parent = this.Parent;
+            return SearchForParent(this, filter);
+        }
+        /// <summary>
+        /// Metoda vyhledá nejbližšího parenta, vyhovujícího danému filtru.
+        /// Může vrátit null.
+        /// Sebe sama netestuje!
+        /// </summary>
+        /// <param name="filter"></param>
+        /// <returns></returns>
+        protected static IInteractiveParent SearchForParent(IInteractiveItem item, Func<IInteractiveParent, bool> filter)
+        {
+            if (item == null) return null;
+            IInteractiveParent parent = item.Parent;
             while (parent != null)
             {
-                if (Object.ReferenceEquals(parent, this)) return null;         // Zacyklení
+                if (Object.ReferenceEquals(parent, item)) return null;         // Zacyklení
                 if (filter(parent)) return parent;                             // Úspěch
                 parent = parent.Parent;                                        // O level dál
             }
@@ -848,6 +877,7 @@ namespace Asol.Tools.WorkScheduler.Components
         #region IInteractiveItem + IInteractiveParent members
         IEnumerable<IInteractiveItem> IInteractiveItem.Childs { get { return this.Childs; } }
         Rectangle IInteractiveItem.Bounds { get { return this.Bounds; } set { this.Bounds = value; } }
+        Rectangle? IInteractiveItem.BoundsInteractive { get { return this.BoundsInteractive; } }
         Padding? IInteractiveItem.ClientBorder { get { return this.ClientBorder; } set { this.ClientBorder = value; } }
         Padding? IInteractiveItem.InteractivePadding { get { return this.InteractivePadding; } set { this.InteractivePadding = value; } }
         Boolean IInteractiveItem.IsInteractive { get { return this.IsInteractive; } }
@@ -1080,8 +1110,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Do těchto souřadnic je objekt v době Drag & Drop vykreslován jako Ghost, pokud styl obsahuje <see cref="GInteractiveStyles.DragDrawGhostInteractive"/>,
         /// anebo jako standardní objektu pokud styl obsahuje <see cref="GInteractiveStyles.DragDrawGhostOriginal"/>.
         /// Mimo proces Drag & Drop je zde null.
+        /// <para/>
+        /// Tato hodnota se reálně propisuje do property <see cref="InteractiveObject.BoundsInteractive"/>.
         /// </summary>
-        protected virtual Rectangle? BoundsDragTarget { get; set; }
+        protected virtual Rectangle? BoundsDragTarget { get { return this.BoundsInteractive; } set { this.BoundsInteractive = value; } }
         /// <summary>
         /// Vrstvy, které se mají překreslovat v době procesu Drag & Drop.
         /// </summary>
@@ -1172,8 +1204,14 @@ namespace Asol.Tools.WorkScheduler.Components
                     // Do jiných vrstev nebudeme kreslit nic:
                     runDraw = false;
             }
+            else if (currentLayer != GInteractiveDrawLayer.Standard)
+            {   // Prvek sám sice není předmětem Drag and Drop, ale nejspíš jeho Parent ano, protože nyní probíhá kreslení do Interaktivní vrstvy (jiná asi ne):
+                absoluteBoundsDraw = this.BoundsAbsolute;
+                absoluteBoundsDraw = BoundsInfo.GetAbsoluteBoundsInContainer(this.Parent, this.Bounds, currentLayer);
+                drawMode = DrawItemMode.Ghost;
+            }
             else
-            {   // Aktuálně NEPROBÍHÁ Drag & Drop:
+            {   // Aktuálně NEPROBÍHÁ Drag & Drop, a prvek se kreslí do standardní vrstvy => jde o dočista normální kreslení:
                 absoluteBoundsDraw = absoluteBoundsItem;
                 drawMode = DrawItemMode.Standard;
             }
