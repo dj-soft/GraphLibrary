@@ -649,7 +649,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// Aplikační kód (implementační objekt <see cref="ITimeGraphItem"/> se o tuto property nemusí starat, řídící mechanismus sem vloží v případě potřeby new instanci.
         /// Implementátor pouze poskytuje úložiště pro tuto instanci.
         /// </summary>
-        public GTimeGraphControl GControl { get; set; }
+        public GTimeGraphItem GControl { get; set; }
         /// <summary>
         /// Barva okraje (ohraničení) prvku.
         /// </summary>
@@ -672,7 +672,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         System.Drawing.Drawing2D.HatchStyle? ITimeGraphItem.BackStyle { get { return null; } }
         Color? ITimeGraphItem.LinkBackColor { get { return this.LinkBackColor; } }
         Color? ITimeGraphItem.BorderColor { get { return this.BorderColor; } }
-        GTimeGraphControl ITimeGraphItem.GControl { get { return this.GControl; } set { this.GControl = value; } }
+        GTimeGraphItem ITimeGraphItem.GControl { get { return this.GControl; } set { this.GControl = value; } }
         void ITimeGraphItem.Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode) { this.GControl.DrawItem(e, boundsAbsolute, drawMode); }
         #endregion
     }
