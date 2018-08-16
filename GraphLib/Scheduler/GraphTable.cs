@@ -834,7 +834,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private System.Drawing.Drawing2D.HatchStyle? _BackStyle;
         private Color? _BorderColor;
         private Color? _LinkBackColor;
-        private GTimeGraphControl _GControl;
+        private GTimeGraphItem _GControl;
         #endregion
         #region Aplikační data - identifikátory atd
         /// <summary>
@@ -907,7 +907,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         #region Podpora pro kreslení a interaktivitu
         /// <summary>
         /// Metoda je volaná pro vykreslení jedné položky grafu.
-        /// Implementátor může bez nejmenších obav převolat <see cref="GControl"/> : <see cref="GTimeGraphControl.DrawItem(GInteractiveDrawArgs, Rectangle, DrawItemMode)"/>
+        /// Implementátor může bez nejmenších obav převolat <see cref="GControl"/> : <see cref="GTimeGraphItem.DrawItem(GInteractiveDrawArgs, Rectangle, DrawItemMode)"/>
         /// </summary>
         /// <param name="e">Standardní data pro kreslení</param>
         /// <param name="boundsAbsolute">Absolutní souřadnice tohoto prvku</param>
@@ -931,7 +931,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         System.Drawing.Drawing2D.HatchStyle? ITimeGraphItem.BackStyle { get { return this._BackStyle; } }
         Color? ITimeGraphItem.BorderColor { get { return this._BorderColor; } }
         Color? ITimeGraphItem.LinkBackColor { get { return this._LinkBackColor; } }
-        GTimeGraphControl ITimeGraphItem.GControl { get { return this._GControl; } set { this._GControl = value; } }
+        GTimeGraphItem ITimeGraphItem.GControl { get { return this._GControl; } set { this._GControl = value; } }
         void ITimeGraphItem.Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode) { this.Draw(e, boundsAbsolute, drawMode); }
         #endregion
     }

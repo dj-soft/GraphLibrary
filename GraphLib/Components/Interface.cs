@@ -84,11 +84,21 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         Boolean IsSelected { get; set; }
         /// <summary>
+        /// Je aktuálně zarámován (pro budoucí selectování)?
+        /// Zarámovaný prvek (v procesu hromadného označování myší SelectFrame) má <see cref="IsFramed"/> = true, ale hodnotu <see cref="IsSelected"/> má beze změn.
+        /// Teprve na konci procesu SelectFrame se pro dotčené objekty (které mají <see cref="IsFramed"/> = true) nastaví i <see cref="IsSelected"/> = true.
+        /// </summary>
+        Boolean IsFramed { get; set; }
+        /// <summary>
         /// Pokud je true, pak tažení myší na tomto prvku nebude interpretováno jako Drag & Drop, ale jako SelectArea.
         /// Tzn. zahájení akce (Mouse Down + Mouse Move) zahájí SelectArea akci (namísto Drag Drop), začne se vykreslovat SelectFrame (do Interactive vrstvy),
         /// a začnou se vybírat controly spadající do výběru (které mají <see cref="IsSelectable"/> == true).
         /// </summary>
         Boolean IsSelectParent { get; }
+        /// <summary>
+        /// Pokud je true, pak tažení myší na tomto prvku bude interpretováno jako Drag & Drop tohoto prvku.
+        /// </summary>
+        Boolean IsDragEnabled { get; }
         /// <summary>
         /// Hold a mouse attention.
         /// When a item is drawed to Interactive layer (in MouseOver, MouseDrag and in other active states), this is: above other subitem, 
@@ -240,15 +250,24 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Lze selectovat?
         /// </summary>
-        public virtual bool IsSelectable { get { return this.GetBitValue(BitSelectable); } set { this.SetBitValue(BitSelectable, value); } }
+        public virtual bool Selectable { get { return this.GetBitValue(BitSelectable); } set { this.SetBitValue(BitSelectable, value); } }
         /// <summary>
         /// Je aktuálně selectován?
         /// </summary>
-        public virtual bool IsSelected { get { return this.GetBitValue(BitSelected); } set { this.SetBitValue(BitSelected, value); } }
+        public virtual bool Selected { get { return this.GetBitValue(BitSelected); } set { this.SetBitValue(BitSelected, value); } }
+        /// <summary>
+        /// Je aktuálně zarámován (pro budoucí selectování)?
+        /// </summary>
+        public virtual bool Framed { get { return this.GetBitValue(BitFramed); } set { this.SetBitValue(BitFramed, value); } }
         /// <summary>
         /// Může zahájit akci SelectFrame?
         /// </summary>
-        public virtual bool IsSelectParent { get { return this.GetBitValue(BitSelectParent); } set { this.SetBitValue(BitSelectParent, value); } }
+        public virtual bool SelectParent { get { return this.GetBitValue(BitSelectParent); } set { this.SetBitValue(BitSelectParent, value); } }
+        /// <summary>
+        /// Pokud je true, pak tažení myší na tomto prvku bude interpretováno jako Drag & Drop tohoto prvku.
+        /// </summary>
+        public virtual bool DragEnabled { get { return this.GetBitValue(BitDragEnabled); } set { this.SetBitValue(BitDragEnabled, value); } }
+
         /// <summary>
         /// Hold mouse?
         /// </summary>
@@ -269,8 +288,10 @@ namespace Asol.Tools.WorkScheduler.Components
         public const UInt32 BitEnabled = 0x0004;
         public const UInt32 BitSelectable = 0x0010;
         public const UInt32 BitSelected = 0x0020;
-        public const UInt32 BitSelectParent = 0x0040;
-        public const UInt32 BitHoldMouse = 0x0100;
+        public const UInt32 BitFramed = 0x0040;
+        public const UInt32 BitSelectParent = 0x0080;
+        public const UInt32 BitDragEnabled = 0x010;
+        public const UInt32 BitHoldMouse = 0x0200;
         public const UInt32 BitSuppressEvents = 0x1000;
     }
     #endregion
@@ -991,43 +1012,64 @@ namespace Asol.Tools.WorkScheduler.Components
     [Flags]
     public enum GInteractiveState
     {
+        /// <summary>
+        /// Příznak pohybu myši nad prvkem
+        /// </summary>
         FlagOver = 0x0010,
+        /// <summary>
+        /// Příznak stisknutého tlačítka myši, ale dosud bez jejího pohybu, bez rozlišení tlačítka myši
+        /// </summary>
         FlagDown = 0x0100,
+        /// <summary>
+        /// Příznak stavu Drag and Drop, bez rozlišení tlačítka myši
+        /// </summary>
         FlagDrag = 0x0200,
+        /// <summary>
+        /// Příznak stavu SelectFrame, bez rozlišení tlačítka myši
+        /// </summary>
         FlagFrame = 0x0400,
+        /// <summary>
+        /// Příznak levého (hlavního) tlačítka myši, bez rozlišení akce myši
+        /// </summary>
         FlagLeftMouse = 0x1000,
+        /// <summary>
+        /// Příznak prostředního tlačítka myši, bez rozlišení akce myši
+        /// </summary>
         FlagMiddleMouse = 0x2000,
+        /// <summary>
+        /// Příznak pravého (kontextového) tlačítka myši, bez rozlišení akce myši
+        /// </summary>
         FlagRightMouse = 0x4000,
         /// <summary>
-        /// Not defined - do not use in real algorithm
+        /// Neurčeno, běžně se nevyskytuje
         /// </summary>
         None = 0,
         /// <summary>
-        /// Enabled, without mouse, but ready to activate
+        /// Povoleno, bez přítomnosti myši, připraveno k akci
         /// </summary>
         Enabled = 0x0001,
         /// <summary>
-        /// Disabled, not mouse-active
+        /// Disabled, bez aktivity myši
         /// </summary>
         Disabled = 0x0002,
         /// <summary>
-        /// With mouse over
+        /// Pohyb myši nad prvkem
         /// </summary>
         MouseOver = FlagOver,
         /// <summary>
-        /// With left mouse button down (not dragging)
+        /// Levá myš stisknutá, bez pohybu
         /// </summary>
         LeftDown = FlagLeftMouse | FlagDown,
         /// <summary>
-        /// With right mouse button down (not dragging)
+        /// Pravá myš stisknutá, bez pohybu
         /// </summary>
         RightDown = FlagRightMouse | FlagDown,
         /// <summary>
-        /// Dragging by left mouse button
+        /// Drag and Drop levou myší
         /// </summary>
         LeftDrag = FlagLeftMouse | FlagDrag,
         /// <summary>
-        /// Dragging by right mouse button
+        /// Drag and Drop pravou myší
         /// </summary>
         RightDrag = FlagRightMouse | FlagDrag,
         /// <summary>

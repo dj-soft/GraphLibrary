@@ -60,7 +60,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <summary>
         /// true pokud tento prvek může být přetahován myší jinam
         /// </summary>
-        protected override bool CanDrag { get { return false; } }
+        public override bool IsDragEnabled { get { return false; } }
         protected virtual bool NeedDebug { get { return false; } }
         /// <summary>
         /// Kreslí prvek standardně (včetně kompletního obsahu).
@@ -619,7 +619,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <summary>
         /// Můžeme tento sloupec přemístit jinam? Závisí na OwnerTable.AllowColumnReorder
         /// </summary>
-        protected override bool CanDrag { get { return this.OwnerTable.AllowColumnReorder; } }
+        public override bool IsDragEnabled { get { return this.OwnerTable.AllowColumnReorder; } set { } }
         /// <summary>
         /// Volá se v procesu přesouvání. Zarovná souřadnice do povoleného rozmezí a najde sloupce, kam by se měl přesun provést.
         /// </summary>
@@ -1163,7 +1163,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         {
             this.OwnerGTable.RowHeaderClick(e, this.OwnerRow);
         }
-        protected override bool CanDrag { get { return this.OwnerTable.AllowRowReorder; } }
+        public override bool IsDragEnabled { get { return this.OwnerTable.AllowRowReorder; } set { } }
         #endregion
         #region Draw - kreslení záhlaví řádku
         protected override void DrawContent(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)

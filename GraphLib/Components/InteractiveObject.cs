@@ -378,7 +378,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Obsahuje true, pokud this objekt je nyní přemisťován akcí DragMove 
         /// (<see cref="InteractiveState"/> je <see cref="GInteractiveState.LeftDrag"/> nebo <see cref="GInteractiveState.RightDrag"/>)
         /// </summary>
-        protected bool IsDragged { get { return this.IsInInteractiveState(GInteractiveState.LeftDrag, GInteractiveState.RightDrag); } }
+        protected bool IsDragged { get { return this.HasInteractiveStateFlag(GInteractiveState.FlagDrag); } }
         /// <summary>
         /// Obsahuje true, pokud na this objektu začal výběr DragFrame 
         /// (<see cref="InteractiveState"/> je <see cref="GInteractiveState.LeftFrame"/> nebo <see cref="GInteractiveState.RightFrame"/>)
@@ -393,15 +393,27 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected bool IsMouseDown { get { return this.IsInInteractiveState(GInteractiveState.LeftDown, GInteractiveState.RightDown, GInteractiveState.LeftDrag, GInteractiveState.RightDrag, GInteractiveState.LeftFrame, GInteractiveState.RightFrame); } }
         /// <summary>
-        /// Returns true when this.CurrentState is any from specified states.
+        /// Vrátí true, pokud <see cref="InteractiveState"/> má některou ze zadaných hodnot. 
+        /// Porovnává se přesná rovnost, nikoli částečná shoda příznaků, na to existuje metoda <see cref="HasInteractiveStateFlag(GInteractiveState)"/>.
         /// </summary>
         /// <param name="states"></param>
         /// <returns></returns>
         protected bool IsInInteractiveState(params GInteractiveState[] states)
         {
             if (states == null || states.Length == 0) return false;
-            GInteractiveState state = this.InteractiveState;
-            return (states.Any(s => s == state));
+            GInteractiveState currentState = this.InteractiveState;
+            return states.Any(state => (state == currentState));
+        }
+        /// <summary>
+        /// Vrátí true, pokud <see cref="InteractiveState"/> má nahozený některý příznak (bit) z dodaných.
+        /// Stav má jednotlivé příznaky, z nichž se skládá.
+        /// Tato metoda netestuje exaktní shodu, na to existuje metoda <see cref="IsInInteractiveState(GInteractiveState[])"/>.
+        /// </summary>
+        /// <param name="state"></param>
+        /// <returns></returns>
+        protected bool HasInteractiveStateFlag(GInteractiveState state)
+        {
+            return ((this.InteractiveState & state) != 0);                     // Jde o příznaky [Flags], takže mě stačí shoda jednoho bitu
         }
         /// <summary>
         /// Coordinate of mouse relative to CurrentItem.Area.Location.
@@ -802,17 +814,28 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Pokud je true, pak tento prvek může být vybrán = selectován (Click myší, nebo Ctrl+Click myší, nebo zarámováním).
         /// Hodnota, zda je prvek vybrán je vložena do property <see cref="IsSelected"/>.
         /// </summary>
-        public virtual bool IsSelectable { get { return this.Is.IsSelectable; } set { this.Is.IsSelectable = value; } }
+        public virtual bool IsSelectable { get { return this.Is.Selectable; } set { this.Is.Selectable = value; } }
         /// <summary>
         /// Do této property je vkládáno true po výběru prvku, a false po zrušení výběru.
+        /// Prvek nemá vloženo true pokud je zatím jen zarámován (<see cref="IsFramed"/>), to se provede na konci framování.
         /// </summary>
-        public virtual bool IsSelected { get { return this.Is.IsSelected; } set { this.Is.IsSelected = value; } }
+        public virtual bool IsSelected { get { return this.Is.Selected; } set { this.Is.Selected = value; } }
+        /// <summary>
+        /// Je aktuálně zarámován (pro budoucí selectování)?
+        /// Zarámovaný prvek (v procesu hromadného označování myší SelectFrame) má <see cref="IsFramed"/> = true, ale hodnotu <see cref="IsSelected"/> má beze změn.
+        /// Teprve na konci procesu SelectFrame se pro dotčené objekty (které mají <see cref="IsFramed"/> = true) nastaví i <see cref="IsSelected"/> = true.
+        /// </summary>
+        public virtual bool IsFramed { get { return this.Is.Framed; } set { this.Is.Framed = value; } }
         /// <summary>
         /// Pokud je true, pak tažení myší na tomto prvku nebude interpretováno jako Drag & Drop, ale jako SelectArea.
         /// Tzn. zahájení akce (Mouse Down + Mouse Move) zahájí SelectArea akci (namísto Drag Drop), začne se vykreslovat SelectFrame (do Interactive vrstvy),
         /// a začnou se vybírat controly spadající do výběru (které mají <see cref="IsSelectable"/> == true).
         /// </summary>
-        public virtual bool IsSelectParent { get { return this.Is.IsSelectParent; } set { this.Is.IsSelectParent = value; } }
+        public virtual bool IsSelectParent { get { return this.Is.SelectParent; } set { this.Is.SelectParent = value; } }
+        /// <summary>
+        /// Pokud je true, pak tažení myší na tomto prvku bude interpretováno jako Drag & Drop tohoto prvku.
+        /// </summary>
+        public virtual bool IsDragEnabled { get { return this.Is.DragEnabled; } set { this.Is.DragEnabled = value; } }
         /// <summary>
         /// Is HoldMouse?
         /// </summary>
@@ -832,7 +855,9 @@ namespace Asol.Tools.WorkScheduler.Components
         Boolean IInteractiveItem.IsEnabled { get { return this.IsEnabled; } }
         Boolean IInteractiveItem.IsSelectable { get { return this.IsSelectable; } }
         Boolean IInteractiveItem.IsSelected { get { return this.IsSelected; } set { this.IsSelected = value; } }
+        Boolean IInteractiveItem.IsFramed { get { return this.Is.Framed; } set { this.Is.Framed = value; } }
         Boolean IInteractiveItem.IsSelectParent { get { return this.IsSelectParent; } }
+        Boolean IInteractiveItem.IsDragEnabled { get { return this.IsDragEnabled; } }
         Boolean IInteractiveItem.HoldMouse { get { return this.IsHoldMouse; } }
         ZOrder IInteractiveItem.ZOrder { get { return this.ZOrder; } }
         GInteractiveDrawLayer IInteractiveItem.StandardDrawToLayer { get { return this.StandardDrawToLayer; } }
@@ -938,6 +963,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public InteractiveDragObject() : base()
         {
             this.Style |= GInteractiveStyles.DragDrawGhostOriginal;
+            this.IsDragEnabled = true;
         }
         /// <summary>
         /// Konstruktor.
@@ -964,15 +990,15 @@ namespace Asol.Tools.WorkScheduler.Components
             switch (e.DragAction)
             {
                 case DragActionType.DragThisStart:
-                    this._CanDragCurrent = this.CanDrag;
-                    if (this._CanDragCurrent)
+                    this._IsDragEnabledCurrent = this.IsDragEnabled;
+                    if (this._IsDragEnabledCurrent)
                     {
                         this.BoundsDragOrigin = this.Bounds;
                         this.RepaintToLayers = this.DragDrawToLayers;
                     }
                     break;
                 case DragActionType.DragThisMove:
-                    if (this._CanDragCurrent && e.DragToBounds.HasValue)
+                    if (this._IsDragEnabledCurrent && e.DragToBounds.HasValue)
                     {
                         this.BoundsDragTarget = e.DragToBounds.Value;
                         this.DragThisOverBounds(e, e.DragToBounds.Value);
@@ -980,14 +1006,14 @@ namespace Asol.Tools.WorkScheduler.Components
                     }
                     break;
                 case DragActionType.DragThisCancel:
-                    if (this._CanDragCurrent && this.BoundsDragOrigin.HasValue && this.BoundsDragOrigin.Value != this.Bounds)
+                    if (this._IsDragEnabledCurrent && this.BoundsDragOrigin.HasValue && this.BoundsDragOrigin.Value != this.Bounds)
                     {
                         this.SetBounds(e.DragToBounds.Value, ProcessAction.DragValueActions, EventSourceType.InteractiveChanging | EventSourceType.BoundsChange);
                         this.RepaintToLayers = this.DragDrawToLayers;
                     }
                     break;
                 case DragActionType.DragThisDrop:
-                    if (this._CanDragCurrent && this.BoundsDragTarget.HasValue)
+                    if (this._IsDragEnabledCurrent && this.BoundsDragTarget.HasValue)
                     {
                         this.DragThisDropToBounds(e, this.BoundsDragTarget.Value);
                         this.RepaintToLayers = this.DragDrawToLayers;
@@ -996,26 +1022,18 @@ namespace Asol.Tools.WorkScheduler.Components
                 case DragActionType.DragThisEnd:
                     this.BoundsDragOrigin = null;
                     this.BoundsDragTarget = null;
-                    this._CanDragCurrent = false;
+                    this._IsDragEnabledCurrent = false;
                     this.Repaint();
-                    // this.RepaintToLayers = this.DragDrawToLayers;
                     this.DragThisOverEnd(e);
                     break;
             }
         }
         /// <summary>
-        /// Hodnota převzatá z <see cref="CanDrag"/> v době, kdy začala akce <see cref="DragActionType.DragThisStart"/>.
+        /// Hodnota převzatá z <see cref="IInteractiveItem.IsDragEnabled"/> v době, kdy začala akce <see cref="DragActionType.DragThisStart"/>.
         /// Je platná až do akce <see cref="DragActionType.DragThisEnd"/>.
         /// Při další akci Drag bude znovu vyhodnocena.
         /// </summary>
-        private bool _CanDragCurrent;
-        /// <summary>
-        /// Property má vrátit true, pokud prvek (this) může být za své aktuální situace přetahován.
-        /// Tato hodnota je načtena v době akce <see cref="DragActionType.DragThisStart"/>.
-        /// Samosebou není jisto, kam bude přetahován.
-        /// Bázová třída <see cref="InteractiveDragObject"/> vrací true.
-        /// </summary>
-        protected virtual bool CanDrag { get { return true; } }
+        private bool _IsDragEnabledCurrent;
         /// <summary>
         /// Volá se v procesu přesouvání, pro aktivní objekt.
         /// Bázová třída v době volání této metody má uložené cílové souřadnice (dle parametru targetRelativeBounds) v proměnné <see cref="BoundsDragTarget"/>.

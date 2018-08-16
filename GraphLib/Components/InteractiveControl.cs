@@ -432,7 +432,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 scope.Result = "MouseDragFrameBegin";
             }
             else if (this._MouseCurrentItem.SearchForDraggableItem())
-            {   // Našli jsme nějaký prvek, který je ochotný s sebou nechat vláčet (podporuje Drag & Drop):
+            {   // Našli jsme nějaký prvek, který je ochotný s sebou nechat vláčet (v jeho aktuiálním stavu podporuje Drag & Drop):
                 // Myš se právě nyní pohnula z "Silent zone" (oblast okolo místa, kde byla myš zmáčknuta) => Drag & Drop začíná:
                 this._MouseDragState = MouseMoveDragState.DragMove;
                 this._MouseDragMoveBegin(e);
@@ -2538,7 +2538,7 @@ namespace Asol.Tools.WorkScheduler.Components
             int foundIndex = -1;
             for (int i = lastIndex; i >= 0; i--)
             {
-                if (this.Items[i].Item.IsEnabled && this.Items[i].HasStyle(GInteractiveStyles.Drag))
+                if (this.Items[i].Item.IsEnabled && this.Items[i].Item.IsDragEnabled)
                 {
                     foundIndex = i;
                     break;
