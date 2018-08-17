@@ -1608,6 +1608,16 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             return cmp;
         }
         #endregion
+        #region Podpora pro Drag and Drop
+        /// <summary>
+        /// Vrací true, pokud daný prvek může být přemísťován.
+        /// Rozhoduje o tom Group, protože jednotlivé Items přemisťovat nelze.
+        /// </summary>
+        internal bool IsDragEnabled
+        {
+            get { return this.BehaviorMode.HasFlag(GraphItemBehaviorMode.AnyMove); }
+        }
+        #endregion
         #region explicit ITimeGraphItem members
         ITimeInteractiveGraph ITimeGraphItem.OwnerGraph { get { return this._OwnerGraph; } set { this._OwnerGraph = value; } }
         int ITimeGraphItem.ItemId { get { return this._ItemId; } }
@@ -1983,7 +1993,11 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Default pro text = <see cref="ShowCaptionInMouseOver"/> | <see cref="ShowCaptionInSelected"/> | <see cref="ShowToolTipFadeIn"/>
         /// </summary>
-        DefaultText = ShowCaptionInMouseOver | ShowCaptionInSelected | ShowToolTipFadeIn
+        DefaultText = ShowCaptionInMouseOver | ShowCaptionInSelected | ShowToolTipFadeIn,
+        /// <summary>
+        /// Souhrn příznaků, povolujících Drag and Drop prvku = <see cref="MoveToAnotherTime"/> | <see cref="MoveToAnotherRow"/> | <see cref="MoveToAnotherTable"/>
+        /// </summary>
+        AnyMove = MoveToAnotherTime | MoveToAnotherRow | MoveToAnotherTable
 
 
     }

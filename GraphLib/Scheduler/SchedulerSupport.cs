@@ -32,6 +32,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         public const string CMD_START_PLUGIN = "StartPlugin";
         /// <summary>
+        /// Key v Request: "PluginId"
+        /// </summary>
+        public const string KEY_REQUEST_PLUGIN_ID = "PluginId";
+        /// <summary>
         /// Key v Request: "Data"
         /// </summary>
         public const string KEY_REQUEST_DATA = "Data";

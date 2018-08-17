@@ -765,7 +765,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         protected void _LoadDataDefault()
         {
-            switch (this._DataGId.ClassId)
+            switch (this.ItemGId.ClassId)        // Číslo třídy prvku grafu
             {
                 case GreenClasses.PlanUnitCCl:
                     this._BackStyle = System.Drawing.Drawing2D.HatchStyle.Percent25;
@@ -774,6 +774,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 case GreenClasses.PlanUnitCUnit:
                     this._BackStyle = null;
                     this._BehaviorMode = GraphItemBehaviorMode.DefaultWorkTime | GraphItemBehaviorMode.DefaultText;
+                    break;
+                case GreenClasses.ProductOrderOperation:
+                    break;
+                default:
                     break;
             }
         }

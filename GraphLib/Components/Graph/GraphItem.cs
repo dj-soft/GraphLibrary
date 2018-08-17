@@ -134,10 +134,17 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             }
         }
         #endregion
-        #region Přetahování (Drag & Drop)
+        #region Přetahování (Drag & Drop) : týká se výhradně prvků typu Group!
+        /// <summary>
+        /// Vrací true, pokud daný prvek může být přemísťován.
+        /// </summary>
         public override bool IsDragEnabled
         {
-            get { return (this._Position == GGraphControlPosition.Group); }
+            get
+            {
+                if (this._Position != GGraphControlPosition.Group) return false;
+                return this._Group.IsDragEnabled;
+            }
             set { }
         }
         protected override void DragAction(GDragActionArgs e)
