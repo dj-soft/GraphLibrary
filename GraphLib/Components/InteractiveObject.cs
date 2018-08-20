@@ -1028,17 +1028,17 @@ namespace Asol.Tools.WorkScheduler.Components
                     }
                     break;
                 case DragActionType.DragThisMove:
-                    if (this._IsDragEnabledCurrent && e.DragToBounds.HasValue)
+                    if (this._IsDragEnabledCurrent && e.DragToRelativeBounds.HasValue)
                     {
-                        this.BoundsDragTarget = e.DragToBounds.Value;
-                        this.DragThisOverBounds(e, e.DragToBounds.Value);
+                        this.BoundsDragTarget = e.DragToRelativeBounds.Value;
+                        this.DragThisOverBounds(e, e.DragToRelativeBounds.Value);
                         this.RepaintToLayers = this.DragDrawToLayers;
                     }
                     break;
                 case DragActionType.DragThisCancel:
                     if (this._IsDragEnabledCurrent && this.BoundsDragOrigin.HasValue && this.BoundsDragOrigin.Value != this.Bounds)
                     {
-                        this.SetBounds(e.DragToBounds.Value, ProcessAction.DragValueActions, EventSourceType.InteractiveChanging | EventSourceType.BoundsChange);
+                        this.SetBounds(e.DragToRelativeBounds.Value, ProcessAction.DragValueActions, EventSourceType.InteractiveChanging | EventSourceType.BoundsChange);
                         this.RepaintToLayers = this.DragDrawToLayers;
                     }
                     break;

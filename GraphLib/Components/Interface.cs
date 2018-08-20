@@ -407,7 +407,7 @@ namespace Asol.Tools.WorkScheduler.Components
     {
         #region Konstruktory
         /// <summary>
-        /// Konstruktor
+        /// Konstruktor pro událost nepocházející ani z myši, ani z klávesnice
         /// </summary>
         /// <param name="existsItem">true, when CurrentItem is found. Whereby CurrentItem is interface (i.e. can be a struct), then test for CurrentItem == null is not possible.</param>
         /// <param name="currentItem">Active item. Item is found in hierarchy of IInteractiveItem and all its Childs, this is last Child found.</param>
@@ -423,7 +423,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this.SearchItemMethod = searchItemMethod;
         }
         /// <summary>
-        /// Konstruktor
+        /// Konstruktor pro událost pocházející z myši
         /// </summary>
         /// <param name="existsItem">true, when CurrentItem is found. Whereby CurrentItem is interface (i.e. can be a struct), then test for CurrentItem == null is not possible.</param>
         /// <param name="currentItem">Active item. Item is found in hierarchy of IInteractiveItem and all its Childs, this is last Child found.</param>
@@ -432,7 +432,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="mouseRelativePoint">Coordinate of mouse relative to CurrentItem.ActiveBounds.Location. Can be a null (in case when ExistsItem is false).</param>
         /// <param name="dragOriginBounds">Original area before current Drag operacion begun (in DragMove events)</param>
         /// <param name="dragToBounds">Target area during Drag operation (in DragMove event)</param>
-        public GInteractiveChangeStateArgs(bool existsItem, IInteractiveItem currentItem, GInteractiveChangeState changeState, GInteractiveState targetState, Func<Point, bool, IInteractiveItem> searchItemMethod, Point? mouseAbsolutePoint, Point? mouseRelativePoint, Rectangle? dragOriginBounds, Rectangle? dragToBounds)
+        public GInteractiveChangeStateArgs(bool existsItem, IInteractiveItem currentItem, GInteractiveChangeState changeState, GInteractiveState targetState, 
+            Func<Point, bool, IInteractiveItem> searchItemMethod, Point? mouseAbsolutePoint, Point? mouseRelativePoint,
+            Rectangle? dragOriginBounds, Rectangle? dragToBounds)
               : this()
         {
             this.ExistsItem = existsItem;
@@ -446,7 +448,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this.DragMoveToBounds = dragToBounds;
         }
         /// <summary>
-        /// Konstruktor
+        /// Konstruktor pro událost pocházející z klávesnice
         /// </summary>
         /// <param name="existsItem">true, when CurrentItem is found. Whereby CurrentItem is interface (i.e. can be a struct), then test for CurrentItem == null is not possible.</param>
         /// <param name="currentItem">Active item. Item is found in hierarchy of IInteractiveItem and all its Childs, this is last Child found.</param>
@@ -672,12 +674,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Origin area (Bounds of current item) before current Drag operation begun (in DragMove event)
         /// </summary>
-        public Rectangle? DragOriginBounds { get { return this._ChangeArgs.DragMoveOriginBounds; } }
+        public Rectangle? DragOriginRelativeBounds { get { return this._ChangeArgs.DragMoveOriginBounds; } }
         /// <summary>
         /// Target area during Drag operation (in DragMove event) calculated from DragOriginBounds and mouse move (without limitations).
         /// Real target bounds can be other than this unlimited bounds.
         /// </summary>
-        public Rectangle? DragToBounds { get { return this._ChangeArgs.DragMoveToBounds; } }
+        public Rectangle? DragToRelativeBounds { get { return this._ChangeArgs.DragMoveToBounds; } }
 
         /// <summary>
         /// Type of action (drag this object, or drag another object over this object)

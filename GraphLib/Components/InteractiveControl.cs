@@ -1097,13 +1097,21 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="gcItem">Current item under mouse</param>
         /// <param name="change">Change of state, independently on MouseButton (i.e. LeftDown, in situation where is pressed Right Mouse button). Real change state is detected in this method, with _GetStateForCurrentButton() method.</param>
+        /// <param name="mouseRelativePoint"></param>
+        /// <param name="dragToArea"></param>
+        /// <param name="recurseToSolver"></param>
+        /// <param name="userDragPoint"></param>
+        /// <param name="frameWorkArea"></param>
         private void _ItemMouseCallStateChangedEvent(GActivePosition gcItem, GInteractiveChangeState change, Point? mouseRelativePoint, Rectangle? dragToArea, 
             bool recurseToSolver, ref Point? userDragPoint, out Rectangle? frameWorkArea)
         {
             frameWorkArea = null;
             GInteractiveChangeState realChange = this._GetStateForCurrentMouseButton(change, gcItem.IsEnabled);
             GInteractiveState state = (gcItem.HasItem ? _GetStateAfterChange(realChange, gcItem.ActiveItem.IsEnabled) : GInteractiveState.Disabled);
-            GInteractiveChangeStateArgs stateArgs = new GInteractiveChangeStateArgs(gcItem.HasItem, gcItem.ActiveItem, realChange, state, this.FindNewItemAtPoint, this._MouseCurrentAbsolutePoint, mouseRelativePoint, this._MouseDragMoveItemOriginBounds, dragToArea);
+            přidat sem offset aktuálního prvku = (absolute - relative)
+            GInteractiveChangeStateArgs stateArgs = new GInteractiveChangeStateArgs(gcItem.HasItem, gcItem.ActiveItem, realChange, state, 
+                this.FindNewItemAtPoint, gcItem.MouseAbsolutePoint, mouseRelativePoint, 
+                this._MouseDragMoveItemOriginBounds, dragToArea);
             stateArgs.UserDragPoint = userDragPoint;
 
             if (gcItem.HasItem)
@@ -2621,6 +2629,7 @@ namespace Asol.Tools.WorkScheduler.Components
             GActivePosition currItem = new GActivePosition(mouseAbsolutePoint);
             IInteractiveItem[] items = _CreateJoinItems(itemList, priorityItems);
             GActiveItem[] holdItems = ((prevItem != null && prevItem.HasItem) ? prevItem.Items : null);
+            zachovat i BoundsInfo:
             currItem._FindItemAtPoint(hostSize, items, mouseAbsolutePoint, withDisabled, holdItems);
             return currItem;
         }
