@@ -155,13 +155,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             DataGraphTable dataGraphTable = this.GetGraphTable(dataId, tableName);
             if (dataGraphTable == null)
-            {   // Nová tabulka = založit DataGraphTable:
+            {   // Nová tabulka => založit nový kontenjer DataGraphTable:
                 DataDeclaration dataDeclaration = this.SearchDataDeclarationForTable(tableName);
                 dataGraphTable = new DataGraphTable(this, tableName, dataDeclaration);
                 this.GraphTableList.Add(dataGraphTable);
             }
             try
-            {   // Do existující tabulky DataGraphTable vložit nová datá daného typu:
+            {   // Do existujícího kontenjeru DataGraphTable vložit nová data daného typu:
                 dataGraphTable.AddTable(data, tableType);
             }
             catch (Exception)

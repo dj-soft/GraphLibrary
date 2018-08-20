@@ -140,11 +140,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         public override bool IsDragEnabled
         {
-            get
-            {
-                if (this._Position != GGraphControlPosition.Group) return false;
-                return this._Group.IsDragEnabled;
-            }
+            get { return (this._Position == GGraphControlPosition.Group && this._Group.IsDragEnabled); }
             set { }
         }
         protected override void DragAction(GDragActionArgs e)
@@ -153,10 +149,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         }
         protected override void DragThisOverBounds(GDragActionArgs e, Rectangle targetRelativeBounds)
         {
-            var item = e.FindItemAtPoint(e.MouseCurrentAbsolutePoint.Value);
-            var graph = SearchForParent(item, typeof(GTimeGraph));
-
-            targetRelativeBounds.Y = this.Bounds.Y;
+            this.DragGroupOverAny(e, ref targetRelativeBounds);
             base.DragThisOverBounds(e, targetRelativeBounds);
         }
         protected override void DragThisDropToBounds(GDragActionArgs e, Rectangle boundsTarget)
@@ -167,6 +160,52 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             base.DragThisOverEnd(e);
         }
+        /// <summary>
+        /// Klíčová metoda, která v procesu Drag and Drop určuje, zda, jak a kam se právě přesouvá grafický prvek.
+        /// Metoda vyhledá odpovídající podkladový graf, respektive jiný podkladový prostor, a omezí případně pohyb prvku jen do vyhrazené oblasti.
+        /// Současně si ukládá nalezený podkladový graf jako případný cíl...
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="targetRelativeBounds"></param>
+        /// <returns></returns>
+        protected void DragGroupOverAny(GDragActionArgs e, ref Rectangle targetRelativeBounds)
+        {
+            // Najdu prvek, který se právě nachází pod myší:
+            // (na počátku to je tentýž, který přemisťuji, ale později už ne - protože ten má pozici Bounds dosud nezměněnou !)
+            // Takže postupně (kromě sebe sama) najdu buď nějaký sousední grafický prvek, nebo samotný graf, anebo grid nebo jiný prvek, na němž se nachází myš:
+            IInteractiveItem item = e.FindItemAtPoint(e.MouseCurrentAbsolutePoint.Value);
+
+            // Podle toho, nad čím se myš pohybuje, určím co dál:
+            GTimeGraph graph = SearchForParent(item, typeof(GTimeGraph)) as GTimeGraph;
+            if (graph != null)
+            {
+                DragGroupOverGraph(e, graph, ref targetRelativeBounds);
+                return;
+            }
+
+            Grid.GTable table = SearchForParent(item, typeof(Grid.GTable)) as Grid.GTable;
+            if (table != null)
+            {
+                DragGroupOverTable(e, table, ref targetRelativeBounds);
+                return;
+            }
+
+            GTimeGraph parentGraph = this.Parent as GTimeGraph;
+            if (parentGraph != null)
+            {
+                Rectangle clientBounds = new Rectangle(new Point(), parentGraph.Bounds.Size);
+                targetRelativeBounds = targetRelativeBounds.FitInto(clientBounds, false);
+            }
+            // targetRelativeBounds.Y = this.Bounds.Y;
+        }
+        protected void DragGroupOverGraph(GDragActionArgs e, GTimeGraph graph, ref Rectangle targetRelativeBounds)
+        {
+            Rectangle clientBounds = new Rectangle(new Point(), graph.Bounds.Size);
+            targetRelativeBounds = targetRelativeBounds.FitInto(clientBounds, false);
+
+        }
+        protected void DragGroupOverTable(GDragActionArgs e, Grid.GTable table, ref Rectangle targetRelativeBounds)
+        { }
         #endregion
         #region Kreslení prvku
         /// <summary>

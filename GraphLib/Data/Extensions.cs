@@ -231,6 +231,31 @@ namespace Asol.Tools.WorkScheduler.Data
             return ContainsAnyFromChars(test, "0123456789");
         }
         #endregion
+        #region Enum
+        /// <summary>
+        /// Vrátí true, pokud this hodnota (value) obsahuje alespoň jeden nahozený flag z dané sady (flags).
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="flags"></param>
+        /// <returns></returns>
+        public static bool HasAnyFlag<T>(this T value, T flags) where T : IConvertible
+        {
+            IFormatProvider p = System.Globalization.NumberFormatInfo.CurrentInfo;
+            int v = value.ToInt32(p);
+            int f = flags.ToInt32(p);
+            return ((f & v) != 0);
+        }
+        /// <summary>
+        /// Vrátí true, pokud this hodnota (value) obsahuje alespoň jeden nahozený bit z dané hodnoty (flags).
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="flags"></param>
+        /// <returns></returns>
+        public static bool HasAnyFlag(this int value, int flags)
+        {
+            return ((value & flags) != 0);
+        }
+        #endregion
         #region IEnumerable
         /// <summary>
         /// Provede danou akci pro každý prvek kolekce
