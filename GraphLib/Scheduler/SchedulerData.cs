@@ -436,40 +436,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             string name = text.Trim().ToLower();
             if (colorDict.TryGetValue(name, out color)) return color;
 
-            if (name.StartsWith("0x") || name.StartsWith("0&"))
-                color = _GetColorHex(name);
-            else
-                color = _GetColorName(name);
-
+            WorkSchedulerSupport.TryColorDeserialize(name, out color);
+            
             if (!colorDict.ContainsKey(name))
                 colorDict.Add(name, color);
-            return color;
-        }
-        /// <summary>
-        /// Vrátí barvu pro zadaný název barvy. Název může být string z enumu <see cref="KnownColor"/>, například "Violet";, ignoruje se velikost písmen.
-        /// </summary>
-        /// <param name="name"></param>
-        /// <returns></returns>
-        private static Color? _GetColorName(string name)
-        {
-            KnownColor color;
-            if (Enum.TryParse(name, true, out color)) return Color.FromKnownColor(color);
-            return null;
-        }
-        /// <summary>
-        /// Vrátí barvu pro zadaný hexadecimální řetězec.
-        /// </summary>
-        /// <param name="name"></param>
-        /// <returns></returns>
-        private static Color? _GetColorHex(string name)
-        {
-            System.Globalization.NumberFormatInfo nfi = new System.Globalization.NumberFormatInfo();
-            string hexValue = name.Substring(2).ToUpper();
-            int value;
-            if (!Int32.TryParse(hexValue, System.Globalization.NumberStyles.AllowHexSpecifier, nfi, out value)) return null;
-            Color color = Color.FromArgb(value);
-            if (color.A == 0)                              // Pokud v barvě NENÍ zadáno nic do složky Alpha, jde nejspíš o opomenutí!
-                color = Color.FromArgb(255, color);        //   (implicitně se hodnota Alpha nezadává, a přitom se předpokládá že tan bude 255)  =>  Alpha = 255 = plná barva
             return color;
         }
         /// <summary>

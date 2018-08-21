@@ -716,6 +716,94 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             return image;
         }
         #endregion
+        #region Serializace a Deserializace Color
+        /// <summary>
+        /// Serializuje Color.
+        /// Text lze převést na barvu metodou ColorDeserialize().
+        /// </summary>
+        /// <param name="color"></param>
+        /// <returns></returns>
+        public static string ColorSerialize(Color color)
+        {
+            if (color.IsKnownColor) return color.Name;
+            return "0x" + color.A.ToString("X2") + color.R.ToString("X2") + color.G.ToString("X2") + color.B.ToString("X2");
+        }
+        /// <summary>
+        /// Deserializuje a vrátí Color.
+        /// Vstupní barva má být vytvořena metodou <see cref="ColorSerialize(Color)"/>.
+        /// Tato metoda může hodit chybu.
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        public static Color ColorDeserialize(string data)
+        {
+            return _ColorDeserialize(data, false).Value;
+        }
+        /// <summary>
+        /// Deserializuje Color.
+        /// Vstupní barva má být vytvořena metodou <see cref="ColorSerialize(Color)"/>.
+        /// Tato metoda při chybě vrátí false a do out parametru color uloží null. Nikdy nehodí chybu.
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        public static bool TryColorDeserialize(string data, out Color? color)
+        {
+            color = _ColorDeserialize(data, true);
+            return (color.HasValue);
+        }
+        /// <summary>
+        /// Deserializuje obrázek. Z textu vrátí objekt Image.
+        /// Vstupní obrázek má být vytvořen metodou <see cref="ImageSerialize(Image)"/>.
+        /// Při chybě se chová podle parametru ignoreErrors.
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="ignoreErrors"></param>
+        /// <returns></returns>
+        private static Color? _ColorDeserialize(string data, bool ignoreErrors)
+        {
+            Color? color = null;
+            string message = null;
+            if (String.IsNullOrEmpty(data))
+                message = "ImageDeserialize: Zadaný řetězec (data) není možno převést do formátu Image, řetězec je prázdný.";
+            else
+            {
+                if (data.StartsWith("0x") || data.StartsWith("0&"))
+                    color = _GetColorHex(data);
+                else
+                    color = _GetColorName(data);
+            }
+            if (!color.HasValue && !ignoreErrors)
+                throw new ArgumentException(message);
+            return color;
+        }
+        /// <summary>
+        /// Vrátí barvu pro zadaný název barvy. Název může být string z enumu <see cref="KnownColor"/>, například "Violet";, ignoruje se velikost písmen.
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        private static Color? _GetColorName(string name)
+        {
+            KnownColor color;
+            if (Enum.TryParse(name, true, out color)) return Color.FromKnownColor(color);
+            return null;
+        }
+        /// <summary>
+        /// Vrátí barvu pro zadaný hexadecimální řetězec.
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        private static Color? _GetColorHex(string name)
+        {
+            System.Globalization.NumberFormatInfo nfi = new System.Globalization.NumberFormatInfo();
+            string hexValue = name.Substring(2).ToUpper();
+            int value;
+            if (!Int32.TryParse(hexValue, System.Globalization.NumberStyles.AllowHexSpecifier, nfi, out value)) return null;
+            Color color = Color.FromArgb(value);
+            if (color.A == 0)                              // Pokud v barvě NENÍ zadáno nic do složky Alpha, jde nejspíš o opomenutí!
+                color = Color.FromArgb(255, color);        //   (implicitně se hodnota Alpha nezadává, a přitom se předpokládá že tan bude 255)  =>  Alpha = 255 = plná barva
+            return color;
+        }
+        #endregion
         #region Komprimace a dekomprimace stringu
         /// <summary>
         /// Metoda vrátí daný string KOMPRIMOVANÝ pomocí <see cref="System.IO.Compression.GZipStream"/>, převedený do Base64 stringu.
