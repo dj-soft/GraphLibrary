@@ -29,6 +29,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public GBaseAxis()
         {
+            this.IsDragEnabled = true;
             this.PrepareInitialValues();
             this.PrepareVisual();
             this.PrepareArrangement();

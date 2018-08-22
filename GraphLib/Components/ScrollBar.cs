@@ -879,6 +879,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 this.ImageType = LinearShapeType.None;
                 this.OverCursorType = null;
                 this.DragCursorType = null;
+                this.IsDragEnabled = (itemType == ChildItemType.Thumb);
                 this.IsHoldMouse = false;
                 this.IsEnabled = isEnabled;
             }
