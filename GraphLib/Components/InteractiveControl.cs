@@ -295,7 +295,7 @@ namespace Asol.Tools.WorkScheduler.Components
             return null;
         }
         /// <summary>
-        /// Call item.AfterStateChanged() method with correct argument
+        /// Zavolá obsluhu item.AfterStateChanged() s patřičnými daty, pocházejícími z klávesnicové události.
         /// </summary>
         /// <param name="item"></param>
         /// <param name="change"></param>
@@ -304,7 +304,9 @@ namespace Asol.Tools.WorkScheduler.Components
             if ((item.Style & GInteractiveStyles.KeyboardInput) != 0)
             {
                 GInteractiveChangeState realChange = change;
-                GInteractiveChangeStateArgs stateArgs = new GInteractiveChangeStateArgs(item, realChange, _GetStateAfterChange(realChange, item.IsEnabled), this.FindNewItemAtPoint, previewArgs, keyArgs, keyPressArgs);
+                GInteractiveState targetState = _GetStateAfterChange(realChange, item.IsEnabled);
+                BoundsInfo boundsInfo = BoundsInfo.CreateForChild(item);
+                GInteractiveChangeStateArgs stateArgs = new GInteractiveChangeStateArgs(boundsInfo, realChange, targetState, this.FindNewItemAtPoint, previewArgs, keyArgs, keyPressArgs);
                 stateArgs.UserDragPoint = null;
 
                 item.AfterStateChanged(stateArgs);
@@ -1036,11 +1038,11 @@ namespace Asol.Tools.WorkScheduler.Components
             List<GActivePosition.GActiveItem> leaveList, enterList;
             GActivePosition.MapExchange(gcItemPrev, gcItemNext, out leaveList, out enterList);
 
-            foreach (GActivePosition.GActiveItem item in leaveList)
-                this._ItemMouseCallStateChangedEvent(gcItemPrev, item, GInteractiveChangeState.MouseLeave);
+            foreach (GActivePosition.GActiveItem activeItem in leaveList)
+                this._CallItemStateChangedEventEnterLeave(activeItem, GInteractiveChangeState.MouseLeave);
 
-            foreach (GActivePosition.GActiveItem item in enterList)
-                this._ItemMouseCallStateChangedEvent(gcItemNext, item, GInteractiveChangeState.MouseEnter);
+            foreach (GActivePosition.GActiveItem activeItem in enterList)
+                this._CallItemStateChangedEventEnterLeave(activeItem, GInteractiveChangeState.MouseEnter);
 
             if (gcItemNext != null && gcItemNext.CanOver)
                 this._ItemMouseCallStateChangedEvent(gcItemNext, GInteractiveChangeState.MouseOver, mouseRelativePoint, null);
@@ -1091,11 +1093,11 @@ namespace Asol.Tools.WorkScheduler.Components
             this._ItemMouseCallStateChangedEvent(gcItem, change, mouseRelativePoint, dragToArea, false, ref userDragPoint, out frameWorkArea);
         }
         /// <summary>
-        /// Metoda zavolá klíčovou událost <see cref="IInteractiveItem.AfterStateChanged(GInteractiveChangeStateArgs)"/> pro aktivní prvek dle parametru "item".
+        /// Metoda zavolá klíčovou událost <see cref="IInteractiveItem.AfterStateChanged(GInteractiveChangeStateArgs)"/> pro aktivní prvek dle parametru "item", po události s myší.
         /// Podle potřeby (podle typu akce) vyvolá i událost <see cref="IInteractiveItem.DragAction(GDragActionArgs)"/> .
-        /// Je použito pouze pro většinu eventů.
+        /// Je použito pouze pro většinu myších eventů.
         /// </summary>
-        /// <param name="gcItem">Current item under mouse</param>
+        /// <param name="gcItem">Aktuální prvek, jehož se akce týká</param>
         /// <param name="change">Změna stavu, ale nezávislá na konkrétním myším buttonu (Left / Right).
         /// Typicky se zadává změna "na levém buttonu", například <see cref="GInteractiveChangeState.LeftDown"/>.
         /// Tato metoda pak určí skutečně stisknuté tlačítko myši (je uloženo v <see cref="_MouseDownButtons"/>) 
@@ -1110,11 +1112,11 @@ namespace Asol.Tools.WorkScheduler.Components
             bool recurseToSolver, ref Point? userDragPoint, out Rectangle? frameWorkArea)
         {
             frameWorkArea = null;
-            GInteractiveChangeState realChange = this._GetStateForCurrentMouseButton(change, gcItem.IsEnabled);
-            GInteractiveState state = (gcItem.HasItem ? _GetStateAfterChange(realChange, gcItem.ActiveItem.IsEnabled) : GInteractiveState.Disabled);
+            bool isEnabled = gcItem.IsEnabled;
+            GInteractiveChangeState realChange = this._GetStateForCurrentMouseButton(change, isEnabled);
+            GInteractiveState state = (gcItem.HasItem ? _GetStateAfterChange(realChange, isEnabled) : GInteractiveState.Disabled);
             BoundsInfo boundsInfo = gcItem.ActiveItemBoundsInfo;
-            přidat sem offset aktuálního prvku = (absolute - relative)
-            GInteractiveChangeStateArgs stateArgs = new GInteractiveChangeStateArgs(gcItem, realChange, state, 
+            GInteractiveChangeStateArgs stateArgs = new GInteractiveChangeStateArgs(boundsInfo, realChange, state, 
                 this.FindNewItemAtPoint, gcItem.MouseAbsolutePoint, mouseRelativePoint, 
                 this._MouseDragMoveItemOriginBounds, dragToArea);
             stateArgs.UserDragPoint = userDragPoint;
@@ -1133,21 +1135,22 @@ namespace Asol.Tools.WorkScheduler.Components
             userDragPoint = stateArgs.UserDragPoint;
         }
         /// <summary>
-        /// Metoda zavolá klíčovou událost <see cref="IInteractiveItem.AfterStateChanged(GInteractiveChangeStateArgs)"/> pro aktivní prvek dle parametru "item".
-        /// Podle potřeby (podle typu akce) vyvolá i událost <see cref="IInteractiveItem.DragAction(GDragActionArgs)"/> .
-        /// Je použito pouze pro eventy MouseEnter a MouseLeave.
+        /// Metoda zavolá klíčovou událost <see cref="IInteractiveItem.AfterStateChanged(GInteractiveChangeStateArgs)"/> pro aktivní prvek dle parametru "item", 
+        /// je voláni při změně aktivního prvku (<see cref="GInteractiveChangeState.MouseLeave"/> a <see cref="GInteractiveChangeState.MouseEnter"/>).
+        /// Podle potřeby (podle typu akce) vyvolá i událost <see cref="IInteractiveItem.DragAction(GDragActionArgs)"/>.
         /// </summary>
-        /// <param name="gci"></param>
-        /// <param name="item"></param>
+        /// <param name="activeItem"></param>
         /// <param name="change"></param>
-        private void _ItemMouseCallStateChangedEvent(GActivePosition gci, IInteractiveItem item, GInteractiveChangeState change)
+        private void _CallItemStateChangedEventEnterLeave(GActivePosition.GActiveItem activeItem, GInteractiveChangeState change)
         {
-            GInteractiveChangeState realChange = this._GetStateForCurrentMouseButton(change, item.IsEnabled);
-            GInteractiveChangeStateArgs stateArgs = new GInteractiveChangeStateArgs(item, realChange, _GetStateAfterChange(realChange, item.IsEnabled), this.FindNewItemAtPoint);
+            bool isEnabled = activeItem.Item.IsEnabled;
+            GInteractiveChangeState realChange = this._GetStateForCurrentMouseButton(change, isEnabled);
+            var targetState = _GetStateAfterChange(realChange, isEnabled);
+            GInteractiveChangeStateArgs stateArgs = new GInteractiveChangeStateArgs(activeItem.BoundsInfo, realChange, targetState, this.FindNewItemAtPoint);
             stateArgs.UserDragPoint = null;
 
-            item.AfterStateChanged(stateArgs);
-            this._ItemMouseCallDragEvent(item, stateArgs);
+            activeItem.Item.AfterStateChanged(stateArgs);
+            this._ItemMouseCallDragEvent(activeItem.Item, stateArgs);
 
             this._CallInteractiveStateChanged(stateArgs);
             this._InteractiveDrawStore(stateArgs);

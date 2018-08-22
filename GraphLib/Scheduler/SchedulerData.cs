@@ -784,6 +784,12 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         }
         #endregion
         #region Kontextové menu
+        /// <summary>
+        /// Metoda vytvoří a vrátí kontextové menu pro konkrétní prvek grafu
+        /// </summary>
+        /// <param name="graphItem"></param>
+        /// <param name="args"></param>
+        /// <returns></returns>
         protected ToolStripDropDownMenu CreateContextMenu(DataGraphItem graphItem, ItemActionArgs args)
         {
             IEnumerable<FunctionItem> menuItems = this._GetContextMenuItems(graphItem, args);
@@ -805,12 +811,17 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             }
             this._ContextFunctions = functions.ToArray();
         }
+        /// <summary>
+        /// Metoda najde a vrátí soupis položek, popisujících funkci <see cref="FunctionItem"/>, které mají být zobrazeny jako Kontextové menu pro daný prvek grafu.
+        /// </summary>
+        /// <param name="graphItem"></param>
+        /// <param name="args"></param>
+        /// <returns></returns>
         private IEnumerable<FunctionItem> _GetContextMenuItems(DataGraphItem graphItem, ItemActionArgs args)
         {
             // graphItem.GraphTable;
             List<FunctionItem> menuItems = new List<FunctionItem>();
 
-                DataDeclaration dataDeclaration;
             // this.TryGetDataDeclaration()
             var fd = this.Declarations.FirstOrDefault();
 
@@ -842,7 +853,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             menu.ItemClicked += ContextMenuItemClicked;
             return menuItems;
         }
-
+        /// <summary>
+        /// Obsluha kliknutí na položku kontextového menu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void ContextMenuItemClicked(object sender, ToolStripItemClickedEventArgs e)
         {
             ToolStripDropDownMenu menu = sender as ToolStripDropDownMenu;

@@ -409,22 +409,20 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Konstruktor pro událost pocházející z myši
         /// </summary>
-        /// <param name="existsItem">true, when CurrentItem is found. Whereby CurrentItem is interface (i.e. can be a struct), then test for CurrentItem == null is not possible.</param>
-        /// <param name="currentItem">Active item. Item is found in hierarchy of IInteractiveItem and all its Childs, this is last Child found.</param>
-        /// <param name="changeState">Type of event (change of status)</param>
-        /// <param name="targetState">New state of item (after this event, not before it).</param>
+        /// <param name="boundsInfo">Souřadný systém položky <see cref="CurrentItem"/>, včetně souřadnic absolutních a reference na konkrétní prvek</param>
+        /// <param name="changeState">Typ události = změna stavu</param>
+        /// <param name="targetState">Nový stav prvku po této změně.</param>
+        /// <param name="searchItemMethod">Metoda, která pro danou absolutní souřadnici vyhledá konkrétní prvek. Parametr 1 = absolutní souřadnice; Parametr 2 = požadavek na hledání i Disabled prvků (true hledá i Disabled); Výstup = prvek na dané souřadnici, na nejvyšší pozici v hierarchii i v ose Z.</param>
+        /// <param name="mouseAbsolutePoint"></param>
         /// <param name="mouseRelativePoint">Coordinate of mouse relative to CurrentItem.ActiveBounds.Location. Can be a null (in case when ExistsItem is false).</param>
         /// <param name="dragOriginBounds">Original area before current Drag operacion begun (in DragMove events)</param>
         /// <param name="dragToBounds">Target area during Drag operation (in DragMove event)</param>
-        public GInteractiveChangeStateArgs(GActivePosition gcItem, GInteractiveChangeState changeState, GInteractiveState targetState, 
+        public GInteractiveChangeStateArgs(BoundsInfo boundsInfo, GInteractiveChangeState changeState, GInteractiveState targetState, 
             Func<Point, bool, IInteractiveItem> searchItemMethod, Point? mouseAbsolutePoint, Point? mouseRelativePoint,
             Rectangle? dragOriginBounds, Rectangle? dragToBounds)
               : this()
         {
-            ;
-            this.ExistsItem = gcItem.HasItem;
-            this.CurrentItem = gcItem.ActiveItem;
-            this.CurrentBoundsInfo = gcItem.ActiveItemBoundsInfo;
+            this.BoundsInfo = boundsInfo;
             this.ChangeState = changeState;
             this.TargetState = targetState;
             this.SearchItemMethod = searchItemMethod;
@@ -436,18 +434,17 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Konstruktor pro událost pocházející z klávesnice
         /// </summary>
-        /// <param name="existsItem">true, when CurrentItem is found. Whereby CurrentItem is interface (i.e. can be a struct), then test for CurrentItem == null is not possible.</param>
-        /// <param name="currentItem">Active item. Item is found in hierarchy of IInteractiveItem and all its Childs, this is last Child found.</param>
-        /// <param name="changeState">Type of event (change of status)</param>
-        /// <param name="targetState">New state of item (after this event, not before it).</param>
+        /// <param name="boundsInfo">Souřadný systém položky <see cref="CurrentItem"/>, včetně souřadnic absolutních a reference na konkrétní prvek</param>
+        /// <param name="changeState">Typ události = změna stavu</param>
+        /// <param name="targetState">Nový stav prvku po této změně.</param>
+        /// <param name="searchItemMethod">Metoda, která pro danou absolutní souřadnici vyhledá konkrétní prvek. Parametr 1 = absolutní souřadnice; Parametr 2 = požadavek na hledání i Disabled prvků (true hledá i Disabled); Výstup = prvek na dané souřadnici, na nejvyšší pozici v hierarchii i v ose Z.</param>
         /// <param name="previewArgs">Keyboard Preview Data</param>
         /// <param name="keyArgs">Keyboard Events Data</param>
         /// <param name="keyPressArgs">Keyboard KeyPress data</param>
-        public GInteractiveChangeStateArgs(IInteractiveItem currentItem, GInteractiveChangeState changeState, GInteractiveState targetState, Func<Point, bool, IInteractiveItem> searchItemMethod, PreviewKeyDownEventArgs previewArgs, KeyEventArgs keyArgs, KeyPressEventArgs keyPressArgs)
+        public GInteractiveChangeStateArgs(BoundsInfo boundsInfo, GInteractiveChangeState changeState, GInteractiveState targetState, Func<Point, bool, IInteractiveItem> searchItemMethod, PreviewKeyDownEventArgs previewArgs, KeyEventArgs keyArgs, KeyPressEventArgs keyPressArgs)
             : this()
         {
-            this.ExistsItem = true;
-            this.CurrentItem = currentItem;
+            this.BoundsInfo = boundsInfo;
             this.ChangeState = changeState;
             this.TargetState = targetState;
             this.SearchItemMethod = searchItemMethod;
@@ -458,15 +455,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Konstruktor pro událost nepocházející ani z myši, ani z klávesnice, anebo pro událost MouseEnter a MouseLeave controlu.
         /// </summary>
-        /// <param name="existsItem">true, when CurrentItem is found. Whereby CurrentItem is interface (i.e. can be a struct), then test for CurrentItem == null is not possible.</param>
-        /// <param name="currentItem">Active item. Item is found in hierarchy of IInteractiveItem and all its Childs, this is last Child found.</param>
-        /// <param name="changeState">Type of event (change of status)</param>
-        /// <param name="targetState">New state of item (after this event, not before it).</param>
-        public GInteractiveChangeStateArgs(IInteractiveItem currentItem, GInteractiveChangeState changeState, GInteractiveState targetState, Func<Point, bool, IInteractiveItem> searchItemMethod)
+        /// <param name="boundsInfo">Souřadný systém položky <see cref="CurrentItem"/>, včetně souřadnic absolutních a reference na konkrétní prvek</param>
+        /// <param name="changeState">Typ události = změna stavu</param>
+        /// <param name="targetState">Nový stav prvku po této změně.</param>
+        /// <param name="searchItemMethod">Metoda, která pro danou absolutní souřadnici vyhledá konkrétní prvek. Parametr 1 = absolutní souřadnice; Parametr 2 = požadavek na hledání i Disabled prvků (true hledá i Disabled); Výstup = prvek na dané souřadnici, na nejvyšší pozici v hierarchii i v ose Z.</param>
+        public GInteractiveChangeStateArgs(BoundsInfo boundsInfo, GInteractiveChangeState changeState, GInteractiveState targetState, Func<Point, bool, IInteractiveItem> searchItemMethod)
                : this()
         {
-            this.ExistsItem = true;
-            this.CurrentItem = currentItem;
+            this.BoundsInfo = boundsInfo;
             this.ChangeState = changeState;
             this.TargetState = targetState;
             this.SearchItemMethod = searchItemMethod;
@@ -476,8 +472,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected GInteractiveChangeStateArgs()
         {
-            this.ExistsItem = false;
-            this.CurrentItem = null;
+            this.BoundsInfo = null;
             this.ChangeState = GInteractiveChangeState.None;
             this.TargetState = GInteractiveState.None;
             this.SearchItemMethod = null;
@@ -494,18 +489,18 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Input properties (read-only)
         /// <summary>
+        /// Souřadný systém položky <see cref="CurrentItem"/>, včetně souřadnic absolutních a reference na konkrétní prvek
+        /// </summary>
+        public BoundsInfo BoundsInfo { get; protected set; }
+        /// <summary>
         /// Obsahuje true, pokud <see cref="CurrentItem"/> je nalezen.
         /// Poněvadž <see cref="CurrentItem"/> je interface (tedy může to být i struct), pak je vhodnější netestovat: if (<see cref="CurrentItem"/> != null).
         /// </summary>
-        public bool ExistsItem { get; protected set; }
+        public bool ExistsItem { get { return (this.BoundsInfo != null); } }
         /// <summary>
         /// Aktivní prvek.
         /// </summary>
-        public IInteractiveItem CurrentItem { get; protected set; }
-        /// <summary>
-        /// Souřadný systém položky <see cref="CurrentItem"/>
-        /// </summary>
-        public BoundsInfo CurrentBoundsInfo { get; protected set; }
+        public IInteractiveItem CurrentItem { get { return (this.BoundsInfo != null ? this.BoundsInfo.CurrentItem : null); } }
         /// <summary>
         /// Typ události = změny stavu
         /// </summary>
@@ -532,12 +527,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public Point? MouseRelativePoint { get; protected set; }
         /// <summary>
-        /// Origin area (Bounds of current item) before current Drag operation begun (in DragMove event)
+        /// Souřadnice prvku výchozí před zahájením akce Drag and Drop, relativní koordináty. 
+        /// Je vyplněno pouze v Drag and Drop událostech, jinak je null.
         /// </summary>
         public Rectangle? DragMoveOriginBounds { get; protected set; }
         /// <summary>
-        /// Target area during Drag operation (in DragMove event) calculated from DragOriginBounds and mouse move (without limitations).
-        /// Real target bounds can be other than this unlimited bounds.
+        /// Souřadnice prvku cílová v průběhu akce Drag and Drop, relativní koordináty. 
+        /// Jedná se o souřadnice odpovídající pohybu myši; prvek sám může svoje cílové souřadnice modifikovat s ohledem na svoje vlastní pravidla.
+        /// Je vyplněno pouze v Drag and Drop událostech, jinak je null.
         /// </summary>
         public Rectangle? DragMoveToBounds { get; protected set; }
         /// <summary>
@@ -547,7 +544,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public Rectangle? DragFrameWorkArea { get; set; }
         /// <summary>
-        /// Stav kláves v okamžiku události, včetně události myši
+        /// Stav kláves v okamžiku události (a to včetně události myši)
         /// </summary>
         public System.Windows.Forms.Keys ModifierKeys { get; protected set; }
         /// <summary>
