@@ -304,7 +304,7 @@ namespace Asol.Tools.WorkScheduler.Components
             if ((item.Style & GInteractiveStyles.KeyboardInput) != 0)
             {
                 GInteractiveChangeState realChange = change;
-                GInteractiveChangeStateArgs stateArgs = new GInteractiveChangeStateArgs(true, item, realChange, _GetStateAfterChange(realChange, item.IsEnabled), this.FindNewItemAtPoint, previewArgs, keyArgs, keyPressArgs);
+                GInteractiveChangeStateArgs stateArgs = new GInteractiveChangeStateArgs(item, realChange, _GetStateAfterChange(realChange, item.IsEnabled), this.FindNewItemAtPoint, previewArgs, keyArgs, keyPressArgs);
                 stateArgs.UserDragPoint = null;
 
                 item.AfterStateChanged(stateArgs);
@@ -1033,13 +1033,13 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="gcItemNext"></param>
         private void _ItemMouseExchange(GActivePosition gcItemPrev, GActivePosition gcItemNext, Point? mouseRelativePoint)
         {
-            List<IInteractiveItem> leaveList, enterList;
+            List<GActivePosition.GActiveItem> leaveList, enterList;
             GActivePosition.MapExchange(gcItemPrev, gcItemNext, out leaveList, out enterList);
 
-            foreach (IInteractiveItem item in leaveList)
+            foreach (GActivePosition.GActiveItem item in leaveList)
                 this._ItemMouseCallStateChangedEvent(gcItemPrev, item, GInteractiveChangeState.MouseLeave);
 
-            foreach (IInteractiveItem item in enterList)
+            foreach (GActivePosition.GActiveItem item in enterList)
                 this._ItemMouseCallStateChangedEvent(gcItemNext, item, GInteractiveChangeState.MouseEnter);
 
             if (gcItemNext != null && gcItemNext.CanOver)
@@ -1096,7 +1096,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Je použito pouze pro většinu eventů.
         /// </summary>
         /// <param name="gcItem">Current item under mouse</param>
-        /// <param name="change">Change of state, independently on MouseButton (i.e. LeftDown, in situation where is pressed Right Mouse button). Real change state is detected in this method, with _GetStateForCurrentButton() method.</param>
+        /// <param name="change">Změna stavu, ale nezávislá na konkrétním myším buttonu (Left / Right).
+        /// Typicky se zadává změna "na levém buttonu", například <see cref="GInteractiveChangeState.LeftDown"/>.
+        /// Tato metoda pak určí skutečně stisknuté tlačítko myši (je uloženo v <see cref="_MouseDownButtons"/>) 
+        /// a použije reálnou hodnotu, například <see cref="GInteractiveChangeState.RightDown"/>.
+        /// Využívá k tomu metodu <see cref="_GetStateForCurrentMouseButton(GInteractiveChangeState, bool)"/>.</param>
         /// <param name="mouseRelativePoint"></param>
         /// <param name="dragToArea"></param>
         /// <param name="recurseToSolver"></param>
@@ -1108,8 +1112,9 @@ namespace Asol.Tools.WorkScheduler.Components
             frameWorkArea = null;
             GInteractiveChangeState realChange = this._GetStateForCurrentMouseButton(change, gcItem.IsEnabled);
             GInteractiveState state = (gcItem.HasItem ? _GetStateAfterChange(realChange, gcItem.ActiveItem.IsEnabled) : GInteractiveState.Disabled);
+            BoundsInfo boundsInfo = gcItem.ActiveItemBoundsInfo;
             přidat sem offset aktuálního prvku = (absolute - relative)
-            GInteractiveChangeStateArgs stateArgs = new GInteractiveChangeStateArgs(gcItem.HasItem, gcItem.ActiveItem, realChange, state, 
+            GInteractiveChangeStateArgs stateArgs = new GInteractiveChangeStateArgs(gcItem, realChange, state, 
                 this.FindNewItemAtPoint, gcItem.MouseAbsolutePoint, mouseRelativePoint, 
                 this._MouseDragMoveItemOriginBounds, dragToArea);
             stateArgs.UserDragPoint = userDragPoint;
@@ -1138,7 +1143,7 @@ namespace Asol.Tools.WorkScheduler.Components
         private void _ItemMouseCallStateChangedEvent(GActivePosition gci, IInteractiveItem item, GInteractiveChangeState change)
         {
             GInteractiveChangeState realChange = this._GetStateForCurrentMouseButton(change, item.IsEnabled);
-            GInteractiveChangeStateArgs stateArgs = new GInteractiveChangeStateArgs(true, item, realChange, _GetStateAfterChange(realChange, item.IsEnabled), this.FindNewItemAtPoint);
+            GInteractiveChangeStateArgs stateArgs = new GInteractiveChangeStateArgs(item, realChange, _GetStateAfterChange(realChange, item.IsEnabled), this.FindNewItemAtPoint);
             stateArgs.UserDragPoint = null;
 
             item.AfterStateChanged(stateArgs);
@@ -2509,6 +2514,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public IInteractiveItem ActiveItem { get { return (this.HasItem ? this.Item.Item : null); } }
         /// <summary>
+        /// Souřadný systém aktivního prvku <see cref="ActiveItem"/>.
+        /// Souřadný systém obsahuje údaje o souřadnici prvku relativní i absolutní.
+        /// Pokud <see cref="HasItem"/> je false, pak <see cref="ActiveItemBoundsInfo"/> je null.
+        /// </summary>
+        public BoundsInfo ActiveItemBoundsInfo { get { return (this.HasItem ? this.Item.BoundsInfo : null); } }
+        /// <summary>
         /// Souřadnice prvku <see cref="Item"/> v absolutních koordinátech Controlu (nebo nulll, když <see cref="HasItem"/> je false).
         /// </summary>
         public Rectangle? ActiveItemAbsBounds { get { return (this.HasItem ? (Rectangle?)this.Item.ItemAbsBounds : (Rectangle?)null); } }
@@ -2629,7 +2640,6 @@ namespace Asol.Tools.WorkScheduler.Components
             GActivePosition currItem = new GActivePosition(mouseAbsolutePoint);
             IInteractiveItem[] items = _CreateJoinItems(itemList, priorityItems);
             GActiveItem[] holdItems = ((prevItem != null && prevItem.HasItem) ? prevItem.Items : null);
-            zachovat i BoundsInfo:
             currItem._FindItemAtPoint(hostSize, items, mouseAbsolutePoint, withDisabled, holdItems);
             return currItem;
         }
@@ -2786,10 +2796,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="next"></param>
         /// <param name="leaveList"></param>
         /// <param name="enterList"></param>
-        public static void MapExchange(GActivePosition prev, GActivePosition next, out List<IInteractiveItem> leaveList, out List<IInteractiveItem> enterList)
+        public static void MapExchange(GActivePosition prev, GActivePosition next, out List<GActiveItem> leaveList, out List<GActiveItem> enterList)
         {
-            leaveList = new List<IInteractiveItem>();
-            enterList = new List<IInteractiveItem>();
+            leaveList = new List<GActiveItem>();
+            enterList = new List<GActiveItem>();
 
             if (prev == null && next == null) return;
 
@@ -2816,11 +2826,11 @@ namespace Asol.Tools.WorkScheduler.Components
             int firstDiffIdx = commonObjectIdx + 1;   // Index prvního prvku, který je odlišný
             // Událost MouseLeave se volá od posledního prvku v poli "prev" až po prvek na indexu "firstDiffIdx":
             for (int i = prevLastIdx; i >= firstDiffIdx; i--)
-                leaveList.Add(prev.Items[i].Item);
+                leaveList.Add(prev.Items[i]);
 
             // Událost MouseEnter se volá od prvku na indexu "firstDiffIdx" až do posledního prvku v poli "next":
             for (int i = firstDiffIdx; i <= nextLastIdx; i++)
-                enterList.Add(next.Items[i].Item);
+                enterList.Add(next.Items[i]);
         }
         /// <summary>
         /// Vrátí relativní bod (v koordinátech <see cref="ActiveItemAbsBounds"/>) pro daný absolutní bod

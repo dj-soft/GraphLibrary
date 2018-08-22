@@ -407,22 +407,6 @@ namespace Asol.Tools.WorkScheduler.Components
     {
         #region Konstruktory
         /// <summary>
-        /// Konstruktor pro událost nepocházející ani z myši, ani z klávesnice
-        /// </summary>
-        /// <param name="existsItem">true, when CurrentItem is found. Whereby CurrentItem is interface (i.e. can be a struct), then test for CurrentItem == null is not possible.</param>
-        /// <param name="currentItem">Active item. Item is found in hierarchy of IInteractiveItem and all its Childs, this is last Child found.</param>
-        /// <param name="changeState">Type of event (change of status)</param>
-        /// <param name="targetState">New state of item (after this event, not before it).</param>
-        public GInteractiveChangeStateArgs(bool existsItem, IInteractiveItem currentItem, GInteractiveChangeState changeState, GInteractiveState targetState, Func<Point, bool, IInteractiveItem> searchItemMethod)
-               : this()
-        {
-            this.ExistsItem = existsItem;
-            this.CurrentItem = currentItem;
-            this.ChangeState = changeState;
-            this.TargetState = targetState;
-            this.SearchItemMethod = searchItemMethod;
-        }
-        /// <summary>
         /// Konstruktor pro událost pocházející z myši
         /// </summary>
         /// <param name="existsItem">true, when CurrentItem is found. Whereby CurrentItem is interface (i.e. can be a struct), then test for CurrentItem == null is not possible.</param>
@@ -432,13 +416,15 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="mouseRelativePoint">Coordinate of mouse relative to CurrentItem.ActiveBounds.Location. Can be a null (in case when ExistsItem is false).</param>
         /// <param name="dragOriginBounds">Original area before current Drag operacion begun (in DragMove events)</param>
         /// <param name="dragToBounds">Target area during Drag operation (in DragMove event)</param>
-        public GInteractiveChangeStateArgs(bool existsItem, IInteractiveItem currentItem, GInteractiveChangeState changeState, GInteractiveState targetState, 
+        public GInteractiveChangeStateArgs(GActivePosition gcItem, GInteractiveChangeState changeState, GInteractiveState targetState, 
             Func<Point, bool, IInteractiveItem> searchItemMethod, Point? mouseAbsolutePoint, Point? mouseRelativePoint,
             Rectangle? dragOriginBounds, Rectangle? dragToBounds)
               : this()
         {
-            this.ExistsItem = existsItem;
-            this.CurrentItem = currentItem;
+            ;
+            this.ExistsItem = gcItem.HasItem;
+            this.CurrentItem = gcItem.ActiveItem;
+            this.CurrentBoundsInfo = gcItem.ActiveItemBoundsInfo;
             this.ChangeState = changeState;
             this.TargetState = targetState;
             this.SearchItemMethod = searchItemMethod;
@@ -457,10 +443,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="previewArgs">Keyboard Preview Data</param>
         /// <param name="keyArgs">Keyboard Events Data</param>
         /// <param name="keyPressArgs">Keyboard KeyPress data</param>
-        public GInteractiveChangeStateArgs(bool existsItem, IInteractiveItem currentItem, GInteractiveChangeState changeState, GInteractiveState targetState, Func<Point, bool, IInteractiveItem> searchItemMethod, PreviewKeyDownEventArgs previewArgs, KeyEventArgs keyArgs, KeyPressEventArgs keyPressArgs)
+        public GInteractiveChangeStateArgs(IInteractiveItem currentItem, GInteractiveChangeState changeState, GInteractiveState targetState, Func<Point, bool, IInteractiveItem> searchItemMethod, PreviewKeyDownEventArgs previewArgs, KeyEventArgs keyArgs, KeyPressEventArgs keyPressArgs)
             : this()
         {
-            this.ExistsItem = existsItem;
+            this.ExistsItem = true;
             this.CurrentItem = currentItem;
             this.ChangeState = changeState;
             this.TargetState = targetState;
@@ -468,6 +454,22 @@ namespace Asol.Tools.WorkScheduler.Components
             this.KeyboardPreviewArgs = previewArgs;
             this.KeyboardEventArgs = keyArgs;
             this.KeyboardPressEventArgs = keyPressArgs;
+        }
+        /// <summary>
+        /// Konstruktor pro událost nepocházející ani z myši, ani z klávesnice, anebo pro událost MouseEnter a MouseLeave controlu.
+        /// </summary>
+        /// <param name="existsItem">true, when CurrentItem is found. Whereby CurrentItem is interface (i.e. can be a struct), then test for CurrentItem == null is not possible.</param>
+        /// <param name="currentItem">Active item. Item is found in hierarchy of IInteractiveItem and all its Childs, this is last Child found.</param>
+        /// <param name="changeState">Type of event (change of status)</param>
+        /// <param name="targetState">New state of item (after this event, not before it).</param>
+        public GInteractiveChangeStateArgs(IInteractiveItem currentItem, GInteractiveChangeState changeState, GInteractiveState targetState, Func<Point, bool, IInteractiveItem> searchItemMethod)
+               : this()
+        {
+            this.ExistsItem = true;
+            this.CurrentItem = currentItem;
+            this.ChangeState = changeState;
+            this.TargetState = targetState;
+            this.SearchItemMethod = searchItemMethod;
         }
         /// <summary>
         /// Konstruktor pouze pro inicializaci proměnných
@@ -492,35 +494,41 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Input properties (read-only)
         /// <summary>
-        /// true, when CurrentItem is found.
-        /// Whereby CurrentItem is interface (i.e. can be a struct), then test for CurrentItem == null is not possible.
+        /// Obsahuje true, pokud <see cref="CurrentItem"/> je nalezen.
+        /// Poněvadž <see cref="CurrentItem"/> je interface (tedy může to být i struct), pak je vhodnější netestovat: if (<see cref="CurrentItem"/> != null).
         /// </summary>
         public bool ExistsItem { get; protected set; }
         /// <summary>
-        /// Active item.
-        /// Item is found in hierarchy of IInteractiveItem and all its Childs, this is last Child found.
+        /// Aktivní prvek.
         /// </summary>
         public IInteractiveItem CurrentItem { get; protected set; }
         /// <summary>
-        /// Type of event (change of status)
+        /// Souřadný systém položky <see cref="CurrentItem"/>
+        /// </summary>
+        public BoundsInfo CurrentBoundsInfo { get; protected set; }
+        /// <summary>
+        /// Typ události = změny stavu
         /// </summary>
         public GInteractiveChangeState ChangeState { get; protected set; }
         /// <summary>
-        /// New state of item (after this event, not before it).
+        /// Stav, který bude platit po změně stavu
         /// </summary>
         public GInteractiveState TargetState { get; protected set; }
         /// <summary>
-        /// Method for search for IInteractiveItem at specified Absolute point
+        /// Metoda, která pro danou absolutní souřadnici vyhledá konkrétní prvek.
+        /// Parametr 1 = absolutní souřadnice;
+        /// Parametr 2 = požadavek na hledání i Disabled prvků (true hledá i Disabled);
+        /// Výstup = prvek na dané souřadnici, na nejvyšší pozici v hierarchii i v ose Z.
         /// </summary>
         protected Func<Point, bool, IInteractiveItem> SearchItemMethod;
         /// <summary>
-        /// Coordinate of mouse on coordinates of Control.
-        /// Can be a null (in keyboard actions).
+        /// Absolutní souřadnice myši v koordinátech Controlu.
+        /// Může být null, pokud se akce nevztahuje k myši anebo pokud <see cref="ExistsItem"/> je false.
         /// </summary>
         public Point? MouseAbsolutePoint { get; protected set; }
         /// <summary>
-        /// Coordinate of mouse relative to CurrentItem.Bounds.Location.
-        /// Can be a null (in case when ExistsItem is false or in keyboard actions).
+        /// Relativní souřadnice myši v koordinátech aktivního prvku <see cref="CurrentItem"/>.
+        /// Může být null, pokud se akce nevztahuje k myši anebo pokud <see cref="ExistsItem"/> je false.
         /// </summary>
         public Point? MouseRelativePoint { get; protected set; }
         /// <summary>
