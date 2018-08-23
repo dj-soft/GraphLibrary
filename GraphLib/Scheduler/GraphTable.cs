@@ -561,10 +561,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                     else
                     {
                         Size size = args.MeasureString(test);
-                        if (size.Width <= width)
-                            text = test;
+                        if (size.Width > width)
+                            break;
+                        text = test;
                     }
-
                 }
                 args.Text = text;
             }

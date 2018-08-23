@@ -2137,9 +2137,11 @@ namespace Asol.Tools.WorkScheduler.Components
                     if (!isCtrl)
                     {   // Myší kolečko: samotné nebo se Shiftem = posun hodnoty:
                         if (canShift)
-                        {
+                        {   // Posun hodnoty: filozoficky to beru jako Scroll v odkumentu: 
+                            //  - když se točí kolečkem dolů, tak dokument se posouvá "dolů" = ukazuje další řádky a stránky, pokračování děje
+                            //  - tak i (časová) osa bude při točení dolů (WheelDown) ukazovat pokračování děje = vyšší hodnoty DateTime:
                             this._AxisState = AxisInteractiveState.DragMove;
-                            double shiftRatio = (Control.ModifierKeys == Keys.Shift ? 0.333d : 0.07d) * (e.ChangeState == GInteractiveChangeState.WheelUp ? 1d : -1d);
+                            double shiftRatio = (Control.ModifierKeys == Keys.Shift ? 0.333d : 0.07d) * (e.ChangeState == GInteractiveChangeState.WheelDown ? 1d : -1d);
                             TValue shiftValue = this.CalculateValueByShift(valueOld, shiftRatio, AxisTickType.Pixel);
                             shiftValue = this.AlignValue(shiftValue);
                             if (shiftValue != this._Value)
