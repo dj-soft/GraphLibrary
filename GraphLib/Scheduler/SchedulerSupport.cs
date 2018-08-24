@@ -263,6 +263,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         public const string DATA_GRAPHITEM_EDITMODE_MoveToAnotherTable = "MoveToAnotherTable";
         /// <summary>
+        /// Hodnota proměnné EditMode v tabulce Graph v prvku DATA: Nezobrazovat text v prvku nikdy
+        /// </summary>
+        public const string DATA_GRAPHITEM_EDITMODE_ShowCaptionNone = "ShowCaptionNone";
+        /// <summary>
         /// Hodnota proměnné EditMode v tabulce Graph v prvku DATA: Zobrazit text v prvku při stavu MouseOver
         /// </summary>
         public const string DATA_GRAPHITEM_EDITMODE_ShowCaptionInMouseOver = "ShowCaptionInMouseOver";
@@ -275,13 +279,17 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         public const string DATA_GRAPHITEM_EDITMODE_ShowCaptionAllways = "ShowCaptionAllways";
         /// <summary>
-        /// Hodnota proměnné EditMode v tabulce Graph v prvku DATA: Zobrazit ToolTip okamžitě po najetí myší na prvek (trochu brutus) a nechat svítit "skoro pořád"
+        /// Hodnota proměnné EditMode v tabulce Graph v prvku DATA: Nezobrazovat ToolTip nikdy.
         /// </summary>
-        public const string DATA_GRAPHITEM_EDITMODE_ShowToolTipImmediatelly = "ShowToolTipImmediatelly";
+        public const string DATA_GRAPHITEM_EDITMODE_ShowToolTipNone = "ShowToolTipNone";
         /// <summary>
         /// Hodnota proměnné EditMode v tabulce Graph v prvku DATA: Zobrazit ToolTip až nějaký čas po najetí myší, a po přiměřeném čase zhasnout.
         /// </summary>
         public const string DATA_GRAPHITEM_EDITMODE_ShowToolTipFadeIn = "ShowToolTipFadeIn";
+        /// <summary>
+        /// Hodnota proměnné EditMode v tabulce Graph v prvku DATA: Zobrazit ToolTip okamžitě po najetí myší na prvek (trochu brutus) a nechat svítit "skoro pořád"
+        /// </summary>
+        public const string DATA_GRAPHITEM_EDITMODE_ShowToolTipImmediatelly = "ShowToolTipImmediatelly";
         /// <summary>
         /// Hodnota proměnné EditMode v tabulce Graph v prvku DATA: Default pro pracovní čas = ResizeTime | MoveToAnotherTime | MoveToAnotherRow
         /// </summary>

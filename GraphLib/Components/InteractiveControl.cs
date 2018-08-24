@@ -657,7 +657,7 @@ namespace Asol.Tools.WorkScheduler.Components
         #region Řízení procesu MouseDragMove = přesouvání prvku Drag & Drop
         private void _MouseDragMoveBegin(MouseEventArgs e)
         {
-            // Relativní pozice myši v okamžiku MouseDown, nikoli aktuální pozice (ta už je mimo prostor _CurrentMouseDragStart):
+            // Relativní pozice myši v okamžiku MouseDown, nikoli aktuální pozice (ta už je přesunutá = mimo prostor _CurrentMouseDragStart):
             this._MouseCurrentRelativePoint = _GetRelativePoint(this._MouseDownAbsolutePoint.Value, this._MouseCurrentItem);
             if (this._MouseCurrentItem.CanDrag)
             {
@@ -753,10 +753,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// This offset will be added to MouseLocation (in control coordinates) during drag, and sent to DragMove events.
         /// </summary>
         private Point? _UserDragPointOffset { get; set; }
-        /// <summary>
-        /// Prvek, který je Parentem aktuální akce DragFrame.
-        /// </summary>
-        private GActivePosition _MouseDragFrameItem { get; set; }
 
         #endregion
         #region Řízení procesu MouseDragFrame = výběr prvků zarámováním, včetně vykreslení
@@ -852,6 +848,10 @@ namespace Asol.Tools.WorkScheduler.Components
             GPainter.DrawFrameSelect(graphics, this._MouseDragFrameCurrentBounds.Value);
         }
         /// <summary>
+        /// Prvek, který je Parentem aktuální akce DragFrame.
+        /// </summary>
+        private GActivePosition _MouseDragFrameItem { get; set; }
+        /// <summary>
         /// Pole prvků, které jsou aktuálně vybrány prostřednictvím DragFrame.
         /// Mimo proces DragFrame je null.
         /// </summary>
@@ -869,8 +869,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Pokud je null, pak se nekreslí.
         /// </summary>
         private Rectangle? _MouseDragFrameCurrentBounds { get; set; }
-
-
         #endregion
         #region Metody pro volání interaktivních metod na prvcích IInteractiveItem.AfterStateChanged() atd
         /// <summary>
@@ -2550,7 +2548,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Hledá počínaje od prvku <see cref="ActiveItem"/> (navrchu), a pokud ten nepodporuje Drag & Drop, tak hledá směrem k jeho Parentům.
         /// Pokud takový najde, pak vrací true.
         /// Pokud najde vhodný prvek na pozici "nižší" než je aktuální prvek <see cref="ActiveItem"/>, tak tento "aktivuje" (a poté vrátí true).
-        /// Aktivace = od této chvíle bude aktivním prvkem ten, který podporuje Drag & Drop, a ne prvky "vyšší".
+        /// Aktivace = od této chvíle bude aktivním prvkem ten, který podporuje Drag & Drop, a ne prvky "vyšší". Vyšší prvky budou "zapomenuty".
         /// </summary>
         /// <returns></returns>
         internal bool SearchForDraggableItem()

@@ -319,11 +319,20 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Vrátí danou relativní souřadnici posunutou do absolutních koordinátů (k souřadnici se přičte <see cref="_OriginX"/>, <see cref="_OriginY"/>)
         /// </summary>
-        /// <param name="bounds"></param>
+        /// <param name="relativeBounds"></param>
         /// <returns></returns>
-        protected Rectangle GetAbsBounds(Rectangle bounds)
+        public Rectangle GetAbsBounds(Rectangle relativeBounds)
         {
-            return bounds.Add(this._OriginX, this._OriginY);
+            return relativeBounds.Add(this._OriginX, this._OriginY);
+        }
+        /// <summary>
+        /// Vrátí danou absolutní souřadnici posunutou do relativních koordinátů (k souřadnici se odečte <see cref="_OriginX"/>, <see cref="_OriginY"/>)
+        /// </summary>
+        /// <param name="absoluteBounds"></param>
+        /// <returns></returns>
+        public Rectangle GetRelBounds(Rectangle absoluteBounds)
+        {
+            return absoluteBounds.Sub(this._OriginX, this._OriginY);
         }
         /// <summary>
         /// Vrátí danou relativní souřadnici posunutou do absolutních koordinátů (k souřadnici se přičte <see cref="_OriginX"/>, <see cref="_OriginY"/>),

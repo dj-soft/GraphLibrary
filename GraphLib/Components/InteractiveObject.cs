@@ -745,7 +745,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         protected static IInteractiveParent SearchForParent(IInteractiveItem item, Type parentType)
         {
-            return SearchForParent(item, i => (i.GetType() == parentType));
+            return SearchForItem(item, false, i => (i.GetType() == parentType));
         }
         /// <summary>
         /// Metoda vyhledá nejbližšího parenta, vyhovujícího danému filtru.
@@ -756,7 +756,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         protected IInteractiveParent SearchForParent(Func<IInteractiveParent,bool> filter)
         {
-            return SearchForParent(this, filter);
+            return SearchForItem(this, false, filter);
         }
         /// <summary>
         /// Metoda vyhledá nejbližšího parenta, vyhovujícího danému filtru.
@@ -767,13 +767,43 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         protected static IInteractiveParent SearchForParent(IInteractiveItem item, Func<IInteractiveParent, bool> filter)
         {
+            return SearchForItem(item, false, filter);
+        }
+        /// <summary>
+        /// Metoda vyhledá nejbližší prvek, který je daného typu.
+        /// Sebe sama testuje, pokud parametr (withCurrent) je true; 
+        /// anebo netestuje (pokud withCurrent je false), pak se chová jako metoda <see cref="SearchForParent(IInteractiveItem, Func{IInteractiveParent, bool})"/>.
+        /// Může vrátit null.
+        /// </summary>
+        /// <param name="item">První prvek v řadě, bude se prohledávat jeho hierarchie směrem k Parent</param>
+        /// <param name="withCurrent">Testovat i sebe? false = ne (hledám parenty), true = ano (i prvek item může vyhovovat)</param>
+        /// <param name="parentType">Typ objektu, který hledáme.</param>
+        /// <returns></returns>
+        protected static IInteractiveParent SearchForItem(IInteractiveItem item, bool withCurrent, Type parentType)
+        {
+            return SearchForItem(item, withCurrent, i => (i.GetType() == parentType));
+        }
+        /// <summary>
+        /// Metoda vyhledá nejbližší prvek, vyhovujícího danému filtru.
+        /// Sebe sama testuje, pokud parametr (withCurrent) je true; 
+        /// anebo netestuje (pokud withCurrent je false), pak se chová jako metoda <see cref="SearchForParent(IInteractiveItem, Func{IInteractiveParent, bool})"/>.
+        /// Může vrátit null.
+        /// </summary>
+        /// <param name="item">První prvek v řadě, bude se prohledávat jeho hierarchie směrem k Parent</param>
+        /// <param name="withCurrent">Testovat i sebe? false = ne (hledám parenty), true = ano (i prvek item může vyhovovat)</param>
+        /// <param name="filter">Filtrační podmínka</param>
+        /// <returns></returns>
+        protected static IInteractiveParent SearchForItem(IInteractiveItem item, bool withCurrent, Func<IInteractiveParent, bool> filter)
+        {
             if (item == null) return null;
-            IInteractiveParent parent = item.Parent;
-            while (parent != null)
+            IInteractiveParent testItem = (withCurrent ? item : item.Parent);  // První prvek, který budeme testovat
+            bool testCycle = !withCurrent;                                     // Test zacyklení v první smyčce budeme provádět jen tehdy, když v první smyčce řešíme Parenta, ale ne withCurrent
+            while (testItem != null)
             {
-                if (Object.ReferenceEquals(parent, item)) return null;         // Zacyklení
-                if (filter(parent)) return parent;                             // Úspěch
-                parent = parent.Parent;                                        // O level dál
+                if (!testCycle) testCycle = true;                              // Pokud jsme v první smyčce a netestujeme zde zacyklení, pak nastavíme true pro další smyčku.
+                else if (Object.ReferenceEquals(testItem, item)) return null;  // Protože máme testovat zacyklení, provedeme to zde...
+                if (filter(testItem)) return testItem;                         // Shoda filtru => Úspěch
+                testItem = testItem.Parent;                                    // Jdeme o level dál ve směru k Parentovi
             }
             return null;                                                       // Neúspěch
         }

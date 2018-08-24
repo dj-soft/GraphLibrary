@@ -657,7 +657,7 @@ namespace Asol.Tools.WorkScheduler.Components
     /// </summary>
     public class GDragActionArgs : EventArgs
     {
-        #region Constructors
+        #region Konstruktor
         public GDragActionArgs(GInteractiveChangeStateArgs changeArgs, DragActionType dragAction, Point mouseDownAbsolutePoint, Point? mouseCurrentAbsolutePoint)
         {
             this._ChangeArgs = changeArgs;
@@ -667,24 +667,32 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         private GInteractiveChangeStateArgs _ChangeArgs;
         #endregion
-        #region Input properties (read-only)
+        #region Public properties - vstupní ze controlu (read-only)
         /// <summary>
-        /// Type of event (change of status)
+        /// Typ události = změny stavu
         /// </summary>
         public GInteractiveChangeState ChangeState { get { return this._ChangeArgs.ChangeState; } }
         /// <summary>
-        /// New state of item (after this event, not before it).
+        /// Stav, který bude platit po změně stavu
         /// </summary>
         public GInteractiveState TargetState { get { return this._ChangeArgs.TargetState; } }
         /// <summary>
-        /// Origin area (Bounds of current item) before current Drag operation begun (in DragMove event)
+        /// Souřadnice prvku výchozí před zahájením akce Drag and Drop, relativní koordináty. 
         /// </summary>
         public Rectangle? DragOriginRelativeBounds { get { return this._ChangeArgs.DragMoveOriginBounds; } }
         /// <summary>
-        /// Target area during Drag operation (in DragMove event) calculated from DragOriginBounds and mouse move (without limitations).
-        /// Real target bounds can be other than this unlimited bounds.
+        /// Souřadnice prvku cílová v průběhu akce Drag and Drop, relativní koordináty. 
+        /// Jedná se o souřadnice odpovídající pohybu myši; prvek sám může svoje cílové souřadnice modifikovat s ohledem na svoje vlastní pravidla.
         /// </summary>
         public Rectangle? DragToRelativeBounds { get { return this._ChangeArgs.DragMoveToBounds; } }
+        /// <summary>
+        /// Aktivní prvek.
+        /// </summary>
+        public IInteractiveItem CurrentItem { get { return this._ChangeArgs.CurrentItem; } }
+        /// <summary>
+        /// Souřadný systém položky <see cref="CurrentItem"/>, včetně souřadnic absolutních a reference na konkrétní prvek
+        /// </summary>
+        public BoundsInfo BoundsInfo { get { return this._ChangeArgs.BoundsInfo; } }
 
         /// <summary>
         /// Type of action (drag this object, or drag another object over this object)

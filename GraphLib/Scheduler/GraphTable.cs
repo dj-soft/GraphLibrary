@@ -749,7 +749,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                     case WorkSchedulerSupport.DATA_GRAPHITEM_BACKSTYLE:
                     case "backstyle":
                     case "back_style":
-                        this._BackStyle = Scheduler.MainData.GetHatchStyle(item.Value);
+                        // this._BackStyle = Scheduler.MainData.GetHatchStyle(item.Value);
                         break;
                     case WorkSchedulerSupport.DATA_GRAPHITEM_BORDERCOLOR:
                     case "bordercolor":
@@ -765,17 +765,20 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         protected void _LoadDataDefault()
         {
-            switch (this.ItemGId.ClassId)        // Číslo třídy prvku grafu
+            int classNumber = (this.ItemGId.ClassId >= 0 ? this.ItemGId.ClassId : -this.ItemGId.ClassId);
+            switch (classNumber)        // Číslo třídy prvku grafu
             {
-                case GreenClasses.PlanUnitCCl:
-                    this._BackStyle = System.Drawing.Drawing2D.HatchStyle.Percent25;
+                case GreenClasses.PlanUnitCCl:             // Stav kapacit
+                    this._BackStyle = System.Drawing.Drawing2D.HatchStyle.Percent50;
                     this._BehaviorMode = GraphItemBehaviorMode.None | GraphItemBehaviorMode.ShowToolTipFadeIn;
                     break;
-                case GreenClasses.PlanUnitCUnit:
+                case GreenClasses.PlanUnitCUnit:           // Jednotka práce
                     this._BackStyle = null;
                     this._BehaviorMode = GraphItemBehaviorMode.DefaultWorkTime | GraphItemBehaviorMode.DefaultText;
                     break;
-                case GreenClasses.ProductOrderOperation:
+                case GreenClasses.ProductOrderOperation:   // Operace VP
+                    this._BackStyle = null;
+                    this._BehaviorMode = GraphItemBehaviorMode.None | GraphItemBehaviorMode.ShowToolTipFadeIn;
                     break;
                 default:
                     break;

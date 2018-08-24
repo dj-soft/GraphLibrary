@@ -149,7 +149,9 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         }
         protected override void DragThisOverBounds(GDragActionArgs e, Rectangle targetRelativeBounds)
         {
-            this.DragGroupOverAny(e, ref targetRelativeBounds);
+            Rectangle targetAbsoluteBounds = e.BoundsInfo.GetAbsBounds(targetRelativeBounds);
+            if (this.DragGroupOverAny(e, ref targetAbsoluteBounds))
+                targetRelativeBounds = e.BoundsInfo.GetRelBounds(targetAbsoluteBounds);
             base.DragThisOverBounds(e, targetRelativeBounds);
         }
         protected override void DragThisDropToBounds(GDragActionArgs e, Rectangle boundsTarget)
@@ -164,48 +166,92 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Klíčová metoda, která v procesu Drag and Drop určuje, zda, jak a kam se právě přesouvá grafický prvek.
         /// Metoda vyhledá odpovídající podkladový graf, respektive jiný podkladový prostor, a omezí případně pohyb prvku jen do vyhrazené oblasti.
         /// Současně si ukládá nalezený podkladový graf jako případný cíl...
+        /// Metoda vrací true, pokud došlo ke změně souřadnic.
         /// </summary>
         /// <param name="e"></param>
-        /// <param name="targetRelativeBounds"></param>
+        /// <param name="targetAbsoluteBounds">
+        /// Na vstupu: absolutní souřadnice místa, kam by uživatel rád přesunul prvek grafu;
+        /// Na výstupu: </param>
         /// <returns></returns>
-        protected void DragGroupOverAny(GDragActionArgs e, ref Rectangle targetRelativeBounds)
+        protected bool DragGroupOverAny(GDragActionArgs e, ref Rectangle targetAbsoluteBounds)
         {
+            /* Popis chování:
+    * SITUACE  : Přetahuji položku grafu, hledám prvek nad nímž se pohybuji (můj vlastní graf, jiný graf v rámci téže tabulky, jakýkoli jiný graf, jiný objekt?)
+    * POTŘEBA  : Chci jednak omezit pohyb prvku jen na vhodná místa,
+    *            a jednak chci určit, nad kterým prvkem se položka grafu pohybuje = to ovlivňuje chování i případně vykreslování
+    * PODMÍNKY : a) pokud jsem nad svým vlastním grafem, pak je pohyb povolen
+    *            b) pokud jsem nad tabulkou, pak je pohyb povolen jen nad oblastí dat, a to jen v rámci sloupce grafů
+    *            c) určuji, zda jsem nad vlastním grafem, nebo nad vlastní tabulkou, a nad nějakým jiným grafem.
+    *            Podle toho se následně rozhoduje, jak je pohyb přípustný.
+    *            Po určení situace se volá datový zdroj pro určení důsledků
+    * VÝSLEDKY : 
+
+
+
+
+
+            */
+
+            // Zjistím, zda já sám (prvek grafu) jsem umístěn v tabulce (teoreticky nemusím být v tabulce, měl bych být jen v Grafu):
+            Grid.GTable parentTable = this.SearchForParent(typeof(Grid.GTable)) as Grid.GTable;
+            bool isInTable = (parentTable != null);
+
+            // Najdu prvek, nad nímž se pohybuji:
+            IInteractiveItem item = e.FindItemAtPoint(e.MouseCurrentAbsolutePoint.Value);
+
+            // Zjistím, zda se pohybuji nad nějakým grafem:
+            GTimeGraph overGraph = SearchForItem(item, true, typeof(GTimeGraph)) as GTimeGraph;
+
+            // Zjistím, zda se pohybuji nad mým aktuálním parent grafem (pokud se pohybuji nad grafem):
+            bool isOverParentGraph = (overGraph != null && Object.ReferenceEquals(overGraph, this.Parent));
+
+            // Zjistím, zda Drag and Drop se nyní pohybuje nad nějakou tabulkou:
+            Grid.GTable overTable = SearchForItem(item,true, typeof(Grid.GTable)) as Grid.GTable;
+
+            // Zjistím, zda tabulka, nad niž se Drag and Drop nyní pohybuje, je identická sa mojí tabulkou:
+            bool isOverParentTable = (isInTable && overTable != null && Object.ReferenceEquals(overTable, parentTable));
+
+
+            // Nyní 
+            qqq;
+
+
+            // Najdu tabulku, do které patřím:
+            Rectangle rowArea = parentTable.GetAbsoluteBoundsForArea(Grid.TableAreaType.RowData);
+
             // Najdu prvek, který se právě nachází pod myší:
             // (na počátku to je tentýž, který přemisťuji, ale později už ne - protože ten má pozici Bounds dosud nezměněnou !)
             // Takže postupně (kromě sebe sama) najdu buď nějaký sousední grafický prvek, nebo samotný graf, anebo grid nebo jiný prvek, na němž se nachází myš:
-            IInteractiveItem item = e.FindItemAtPoint(e.MouseCurrentAbsolutePoint.Value);
 
             // Podle toho, nad čím se myš pohybuje, určím co dál:
             GTimeGraph graph = SearchForParent(item, typeof(GTimeGraph)) as GTimeGraph;
             if (graph != null)
-            {
-                DragGroupOverGraph(e, graph, ref targetRelativeBounds);
-                return;
-            }
+                return this.DragGroupOverGraph(e, graph, ref targetAbsoluteBounds);
 
             Grid.GTable table = SearchForParent(item, typeof(Grid.GTable)) as Grid.GTable;
             if (table != null)
-            {
-                DragGroupOverTable(e, table, ref targetRelativeBounds);
-                return;
-            }
+                return this.DragGroupOverTable(e, table, ref targetAbsoluteBounds);
 
             GTimeGraph parentGraph = this.Parent as GTimeGraph;
             if (parentGraph != null)
             {
                 Rectangle clientBounds = new Rectangle(new Point(), parentGraph.Bounds.Size);
-                targetRelativeBounds = targetRelativeBounds.FitInto(clientBounds, false);
+                targetAbsoluteBounds = targetAbsoluteBounds.FitInto(clientBounds, false);
             }
             // targetRelativeBounds.Y = this.Bounds.Y;
+            return false;
         }
-        protected void DragGroupOverGraph(GDragActionArgs e, GTimeGraph graph, ref Rectangle targetRelativeBounds)
+        protected bool DragGroupOverGraph(GDragActionArgs e, GTimeGraph graph, ref Rectangle targetAbsoluteBounds)
         {
             Rectangle clientBounds = new Rectangle(new Point(), graph.Bounds.Size);
-            targetRelativeBounds = targetRelativeBounds.FitInto(clientBounds, false);
-
+            targetAbsoluteBounds = targetAbsoluteBounds.FitInto(clientBounds, false);
+            return false;
         }
-        protected void DragGroupOverTable(GDragActionArgs e, Grid.GTable table, ref Rectangle targetRelativeBounds)
-        { }
+        protected bool DragGroupOverTable(GDragActionArgs e, Grid.GTable table, ref Rectangle targetAbsoluteBounds)
+        {
+
+            return false;
+        }
         #endregion
         #region Kreslení prvku
         /// <summary>

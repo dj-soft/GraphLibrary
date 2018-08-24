@@ -887,6 +887,9 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         internal void GraphItemPrepareToolTip(GInteractiveChangeStateArgs e, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position)
         {
             if (data == null) return;
+            bool isNone = data.BehaviorMode.HasFlag(GraphItemBehaviorMode.ShowToolTipNone);
+            if (isNone) return;
+
             bool isFadeIn = data.BehaviorMode.HasFlag(GraphItemBehaviorMode.ShowToolTipFadeIn);
             bool isImmediatelly = data.BehaviorMode.HasFlag(GraphItemBehaviorMode.ShowToolTipImmediatelly);
             if (!isFadeIn && !isImmediatelly) return;
@@ -1216,6 +1219,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <returns></returns>
         internal static bool IsCaptionVisible(GraphItemBehaviorMode mode, GInteractiveState state, bool isSelected)
         {
+            if (mode.HasFlag(GraphItemBehaviorMode.ShowCaptionNone)) return false;
             if (mode.HasFlag(GraphItemBehaviorMode.ShowCaptionAllways)) return true;
             if (mode.HasFlag(GraphItemBehaviorMode.ShowCaptionInSelected) && isSelected) return true;
             if (mode.HasFlag(GraphItemBehaviorMode.ShowCaptionInMouseOver))
@@ -1498,6 +1502,9 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
     /// </summary>
     public enum TimeGraphTimeAxisMode
     {
+        // VAROVÁNÍ : Změna názvu jednotlivých enumů je zásadní změnou, která se musí promítnout i do konstant ve WorkSchedulerSupport a to jak zde, tak v Greenu.
+        //            Hodnoty se z Greenu předávají v textové formě, a tady v GUI se z textu získávají parsováním (Enum.TryParse()) !
+
         /// <summary>
         /// Výchozí = podle vlastníka (sloupce, nebo tabulky).
         /// </summary>
@@ -1529,6 +1536,9 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
     [Flags]
     public enum GraphItemBehaviorMode : int
     {
+        // VAROVÁNÍ : Změna názvu jednotlivých enumů je zásadní změnou, která se musí promítnout i do konstant ve WorkSchedulerSupport a to jak zde, tak v Greenu.
+        //            Hodnoty se z Greenu předávají v textové formě, a tady v GUI se z textu získávají parsováním (Enum.TryParse()) !
+
         /// <summary>
         /// Bez zadání
         /// </summary>
@@ -1554,30 +1564,40 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         MoveToAnotherTable = 0x40,
         /// <summary>
-        /// Zobrazit text v prvku při stavu MouseOver
+        /// Nezobrazovat text v prvku nikdy.
+        /// Toto je explicitní hodnota; ale shodné chování bude použito i když nebude specifikována žádná jiná hodnota ShowCaption*.
+        /// </summary>
+        ShowCaptionNone = 0x1000,
+        /// <summary>
+        /// Zobrazit text v prvku při stavu MouseOver.
         /// Pokud nebude specifikována hodnota <see cref="ShowCaptionInMouseOver"/> ani <see cref="ShowCaptionInSelected"/> ani <see cref="ShowCaptionAllways"/>, nebude se zobrazovat text v prvku vůbec.
         /// </summary>
-        ShowCaptionInMouseOver = 0x1000,
+        ShowCaptionInMouseOver = 0x2000,
         /// <summary>
-        /// Zobrazit text v prvku při stavu Selected
+        /// Zobrazit text v prvku při stavu Selected.
         /// Pokud nebude specifikována hodnota <see cref="ShowCaptionInMouseOver"/> ani <see cref="ShowCaptionInSelected"/> ani <see cref="ShowCaptionAllways"/>, nebude se zobrazovat text v prvku vůbec.
         /// </summary>
-        ShowCaptionInSelected = 0x2000,
+        ShowCaptionInSelected = 0x4000,
         /// <summary>
-        /// Zobrazit text v prvku vždy
+        /// Zobrazit text v prvku vždy.
         /// Pokud nebude specifikována hodnota <see cref="ShowCaptionInMouseOver"/> ani <see cref="ShowCaptionInSelected"/> ani <see cref="ShowCaptionAllways"/>, nebude se zobrazovat text v prvku vůbec.
         /// </summary>
         ShowCaptionAllways = 0x8000,
         /// <summary>
-        /// Zobrazit ToolTip okamžitě po najetí myší na prvek (trochu brutus) a nechat svítit "skoro pořád"
-        /// Pokud nebude specifikována hodnota <see cref="ShowToolTipImmediatelly"/> ani <see cref="ShowToolTipFadeIn"/>, nebude se zobrazovat ToolTip vůbec.
+        /// Nezobrazovat ToolTip nikdy.
+        /// Toto je explicitní hodnota; ale shodné chování bude použito i když nebude specifikována žádná jiná hodnota ShowToolTip*.
         /// </summary>
-        ShowToolTipImmediatelly = 0x10000,
+        ShowToolTipNone = 0x10000,
         /// <summary>
-        /// Zobrazit ToolTip až nějaký čas po najetí myší, a po přiměřeném čase zhasnout.
+        /// Zobrazit ToolTip až nějaký čas po najetí myší, a po přiměřeném čase (vzhledem k délce zobrazeného textu) zhasnout.
         /// Pokud nebude specifikována hodnota <see cref="ShowToolTipImmediatelly"/> ani <see cref="ShowToolTipFadeIn"/>, nebude se zobrazovat ToolTip vůbec.
         /// </summary>
         ShowToolTipFadeIn = 0x20000,
+        /// <summary>
+        /// Zobrazit ToolTip okamžitě po najetí myší na prvek (trochu brutus) a nechat svítit "skoro pořád".
+        /// Pokud nebude specifikována hodnota <see cref="ShowToolTipImmediatelly"/> ani <see cref="ShowToolTipFadeIn"/>, nebude se zobrazovat ToolTip vůbec.
+        /// </summary>
+        ShowToolTipImmediatelly = 0x40000,
         /// <summary>
         /// Default pro pracovní čas = <see cref="ResizeTime"/> | <see cref="MoveToAnotherTime"/> | <see cref="MoveToAnotherRow"/>
         /// </summary>
@@ -1590,14 +1610,15 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Souhrn příznaků, povolujících Drag and Drop prvku = <see cref="MoveToAnotherTime"/> | <see cref="MoveToAnotherRow"/> | <see cref="MoveToAnotherTable"/>
         /// </summary>
         AnyMove = MoveToAnotherTime | MoveToAnotherRow | MoveToAnotherTable
-
-
     }
     /// <summary>
     /// Tvar položky grafu
     /// </summary>
     public enum TimeGraphElementShape
     {
+        // VAROVÁNÍ : Změna názvu jednotlivých enumů je zásadní změnou, která se musí promítnout i do konstant ve WorkSchedulerSupport a to jak zde, tak v Greenu.
+        //            Hodnoty se z Greenu předávají v textové formě, a tady v GUI se z textu získávají parsováním (Enum.TryParse()) !
+
         Default = 0,
         Rectangle
     }
