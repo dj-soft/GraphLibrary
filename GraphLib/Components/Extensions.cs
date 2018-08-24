@@ -1411,7 +1411,7 @@ namespace Asol.Tools.WorkScheduler.Components
             return r.Width * r.Height;
         }
         /// <summary>
-        /// Returns a Orientation of this Rectangle. When Width is equal or greater than Height, then returns Horizontal. Otherwise returns Vertica orientation.
+        /// Vrátí orientaci tohoto prostoru podle poměru šířky a výšky. Pokud šířka == výšce, pak vrací Horizontal.
         /// </summary>
         /// <param name="r"></param>
         /// <returns></returns>
@@ -1427,6 +1427,62 @@ namespace Asol.Tools.WorkScheduler.Components
         public static Orientation GetOrientation(this RectangleF r)
         {
             return (r.Width >= r.Height ? Orientation.Horizontal : Orientation.Vertical);
+        }
+        /// <summary>
+        /// Metoda vrátí vzdálenost daného bodu od nejbližšího bodu daného rectangle.
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <param name="point"></param>
+        /// <returns></returns>
+        public static int GetOuterDistance(this Rectangle bounds, Point point)
+        {
+            int x = point.X;
+            int y = point.Y;
+            int l = bounds.X;
+            int t = bounds.Y;
+            int r = bounds.Right;
+            int b = bounds.Bottom;
+
+            string q = ((x < l) ? "0" : ((x < r) ? "1" : "2")) + ((y < t) ? "0" : ((y < b) ? "1" : "2"));        // Kvadrant "00" = vlevo nad, "11" = uvnitř, "02" = vlevo pod, atd...
+            int dx = 0;
+            int dy = 0;
+            switch (q)
+            {
+                case "00":        // Vlevo, Nad
+                    dx = l - x;
+                    dy = t - y;
+                    break;
+                case "01":        // Vlevo, Uvnitř
+                    dx = l - x;
+                    break;
+                case "02":        // Vlevo, Pod
+                    dx = l - x;
+                    dy = y - b;
+                    break;
+                case "10":        // Uvnitř, Nad
+                    dy = t - y;
+                    break;
+                case "11":        // Uvnitř, Uvnitř
+                    break;
+                case "12":        // Uvnitř, Pod
+                    dy = y - b;
+                    break;
+                case "20":        // Vpravo, Nad
+                    dx = x - r;
+                    dy = t - y;
+                    break;
+                case "21":        // Vpravo, Uvnitř
+                    dx = x - r;
+                    break;
+                case "22":        // Vpravo, Pod
+                    dx = x - r;
+                    dy = y - b;
+                    break;
+            }
+            if (dy == 0) return dx;
+            if (dx == 0) return dy;
+            int d = (int)Math.Ceiling(Math.Sqrt((double)(dx * dx + dy * dy)));
+            return d;
         }
         /// <summary>
         /// Vrací Rectangle, který je souhrnem všech zadaných Rectangle.
@@ -1686,6 +1742,46 @@ namespace Asol.Tools.WorkScheduler.Components
         public static Rectangle Sub(this Rectangle r, int x, int y)
         {
             return new Rectangle(r.X - x, r.Y - y, r.Width, r.Height);
+        }
+        /// <summary>
+        /// Returns a Rectangle, which is this rectangle plus point (=new Rectangle(this.X + point.X, this.Y + point.Y, this.Width, this.Height))
+        /// </summary>
+        /// <param name="r"></param>
+        /// <param name="point"></param>
+        /// <returns></returns>
+        public static Rectangle? Add(this Rectangle? r, Point? point)
+        {
+            return (r.HasValue && point.HasValue ? (Rectangle?)(new Rectangle(r.Value.Location.Add(point.Value), r.Value.Size)) : (Rectangle?)null);
+        }
+        /// <summary>
+        /// Returns a Rectangle?, which is this rectangle plus point (=new Rectangle?(this.X + point.X, this.Y + point.Y, this.Width, this.Height))
+        /// </summary>
+        /// <param name="r"></param>
+        /// <param name="point"></param>
+        /// <returns></returns>
+        public static Rectangle? Add(this Rectangle? r, int x, int y)
+        {
+            return (r.HasValue ? (Rectangle?)(new Rectangle(r.Value.X + x, r.Value.Y + y, r.Value.Width, r.Value.Height)) : (Rectangle?)null);
+        }
+        /// <summary>
+        /// Returns a Rectangle?, which is this rectangle minus point (=new Rectangle?(this.X - point.X, this.Y - point.Y, this.Width, this.Height))
+        /// </summary>
+        /// <param name="r"></param>
+        /// <param name="point"></param>
+        /// <returns></returns>
+        public static Rectangle? Sub(this Rectangle? r, Point? point)
+        {
+            return (r.HasValue && point.HasValue ? (Rectangle?)(new Rectangle(r.Value.Location.Sub(point.Value), r.Value.Size)) : (Rectangle?)null);
+        }
+        /// <summary>
+        /// Returns a Rectangle?, which is this rectangle minus point (=new Rectangle?(this.X - point.X, this.Y - point.Y, this.Width, this.Height))
+        /// </summary>
+        /// <param name="r"></param>
+        /// <param name="point"></param>
+        /// <returns></returns>
+        public static Rectangle? Sub(this Rectangle? r, int x, int y)
+        {
+            return (r.HasValue ? (Rectangle?)(new Rectangle(r.Value.X - x, r.Value.Y - y, r.Value.Width, r.Value.Height)) : (Rectangle?)null);
         }
         /// <summary>
         /// Returns a RectangleF, which is this rectangle plus point (=new RectangleF(this.X + point.X, this.Y + point.Y, this.Width, this.Height))

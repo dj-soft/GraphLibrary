@@ -640,6 +640,20 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (itemId <= 0) return null;
             return this.GetGraphItem(itemId);
         }
+        protected void ItemDragItemStart(ItemDragDropArgs args)
+        {
+        }
+        /// <summary>
+        /// Scheduler zde pomáhá určovat, zda jak a kam lze nebo nelze přemisťovat prvek grafu.
+        /// </summary>
+        /// <param name="args"></param>
+        protected void ItemDragItemMove(ItemDragDropArgs args)
+        {
+        }
+        protected void ItemDragItemDrop(ItemDragDropArgs args)
+        {
+        }
+
         void ITimeGraphDataSource.CreateText(CreateTextArgs args) { this.GraphItemPrepareText(args); }
         void ITimeGraphDataSource.CreateToolTip(CreateToolTipArgs args) { this.GraphItemPrepareToolTip(args); }
         void ITimeGraphDataSource.GraphRightClick(ItemActionArgs args) { args.ContextMenu = this.GetContextMenuForGraph(args); }
@@ -647,6 +661,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         void ITimeGraphDataSource.ItemDoubleClick(ItemActionArgs args) { this.GraphItemDoubleClick(args); }
         void ITimeGraphDataSource.ItemLongClick(ItemActionArgs args) { }
         void ITimeGraphDataSource.ItemChange(ItemChangeArgs args) { }
+        void ITimeGraphDataSource.ItemDragItemStart(ItemDragDropArgs args) { this.ItemDragItemStart(args); }
+        void ITimeGraphDataSource.ItemDragItemMove(ItemDragDropArgs args) { this.ItemDragItemMove(args); }
+        void ITimeGraphDataSource.ItemDragItemDrop(ItemDragDropArgs args) { this.ItemDragItemDrop(args); }
         #endregion
     }
     /// <summary>

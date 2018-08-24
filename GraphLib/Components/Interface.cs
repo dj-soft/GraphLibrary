@@ -588,8 +588,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         private bool _ItemAtCurrentMousePointSearched;
         /// <summary>
-        /// This method returns first top-most object, which BoundAbsolute is on specified point.
-        /// Can return a null (when at point is not object, only host container).
+        /// Tato metoda najde první Top-Most objekt, který se nachází na dané absolutní souřadnici.
+        /// Může vrátit null, když tam nic není.
+        /// Tato metoda "nevidí" prvky, které mají IsDisabled = true.
         /// </summary>
         /// <param name="absolutePoint"></param>
         /// <returns></returns>
@@ -598,10 +599,12 @@ namespace Asol.Tools.WorkScheduler.Components
             return this.FindItemAtPoint(absolutePoint, false);
         }
         /// <summary>
-        /// This method returns first top-most object, which BoundAbsolute is on specified point.
-        /// Can return a null (when at point is not object, only host container).
+        /// Tato metoda najde první Top-Most objekt, který se nachází na dané absolutní souřadnici.
+        /// Může vrátit null, když tam nic není.
+        /// Tato metoda akceptuje prvky, které mají IsDisabled = true, pokud má parametr "withDisabled" = true.
         /// </summary>
         /// <param name="absolutePoint"></param>
+        /// <param name="withDisabled">true = najde i IsDisabled prvky</param>
         /// <returns></returns>
         public IInteractiveItem FindItemAtPoint(Point absolutePoint, bool withDisabled)
         {
@@ -669,6 +672,10 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Public properties - vstupní ze controlu (read-only)
         /// <summary>
+        /// Kompletní data o interaktivní akci
+        /// </summary>
+        public GInteractiveChangeStateArgs ChangeArgs { get { return this._ChangeArgs; } }
+        /// <summary>
         /// Typ události = změny stavu
         /// </summary>
         public GInteractiveChangeState ChangeState { get { return this._ChangeArgs.ChangeState; } }
@@ -686,6 +693,21 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public Rectangle? DragToRelativeBounds { get { return this._ChangeArgs.DragMoveToBounds; } }
         /// <summary>
+        /// Souřadnice prvku cílová v průběhu akce Drag and Drop, absolutní koordináty. 
+        /// Jedná se o souřadnice odpovídající pohybu myši; prvek sám může svoje cílové souřadnice modifikovat s ohledem na svoje vlastní pravidla.
+        /// </summary>
+        public Rectangle? DragToAbsoluteBounds
+        {
+            get
+            {
+                Rectangle? dragToRelativeBounds = this.DragToRelativeBounds;
+                BoundsInfo boundsInfo = this.BoundsInfo;
+                if (boundsInfo == null || !dragToRelativeBounds.HasValue) return null;
+                return boundsInfo.GetAbsBounds(dragToRelativeBounds.Value);
+            }
+        }
+
+        /// <summary>
         /// Aktivní prvek.
         /// </summary>
         public IInteractiveItem CurrentItem { get { return this._ChangeArgs.CurrentItem; } }
@@ -695,17 +717,16 @@ namespace Asol.Tools.WorkScheduler.Components
         public BoundsInfo BoundsInfo { get { return this._ChangeArgs.BoundsInfo; } }
 
         /// <summary>
-        /// Type of action (drag this object, or drag another object over this object)
+        /// Typ aktuální akce
         /// </summary>
         public DragActionType DragAction { get; protected set; }
         /// <summary>
-        /// Origin coordinate of mouse, where was MouseDown registered, on coordinates of Control.
-        /// Can not be a null value.
+        /// Absolutní souřadnice myši, kde byla stisknuta.
         /// </summary>
         public Point MouseDownAbsolutePoint { get; protected set; }
         /// <summary>
-        /// Current coordinate of mouse on coordinates of Control.
-        /// Can be a null value, when DragAction = DragThisCancel!
+        /// Absolutní souřadnice myši, kde se nachází nyní.
+        /// Může být null pouze při akci <see cref="DragAction"/> == <see cref="DragActionType.DragThisCancel"/>.
         /// </summary>
         public Point? MouseCurrentAbsolutePoint { get; protected set; }
         #endregion
@@ -715,8 +736,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public IInteractiveItem ItemAtCurrentMousePoint { get { return this._ChangeArgs.ItemAtCurrentMousePoint; } }
         /// <summary>
-        /// This method returns first top-most object, which BoundAbsolute is on specified point.
-        /// Can return a null (when at point is not object, only host container).
+        /// Tato metoda najde první Top-Most objekt, který se nachází na dané absolutní souřadnici.
+        /// Může vrátit null, když tam nic není.
+        /// Tato metoda "nevidí" prvky, které mají IsDisabled = true.
         /// </summary>
         /// <param name="absolutePoint"></param>
         /// <returns></returns>
@@ -725,10 +747,12 @@ namespace Asol.Tools.WorkScheduler.Components
             return this._ChangeArgs.FindItemAtPoint(absolutePoint);
         }
         /// <summary>
-        /// This method returns first top-most object, which BoundAbsolute is on specified point.
-        /// Can return a null (when at point is not object, only host container).
+        /// Tato metoda najde první Top-Most objekt, který se nachází na dané absolutní souřadnici.
+        /// Může vrátit null, když tam nic není.
+        /// Tato metoda akceptuje prvky, které mají IsDisabled = true, pokud má parametr "withDisabled" = true.
         /// </summary>
         /// <param name="absolutePoint"></param>
+        /// <param name="withDisabled">true = najde i IsDisabled prvky</param>
         /// <returns></returns>
         public IInteractiveItem FindItemAtPoint(Point absolutePoint, bool withDisabled)
         {

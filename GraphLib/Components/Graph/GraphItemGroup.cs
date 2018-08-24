@@ -61,8 +61,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Metoda vytvoří grafický control třídy <see cref="GTimeGraphItem"/> (<see cref="ITimeGraphItem.GControl"/>) pro this grupu.
         /// </summary>
-        /// <param name="parent">Parent prvku, GUI container, některý vyšší GUI prvek (typicky <see cref="GTimeGraph"/>).</param>
-        private void _PrepareGControlGroup(IInteractiveParent parent)
+        /// <param name="parent">Parent prvku, graf (neboť this je <see cref="GTimeGraphGroup"/>, pak jeho přímý Parent je <see cref="GTimeGraph"/>).</param>
+        private void _PrepareGControlGroup(GTimeGraph parent)
         {
             if (this.GControl != null) return;
             this.GControl = new GTimeGraphItem(this, parent, this, GGraphControlPosition.Group);          // GUI prvek (GTimeGraphItem) dostává data (=this) a dostává vizuálního parenta (parent)
@@ -199,6 +199,10 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         #endregion
         #region Public prvky
         /// <summary>
+        /// Graf, do něhož tento prvek (grupa) patří
+        /// </summary>
+        public GTimeGraph Graph { get { return this._ParentGraph; } }
+        /// <summary>
         /// Pole všech základních prvků <see cref="ITimeGraphItem"/> zahrnutých v tomto objektu.
         /// Pole má vždy nejméně jeden prvek.
         /// První prvek tohoto pole <see cref="_FirstItem"/> je nositelem některých klíčových informací.
@@ -248,52 +252,12 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Vizuální prvek, který v sobě zahrnuje jak podporu pro vykreslování, tak podporu interaktivity.
         /// A přitom to nevyžaduje od třídy, která fyzicky implementuje <see cref="ITimeGraphItem"/>.
-        /// Aplikační kód (implementační objekt <see cref="ITimeGraphItem"/> se o tuto property nemusí starat, řídící mechanismus sem vloží v případě potřeby new instanci.
+        /// Aplikační kód (respektive implementační objekt <see cref="ITimeGraphItem"/>) se o tuto property nemusí starat, řídící mechanismus sem vloží v případě potřeby new instanci.
         /// Implementátor pouze poskytuje úložiště pro tuto instanci.
         /// </summary>
         public GTimeGraphItem GControl { get; set; }
         #endregion
         #region Childs, Interaktivita, Draw()
-        /// <summary>
-        /// Metoda zajistí přípravu ToolTipu pro daný prvek (data) na dané pozici (position).
-        /// </summary>
-        /// <param name="e"></param>
-        /// <param name="data"></param>
-        /// <param name="position"></param>
-        internal void GraphItemPrepareToolTip(GInteractiveChangeStateArgs e, ITimeGraphItem data, GGraphControlPosition position)
-        {
-            this._ParentGraph.GraphItemPrepareToolTip(e, this, data, position);
-        }
-        /// <summary>
-        /// Metoda zajistí zpracování události RightCLick na grafickém prvku (data) na dané pozici (position).
-        /// </summary>
-        /// <param name="e"></param>
-        /// <param name="data"></param>
-        /// <param name="position"></param>
-        internal void GraphItemRightClick(GInteractiveChangeStateArgs e, ITimeGraphItem data, GGraphControlPosition position)
-        {
-            this._ParentGraph.GraphItemRightClick(e, this, data, position);
-        }
-        /// <summary>
-        /// Metoda zajistí zpracování události LeftDoubleCLick na grafickém prvku (data) na dané pozici (position).
-        /// </summary>
-        /// <param name="e"></param>
-        /// <param name="data"></param>
-        /// <param name="position"></param>
-        internal void GraphItemLeftDoubleClick(GInteractiveChangeStateArgs e, ITimeGraphItem data, GGraphControlPosition position)
-        {
-            this._ParentGraph.GraphItemLeftDoubleClick(e, this, data, position);
-        }
-        /// <summary>
-        /// Metoda zajistí zpracování události LeftLongCLick na grafickém prvku (data) na dané pozici (position).
-        /// </summary>
-        /// <param name="e"></param>
-        /// <param name="data"></param>
-        /// <param name="position"></param>
-        internal void GraphItemLeftLongClick(GInteractiveChangeStateArgs e, ITimeGraphItem data, GGraphControlPosition position)
-        {
-            this._ParentGraph.GraphItemLeftLongClick(e, this, data, position);
-        }
         /// <summary>
         /// Vykreslí tuto grupu. Kreslí pouze pokud obsahuje více než 1 prvek, a pokud vrstva <see cref="ITimeGraphItem.Layer"/> je nula nebo kladná (pro záporné vrstvy se nekreslí).
         /// </summary>

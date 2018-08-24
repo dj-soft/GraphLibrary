@@ -851,7 +851,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 this._Childs.Add(groupItem.GControl);
         }
         #endregion
-        #region Komunikace s datovým zdrojem: Caption, ToolTip, DoubleClick, LongClick
+        #region Komunikace s datovým zdrojem: Caption, ToolTip, DoubleClick, LongClick, Drag and Drop
         /// <summary>
         /// Metoda získá text, který se bude vykreslovat do prvku
         /// </summary>
@@ -974,7 +974,6 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         internal void GraphItemLeftDoubleClick(GInteractiveChangeStateArgs e, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position)
         {
             if (!this.HasDataSource) return;
-
             ItemActionArgs args = new ItemActionArgs(e, this, group, data, position);
             this.DataSource.ItemDoubleClick(args);
         }
@@ -987,9 +986,26 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         internal void GraphItemLeftLongClick(GInteractiveChangeStateArgs e, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position)
         {
             if (!this.HasDataSource) return;
-
             ItemActionArgs args = new ItemActionArgs(e, this, group, data, position);
             this.DataSource.ItemLongClick(args);
+        }
+
+        internal void GraphItemDragItemStart(ItemDragDropArgs args)
+        {
+            if (!this.HasDataSource) return;
+            this.DataSource.ItemDragItemStart(args);
+
+        }
+        internal void GraphItemDragItemMove(ItemDragDropArgs args)
+        {
+            if (!this.HasDataSource) return;
+            this.DataSource.ItemDragItemMove(args);
+        }
+        internal void GraphItemDragItemDrop(ItemDragDropArgs args)
+        {
+            if (!this.HasDataSource) return;
+            this.DataSource.ItemDragItemDrop(args);
+
         }
         /// <summary>
         /// true pokud máme datový zdroj
@@ -1636,6 +1652,9 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         void ItemDoubleClick(ItemActionArgs args);
         void ItemLongClick(ItemActionArgs args);
         void ItemChange(ItemChangeArgs args);
+        void ItemDragItemStart(ItemDragDropArgs args);
+        void ItemDragItemMove(ItemDragDropArgs args);
+        void ItemDragItemDrop(ItemDragDropArgs args);
     }
     #region class CreateTextArgs : 
     public class CreateTextArgs : ItemArgs
@@ -1713,6 +1732,132 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Tuto property lze setovat, nebo ji lze rovnou naplnit (je autoinicializační).
         /// </summary>
         public ToolTipData ToolTipData { get { return this.InteractiveArgs.ToolTipData; } set { this.InteractiveArgs.ToolTipData = value; } }
+    }
+    #endregion
+    #region class ItemDragDropArgs : Argument obsahující data pro Drag and Drop
+    /// <summary>
+    /// ItemDragDropArgs : Argument obsahující data pro Drag and Drop
+    /// </summary>
+    public class ItemDragDropArgs : ItemInteractiveArgs
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="dragArgs"></param>
+        /// <param name="graph"></param>
+        /// <param name="group"></param>
+        /// <param name="data"></param>
+        /// <param name="position"></param>
+        public ItemDragDropArgs(GDragActionArgs dragArgs, GTimeGraph graph, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position, Rectangle? targetAbsoluteBounds)
+            : base(dragArgs.ChangeArgs, graph, group, data, position)
+        {
+            this._DragArgs = dragArgs;
+            this._AbsOrigin = (dragArgs.BoundsInfo != null ? (Point?)dragArgs.BoundsInfo.AbsOrigin : (Point?)null);
+            this.DragToAbsoluteBounds = targetAbsoluteBounds;             // Musí se provést až po vložení hodnoty do this._AbsOrigin.
+            this.TargetIsValid = true;
+        }
+        /// <summary>
+        /// Vstupní argument akce Drag and Drop
+        /// </summary>
+        private GDragActionArgs _DragArgs;
+        /// <summary>
+        /// Aktuální souřadnice cílová v průběhu akce Drag and Drop, relativní koordináty.
+        /// Jedná se o souřadnice odpovídající pohybu myši; prvek sám může svoje cílové souřadnice modifikovat s ohledem na svoje vlastní pravidla.
+        /// </summary>
+        private Rectangle? _DragToRelativeBounds;
+        /// <summary>
+        /// Absolutní souřadnice počátku relativního prostoru = offset mezi <see cref="DragToRelativeBounds"/> a <see cref="DragToAbsoluteBounds"/>.
+        /// </summary>
+        private Point? _AbsOrigin;
+        /// <summary>
+        /// false = lze zadávat data do properties "WriteInit", true = už to nejde
+        /// </summary>
+        private bool _IsFinalised;
+        /// <summary>
+        /// Pokud <see cref="IsFinalised"/> je false, proběhne bez chyby. Pokud je true, dojde k chybě "Nelze nastavit data po inicializaci..."
+        /// </summary>
+        private void _CheckSet()
+        {
+            if (!this._IsFinalised) return;
+            throw new GraphLibCodeException("Nelze nastavovat vlastnosti v instanci ItemDragDropArgs poté, kdy proběhla její finalizace.");
+        }
+        /// <summary>
+        /// Argumenty akce Drag and Drop
+        /// </summary>
+        public GDragActionArgs DragArgs { get { return this._DragArgs; } }
+        /// <summary>
+        /// Typ aktuální akce
+        /// </summary>
+        public DragActionType DragAction { get { return this._DragArgs.DragAction; } }
+        /// <summary>
+        /// Absolutní souřadnice myši, kde se nachází nyní.
+        /// Může být null pouze při akci <see cref="DragAction"/> == <see cref="DragActionType.DragThisCancel"/>.
+        /// </summary>
+        public Point? MouseCurrentAbsolutePoint { get { return this._DragArgs.MouseCurrentAbsolutePoint; } }
+        /// <summary>
+        /// Souřadnice prvku cílová v průběhu akce Drag and Drop, relativní koordináty.
+        /// Souřadnice je ve výchozím stavu nastavena systémem - podle pohybu myši, ale aplikační kód ji může změnit na hodnotu, kam se má prvek skutečně přemístit.
+        /// Aplikační kód může stejně tak pracovat i s absolutní souřadnicí <see cref="DragToAbsoluteBounds"/>.
+        /// Pro akci <see cref="DragAction"/> == <see cref="DragActionType.DragThisCancel"/> je null, jinak obsahuje hodnotu.
+        /// Výchozí hodnota je k dispozici v <see cref="DragArgs"/>, tam ji měnit nelze.
+        /// </summary>
+        public Rectangle? DragToRelativeBounds { get { return this._DragToRelativeBounds; } set { this._DragToRelativeBounds = value; } }
+        /// <summary>
+        /// Souřadnice prvku cílová v průběhu akce Drag and Drop, absolutní koordináty. 
+        /// Souřadnice je ve výchozím stavu nastavena systémem - podle pohybu myši, ale aplikační kód ji může změnit na hodnotu, kam se má prvek skutečně přemístit.
+        /// Aplikační kód může stejně tak pracovat i s relativní souřadnicí <see cref="DragToRelativeBounds"/>.
+        /// Pro akci <see cref="DragAction"/> == <see cref="DragActionType.DragThisCancel"/> je null, jinak obsahuje hodnotu.
+        /// Výchozí hodnota je k dispozici v <see cref="DragArgs"/>, tam ji měnit nelze.
+        /// </summary>
+        public Rectangle? DragToAbsoluteBounds { get { return this._DragToRelativeBounds.Add(this._AbsOrigin); } set { this._DragToRelativeBounds = value.Sub(this._AbsOrigin); } }
+        /// <summary>
+        /// Obsahuje false po iniciaci. V tomto stavu lze vkládat hodnoty do všech "WriteInit" properties:
+        /// <see cref="ParentGraph"/>, <see cref="ParentTable"/>, <see cref="TargetItem"/>, <see cref="TargetGraph"/>, <see cref="TargetTable"/> (označeny "WriteInit").
+        /// Po vložení všech hodnot se nastaví <see cref="IsFinalised"/> na true.
+        /// Poté již nelze setovat data do "WriteInit" properties, a nelze vložit hodnotu false do property <see cref="IsFinalised"/>.
+        /// </summary>
+        public bool IsFinalised { get { return this._IsFinalised; } set { if (!this._IsFinalised) this._IsFinalised = value; } }
+        /// <summary>
+        /// Graf, v němž je nyní aktuální prvek grafu uložen (=Parent) (nikoli ten, nad kterým se zrovna přemisťuje).
+        /// "WriteInit" property.
+        /// </summary>
+        public GTimeGraph ParentGraph { get { return this._ParentGraph; } set { this._CheckSet(); this._ParentGraph = value; } } private GTimeGraph _ParentGraph;
+        /// <summary>
+        /// Tabulka, v které je nyní aktuální prvek grafu uložen (=Parent) (nikoli ten, nad kterým se zrovna přemisťuje).
+        /// "WriteInit" property.
+        /// </summary>
+        public Grid.GTable ParentTable { get { return this._ParentTable; } set { this._CheckSet(); this._ParentTable = value; } } private Grid.GTable _ParentTable;
+        /// <summary>
+        /// Interaktivní cílový prvek, nad nímž se nyní nachází ukazatel myši = na tento prvek "by se aktuální prvek grafu přemístil".
+        /// "WriteInit" property.
+        /// </summary>
+        public IInteractiveItem TargetItem { get { return this._TargetItem; } set { this._CheckSet(); this._TargetItem = value; } } private IInteractiveItem _TargetItem;
+        /// <summary>
+        /// Cílový graf, nad nímž se nyní nachází ukazatel myši = do tohoto grafu "by se aktuální prvek grafu přemístil".
+        /// "WriteInit" property.
+        /// </summary>
+        public GTimeGraph TargetGraph { get { return this._TargetGraph; } set { this._CheckSet(); this._TargetGraph = value; } } private GTimeGraph _TargetGraph;
+        /// <summary>
+        /// Cílová tabulka, nad níž se nyní nachází ukazatel myši = do této tabulky "by se aktuální prvek grafu přemístil".
+        /// "WriteInit" property.
+        /// </summary>
+        public Grid.GTable TargetTable { get { return this._TargetTable; } set { this._CheckSet(); this._TargetTable = value; } } private Grid.GTable _TargetTable;
+
+        /// <summary>
+        /// Vyjadřuje platnost cílové souřadnice (pozice Drag and Drop) pro aktuální prvek.
+        /// Hodnota 1 je výchozí a značí ANO, prvek se na dané místo může přemístit, hodnota menší než 1 = nemůže.
+        /// Hodnota má vliv na způsob vykreslení prvku a vyjadřuje úroveň "viditelnosti": 
+        /// 0 = prvek je neviditelný, např. 0.75 = prvek je viditelný na 75%, 1.00 = prvek je plně viditelný (řídí se úroveň Alpha kanálu).
+        /// Stačilo by true / false, ale svět není jen binární :-)
+        /// </summary>
+        public decimal TargetValidityRatio { get; set; }
+        /// <summary>
+        /// Platnost cílové souřadnice (pozice Drag and Drop) pro aktuální prvek.
+        /// Obsahuje true, pokud <see cref="TargetValidityRatio"/> obsahuje 1.0 a více, obsahuje false pro menší hodnotu.
+        /// Setování do <see cref="TargetIsValid"/> vloží do <see cref="TargetValidityRatio"/> hodnotu 1.0 (pro true) nebo 0.333 (pro false).
+        /// </summary>
+        public bool TargetIsValid { get { return (this.TargetValidityRatio >= 1.0m); } set { this.TargetValidityRatio = (value ? 1.0m : 0.333m); } }
+
     }
     #endregion
     #region class ItemActionArgs : Argument obsahující data prosté akce
@@ -1802,7 +1947,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Grupa položek
         /// </summary>
-        protected GTimeGraphGroup Group { get; set; }
+        public GTimeGraphGroup Group { get; protected set; }
         /// <summary>
         /// Přímo ten prvek, jehož se týká akce (na který bylo kliknuto).
         /// Může být null, pokud se akce týká skupiny prvků = bylo kliknuto na "spojovací linii mezi prvky".

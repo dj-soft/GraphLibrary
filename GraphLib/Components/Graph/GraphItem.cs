@@ -20,13 +20,15 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Konstruktor
         /// </summary>
-        /// <param name="data">Prvek grafu, ten v sobě obsahuje data</param>
-        /// <param name="parent">Parent prvku, GUI container</param>
-        public GTimeGraphItem(ITimeGraphItem data, IInteractiveParent parent, GTimeGraphGroup group, GGraphControlPosition position)
+        /// <param name="data">Datový prvek grafu</param>
+        /// <param name="interactiveParent">Interaktivní vizuální parent prvku, GUI container (buď graf pro grupu, nebo grupa pro item)</param>
+        /// <param name="group">Data grupy, do níž vytvářený prvek bude patřit (přímo nebo nepřímo)</param>
+        /// <param name="position">Pozice vytvářeného prvku</param>
+        public GTimeGraphItem(ITimeGraphItem data, IInteractiveParent interactiveParent, GTimeGraphGroup group, GGraphControlPosition position)
             : base()
         {
             this._Owner = data;
-            this._Parent = parent;
+            this._InteractiveParent = interactiveParent;
             this._Group = group;
             this._Position = position;
             this.IsSelectable = true;
@@ -43,7 +45,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Parent tohoto grafického prvku = GUI prvek, v němž je tento grafický prvek hostován
         /// </summary>
-        private IInteractiveParent _Parent;
+        private IInteractiveParent _InteractiveParent;
         /// <summary>
         /// Grupa, která slouží jako vazba na globální data
         /// </summary>
@@ -54,6 +56,12 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         private GGraphControlPosition _Position;
         #endregion
         #region Veřejná data
+        /// <summary>
+        /// Graf, do něhož tento vizuální interaktivní prvek patří.
+        /// Může se lišit od našeho vizuálního parenta, protože this prvek může být Child prvkem Grupy, a ta je Child prvkem Grafu.
+        /// Nicméně přes zdejší Grupu je vždy možno najít Graf, v němž je this prvek zobrazován.
+        /// </summary>
+        internal GTimeGraph Graph { get { return this._Group.Graph; } }
         /// <summary>
         /// Souřadnice na ose X. Jednotkou jsou pixely.
         /// Tato osa je společná jak pro virtuální, tak pro reálné souřadnice.
@@ -73,6 +81,9 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             }
             set { }
         }
+        /// <summary>
+        /// Barva okraje prvku
+        /// </summary>
         public Color BorderColor
         {
             get
@@ -103,21 +114,37 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         private List<IInteractiveItem> _Childs;
         #endregion
         #region Interaktivita
+        /// <summary>
+        /// Metoda zajistí přípravu ToolTipu pro zdejší prvek (data) na dané pozici (position).
+        /// </summary>
+        /// <param name="e"></param>
         protected override void PrepareToolTip(GInteractiveChangeStateArgs e)
         {
-            this._Group.GraphItemPrepareToolTip(e, this._Owner, this._Position);
+            this.Graph.GraphItemPrepareToolTip(e, this._Group, this._Owner, this._Position);
         }
+        /// <summary>
+        /// Metoda zajistí zpracování události RightCLick na grafickém prvku (data) na dané pozici (position).
+        /// </summary>
+        /// <param name="e"></param>
         protected override void AfterStateChangedRightClick(GInteractiveChangeStateArgs e)
         {
-            this._Group.GraphItemRightClick(e, this._Owner, this._Position);
+            this.Graph.GraphItemRightClick(e, this._Group, this._Owner, this._Position);
         }
+        /// <summary>
+        /// Metoda zajistí zpracování události LeftDoubleCLick na grafickém prvku (data) na dané pozici (position).
+        /// </summary>
+        /// <param name="e"></param>
         protected override void AfterStateChangedLeftDoubleClick(GInteractiveChangeStateArgs e)
         {
-            this._Group.GraphItemLeftDoubleClick(e, this._Owner, this._Position);
+            this.Graph.GraphItemLeftDoubleClick(e, this._Group, this._Owner, this._Position);
         }
+        /// <summary>
+        /// Metoda zajistí zpracování události LeftLongCLick na grafickém prvku (data) na dané pozici (position).
+        /// </summary>
+        /// <param name="e"></param>
         protected override void AfterStateChangedLeftLongClick(GInteractiveChangeStateArgs e)
         {
-            this._Group.GraphItemLeftLongClick(e, this._Owner, this._Position);
+            this.Graph.GraphItemLeftLongClick(e, this._Group, this._Owner, this._Position);
         }
         public override bool IsSelected
         {
@@ -142,10 +169,6 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             get { return (this._Position == GGraphControlPosition.Group && this._Group.IsDragEnabled); }
             set { }
-        }
-        protected override void DragAction(GDragActionArgs e)
-        {
-            base.DragAction(e);
         }
         protected override void DragThisOverBounds(GDragActionArgs e, Rectangle targetRelativeBounds)
         {
@@ -192,65 +215,95 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
 
             */
 
-            // Zjistím, zda já sám (prvek grafu) jsem umístěn v tabulce (teoreticky nemusím být v tabulce, měl bych být jen v Grafu):
-            Grid.GTable parentTable = this.SearchForParent(typeof(Grid.GTable)) as Grid.GTable;
-            bool isInTable = (parentTable != null);
-
-            // Najdu prvek, nad nímž se pohybuji:
+            // Najdu prvek, nad nímž se aktuálně pohybuji:
             IInteractiveItem item = e.FindItemAtPoint(e.MouseCurrentAbsolutePoint.Value);
 
-            // Zjistím, zda se pohybuji nad nějakým grafem:
-            GTimeGraph overGraph = SearchForItem(item, true, typeof(GTimeGraph)) as GTimeGraph;
+            // Sestavím argument (pro this prvek) a doplním do něj údaje o dalších prvcích:
+            ItemDragDropArgs args = new ItemDragDropArgs(e, this.Graph, this._Group, this._Owner, this._Position, targetAbsoluteBounds);
+            args.ParentGraph = this.Graph;
+            args.ParentTable = this.SearchForParent(typeof(Grid.GTable)) as Grid.GTable;
+            args.TargetItem = item;
+            args.TargetGraph = SearchForItem(item, true, typeof(GTimeGraph)) as GTimeGraph;
+            args.TargetTable = SearchForItem(item, true, typeof(Grid.GTable)) as Grid.GTable;
 
-            // Zjistím, zda se pohybuji nad mým aktuálním parent grafem (pokud se pohybuji nad grafem):
-            bool isOverParentGraph = (overGraph != null && Object.ReferenceEquals(overGraph, this.Parent));
+            // Předem připravím "defaultní" výsledky (ale datový zdroj, který se vyvolá v následujícím řádku) má plnou moc nastavit libovolné výsledky po svém:
+            this.DragPrepareDefaultValidity(args);
 
-            // Zjistím, zda Drag and Drop se nyní pohybuje nad nějakou tabulkou:
-            Grid.GTable overTable = SearchForItem(item,true, typeof(Grid.GTable)) as Grid.GTable;
+            // Zavolám datový zdroj, ten vyhodnotí zda se může prvek posunout, nebo na jaké souřadnice se může posunout, a určí vzhled kreslení (disabled?):
+            // On by mohl i zařídit "scrollování" v čase (osa X => TimeAxis) nebo v místě (osa Y => řádek, kam položku přesunout):
+            this.Graph.GraphItemDragItemMove(args);
 
-            // Zjistím, zda tabulka, nad niž se Drag and Drop nyní pohybuje, je identická sa mojí tabulkou:
-            bool isOverParentTable = (isInTable && overTable != null && Object.ReferenceEquals(overTable, parentTable));
+            // Převezmu výsledky:
 
+            bool result = (args.DragToAbsoluteBounds.HasValue && args.DragToAbsoluteBounds.Value != targetAbsoluteBounds);
+            if (result)
+                targetAbsoluteBounds = args.DragToAbsoluteBounds.Value;
+            
+            return result;
+        }
+        /// <summary>
+        /// Metoda nastaví defaultní hodnotu platnosti podle toho, zda se cíl nachází nad grafem, anebo jak daleko se nachází od nejbližšího prostoru RowArea vlastní tabulky
+        /// </summary>
+        /// <param name="args"></param>
+        protected void DragPrepareDefaultValidity(ItemDragDropArgs args)
+        {
+            args.TargetValidityRatio = 1.0m;
 
-            // Nyní 
-            qqq;
+            // Pokud je prvek stále nad svým grafem, je ratio 1 a končíme:
+            bool isSameGraph = (args.TargetGraph != null && Object.ReferenceEquals(args.ParentGraph, args.TargetGraph));
+            if (isSameGraph) return;
 
+            // Pokud jsem "nad svou tabulkou" a "nad nějakým grafem", je to rovněž OK:
+            bool isSameTable = (args.TargetTable != null && Object.ReferenceEquals(args.ParentTable, args.TargetTable));
+            if (isSameTable && args.TargetGraph != null) return;
 
-            // Najdu tabulku, do které patřím:
-            Rectangle rowArea = parentTable.GetAbsoluteBoundsForArea(Grid.TableAreaType.RowData);
+            // Pokud jsem "nad cizím grafem", pak nastavím ratio = 0.75 a končím:
+            args.TargetValidityRatio = 0.75m;
+            bool isOtherGraph = (args.TargetGraph != null);
+            if (isOtherGraph) return;
 
-            // Najdu prvek, který se právě nachází pod myší:
-            // (na počátku to je tentýž, který přemisťuji, ale později už ne - protože ten má pozici Bounds dosud nezměněnou !)
-            // Takže postupně (kromě sebe sama) najdu buď nějaký sousední grafický prvek, nebo samotný graf, anebo grid nebo jiný prvek, na němž se nachází myš:
-
-            // Podle toho, nad čím se myš pohybuje, určím co dál:
-            GTimeGraph graph = SearchForParent(item, typeof(GTimeGraph)) as GTimeGraph;
-            if (graph != null)
-                return this.DragGroupOverGraph(e, graph, ref targetAbsoluteBounds);
-
-            Grid.GTable table = SearchForParent(item, typeof(Grid.GTable)) as Grid.GTable;
-            if (table != null)
-                return this.DragGroupOverTable(e, table, ref targetAbsoluteBounds);
-
-            GTimeGraph parentGraph = this.Parent as GTimeGraph;
-            if (parentGraph != null)
+            // Nejsem nad žádným grafem - určím vzdálenost od prostoru RowArea mé tabulky (nebo grafu) a podle vzdálenosti určím ratio:
+            if (args.MouseCurrentAbsolutePoint.HasValue)
             {
-                Rectangle clientBounds = new Rectangle(new Point(), parentGraph.Bounds.Size);
-                targetAbsoluteBounds = targetAbsoluteBounds.FitInto(clientBounds, false);
-            }
-            // targetRelativeBounds.Y = this.Bounds.Y;
-            return false;
-        }
-        protected bool DragGroupOverGraph(GDragActionArgs e, GTimeGraph graph, ref Rectangle targetAbsoluteBounds)
-        {
-            Rectangle clientBounds = new Rectangle(new Point(), graph.Bounds.Size);
-            targetAbsoluteBounds = targetAbsoluteBounds.FitInto(clientBounds, false);
-            return false;
-        }
-        protected bool DragGroupOverTable(GDragActionArgs e, Grid.GTable table, ref Rectangle targetAbsoluteBounds)
-        {
+                Rectangle parentAbsoluteArea;
+                if (args.ParentTable != null)
+                {
+                    parentAbsoluteArea = args.ParentTable.GetAbsoluteBoundsForArea(Grid.TableAreaType.RowData);
+                    if (args.ParentGraph != null)
+                    {
+                        Rectangle graphBounds = args.ParentGraph.BoundsAbsolute;
+                        Int32Range x = Int32Range.CreateFromRectangle(graphBounds, System.Windows.Forms.Orientation.Horizontal);
+                        Int32Range y = Int32Range.CreateFromRectangle(parentAbsoluteArea, System.Windows.Forms.Orientation.Vertical);
+                        parentAbsoluteArea = Int32Range.GetRectangle(x, y);
+                    }
+                }
+                else if (args.ParentGraph != null)
+                {
+                    parentAbsoluteArea = args.ParentGraph.BoundsAbsolute;
+                }
+                else
+                {
+                    parentAbsoluteArea = args.CurrentItem.GControl.BoundsAbsolute;
+                }
 
-            return false;
+                // Vzdálenost myši od prostoru určuje hodnotu do TargetValidityRatio:
+                int distance = parentAbsoluteArea.GetOuterDistance(args.MouseCurrentAbsolutePoint.Value);
+                args.TargetValidityRatio = GetValidityForDistance(distance, 0.333m, 0.750m);
+            }
+        }
+        /// <summary>
+        /// Vrací hodnotu ValidityRatio pro vzdálenost v pixelech
+        /// </summary>
+        /// <param name="distance"></param>
+        /// <param name="minValue"></param>
+        /// <param name="maxValue"></param>
+        /// <returns></returns>
+        protected static decimal GetValidityForDistance(decimal distance, decimal minValue, decimal maxValue)
+        {
+            decimal maxDistance = 150m;
+            if (distance <= 0m) return maxValue;
+            if (distance > maxDistance) return minValue;
+            return minValue + ((maxDistance - distance) / maxDistance) * (maxValue - minValue);
         }
         #endregion
         #region Kreslení prvku
