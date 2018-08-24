@@ -80,8 +80,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             string fileName = null;
             using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority3_BellowNormal, "PluginForm", "SearchForDataPack", ""))
             {
-                string appPath = Application.App.AppCodePath;                                                   // D:\Hobby\Csharp\GraphLibrary\bin
-                string fixFile = System.IO.Path.Combine(appPath, "..", "TestGUI", "Data_20180101_120000.dat");  // D:\Hobby\Csharp\GraphLibrary\TestGUI\Data_20180101_120000.dat
+                string appPath = Application.App.AppCodePath;                                                // D:\Hobby\Csharp\GraphLibrary\bin
+                string datPath = System.IO.Path.GetDirectoryName(appPath);                                   // D:\Hobby\Csharp\GraphLibrary
+                string fixFile = System.IO.Path.Combine(datPath, "TestGUI", "Data_20180101_120000.dat");     // D:\Hobby\Csharp\GraphLibrary\TestGUI\Data_20180101_120000.dat
                 if (System.IO.File.Exists(fixFile))
                 {
                     fileName = fixFile;
@@ -119,7 +120,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <param name="recordGId"></param>
         void IAppHost.RunOpenRecordForm(GId recordGId)
         {
-            System.Windows.Forms.MessageBox.Show("Rád bych otevřel záznam " + recordGId.ToString() + ";\r\n ale jsem jen testovací formulář.");
+            ShowMsg("Rád bych otevřel záznam:~" + recordGId.ToString() + ";~~ale jsem jen obyčejný testovací formulář.");
         }
         /// <summary>
         /// Metoda, která zajistí provedení dané funkce
@@ -127,9 +128,13 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <param name="runArgs"></param>
         void IAppHost.RunContextFunction(RunContextFunctionArgs runArgs)
         {
-            System.Windows.Forms.MessageBox.Show("Rád bych provedl funkci " + runArgs.MenuItemText + ";\r\n ale jsem jen testovací formulář.");
+            ShowMsg("Rád bych provedl funkci:~" + runArgs.MenuItemText + ";~~ale jsem jen obyčejný testovací formulář.");
         }
-
+        protected void ShowMsg(string message)
+        {
+            message = message.Replace("~", Environment.NewLine);
+            System.Windows.Forms.MessageBox.Show((this as IWin32Window), message, "Problém:", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
         #endregion
     }
 }
