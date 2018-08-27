@@ -465,6 +465,11 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         public bool UseTimeAxis { get { return this.OwnerColumn.ColumnProperties.UseTimeAxis; } }
         /// <summary>
+        /// Obsahuje true, pokud se pro sloupec má zobrazit časová osa v záhlaví, a tato časová osa se má synchronizovat do dalších Gridů a objektů.
+        /// To je jen tehdy, když sloupec obsahuje časový graf (<see cref="ColumnContent"/> == <see cref="ColumnContentType.TimeGraphSynchronized"/>).
+        /// </summary>
+        public bool UseTimeAxisSynchronized { get { return this.OwnerColumn.ColumnProperties.UseTimeAxisSynchronized; } }
+        /// <summary>
         /// Objekt, který provádí konverze časových údajů a pixelů, jde o vizuální časovou osu.
         /// Může být null, pokud this.UseTimeAxis je false.
         /// </summary>
@@ -975,8 +980,11 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         protected override void DrawContent(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
         {
             base.DrawContent(e, boundsAbsolute, drawAsGhost, opacity);
+
+            // Tudy se vykresluje (připravuje) graf na pozadí:
             if (this.OwnerRow.BackgroundValueType == TableValueType.ITimeInteractiveGraph)
             { }
+
             this.OwnerGTable.DrawValue(e, boundsAbsolute, this.OwnerRow.BackgroundValue, this.OwnerRow.BackgroundValueType, this.OwnerRow, null);
         }
         /// <summary>

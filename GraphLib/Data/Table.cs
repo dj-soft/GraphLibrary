@@ -1866,9 +1866,14 @@ namespace Asol.Tools.WorkScheduler.Data
         public bool AllowColumnResize { get { return this._AllowColumnResize; } set { this._AllowColumnResize = value; } } private bool _AllowColumnResize = true;
         /// <summary>
         /// Obsahuje true, pokud se pro sloupec má zobrazit časová osa v záhlaví.
-        /// To je jen tehdy, když sloupec obsahuje časový graf (<see cref="ColumnContent"/> == <see cref="ColumnContentType.TimeGraph"/>).
+        /// To je jen tehdy, když sloupec obsahuje časový graf (<see cref="ColumnContent"/> == <see cref="ColumnContentType.TimeGraphSynchronized"/> nebo <see cref="ColumnContentType.TimeGraphStandalone"/>).
         /// </summary>
-        public bool UseTimeAxis { get { return this.ColumnContent == ColumnContentType.TimeGraph; } }
+        public bool UseTimeAxis { get { return (this.ColumnContent == ColumnContentType.TimeGraphSynchronized || this.ColumnContent == ColumnContentType.TimeGraphStandalone); } }
+        /// <summary>
+        /// Obsahuje true, pokud se pro sloupec má zobrazit časová osa v záhlaví, a tato časová osa se má synchronizovat do dalších Gridů a objektů.
+        /// To je jen tehdy, když sloupec obsahuje časový graf (<see cref="ColumnContent"/> == <see cref="ColumnContentType.TimeGraphSynchronized"/>).
+        /// </summary>
+        public bool UseTimeAxisSynchronized { get { return (this.ColumnContent == ColumnContentType.TimeGraphSynchronized); } }
         /// <summary>
         /// Zadaná šířka sloupce.
         /// Hodnotu může vložit aplikační kód, hodnota se projeví v GUI.
@@ -1918,9 +1923,9 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// true, pokud this sloupec smí být někdy zobrazen uživateli.
         /// To mohou být pouze sloupce, jejichž obsah <see cref="ColumnContent"/> 
-        /// je <see cref="ColumnContentType.UserData"/> nebo <see cref="ColumnContentType.RelationRecordData"/> nebo <see cref="ColumnContentType.TimeGraph"/>.
+        /// je <see cref="ColumnContentType.UserData"/> nebo <see cref="ColumnContentType.RelationRecordData"/> nebo <see cref="ColumnContentType.TimeGraphSynchronized"/> nebo <see cref="ColumnContentType.TimeGraphStandalone"/>.
         /// </summary>
-        public bool CanBeVisible { get { ColumnContentType cc = this.ColumnContent; return (cc == ColumnContentType.UserData || cc == ColumnContentType.RelationRecordData || cc == ColumnContentType.TimeGraph); } }
+        public bool CanBeVisible { get { ColumnContentType cc = this.ColumnContent; return (cc == ColumnContentType.UserData || cc == ColumnContentType.RelationRecordData || cc == ColumnContentType.TimeGraphSynchronized || cc == ColumnContentType.TimeGraphStandalone); } }
 
         /// <summary>
         /// Komparátor pro dvě hodnoty v tomto sloupci, pro třídění podle tohoto sloupce
@@ -2055,10 +2060,16 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         RelationRecordData,
         /// <summary>
-        /// Časový graf.
+        /// Časový graf s časovou synchronizací do všech okolních Gridů.
         /// Tento sloupec může být viditelný.
         /// </summary>
-        TimeGraph,
+        TimeGraphSynchronized,
+        /// <summary>
+        /// Časový graf bez časové synchronizace do všech okolních Gridů.
+        /// Tento časový graf se synchronizuje pouze do sousedních tabulek v rámci jednoho Gridu.
+        /// Tento sloupec může být viditelný.
+        /// </summary>
+        TimeGraphStandalone,
         /// <summary>
         /// Číslo záznamu celého řádku.
         /// Tento sloupec se nikdy nezobrazuje.

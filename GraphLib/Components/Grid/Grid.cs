@@ -960,6 +960,16 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         /// <summary>
+        /// Synchronizační element časové osy
+        /// </summary>
+        public ValueSynchronizer<TimeRange> SynchronizedTime
+        {
+            get { if (this._SynchronizedTime == null) this._SynchronizedTime = new ValueSynchronizer<TimeRange>(); return this._SynchronizedTime; }
+            set { this._SynchronizedTime = value; }
+        }
+        private ValueSynchronizer<TimeRange> _SynchronizedTime;
+
+        /// <summary>
         /// Událost, kdy externí časová osa provedla nějakou změnu zobrazeného času, 
         /// a náš graf (který je v režimu Slave, proto má napojenou externí časovou osu) na to má reagovat
         /// </summary>
@@ -1245,6 +1255,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// true pokud se pro sloupec má zobrazit časová osa v záhlaví
         /// </summary>
         public bool UseTimeAxis { get { return this._MasterColumn.ColumnProperties.UseTimeAxis; } }
+        /// <summary>
+        /// Obsahuje true, pokud se pro sloupec má zobrazit časová osa v záhlaví, a tato časová osa se má synchronizovat do dalších Gridů a objektů.
+        /// To je jen tehdy, když sloupec obsahuje časový graf (<see cref="ColumnContent"/> == <see cref="ColumnContentType.TimeGraphSynchronized"/>).
+        /// </summary>
+        public bool UseTimeAxisSynchronized { get { return this._MasterColumn.ColumnProperties.UseTimeAxisSynchronized; } }
         /// <summary>
         /// Objekt, který provádí konverze časových údajů a pixelů, jde o vizuální časovou osu
         /// </summary>

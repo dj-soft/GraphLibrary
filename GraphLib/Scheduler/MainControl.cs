@@ -7,6 +7,7 @@ using System.Drawing;
 using System.Windows.Forms;
 
 using Asol.Tools.WorkScheduler.Services;
+using Asol.Tools.WorkScheduler.Data;
 
 namespace Asol.Tools.WorkScheduler.Scheduler
 {
@@ -108,6 +109,15 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this._SchedulerPanelCurrentDataId = -1;
         }
         /// <summary>
+        /// Synchronizační element časové osy
+        /// </summary>
+        public ValueSynchronizer<TimeRange> SynchronizedTime
+        {
+            get { if (this._SynchronizedTime == null) this._SynchronizedTime = new ValueSynchronizer<TimeRange>(); return this._SynchronizedTime; }
+            set { this._SynchronizedTime = value; }
+        }
+        private ValueSynchronizer<TimeRange> _SynchronizedTime;
+        /// <summary>
         /// Najde / přidá a vrátí instanci TabSchedulerPanelInfo pro DataId dané tabulky.
         /// </summary>
         /// <param name="tableDataDeclaration"></param>
@@ -119,7 +129,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             {
                 DataDeclaration panelDataDeclaration = (tableDataDeclaration.MainDataDeclaration ?? tableDataDeclaration);
                 int tabPageIndex = this._TabContainer.TabCount;
-                SchedulerPanel schedulerPanel = new SchedulerPanel(panelDataDeclaration);
+                SchedulerPanel schedulerPanel = new SchedulerPanel(this, panelDataDeclaration);
                 GTabPage tabPage = this._TabContainer.AddTabItem(schedulerPanel, panelDataDeclaration.Title, toolTip: panelDataDeclaration.ToolTip, image: null);
                 tspInfo = new TabSchedulerPanelInfo(dataId, tabPageIndex, tabPage, schedulerPanel);
                 this._SchedulerPanelDict.Add(dataId, tspInfo);

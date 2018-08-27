@@ -18,8 +18,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     public class SchedulerPanel : InteractiveContainer, IInteractiveItem
     {
         #region Konstruktor, inicializace, privátní proměnné
-        public SchedulerPanel(DataDeclaration panelDataDeclaration)
+        public SchedulerPanel(MainControl mainControl, DataDeclaration panelDataDeclaration)
         {
+            this._MainControl = mainControl;
             this._PanelDataDeclaration = panelDataDeclaration;
             this._InitComponents();
         }
@@ -180,6 +181,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private GTabContainer _InfoContainer;
         private bool _IsInfoVisible;
         private bool _IsInfoEnabled;
+        private MainControl _MainControl;
         private DataDeclaration _PanelDataDeclaration;
         #endregion
         #region Child items
@@ -230,7 +232,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// true pokud je viditelná tabulka informací o zaplánování
         /// </summary>
         public bool IsInfoEnabled { get { return this._IsInfoEnabled; } set { this._IsInfoEnabled = value; this.CalculateLayout(); } }
-
+        /// <summary>
+        /// Synchronizační element časové osy
+        /// </summary>
+        public ValueSynchronizer<TimeRange> SynchronizedTime { get { return this._MainControl.SynchronizedTime; } }
 
         #endregion
         #region Tabulky
@@ -270,6 +275,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             if (graphTable == null || graphTable.TableRow == null) return;
             GGrid grid = new GGrid();
+            grid.SynchronizedTime = this.SynchronizedTime;
+            grid.MainTimeAxis;
             grid.AddTable(graphTable.TableRow);
             tabs.AddTabItem(grid, graphTable.DataDeclaration.Title, graphTable.DataDeclaration.ToolTip);
         }
@@ -281,6 +288,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private void AddTableToGrid(MainDataTable graphTable, GGrid grid)
         {
             if (graphTable == null || graphTable.TableRow == null) return;
+            grid.SynchronizedTime = this.SynchronizedTime;
             grid.AddTable(graphTable.TableRow);
         }
         #endregion

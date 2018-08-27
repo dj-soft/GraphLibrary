@@ -1383,8 +1383,13 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         {
             if (column == null) return;
             this.RepaintColumn(column);
-            if (this.HasGrid)
+            if (column.ColumnProperties.UseTimeAxis && this.HasGrid)
+            {
                 this.Grid.OnChangeTimeAxis(this.TableId, column.ColumnId, e);
+                if (column.ColumnProperties.UseTimeAxisSynchronized)
+                    qqq;
+            }
+
         }
         /// <summary>
         /// Je voláno z GGrid, po změně hodnoty Value na některé TimeAxis na sloupci columnId (v this.Columns), ale na jiné tabulce než je this tabulka.
@@ -1768,14 +1773,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             if (graph.Parent == null)
                 graph.Parent = this.GetInteractiveParent(row, cell);
 
-            /* Teď už je pozdě nastavovat Bounds pro graf, protože to je potřeba nastavit dříve kvůli výběru Child prvků pro kreslení...
-            Rectangle boundsClient = this.GetBoundsClient(row, cell);
-            if (graph.Bounds != boundsClient)
-                graph.Bounds = boundsClient;
-            */
-
             // Graf se nevykresluje jako obrázek v rámci buňky, graf se vykresluje sám protože je Child prvkem své buňky nebo řádku :  
-            //   graph.DrawContentTimeGraph(e, boundsAbsolute);
         }
         /// <summary>
         /// Vykreslí obsah this buňky jako časový graf
@@ -1882,7 +1880,6 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             float? effect3d = null;
             Color backColor = this.GetBackColor(row, cell, ref effect3d);
             GPainter.DrawEffect3D(e.Graphics, boundsAbsolute, backColor, System.Windows.Forms.Orientation.Horizontal, effect3d);
-            // this.Host.FillRectangle(e.Graphics, boundsAbsolute, backColor);
         }
         /// <summary>
         /// Metoda vykreslí linky ohraničující danou buňku jednoho řádku.

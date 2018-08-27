@@ -200,7 +200,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             graphColumn.ColumnProperties.AllowColumnResize = true;
             graphColumn.ColumnProperties.AllowColumnSortByClick = false;
             graphColumn.ColumnProperties.AutoWidth = true;
-            graphColumn.ColumnProperties.ColumnContent = ColumnContentType.TimeGraph;
+            graphColumn.ColumnProperties.ColumnContent = ColumnContentType.TimeGraphSynchronized;
             graphColumn.ColumnProperties.IsVisible = true;
             graphColumn.ColumnProperties.WidthMininum = 250;
 
