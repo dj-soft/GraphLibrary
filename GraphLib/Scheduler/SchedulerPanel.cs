@@ -236,10 +236,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         #region Tabulky
         /// <summary>
         /// Do this panelu přidá další tabulku.
-        /// Pozici tabulky určí z <see cref="DataGraphTable.DataDeclaration"/> : <see cref="DataDeclaration.Target"/>
+        /// Pozici tabulky určí z <see cref="MainDataTable.DataDeclaration"/> : <see cref="DataDeclaration.Target"/>
         /// </summary>
         /// <param name="graphTable"></param>
-        public void AddGraphTable(DataGraphTable graphTable)
+        public void AddGraphTable(MainDataTable graphTable)
         {
             DataTargetType target = graphTable.Target;
             switch (target)
@@ -266,7 +266,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="graphTable"></param>
         /// <param name="tabs"></param>
-        private void AddTableToTabs(DataGraphTable graphTable, GTabContainer tabs)
+        private void AddTableToTabs(MainDataTable graphTable, GTabContainer tabs)
         {
             if (graphTable == null || graphTable.TableRow == null) return;
             GGrid grid = new GGrid();
@@ -278,7 +278,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="graphTable"></param>
         /// <param name="grid"></param>
-        private void AddTableToGrid(DataGraphTable graphTable, GGrid grid)
+        private void AddTableToGrid(MainDataTable graphTable, GGrid grid)
         {
             if (graphTable == null || graphTable.TableRow == null) return;
             grid.AddTable(graphTable.TableRow);

@@ -184,6 +184,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         protected override void DragThisOverEnd(GDragActionArgs e)
         {
             base.DragThisOverEnd(e);
+            this._Group.DragDropDrawInteractiveOpacity = null;
         }
         /// <summary>
         /// Klíčová metoda, která v procesu Drag and Drop určuje, zda, jak a kam se právě přesouvá grafický prvek.
@@ -208,11 +209,6 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
     *            Podle toho se následně rozhoduje, jak je pohyb přípustný.
     *            Po určení situace se volá datový zdroj pro určení důsledků
     * VÝSLEDKY : 
-
-
-
-
-
             */
 
             // Najdu prvek, nad nímž se aktuálně pohybuji:
@@ -225,6 +221,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             args.TargetItem = item;
             args.TargetGraph = SearchForItem(item, true, typeof(GTimeGraph)) as GTimeGraph;
             args.TargetTable = SearchForItem(item, true, typeof(Grid.GTable)) as Grid.GTable;
+            args.IsFinalised = true;
 
             // Předem připravím "defaultní" výsledky (ale datový zdroj, který se vyvolá v následujícím řádku) má plnou moc nastavit libovolné výsledky po svém:
             this.DragPrepareDefaultValidity(args);
@@ -233,7 +230,9 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             // On by mohl i zařídit "scrollování" v čase (osa X => TimeAxis) nebo v místě (osa Y => řádek, kam položku přesunout):
             this.Graph.GraphItemDragItemMove(args);
 
-            // Převezmu výsledky:
+            // Převezmu výsledky (buď defaultní, nebo modifikované datovým zdrojem):
+            this.DragDropTargetItem = args.TargetDropItem;
+            this._Group.DragDropDrawInteractiveOpacity = args.TargetValidityOpacity;
 
             bool result = (args.DragToAbsoluteBounds.HasValue && args.DragToAbsoluteBounds.Value != targetAbsoluteBounds);
             if (result)
@@ -247,48 +246,29 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="args"></param>
         protected void DragPrepareDefaultValidity(ItemDragDropArgs args)
         {
-            args.TargetValidityRatio = 1.0m;
+            ItemDragTargetType targetType = args.TargetType;
 
-            // Pokud je prvek stále nad svým grafem, je ratio 1 a končíme:
-            bool isSameGraph = (args.TargetGraph != null && Object.ReferenceEquals(args.ParentGraph, args.TargetGraph));
-            if (isSameGraph) return;
-
-            // Pokud jsem "nad svou tabulkou" a "nad nějakým grafem", je to rovněž OK:
-            bool isSameTable = (args.TargetTable != null && Object.ReferenceEquals(args.ParentTable, args.TargetTable));
-            if (isSameTable && args.TargetGraph != null) return;
-
-            // Pokud jsem "nad cizím grafem", pak nastavím ratio = 0.75 a končím:
-            args.TargetValidityRatio = 0.75m;
-            bool isOtherGraph = (args.TargetGraph != null);
-            if (isOtherGraph) return;
-
-            // Nejsem nad žádným grafem - určím vzdálenost od prostoru RowArea mé tabulky (nebo grafu) a podle vzdálenosti určím ratio:
-            if (args.MouseCurrentAbsolutePoint.HasValue)
+            if (targetType.HasFlag(ItemDragTargetType.OnSameGraph))
             {
-                Rectangle parentAbsoluteArea;
-                if (args.ParentTable != null)
-                {
-                    parentAbsoluteArea = args.ParentTable.GetAbsoluteBoundsForArea(Grid.TableAreaType.RowData);
-                    if (args.ParentGraph != null)
-                    {
-                        Rectangle graphBounds = args.ParentGraph.BoundsAbsolute;
-                        Int32Range x = Int32Range.CreateFromRectangle(graphBounds, System.Windows.Forms.Orientation.Horizontal);
-                        Int32Range y = Int32Range.CreateFromRectangle(parentAbsoluteArea, System.Windows.Forms.Orientation.Vertical);
-                        parentAbsoluteArea = Int32Range.GetRectangle(x, y);
-                    }
-                }
-                else if (args.ParentGraph != null)
-                {
-                    parentAbsoluteArea = args.ParentGraph.BoundsAbsolute;
-                }
-                else
-                {
-                    parentAbsoluteArea = args.CurrentItem.GControl.BoundsAbsolute;
-                }
-
-                // Vzdálenost myši od prostoru určuje hodnotu do TargetValidityRatio:
-                int distance = parentAbsoluteArea.GetOuterDistance(args.MouseCurrentAbsolutePoint.Value);
-                args.TargetValidityRatio = GetValidityForDistance(distance, 0.333m, 0.750m);
+                args.TargetDropItem = args.TargetGraph;
+                args.TargetValidityRatio = 1.0m;
+            }
+            else if (targetType.HasFlag(ItemDragTargetType.OnOtherGraph))
+            {
+                args.TargetDropItem = args.TargetGraph;
+                args.TargetValidityRatio = 1.0m;
+            }
+            else if (targetType.HasAnyFlag(ItemDragTargetType.OnTable))
+            {
+                args.TargetDropItem = null;
+                Rectangle? homeBounds = args.HomeAbsoluteBounds;
+                int distance = (homeBounds.HasValue ? homeBounds.Value.GetOuterDistance(args.MouseCurrentAbsolutePoint.Value) : 150);
+                args.TargetValidityRatio = GetValidityForDistance(distance, 150m, 0.250m, 0.500m);
+            }
+            else
+            {
+                args.TargetDropItem = null;
+                args.TargetValidityRatio = 0.250m;
             }
         }
         /// <summary>
@@ -298,9 +278,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="minValue"></param>
         /// <param name="maxValue"></param>
         /// <returns></returns>
-        protected static decimal GetValidityForDistance(decimal distance, decimal minValue, decimal maxValue)
+        protected static decimal GetValidityForDistance(decimal distance, decimal maxDistance, decimal minValue, decimal maxValue)
         {
-            decimal maxDistance = 150m;
             if (distance <= 0m) return maxValue;
             if (distance > maxDistance) return minValue;
             return minValue + ((maxDistance - distance) / maxDistance) * (maxValue - minValue);
@@ -359,9 +338,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             if (boundsAbsolute.Width < 1)
                 boundsAbsolute.Width = 1;
 
-            Color backColor = this.BackColor;
-            Color borderColor = this.BorderColor;
-            if (this.IsSelected) borderColor = Color.DarkGreen;
+            Color backColor = this._Group.GetColorWithOpacity(this.BackColor, e);
+            Color borderColor = this._Group.GetColorWithOpacity((this.IsSelected ? Color.DarkGreen : this.BorderColor), e);
             int lineWidth = (this.IsSelected ? 2 : 1);
             if (boundsAbsolute.Width <= 2)
             {

@@ -14,11 +14,11 @@ using Asol.Tools.WorkScheduler.Components.Graph;
 
 namespace Asol.Tools.WorkScheduler.Scheduler
 {
-    #region class DataGraphTable : obsah dat jedné logické tabulky: shrnuje v sobě fyzické řádky, položky grafů, vztahy položek grafů a popisky položek grafů
+    #region class MainDataTable : obsah dat jedné logické tabulky: shrnuje v sobě fyzické řádky, položky grafů, vztahy položek grafů a popisky položek grafů
     /// <summary>
-    /// DataGraphTable : obsah dat jedné logické tabulky: shrnuje v sobě fyzické řádky, položky grafů, vztahy položek grafů a popisky položek grafů
+    /// MainDataTable : obsah dat jedné logické tabulky: shrnuje v sobě fyzické řádky, položky grafů, vztahy položek grafů a popisky položek grafů
     /// </summary>
-    public class DataGraphTable : IDataGraphTableInternal, ITimeGraphDataSource
+    public class MainDataTable : IMainDataTableInternal, ITimeGraphDataSource
     {
         #region Konstrukce, postupné vkládání dat z tabulek, včetně finalizace
         /// <summary>
@@ -26,7 +26,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="mainData"></param>
         /// <param name="tableName"></param>
-        public DataGraphTable(MainData mainData, string tableName, DataDeclaration dataDeclaration)
+        public MainDataTable(MainData mainData, string tableName, DataDeclaration dataDeclaration)
         {
             this.MainData = mainData;
             this.TableName = tableName;
@@ -152,7 +152,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (this.DataDeclaration == null || this.TableRow == null)
                 return;
 
-            using (var scope = App.Trace.Scope(TracePriority.Priority3_BellowNormal, "DataGraphTable", "LoadFinalise", ""))
+            using (var scope = App.Trace.Scope(TracePriority.Priority3_BellowNormal, "MainDataTable", "LoadFinalise", ""))
             {
                 this.CreateGraphs();
                 this.FillGraphItems();
@@ -515,10 +515,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             return dataGraphItem;
         }
         #region Explicitní implementace IDataGraphTableInternal
-        int IDataGraphTableInternal.GetId(GId gId) { return this.GetId(gId); }
-        GId IDataGraphTableInternal.GetGId(int id) { return this.GetGId(id); }
-        DataGraphItem IDataGraphTableInternal.GetGraphItem(int id) { return this.GetGraphItem(id); }
-        DataGraphItem IDataGraphTableInternal.GetGraphItem(GId gId) { return this.GetGraphItem(gId); }
+        int IMainDataTableInternal.GetId(GId gId) { return this.GetId(gId); }
+        GId IMainDataTableInternal.GetGId(int id) { return this.GetGId(id); }
+        DataGraphItem IMainDataTableInternal.GetGraphItem(int id) { return this.GetGraphItem(id); }
+        DataGraphItem IMainDataTableInternal.GetGraphItem(GId gId) { return this.GetGraphItem(gId); }
         #endregion
         #endregion
         #region Komunikace s hlavním zdrojem dat (MainData)
@@ -667,9 +667,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         #endregion
     }
     /// <summary>
-    /// Rozhraní pro přístup k interním metodám třídy DataGraphTable
+    /// Rozhraní pro přístup k interním metodám třídy MainDataTable
     /// </summary>
-    public interface IDataGraphTableInternal
+    public interface IMainDataTableInternal
     {
         /// <summary>
         /// Metoda vrátí Int32 ID pro daný <see cref="GId"/>.
@@ -713,7 +713,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="graphTable"></param>
         /// <param name="row"></param>
         /// <returns></returns>
-        public static DataGraphItem CreateFrom(DataGraphTable graphTable, DataRow row)
+        public static DataGraphItem CreateFrom(MainDataTable graphTable, DataRow row)
         {
             if (row == null) return null;
 
@@ -735,7 +735,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             item._LoadData(row.GetValue<string>("data"));
 
             // ID pro grafickou vrstvu:
-            IDataGraphTableInternal iGraphTable = graphTable as IDataGraphTableInternal;
+            IMainDataTableInternal iGraphTable = graphTable as IMainDataTableInternal;
             item._ItemId = iGraphTable.GetId(item.ItemGId);
             item._GroupId = iGraphTable.GetId(item.GroupGId);
 
@@ -819,9 +819,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             return new GId(classId.Value, recordId.Value);
         }
         /// <summary>
-        /// privátní konstruktor. Instanci lze založit pomocí metody <see cref="CreateFrom(DataGraphTable, DataRow)"/>.
+        /// privátní konstruktor. Instanci lze založit pomocí metody <see cref="CreateFrom(MainDataTable, DataRow)"/>.
         /// </summary>
-        private DataGraphItem(DataGraphTable graphTable)
+        private DataGraphItem(MainDataTable graphTable)
         {
             this._GraphTable = graphTable;
         }
@@ -840,7 +840,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Vlastník prvku = celá tabulka
         /// </summary>
-        private DataGraphTable _GraphTable;
+        private MainDataTable _GraphTable;
         private ITimeInteractiveGraph _OwnerGraph;
         private GId _ParentGId;
         private GId _ItemGId;
@@ -864,7 +864,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Vlastník prvku grafu = tabulka s komplexními daty
         /// </summary>
-        public DataGraphTable GraphTable { get { return this._GraphTable; } }
+        public MainDataTable GraphTable { get { return this._GraphTable; } }
         /// <summary>
         /// Veřejný identifikátor MAJITELE PRVKU (obsahuje číslo třídy a číslo záznamu).
         /// Může jít o Kapacitní plánovací jednotku.
@@ -973,7 +973,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="dataGraphTable"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public static DataGraphProperties CreateFrom(DataGraphTable dataGraphTable, string data)
+        public static DataGraphProperties CreateFrom(MainDataTable dataGraphTable, string data)
         {
             DataGraphProperties dataGraphProperties = new DataGraphProperties(dataGraphTable);
             dataGraphProperties.LoadData(data);
@@ -983,9 +983,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Privátní konstruktor
         /// </summary>
         /// <param name="dataGraphTable"></param>
-        private DataGraphProperties(DataGraphTable dataGraphTable)
+        private DataGraphProperties(MainDataTable dataGraphTable)
         {
-            this.DataGraphTable = dataGraphTable;
+            this.MainDataTable = dataGraphTable;
         }
         /// <summary>
         /// Načte data do this objektu z datového stringu
@@ -1017,7 +1017,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Vlastník = tabulka
         /// </summary>
-        protected DataGraphTable DataGraphTable { get; private set; }
+        protected MainDataTable MainDataTable { get; private set; }
         #endregion
         #region Public data
         /// <summary>

@@ -250,6 +250,11 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         internal bool IsValidRealTime { get { return this._IsValidRealTime; } }
         /// <summary>
+        /// Obsahuje průhlednost pro vykreslení tohoto prvku do vrstvy Interactive.
+        /// Vkládá se sem v procesu Drag and Drop, čte se v procesu Draw na prvku třídy <see cref="GTimeGraphItem"/>
+        /// </summary>
+        internal int? DragDropDrawInteractiveOpacity { get; set; }
+        /// <summary>
         /// Vizuální prvek, který v sobě zahrnuje jak podporu pro vykreslování, tak podporu interaktivity.
         /// A přitom to nevyžaduje od třídy, která fyzicky implementuje <see cref="ITimeGraphItem"/>.
         /// Aplikační kód (respektive implementační objekt <see cref="ITimeGraphItem"/>) se o tuto property nemusí starat, řídící mechanismus sem vloží v případě potřeby new instanci.
@@ -276,6 +281,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             Color? borderColor = backColor;
 
             Rectangle boundsLink = boundsAbsolute.Enlarge(-1, -2, -1, -2);
+            backColor = this.GetColorWithOpacity(backColor.Value, e);
             GPainter.DrawEffect3D(e.Graphics, boundsLink, backColor.Value, System.Windows.Forms.Orientation.Horizontal, this.GControl.InteractiveState, force3D: false);
         }
         /// <summary>
@@ -299,9 +305,43 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             // Kreslit text:
             if (!String.IsNullOrEmpty(text))
             {
-                Color foreColor = this.GControl.BackColor.Contrast();
+                Color foreColor = this.GetColorWithOpacity(this.GControl.BackColor.Contrast(), e);
                 GPainter.DrawString(e.Graphics, boundsAbsolute, text, foreColor, fontInfo, ContentAlignment.MiddleCenter);
             }
+        }
+        /// <summary>
+        /// Vrátí danou barvu, s nastavenou průhledností Opacity (<see cref="Color.A"/>) podle <see cref="DragDropDrawInteractiveOpacity"/>, 
+        /// tedy pokud se aktuálně kreslí do vrstvy <see cref="GInteractiveDrawLayer.Interactive"/>.
+        /// </summary>
+        /// <param name="baseColor"></param>
+        /// <param name="e"></param>
+        /// <returns></returns>
+        public Color GetColorWithOpacity(Color baseColor, GInteractiveDrawArgs e)
+        {
+            return this.GetColorWithOpacity(baseColor, e.DrawLayer);
+        }
+        /// <summary>
+        /// Vrátí danou barvu, s nastavenou průhledností Opacity (<see cref="Color.A"/>) podle <see cref="DragDropDrawInteractiveOpacity"/>, 
+        /// tedy pokud se aktuálně kreslí do vrstvy <see cref="GInteractiveDrawLayer.Interactive"/>.
+        /// </summary>
+        /// <param name="baseColor"></param>
+        /// <param name="drawLayer"></param>
+        /// <returns></returns>
+        public Color GetColorWithOpacity(Color baseColor, GInteractiveDrawLayer drawLayer)
+        {
+            if (drawLayer != GInteractiveDrawLayer.Interactive) return baseColor;
+            return this.GetColorWithOpacity(baseColor);
+        }
+        /// <summary>
+        /// Vrátí danou barvu, s nastavenou průhledností Opacity (<see cref="Color.A"/>) podle <see cref="DragDropDrawInteractiveOpacity"/>.
+        /// </summary>
+        /// <param name="baseColor"></param>
+        /// <returns></returns>
+        public Color GetColorWithOpacity(Color baseColor)
+        {
+            int? opacity = this.DragDropDrawInteractiveOpacity;
+            if (!opacity.HasValue && opacity.Value >= 255) return baseColor;
+            return baseColor.SetOpacity(opacity);
         }
         /// <summary>
         /// Vrací true, pokud se v aktuálním stavu objektu má kreslit text.

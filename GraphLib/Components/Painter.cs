@@ -2811,6 +2811,20 @@ namespace Asol.Tools.WorkScheduler.Components
             return state;
         }
         /// <summary>
+        /// Prepare Graphics for text drawing (lines, text), fast rendering lines and quality rendering of texts.
+        /// Return a disposable object, which at its Dispose returns graphics to the original state.
+        /// You must use this method in using pattern:
+        /// using(Painter.GraphicsUseSmooth(graphics) { any drawing... }.
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <returns></returns>
+        internal static IDisposable GraphicsUseOpacity(Graphics graphics, int opacity)
+        {
+            IDisposable state = new GraphicsStateRestore(graphics);
+            _GraphicsSetOpacity(graphics, opacity);
+            return state;
+        }
+        /// <summary>
         /// Zajistí oříznutí aktivní plochy v grafice na daný prostor.
         /// Po konci bloku using() bude plocha vrácena na předchozí nastavení.
         /// </summary>
@@ -2852,6 +2866,15 @@ namespace Asol.Tools.WorkScheduler.Components
             graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None;             // Kreslí jednotlivé pixely
             graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Default;
             graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;     // TextRenderingHint.AntiAlias vyhovuje pro všechny režimy, a neovlivňuje vykreslení jiné grafiky
+        }
+        /// <summary>
+        /// Nastaví Graphics tak, aby pro veškeré následující kreslení použil danou průhlednost
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="opacity"></param>
+        private static void _GraphicsSetOpacity(Graphics graphics, int opacity)
+        {
+            /*  Bohužel tohle WinForm Graphics neumí  */
         }
         #region class GraphicsStateRestore : Disposable pattern for graphics.Save(), Set, use and Restore on Dispose
         /// <summary>

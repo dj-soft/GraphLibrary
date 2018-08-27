@@ -1085,8 +1085,19 @@ namespace Asol.Tools.WorkScheduler.Components
                     this._IsDragEnabledCurrent = false;
                     this.Repaint();
                     this.DragThisOverEnd(e);
+                    this.DragThisOverEndFinal(e);
                     break;
             }
+        }
+        /// <summary>
+        /// Metoda provádí úklid vnitřních dat procesu Drag and Drop po jeho skončení.
+        /// Metoda je volána v průběhu akce <see cref="DragActionType.DragThisEnd"/>, po proběhnutí metody <see cref="DragThisOverEnd(GDragActionArgs)"/>.
+        /// </summary>
+        protected void DragThisOverEndFinal(GDragActionArgs e)
+        {
+            this.DragDropTargetItem = null;
+            this.DragDropDrawStandardOpacity = null;
+            this.DragDropDrawInteractiveOpacity = null;
         }
         /// <summary>
         /// Hodnota převzatá z <see cref="IInteractiveItem.IsDragEnabled"/> v době, kdy začala akce <see cref="DragActionType.DragThisStart"/>.
@@ -1148,6 +1159,27 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Vrstvy, které se mají překreslovat v době procesu Drag & Drop.
         /// </summary>
         protected virtual GInteractiveDrawLayer DragDrawToLayers { get { return (GInteractiveDrawLayer.Standard | GInteractiveDrawLayer.Interactive); } }
+        /// <summary>
+        /// Sem si instance může uložit referenci na objekt, do kterého by měla být vložena po Dropnutí v procesu Drag and Drop.
+        /// Hodnota je nastavena na null na konci akce <see cref="DragActionType.DragThisEnd"/>, po proběhnutí metody <see cref="DragThisOverEnd(GDragActionArgs)"/>.
+        /// </summary>
+        protected virtual IInteractiveItem DragDropTargetItem { get; set; }
+        /// <summary>
+        /// Sem si instance může uložit hodnotu Opacity, kterou bude vykreslována do vrstvy Standard v procesu Drag and Drop.
+        /// Pokud je nastavena hodnota 0, pak se kreslení do Standard vrstvy neprovádí.
+        /// Pokud je nastavena hodnota větší než 0, pak se provádí kreslení s nastavením grafiky na patřičnou transparentnost (s použitím ColorMatrix).
+        /// Pokud je zde hodnota null, pak se kreslení provádí, ale grafika se nijak nemodifikuje (stejně jako při hodnotě 255).
+        /// Hodnota je nastavena na null na konci akce <see cref="DragActionType.DragThisEnd"/>, po proběhnutí metody <see cref="DragThisOverEnd(GDragActionArgs)"/>.
+        /// </summary>
+        protected virtual int? DragDropDrawStandardOpacity { get; set; }
+        /// <summary>
+        /// Sem si instance může uložit hodnotu Opacity, kterou bude vykreslována do vrstvy Interactive v procesu Drag and Drop.
+        /// Pokud je nastavena hodnota 0, pak se kreslení do Interactive vrstvy neprovádí.
+        /// Pokud je nastavena hodnota větší než 0, pak se provádí kreslení s nastavením grafiky na patřičnou transparentnost (s použitím ColorMatrix).
+        /// Pokud je zde hodnota null, pak se kreslení provádí, ale grafika se nijak nemodifikuje (stejně jako při hodnotě 255).
+        /// Hodnota je nastavena na null na konci akce <see cref="DragActionType.DragThisEnd"/>, po proběhnutí metody <see cref="DragThisOverEnd(GDragActionArgs)"/>.
+        /// </summary>
+        protected virtual int? DragDropDrawInteractiveOpacity { get; set; }
         #endregion
         #region Draw
         /// <summary>
@@ -1160,8 +1192,14 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             Rectangle absoluteBoundsDraw;
             DrawItemMode drawMode;
-            if (this.PrepareDrawDataByDragData(e.DrawLayer, absoluteBounds, out absoluteBoundsDraw, out drawMode))
-                this.Draw(e, absoluteBoundsDraw, absoluteVisibleBounds, drawMode);
+            int? drawOpacity;
+            if (this.PrepareDrawDataByDragData(e.DrawLayer, absoluteBounds, out absoluteBoundsDraw, out drawMode, out drawOpacity))
+            {
+                using (PrepareGraphicsOpacity(e, drawOpacity))
+                {
+                    this.Draw(e, absoluteBoundsDraw, absoluteVisibleBounds, drawMode);
+                }
+            }
         }
         /// <summary>
         /// Kreslení "OverChilds"
@@ -1173,8 +1211,14 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             Rectangle absoluteBoundsDraw;
             DrawItemMode drawMode;
-            if (this.PrepareDrawDataByDragData(e.DrawLayer, absoluteBounds, out absoluteBoundsDraw, out drawMode))
-                this.DrawOverChilds(e, absoluteBoundsDraw, drawMode);
+            int? drawOpacity;
+            if (this.PrepareDrawDataByDragData(e.DrawLayer, absoluteBounds, out absoluteBoundsDraw, out drawMode, out drawOpacity))
+            {
+                using (PrepareGraphicsOpacity(e, drawOpacity))
+                {
+                    this.DrawOverChilds(e, absoluteBoundsDraw, drawMode);
+                }
+            }
         }
         /// <summary>
         /// Tato metoda určí souřadnice, kam se má objekt vykreslit, a režim kreslení (Standard, Ghost), pro aktuální situaci objektu.
@@ -1193,12 +1237,13 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="absoluteBoundsItem">Vstup: Absolutní souřadnice prvku, běžná (odvozená od <see cref="IInteractiveItem.Bounds"/>)</param>
         /// <param name="absoluteBoundsDraw">Výstup: Absolutní souřadnice, kam se bude prvek vykreslovat (souvisí s procesem Drag & Drop)</param>
         /// <param name="drawMode">Režim kreslení prvku v aktuální situaci</param>
-        protected virtual bool PrepareDrawDataByDragData(GInteractiveDrawLayer currentLayer, Rectangle absoluteBoundsItem, out Rectangle absoluteBoundsDraw, out DrawItemMode drawMode)
+        protected virtual bool PrepareDrawDataByDragData(GInteractiveDrawLayer currentLayer, Rectangle absoluteBoundsItem, out Rectangle absoluteBoundsDraw, out DrawItemMode drawMode, out int? drawOpacity)
         {
             bool ghostInOriginalBounds = ((this.Style & GInteractiveStyles.DragDrawGhostOriginal) != 0);
             bool ghostInDraggedBounds = ((this.Style & GInteractiveStyles.DragDrawGhostInteractive) != 0);
             absoluteBoundsDraw = Rectangle.Empty;
             drawMode = DrawItemMode.InDragProcess;
+            drawOpacity = null;
             bool runDraw = true;
 
             if (this.IsDragged && this.BoundsDragOrigin.HasValue)
@@ -1207,6 +1252,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 {   // Nyní kreslíme do vrstvy Standard, tedy kreslíme do výchozích souřadnic BoundsDragOrigin:
                     absoluteBoundsDraw = BoundsInfo.GetAbsoluteBoundsInContainer(this.Parent, this.BoundsDragOrigin.Value);
                     drawMode |= DrawItemMode.OriginalBounds;
+                    drawOpacity = this.DragDropDrawStandardOpacity;
                     if (ghostInOriginalBounds)
                         // Máme styl DragDrawGhostOriginal, takže na originální souřadnice (tj. do standardní vrstvy) máme vykreslit Ghost:
                         drawMode |= DrawItemMode.Ghost;
@@ -1223,6 +1269,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 {   // Nyní kreslíme do vrstvy Interactive, tedy kreslíme do cílových souřadnic BoundsDragTarget:
                     absoluteBoundsDraw = BoundsInfo.GetAbsoluteBoundsInContainer(this.Parent, this.BoundsDragTarget.Value);
                     drawMode |= DrawItemMode.DraggedBounds;
+                    drawOpacity = this.DragDropDrawInteractiveOpacity;
                     if (ghostInDraggedBounds)
                         // Máme styl DragDrawGhostInteractive, takže na cílové souřadnice (tj. do interaktivní vrstvy) máme vykreslit Ghost:
                         drawMode |= DrawItemMode.Ghost;
@@ -1245,7 +1292,23 @@ namespace Asol.Tools.WorkScheduler.Components
                 absoluteBoundsDraw = absoluteBoundsItem;
                 drawMode = DrawItemMode.Standard;
             }
+
+            // Pokud je specifikována průhlednost pro aktuální vrstvu == 0 (a záporné hodnoty), pak se nic kreslit nebude:
+            if (drawOpacity.HasValue && drawOpacity.Value <= 0)
+                runDraw = false;
+
             return runDraw;
+        }
+        /// <summary>
+        /// Metoda na základě hodnoty "drawOpacity" nastaví ColorMatrix.Opacity pro danou e.Graphics
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="drawOpacity"></param>
+        /// <returns></returns>
+        protected virtual IDisposable PrepareGraphicsOpacity(GInteractiveDrawArgs e, int? drawOpacity)
+        {
+            if (!drawOpacity.HasValue) return null;
+            return GPainter.GraphicsUseOpacity(e.Graphics, drawOpacity.Value);
         }
         #endregion
     }

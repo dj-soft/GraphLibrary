@@ -47,11 +47,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         #region Public rozhraní: vkládání tabulek a dalších dat
         /// <summary>
         /// Vloží novou tabulku do controlu. Metoda sama nejlépe ví, kam ji zařadit, a udělá vše potřebné.
-        /// Tzn. najde / vytvoří nový <see cref="SchedulerPanel"/> pro <see cref="DataGraphTable.DataId"/>, a do tohoto panelu vloží dodanou tabulku.
-        /// Panel postupuje obdobně: z dodané tabulky zjistí, kam patří (do kterého <see cref="DataGraphTable.tar"/>
+        /// Tzn. najde / vytvoří nový <see cref="SchedulerPanel"/> pro <see cref="MainDataTable.DataId"/>, a do tohoto panelu vloží dodanou tabulku.
+        /// Panel postupuje obdobně: z dodané tabulky zjistí, kam patří (do kterého <see cref="MainDataTable.tar"/>
         /// </summary>
         /// <param name="graphTable"></param>
-        public void AddGraphTable(DataGraphTable graphTable)
+        public void AddGraphTable(MainDataTable graphTable)
         {
             if (graphTable == null) return;
             TabSchedulerPanelInfo tspInfo = this._TabSchedulerPanelPrepare(graphTable.DataDeclaration);

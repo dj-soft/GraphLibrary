@@ -1740,6 +1740,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
     /// </summary>
     public class ItemDragDropArgs : ItemInteractiveArgs
     {
+        #region Konstruktor, základní properties
         /// <summary>
         /// Konstruktor
         /// </summary>
@@ -1810,6 +1811,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Výchozí hodnota je k dispozici v <see cref="DragArgs"/>, tam ji měnit nelze.
         /// </summary>
         public Rectangle? DragToAbsoluteBounds { get { return this._DragToRelativeBounds.Add(this._AbsOrigin); } set { this._DragToRelativeBounds = value.Sub(this._AbsOrigin); } }
+        #endregion
+        #region Properties WriteInit
         /// <summary>
         /// Obsahuje false po iniciaci. V tomto stavu lze vkládat hodnoty do všech "WriteInit" properties:
         /// <see cref="ParentGraph"/>, <see cref="ParentTable"/>, <see cref="TargetItem"/>, <see cref="TargetGraph"/>, <see cref="TargetTable"/> (označeny "WriteInit").
@@ -1842,7 +1845,76 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// "WriteInit" property.
         /// </summary>
         public Grid.GTable TargetTable { get { return this._TargetTable; } set { this._CheckSet(); this._TargetTable = value; } } private Grid.GTable _TargetTable;
+        #endregion
+        #region Dopočítané vstupní proměnné
+        /// <summary>
+        /// true = cíl (Target) je na "domácím" grafu (Parent)
+        /// </summary>
+        public bool IsOnSameGraph { get { return (this.TargetGraph != null && Object.ReferenceEquals(this.ParentGraph, this.TargetGraph)); } }
+        /// <summary>
+        /// true = cíl (Target) je na "cizím" grafu (existující graf, jiný než Parent)
+        /// </summary>
+        public bool IsOnOtherGraph { get { return (this.TargetGraph != null && !Object.ReferenceEquals(this.ParentGraph, this.TargetGraph)); } }
+        /// <summary>
+        /// true = cíl (Target) je na "domácí" tabulce (Parent)
+        /// </summary>
+        public bool IsOnSameTable { get { return (this.TargetTable != null && Object.ReferenceEquals(this.ParentTable, this.TargetTable)); } }
+        /// <summary>
+        /// true = cíl (Target) je na "cizí" tabulce (existující tabulka, jiná než Parent)
+        /// </summary>
+        public bool IsOnOtherTable { get { return (this.TargetTable != null && !Object.ReferenceEquals(this.ParentTable, this.TargetTable)); } }
+        /// <summary>
+        /// Typ cíle
+        /// </summary>
+        public ItemDragTargetType TargetType
+        {
+            get
+            {
+                ItemDragTargetType targetType =
+                    (this.TargetGraph != null ? (Object.ReferenceEquals(this.ParentGraph, this.TargetGraph) ? ItemDragTargetType.OnSameGraph : ItemDragTargetType.OnOtherGraph) : ItemDragTargetType.None) |
+                    (this.TargetTable != null ? (Object.ReferenceEquals(this.ParentTable, this.TargetTable) ? ItemDragTargetType.OnSameTable : ItemDragTargetType.OnOtherTable) : ItemDragTargetType.None);
+                if (targetType == ItemDragTargetType.None && this.TargetItem != null) targetType = ItemDragTargetType.OnItem;
+                return targetType;
+            }
+        }
+        /// <summary>
+        /// Prostor (absolutní souřadnice) okolo cílového prvku (Target).
+        /// </summary>
+        public Rectangle? HomeAbsoluteBounds
+        {
+            get
+            {
+                Rectangle? homeBounds = null;
 
+                if (this.TargetTable != null)
+                    homeBounds = this.TargetTable.GetAbsoluteBoundsForArea(Grid.TableAreaType.RowData);
+
+                if (this.TargetGraph != null)
+                {
+                    Rectangle graphBounds = this.TargetGraph.BoundsAbsolute;
+                    if (homeBounds.HasValue)
+                    {
+                        Int32Range x = Int32Range.CreateFromRectangle(graphBounds, System.Windows.Forms.Orientation.Horizontal);
+                        Int32Range y = Int32Range.CreateFromRectangle(homeBounds.Value, System.Windows.Forms.Orientation.Vertical);
+                        homeBounds = Int32Range.GetRectangle(x, y);
+                    }
+                    else
+                    {
+                        homeBounds = graphBounds;
+                    }
+                }
+
+                if (!homeBounds.HasValue && this.TargetItem != null)
+                {
+                    BoundsInfo boundsInfo = BoundsInfo.CreateForChild(this.TargetItem);
+                    homeBounds = boundsInfo.CurrentAbsBounds;
+                }
+
+                return homeBounds;
+            }
+        }
+        #endregion
+        #region Výstupní proměnné
         /// <summary>
         /// Vyjadřuje platnost cílové souřadnice (pozice Drag and Drop) pro aktuální prvek.
         /// Hodnota 1 je výchozí a značí ANO, prvek se na dané místo může přemístit, hodnota menší než 1 = nemůže.
@@ -1852,12 +1924,34 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         public decimal TargetValidityRatio { get; set; }
         /// <summary>
+        /// Vyjadřuje hodnotu Opacity odpovídající hodnotě <see cref="TargetValidityRatio"/>:
+        /// Pro Ratio = 1.0 (a vyšší) obsahuje 255, pro Ratio = 0.0 (a nižší) obsahuje 0.
+        /// </summary>
+        public int? TargetValidityOpacity { get { decimal tvr = this.TargetValidityRatio; return (tvr <= 0.0m ? 0 : (tvr >= 1.0m ? 255 : (int)(Math.Round(255m * tvr, 0)))); } }
+        /// <summary>
         /// Platnost cílové souřadnice (pozice Drag and Drop) pro aktuální prvek.
         /// Obsahuje true, pokud <see cref="TargetValidityRatio"/> obsahuje 1.0 a více, obsahuje false pro menší hodnotu.
         /// Setování do <see cref="TargetIsValid"/> vloží do <see cref="TargetValidityRatio"/> hodnotu 1.0 (pro true) nebo 0.333 (pro false).
         /// </summary>
         public bool TargetIsValid { get { return (this.TargetValidityRatio >= 1.0m); } set { this.TargetValidityRatio = (value ? 1.0m : 0.333m); } }
-
+        /// <summary>
+        /// Objekt, na který reálně má být přemisťovaný prvek "upuštěn" = jeho Child by měl být.
+        /// Ve výchozím stavu je nastaveno na <see cref="TargetItem"/>, ale může být změněno.
+        /// </summary>
+        public IInteractiveItem TargetDropItem { get; set; }
+        #endregion
+    }
+    [Flags]
+    public enum ItemDragTargetType
+    {
+        None = 0,
+        OnItem = 0x0001,
+        OnSameGraph = 0x0010,
+        OnOtherGraph = 0x0020,
+        OnGraph = OnSameGraph | OnOtherGraph,
+        OnSameTable = 0x0100,
+        OnOtherTable = 0x0200,
+        OnTable = OnSameTable | OnOtherTable
     }
     #endregion
     #region class ItemActionArgs : Argument obsahující data prosté akce

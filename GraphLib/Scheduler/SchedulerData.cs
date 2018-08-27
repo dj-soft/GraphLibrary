@@ -44,7 +44,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             try
             {
-                this.GraphTableList = new List<DataGraphTable>();
+                this.GraphTableList = new List<MainDataTable>();
                 this.ImageDict = new Dictionary<string, Image>();
                 using (var buffer = WorkSchedulerSupport.CreateDataBufferReader(dataPack))
                 {
@@ -153,11 +153,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="tableType">Typ dat, načtený z klíče (obsahuje string: Row, Graph, Rel, Item)</param>
         private void _LoadDataGraphTable(string data, int? dataId, string tableName, DataTableType tableType)
         {
-            DataGraphTable dataGraphTable = this.GetGraphTable(dataId, tableName);
+            MainDataTable dataGraphTable = this.GetGraphTable(dataId, tableName);
             if (dataGraphTable == null)
             {   // Nová tabulka => založit nový kontenjer DataGraphTable:
                 DataDeclaration dataDeclaration = this.SearchDataDeclarationForTable(tableName);
-                dataGraphTable = new DataGraphTable(this, tableName, dataDeclaration);
+                dataGraphTable = new MainDataTable(this, tableName, dataDeclaration);
                 this.GraphTableList.Add(dataGraphTable);
             }
             try
@@ -174,9 +174,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="dataId"></param>
         /// <param name="tableName"></param>
         /// <returns></returns>
-        protected DataGraphTable GetGraphTable(int? dataId, string tableName)
+        protected MainDataTable GetGraphTable(int? dataId, string tableName)
         {
-            DataGraphTable dataGraphTable = null;
+            MainDataTable dataGraphTable = null;
             if (this.GraphTableList.Count == 0) return dataGraphTable;
             dataGraphTable = this.GraphTableList.FirstOrDefault(t => t.EqualsId(dataId, tableName));
             return dataGraphTable;
@@ -187,7 +187,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         private void _LoadDataGraphTableFinalise()
         {
-            foreach (DataGraphTable dataGraphTable in this.GraphTableList)
+            foreach (MainDataTable dataGraphTable in this.GraphTableList)
             {
                 dataGraphTable.LoadFinalise();
             }
@@ -230,7 +230,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Seznam obsahující data jednotlivých tabulek
         /// </summary>
-        protected List<DataGraphTable> GraphTableList { get; private set; }
+        protected List<MainDataTable> GraphTableList { get; private set; }
         #endregion
         #region Data obrázků
         /// <summary>

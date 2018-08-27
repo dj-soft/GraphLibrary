@@ -103,7 +103,7 @@
     <Compile Include="Rtf\RtfDocument.cs" />
     <Compile Include="Rtf\RtfPaint.cs" />
     <Compile Include="Scheduler\Constants.cs" />
-    <Compile Include="Scheduler\GraphTable.cs" />
+    <Compile Include="Scheduler\SchedulerDataTable.cs" />
     <Compile Include="Scheduler\MainControl.cs">
       <SubType>Component</SubType>
     </Compile>
