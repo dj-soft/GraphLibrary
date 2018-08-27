@@ -160,7 +160,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                         new Column("key", "Reference", "Reference záznamu v tomto sloupci", "0000000", 75),
                         new Column("date_from", "Datum OD", "Počáteční datum směny", "yyyy-MM-dd HH:mm", 80),
                         new Column("date_to", "Datum DO", "Koncové datum směny", "yyyy-MM-dd HH:mm:ss", 80),
-                        new Column("graph1", "graf", "Graf vytížení", null, 180, columnContent: ColumnContentType.TimeGraph, autoWidth: true, sortingEnabled: false, widthMininum: 160),
+                        new Column("graph1", "graf", "Graf vytížení", null, 180, columnContent: ColumnContentType.TimeGraphSynchronized, autoWidth: true, sortingEnabled: false, widthMininum: 160),
                         new Column("price1", "Cena jednotky", "Jednotková cena.\r\nJe zde jen pro informaci.", "### ##0.00", 80),
                         new Column("image", "Fotografie", "Zobrazení", null, 60, sortingEnabled: false)
                     );
