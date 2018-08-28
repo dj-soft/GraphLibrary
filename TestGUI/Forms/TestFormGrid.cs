@@ -52,6 +52,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 this._Table1 = this._PrepareTableW("stroje", 48);
                 this._Table2 = this._PrepareTableW("směny", 128);
                 this._TableZ = this._PrepareTableZ("lidi", 18);
+                this._TimeSynchronizer = new ValueSynchronizer<TimeRange>();
 
                 using (var scope2 = Application.App.Trace.Scope("TestFormGrid", "InitGControl", "CreateGrid"))
                 {
@@ -68,7 +69,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                     this._SplitterWZ.ValueChanging += new GPropertyChangedHandler<int>(_SplitterWZ_ValueChanging);
                     this._GridZ = new GGrid();
                     this._GridZ.AddTable(this._TableZ);
-                    this._GridZ.MainTimeAxis = this._GridW.MainTimeAxis;
+                    this._GridZ.SynchronizedTime = this._TimeSynchronizer;
+                    this._GridW.SynchronizedTime = this._TimeSynchronizer;
                 }
 
                 using (var scope3 = Application.App.Trace.Scope("TestFormGrid", "InitGControl", "GControl.AddItem(Grid)"))
@@ -519,6 +521,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         private GGrid _GridW;
         private GGrid _GridZ;
         private GSplitter _SplitterWZ;
+        private ValueSynchronizer<TimeRange> _TimeSynchronizer;
         private void TestFormGrid_SizeChanged(object sender, EventArgs e)
         {
             this.ControlsPosition();
