@@ -1055,4 +1055,253 @@ namespace Asol.Tools.WorkScheduler.Data
         #endregion
     }
     #endregion
+    #region DoubleRange = BaseRange<Double, Double>
+    /// <summary>
+    /// <see cref="DoubleRange"/> = rozmezí hodnot, kde Begin, End a Size jsou Double
+    /// </summary>
+    public class DoubleRange : BaseRange<Double, Double>
+    {
+        #region Constructors, Visualiser, Helper
+        public DoubleRange() : base() { }
+        public DoubleRange(Double begin, Double end) : base(begin, end) { }
+        /// <summary>
+        /// Allways returns a new instance of <see cref="DoubleRange"/>, containing empty values
+        /// </summary>
+        public static DoubleRange Empty { get { return new DoubleRange(); } }
+        /// <summary>
+        /// Allways returns a new instance of <see cref="DoubleRange"/>, containing current values from this instance
+        /// </summary>
+        public DoubleRange Clone { get { return new DoubleRange(this.Begin, this.End); } }
+        /// <summary>
+        /// Create interval from begin and time (size). Booth must be defined.
+        /// </summary>
+        /// <param name="begin"></param>
+        /// <param name="size"></param>
+        public static DoubleRange CreateFromBeginSize(Double begin, Double size)
+        {
+            return new DoubleRange(begin, begin + size);
+        }
+        /// <summary>
+        /// Create interval from time (duration) and end. Booth must be defined.
+        /// </summary>
+        /// <param name="size"></param>
+        /// <param name="end"></param>
+        public static DoubleRange CreateFromSizeEnd(Double size, Double end)
+        {
+            return new DoubleRange(end - size, end);
+        }
+        /// <summary>
+        /// Contains a textual form of this interval
+        /// </summary>
+        public string Text
+        {
+            get
+            {
+                return this.Begin.ToString() + " ÷ " + this.End.ToString();
+            }
+        }
+        public override int GetHashCode()
+        {
+            return this.HashCode;
+        }
+        public override bool Equals(object obj)
+        {
+            return Helper.IsEqual(this, (obj as DoubleRange));
+        }
+        public override string ToString()
+        {
+            return this.Text;
+        }
+        /// <summary>
+        /// Help object: singleton empty instance, for access to base instantial methods
+        /// </summary>
+        protected static DoubleRange Helper { get { if (((object)_Helper) == null) _Helper = new DoubleRange(); return _Helper; } }
+        private static DoubleRange _Helper;
+        #endregion
+        #region Operators
+        public static DoubleRange operator *(DoubleRange a, DoubleRange b)
+        {
+            Double begin, end;
+            Helper.PrepareIntersect(a, b, out begin, out end);
+            return new DoubleRange(begin, end);
+        }
+        public static DoubleRange operator +(DoubleRange a, DoubleRange b)
+        {
+            Double begin, end;
+            Helper.PrepareUnion(a, b, out begin, out end);
+            return new DoubleRange(begin, end);
+        }
+        public static bool operator ==(DoubleRange a, DoubleRange b)
+        {
+            return Helper.IsEqual(a, b);
+        }
+        public static bool operator !=(DoubleRange a, DoubleRange b)
+        {
+            return !Helper.IsEqual(a, b);
+        }
+        #endregion
+        #region Public methods - Zoom
+        /// <summary>
+        /// Returns a new instance created from current instance, which Time is (ratio * this.Time) and center of zooming is on specified date.
+        /// </summary>
+        /// <param name="center"></param>
+        /// <param name="ratio"></param>
+        /// <returns></returns>
+        public DoubleRange ZoomToRatio(Double center, double ratio)
+        {
+            Double begin, end;
+            this.PrepareZoomToRatio(center, (decimal)ratio, out begin, out end);
+            return new DoubleRange(begin, end);
+        }
+        /// <summary>
+        /// Returns a new instance created from current instance, which Time is (ratio * this.Time) and center of zooming is on specified date.
+        /// </summary>
+        /// <param name="center"></param>
+        /// <param name="ratio"></param>
+        /// <returns></returns>
+        public DoubleRange ZoomToRatio(Double center, decimal ratio)
+        {
+            Double begin, end;
+            this.PrepareZoomToRatio(center, ratio, out begin, out end);
+            return new DoubleRange(begin, end);
+        }
+        /// <summary>
+        /// Returns a new instance created from current instance, which Time is specified and center of zooming is on specified date.
+        /// </summary>
+        /// <param name="center"></param>
+        /// <param name="time"></param>
+        /// <returns></returns>
+        public DoubleRange ZoomToSize(Double center, Double size)
+        {
+            Double begin, end;
+            this.PrepareZoomToSizeOnCenterPoint(center, size, out begin, out end);
+            return new DoubleRange(begin, end);
+        }
+        /// <summary>
+        /// Vrací this interval posunutý o shift, beze změny délky.
+        /// </summary>
+        /// <param name="shift"></param>
+        /// <returns></returns>
+        public DoubleRange ShiftBy(Double shift)
+        {
+            return new DoubleRange(this.Begin + shift, this.End + shift);
+        }
+        /// <summary>
+        /// Returns a date on relative position (where 0 = Begin, 1 = End). Center of interval is on position 0.5d.
+        /// When this is not filled, return null.
+        /// </summary>
+        /// <param name="relativePosition"></param>
+        /// <returns></returns>
+        public Double GetValueAt(double relativePosition)
+        {
+            return this.GetValueAtRelativePosition((decimal)relativePosition);
+        }
+        /// <summary>
+        /// Obsahuje <see cref="Int32Range"/>, vytvořený ze zaokrouhleného počátku a zaokrouhleného konce.
+        /// </summary>
+        public Int32Range Int32RoundEnd { get { return new Int32Range(Round(this.Begin), Round(this.End)); } }
+        /// <summary>
+        /// Obsahuje <see cref="Int32Range"/>, vytvořený ze zaokrouhleného počátku a zaokrouhlené velikosti.
+        /// </summary>
+        public Int32Range Int32RoundSize { get { return Int32Range.CreateFromBeginSize(Round(this.Begin), Round(this.Size)); } }
+        /// <summary>
+        /// Zaokrouhlí hodnotu na Int32
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        protected static Int32 Round(Double value)
+        {
+            return (Int32)(Math.Round(value, 0));
+        }
+        #endregion
+        #region Static services - Round and Equal
+        /// <summary>
+        /// Round specified Double value to nearest whole value in specified interval.
+        /// In example, origin = 16518.354 round = 5.00, mode = Floor; result = 16515.000
+        /// </summary>
+        /// <param name="origin">Original Double</param>
+        /// <param name="round">Round divisor (amount, to which will be original Double rounded)</param>
+        /// <param name="mode">Round mode</param>
+        /// <returns>Rounded Double</returns>
+        public static Double RoundValue(Double origin, Double round, RoundMode mode)
+        {
+            Double result = origin;
+            if (round > 0d)
+            {
+                Double count = origin / round;
+                switch (mode)
+                {
+                    case RoundMode.Floor:
+                        count = Math.Floor(count);
+                        break;
+                    case RoundMode.Math:
+                        count = Math.Round(count, 0, MidpointRounding.AwayFromZero);
+                        break;
+                    case RoundMode.Ceiling:
+                        count = Math.Ceiling(count);
+                        break;
+                }
+                result = count * round;
+            }
+            return result;
+        }
+        /// <summary>
+        /// Return true, when two instance has equal values
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static bool Equal(DoubleRange a, DoubleRange b)
+        {
+            return Helper.IsEqual(a, b);
+        }
+        #endregion
+        #region Abstract member override
+        public override bool IsEmptyEdge(Double value)
+        {
+            return false;
+        }
+        public override bool IsEmptySize(Double value)
+        {
+            return false;
+        }
+        public override int CompareEdge(Double a, Double b)
+        {
+            return a.CompareTo(b);
+        }
+        public override int CompareSize(Double a, Double b)
+        {
+            return a.CompareTo(b);
+        }
+        public override Double Add(Double begin, Double size)
+        {
+            return begin + size;
+        }
+        public override Double SubEdge(Double a, Double b)
+        {
+            return a - b;
+        }
+        public override Double SubSize(Double a, Double b)
+        {
+            return a - b;
+        }
+        public override Double Multiply(Double size, decimal ratio)
+        {
+            return size * (double)ratio;
+        }
+        public override decimal Divide(Double a, Double b)
+        {
+            return ((b != 0d) ? (decimal)(a / b) : 0m);
+        }
+        protected override string TTickToText(Double tick)
+        {
+            return tick.ToString();
+        }
+        protected override string TSizeToText(Double size)
+        {
+            return size.ToString();
+        }
+        #endregion
+    }
+    #endregion
 }

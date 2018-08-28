@@ -276,7 +276,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (graphTable == null || graphTable.TableRow == null) return;
             GGrid grid = new GGrid();
             grid.SynchronizedTime = this.SynchronizedTime;
-            grid.MainTimeAxis;
             grid.AddTable(graphTable.TableRow);
             tabs.AddTabItem(grid, graphTable.DataDeclaration.Title, graphTable.DataDeclaration.ToolTip);
         }

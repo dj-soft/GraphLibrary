@@ -366,7 +366,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Identity of axis
         /// </summary>
-        public string Identity
+        public virtual string Identity
         {
             get
             {

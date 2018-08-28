@@ -117,19 +117,21 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Metoda připraví souřadnice this grupy na ose X, včetně jejích grafických items
         /// </summary>
         /// <param name="timeConvert"></param>
-        /// <param name="coordinateYVirtual"></param>
+        /// <param name="offsetX"></param>
         /// <param name="itemsCount"></param>
-        public void PrepareCoordinateX(Func<TimeRange, Int32Range> timeConvert, ref int itemsCount)
+        public void PrepareCoordinateX(Func<TimeRange, DoubleRange> timeConvert, Double offsetX, ref int itemsCount)
         {
-            Int32Range groupX = timeConvert(this.Time);
-            this.GControl.CoordinateX = groupX;
+            DoubleRange groupX = timeConvert(this.Time);                                 // Vrací souřadnici X v koordinátech grafu
+            double groupB = groupX.Begin;
+            if (offsetX != 0d)
+                groupX = groupX.ShiftBy(offsetX);
+            this.GControl.CoordinateX = groupX.Int32RoundEnd;
             foreach (ITimeGraphItem item in this.Items)
             {
                 itemsCount++;
-                Int32Range absX = timeConvert(item.Time);                                // Vrací souřadnici X v koordinátech grafu
-                int relBegin = absX.Begin - groupX.Begin;
-                Int32Range relX = Int32Range.CreateFromBeginSize(relBegin, absX.Size);   // Získáme souřadnici X relativní k prvku Group, který je Parentem daného item
-                item.GControl.CoordinateX = relX;
+                DoubleRange absX = timeConvert(item.Time);                               // Vrací souřadnici X v koordinátech grafu
+                DoubleRange relX = absX.ShiftBy(-groupB);                                // Získáme souřadnici X relativní k prvku Group, který je Parentem daného item
+                item.GControl.CoordinateX = relX.Int32RoundEnd;
             }
             this.InvalidateBounds();
         }

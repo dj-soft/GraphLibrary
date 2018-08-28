@@ -611,10 +611,15 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         protected void RecalculateTimeAxis()
         {
-            ITimeConvertor timeConvertor = this._TimeConvertor;
+            ITimeAxisConvertor timeConvertor = this._TimeConvertor;
             if (timeConvertor == null) return;
-            this._TimeAxisBegin = timeConvertor.GetPixel(timeConvertor.VisibleTime.Begin);
-            this._TimeAxisTicks = timeConvertor.Ticks.Where(t => t.TickType == AxisTickType.BigLabel || t.TickType == AxisTickType.StdLabel || t.TickType == AxisTickType.BigTick).ToArray();
+            this._TimeAxisBegin = timeConvertor.FirstPixel;
+
+            VisualTick[] ticks = timeConvertor.Ticks;
+            if (ticks != null) ticks = ticks.Where(t => t.TickType == AxisTickType.BigLabel || t.TickType == AxisTickType.StdLabel || t.TickType == AxisTickType.BigTick).ToArray();
+            else ticks = new VisualTick[0];
+            this._TimeAxisTicks = ticks;
+
             this._ValidatedAxisIdentity = this.TimeAxisIdentity;
             this.Invalidate(InvalidateItems.CoordinateX);
         }
@@ -641,7 +646,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Reference na aktuální TimeConvertor
         /// </summary>
-        private ITimeConvertor _TimeConvertor;
+        private ITimeAxisConvertor _TimeConvertor;
         #endregion
         #region Souřadnice X : kontrolní a přepočtové metody souřadnic na ose X, algoritmy Native, Proportional, Logarithmic; určení Visible prvků do VisibleGroupList
         /// <summary>
@@ -665,6 +670,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
 
             using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "ItemsRecalculateVisibleList", ""))
             {
+                int offsetX = this._TimeConvertor.FirstPixel;
                 int[] counters = new int[3];
                 foreach (List<GTimeGraphGroup> layerList in this.AllGroupList)
                 {   // Jedna vizuální vrstva za druhou:
@@ -673,16 +679,16 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                     {
                         case TimeGraphTimeAxisMode.ProportionalScale:
                             foreach (GTimeGraphGroup groupItem in layerList)
-                                this.RecalculateCoordinateXProportional(groupItem, counters);
+                                this.RecalculateCoordinateXProportional(groupItem, offsetX, counters);
                             break;
                         case TimeGraphTimeAxisMode.LogarithmicScale:
                             foreach (GTimeGraphGroup groupItem in layerList)
-                                this.RecalculateCoordinateXLogarithmic(groupItem, counters);
+                                this.RecalculateCoordinateXLogarithmic(groupItem, offsetX, counters);
                             break;
                         case TimeGraphTimeAxisMode.Standard:
                         default:
                             foreach (GTimeGraphGroup groupItem in layerList)
-                                this.RecalculateCoordinateXStandard(groupItem, counters);
+                                this.RecalculateCoordinateXStandard(groupItem, offsetX, counters);
                             break;
                     }
                 }
@@ -718,13 +724,14 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="visibleItems">Výstupní seznam, do něhož se vkládají viditelné prvky</param>
         /// <param name="groupCount">Počet viditelných prvků group, pro statistiku</param>
         /// <param name="itemsCount">Počet zpracovaných prvků typu <see cref="ITimeGraphItem"/>, pro statistiku</param>
-        protected void RecalculateCoordinateXStandard(GTimeGraphGroup groupItem, int[] counters)
+        protected void RecalculateCoordinateXStandard(GTimeGraphGroup groupItem, int offsetX, int[] counters)
         {
             if (!groupItem.IsValidRealTime) return;
-            ITimeConvertor timeConvertor = this._TimeConvertor;
-            groupItem.PrepareCoordinateX(t => timeConvertor.GetPixelRange(t), ref counters[2]);
+            ITimeAxisConvertor timeConvertor = this._TimeConvertor;
+            int size = this.Bounds.Width;
+            groupItem.PrepareCoordinateX(t => timeConvertor.GetProportionalPixelRange(t, size), offsetX, ref counters[2]);
 
-            if (timeConvertor.VisibleTime.HasIntersect(groupItem.Time))
+            if (timeConvertor.Value.HasIntersect(groupItem.Time))
             {   // Prvek je alespoň zčásti viditelný v časovém okně:
                 counters[1]++;
                 this._VisibleGroupList.Add(groupItem);
@@ -738,14 +745,14 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="visibleItems">Výstupní seznam, do něhož se vkládají viditelné prvky</param>
         /// <param name="groupCount">Počet viditelných prvků group, pro statistiku</param>
         /// <param name="itemsCount">Počet zpracovaných prvků typu <see cref="ITimeGraphItem"/>, pro statistiku</param>
-        protected void RecalculateCoordinateXProportional(GTimeGraphGroup groupItem, int[] counters)
+        protected void RecalculateCoordinateXProportional(GTimeGraphGroup groupItem, int offsetX, int[] counters)
         {
             if (!groupItem.IsValidRealTime) return;
-            ITimeConvertor timeConvertor = this._TimeConvertor;
+            ITimeAxisConvertor timeConvertor = this._TimeConvertor;
             int size = this.Bounds.Width;
-            groupItem.PrepareCoordinateX(t => timeConvertor.GetProportionalPixelRange(t, size), ref counters[2]);
+            groupItem.PrepareCoordinateX(t => timeConvertor.GetProportionalPixelRange(t, size), offsetX, ref counters[2]);
 
-            if (timeConvertor.VisibleTime.HasIntersect(groupItem.Time))
+            if (timeConvertor.Value.HasIntersect(groupItem.Time))
             {   // Prvek je alespoň zčásti viditelný v časovém okně:
                 counters[1]++;
                 this._VisibleGroupList.Add(groupItem);
@@ -759,13 +766,13 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="visibleItems">Výstupní seznam, do něhož se vkládají viditelné prvky</param>
         /// <param name="groupCount">Počet viditelných prvků group, pro statistiku</param>
         /// <param name="itemsCount">Počet zpracovaných prvků typu <see cref="ITimeGraphItem"/>, pro statistiku</param>
-        protected void RecalculateCoordinateXLogarithmic(GTimeGraphGroup groupItem, int[] counters)
+        protected void RecalculateCoordinateXLogarithmic(GTimeGraphGroup groupItem, int offsetX, int[] counters)
         {
             if (!groupItem.IsValidRealTime) return;
-            ITimeConvertor timeConvertor = this._TimeConvertor;
+            ITimeAxisConvertor timeConvertor = this._TimeConvertor;
             int size = this.Bounds.Width;
             float proportionalRatio = this.GraphParameters.LogarithmicRatio;
-            groupItem.PrepareCoordinateX(t => timeConvertor.GetLogarithmicPixelRange(t, size, proportionalRatio), ref counters[2]);
+            groupItem.PrepareCoordinateX(t => timeConvertor.GetLogarithmicPixelRange(t, size, proportionalRatio), offsetX, ref counters[2]);
 
             // Pozor: režim Logarithmic zajistí, že zobrazeny budou VŠECHNY prvky, takže prvky nefiltrujeme s ohledem na jejich čas : VisibleTime.HasIntersect() !
             counters[1]++;
@@ -1244,7 +1251,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         }
         #endregion
         #region ITimeInteractiveGraph members
-        ITimeConvertor ITimeInteractiveGraph.TimeConvertor { get { return this._TimeConvertor; } set { this._TimeConvertor = value; this.Invalidate(InvalidateItems.CoordinateX); } }
+        ITimeAxisConvertor ITimeInteractiveGraph.TimeAxisConvertor { get { return this._TimeConvertor; } set { this._TimeConvertor = value; this.Invalidate(InvalidateItems.CoordinateX); } }
         int ITimeInteractiveGraph.UnitHeight { get { return this.GraphParameters.OneLineHeight.Value; } }
         IVisualParent ITimeInteractiveGraph.VisualParent { get { return this.VisualParent; } set { this.VisualParent = value; } }
         #endregion
@@ -1397,7 +1404,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Reference na objekt, který provádí časové konverze pro tento graf.
         /// Instanci do této property plní ten, kdo ji zná.
         /// </summary>
-        ITimeConvertor TimeConvertor { get; set; }
+        ITimeAxisConvertor TimeAxisConvertor { get; set; }
         /// <summary>
         /// Reference na objekt, který dovoluje grafu ovlivnit velikost svého parenta.
         /// Po přepočtu výšky grafu může graf chtít nastavit výšku (i šířku?) svého hostitele tak, aby bylo zobrazeno vše, co je třeba.
@@ -1417,7 +1424,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Reference na objekt, který provádí časové konverze pro tento graf.
         /// Instanci do této property plní ten, kdo ji zná.
         /// </summary>
-        ITimeConvertor TimeConvertor { get; set; }
+        ITimeAxisConvertor TimeConvertor { get; set; }
         /// <summary>
         /// Height (in pixels) for one unit of GTimeItem.Height
         /// </summary>

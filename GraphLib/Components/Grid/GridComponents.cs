@@ -473,7 +473,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// Objekt, který provádí konverze časových údajů a pixelů, jde o vizuální časovou osu.
         /// Může být null, pokud this.UseTimeAxis je false.
         /// </summary>
-        public ITimeConvertor TimeConvertor { get { return (this.UseTimeAxis ? this.TimeAxis : null); } }
+        public ITimeAxisConvertor TimeConvertor { get { return (this.UseTimeAxis ? this.TimeAxis : null); } }
         /// <summary>
         /// Objekt, který provádí konverze časových údajů a pixelů, jde o vizuální časovou osu.
         /// Může být null, pokud this.UseTimeAxis je false.
@@ -496,19 +496,21 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         private void _TimeAxisCheck()
         {
-            if (this._TimeAxis != null) return;
-
-            this._TimeAxis = new GTimeAxis();
-            Components.Graph.TimeGraphProperties graphParameters = this.OwnerColumn.GraphParameters;
-            if (graphParameters != null)
+            // Zkontroluji objekt časové osy:
+            if (this._TimeAxis == null)
             {
-                this._TimeAxis.ResizeContentMode = (graphParameters.InitialResizeMode.HasValue ? graphParameters.InitialResizeMode.Value : AxisResizeContentMode.ChangeValueEnd);
-                this._TimeAxis.Value = (graphParameters.InitialValue != null ? graphParameters.InitialValue : _TimeAxisInitialValue);
-                this._TimeAxis.InteractiveChangeMode = (graphParameters.InteractiveChangeMode.HasValue ? graphParameters.InteractiveChangeMode.Value : AxisInteractiveChangeMode.All);
+                this._TimeAxis = new GTimeAxis();
+                Components.Graph.TimeGraphProperties graphParameters = this.OwnerColumn.GraphParameters;
+                if (graphParameters != null)
+                {
+                    this._TimeAxis.ResizeContentMode = (graphParameters.InitialResizeMode.HasValue ? graphParameters.InitialResizeMode.Value : AxisResizeContentMode.ChangeValueEnd);
+                    this._TimeAxis.Value = (graphParameters.InitialValue != null ? graphParameters.InitialValue : _TimeAxisInitialValue);
+                    this._TimeAxis.InteractiveChangeMode = (graphParameters.InteractiveChangeMode.HasValue ? graphParameters.InteractiveChangeMode.Value : AxisInteractiveChangeMode.All);
+                }
+                ((IInteractiveItem)this._TimeAxis).Parent = this;
+                this._TimeAxis.ValueChanging += _TimeAxis_ValueChange;
+                this._TimeAxis.ValueChanged += _TimeAxis_ValueChange;
             }
-            ((IInteractiveItem)this._TimeAxis).Parent = this;
-            this._TimeAxis.ValueChanging += _TimeAxis_ValueChange;
-            this._TimeAxis.ValueChanged += _TimeAxis_ValueChange;
         }
         /// <summary>
         /// Výchozí hodnota pro zobrazený úsek na časové ose, pokud nebude specifikováno jinak (v <see cref="Components.Graph.TimeGraphProperties.InitialValue"/>)
@@ -854,7 +856,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             string text = column.ColumnProperties.Title;
             Rectangle textArea = Rectangle.Empty;
             if (!String.IsNullOrEmpty(text) && !column.ColumnProperties.UseTimeAxis)
-            {   // Sloupec má zadaný titulek, a nepoužívá časovou osu (pak nebudeme kreslit titulek, bude tam jen osa):
+            {   // Sloupec má zadaný titulek, a přitom nepoužívá časovou osu (pod časovou osou se nebude kreslit titulek, bude tam jen osa):
                 FontInfo fontInfo = FontInfo.Caption;
                 fontInfo.Bold = (column.SortCurrent == ItemSortType.Ascending || column.SortCurrent == ItemSortType.Descending);
                 Color textColor = Skin.Grid.HeaderTextColor.SetOpacity(opacity);
@@ -1482,8 +1484,8 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         protected IInteractiveItem[] GetChildsITimeInteractiveGraph()
         {
             Components.Graph.ITimeInteractiveGraph graph = this.OwnerCell.Value as Components.Graph.ITimeInteractiveGraph;
-            if (graph.TimeConvertor == null)
-                graph.TimeConvertor = this.OwnerGTable.GetTimeConvertor(this.OwnerCell);
+            if (graph.TimeAxisConvertor == null)
+                graph.TimeAxisConvertor = this.OwnerGTable.GetTimeAxisConvertor(this.OwnerCell);
             if (graph.Parent == null)
                 graph.Parent = this; // this.OwnerGTable.GetInteractiveParent(this.OwnerCell.Row, this.OwnerCell);
             if (graph.VisualParent == null)

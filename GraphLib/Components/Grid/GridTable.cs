@@ -1360,21 +1360,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// Je voláno z eventhandleru TimeAxis.ValueChange, při/po změně hodnoty Value na některé TimeAxis na sloupci columnId v this.Columns.
         /// Metoda zajistí synchronizaci okolních tabulek (kromě zdejší, ta je v tomto pohledu Master).
         /// Metoda se volá po jakékoli změně hodnot na časové ose daného sloupce v TÉTO tabulce.
-        /// Metoda vyvolá Grid.OnChangeTimeAxis(), tím dojde k synchronizaci Value z this tabulky a aktuálního sloupce do okolních tabulek stejného Gridu.
-        /// Metoda dále zajistí překreslení všech Cell pro daný sloupec ve všech viditelných řádcích této tabulky.
-        /// </summary>
-        /// <param name="columnId">Identifikace sloupce</param>
-        /// <param name="e">Data o změně</param>
-        internal void OnChangeTimeAxis(int columnId, GPropertyChangeArgs<TimeRange> e)
-        {
-            Column column = this.Columns.FirstOrDefault(c => c.ColumnId == columnId);
-            this.OnChangeTimeAxis(column, e);
-        }
-        /// <summary>
-        /// Je voláno z eventhandleru TimeAxis.ValueChange, při/po změně hodnoty Value na některé TimeAxis na sloupci columnId v this.Columns.
-        /// Metoda zajistí synchronizaci okolních tabulek (kromě zdejší, ta je v tomto pohledu Master).
-        /// Metoda se volá po jakékoli změně hodnot na časové ose daného sloupce v TÉTO tabulce.
-        /// Metoda vyvolá Grid.OnChangeTimeAxis(), tím dojde k synchronizaci Value z this tabulky a aktuálního sloupce do okolních tabulek stejného Gridu.
+        /// Metoda vyvolá <see cref="GGrid.OnChangeTimeAxis(int?, int, GPropertyChangeArgs{TimeRange})"/>, tím dojde k synchronizaci Value z this tabulky a aktuálního sloupce do okolních tabulek stejného Gridu.
         /// Metoda dále zajistí překreslení všech Cell pro daný sloupec ve všech viditelných řádcích této tabulky.
         /// </summary>
         /// <param name="columnId">Identifikace sloupce</param>
@@ -1383,27 +1369,21 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         {
             if (column == null) return;
             this.RepaintColumn(column);
-            if (column.ColumnProperties.UseTimeAxis && this.HasGrid)
-            {
+            if (this.HasGrid && column.ColumnProperties.UseTimeAxis)
+            {   // Já (GTable) zavolám můj GGrid, aby zavolal GridColumn.OnChangeTimeAxis(int?, GPropertyChangeArgs<TimeRange>) pro daný sloupec:
+                // Grid dále zajistí aktualizaci synchronizované časové osy (nahoru), a následně i obsluhy jejího eventu o změně (dolů).
                 this.Grid.OnChangeTimeAxis(this.TableId, column.ColumnId, e);
-                if (column.ColumnProperties.UseTimeAxisSynchronized)
-                    qqq;
             }
-
         }
         /// <summary>
-        /// Je voláno z GGrid, po změně hodnoty Value na některé TimeAxis na sloupci columnId (v this.Columns), ale na jiné tabulce než je this tabulka.
-        /// Tato tabulka je tedy Slave, a má si změnit svoji hodnotu bez toho, aby vyvolala další event o změně hodnoty.
-        /// Metoda se volá po jakékoli změně hodnot na časové ose daného sloupce v JINÉ tabulce.
-        /// Metoda zajistí aktualizaci hodnoty v TimeAxis této tabulky v daném sloupci, a překreslení ColumnHeader (=tedy TimeAxis) 
-        /// i překreslení všech Cell pro daný sloupec ve všech viditelných řádcích.
+        /// Je voláno z GGrid, po změně hodnoty synchronizovaného času někde jinde.
+        /// Tato tabulka má nastaveno <see cref="UseBackgroundTimeAxis"/> == true, takže by si měla aktualizovat svůj čas podle synchronního, a zajistit překreslení.
         /// </summary>
-        /// <param name="columnId">Identifikace sloupce</param>
-        /// <param name="e">Data o změně</param>
-        internal void RefreshTimeAxis(int columnId, GPropertyChangeArgs<TimeRange> e)
+        /// <param name="e">Zdroj, který změnil hodnotu</param>
+        /// <param name="sender">Data o změně</param>
+        internal void RefreshBackgroundTimeAxis(object sender, GPropertyChangeArgs<TimeRange> e)
         {
-            Column column = this.Columns.FirstOrDefault(c => c.ColumnId == columnId);
-            this.RefreshTimeAxis(column, e);
+            this.Repaint();
         }
         /// <summary>
         /// Je voláno z GGrid, po změně hodnoty Value na některé TimeAxis na sloupci columnId (v this.Columns), ale na jiné tabulce než je this tabulka.
@@ -1421,15 +1401,12 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             this.RepaintColumn(column);
         }
         /// <summary>
-        /// Vrátí ITimeConvertor pro daný columnId.
+        /// Obsahuje true, pokud v této tabulce existuje nějaký řádek, který potřebuje časovou osu ke svému vlastnímu zobrazení 
+        /// (tj. má nastaveno <see cref="Row.UseBackgroundTimeAxis"/> == true).
         /// </summary>
-        /// <param name="columnId"></param>
-        /// <returns></returns>
-        internal ITimeConvertor GetTimeConvertor(int columnId)
+        internal bool UseBackgroundTimeAxis
         {
-            Column column = this.Columns.FirstOrDefault(c => c.ColumnId == columnId);
-            if (column == null || !column.ColumnProperties.UseTimeAxis) return null;
-            return column.ColumnHeader.TimeConvertor;
+            get { return this.DataTable.UseBackgroundTimeAxis; }
         }
         #endregion
         #region Interaktivita vlastní GTable
@@ -1639,14 +1616,14 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <summary>
         /// Metoda zajistí vykreslení pasivního obsahu dané buňky nebo řádku daného typu.
         /// Aktivní obsah (v současné době <see cref="ITimeInteractiveGraph"/>) se vykresluje automaticky jako Child prvek své buňky / řádku.
-        /// Zdejší metoda pro něj pouze vykreslí pozadí.
+        /// Zdejší metoda pro něj pouze vykreslí pozadí řádku pod grafem.
         /// </summary>
         /// <param name="e"></param>
         /// <param name="boundsAbsolute"></param>
         /// <param name="value"></param>
         /// <param name="valueType"></param>
         /// <param name="row"></param>
-        /// <param name="cell"></param>
+        /// <param name="cell">Buňka tabulky, anebo null pokud se kreslí pozadí pod řádkem</param>
         internal void DrawValue(GInteractiveDrawArgs e, Rectangle boundsAbsolute, object value, TableValueType valueType, Row row, Cell cell)
         {
             this.DrawBackground(e, boundsAbsolute, row, cell);
@@ -1768,12 +1745,12 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         {
             this.DrawRowBackColor(e, boundsAbsolute, row, cell);     // Co s pozadím pod grafem?
 
-            if (graph.TimeConvertor == null)
-                graph.TimeConvertor = this.GetTimeConvertor(cell);
+            if (graph.TimeAxisConvertor == null)
+                graph.TimeAxisConvertor = this.GetTimeAxisConvertor(cell);
             if (graph.Parent == null)
                 graph.Parent = this.GetInteractiveParent(row, cell);
 
-            // Graf se nevykresluje jako obrázek v rámci buňky, graf se vykresluje sám protože je Child prvkem své buňky nebo řádku :  
+            // Graf se nevykresluje jako "obrázek" v rámci buňky/řádku, protože graf (reps. jeho Items) se vykresluje sám protože je Child prvkem své buňky nebo řádku...
         }
         /// <summary>
         /// Vykreslí obsah this buňky jako časový graf
@@ -1786,7 +1763,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             this.DrawRowBackColor(e, boundsAbsolute, row, cell);     // Co s pozadím pod grafem?
 
             if (graph.TimeConvertor == null)
-                graph.TimeConvertor = this.GetTimeConvertor(cell);
+                graph.TimeConvertor = this.GetTimeAxisConvertor(cell);
 
             graph.DrawContentTimeGraph(e, boundsAbsolute);
         }
@@ -1836,12 +1813,12 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         /// <param name="cell"></param>
         /// <returns></returns>
-        internal ITimeConvertor GetTimeConvertor(Cell cell)
+        internal ITimeAxisConvertor GetTimeAxisConvertor(Cell cell)
         {
             if (cell != null && cell.Column != null && cell.Column.ColumnHeader != null && cell.Column.ColumnHeader.TimeConvertor != null)
                 return cell.Column.ColumnHeader.TimeConvertor;
-            if (this.Grid.MainTimeAxis != null)
-                return this.Grid.MainTimeAxis;
+            if (this.HasGrid)
+                return this.Grid.SynchronizedTimeConvertor;
             return null;
         }
         /// <summary>

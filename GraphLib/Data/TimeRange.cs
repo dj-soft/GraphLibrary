@@ -69,6 +69,22 @@ namespace Asol.Tools.WorkScheduler.Data
                 return "???";
             }
         }
+        /// <summary>
+        /// Identity string: obsahuje kompletní opis hodnot (včetně roků až po milisekundy)
+        /// </summary>
+        public string Identity { get { return ToIdentity(this.Begin) + "÷" + ToIdentity(this.End); } }
+        /// <summary>
+        /// Vrátí string obsahující identity daného času
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static string ToIdentity(DateTime? value)
+        {
+            if (value.HasValue)
+                return value.Value.ToString("yyyyMMdd HHmmss.fff");
+            return "NULL";
+        }
+
         public override int GetHashCode()
         {
             return this.HashCode;

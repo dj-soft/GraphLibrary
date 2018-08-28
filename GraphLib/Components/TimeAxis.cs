@@ -13,7 +13,7 @@ namespace Asol.Tools.WorkScheduler.Components
     /// GTimeAxis : Interactive object for TimeAxis control
     /// </summary>
     public class GTimeAxis
-        : GBaseAxis<DateTime?, TimeSpan?, TimeRange>, ITimeConvertor
+        : GBaseAxis<DateTime?, TimeSpan?, TimeRange>, ITimeAxisConvertor
     {
         #region Konstruktory, Obecné overrides osy
         /// <summary>
@@ -24,7 +24,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public GTimeAxis() : base() { }
+        public GTimeAxis() : base()
+        {
+            this.TimeAxisConvertor = new TimeAxisConvertor(this);
+        }
+        /// <summary>
+        /// Instance TimeAxis konvertoru, navázaná na this
+        /// </summary>
+        protected TimeAxisConvertor TimeAxisConvertor;
         /// <summary>
         /// Initial value for new axis
         /// </summary>
@@ -32,6 +39,26 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             get { DateTime now = DateTime.Now; return new TimeRange(now.Date, now.Date.AddDays(1d)); }
         }
+        /// <summary>
+        /// Identita této osy (hodnota + velikost v pixelech)
+        /// </summary>
+        public override string Identity
+        {
+            get
+            {
+                string value = this.Value.Identity;
+                string size = ((int)this.PixelSize).ToString();
+                return value + "; " + size;
+            }
+        }
+        /// <summary>
+        /// Pozice prvního pixelu
+        /// </summary>
+        public int FirstPixel { get { return (int)this.PixelFirst; } }
+        /// <summary>
+        /// Délka osy v pixelech
+        /// </summary>
+        public int SizeInPixel { get { return (int)this.PixelSize; } }
         /// <summary>
         /// Returns a new instance of TValue for specified begin and end of interval.
         /// </summary>
@@ -233,30 +260,14 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         #endregion
         #region ITimeConvertor members + jejich obsluha
-        string ITimeConvertor.Identity
-        { 
-            get 
-            {
-                string value = ToIdentity(this.Value.Begin) + "÷" + ToIdentity(this.Value.End);
-                string size = ((int)this.PixelSize).ToString();
-                return value + "; " + size;
-            }
-        }
-        TimeRange ITimeConvertor.VisibleTime { get { return this.Value; } }
-        VisualTick[] ITimeConvertor.Ticks { get { return this.TickList.ToArray(); } }
-        int ITimeConvertor.GetPixel(DateTime? time) { return this.GetPixel(time); }
-        Int32Range ITimeConvertor.GetPixelRange(TimeRange timeRange) { return this.GetPixelRange(timeRange); }
-        int ITimeConvertor.GetProportionalPixel(DateTime? time, int targetSize) { return this.GetProportionalPixel(time, targetSize); }
-        Int32Range ITimeConvertor.GetProportionalPixelRange(TimeRange timeRange, int targetSize) { return this.GetProportionalPixelRange(timeRange, targetSize); }
-        int ITimeConvertor.GetLogarithmicPixel(DateTime? time, int targetSize, float proportionalRatio) { return this.GetLogarithmicPixel(time, targetSize, proportionalRatio); }
-        Int32Range ITimeConvertor.GetLogarithmicPixelRange(TimeRange timeRange, int targetSize, float proportionalRatio) { return this.GetLogarithmicPixelRange(timeRange, targetSize, proportionalRatio); }
-        event GPropertyChangedHandler<TimeRange> ITimeConvertor.VisibleTimeChanged { add { this._VisibleTimeChanged += value; } remove { this._VisibleTimeChanged -= value; } }
-        protected static string ToIdentity(DateTime? value)
-        {
-            if (value.HasValue)
-                return value.Value.ToString("yyyy-MM-dd HH:mm:ss.fff");
-            return "NULL";
-        }
+        string ITimeAxisConvertor.Identity { get { return this.Identity; } }
+        TimeRange ITimeAxisConvertor.Value { get { return this.Value; } set { this.Value = value; } }
+        VisualTick[] ITimeAxisConvertor.Ticks { get { return this.TickList.ToArray(); } }
+        int ITimeAxisConvertor.FirstPixel { get { return (int)this.PixelFirst; } }
+        Double ITimeAxisConvertor.GetProportionalPixel(DateTime? time, int targetSize) { return this.TimeAxisConvertor.GetProportionalPixel(time, targetSize); }
+        DoubleRange ITimeAxisConvertor.GetProportionalPixelRange(TimeRange timeRange, int targetSize) { return this.TimeAxisConvertor.GetProportionalPixelRange(timeRange, targetSize); }
+        Double ITimeAxisConvertor.GetLogarithmicPixel(DateTime? time, int targetSize, float proportionalRatio) { return this.TimeAxisConvertor.GetLogarithmicPixel(time, targetSize, proportionalRatio); }
+        DoubleRange ITimeAxisConvertor.GetLogarithmicPixelRange(TimeRange timeRange, int targetSize, float proportionalRatio) { return this.TimeAxisConvertor.GetLogarithmicPixelRange(timeRange, targetSize, proportionalRatio); }
         /// <summary>
         /// Je voláno v průběhu změny hodnoty <see cref="GBaseAxis{TTick, TSize, TValue}.Value"/>
         /// </summary>
@@ -286,140 +297,168 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         private event GPropertyChangedHandler<TimeRange> _VisibleTimeChanged;
         #endregion
-        #region Výpočty časových os
+    }
+    #endregion
+    #region class TimeAxisConvertor : jednoduchá třída, která provádí výpočty potřebné pro interface ITimeAxisConvertor na časové ose
+    /// <summary>
+    /// TimeAxisConvertor : jednoduchá třída, která provádí výpočty potřebné pro interface ITimeAxisConvertor na časové ose
+    /// </summary>
+    public class TimeAxisConvertor : ITimeAxisConvertor
+    {
+        #region Konstruktor a privátní proměnné
         /// <summary>
-        /// Metoda vrátí pozici pixelu přesně odpovídající danému času na aktuální ose, včetně započtení pozice počátku osy <see cref="GBaseAxis{TTick, TSize, TValue}.PixelFirst"/>.
+        /// Konstruktor pro samostatný objekt
         /// </summary>
-        /// <param name="time">Čas, jehož pozici hledáme</param>
-        /// <returns></returns>
-        protected int GetPixel(DateTime? time)
+        public TimeAxisConvertor()
         {
-            decimal result = this._GetPosition(time);
-            return (int)(Math.Round(result, 0));
-        }
-        protected Int32Range GetPixelRange(TimeRange timeRange)
-        {
-            decimal begin = this._GetPosition(timeRange.Begin);
-            decimal end = this._GetPosition(timeRange.End);
-            return Int32Range.CreateFromBeginSize((int)Math.Round(begin, 0), (int)Math.Round((end - begin), 0));
+            this._TimeAxis = null;
         }
         /// <summary>
-        /// Metoda vrátí decimal pozici pixelu přesně odpovídající danému času na aktuální ose, včetně započtení pozice počátku osy <see cref="GBaseAxis{TTick, TSize, TValue}.PixelFirst"/>.
+        /// Konstruktor pro konvertor provázaný s TimeAxis
         /// </summary>
-        /// <param name="time">Čas, jehož pozici hledáme</param>
-        /// <returns></returns>
-        protected decimal _GetPosition(DateTime? time)
+        /// <param name="timeAxis"></param>
+        public TimeAxisConvertor(GTimeAxis timeAxis)
         {
-            decimal begin = this.PixelFirst;
-            decimal? axisPosition = this.CalculatePositionLocalForTick(time);
-            return begin + (axisPosition.HasValue ? axisPosition.Value : 0m);
+            this._TimeAxis = timeAxis;
         }
+        private GTimeAxis _TimeAxis;
+        private TimeRange _Value;
+        private bool _HasTimeAxis { get { return (this._TimeAxis != null); } }
+        #endregion
+        #region Public prvky, implicitní implementace ITimeAxisConvertor
+        /// <summary>
+        /// Aktuálně zobrazený interval data a času
+        /// </summary>
+        public TimeRange Value
+        {
+            get { return (this._HasTimeAxis ? this._TimeAxis.Value : this._Value); }
+            set { if (this._HasTimeAxis) this._TimeAxis.Value = value; else this._Value = value; }
+        }
+        /// <summary>
+        /// Identita časového a vizuálního prostoru.
+        /// Časový prostor popisuje rozmezí času (Begin a End) s maximální přesností.
+        /// Vizuální prostor popisuje počet pixelů velikosti osy (pro osu Horizontal = Width), ale nikoli její pixel počátku (Left).
+        /// </summary>
+        public string Identity
+        {
+            get { return (this._HasTimeAxis ? this._TimeAxis.Identity : this._Value.Identity); }
+        }
+        /// <summary>
+        /// Obsahuje všechny aktuální ticky na časové ose.
+        /// </summary>
+        public VisualTick[] Ticks
+        {
+            get { return (this._HasTimeAxis ? this._TimeAxis.Ticks.ToArray() : null); }
+        }
+        /// <summary>
+        /// Pozice prvního pixelu
+        /// </summary>
+        public int FirstPixel
+        {
+            get { return (this._HasTimeAxis ? this._TimeAxis.FirstPixel : 0); }
+        }
+        /// <summary>
+        /// Vrátí pozici daného času (v pixelech) na časové ose, proporcionálně přepočítanou pro danou cílovou velikost osy
+        /// </summary>
+        /// <param name="time"></param>
+        /// <param name="targetSize"></param>
+        /// <returns></returns>
+        public Double GetProportionalPixel(DateTime? time, int targetSize) { return this.GetProportionalPoint(time, targetSize); }
+        /// <summary>
+        /// Vrátí rozsah daného časového úseku (v pixelech) na časové ose, proporcionálně přepočítanou pro danou cílovou velikost osy
+        /// </summary>
+        /// <param name="timeRange"></param>
+        /// <param name="targetSize"></param>
+        /// <returns></returns>
+        public DoubleRange GetProportionalPixelRange(TimeRange timeRange, int targetSize) { return (timeRange != null ? new DoubleRange(this.GetProportionalPoint(timeRange.Begin, targetSize), this.GetProportionalPoint(timeRange.End, targetSize)) : null); }
+        /// <summary>
+        /// Vrátí pozici daného času (v pixelech) na časové ose, logaritmicky přepočítanou pro danou cílovou velikost osy a definovanou proporcionální střední část
+        /// </summary>
+        /// <param name="time"></param>
+        /// <param name="targetSize"></param>
+        /// <param name="proportionalRatio"></param>
+        /// <returns></returns>
+        public Double GetLogarithmicPixel(DateTime? time, int targetSize, float proportionalRatio) { return this.GetLogarithmicPoint(time, targetSize, proportionalRatio); }
+        /// <summary>
+        /// Vrátí pozici daného časového úseku (v pixelech) na časové ose, logaritmicky přepočítanou pro danou cílovou velikost osy a definovanou proporcionální střední část
+        /// </summary>
+        /// <param name="timeRange"></param>
+        /// <param name="targetSize"></param>
+        /// <param name="proportionalRatio"></param>
+        /// <returns></returns>
+        public DoubleRange GetLogarithmicPixelRange(TimeRange timeRange, int targetSize, float proportionalRatio) { return (timeRange != null ? new DoubleRange(this.GetLogarithmicPoint(timeRange.Begin, targetSize, proportionalRatio), this.GetLogarithmicPoint(timeRange.End, targetSize, proportionalRatio)) : null); }
+        #endregion
+        #region Vnitřní výpočtové metody
+        /// <summary>
+        /// Vrací relativní vzdálenost (v pixelech) zadaného času od toho pixelu, kde začíná osa, při přepočtu velikosti osy na daný cílový počet pixelů.
+        /// Tady parametr time je hledaný čas, a parametr targetSize určuje aktuální délku osy (na tuto délku se rozpočítá hodnota <see cref="Value"/>).
+        /// </summary>
+        /// <param name="time"></param>
+        /// <param name="targetSize"></param>
+        /// <returns></returns>
+        protected Double GetProportionalPoint(DateTime? time, Double targetSize)
+        {
+            if (!this.IsValid(time, targetSize)) return 0d;
 
-        /// <summary>
-        /// Metoda vrátí pozici pixelu, odpovídající danému času na aktuální časové ose, 
-        /// přepočtenou lineárně do cílového prostoru dle parametru "targetSize".
-        /// </summary>
-        /// <param name="time">Čas, jehož pozici hledáme</param>
-        /// <param name="targetSize">Cílový prostor, do něhož máme promítnout viditelný prostor na ose</param>
-        /// <returns></returns>
-        protected int GetProportionalPixel(DateTime? time, int targetSize)
-        {
-            decimal result = this._GetProportionalPosition(time, targetSize);
-            return (int)(Math.Round(result, 0));
-        }
-        protected Int32Range GetProportionalPixelRange(TimeRange timeRange, int targetSize)
-        {
-            decimal begin = this._GetProportionalPosition(timeRange.Begin, targetSize);
-            decimal end = this._GetProportionalPosition(timeRange.End, targetSize);
-            return Int32Range.CreateFromBeginSize((int)Math.Round(begin, 0), (int)Math.Round((end - begin), 0));
+            TimeRange value = this.Value;
+            Double axisSeconds = value.Size.Value.TotalSeconds;
+            Double timeSeconds = (time.Value - value.Begin.Value).TotalSeconds;
+            return targetSize * (timeSeconds / axisSeconds);
         }
         /// <summary>
-        /// Metoda vrátí decimal pozici pixelu, odpovídající danému času na aktuální časové ose, 
-        /// přepočtenou lineárně do cílového prostoru dle parametru "targetSize".
+        /// Vrátí relativní pozici (v pixelech) zadaného času na logaritmické časové ose, kde střední proporcionální část má danou velikost (proportionalRatio).
         /// </summary>
-        /// <param name="time">Čas, jehož pozici hledáme</param>
-        /// <param name="targetSize">Cílový prostor, do něhož máme promítnout viditelný prostor na ose</param>
+        /// <param name="time"></param>
+        /// <param name="targetSize"></param>
+        /// <param name="proportionalRatio">Poměrná část fyzického prostoru osy (targetSize), ležící uprostřed, ve které se zobrazují časy osy (Value) lineárně. Krajní části osy jsou logaritmické.</param>
         /// <returns></returns>
-        protected decimal _GetProportionalPosition(DateTime? time, int targetSize)
+        protected Double GetLogarithmicPoint(DateTime? time, Double targetSize, float proportionalRatio)
         {
-            if (targetSize <= 0) return 0m;
-            decimal axisSize = this.PixelSize;
-            if (axisSize <= 0m) return 0m;
+            if (!this.IsValid(time, targetSize)) return 0d;
 
-            decimal? axisPosition = this.CalculatePositionLocalForTick(time);
-            decimal size = (decimal)targetSize;
-            if (!axisPosition.HasValue) return 0m;
-            decimal result = size * ((axisPosition.Value) / axisSize);
-            return result;
-        }
-
-        /// <summary>
-        /// Vrátí relativní pixel, na kterém se nachází daný čas.
-        /// Vrací pozici na logaritmické časové ose, kde střední část prostoru (dle parametru "targetSize") je proporcionální (její velikost je dána hodnotou "proportionalRatio"),
-        /// a okrajové části jsou logaritmické, takže do daného prostoru "targetSize" se promítnou úplně všechny časy, jen v těch okrajových částech budou zahuštěné.
-        /// </summary>
-        /// <param name="time">Čas, jehož pozici hledáme</param>
-        /// <param name="targetSize">Cílový prostor, do něhož máme promítnout viditelný prostor na ose</param>
-        /// <param name="proportionalRatio">Relativní část prostoru "size", v němž je čas proporcionální (lineární). Povolené hodnoty jsou 0.4 až 0.9</param>
-        /// <returns></returns>
-        protected int GetLogarithmicPixel(DateTime? time, int targetSize, float proportionalRatio)
-        {
-            decimal result = this._GetLogarithmicPosition(time, targetSize, proportionalRatio);
-            return (int)(Math.Round(result, 0));
-        }
-        protected Int32Range GetLogarithmicPixelRange(TimeRange timeRange, int targetSize, float proportionalRatio)
-        {
-            decimal begin = this._GetLogarithmicPosition(timeRange.Begin, targetSize, proportionalRatio);
-            decimal end = this._GetLogarithmicPosition(timeRange.End, targetSize, proportionalRatio);
-            return Int32Range.CreateFromBeginSize((int)Math.Round(begin, 0), (int)Math.Round((end - begin), 0));
-        }
-        /// <summary>
-        /// Vrátí decimal pozici pixelu, na kterém se nachází daný čas.
-        /// Vrací pozici na logaritmické časové ose, kde střední část prostoru (dle parametru "targetSize") je proporcionální (její velikost je dána hodnotou "proportionalRatio"),
-        /// a okrajové části jsou logaritmické, takže do daného prostoru "targetSize" se promítnou úplně všechny časy, jen v těch okrajových částech budou zahuštěné.
-        /// </summary>
-        /// <param name="time">Čas, jehož pozici hledáme</param>
-        /// <param name="targetSize">Cílový prostor v pixelech, do něhož máme promítnout viditelný prostor na ose</param>
-        /// <param name="proportionalRatio">Relativní část prostoru "targetSize", v němž je čas proporcionální (lineární). Povolené hodnoty jsou 0.4 až 0.9</param>
-        /// <returns></returns>
-        protected decimal _GetLogarithmicPosition(DateTime? time, int targetSize, float proportionalRatio)
-        {
-            if (targetSize <= 0) return 0m;
-            decimal axisSize = this.PixelSize;
-            if (axisSize <= 0m) return 0m;
-
-            decimal? axisPosition = this.CalculatePositionLocalForTick(time);
-            if (!axisPosition.HasValue) return 0m;
+            Double pointRatio = this.GetProportionalPoint(time, 1d);      // Pozice cílového data v jednotkách { 0 ÷ 1 }, kde 1 == konec viditelné osy; hodnota záporná = vlevo před lineární částí, hodnota větší než 1 = vpravo za lineární částí
 
             // Tady teprve začíná logaritmický algoritmus:
-            decimal size = (decimal)targetSize;
-            decimal result = 0m;
-            decimal proportional = (proportionalRatio < 0.4f ? 0.4m : (proportionalRatio > 0.9f ? 0.9m : (decimal)proportionalRatio));
-            DecimalNRange linearRange = DecimalNRange.CreateFromBeginSize(((1m - proportional) / 2) * size, proportional * size);
-            decimal targetPixelRatio = (axisPosition.Value / axisSize);   // Pozice daného time na časové ose: 
-            if (targetPixelRatio >= 0m && targetPixelRatio <= 1m)
-            {   // Hodnoty 0-1 jsou "uvnitř" = v lineární části:
-                result = linearRange.Begin.Value + (targetPixelRatio * linearRange.Size.Value);
+            Double result;
+            Double linearRatio = (proportionalRatio < 0.4f ? 0.4d : (proportionalRatio > 0.9f ? 0.9d : (Double)proportionalRatio));        // Lineární část osy, relativní, poměrná část v rozmezí (0.4 - 0.9)
+            DoubleRange linearRange = DoubleRange.CreateFromBeginSize(((1d - linearRatio) / 2d) * targetSize, linearRatio * targetSize);   // Lineární oblast osy, v pixelech, Od-Do (např. 40 ÷ 160)
+            if (pointRatio >= 0d && pointRatio <= 1d)
+            {   // Pozice cílového bodu v rozsahu { 0 ÷ 1 } jsou "uvnitř viditelné" osy = zobrazí se ve střední lineární části:
+                result = linearRange.Begin + (pointRatio * linearRange.Size);
             }
             else
-            {   // Ostatní hodnoty targetPixelRatio jsou v logaritmické části na začátku nebo na konci:
-                bool isPositive = (targetPixelRatio > 1m);                // true = jsme napravo (targetPixelRatio je větší), false = jsme nalevo
-                decimal distance = (isPositive ? targetPixelRatio - 1m: -targetPixelRatio);   // Vzdálenost hodnoty targetPixelRatio od odpovídajcí hranice lineárního úseku, hodnota začíná lehce nad nulou (nula nikdy není) a jde do kladného nekonečna
-                decimal logdist = 1m - (1m / (1m + distance));            // Výsledná hodnota v rozsahu (0 až 1), odpovídající distance v rosahu (0 až +nekonečno)
+            {   // Ostatní pozice cílového bodu jsou mimo "viditelnou část" = zobrazí se v logaritmické části (na začátku nebo na konci prostoru):
+                bool isPositive = (pointRatio > 1d);                      // true = jsme napravo (targetPixelRatio je větší), false = jsme nalevo
+                Double distance = (isPositive ? pointRatio - 1d : -pointRatio);   // Vzdálenost hodnoty pointRatio od odpovídajcí hranice lineárního úseku, hodnota "distance" vždy začíná lehce nad nulou (nula nikdy není) a jde do kladného nekonečna
+                Double distanceLog = 1d - (1d / (1d + distance));                 // Výsledná "logaritmická" hodnota v rozsahu (0 až 1), odpovídající distance v rosahu (0 až +nekonečno) (nepravý Logaritmus = Hyperbola)
                 result = (isPositive ?
-                            linearRange.End.Value + (logdist * (size - linearRange.End.Value)) :
-                            linearRange.Begin.Value - (logdist * linearRange.Begin.Value));
+                            linearRange.End + (distanceLog * (targetSize - linearRange.End)) :
+                            linearRange.Begin - (distanceLog * linearRange.Begin));
             }
             return result;
+        }
+        /// <summary>
+        /// Vrací true, pokud daná data a hodnota osy <see cref="Value"/> dávají možnost počítat souřadnice.
+        /// To vyžaduje, aby čas time měl hodnotu, velikost targetSize aby byla kladná, a hodnota <see cref="Value"/> měla zadán Begin a End, kde Begin je menší než End (nikoli rovno).
+        /// </summary>
+        /// <param name="time"></param>
+        /// <param name="targetSize"></param>
+        /// <returns></returns>
+        protected bool IsValid(DateTime? time, Double targetSize)
+        {
+            if (!time.HasValue || targetSize <= 0d) return false;
+            TimeRange value = this.Value;
+            if (value == null || !value.IsFilled || value.End.Value <= value.Begin.Value) return false;
+            return true;
         }
         #endregion
     }
     #endregion
-    #region Interface ITimeConvertor
+    #region interface ITimeAxisConvertor : Interface, který umožní pracovat s časovou osou
     /// <summary>
-    /// ITimeConvertor : Interface, který umožní pracovat s časovou osou
+    /// ITimeAxisConvertor : Interface, který umožní pracovat s časovou osou
     /// </summary>
-    public interface ITimeConvertor
+    public interface ITimeAxisConvertor
     {
         /// <summary>
         /// Identita časového a vizuálního prostoru.
@@ -430,65 +469,53 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Aktuálně zobrazený interval data a času
         /// </summary>
-        TimeRange VisibleTime { get; }
+        TimeRange Value { get; set; }
         /// <summary>
         /// Obsahuje všechny aktuální ticky na časové ose.
         /// </summary>
         VisualTick[] Ticks { get; }
         /// <summary>
-        /// Vrátí relativní pixel, na kterém se nachází daný čas.
+        /// Obsahuje první pixel, na kterém se nachází počátční hodnota osy.
         /// </summary>
-        /// <param name="time">Čas, jehož pozici hledáme</param>
-        /// <returns></returns>
-        int GetPixel(DateTime? time);
-        /// <summary>
-        /// Vrátí pozici, na které se nachází daný časový úsek na aktuální časové ose.
-        /// </summary>
-        /// <param name="timeRange"></param>
-        /// <returns></returns>
-        Int32Range GetPixelRange(TimeRange timeRange);
+        int FirstPixel { get; }
         /// <summary>
         /// Vrátí relativní pixel, na kterém se nachází daný čas.
         /// Vrací pixel pro jinou velikost prostoru, než jakou má aktuální TimeAxis, kdy cílová velikost je dána parametrem targetSize.
         /// Jinými slovy: pokud na reálné časové ose máme zobrazeno rozmezí (numerický příklad): 40 - 80,
-        /// pak <see cref="GetProportionalPixel(DateTime?, int)"/> pro hodnotu time = 50 a targetSize = 100 vrátí hodnotu 25.
+        /// pak tato metoda pro hodnotu time = 50 a targetSize = 100 vrátí hodnotu 25.
         /// Proč? Protože: požadovaná hodnota 50 se nachází na pozici 0.25 časové osy (40 - 80), a odpovídající pozice v cílovém prostoru (100 pixelů) je 25.
         /// </summary>
         /// <param name="time">Čas, jehož pozici hledáme</param>
-        /// <param name="targetSize">Cílový prostor, do něhož máme promítnout viditelný prostor na ose</param>
+        /// <param name="targetSize">Cílový prostor (v počtu pixelů), do něhož máme promítnout viditelný prostor na ose</param>
         /// <returns></returns>
-        int GetProportionalPixel(DateTime? time, int targetSize);
+        Double GetProportionalPixel(DateTime? time, int targetSize);
         /// <summary>
         /// Vrátí pozici, na které se nachází daný časový úsek v daném cílovém prostoru.
         /// </summary>
-        /// <param name="timeRange"></param>
+        /// <param name="timeRange">Časový úsek, jehož prostor hledáme</param>
+        /// <param name="targetSize">Cílový prostor (v počtu pixelů), do něhož máme promítnout viditelný prostor na ose</param>
         /// <returns></returns>
-        Int32Range GetProportionalPixelRange(TimeRange timeRange, int targetSize);
+        DoubleRange GetProportionalPixelRange(TimeRange timeRange, int targetSize);
         /// <summary>
         /// Vrátí relativní pixel, na kterém se nachází daný čas.
         /// Vrací pixel na logaritmické časové ose, kde střední část prostoru (z parametru "size") je proporcionální (její velikost je dána hodnotou "ratio"),
         /// a okrajové části jsou logaritmické, takže do daného prostoru "size" se promítnou úplně všechny časy, jen v těch okrajových částech budou zahuštěné.
         /// </summary>
         /// <param name="time">Čas, jehož pozici hledáme</param>
-        /// <param name="targetSize">Cílový prostor, do něhož máme promítnout viditelný prostor na ose</param>
+        /// <param name="targetSize">Cílový prostor (v počtu pixelů), do něhož máme promítnout viditelný prostor na ose</param>
         /// <param name="proportionalRatio">Relativní část prostoru "size", v němž je čas proporcionální (lineární). Povolené hodnoty jsou 0.4 až 0.9</param>
         /// <returns></returns>
-        int GetLogarithmicPixel(DateTime? time, int targetSize, float proportionalRatio);
+        Double GetLogarithmicPixel(DateTime? time, int targetSize, float proportionalRatio);
         /// <summary>
         /// Vrátí pozici, na které se nachází daný časový úsek v daném cílovém prostoru, v logaritmickém měřítku.
         /// Vrací pixel na logaritmické časové ose, kde střední část prostoru (z parametru "size") je proporcionální (její velikost je dána hodnotou "ratio"),
         /// a okrajové části jsou logaritmické, takže do daného prostoru "size" se promítnou úplně všechny časy, jen v těch okrajových částech budou zahuštěné.
         /// </summary>
-        /// <param name="timeRange"></param>
-        /// <param name="targetSize">Cílový prostor, do něhož máme promítnout viditelný prostor na ose</param>
+        /// <param name="timeRange">Časový úsek, jehož prostor hledáme</param>
+        /// <param name="targetSize">Cílový prostor (v počtu pixelů), do něhož máme promítnout viditelný prostor na ose</param>
         /// <param name="proportionalRatio">Relativní část prostoru "size", v němž je čas proporcionální (lineární). Povolené hodnoty jsou 0.4 až 0.9</param>
         /// <returns></returns>
-        Int32Range GetLogarithmicPixelRange(TimeRange timeRange, int targetSize, float proportionalRatio);
-
-        /// <summary>
-        /// Event vyvolaný po každé změně hodnoty <see cref="VisibleTime"/>
-        /// </summary>
-        event GPropertyChangedHandler<TimeRange> VisibleTimeChanged;
+        DoubleRange GetLogarithmicPixelRange(TimeRange timeRange, int targetSize, float proportionalRatio);
     }
     #endregion
-}
+ }

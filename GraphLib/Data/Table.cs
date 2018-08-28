@@ -402,6 +402,14 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public int RowsCount { get { return this._Rows.Count; } }
         /// <summary>
+        /// Obsahuje true, pokud v této tabulce existuje nějaký řádek, který potřebuje časovou osu ke svému vlastnímu zobrazení 
+        /// (tj. má nastaveno <see cref="Row.UseBackgroundTimeAxis"/> == true).
+        /// </summary>
+        internal bool UseBackgroundTimeAxis
+        {
+            get { return this.Rows.Any(r => r.UseBackgroundTimeAxis); }
+        }
+        /// <summary>
         /// Přidá nový řádek, vrátí jeho objekt
         /// </summary>
         /// <returns></returns>
@@ -2296,6 +2304,10 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Vykreslování objektu pozadí provádí instance <see cref="Control"/> třídy <see cref="GRow"/>.
         /// </summary>
         public TableValueType BackgroundValueType { get { return Data.Table.GetValueType(this.BackgroundValue); } }
+        /// <summary>
+        /// Obsahuje true, pokud tento řádek používá časovou osu k vykreslení svého pozadí (=má na pozadí graf související s časovou osou)
+        /// </summary>
+        public bool UseBackgroundTimeAxis { get { TableValueType bgt = this.BackgroundValueType; return (bgt == TableValueType.ITimeInteractiveGraph || bgt == TableValueType.ITimeGraph); } }
         #endregion
         #region GUI vlastnosti
         /// <summary>

@@ -895,106 +895,110 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Obecná práce s časovými osami, hlavní časová osa, podpora pro časové osy v synchronizovaných sloupcích
         /// <summary>
-        /// Vyvolá RefreshTimeAxis pro všechny GTable, předá jim ID sloupce pro refresh.
-        /// Metoda se volá po jakékoli změně hodnot na časové ose daného sloupce.
+        /// Synchronizační element časové osy.
+        /// Pozor, smí být null, pokud GGrid není zapojen do synchronního okruhu.
+        /// Pak změna jeho časové osy se nepromítne nikam jinam.
         /// </summary>
-        /// <param name="columnId">Identifikace sloupce</param>
-        /// <param name="e">Data o změně</param>
-        internal void OnChangeTimeAxis(int columnId, GPropertyChangeArgs<TimeRange> e)
+        public ValueSynchronizer<TimeRange> SynchronizedTime
         {
-            this.OnChangeTimeAxis(null, columnId, e);
+            get { return this._SynchronizedTime; }
+            set
+            {
+                // Odpojit od dosavadního synchronizátoru:
+                if (this.HasSynchronizedTime)
+                    this._SynchronizedTime.ValueChanging -= this._SynchronizedTime_ValueChanging;
+
+                // Uložit nový synchronizátor:
+                this._SynchronizedTime = value;
+
+                // Napojit se do nového synchronizátoru:
+                if (this.HasSynchronizedTime)
+                    this._SynchronizedTime.ValueChanging += this._SynchronizedTime_ValueChanging;
+            }
         }
+        /// <summary>
+        /// Obsahuje true, pokud this Grid má napojení na časový synchronizátor SynchronizedTime
+        /// </summary>
+        public bool HasSynchronizedTime { get { return (this._SynchronizedTime != null); } }
         /// <summary>
         /// Vyvolá RefreshTimeAxis pro všechny GTable, vyjma tabulky s daným TableId (ta se považuje za zdroj události, a řeší si svůj event jinak), a předá jim ID sloupce pro refresh.
         /// Metoda se volá po jakékoli změně hodnot na časové ose daného sloupce.
+        /// Fyzicky se zavolá <see cref="GridColumn.OnChangeTimeAxis(int?, GPropertyChangeArgs{TimeRange})"/> pro daný columnId.
+        /// Tato metoda dále zajistí synchronizaci hodnoty do <see cref="SynchronizedTime"/>, pokud daný sloupec používá synchronní časovou osu.
         /// </summary>
         /// <param name="tableId">identifikace tabulky, kde došlo ke změně</param>
         /// <param name="columnId">Identifikace sloupce</param>
         /// <param name="e">Data o změně</param>
         internal void OnChangeTimeAxis(int? tableId, int columnId, GPropertyChangeArgs<TimeRange> e)
         {
-            GridColumn gridColumn;
-            if (this.TryGetGridColumn(columnId, out gridColumn))
-                gridColumn.OnChangeTimeAxis(tableId, e);
-        }
-        /// <summary>
-        /// Vrací ITimeConvertor pro daný sloupec.
-        /// Pokud daný sloupec nepoužívá časovou osu (nebo sloupec pro columnId neexistuje), vrací null.
-        /// De facto jde o TimeAxis z první tabulky z daného sloupce.
-        /// </summary>
-        /// <param name="columnId"></param>
-        /// <returns></returns>
-        public ITimeConvertor GetTimeConvertor(int columnId)
-        {
-            GridColumn gridColumn;
-            if (!this.TryGetGridColumn(columnId, out gridColumn)) return null;
-            if (!gridColumn.UseTimeAxis) return null;
-            return gridColumn.TimeConvertor;
-        }
-        /// <summary>
-        /// Obsahuje hlavní časovou osu celého Gridu.
-        /// Je to ITimeConvertor z prvního sloupce, který používá časovou osu (má UseTimeAxis == true).
-        /// Hlavní časovou osu lze i setovat (vložit sem nějakou osu z jiného Gridu).
-        /// Pak se this Grid stává "závislým" na dodané časové ose (která je pak Master).
-        /// Vložením null do <see cref="MainTimeAxis"/> se this Grid zase odpojí od Master časové osy a bude si sám svým pánem.
-        /// </summary>
-        public ITimeConvertor MainTimeAxis
-        {
-            get
+            if (this._TimeAxisValueIsChanging) return;                                   // Zabráníme rekurzi
+            try
             {
-                if (this._MainTimeAxisExternal != null) return this._MainTimeAxisExternal;         // Externí časová osa vložená do tohoto Gridu?
-                return this._MainTimeAxisInternal;                                                 // Interní osa nebo null
+                this._TimeAxisValueIsChanging = true;
+                GridColumn gridColumn;
+                if (this.TryGetGridColumn(columnId, out gridColumn))
+                {
+                    gridColumn.OnChangeTimeAxis(tableId, e);                             // Novou hodnotu promítneme do sousedních tabulek v this Gridu (vyjma tabulky tableId, ta událost vyvolala, a novou hodnotu už má vyřešenou interně)
+                    if (this.HasSynchronizedTime && gridColumn.UseTimeAxisSynchronized)  // Pokud se má řešit synchronicita časové osy:
+                        this.SynchronizedTime.SetValue(e.NewValue, this, e.EventSource); //  Vložíme novou hodnotou do synchronizátoru, ten si ji uloží a pošle event všem, kd o to stojí (tedy i nám do metody _SynchronizedTime_ValueChanging)
+                }
             }
-            set
+            finally
             {
-                if (this._MainTimeAxisExternal != null)
-                {   // Odpojit handler ze stávajícího objektu, a odpojit stávající objekt:
-                    this._MainTimeAxisExternal.VisibleTimeChanged -= _MainTimeAxisExternal_VisibleTimeChanged;
-                    this._MainTimeAxisExternal = null;
-                }
-                if (value != null)
-                {   // Zapojit nový objekt, a zapojit náš handler do jeho eventu:
-                    this._MainTimeAxisExternal = value;
-                    this._MainTimeAxisExternal.VisibleTimeChanged += _MainTimeAxisExternal_VisibleTimeChanged;
-                }
+                this._TimeAxisValueIsChanging = false;
             }
         }
         /// <summary>
-        /// Synchronizační element časové osy
+        /// Eventhandler vyvolaný po změně hodnoty (času) v synchronizátoru <see cref="SynchronizedTime"/>.
+        /// Kdokoliv mohl změnit jeho hodnotu, a synchronizátor volá tento event do všech odběratelů.
+        /// Autor změny může je uveden v parametru sender (pokud je znám).
         /// </summary>
-        public ValueSynchronizer<TimeRange> SynchronizedTime
-        {
-            get { if (this._SynchronizedTime == null) this._SynchronizedTime = new ValueSynchronizer<TimeRange>(); return this._SynchronizedTime; }
-            set { this._SynchronizedTime = value; }
-        }
-        private ValueSynchronizer<TimeRange> _SynchronizedTime;
-
-        /// <summary>
-        /// Událost, kdy externí časová osa provedla nějakou změnu zobrazeného času, 
-        /// a náš graf (který je v režimu Slave, proto má napojenou externí časovou osu) na to má reagovat
-        /// </summary>
-        /// <param name="sender"></param>
+        /// <param name="sender">Autor, který změnu vyvolal. Pokud jsme změnu vyvolali my, pak (sender == this), viz metoda <see cref="OnChangeTimeAxis(int?, int, GPropertyChangeArgs{TimeRange})"/>.</param>
         /// <param name="e"></param>
-        private void _MainTimeAxisExternal_VisibleTimeChanged(object sender, GPropertyChangeArgs<TimeRange> e)
+        private void _SynchronizedTime_ValueChanging(object sender, GPropertyChangeArgs<TimeRange> e)
         {
-            this.Repaint();
-        }
-        /// <summary>
-        /// Interní hlavní časová osa tohoto Gridu. Vždy pochází z prvního sloupce <see cref="Columns"/>, který používá časovou osu: <see cref="GridColumn.UseTimeAxis"/>.
-        /// Tato property nijak nereaguje na přítomnost externí časové osy <see cref="_MainTimeAxisExternal"/>: vrací interní osu i když by byla externé osa zadaná.
-        /// </summary>
-        private ITimeConvertor _MainTimeAxisInternal
-        {
-            get
+            if (sender != null && Object.ReferenceEquals(sender, this)) return;          // Tuto změnu jsme vyvolali my => už na ni nebudeme reagovat!
+            if (this._TimeAxisValueIsChanging) return;                                   // Zabráníme rekurzi
+            // Zvenku došlo ke změně synchronizované hodnoty časové osy, my v našem Gridu to promítneme do všech synchronizovaných sloupců, ale ne do synchronizačního objektu:
+            try
             {
-                GridColumn timeAxisColumn = this.Columns.FirstOrDefault(c => c.UseTimeAxis);       // Nemáme externí, zkusíme najít vlastní časovou osu...
-                return (timeAxisColumn != null ? timeAxisColumn.TimeConvertor : null);
+                this._TimeAxisValueIsChanging = true;
+                this.SynchronizedTimeConvertor.Value = e.NewValue;                       // Obecný časový konvertor
+                // 1. Sloupce, které mají synchronní časovou osu:
+                foreach (GridColumn gridColumn in this.Columns.Where(c => c.UseTimeAxisSynchronized))
+                    gridColumn.OnChangeTimeAxis(null, e);                                // Novou hodnotu promítneme do VŠECH tabulek v this Gridu, do sloupců které používají synchronní časovou osu
+                // 2. Tabulky, které zobrazují časový graf na pozadí řádků:
+                foreach (GTable table in this.Tables.Where(t => t.UseBackgroundTimeAxis))
+                    table.RefreshBackgroundTimeAxis(sender, e);
+            }
+            finally
+            {
+                this._TimeAxisValueIsChanging = false;
             }
         }
         /// <summary>
-        /// Externí časová osa. Je null, pokud this Grid jede "ze své časové osy", anebo žádnou nemá.
+        /// V době změn hodnoty časové osy je zde true, aby se eventy nevolaly opakovaně ve vnořeném režimu.
         /// </summary>
-        private ITimeConvertor _MainTimeAxisExternal;
+        private bool _TimeAxisValueIsChanging;
+        /// <summary>
+        /// Synchronizovaný konvertor časových údajů
+        /// </summary>
+        public ITimeAxisConvertor SynchronizedTimeConvertor
+        {
+            get
+            {
+                if (this._SynchronizedTimeConvertor == null)
+                    this._SynchronizedTimeConvertor = new TimeAxisConvertor();
+                return this._SynchronizedTimeConvertor;
+            }
+        }
+        private TimeAxisConvertor _SynchronizedTimeConvertor;
+
+
+       
+
+        private ValueSynchronizer<TimeRange> _SynchronizedTime;
+       
         #endregion
         #region Invalidace, resety, refreshe
         /// <summary>
@@ -1263,7 +1267,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Objekt, který provádí konverze časových údajů a pixelů, jde o vizuální časovou osu
         /// </summary>
-        public ITimeConvertor TimeConvertor { get { return this._MasterColumn.ColumnHeader.TimeConvertor; } }
+        public ITimeAxisConvertor TimeConvertor { get { return this._MasterColumn.ColumnHeader.TimeConvertor; } }
         /// <summary>
         /// Přidá další sloupec do this GridColumnu
         /// </summary>
