@@ -321,9 +321,34 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             this._TimeAxis = timeAxis;
         }
-        private GTimeAxis _TimeAxis;
+        /// <summary>
+        /// Konstruktor pro konvertor provázaný se synchronizerem hodnoty
+        /// </summary>
+        /// <param name="valueSynchronizer"></param>
+        public TimeAxisConvertor(ValueSynchronizer<TimeRange> valueSynchronizer)
+        {
+            this._ValueSynchronizer = valueSynchronizer;
+        }
+        /// <summary>
+        /// Lokální hodnota
+        /// </summary>
         private TimeRange _Value;
+        /// <summary>
+        /// Časová osa
+        /// </summary>
+        private GTimeAxis _TimeAxis;
+        /// <summary>
+        /// Synchronizer hodnoty
+        /// </summary>
+        private ValueSynchronizer<TimeRange> _ValueSynchronizer;
+        /// <summary>
+        /// true pokud máme <see cref="_TimeAxis"/>
+        /// </summary>
         private bool _HasTimeAxis { get { return (this._TimeAxis != null); } }
+        /// <summary>
+        /// true pokud máme <see cref="_ValueSynchronizer"/>
+        /// </summary>
+        private bool _HasValueSynchronizer{ get { return (this._ValueSynchronizer != null); } }
         #endregion
         #region Public prvky, implicitní implementace ITimeAxisConvertor
         /// <summary>
@@ -331,8 +356,18 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public TimeRange Value
         {
-            get { return (this._HasTimeAxis ? this._TimeAxis.Value : this._Value); }
-            set { if (this._HasTimeAxis) this._TimeAxis.Value = value; else this._Value = value; }
+            get
+            {
+                if (this._HasTimeAxis) return this._TimeAxis.Value;
+                if (this._HasValueSynchronizer) return this._ValueSynchronizer.Value;
+                return this._Value;
+            }
+            set
+            {
+                if (this._HasTimeAxis) this._TimeAxis.Value = value;
+                else if (this._HasValueSynchronizer) this._ValueSynchronizer.Value = value;
+                else this._Value = value;
+            }
         }
         /// <summary>
         /// Identita časového a vizuálního prostoru.
@@ -341,7 +376,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public string Identity
         {
-            get { return (this._HasTimeAxis ? this._TimeAxis.Identity : this._Value.Identity); }
+            get
+            {
+                if (this._HasTimeAxis) return this._TimeAxis.Identity;
+                TimeRange value = this.Value;
+                return (value != null ? value.Identity : "");
+            }
         }
         /// <summary>
         /// Obsahuje všechny aktuální ticky na časové ose.
@@ -360,41 +400,41 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Vrátí pozici daného času (v pixelech) na časové ose, proporcionálně přepočítanou pro danou cílovou velikost osy
         /// </summary>
-        /// <param name="time"></param>
-        /// <param name="targetSize"></param>
+        /// <param name="time">Zadaný vstupní čas</param>
+        /// <param name="targetSize">Velikost výstupního prostoru v pixelech</param>
         /// <returns></returns>
         public Double GetProportionalPixel(DateTime? time, int targetSize) { return this.GetProportionalPoint(time, targetSize); }
         /// <summary>
         /// Vrátí rozsah daného časového úseku (v pixelech) na časové ose, proporcionálně přepočítanou pro danou cílovou velikost osy
         /// </summary>
-        /// <param name="timeRange"></param>
-        /// <param name="targetSize"></param>
+        /// <param name="timeRange">Zadaný vstupní časový interval</param>
+        /// <param name="targetSize">Velikost výstupního prostoru v pixelech</param>
         /// <returns></returns>
         public DoubleRange GetProportionalPixelRange(TimeRange timeRange, int targetSize) { return (timeRange != null ? new DoubleRange(this.GetProportionalPoint(timeRange.Begin, targetSize), this.GetProportionalPoint(timeRange.End, targetSize)) : null); }
         /// <summary>
         /// Vrátí pozici daného času (v pixelech) na časové ose, logaritmicky přepočítanou pro danou cílovou velikost osy a definovanou proporcionální střední část
         /// </summary>
-        /// <param name="time"></param>
-        /// <param name="targetSize"></param>
+        /// <param name="time">Zadaný vstupní čas</param>
+        /// <param name="targetSize">Velikost výstupního prostoru v pixelech</param>
         /// <param name="proportionalRatio"></param>
         /// <returns></returns>
         public Double GetLogarithmicPixel(DateTime? time, int targetSize, float proportionalRatio) { return this.GetLogarithmicPoint(time, targetSize, proportionalRatio); }
         /// <summary>
         /// Vrátí pozici daného časového úseku (v pixelech) na časové ose, logaritmicky přepočítanou pro danou cílovou velikost osy a definovanou proporcionální střední část
         /// </summary>
-        /// <param name="timeRange"></param>
-        /// <param name="targetSize"></param>
+        /// <param name="timeRange">Zadaný vstupní časový interval</param>
+        /// <param name="targetSize">Velikost výstupního prostoru v pixelech</param>
         /// <param name="proportionalRatio"></param>
         /// <returns></returns>
         public DoubleRange GetLogarithmicPixelRange(TimeRange timeRange, int targetSize, float proportionalRatio) { return (timeRange != null ? new DoubleRange(this.GetLogarithmicPoint(timeRange.Begin, targetSize, proportionalRatio), this.GetLogarithmicPoint(timeRange.End, targetSize, proportionalRatio)) : null); }
         #endregion
-        #region Vnitřní výpočtové metody
+        #region Vnitřní výpočtové metody GetProportionalPoint() a GetLogarithmicPoint()
         /// <summary>
         /// Vrací relativní vzdálenost (v pixelech) zadaného času od toho pixelu, kde začíná osa, při přepočtu velikosti osy na daný cílový počet pixelů.
         /// Tady parametr time je hledaný čas, a parametr targetSize určuje aktuální délku osy (na tuto délku se rozpočítá hodnota <see cref="Value"/>).
         /// </summary>
-        /// <param name="time"></param>
-        /// <param name="targetSize"></param>
+        /// <param name="time">Zadaný vstupní čas</param>
+        /// <param name="targetSize">Velikost výstupního prostoru v pixelech</param>
         /// <returns></returns>
         protected Double GetProportionalPoint(DateTime? time, Double targetSize)
         {
@@ -407,9 +447,14 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         /// <summary>
         /// Vrátí relativní pozici (v pixelech) zadaného času na logaritmické časové ose, kde střední proporcionální část má danou velikost (proportionalRatio).
+        /// Ona ta hodnota de facto není logaritmická, ale hyperbolická, 
+        /// s tím že pro vstupní hodnotu času plus/mínus nekonečno se výstupní hodnota pixelu limitně blíží konci/začátku daného prostoru v pixelech.
+        /// Jinak řečeno: pro time s rokem 0001 je výstup roven 0.0m, a pro rok 9999 je výstup roven targetSize.
+        /// Ve výstupním prostoru (0 až targetSize) je uprostřed část, která zobrazuje čas lineárně; tato část obsazuje poměrný díl (proportionalRatio) celého prostoru (targetSize).
+        /// Do tohoto prostoru se lineárně promítají vstupní časy (time), které leží v rozmezí aktuální hodnoty <see cref="Value"/>.
         /// </summary>
-        /// <param name="time"></param>
-        /// <param name="targetSize"></param>
+        /// <param name="time">Zadaný vstupní čas</param>
+        /// <param name="targetSize">Velikost výstupního prostoru v pixelech</param>
         /// <param name="proportionalRatio">Poměrná část fyzického prostoru osy (targetSize), ležící uprostřed, ve které se zobrazují časy osy (Value) lineárně. Krajní části osy jsou logaritmické.</param>
         /// <returns></returns>
         protected Double GetLogarithmicPoint(DateTime? time, Double targetSize, float proportionalRatio)
@@ -428,7 +473,7 @@ namespace Asol.Tools.WorkScheduler.Components
             }
             else
             {   // Ostatní pozice cílového bodu jsou mimo "viditelnou část" = zobrazí se v logaritmické části (na začátku nebo na konci prostoru):
-                bool isPositive = (pointRatio > 1d);                      // true = jsme napravo (targetPixelRatio je větší), false = jsme nalevo
+                bool isPositive = (pointRatio > 1d);                              // true = jsme napravo (targetPixelRatio je větší), false = jsme nalevo
                 Double distance = (isPositive ? pointRatio - 1d : -pointRatio);   // Vzdálenost hodnoty pointRatio od odpovídajcí hranice lineárního úseku, hodnota "distance" vždy začíná lehce nad nulou (nula nikdy není) a jde do kladného nekonečna
                 Double distanceLog = 1d - (1d / (1d + distance));                 // Výsledná "logaritmická" hodnota v rozsahu (0 až 1), odpovídající distance v rosahu (0 až +nekonečno) (nepravý Logaritmus = Hyperbola)
                 result = (isPositive ?

@@ -287,7 +287,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private void AddTableToGrid(MainDataTable graphTable, GGrid grid)
         {
             if (graphTable == null || graphTable.TableRow == null) return;
-            grid.SynchronizedTime = this.SynchronizedTime;
+            if (grid.SynchronizedTime == null)
+                grid.SynchronizedTime = this.SynchronizedTime;
             grid.AddTable(graphTable.TableRow);
         }
         #endregion

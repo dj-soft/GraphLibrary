@@ -988,17 +988,20 @@ namespace Asol.Tools.WorkScheduler.Components
             get
             {
                 if (this._SynchronizedTimeConvertor == null)
-                    this._SynchronizedTimeConvertor = new TimeAxisConvertor();
+                {   // TimeConvertor pro tento Grid dosud neexistuje, vytvořím jej tedy nový, a napojím ho na synchronizovaný čas:
+                    this._SynchronizedTimeConvertor = new TimeAxisConvertor(this._SynchronizedTime);
+                }
                 return this._SynchronizedTimeConvertor;
             }
         }
+        /// <summary>
+        /// Instance konvertoru času na prostor
+        /// </summary>
         private TimeAxisConvertor _SynchronizedTimeConvertor;
-
-
-       
-
+        /// <summary>
+        /// Instance synchronní hodnoty času přes veškeré objekty
+        /// </summary>
         private ValueSynchronizer<TimeRange> _SynchronizedTime;
-       
         #endregion
         #region Invalidace, resety, refreshe
         /// <summary>

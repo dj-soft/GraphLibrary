@@ -3209,6 +3209,32 @@ namespace Asol.Tools.WorkScheduler.Components
     public class ValueSynchronizer<T>
     {
         /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public ValueSynchronizer()
+        {
+            this.SynchronizerId = App.GetNextId(typeof(System.ValueType));
+            if (AllSynchronizerList == null)
+                AllSynchronizerList = new List<object>();
+            AllSynchronizerList.Add(this);
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return "ValueSynchronizer #" + this.SynchronizerId.ToString() + "; Value: " + (this.Value == null ? "NULL" : this.Value.ToString());
+        }
+        /// <summary>
+        /// ID tohoto konkrétního synchronizeru
+        /// </summary>
+        protected int SynchronizerId { get; private set; }
+        /// <summary>
+        /// Pole všech synchronizerů
+        /// </summary>
+        protected static List<object> AllSynchronizerList;
+        /// <summary>
         /// Aktuální hodnota v synchronizeru.
         /// Hodnotu lze číst i zapisovat.
         /// Zápis hodnoty (takto napřímo) vyvolá událost <see cref="ValueChanging"/>, kde ale do eventhandleru bude předán objekt sender == null.

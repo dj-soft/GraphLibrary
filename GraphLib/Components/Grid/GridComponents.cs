@@ -501,12 +501,20 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             {
                 this._TimeAxis = new GTimeAxis();
                 Components.Graph.TimeGraphProperties graphParameters = this.OwnerColumn.GraphParameters;
+                TimeRange value = this._TimeAxis.Value;
+                if (_TimeAxisInitialValue != null) value = _TimeAxisInitialValue;
                 if (graphParameters != null)
                 {
                     this._TimeAxis.ResizeContentMode = (graphParameters.InitialResizeMode.HasValue ? graphParameters.InitialResizeMode.Value : AxisResizeContentMode.ChangeValueEnd);
-                    this._TimeAxis.Value = (graphParameters.InitialValue != null ? graphParameters.InitialValue : _TimeAxisInitialValue);
                     this._TimeAxis.InteractiveChangeMode = (graphParameters.InteractiveChangeMode.HasValue ? graphParameters.InteractiveChangeMode.Value : AxisInteractiveChangeMode.All);
+                    if (graphParameters.InitialValue != null) value = graphParameters.InitialValue;
                 }
+
+                // Výchozí hodnota, a vepsat ji do synchronizeru (pokud this sloupec má časovou osu synchronní):
+                this._TimeAxis.Value = value;
+                if (this.OwnerGTable != null)
+                    this.OwnerGTable.OnChangeTimeAxis(this.OwnerColumn, new GPropertyChangeArgs<TimeRange>(null, value, EventSourceType.ApplicationCode));
+
                 ((IInteractiveItem)this._TimeAxis).Parent = this;
                 this._TimeAxis.ValueChanging += _TimeAxis_ValueChange;
                 this._TimeAxis.ValueChanged += _TimeAxis_ValueChange;
@@ -939,6 +947,8 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         protected override void SetChildBounds(Rectangle newBounds)
         {
             // Pokud bych měl (já jako GRow) nějaké ChildItems, tak tady jim můžu nastavit Bounds, podle mých rozměrů.
+            if (this.OwnerRow.BackgroundValueType == TableValueType.ITimeInteractiveGraph)
+                (this.OwnerRow.BackgroundValue as IInteractiveItem).Bounds = new Rectangle(1, 1, newBounds.Width - 2, newBounds.Height - 2);
         }
         /// <summary>
         /// Vizualizace
@@ -1004,6 +1014,10 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             Int32Range rowChildsYRange = new Int32Range(0, this.VisualRange.Size - 0);             // Pozice všech Child items na ose Y (ta je relativní vzhledem k this řádku, proto začíná 0, a je o 1 pixel menší = o dolní GridLine)
 
             List<IInteractiveItem> childList = new List<IInteractiveItem>();
+
+            // Objekt na pozadí = pouze ITimeInteractiveGraph:
+            if (this.OwnerRow.BackgroundValueType == TableValueType.ITimeInteractiveGraph)
+                childList.Add(this.OwnerRow.BackgroundValue as IInteractiveItem);
 
             // Viditelné buňky:
             int cellXBegin = rowDataXRange.Begin;
