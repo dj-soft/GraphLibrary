@@ -996,23 +996,10 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             ItemActionArgs args = new ItemActionArgs(e, this, group, data, position);
             this.DataSource.ItemLongClick(args);
         }
-
-        internal void GraphItemDragItemStart(ItemDragDropArgs args)
+        internal void DragDropGroupCallSource(ItemDragDropArgs args)
         {
             if (!this.HasDataSource) return;
-            this.DataSource.ItemDragItemStart(args);
-
-        }
-        internal void GraphItemDragItemMove(ItemDragDropArgs args)
-        {
-            if (!this.HasDataSource) return;
-            this.DataSource.ItemDragItemMove(args);
-        }
-        internal void GraphItemDragItemDrop(ItemDragDropArgs args)
-        {
-            if (!this.HasDataSource) return;
-            this.DataSource.ItemDragItemDrop(args);
-
+            this.DataSource.ItemDragDropAction(args);
         }
         /// <summary>
         /// true pokud máme datový zdroj
@@ -1659,9 +1646,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         void ItemDoubleClick(ItemActionArgs args);
         void ItemLongClick(ItemActionArgs args);
         void ItemChange(ItemChangeArgs args);
-        void ItemDragItemStart(ItemDragDropArgs args);
-        void ItemDragItemMove(ItemDragDropArgs args);
-        void ItemDragItemDrop(ItemDragDropArgs args);
+        void ItemDragDropAction(ItemDragDropArgs args);
     }
     #region class CreateTextArgs : 
     public class CreateTextArgs : ItemArgs

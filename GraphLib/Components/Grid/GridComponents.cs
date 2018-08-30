@@ -947,7 +947,8 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         protected override void SetChildBounds(Rectangle newBounds)
         {
             // Pokud bych měl (já jako GRow) nějaké ChildItems, tak tady jim můžu nastavit Bounds, podle mých rozměrů.
-            if (this.OwnerRow.BackgroundValueType == TableValueType.ITimeInteractiveGraph)
+            // Například InteractiveGraph (ten se chová jako plnohodnotný Child, ten není vykreslován jako statický content řádku):
+            if (this.HasTimeInteractiveGraph)
                 (this.OwnerRow.BackgroundValue as IInteractiveItem).Bounds = new Rectangle(1, 1, newBounds.Width - 2, newBounds.Height - 2);
         }
         /// <summary>
@@ -1015,8 +1016,8 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
 
             List<IInteractiveItem> childList = new List<IInteractiveItem>();
 
-            // Objekt na pozadí = pouze ITimeInteractiveGraph:
-            if (this.OwnerRow.BackgroundValueType == TableValueType.ITimeInteractiveGraph)
+            // Přidáme objekt na pozadí = pouze ITimeInteractiveGraph:
+            if (this.HasTimeInteractiveGraph)
                 childList.Add(this.OwnerRow.BackgroundValue as IInteractiveItem);
 
             // Viditelné buňky:
@@ -1066,6 +1067,10 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// Child prvky <see cref="IInteractiveItem.Childs"/>
         /// </summary>
         protected override IEnumerable<IInteractiveItem> Childs { get { return this._ChildItems; } }
+        /// <summary>
+        /// Obsahuje true pokud this řádek obsahuje <see cref="Row.BackgroundValue"/>, která je typu <see cref="TableValueType.ITimeInteractiveGraph"/>.
+        /// </summary>
+        protected bool HasTimeInteractiveGraph { get { return (this.OwnerRow.BackgroundValueType == TableValueType.ITimeInteractiveGraph); } }
         #endregion
     }
     #endregion

@@ -1054,6 +1054,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     if (this._IsDragEnabledCurrent)
                     {
                         this.BoundsDragOrigin = this.Bounds;
+                        this.DragThisStartBounds(e, this.Bounds);
                         this.RepaintToLayers = this.DragDrawToLayers;
                     }
                     break;
@@ -1106,6 +1107,15 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         private bool _IsDragEnabledCurrent;
         /// <summary>
+        /// Volá se na začátku procesu přesouvání, pro aktivní objekt.
+        /// Bázová třída už má uloženy výchozí souřadnice objektu do <see cref="BoundsDragOrigin"/>.
+        /// Bázová metoda <see cref="DragThisStartBounds(GDragActionArgs, Rectangle)"/> nic nedělá.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="targetRelativeBounds"></param>
+        protected virtual void DragThisStartBounds(GDragActionArgs e, Rectangle targetRelativeBounds)
+        { }
+        /// <summary>
         /// Volá se v procesu přesouvání, pro aktivní objekt.
         /// Bázová třída v době volání této metody má uložené cílové souřadnice (dle parametru targetRelativeBounds) v proměnné <see cref="BoundsDragTarget"/>.
         /// Potomek může tuto souřadnici v této metodě změnit, a upravenou ji vložit do <see cref="BoundsDragTarget"/>.
@@ -1120,15 +1130,15 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         /// <summary>
         /// Volá se při ukončení Drag & Drop, při akci <see cref="DragActionType.DragThisDrop"/>, pro aktivní objekt (=ten který je přesouván).
-        /// Bázová metoda <see cref="InteractiveDragObject.DragThisDropToBounds(GDragActionArgs, Rectangle)"/> vepíše předané souřadnice (parametr boundsTarget) 
+        /// Bázová metoda <see cref="InteractiveDragObject.DragThisDropToBounds(GDragActionArgs, Rectangle)"/> vepíše předané souřadnice (parametr targetRelativeBounds) 
         /// do this.Bounds pomocí metody <see cref="InteractiveObject.SetBounds(Rectangle, ProcessAction, EventSourceType)"/>.
-        /// Pokud potomek chce modifikovat souřadnice, stačí změnit hodnotu parametru boundsTarget.
+        /// Pokud potomek chce modifikovat cílové souřadnice, stačí změnit hodnotu parametru targetRelativeBounds.
         /// </summary>
         /// <param name="e"></param>
-        /// <param name="boundsTarget"></param>
-        protected virtual void DragThisDropToBounds(GDragActionArgs e, Rectangle boundsTarget)
+        /// <param name="targetRelativeBounds"></param>
+        protected virtual void DragThisDropToBounds(GDragActionArgs e, Rectangle targetRelativeBounds)
         {
-            this.SetBounds(boundsTarget, ProcessAction.DragValueActions, EventSourceType.InteractiveChanged | EventSourceType.BoundsChange);
+            this.SetBounds(targetRelativeBounds, ProcessAction.DragValueActions, EventSourceType.InteractiveChanged | EventSourceType.BoundsChange);
         }
         /// <summary>
         /// Je voláno po skončení přetahování, ať už skončilo OK (=Drop) nebo Escape (=Cancel).

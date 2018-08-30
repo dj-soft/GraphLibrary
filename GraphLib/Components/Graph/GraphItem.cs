@@ -170,19 +170,25 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             get { return (this._Position == GGraphControlPosition.Group && this._Group.IsDragEnabled); }
             set { }
         }
+        protected override void DragThisStartBounds(GDragActionArgs e, Rectangle targetRelativeBounds)
+        {
+            this.DragDropGroupCallSource(e, ref targetRelativeBounds);
+            base.DragThisStartBounds(e, targetRelativeBounds);
+        }
         protected override void DragThisOverBounds(GDragActionArgs e, Rectangle targetRelativeBounds)
         {
-            Rectangle targetAbsoluteBounds = e.BoundsInfo.GetAbsBounds(targetRelativeBounds);
-            if (this.DragGroupOverAny(e, ref targetAbsoluteBounds))
-                targetRelativeBounds = e.BoundsInfo.GetRelBounds(targetAbsoluteBounds);
+            this.DragDropGroupCallSource(e, ref targetRelativeBounds);
             base.DragThisOverBounds(e, targetRelativeBounds);
         }
-        protected override void DragThisDropToBounds(GDragActionArgs e, Rectangle boundsTarget)
+        protected override void DragThisDropToBounds(GDragActionArgs e, Rectangle targetRelativeBounds)
         {
-            base.DragThisDropToBounds(e, boundsTarget);
+            this.DragDropGroupCallSource(e, ref targetRelativeBounds);
+            base.DragThisDropToBounds(e, targetRelativeBounds);
         }
         protected override void DragThisOverEnd(GDragActionArgs e)
         {
+            Rectangle targetRelativeBounds = Rectangle.Empty;
+            this.DragDropGroupCallSource(e, ref targetRelativeBounds);
             base.DragThisOverEnd(e);
             this._Group.DragDropDrawInteractiveOpacity = null;
         }
@@ -193,11 +199,11 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Metoda vrací true, pokud došlo ke změně souřadnic.
         /// </summary>
         /// <param name="e"></param>
-        /// <param name="targetAbsoluteBounds">
+        /// <param name="targetRelativeBounds">Relativní souřadnice prvku (při akci Start = výchozí, při akci Move a Drop = cílová)
         /// Na vstupu: absolutní souřadnice místa, kam by uživatel rád přesunul prvek grafu;
         /// Na výstupu: </param>
         /// <returns></returns>
-        protected bool DragGroupOverAny(GDragActionArgs e, ref Rectangle targetAbsoluteBounds)
+        protected void DragDropGroupCallSource(GDragActionArgs e, ref Rectangle targetRelativeBounds)
         {
             /* Popis chování:
     * SITUACE  : Přetahuji položku grafu, hledám prvek nad nímž se pohybuji (můj vlastní graf, jiný graf v rámci téže tabulky, jakýkoli jiný graf, jiný objekt?)
@@ -213,6 +219,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
 
             // Najdu prvek, nad nímž se aktuálně pohybuji:
             IInteractiveItem item = e.FindItemAtPoint(e.MouseCurrentAbsolutePoint.Value);
+            Rectangle targetAbsoluteBounds = e.BoundsInfo.GetAbsBounds(targetRelativeBounds);
 
             // Sestavím argument (pro this prvek) a doplním do něj údaje o dalších prvcích:
             ItemDragDropArgs args = new ItemDragDropArgs(e, this.Graph, this._Group, this._Owner, this._Position, targetAbsoluteBounds);
@@ -228,17 +235,16 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
 
             // Zavolám datový zdroj, ten vyhodnotí zda se může prvek posunout, nebo na jaké souřadnice se může posunout, a určí vzhled kreslení (disabled?):
             // On by mohl i zařídit "scrollování" v čase (osa X => TimeAxis) nebo v místě (osa Y => řádek, kam položku přesunout):
-            this.Graph.GraphItemDragItemMove(args);
+            this.Graph.DragDropGroupCallSource(args);
 
             // Převezmu výsledky (buď defaultní, nebo modifikované datovým zdrojem):
             this.DragDropTargetItem = args.TargetDropItem;
             this._Group.DragDropDrawInteractiveOpacity = args.TargetValidityOpacity;
-
-            bool result = (args.DragToAbsoluteBounds.HasValue && args.DragToAbsoluteBounds.Value != targetAbsoluteBounds);
-            if (result)
+            if (args.DragToAbsoluteBounds.HasValue)
+            {
                 targetAbsoluteBounds = args.DragToAbsoluteBounds.Value;
-            
-            return result;
+                targetRelativeBounds = e.BoundsInfo.GetRelBounds(targetAbsoluteBounds);
+            }
         }
         /// <summary>
         /// Metoda nastaví defaultní hodnotu platnosti podle toho, zda se cíl nachází nad grafem, anebo jak daleko se nachází od nejbližšího prostoru RowArea vlastní tabulky
