@@ -67,8 +67,11 @@ namespace Asol.Tools.WorkScheduler.Components
         #region Obsluha override metod (z WinForm.Control) pro Focus a Keyboard
         protected override void OnEnter(EventArgs e)
         {
-            this._OnEnter(e);
-            base.OnEnter(e);
+            using (new InteractiveProcessingScope(this))
+            {
+                this._OnEnter(e);
+                base.OnEnter(e);
+            }
         }
         private void _OnEnter(EventArgs e)
         {
@@ -90,22 +93,31 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         protected override void OnGotFocus(EventArgs e)
         {
-            this._OnGotFocus(e);
-            base.OnGotFocus(e);
+            using (new InteractiveProcessingScope(this))
+            {
+                this._OnGotFocus(e);
+                base.OnGotFocus(e);
+            }
         }
         private void _OnGotFocus(EventArgs e)
         { }
         protected override void OnLostFocus(EventArgs e)
         {
-            this._OnLostFocus(e);
-            base.OnLostFocus(e);
+            using (new InteractiveProcessingScope(this))
+            {
+                this._OnLostFocus(e);
+                base.OnLostFocus(e);
+            }
         }
         private void _OnLostFocus(EventArgs e)
         { }
         protected override void OnLeave(EventArgs e)
         {
-            this._OnLeave(e);
-            base.OnLeave(e);
+            using (new InteractiveProcessingScope(this))
+            {
+                this._OnLeave(e);
+                base.OnLeave(e);
+            }
         }
         private void _OnLeave(EventArgs e)
         {
@@ -125,8 +137,11 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         protected override void OnPreviewKeyDown(PreviewKeyDownEventArgs e)
         {
-            this._OnPreviewKeyDown(e);
-            base.OnPreviewKeyDown(e);
+            using (new InteractiveProcessingScope(this))
+            {
+                this._OnPreviewKeyDown(e);
+                base.OnPreviewKeyDown(e);
+            }
         }
         private void _OnPreviewKeyDown(PreviewKeyDownEventArgs e)
         {
@@ -148,8 +163,11 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         protected override void OnKeyDown(KeyEventArgs e)
         {
-            this._OnKeyDown(e);
-            base.OnKeyDown(e);
+            using (new InteractiveProcessingScope(this))
+            {
+                this._OnKeyDown(e);
+                base.OnKeyDown(e);
+            }
         }
         private void _OnKeyDown(KeyEventArgs e)
         {
@@ -188,8 +206,11 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         protected override void OnKeyUp(KeyEventArgs e)
         {
-            this._OnKeyUp(e);
-            base.OnKeyUp(e);
+            using (new InteractiveProcessingScope(this))
+            {
+                this._OnKeyUp(e);
+                base.OnKeyUp(e);
+            }
         }
         private void _OnKeyUp(KeyEventArgs e)
         {
@@ -211,8 +232,11 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         protected override void OnKeyPress(KeyPressEventArgs e)
         {
-            this._OnKeyPress(e);
-            base.OnKeyPress(e);
+            using (new InteractiveProcessingScope(this))
+            {
+                this._OnKeyPress(e);
+                base.OnKeyPress(e);
+            }
         }
         private void _OnKeyPress(KeyPressEventArgs e)
         {
@@ -339,8 +363,11 @@ namespace Asol.Tools.WorkScheduler.Components
         #region Obsluha override metod (z WinForm.Control) pro myš
         protected override void OnMouseEnter(EventArgs e)
         {
-            this._OnMouseEnter(e);
-            base.OnMouseEnter(e);
+            using (new InteractiveProcessingScope(this))
+            {
+                this._OnMouseEnter(e);
+                base.OnMouseEnter(e);
+            }
         }
         private void _OnMouseEnter(EventArgs e)
         {
@@ -359,8 +386,11 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         protected override void OnMouseMove(MouseEventArgs e)
         {
-            this._OnMouseMove(e);
-            base.OnMouseMove(e);
+            using (new InteractiveProcessingScope(this))
+            {
+                this._OnMouseMove(e);
+                base.OnMouseMove(e);
+            }
         }
         private void _OnMouseMove(MouseEventArgs e)
         {
@@ -501,8 +531,11 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         protected override void OnMouseDown(MouseEventArgs e)
         {
-            this._OnMouseDown(e);
-            base.OnMouseDown(e);
+            using (new InteractiveProcessingScope(this))
+            {
+                this._OnMouseDown(e);
+                base.OnMouseDown(e);
+            }
         }
         private void _OnMouseDown(MouseEventArgs e)
         {
@@ -521,8 +554,11 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         protected override void OnMouseUp(MouseEventArgs e)
         {
-            this._OnMouseUp(e);
-            base.OnMouseUp(e);
+            using (new InteractiveProcessingScope(this))
+            {
+                this._OnMouseUp(e);
+                base.OnMouseUp(e);
+            }
         }
         private void _OnMouseUp(MouseEventArgs e)
         {
@@ -548,8 +584,11 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         protected override void OnMouseWheel(MouseEventArgs e)
         {
-            this._OnMouseWheel(e);
-            base.OnMouseWheel(e);
+            using (new InteractiveProcessingScope(this))
+            {
+                this._OnMouseWheel(e);
+                base.OnMouseWheel(e);
+            }
         }
         private void _OnMouseWheel(MouseEventArgs e)
         {
@@ -568,8 +607,11 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         protected override void OnMouseLeave(EventArgs e)
         {
-            this._OnMouseLeave(e);
-            base.OnMouseLeave(e);
+            using (new InteractiveProcessingScope(this))
+            {
+                this._OnMouseLeave(e);
+                base.OnMouseLeave(e);
+            }
         }
         private void _OnMouseLeave(EventArgs e)
         {
@@ -661,7 +703,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this._MouseCurrentRelativePoint = _GetRelativePoint(this._MouseDownAbsolutePoint.Value, this._MouseCurrentItem);
             if (this._MouseCurrentItem.CanDrag)
             {
-                this._MouseCurrentItem.CurrentTime = DateTime.Now; 
+                this._MouseCurrentItem.CurrentTime = DateTime.Now;
                 this._MouseDragMoveItem = this._MouseCurrentItem;
                 this._MouseDragMoveItemOriginBounds = this._MouseCurrentItem.ActiveItem.Bounds;
                 Point? userDragPoint = null;
@@ -1106,7 +1148,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="recurseToSolver"></param>
         /// <param name="userDragPoint"></param>
         /// <param name="frameWorkArea"></param>
-        private void _ItemMouseCallStateChangedEvent(GActivePosition gcItem, GInteractiveChangeState change, Point? mouseRelativePoint, Rectangle? dragToArea, 
+        private void _ItemMouseCallStateChangedEvent(GActivePosition gcItem, GInteractiveChangeState change, Point? mouseRelativePoint, Rectangle? dragToArea,
             bool recurseToSolver, ref Point? userDragPoint, out Rectangle? frameWorkArea)
         {
             frameWorkArea = null;
@@ -1114,8 +1156,8 @@ namespace Asol.Tools.WorkScheduler.Components
             GInteractiveChangeState realChange = this._GetStateForCurrentMouseButton(change, isEnabled);
             GInteractiveState state = (gcItem.HasItem ? _GetStateAfterChange(realChange, isEnabled) : GInteractiveState.Disabled);
             BoundsInfo boundsInfo = gcItem.ActiveItemBoundsInfo;
-            GInteractiveChangeStateArgs stateArgs = new GInteractiveChangeStateArgs(boundsInfo, realChange, state, 
-                this.FindNewItemAtPoint, gcItem.MouseAbsolutePoint, mouseRelativePoint, 
+            GInteractiveChangeStateArgs stateArgs = new GInteractiveChangeStateArgs(boundsInfo, realChange, state,
+                this.FindNewItemAtPoint, gcItem.MouseAbsolutePoint, mouseRelativePoint,
                 this._MouseDragMoveItemOriginBounds, dragToArea);
             stateArgs.UserDragPoint = userDragPoint;
 
@@ -1616,8 +1658,16 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Událost volaná v procesu kreslení standardní vrstvy
         /// </summary>
         public event PaintEventHandler DrawStandardLayer;
-
-
+        /// <summary>
+        /// Metoda zajistí překreslení celého tohoto controlu.
+        /// Pokud ale v této době probíhá nějaká interaktivní akce (typicky myšovitá), pak se nevyvolá tento Refresh(), protože by docházelo k blikální.
+        /// Na konci interaktivní operace se provádí překreslení, a to tedy zajistí překreslení objektu, které je požadováno zde.
+        /// </summary>
+        public override void Refresh()
+        {
+            if (!this.InteractiveProcessing)
+                base.Refresh();
+        }
         #region class DrawRequest + DrawRequestItem
         /// <summary>
         /// Class for analyze items to repaint/draw
@@ -1640,7 +1690,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 this.DrawToolTip = (toolTipItem != null && toolTipItem.NeedDraw);
                 this.DrawProgress = (progressItem != null && progressItem.IsVisible);
             }
-            
+
             /// <summary>
             /// Prvky, které jsme již zařadili
             /// </summary>
@@ -1778,7 +1828,7 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 bool interactive = this.InteractiveMode;
                 bool drawAllItems = this.DrawAllItems;
-                GInteractiveDrawLayer itemLayers = 
+                GInteractiveDrawLayer itemLayers =
                     ((interactive & !drawAllItems) ? item.RepaintToLayers :
                     ((interactive & drawAllItems) ? (item.StandardDrawToLayer | item.RepaintToLayers) :
                      item.StandardDrawToLayer));
@@ -2336,7 +2386,7 @@ namespace Asol.Tools.WorkScheduler.Components
         private void _BackThreadRun()
         {
             bool needDraw = false;
-            
+
             if (this._ToolTipNeedAnimation)
             {   // ToolTip needs animation: call its AnimateStep() method, this method returns true when ToolTip need new Draw:
                 bool needDrawToolTip = this._ToolTip.AnimateTick();
@@ -2463,6 +2513,26 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Event after change of interactive state
         /// </summary>
         public event GInteractiveChangeStateHandler InteractiveStateChanged;
+        #endregion
+        #region Příznak aktuálního zpracování interaktivního procesu
+        /// <summary>
+        /// Obsahuje false v běžném (mrtvém) stavu, obsahuje true pokud právě probíhá obsluha jakékoli interaktivní události
+        /// </summary>
+        public bool InteractiveProcessing { get; protected set; }
+        protected class InteractiveProcessingScope : IDisposable
+        {
+            public InteractiveProcessingScope(GInteractiveControl control)
+            {
+                this._Control = control;
+                this._Control.InteractiveProcessing = true;
+            }
+            private GInteractiveControl _Control;
+            void IDisposable.Dispose()
+            {
+                this._Control.InteractiveProcessing = false;
+                this._Control = null;
+            }
+        }
         #endregion
         #region Implementace IInteractiveParent : on totiž GInteractiveControl je umístěn jako Parent ve svých IInteractiveItem
         UInt32 IInteractiveParent.Id { get { return 0; } }

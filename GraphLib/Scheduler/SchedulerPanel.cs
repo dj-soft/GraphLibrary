@@ -29,12 +29,18 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         private void _InitComponents()
         {
+            this.Bounds = new Rectangle(0, 0, 800, 600);
+            Size size = this.ClientSize;
+            int x1 = 300;
+            int x2 = size.Width - 300;
+            int y2 = size.Height - 200;
+
             this._TaskContainer = new GTabContainer(this) { TabHeaderPosition = RectangleSide.Left, TabHeaderMode = ShowTabHeaderMode.CollapseItem };
-            this._TaskSplitter = new GSplitter() { SplitterVisibleWidth = SplitterSize, SplitterActiveOverlap = 2, Orientation = Orientation.Vertical, Value = 300, BoundsNonActive = new Int32NRange(0, 200) };
+            this._TaskSplitter = new GSplitter() { SplitterVisibleWidth = SplitterSize, SplitterActiveOverlap = 2, Orientation = Orientation.Vertical, Value = x1, BoundsNonActive = new Int32NRange(0, 200) };
             this._SchedulerGrid = new GGrid(this);
-            this._SourceSplitter = new GSplitter() { SplitterVisibleWidth = SplitterSize, SplitterActiveOverlap = 2, Orientation = Orientation.Vertical, Value = 600, BoundsNonActive = new Int32NRange(0, 200) };
+            this._SourceSplitter = new GSplitter() { SplitterVisibleWidth = SplitterSize, SplitterActiveOverlap = 2, Orientation = Orientation.Vertical, Value = x2, BoundsNonActive = new Int32NRange(0, 200) };
             this._SourceContainer = new GTabContainer(this) { TabHeaderPosition = RectangleSide.Right, TabHeaderMode = ShowTabHeaderMode.CollapseItem };
-            this._InfoSplitter = new GSplitter() { SplitterVisibleWidth = SplitterSize, SplitterActiveOverlap = 2, Orientation = Orientation.Horizontal, Value = 300, BoundsNonActive = new Int32NRange(0, 600) };
+            this._InfoSplitter = new GSplitter() { SplitterVisibleWidth = SplitterSize, SplitterActiveOverlap = 2, Orientation = Orientation.Horizontal, Value = y2, BoundsNonActive = new Int32NRange(0, 600) };
             this._InfoContainer = new GTabContainer(this) { TabHeaderPosition = RectangleSide.Bottom, TabHeaderMode = ShowTabHeaderMode.CollapseItem };
 
             this.AddItem(this._TaskContainer);
@@ -44,6 +50,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.AddItem(this._SourceContainer);
             this.AddItem(this._InfoSplitter);
             this.AddItem(this._InfoContainer);
+
+            this.CalculateLayout();
 
             this._TaskSplitter.ValueChanging += LayoutChanging;
             this._TaskSplitter.ValueChanged += LayoutChanging;
@@ -76,10 +84,21 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private void CalculateLayout()
         {
             if (this.IsSuppressedEvent) return;
+            if (this._InfoContainer == null) return;       // Před dokončením inicializace
 
             using (this.SuppressEvents())
             {
                 Size size = this.ClientSize;
+                Size? lastSize = this._LastSize;
+
+                // Pokud si pamatujeme předešlou velikost (na kterou byly spočítány pozice při posledním běhu této metody), pak zjistíme zda nedošlo ke změně:
+                bool isChangeSizeX = false;
+                bool isChangeSizeY = false;
+                if (lastSize.HasValue && size != lastSize.Value)
+                {   // Změna velikosti: určíme, zda X a/nebo Y:
+                    isChangeSizeX = (size.Width != lastSize.Value.Width);
+                    isChangeSizeY = (size.Height != lastSize.Value.Height);
+                }
 
                 int sp = SplitterSize / 2;                 // Prostor "před splitterem" = odsazení souřadnice Prev.End před souřadnicí Splitter.Value
                 int sn = SplitterSize - sp;                // Prostor "za splitterem" = odsazení souřadnice Next.Begin za souřadnicí Splitter.Value
@@ -95,7 +114,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 this._IsSchedulerVisible = true;
 
                 this._IsSourceVisible = (this._IsSourceEnabled && this._SourceContainer.TabCount > 0 && width >= MinControlWidthForSideGrids);
-                int x2 = CalculateLayoutOne(this._IsSourceVisible, x3, this._SourceSplitter.Value, x3 - maxw, x3 - MinGridWidth);
+                int x2old = this._SourceSplitter.Value;
+                if (this._IsSourceVisible && isChangeSizeX)
+                {   // Proběhla změna šířky celého okna => o tuto změnu posuneme i pozici splitteru Source (aby držel vpravo):
+                    x2old = x2old + (size.Width - lastSize.Value.Width);
+                    this._SourceSplitter.ValueSilent = x2old;
+                    x2old = this._SourceSplitter.Value;    // Hodnota _SourceSplitter.Value může akceptovat svoje Min-Max omezení a může se lišit od očekávání...
+                }
+                int x2 = CalculateLayoutOne(this._IsSourceVisible, x3, x2old, x3 - maxw, x3 - MinGridWidth);
 
                 int height = size.Height;
                 int maxh = height / 2;
@@ -103,7 +129,15 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 int y3 = size.Height;
 
                 this._IsInfoVisible = (this._IsInfoEnabled && this._InfoContainer.TabCount > 0 && height >= MinControlHeightForSideGrids);
-                int y2 = CalculateLayoutOne(this._IsInfoVisible, y3, this._InfoSplitter.Value, y3 - maxh, y3 - MinGridHeight);
+                int y2old = this._InfoSplitter.Value;
+                if (this._IsSourceVisible && isChangeSizeY)
+                {   // Proběhla změna výšky celého okna => o tuto změnu posuneme i pozici splitteru Info (aby držel dole):
+                    y2old = y2old + (size.Height - lastSize.Value.Height);
+                    this._InfoSplitter.ValueSilent = y2old;
+                    y2old = this._InfoSplitter.Value;      // Hodnota _InfoSplitter.Value může akceptovat svoje Min-Max omezení a může se lišit od očekávání...
+                }
+                int y2 = CalculateLayoutOne(this._IsInfoVisible, y3, y2old, y3 - maxh, y3 - MinGridHeight);
+                int b = y2 - (this._IsInfoVisible ? sp : 0);
 
                 bool isChangeChildItems = (this._TaskContainer.IsVisible != this._IsTaskVisible) ||
                                           (this._TaskSplitter.IsVisible != this._IsTaskVisible) ||
@@ -124,7 +158,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 if (this._IsTaskVisible)
                 {
                     int r = x1 - sp;
-                    int b = y2 - (this._IsInfoVisible ? sp : 0);
                     this._TaskContainer.Bounds = new Rectangle(x0, y0, r - x0, b - y0);
                     this._TaskSplitter.LoadFrom(this._TaskContainer.Bounds, RectangleSide.Right, true);
                 }
@@ -133,13 +166,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                     int l = x1 + (this._IsTaskVisible ? sn : 0);
                     int r = x2 - (this._IsSourceVisible ? sp : 0);
                     int t = y0;
-                    int b = y2 - (this._IsInfoVisible ? sp : 0);
                     this._SchedulerGrid.Bounds = new Rectangle(l, t, r - l, b - t);
                 }
                 if (this._IsSourceVisible)
                 {
                     int l = x2 + sn;
-                    int b = y2 - (this._IsInfoVisible ? sp : 0);
                     this._SourceContainer.Bounds = new Rectangle(l, y0, x3 - l, b - y0);
                     this._SourceSplitter.LoadFrom(this._SourceContainer.Bounds, RectangleSide.Left, true);
                 }
@@ -152,6 +183,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
                 if (isChangeChildItems)
                     this._IsChildValid = false;
+
+                this._LastSize = size;
             }
         }
         private static int CalculateLayoutOne(bool isVisible, int valueInvisible, int valueVisible, int valueMin, int valueMax)
@@ -181,6 +214,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private GTabContainer _InfoContainer;
         private bool _IsInfoVisible;
         private bool _IsInfoEnabled;
+        private Size? _LastSize;
+
         private MainControl _MainControl;
         private DataDeclaration _PanelDataDeclaration;
         #endregion

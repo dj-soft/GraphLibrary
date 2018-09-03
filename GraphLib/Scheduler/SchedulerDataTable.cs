@@ -225,6 +225,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.TableRow.GraphParameters = new TimeGraphProperties();
             this.TableRow.GraphParameters.TimeAxisMode = this.TimeAxisMode;
             this.TableRow.GraphParameters.TimeAxisVisibleTickLevel = AxisTickType.BigTick;
+            this.TableRow.GraphParameters.Opacity = 96;
 
             this.AddTimeGraphToRows();
         }
@@ -607,7 +608,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             return this.IMainData.CreateContextMenu(null, args);
         }
         /// <summary>
-        /// Uživatel chce vidět kontextové menu na daném prvku
+        /// Uživatel chce vidět kontextové menu na daném prvku grafu
         /// </summary>
         /// <param name="args"></param>
         /// <returns></returns>
@@ -653,8 +654,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 case DragActionType.DragThisMove:
                     break;
                 case DragActionType.DragThisDrop:
+
                     break;
                 case DragActionType.DragThisEnd:
+                    args.ParentGraph.Refresh();
                     break;
             }
         }

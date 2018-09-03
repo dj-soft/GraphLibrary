@@ -281,11 +281,13 @@ namespace Asol.Tools.WorkScheduler.Components
                 this.Draw();
             this._RenderValidLayerTo(e.Graphics);
         }
+        /// <summary>
+        /// Metoda zajistí překreslení obsahu controlu: zavolá <see cref="Draw"/> a poté <see cref="Control.Invalidate()"/>.
+        /// </summary>
         public override void Refresh()
         {
             this.Draw();
             this.Invalidate();
-            // base.Refresh();
         }
         #endregion
         #region Public members

@@ -136,7 +136,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public ZOrder ZOrder { get { return this.__ZOrder; } set { this.__ZOrder = value; } } private ZOrder __ZOrder = ZOrder.Standard;
         /// <summary>
-        /// Zajistí vykreslení this prvku včetně překreslení Host controlu.
+        /// Zajistí vykreslení this prvku <see cref="Repaint()"/>, včetně překreslení Host controlu <see cref="GInteractiveControl"/>.
         /// </summary>
         public virtual void Refresh()
         {

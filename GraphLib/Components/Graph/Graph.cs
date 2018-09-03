@@ -930,7 +930,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             }
         }
         /// <summary>
-        /// Metoda zajistí zpracování události RightCLick na grafickém prvku (data) na dané pozici (position).
+        /// Metoda zajistí zpracování události RightClick na grafickém prvku (data) na dané pozici (position).
         /// </summary>
         /// <param name="e"></param>
         /// <param name="data"></param>
@@ -941,7 +941,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
 
             ItemActionArgs args = new ItemActionArgs(e, this, group, data, position);
             this.DataSource.ItemRightClick(args);
-            if (args.ContextMenu != null)
+            if (args.ContextMenu != null && args.ContextMenu.Items.Count > 0)
                 this.GraphItemShowContextMenu(e, args.ContextMenu);
         }
         /// <summary>
@@ -1134,8 +1134,25 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Pokud se překresluje graf, má se překreslit i jeho Parent
         /// </summary>
         protected override RepaintParentMode RepaintParent { get { return RepaintParentMode.Always; } }
+        /// Průhlednost prvků grafu při běžném vykreslování.
+        /// Má hodnotu null (neaplikuje se), nebo 0 ÷ 255. 
+        /// Hodnota 255 má stejný význam jako null = plně viditelný graf. 
+        /// Hodnota 0 = zcela neviditelné prvky (ale fyzicky jsou přítomné).
+        /// Výchozí hodnota = null.
+        public int? GraphOpacity
+        {
+            get { return this.GraphParameters.Opacity; }
+        }
         #endregion
         #region Invalidace je řešená jedním vstupním bodem
+        /// <summary>
+        /// Zajistí vykreslení this prvku <see cref="Repaint()"/>, včetně překreslení Host controlu <see cref="GInteractiveControl"/>.
+        /// </summary>
+        public override void Refresh()
+        {
+            this.Invalidate(InvalidateItems.AllGroups);
+            base.Refresh();
+        }
         /// <summary>
         /// Invaliduje dané prvky grafu, a automaticky přidá i prvky na nich závislé.
         /// Invalidace typu <see cref="InvalidateItems.Repaint"/> se nepřidává automaticky, tu musí volající specifikovat explicitně.
@@ -1263,6 +1280,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             this._OneLineHeight = Skin.Graph.LineHeight;
             this._LogarithmicRatio = 0.60f;
             this._LogarithmicGraphDrawOuterShadow = 0.20f;
+            this._Opacity = null;
         }
         /// <summary>
         /// Režim zobrazování času na ose X
@@ -1379,6 +1397,31 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             set { float v = value; this._LogarithmicGraphDrawOuterShadow = (v < 0.0f ? 0.0f : (v > 1.0f ? 1.0f : v)); }
         }
         private float _LogarithmicGraphDrawOuterShadow;
+        /// <summary>
+        /// Průhlednost prvků grafu při běžném vykreslování.
+        /// Má hodnotu null (neaplikuje se), nebo 0 ÷ 255. 
+        /// Hodnota 255 má stejný význam jako null = plně viditelný graf. 
+        /// Hodnota 0 = zcela neviditelné prvky (ale fyzicky jsou přítomné).
+        /// Výchozí hodnota = null.
+        /// </summary>
+        public int? Opacity
+        {
+            get { return this._Opacity; }
+            set
+            {
+                if (value.HasValue)
+                {
+                    int v = value.Value;
+                    this._Opacity = (v < 0 ? 0 : (v > 255 ? 255 : v));
+                }
+                else
+                {
+                    this._Opacity = null;
+                }
+            }
+        }
+        private int? _Opacity;
+
     }
     #endregion
     #region Interface ITimeInteractiveGraph, ITimeGraph, ITimeGraphItem; enum TimeGraphAxisXMode

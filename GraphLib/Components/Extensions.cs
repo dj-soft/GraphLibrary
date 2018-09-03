@@ -255,10 +255,44 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         #endregion
         #region Color: Opacity
+        /// <summary>
+        /// Do dané barvy (this) vloží danou hodnotu Alpha (parametr opacity), výsledek vrátí.
+        /// </summary>
+        /// <param name="root"></param>
+        /// <param name="opacity"></param>
+        /// <returns></returns>
         public static Color SetOpacity(this Color root, Int32? opacity)
         {
             if (opacity.HasValue) return Color.FromArgb(opacity.Value, root);
             return root;
+        }
+        /// <summary>
+        /// Na danou barvu aplikuje všechny dodané hodnoty průhlednosti, při akceptování i původní průhlednosti.
+        /// Aplikování se provádní vzájemným násobením hodnoty (opacity/255), což je poměr (ratio) průhlednosti.
+        /// </summary>
+        /// <param name="root"></param>
+        /// <param name="opacities"></param>
+        /// <returns></returns>
+        public static Color ApplyOpacity(this Color root, params Int32?[] opacities)
+        {
+            float alpha = _GetColorRatio(root.A);
+            foreach (Int32? opacity in opacities)
+            {
+                if (opacity.HasValue)
+                    alpha = alpha * _GetColorRatio(opacity.Value);
+            }
+            return SetOpacity(root, (int)(Math.Round(255f * alpha, 0)));
+        }
+        /// <summary>
+        /// Vrací ratio { 0.00 až 1.00 } z hodnoty { 0 až 255 }.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        private static float _GetColorRatio(int value)
+        {
+            if (value < 0) return 0f;
+            if (value >= 255) return 1f;
+            return (float)value / 255f;
         }
         /// <summary>
         /// Metoda vrátí novou instanci barvy this, kde její Alpha je nastavena na daný poměr (transparent) původní hodnoty.
@@ -266,11 +300,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// dojde k vytvoření a vrácení barvy s hodnotou Alpha = 75% = 192, od barvy BlueViolet (která je #FF8A2BE2), tedy výsledek bude #C08A2BE2.
         /// </summary>
         /// <param name="root"></param>
-        /// <param name="transparent"></param>
+        /// <param name="alpha"></param>
         /// <returns></returns>
-        public static Color CreateTransparent(this Color root, float transparent)
+        public static Color CreateTransparent(this Color root, float alpha)
         {
-            int a = (int)(((float)root.A) * transparent);
+            int a = (int)(((float)root.A) * alpha);
             a = (a < 0 ? 0 : (a > 255 ? 255 : 0));
             return Color.FromArgb(a, root.R, root.G, root.B);
         }

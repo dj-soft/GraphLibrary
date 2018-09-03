@@ -793,7 +793,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         protected ToolStripDropDownMenu CreateContextMenu(DataGraphItem graphItem, ItemActionArgs args)
         {
             IEnumerable<FunctionItem> menuItems = this._GetContextMenuItems(graphItem, args);
-            System.Windows.Forms.ToolStripDropDownMenu toolStripMenu = FunctionItem.CreateDropDownMenuFrom(menuItems);
+            ToolStripDropDownMenu toolStripMenu = FunctionItem.CreateDropDownMenuFrom(menuItems);
             return toolStripMenu;
         }
         /// <summary>
@@ -981,7 +981,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (this._HasHost)
                 this._AppHost.RunOpenRecordForm(recordGId);
             else
-                System.Windows.Forms.MessageBox.Show("Rád bych otevřel záznam " + recordGId.ToString() + ",\r\n ale není zadán datový hostitel.");
+                System.Windows.Forms.MessageBox.Show("Rád bych otevřel záznam " + recordGId.ToString() + ",\r\nale není zadán datový hostitel.");
         }
         /// <summary>
         /// Tato metoda zajistí otevření formuláře daného záznamu.
