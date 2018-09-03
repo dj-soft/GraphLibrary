@@ -86,9 +86,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (this.IsSuppressedEvent) return;
             if (this._InfoContainer == null) return;       // Před dokončením inicializace
 
+            Size size = this.ClientSize;
+            if (size.Width < 100 || size.Height < 100) return;
+
             using (this.SuppressEvents())
             {
-                Size size = this.ClientSize;
                 Size? lastSize = this._LastSize;
 
                 // Pokud si pamatujeme předešlou velikost (na kterou byly spočítány pozice při posledním běhu této metody), pak zjistíme zda nedošlo ke změně:
