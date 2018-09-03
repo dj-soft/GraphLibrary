@@ -653,6 +653,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Pokud není, pak se stejná událost pošle i do Parent objektů.
         /// </summary>
         public bool ActionIsSolved { get; set; }
+        /// <summary>
+        /// Aplikační kód sem může vložit kontextové menu k aktuální akci.
+        /// Může být k libovolné akci, typické je to k akci <see cref="GInteractiveChangeState.GetContextMenu"/>.
+        /// </summary>
+        public ToolStripDropDownMenu ContextMenu { get; set; }
         #endregion
     }
     /// <summary>
@@ -1120,11 +1125,38 @@ namespace Asol.Tools.WorkScheduler.Components
         MouseLeave,
         MouseEnterSubItem,
         MouseLeaveSubItem,
+        /// <summary>
+        /// Stisknutí levého (hlavního) tlačítka myši.
+        /// Po této akci může následovat akce Drag and Drop anebo Select Frame. 
+        /// Anebo prosté zvednutí myši <see cref="LeftUp"/>,
+        /// následované <see cref="LeftDoubleClick"/>, nebo <see cref="LeftLongClick"/>, nebo <see cref="LeftClick"/>, podle stylu kliknutí.
+        /// </summary>
         LeftDown,
+        /// <summary>
+        /// Zvednutí levého (hlavního) tlačítka myši.
+        /// Tato událost je volána jen tehdy, když neprobíhal proces Drag and Drop a ani Select Frame.
+        /// Po této události okamžitě bude volána jedna z akcí: 
+        /// <see cref="LeftDoubleClick"/>, nebo <see cref="LeftLongClick"/>, nebo <see cref="LeftClick"/>, podle stylu kliknutí.
+        /// </summary>
         LeftUp,
-        LeftClick,
-        LeftLongClick,
+        /// <summary>
+        /// Dvojclick levého (hlavního) tlačítka myši.
+        /// Před touto událostí je vyvolána událost <see cref="LeftUp"/>.
+        /// Jde o druhý click v krátké době po sobě.
+        /// </summary>
         LeftDoubleClick,
+        /// <summary>
+        /// Dlouhý click levého (hlavního) tlačítka myši.
+        /// Před touto událostí je vyvolána událost <see cref="LeftUp"/>.
+        /// Dlouhý click levého tlačítka může sloužit k vyvolání kontextového menu stejně jako standardní akce <see cref="RightClick"/>,
+        /// proto ihned po akci <see cref="LeftLongClick"/> je volána další akce: <see cref="GetContextMenu"/>.
+        /// </summary>
+        LeftLongClick,
+        /// <summary>
+        /// Click levým (hlavním) tlačítkem myši.
+        /// Před touto událostí je vyvolána událost <see cref="LeftUp"/>.
+        /// </summary>
+        LeftClick,
 
         /// <summary>
         /// Událost je volána v okamžiku, kdy je jisté, že začíná proces DragMove na levé myši.
@@ -1163,11 +1195,38 @@ namespace Asol.Tools.WorkScheduler.Components
         LeftDragFrameSelect,
         LeftDragFrameDone,
 
+        /// <summary>
+        /// Stisknutí pravého (vedlejšího) tlačítka myši.
+        /// Po této akci může následovat akce Drag and Drop anebo Select Frame. 
+        /// Anebo prosté zvednutí myši <see cref="RightUp"/>,
+        /// následované <see cref="RightDoubleClick"/>, nebo <see cref="RightLongClick"/>, nebo <see cref="RightClick"/>, podle stylu kliknutí.
+        /// </summary>
         RightDown,
+        /// <summary>
+        /// Zvednutí pravého (vedlejšího) tlačítka myši.
+        /// Tato událost je volána jen tehdy, když neprobíhal proces Drag and Drop a ani Select Frame.
+        /// Po této události okamžitě bude volána jedna z akcí: 
+        /// <see cref="RightDoubleClick"/>, nebo <see cref="RightLongClick"/>, nebo <see cref="RightClick"/>, podle stylu kliknutí.
+        /// </summary>
         RightUp,
-        RightClick,
-        RightLongClick,
+        /// <summary>
+        /// Dvojclick pravého (vedlejšího) tlačítka myši.
+        /// Před touto událostí je vyvolána událost <see cref="RightUp"/>.
+        /// Jde o druhý click v krátké době po sobě.
+        /// </summary>
         RightDoubleClick,
+        /// <summary>
+        /// Dlouhý click pravého (vedlejšího) tlačítka myši.
+        /// Před touto událostí je vyvolána událost <see cref="RightUp"/>.
+        /// Dlouhý click levého tlačítka může sloužit k vyvolání kontextového menu stejně jako standardní akce <see cref="RightClick"/>,
+        /// proto ihned po akci <see cref="RightLongClick"/> je volána další akce: <see cref="GetContextMenu"/>.
+        /// </summary>
+        RightLongClick,
+        /// <summary>
+        /// Click pravým (vedlejším) tlačítkem myši.
+        /// Před touto událostí je vyvolána událost <see cref="RightUp"/>.
+        /// </summary>
+        RightClick,
 
         /// <summary>
         /// Událost je volána v okamžiku, kdy je jisté, že začíná akce DragMove na pravé myši.
@@ -1205,8 +1264,14 @@ namespace Asol.Tools.WorkScheduler.Components
         KeyboardKeyUp,
         KeyboardKeyPress,
         KeyboardFocusLeave,
+
         WheelUp,
-        WheelDown
+        WheelDown,
+
+        /// <summary>
+        /// Získání kontextového menu
+        /// </summary>
+        GetContextMenu
     }
     /// <summary>
     /// Layers to draw
