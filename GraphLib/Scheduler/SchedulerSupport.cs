@@ -7,7 +7,7 @@ using System.Drawing;
 
 namespace Asol.Tools.WorkScheduler.Scheduler
 {
-    #region class WorkSchedulerSupport : Třída obsahující konstanty a další podporu WorkScheduleru
+    #region class WorkSchedulerSupport : Třída obsahující konstanty a další podporu WorkScheduleru - identický kód je v Helios Green i v GraphLibrary !!!
     /// <summary>
     /// WorkSchedulerSupport : Třída obsahující konstanty a další podporu WorkScheduleru
     /// </summary>
