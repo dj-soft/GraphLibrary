@@ -32,9 +32,19 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         public const string CMD_START_PLUGIN = "StartPlugin";
         /// <summary>
-        /// Key v Request: "PluginId"
+        /// Key v Request: "PluginId", obsahuje aktuálně přidělené ID číslo pluginu.
+        /// Toto ID se odesílá do Helios Green do servisní funkce, aby tato funkce dokázala podle ID najít odpovídající serverovou sadu dat, odpovídající klientu.
         /// </summary>
         public const string KEY_REQUEST_PLUGIN_ID = "PluginId";
+        /// <summary>
+        /// Key v Request: "ServiceCwl", obsahuje číslo nebo identifikaci servisní funkce.
+        /// Hodnota v tomto klíči tedy je stringová, a může být dvojí formát:
+        /// 1) pouze číslo: "7894" = číslo funkce; anebo
+        /// 2) číslo, dvojtečku a text: "1180:SchedulerService" = číslo třídy a název akce, která identifikuje funkci.
+        /// Varianta 1 je snazší z hlediska pluginu, ale Cowley typu Run musí buď znát číslo funkce, anebo jej musí získat z repozitory pro třídu a název.
+        /// Varianta 2 je optimálnější z hlediska Cowleyho typu Run, který tuto identifikaci sestavuje, protože opíše číslo třídy a název hlavní metody cowleyho.
+        /// </summary>
+        public const string KEY_REQUEST_SERVICE_CWL = "ServiceCwl";
         /// <summary>
         /// Key v Request: "Data"
         /// </summary>
