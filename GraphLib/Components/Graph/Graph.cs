@@ -1288,7 +1288,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         public TimeGraphTimeAxisMode TimeAxisMode { get { return this._TimeAxisMode; } set { this._TimeAxisMode = value; } }
         private TimeGraphTimeAxisMode _TimeAxisMode;
         /// <summary>
-        /// Režim chování při změně velikosti: zachovat měřítko a změnit hodnotu End, nebo zachovat hoídnotu End a změnit měřítko?
+        /// Režim chování při změně velikosti: zachovat měřítko a změnit hodnotu End, nebo zachovat hodnotu End a změnit měřítko?
         /// </summary>
         public AxisResizeContentMode? InitialResizeMode { get { return this._InitialResizeMode; } set { this._InitialResizeMode = value; } }
         private AxisResizeContentMode? _InitialResizeMode;
@@ -1354,7 +1354,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         private int? _OneLineHeight;
         /// <summary>
         /// Horní okraj = prostor nad nejvyšším prvkem grafu, který by měl být zobrazen jako prázdný, tak aby bylo vidět že nic dalšího už není.
-        /// V tomto prostoru (těsně pod souřadnicí Top) se provádí Drag & Drop prvků.
+        /// V tomto prostoru (těsně pod souřadnicí Top) se provádí Drag and Drop prvků.
         /// Hodnota je zadána v logických jednotkách, tedy v počtu standardních linek.
         /// Výchozí hodnota = 1.0 linka, nelze zadat zápornou hodnotu.
         /// </summary>
@@ -1550,120 +1550,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="drawMode">Režim kreslení (má význam pro akce Drag & Drop)</param>
         void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, DrawItemMode drawMode);
     }
-    /// <summary>
-    /// Režim přepočtu DateTime na osu X.
-    /// </summary>
-    public enum TimeGraphTimeAxisMode
-    {
-        // VAROVÁNÍ : Změna názvu jednotlivých enumů je zásadní změnou, která se musí promítnout i do konstant ve WorkSchedulerSupport a to jak zde, tak v Greenu.
-        //            Hodnoty se z Greenu předávají v textové formě, a tady v GUI se z textu získávají parsováním (Enum.TryParse()) !
 
-        /// <summary>
-        /// Výchozí = podle vlastníka (sloupce, nebo tabulky).
-        /// </summary>
-        Default = 0,
-        /// <summary>
-        /// Standardní režim, kdy graf má osu X rovnou 1:1 k prvku TimeAxis.
-        /// Využívá se v situaci, kdy prvky grafu jsou kresleny přímo pod TimeAxis.
-        /// </summary>
-        Standard,
-        /// <summary>
-        /// Proporcionální režim, kdy graf vykresluje ve své ploše stejný časový úsek jako TimeAxis,
-        /// ale graf má jinou šířku v pixelech než časová osa (a tedy může mít i jiný počátek = souřadnici Bounds.X.
-        /// Pak se pro přepočet hodnoty DateTime na hodnotu pixelu na ose X nepoužívá přímo TimeConverter, ale prostý přepočet vzdáleností.
-        /// </summary>
-        ProportionalScale,
-        /// <summary>
-        /// Logaritmický režim, kdy graf dovolí vykreslit všechny prvky grafu bez ohledu na to, že jejich pozice X (datum) je mimo rozsah TimeAxis.
-        /// Vykreslování probíhá tak, že střední část grafu (typicky 60%) zobrazuje prvky proporcionálně (tj. lineárně) k časovému oknu,
-        /// a okraje (vlevo a vpravo) zobrazují prvky ležící mimo časové okno, jejichž souřadnice X je určena logaritmicky.
-        /// Na souřadnici X = 0 (úplně vlevo v grafu) se zobrazují prvky, jejichž Begin = mínus nekonečno,
-        /// a na X = Right (úplně vpravo v grafu) se zobrazují prvky, jejichž End = plus nekonečno.
-        /// </summary>
-        LogarithmicScale
-    }
-    /// <summary>
-    /// Režimy chování položky grafu. Zahrnují možnosti editace a možnosti zobrazování textu, tooltipu a vztahů.
-    /// Editovatelnost položky grafu.
-    /// </summary>
-    [Flags]
-    public enum GraphItemBehaviorMode : int
-    {
-        // VAROVÁNÍ : Změna názvu jednotlivých enumů je zásadní změnou, která se musí promítnout i do konstant ve WorkSchedulerSupport a to jak zde, tak v Greenu.
-        //            Hodnoty se z Greenu předávají v textové formě, a tady v GUI se z textu získávají parsováním (Enum.TryParse()) !
-
-        /// <summary>
-        /// Bez zadání
-        /// </summary>
-        None = 0,
-        /// <summary>
-        /// Lze změnit délku času (roztáhnout šířku pomocí přesunutí začátku nebo konce)
-        /// </summary>
-        ResizeTime = 0x01,
-        /// <summary>
-        /// Lze změnit výšku = obsazený prostor v grafu (roztáhnout výšku)
-        /// </summary>
-        ResizeHeight = 0x02,
-        /// <summary>
-        /// Lze přesunout položku grafu na ose X = čas doleva / doprava
-        /// </summary>
-        MoveToAnotherTime = 0x10,
-        /// <summary>
-        /// Lze přesunout položku grafu na ose Y = na jiný řádek tabulky
-        /// </summary>
-        MoveToAnotherRow = 0x20,
-        /// <summary>
-        /// Lze přesunout položku grafu do jiné tabulky
-        /// </summary>
-        MoveToAnotherTable = 0x40,
-        /// <summary>
-        /// Nezobrazovat text v prvku nikdy.
-        /// Toto je explicitní hodnota; ale shodné chování bude použito i když nebude specifikována žádná jiná hodnota ShowCaption*.
-        /// </summary>
-        ShowCaptionNone = 0x1000,
-        /// <summary>
-        /// Zobrazit text v prvku při stavu MouseOver.
-        /// Pokud nebude specifikována hodnota <see cref="ShowCaptionInMouseOver"/> ani <see cref="ShowCaptionInSelected"/> ani <see cref="ShowCaptionAllways"/>, nebude se zobrazovat text v prvku vůbec.
-        /// </summary>
-        ShowCaptionInMouseOver = 0x2000,
-        /// <summary>
-        /// Zobrazit text v prvku při stavu Selected.
-        /// Pokud nebude specifikována hodnota <see cref="ShowCaptionInMouseOver"/> ani <see cref="ShowCaptionInSelected"/> ani <see cref="ShowCaptionAllways"/>, nebude se zobrazovat text v prvku vůbec.
-        /// </summary>
-        ShowCaptionInSelected = 0x4000,
-        /// <summary>
-        /// Zobrazit text v prvku vždy.
-        /// Pokud nebude specifikována hodnota <see cref="ShowCaptionInMouseOver"/> ani <see cref="ShowCaptionInSelected"/> ani <see cref="ShowCaptionAllways"/>, nebude se zobrazovat text v prvku vůbec.
-        /// </summary>
-        ShowCaptionAllways = 0x8000,
-        /// <summary>
-        /// Nezobrazovat ToolTip nikdy.
-        /// Toto je explicitní hodnota; ale shodné chování bude použito i když nebude specifikována žádná jiná hodnota ShowToolTip*.
-        /// </summary>
-        ShowToolTipNone = 0x10000,
-        /// <summary>
-        /// Zobrazit ToolTip až nějaký čas po najetí myší, a po přiměřeném čase (vzhledem k délce zobrazeného textu) zhasnout.
-        /// Pokud nebude specifikována hodnota <see cref="ShowToolTipImmediatelly"/> ani <see cref="ShowToolTipFadeIn"/>, nebude se zobrazovat ToolTip vůbec.
-        /// </summary>
-        ShowToolTipFadeIn = 0x20000,
-        /// <summary>
-        /// Zobrazit ToolTip okamžitě po najetí myší na prvek (trochu brutus) a nechat svítit "skoro pořád".
-        /// Pokud nebude specifikována hodnota <see cref="ShowToolTipImmediatelly"/> ani <see cref="ShowToolTipFadeIn"/>, nebude se zobrazovat ToolTip vůbec.
-        /// </summary>
-        ShowToolTipImmediatelly = 0x40000,
-        /// <summary>
-        /// Default pro pracovní čas = <see cref="ResizeTime"/> | <see cref="MoveToAnotherTime"/> | <see cref="MoveToAnotherRow"/>
-        /// </summary>
-        DefaultWorkTime = ResizeTime | MoveToAnotherTime | MoveToAnotherRow,
-        /// <summary>
-        /// Default pro text = <see cref="ShowCaptionInMouseOver"/> | <see cref="ShowCaptionInSelected"/> | <see cref="ShowToolTipFadeIn"/>
-        /// </summary>
-        DefaultText = ShowCaptionInMouseOver | ShowCaptionInSelected | ShowToolTipFadeIn,
-        /// <summary>
-        /// Souhrn příznaků, povolujících Drag and Drop prvku = <see cref="MoveToAnotherTime"/> | <see cref="MoveToAnotherRow"/> | <see cref="MoveToAnotherTable"/>
-        /// </summary>
-        AnyMove = MoveToAnotherTime | MoveToAnotherRow | MoveToAnotherTable
-    }
     /// <summary>
     /// Tvar položky grafu
     /// </summary>

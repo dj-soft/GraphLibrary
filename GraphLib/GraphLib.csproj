@@ -89,6 +89,7 @@
     <Compile Include="Components\TabHeader.cs" />
     <Compile Include="Components\ToolBar.cs" />
     <Compile Include="Components\ToolTip.cs" />
+    <Compile Include="Components\_Shared.cs" />
     <Compile Include="Data\GId.cs" />
     <Compile Include="Data\Index.cs" />
     <Compile Include="Data\Interface.cs" />

@@ -3149,56 +3149,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         DragZoom
     }
-    /// <summary>
-    /// Režim, jak osa reaguje na změnu velikosti.
-    /// Pokud osa obsahuje data pro rozsah { 100 ÷ 150 } a má velikost 50 pixelů, 
-    /// pak po změně velikosti osy na 100 pixelů může dojít k jedné ze dvou akcí: změna rozsahu, nebo změna měřítka.
-    /// a) změní se zobrazený rozsah, a zachová se měřítko (to je defaultní chování), pak 
-    /// </summary>
-    public enum AxisResizeContentMode
-    {
-        /// <summary>
-        /// Neurčeno, v případě nutnosti se použije ChangeValue
-        /// </summary>
-        None,
-        /// <summary>
-        /// Změna hodnoty End:
-        /// Pokud osa ve výchozím stavu zobrazuje data pro rozsah { 100 ÷ 150 } a má velikost 50 pixelů, 
-        /// pak po změně velikosti osy na 100 pixelů se zachová měřítko (1:1), a zvětší se rozsah zobrazených dat tak, 
-        /// že osa bude nově zobrazovat data pro rozsah { 100 ÷ 200 }.
-        /// </summary>
-        ChangeValueEnd,
-        /// <summary>
-        /// Změna měřítka:
-        /// Pokud osa ve výchozím stavu zobrazuje data pro rozsah { 100 ÷ 150 } a má velikost 50 pixelů, 
-        /// pak po změně velikosti osy na 100 pixelů se ponechá rozsah zobrazených hodnot (stále bude zobrazen rozsah dat { 100 ÷ 150 }),
-        /// ale upraví se měřítko tak, že osa bude zobrazovat více detailů (z měřítka 1:1 bude 2:1).
-        /// </summary>
-        ChangeScale
-    }
-    /// <summary>
-    /// Režim, jak může uživatel interaktivně (myší) měnit hodnotu na ose.
-    /// </summary>
-    [Flags]
-    public enum AxisInteractiveChangeMode
-    {
-        /// <summary>
-        /// Uživatel interaktivně (myší) NESMÍ měnit hodnotu na ose ani posunutím, ani změnou měřítka.
-        /// </summary>
-        None = 0,
-        /// <summary>
-        /// Uživatel interaktivně (myší) SMÍ měnit hodnotu na ose posunutím.
-        /// </summary>
-        Shift = 1,
-        /// <summary>
-        /// Uživatel interaktivně (myší) SMÍ měnit hodnotu na ose změnou měřítka.
-        /// </summary>
-        Zoom = 2,
-        /// <summary>
-        /// Uživatel interaktivně (myší) SMÍ měnit hodnotu na ose jak posunutím, tak i změnou měřítka.
-        /// </summary>
-        All = Shift | Zoom
-    }
     #endregion
     #region class ValueSynchronizer : třída, která dokáže zajistit synchronní hodnotu ve vícero navázaných objektech.
     /// <summary>
