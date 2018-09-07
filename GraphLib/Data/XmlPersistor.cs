@@ -12,6 +12,7 @@ using System.Collections;
 
 namespace Asol.Tools.WorkScheduler.Data
 {
+    // public rozhraní:
     #region class Persist : Třída, která zajišťuje persistenci dat do / z XML formátu
     /// <summary>
     /// Třída, která zajišťuje persistenci dat do / z XML formátu
@@ -215,709 +216,181 @@ namespace Asol.Tools.WorkScheduler.Data
     }
     #endregion
 
-    // type library:
-    #region class TypeLibrary : knihovna informací o datových typech a o postupech jejich konverze. Instancuje se 1x pro save/load, obsahuje položky XmlPersistTypeInfo pro každý nalezený Type.
+    // interfaces a atributy pro public použití:
+    #region interface IXmlPersistNotify : dává objektu možnost být informován o procesech XmlPersist (Save / Load) pomocí property XmlPersistState
     /// <summary>
-    /// TypeLibrary : knihovna informací o datových typech a o postupech jejich konverze.
-    /// Instancuje se 1x pro save/load, obsahuje položky TypeInfo pro každý nalezený Type.
-    /// Každý nalezený TypeInfo popisuje datový typ a způsob jeho persistence.
-    /// Pokud je typ složený z dalších property, pak TypeInfo obsahuje seznam PropInfo.
+    /// interface IXmlPersistNotify : dává objektu možnost být informován o procesech XmlPersist (Save / Load) pomocí obsluhy set accessoru property XmlPersistState.
+    /// Jakýkoli objekt, který chce být informován o tom, že je ukládán do XML / obnovován z XML, musí deklarovat interface IXmlPersistNotify.
+    /// Pak v procesu serializace (ukládání dat z objektu to XML) bude do property <see cref="IXmlPersistNotify.XmlPersistState"/> vložena hodnota <see cref="XmlPersistState.SaveBegin"/> a po dokončení ukládán ípak hodnota <see cref="XmlPersistState.SaveDone"/> a <see cref="XmlPersistState.None"/>.
+    /// Obdobně při načítání dat z XML do objektu bude do property <see cref="IXmlPersistNotify.XmlPersistState"/> vložena hodnota <see cref="XmlPersistState.LoadBegin"/> a po dokončení načítání pak hodnota <see cref="XmlPersistState.LoadDone"/> a <see cref="XmlPersistState.None"/>.
     /// </summary>
-    internal class TypeLibrary : IDisposable
+    public interface IXmlPersistNotify
     {
-        #region Konstrukce
-        internal TypeLibrary()
-        {
-            this.TypeInfos = new Dictionary<Type, TypeInfo>();
-            this._PrepareTypes();
-        }
-        private Dictionary<Type, TypeInfo> TypeInfos;
-        void IDisposable.Dispose()
-        {
-            this.TypeInfos.Clear();
-            this.TypeInfos = null;
-
-            this._DisposeTypes();
-        }
-        #endregion
-        #region Hledání / vytvoření informací o typu
         /// <summary>
-        /// Vrátí informaci o daném typu včetně informací sloužících k řízení jeho persistence.
+        /// Aktuální stav procesu XML persistence.
+        /// Umožňuje persistovanému objektu reagovat na ukládání nebo na načítání dat.
+        /// Do této property vkládá XmlPersistor hodnotu odpovídající aktuální situaci.
+        /// Datová instance může v set accessoru zareagovat a například připravit data pro Save, 
+        /// anebo dokončit proces Load (navázat si další data nebo provést přepočty a další reakce).
+        /// V procesu serializace (ukládání dat z objektu to XML) bude do property <see cref="IXmlPersistNotify.XmlPersistState"/> vložena hodnota <see cref="XmlPersistState.SaveBegin"/> a po dokončení ukládán ípak hodnota <see cref="XmlPersistState.SaveDone"/> a <see cref="XmlPersistState.None"/>.
+        /// Obdobně při načítání dat z XML do objektu bude do property <see cref="IXmlPersistNotify.XmlPersistState"/> vložena hodnota <see cref="XmlPersistState.LoadBegin"/> a po dokončení načítání pak hodnota <see cref="XmlPersistState.LoadDone"/> a <see cref="XmlPersistState.None"/>.
         /// </summary>
-        /// <param name="type"></param>
-        /// <returns></returns>
-        internal TypeInfo GetInfo(Type type)
-        {
-            TypeInfo info;
-            if (this.TypeInfos.TryGetValue(type, out info))
-                return info;
-
-            // TypeInfo musím vytvořit, NEmapovat! a ihned vložit do this (Library):
-            info = new TypeInfo(this, type);
-            this.TypeInfos.Add(type, info);
-
-            // Teprve po vložení do Library mohu typ zmapovat:
-            // Proč? Protože existují rekurzivní typy (i vzdáleně rekurzivní), 
-            //   a ty by se v opačném případě (nejprve komplet zmapování typu, a pak teprve jeho vložení do Library) zamotaly.
-            // Jak? Příklad: Type1 obsahuje property typu Type2, a Type2 obsahuje referenci na svého parenta = Type1.
-            // Co by se stalo? Type1 se vytváří, najde property typu Type2, začal by ji mapovat ještě před uložením Type1,
-            //   takže by se v tu chvíli začal mapovat opět Type1, atd...
-            // Toto řešení (uložit nezmapovaný Type1 do Library a teprve potom jej zmapovat) tomu zabrání:
-            info.Fill();
-            return info;
-        }
+        XmlPersistState XmlPersistState { get; set; }
+    }
+    /// <summary>
+    /// Informuje objekt s daty, v jakém stavu je proces XmlPersist.
+    /// Při zahájení Load (kdy jsou do objektu vkládána data načtená z XML) se do objektu, který má interface IXmlPersistNotify, 
+    /// do property XmlPersistState vloží hodnota Load, a při zahájení Save hodnota Save. Po dokončení metody se vrátí hodnota None.
+    /// Objekt na to může reagovat potlačením logiky navázané na Setování hodnot...
+    /// </summary>
+    public enum XmlPersistState
+    {
         /// <summary>
-        /// Pokusí se najít daný Type ve své paměti předdefinovaných typů, anebo detekovat typ jako jeden ze známých, a vrátí jeho XmlPersistenceType.
+        /// Nyní je objekt v klidu.
+        /// Může přejít do stavu LoadBegin nebo SaveBegin.
         /// </summary>
-        /// <param name="type">Hledaný typ</param>
-        /// <param name="typeConvertor">Nalezený konvertor typu</param>
-        /// <returns></returns>
-        internal XmlPersistenceType GetPersistenceType(Type type, out TypeConvertor typeConvertor)
-        {
-            if (type.Name == "Boolean?")
-            { }
-            // Předdefinovaný Type?
-            if (this._PresetTypes.TryGetValue(type, out typeConvertor))
-                return typeConvertor.PersistenceType;
-
-            if (ImplementInterface(type, typeof(IXmlSerializer))) return XmlPersistenceType.Self;
-            if (type.IsEnum) return XmlPersistenceType.Enum;
-            if (type.IsArray) return XmlPersistenceType.Array;
-            if (type.IsInterface) return XmlPersistenceType.None;
-            if (ImplementInterface(type, typeof(IList))) return XmlPersistenceType.IList;
-            if (ImplementInterface(type, typeof(IDictionary))) return XmlPersistenceType.IDictionary;
-
-            return XmlPersistenceType.Compound;
-        }
-        #endregion
-        #region Simple types: příprava seznamu _PresetTypes, metoda AddTypeConvertor()
+		None = 0,
         /// <summary>
-        /// Připraví seznam datových typů, které se ukládají Simple
+        /// Nyní začalo načítání dat do objektu.
+        /// Po načtení bude stav změněn na LoadDone a pak None.
         /// </summary>
-        private void _SimpleTypePrepare()
+		LoadBegin,
+        /// <summary>
+        /// Nyní skončilo načítání dat do objektu.
+        /// Okamžitě poté bude následovat vepsání stavu None.
+        /// </summary>
+        LoadDone,
+        /// <summary>
+        /// Nyní začalo ukládání dat z objektu.
+        /// Po uložení bude stav změněn na SaveDone a pak None.
+        /// </summary>
+		SaveBegin,
+        /// <summary>
+        /// Nyní skončilo ukládání dat z objektu.
+        /// Okamžitě poté bude následovat vepsání stavu None.
+        /// </summary>
+        SaveDone
+    }
+    #endregion
+    #region interface IXmlSerializer : dává objektu možnost serializovat / deserializovat se vlastními silami.
+    /// <summary>
+    /// IXmlSerializer : dává objektu možnost serializovat / deserializovat se vlastními silami.
+    /// Interface předepisuje jednu property XmlSerialData { get; set; }, 
+    /// která v GET accessoru vrátí svoji vlastní serializaci,
+    /// a která v SET accessoru převezme serializovaný text a naplní se z něj.
+    /// Pro konverzi jednoduchých typů lze použít statické metody třídy <see cref="Convertor"/>, které konvertují jakýkoli primární datový typ z/na string.
+    /// </summary>
+    public interface IXmlSerializer
+    {
+        /// <summary>
+        /// Tato property má obsahovat (get vrací, set akceptuje) XML data z celého aktuálního objektu.
+        /// </summary>
+        string XmlSerialData { get; set; }
+    }
+    #endregion
+    #region Attribute classes: PropertyNameAttribute, CollectionItemNameAttribute, PersistingEnabledAttribute
+    /// <summary>
+    /// Abstraktní předek atributů XmlPersistoru
+    /// </summary>
+    public abstract class PersistAttribute : Attribute
+    { }
+    /// <summary>
+    /// Definuje jméno elementu, do něhož se ukládá hodnota této property.
+    /// Pokud nebude specifikováno, jméno bude odvozeno ze jména property dle těchto příkladů:
+    /// "PropertyName" = "property_name"; "_Ukazatel" = "_ukazatel"; "GID" = "gid", atd
+    /// </summary>
+    public class PropertyNameAttribute : PersistAttribute
+    {
+        /// <summary>
+        /// Definice jména elementu.
+        /// Pokud nebude specifikováno, jméno bude odvozeno ze jména property.
+        /// </summary>
+        /// <param name="propertyName">
+        /// Definuje jméno elementu, do něhož se ukládá hodnota této property.
+        /// Pokud nebude specifikováno, jméno bude odvozeno ze jména property dle těchto příkladů:
+        /// "PropertyName" = "property_name"; "_Ukazatel" = "_ukazatel"; "GID" = "gid", atd
+        /// </param>
+        public PropertyNameAttribute(string propertyName)
         {
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Boolean), XmlPersistenceType.Simple, Convertor.BooleanToString, Convertor.StringToBoolean));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Byte), XmlPersistenceType.Simple, Convertor.ByteToString, Convertor.StringToByte));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.DateTime), XmlPersistenceType.Simple, Convertor.DateTimeToString, Convertor.StringToDateTime));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.DateTimeOffset), XmlPersistenceType.Simple, Convertor.DateTimeOffsetToString, Convertor.StringToDateTimeOffset));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Decimal), XmlPersistenceType.Simple, Convertor.DecimalToString, Convertor.StringToDecimal));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Double), XmlPersistenceType.Simple, Convertor.DoubleToString, Convertor.StringToDouble));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Guid), XmlPersistenceType.Simple, Convertor.GuidToString, Convertor.StringToGuid));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Char), XmlPersistenceType.Simple, Convertor.CharToString, Convertor.StringToChar));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Int16), XmlPersistenceType.Simple, Convertor.Int16ToString, Convertor.StringToInt16));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Int32), XmlPersistenceType.Simple, Convertor.Int32ToString, Convertor.StringToInt32));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Int64), XmlPersistenceType.Simple, Convertor.Int64ToString, Convertor.StringToInt64));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.IntPtr), XmlPersistenceType.Simple, Convertor.IntPtrToString, Convertor.StringToIntPtr));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.SByte), XmlPersistenceType.Simple, Convertor.SByteToString, Convertor.StringToSByte));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Single), XmlPersistenceType.Simple, Convertor.SingleToString, Convertor.StringToSingle));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.String), XmlPersistenceType.Simple, Convertor.StringToString, Convertor.StringToString));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.TimeSpan), XmlPersistenceType.Simple, Convertor.TimeSpanToString, Convertor.StringToTimeSpan));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.UInt16), XmlPersistenceType.Simple, Convertor.UInt16ToString, Convertor.StringToUInt16));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.UInt32), XmlPersistenceType.Simple, Convertor.UInt32ToString, Convertor.StringToUInt32));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.UInt64), XmlPersistenceType.Simple, Convertor.UInt64ToString, Convertor.StringToUInt64));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.UIntPtr), XmlPersistenceType.Simple, Convertor.UIntPtrToString, Convertor.StringToUIntPtr));
-
-            /*
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Data.SqlTypes.SqlBinary), XmlPersistenceType.Simple, Convertor.SqlBinaryToString, Convertor.StringToSqlBinary));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Data.SqlTypes.SqlBoolean), XmlPersistenceType.Simple, Convertor.SqlBooleanToString, Convertor.StringToSqlBoolean));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Data.SqlTypes.SqlByte), XmlPersistenceType.Simple, Convertor.SqlByteToString, Convertor.StringToSqlByte));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Data.SqlTypes.SqlDateTime), XmlPersistenceType.Simple, Convertor.SqlDateTimeToString, Convertor.StringToSqlDateTime));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Data.SqlTypes.SqlDecimal), XmlPersistenceType.Simple, Convertor.SqlDecimalToString, Convertor.StringToSqlDecimal));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Data.SqlTypes.SqlDouble), XmlPersistenceType.Simple, Convertor.SqlDoubleToString, Convertor.StringToSqlDouble));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Data.SqlTypes.SqlGuid), XmlPersistenceType.Simple, Convertor.SqlGuidToString, Convertor.StringToSqlGuid));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Data.SqlTypes.SqlInt16), XmlPersistenceType.Simple, Convertor.SqlInt16ToString, Convertor.StringToSqlInt16));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Data.SqlTypes.SqlInt32), XmlPersistenceType.Simple, Convertor.SqlInt32ToString, Convertor.StringToSqlInt32));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Data.SqlTypes.SqlInt64), XmlPersistenceType.Simple, Convertor.SqlInt64ToString, Convertor.StringToSqlInt64));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Data.SqlTypes.SqlMoney), XmlPersistenceType.Simple, Convertor.SqlMoneyToString, Convertor.StringToSqlMoney));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Data.SqlTypes.SqlSingle), XmlPersistenceType.Simple, Convertor.SqlSingleToString, Convertor.StringToSqlSingle));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Data.SqlTypes.SqlString), XmlPersistenceType.Simple, Convertor.SqlStringToString, Convertor.StringToSqlString));
-            */
-
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Drawing.Color), XmlPersistenceType.Simple, Convertor.ColorToString, Convertor.StringToColor));
-            // this.AddTypeConvertor(new TypeConvertor(typeof(System.Drawing.CharacterRange), XmlPersistenceType.Simple, null, null));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Drawing.Point), XmlPersistenceType.Simple, Convertor.PointToString, Convertor.StringToPoint));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Drawing.PointF), XmlPersistenceType.Simple, Convertor.PointFToString, Convertor.StringToPointF));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Drawing.Rectangle), XmlPersistenceType.Simple, Convertor.RectangleToString, Convertor.StringToRectangle));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Drawing.RectangleF), XmlPersistenceType.Simple, Convertor.RectangleFToString, Convertor.StringToRectangleF));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Drawing.Size), XmlPersistenceType.Simple, Convertor.SizeToString, Convertor.StringToSize));
-            this.AddTypeConvertor(new TypeConvertor(typeof(System.Drawing.SizeF), XmlPersistenceType.Simple, Convertor.SizeFToString, Convertor.StringToSizeF));
-
-            // Pokud zařadím další typy, musím k nim přidat jejich konvertory.
+            this.PropertyName = propertyName;
         }
         /// <summary>
-        /// Několik vybraných typů, které se ukládají Simple
+        /// Název elemetnu v persistovaném XML dokumentu, do něhož se ukládá tato property
         /// </summary>
-        private Dictionary<Type, TypeConvertor> _PresetTypes;
+        public string PropertyName { get; private set; }
+    }
+    /// <summary>
+    /// Definuje jméno elementu, do něhož se ukládají jednotlivé položky kolekce tohoto seznamu.
+    /// Implicitní název je Item, ale tímto atributem jej lze předefinovat.
+    /// </summary>
+    public class CollectionItemNameAttribute : PersistAttribute
+    {
         /// <summary>
-        /// Připraví seznam datových typů, které se ukládají Simple
+        /// Definice jména elementu.
+        /// Pokud nebude specifikováno, jméno bude odvozeno ze jména property.
         /// </summary>
-        private void _PrepareTypes()
+        /// <param name="itemName">
+        /// Definuje jméno elementu, do něhož se ukládá hodnota této property.
+        /// Pokud nebude specifikováno, jméno bude odvozeno ze jména property dle těchto příkladů:
+        /// "PropertyName" = "property_name"; "_Ukazatel" = "_ukazatel"; "GID" = "gid", atd
+        /// </param>
+        public CollectionItemNameAttribute(string itemName)
         {
-            this._PresetTypes = new Dictionary<Type, TypeConvertor>();
-            this._SimpleTypePrepare();
-        }
-        /// <summary>
-        /// Přidá/modifikuje daný TypeConvertor
-        /// </summary>
-        /// <param name="typeConvertor"></param>
-        internal void AddTypeConvertor(TypeConvertor typeConvertor)
-        {
-            if (!this._PresetTypes.ContainsKey(typeConvertor.DataType))
-                this._PresetTypes.Add(typeConvertor.DataType, typeConvertor);
-            else
-                this._PresetTypes[typeConvertor.DataType] = typeConvertor;
-        }
-        private void _DisposeTypes()
-        {
-            this._PresetTypes.Clear();
-            this._PresetTypes = null;
-        }
-        #endregion
-        #region InstanceCreator
-        /// <summary>
-        /// Vytvoří a vrátí objekt daného typu
-        /// </summary>
-        /// <param name="type"></param>
-        /// <returns></returns>
-        private object _ObjectCreate(Type type)
-        {
-            object result = null;
-            ConstructorInfo constructor = this.CheckConstructors(type);     // Ověří, zda Type má bezparametrický konstruktor. Vrátí jej.
-            if (constructor != null)
-                result = constructor.Invoke(null);
-            else
-                // Například struktury nemají bezparametrický konstruktor definovaný, proto vrací null. Přesto je lze standardně vytvořit:
-                result = System.Activator.CreateInstance(type);
-            return result;
+            this.ItemName = itemName;
         }
         /// <summary>
-        /// Metoda ověří, zda typ má bezparametrický konstruktor.
-        /// Pokud jej nemá, vyhodí chybu.
-        /// Pokud jej má, vrátí jej.
+        /// Definuje jméno elementu, do něhož se ukládá hodnota této property.
+        /// Pokud nebude specifikováno, jméno bude odvozeno ze jména property dle těchto příkladů:
+        /// "PropertyName" = "property_name"; "_Ukazatel" = "_ukazatel"; "GID" = "gid", atd
         /// </summary>
-        /// <param name="type"></param>
-        /// <returns></returns>
-        internal ConstructorInfo CheckConstructors(Type type)
-        {
-            if (type.IsClass)
-            {
-                ConstructorInfo[] typeConsts = type.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);   // Najdu konstruktory daného Type
-                ConstructorInfo[] typeConstNps = typeConsts.Where(c => c.GetParameters().Length == 0).ToArray();     // Najdu jen ty bezparametrické...
-                if (typeConstNps.Length == 0)
-                    throw new InvalidOperationException("Type " + type.Namespace + "." + type.Name + " can not be persisted, must be a type with parameterless constructor!");
-                return typeConstNps[0];
-            }
-            if (type.IsInterface)
-            {
-                throw new InvalidOperationException("Type " + type.Namespace + "." + type.Name + " is interface. Object can not be created.!");
-            }
-            if (type.IsValueType || type.IsEnum || type.IsPrimitive)
-            {
-                return null;
-            }
-            throw new InvalidOperationException("Type " + type.Namespace + "." + type.Name + " is unknown type. Object can not be created.!");
-        }
-        #endregion
-        #region Static Type.Assembly podpora
+        public string ItemName { get; private set; }
+    }
+    /// <summary>
+    /// Umožní potlačit ukládání této property.
+    /// Pokud není specifikováno, property se uloží, pokud k ní existuje SET metoda (i kdyby byla privátní).
+    /// V některých případech je vhodné hodnotu neukládat (a nenačítat), například pokud property při setování hodnotu ukládá do dalších property.
+    /// Rozhodně je nutno potlačit persistenci property, které referencují globální (systémové) objekty, ty by se jinak persistovaly také!!!
+    /// </summary>
+    public class PersistingEnabledAttribute : PersistAttribute
+    {
         /// <summary>
-        /// Určí text do atributu Type a Assembly pro daný Type.
-        /// Pro některé typy není Assembly zapotřebí.
-        /// Vrací takové informace, z nichž může reciproční metoda GetTypeFromSerial() vrátit Type.
+        /// Tato property se má persistovat? true = ano, false = ne.
+        /// Pokud tento atribut není přítomen, chápe se hodnota jako Ano.
         /// </summary>
-        /// <param name="type"></param>
-        /// <param name="serialType"></param>
-        /// <param name="serialAssembly"></param>
-        /// <returns></returns>
-        internal static void GetSerialForType(Type type, out string serialType, out string serialAssembly)
+		/// <param name="persistAndCloneEnable">Property lze persistovat i klonovat</param>
+		public PersistingEnabledAttribute(bool persistAndCloneEnable)
         {
-            serialType = type.FullName;
-            serialAssembly = null;
-
-            // Někdy si chci uložit i assembly - to v případě, že v type.FullName není explicitně určena, a pro konkrétní datový typ ji budu potřebovat explicitně loadovat (v metodě GetTypeFromSerial()):
-
-            // Pokud už v Type je obsažena explicitní informace o Assembly, pak končím:
-            if (serialType.Contains("[") && serialType.Contains(" Version=")) return;
-
-            // Pokud dokážu vytvořit Type jen na základě jeho názvu, pak nemusím ukládat explicitní jméno Assembly:
-            Type test = Type.GetType(serialType);
-            if (test != null) return;
-
-            // Pokud dokážu vrátit assembly jen na základě názvu typu, pak nemusím ukládat její explicitní jméno:
-            Assembly assm = _GetAssemblyFromTypeName(serialType);
-            if (assm != null) return;
-
-            // Protože z typu nedokážu určit assembly, musím si ji explicitně uložit teď, když mám typ:
-            serialAssembly = type.Assembly.FullName;
+            this.PersistEnable = persistAndCloneEnable;
+            this.CloneEnable = persistAndCloneEnable;
         }
         /// <summary>
-        /// Ze serializovaných údajů Type a Assembly vrátí Type daného objektu.
+        /// Tato property se má persistovat? true = ano, false = ne.
+        /// Pokud tento atribut není přítomen, chápe se hodnota jako Ano.
         /// </summary>
-        /// <param name="serialType"></param>
-        /// <param name="serialAssembly"></param>
-        /// <returns></returns>
-        internal static Type GetTypeFromSerial(string serialType, string serialAssembly)
+        /// <param name="persistEnable">Property lze persistovat</param>
+		/// <param name="cloneEnable">Property lze klonovat</param>
+        public PersistingEnabledAttribute(bool persistEnable, bool cloneEnable)
         {
-            if (String.IsNullOrEmpty(serialType)) return null;
-
-            if (String.IsNullOrEmpty(serialAssembly))
-            {
-                Type result = Type.GetType(serialType);
-                if (result != null) return result;
-
-                Assembly assm = _GetAssemblyFromTypeName(serialType);
-                if (assm == null) return null;
-
-                return assm.GetType(serialType);
-            }
-
-            Assembly assLoad;
-            Dictionary<string, Assembly> assDict = _LoadedAssemblyDict;
-            if (!assDict.TryGetValue(serialAssembly, out assLoad))
-            {
-                AssemblyName assName = new AssemblyName(serialAssembly);
-                assLoad = Assembly.Load(assName);
-                assDict.Add(serialAssembly, assLoad);
-            }
-            return assLoad.GetType(serialType);
-        }
-        private static Dictionary<string, Assembly> _LoadedAssemblyDict
-        {
-            get
-            {
-                if (__LoadedAssemblyDict == null)
-                    __LoadedAssemblyDict = new Dictionary<string, Assembly>();
-                return __LoadedAssemblyDict;
-            }
-        }
-        private static Dictionary<string, Assembly> __LoadedAssemblyDict;
-        /// <summary>
-        /// Zkusí určit Assembly pro daný název typu.
-        /// </summary>
-        /// <param name="serialType"></param>
-        /// <returns></returns>
-        private static Assembly _GetAssemblyFromTypeName(string serialType)
-        {
-            string nmsp = _GetNamespaceFromType(serialType);
-            if (nmsp == "System") return typeof(System.Decimal).Assembly;
-            if (nmsp == "System.Data") return typeof(System.Data.DataTable).Assembly;
-            if (nmsp == "System.Drawing") return typeof(System.Drawing.Font).Assembly;
-            if (nmsp == "System.Drawing.Design") return typeof(System.Drawing.Design.ToolboxItem).Assembly;
-            if (nmsp == "System.Drawing.Drawing2D") return typeof(System.Drawing.Drawing2D.PathData).Assembly;
-            if (nmsp == "System.Drawing.Imaging") return typeof(System.Drawing.Imaging.ColorMap).Assembly;
-            if (nmsp == "System.Drawing.Printing") return typeof(System.Drawing.Printing.PageSettings).Assembly;
-            if (nmsp == "System.Drawing.Text") return typeof(System.Drawing.Text.GenericFontFamilies).Assembly;
-            if (nmsp == "System.Globalization") return typeof(System.Globalization.Calendar).Assembly;
-            if (nmsp == "System.IO") return typeof(System.IO.DirectoryInfo).Assembly;
-
-            return null;
+            this.PersistEnable = persistEnable;
+            this.CloneEnable = cloneEnable;
         }
         /// <summary>
-        /// Vrátí namespace typu, nebo jeho owner class pokud je to vnořená třída.
+        /// Tato property se má persistovat? true = ano, false = ne.
+        /// Pokud tento atribut není přítomen, chápe se hodnota PersistEnable jako Ano.
         /// </summary>
-        /// <param name="serialType"></param>
-        /// <returns></returns>
-        private static string _GetNamespaceFromType(string serialType)
-        {
-            // Oddělit název typu před [ 
-            //   "System.Collections.Generic.List`1[[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]" => "System.Collections.Generic.List`1"
-            int ptr = serialType.IndexOf('[');
-            string typeName = (ptr < 0 ? serialType : (ptr == 0 ? "" : serialType.Substring(0, ptr)));
-
-            // Rozdělit název typu na položky: 
-            //   "System.Drawing.Drawing2D.PathGradientBrush" => "System"; "Drawing"; "Drawing2D"; "PathGradientBrush"
-            string[] typeItems = typeName.Split('.');
-            string result = "";
-            for (int t = 0; t < (typeItems.Length - 1); t++)
-                result = result + (t == 0 ? "" : ".") + typeItems[t];
-            return result;
-        }
+		public bool PersistEnable { get; private set; }
         /// <summary>
-        /// Vrátí true, pokud this type implementuje daný interface.
-        /// Je obdobou testu "if (data is implementInterface)", ale pro případ, kdy nemáme objekt ale jeho Type.
+        /// Tato property se má klonovat? true = ano, false = ne.
+        /// Pokud tento atribut není přítomen, chápe se hodnota CloneEnable jako Ano.
+        /// Pokud je atribut vytvořen s pouze jednou hodnotou (persistAndCloneEnable), pak platí shodná pravidla pro persistování i klonování.
         /// </summary>
-        /// <param name="type"></param>
-        /// <param name="implementInterface"></param>
-        /// <returns></returns>
-        internal static bool ImplementInterface(Type type, Type implementInterface)
-        {
-            return type.GetInterfaces().Any(i => Type.Equals(i, implementInterface));
-        }
-        #endregion
-        #region class TypeInfo : obecné informace o persistování jednoho datového typu. TypeInfo může obsahovat seznam PropInfo, anebo
-        /// <summary>
-        /// TypeInfo : obecné informace o persistování jednoho datového typu. TypeInfo může obsahovat seznam PropInfo, anebo 
-        /// </summary>
-        internal class TypeInfo
-        {
-            internal TypeInfo(TypeLibrary typeLibrary, Type dataType)
-            {
-                this.TypeLibrary = typeLibrary;
-                this.DataType = dataType;
-            }
-            public override string ToString()
-            {
-                return this.DataType.Name + ": " + this.PersistenceType.ToString();
-            }
-            internal void Fill()
-            {
-                // Základní režim persistence (primitiv / datový objekt / soupis), plus najdu TypeConvertor:
-                TypeConvertor typeConvert;
-                this.PersistenceType = this.TypeLibrary.GetPersistenceType(this.DataType, out typeConvert);
-                this.TypeConvert = typeConvert;
-
-                // Detekce property do seznamu properties:
-                switch (this.PersistenceType)
-                {
-                    case XmlPersistenceType.Array:
-                        this._DetectArrayItemType();
-                        break;
-                    case XmlPersistenceType.IList:
-                    case XmlPersistenceType.IDictionary:
-                        break;
-                    case XmlPersistenceType.Compound:
-                        this._DetectProperties();
-                        break;
-                }
-
-                // Detekce generických typů proběhne vždy:
-                this._DetectGenericArgs();
-            }
-            /// <summary>
-            /// Reference na knihovnu typů.
-            /// V ní jsem uložen já, v ní dohledávám informace pro svoje typy.
-            /// </summary>
-            internal TypeLibrary TypeLibrary { get; private set; }
-            /// <summary>
-            /// Můj Type.
-            /// </summary>
-            internal Type DataType { get; private set; }
-            /// <summary>
-            /// Typ persistence zdejšího typu (this.DataType).
-            /// </summary>
-            internal XmlPersistenceType PersistenceType { get; private set; }
-            /// <summary>
-            /// Type convertor, pokud pro tento typ existuje.
-            /// </summary>
-            internal TypeConvertor TypeConvert { get; private set; }
-            /// <summary>
-            /// Soupis property zdejšího typu.
-            /// Je naplněn pouze při PersistenceType = XmlPersistenceType.InnerObject.
-            /// </summary>
-            internal List<PropInfo> PropertyList { get; private set; }
-            #region Properties
-            /// <summary>
-            /// Detekuje PropertyInfo zdejšího typu a vytváří seznam this.PropertyList s prvky třídy PropInfo
-            /// </summary>
-            private void _DetectProperties()
-            {
-                this.PropertyList = new List<PropInfo>();
-                PropertyInfo[] props = this.DataType.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy);
-                foreach (PropertyInfo prop in props)
-                {
-                    PropInfo propData = new PropInfo(this, prop);
-                    if (!propData.Enabled) continue;
-
-                    this.PropertyList.Add(propData);
-                }
-                // Seznam setřídit:
-                this.PropertyList.Sort(PropInfo.CompareByName);
-            }
-            #endregion
-            #region Generika
-            /// <summary>
-            /// Počet generických argumentů
-            /// </summary>
-            internal int GenericCount
-            {
-                get
-                {
-                    Type[] gps = this.DataType.GetGenericArguments();
-                    if (gps == null || gps.Length == 0) return 0;
-                    return gps.Length;
-                }
-            }
-            /// <summary>
-            /// Vrátí generický typ z dané pozice. Pokud daná pozice není obsazená, vrátí null.
-            /// </summary>
-            /// <param name="index"></param>
-            /// <returns></returns>
-            internal Type GetGenericType(int index)
-            {
-                if (this.GenericList != null && index >= 0 && index < this.GenericList.Count)
-                    return this.GenericList[index];
-                return null;
-            }
-            /// <summary>
-            /// Detekuje typy generických parametrů do this.GenericParamList s prvky třídy TypeInfo.
-            /// </summary>
-            private void _DetectGenericArgs()
-            {
-                Type[] gps = this.DataType.GetGenericArguments();
-                if (gps == null || gps.Length == 0) return;
-                this.GenericList = new List<Type>();
-                foreach (Type generic in gps)
-                    this.GenericList.Add(generic);
-            }
-            /// <summary>
-            /// Soupis generických typů zdejšího typu.
-            /// Je naplněn pouze při PersistenceType = XmlPersistenceType.InnerObject.
-            /// </summary>
-            internal List<Type> GenericList { get; private set; }
-            #endregion
-            #region Array
-            /// <summary>
-            /// Type prvků v tomto Array, pokud this popisuje standardní Array.
-            /// Array má jeden typ, deklaruje se například: Int32[,] x = new Int32[5,12];
-            /// Pak typ pole (this.DataType) = typeof(Int32[,]); a typ prvku this.ItemDataType = typeof(Int32);
-            /// </summary>
-            internal Type ItemDataType { get; private set; }
-            /// <summary>
-            /// Detekuje typ prvklů standardního Array, do this.ItemDataType
-            /// </summary>
-            private void _DetectArrayItemType()
-            {
-                Type arrayType = this.DataType;              // Typ pole, například = typeof(System.Int32[,])
-                if (arrayType.HasElementType)
-                    this.ItemDataType = arrayType.GetElementType();      // Vrátí Type elementu pole, tedy typeof(System.Int32) !!! 
-                else if (this.GenericCount > 0)
-                    this.ItemDataType = this.GetGenericType(0);
-                else
-                    this.ItemDataType = null;
-            }
-            #endregion
-            internal PropInfo FindPropertyByXmlName(string propName)
-            {
-                return this.PropertyList.FirstOrDefault(p => String.Equals(p.XmlName, propName));
-            }
-        }
-        #endregion
-        #region class PropInfo : data o jedné property (jméno property, její typ, její TypeInfo
-        /// <summary>
-        /// PropInfo : data o jedné property
-        /// </summary>
-        internal class PropInfo
-        {
-            internal PropInfo(TypeInfo typeInfo, PropertyInfo property)
-            {
-                this.TypeInfo = typeInfo;
-                this.Property = property;
-                this._PropertyTypeInfo = null;
-
-                // Property lze ukládat, pokud má set metodu:
-                this.Enabled = (property.GetSetMethod(true) != null);
-                this.XmlName = null;
-
-                // Zjistím, zda nejde o property "Djs.Tools.XmlPersistor.IXmlPersistNotify.XmlPersistState" (takovou nebudu persistovat zcela automaticky):
-                object[] atts = null;
-                // Anebo, zda property má atribut PersistingEnabledAttribute s hodnotou PersistEnable = false, pak by se neukládala:
-                if (!this.Enabled || property.Name == "Djs.Tools.XmlPersistor.IXmlPersistNotify.XmlPersistState" || !IsPropertyPersistable(property, out atts))
-                {
-                    this.Enabled = false;
-                    return;
-                }
-                if (atts == null)
-                    atts = property.GetCustomAttributes(typeof(PersistAttribute), true);
-
-                // XmlName (Custom / default):
-                object attName = atts.FirstOrDefault(at => at is PropertyNameAttribute);
-                if (attName != null)
-                    this.XmlName = (attName as PropertyNameAttribute).PropertyName;
-                if (String.IsNullOrEmpty(this.XmlName))
-                    this.XmlName = this.Name;
-                this.XmlName = XmlPersist.CreateXmlName(this.XmlName);
-
-                // XmlItemName
-                object attItem = atts.FirstOrDefault(at => at is CollectionItemNameAttribute);
-                if (attItem != null)
-                    this.XmlItemName = (attItem as CollectionItemNameAttribute).ItemName;
-                if (String.IsNullOrEmpty(this.XmlItemName))
-                    this.XmlItemName = "Item";
-                this.XmlItemName = XmlPersist.CreateXmlName(this.XmlItemName);
-            }
-            /// <summary>
-            /// Určí, zda daná property se má persistovat (ukládat + načítat z XML)
-            /// </summary>
-            /// <param name="property"></param>
-            /// <returns></returns>
-            internal static bool IsPropertyPersistable(PropertyInfo property)
-            {
-                object[] atts;
-                return IsPropertyPersistable(property, out atts);
-            }
-            /// <summary>
-            /// Určí, zda daná property se má persistovat (ukládat + načítat z XML)
-            /// </summary>
-            /// <param name="property"></param>
-            /// <param name="atts"></param>
-            /// <returns></returns>
-            internal static bool IsPropertyPersistable(PropertyInfo property, out object[] atts)
-            {
-                // Custom atributy:
-                atts = property.GetCustomAttributes(typeof(PersistAttribute), true);
-                object attEnabled = atts.FirstOrDefault(at => at is PersistingEnabledAttribute);
-
-                // Pokud existuje atribut PersistingEnabledAttribute, pak vrátím jeho hodnotu PersistEnable:
-                if (attEnabled != null)
-                    return (attEnabled as PersistingEnabledAttribute).PersistEnable;
-
-                // Pokud neexistuje, vrátím true = implicitně persistuji vše:
-                return true;
-            }
-            /// <summary>
-            /// Určí, zda daná property se má persistovat (ukládat + načítat z XML)
-            /// </summary>
-            /// <param name="property"></param>
-            /// <returns></returns>
-            internal static bool IsPropertyCloneable(PropertyInfo property)
-            {
-                // Custom atributy:
-                object[] atts = property.GetCustomAttributes(typeof(PersistAttribute), true);
-                object attEnabled = atts.FirstOrDefault(at => at is PersistingEnabledAttribute);
-
-                // Pokud existuje atribut PersistingEnabledAttribute, pak vrátím jeho hodnotu CloneEnable:
-                if (attEnabled != null)
-                    return (attEnabled as PersistingEnabledAttribute).CloneEnable;
-
-                // Pokud neexistuje, vrátím true = implicitně persistuji vše:
-                return true;
-
-            }
-            public override string ToString()
-            {
-                string text = this.Property.Name + ": ";
-                if (this.Enabled)
-                    text += "XML name=" + this.XmlName + "; Type=" + this.PropertyType.Name;
-                else
-                    text += "disabled.";
-                return text;
-            }
-            internal static int CompareByName(PropInfo a, PropInfo b)
-            {
-                return String.Compare(a.Name, b.Name);
-            }
-            /// <summary>
-            /// Vztah na typ, jehož je tato property členem
-            /// </summary>
-            internal TypeInfo TypeInfo { get; private set; }
-            /// <summary>
-            /// Reference na knihovnu typů.
-            /// V ní je uložen můj TypeInfo, a přes něj se do knihovny dostanu i já.
-            /// </summary>
-            internal TypeLibrary TypeLibrary { get { return this.TypeInfo.TypeLibrary; } }
-            /// <summary>
-            /// Info o této property
-            /// </summary>
-            internal PropertyInfo Property { get; private set; }
-            /// <summary>
-            /// Název této property = exaktně z this.Property.Name
-            /// </summary>
-            internal string Name { get { return this.Property.Name; } }
-            /// <summary>
-            /// .NET Type této property = this.Property.PropertyType.
-            /// Jde o typ, jak je property deklarována, nikoli Type, který je v ní aktuálně uložen (to se zjistí až podle objektu s daty).
-            /// Může to být potomek zdejšího typu, anebo implementace interface...
-            /// </summary>
-            internal Type PropertyType { get { return this.Property.PropertyType; } }
-            /// <summary>
-            /// true, pokud se tato property má persistovat
-            /// </summary>
-            internal bool Enabled { get; private set; }
-            /// <summary>
-            /// Rozšířené vlastnosti typu této property - data, načtená z TypeLibrary.
-            /// Data se načítají až on demand, z TypeLibrary.
-            /// </summary>
-            internal TypeInfo PropertyTypeInfo
-            {
-                get
-                {
-                    if (this._PropertyTypeInfo == null)
-                        this._PropertyTypeInfo = this.TypeLibrary.GetInfo(this.PropertyType);
-                    return this._PropertyTypeInfo;
-                }
-            }
-            private TypeInfo _PropertyTypeInfo;
-            /// <summary>
-            /// Jméno pro persistenci hodnoty této property
-            /// </summary>
-            internal string XmlName { get; private set; }
-            /// <summary>
-            /// Jméno pro persistenci jednotlivých položek kolekce (Item)
-            /// </summary>
-            internal string XmlItemName { get; private set; }
-            #region Vytváření jména elementu - asi zbytečné
-            /// <summary>
-            /// Ze jména property vytvoří jméno XML elementu/atributu
-            /// </summary>
-            /// <param name="objectName"></param>
-            /// <returns></returns>
-            private string _XmlCreateName(string objectName)
-            {
-                string xmlName = "";
-                string upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-                // string lower = "abcdefghijklmnopqrstuvwxyz";
-                string number = "0123456789";
-                string diacriticUpp = "ÁĆČĎÉĚËÍĹĽŇÓŔŘŠŤÚŮÝŽ";
-                string noDiacritUpp = "ACCDEEEILLNORRSTUUYZ";
-                string diacriticLow = "áćčďéěëíĺľňóŕřśšťúůýž";
-                string noDiacritLow = "accdeeeillnorrsstuuyz";
-                string diacritic = diacriticUpp + diacriticLow;
-                string noDiacrit = noDiacritUpp + noDiacritLow;
-                _XmlCreateSequence state = _XmlCreateSequence.Begin;
-                for (int i = 0; i < objectName.Length; i++)
-                {
-                    string c = objectName.Substring(i, 1);
-
-                    // Zrušit diakritiku
-                    int diacr = diacritic.IndexOf(c);
-                    if (diacr > 0)
-                        c = noDiacrit.Substring(diacr, 0);
-
-                    // Pokud mám ve vstupujícím textu podtržítko:
-                    if (c == "_")
-                    {
-                        if (state != _XmlCreateSequence.AfterUnders)
-                        {   // Pokud nejsem po explicitním podtržítku, tak tam první dát můžu (ale další už ne):
-                            xmlName += c;
-                            state = _XmlCreateSequence.AfterUnders;
-                        }
-                    }
-                    // Předsadit _ před číslice:
-                    else if (number.Contains(c))
-                    {   // Máme číslici:
-                        if (state == _XmlCreateSequence.AfterLower || state == _XmlCreateSequence.AfterUpper)
-                            // po jakémkoli písmenu => předsadím _, po _ a po číslici nepředsadím:
-                            xmlName += "_";
-                        xmlName += c.ToLower();
-                        state = _XmlCreateSequence.AfterNumber;
-                    }
-                    // Řešit konverzi CamelCase => camel_case
-                    else if (upper.Contains(c))
-                    {   // Máme velké písmeno:
-                        if (state == _XmlCreateSequence.AfterLower || state == _XmlCreateSequence.AfterNumber)
-                            // po malém písmenu nebo po číslici => předsadím _, po velkém písmenu a po _ ne:
-                            xmlName += "_";
-                        xmlName += c.ToLower();
-                        state = _XmlCreateSequence.AfterUpper;
-                    }
-                    else
-                    {
-                        xmlName += c.ToLower();
-                        state = _XmlCreateSequence.AfterLower;
-                    }
-                }
-                return xmlName;
-            }
-            private enum _XmlCreateSequence { Begin, AfterMultiUpper, AfterUpper, AfterLower, AfterNumber, AfterUnders }
-            #endregion
-        }
-        #endregion
+        public bool CloneEnable { get; private set; }
     }
     #endregion
 
-    // convertor:
-    // internal class for conversion string - object
+    #region class Convertor : Knihovna statických konverzních metod mezi simple typy a stringem
     /// <summary>
-    /// Knihovna statických konverzních metod mezi simple typy a stringem
+    /// Convertor : Knihovna statických konverzních metod mezi simple typy a stringem
     /// </summary>
     public static class Convertor
     {
@@ -2121,238 +1594,26 @@ namespace Asol.Tools.WorkScheduler.Data
         static System.Globalization.NumberFormatInfo _Nmfi;
         #endregion
     }
-
-
-    // interfaces:
-    #region interface IXmlPersistNotify : dává objektu možnost být informován o procesech XmlPersist (Save / Load) pomocí property XmlPersistState
-    /// <summary>
-    /// interface IXmlPersistNotify : dává objektu možnost být informován o procesech XmlPersist (Save / Load) pomocí obsluhy set accessoru property XmlPersistState.
-    /// Jakýkoli objekt, který chce být informován o tom, že je ukládán do XML / obnovován z XML, musí deklarovat interface IXmlPersistNotify.
-    /// Pak do jeho property IXmlPersistNotify.XmlPersistState bude vkládána hodnota: při ukládání do XML hodnota Save (a po dokončení None), při načítání z XML hodnota Load a None.
-    /// </summary>
-    public interface IXmlPersistNotify
-    {
-        /// <summary>
-        /// Aktuální stav procesu XML persistence.
-        /// Umožňuje persistovanému objektu reagovat na ukládání nebo na načítání dat.
-        /// Do této property vkládá XmlPersistor hodnotu odpovídající aktuální situaci.
-        /// Datová instance může v set accessoru zareagovat a například připravit data pro Save, 
-        /// anebo dokončit proces Load (navázat si další data nebo provést přepočty a další reakce).
-        /// </summary>
-		XmlPersistState XmlPersistState { get; set; }
-    }
-    /// <summary>
-    /// Informuje objekt s daty, v jakém stavu je proces XmlPersist.
-    /// Při zahájení Load (kdy jsou do objektu vkládána data načtená z XML) se do objektu, který má interface IXmlPersistNotify, 
-    /// do property XmlPersistState vloží hodnota Load, a při zahájení Save hodnota Save. Po dokončení metody se vrátí hodnota None.
-    /// Objekt na to může reagovat potlačením logiky navázané na Setování hodnot...
-    /// </summary>
-    public enum XmlPersistState
-    {
-        /// <summary>
-        /// Nyní je objekt v klidu.
-        /// Může přejít do stavu LoadBegin nebo SaveBegin.
-        /// </summary>
-		None = 0,
-        /// <summary>
-        /// Nyní začalo načítání dat do objektu.
-        /// Po načtení bude stav změněn na LoadDone a pak None.
-        /// </summary>
-		LoadBegin,
-        /// <summary>
-        /// Nyní skončilo načítání dat do objektu.
-        /// Okamžitě poté bude následovat vepsání stavu None.
-        /// </summary>
-        LoadDone,
-        /// <summary>
-        /// Nyní začalo ukládání dat z objektu.
-        /// Po uložení bude stav změněn na SaveDone a pak None.
-        /// </summary>
-		SaveBegin,
-        /// <summary>
-        /// Nyní skončilo ukládání dat z objektu.
-        /// Okamžitě poté bude následovat vepsání stavu None.
-        /// </summary>
-        SaveDone
-    }
-    #endregion
-    #region interface IXmlSerializer : dává objektu možnost serializovat / deserializovat se vlastními silami.
-    /// <summary>
-    /// IXmlSerializer : dává objektu možnost serializovat / deserializovat se vlastními silami.
-    /// Interface předepisuje jednu property XmlSerialData { get; set; }, 
-    /// která v GET accessoru vrátí svoji vlastní serializaci,
-    /// a která v SET accessoru převezme serializovaný text a naplní se z něj.
-    /// Pro konverzi jednoduchých typů lze použít statické metody třídy Djs.Tools.XmlPersistor.Convertor, které konvertují datový typ z/na string.
-    /// </summary>
-    public interface IXmlSerializer
-    {
-        /// <summary>
-        /// Tato property má obsahovat (get vrací, set akceptuje) XML data z celého aktuálního objektu.
-        /// </summary>
-        string XmlSerialData { get; set; }
-    }
-    #endregion
-    #region class TypeConvertor : definuje pravidla pro persistenci specifického datového typu, obsahuje delegáty pro serializaci / deserializaci typu.
-    /// <summary>
-    /// TypeConvertor : Předpis pro konverzi jednoho typu.
-    /// Popisuje jeden konkrétní Type, a uvádí delegáty na metody, které provedou serializaci / deserializaci tohoto typu.
-    /// </summary>
-    internal class TypeConvertor
-    {
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        /// <param name="dataType">Datový typ, pro který platá tato deklarace</param>
-        /// <param name="serializator">Metoda, která provede serializaci (z objektu na string). Musí být zadán pro persistenceType = XmlPersistenceType.Simple!</param>
-        /// <param name="deserializator">Metoda, která provede deserializaci (ze stringu na objekt). Musí být zadán pro persistenceType = XmlPersistenceType.Simple!</param>
-        public TypeConvertor(Type dataType, Func<object, string> serializator, Func<string, object> deserializator)
-        {
-            this.DataType = dataType;
-            this.PersistenceType = XmlPersistenceType.Self;
-            this.Serializator = serializator;
-            this.Deserializator = deserializator;
-        }
-        /// <summary>
-        /// Konstruktor interní
-        /// </summary>
-        /// <param name="dataType">Datový typ, pro který platá tato deklarace</param>
-        /// <param name="persistenceType">Druh uložení. Pokud se bude používat serializátor</param>
-        /// <param name="serializator">Metoda, která provede serializaci (z objektu na string). Musí být zadán pro persistenceType = XmlPersistenceType.Simple!</param>
-        /// <param name="deserializator">Metoda, která provede deserializaci (ze stringu na objekt). Musí být zadán pro persistenceType = XmlPersistenceType.Simple!</param>
-        internal TypeConvertor(Type dataType, XmlPersistenceType persistenceType, Func<object, string> serializator, Func<string, object> deserializator)
-        {
-            this.DataType = dataType;
-            this.PersistenceType = persistenceType;
-            this.Serializator = serializator;
-            this.Deserializator = deserializator;
-        }
-        /// <summary>
-        /// Datový typ, pro který platá tato deklarace
-        /// </summary>
-        public Type DataType { get; private set; }
-        /// <summary>
-        /// Druh uložení. Pokud bude zadána hodnota XmlPersistenceType.Simple, musí se vyplnit i Serializator a Deserializator.
-        /// Pokud aplikace chce některé typy serializovat vlastními silami, uvede XmlPersistenceType.Simple a naplní svoje metody Serializator a Deserializator.
-        /// </summary>
-        internal XmlPersistenceType PersistenceType { get; private set; }
-        /// <summary>
-        /// Metoda, která provede serializaci (z objektu na string)
-        /// </summary>
-        public Func<object, string> Serializator { get; private set; }
-        /// <summary>
-        /// Metoda, která provede deserializaci (ze stringu na objekt)
-        /// </summary>
-        public Func<string, object> Deserializator { get; private set; }
-    }
-    #endregion
-    #region Attribute classes: PropertyNameAttribute, CollectionItemNameAttribute, PersistingEnabledAttribute
-    /// <summary>
-    /// Abstraktní předek atributů XmlPersistoru
-    /// </summary>
-    public abstract class PersistAttribute : Attribute
-    { }
-    /// <summary>
-    /// Definuje jméno elementu, do něhož se ukládá hodnota této property.
-    /// Pokud nebude specifikováno, jméno bude odvozeno ze jména property dle těchto příkladů:
-    /// "PropertyName" = "property_name"; "_Ukazatel" = "_ukazatel"; "GID" = "gid", atd
-    /// </summary>
-    internal class PropertyNameAttribute : PersistAttribute
-    {
-        /// <summary>
-        /// Definice jména elementu.
-        /// Pokud nebude specifikováno, jméno bude odvozeno ze jména property.
-        /// </summary>
-        /// <param name="propertyName">
-        /// Definuje jméno elementu, do něhož se ukládá hodnota této property.
-        /// Pokud nebude specifikováno, jméno bude odvozeno ze jména property dle těchto příkladů:
-        /// "PropertyName" = "property_name"; "_Ukazatel" = "_ukazatel"; "GID" = "gid", atd
-        /// </param>
-        public PropertyNameAttribute(string propertyName)
-        {
-            this.PropertyName = propertyName;
-        }
-        /// <summary>
-        /// Název elemetnu v persistovaném XML dokumentu, do něhož se ukládá tato property
-        /// </summary>
-        public string PropertyName { get; private set; }
-    }
-    /// <summary>
-    /// Definuje jméno elementu, do něhož se ukládají jednotlivé položky kolekce tohoto seznamu.
-    /// Implicitní název je Item, ale tímto atributem jej lze předefinovat.
-    /// </summary>
-    internal class CollectionItemNameAttribute : PersistAttribute
-    {
-        /// <summary>
-        /// Definice jména elementu.
-        /// Pokud nebude specifikováno, jméno bude odvozeno ze jména property.
-        /// </summary>
-        /// <param name="itemName">
-        /// Definuje jméno elementu, do něhož se ukládá hodnota této property.
-        /// Pokud nebude specifikováno, jméno bude odvozeno ze jména property dle těchto příkladů:
-        /// "PropertyName" = "property_name"; "_Ukazatel" = "_ukazatel"; "GID" = "gid", atd
-        /// </param>
-        public CollectionItemNameAttribute(string itemName)
-        {
-            this.ItemName = itemName;
-        }
-        public string ItemName { get; private set; }
-    }
-    /// <summary>
-    /// Umožní potlačit ukládání této property.
-    /// Pokud není specifikováno, property se uloží, pokud k ní existuje SET metoda (i kdyby byla privátní).
-    /// V některých případech je vhodné hodnotu neukládat (a nenačítat), například pokud property při setování hodnotu ukládá do dalších property.
-    /// Rozhodně je nutno potlačit persistenci property, které referencují globální (systémové) objekty, ty by se jinak persistovaly také!!!
-    /// </summary>
-    internal class PersistingEnabledAttribute : PersistAttribute
-    {
-        /// <summary>
-        /// Tato property se má persistovat? true = ano, false = ne.
-        /// Pokud tento atribut není přítomen, chápe se hodnota jako Ano.
-        /// </summary>
-		/// <param name="persistAndCloneEnable">Property lze persistovat i klonovat</param>
-		public PersistingEnabledAttribute(bool persistAndCloneEnable)
-        {
-            this.PersistEnable = persistAndCloneEnable;
-            this.CloneEnable = persistAndCloneEnable;
-        }
-        /// <summary>
-        /// Tato property se má persistovat? true = ano, false = ne.
-        /// Pokud tento atribut není přítomen, chápe se hodnota jako Ano.
-        /// </summary>
-        /// <param name="persistEnable">Property lze persistovat</param>
-		/// <param name="cloneEnable">Property lze klonovat</param>
-        public PersistingEnabledAttribute(bool persistEnable, bool cloneEnable)
-        {
-            this.PersistEnable = persistEnable;
-            this.CloneEnable = cloneEnable;
-        }
-        /// <summary>
-        /// Tato property se má persistovat? true = ano, false = ne.
-        /// Pokud tento atribut není přítomen, chápe se hodnota PersistEnable jako Ano.
-        /// </summary>
-		public bool PersistEnable { get; private set; }
-        /// <summary>
-        /// Tato property se má klonovat? true = ano, false = ne.
-        /// Pokud tento atribut není přítomen, chápe se hodnota CloneEnable jako Ano.
-        /// Pokud je atribut vytvořen s pouze jednou hodnotou (persistAndCloneEnable), pak platí shodná pravidla pro persistování i klonování.
-        /// </summary>
-        public bool CloneEnable { get; private set; }
-    }
     #endregion
 
-
-    // all internal:
+    // XmlPersist, TypeLibrary, XmDocument : výkonné soukromé kódy
     /// <summary>
     /// Internal výkonná třída pro XML persistenci. 
     /// Tuto třídu nevyužívat z aplikačního kódu, má se používat třída (Djs.Tools.XmlPersistor.)Persist !!!
     /// </summary>
-    internal class XmlPersist : IDisposable
+    internal sealed class XmlPersist : IDisposable
     {
         #region Konstrukce
-        protected XmlPersist()
+        /// <summary>
+        /// Konstruktor, používá se ze statických metod této třídy
+        /// </summary>
+        private XmlPersist()
         {
             this._TypeLibrary = new TypeLibrary();
         }
+        /// <summary>
+        /// Provozní instance knihovny použitých typů
+        /// </summary>
         private TypeLibrary _TypeLibrary;
         void IDisposable.Dispose()
         {
@@ -2363,9 +1624,9 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Označení verze dat při jejich načítání.
         /// Je tak umožněno aktuálním loaderem načíst data uložená v dřívější verzi XmlPersist.
         /// </summary>
-        protected string XmlPersistedVersion { get; set; }
+        private string XmlPersistedVersion { get; set; }
         #endregion
-        #region Statické internal metody
+        #region Statické internal metody = jediný veřejný přístup
         /// <summary>
         /// Zajistí persistenci (uložení = serializaci) datového objektu do stringu podle daných parametrů.
         /// Pokud je v parametru uveden soubor (XmlFile), pak XML text uloží do něj (případně vytvoří adresář).
@@ -2459,7 +1720,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Ostatní typy dat řeší specializované metody, ty si svoje elementy zakládají.
         /// </summary>
         /// <param name="args">Kompletní datový balík pro uložení dat</param>
-        internal void SaveObject(XmlPersistSaveArgs args)
+        private void SaveObject(XmlPersistSaveArgs args)
         {
             // do XML budu persistovat pouze not null hodnoty!
             if (!args.HasData) return;
@@ -2470,25 +1731,25 @@ namespace Asol.Tools.WorkScheduler.Data
             // Podle reálného typu, podle jeho charakteru předám řízení do odpovídající metody:
             switch (args.DataTypeInfo.PersistenceType)
             {
-                case XmlPersistenceType.Simple:
+                case TypeLibrary.XmlPersistenceType.Simple:
                     this.SimpleTypeSave(args);
                     break;
-                case XmlPersistenceType.Self:
+                case TypeLibrary.XmlPersistenceType.Self:
                     this.SelfTypeSave(args);
                     break;
-                case XmlPersistenceType.Enum:
+                case TypeLibrary.XmlPersistenceType.Enum:
                     this.EnumTypeSave(args);
                     break;
-                case XmlPersistenceType.Array:
+                case TypeLibrary.XmlPersistenceType.Array:
                     this.ArrayTypeSave(args);
                     break;
-                case XmlPersistenceType.IList:
+                case TypeLibrary.XmlPersistenceType.IList:
                     this.IListTypeSave(args);
                     break;
-                case XmlPersistenceType.IDictionary:
+                case TypeLibrary.XmlPersistenceType.IDictionary:
                     this.IDictionaryTypeSave(args);
                     break;
-                case XmlPersistenceType.Compound:
+                case TypeLibrary.XmlPersistenceType.Compound:
                     this.CompoundTypeSave(args);
                     break;
             }
@@ -2525,7 +1786,7 @@ namespace Asol.Tools.WorkScheduler.Data
             this.XmlPersistedVersion = xmPers.FindAttributeValue("Version", "");
 
             // Najdu element "data", v něm bude uložen objekt:
-            XmElement elData = xmDoc.FindElement("persistent", "data");
+            XmElement elData = xmDoc.FindElement("persistent/data");
             if (elData == null)
             {
                 parameters.DeserializeStatus = XmlDeserializeStatus.BadFormatData;
@@ -2562,8 +1823,8 @@ namespace Asol.Tools.WorkScheduler.Data
             findAttribute = null;
 
             // Zkusím najít atribut s daným jménem:
-            XmAttribute att = inElement.TryFindAttribute(name);
-            if (att != null)
+            XmAttribute att;
+            if (inElement.TryGetAttribute(name, out att))
             {   // Nalezen atribut (typický vzhled:  <element Value.Type="XmlPersistor.GID" Value="1234;5678" />)
                 findElement = inElement;
                 findAttribute = att;
@@ -2574,8 +1835,8 @@ namespace Asol.Tools.WorkScheduler.Data
             XmElement ele = inElement.TryFindElement(name);
             if (ele != null)
             {   // Uvnitř daného elementu <element> je element <name...> (například: <Value Value.Type="XmlPersistor.DataObject" BindFlags="Public, SetField" ... a další atributy = jednoduché property):
-                att = ele.TryFindAttribute(name);
-                if (att != null || !requiredAttInElement)
+                bool find = ele.TryGetAttribute(name, out att);
+                if (find || !requiredAttInElement)
                 {   // Nalezen atribut (typický vzhled:  <element Value.Type="XmlPersistor.GID" Value="1234;5678" />)
                     findElement = ele;
                     findAttribute = att;
@@ -2615,26 +1876,26 @@ namespace Asol.Tools.WorkScheduler.Data
 		/// </summary>
         /// <param name="args">Kompletní datový balík</param>
 		/// <returns></returns>
-		internal object _CreateObjectOfType(XmlPersistLoadArgs args)
+		private object _CreateObjectOfType(XmlPersistLoadArgs args)
         {
             if (args.DataType == null) return null;
             try
             {
                 switch (args.DataTypeInfo.PersistenceType)
                 {
-                    case XmlPersistenceType.Simple:
+                    case TypeLibrary.XmlPersistenceType.Simple:
                         return this.SimpleTypeCreate(args);
-                    case XmlPersistenceType.Self:
+                    case TypeLibrary.XmlPersistenceType.Self:
                         return this.SelfTypeCreate(args);
-                    case XmlPersistenceType.Enum:
+                    case TypeLibrary.XmlPersistenceType.Enum:
                         return this.EnumTypeCreate(args);
-                    case XmlPersistenceType.Array:
+                    case TypeLibrary.XmlPersistenceType.Array:
                         break;
-                    case XmlPersistenceType.IList:
+                    case TypeLibrary.XmlPersistenceType.IList:
                         return this.IListTypeCreate(args);
-                    case XmlPersistenceType.IDictionary:
+                    case TypeLibrary.XmlPersistenceType.IDictionary:
                         return null; // this._DictionaryTypeCreate(args);
-                    case XmlPersistenceType.Compound:
+                    case TypeLibrary.XmlPersistenceType.Compound:
                         return this.CompoundTypeCreate(args);
                 }
             }
@@ -2888,7 +2149,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Uloží kolekci (List)
         /// </summary>
         /// <param name="args">Kompletní datový balík</param>
-        internal void IListTypeSave(XmlPersistSaveArgs args)
+        private void IListTypeSave(XmlPersistSaveArgs args)
         {
             // Zavedu element za celý List,například <ItemList ...>...</ItemList>:
             XmlElement xmlListElement = CreateElement(args.ObjectName, args.XmlElement);
@@ -2915,7 +2176,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         /// <param name="args">Kompletní datový balík</param>
         /// <returns></returns>
-        internal object IListTypeCreate(XmlPersistLoadArgs args)
+        private object IListTypeCreate(XmlPersistLoadArgs args)
         {
             // Vytvořím objekt s daty odpovídajícími datům persistovaným:
             object data = _ObjectCreate(args.DataType);
@@ -2957,7 +2218,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// Uloží Dictionary
         /// </summary>
-        internal void IDictionaryTypeSave(XmlPersistSaveArgs args)
+        private void IDictionaryTypeSave(XmlPersistSaveArgs args)
         {
             // string currentName, string itemName, TypeInfo typeInfo, object data, Type estimatedType, string typeAttributeName, XmlElement xElement)
             XmlElement xmlDictElement = CreateElement(args.ObjectName, args.XmlElement);  // Zavedu element za celý List,například <ItemList ...>...</ItemList>
@@ -2982,13 +2243,22 @@ namespace Asol.Tools.WorkScheduler.Data
                 this.SaveObject(new XmlPersistSaveArgs(entry.Value, "Value", valueType, xmlItemElement, this._TypeLibrary));
             }
         }
+        /// <summary>
+        /// DOPLNIT !!!
+        /// </summary>
+        /// <param name="args"></param>
+        /// <returns></returns>
+        private object IDictionaryTypeCreate(XmlPersistLoadArgs args)
+        {
+            return null;
+        }
         #endregion
         #region Compound typy: Save, Create
         /// <summary>
         /// Uloží do Xml dokumentu daný objekt, který je typu Compound (tj. má property)
         /// </summary>
         /// <param name="args">Kompletní datový balík</param>
-        internal void CompoundTypeSave(XmlPersistSaveArgs args)
+        private void CompoundTypeSave(XmlPersistSaveArgs args)
         {
             NotifyData(args.Data, XmlPersistState.SaveBegin);
 
@@ -3008,7 +2278,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         /// <param name="args"></param>
         /// <returns></returns>
-		internal object CompoundTypeCreate(XmlPersistLoadArgs args)
+		private object CompoundTypeCreate(XmlPersistLoadArgs args)
         {
             // Vytvořím objekt s daty odpovídajícími datům persistovaným:
             object data = _ObjectCreate(args.DataType);
@@ -3033,7 +2303,8 @@ namespace Asol.Tools.WorkScheduler.Data
                 TypeLibrary.PropInfo propInfo = args.DataTypeInfo.FindPropertyByXmlName(xmEle.Name);
                 if (propInfo != null)
                 {
-                    XmAttribute xmAte = xmEle.TryFindAttribute(xmEle.Name);            // Pokud je v elementu uložen obraz objektu, který je jiného typu než je očekáván v property, pak je zde uložen i konkrétní Type
+                    XmAttribute xmAte;
+                    xmEle.TryGetAttribute(xmEle.Name, out xmAte);            // Pokud je v elementu uložen obraz objektu, který je jiného typu než je očekáván v property, pak je zde uložen i konkrétní Type
                     XmlPersistLoadArgs propArgs = this._CreateLoadArgs(args.Parameters, propInfo, propInfo.PropertyType, xmEle, xmAte);
                     object value = this._CreateObjectOfType(propArgs);
                     propInfo.Property.SetValue(data, value, null);
@@ -3051,7 +2322,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="elementName">Název elementu (typicky jde o název property, nebo klíčové slovo pro element za položku listu, atd)</param>
         /// <param name="xParentElement"></param>
         /// <returns></returns>
-        internal static XmlElement CreateElement(string elementName, XmlElement xParentElement)
+        private static XmlElement CreateElement(string elementName, XmlElement xParentElement)
         {
             string name = CreateXmlName(elementName);
             XmlElement xElement = xParentElement.OwnerDocument.CreateElement(name);
@@ -3081,7 +2352,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="name">Název atributu</param>
         /// <param name="value">Hodnota do atributu, string. Pokud bude null, bude atribut bez hodnoty.</param>
         /// <param name="xElement"></param>
-        internal static XmlAttribute CreateAttribute(string name, string value, XmlElement xElement)
+        private static XmlAttribute CreateAttribute(string name, string value, XmlElement xElement)
         {
             XmlAttribute xAttribute = xElement.OwnerDocument.CreateAttribute(name);
             if (value != null)
@@ -3093,7 +2364,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// V případě potřeby uloží do aktuálního elementu atribut, který ponese aktuální Type.
         /// Případ potřeby je tehdy, když se aktuální Type (currentType) liší od očekávaného (estimatedType).
         /// </summary>
-        internal static void SaveTypeAttribute(XmlPersistSaveArgs args)
+        private static void SaveTypeAttribute(XmlPersistSaveArgs args)
         {
             SaveTypeAttribute(args, args.XmlElement);
         }
@@ -3101,7 +2372,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// V případě potřeby uloží do aktuálního elementu atribut, který ponese aktuální Type.
         /// Případ potřeby je tehdy, když se aktuální Type (currentType) liší od očekávaného (estimatedType).
         /// </summary>
-        internal static void SaveTypeAttribute(XmlPersistSaveArgs args, XmlElement xmlElement)
+        private static void SaveTypeAttribute(XmlPersistSaveArgs args, XmlElement xmlElement)
         {
             // Neliší se typ reálný a očekávaný? OK, žádný atribut s typem se neuloží.
             if (Type.Equals(args.DataType, args.EstimatedType)) return;
@@ -3122,7 +2393,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="xmlReader"></param>
         /// <param name="elementName"></param>
         /// <param name="depthType"></param>
-        internal static bool XmlReadFindElement(XmlTextReader xmlReader, string elementName, XmlElementDepthType depthType)
+        private static bool XmlReadFindElement(XmlTextReader xmlReader, string elementName, XmlElementDepthType depthType)
         {
             int depth = xmlReader.Depth;
             while (!xmlReader.EOF)
@@ -3179,7 +2450,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         /// <param name="type"></param>
         /// <returns></returns>
-        internal ConstructorInfo CheckConstructors(Type type)
+        private ConstructorInfo CheckConstructors(Type type)
         {
             if (type.IsClass)
             {
@@ -3207,7 +2478,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         /// <param name="data"></param>
         /// <param name="xmlPersistState"></param>
-        internal static void NotifyData(object data, XmlPersistState xmlPersistState)
+        private static void NotifyData(object data, XmlPersistState xmlPersistState)
         {
             if (data != null && data is IXmlPersistNotify)
             {
@@ -3218,6 +2489,150 @@ namespace Asol.Tools.WorkScheduler.Data
                 if (xmlPersistState == XmlPersistState.LoadDone || xmlPersistState == XmlPersistState.SaveDone)
                     xmlPers.XmlPersistState = XmlPersistState.None;
             }
+        }
+        #endregion
+        #region class XmlPersistSaveArgs : sada parametrů předávaných mezi vnitřními metodami XmlPersist při serializaci objektu
+        /// <summary>
+        /// XmlPersistSaveArgs : sada parametrů předávaných mezi vnitřními metodami XmlPersist při serializaci objektu
+        /// </summary>
+        internal class XmlPersistSaveArgs
+        {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="data"></param>
+            /// <param name="objectName"></param>
+            /// <param name="estimatedType"></param>
+            /// <param name="xmlElement"></param>
+            /// <param name="typeLibrary"></param>
+            internal XmlPersistSaveArgs(object data, string objectName, Type estimatedType, XmlElement xmlElement, TypeLibrary typeLibrary)
+            {
+                this.Data = data;
+                this.ObjectName = objectName;
+                this.EstimatedType = estimatedType;
+                this.ItemName = null;
+                this.XmlElement = xmlElement;
+                this.DataTypeInfo = (data == null ? null : typeLibrary.GetInfo(data.GetType()));
+            }
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="data"></param>
+            /// <param name="objectName"></param>
+            /// <param name="estimatedType"></param>
+            /// <param name="itemName"></param>
+            /// <param name="xmlElement"></param>
+            /// <param name="typeLibrary"></param>
+            internal XmlPersistSaveArgs(object data, string objectName, Type estimatedType, string itemName, XmlElement xmlElement, TypeLibrary typeLibrary)
+            {
+                this.Data = data;
+                this.ObjectName = objectName;
+                this.EstimatedType = estimatedType;
+                this.ItemName = itemName;
+                this.XmlElement = xmlElement;
+                this.DataTypeInfo = (data == null ? null : typeLibrary.GetInfo(data.GetType()));
+            }
+            /// <summary>
+            /// Vlastní objekt s daty
+            /// </summary>
+            internal object Data { get; private set; }
+            /// <summary>
+            /// true pokud objekt není null
+            /// </summary>
+            internal bool HasData { get { return (this.Data != null); } }
+            /// <summary>
+            /// Název objektu
+            /// </summary>
+            internal string ObjectName { get; private set; }
+            /// <summary>
+            /// Očekávaný datový typ
+            /// </summary>
+            internal Type EstimatedType { get; private set; }
+            internal string ItemName { get; private set; }
+            internal string TypeAttributeName { get; private set; }
+            internal XmlElement XmlElement { get; private set; }
+            /// <summary>
+            /// Datový typ
+            /// </summary>
+            internal Type DataType { get { return (this.DataTypeInfo == null ? null : this.DataTypeInfo.DataType); } }
+            /// <summary>
+            /// Informace o typu, který se právě zpracovává
+            /// </summary>
+            internal TypeLibrary.TypeInfo DataTypeInfo { get; set; }
+            /// <summary>
+            /// Vrátí jméno elementu, který obsahuje jednu položku (listu, dictionary, atd)
+            /// </summary>
+            /// <param name="defaultName"></param>
+            /// <returns></returns>
+            internal string GetItemName(string defaultName)
+            {
+                return (String.IsNullOrEmpty(this.ItemName) ? "Item" : this.ItemName);
+            }
+        }
+        #endregion
+        #region class XmlPersistLoadArgs : sada parametrů předávaných mezi vnitřními metodami XmlPersist při deserializaci objektu
+        /// <summary>
+        /// XmlPersistLoadArgs : sada parametrů předávaných mezi vnitřními metodami XmlPersist při deserializaci objektu
+        /// </summary>
+        internal class XmlPersistLoadArgs
+        {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="parameters"></param>
+            /// <param name="propInfo"></param>
+            /// <param name="dataType"></param>
+            /// <param name="dataTypeInfo"></param>
+            /// <param name="xmElement"></param>
+            /// <param name="xmAttribute"></param>
+            internal XmlPersistLoadArgs(PersistArgs parameters, TypeLibrary.PropInfo propInfo, Type dataType, TypeLibrary.TypeInfo dataTypeInfo, XmElement xmElement, XmAttribute xmAttribute)
+            {
+                this.Parameters = parameters;
+                this.PropInfo = propInfo;
+                this.DataType = dataType;
+                this.DataTypeInfo = dataTypeInfo;
+                this.XmElement = xmElement;
+                this.XmAttribute = xmAttribute;
+            }
+            internal PersistArgs Parameters { get; private set; }
+            internal TypeLibrary.PropInfo PropInfo { get; private set; }
+            internal Type DataType { get; private set; }
+            internal TypeLibrary.TypeInfo DataTypeInfo { get; set; }
+            internal XmElement XmElement { get; private set; }
+            internal XmAttribute XmAttribute { get; private set; }
+        }
+        #endregion
+        #region enum XmlPersistenceType
+        /// <summary>
+        /// Určení úrovně, v níž se má hledat XML element
+        /// </summary>
+        internal enum XmlElementDepthType
+        {
+            None = 0,
+            /// <summary>
+            /// Kdekoliv (ve zdejší, v nižší i ve vyšší úrovni)
+            /// </summary>
+            Anywhere,
+            /// <summary>
+            /// Výhradně ve zdejší úrovni
+            /// </summary>
+            InCurrentDepth,
+            /// <summary>
+            /// Ve zdejší úrovni a v kterékoli z podřízených úrovní
+            /// </summary>
+            CurrentAndAnyChilds,
+            /// <summary>
+            /// Ve zdejší úrovni a v nejbližší podřízené úrovni
+            /// </summary>
+            CurrentAndMyChild,
+            /// <summary>
+            /// Pouze v podřízených úrovních
+            /// </summary>
+            OnlyInChilds,
+            /// <summary>
+            /// Pouze přímo podřízené úrovně (current + 1)
+            /// </summary>
+            OnlyMyOwnChild
         }
         #endregion
         #region Ukázky XML
@@ -3391,152 +2806,807 @@ anebo neprázdný objekt:
 */
         #endregion
     }
-    #region class XmlPersistSaveArgs : sada parametrů předávaných mezi vnitřními metodami XmlPersist při serializaci objektu
+    #region class TypeLibrary : knihovna informací o datových typech a o postupech jejich konverze. Instancuje se 1x pro save/load, obsahuje položky XmlPersistTypeInfo pro každý nalezený Type.
     /// <summary>
-    /// XmlPersistSaveArgs : sada parametrů předávaných mezi vnitřními metodami XmlPersist při serializaci objektu
+    /// TypeLibrary : knihovna informací o datových typech a o postupech jejich konverze.
+    /// Instancuje se 1x pro save/load, obsahuje položky TypeInfo pro každý nalezený Type.
+    /// Každý nalezený TypeInfo popisuje datový typ a způsob jeho persistence.
+    /// Pokud je typ složený z dalších property, pak TypeInfo obsahuje seznam PropInfo.
     /// </summary>
-    internal class XmlPersistSaveArgs
+    internal class TypeLibrary : IDisposable
     {
-        internal XmlPersistSaveArgs(object data, string objectName, Type estimatedType, XmlElement xmlElement, TypeLibrary typeLibrary)
+        #region Konstrukce
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        internal TypeLibrary()
         {
-            this.Data = data;
-            this.ObjectName = objectName;
-            this.EstimatedType = estimatedType;
-            this.ItemName = null;
-            this.XmlElement = xmlElement;
-            this.DataTypeInfo = (data == null ? null : typeLibrary.GetInfo(data.GetType()));
+            this.TypeInfos = new Dictionary<Type, TypeInfo>();
+            this._PrepareTypes();
         }
-        internal XmlPersistSaveArgs(object data, string objectName, Type estimatedType, string itemName, XmlElement xmlElement, TypeLibrary typeLibrary)
+        private Dictionary<Type, TypeInfo> TypeInfos;
+        void IDisposable.Dispose()
         {
-            this.Data = data;
-            this.ObjectName = objectName;
-            this.EstimatedType = estimatedType;
-            this.ItemName = itemName;
-            this.XmlElement = xmlElement;
-            this.DataTypeInfo = (data == null ? null : typeLibrary.GetInfo(data.GetType()));
-        }
-        internal object Data;
-        internal bool HasData { get { return (this.Data != null); } }
-        internal string ObjectName;
-        internal Type EstimatedType;
-        internal string ItemName;
-        internal string TypeAttributeName;
-        internal XmlElement XmlElement;
-        internal Type DataType { get { return (this.DataTypeInfo == null ? null : this.DataTypeInfo.DataType); } }
-        internal TypeLibrary.TypeInfo DataTypeInfo;
-        /// <summary>
-        /// Vrátí jméno elementu, který obsahuje jednu položku (listu, dictionary, atd)
-        /// </summary>
-        /// <param name="defaultName"></param>
-        /// <returns></returns>
-        internal string GetItemName(string defaultName)
-        {
-            return (String.IsNullOrEmpty(this.ItemName) ? "Item" : this.ItemName);
-        }
-    }
-    #endregion
-    #region class XmlPersistLoadArgs : sada parametrů předávaných mezi vnitřními metodami XmlPersist při deserializaci objektu
-    /// <summary>
-    /// XmlPersistLoadArgs : sada parametrů předávaných mezi vnitřními metodami XmlPersist při deserializaci objektu
-    /// </summary>
-    internal class XmlPersistLoadArgs
-    {
-        internal XmlPersistLoadArgs(PersistArgs parameters, TypeLibrary.PropInfo propInfo, Type dataType, TypeLibrary.TypeInfo dataTypeInfo, XmElement xmElement, XmAttribute xmAttribute)
-        {
-            this.Parameters = parameters;
-            this.PropInfo = propInfo;
-            this.DataType = dataType;
-            this.DataTypeInfo = dataTypeInfo;
-            this.XmElement = xmElement;
-            this.XmAttribute = xmAttribute;
-        }
-        internal PersistArgs Parameters;
-        internal TypeLibrary.PropInfo PropInfo;
-        internal Type DataType;
-        internal TypeLibrary.TypeInfo DataTypeInfo;
-        internal XmElement XmElement;
-        internal XmAttribute XmAttribute;
-    }
-    #endregion
-    #region enum XmlPersistenceType
-    /// <summary>
-    /// Typ objektu z hlediska persistence
-    /// </summary>
-    internal enum XmlPersistenceType
-    {
-        /// <summary>
-        /// Tento druh dat se neukládá
-        /// </summary>
-        None = 0,
-        /// <summary>
-        /// Jde o jednoduchou, jednorozměrnou hodnotu, kterou je možno uložit do XML atributu (Name = "value")
-        /// </summary>
-        Simple,
-        /// <summary>
-        /// Tato property je typu, který deklaruje, že sám provádí XmlPersistenci (z/do stringu). Do XML se formátuje jako Simple (do atributu).
-        /// </summary>
-        Self,
-        /// <summary>
-        /// Enumy
-        /// </summary>
-        Enum,
-        /// <summary>
-        /// Složený objekt, budeme hledat sadu jeho property. Pro představu: Jeden záznam (do šířky).
-        /// </summary>
-        Compound,
-        /// <summary>
-        /// Standardní pole prvků
-        /// </summary>
-        Array,
-        /// <summary>
-        /// IList, seznam, má více položek (řádků), přičemž v jednom řádku je uložen jeden objekt. Typicky List.
-        /// </summary>
-        IList,
-        /// <summary>
-        /// IDictionary, má více položek (řádků), přičemž v jednom řádku je uložena hodnota Key+Value.
-        /// </summary>
-        IDictionary
-    }
-    /// <summary>
-    /// Určení úrovně, v níž se má hledat XML element
-    /// </summary>
-    internal enum XmlElementDepthType
-    {
-        None = 0,
-        /// <summary>
-        /// Kdekoliv (ve zdejší, v nižší i ve vyšší úrovni)
-        /// </summary>
-        Anywhere,
-        /// <summary>
-        /// Výhradně ve zdejší úrovni
-        /// </summary>
-        InCurrentDepth,
-        /// <summary>
-        /// Ve zdejší úrovni a v kterékoli z podřízených úrovní
-        /// </summary>
-        CurrentAndAnyChilds,
-        /// <summary>
-        /// Ve zdejší úrovni a v nejbližší podřízené úrovni
-        /// </summary>
-        CurrentAndMyChild,
-        /// <summary>
-        /// Pouze v podřízených úrovních
-        /// </summary>
-        OnlyInChilds,
-        /// <summary>
-        /// Pouze přímo podřízené úrovně (current + 1)
-        /// </summary>
-        OnlyMyOwnChild
-    }
-    #endregion
+            this.TypeInfos.Clear();
+            this.TypeInfos = null;
 
-    #region XmDocument: obálka nad objektem System.Xml.Linq.XDocument
+            this._DisposeTypes();
+        }
+        #endregion
+        #region Hledání / vytvoření informací o typu
+        /// <summary>
+        /// Vrátí informaci o daném typu včetně informací sloužících k řízení jeho persistence.
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        internal TypeInfo GetInfo(Type type)
+        {
+            TypeInfo info;
+            if (this.TypeInfos.TryGetValue(type, out info))
+                return info;
+
+            // TypeInfo musím vytvořit, NEmapovat! a ihned vložit do this (Library):
+            info = new TypeInfo(this, type);
+            this.TypeInfos.Add(type, info);
+
+            // Teprve po vložení do Library mohu typ zmapovat:
+            // Proč? Protože existují rekurzivní typy (i vzdáleně rekurzivní), 
+            //   a ty by se v opačném případě (nejprve komplet zmapování typu, a pak teprve jeho vložení do Library) zamotaly.
+            // Jak? Příklad: Type1 obsahuje property typu Type2, a Type2 obsahuje referenci na svého parenta = Type1.
+            // Co by se stalo? Type1 se vytváří, najde property typu Type2, začal by ji mapovat ještě před uložením Type1,
+            //   takže by se v tu chvíli začal mapovat opět Type1, atd...
+            // Toto řešení (uložit nezmapovaný Type1 do Library a teprve potom jej zmapovat) tomu zabrání:
+            info.Fill();
+            return info;
+        }
+        /// <summary>
+        /// Pokusí se najít daný Type ve své paměti předdefinovaných typů, anebo detekovat typ jako jeden ze známých, a vrátí jeho XmlPersistenceType.
+        /// </summary>
+        /// <param name="type">Hledaný typ</param>
+        /// <param name="typeConvertor">Nalezený konvertor typu</param>
+        /// <returns></returns>
+        internal XmlPersistenceType GetPersistenceType(Type type, out TypeConvertor typeConvertor)
+        {
+            if (type.Name == "Boolean?")
+            { }
+            // Předdefinovaný Type?
+            if (this._PresetTypes.TryGetValue(type, out typeConvertor))
+                return typeConvertor.PersistenceType;
+
+            if (ImplementInterface(type, typeof(IXmlSerializer))) return XmlPersistenceType.Self;
+            if (type.IsEnum) return XmlPersistenceType.Enum;
+            if (type.IsArray) return XmlPersistenceType.Array;
+            if (type.IsInterface) return XmlPersistenceType.None;
+            if (ImplementInterface(type, typeof(IList))) return XmlPersistenceType.IList;
+            if (ImplementInterface(type, typeof(IDictionary))) return XmlPersistenceType.IDictionary;
+
+            return XmlPersistenceType.Compound;
+        }
+        #endregion
+        #region Simple types: příprava seznamu _PresetTypes, metoda AddTypeConvertor()
+        /// <summary>
+        /// Připraví seznam datových typů, které se ukládají Simple
+        /// </summary>
+        private void _SimpleTypePrepare()
+        {
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Boolean), XmlPersistenceType.Simple, Convertor.BooleanToString, Convertor.StringToBoolean));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Byte), XmlPersistenceType.Simple, Convertor.ByteToString, Convertor.StringToByte));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.DateTime), XmlPersistenceType.Simple, Convertor.DateTimeToString, Convertor.StringToDateTime));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.DateTimeOffset), XmlPersistenceType.Simple, Convertor.DateTimeOffsetToString, Convertor.StringToDateTimeOffset));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Decimal), XmlPersistenceType.Simple, Convertor.DecimalToString, Convertor.StringToDecimal));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Double), XmlPersistenceType.Simple, Convertor.DoubleToString, Convertor.StringToDouble));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Guid), XmlPersistenceType.Simple, Convertor.GuidToString, Convertor.StringToGuid));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Char), XmlPersistenceType.Simple, Convertor.CharToString, Convertor.StringToChar));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Int16), XmlPersistenceType.Simple, Convertor.Int16ToString, Convertor.StringToInt16));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Int32), XmlPersistenceType.Simple, Convertor.Int32ToString, Convertor.StringToInt32));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Int64), XmlPersistenceType.Simple, Convertor.Int64ToString, Convertor.StringToInt64));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.IntPtr), XmlPersistenceType.Simple, Convertor.IntPtrToString, Convertor.StringToIntPtr));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.SByte), XmlPersistenceType.Simple, Convertor.SByteToString, Convertor.StringToSByte));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Single), XmlPersistenceType.Simple, Convertor.SingleToString, Convertor.StringToSingle));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.String), XmlPersistenceType.Simple, Convertor.StringToString, Convertor.StringToString));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.TimeSpan), XmlPersistenceType.Simple, Convertor.TimeSpanToString, Convertor.StringToTimeSpan));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.UInt16), XmlPersistenceType.Simple, Convertor.UInt16ToString, Convertor.StringToUInt16));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.UInt32), XmlPersistenceType.Simple, Convertor.UInt32ToString, Convertor.StringToUInt32));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.UInt64), XmlPersistenceType.Simple, Convertor.UInt64ToString, Convertor.StringToUInt64));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.UIntPtr), XmlPersistenceType.Simple, Convertor.UIntPtrToString, Convertor.StringToUIntPtr));
+
+            /*
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Data.SqlTypes.SqlBinary), XmlPersistenceType.Simple, Convertor.SqlBinaryToString, Convertor.StringToSqlBinary));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Data.SqlTypes.SqlBoolean), XmlPersistenceType.Simple, Convertor.SqlBooleanToString, Convertor.StringToSqlBoolean));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Data.SqlTypes.SqlByte), XmlPersistenceType.Simple, Convertor.SqlByteToString, Convertor.StringToSqlByte));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Data.SqlTypes.SqlDateTime), XmlPersistenceType.Simple, Convertor.SqlDateTimeToString, Convertor.StringToSqlDateTime));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Data.SqlTypes.SqlDecimal), XmlPersistenceType.Simple, Convertor.SqlDecimalToString, Convertor.StringToSqlDecimal));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Data.SqlTypes.SqlDouble), XmlPersistenceType.Simple, Convertor.SqlDoubleToString, Convertor.StringToSqlDouble));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Data.SqlTypes.SqlGuid), XmlPersistenceType.Simple, Convertor.SqlGuidToString, Convertor.StringToSqlGuid));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Data.SqlTypes.SqlInt16), XmlPersistenceType.Simple, Convertor.SqlInt16ToString, Convertor.StringToSqlInt16));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Data.SqlTypes.SqlInt32), XmlPersistenceType.Simple, Convertor.SqlInt32ToString, Convertor.StringToSqlInt32));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Data.SqlTypes.SqlInt64), XmlPersistenceType.Simple, Convertor.SqlInt64ToString, Convertor.StringToSqlInt64));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Data.SqlTypes.SqlMoney), XmlPersistenceType.Simple, Convertor.SqlMoneyToString, Convertor.StringToSqlMoney));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Data.SqlTypes.SqlSingle), XmlPersistenceType.Simple, Convertor.SqlSingleToString, Convertor.StringToSqlSingle));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Data.SqlTypes.SqlString), XmlPersistenceType.Simple, Convertor.SqlStringToString, Convertor.StringToSqlString));
+            */
+
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Drawing.Color), XmlPersistenceType.Simple, Convertor.ColorToString, Convertor.StringToColor));
+            // this.AddTypeConvertor(new TypeConvertor(typeof(System.Drawing.CharacterRange), XmlPersistenceType.Simple, null, null));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Drawing.Point), XmlPersistenceType.Simple, Convertor.PointToString, Convertor.StringToPoint));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Drawing.PointF), XmlPersistenceType.Simple, Convertor.PointFToString, Convertor.StringToPointF));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Drawing.Rectangle), XmlPersistenceType.Simple, Convertor.RectangleToString, Convertor.StringToRectangle));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Drawing.RectangleF), XmlPersistenceType.Simple, Convertor.RectangleFToString, Convertor.StringToRectangleF));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Drawing.Size), XmlPersistenceType.Simple, Convertor.SizeToString, Convertor.StringToSize));
+            this.AddTypeConvertor(new TypeConvertor(typeof(System.Drawing.SizeF), XmlPersistenceType.Simple, Convertor.SizeFToString, Convertor.StringToSizeF));
+
+            // Pokud zařadím další typy, musím k nim přidat jejich konvertory.
+        }
+        /// <summary>
+        /// Několik vybraných typů, které se ukládají Simple
+        /// </summary>
+        private Dictionary<Type, TypeConvertor> _PresetTypes;
+        /// <summary>
+        /// Připraví seznam datových typů, které se ukládají Simple
+        /// </summary>
+        private void _PrepareTypes()
+        {
+            this._PresetTypes = new Dictionary<Type, TypeConvertor>();
+            this._SimpleTypePrepare();
+        }
+        /// <summary>
+        /// Přidá/modifikuje daný TypeConvertor
+        /// </summary>
+        /// <param name="typeConvertor"></param>
+        internal void AddTypeConvertor(TypeConvertor typeConvertor)
+        {
+            if (!this._PresetTypes.ContainsKey(typeConvertor.DataType))
+                this._PresetTypes.Add(typeConvertor.DataType, typeConvertor);
+            else
+                this._PresetTypes[typeConvertor.DataType] = typeConvertor;
+        }
+        private void _DisposeTypes()
+        {
+            this._PresetTypes.Clear();
+            this._PresetTypes = null;
+        }
+        #endregion
+        #region InstanceCreator
+        /// <summary>
+        /// Vytvoří a vrátí objekt daného typu
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        private object _ObjectCreate(Type type)
+        {
+            object result = null;
+            ConstructorInfo constructor = this.CheckConstructors(type);     // Ověří, zda Type má bezparametrický konstruktor. Vrátí jej.
+            if (constructor != null)
+                result = constructor.Invoke(null);
+            else
+                // Například struktury nemají bezparametrický konstruktor definovaný, proto vrací null. Přesto je lze standardně vytvořit:
+                result = System.Activator.CreateInstance(type);
+            return result;
+        }
+        /// <summary>
+        /// Metoda ověří, zda typ má bezparametrický konstruktor.
+        /// Pokud jej nemá, vyhodí chybu.
+        /// Pokud jej má, vrátí jej.
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        internal ConstructorInfo CheckConstructors(Type type)
+        {
+            if (type.IsClass)
+            {
+                ConstructorInfo[] typeConsts = type.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);   // Najdu konstruktory daného Type
+                ConstructorInfo[] typeConstNps = typeConsts.Where(c => c.GetParameters().Length == 0).ToArray();     // Najdu jen ty bezparametrické...
+                if (typeConstNps.Length == 0)
+                    throw new InvalidOperationException("Type " + type.Namespace + "." + type.Name + " can not be persisted, must be a type with parameterless constructor!");
+                return typeConstNps[0];
+            }
+            if (type.IsInterface)
+            {
+                throw new InvalidOperationException("Type " + type.Namespace + "." + type.Name + " is interface. Object can not be created.!");
+            }
+            if (type.IsValueType || type.IsEnum || type.IsPrimitive)
+            {
+                return null;
+            }
+            throw new InvalidOperationException("Type " + type.Namespace + "." + type.Name + " is unknown type. Object can not be created.!");
+        }
+        #endregion
+        #region Static Type.Assembly podpora
+        /// <summary>
+        /// Určí text do atributu Type a Assembly pro daný Type.
+        /// Pro některé typy není Assembly zapotřebí.
+        /// Vrací takové informace, z nichž může reciproční metoda GetTypeFromSerial() vrátit Type.
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="serialType"></param>
+        /// <param name="serialAssembly"></param>
+        /// <returns></returns>
+        internal static void GetSerialForType(Type type, out string serialType, out string serialAssembly)
+        {
+            serialType = type.FullName;
+            serialAssembly = null;
+
+            // Někdy si chci uložit i assembly - to v případě, že v type.FullName není explicitně určena, a pro konkrétní datový typ ji budu potřebovat explicitně loadovat (v metodě GetTypeFromSerial()):
+
+            // Pokud už v Type je obsažena explicitní informace o Assembly, pak končím:
+            if (serialType.Contains("[") && serialType.Contains(" Version=")) return;
+
+            // Pokud dokážu vytvořit Type jen na základě jeho názvu, pak nemusím ukládat explicitní jméno Assembly:
+            Type test = Type.GetType(serialType);
+            if (test != null) return;
+
+            // Pokud dokážu vrátit assembly jen na základě názvu typu, pak nemusím ukládat její explicitní jméno:
+            Assembly assm = _GetAssemblyFromTypeName(serialType);
+            if (assm != null) return;
+
+            // Protože z typu nedokážu určit assembly, musím si ji explicitně uložit teď, když mám typ:
+            serialAssembly = type.Assembly.FullName;
+        }
+        /// <summary>
+        /// Ze serializovaných údajů Type a Assembly vrátí Type daného objektu.
+        /// </summary>
+        /// <param name="serialType"></param>
+        /// <param name="serialAssembly"></param>
+        /// <returns></returns>
+        internal static Type GetTypeFromSerial(string serialType, string serialAssembly)
+        {
+            if (String.IsNullOrEmpty(serialType)) return null;
+
+            if (String.IsNullOrEmpty(serialAssembly))
+            {
+                Type result = Type.GetType(serialType);
+                if (result != null) return result;
+
+                Assembly assm = _GetAssemblyFromTypeName(serialType);
+                if (assm == null) return null;
+
+                return assm.GetType(serialType);
+            }
+
+            Assembly assLoad;
+            Dictionary<string, Assembly> assDict = _LoadedAssemblyDict;
+            if (!assDict.TryGetValue(serialAssembly, out assLoad))
+            {
+                AssemblyName assName = new AssemblyName(serialAssembly);
+                assLoad = Assembly.Load(assName);
+                assDict.Add(serialAssembly, assLoad);
+            }
+            return assLoad.GetType(serialType);
+        }
+        private static Dictionary<string, Assembly> _LoadedAssemblyDict
+        {
+            get
+            {
+                if (__LoadedAssemblyDict == null)
+                    __LoadedAssemblyDict = new Dictionary<string, Assembly>();
+                return __LoadedAssemblyDict;
+            }
+        }
+        private static Dictionary<string, Assembly> __LoadedAssemblyDict;
+        /// <summary>
+        /// Zkusí určit Assembly pro daný název typu.
+        /// </summary>
+        /// <param name="serialType"></param>
+        /// <returns></returns>
+        private static Assembly _GetAssemblyFromTypeName(string serialType)
+        {
+            string nmsp = _GetNamespaceFromType(serialType);
+            if (nmsp == "System") return typeof(System.Decimal).Assembly;
+            if (nmsp == "System.Data") return typeof(System.Data.DataTable).Assembly;
+            if (nmsp == "System.Drawing") return typeof(System.Drawing.Font).Assembly;
+            if (nmsp == "System.Drawing.Design") return typeof(System.Drawing.Design.ToolboxItem).Assembly;
+            if (nmsp == "System.Drawing.Drawing2D") return typeof(System.Drawing.Drawing2D.PathData).Assembly;
+            if (nmsp == "System.Drawing.Imaging") return typeof(System.Drawing.Imaging.ColorMap).Assembly;
+            if (nmsp == "System.Drawing.Printing") return typeof(System.Drawing.Printing.PageSettings).Assembly;
+            if (nmsp == "System.Drawing.Text") return typeof(System.Drawing.Text.GenericFontFamilies).Assembly;
+            if (nmsp == "System.Globalization") return typeof(System.Globalization.Calendar).Assembly;
+            if (nmsp == "System.IO") return typeof(System.IO.DirectoryInfo).Assembly;
+
+            return null;
+        }
+        /// <summary>
+        /// Vrátí namespace typu, nebo jeho owner class pokud je to vnořená třída.
+        /// </summary>
+        /// <param name="serialType"></param>
+        /// <returns></returns>
+        private static string _GetNamespaceFromType(string serialType)
+        {
+            // Oddělit název typu před [ 
+            //   "System.Collections.Generic.List`1[[System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]" => "System.Collections.Generic.List`1"
+            int ptr = serialType.IndexOf('[');
+            string typeName = (ptr < 0 ? serialType : (ptr == 0 ? "" : serialType.Substring(0, ptr)));
+
+            // Rozdělit název typu na položky: 
+            //   "System.Drawing.Drawing2D.PathGradientBrush" => "System"; "Drawing"; "Drawing2D"; "PathGradientBrush"
+            string[] typeItems = typeName.Split('.');
+            string result = "";
+            for (int t = 0; t < (typeItems.Length - 1); t++)
+                result = result + (t == 0 ? "" : ".") + typeItems[t];
+            return result;
+        }
+        /// <summary>
+        /// Vrátí true, pokud this type implementuje daný interface.
+        /// Je obdobou testu "if (data is implementInterface)", ale pro případ, kdy nemáme objekt ale jeho Type.
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="implementInterface"></param>
+        /// <returns></returns>
+        internal static bool ImplementInterface(Type type, Type implementInterface)
+        {
+            return type.GetInterfaces().Any(i => Type.Equals(i, implementInterface));
+        }
+        #endregion
+        #region class TypeInfo : obecné informace o persistování jednoho datového typu. TypeInfo může obsahovat seznam PropInfo, anebo
+        /// <summary>
+        /// TypeInfo : obecné informace o persistování jednoho datového typu. TypeInfo může obsahovat seznam PropInfo, anebo 
+        /// </summary>
+        internal class TypeInfo
+        {
+            internal TypeInfo(TypeLibrary typeLibrary, Type dataType)
+            {
+                this.TypeLibrary = typeLibrary;
+                this.DataType = dataType;
+            }
+            public override string ToString()
+            {
+                return this.DataType.Name + ": " + this.PersistenceType.ToString();
+            }
+            internal void Fill()
+            {
+                // Základní režim persistence (primitiv / datový objekt / soupis), plus najdu TypeConvertor:
+                TypeConvertor typeConvert;
+                this.PersistenceType = this.TypeLibrary.GetPersistenceType(this.DataType, out typeConvert);
+                this.TypeConvert = typeConvert;
+
+                // Detekce property do seznamu properties:
+                switch (this.PersistenceType)
+                {
+                    case XmlPersistenceType.Array:
+                        this._DetectArrayItemType();
+                        break;
+                    case XmlPersistenceType.IList:
+                    case XmlPersistenceType.IDictionary:
+                        break;
+                    case XmlPersistenceType.Compound:
+                        this._DetectProperties();
+                        break;
+                }
+
+                // Detekce generických typů proběhne vždy:
+                this._DetectGenericArgs();
+            }
+            /// <summary>
+            /// Reference na knihovnu typů.
+            /// V ní jsem uložen já, v ní dohledávám informace pro svoje typy.
+            /// </summary>
+            internal TypeLibrary TypeLibrary { get; private set; }
+            /// <summary>
+            /// Můj Type.
+            /// </summary>
+            internal Type DataType { get; private set; }
+            /// <summary>
+            /// Typ persistence zdejšího typu (this.DataType).
+            /// </summary>
+            internal XmlPersistenceType PersistenceType { get; private set; }
+            /// <summary>
+            /// Type convertor, pokud pro tento typ existuje.
+            /// </summary>
+            internal TypeConvertor TypeConvert { get; private set; }
+            /// <summary>
+            /// Soupis property zdejšího typu.
+            /// Je naplněn pouze při PersistenceType = XmlPersistenceType.InnerObject.
+            /// </summary>
+            internal List<PropInfo> PropertyList { get; private set; }
+            #region Properties
+            /// <summary>
+            /// Detekuje PropertyInfo zdejšího typu a vytváří seznam this.PropertyList s prvky třídy PropInfo
+            /// </summary>
+            private void _DetectProperties()
+            {
+                this.PropertyList = new List<PropInfo>();
+                PropertyInfo[] props = this.DataType.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy);
+                foreach (PropertyInfo prop in props)
+                {
+                    PropInfo propData = new PropInfo(this, prop);
+                    if (!propData.Enabled) continue;
+
+                    this.PropertyList.Add(propData);
+                }
+                // Seznam setřídit:
+                this.PropertyList.Sort(PropInfo.CompareByName);
+            }
+            #endregion
+            #region Generika
+            /// <summary>
+            /// Počet generických argumentů
+            /// </summary>
+            internal int GenericCount
+            {
+                get
+                {
+                    Type[] gps = this.DataType.GetGenericArguments();
+                    if (gps == null || gps.Length == 0) return 0;
+                    return gps.Length;
+                }
+            }
+            /// <summary>
+            /// Vrátí generický typ z dané pozice. Pokud daná pozice není obsazená, vrátí null.
+            /// </summary>
+            /// <param name="index"></param>
+            /// <returns></returns>
+            internal Type GetGenericType(int index)
+            {
+                if (this.GenericList != null && index >= 0 && index < this.GenericList.Count)
+                    return this.GenericList[index];
+                return null;
+            }
+            /// <summary>
+            /// Detekuje typy generických parametrů do this.GenericParamList s prvky třídy TypeInfo.
+            /// </summary>
+            private void _DetectGenericArgs()
+            {
+                Type[] gps = this.DataType.GetGenericArguments();
+                if (gps == null || gps.Length == 0) return;
+                this.GenericList = new List<Type>();
+                foreach (Type generic in gps)
+                    this.GenericList.Add(generic);
+            }
+            /// <summary>
+            /// Soupis generických typů zdejšího typu.
+            /// Je naplněn pouze při PersistenceType = XmlPersistenceType.InnerObject.
+            /// </summary>
+            internal List<Type> GenericList { get; private set; }
+            #endregion
+            #region Array
+            /// <summary>
+            /// Type prvků v tomto Array, pokud this popisuje standardní Array.
+            /// Array má jeden typ, deklaruje se například: Int32[,] x = new Int32[5,12];
+            /// Pak typ pole (this.DataType) = typeof(Int32[,]); a typ prvku this.ItemDataType = typeof(Int32);
+            /// </summary>
+            internal Type ItemDataType { get; private set; }
+            /// <summary>
+            /// Detekuje typ prvklů standardního Array, do this.ItemDataType
+            /// </summary>
+            private void _DetectArrayItemType()
+            {
+                Type arrayType = this.DataType;              // Typ pole, například = typeof(System.Int32[,])
+                if (arrayType.HasElementType)
+                    this.ItemDataType = arrayType.GetElementType();      // Vrátí Type elementu pole, tedy typeof(System.Int32) !!! 
+                else if (this.GenericCount > 0)
+                    this.ItemDataType = this.GetGenericType(0);
+                else
+                    this.ItemDataType = null;
+            }
+            #endregion
+            internal PropInfo FindPropertyByXmlName(string propName)
+            {
+                return this.PropertyList.FirstOrDefault(p => String.Equals(p.XmlName, propName));
+            }
+        }
+        #endregion
+        #region class PropInfo : data o jedné property (jméno property, její typ, její TypeInfo
+        /// <summary>
+        /// PropInfo : data o jedné property
+        /// </summary>
+        internal class PropInfo
+        {
+            internal PropInfo(TypeInfo typeInfo, PropertyInfo property)
+            {
+                this.TypeInfo = typeInfo;
+                this.Property = property;
+                this._PropertyTypeInfo = null;
+
+                // Property lze ukládat, pokud má set metodu:
+                this.Enabled = (property.GetSetMethod(true) != null);
+                this.XmlName = null;
+
+                // Zjistím, zda nejde o property "Djs.Tools.XmlPersistor.IXmlPersistNotify.XmlPersistState" (takovou nebudu persistovat zcela automaticky):
+                object[] atts = null;
+                // Anebo, zda property má atribut PersistingEnabledAttribute s hodnotou PersistEnable = false, pak by se neukládala:
+                if (!this.Enabled || property.Name == "Djs.Tools.XmlPersistor.IXmlPersistNotify.XmlPersistState" || !IsPropertyPersistable(property, out atts))
+                {
+                    this.Enabled = false;
+                    return;
+                }
+                if (atts == null)
+                    atts = property.GetCustomAttributes(typeof(PersistAttribute), true);
+
+                // XmlName (Custom / default):
+                object attName = atts.FirstOrDefault(at => at is PropertyNameAttribute);
+                if (attName != null)
+                    this.XmlName = (attName as PropertyNameAttribute).PropertyName;
+                if (String.IsNullOrEmpty(this.XmlName))
+                    this.XmlName = this.Name;
+                this.XmlName = XmlPersist.CreateXmlName(this.XmlName);
+
+                // XmlItemName
+                object attItem = atts.FirstOrDefault(at => at is CollectionItemNameAttribute);
+                if (attItem != null)
+                    this.XmlItemName = (attItem as CollectionItemNameAttribute).ItemName;
+                if (String.IsNullOrEmpty(this.XmlItemName))
+                    this.XmlItemName = "Item";
+                this.XmlItemName = XmlPersist.CreateXmlName(this.XmlItemName);
+            }
+            /// <summary>
+            /// Určí, zda daná property se má persistovat (ukládat + načítat z XML)
+            /// </summary>
+            /// <param name="property"></param>
+            /// <returns></returns>
+            internal static bool IsPropertyPersistable(PropertyInfo property)
+            {
+                object[] atts;
+                return IsPropertyPersistable(property, out atts);
+            }
+            /// <summary>
+            /// Určí, zda daná property se má persistovat (ukládat + načítat z XML)
+            /// </summary>
+            /// <param name="property"></param>
+            /// <param name="atts"></param>
+            /// <returns></returns>
+            internal static bool IsPropertyPersistable(PropertyInfo property, out object[] atts)
+            {
+                // Custom atributy:
+                atts = property.GetCustomAttributes(typeof(PersistAttribute), true);
+                object attEnabled = atts.FirstOrDefault(at => at is PersistingEnabledAttribute);
+
+                // Pokud existuje atribut PersistingEnabledAttribute, pak vrátím jeho hodnotu PersistEnable:
+                if (attEnabled != null)
+                    return (attEnabled as PersistingEnabledAttribute).PersistEnable;
+
+                // Pokud neexistuje, vrátím true = implicitně persistuji vše:
+                return true;
+            }
+            /// <summary>
+            /// Určí, zda daná property se má persistovat (ukládat + načítat z XML)
+            /// </summary>
+            /// <param name="property"></param>
+            /// <returns></returns>
+            internal static bool IsPropertyCloneable(PropertyInfo property)
+            {
+                // Custom atributy:
+                object[] atts = property.GetCustomAttributes(typeof(PersistAttribute), true);
+                object attEnabled = atts.FirstOrDefault(at => at is PersistingEnabledAttribute);
+
+                // Pokud existuje atribut PersistingEnabledAttribute, pak vrátím jeho hodnotu CloneEnable:
+                if (attEnabled != null)
+                    return (attEnabled as PersistingEnabledAttribute).CloneEnable;
+
+                // Pokud neexistuje, vrátím true = implicitně persistuji vše:
+                return true;
+
+            }
+            public override string ToString()
+            {
+                string text = this.Property.Name + ": ";
+                if (this.Enabled)
+                    text += "XML name=" + this.XmlName + "; Type=" + this.PropertyType.Name;
+                else
+                    text += "disabled.";
+                return text;
+            }
+            internal static int CompareByName(PropInfo a, PropInfo b)
+            {
+                return String.Compare(a.Name, b.Name);
+            }
+            /// <summary>
+            /// Vztah na typ, jehož je tato property členem
+            /// </summary>
+            internal TypeInfo TypeInfo { get; private set; }
+            /// <summary>
+            /// Reference na knihovnu typů.
+            /// V ní je uložen můj TypeInfo, a přes něj se do knihovny dostanu i já.
+            /// </summary>
+            internal TypeLibrary TypeLibrary { get { return this.TypeInfo.TypeLibrary; } }
+            /// <summary>
+            /// Info o této property
+            /// </summary>
+            internal PropertyInfo Property { get; private set; }
+            /// <summary>
+            /// Název této property = exaktně z this.Property.Name
+            /// </summary>
+            internal string Name { get { return this.Property.Name; } }
+            /// <summary>
+            /// .NET Type této property = this.Property.PropertyType.
+            /// Jde o typ, jak je property deklarována, nikoli Type, který je v ní aktuálně uložen (to se zjistí až podle objektu s daty).
+            /// Může to být potomek zdejšího typu, anebo implementace interface...
+            /// </summary>
+            internal Type PropertyType { get { return this.Property.PropertyType; } }
+            /// <summary>
+            /// true, pokud se tato property má persistovat
+            /// </summary>
+            internal bool Enabled { get; private set; }
+            /// <summary>
+            /// Rozšířené vlastnosti typu této property - data, načtená z TypeLibrary.
+            /// Data se načítají až on demand, z TypeLibrary.
+            /// </summary>
+            internal TypeInfo PropertyTypeInfo
+            {
+                get
+                {
+                    if (this._PropertyTypeInfo == null)
+                        this._PropertyTypeInfo = this.TypeLibrary.GetInfo(this.PropertyType);
+                    return this._PropertyTypeInfo;
+                }
+            }
+            private TypeInfo _PropertyTypeInfo;
+            /// <summary>
+            /// Jméno pro persistenci hodnoty této property
+            /// </summary>
+            internal string XmlName { get; private set; }
+            /// <summary>
+            /// Jméno pro persistenci jednotlivých položek kolekce (Item)
+            /// </summary>
+            internal string XmlItemName { get; private set; }
+            #region Vytváření jména elementu - asi zbytečné
+            /// <summary>
+            /// Ze jména property vytvoří jméno XML elementu/atributu
+            /// </summary>
+            /// <param name="objectName"></param>
+            /// <returns></returns>
+            private string _XmlCreateName(string objectName)
+            {
+                string xmlName = "";
+                string upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+                // string lower = "abcdefghijklmnopqrstuvwxyz";
+                string number = "0123456789";
+                string diacriticUpp = "ÁĆČĎÉĚËÍĹĽŇÓŔŘŠŤÚŮÝŽ";
+                string noDiacritUpp = "ACCDEEEILLNORRSTUUYZ";
+                string diacriticLow = "áćčďéěëíĺľňóŕřśšťúůýž";
+                string noDiacritLow = "accdeeeillnorrsstuuyz";
+                string diacritic = diacriticUpp + diacriticLow;
+                string noDiacrit = noDiacritUpp + noDiacritLow;
+                _XmlCreateSequence state = _XmlCreateSequence.Begin;
+                for (int i = 0; i < objectName.Length; i++)
+                {
+                    string c = objectName.Substring(i, 1);
+
+                    // Zrušit diakritiku
+                    int diacr = diacritic.IndexOf(c);
+                    if (diacr > 0)
+                        c = noDiacrit.Substring(diacr, 0);
+
+                    // Pokud mám ve vstupujícím textu podtržítko:
+                    if (c == "_")
+                    {
+                        if (state != _XmlCreateSequence.AfterUnders)
+                        {   // Pokud nejsem po explicitním podtržítku, tak tam první dát můžu (ale další už ne):
+                            xmlName += c;
+                            state = _XmlCreateSequence.AfterUnders;
+                        }
+                    }
+                    // Předsadit _ před číslice:
+                    else if (number.Contains(c))
+                    {   // Máme číslici:
+                        if (state == _XmlCreateSequence.AfterLower || state == _XmlCreateSequence.AfterUpper)
+                            // po jakémkoli písmenu => předsadím _, po _ a po číslici nepředsadím:
+                            xmlName += "_";
+                        xmlName += c.ToLower();
+                        state = _XmlCreateSequence.AfterNumber;
+                    }
+                    // Řešit konverzi CamelCase => camel_case
+                    else if (upper.Contains(c))
+                    {   // Máme velké písmeno:
+                        if (state == _XmlCreateSequence.AfterLower || state == _XmlCreateSequence.AfterNumber)
+                            // po malém písmenu nebo po číslici => předsadím _, po velkém písmenu a po _ ne:
+                            xmlName += "_";
+                        xmlName += c.ToLower();
+                        state = _XmlCreateSequence.AfterUpper;
+                    }
+                    else
+                    {
+                        xmlName += c.ToLower();
+                        state = _XmlCreateSequence.AfterLower;
+                    }
+                }
+                return xmlName;
+            }
+            private enum _XmlCreateSequence { Begin, AfterMultiUpper, AfterUpper, AfterLower, AfterNumber, AfterUnders }
+            #endregion
+        }
+        #endregion
+        #region class TypeConvertor : definuje pravidla pro persistenci specifického datového typu, obsahuje delegáty pro serializaci / deserializaci typu.
+        /// <summary>
+        /// TypeConvertor : Předpis pro konverzi jednoho typu.
+        /// Popisuje jeden konkrétní Type, a uvádí delegáty na metody, které provedou serializaci / deserializaci tohoto typu.
+        /// </summary>
+        internal class TypeConvertor
+        {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="dataType">Datový typ, pro který platá tato deklarace</param>
+            /// <param name="serializator">Metoda, která provede serializaci (z objektu na string). Musí být zadán pro persistenceType = XmlPersistenceType.Simple!</param>
+            /// <param name="deserializator">Metoda, která provede deserializaci (ze stringu na objekt). Musí být zadán pro persistenceType = XmlPersistenceType.Simple!</param>
+            public TypeConvertor(Type dataType, Func<object, string> serializator, Func<string, object> deserializator)
+            {
+                this.DataType = dataType;
+                this.PersistenceType = XmlPersistenceType.Self;
+                this.Serializator = serializator;
+                this.Deserializator = deserializator;
+            }
+            /// <summary>
+            /// Konstruktor interní
+            /// </summary>
+            /// <param name="dataType">Datový typ, pro který platá tato deklarace</param>
+            /// <param name="persistenceType">Druh uložení. Pokud se bude používat serializátor</param>
+            /// <param name="serializator">Metoda, která provede serializaci (z objektu na string). Musí být zadán pro persistenceType = XmlPersistenceType.Simple!</param>
+            /// <param name="deserializator">Metoda, která provede deserializaci (ze stringu na objekt). Musí být zadán pro persistenceType = XmlPersistenceType.Simple!</param>
+            internal TypeConvertor(Type dataType, XmlPersistenceType persistenceType, Func<object, string> serializator, Func<string, object> deserializator)
+            {
+                this.DataType = dataType;
+                this.PersistenceType = persistenceType;
+                this.Serializator = serializator;
+                this.Deserializator = deserializator;
+            }
+            /// <summary>
+            /// Datový typ, pro který platá tato deklarace
+            /// </summary>
+            public Type DataType { get; private set; }
+            /// <summary>
+            /// Druh uložení. Pokud bude zadána hodnota XmlPersistenceType.Simple, musí se vyplnit i Serializator a Deserializator.
+            /// Pokud aplikace chce některé typy serializovat vlastními silami, uvede XmlPersistenceType.Simple a naplní svoje metody Serializator a Deserializator.
+            /// </summary>
+            internal XmlPersistenceType PersistenceType { get; private set; }
+            /// <summary>
+            /// Metoda, která provede serializaci (z objektu na string)
+            /// </summary>
+            public Func<object, string> Serializator { get; private set; }
+            /// <summary>
+            /// Metoda, která provede deserializaci (ze stringu na objekt)
+            /// </summary>
+            public Func<string, object> Deserializator { get; private set; }
+        }
+        #endregion
+        #region enum XmlPersistenceType
+        /// <summary>
+        /// Typ objektu z hlediska persistence
+        /// </summary>
+        internal enum XmlPersistenceType
+        {
+            /// <summary>
+            /// Tento druh dat se neukládá
+            /// </summary>
+            None = 0,
+            /// <summary>
+            /// Jde o jednoduchou, jednorozměrnou hodnotu, kterou je možno uložit do XML atributu (Name = "value")
+            /// </summary>
+            Simple,
+            /// <summary>
+            /// Tato property je typu, který deklaruje, že sám provádí XmlPersistenci (z/do stringu). Do XML se formátuje jako Simple (do atributu).
+            /// </summary>
+            Self,
+            /// <summary>
+            /// Enumy
+            /// </summary>
+            Enum,
+            /// <summary>
+            /// Složený objekt, budeme hledat sadu jeho property. Pro představu: Jeden záznam (do šířky).
+            /// </summary>
+            Compound,
+            /// <summary>
+            /// Standardní pole prvků
+            /// </summary>
+            Array,
+            /// <summary>
+            /// IList, seznam, má více položek (řádků), přičemž v jednom řádku je uložen jeden objekt. Typicky List.
+            /// </summary>
+            IList,
+            /// <summary>
+            /// IDictionary, má více položek (řádků), přičemž v jednom řádku je uložena hodnota Key+Value.
+            /// </summary>
+            IDictionary
+        }
+        #endregion
+
+    }
+    #endregion
+    #region class XmDocument: obálka nad objektem System.Xml.Linq.XDocument
     /// <summary>
     /// XmDocument: obálka nad objektem System.Xml.Linq.XDocument
     /// </summary>
     internal class XmDocument
     {
-        #region Konstrukce
+        #region Konstrukce - tvorba obálky XmDocument ze souboru nebo z textu
         private XmDocument(System.Xml.Linq.XDocument xDoc)
         {
             this._XDocument = xDoc;
@@ -3598,30 +3668,31 @@ anebo neprázdný objekt:
         private System.Xml.Linq.XDocument _XDocument;
         private XmElement _CurrentElement;
         #endregion
-        #region Hledání
+        #region Hledání elementu v rámci dokumentu
         /// <summary>
         /// Vyhledá a vrátí přesně zadaný element.
-        /// Zadání se provádí uvedením všech elementů počínaje Root elementem, až k elementu který chci vrátit.
+        /// Zadání se provádí uvedením všech elementů počínaje Root elementem, až k elementu který chci vrátit, oddělovačem elementů v cestě je lomítko / nebo \
+        /// Například FindElement("root/data/first") vyhledá root element, v něm vyhledá element data a v něm pak first.
         /// </summary>
-        /// <param name="elementNames"></param>
+        /// <param name="elementPath"></param>
         /// <returns></returns>
-        internal XmElement FindElement(params string[] elementNames)
+        internal XmElement FindElement(string elementPath)
         {
-            XElement findIn = this._XDocument.Root;
             XmElement result = null;
-            if (elementNames != null && elementNames.Length > 0)
+            if (elementPath != null && elementPath.Length > 0)
             {
+                XElement findIn = this._XDocument.Root;
+                string[] elementNames = elementPath.Split('\\', '/');
                 int len = elementNames.Length;
                 if (findIn.Name.LocalName == elementNames[0])
-                {
+                {   // Pokud se jméno (LocalName) skutečného Root elementu shoduje s požadovaným, tak jdeme hledat:
                     if (len == 1)
                         result = XmElement.Create(findIn);
                     else
                     {
                         for (int i = 1; i < len; i++)
-                        {
+                        {   // Hledáme další element, ne jen Root:
                             string elementName = elementNames[i];
-                            // XElement find = findIn.Element(elementName);
                             XElement find = findIn.Elements().FirstOrDefault(xe => xe.Name.LocalName == elementName);
 
                             if (find == null) break;
@@ -3644,7 +3715,7 @@ anebo neprázdný objekt:
         #endregion
     }
     #endregion
-    #region XmElement: obálka nad objektem System.Xml.Linq.XElement
+    #region class XmElement: obálka nad objektem System.Xml.Linq.XElement
     /// <summary>
     /// XmElement: obálka nad objektem System.Xml.Linq.XElement
     /// </summary>
@@ -3675,7 +3746,6 @@ anebo neprázdný objekt:
             return "XmlElement: " + this._XElement.Name.LocalName;
         }
         private System.Xml.Linq.XElement _XElement;
-        private XmAttributes _XmAttributes;
         #endregion
         #region Property
         /// <summary>
@@ -3686,16 +3756,24 @@ anebo neprázdný objekt:
         /// Aktuální XElement = přímý přístup k objektu System.Xml.Linq.XElement, pro který je tento XmElement vytvořen
         /// </summary>
         internal XElement XElement { get { return this._XElement; } }
+        #endregion
+        #region Atributy elementu
         /// <summary>
-        /// Přístup k vnitřním elementům v tomto elementu.
-        /// Vnitřní elementy jsou elementy právě v úrovni this.Childs, nikoli hlouběji zanořené.
-        /// Vnitřní elementy jsou opět třídy shodné jako this (tj. XmElement), nejde o elementy System.Xml.Linq.XElement.
+        /// Sada atributů tohoto elementu
         /// </summary>
-        internal IEnumerable<XmElement> XmElements { get { return new XmElementList(this); } }
+        internal IEnumerable<XmAttribute> XmAttributes
+        {
+            get
+            {
+                if (this._XmAttributes == null)
+                    this._ReadAttributes();
+                return this._XmAttributes.Values;
+            }
+        }
         /// <summary>
-		/// Zmapovaná sada atributů
-		/// </summary>
-		internal XmAttributes XmAttributes
+        /// Sada atributů tohoto elementu, Dictionary
+        /// </summary>
+        private Dictionary<string, XmAttribute> XmAttributeDict
         {
             get
             {
@@ -3704,57 +3782,16 @@ anebo neprázdný objekt:
                 return this._XmAttributes;
             }
         }
-        #endregion
-        #region Zmapování atributů
-        private void _ReadAttributes()
-        {
-            this._XmAttributes = new XmAttributes(this);
-            if (!this._XElement.HasAttributes) return;
-            foreach (XAttribute xAtr in this._XElement.Attributes())
-                this._XmAttributes.Add(xAtr);
-        }
-        #endregion
-        #region Enumerace vnitřních elementů (enumerace elementů XmElement, nikoli XElement)
-        protected class XmElementList : IEnumerable<XmElement>
-        {
-            internal XmElementList(XmElement parent)
-            {
-                this.Parent = parent;
-            }
-            protected XmElement Parent;
-            IEnumerator<XmElement> IEnumerable<XmElement>.GetEnumerator()
-            {
-                return _GetEnumerator();
-            }
-            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-            {
-                return _GetEnumerator();
-            }
-            /// <summary>
-            /// Tvorba enumerátoru: z dat třídy XElement (systémová) z _XElement.Elements() 
-            /// vytvořím položky třídy XmElement (zdejší) do lokálního seznamu, z nějž vrátím jeho enumerátor.
-            /// </summary>
-            /// <returns></returns>
-            private IEnumerator<XmElement> _GetEnumerator()
-            {
-                if (this.Parent == null) return null;
-                List<XmElement> list = new List<XmElement>();
-                foreach (XElement xEle in this.Parent._XElement.Elements())
-                    list.Add(XmElement.Create(xEle));
-                return list.GetEnumerator();
-            }
-        }
-        #endregion
-        #region Vyhledání atributu a elementu
         /// <summary>
         /// Najde ve zdejších atributech atribut daného jména (case sensitive) a vrátí jeho hodnotu Value. Pokud je jich víc, vrátí první.
         /// Pokud neexistuje atribut, nebo neobsahuje value, vrací defaultValue.
         /// </summary>
         /// <param name="attributeName"></param>
+        /// <param name="attribute"></param>
         /// <returns></returns>
-        internal XmAttribute TryFindAttribute(string attributeName)
+        internal bool TryGetAttribute(string attributeName, out XmAttribute attribute)
         {
-            return this.XmAttributes.TryFind(attributeName);
+            return (this.XmAttributeDict.TryGetValue(attributeName, out attribute) && attribute != null);
         }
         /// <summary>
         /// Najde ve zdejších atributech atribut daného jména (case sensitive) a vrátí jeho hodnotu Value. Pokud je jich víc, vrátí první.
@@ -3765,11 +3802,58 @@ anebo neprázdný objekt:
         /// <returns></returns>
         internal string FindAttributeValue(string attributeName, string defaultValue)
         {
-            XmAttribute attr = this.XmAttributes.TryFind(attributeName);
-            if (attr == null) return defaultValue;
-            string value = attr.ValueFirstOrDefault;
+            XmAttribute attribute;
+            if (!this.TryGetAttribute(attributeName, out attribute)) return defaultValue;
+            string value = attribute.ValueFirstOrDefault;
             if (value == null) return defaultValue;
             return value;
+        }
+        /// <summary>
+        /// Načte atributy tohoto elementu do <see cref="_XmAttributes"/>
+        /// </summary>
+        private void _ReadAttributes()
+        {
+            Dictionary<string, XmAttribute> attributes = new Dictionary<string, XmAttribute>();
+            if (this._XElement.HasAttributes)
+            {
+                foreach (XAttribute xAtr in this._XElement.Attributes())
+                {
+                    string name, suffix;
+                    XmAttribute.ParseSuffix(xAtr.Name.LocalName, out name, out suffix);
+
+                    // Najdu / vytvořím atribut:
+                    XmAttribute xmAtt;
+                    if (!attributes.TryGetValue(name, out xmAtt))
+                    {
+                        xmAtt = new XmAttribute(name);
+                        attributes.Add(name, xmAtt);
+                    }
+
+                    // Uložím suffix a hodnotu:
+                    xmAtt.Add(suffix, xAtr.Value);
+                }
+            }
+            this._XmAttributes = attributes;
+        }
+        /// <summary>
+        /// Index atributů tohoto elementu, klíčem je název.
+        /// Pokud má element více atributů shodného názvu, je zde uložen jen jedenkrát, 
+        /// a všechny jeho hodnoty jsou uloženy v něm, v property <see cref="XmAttribute.Values"/>.
+        /// </summary>
+        private Dictionary<string, XmAttribute> _XmAttributes;
+        #endregion
+        #region Sub-elementy this elementu
+        /// <summary>
+        /// Sada vnořených elementů tohoto elementu
+        /// </summary>
+        internal IEnumerable<XmElement> XmElements
+        {
+            get
+            {
+                if (this._XmElements == null)
+                    this._ReadElements();
+                return this._XmElements;
+            }
         }
         /// <summary>
         /// Najde ve svých elementech element s daným jménem a vrátí jej.
@@ -3783,74 +3867,34 @@ anebo neprázdný objekt:
                 return null;
             return this.XmElements.FirstOrDefault(e => e.Name == elementName);
         }
+        /// <summary>
+        /// Načte sub-elementy tohoto elementu do <see cref="_XmElements"/>
+        /// </summary>
+        private void _ReadElements()
+        {
+            List<XmElement> elements = new List<XmElement>();
+            if (this._XElement.HasElements)
+            {
+                foreach (XElement subElement in this._XElement.Elements())
+                    elements.Add(XmElement.Create(subElement));
+            }
+            this._XmElements = elements.ToArray();
+        }
+        /// <summary>
+        /// Index atributů tohoto elementu, klíčem je název.
+        /// Pokud má element více atributů shodného názvu, je zde uložen jen ten první!
+        /// </summary>
+        private XmElement[] _XmElements;
         #endregion
     }
     #endregion
-    #region XmAttributes a XmAttribute: slovník atributů
-    /// <summary>
-    /// Soupis atributů jednoho elementu
-    /// </summary>
-    internal class XmAttributes : IEnumerable<XmAttribute>
-    {
-        #region Konstrukce
-        internal XmAttributes(XmElement xmEle)
-        {
-            this._XmElement = xmEle;
-            this._AttributeDict = new Dictionary<string, XmAttribute>();
-        }
-        private XmElement _XmElement;
-        private Dictionary<string, XmAttribute> _AttributeDict;
-        /// <summary>
-        /// Do sady atributů přidá hodnotu načtenou z dalšího atributu.
-        /// Detekuje přitom lokální jména s tečkou, separuje název před tečkou.
-        /// </summary>
-        /// <param name="xAtr"></param>
-        internal void Add(XAttribute xAtr)
-        {
-            // Rozdělím název atributu v místě tečky:
-            string aNam = xAtr.Name.LocalName;          // Jméno, například "Value", nebo "Value.Type", nebo "Array.Range"
-            string aSfx = null;                         // Zůstane null pro atributy, které ve jménu nemají tečku
-            if (!String.IsNullOrEmpty(aNam) && aNam.Contains('.'))
-            {
-                int len = aNam.Length;
-                int iDot = aNam.IndexOf('.');
-                aSfx = (iDot < (len - 1) ? aNam.Substring(iDot + 1) : "");      // Text před tečkou = název logického atributu
-                aNam = (iDot > 0 ? aNam.Substring(0, iDot) : "");               // Text za tečkou   = určuje property v XmAttribute, do které se uloží hodnota Value
-            }
-
-            // Najdu / vytvořím atribut:
-            XmAttribute xmAtt;
-            if (!this._AttributeDict.TryGetValue(aNam, out xmAtt))
-            {
-                xmAtt = new XmAttribute(aNam);
-                this._AttributeDict.Add(aNam, xmAtt);
-            }
-
-            // Uložím suffix a hodnotu:
-            xmAtt.Add(aSfx, xAtr.Value);
-        }
-        /// <summary>
-        /// Najde a vrátí data pro daný název atributu, nebo vrátí null.
-        /// </summary>
-        /// <param name="attributeName"></param>
-        /// <returns></returns>
-        internal XmAttribute TryFind(string attributeName)
-        {
-            XmAttribute result;
-            if (this._AttributeDict.TryGetValue(attributeName, out result))
-                return result;
-            return null;
-        }
-        #endregion
-        #region IEnumerable<XmAttribute> Members
-        IEnumerator<XmAttribute> IEnumerable<XmAttribute>.GetEnumerator() { return this._AttributeDict.Values.GetEnumerator(); }
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { return this._AttributeDict.Values.GetEnumerator(); }
-        #endregion
-    }
+    #region class XmAttribute : jeden atribut, slovník atributů
     /// <summary>
     /// XmAttribute: jeden atribut, logická jednotka (shrnutá z více záznamů shodného jména).
-    /// Pokud jsou v elementu uvedeny atributy například Item = "hodnota", Item.Type = "String", Item.Indices = "[0,2,6]", 
-    /// budou tyto atributy shrnuty v jednom objektu třídy XmAttribute
+    /// Pokud jsou v elementu uvedeny atributy například: { Item = "hodnota", Item.Type = "String", Item.Indices = "[0,2,6]" };
+    /// pak budou tyto atributy shrnuty v jednom objektu třídy <see cref="XmAttribute"/>, jehož <see cref="Name"/> = "Item", 
+    /// kde obsah pole <see cref="Values"/> bude jeden prvek obsahující string: "hodnota", 
+    /// a jehož Dictionary <see cref="_SuffixDict"/> bude obsahovat páry: { "Type" : "String" }; { "Indices" : "[0,2,6]" }.
     /// </summary>
     internal class XmAttribute
     {
@@ -3859,7 +3903,7 @@ anebo neprázdný objekt:
         {
             this.Name = name;
             this.Values = new List<string>();
-            this.Suffixes = new Dictionary<string, string>();
+            this._SuffixDict = new Dictionary<string, string>();
         }
         public override string ToString()
         {
@@ -3874,16 +3918,46 @@ anebo neprázdný objekt:
         }
         #endregion
         #region Property
+        /// <summary>
+        /// Název atributu, bez suffixu (tj. před první tečkou v názvu atributu)
+        /// </summary>
         internal string Name { get; private set; }
+        /// <summary>
+        /// Hodnota atributu se suffixem .Type
+        /// </summary>
         internal string Type { get { return GetSuffix("Type"); } }
+        /// <summary>
+        /// Hodnota atributu se suffixem .Assembly
+        /// </summary>
         internal string Assembly { get { return GetSuffix("Assembly"); } }
+        /// <summary>
+        /// Hodnota atributu se suffixem .Range
+        /// </summary>
         internal string Range { get { return GetSuffix("Range"); } }
+        /// <summary>
+        /// Hodnota atributu se suffixem .Indices
+        /// </summary>
         internal string Indices { get { return GetSuffix("Indices"); } }
+        /// <summary>
+        /// Hodnoty všech atributů daného jména, pokud je to jméno bez suffixu.
+        /// Pokud jeden XML element obsahuje více atributů shodného názvu, hodnoty jsou zde, ze všech atributů tohoto názvu.
+        /// </summary>
         internal List<string> Values { get; private set; }
+        /// <summary>
+        /// První hodnota z <see cref="Values"/>, nebo null.
+        /// </summary>
         internal string ValueFirstOrDefault { get { return (this.Values.Count > 0 ? this.Values[0] : null); } }
-        internal Dictionary<string, string> Suffixes { get; private set; }
+        /// <summary>
+        /// Všechny suffixy a jejich hodnoty
+        /// </summary>
+        internal IEnumerable<KeyValuePair<string, string>> Suffixes { get { return this._SuffixDict; } }
+
+        /// <summary>
+        /// Index suffixů
+        /// </summary>
+        private Dictionary<string, string> _SuffixDict;
         #endregion
-        #region Metody Add, ContainSuffix, GetSuffix
+        #region Metody Add, ContainSuffix, GetSuffix, ParseSuffix
         /// <summary>
         /// Uloží do sebe hodnotu podle uvedeného suffixu.
         /// Příklad pro atribut: Value.Type = "Int32"
@@ -3899,21 +3973,11 @@ anebo neprázdný objekt:
                 this.Values.Add(value);
             else
             {
-                if (!this.Suffixes.ContainsKey(suffix))
-                    this.Suffixes.Add(suffix, value);
+                if (!this._SuffixDict.ContainsKey(suffix))
+                    this._SuffixDict.Add(suffix, value);
                 else
-                    this.Suffixes[suffix] = value;
+                    this._SuffixDict[suffix] = value;
             }
-        }
-        /// <summary>
-        /// Vrací příznak, zda tento atribut obsahuje daný suffix.
-        /// </summary>
-        /// <param name="suffix"></param>
-        /// <returns></returns>
-        internal bool ContainSuffix(string suffix)
-        {
-            if (suffix == null) return false;
-            return this.Suffixes.ContainsKey(suffix);
         }
         /// <summary>
         /// Vrací hodnotu uloženou za daným suffixem.
@@ -3921,14 +3985,31 @@ anebo neprázdný objekt:
         /// </summary>
         /// <param name="suffix"></param>
         /// <returns></returns>
-        internal string GetSuffix(string suffix)
+        private string GetSuffix(string suffix)
         {
             if (suffix == null) return null;
-            if (!this.Suffixes.ContainsKey(suffix)) return null;
-            return this.Suffixes[suffix];
+            if (!this._SuffixDict.ContainsKey(suffix)) return null;
+            return this._SuffixDict[suffix];
+        }
+        /// <summary>
+        /// Metoda rozdělí daný text v místě první tečky, a do out parametru name vloží obsah před tečkou a do suffix dá text za touto tečkou.
+        /// </summary>
+        /// <param name="attributeName">Typicky Attribute.Name.LocalName</param>
+        /// <param name="name">Výstup jména = před první tečkou</param>
+        /// <param name="suffix">Výstup suffixu = za první tečkou. Pokud attributeName nemá tečku, bude zde null. Pokud má tečku na konci textu, bude zde "".</param>
+        internal static void ParseSuffix(string attributeName, out string name, out string suffix)
+        {
+            name = attributeName;
+            suffix = null;
+            if (!String.IsNullOrEmpty(name) && name.Contains("."))
+            {
+                int len = name.Length;
+                int iDot = name.IndexOf('.');
+                suffix = (iDot < (len - 1) ? name.Substring(iDot + 1) : "");   // Text za tečkou   = suffix (určuje property v XmAttribute, do které se uloží hodnota Value)
+                name = (iDot > 0 ? name.Substring(0, iDot) : "");              // Text před tečkou = název logického atributu
+            }
         }
         #endregion
     }
     #endregion
-
 }

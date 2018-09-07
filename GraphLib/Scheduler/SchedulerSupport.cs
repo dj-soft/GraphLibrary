@@ -4,6 +4,7 @@ using System.Text;
 using System.IO;
 using System.Data;
 using System.Drawing;
+using System.Linq;
 
 namespace Asol.Tools.WorkScheduler.Scheduler
 {
@@ -325,56 +326,97 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             DataTable table = new DataTable();
             table.TableName = tableName;
 
-            Tuple<string, Type>[] columns = ParseTableStructure(structure);
-            foreach (Tuple<string, Type> column in columns)
-                table.Columns.Add(column.Item1, column.Item2);
+            ColumnInfo[] columns = ParseTableFullStructure(structure);
+            foreach (ColumnInfo column in columns)
+                table.Columns.Add(column.Name, column.Type);
 
             return table;
         }
         /// <summary>
-        /// Metoda vyhodí chybu s odpovídající zprávou, pokud daná tabulka není v pořádku (je null, anebo ne obsahuje všechny dané sloupce (ověřuje jejich název a typ)).
+        /// Metoda vyhodí chybu <see cref="InvalidDataException"/> s odpovídající zprávou, pokud daná tabulka není v pořádku (je null, anebo ne obsahuje všechny dané sloupce (ověřuje jejich název a typ)).
+        /// Struktura je načtena metodou <see cref="ParseTableFullStructure(string)"/> a má obecně formát: {column type[, {column type}, ...]}".
+        /// Například: "cislo_subjektu int, reference_subjektu string, nazev_subjektu string, datum_od datetime".
         /// </summary>
         /// <param name="table"></param>
         /// <param name="structure"></param>
         /// <returns></returns>
         public static void CheckTable(DataTable table, string structure)
         {
-            string message = _VerifyTable(table, structure);
+            string badColumns;
+            string message = _VerifyTable(table, structure, out badColumns);
             if (message == null) return;
             throw new InvalidDataException(message);
         }
         /// <summary>
         /// Metoda vrátí true, pokud daná tabulka je v pořádku = není null, a obsahuje všechny dané sloupce (ověřuje jejich název a typ).
+        /// Struktura je načtena metodou <see cref="ParseTableFullStructure(string)"/> a má obecně formát: {column type[, {column type}, ...]}".
+        /// Například: "cislo_subjektu int, reference_subjektu string, nazev_subjektu string, datum_od datetime".
         /// </summary>
         /// <param name="table"></param>
         /// <param name="structure"></param>
         /// <returns></returns>
         public static bool VerifyTable(DataTable table, string structure)
         {
-            string message = _VerifyTable(table, structure);
+            string badColumns;
+            string message = _VerifyTable(table, structure, out badColumns);
             return (message == null);
         }
         /// <summary>
         /// Metoda vrátí true, pokud daná tabulka je v pořádku = není null, a obsahuje všechny dané sloupce (ověřuje jejich název a typ).
+        /// Pokud vrátí false, pak v out parametru badColumns bude uložen seznam chybějících nebo špatných sloupců.
+        /// Struktura je načtena metodou <see cref="ParseTableFullStructure(string)"/> a má obecně formát: {column type[, {column type}, ...]}".
+        /// Například: "cislo_subjektu int, reference_subjektu string, nazev_subjektu string, datum_od datetime".
         /// </summary>
         /// <param name="table"></param>
         /// <param name="structure"></param>
+        /// <param name="badColumns"></param>
         /// <returns></returns>
-        private static string _VerifyTable(DataTable table, string structure)
+        public static bool VerifyTable(DataTable table, string structure, out string badColumns)
         {
+            string message = _VerifyTable(table, structure, out badColumns);
+            return (message == null);
+        }
+        /// <summary>
+        /// Metoda vrátí true, pokud daná tabulka je v pořádku = není null, a obsahuje všechny dané sloupce (ověřuje jejich název a typ).
+        /// Struktura je načtena metodou <see cref="ParseTableFullStructure(string)"/> a má obecně formát: {column type[, {column type}, ...]}".
+        /// Například: "cislo_subjektu int, reference_subjektu string, nazev_subjektu string, datum_od datetime".
+        /// </summary>
+        /// <param name="table"></param>
+        /// <param name="structure"></param>
+        /// <param name="badColumns"></param>
+        /// <returns></returns>
+        private static string _VerifyTable(DataTable table, string structure, out string badColumns)
+        {
+            badColumns = "";
+
             if (table == null) return "DataTable is null";
 
-            Tuple<string, Type>[] columns = ParseTableStructure(structure);
-            foreach (Tuple<string, Type> column in columns)
+            string message = "";
+            ColumnInfo[] columns = ParseTableFullStructure(structure);
+            foreach (ColumnInfo column in columns)
             {
-                string columnName = column.Item1;
-                if (!table.Columns.Contains(columnName)) return "DataTable <" + table.TableName + "> does not contain column <" + columnName + ">.";
-                Type expectedType = column.Item2;
-                Type columnType = table.Columns[columnName].DataType;
-                if (!_IsExpectedType(columnType, expectedType)) return "Column <" + columnName + "> [" + columnType + "] in DataTable <" + table.TableName + "> is not convertible to expected type <" + expectedType + ">.";
+                string columnName = column.Name;
+                if (!table.Columns.Contains(columnName))
+                {   // Chybějící sloupec:
+                    badColumns += ", " + columnName + " " + column.TypeName;
+                    message += ", missing column: " + columnName + " " + column.TypeName;
+                }
+                else
+                {
+                    Type expectedType = column.Type;
+                    Type columnType = table.Columns[columnName].DataType;
+                    if (!_IsExpectedType(columnType, expectedType))
+                    {   // Nesprávný typ sloupce:
+                        badColumns += ", " + columnName + " " + column.TypeName;
+                        message += ", wrong type in column: " + columnName + " " + column.TypeName + " (current Type: " + columnType.Name + ")";
+                    }
+                }
             }
 
-            return null;
+            if (badColumns.Length > 0) badColumns = badColumns.Substring(2);
+
+            if (message.Length == 0) return null;              // OK
+            return "Incorrect structure of table <" + table.TableName + ">: " + message.Substring(2);
         }
         /// <summary>
         /// Vrátí true, pokud datový typ sloupce (sourceType) je vyhovující pro očekávaný cílový typ sloupce (targetType).
@@ -457,12 +499,30 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Sloupce jsou zadány jedním stringem ve formě: "název typ, název typ, ...", kde typ je název datového typu dle níže uvedeného soupisu.
         /// string = char = text = varchar = nvarchar; sbyte; short = int16; int = int32; long = int64; byte; ushort = uint16; uint = uint32; ulong = uint64;
         /// single = float; double; decimal = numeric; bool = boolean; datetime = date; binary = image = picture.
+        /// <para/>
+        /// Výstupní prvky mají tento obsah: Item1 = název sloupce, Item2 = Type odpovídající zadanému datovému typu
         /// </summary>
         /// <param name="structure"></param>
         /// <returns></returns>
+        [Obsolete("Use ParseTableFullStructure() instead", true)]
         public static Tuple<string, Type>[] ParseTableStructure(string structure)
+        {   // Only for ppublic interface
+            ColumnInfo[] columnList = ParseTableFullStructure(structure);
+            return columnList.Select(i => new Tuple<string, Type>(i.Name, i.Type)).ToArray();
+        }
+        /// <summary>
+        /// Metoda z textové podoby struktury vrací typově definované pole, které obsahuje zadanou strukturu.
+        /// Sloupce jsou zadány jedním stringem ve formě: "název typ, název typ, ...", kde typ je název datového typu dle níže uvedeného soupisu.
+        /// string = char = text = varchar = nvarchar; sbyte; short = int16; int = int32; long = int64; byte; ushort = uint16; uint = uint32; ulong = uint64;
+        /// single = float; double; decimal = numeric; bool = boolean; datetime = date; binary = image = picture.
+        /// <para/>
+        /// Výstupní prvky mají tento obsah: Item1 = název sloupce, Item2 = zadaný datový typ (string), Item3 = Type odpovídající zadanému typu
+        /// </summary>
+        /// <param name="structure"></param>
+        /// <returns></returns>
+        public static ColumnInfo[] ParseTableFullStructure(string structure)
         {
-            List<Tuple<string, Type>> columnList = new List<Tuple<string, Type>>();
+            List<ColumnInfo> columnList = new List<ColumnInfo>();
             if (!String.IsNullOrEmpty(structure))
             {
                 char[] columnDelimiters = ",;".ToCharArray();
@@ -472,12 +532,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 for (int i = 0; i < count; i++)
                 {
                     string[] column = columns[i].Trim().Split(partDelimiters, StringSplitOptions.RemoveEmptyEntries);
-                    if (column.Length != 2) continue;
+                    if (column.Length < 2) continue;
                     string name = column[0];
                     if (String.IsNullOrEmpty(name)) continue;
-                    Type type = GetTypeFromName(column[1]);
+                    string typeName = column[1];
+                    Type type = GetTypeFromName(typeName);
                     if (type == null) continue;
-                    columnList.Add(new Tuple<string, Type>(name, type));
+                    columnList.Add(new ColumnInfo(name, typeName, type));
                 }
             }
             return columnList.ToArray();
@@ -560,6 +621,30 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             }
 
             return null;
+        }
+        /// <summary>
+        /// Údaje o sloupci
+        /// </summary>
+        public class ColumnInfo
+        {
+            internal ColumnInfo(string name, string typeName, Type type)
+            {
+                this.Name = name;
+                this.TypeName = typeName;
+                this.Type = type;
+            }
+            /// <summary>
+            /// Název sloupce
+            /// </summary>
+            public string Name { get; private set; }
+            /// <summary>
+            /// Zadaný název datového typu
+            /// </summary>
+            public string TypeName { get; private set; }
+            /// <summary>
+            /// Odpovídající Type
+            /// </summary>
+            public Type Type { get; private set; }
         }
         #endregion
         #region Serializace a Deserializace DataTable
@@ -693,6 +778,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Tato metoda při chybě vrátí false a do out parametru image nechá null. Nikdy nehodí chybu.
         /// </summary>
         /// <param name="data"></param>
+        /// <param name="image"></param>
         /// <returns></returns>
         public static bool TryImageDeserialize(string data, out Image image)
         {
@@ -763,6 +849,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Tato metoda při chybě vrátí false a do out parametru color uloží null. Nikdy nehodí chybu.
         /// </summary>
         /// <param name="data"></param>
+        /// <param name="color"></param>
         /// <returns></returns>
         public static bool TryColorDeserialize(string data, out Color? color)
         {
