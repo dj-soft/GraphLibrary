@@ -16,23 +16,32 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     /// GuiData : Kompletní datový balík, jehož data budou zobrazena v pluginu ASOL.WorkScheduler.
     /// Obsahuje jak definice všech dat, tak jejich obsah.
     /// </summary>
-    public class GuiData
+    public class GuiData : GuiBase, IXmlPersistNotify
     {
+        #region Konstrukce a data
         /// <summary>
         /// Konstruktor
         /// </summary>
         public GuiData()
         {
-            this.ToolbarItems = new List<GuiToolbarItem>();
+            this.ToolbarItems = new GuiToolbarPanel() { Name = TOOLBAR_NAME  };
             this.ShowToolbar = true;
             this.Pages = new List<GuiPage>();
             this.ShowPageTitleAllways = true;
-            this.ContextMenuItems = new List<GuiContextMenuItem>();
+            this.ContextMenuItems = new GuiContextMenuSet() { Name = CONTEXT_MENU_NAME };
         }
+        /// <summary>
+        /// Název prvku <see cref="ToolbarItems"/>
+        /// </summary>
+        public const string TOOLBAR_NAME = "toolBar";
+        /// <summary>
+        /// Název prvku <see cref="ContextMenuItems"/>
+        /// </summary>
+        public const string CONTEXT_MENU_NAME = "contextMenu";
         /// <summary>
         /// Prvky zobrazené v Toolbaru nahoře
         /// </summary>
-        public List<GuiToolbarItem> ToolbarItems { get; set; }
+        public GuiToolbarPanel ToolbarItems { get; set; }
         /// <summary>
         /// Zobrazovat toolbar
         /// </summary>
@@ -49,7 +58,63 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Definice všech kontextových funkcí.
         /// GUI si z nich pro konkrétní situaci vybere jen položky odpovídající jejich definici (shoda stránky, shoda panelu, shoda tabulky, shoda třídy prvku)
         /// </summary>
-        public List<GuiContextMenuItem> ContextMenuItems { get; set; }
+        public GuiContextMenuSet ContextMenuItems { get; set; }
+        /// <summary>
+        /// Potomek zde vrací soupis svých Child prvků
+        /// </summary>
+        [PersistingEnabled(false)]
+        protected override IEnumerable<IGuiBase> Childs { get { return Union(this.ToolbarItems, this.Pages, this.ContextMenuItems); } }
+        #endregion
+        #region Finalizace (ruční, i po deserializaci); Vyhledání prvku podle FullName
+        /// <summary>
+        /// Metoda zajistí, že všichni členové tohoto balíku dat budou mít přísup ke svému parentovi.
+        /// Tím dojde i k tomu, že každý prvek datového balíku bude mít platnou hodnotu ve své property <see cref="GuiBase.FullName"/>.
+        /// </summary>
+        public void Finalise()
+        {
+            this.FillParentToChilds();
+        }
+        /// <summary>
+        /// Metoda najde prvek na základě jeho plného jména
+        /// </summary>
+        /// <param name="fullName"></param>
+        /// <returns></returns>
+        public IGuiBase FindByFullName(string fullName)
+        {
+            return this.FindByName(fullName);
+        }
+        /// <summary>
+        /// Aktuální stav procesu XML persistence.
+        /// Umožňuje persistovanému objektu reagovat na ukládání nebo na načítání dat.
+        /// Do této property vkládá XmlPersistor hodnotu odpovídající aktuální situaci.
+        /// Datová instance může v set accessoru zareagovat a například připravit data pro Save, 
+        /// anebo dokončit proces Load (navázat si další data nebo provést přepočty a další reakce).
+        /// V procesu serializace (ukládání dat z objektu to XML) bude do property <see cref="IXmlPersistNotify.XmlPersistState"/> vložena hodnota <see cref="XmlPersistState.SaveBegin"/> a po dokončení ukládán ípak hodnota <see cref="XmlPersistState.SaveDone"/> a <see cref="XmlPersistState.None"/>.
+        /// Obdobně při načítání dat z XML do objektu bude do property <see cref="IXmlPersistNotify.XmlPersistState"/> vložena hodnota <see cref="XmlPersistState.LoadBegin"/> a po dokončení načítání pak hodnota <see cref="XmlPersistState.LoadDone"/> a <see cref="XmlPersistState.None"/>.
+        /// </summary>
+        [PersistingEnabled(false)]
+        XmlPersistState IXmlPersistNotify.XmlPersistState
+        {
+            get { return this._XmlPersistState; }
+            set
+            {
+                switch (value)
+                {
+                    case XmlPersistState.LoadDone:
+                        // Po ukončení načítání všech dat (tzn. i vnořených) se provede finalizace:
+                        this.Finalise();
+                        break;
+                }
+                this._XmlPersistState = value;
+            }
+        }
+        /// <summary>
+        /// Stav procesu persistování
+        /// </summary>
+        [PersistingEnabled(false)]
+        private XmlPersistState _XmlPersistState;
+
+        #endregion
     }
     #endregion
     #region GuiPage : Jedna úplná stránka s daty, obsahuje kompletní editační GUI vyjma ToolBaru; stránek může být více vedle sebe (na záložkách)
@@ -64,11 +129,27 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         public GuiPage()
         {
-            this.LeftPanel = new GuiPanel();
-            this.MainPanel = new GuiPanel();
-            this.RightPanel = new GuiPanel();
-            this.BottomPanel = new GuiPanel();
+            this.LeftPanel = new GuiPanel() { Name = LEFT_PANEL_NAME };
+            this.MainPanel = new GuiPanel() { Name = MAIN_PANEL_NAME };
+            this.RightPanel = new GuiPanel() { Name = RIGHT_PANEL_NAME };
+            this.BottomPanel = new GuiPanel() { Name = BOTTOM_PANEL_NAME };
         }
+        /// <summary>
+        /// Název prvku <see cref="LeftPanel"/>
+        /// </summary>
+        public const string LEFT_PANEL_NAME = "leftPanel";
+        /// <summary>
+        /// Název prvku <see cref="MainPanel"/>
+        /// </summary>
+        public const string MAIN_PANEL_NAME = "mainPanel";
+        /// <summary>
+        /// Název prvku <see cref="RightPanel"/>
+        /// </summary>
+        public const string RIGHT_PANEL_NAME = "rightPanel";
+        /// <summary>
+        /// Název prvku <see cref="BottomPanel"/>
+        /// </summary>
+        public const string BOTTOM_PANEL_NAME = "bottomPanel";
         /// <summary>
         /// Levý panel, typicky používaný pro úkoly ("co se má udělat")
         /// </summary>
@@ -85,13 +166,18 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Střední panel, typicky používaný pro informace (detailní data, výsledky, problémy)
         /// </summary>
         public GuiPanel BottomPanel { get; private set; }
+        /// <summary>
+        /// Potomek zde vrací soupis svých Child prvků
+        /// </summary>
+        [PersistingEnabled(false)]
+        protected override IEnumerable<IGuiBase> Childs { get { return Union(this.LeftPanel, this.MainPanel, this.RightPanel, this.BottomPanel); } }
     }
     #endregion
     #region GuiPanel : Obsah jednoho panelu s více tabulkami
     /// <summary>
     /// GuiPanel : Obsah jednoho panelu s více tabulkami
     /// </summary>
-    public class GuiPanel
+    public class GuiPanel : GuiBase
     {
         /// <summary>
         /// Konstruktor
@@ -137,6 +223,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Zobrazovat tlačítko "Minimalizovat" na liště tabulek.
         /// </summary>
         public bool ShowMinimizeButton { get; set; }
+        /// <summary>
+        /// Potomek zde vrací soupis svých Child prvků
+        /// </summary>
+        [PersistingEnabled(false)]
+        protected override IEnumerable<IGuiBase> Childs { get { return this.Grids; } }
     }
     #endregion
     #region GuiGrid : obsahuje veškeré data pro zobrazení jedné tabulky v WorkScheduler pluginu
@@ -154,10 +245,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         public GuiGrid()
         {
-            this.GraphProperties = new GuiGraphProperties();
+            this.GraphProperties = new GuiGraphProperties() { Name = GRAPH_PROPERTIES_NAME };
             this.GraphItems = new List<GuiGraphTable>();
             this.GraphTexts = new List<GuiTable>();
         }
+        /// <summary>
+        /// Název prvku <see cref="GraphProperties"/>
+        /// </summary>
+        public const string GRAPH_PROPERTIES_NAME = "graphProperties";
         /// <summary>
         /// Vizualizace
         /// </summary>
@@ -189,13 +284,18 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Konkrétní řádek se dohledává podle GuiId grafického prvku, který se vyhledává v těchto tabulkách.
         /// </summary>
         public List<GuiTable> GraphTexts { get; set; }
+        /// <summary>
+        /// Potomek zde vrací soupis svých Child prvků
+        /// </summary>
+        [PersistingEnabled(false)]
+        protected override IEnumerable<IGuiBase> Childs { get { return Union(this.Rows, this.GraphItems, this.GraphTexts); } }
     }
     #endregion
     #region GuiTable : Jedna fyzická tabulka (ekvivalent DataTable, s podporou serializace)
     /// <summary>
     /// GuiTable : Jedna fyzická tabulka (ekvivalent DataTable, s podporou serializace)
     /// </summary>
-    public class GuiTable
+    public class GuiTable : GuiBase
     {
         /// <summary>
         /// Konstruktor
@@ -295,7 +395,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     /// <summary>
     /// GuiGraphProperties : vlastnosti grafu
     /// </summary>
-    public class GuiGraphProperties
+    public class GuiGraphProperties : GuiBase
     {
         /// <summary>
         /// Konstruktor
@@ -376,7 +476,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     /// <summary>
     /// GuiGraphTable : Objekt reprezentující sadu grafických prvků <see cref="GuiGraphItem"/>, umožní pracovat s položkami grafu typově
     /// </summary>
-    public class GuiGraphTable
+    public class GuiGraphTable : GuiBase
     {
         /// <summary>
         /// Konstruktor
@@ -389,13 +489,18 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Soupis položek grafů. Typicky jeden soupis obsahuje položky pro všechny řádky tabulky. GUI vrstva si položky rozebere.
         /// </summary>
         public List<GuiGraphItem> GraphItems { get; set; }
+        /// <summary>
+        /// Potomek zde vrací soupis svých Child prvků
+        /// </summary>
+        [PersistingEnabled(false)]
+        protected override IEnumerable<IGuiBase> Childs { get { return this.GraphItems; } }
     }
     #endregion
     #region GuiGraphItem : Jeden obdélníček v grafu na časové ose
     /// <summary>
     /// GuiGraphItem : Jeden obdélníček v grafu na časové ose
     /// </summary>
-    public class GuiGraphItem
+    public class GuiGraphItem : GuiBase
     {
         /// <summary>
         /// Konstruktor
@@ -504,6 +609,44 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         public GraphItemBehaviorMode BehaviorMode { get; set; }
     }
     #endregion
+    #region GuiToolbarPanel : Celý Toolbar
+    /// <summary>
+    /// GuiToolbarPanel : Celý Toolbar, obsahuje položky v seznamu <see cref="Items"/> 
+    /// </summary>
+    public class GuiToolbarPanel : GuiBase
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public GuiToolbarPanel()
+        {
+            this.Items = new List<GuiToolbarItem>();
+        }
+        /// <summary>
+        /// Všechny položky obsažené v Toolbaru
+        /// </summary>
+        public List<GuiToolbarItem> Items { get; set; }
+        /// <summary>
+        /// Přidá další prvek do this seznamu
+        /// </summary>
+        /// <param name="item"></param>
+        public void Add(GuiToolbarItem item) { this.Items.Add(item); }
+        /// <summary>
+        /// Přidá další prvky do this seznamu
+        /// </summary>
+        /// <param name="items"></param>
+        public void AddRange(IEnumerable<GuiToolbarItem> items) { this.Items.AddRange(items); }
+        /// <summary>
+        /// Počet prvků v kolekci
+        /// </summary>
+        public int Count { get { return this.Items.Count; } }
+        /// <summary>
+        /// Potomek zde vrací soupis svých Child prvků
+        /// </summary>
+        [PersistingEnabled(false)]
+        protected override IEnumerable<IGuiBase> Childs { get { return this.Items; } }
+    }
+    #endregion
     #region GuiToolbarItem : Položka zobrazovaná v Toolbaru
     /// <summary>
     /// GuiToolbarItem : Položka zobrazovaná v Toolbaru
@@ -516,6 +659,44 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         public GuiToolbarItem()
         { }
 
+    }
+    #endregion
+    #region GuiContextMenuSet : Všechny položky všech Kontextových menu
+    /// <summary>
+    /// GuiContextMenuSet : Všechny položky všech Kontextových menu
+    /// </summary>
+    public class GuiContextMenuSet : GuiBase
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public GuiContextMenuSet()
+        {
+            this.Items = new List<GuiContextMenuItem>();
+        }
+        /// <summary>
+        /// Všechny položky obsažené v Toolbaru
+        /// </summary>
+        public List<GuiContextMenuItem> Items { get; set; }
+        /// <summary>
+        /// Přidá další prvek do this seznamu
+        /// </summary>
+        /// <param name="item"></param>
+        public void Add(GuiContextMenuItem item) { this.Items.Add(item); }
+        /// <summary>
+        /// Přidá další prvky do this seznamu
+        /// </summary>
+        /// <param name="items"></param>
+        public void AddRange(IEnumerable<GuiContextMenuItem> items) { this.Items.AddRange(items); }
+        /// <summary>
+        /// Počet prvků v kolekci
+        /// </summary>
+        public int Count { get { return this.Items.Count; } }
+        /// <summary>
+        /// Potomek zde vrací soupis svých Child prvků
+        /// </summary>
+        [PersistingEnabled(false)]
+        protected override IEnumerable<IGuiBase> Childs { get { return this.Items; } }
     }
     #endregion
     #region GuiContextMenuItem : Jedna položka nabídky, zobrazovaná v kontextovém menu
@@ -539,7 +720,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     /// <summary>
     /// GuiTextItem : Vizuální prvek v GUI, obsahuje Name, Title, ToolTip a Image
     /// </summary>
-    public class GuiTextItem
+    public class GuiTextItem : GuiBase
     {
         /// <summary>
         /// Vizualizace
@@ -549,10 +730,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             return "[" + this.Name + "] " + this.Title + " ... " + this.ToolTip;
         }
-        /// <summary>
-        /// Klíčové jméno, používané v aplikaci
-        /// </summary>
-        public string Name { get; set; }
         /// <summary>
         /// Titulek, zobrazovaný pro uživatele vždy (text v záhlaví stránky, text tlačítka toolbaru, text položky funkce, atd)
         /// </summary>
@@ -571,16 +748,179 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     /// <summary>
     /// GuiBase : Bázová třída všech prvků Gui*
     /// </summary>
-    public abstract class GuiBase
+    public abstract class GuiBase : IGuiBase
+    {
+        #region Data : Name, Parent, Childs
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return "[" + this.Name + "]";
+        }
+        /// <summary>
+        /// Klíčové jméno, používané v aplikaci jako strojový název prvku
+        /// </summary>
+        public string Name { get; set; }
+        /// <summary>
+        /// Objekt parenta, v němž je tento prvek umístěn.
+        /// </summary>
+        [PersistingEnabled(false)]
+        public IGuiBase Parent { get { return this._Parent; } }
+        /// <summary>
+        /// Úložiště parenta
+        /// </summary>
+        [PersistingEnabled(false)]
+        private IGuiBase _Parent;
+        /// <summary>
+        /// V této property vrací daný objekt všechny svoje přímé Child objekty.
+        /// Pokud objekt nemá Child objekty, vrací null (to zajišťuje bázová třída <see cref="GuiBase"/>).
+        /// Pokud má jednu sadu Child objektů, vrací ji napřímo.
+        /// Pokud objekt má více sad Child objektů, pak vrací jejich souhrnný seznam, vytvořený metodou <see cref="Union(object[])"/>.
+        /// </summary>
+        [PersistingEnabled(false)]
+        protected virtual IEnumerable<IGuiBase> Childs { get { return null; } }
+        #endregion
+        #region Práce s řadou Parentů
+        /// <summary>
+        /// Plné jméno tohoto objektu = počínaje Root parentem, 
+        /// obsahuje veškerá jména (<see cref="IGuiBase.Name"/>) oddělená zpětným lomítkem,
+        /// až k this jménu <see cref="Name"/>.
+        /// Největší možná délka <see cref="FullName"/> je 1024 znaků.
+        /// </summary>
+        [PersistingEnabled(false)]
+        public string FullName
+        {
+            get
+            {
+                string fullName = "";
+                string separator = "";
+                IGuiBase item = this;
+                while (item != null)
+                {
+                    fullName = (item.Name == null ? "NULL" : item.Name) + separator + fullName;
+                    if (fullName.Length > 1024) break;
+                    if (separator.Length == 0) separator = NAME_SEPARATOR;
+                    item = item.Parent;
+                }
+                return fullName;
+            }
+        }
+        /// <summary>
+        /// Oddělovač úrovní jmen ve <see cref="FullName"/>
+        /// </summary>
+        protected const string NAME_SEPARATOR = "\\";
+        #endregion
+        #region Servis pro potomky: Vložení Parenta do Childs; tvorba Union()
+        /// <summary>
+        /// Metoda vloží this instanci do všech svých Childs objektů, a zajistí totéž i pro tyto Childs
+        /// </summary>
+        protected virtual void FillParentToChilds()
+        {
+            Queue<IGuiBase> queue = new Queue<IGuiBase>();
+            queue.Enqueue(this);
+            while (queue.Count > 0)
+            {
+                IGuiBase item = queue.Dequeue();
+                IEnumerable<IGuiBase> childs = item.Childs;
+                if (childs == null) continue;
+                foreach (IGuiBase child in childs)
+                {
+                    if (child == null) continue;
+                    child.Parent = item;
+                    queue.Enqueue(child);
+                }
+            }
+        }
+        /// <summary>
+        /// Metoda najde prvek na základě jeho plného jména
+        /// </summary>
+        /// <param name="fullName"></param>
+        /// <returns></returns>
+        protected virtual IGuiBase FindByName(string fullName)
+        {
+            if (String.IsNullOrEmpty(fullName)) return null;
+            string[] names = fullName.Split(new string[] { NAME_SEPARATOR }, StringSplitOptions.RemoveEmptyEntries);
+            int pointer = 0;
+            int length = names.Length;
+
+            // Pokud neopdovídá název Root prvku, skončíme hned:
+            IGuiBase item = this;
+            if (!String.Equals(item.Name, names[pointer], StringComparison.InvariantCulture)) return null;
+
+            pointer++;
+            while (pointer < length)
+            {
+                var childs = item.Childs;
+                if (childs == null) return null;
+                item = childs.FirstOrDefault(i => String.Equals(i.Name, names[pointer], StringComparison.InvariantCulture));
+                if (item == null) return null;
+                pointer++;
+            }
+            return item;
+        }
+        /// <summary>
+        /// Metoda vezme všechny dodané parametry, a přidá je do výstupního spojeného seznamu.
+        /// Pokud vstup je pole (IEnumerable) prvků <see cref="IGuiBase"/>, pak do výstupu přidá všechny prvky pole.
+        /// Pokud vstup je jeden objekt <see cref="IGuiBase"/>, pak do výstupu přidá daný objekt.
+        /// </summary>
+        /// <param name="items"></param>
+        /// <returns></returns>
+        protected static IEnumerable<IGuiBase> Union(params object[] items)
+        {
+            List<IGuiBase> result = new List<IGuiBase>();
+            foreach (object item in items)
+            {
+                if (item is IEnumerable<IGuiBase>)
+                    result.AddRange(item as IEnumerable<IGuiBase>);
+                else if (item is IGuiBase)
+                    result.Add(item as IGuiBase);
+            }
+            return result;
+        }
+        #endregion
+        #region Implementace IGuiBase
+        /// <summary>
+        /// Member of interface IGuiBase : Klíčové jméno, používané v aplikaci jako strojový název prvku
+        /// </summary>
+        [PersistingEnabled(false)]
+        string IGuiBase.Name { get { return this.Name; } }
+        /// <summary>
+        /// Member of interface IGuiBase : objekt parenta včetně možnosti setování
+        /// </summary>
+        [PersistingEnabled(false)]
+        IGuiBase IGuiBase.Parent { get { return this._Parent; } set { this._Parent = value; } }
+        /// <summary>
+        /// Member of interface IGuiBase : soupis všech Child objektů tohoto objektu.
+        /// </summary>
+        [PersistingEnabled(false)]
+        IEnumerable<IGuiBase> IGuiBase.Childs { get { return this.Childs; } }
+        #endregion
+    }
+    #endregion
+    #region IGuiBase : společný interface všech prvků Gui* (kromě GuiId)
+    /// <summary>
+    /// Interface, který implementuje každá třída Gui (kromě GuiId), a který garantuje přítomnost prvku <see cref="Parent"/> včetně { set } accessoru.
+    /// Tzn. přes tento interface je možno nasetovat parenta do každého objektu.
+    /// </summary>
+    public interface IGuiBase
     {
         /// <summary>
-        /// true pokud prvek neobsahuje nic co by stálo za řeč
+        /// Klíčové jméno, používané v aplikaci jako strojový název prvku
         /// </summary>
-        public abstract bool IsEmpty { get; }
+        string Name { get; }
         /// <summary>
-        /// Prověří, že prvek je správně naplněn a funkční
+        /// Parent this objektu
         /// </summary>
-        protected abstract void CheckValid();
+        IGuiBase Parent { get; set; }
+        /// <summary>
+        /// V této property vrací daný objekt všechny svoje přímé Child objekty.
+        /// Pokud objekt nemá Child objekty, vrací null.
+        /// Pokud má jednu sadu Child objektů, vrací ji.
+        /// Pokád má více sad Child objektů, pak vrací jejich Union.
+        /// </summary>
+        IEnumerable<IGuiBase> Childs { get; }
     }
     #endregion
     #region GuiId : Identifikátor čísla třídy a čísla záznamu, použitelný i jako klíč v Dictionary.

@@ -98,6 +98,7 @@
     <Compile Include="Data\Text.cs" />
     <Compile Include="Data\TypeArray.cs" />
     <Compile Include="Data\XmlPersistor.cs" />
+    <Compile Include="Data\_Test.cs" />
     <Compile Include="Localizable\Text.cs" />
     <Compile Include="Parser\Analyser.cs" />
     <Compile Include="Parser\Gui.cs">
@@ -117,7 +118,6 @@
     <Compile Include="Scheduler\SchedulerInterface.cs" />
     <Compile Include="Scheduler\SchedulerPanel.cs" />
     <Compile Include="Scheduler\SchedulerSupport.cs" />
-    <Compile Include="Scheduler\_OldDataSource.cs" />
     <Compile Include="Scheduler\_Test.cs" />
     <Compile Include="Services\Interface.cs" />
     <Compile Include="Services\TestDataSource.cs" />
