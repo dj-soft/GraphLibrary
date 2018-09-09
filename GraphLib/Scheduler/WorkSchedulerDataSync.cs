@@ -14,9 +14,18 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     #region GuiData : Kompletní datový balík, jehož data budou zobrazena v pluginu ASOL.WorkScheduler
     /// <summary>
     /// GuiData : Kompletní datový balík, jehož data budou zobrazena v pluginu ASOL.WorkScheduler.
-    /// Obsahuje jak definice všech dat, tak jejich obsah.
+    /// Obsahuje jak definice všech dat, tak i jejich obsah.
+    /// Datový balík se vytvoří na aplikačním serveru, projde serializací a odejde do pluginu, kde se deserializuje a použije jako zdroj dat pro vykreslení.
+    /// <para/>
+    /// Každý prvek v celé hierarchii má svoje property <see cref="IGuiItem.Name"/>, <see cref="IGuiItem.Parent"/> 
+    /// a na jejich základě i <see cref="GuiBase.FullName"/>, které obsahuje jednoznačné a úplné jméno prvku od root prvku (<see cref="GuiData"/>).
+    /// Pod tímto jménem jej lze vyhledat pomocí metody <see cref="FindByFullName(string)"/>.
+    /// <para/>
+    /// Všechny třídy jsou sealed, aby aplikaci nebylo povoleno používat vlastní potomky namísto tříd dodaných.
+    /// Důvod je jednoduchý, konkrétní třídy musí existovat jak v aplikaci, tak na straně WorkScheduler;
+    /// a tam by uživatelem definované třídy nebylo možno deserializovat.
     /// </summary>
-    public class GuiData : GuiBase, IXmlPersistNotify
+    public sealed class GuiData : GuiBase, IXmlPersistNotify
     {
         #region Konstrukce a data
         /// <summary>
@@ -63,7 +72,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Potomek zde vrací soupis svých Child prvků
         /// </summary>
         [PersistingEnabled(false)]
-        protected override IEnumerable<IGuiBase> Childs { get { return Union(this.ToolbarItems, this.Pages, this.ContextMenuItems); } }
+        protected override IEnumerable<IGuiItem> Childs { get { return Union(this.ToolbarItems, this.Pages, this.ContextMenuItems); } }
         #endregion
         #region Finalizace (ruční, i po deserializaci); Vyhledání prvku podle FullName
         /// <summary>
@@ -79,7 +88,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="fullName"></param>
         /// <returns></returns>
-        public IGuiBase FindByFullName(string fullName)
+        public IGuiItem FindByFullName(string fullName)
         {
             return this.FindByName(fullName);
         }
@@ -122,7 +131,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     /// GuiPage : Jedna úplná stránka s daty, obsahuje kompletní editační GUI vyjma ToolBaru; stránek může být více vedle sebe (na záložkách).
     /// Stránka obsahuje jednotlivé panely (levý, hlavní, pravý, dolní), a textové popisky.
     /// </summary>
-    public class GuiPage : GuiTextItem
+    public sealed class GuiPage : GuiTextItem
     {
         /// <summary>
         /// Konstruktor
@@ -170,14 +179,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Potomek zde vrací soupis svých Child prvků
         /// </summary>
         [PersistingEnabled(false)]
-        protected override IEnumerable<IGuiBase> Childs { get { return Union(this.LeftPanel, this.MainPanel, this.RightPanel, this.BottomPanel); } }
+        protected override IEnumerable<IGuiItem> Childs { get { return Union(this.LeftPanel, this.MainPanel, this.RightPanel, this.BottomPanel); } }
     }
     #endregion
     #region GuiPanel : Obsah jednoho panelu s více tabulkami
     /// <summary>
     /// GuiPanel : Obsah jednoho panelu s více tabulkami
     /// </summary>
-    public class GuiPanel : GuiBase
+    public sealed class GuiPanel : GuiBase
     {
         /// <summary>
         /// Konstruktor
@@ -227,7 +236,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Potomek zde vrací soupis svých Child prvků
         /// </summary>
         [PersistingEnabled(false)]
-        protected override IEnumerable<IGuiBase> Childs { get { return this.Grids; } }
+        protected override IEnumerable<IGuiItem> Childs { get { return this.Grids; } }
     }
     #endregion
     #region GuiGrid : obsahuje veškeré data pro zobrazení jedné tabulky v WorkScheduler pluginu
@@ -238,7 +247,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     /// Tyto prvky jsou zde uloženy takříkajíc na hromadě, bez nějakého ladu a skladu.
     /// Teprve až WorkScheduler si je probere a poskládá z nich vizuální tabulku a do ní vloží patřičné grafy.
     /// </summary>
-    public class GuiGrid : GuiTextItem
+    public sealed class GuiGrid : GuiTextItem
     {
         /// <summary>
         /// Konstruktor
@@ -288,14 +297,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Potomek zde vrací soupis svých Child prvků
         /// </summary>
         [PersistingEnabled(false)]
-        protected override IEnumerable<IGuiBase> Childs { get { return Union(this.Rows, this.GraphItems, this.GraphTexts); } }
+        protected override IEnumerable<IGuiItem> Childs { get { return Union(this.Rows, this.GraphItems, this.GraphTexts); } }
     }
     #endregion
     #region GuiTable : Jedna fyzická tabulka (ekvivalent DataTable, s podporou serializace)
     /// <summary>
     /// GuiTable : Jedna fyzická tabulka (ekvivalent DataTable, s podporou serializace)
     /// </summary>
-    public class GuiTable : GuiBase
+    public sealed class GuiTable : GuiBase
     {
         /// <summary>
         /// Konstruktor
@@ -395,7 +404,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     /// <summary>
     /// GuiGraphProperties : vlastnosti grafu
     /// </summary>
-    public class GuiGraphProperties : GuiBase
+    public sealed class GuiGraphProperties : GuiBase
     {
         /// <summary>
         /// Konstruktor
@@ -424,7 +433,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Možnosti uživatele změnit zobrazený rozsah anebo měřítko
         /// </summary>
-        public virtual AxisInteractiveChangeMode InteractiveChangeMode { get; set; }
+        public AxisInteractiveChangeMode InteractiveChangeMode { get; set; }
         /// <summary>
         /// Fyzická výška jedné logické linky grafu v pixelech.
         /// Určuje, tedy kolik pixelů bude vysoký prvek <see cref="GuiGraphItem"/>, jehož <see cref="GuiGraphItem.Height"/> = 1.0f.
@@ -476,7 +485,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     /// <summary>
     /// GuiGraphTable : Objekt reprezentující sadu grafických prvků <see cref="GuiGraphItem"/>, umožní pracovat s položkami grafu typově
     /// </summary>
-    public class GuiGraphTable : GuiBase
+    public sealed class GuiGraphTable : GuiBase
     {
         /// <summary>
         /// Konstruktor
@@ -490,23 +499,40 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         public List<GuiGraphItem> GraphItems { get; set; }
         /// <summary>
+        /// Přidá další prvek do this seznamu
+        /// </summary>
+        /// <param name="item"></param>
+        public void Add(GuiGraphItem item) { this.GraphItems.Add(item); }
+        /// <summary>
+        /// Přidá další prvky do this seznamu
+        /// </summary>
+        /// <param name="items"></param>
+        public void AddRange(IEnumerable<GuiGraphItem> items) { this.GraphItems.AddRange(items); }
+        /// <summary>
+        /// Počet prvků v kolekci
+        /// </summary>
+        public int Count { get { return this.GraphItems.Count; } }
+        /// <summary>
         /// Potomek zde vrací soupis svých Child prvků
         /// </summary>
         [PersistingEnabled(false)]
-        protected override IEnumerable<IGuiBase> Childs { get { return this.GraphItems; } }
+        protected override IEnumerable<IGuiItem> Childs { get { return this.GraphItems; } }
     }
     #endregion
     #region GuiGraphItem : Jeden obdélníček v grafu na časové ose
     /// <summary>
     /// GuiGraphItem : Jeden obdélníček v grafu na časové ose
     /// </summary>
-    public class GuiGraphItem : GuiBase
+    public sealed class GuiGraphItem : GuiBase
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
         public GuiGraphItem()
-        { }
+        {
+            this.Height = 1f;
+            this.BehaviorMode = GraphItemBehaviorMode.DefaultText;
+        }
         /// <summary>
         /// Obsahuje sloupce, které jsou povinné.
         /// Pokud dodaná data nebudou obsahovat některý z uvedených sloupců, načítání se neprovede.
@@ -521,7 +547,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                     "begin datetime, end datetime, " +
                     "layer int, level int, order int, height float, ratio float, " +
                     "back_color string, line_color string, back_style string";
-
+        /// <summary>
+        /// Jméno prvku GuiGraphItem je vždy rovno textu z <see cref="ItemId"/>. Property Name zde nemá význam setovat.
+        /// </summary>
+        public override string Name
+        {
+            get { return (this.ItemId != null ? this.ItemId.Name : "NULL"); }
+            set { }
+        }
         /// <summary>
         /// ID položky časového grafu (ID obdélníčku).
         /// Z databáze se načítá ze sloupců: "item_class_id", "item_record_id", je POVINNÝ.
@@ -613,7 +646,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     /// <summary>
     /// GuiToolbarPanel : Celý Toolbar, obsahuje položky v seznamu <see cref="Items"/> 
     /// </summary>
-    public class GuiToolbarPanel : GuiBase
+    public sealed class GuiToolbarPanel : GuiBase
     {
         /// <summary>
         /// Konstruktor
@@ -644,14 +677,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Potomek zde vrací soupis svých Child prvků
         /// </summary>
         [PersistingEnabled(false)]
-        protected override IEnumerable<IGuiBase> Childs { get { return this.Items; } }
+        protected override IEnumerable<IGuiItem> Childs { get { return this.Items; } }
     }
     #endregion
     #region GuiToolbarItem : Položka zobrazovaná v Toolbaru
     /// <summary>
     /// GuiToolbarItem : Položka zobrazovaná v Toolbaru
     /// </summary>
-    public class GuiToolbarItem : GuiTextItem
+    public sealed class GuiToolbarItem : GuiTextItem
     {
         /// <summary>
         /// Konstruktor
@@ -665,7 +698,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     /// <summary>
     /// GuiContextMenuSet : Všechny položky všech Kontextových menu
     /// </summary>
-    public class GuiContextMenuSet : GuiBase
+    public sealed class GuiContextMenuSet : GuiBase
     {
         /// <summary>
         /// Konstruktor
@@ -696,14 +729,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Potomek zde vrací soupis svých Child prvků
         /// </summary>
         [PersistingEnabled(false)]
-        protected override IEnumerable<IGuiBase> Childs { get { return this.Items; } }
+        protected override IEnumerable<IGuiItem> Childs { get { return this.Items; } }
     }
     #endregion
     #region GuiContextMenuItem : Jedna položka nabídky, zobrazovaná v kontextovém menu
     /// <summary>
     /// GuiContextMenuItem : Jedna položka nabídky, zobrazovaná v kontextovém menu
     /// </summary>
-    public class GuiContextMenuItem : GuiTextItem
+    public sealed class GuiContextMenuItem : GuiTextItem
     {
         /// <summary>
         /// Konstruktor
@@ -748,9 +781,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     /// <summary>
     /// GuiBase : Bázová třída všech prvků Gui*
     /// </summary>
-    public abstract class GuiBase : IGuiBase
+    public abstract class GuiBase : IGuiItem
     {
-        #region Data : Name, Parent, Childs
+        #region Data : Name, UserData, Parent, Childs
         /// <summary>
         /// Vizualizace
         /// </summary>
@@ -762,17 +795,24 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Klíčové jméno, používané v aplikaci jako strojový název prvku
         /// </summary>
-        public string Name { get; set; }
+        public virtual string Name { get; set; }
+        /// <summary>
+        /// Libovolná aplikační data, která neprochází serializací.
+        /// Toto je prostor, který může využít aplikace k uložení svých dat nad rámec dat třídy, protože Gui třídy jsou sealed 
+        /// a aplikace nemůže používat potomky základních tříd.
+        /// </summary>
+        [PersistingEnabled(false)]
+        public object UserData { get; set; }
         /// <summary>
         /// Objekt parenta, v němž je tento prvek umístěn.
         /// </summary>
         [PersistingEnabled(false)]
-        public IGuiBase Parent { get { return this._Parent; } }
+        public IGuiItem Parent { get { return this._Parent; } }
         /// <summary>
         /// Úložiště parenta
         /// </summary>
         [PersistingEnabled(false)]
-        private IGuiBase _Parent;
+        private IGuiItem _Parent;
         /// <summary>
         /// V této property vrací daný objekt všechny svoje přímé Child objekty.
         /// Pokud objekt nemá Child objekty, vrací null (to zajišťuje bázová třída <see cref="GuiBase"/>).
@@ -780,12 +820,12 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Pokud objekt má více sad Child objektů, pak vrací jejich souhrnný seznam, vytvořený metodou <see cref="Union(object[])"/>.
         /// </summary>
         [PersistingEnabled(false)]
-        protected virtual IEnumerable<IGuiBase> Childs { get { return null; } }
+        protected virtual IEnumerable<IGuiItem> Childs { get { return null; } }
         #endregion
         #region Práce s řadou Parentů
         /// <summary>
         /// Plné jméno tohoto objektu = počínaje Root parentem, 
-        /// obsahuje veškerá jména (<see cref="IGuiBase.Name"/>) oddělená zpětným lomítkem,
+        /// obsahuje veškerá jména (<see cref="IGuiItem.Name"/>) oddělená zpětným lomítkem,
         /// až k this jménu <see cref="Name"/>.
         /// Největší možná délka <see cref="FullName"/> je 1024 znaků.
         /// </summary>
@@ -796,7 +836,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             {
                 string fullName = "";
                 string separator = "";
-                IGuiBase item = this;
+                IGuiItem item = this;
                 while (item != null)
                 {
                     fullName = (item.Name == null ? "NULL" : item.Name) + separator + fullName;
@@ -818,14 +858,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         protected virtual void FillParentToChilds()
         {
-            Queue<IGuiBase> queue = new Queue<IGuiBase>();
+            Queue<IGuiItem> queue = new Queue<IGuiItem>();
             queue.Enqueue(this);
             while (queue.Count > 0)
             {
-                IGuiBase item = queue.Dequeue();
-                IEnumerable<IGuiBase> childs = item.Childs;
+                IGuiItem item = queue.Dequeue();
+                IEnumerable<IGuiItem> childs = item.Childs;
                 if (childs == null) continue;
-                foreach (IGuiBase child in childs)
+                foreach (IGuiItem child in childs)
                 {
                     if (child == null) continue;
                     child.Parent = item;
@@ -838,7 +878,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="fullName"></param>
         /// <returns></returns>
-        protected virtual IGuiBase FindByName(string fullName)
+        protected virtual IGuiItem FindByName(string fullName)
         {
             if (String.IsNullOrEmpty(fullName)) return null;
             string[] names = fullName.Split(new string[] { NAME_SEPARATOR }, StringSplitOptions.RemoveEmptyEntries);
@@ -846,7 +886,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             int length = names.Length;
 
             // Pokud neopdovídá název Root prvku, skončíme hned:
-            IGuiBase item = this;
+            IGuiItem item = this;
             if (!String.Equals(item.Name, names[pointer], StringComparison.InvariantCulture)) return null;
 
             pointer++;
@@ -862,20 +902,20 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         }
         /// <summary>
         /// Metoda vezme všechny dodané parametry, a přidá je do výstupního spojeného seznamu.
-        /// Pokud vstup je pole (IEnumerable) prvků <see cref="IGuiBase"/>, pak do výstupu přidá všechny prvky pole.
-        /// Pokud vstup je jeden objekt <see cref="IGuiBase"/>, pak do výstupu přidá daný objekt.
+        /// Pokud vstup je pole (IEnumerable) prvků <see cref="IGuiItem"/>, pak do výstupu přidá všechny prvky pole.
+        /// Pokud vstup je jeden objekt <see cref="IGuiItem"/>, pak do výstupu přidá daný objekt.
         /// </summary>
         /// <param name="items"></param>
         /// <returns></returns>
-        protected static IEnumerable<IGuiBase> Union(params object[] items)
+        protected static IEnumerable<IGuiItem> Union(params object[] items)
         {
-            List<IGuiBase> result = new List<IGuiBase>();
+            List<IGuiItem> result = new List<IGuiItem>();
             foreach (object item in items)
             {
-                if (item is IEnumerable<IGuiBase>)
-                    result.AddRange(item as IEnumerable<IGuiBase>);
-                else if (item is IGuiBase)
-                    result.Add(item as IGuiBase);
+                if (item is IEnumerable<IGuiItem>)
+                    result.AddRange(item as IEnumerable<IGuiItem>);
+                else if (item is IGuiItem)
+                    result.Add(item as IGuiItem);
             }
             return result;
         }
@@ -885,17 +925,17 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Member of interface IGuiBase : Klíčové jméno, používané v aplikaci jako strojový název prvku
         /// </summary>
         [PersistingEnabled(false)]
-        string IGuiBase.Name { get { return this.Name; } }
+        string IGuiItem.Name { get { return this.Name; } }
         /// <summary>
         /// Member of interface IGuiBase : objekt parenta včetně možnosti setování
         /// </summary>
         [PersistingEnabled(false)]
-        IGuiBase IGuiBase.Parent { get { return this._Parent; } set { this._Parent = value; } }
+        IGuiItem IGuiItem.Parent { get { return this._Parent; } set { this._Parent = value; } }
         /// <summary>
         /// Member of interface IGuiBase : soupis všech Child objektů tohoto objektu.
         /// </summary>
         [PersistingEnabled(false)]
-        IEnumerable<IGuiBase> IGuiBase.Childs { get { return this.Childs; } }
+        IEnumerable<IGuiItem> IGuiItem.Childs { get { return this.Childs; } }
         #endregion
     }
     #endregion
@@ -904,7 +944,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     /// Interface, který implementuje každá třída Gui (kromě GuiId), a který garantuje přítomnost prvku <see cref="Parent"/> včetně { set } accessoru.
     /// Tzn. přes tento interface je možno nasetovat parenta do každého objektu.
     /// </summary>
-    public interface IGuiBase
+    public interface IGuiItem
     {
         /// <summary>
         /// Klíčové jméno, používané v aplikaci jako strojový název prvku
@@ -913,14 +953,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Parent this objektu
         /// </summary>
-        IGuiBase Parent { get; set; }
+        IGuiItem Parent { get; set; }
         /// <summary>
         /// V této property vrací daný objekt všechny svoje přímé Child objekty.
         /// Pokud objekt nemá Child objekty, vrací null.
         /// Pokud má jednu sadu Child objektů, vrací ji.
         /// Pokád má více sad Child objektů, pak vrací jejich Union.
         /// </summary>
-        IEnumerable<IGuiBase> Childs { get; }
+        IEnumerable<IGuiItem> Childs { get; }
     }
     #endregion
     #region GuiId : Identifikátor čísla třídy a čísla záznamu, použitelný i jako klíč v Dictionary.
@@ -929,7 +969,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     /// Třída zahrnující <see cref="ClassId"/> + <see cref="RecordId"/>, ale bez omezení 
     /// Tato třída řeší: <see cref="GetHashCode()"/>, <see cref="Equals(object)"/> a přepisuje operátory == a !=
     /// </summary>
-    public class GuiId
+    public sealed class GuiId : IXmlSerializer
     {
         /// <summary>
         /// Konstruktor
@@ -941,6 +981,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.ClassId = classId;
             this.RecordId = recordId;
         }
+        /// <summary>
+        /// Konstruktor bez parametrů musí existovat kvůli deserialiaci.
+        /// </summary>
+        public GuiId() { }
         /// <summary>
         /// Číslo třídy
         /// </summary>
@@ -1008,6 +1052,34 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="b"></param>
         /// <returns></returns>
         public static bool operator !=(GuiId a, GuiId b) { return !_Equals(a, b); }
+        /// <summary>
+        /// Obsahuje textové vyjádření zdejších dat
+        /// </summary>
+        public string Name
+        {
+            get { return this.ClassId.ToString() + ":" + this.RecordId.ToString(); }
+            private set
+            {
+                int classId = 0;
+                int recordId = 0;
+                bool isValid = false;
+                if (!String.IsNullOrEmpty(value) && value.Contains(":"))
+                {
+                    string[] items = value.Split(':');
+                    isValid = (Int32.TryParse(items[0], out classId) && Int32.TryParse(items[1], out recordId));
+                }
+                this.ClassId = (isValid ? classId : 0);
+                this.RecordId = (isValid ? recordId : 0);
+            }
+        }
+        /// <summary>
+        /// Tato property má obsahovat (get vrací, set akceptuje) XML data z celého aktuálního objektu.
+        /// </summary>
+        string IXmlSerializer.XmlSerialData
+        {
+            get { return this.Name; }
+            set { this.Name = value; }
+        }
     }
     #endregion
     #endregion
