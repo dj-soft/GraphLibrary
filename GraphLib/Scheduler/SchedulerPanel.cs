@@ -7,6 +7,7 @@ using System.Windows.Forms;
 
 using Asol.Tools.WorkScheduler.Components;
 using Asol.Tools.WorkScheduler.Data;
+using Noris.LCS.Manufacturing.WorkScheduler;
 
 namespace Asol.Tools.WorkScheduler.Scheduler
 {
@@ -18,11 +19,17 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     public class SchedulerPanel : InteractiveContainer, IInteractiveItem
     {
         #region Konstruktor, inicializace, privátní proměnné
-        public SchedulerPanel(MainControl mainControl, DataDeclaration panelDataDeclaration)
+        /// <summary>
+        /// Konstruktor, automaticky provede načtení dat z dat guiPage
+        /// </summary>
+        /// <param name="mainControl">Vizuální control</param>
+        /// <param name="guiPage">Data pro tento panel</param>
+        public SchedulerPanel(MainControl mainControl, GuiPage guiPage)
         {
             this._MainControl = mainControl;
-            this._PanelDataDeclaration = panelDataDeclaration;
+            this._GuiPage = guiPage;
             this._InitComponents();
+            this.LoadData();
         }
         /// <summary>
         /// Vytvoří GUI objekty potřebné pro tento panel.
@@ -35,30 +42,30 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             int x2 = size.Width - 300;
             int y2 = size.Height - 200;
 
-            this._TaskContainer = new GTabContainer(this) { TabHeaderPosition = RectangleSide.Left, TabHeaderMode = ShowTabHeaderMode.CollapseItem };
-            this._TaskSplitter = new GSplitter() { SplitterVisibleWidth = SplitterSize, SplitterActiveOverlap = 2, Orientation = Orientation.Vertical, Value = x1, BoundsNonActive = new Int32NRange(0, 200) };
-            this._SchedulerGrid = new GGrid(this);
-            this._SourceSplitter = new GSplitter() { SplitterVisibleWidth = SplitterSize, SplitterActiveOverlap = 2, Orientation = Orientation.Vertical, Value = x2, BoundsNonActive = new Int32NRange(0, 200) };
-            this._SourceContainer = new GTabContainer(this) { TabHeaderPosition = RectangleSide.Right, TabHeaderMode = ShowTabHeaderMode.CollapseItem };
-            this._InfoSplitter = new GSplitter() { SplitterVisibleWidth = SplitterSize, SplitterActiveOverlap = 2, Orientation = Orientation.Horizontal, Value = y2, BoundsNonActive = new Int32NRange(0, 600) };
-            this._InfoContainer = new GTabContainer(this) { TabHeaderPosition = RectangleSide.Bottom, TabHeaderMode = ShowTabHeaderMode.CollapseItem };
+            this._LeftPanelTabs = new GTabContainer(this) { TabHeaderPosition = RectangleSide.Left, TabHeaderMode = ShowTabHeaderMode.CollapseItem };
+            this._LeftPanelSplitter = new GSplitter() { SplitterVisibleWidth = SplitterSize, SplitterActiveOverlap = 2, Orientation = Orientation.Vertical, Value = x1, BoundsNonActive = new Int32NRange(0, 200) };
+            this._MainPanelGrid = new GGrid(this);
+            this._RightPanelSplitter = new GSplitter() { SplitterVisibleWidth = SplitterSize, SplitterActiveOverlap = 2, Orientation = Orientation.Vertical, Value = x2, BoundsNonActive = new Int32NRange(0, 200) };
+            this._RightPanelTabs = new GTabContainer(this) { TabHeaderPosition = RectangleSide.Right, TabHeaderMode = ShowTabHeaderMode.CollapseItem };
+            this._BottomPanelSplitter = new GSplitter() { SplitterVisibleWidth = SplitterSize, SplitterActiveOverlap = 2, Orientation = Orientation.Horizontal, Value = y2, BoundsNonActive = new Int32NRange(0, 600) };
+            this._BottomPanelTabs = new GTabContainer(this) { TabHeaderPosition = RectangleSide.Bottom, TabHeaderMode = ShowTabHeaderMode.CollapseItem };
 
-            this.AddItem(this._TaskContainer);
-            this.AddItem(this._TaskSplitter);
-            this.AddItem(this._SchedulerGrid);
-            this.AddItem(this._SourceSplitter);
-            this.AddItem(this._SourceContainer);
-            this.AddItem(this._InfoSplitter);
-            this.AddItem(this._InfoContainer);
+            this.AddItem(this._LeftPanelTabs);
+            this.AddItem(this._LeftPanelSplitter);
+            this.AddItem(this._MainPanelGrid);
+            this.AddItem(this._RightPanelSplitter);
+            this.AddItem(this._RightPanelTabs);
+            this.AddItem(this._BottomPanelSplitter);
+            this.AddItem(this._BottomPanelTabs);
 
             this.CalculateLayout();
 
-            this._TaskSplitter.ValueChanging += LayoutChanging;
-            this._TaskSplitter.ValueChanged += LayoutChanging;
-            this._SourceSplitter.ValueChanging += LayoutChanging;
-            this._SourceSplitter.ValueChanged += LayoutChanging;
-            this._InfoSplitter.ValueChanging += LayoutChanging;
-            this._InfoSplitter.ValueChanged += LayoutChanging;
+            this._LeftPanelSplitter.ValueChanging += LayoutChanging;
+            this._LeftPanelSplitter.ValueChanged += LayoutChanging;
+            this._RightPanelSplitter.ValueChanging += LayoutChanging;
+            this._RightPanelSplitter.ValueChanged += LayoutChanging;
+            this._BottomPanelSplitter.ValueChanging += LayoutChanging;
+            this._BottomPanelSplitter.ValueChanged += LayoutChanging;
         }
         /// <summary>
         /// Po změně velikosti controlu
@@ -84,7 +91,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private void CalculateLayout()
         {
             if (this.IsSuppressedEvent) return;
-            if (this._InfoContainer == null) return;       // Před dokončením inicializace
+            if (this._BottomPanelTabs == null) return;       // Před dokončením inicializace
 
             Size size = this.ClientSize;
             if (size.Width < 100 || size.Height < 100) return;
@@ -110,77 +117,77 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 int x0 = 1;
                 int x3 = width;
 
-                this._IsTaskVisible = (this._IsTaskEnabled && this._TaskContainer.TabCount > 0 && width >= MinControlWidthForSideGrids);
-                int x1 = CalculateLayoutOne(this._IsTaskVisible, x0, this._TaskSplitter.Value, x0 + MinGridWidth, x0 + maxw);
+                this._LeftPanelIsVisible = (this._LeftPanelIsEnabled && this._LeftPanelTabs.TabCount > 0 && width >= MinControlWidthForSideGrids);
+                int x1 = CalculateLayoutOne(this._LeftPanelIsVisible, x0, this._LeftPanelSplitter.Value, x0 + MinGridWidth, x0 + maxw);
 
-                this._IsSchedulerVisible = true;
+                this._MainPanelIsVisible = true;
 
-                this._IsSourceVisible = (this._IsSourceEnabled && this._SourceContainer.TabCount > 0 && width >= MinControlWidthForSideGrids);
-                int x2old = this._SourceSplitter.Value;
-                if (this._IsSourceVisible && isChangeSizeX)
+                this._RightPanelIsVisible = (this._RightPanelIsEnabled && this._RightPanelTabs.TabCount > 0 && width >= MinControlWidthForSideGrids);
+                int x2old = this._RightPanelSplitter.Value;
+                if (this._RightPanelIsVisible && isChangeSizeX)
                 {   // Proběhla změna šířky celého okna => o tuto změnu posuneme i pozici splitteru Source (aby držel vpravo):
                     x2old = x2old + (size.Width - lastSize.Value.Width);
-                    this._SourceSplitter.ValueSilent = x2old;
-                    x2old = this._SourceSplitter.Value;    // Hodnota _SourceSplitter.Value může akceptovat svoje Min-Max omezení a může se lišit od očekávání...
+                    this._RightPanelSplitter.ValueSilent = x2old;
+                    x2old = this._RightPanelSplitter.Value;    // Hodnota _SourceSplitter.Value může akceptovat svoje Min-Max omezení a může se lišit od očekávání...
                 }
-                int x2 = CalculateLayoutOne(this._IsSourceVisible, x3, x2old, x3 - maxw, x3 - MinGridWidth);
+                int x2 = CalculateLayoutOne(this._RightPanelIsVisible, x3, x2old, x3 - maxw, x3 - MinGridWidth);
 
                 int height = size.Height;
                 int maxh = height / 2;
                 int y0 = 0;
                 int y3 = size.Height;
 
-                this._IsInfoVisible = (this._IsInfoEnabled && this._InfoContainer.TabCount > 0 && height >= MinControlHeightForSideGrids);
-                int y2old = this._InfoSplitter.Value;
-                if (this._IsSourceVisible && isChangeSizeY)
+                this._BottomPanelIsVisible = (this._BottomPanelIsEnabled && this._BottomPanelTabs.TabCount > 0 && height >= MinControlHeightForSideGrids);
+                int y2old = this._BottomPanelSplitter.Value;
+                if (this._RightPanelIsVisible && isChangeSizeY)
                 {   // Proběhla změna výšky celého okna => o tuto změnu posuneme i pozici splitteru Info (aby držel dole):
                     y2old = y2old + (size.Height - lastSize.Value.Height);
-                    this._InfoSplitter.ValueSilent = y2old;
-                    y2old = this._InfoSplitter.Value;      // Hodnota _InfoSplitter.Value může akceptovat svoje Min-Max omezení a může se lišit od očekávání...
+                    this._BottomPanelSplitter.ValueSilent = y2old;
+                    y2old = this._BottomPanelSplitter.Value;      // Hodnota _InfoSplitter.Value může akceptovat svoje Min-Max omezení a může se lišit od očekávání...
                 }
-                int y2 = CalculateLayoutOne(this._IsInfoVisible, y3, y2old, y3 - maxh, y3 - MinGridHeight);
-                int b = y2 - (this._IsInfoVisible ? sp : 0);
+                int y2 = CalculateLayoutOne(this._BottomPanelIsVisible, y3, y2old, y3 - maxh, y3 - MinGridHeight);
+                int b = y2 - (this._BottomPanelIsVisible ? sp : 0);
 
-                bool isChangeChildItems = (this._TaskContainer.IsVisible != this._IsTaskVisible) ||
-                                          (this._TaskSplitter.IsVisible != this._IsTaskVisible) ||
-                                          (this._SchedulerGrid.IsVisible != this._IsSchedulerVisible) ||
-                                          (this._SourceSplitter.IsVisible != this._IsSourceVisible) ||
-                                          (this._SourceContainer.IsVisible != this._IsSourceVisible) ||
-                                          (this._InfoSplitter.IsVisible != this._IsInfoVisible) ||
-                                          (this._InfoContainer.IsVisible != this._IsInfoVisible);
+                bool isChangeChildItems = (this._LeftPanelTabs.IsVisible != this._LeftPanelIsVisible) ||
+                                          (this._LeftPanelSplitter.IsVisible != this._LeftPanelIsVisible) ||
+                                          (this._MainPanelGrid.IsVisible != this._MainPanelIsVisible) ||
+                                          (this._RightPanelSplitter.IsVisible != this._RightPanelIsVisible) ||
+                                          (this._RightPanelTabs.IsVisible != this._RightPanelIsVisible) ||
+                                          (this._BottomPanelSplitter.IsVisible != this._BottomPanelIsVisible) ||
+                                          (this._BottomPanelTabs.IsVisible != this._BottomPanelIsVisible);
 
-                this._TaskContainer.IsVisible = this._IsTaskVisible;
-                this._TaskSplitter.IsVisible = this._IsTaskVisible;
-                this._SchedulerGrid.IsVisible = this._IsSchedulerVisible;
-                this._SourceSplitter.IsVisible = this._IsSourceVisible;
-                this._SourceContainer.IsVisible = this._IsSourceVisible;
-                this._InfoSplitter.IsVisible = this._IsInfoVisible;
-                this._InfoContainer.IsVisible = this._IsInfoVisible;
+                this._LeftPanelTabs.IsVisible = this._LeftPanelIsVisible;
+                this._LeftPanelSplitter.IsVisible = this._LeftPanelIsVisible;
+                this._MainPanelGrid.IsVisible = this._MainPanelIsVisible;
+                this._RightPanelSplitter.IsVisible = this._RightPanelIsVisible;
+                this._RightPanelTabs.IsVisible = this._RightPanelIsVisible;
+                this._BottomPanelSplitter.IsVisible = this._BottomPanelIsVisible;
+                this._BottomPanelTabs.IsVisible = this._BottomPanelIsVisible;
 
-                if (this._IsTaskVisible)
+                if (this._LeftPanelIsVisible)
                 {
                     int r = x1 - sp;
-                    this._TaskContainer.Bounds = new Rectangle(x0, y0, r - x0, b - y0);
-                    this._TaskSplitter.LoadFrom(this._TaskContainer.Bounds, RectangleSide.Right, true);
+                    this._LeftPanelTabs.Bounds = new Rectangle(x0, y0, r - x0, b - y0);
+                    this._LeftPanelSplitter.LoadFrom(this._LeftPanelTabs.Bounds, RectangleSide.Right, true);
                 }
-                if (this._IsSchedulerVisible)
+                if (this._MainPanelIsVisible)
                 {
-                    int l = x1 + (this._IsTaskVisible ? sn : 0);
-                    int r = x2 - (this._IsSourceVisible ? sp : 0);
+                    int l = x1 + (this._LeftPanelIsVisible ? sn : 0);
+                    int r = x2 - (this._RightPanelIsVisible ? sp : 0);
                     int t = y0;
-                    this._SchedulerGrid.Bounds = new Rectangle(l, t, r - l, b - t);
+                    this._MainPanelGrid.Bounds = new Rectangle(l, t, r - l, b - t);
                 }
-                if (this._IsSourceVisible)
+                if (this._RightPanelIsVisible)
                 {
                     int l = x2 + sn;
-                    this._SourceContainer.Bounds = new Rectangle(l, y0, x3 - l, b - y0);
-                    this._SourceSplitter.LoadFrom(this._SourceContainer.Bounds, RectangleSide.Left, true);
+                    this._RightPanelTabs.Bounds = new Rectangle(l, y0, x3 - l, b - y0);
+                    this._RightPanelSplitter.LoadFrom(this._RightPanelTabs.Bounds, RectangleSide.Left, true);
                 }
-                if (this._IsInfoVisible)
+                if (this._BottomPanelIsVisible)
                 {
                     int t = y2 + sn;
-                    this._InfoContainer.Bounds = new Rectangle(x0, t, x3 - x0, y3 - t);
-                    this._InfoSplitter.LoadFrom(this._InfoContainer.Bounds, RectangleSide.Top, true);
+                    this._BottomPanelTabs.Bounds = new Rectangle(x0, t, x3 - x0, y3 - t);
+                    this._BottomPanelSplitter.LoadFrom(this._BottomPanelTabs.Bounds, RectangleSide.Top, true);
                 }
 
                 if (isChangeChildItems)
@@ -202,39 +209,111 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private const int MinGridHeight = 75;
         private const int SplitterSize = 4;
         
-        private GTabContainer _TaskContainer;
-        private GSplitter _TaskSplitter;
-        private bool _IsTaskVisible;
-        private bool _IsTaskEnabled;
-        private GGrid _SchedulerGrid;
-        private bool _IsSchedulerVisible;
-        private GSplitter _SourceSplitter;
-        private GTabContainer _SourceContainer;
-        private bool _IsSourceVisible;
-        private bool _IsSourceEnabled;
-        private GSplitter _InfoSplitter;
-        private GTabContainer _InfoContainer;
-        private bool _IsInfoVisible;
-        private bool _IsInfoEnabled;
+        private GTabContainer _LeftPanelTabs;
+        private GSplitter _LeftPanelSplitter;
+        private bool _LeftPanelIsVisible;
+        private bool _LeftPanelIsEnabled;
+        private GGrid _MainPanelGrid;
+        private bool _MainPanelIsVisible;
+        private GSplitter _RightPanelSplitter;
+        private GTabContainer _RightPanelTabs;
+        private bool _RightPanelIsVisible;
+        private bool _RightPanelIsEnabled;
+        private GSplitter _BottomPanelSplitter;
+        private GTabContainer _BottomPanelTabs;
+        private bool _BottomPanelIsVisible;
+        private bool _BottomPanelIsEnabled;
         private Size? _LastSize;
 
         private MainControl _MainControl;
-        private DataDeclaration _PanelDataDeclaration;
+        private GuiPage _GuiPage;
+        #endregion
+        #region Načítání dat jednotlivých tabulek
+        /// <summary>
+        /// Metoda zajistí, že veškeré údaje dodané v <see cref="GuiPage"/> pro tuto stránku budou načteny a budou z nich vytvořeny příslušné tabulky.
+        /// </summary>
+        protected void LoadData()
+        {
+            this._DataTableList = new List<MainDataTable>();
+            GuiPage guiPage = this._GuiPage;
+
+            this._LeftPanelIsEnabled = this._LoadDataToTabs(guiPage.LeftPanel, this._LeftPanelTabs);
+            this._LoadDataToGrid(guiPage.MainPanel, this._MainPanelGrid);
+            this._RightPanelIsEnabled = this._LoadDataToTabs(guiPage.RightPanel, this._RightPanelTabs);
+            this._BottomPanelIsEnabled = this._LoadDataToTabs(guiPage.BottomPanel, this._BottomPanelTabs);
+        }
+        /// <summary>
+        /// Souhrn všech tabulek této stránky, bez ohledu na to ve kterém panelu se nacházejí
+        /// </summary>
+        private List<MainDataTable> _DataTableList;
+        /// <summary>
+        /// Metoda načte všechny tabulky typu <see cref="GuiGrid"/> z dodaného <see cref="GuiPanel"/> a vloží je do dodaného vizuálního objektu <see cref="GGrid"/>.
+        /// Současně je ukládá do <see cref="_DataTableList"/>.
+        /// </summary>
+        /// <param name="guiPanel"></param>
+        /// <param name="grid"></param>
+        /// <returns></returns>
+        private bool _LoadDataToGrid(GuiPanel guiPanel, GGrid grid)
+        {
+            if (guiPanel == null || guiPanel.Grids.Count == 0) return false;
+
+            if (grid.SynchronizedTime == null)
+                grid.SynchronizedTime = this.SynchronizedTime;
+
+            foreach (GuiGrid guiGrid in guiPanel.Grids)
+            {
+                MainDataTable graphTable = new MainDataTable(this._MainControl.MainData, guiGrid);
+                if (graphTable.TableRow == null) continue;
+
+                this._DataTableList.Add(graphTable);
+
+                grid.AddTable(graphTable.TableRow);
+            }
+            return true;
+        }
+        /// <summary>
+        /// Metoda načte všechny tabulky typu <see cref="GuiGrid"/> z dodaného <see cref="GuiPanel"/> a vloží je jako nové Taby do do dodaného vizuálního objektu <see cref="GTabContainer"/>.
+        /// Současně je ukládá do <see cref="_DataTableList"/>.
+        /// </summary>
+        /// <param name="guiPanel"></param>
+        /// <param name="tabs"></param>
+        /// <returns></returns>
+        private bool _LoadDataToTabs(GuiPanel guiPanel, GTabContainer tabs)
+        {
+            if (guiPanel == null || guiPanel.Grids.Count == 0) return false;
+
+            foreach (GuiGrid guiGrid in guiPanel.Grids)
+            {
+                MainDataTable graphTable = new MainDataTable(this._MainControl.MainData, guiGrid);
+                if (graphTable.TableRow == null) continue;
+
+                this._DataTableList.Add(graphTable);
+
+                GGrid grid = new GGrid();
+                grid.SynchronizedTime = this.SynchronizedTime;
+                grid.AddTable(graphTable.TableRow);
+                tabs.AddTabItem(grid, guiGrid.Title, guiGrid.ToolTip);
+            }
+            return true;
+        }
         #endregion
         #region Child items
+        /// <summary>
+        /// Interaktivní potomci
+        /// </summary>
         protected override IEnumerable<IInteractiveItem> Childs { get { return this._GetChildList(); } }
         private IEnumerable<IInteractiveItem> _GetChildList()
         {
             if (this._ChildList == null || !this._IsChildValid)
             {
                 this._ChildList = new List<IInteractiveItem>();
-                if (this._IsTaskVisible) this._ChildList.Add(this._TaskContainer);
-                if (this._IsSchedulerVisible) this._ChildList.Add(this._SchedulerGrid);
-                if (this._IsSourceVisible) this._ChildList.Add(this._SourceContainer);
-                if (this._IsInfoVisible) this._ChildList.Add(this._InfoContainer);
-                if (this._IsTaskVisible) this._ChildList.Add(this._TaskSplitter);
-                if (this._IsSourceVisible) this._ChildList.Add(this._SourceSplitter);
-                if (this._IsInfoVisible) this._ChildList.Add(this._InfoSplitter);
+                if (this._LeftPanelIsVisible) this._ChildList.Add(this._LeftPanelTabs);
+                if (this._MainPanelIsVisible) this._ChildList.Add(this._MainPanelGrid);
+                if (this._RightPanelIsVisible) this._ChildList.Add(this._RightPanelTabs);
+                if (this._BottomPanelIsVisible) this._ChildList.Add(this._BottomPanelTabs);
+                if (this._LeftPanelIsVisible) this._ChildList.Add(this._LeftPanelSplitter);
+                if (this._RightPanelIsVisible) this._ChildList.Add(this._RightPanelSplitter);
+                if (this._BottomPanelIsVisible) this._ChildList.Add(this._BottomPanelSplitter);
             }
             return this._ChildList;
         }
@@ -245,89 +324,31 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Titulek celých dat, zobrazí se v TabHeaderu, pokud bude datových zdrojů více než 1
         /// </summary>
-        public Localizable.TextLoc Title { get { return this._Title; } set { this._Title = value; } }
-        private Localizable.TextLoc _Title;
+        public Localizable.TextLoc Title { get { return this._GuiPage.Title; } }
         /// <summary>
         /// ToolTip celých dat, zobrazí se v TabHeaderu, pokud bude datových zdrojů více než 1
         /// </summary>
-        public Localizable.TextLoc ToolTip { get { return this._ToolTip; } set { this._ToolTip = value; } }
-        private Localizable.TextLoc _ToolTip;
+        public Localizable.TextLoc ToolTip { get { return this._GuiPage.ToolTip; } }
         /// <summary>
         /// Ikona celých dat, zobrazí se v TabHeaderu, pokud bude datových zdrojů více než 1
         /// </summary>
-        public Image Icon { get { return this._Icon; } set { this._Icon = value; } }
-        private Image _Icon;
+        public Image Icon { get { return this._GuiPage.Image.Image; } }
         /// <summary>
         /// true pokud je viditelná tabulka úkolů k zapracování
         /// </summary>
-        public bool IsTaskEnabled { get { return this._IsTaskEnabled; } set { this._IsTaskEnabled = value; this.CalculateLayout();  } }
+        public bool IsTaskEnabled { get { return this._LeftPanelIsEnabled; } set { this._LeftPanelIsEnabled = value; this.CalculateLayout();  } }
         /// <summary>
         /// true pokud je viditelná tabulka zdrojů k zaplánování
         /// </summary>
-        public bool IsSourceEnabled { get { return this._IsSourceEnabled; } set { this._IsSourceEnabled = value; this.CalculateLayout(); } }
+        public bool IsSourceEnabled { get { return this._RightPanelIsEnabled; } set { this._RightPanelIsEnabled = value; this.CalculateLayout(); } }
         /// <summary>
         /// true pokud je viditelná tabulka informací o zaplánování
         /// </summary>
-        public bool IsInfoEnabled { get { return this._IsInfoEnabled; } set { this._IsInfoEnabled = value; this.CalculateLayout(); } }
+        public bool IsInfoEnabled { get { return this._BottomPanelIsEnabled; } set { this._BottomPanelIsEnabled = value; this.CalculateLayout(); } }
         /// <summary>
         /// Synchronizační element časové osy
         /// </summary>
         public ValueSynchronizer<TimeRange> SynchronizedTime { get { return this._MainControl.SynchronizedTime; } }
-
-        #endregion
-        #region Tabulky
-        /// <summary>
-        /// Do this panelu přidá další tabulku.
-        /// Pozici tabulky určí z <see cref="MainDataTable.DataDeclaration"/> : <see cref="DataDeclaration.Target"/>
-        /// </summary>
-        /// <param name="graphTable"></param>
-        public void AddGraphTable(MainDataTable graphTable)
-        {
-            DataTargetType target = graphTable.Target;
-            switch (target)
-            {
-                case DataTargetType.Task:
-                    this.AddTableToTabs(graphTable, this._TaskContainer);
-                    this._IsTaskEnabled = (this._TaskContainer.TabCount > 0);
-                    break;
-                case DataTargetType.Schedule:
-                    this.AddTableToGrid(graphTable, this._SchedulerGrid);
-                    break;
-                case DataTargetType.Source:
-                    this.AddTableToTabs(graphTable, this._SourceContainer);
-                    this._IsSourceEnabled = (this._SourceContainer.TabCount > 0);
-                    break;
-                case DataTargetType.Info:
-                    this.AddTableToTabs(graphTable, this._InfoContainer);
-                    this._IsInfoEnabled = (this._InfoContainer.TabCount > 0);
-                    break;
-            }
-        }
-        /// <summary>
-        /// Metoda zajistí, že do daného TabContaineru se přidá nová záložka, zobrazující danou tabulku.
-        /// </summary>
-        /// <param name="graphTable"></param>
-        /// <param name="tabs"></param>
-        private void AddTableToTabs(MainDataTable graphTable, GTabContainer tabs)
-        {
-            if (graphTable == null || graphTable.TableRow == null) return;
-            GGrid grid = new GGrid();
-            grid.SynchronizedTime = this.SynchronizedTime;
-            grid.AddTable(graphTable.TableRow);
-            tabs.AddTabItem(grid, graphTable.DataDeclaration.Title, graphTable.DataDeclaration.ToolTip);
-        }
-        /// <summary>
-        /// Metoda zajistí, že do daného Gridu se přidá nová tabulka z dodaného objektu.
-        /// </summary>
-        /// <param name="graphTable"></param>
-        /// <param name="grid"></param>
-        private void AddTableToGrid(MainDataTable graphTable, GGrid grid)
-        {
-            if (graphTable == null || graphTable.TableRow == null) return;
-            if (grid.SynchronizedTime == null)
-                grid.SynchronizedTime = this.SynchronizedTime;
-            grid.AddTable(graphTable.TableRow);
-        }
         #endregion
     }
 }

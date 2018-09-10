@@ -21,91 +21,213 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     /// </summary>
     public class MainDataTable : IMainDataTableInternal, ITimeGraphDataSource
     {
-        #region Konstrukce, postupné vkládání dat z tabulek, včetně finalizace
+        #region Konstrukce, základní property
         /// <summary>
-        /// Konstruktor
+        /// Konstruktor, automaticky provede načtení dat z dat guiGrid
         /// </summary>
         /// <param name="mainData"></param>
-        /// <param name="tableName"></param>
-        public MainDataTable(MainData mainData, string tableName, DataDeclaration dataDeclaration)
+        /// <param name="guiGrid"></param>
+        public MainDataTable(MainData mainData, GuiGrid guiGrid)
         {
             this.MainData = mainData;
-            this.TableName = tableName;
-            this.DataDeclaration = dataDeclaration;
-            this.DataGraphProperties = DataGraphProperties.CreateFrom(this, this.DataDeclaration.Data);
-            this._TableRow = null;
+            this.GuiGrid = guiGrid;
+
+            this.DataGraphProperties = null;
+            this.TableRow = null;
             this._TableInfoList = new List<Table>();
             this._GIdIndex = new Index<GId>(IndexScopeType.TKeyType);
             this._GraphItemDict = new Dictionary<GId, DataGraphItem>();
+
+            this.LoadData();
         }
         /// <summary>
         /// Vlastník = instance třídy <see cref="Scheduler.MainData"/>
         /// </summary>
         internal MainData MainData { get; private set; }
         /// <summary>
+        /// Instance <see cref="GuiGrid"/>, která tvoří datový základ této tabulky
+        /// </summary>
+        internal GuiGrid GuiGrid { get; private set; }
+        /// <summary>
         /// Vlastník přetypovaný na IMainDataInternal
         /// </summary>
         protected IMainDataInternal IMainData { get { return (this.MainData as IMainDataInternal); } }
+        #endregion
+        #region Načtení dat z GuiGrid
+        /// <summary>
+        /// Metoda zajistí, že veškeré údaje dodané v <see cref="GuiGrid"/> pro tuto tabulku budou načteny a budou z nich vytvořeny příslušné prvky.
+        /// </summary>
+        protected void LoadData()
+        {
+            this.DataGraphProperties = DataGraphProperties.CreateFrom(this, this.GuiGrid.GraphProperties);
+            this.LoadDataLoadRow();
+            this.LoadDataCreateGraphs();
+            this.LoadDataLoadGraphItems();
+            this.LoadDataLoadTexts();
+        }
+
+        /// <summary>
+        /// Načte a zapracuje prvky grafů
+        /// </summary>
+        protected void LoadDataLoadGraphItems()
+        {
+            GuiGrid guiGrid = this.GuiGrid;
+
+            this._GraphItemDict = new Dictionary<GId, DataGraphItem>();
+            if (guiGrid.GraphItems != null)
+            {
+                foreach (GuiGraphTable guiGraphTable in guiGrid.GraphItems)
+                {
+                    if (guiGraphTable == null || guiGraphTable.Count == 0) continue;
+                    foreach (GuiGraphItem guiGraphItem in guiGraphTable.GraphItems)
+                    {
+                        DataGraphItem dataGraphItem = DataGraphItem.CreateFrom(this, guiGraphItem);
+                        if (dataGraphItem == null) continue;
+                        if (!this._GraphItemDict.ContainsKey(dataGraphItem.ItemGId))
+                            this._GraphItemDict.Add(dataGraphItem.ItemGId, dataGraphItem);
+                    }
+                }
+            }
+
+
+        }
+        /// <summary>
+        /// Načte tabulky s texty
+        /// </summary>
+        protected void LoadDataLoadTexts()
+        {
+            GuiGrid guiGrid = this.GuiGrid;
+        }
+        #endregion
+        #region TableRow
+        /// <summary>
+        /// Načte tabulku s řádky
+        /// </summary>
+        protected void LoadDataLoadRow()
+        {
+            this.TableRow = Table.CreateFrom(this.GuiGrid.Rows.DataTable);
+            this.TableRow.OpenRecordForm += _TableRow_OpenRecordForm;
+            if (this.TableRow.AllowPrimaryKey) this.TableRow.HasPrimaryIndex = true;
+        }
+        /// <summary>
+        /// Tabulka s řádky.
+        /// Tato tabulka je zobrazována.
+        /// </summary>
+        public Table TableRow { get; private set; }
+        #endregion
+        #region Grafy a položky grafů
+        /// <summary>
+        /// Do tabulky s řádky vytvoří grafy do všech řádků, zatím prázdné
+        /// </summary>
+        protected void LoadDataCreateGraphs()
+        {
+            this.TimeGraphDict = new Dictionary<GId, GTimeGraph>();
+            if (this.TableRow == null) return;
+            DataGraphPositionType graphPosition = this.GraphPosition;
+            if (graphPosition == DataGraphPositionType.None) return;
+            this.LoadDataPrepareTableForGraphs(graphPosition);
+
+            foreach (Row row in this.TableRow.Rows)
+            {
+                GId rowGid = row.RecordGId;
+                if (rowGid == null) continue;
+
+                GTimeGraph gTimeGraph = this.LoadDataCreateGTimeGraph(row, graphPosition);
+                if (!this.TimeGraphDict.ContainsKey(rowGid))
+                    this.TimeGraphDict.Add(rowGid, gTimeGraph);
+            }
+        }
+        /// <summary>
+        /// Metoda připraví tabulku <see cref="TableRow"/> na vkládání grafů daného typu
+        /// </summary>
+        /// <param name="graphPosition"></param>
+        protected void LoadDataPrepareTableForGraphs(DataGraphPositionType graphPosition)
+        {
+            if (graphPosition == DataGraphPositionType.InLastColumn)
+            {
+                Column graphColumn = new Column("__time__graph__");
+
+                graphColumn.ColumnProperties.AllowColumnResize = true;
+                graphColumn.ColumnProperties.AllowColumnSortByClick = false;
+                graphColumn.ColumnProperties.AutoWidth = true;
+                graphColumn.ColumnProperties.ColumnContent = ColumnContentType.TimeGraphSynchronized;
+                graphColumn.ColumnProperties.IsVisible = true;
+                graphColumn.ColumnProperties.WidthMininum = 250;
+
+                graphColumn.GraphParameters = new TimeGraphProperties();
+                graphColumn.GraphParameters.TimeAxisMode = TimeGraphTimeAxisMode.Standard;
+                graphColumn.GraphParameters.TimeAxisVisibleTickLevel = AxisTickType.StdTick;
+                graphColumn.GraphParameters.InitialResizeMode = AxisResizeContentMode.ChangeScale;
+                graphColumn.GraphParameters.InitialValue = this.CreateInitialTimeRange();
+                graphColumn.GraphParameters.InteractiveChangeMode = AxisInteractiveChangeMode.Shift;
+
+                this.TableRow.Columns.Add(graphColumn);
+                this.TableRowGraphColumn = graphColumn;
+            }
+            else
+            {
+                this.TableRow.GraphParameters = new TimeGraphProperties();
+                this.TableRow.GraphParameters.TimeAxisMode = this.TimeAxisMode;
+                this.TableRow.GraphParameters.TimeAxisVisibleTickLevel = AxisTickType.BigTick;
+                this.TableRow.GraphParameters.Opacity = 96;
+            }
+        }
+        /// <summary>
+        /// Metoda vytvoří nový <see cref="GTimeGraph"/> pro daný řádek a pozici, umístí jej do řádku, a graf vrátí.
+        /// Graf zatím neobsahuje položky.
+        /// </summary>
+        /// <param name="row"></param>
+        /// <param name="graphPosition"></param>
+        /// <returns></returns>
+        protected GTimeGraph LoadDataCreateGTimeGraph(Row row, DataGraphPositionType graphPosition)
+        {
+            GTimeGraph gTimeGraph = new GTimeGraph();
+            gTimeGraph.DataSource = this;
+            gTimeGraph.GraphId = this.GetId(row.RecordGId);
+
+            if (graphPosition == DataGraphPositionType.InLastColumn)
+            {
+                Cell graphCell = row[this.TableRowGraphColumn];
+                graphCell.Value = gTimeGraph;
+            }
+            else
+            {
+                row.BackgroundValue = gTimeGraph;
+            }
+
+            return gTimeGraph;
+        }
+        /// <summary>
+        /// Reference na objekty grafů, kde klíčem je GId řádku
+        /// </summary>
+        protected Dictionary<GId, GTimeGraph> TimeGraphDict { get; private set; }
+        /// <summary>
+        /// Sloupec hlavní tabulky, který zobrazuje graf při umístění <see cref="DataGraphPositionType.InLastColumn"/>
+        /// </summary>
+        protected Column TableRowGraphColumn { get; private set; }
+        #endregion
+        #region Textové údaje
+
+        #endregion
+
+
+
+
+
         /// <summary>
         /// Verze dat, do které patří tato tabulka.
         /// </summary>
         public Int32? DataId { get { return (this.DataDeclaration != null ? (Int32?)this.DataDeclaration.DataId : (Int32?)null); } }
         /// <summary>
-        /// Cílový prostor v panelu <see cref="SchedulerPanel"/> pro tuto položku deklarace
-        /// </summary>
-        public DataTargetType Target { get { return (this.DataDeclaration != null ? this.DataDeclaration.Target : DataTargetType.None); } }
-        /// <summary>
         /// Název této tabulky
         /// </summary>
         public string TableName { get; private set; }
         /// <summary>
-        /// Deklarace dat pro tuto tabulku.
-        /// Pokud je null, je to způsobené nekonzistencí dat (je předán obsah tabulky, ale její jméno není uvedeno v deklaraci).
-        /// </summary>
-        public DataDeclaration DataDeclaration { get; private set; }
-        /// <summary>
         /// Vlastnosti tabulky, načtené z DataDeclaration
         /// </summary>
         public DataGraphProperties DataGraphProperties { get; private set; }
-        /// <summary>
-        /// Přidá další data, dodaná ve formě serializované <see cref="DataTable"/> do this tabulky
-        /// </summary>
-        /// <param name="data"></param>
-        /// <param name="tableType"></param>
-        public void AddTable(string data, DataTableType tableType)
-        {
-            string text = WorkSchedulerSupport.Decompress(data);
-            DataTable dataTable = WorkSchedulerSupport.TableDeserialize(text);
-            switch (tableType)
-            {
-                case DataTableType.Row:
-                    this.AddTableRow(dataTable);
-                    break;
-                case DataTableType.Graph:
-                    this.AddTableGraph(dataTable);
-                    break;
-                case DataTableType.Rel:
-                    this.AddTableRel(dataTable);
-                    break;
-                case DataTableType.Item:
-                    this.AddTableItem(dataTable);
-                    break;
-            }
-        }
-        /// <summary>
-        /// Metoda vloží data řádků.
-        /// Lze vložit pouze jednu tabulku; další pokus o vložení skončí chybou.
-        /// </summary>
-        /// <param name="dataTable"></param>
-        protected void AddTableRow(DataTable dataTable)
-        {
-            if (this.TableRow != null)
-                throw new GraphLibDataException("Duplicitní zadání dat typu Row pro tabulku <" + this.TableName + ">.");
-            this._TableRow = Table.CreateFrom(dataTable);
-            this._TableRow.OpenRecordForm += _TableRow_OpenRecordForm;
-            if (this.TableRow.AllowPrimaryKey)
-                this.TableRow.HasPrimaryIndex = true;
-        }
+       
+    
         /// <summary>
         /// Obsluha události, kdy tabulka sama (řádek nebo statický vztah) chce otevírat záznam
         /// </summary>
@@ -115,23 +237,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             this.RunOpenRecordForm(e.Value);
         }
-        /// <summary>
-        /// Metoda přidá data grafických prvků.
-        /// </summary>
-        /// <param name="dataTable"></param>
-        protected void AddTableGraph(DataTable dataTable)
-        {
-            WorkSchedulerSupport.CheckTable(dataTable, WorkSchedulerSupport.DATA_TABLE_GRAPH_STRUCTURE);
-            foreach (DataRow row in dataTable.Rows)
-            {   // Grafické řádky se vytvářejí přímo z DataRow, nepotřebujeme kvůli nim konvertovat DataTable na Table:
-                DataGraphItem dataGraphItem = DataGraphItem.CreateFrom(this, row);
-                this.AddGraphItem(dataGraphItem);
-            }
-        }
-        protected void AddTableRel(DataTable dataTable)
-        {
-            // Doplnit strukturu a načítání vztahů
-        }
+        
         /// <summary>
         /// Provede uložení dat typu Item = textové informace o položce grafu.
         /// Tabulka musí umožnit <see cref="Table.AllowPrimaryKey"/>.
@@ -170,7 +276,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (!String.Equals(this.TableName, tableName, StringComparison.InvariantCulture)) return false;
             return (this.DataId == dataId);
         }
-        #endregion
         #region Tvorba a modifikace grafů
         /// <summary>
         /// Metoda vytvoří grafy do položek tabulky řádků
@@ -374,25 +479,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         protected DataGraphPositionType GraphPosition
         {
-            get
-            {
-                if (this.TableRow == null || this.DataDeclaration == null || this.DataGraphProperties == null) return DataGraphPositionType.None;
-                DataGraphPositionType? gp = this.DataGraphProperties.GraphPosition;
-                return (gp.HasValue ? gp.Value : DataGraphPositionType.None);
-            }
+            get { return ((this.TableRow != null && this.DataGraphProperties != null) ? this.DataGraphProperties.GraphPosition : DataGraphPositionType.None); }
         }
-        /// <summary>
-        /// Sloupec hlavní tabulky, který zobrazuje graf při umístění <see cref="DataGraphPositionType.InLastColumn"/>
-        /// </summary>
-        protected Column TableRowGraphColumn { get; private set; }
         #endregion
         #region Data - tabulka s řádky, prvky grafů, vztahů, položky s informacemi
-        /// <summary>
-        /// Tabulka s řádky.
-        /// Tato tabulka je zobrazována.
-        /// </summary>
-        public Table TableRow { get { return this._TableRow; } }
-        protected Table _TableRow;
         /// <summary>
         /// Data položek všech grafů (=ze všech řádků) tabulky <see cref="TableRow"/>
         /// </summary>
@@ -404,7 +494,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Dictionary pro vyhledání prvku grafu podle jeho GId. Primární úložiště položek grafů.
         /// </summary>
-        protected Dictionary<GId, DataGraphItem> _GraphItemDict;
+        protected Dictionary<GId, DataGraphItem> _GraphItemDict { get; private set; }
         #endregion
         #region Textové informace pro položky grafů - tabulka TableInfoList a její obsluha
         /// <summary>
@@ -483,18 +573,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (!this._GIdIndex.TryGetKey(id, out gId)) return null;
             return gId;
         }
-        /// <summary>
-        /// Metoda uloží danou položku grafu do interního úložiště <see cref="_GraphItemDict"/>.
-        /// </summary>
-        /// <param name="dataGraphItem"></param>
-        /// <returns></returns>
-        protected void AddGraphItem(DataGraphItem dataGraphItem)
-        {
-            if (dataGraphItem == null || dataGraphItem.ItemGId == null) return;
-            GId gId = dataGraphItem.ItemGId;
-            if (!this._GraphItemDict.ContainsKey(gId))
-                this._GraphItemDict.Add(gId, dataGraphItem);
-        }
+        
         /// <summary>
         /// Najde a vrátí položku grafu podle jeho ID
         /// </summary>
@@ -717,11 +796,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Metoda vytvoří a vrátí instanci položky grafu z dodaného řádku s daty.
         /// </summary>
         /// <param name="graphTable"></param>
-        /// <param name="row"></param>
+        /// <param name="guiGraphItem"></param>
         /// <returns></returns>
-        public static DataGraphItem CreateFrom(MainDataTable graphTable, DataRow row)
+        public static DataGraphItem CreateFrom(MainDataTable graphTable, GuiGraphItem guiGraphItem)
         {
-            if (row == null) return null;
+            if (guiGraphItem == null) return null;
 
             DataGraphItem item = new DataGraphItem(graphTable);
             // Struktura řádku: parent_rec_id int; parent_class_id int; item_rec_id int; item_class_id int; group_rec_id int; group_class_id int; data_rec_id int; data_class_id int; layer int; level int; is_user_fixed int; time_begin datetime; time_end datetime; height decimal; back_color string; join_back_color string; data string
@@ -974,75 +1053,84 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     {
         #region Konstrukce, načtení
         /// <summary>
-        /// Vytvoří a vrátí instanci DataGraphProperties,vloží do ní dodaná data.
+        /// Vytvoří a vrátí instanci DataGraphProperties, vloží do ní dodaná data.
         /// </summary>
-        /// <param name="dataGraphTable"></param>
-        /// <param name="data"></param>
+        /// <param name="dataGraphTable">Vlastník = tabulka</param>
+        /// <param name="guiGraphProperties">Definice vlastností grafu</param>
         /// <returns></returns>
-        public static DataGraphProperties CreateFrom(MainDataTable dataGraphTable, string data)
+        public static DataGraphProperties CreateFrom(MainDataTable dataGraphTable, GuiGraphProperties guiGraphProperties)
         {
-            DataGraphProperties dataGraphProperties = new DataGraphProperties(dataGraphTable);
-            dataGraphProperties.LoadData(data);
+            DataGraphProperties dataGraphProperties = new DataGraphProperties(dataGraphTable, guiGraphProperties);
             return dataGraphProperties;
         }
         /// <summary>
         /// Privátní konstruktor
         /// </summary>
-        /// <param name="dataGraphTable"></param>
-        private DataGraphProperties(MainDataTable dataGraphTable)
+        /// <param name="dataGraphTable">Vlastník = tabulka</param>
+        /// <param name="guiGraphProperties">Definice vlastností grafu</param>
+        private DataGraphProperties(MainDataTable dataGraphTable, GuiGraphProperties guiGraphProperties)
         {
             this.MainDataTable = dataGraphTable;
-        }
-        /// <summary>
-        /// Načte data do this objektu z datového stringu
-        /// </summary>
-        /// <param name="data">Obsahuje formát: "GraphPosition: LastColumn; LineHeight: 16; MaxHeight: 320"</param>
-        protected void LoadData(string data)
-        {
-            if (data == null) return;
-            var items = data.ToKeyValues(";", ":", true, true);
-            foreach (var item in items)
-            {
-                switch (item.Key)
-                {
-                    case WorkSchedulerSupport.DATA_TABLE_GRAPH_POSITION:
-                        this.GraphPosition = MainData.GetGraphPosition(item.Value);
-                        break;
-                    case WorkSchedulerSupport.DATA_TABLE_GRAPH_LINE_HEIGHT:
-                        this.GraphLineHeight = MainData.GetInt32N(item.Value);
-                        break;
-                    case WorkSchedulerSupport.DATA_TABLE_GRAPH_MIN_HEIGHT:
-                        this.RowLineHeightMin = MainData.GetInt32N(item.Value);
-                        break;
-                    case WorkSchedulerSupport.DATA_TABLE_GRAPH_MAX_HEIGHT:
-                        this.RowLineHeightMax = MainData.GetInt32N(item.Value);
-                        break;
-                }
-            }
+            this.GuiGraphProperties = guiGraphProperties;
         }
         /// <summary>
         /// Vlastník = tabulka
         /// </summary>
         protected MainDataTable MainDataTable { get; private set; }
+        /// <summary>
+        /// Vlastnosti grafu načtené z deklarace v <see cref="GuiData"/>
+        /// </summary>
+        protected GuiGraphProperties GuiGraphProperties { get; private set; }
         #endregion
         #region Public data
         /// <summary>
+        /// Režim zobrazování času na ose X
+        /// </summary>
+        public TimeGraphTimeAxisMode TimeAxisMode { get { return this.GuiGraphProperties.TimeAxisMode; } }
+        /// <summary>
+        /// Režim chování při změně velikosti: zachovat měřítko a změnit hodnotu End, nebo zachovat hodnotu End a změnit měřítko?
+        /// </summary>
+        public AxisResizeContentMode AxisResizeMode { get { return this.GuiGraphProperties.AxisResizeMode; } }
+        /// <summary>
+        /// Možnosti uživatele změnit zobrazený rozsah anebo měřítko
+        /// </summary>
+        public AxisInteractiveChangeMode InteractiveChangeMode { get { return this.GuiGraphProperties.InteractiveChangeMode; } }
+        /// <summary>
         /// Pozice grafu v tabulce
         /// </summary>
-        public DataGraphPositionType? GraphPosition { get; private set; }
+        public DataGraphPositionType GraphPosition { get { return this.GuiGraphProperties.GraphPosition; } }
         /// <summary>
         /// Výška jednotky v grafu, v pixelech
         /// </summary>
-        public int? GraphLineHeight { get; private set; }
+        public int GraphLineHeight { get { return this.GuiGraphProperties.GraphLineHeight; } }
         /// <summary>
         /// Výška řádku v tabulce minimální, v pixelech
         /// </summary>
-        public int? RowLineHeightMin { get; private set; }
+        public int TableRowHeightMin { get { return this.GuiGraphProperties.TableRowHeightMin; } }
         /// <summary>
         /// Výška řádku v tabulce maximální, v pixelech
         /// </summary>
-        public int? RowLineHeightMax { get; private set; }
-
+        public int TableRowHeightMax { get { return this.GuiGraphProperties.TableRowHeightMax; } }
+        /// <summary>
+        /// Logaritmická časová osa: Rozsah lineární části grafu uprostřed logaritmické časové osy.
+        /// Implicitní hodnota (pokud není zadáno jinak) = 0.60f, povolené rozmezí od 0.40f po 0.90f.
+        /// </summary>
+        public float? LogarithmicRatio { get { return this.GuiGraphProperties.LogarithmicRatio; } }
+        /// <summary>
+        /// Logaritmická časová osa: vykreslovat vystínování oblastí s logaritmickým měřítkem osy (tedy ty levé a pravé okraje, kde již neplatí lineární měřítko).
+        /// Zde se zadává hodnota 0 až 1, která reprezentuje úroven vystínování těchto okrajů.
+        /// Hodnota 0 = žádné stínování, hodnota 1 = krajní pixel je zcela černý. 
+        /// Implicitní hodnota (pokud není zadáno jinak) = 0.20f.
+        /// </summary>
+        public float? LogarithmicGraphDrawOuterShadow { get { return this.GuiGraphProperties.LogarithmicGraphDrawOuterShadow; } }
+        /// <summary>
+        /// Průhlednost prvků grafu při běžném vykreslování.
+        /// Má hodnotu null (průhlednost se neaplikuje), nebo 0 ÷ 255. 
+        /// Hodnota 255 má stejný význam jako null = plně viditelný graf. 
+        /// Hodnota 0 = zcela neviditelné prvky (ale fyzicky jsou přítomné).
+        /// Výchozí hodnota = null.
+        /// </summary>
+        public int? Opacity { get { return this.GuiGraphProperties.Opacity; } }
         #endregion
     }
     #endregion

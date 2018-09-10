@@ -36,6 +36,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this._SchedulerPanelInit();
             this.CalculateLayout();
         }
+        /// <summary>
+        /// Reference na hlavní datový objekt
+        /// </summary>
+        public MainData MainData { get { return this._MainData; } }
         private MainData _MainData;
         /// <summary>
         /// Po změně velikosti controlu přepočítá souřadnice vnitřních prvků
@@ -63,7 +67,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.Refresh();
         }
         #endregion
-        #region Public rozhraní: vkládání tabulek a dalších dat
+        #region Public rozhraní: vkládání tabulek a dalších dat, synchronizační element časové osy
         /// <summary>
         /// Metoda přidá jednu stránku s daty podle dat dodaných v parametru
         /// </summary>
@@ -80,10 +84,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this._TabContainer.ClearItems();
         }
         /// <summary>
-        /// Instance všech Scheduler panelů a na něj napojených dat.
-        /// Klíčem je DataId.
+        /// Synchronizační element časové osy
         /// </summary>
-        private List<TabSchedulerPanelInfo> _SchedulerPanelList;
+        public ValueSynchronizer<TimeRange> SynchronizedTime
+        {
+            get { if (this._SynchronizedTime == null) this._SynchronizedTime = new ValueSynchronizer<TimeRange>(); return this._SynchronizedTime; }
+            set { this._SynchronizedTime = value; }
+        }
+        private ValueSynchronizer<TimeRange> _SynchronizedTime;
 
         #endregion
         #region ToolBar
@@ -163,7 +171,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.AddItem(this._TabContainer);
 
             this._SchedulerPanelList = new List<TabSchedulerPanelInfo>();
-            this._SchedulerPanelCurrentDataId = -1;
         }
         /// <summary>
         /// Metoda přidá jednu stránku s daty podle dat dodaných v parametru
@@ -178,14 +185,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this._SchedulerPanelList.Add(tspInfo);
         }
         /// <summary>
-        /// Synchronizační element časové osy
+        /// Instance všech Scheduler panelů a na něj napojených dat.
         /// </summary>
-        public ValueSynchronizer<TimeRange> SynchronizedTime
-        {
-            get { if (this._SynchronizedTime == null) this._SynchronizedTime = new ValueSynchronizer<TimeRange>(); return this._SynchronizedTime; }
-            set { this._SynchronizedTime = value; }
-        }
-        private ValueSynchronizer<TimeRange> _SynchronizedTime;
+        private List<TabSchedulerPanelInfo> _SchedulerPanelList;
         /// <summary>
         /// Po změně záložky, která reprezentuje komplexní GUI datového zdroje
         /// </summary>
@@ -200,17 +202,28 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         private GTabContainer _TabContainer;
         /// <summary>
-        /// Index aktuálního Scheduler panelu
+        /// Aktuálně zobrazená stránka s daty.
+        /// Obsahue (vrací) instanci <see cref="TabSchedulerPanelInfo"/> ze seznamu <see cref="_SchedulerPanelList"/>, která se týká té stránky <see cref="GTabPage"/>, 
+        /// která je aktivní v <see cref="_TabContainer"/>.
         /// </summary>
-        private int _SchedulerPanelCurrentDataId;
+        protected TabSchedulerPanelInfo SchedulerTabPanelCurrent
+        {
+            get
+            {
+                if (this._TabContainer == null) return null;
+                GTabPage activePage = this._TabContainer.ActivePage;
+                if (activePage == null) return null;
+                return this._SchedulerPanelList.FirstOrDefault(p => Object.ReferenceEquals(p.GTabPage, activePage));
+            }
+        }
         /// <summary>
         /// true pokud v <see cref="SchedulerPanelCurrent"/> je vybraný panel, false pokud není.
         /// </summary>
-        protected bool SchedulerPanelExists { get { return (this._SchedulerPanelList != null && this._SchedulerPanelCurrentDataId > 0 && this._SchedulerPanelList.ContainsKey(this._SchedulerPanelCurrentDataId)); } }
+        protected bool SchedulerPanelExists { get { return (this.SchedulerTabPanelCurrent != null); } }
         /// <summary>
         /// Aktuálně zobrazovaný Scheduler panel
         /// </summary>
-        protected SchedulerPanel SchedulerPanelCurrent { get { return (this.SchedulerPanelExists ? this._SchedulerPanelList[this._SchedulerPanelCurrentDataId].SchedulerPanel : null); } }
+        protected SchedulerPanel SchedulerPanelCurrent { get { TabSchedulerPanelInfo tsp = this.SchedulerTabPanelCurrent;  return (tsp != null ? tsp.SchedulerPanel : null); } }
         #endregion
         #region class TabSchedulerPanelInfo - třída obsaující data o jednom panelu pro jeden klíč DataId
         /// <summary>

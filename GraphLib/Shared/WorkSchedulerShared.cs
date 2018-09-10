@@ -465,11 +465,11 @@ namespace Noris.LCS.Manufacturing.WorkScheduler
             this.TimeAxisMode = TimeGraphTimeAxisMode.Standard;
             this.AxisResizeMode = AxisResizeContentMode.ChangeValueEnd;
             this.InteractiveChangeMode = AxisInteractiveChangeMode.All;
-            this.OneLineHeight = 20;
+            this.GraphLineHeight = 20;
             this.UpperSpaceLogical = 1f;
             this.BottomMarginPixel = 1;
-            this.TotalHeightMin = 22;
-            this.TotalHeightMax = 200;
+            this.TableRowHeightMin = 22;
+            this.TableRowHeightMax = 200;
             this.LogarithmicRatio = 0.60f;
             this.LogarithmicGraphDrawOuterShadow = 0.20f;
         }
@@ -486,30 +486,34 @@ namespace Noris.LCS.Manufacturing.WorkScheduler
         /// </summary>
         public AxisInteractiveChangeMode InteractiveChangeMode { get; set; }
         /// <summary>
+        /// Pozice grafu v tabulce
+        /// </summary>
+        public DataGraphPositionType GraphPosition { get; set; }
+        /// <summary>
         /// Fyzická výška jedné logické linky grafu v pixelech.
         /// Určuje, tedy kolik pixelů bude vysoký prvek <see cref="GuiGraphItem"/>, jehož <see cref="GuiGraphItem.Height"/> = 1.0f.
         /// Pokud je null, bude použit default definovaný v GUI.
         /// </summary>
-        public int? OneLineHeight { get; set; }
+        public int GraphLineHeight { get; set; }
         /// <summary>
         /// Horní okraj = prostor nad nejvyšším prvkem grafu, který by měl být zobrazen jako prázdný, tak aby bylo vidět že nic dalšího už není.
         /// V tomto prostoru (těsně pod souřadnicí Top) se provádí Drag and Drop prvků.
         /// Hodnota je zadána v logických jednotkách, tedy v počtu standardních linek.
         /// Výchozí hodnota = 1.0 linka, nelze zadat zápornou hodnotu.
         /// </summary>
-        public float? UpperSpaceLogical { get; set; }
+        public float UpperSpaceLogical { get; set; }
         /// <summary>
         /// Dolní okraj = mezera pod dolním okrajem nejnižšího prvku grafu k dolnímu okraji controlu, v pixelech.
         /// </summary>
-        public int? BottomMarginPixel { get; set; }
+        public int BottomMarginPixel { get; set; }
         /// <summary>
         /// Výška celého grafu, nejmenší přípustná, v pixelech.
         /// </summary>
-        public int? TotalHeightMin { get; set; }
+        public int TableRowHeightMin { get; set; }
         /// <summary>
         /// Výška celého grafu, největší přípustná, v pixelech.
         /// </summary>
-        public int? TotalHeightMax { get; set; }
+        public int TableRowHeightMax { get; set; }
         /// <summary>
         /// Logaritmická časová osa: Rozsah lineární části grafu uprostřed logaritmické časové osy.
         /// Implicitní hodnota (pokud není zadáno jinak) = 0.60f, povolené rozmezí od 0.40f po 0.90f.
@@ -666,7 +670,7 @@ namespace Noris.LCS.Manufacturing.WorkScheduler
         public int Order { get; set; }
         /// <summary>
         /// Relativní výška tohoto prvku. Standardní hodnota = 1.0F. Fyzická výška (v pixelech) jednoho prvku je dána součinem 
-        /// <see cref="Height"/> * <see cref="GuiGraphProperties.OneLineHeight"/>
+        /// <see cref="Height"/> * <see cref="GuiGraphProperties.GraphLineHeight"/>
         /// Prvky s výškou 0 a menší nebudou vykresleny.
         /// Z databáze se načítá ze sloupce: "height", je NEPOVINNÝ.
         /// </summary>
@@ -1544,6 +1548,28 @@ namespace Noris.LCS.Manufacturing.WorkScheduler
         /// a na X = Right (úplně vpravo v grafu) se zobrazují prvky, jejichž End = plus nekonečno.
         /// </summary>
         LogarithmicScale
+    }
+    /// <summary>
+    /// Pozice grafu v tabulce
+    /// </summary>
+    public enum DataGraphPositionType
+    {
+        /// <summary>
+        /// V dané tabulce není graf (výchozí stav)
+        /// </summary>
+        None,
+        /// <summary>
+        /// Graf zobrazit v posledním sloupci (sloupec bude do tabulky přidán)
+        /// </summary>
+        InLastColumn,
+        /// <summary>
+        /// Graf zobrazit jako poklad, měřítko časové osy = proporcionální
+        /// </summary>
+        OnBackgroundProportional,
+        /// <summary>
+        /// Graf zobrazit jako poklad, měřítko časové osy = logaritmické
+        /// </summary>
+        OnBackgroundLogarithmic
     }
     #endregion
     #region class WorkSchedulerSupport : Třída obsahující konstanty a další podporu WorkScheduleru - identický kód je v Helios Green i v GraphLibrary !!!

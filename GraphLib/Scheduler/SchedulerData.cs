@@ -235,7 +235,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         private GuiPages _GuiPages;
         /// <summary>
-        /// Do připraveného controlu vloží objekt obsahující 
+        /// Do připraveného vizuálního controlu <see cref="_MainControl"/> vloží objekty za jednotlivé stránky s daty z <see cref="_GuiPages"/>.
         /// </summary>
         private void _FillMainControlPagesFromGui()
         {
@@ -395,89 +395,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
 
         #region Data tabulek
-        /// <summary>
-        /// Načte a zpracuje vstupní data jedné tabulky
-        /// </summary>
-        /// <param name="data">Obsah dat ve formě komprimovaného stringu serializované <see cref="DataTable"/></param>
-        /// <param name="dataId">DataId tabulky</param>
-        /// <param name="tableName">Název tabulky</param>
-        /// <param name="tableType">Typ dat, načtený z klíče (obsahuje string: Row, Graph, Rel, Item)</param>
-        private void _LoadDataGraphTable(string data, int? dataId, string tableName, DataTableType tableType)
-        {
-            MainDataTable dataGraphTable = this.GetGraphTable(dataId, tableName);
-            if (dataGraphTable == null)
-            {   // Nová tabulka => založit nový kontenjer DataGraphTable:
-                DataDeclaration dataDeclaration = this.SearchDataDeclarationForTable(tableName);
-                dataGraphTable = new MainDataTable(this, tableName, dataDeclaration);
-                this.GraphTableList.Add(dataGraphTable);
-            }
-            try
-            {   // Do existujícího kontenjeru DataGraphTable vložit nová data daného typu:
-                dataGraphTable.AddTable(data, tableType);
-            }
-            catch (Exception)
-            { }
-        }
-        /// <summary>
-        /// Najde a vrátí tabulku pro danou verzi dat a daný název.
-        /// Může vrátit null.
-        /// </summary>
-        /// <param name="dataId"></param>
-        /// <param name="tableName"></param>
-        /// <returns></returns>
-        protected MainDataTable GetGraphTable(int? dataId, string tableName)
-        {
-            MainDataTable dataGraphTable = null;
-            if (this.GraphTableList.Count == 0) return dataGraphTable;
-            dataGraphTable = this.GraphTableList.FirstOrDefault(t => t.EqualsId(dataId, tableName));
-            return dataGraphTable;
-        }
-        /// <summary>
-        /// Finalizuje informace, popisující jednotlivé tabulky s daty.
-        /// V této době jsou již načteny všechny datové tabulky, a deklarace dat prošla finalizací.
-        /// </summary>
-        private void _LoadDataGraphTableFinalise()
-        {
-            foreach (MainDataTable dataGraphTable in this.GraphTableList)
-            {
-                dataGraphTable.LoadFinalise();
-            }
-        }
-        /// <summary>
-        /// Klíč z requestu typu "Table.135103.workplace_table.Row.0" rozdělí na části, 
-        /// z nichž název tabulky (zde "workplace_table") uloží do out tableName,
-        /// a druh dat v tabulce (zde "Row") uloží do out tableType.
-        /// Vrací true, pokud vstupující klíč obsahuje vyhovující data, nebo vrací false, pokud na vstupu je něco nerozpoznatelného.
-        /// </summary>
-        /// <param name="key"></param>
-        /// <param name="dataId"></param>
-        /// <param name="tableName"></param>
-        /// <param name="tableType"></param>
-        /// <returns></returns>
-        protected static bool IsKeyRequestTable(string key, out int? dataId, out string tableName, out DataTableType tableType)
-        {
-            dataId = null;
-            tableName = null;
-            tableType = DataTableType.None;
-            if (String.IsNullOrEmpty(key)) return false;
-            string[] parts = key.Split('.');           // Nový formát  : [0]=Table   [1]=DataId     [2]=TableName    [3]=TableType    [4]=Part   ...
-            int count = parts.Length;                  // Starý formát : [0]=Table   [1]=TableName  [2]=TableType    [4]=Part   ...
-            if (count < 3) return false;
-            if (parts[0] != "Table") return false;
-
-
-            if (count >= 5 && parts[1].ContainsOnlyNumeric() && TryGetDataTableType(parts[3], out tableType))
-            {   // Nový formát s kladným číslem verze dat v poli [1] a s platným typem dat v poli [3]:
-                dataId = MainData.GetInt32N(parts[1]);
-                tableName = parts[2];
-            }
-            else if (count >= 4 && TryGetDataTableType(parts[2], out tableType))
-            {   // Starý formát s platným typem dat v poli [2]:
-                tableName = parts[1];
-            }
-
-            return (!String.IsNullOrEmpty(tableName) && tableType != DataTableType.None);
-        }
         /// <summary>
         /// Seznam obsahující data jednotlivých tabulek
         /// </summary>
@@ -1098,28 +1015,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Function = kontextová funkce
         /// </summary>
         Function
-    }
-    /// <summary>
-    /// Pozice grafu v tabulce
-    /// </summary>
-    public enum DataGraphPositionType
-    {
-        /// <summary>
-        /// V dané tabulce není graf (výchozí stav)
-        /// </summary>
-        None,
-        /// <summary>
-        /// Graf zobrazit v posledním sloupci (sloupec bude do tabulky přidán)
-        /// </summary>
-        InLastColumn,
-        /// <summary>
-        /// Graf zobrazit jako poklad, měřítko časové osy = proporcionální
-        /// </summary>
-        OnBackgroundProportional,
-        /// <summary>
-        /// Graf zobrazit jako poklad, měřítko časové osy = logaritmické
-        /// </summary>
-        OnBackgroundLogarithmic
     }
     #endregion
 }
