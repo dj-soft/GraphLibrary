@@ -52,7 +52,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 {
                     this.MainData = new Scheduler.MainData(this as IAppHost);
                     this.MainData.LoadData(dataPack);
-                    this.MainControl = this.MainData.CreateGui();
+                    this.MainControl = this.MainData.CreateControl();
                     this.Controls.Add(this.MainControl);
                     this.MainControl.Dock = DockStyle.Fill;
                 }

@@ -10,6 +10,7 @@ using System.Windows.Forms;
 using Asol.Tools.WorkScheduler.Data;
 using Asol.Tools.WorkScheduler.Components;
 using Asol.Tools.WorkScheduler.Components.Graph;
+using Noris.LCS.Manufacturing.WorkScheduler;
 
 namespace Asol.Tools.WorkScheduler.TestGUI
 {
