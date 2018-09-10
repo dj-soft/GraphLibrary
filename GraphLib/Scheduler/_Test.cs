@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Noris.LCS.Manufacturing.WorkScheduler;
 
 namespace Asol.Tools.WorkScheduler.Scheduler
 {
@@ -42,15 +43,15 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             workRows.DataTable.Rows.Add(2, "Referen 2", "Náz 2", "Výrobek B");
             workRows.DataTable.Rows.Add(3, "Reference 3", "N 3", "Výrobek C");
             workGrid.Rows = workRows;
-            workGrid.GraphProperties.AxisResizeMode = Components.AxisResizeContentMode.ChangeScale;
-            workGrid.GraphProperties.InteractiveChangeMode = Components.AxisInteractiveChangeMode.Shift;
+            workGrid.GraphProperties.AxisResizeMode = AxisResizeContentMode.ChangeScale;
+            workGrid.GraphProperties.InteractiveChangeMode = AxisInteractiveChangeMode.Shift;
             GuiGraphTable workItems = new GuiGraphTable() { Name = "workItems" };
             workGrid.GraphItems.Add(workItems);
             workItems.Add(new GuiGraphItem() { ItemId = new GuiId(1817, 1), ParentRowId = new GuiId(1364, 1), Begin = new DateTime(2018, 8, 1, 12, 0, 0), End = new DateTime(2018, 8, 1, 16, 0, 0) });
             workItems.Add(new GuiGraphItem() { ItemId = new GuiId(1817, 2), ParentRowId = new GuiId(1364, 1), Begin = new DateTime(2018, 8, 1, 16, 0, 0), End = new DateTime(2018, 8, 1, 20, 0, 0) });
             workItems.Add(new GuiGraphItem() { ItemId = new GuiId(1817, 3), ParentRowId = new GuiId(1364, 1), Begin = new DateTime(2018, 8, 1, 21, 0, 0), End = new DateTime(2018, 8, 1, 22, 0, 0) });
 
-            Components.GraphItemBehaviorMode graph4BehaviorMode = (Components.GraphItemBehaviorMode.DefaultText | Components.GraphItemBehaviorMode.ResizeTime);
+            GraphItemBehaviorMode graph4BehaviorMode = (GraphItemBehaviorMode.DefaultText | GraphItemBehaviorMode.ResizeTime);
             DateTime graph4Begin = new DateTime(2018, 8, 1, 14, 30, 45, 550);
             DateTime graph4End = new DateTime(2018, 8, 1, 18, 15, 30, 10);
             workItems.Add(new GuiGraphItem() { ItemId = new GuiId(1817, 4), ParentRowId = new GuiId(1364, 2), Begin = graph4Begin, End = graph4End, BehaviorMode = graph4BehaviorMode });
@@ -64,8 +65,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             IGuiItem item3 = data.FindByFullName(@"Data\pageMain\mainPanel\workGrid\");
 
 
-            string serial = Data.Persist.Serialize(data);
-            object deserial = Data.Persist.Deserialize(serial);
+            string serial = Persist.Serialize(data);
+            object deserial = Persist.Deserialize(serial);
 
             if (deserial == null)
                 throw new AssertFailedException("Deserializovaný objekt je null.");

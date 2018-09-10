@@ -6,6 +6,7 @@ using System.Drawing;
 using System.Windows.Forms;
 using Asol.Tools.WorkScheduler.Data;
 using Asol.Tools.WorkScheduler.Application;
+using Noris.LCS.Manufacturing.WorkScheduler;
 
 namespace Asol.Tools.WorkScheduler.Components
 {

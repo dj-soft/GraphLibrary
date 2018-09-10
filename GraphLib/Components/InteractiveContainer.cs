@@ -173,7 +173,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Vymaže všechny prvky z pole Items.
         /// </summary>
-        public void ClearItems()
+        public virtual void ClearItems()
         {
             this.ChildList.Clear();
         }

@@ -11,6 +11,7 @@ using Asol.Tools.WorkScheduler.Application;
 using Asol.Tools.WorkScheduler.Services;
 using Asol.Tools.WorkScheduler.Components;
 using Asol.Tools.WorkScheduler.Components.Graph;
+using Noris.LCS.Manufacturing.WorkScheduler;
 
 namespace Asol.Tools.WorkScheduler.Scheduler
 {
@@ -39,60 +40,360 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private IAppHost _AppHost;
         PluginActivity IPlugin.Activity { get { return PluginActivity.Standard; } }
         #endregion
-        #region Načítání a analýza dodaných dat, verze 1: string
+        #region Technika zpracování serializovaných prvků typu GuiItem
         /// <summary>
-        /// Načte data z datového balíku
+        /// Načte data ze strukturovaného objektu <see cref="GuiData"/>
         /// </summary>
-        /// <param name="dataPack"></param>
-        public void LoadData(string dataPack)
+        /// <param name="guiData"></param>
+        public void LoadData(GuiData guiData)
         {
-            try
+            this._GuiData = guiData;
+            this._LoadGuiToolbar(guiData.ToolbarItems);
+            this._LoadGuiPanels(guiData.Pages);
+            this._LoadGuiContext(guiData.ContextMenuItems);
+        }
+        /// <summary>
+        /// Hlavní objekt s daty <see cref="GuiData"/>
+        /// </summary>
+        private GuiData _GuiData;
+        /// <summary>
+        /// Vytvoří a vrátí new WinForm control, obsahující kompletní strukturu pro zobrazení dodaných dat
+        /// </summary>
+        /// <returns></returns>
+        public System.Windows.Forms.Control CreateControl()
+        {
+            this._MainControl = new MainControl(this);
+            this._FillMainControlFromGui();
+            return this._MainControl;
+        }
+        /// <summary>
+        /// Z dat dodaných v prvcích GuiItem vytvoří vizuální controly a vloží je do Main WinForm controlu
+        /// </summary>
+        private void _FillMainControlFromGui()
+        {
+            this._FillMainControlToolbarFromGui();
+            this._FillMainControlPagesFromGui();
+        }
+        /// <summary>
+        /// Reference na hlavní GUI control, který je vytvořen v metodě <see cref="CreateControl"/>
+        /// </summary>
+        protected MainControl _MainControl;
+        #region Toolbar
+        /// <summary>
+        /// Načte položky do Toolbaru z dodaných dat Gui
+        /// </summary>
+        /// <param name="guiToolbarPanel"></param>
+        private void _LoadGuiToolbar(GuiToolbarPanel guiToolbarPanel)
+        {
+            this._GuiToolbarPanel = guiToolbarPanel;
+        }
+        /// <summary>
+        /// Data o ToolBaru z Gui
+        /// </summary>
+        private GuiToolbarPanel _GuiToolbarPanel;
+        /// <summary>
+        /// Z dat v <see cref="_GuiToolbarPanel"/> naplní toolbar
+        /// </summary>
+        private void _FillMainControlToolbarFromGui()
+        {
+            this._MainControl.ClearToolBar();
+            this._MainControl.ToolBarVisible = this._GuiToolbarPanel.ToolbarVisible;
+            this._FillMainControlToolbarSystemFromGui();
+            this._FillMainControlToolbarDataFromGui();
+            this._MainControl.ToolBarItemClicked += _MainControl_ToolBarItemClicked;
+        }
+        /// <summary>
+        /// Do toolbaru vloží systémové funkce
+        /// </summary>
+        private void _FillMainControlToolbarSystemFromGui()
+        {
+            if (!this._GuiToolbarPanel.ToolbarShowSystemItems) return;
+
+            FunctionGlobalGroup group = new FunctionGlobalGroup();
+            group.Title = "ÚPRAVY";
+            group.Order = "A1";
+            group.ToolTipTitle = "Úpravy zadaných dat";
+
+            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Small, Image = Components.IconStandard.EditUndo, Text = "Zpět", IsEnabled = false, LayoutHint = LayoutHint.NextItemSkipToNextRow, UserData = "EditUndo" });
+            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Small, Image = Components.IconStandard.EditRedo, Text = "Vpřed", IsEnabled = true, UserData = "EditRedo" });
+            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Separator, Size = FunctionGlobalItemSize.Whole });
+            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Half, Image = Components.IconStandard.Refresh, Text = "Přenačíst", ToolTip = "Zruší všechny provedené změny a znovu načte data z databáze", IsEnabled = true, UserData = "Refresh" });
+            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Half, Image = Components.IconStandard.DocumentSave, Text = "Uložit", ToolTip = "Uloží všechny provedené změny do databáze", IsEnabled = false, UserData = "DocumentSave" });
+
+            this._MainControl.AddToolBarGroup(group);
+        }
+        /// <summary>
+        /// Do toolbaru vloží aplikační funkce
+        /// </summary>
+        private void _FillMainControlToolbarDataFromGui()
+        {
+            if (this._GuiToolbarPanel.Items == null) return;
+
+            // Nejprve sestavíme jednotlivé grupy pro prvky, podle názvu grup kam chtějí tyto prvky jít:
+            Dictionary<string, FunctionGlobalGroup> toolBarGroups = new Dictionary<string, FunctionGlobalGroup>();
+            string defaultGroupName = "FUNKCE";
+            foreach (GuiToolbarItem guiToolBarItem in this._GuiToolbarPanel.Items)
             {
-                this.GraphTableList = new List<MainDataTable>();
-                this.ImageDict = new Dictionary<string, Image>();
-                using (var buffer = WorkSchedulerSupport.CreateDataBufferReader(dataPack))
+                if (guiToolBarItem == null) continue;
+
+                string groupName = guiToolBarItem.GroupName;
+                if (String.IsNullOrEmpty(groupName)) groupName = defaultGroupName;
+                FunctionGlobalGroup group;
+                if (!toolBarGroups.TryGetValue(groupName, out group))
                 {
-                    while (!buffer.ReaderIsEnd)
-                    {
-                        string key, data;
-                        if (buffer.ReadNextData(out key, out data))
-                            this._LoadDataOne(key, data);
-                    }
+                    group = new FunctionGlobalGroup() { Title = groupName };
+                    toolBarGroups.Add(groupName, group);
                 }
-                this._LoadDataFinalise();
+                ToolBarItem item = ToolBarItem.Create(this, guiToolBarItem);
+                if (item != null)
+                    group.Items.Add(item);
             }
-            catch (Exception)
-            {   // Zatím nijak explicitně neřešíme:
-                throw;
-            }
+
+            // Výsledky (jednotlivé grupy, kde každá obsahuje sadu prvků = buttonů) vložím do předaného pole:
+            if (toolBarGroups.Count > 0)
+                this._MainControl.AddToolBarGroups(toolBarGroups.Values);
         }
         /// <summary>
-        /// Zajistí načtení jednoho bloku dat z datového balíčku.
-        /// Blok má svůj název (klíč = key) a obsah (data).
-        /// Měl by existovat blok s názvem "DataDeclaration" (jen jeden, obsahuje deklaraci GUI) 
-        /// a několik bloků s daty jednotlivých tabulek, název typicky "Table.workplace_table.Graph.1", jejich obsahem je DataTable.
-        /// Mohou existovat i bloky dodávající obrázky (název "Image.name"), jejich obsahem je bitmapa (ikony funkcí, tollbaru, aplikační obrázky, atd).
+        /// ContextFunctionItem : adapter mezi <see cref="DataDeclaration"/> pro typ obsahu = <see cref="DataContentType.Button"/>, a položku kontextového menu <see cref="FunctionGlobalItem"/>.
         /// </summary>
-        /// <param name="key"></param>
-        /// <param name="data"></param>
-        private void _LoadDataOne(string key, string data)
+        protected class ToolBarItem : FunctionGlobalItem
         {
-            int? dataId;
-            string itemName;
-            DataTableType tableType;
-            if (key == WorkSchedulerSupport.KEY_REQUEST_DATA_DECLARATION)
-            {   // Deklarace dat:
-                this._LoadDataDeclaration(data);
+            #region Konstrukce, načtení dat
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="provider"></param>
+            /// <param name="guiToolBarItem"></param>
+            protected ToolBarItem(IFunctionProvider provider, GuiToolbarItem guiToolBarItem) : base(provider)
+            {
+                this._GuiToolBarItem = guiToolBarItem;
+                this.Size = FunctionGlobalItemSize.Half;
+                this.ItemType = FunctionGlobalItemType.Button;
             }
-            else if (IsKeyRequestTable(key, out dataId, out itemName, out tableType))
-            {   // Tabulka s daty:
-                this._LoadDataGraphTable(data, dataId, itemName, tableType);
+            /// <summary>
+            /// Z této položky je funkce načtena
+            /// </summary>
+            private GuiToolbarItem _GuiToolBarItem;
+            /// <summary>
+            /// Vytvoří a vrátí new instanci <see cref="ToolBarItem"/> pro funkci definovanou v <see cref="GuiToolbarItem"/>.
+            /// Může vrátit null pro neplatné zadání.
+            /// </summary>
+            /// <param name="provider"></param>
+            /// <param name="guiToolBarItem"></param>
+            /// <returns></returns>
+            public static ToolBarItem Create(IFunctionProvider provider, GuiToolbarItem guiToolBarItem)
+            {
+                if (provider == null || guiToolBarItem == null) return null;
+
+                ToolBarItem toolBarItem = new ToolBarItem(provider, guiToolBarItem);
+                return toolBarItem;
             }
-            else if (IsKeyRequestImage(key, out itemName))
-            {   // Image:
-                this._LoadDataImage(data, itemName);
-            }
+            #endregion
+            #region Public property FunctionGlobalItem, načítané z GuiToolbarItem, a explicitně přidané
+            /// <summary>
+            /// Text do funkce
+            /// </summary>
+            public override string TextText { get { return this._GuiToolBarItem.Title; } }
+            /// <summary>
+            /// ToolTip k textu
+            /// </summary>
+            public override string ToolTipText { get { return this._GuiToolBarItem.ToolTip; } }
+            /// <summary>
+            /// Obrázek
+            /// </summary>
+            public override Image Image { get { return null /* this._Declaration.Image */; } }
+            /// <summary>
+            /// Velikost prvku na toolbaru, vzhledem k výšce toolbaru
+            /// </summary>
+            public override FunctionGlobalItemSize Size { get { return this._GuiToolBarItem.Size; } set { this._GuiToolBarItem.Size = value; } }
+            /// <summary>
+            /// Explicitně požadovaná šířka prvku v počtu modulů
+            /// </summary>
+            public override int? ModuleWidth { get { return this._GuiToolBarItem.ModuleWidth; } set { this._GuiToolBarItem.ModuleWidth = value; } }
+            /// <summary>
+            /// Nápověda ke zpracování layoutu této položky
+            /// </summary>
+            public override LayoutHint LayoutHint { get { return this._GuiToolBarItem.LayoutHint; } set { this._GuiToolBarItem.LayoutHint = value; } }
+            /// <summary>
+            /// Název grupy, kde se tento prvek objeví. Nezadaná grupa = implicitní s názvem "FUNKCE".
+            /// </summary>
+            public string GroupName { get { return this._GuiToolBarItem.GroupName; } set { this._GuiToolBarItem.GroupName = value; } }
+            #endregion
         }
+        #endregion
+        #region Datové panely
+        /// <summary>
+        /// Načte položky do panelů z dodaných dat Gui
+        /// </summary>
+        /// <param name="guiPages"></param>
+        private void _LoadGuiPanels(GuiPages guiPages)
+        {
+            this._GuiPages = guiPages;
+        }
+        /// <summary>
+        /// Data o stránkách dat z Gui
+        /// </summary>
+        private GuiPages _GuiPages;
+        /// <summary>
+        /// Do připraveného controlu vloží objekt obsahující 
+        /// </summary>
+        private void _FillMainControlPagesFromGui()
+        {
+            this._MainControl.ClearPages();
+            foreach (GuiPage guiPage in this._GuiPages.Pages)
+                this._MainControl.AddPage(guiPage);
+        }
+        #endregion
+        #region Kontextové menu
+        /// <summary>
+        /// Načte položky do Kontextových menu z dodaných dat Gui
+        /// </summary>
+        /// <param name="guiContextMenuSet"></param>
+        private void _LoadGuiContext(GuiContextMenuSet guiContextMenuSet)
+        {
+            this._GuiContextMenuSet = guiContextMenuSet;
+
+            List<ContextFunctionItem> functions = new List<ContextFunctionItem>();
+            foreach (GuiContextMenuItem guiContextMenuItem in guiContextMenuSet.Items)
+            {
+                ContextFunctionItem item = ContextFunctionItem.Create(this, guiContextMenuItem);
+                if (item != null)
+                    functions.Add(item);
+            }
+            this._ContextFunctions = functions.ToArray();
+        }
+        /// <summary>
+        /// Data o kontextových funkcích z Gui
+        /// </summary>
+        private GuiContextMenuSet _GuiContextMenuSet;
+        /// <summary>
+        /// Souhrn všech definovaných funkcí pro všechna kontextová menu v systému.
+        /// Souhrn je načten z <see cref="GuiContextMenuSet"/> v metodě <see cref="_LoadGuiContext(GuiContextMenuSet)"/>, 
+        /// z tohoto souhrnu jsou následně vybírány funkce pro konkrétní situaci v metodě <see cref="_GetContextMenuItems(DataGraphItem, ItemActionArgs)"/>, 
+        /// a z nich je pak vytvořeno fyzické kontextové menu v metodě <see cref="CreateContextMenu(DataGraphItem, ItemActionArgs)"/>.
+        /// </summary>
+        protected ContextFunctionItem[] _ContextFunctions;
+        /// <summary>
+        /// Metoda vytvoří a vrátí kontextové menu pro konkrétní prvek grafu
+        /// </summary>
+        /// <param name="graphItem"></param>
+        /// <param name="args"></param>
+        /// <returns></returns>
+        protected ToolStripDropDownMenu CreateContextMenu(DataGraphItem graphItem, ItemActionArgs args)
+        {
+            IEnumerable<FunctionItem> menuItems = this._GetContextMenuItems(graphItem, args);
+            ToolStripDropDownMenu toolStripMenu = FunctionItem.CreateDropDownMenuFrom(menuItems);
+            return toolStripMenu;
+        }
+        /// <summary>
+        /// Metoda najde a vrátí soupis položek, popisujících jednotlivé funkce <see cref="FunctionItem"/>, 
+        /// které mají být zobrazeny jako Kontextové menu pro daný prvek grafu.
+        /// </summary>
+        /// <param name="graphItem"></param>
+        /// <param name="args"></param>
+        /// <returns></returns>
+        private IEnumerable<FunctionItem> _GetContextMenuItems(DataGraphItem graphItem, ItemActionArgs args)
+        {
+            // graphItem.GraphTable;
+            List<FunctionItem> menuItems = new List<FunctionItem>();
+
+
+            ToolStripDropDownMenu menu = new ToolStripDropDownMenu();
+            menu.Text = "nabídka funkcí";
+            menu.DropShadowEnabled = true;
+            menu.RenderMode = ToolStripRenderMode.System;
+            menu.Tag = args;
+
+            ToolStripLabel menuTitle = new ToolStripLabel("NABÍDKA FUNKCÍ");
+            // menuTitle.BackColor = Color.DarkBlue;
+            menu.Items.Add(menuTitle);
+
+            menu.Items.Add(new ToolStripSeparator());
+
+            ToolStripMenuItem menuItem = new ToolStripMenuItem("Změnit čas události", IconStandard.BulletBlue16);
+            menuItem.Tag = "Změna času";
+            if (graphItem != null)
+                menu.Items.Add(menuItem);
+
+            if (graphItem == null)
+                menu.Items.Add("Přidej stav kapacit");
+
+            menu.Items.Add("Přidej další pracovní linku");
+
+            if (graphItem != null)
+                menu.Items.Add("Změnit čas směny");
+
+            menu.ItemClicked += ContextMenuItemClicked;
+            return menuItems;
+        }
+        /// <summary>
+        /// ContextFunctionItem : adapter mezi <see cref="DataDeclaration"/> pro typ obsahu = <see cref="DataContentType.Function"/>, a položku kontextového menu <see cref="FunctionItem"/>.
+        /// </summary>
+        protected class ContextFunctionItem : FunctionItem
+        {
+            #region Konstrukce, načtení dat
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="provider"></param>
+            /// <param name="guiContextMenuItem"></param>
+            protected ContextFunctionItem(IFunctionProvider provider, GuiContextMenuItem guiContextMenuItem) : base(provider)
+            {
+                this._GuiContextMenuItem = guiContextMenuItem;
+            }
+            /// <summary>
+            /// Z této deklarace je funkce načtena
+            /// </summary>
+            private GuiContextMenuItem _GuiContextMenuItem;
+            /// <summary>
+            /// Vytvoří a vrátí new instanci <see cref="ContextFunctionItem"/> pro data definovaná v <see cref="GuiContextMenuItem"/>.
+            /// Může vrátit null pro neplatné zadání.
+            /// </summary>
+            /// <param name="provider"></param>
+            /// <param name="guiContextMenuItem"></param>
+            /// <returns></returns>
+            public static ContextFunctionItem Create(IFunctionProvider provider, GuiContextMenuItem guiContextMenuItem)
+            {
+                if (provider == null || guiContextMenuItem == null) return null;
+
+                ContextFunctionItem funcItem = new ContextFunctionItem(provider, guiContextMenuItem);
+                return funcItem;
+            }
+            #endregion
+            #region Public property FunctionItem, načítané z DataDeclaration
+            /// <summary>
+            /// Text do funkce
+            /// </summary>
+            public override string TextText { get { return this._GuiContextMenuItem.Title; } }
+            /// <summary>
+            /// ToolTip k textu
+            /// </summary>
+            public override string ToolTipText { get { return this._GuiContextMenuItem.ToolTip; } }
+            /// <summary>
+            /// Obrázek
+            /// </summary>
+            public override Image Image { get { return null /* this._GuiContextMenuItem.Image */ ; } }
+            #endregion
+            #region Určení dostupnosti položky pro konkrétní situaci
+            /// <summary>
+            /// Vrátí true, pokud tato položka kontextového menu se má použít pro prvek, jehož <see cref="GuiBase.FullName"/> je v parametru.
+            /// </summary>
+            /// <param name="fullName"></param>
+            /// <returns></returns>
+            public bool IsValidFor(string fullName)
+            {
+                return false;
+            }
+            #endregion
+        }
+        #endregion
+        #endregion
+
+
+
+        #region Načítání a analýza dodaných dat, verze 1: string
+
+
         #region Data tabulek
         /// <summary>
         /// Načte a zpracuje vstupní data jedné tabulky
@@ -182,6 +483,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         protected List<MainDataTable> GraphTableList { get; private set; }
         #endregion
+        #endregion
         #region Data obrázků
         /// <summary>
         /// Vrátí obrázek daného jména. Může dojít k chybě <see cref="System.ArgumentNullException"/> nebo <see cref="System.Collections.Generic.KeyNotFoundException"/>.
@@ -246,8 +548,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         protected Dictionary<string, Image> ImageDict { get; private set; }
         #endregion
-        #endregion
-        
+
         #region Konverze stringů a enumů
         /// <summary>
         /// Metoda určí Typ údajů, které obsahuje určitá tabulka, na základě stringu, který je uveden v klíči těchto dat.
@@ -507,30 +808,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             return result;
         }
         #endregion
-        #region Tvorba GUI controlu
-        /// <summary>
-        /// Vytvoří a vrátí new WinForm control, obsahující kompletní strukturu pro zobrazení dodaných dat
-        /// </summary>
-        /// <returns></returns>
-        public System.Windows.Forms.Control CreateGui()
-        {
-            this._MainControl = new MainControl(this);
-            this._FillMainControlFromGui();
-            return this._MainControl;
-        }
-        /// <summary>
-        /// Naplní do <see cref="_MainControl"/> veškeré tabulky
-        /// </summary>
-        protected void _FillMainDataTables()
-        {
-            foreach (var graphTable in this.GraphTableList)
-                this._MainControl.AddGraphTable(graphTable);
-        }
-        /// <summary>
-        /// Reference na hlavní GUI control
-        /// </summary>
-        protected MainControl _MainControl;
-        #endregion
         
         #region Eventy z GUI controlu
         /// <summary>
@@ -570,350 +847,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         }
 
         #endregion
-      
-
-        #region Nová technika serializovaných prvků GuiItem
-        /// <summary>
-        /// Načte data ze strukturovaného objektu
-        /// </summary>
-        /// <param name="guiData"></param>
-        public void LoadData(GuiData guiData)
-        {
-            this._GuiData = guiData;
-            this._LoadGuiToolbar(guiData.ToolbarItems);
-            this._LoadGuiPanels(guiData.Pages);
-            this._LoadGuiContext(guiData.ContextMenuItems);
-        }
-        /// <summary>
-        /// Hlavní objekt s daty Gui
-        /// </summary>
-        private GuiData _GuiData;
-        /// <summary>
-        /// Z dat dodaných v prvcích GuiItem vytvoří vizuální controly a vloží je do Main WinForm controlu
-        /// </summary>
-        private void _FillMainControlFromGui()
-        {
-            this._MainControl = new MainControl(this);
-            this._FillMainControlToolbarFromGui();
-            this._FillMainControlPagesFromGui();
-        }
-
-        #region Načítání a analýza dodaných dat, verze 2: GuiData
-        #region Načítání z Gui: Panely
-        /// <summary>
-        /// Načte položky do panelů z dodaných dat Gui
-        /// </summary>
-        /// <param name="guiPages"></param>
-        private void _LoadGuiPanels(GuiPages guiPages)
-        {
-            this._GuiPages = guiPages;
-        }
-        /// <summary>
-        /// Data o stránkách dat z Gui
-        /// </summary>
-        private GuiPages _GuiPages;
-        #endregion
-        #endregion
-        #region Vytvoření vizuálních controlů z dat GuiItem
-
-        #region Vytvoření vizuálních controlů pro Panely
-        private void _FillMainControlPagesFromGui()
-        { }
-
-        #endregion
 
 
-        #endregion
-        #region Toolbar
-        /// <summary>
-        /// Načte položky do Toolbaru z dodaných dat Gui
-        /// </summary>
-        /// <param name="guiToolbarPanel"></param>
-        private void _LoadGuiToolbar(GuiToolbarPanel guiToolbarPanel)
-        {
-            this._GuiToolbarPanel = guiToolbarPanel;
-        }
-        /// <summary>
-        /// Data o ToolBaru z Gui
-        /// </summary>
-        private GuiToolbarPanel _GuiToolbarPanel;
-        /// <summary>
-        /// Z dat v <see cref="_GuiToolbarPanel"/> naplní toolbar
-        /// </summary>
-        private void _FillMainControlToolbarFromGui()
-        {
-            this._MainControl.ClearToolBar();
-            this._MainControl.ToolBarVisible = this._GuiToolbarPanel.ToolbarVisible;
-            this._FillMainControlToolbarSystemFromGui();
-            this._FillMainControlToolbarDataFromGui();
-            this._MainControl.ToolBarItemClicked += _MainControl_ToolBarItemClicked;
-        }
-        /// <summary>
-        /// Do toolbaru vloží systémové funkce
-        /// </summary>
-        private void _FillMainControlToolbarSystemFromGui()
-        {
-            if (!this._GuiToolbarPanel.ToolbarShowSystemItems) return;
-
-            FunctionGlobalGroup group = new FunctionGlobalGroup();
-            group.Title = "ÚPRAVY";
-            group.Order = "A1";
-            group.ToolTipTitle = "Úpravy zadaných dat";
-
-            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Small, Image = Components.IconStandard.EditUndo, Text = "Zpět", IsEnabled = false, LayoutHint = LayoutHint.NextItemSkipToNextRow, UserData = "EditUndo" });
-            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Small, Image = Components.IconStandard.EditRedo, Text = "Vpřed", IsEnabled = true, UserData = "EditRedo" });
-            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Separator, Size = FunctionGlobalItemSize.Whole });
-            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Half, Image = Components.IconStandard.Refresh, Text = "Přenačíst", ToolTip = "Zruší všechny provedené změny a znovu načte data z databáze", IsEnabled = true, UserData = "Refresh" });
-            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Half, Image = Components.IconStandard.DocumentSave, Text = "Uložit", ToolTip = "Uloží všechny provedené změny do databáze", IsEnabled = false, UserData = "DocumentSave" });
-
-            this._MainControl.AddToolBarGroup(group);
-        }
-        /// <summary>
-        /// Do toolbaru vloží aplikační funkce
-        /// </summary>
-        private void _FillMainControlToolbarDataFromGui()
-        {
-            if (this._GuiToolbarPanel.Items == null) return;
-
-            // Nejprve sestavíme jednotlivé grupy pro prvky, podle názvu grup kam chtějí tyto prvky jít:
-            Dictionary<string, FunctionGlobalGroup> toolBarGroups = new Dictionary<string, FunctionGlobalGroup>();
-            string defaultGroupName = "FUNKCE";
-            foreach (GuiToolbarItem guiToolBarItem in this._GuiToolbarPanel.Items)
-            {
-                if (guiToolBarItem == null) continue;
-
-                string groupName = guiToolBarItem.GroupName;
-                if (String.IsNullOrEmpty(groupName)) groupName = defaultGroupName;
-                FunctionGlobalGroup group;
-                if (!toolBarGroups.TryGetValue(groupName, out group))
-                {
-                    group = new FunctionGlobalGroup() { Title = groupName };
-                    toolBarGroups.Add(groupName, group);
-                }
-                ToolBarItem item = ToolBarItem.Create(this, guiToolBarItem);
-                if (item != null)
-                    group.Items.Add(item);
-            }
-
-            // Výsledky (jednotlivé grupy, kde každá obsahuje sadu prvků = buttonů) vložím do předaného pole:
-            if (toolBarGroups.Count > 0)
-                this._MainControl.AddToolBarGroups(toolBarGroups.Values);
-        }
-        /// <summary>
-        /// ContextFunctionItem : adapter mezi <see cref="DataDeclaration"/> pro typ obsahu = <see cref="DataContentType.Button"/>, a položku kontextového menu <see cref="FunctionGlobalItem"/>.
-        /// </summary>
-        protected class ToolBarItem : FunctionGlobalItem
-        {
-            #region Konstrukce, načtení dat
-            /// <summary>
-            /// Konstruktor
-            /// </summary>
-            /// <param name="provider"></param>
-            /// <param name="guiToolBarItem"></param>
-            protected ToolBarItem(IFunctionProvider provider, GuiToolbarItem guiToolBarItem) : base(provider)
-            {
-                this._GuiToolBarItem = guiToolBarItem;
-                this.Size = FunctionGlobalItemSize.Half;
-                this.ItemType = FunctionGlobalItemType.Button;
-            }
-            /// <summary>
-            /// Z této položky je funkce načtena
-            /// </summary>
-            private GuiToolbarItem _GuiToolBarItem;
-            /// <summary>
-            /// Vytvoří a vrátí new instanci <see cref="ToolBarItem"/> pro funkci definovanou v <see cref="GuiToolbarItem"/>.
-            /// Může vrátit null pro neplatné zadání.
-            /// </summary>
-            /// <param name="provider"></param>
-            /// <param name="guiToolBarItem"></param>
-            /// <returns></returns>
-            public static ToolBarItem Create(IFunctionProvider provider, GuiToolbarItem guiToolBarItem)
-            {
-                if (provider == null || guiToolBarItem == null) return null;
-
-                ToolBarItem toolBarItem = new ToolBarItem(provider, guiToolBarItem);
-                return toolBarItem;
-            }
-            #endregion
-            #region Public property FunctionGlobalItem, načítané z GuiToolbarItem, a explicitně přidané
-            /// <summary>
-            /// Text do funkce
-            /// </summary>
-            public override string TextText { get { return this._GuiToolBarItem.Title; } }
-            /// <summary>
-            /// ToolTip k textu
-            /// </summary>
-            public override string ToolTipText { get { return this._GuiToolBarItem.ToolTip; } }
-            /// <summary>
-            /// Obrázek
-            /// </summary>
-            public override Image Image { get { return null /* this._Declaration.Image */; } }
-            /// <summary>
-            /// Velikost prvku na toolbaru, vzhledem k výšce toolbaru
-            /// </summary>
-            public override FunctionGlobalItemSize Size { get { return this._GuiToolBarItem.Size; } set { this._GuiToolBarItem.Size = value; } }
-            /// <summary>
-            /// Explicitně požadovaná šířka prvku v počtu modulů
-            /// </summary>
-            public override int? ModuleWidth { get { return this._GuiToolBarItem.ModuleWidth; } set { this._GuiToolBarItem.ModuleWidth = value; } }
-            /// <summary>
-            /// Nápověda ke zpracování layoutu této položky
-            /// </summary>
-            public override LayoutHint LayoutHint { get { return this._GuiToolBarItem.LayoutHint; } set { this._GuiToolBarItem.LayoutHint = value; } }
-            /// <summary>
-            /// Název grupy, kde se tento prvek objeví. Nezadaná grupa = implicitní s názvem "FUNKCE".
-            /// </summary>
-            public string GroupName { get { return this._GuiToolBarItem.GroupName; } set { this._GuiToolBarItem.GroupName = value; } }
-            #endregion
-        }
-        #endregion
-        #region Datové panely
-
-        #endregion
-        #region Kontextové menu
-        /// <summary>
-        /// Načte položky do Kontextových menu z dodaných dat Gui
-        /// </summary>
-        /// <param name="guiContextMenuSet"></param>
-        private void _LoadGuiContext(GuiContextMenuSet guiContextMenuSet)
-        {
-            this._GuiContextMenuSet = guiContextMenuSet;
-
-            List<ContextFunctionItem> functions = new List<ContextFunctionItem>();
-            foreach (GuiContextMenuItem guiContextMenuItem in guiContextMenuSet.Items)
-            {
-                ContextFunctionItem item = ContextFunctionItem.Create(this, guiContextMenuItem);
-                if (item != null)
-                    functions.Add(item);
-            }
-            this._ContextFunctions = functions.ToArray();
-        }
-        /// <summary>
-        /// Data o kontextových funkcích z Gui
-        /// </summary>
-        private GuiContextMenuSet _GuiContextMenuSet;
-        /// <summary>
-        /// Souhrn všech definovaných funkcí pro všechna kontextová menu v systému.
-        /// Souhrn je načten z <see cref="GuiContextMenuSet"/> v metodě <see cref="_LoadGuiContext(GuiContextMenuSet)"/>, 
-        /// z tohoto souhrnu jsou následně vybírány funkce pro konkrétní situaci v metodě <see cref="_GetContextMenuItems(DataGraphItem, ItemActionArgs)"/>, 
-        /// a z nich je pak vytvořeno fyzické kontextové menu v metodě <see cref="CreateContextMenu(DataGraphItem, ItemActionArgs)"/>.
-        /// </summary>
-        protected ContextFunctionItem[] _ContextFunctions;
-        /// <summary>
-        /// Metoda vytvoří a vrátí kontextové menu pro konkrétní prvek grafu
-        /// </summary>
-        /// <param name="graphItem"></param>
-        /// <param name="args"></param>
-        /// <returns></returns>
-        protected ToolStripDropDownMenu CreateContextMenu(DataGraphItem graphItem, ItemActionArgs args)
-        {
-            IEnumerable<FunctionItem> menuItems = this._GetContextMenuItems(graphItem, args);
-            ToolStripDropDownMenu toolStripMenu = FunctionItem.CreateDropDownMenuFrom(menuItems);
-            return toolStripMenu;
-        }
-        /// <summary>
-        /// Metoda najde a vrátí soupis položek, popisujících jednotlivé funkce <see cref="FunctionItem"/>, 
-        /// které mají být zobrazeny jako Kontextové menu pro daný prvek grafu.
-        /// </summary>
-        /// <param name="graphItem"></param>
-        /// <param name="args"></param>
-        /// <returns></returns>
-        private IEnumerable<FunctionItem> _GetContextMenuItems(DataGraphItem graphItem, ItemActionArgs args)
-        {
-            // graphItem.GraphTable;
-            List<FunctionItem> menuItems = new List<FunctionItem>();
-
-
-            ToolStripDropDownMenu menu = new ToolStripDropDownMenu();
-            menu.Text = "nabídka funkcí";
-            menu.DropShadowEnabled = true;
-            menu.RenderMode = ToolStripRenderMode.System;
-            menu.Tag = args;
-
-            ToolStripLabel menuTitle = new ToolStripLabel("NABÍDKA FUNKCÍ");
-            // menuTitle.BackColor = Color.DarkBlue;
-            menu.Items.Add(menuTitle);
-
-            menu.Items.Add(new ToolStripSeparator());
-
-            ToolStripMenuItem menuItem = new ToolStripMenuItem("Změnit čas události", IconStandard.BulletBlue16);
-            menuItem.Tag = "Změna času";
-            if (graphItem != null)
-                menu.Items.Add(menuItem);
-
-            if (graphItem == null)
-                menu.Items.Add("Přidej stav kapacit");
-
-            menu.Items.Add("Přidej další pracovní linku");
-
-            if (graphItem != null)
-                menu.Items.Add("Změnit čas směny");
-
-            menu.ItemClicked += ContextMenuItemClicked;
-            return menuItems;
-        }
-        /// <summary>
-        /// ContextFunctionItem : adapter mezi <see cref="DataDeclaration"/> pro typ obsahu = <see cref="DataContentType.Function"/>, a položku kontextového menu <see cref="FunctionItem"/>.
-        /// </summary>
-        protected class ContextFunctionItem : FunctionItem
-        {
-            #region Konstrukce, načtení dat
-            /// <summary>
-            /// Konstruktor
-            /// </summary>
-            /// <param name="provider"></param>
-            /// <param name="guiContextMenuItem"></param>
-            protected ContextFunctionItem(IFunctionProvider provider, GuiContextMenuItem guiContextMenuItem) : base(provider)
-            {
-                this._GuiContextMenuItem = guiContextMenuItem;
-            }
-            /// <summary>
-            /// Z této deklarace je funkce načtena
-            /// </summary>
-            private GuiContextMenuItem _GuiContextMenuItem;
-            /// <summary>
-            /// Vytvoří a vrátí new instanci <see cref="ContextFunctionItem"/> pro data definovaná v <see cref="GuiContextMenuItem"/>.
-            /// Může vrátit null pro neplatné zadání.
-            /// </summary>
-            /// <param name="provider"></param>
-            /// <param name="guiContextMenuItem"></param>
-            /// <returns></returns>
-            public static ContextFunctionItem Create(IFunctionProvider provider, GuiContextMenuItem guiContextMenuItem)
-            {
-                if (provider == null || guiContextMenuItem == null) return null;
-
-                ContextFunctionItem funcItem = new ContextFunctionItem(provider, guiContextMenuItem);
-                return funcItem;
-            }
-            #endregion
-            #region Public property FunctionItem, načítané z DataDeclaration
-            /// <summary>
-            /// Text do funkce
-            /// </summary>
-            public override string TextText { get { return this._GuiContextMenuItem.Title; } }
-            /// <summary>
-            /// ToolTip k textu
-            /// </summary>
-            public override string ToolTipText { get { return this._GuiContextMenuItem.ToolTip; } }
-            /// <summary>
-            /// Obrázek
-            /// </summary>
-            public override Image Image { get { return null /* this._GuiContextMenuItem.Image */ ; } }
-            #endregion
-            #region Určení dostupnosti položky pro konkrétní situaci
-            /// <summary>
-            /// Vrátí true, pokud tato položka kontextového menu se má použít pro prvek, jehož <see cref="GuiBase.FullName"/> je v parametru.
-            /// </summary>
-            /// <param name="fullName"></param>
-            /// <returns></returns>
-            public bool IsValidFor(string fullName)
-            {
-                return false;
-            }
-            #endregion
-        }
-        #endregion
-        #endregion
 
         #region Implementace IMainDataInternal
         protected void RunOpenRecordForm(GId recordGId)

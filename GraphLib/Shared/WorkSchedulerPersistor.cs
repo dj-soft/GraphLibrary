@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Supervisor: DAJ
+// Part of Helios Green, proprietary software, (c) LCS International, a. s.
+// Redistribution and use in source and binary forms, with or without modification, 
+// is not permitted without valid contract with LCS International, a. s. 
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -10,7 +14,8 @@ using System.Xml.Schema;
 using System.Xml.Linq;
 using System.Collections;
 
-namespace Asol.Tools.WorkScheduler.Data
+// Tento soubor obsahuje třídy, které provádějí serializaci a deserializaci libovolného objektu do XML formátu.
+namespace Noris.LCS.Manufacturing.WorkScheduler
 {
     // public rozhraní:
     #region class Persist : Třída, která zajišťuje persistenci dat do / z XML formátu
@@ -1332,33 +1337,7 @@ namespace Asol.Tools.WorkScheduler.Data
             return result;
         }
         #endregion
-        #region User types
-        /// <summary>
-        /// Konkrétní konvertor
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        public static string TimeRangeToString(object value)
-        {
-            if (!(value is TimeRange))
-                return "";
-            TimeRange data = (TimeRange)value;
-            return DateTimeToString(data.Begin) + "÷" + DateTimeToString(data.End);
-        }
-        /// <summary>
-        /// Konkrétní konvertor
-        /// </summary>
-        /// <param name="text"></param>
-        /// <returns></returns>
-        public static object StringToTimeRange(string text)
-        {
-            if (String.IsNullOrEmpty(text)) return TimeRange.Empty;
-            string[] items = text.Split('÷');
-            if (items.Length != 2) return TimeRange.Empty;
-            DateTime begin = (DateTime)StringToDateTime(items[0]);
-            DateTime end = (DateTime)StringToDateTime(items[1]);
-            return new TimeRange(begin, end);
-        }
+        #region User types : je vhodnější persistovat je pomocí interface IXmlSerializer (pomocí property string IXmlSerializer.XmlSerialData { get; set; } )
         #endregion
         #region Enum types
         /// <summary>

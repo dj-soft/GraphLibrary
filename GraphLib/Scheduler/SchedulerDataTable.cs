@@ -11,6 +11,7 @@ using Asol.Tools.WorkScheduler.Application;
 using Asol.Tools.WorkScheduler.Services;
 using Asol.Tools.WorkScheduler.Components;
 using Asol.Tools.WorkScheduler.Components.Graph;
+using Noris.LCS.Manufacturing.WorkScheduler;
 
 namespace Asol.Tools.WorkScheduler.Scheduler
 {

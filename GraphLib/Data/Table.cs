@@ -7,6 +7,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Asol.Tools.WorkScheduler.Components;
 using Asol.Tools.WorkScheduler.Components.Grid;
 using Asol.Tools.WorkScheduler.Application;
+using Noris.LCS.Manufacturing.WorkScheduler;
 
 namespace Asol.Tools.WorkScheduler.Data
 {
@@ -1989,7 +1990,7 @@ namespace Asol.Tools.WorkScheduler.Data
             this.DefaultValue = dataColumn.DefaultValue;
             this.ReadOnly = dataColumn.ReadOnly;
 
-            Asol.Tools.WorkScheduler.Scheduler.DataColumnExtendedInfo extendedInfo = Scheduler.DataColumnExtendedInfo.CreateForColumn(dataColumn);
+            DataColumnExtendedInfo extendedInfo = DataColumnExtendedInfo.CreateForColumn(dataColumn);
             this.AllowColumnSortByClick = extendedInfo.AllowSort;                   // Povoleno třídění kliknutím
             this.ColumnContent = GetColumnContent(extendedInfo);                    // Obsah sloupce
             this.FormatString = GetFormatString(extendedInfo);                      // Formátovací string z Norisu, musí se převést na .NET
@@ -2001,7 +2002,7 @@ namespace Asol.Tools.WorkScheduler.Data
             this.RelationSide = GetRelationSide(extendedInfo);
             this.RelatedRecordColumnName = extendedInfo.RelationRecordColumnName;
         }
-        protected static ColumnContentType GetColumnContent(Asol.Tools.WorkScheduler.Scheduler.DataColumnExtendedInfo extendedInfo)
+        protected static ColumnContentType GetColumnContent(DataColumnExtendedInfo extendedInfo)
         {
             if (extendedInfo.Index == 0) return ColumnContentType.RecordId;
             switch (extendedInfo.BrowseColumnType)
@@ -2020,22 +2021,22 @@ namespace Asol.Tools.WorkScheduler.Data
             }
             return ColumnContentType.None;
         }
-        protected static string GetFormatString(Asol.Tools.WorkScheduler.Scheduler.DataColumnExtendedInfo extendedInfo)
+        protected static string GetFormatString(DataColumnExtendedInfo extendedInfo)
         {
             string format = extendedInfo.Format;
             return null;
         }
-        protected static int? GetWidth(Asol.Tools.WorkScheduler.Scheduler.DataColumnExtendedInfo extendedInfo)
+        protected static int? GetWidth(DataColumnExtendedInfo extendedInfo)
         {
             return 1 * extendedInfo.Width;
         }
-        protected static int? GetClassNumber(Asol.Tools.WorkScheduler.Scheduler.DataColumnExtendedInfo extendedInfo)
+        protected static int? GetClassNumber(DataColumnExtendedInfo extendedInfo)
         {
             if (extendedInfo.Index == 0) return extendedInfo.ClassNumber;
             if (extendedInfo.RelationClassNumber.HasValue) return extendedInfo.RelationClassNumber;
             return null;
         }
-        protected static RelationMasterSide? GetRelationSide(Asol.Tools.WorkScheduler.Scheduler.DataColumnExtendedInfo extendedInfo)
+        protected static RelationMasterSide? GetRelationSide(DataColumnExtendedInfo extendedInfo)
         {
             if (!extendedInfo.RelationClassNumber.HasValue) return null;
             switch (extendedInfo.RelationSide)

@@ -130,6 +130,16 @@ namespace Asol.Tools.WorkScheduler.Components
             return tabItem;
         }
         /// <summary>
+        /// Vymaže všechny svoje GTabPage.
+        /// </summary>
+        public override void ClearItems()
+        {
+            base.ClearItems();
+            this._TabHeader.ClearItems();
+            this.InvalidateLayout();
+            this.InvalidateChilds();
+        }
+        /// <summary>
         /// Skrýt původní metodu
         /// </summary>
         /// <param name="item"></param>
@@ -627,15 +637,40 @@ namespace Asol.Tools.WorkScheduler.Components
         protected FontInfo CurrentFont { get { return (this._Font != null ? this._Font : FontInfo.CaptionBoldBig); } }
         #endregion
         #region Add header, Remove header, Get header
-
+        /// <summary>
+        /// Přidá další záložku
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="image"></param>
+        /// <param name="tabOrder"></param>
+        /// <param name="linkItem"></param>
+        /// <returns></returns>
         public GTabPage AddHeader(Localizable.TextLoc text, Image image = null, int tabOrder = 0, IInteractiveItem linkItem = null)
         {
             return this._AddHeader(null, text, image, tabOrder, linkItem);
         }
+        /// <summary>
+        /// Přidá další záložku
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="text"></param>
+        /// <param name="image"></param>
+        /// <param name="tabOrder"></param>
+        /// <param name="linkItem"></param>
+        /// <returns></returns>
         public GTabPage AddHeader(string key, Localizable.TextLoc text, Image image = null, int tabOrder = 0, IInteractiveItem linkItem = null)
         {
             return this._AddHeader(key, text, image, tabOrder, linkItem);
         }
+        /// <summary>
+        /// Přidá další záložku
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="text"></param>
+        /// <param name="image"></param>
+        /// <param name="tabOrder"></param>
+        /// <param name="linkItem"></param>
+        /// <returns></returns>
         private GTabPage _AddHeader(string key, Localizable.TextLoc text, Image image, int tabOrder, IInteractiveItem linkItem)
         {
             GTabPage tabPage = new GTabPage(this, key, text, image, linkItem, tabOrder);
@@ -646,6 +681,15 @@ namespace Asol.Tools.WorkScheduler.Components
             this._ShowDataItems();
             this.InvalidateChildItems();
             return tabPage;
+        }
+        /// <summary>
+        /// Vymaže všechny svoje GTabPage.
+        /// </summary>
+        public override void ClearItems()
+        {
+            base.ClearItems();
+            this._PageList.Clear();
+            this.InvalidateChildItems();
         }
         #endregion
         #region Eventy

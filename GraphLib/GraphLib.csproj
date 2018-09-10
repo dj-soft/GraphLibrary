@@ -91,13 +91,11 @@
     <Compile Include="Components\TabHeader.cs" />
     <Compile Include="Components\ToolBar.cs" />
     <Compile Include="Components\ToolTip.cs" />
-    <Compile Include="Components\_Shared.cs" />
     <Compile Include="Data\GId.cs" />
     <Compile Include="Data\Index.cs" />
     <Compile Include="Data\Interface.cs" />
     <Compile Include="Data\Text.cs" />
     <Compile Include="Data\TypeArray.cs" />
-    <Compile Include="Data\XmlPersistor.cs" />
     <Compile Include="Data\_Test.cs" />
     <Compile Include="Localizable\Text.cs" />
     <Compile Include="Parser\Analyser.cs" />
@@ -109,7 +107,6 @@
     <Compile Include="Rtf\RtfDocument.cs" />
     <Compile Include="Rtf\RtfPaint.cs" />
     <Compile Include="Scheduler\Constants.cs" />
-    <Compile Include="Scheduler\WorkSchedulerDataSync.cs" />
     <Compile Include="Scheduler\SchedulerDataTable.cs" />
     <Compile Include="Scheduler\MainControl.cs">
       <SubType>Component</SubType>
@@ -117,7 +114,6 @@
     <Compile Include="Scheduler\SchedulerData.cs" />
     <Compile Include="Scheduler\SchedulerInterface.cs" />
     <Compile Include="Scheduler\SchedulerPanel.cs" />
-    <Compile Include="Scheduler\SchedulerSupport.cs" />
     <Compile Include="Scheduler\_Test.cs" />
     <Compile Include="Services\Interface.cs" />
     <Compile Include="Services\TestDataSource.cs" />
@@ -170,6 +166,8 @@
     <Compile Include="Parser\RtfCoder.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\TestGlobalFunctions.cs" />
+    <Compile Include="Shared\WorkSchedulerPersistor.cs" />
+    <Compile Include="Shared\WorkSchedulerShared.cs" />
     <EmbeddedResource Include="Forms\EditorForm.resx">
       <DependentUpon>EditorForm.cs</DependentUpon>
     </EmbeddedResource>
