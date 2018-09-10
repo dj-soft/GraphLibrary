@@ -17,11 +17,18 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     public class MainControl : GInteractiveControl
     {
         #region Konstruktor, inicializace, privátní proměnné grafiky
+        /// <summary>
+        /// Konstruktor s předáním reference na datový objekt
+        /// </summary>
+        /// <param name="mainData"></param>
         public MainControl(MainData mainData)
             : this()
         {
             this._MainData = mainData;
         }
+        /// <summary>
+        /// Konstruktor základní
+        /// </summary>
         public MainControl()
         {
             this._ToolBarInit();
@@ -29,18 +36,28 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.CalculateLayout();
         }
         private MainData _MainData;
+        /// <summary>
+        /// Po změně velikosti controlu přepočítá souřadnice vnitřních prvků
+        /// </summary>
+        /// <param name="e"></param>
         protected override void OnSizeChanged(EventArgs e)
         {
             base.OnSizeChanged(e);
             this.CalculateLayout();
         }
+        /// <summary>
+        /// Přepočítá souřadnice vnitřních prvků v instanci <see cref="MainControl"/>
+        /// </summary>
         protected void CalculateLayout()
         {
             Size size = this.ClientSize;
-            int th = this._ToolBar.Bounds.Height;
             int y = 0;
-            this._ToolBar.Bounds = new Rectangle(y, 0, size.Width, th);
-            y = this._ToolBar.Bounds.Bottom + 1;
+            if (this._ToolBar.IsVisible)
+            {
+                int th = this._ToolBar.Bounds.Height;
+                this._ToolBar.Bounds = new Rectangle(y, 0, size.Width, th);
+                y = this._ToolBar.Bounds.Bottom + 1;
+            }
             this._TabContainer.Bounds = new Rectangle(0, y, size.Width, size.Height - y);
             this.Refresh();
         }
@@ -60,14 +77,36 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         }
         #endregion
         #region ToolBar
+        /// <summary>
+        /// Bude zobrazován ToolBar?
+        /// </summary>
+        public bool ToolBarVisible { get { return this._ToolBar.IsVisible; } set { this._ToolBar.IsVisible = value; this.CalculateLayout(); } }
+        /// <summary>
+        /// Přidá grupu do toolbaru
+        /// </summary>
+        /// <param name="group"></param>
         public void AddToolBarGroup(FunctionGlobalGroup group)
         {
             this._ToolBar.AddGroup(group);
         }
+        /// <summary>
+        /// Přidá grupy do toolbaru
+        /// </summary>
+        /// <param name="groups"></param>
         public void AddToolBarGroups(IEnumerable<FunctionGlobalGroup> groups)
         {
             this._ToolBar.AddGroups(groups);
         }
+        /// <summary>
+        /// Vymaže všechny prvky Toolbaru
+        /// </summary>
+        public void ClearToolBar()
+        {
+            this._ToolBar.ClearToolBar();
+        }
+        /// <summary>
+        /// Inicializace toolbaru
+        /// </summary>
         private void _ToolBarInit()
         {
             this._ToolBar = new GToolBar() { Bounds = new Rectangle(0, 0, 1024, 64) };
@@ -78,8 +117,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Tuto metodu volá interaktivní prvek (<see cref="GToolBar"/>) po kliknutí na něj, úkolem je vyvolat event <see cref="MainControl.ToolBarItemClicked"/>.
         /// </summary>
-        /// <param name="dataGroup"></param>
-        /// <param name="activeItem"></param>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
         private void _ToolBar_ItemClicked(object sender, FunctionItemEventArgs args)
         {
             if (this.ToolBarItemClicked != null)
@@ -89,6 +128,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Událost vyvolaná po kliknutí na určitý prvek ToolBaru
         /// </summary>
         public event FunctionItemEventHandler ToolBarItemClicked;
+        /// <summary>
+        /// Po změně velikosti toolbaru přepočítá souřadnice panelu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void _ToolBarSizeChanged(object sender, GPropertyChangeArgs<ComponentSize> e)
         {
             this.CalculateLayout();

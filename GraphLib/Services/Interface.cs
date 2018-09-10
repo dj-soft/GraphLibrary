@@ -274,7 +274,7 @@ namespace Asol.Tools.WorkScheduler.Services
         /// </summary>
         public virtual FunctionGlobalItemType ItemType { get; set; }
         /// <summary>
-        /// Velikost prvku na toolbaru, vzhledem k jeho výšce
+        /// Velikost prvku na toolbaru, vzhledem k výšce toolbaru
         /// </summary>
         public virtual FunctionGlobalItemSize Size { get; set; }
         /// <summary>
@@ -285,66 +285,6 @@ namespace Asol.Tools.WorkScheduler.Services
         /// Explicitně požadovaná šířka prvku v počtu modulů
         /// </summary>
         public virtual int? ModuleWidth { get; set; }
-    }
-    /// <summary>
-    /// Typ prvku na ToolBaru
-    /// </summary>
-    public enum FunctionGlobalItemType
-    {
-        /// <summary>
-        /// Nezadáno
-        /// </summary>
-        None,
-        /// <summary>
-        /// Oddělovač podskupin v rámci jedné grupy
-        /// </summary>
-        Separator,
-        /// <summary>
-        /// Textový popisek
-        /// </summary>
-        Label,
-        /// <summary>
-        /// Tlačítko
-        /// </summary>
-        Button,
-        /// <summary>
-        /// ComboBox
-        /// </summary>
-        ComboBox,
-        /// <summary>
-        /// Obrázek
-        /// </summary>
-        Image
-    }
-    /// <summary>
-    /// Size of item for global function (toolbar item)
-    /// </summary>
-    public enum FunctionGlobalItemSize : int
-    {
-        /// <summary>
-        /// Invisible item
-        /// </summary>
-        None = 0,
-        /// <summary>
-        /// Micro item, only icon without text (any Text is ignored!)
-        /// </summary>
-        Micro = 1,
-        /// <summary>
-        /// Small item, 1/3 of toolbar height
-        /// </summary>
-        Small = 2,
-        /// <summary>
-        /// Half item, 1/2 of toolbar height
-        /// </summary>
-        Half = 3,
-        /// <summary>
-        /// Large item, 2/3 of toolbar height
-        /// </summary>
-        Large = 4,
-        /// <summary>
-        /// Whole item, all toolbar height
-        /// </summary>
-        Whole = 6
     }
     #endregion
     #region IFunctionProvider, FunctionItem, FunctionItemEventHandler, FunctionItemEventArgs : Common function provider and classese

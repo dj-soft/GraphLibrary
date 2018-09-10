@@ -115,9 +115,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (graphItem4B.End != graph4End)
                 throw new AssertFailedException("Deserializovaný grafický prvek 4 nemá správnou hodnotu End, má být " + graph4End + "; je " + graphItem4B.End + ".");
 
-
-
-
         }
     }
 }

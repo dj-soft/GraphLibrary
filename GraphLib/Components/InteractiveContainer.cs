@@ -37,7 +37,11 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         #endregion
         #region Items Add/Remove events
-
+        /// <summary>
+        /// Zajistí akce před přidáním prvku
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
         void _ItemList_ItemAddBefore(object sender, EList<IInteractiveItem>.EListBeforeEventArgs args)
         {
             args.Item.Parent = this;
@@ -45,27 +49,60 @@ namespace Asol.Tools.WorkScheduler.Components
             if (this.ItemAddBefore != null)
                 this.ItemAddBefore(this, args);
         }
+        /// <summary>
+        /// Háček volaný před přidáním prvku
+        /// </summary>
+        /// <param name="args"></param>
         protected virtual void OnItemAddBefore(EList<IInteractiveItem>.EListBeforeEventArgs args) { }
+        /// <summary>
+        /// Event volaný před přidáním prvku
+        /// </summary>
         public event EList<IInteractiveItem>.EListEventBeforeHandler ItemAddBefore;
-
+        /// <summary>
+        /// Zajistí akce po přidání prvku
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
         void _ItemList_ItemAddAfter(object sender, EList<IInteractiveItem>.EListAfterEventArgs args)
         {
             this.OnItemAddAfter(args);
             if (this.ItemAddAfter != null)
                 this.ItemAddAfter(this, args);
         }
+        /// <summary>
+        /// Háček volaný po přidání prvku
+        /// </summary>
+        /// <param name="args"></param>
         protected virtual void OnItemAddAfter(EList<IInteractiveItem>.EListAfterEventArgs args) { }
+        /// <summary>
+        /// Event volaný po přidání prvku
+        /// </summary>
         public event EList<IInteractiveItem>.EListEventAfterHandler ItemAddAfter;
-
+        /// <summary>
+        /// Zajistí akce před odebráním prvku
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
         void _ItemList_ItemRemoveBefore(object sender, EList<IInteractiveItem>.EListBeforeEventArgs args)
         {
             this.OnItemRemoveBefore(args);
             if (this.ItemRemoveBefore != null)
                 this.ItemRemoveBefore(this, args);
         }
+        /// <summary>
+        /// Háček volaný před odebráním prvku
+        /// </summary>
+        /// <param name="args"></param>
         protected virtual void OnItemRemoveBefore(EList<IInteractiveItem>.EListBeforeEventArgs args) { }
+        /// <summary>
+        /// Event volaný před odebráním prvku
+        /// </summary>
         public event EList<IInteractiveItem>.EListEventBeforeHandler ItemRemoveBefore;
-
+        /// <summary>
+        /// Zajistí akce po odebrání prvku
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
         void _ItemList_ItemRemoveAfter(object sender, EList<IInteractiveItem>.EListAfterEventArgs args)
         {
             this.OnItemRemoveAfter(args);
@@ -73,11 +110,21 @@ namespace Asol.Tools.WorkScheduler.Components
                 this.ItemRemoveAfter(this, args);
             args.Item.Parent = null;
         }
+        /// <summary>
+        /// Háček volaný po odebrání prvku
+        /// </summary>
+        /// <param name="args"></param>
         protected virtual void OnItemRemoveAfter(EList<IInteractiveItem>.EListAfterEventArgs args) { }
+        /// <summary>
+        /// Event volaný po odebrání prvku
+        /// </summary>
         public event EList<IInteractiveItem>.EListEventAfterHandler ItemRemoveAfter;
 
         #endregion
         #region Items
+        /// <summary>
+        /// Child prvky tohoto prvku
+        /// </summary>
         protected override IEnumerable<IInteractiveItem> Childs { get { return this.ChildList; } }
         /// <summary>
         /// Interactive items in this container.
@@ -109,7 +156,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Add more interactive items.
         /// Does not trigger Draw().
         /// </summary>
-        /// <param name="item"></param>
+        /// <param name="items"></param>
         public void AddItems(params IInteractiveItem[] items)
         {
             this.ChildList.AddRange(items);
@@ -118,11 +165,21 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Add more interactive items.
         /// Does not trigger Draw().
         /// </summary>
-        /// <param name="item"></param>
+        /// <param name="items"></param>
         public void AddItems(IEnumerable<IInteractiveItem> items)
         {
             this.ChildList.AddRange(items);
         }
+        /// <summary>
+        /// Vymaže všechny prvky z pole Items.
+        /// </summary>
+        public void ClearItems()
+        {
+            this.ChildList.Clear();
+        }
+        /// <summary>
+        /// Soupis Child prvků
+        /// </summary>
         protected EList<IInteractiveItem> ChildList
         {
             get
@@ -133,9 +190,6 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         private EList<IInteractiveItem> _ItemList;
-
-        // List<IInteractiveItem> IInteractiveContainer.ItemList { get { return this._ItemList; } }
-        // Rectangle IInteractiveContainer.ItemBounds { get { return this.ItemBounds; } }
         #endregion
         #region Interactive property and methods
        
@@ -145,14 +199,19 @@ namespace Asol.Tools.WorkScheduler.Components
         /// InteractiveContainer.Draw(): call PaintBackground
         /// </summary>
         /// <param name="e"></param>
+        /// <param name="absoluteBounds"></param>
+        /// <param name="absoluteVisibleBounds"></param>
         protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds)
         {
             this.PaintBackground(e);
             base.Draw(e, absoluteBounds, absoluteVisibleBounds);
         }
+        /// <summary>
+        /// Vykreslení pozadí
+        /// </summary>
+        /// <param name="e"></param>
         protected virtual void PaintBackground(GInteractiveDrawArgs e)
         {
-            
         }
         #endregion
     }

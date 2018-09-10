@@ -396,37 +396,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         Rectangle? ItemBounds { get; set; }
     }
-    [Flags]
-    public enum LayoutHint
-    {
-        Default = 0,
-
-        /// <summary>
-        /// This item must be on current row (when height of item is equal to heigh of row)
-        /// </summary>
-        ThisItemOnSameRow = 0x0001,
-        /// <summary>
-        /// This item must be on new row (or on new table, when summary height is greater than args.HeightTarget)
-        /// </summary>
-        ThisItemSkipToNextRow = 0x0002,
-        /// <summary>
-        /// This item must be on new group
-        /// </summary>
-        ThisItemSkipToNextTable = 0x0004,
-
-        /// <summary>
-        /// Item after this item must be on current row
-        /// </summary>
-        NextItemOnSameRow = 0x0010,
-        /// <summary>
-        /// Item after this item must be on new row
-        /// </summary>
-        NextItemSkipToNextRow = 0x0020,
-        /// <summary>
-        /// Item after this item must be on new group
-        /// </summary>
-        NextItemSkipToNextTable = 0x0040
-    }
     #endregion
     #region Tests
     /// <summary>

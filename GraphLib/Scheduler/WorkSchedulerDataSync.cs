@@ -17,6 +17,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     /// Obsahuje jak definice všech dat, tak i jejich obsah.
     /// Datový balík se vytvoří na aplikačním serveru, projde serializací a odejde do pluginu, kde se deserializuje a použije jako zdroj dat pro vykreslení.
     /// <para/>
+    /// Po vytvoření datového balíku (tj. po jeho naplnění daty) je nutno zavolat jeho metodu <see cref="Finalise()"/>, která zajistí, 
+    /// že všechny vložené objekty dostanou referenci na svého <see cref="IGuiItem.Parent"/>. Metodu <see cref="Finalise()"/> je možno volat i opakovaně,
+    /// například po doplnění dalších prvků do objektu.
+    /// <para/>
     /// Každý prvek v celé hierarchii má svoje property <see cref="IGuiItem.Name"/>, <see cref="IGuiItem.Parent"/> 
     /// a na jejich základě i <see cref="GuiBase.FullName"/>, které obsahuje jednoznačné a úplné jméno prvku od root prvku (<see cref="GuiData"/>).
     /// Pod tímto jménem jej lze vyhledat pomocí metody <see cref="FindByFullName(string)"/>.
@@ -34,15 +38,17 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         public GuiData()
         {
             this.ToolbarItems = new GuiToolbarPanel() { Name = TOOLBAR_NAME  };
-            this.ShowToolbar = true;
-            this.Pages = new List<GuiPage>();
-            this.ShowPageTitleAllways = true;
+            this.Pages = new GuiPages() { Name = PAGES_NAME };
             this.ContextMenuItems = new GuiContextMenuSet() { Name = CONTEXT_MENU_NAME };
         }
         /// <summary>
         /// Název prvku <see cref="ToolbarItems"/>
         /// </summary>
         public const string TOOLBAR_NAME = "toolBar";
+        /// <summary>
+        /// Název prvku <see cref="Pages"/>
+        /// </summary>
+        public const string PAGES_NAME = "pages";
         /// <summary>
         /// Název prvku <see cref="ContextMenuItems"/>
         /// </summary>
@@ -52,17 +58,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         public GuiToolbarPanel ToolbarItems { get; set; }
         /// <summary>
-        /// Zobrazovat toolbar
-        /// </summary>
-        public bool ShowToolbar { get; set; }
-        /// <summary>
         /// Jednotlivé stránky (záložky) obsahující kompletní GUI
         /// </summary>
-        public List<GuiPage> Pages { get; set; }
-        /// <summary>
-        /// Zobrazovat titulkový řádek nad jednotlivými <see cref="GuiPage"/> vždy = i když je jen jedna?
-        /// </summary>
-        public bool ShowPageTitleAllways { get; set; }
+        public GuiPages Pages { get; set; }
         /// <summary>
         /// Definice všech kontextových funkcí.
         /// GUI si z nich pro konkrétní situaci vybere jen položky odpovídající jejich definici (shoda stránky, shoda panelu, shoda tabulky, shoda třídy prvku)
@@ -124,6 +122,55 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private XmlPersistState _XmlPersistState;
 
         #endregion
+    }
+    #endregion
+    #region GuiPages : kompletní sada stránek (GuiPage) s daty
+    /// <summary>
+    /// GuiPages : kompletní sada stránek (GuiPage) s daty
+    /// </summary>
+    public sealed class GuiPages : GuiBase
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public GuiPages()
+        {
+            this.ShowPageTitleAllways = true;
+            this.Pages = new List<GuiPage>();
+        }
+        /// <summary>
+        /// Zobrazovat titulkový řádek nad jednotlivými <see cref="GuiPage"/> vždy = i když je jen jedna?
+        /// </summary>
+        public bool ShowPageTitleAllways { get; set; }
+        /// <summary>
+        /// Sada stránek s daty
+        /// </summary>
+        public List<GuiPage> Pages { get; set; }
+        /// <summary>
+        /// Přidá další prvek do this seznamu
+        /// </summary>
+        /// <param name="item"></param>
+        public void Add(GuiPage item) { this.Pages.Add(item); }
+        /// <summary>
+        /// Přidá další prvky do this seznamu
+        /// </summary>
+        /// <param name="items"></param>
+        public void AddRange(IEnumerable<GuiPage> items) { this.Pages.AddRange(items); }
+        /// <summary>
+        /// Počet prvků v kolekci
+        /// </summary>
+        public int Count { get { return this.Pages.Count; } }
+        /// <summary>
+        /// Obsahuje prvek na daném indexu
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        public GuiPage this[int index] { get { return this.Pages[index]; } }
+        /// <summary>
+        /// Potomek zde vrací soupis svých Child prvků
+        /// </summary>
+        [PersistingEnabled(false)]
+        protected override IEnumerable<IGuiItem> Childs { get { return this.Pages; } }
     }
     #endregion
     #region GuiPage : Jedna úplná stránka s daty, obsahuje kompletní editační GUI vyjma ToolBaru; stránek může být více vedle sebe (na záložkách)
@@ -513,6 +560,12 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         public int Count { get { return this.GraphItems.Count; } }
         /// <summary>
+        /// Obsahuje prvek na daném indexu
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        public GuiGraphItem this[int index] { get { return this.GraphItems[index]; } }
+        /// <summary>
         /// Potomek zde vrací soupis svých Child prvků
         /// </summary>
         [PersistingEnabled(false)]
@@ -653,8 +706,18 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         public GuiToolbarPanel()
         {
+            this.ToolbarVisible = true;
+            this.ToolbarShowSystemItems = true;
             this.Items = new List<GuiToolbarItem>();
         }
+        /// <summary>
+        /// Zobrazovat toolbar?
+        /// </summary>
+        public bool ToolbarVisible { get; set; }
+        /// <summary>
+        /// Zobrazovat systémové položky v Toolbaru?
+        /// </summary>
+        public bool ToolbarShowSystemItems { get; set; }
         /// <summary>
         /// Všechny položky obsažené v Toolbaru
         /// </summary>
@@ -674,6 +737,12 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         public int Count { get { return this.Items.Count; } }
         /// <summary>
+        /// Obsahuje prvek na daném indexu
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        public GuiToolbarItem this[int index] { get { return this.Items[index]; } }
+        /// <summary>
         /// Potomek zde vrací soupis svých Child prvků
         /// </summary>
         [PersistingEnabled(false)]
@@ -690,8 +759,26 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Konstruktor
         /// </summary>
         public GuiToolbarItem()
-        { }
-
+        {
+            this.Size = FunctionGlobalItemSize.Half;
+            this.LayoutHint = LayoutHint.Default;
+        }
+        /// <summary>
+        /// Velikost prvku na toolbaru, vzhledem k výšce toolbaru
+        /// </summary>
+        public FunctionGlobalItemSize Size { get; set; }
+        /// <summary>
+        /// Explicitně požadovaná šířka prvku v počtu modulů, opatrně s ohledem na obsah textu
+        /// </summary>
+        public int? ModuleWidth { get; set; }
+        /// <summary>
+        /// Nápověda ke zpracování layoutu této položky (jak se tato položka řadí za ostatní položky)
+        /// </summary>
+        public LayoutHint LayoutHint { get; set; }
+        /// <summary>
+        /// Název grupy, v níž bude tato položka toolbaru zařazena. Nezadáno = bude v implicitní skupině "FUNKCE".
+        /// </summary>
+        public string GroupName { get; set; }
     }
     #endregion
     #region GuiContextMenuSet : Všechny položky všech Kontextových menu
@@ -725,6 +812,12 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Počet prvků v kolekci
         /// </summary>
         public int Count { get { return this.Items.Count; } }
+        /// <summary>
+        /// Obsahuje prvek na daném indexu
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        public GuiContextMenuItem this[int index] { get { return this.Items[index]; } }
         /// <summary>
         /// Potomek zde vrací soupis svých Child prvků
         /// </summary>
@@ -774,7 +867,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Název nebo binární obsah obrázku
         /// </summary>
-        public string Image { get; set; }
+        public GuiImage Image { get; set; }
     }
     #endregion
     #region GuiBase : Bázová třída všech prvků Gui*
@@ -961,6 +1054,112 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Pokád má více sad Child objektů, pak vrací jejich Union.
         /// </summary>
         IEnumerable<IGuiItem> Childs { get; }
+    }
+    #endregion
+    #region GuiImage : Třída pro předávání ikony z aplikačního serveru do pluginu
+    /// <summary>
+    /// GuiImage : Třída pro předávání ikony z aplikačního serveru do pluginu.
+    /// Tato třída nemá property Name, je používána uvnitř prvků, které mají svoje jméno.
+    /// </summary>
+    public sealed class GuiImage : IXmlSerializer
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public GuiImage()
+        { }
+        /// <summary>
+        /// Název souboru
+        /// </summary>
+        public string ImageFile { get; set; }
+        /// <summary>
+        /// Binární obsah souboru
+        /// </summary>
+        [PersistingEnabled(false)]
+        public byte[] ImageContent { get; set; }
+        /// <summary>
+        /// Fyzický obrázek
+        /// </summary>
+        [PersistingEnabled(false)]
+        public Image Image { get; set; }
+
+        /// <summary>
+        /// Tato property má obsahovat (get vrací, set akceptuje) XML data z celého aktuálního objektu.
+        /// </summary>
+        [PersistingEnabled(true)]
+        string IXmlSerializer.XmlSerialData
+        {
+            get
+            {   // Potřebujeme získat string pro persistenci:
+                string prefix = "";
+                string text = null;
+                if (!String.IsNullOrEmpty(this.ImageFile))
+                {
+                    prefix = FILE_PREFIX;
+                    text = this.ImageFile;
+                }
+                else if (this.ImageContent != null)
+                {
+                    prefix = CONTENT_PREFIX;
+                    text = System.Convert.ToBase64String(this.ImageContent, Base64FormattingOptions.None);
+                }
+                else if (this.Image != null)
+                {
+                    prefix = IMAGE_PREFIX;
+                    byte[] data = null;
+                    using (System.IO.MemoryStream ms = new System.IO.MemoryStream())
+                    {
+                        this.Image.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
+                        data = ms.ToArray();
+                        text = System.Convert.ToBase64String(data, Base64FormattingOptions.None);
+                    }
+                }
+                return (text != null ? prefix + text : null);
+            }
+            set
+            {   // Je vložen (persistovaný) string, vložíme jej tam kam patří (podle prefixu):
+                this.ImageFile = null;
+                this.ImageContent = null;
+                this.Image = null;
+                if (!String.IsNullOrEmpty(value) && value.Length > 2)
+                {
+                    string prefix = value.Substring(0, 2);
+                    string text = value.Substring(2);
+                    try
+                    {
+                        switch (prefix)
+                        {
+                            case FILE_PREFIX:
+                                this.ImageFile = text;
+                                break;
+                            case CONTENT_PREFIX:
+                                this.ImageContent = System.Convert.FromBase64String(text);
+                                break;
+                            case IMAGE_PREFIX:
+                                byte[] data = System.Convert.FromBase64String(text);
+                                using (System.IO.MemoryStream ms = new System.IO.MemoryStream(data))
+                                {
+                                    this.Image = Bitmap.FromStream(ms);
+                                }
+                                break;
+                        }
+                    }
+                    catch { }
+                }
+            }
+        }
+        /// <summary>
+        /// Prefix pro data, pokud pocházejí z <see cref="ImageFile"/>
+        /// </summary>
+        private const string FILE_PREFIX = "F:";
+        /// <summary>
+        /// Prefix pro data, pokud pocházejí z <see cref="ImageContent"/>
+        /// </summary>
+        private const string CONTENT_PREFIX = "C:";
+        /// <summary>
+        /// Prefix pro data, pokud pocházejí z <see cref="Image"/>
+        /// </summary>
+        private const string IMAGE_PREFIX = "I:";
     }
     #endregion
     #region GuiId : Identifikátor čísla třídy a čísla záznamu, použitelný i jako klíč v Dictionary.

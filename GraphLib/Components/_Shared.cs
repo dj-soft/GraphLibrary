@@ -11,6 +11,103 @@ namespace Asol.Tools.WorkScheduler.Components
     //            Hodnoty se z Greenu předávají v textové formě, a tady v GUI se z textu získávají parsováním (Enum.TryParse()) !
 
     /// <summary>
+    /// Typ prvku na ToolBaru
+    /// </summary>
+    public enum FunctionGlobalItemType
+    {
+        /// <summary>
+        /// Nezadáno
+        /// </summary>
+        None,
+        /// <summary>
+        /// Oddělovač podskupin v rámci jedné grupy
+        /// </summary>
+        Separator,
+        /// <summary>
+        /// Textový popisek
+        /// </summary>
+        Label,
+        /// <summary>
+        /// Tlačítko
+        /// </summary>
+        Button,
+        /// <summary>
+        /// ComboBox
+        /// </summary>
+        ComboBox,
+        /// <summary>
+        /// Obrázek
+        /// </summary>
+        Image
+    }
+    /// <summary>
+    /// Velikost prvku na toolbaru. Lze chápat jako počet prvků dané velikosti, které zaplní toolbar na výšku.
+    /// </summary>
+    public enum FunctionGlobalItemSize : int
+    {
+        /// <summary>
+        /// Prvek není zobrazován
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Mikro prvek výšky 1. Zobrazuje se pouze ikona. Text je ignorován.
+        /// </summary>
+        Micro = 1,
+        /// <summary>
+        /// Malý prvek, výška 1/3 toolbaru.
+        /// </summary>
+        Small = 2,
+        /// <summary>
+        /// Půlprvek, výšky 1/2 toolbaru.
+        /// </summary>
+        Half = 3,
+        /// <summary>
+        /// Velký prvek, výšky 2/3 toolbaru.
+        /// </summary>
+        Large = 4,
+        /// <summary>
+        /// Prvek přes celý toolbar
+        /// </summary>
+        Whole = 6
+    }
+    /// <summary>
+    /// Požadavky na řízení layoutu
+    /// </summary>
+    [Flags]
+    public enum LayoutHint
+    {
+        /// <summary>
+        /// Necháme to na automatu
+        /// </summary>
+        Default = 0,
+
+        /// <summary>
+        /// Tento prvek musí být na témže řádku, jako prvek předešlý (tedy pokud má shodnou výšku, jinak je hint ignorován)
+        /// </summary>
+        ThisItemOnSameRow = 0x0001,
+        /// <summary>
+        /// Tento prvek musí být na novém řádku (nebo novém odstavci, pokud by se nový řádek nevešel)
+        /// </summary>
+        ThisItemSkipToNextRow = 0x0002,
+        /// <summary>
+        /// Tento prvek musí být vždy na novém odstavci (jako za separátorem)
+        /// </summary>
+        ThisItemSkipToNextTable = 0x0004,
+
+        /// <summary>
+        /// Následující prvek musí být na témže řádku, jako prvek tento (tedy pokud má shodnou výšku, jinak je hint ignorován)
+        /// </summary>
+        NextItemOnSameRow = 0x0010,
+        /// <summary>
+        /// Následující prvek musí být na novém řádku (nebo novém odstavci, pokud by se nový řádek nevešel)
+        /// </summary>
+        NextItemSkipToNextRow = 0x0020,
+        /// <summary>
+        /// Následující prvek musí být na novém odstavci
+        /// </summary>
+        NextItemSkipToNextTable = 0x0040
+    }
+    /// <summary>
     /// Režim, jak osa reaguje na změnu velikosti.
     /// Pokud osa obsahuje data pro rozsah { 100 ÷ 150 } a má velikost 50 pixelů, 
     /// pak po změně velikosti osy na 100 pixelů může dojít k jedné ze dvou akcí: změna rozsahu, nebo změna měřítka.

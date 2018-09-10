@@ -11,6 +11,9 @@ using Asol.Tools.WorkScheduler.Localizable;
 namespace Asol.Tools.WorkScheduler.Components
 {
     #region class Toolbar
+    /// <summary>
+    /// Toolbar kreslený jako panel
+    /// </summary>
     public class GToolBar : InteractiveContainer
     {
         #region Vytvoření Toolbaru bez načítání obsahu, public prvky
@@ -120,6 +123,10 @@ namespace Asol.Tools.WorkScheduler.Components
             this.RecalculateBounds(true);
             this.Repaint();
         }
+        /// <summary>
+        /// Přepočítá souřadnice
+        /// </summary>
+        /// <param name="withSplitterValue"></param>
         protected void RecalculateBounds(bool withSplitterValue)
         {
             Rectangle bounds = this.Bounds;
@@ -235,10 +242,17 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Metoda do this ToolBaru přidá dodanou grupu funkcí
         /// </summary>
-        /// <param name="group"></param>
+        /// <param name="groups"></param>
         public void AddGroups(IEnumerable<FunctionGlobalGroup> groups)
         {
             this._AddGuiGroups(groups);
+        }
+        /// <summary>
+        /// Vymaže všechny prvky Toolbaru
+        /// </summary>
+        public void ClearToolBar()
+        {
+            this.ClearItems();
         }
         /// <summary>
         /// Create GUI items (for Groups) and add it into this Items
@@ -357,6 +371,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public class LayoutSettingTBarInfo
         {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="toolbarSize"></param>
             public LayoutSettingTBarInfo(ComponentSize toolbarSize)
             {
                 this.ToolbarSize = toolbarSize;
@@ -406,6 +424,9 @@ namespace Asol.Tools.WorkScheduler.Components
                 }
             }
             private Dictionary<FunctionGlobalItemSize, LayoutSettingTItemInfo> ItemDict;
+            /// <summary>
+            /// Velikost toolbaru
+            /// </summary>
             public ComponentSize ToolbarSize { get; private set; }
             /// <summary>
             /// Height in modules = number of module units in toolbar
@@ -415,6 +436,9 @@ namespace Asol.Tools.WorkScheduler.Components
             /// Number of pixel per one module
             /// </summary>
             public int PixelPerModule { get; private set; }
+            /// <summary>
+            /// Souřadnice toolbaru
+            /// </summary>
             public Rectangle ToolbarBounds { get; private set; }
             /// <summary>
             /// Souřadnice prostoru Content, ale pouze na ose Y.
@@ -426,12 +450,33 @@ namespace Asol.Tools.WorkScheduler.Components
             /// Souřadnice na ose X jsou převzaty z grupy.
             /// </summary>
             public Rectangle TitleBounds { get; private set; }
+            /// <summary>
+            /// Zoom pro titulky
+            /// </summary>
             public float TitleZoom { get; private set; }
+            /// <summary>
+            /// Zoom pro font
+            /// </summary>
             public FontInfo TitleFont { get { return FontInfo.CaptionSmall.GetZoom(this.TitleZoom); } }
+            /// <summary>
+            /// Vlastnosti layoutu pro Size = Micro
+            /// </summary>
             public LayoutSettingTItemInfo ItemMicroInfo { get { return this.ItemDict[FunctionGlobalItemSize.Micro]; } }
+            /// <summary>
+            /// Vlastnosti layoutu pro Size = Small
+            /// </summary>
             public LayoutSettingTItemInfo ItemSmallInfo { get { return this.ItemDict[FunctionGlobalItemSize.Small]; } }
+            /// <summary>
+            /// Vlastnosti layoutu pro Size = Half
+            /// </summary>
             public LayoutSettingTItemInfo ItemHalfInfo { get { return this.ItemDict[FunctionGlobalItemSize.Half]; } }
+            /// <summary>
+            /// Vlastnosti layoutu pro Size = Large
+            /// </summary>
             public LayoutSettingTItemInfo ItemLargeInfo { get { return this.ItemDict[FunctionGlobalItemSize.Large]; } }
+            /// <summary>
+            /// Vlastnosti layoutu pro Size = Whole
+            /// </summary>
             public LayoutSettingTItemInfo ItemWholeInfo { get { return this.ItemDict[FunctionGlobalItemSize.Whole]; } }
 
             /// <summary>
