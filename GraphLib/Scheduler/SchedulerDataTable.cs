@@ -52,17 +52,116 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         protected void LoadData()
         {
-            this.DataGraphProperties = DataGraphProperties.CreateFrom(this, this.GuiGrid.GraphProperties);
+            this.LoadDataGraphProperties();
+            this.LoadDataPrepareIndex();
             this.LoadDataLoadRow();
             this.LoadDataCreateGraphs();
             this.LoadDataLoadGraphItems();
             this.LoadDataLoadTexts();
         }
+        #endregion
+        #region Vlastnosti grafů a další property
+        /// <summary>
+        /// Načte vlastnosti grafů z <see cref="GuiGraphProperties"/> do <see cref="DataGraphProperties"/>.
+        /// </summary>
+        protected void LoadDataGraphProperties()
+        {
+            this.DataGraphProperties = DataGraphProperties.CreateFrom(this, this.GuiGrid.GraphProperties);
+        }
+        /// <summary>
+        /// Režim časové osy v grafu, podle zadání v deklaraci
+        /// </summary>
+        protected TimeGraphTimeAxisMode TimeAxisMode
+        {
+            get
+            {
+                DataGraphPositionType graphPosition = this.GraphPosition;
+                switch (graphPosition)
+                {
+                    case DataGraphPositionType.InLastColumn: return TimeGraphTimeAxisMode.Standard;
+                    case DataGraphPositionType.OnBackgroundProportional: return TimeGraphTimeAxisMode.ProportionalScale;
+                    case DataGraphPositionType.OnBackgroundLogarithmic: return TimeGraphTimeAxisMode.LogarithmicScale;
+                }
+                return TimeGraphTimeAxisMode.Default;
+            }
+        }
+        /// <summary>
+        /// Pozice grafu. Obsahuje None, pokud graf není definován.
+        /// </summary>
+        protected DataGraphPositionType GraphPosition
+        {
+            get { return ((this.TableRow != null && this.DataGraphProperties != null) ? this.DataGraphProperties.GraphPosition : DataGraphPositionType.None); }
+        }
+        /// <summary>
+        /// Časový interval pro výchozí zobrazení grafu
+        /// </summary>
+        protected TimeRange GraphInitialTimeRange
+        {
+            get
+            {
+                TimeRange initialTimeRange = this.MainData.GuiData.InitialTimeRange;
+                if (initialTimeRange == null)
+                    initialTimeRange = this.GraphInitialTimeRangeDefault;
+                return initialTimeRange;
+            }
+        }
+        /// <summary>
+        /// Defaultní časový interval pro výchozí zobrazení grafu
+        /// </summary>
+        protected TimeRange GraphInitialTimeRangeDefault
+        {
+            get
+            {
+                DateTime now = DateTime.Now;
+                int dow = (now.DayOfWeek == DayOfWeek.Sunday ? 6 : ((int)now.DayOfWeek) - 1);
+                DateTime begin = new DateTime(now.Year, now.Month, now.Day).AddDays(-dow);
+                DateTime end = begin.AddDays(7d);
+                double add = 6d;
+                return new TimeRange(begin.AddHours(-add), end.AddHours(add));
+            }
+        }
         /// <summary>
         /// Vlastnosti tabulky, načtené z DataDeclaration
         /// </summary>
         public DataGraphProperties DataGraphProperties { get; private set; }
-
+        #endregion
+        #region Index pro oboustrannou konverzi GId <=> Int32
+        /// <summary>
+        /// Připraví index pro převody GId - Int32
+        /// </summary>
+        protected void LoadDataPrepareIndex()
+        {
+            this.GIdIntIndex = new Index<GId>();
+        }
+        /// <summary>
+        /// Metoda vrátí Int32 ID pro daný <see cref="GId"/>.
+        /// Pro opakovaný požadavek na tentýž <see cref="GId"/> vrací shodnou hodnotu ID.
+        /// Pro první požadavek na určitý <see cref="GId"/> vytvoří nový ID.
+        /// Reverzní metoda je <see cref="GetId(GId)"/>.
+        /// </summary>
+        /// <param name="gId"></param>
+        /// <returns></returns>
+        protected int GetId(GId gId)
+        {
+            if (gId == null) return 0;
+            return this.GIdIntIndex.GetIndex(gId);
+        }
+        /// <summary>
+        /// Pro daný ID vrátí <see cref="GId"/>, ale pouze pokud byl přidělen v metodě <see cref="GetId(GId)"/>.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        protected GId GetGId(int id)
+        {
+            if (id == 0) return null;
+            GId gId;
+            if (!this.GIdIntIndex.TryGetKey(id, out gId)) return null;
+            return gId;
+        }
+        /// <summary>
+        /// Index pro obousměrnou konverzi Int32 - GId
+        /// </summary>
+        protected Index<GId> GIdIntIndex { get; set; }
         #endregion
         #region TableRow
         /// <summary>
@@ -123,7 +222,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 graphColumn.GraphParameters.TimeAxisMode = TimeGraphTimeAxisMode.Standard;
                 graphColumn.GraphParameters.TimeAxisVisibleTickLevel = AxisTickType.StdTick;
                 graphColumn.GraphParameters.InitialResizeMode = AxisResizeContentMode.ChangeScale;
-                graphColumn.GraphParameters.InitialValue = this.CreateInitialTimeRange();
+                graphColumn.GraphParameters.InitialValue = this.GraphInitialTimeRange;
                 graphColumn.GraphParameters.InteractiveChangeMode = AxisInteractiveChangeMode.Shift;
 
                 this.TableRow.Columns.Add(graphColumn);
@@ -193,11 +292,34 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             }
         }
         /// <summary>
-        /// Reference na objekty grafů, kde klíčem je GId řádku
+        /// Najde a vrátí položku grafu podle jeho ID
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        protected DataGraphItem GetGraphItem(int id)
+        {
+            return this.GetGraphItem(this.GetGId(id));
+        }
+        /// <summary>
+        /// Najde a vrátí položku grafu podle jeho GId
+        /// </summary>
+        /// <param name="gId"></param>
+        /// <returns></returns>
+        protected DataGraphItem GetGraphItem(GId gId)
+        {
+            if (gId == null) return null;
+            DataGraphItem dataGraphItem;
+            if (!this.TimeGraphItemDict.TryGetValue(gId, out dataGraphItem)) return null;
+            return dataGraphItem;
+        }
+        /// <summary>
+        /// Dictionary všech instancí grafů, které jsou vytvořeny do řádků zdejší tabulky <see cref="TableRow"/>.
+        /// Klíčem je GId řádku. Zde jsou grafy jak "plné", umístěné v samostatném sloupci, tak i grafy "na pozadí".
         /// </summary>
         protected Dictionary<GId, GTimeGraph> TimeGraphDict { get; private set; }
         /// <summary>
         /// Dictionary pro vyhledání prvku grafu podle jeho GId. Primární úložiště položek grafů.
+        /// Klíčem je GId grafického prvku <see cref="DataGraphItem.ItemGId"/>.
         /// </summary>
         protected Dictionary<GId, DataGraphItem> TimeGraphItemDict { get; private set; }
         /// <summary>
@@ -205,13 +327,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         protected Column TableRowGraphColumn { get; private set; }
         #endregion
-        #region Textové údaje= popisky grafů
+        #region Textové údaje (popisky grafů)
         /// <summary>
         /// Načte tabulky s texty
         /// </summary>
         protected void LoadDataLoadTexts()
         {
-            this.TableInfoList = new List<Table>();
+            this.TableTextList = new List<Table>();
+            this.TableTextRowDict = new Dictionary<GId, Row>();
             GuiGrid guiGrid = this.GuiGrid;
             if (guiGrid.GraphTexts == null || guiGrid.GraphTexts.Count == 0) return;
 
@@ -223,18 +346,71 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                     throw new GraphLibDataException("Data v tabulce textů «" + guiTable.FullName + "." + table.TableName + "» nepodporují PrimaryKey.");
                 table.HasPrimaryIndex = true;
                 if (table.RowsCount > 0)
-                    this.TableInfoList.Add(table);
+                    this.TableTextList.Add(table);
             }
         }
+        /// <summary>
+        /// Metoda se pokusí najít první řádek z tabulky textů, obsahující textové informace pro daný prvek.
+        /// Může vrátit NULL.
+        /// </summary>
+        /// <param name="graphItem"></param>
+        /// <returns></returns>
+        protected Row GetTableInfoRow(DataGraphItem graphItem)
+        {
+            if (graphItem == null) return null;
+            return this.GetTableInfoRow(graphItem.ItemGId, graphItem.GroupGId, graphItem.DataGId, graphItem.ParentGId);
+        }
+        /// <summary>
+        /// Metoda se pokusí najít první řádek z tabulky INFO, obsahující textové informace pro některý GID.
+        /// Může vrátit NULL.
+        /// </summary>
+        /// <param name="gids"></param>
+        /// <returns></returns>
+        protected Row GetTableInfoRow(params GId[] gids)
+        {
+            foreach (GId gId in gids)
+            {
+                Row row = this.GetTableInfoRowForGId(gId);
+                if (row != null) return row;
+            }
+            return null;
+        }
+        /// <summary>
+        /// Metoda se pokusí najít první řádek z tabulky INFO, obsahující textové informace pro daný GID.
+        /// Může vrátit NULL.
+        /// </summary>
+        /// <param name="gId"></param>
+        /// <returns></returns>
+        protected Row GetTableInfoRowForGId(GId gId)
+        {
+            Row row = null;
+            if (gId == null) return row;
 
+            // Nejprve hledáme v "cache":
+            if (this.TableTextRowDict.TryGetValue(gId, out row))
+                return row;
 
+            // V cache nic není - budeme hledat v kompletních datech:
+            foreach (Table table in this.TableTextList)
+            {
+                if (table.TryGetRowOnPrimaryKey(gId, out row))
+                    break;
+            }
+
+            // Co jsme našli, dáme do cache (pro příští hledání), a vrátíme:
+            this.TableTextRowDict.Add(gId, row);
+            return row;
+        }
         /// <summary>
         /// Tabulky s informacemi = popisky pro položky grafů.
         /// </summary>
-        public List<Table> TableInfoList { get; private set; }
-
+        public List<Table> TableTextList { get; private set; }
+        /// <summary>
+        /// Index textů = obsahuje GId, pro který se někdy hledal text, a k němu nalezený řádek.
+        /// Může rovněž obsahovat NULL pro daný GId, to když nebyl nalezen řádek.
+        /// </summary>
+        public Dictionary<GId, Row> TableTextRowDict { get; private set; }
         #endregion
-
 
 
 
@@ -271,154 +447,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (!String.Equals(this.TableName, tableName, StringComparison.InvariantCulture)) return false;
             return (this.DataId == dataId);
         }
-        #region Tvorba a modifikace grafů
-       
-        /// <summary>
-        /// Vrátí časový interval, který se má zobrazit jako výchozí v grafu.
-        /// </summary>
-        /// <returns></returns>
-        protected TimeRange CreateInitialTimeRange()
-        {
-            DateTime now = DateTime.Now;
-            int dow = (now.DayOfWeek == DayOfWeek.Sunday ? 6 : ((int)now.DayOfWeek) - 1);
-            DateTime begin = new DateTime(now.Year, now.Month, now.Day).AddDays(-dow);
-            DateTime end = begin.AddDays(7d);
-            double add = 6d;
-            return new TimeRange(begin.AddHours(-add), end.AddHours(add));
-        }
-       
-        /// <summary>
-        /// Režim časové osy v grafu, podle zadání v deklaraci
-        /// </summary>
-        protected TimeGraphTimeAxisMode TimeAxisMode
-        {
-            get
-            {
-                DataGraphPositionType graphPosition = this.GraphPosition;
-                switch (graphPosition)
-                {
-                    case DataGraphPositionType.InLastColumn: return TimeGraphTimeAxisMode.Standard;
-                    case DataGraphPositionType.OnBackgroundProportional: return TimeGraphTimeAxisMode.ProportionalScale;
-                    case DataGraphPositionType.OnBackgroundLogarithmic: return TimeGraphTimeAxisMode.LogarithmicScale;
-                }
-                return TimeGraphTimeAxisMode.Default;
-            }
-        }
-        /// <summary>
-        /// Pozice grafu. Obsahuje None, pokud graf není definován.
-        /// </summary>
-        protected DataGraphPositionType GraphPosition
-        {
-            get { return ((this.TableRow != null && this.DataGraphProperties != null) ? this.DataGraphProperties.GraphPosition : DataGraphPositionType.None); }
-        }
-        #endregion
-        #region Data - tabulka s řádky, prvky grafů, vztahů, položky s informacemi
         
-        /// <summary>
-        /// Index pro obousměrnou konverzi Int32 - GId
-        /// </summary>
-        protected Index<GId> _GIdIndex { get; set; }
-        #endregion
-        #region Textové informace pro položky grafů - tabulka TableInfoList a její obsluha
-        /// <summary>
-        /// Metoda se pokusí najít první řádek z tabulky INFO, obsahující textové informace pro daný prvek.
-        /// Může vrátit NULL.
-        /// </summary>
-        /// <param name="graphItem"></param>
-        /// <returns></returns>
-        protected Row GetTableInfoRow(DataGraphItem graphItem)
-        {
-            if (graphItem == null) return null;
-            return this.GetTableInfoRow(graphItem.ItemGId, graphItem.GroupGId, graphItem.DataGId, graphItem.ParentGId);
-        }
-        /// <summary>
-        /// Metoda se pokusí najít první řádek z tabulky INFO, obsahující textové informace pro některý GID.
-        /// Může vrátit NULL.
-        /// </summary>
-        /// <param name="gids"></param>
-        /// <returns></returns>
-        protected Row GetTableInfoRow(params GId[] gids)
-        {
-            foreach (GId gId in gids)
-            {
-                Row row = this.GetTableInfoRowForGId(gId);
-                if (row != null) return row;
-            }
-            return null;
-        }
-        /// <summary>
-        /// Metoda se pokusí najít první řádek z tabulky INFO, obsahující textové informace pro daný GID.
-        /// Může vrátit NULL.
-        /// </summary>
-        /// <param name="gId"></param>
-        /// <returns></returns>
-        protected Row GetTableInfoRowForGId(GId gId)
-        {
-            if (gId == null) return null;
-
-            foreach (Table table in this._TableInfoList)
-            {
-                Row row;
-                if (table.TryGetRowOnPrimaryKey(gId, out row))
-                    return row;
-            }
-            return null;
-        }
-        #endregion
-        #region Správa indexů GId a objektů grafů
-        /// <summary>
-        /// Metoda vrátí Int32 ID pro daný <see cref="GId"/>.
-        /// Pro opakovaný požadavek na tentýž <see cref="GId"/> vrací shodnou hodnotu ID.
-        /// Pro první požadavek na určitý <see cref="GId"/> vytvoří nový ID.
-        /// Reverzní metoda je <see cref="GetId(GId)"/>.
-        /// </summary>
-        /// <param name="gId"></param>
-        /// <returns></returns>
-        protected int GetId(GId gId)
-        {
-            if (gId == null) return 0;
-            return this._GIdIndex.GetIndex(gId);
-        }
-        /// <summary>
-        /// Pro daný ID vrátí <see cref="GId"/>, ale pouze pokud byl přidělen v metodě <see cref="GetId(GId)"/>.
-        /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
-        protected GId GetGId(int id)
-        {
-            if (id == 0) return null;
-            GId gId;
-            if (!this._GIdIndex.TryGetKey(id, out gId)) return null;
-            return gId;
-        }
         
-        /// <summary>
-        /// Najde a vrátí položku grafu podle jeho ID
-        /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
-        protected DataGraphItem GetGraphItem(int id)
-        {
-            return this.GetGraphItem(this.GetGId(id));
-        }
-        /// <summary>
-        /// Najde a vrátí položku grafu podle jeho GId
-        /// </summary>
-        /// <param name="gId"></param>
-        /// <returns></returns>
-        protected DataGraphItem GetGraphItem(GId gId)
-        {
-            if (gId == null) return null;
-            DataGraphItem dataGraphItem;
-            if (!this.TimeGraphItemDict.TryGetValue(gId, out dataGraphItem)) return null;
-            return dataGraphItem;
-        }
+        
         #region Explicitní implementace IDataGraphTableInternal
         int IMainDataTableInternal.GetId(GId gId) { return this.GetId(gId); }
         GId IMainDataTableInternal.GetGId(int id) { return this.GetGId(id); }
         DataGraphItem IMainDataTableInternal.GetGraphItem(int id) { return this.GetGraphItem(id); }
         DataGraphItem IMainDataTableInternal.GetGraphItem(GId gId) { return this.GetGraphItem(gId); }
-        #endregion
         #endregion
         #region Komunikace s hlavním zdrojem dat (MainData)
         /// <summary>
@@ -622,10 +658,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
             DataGraphItem item = new DataGraphItem(graphTable);
             // Struktura řádku: parent_rec_id int; parent_class_id int; item_rec_id int; item_class_id int; group_rec_id int; group_class_id int; data_rec_id int; data_class_id int; layer int; level int; is_user_fixed int; time_begin datetime; time_end datetime; height decimal; back_color string; join_back_color string; data string
-            item._ParentGId = GetGId(row, "parent");
-            item._ItemGId = GetGId(row, "item");
-            item._GroupGId = GetGId(row, "group");
-            item._DataGId = GetGId(row, "data");
+            item._ParentGId = GetGId(guiGraphItem.ParentRowId);
+            item._ItemGId = GetGId(guiGraphItem.ItemId);
+            item._GroupGId = GetGId(guiGraphItem.GroupId);
+            item._DataGId = GetGId(guiGraphItem.DataId);
             item._Layer = row.GetValue<Int32>("layer");
             item._Level = row.GetValue<Int32>("level");
             item._Order = 0;
@@ -722,7 +758,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             return new GId(classId.Value, recordId.Value);
         }
         /// <summary>
-        /// privátní konstruktor. Instanci lze založit pomocí metody <see cref="CreateFrom(MainDataTable, DataRow)"/>.
+        /// privátní konstruktor. Instanci lze založit pomocí metody <see cref="CreateFrom(MainDataTable, GuiGraphItem)"/>.
         /// </summary>
         private DataGraphItem(MainDataTable graphTable)
         {

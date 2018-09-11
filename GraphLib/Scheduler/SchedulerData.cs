@@ -55,6 +55,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Hlavní objekt s daty <see cref="GuiData"/>
         /// </summary>
+        public GuiData GuiData { get { return this._GuiData; } }
+        /// <summary>
+        /// Hlavní objekt s daty <see cref="GuiData"/>
+        /// </summary>
         private GuiData _GuiData;
         /// <summary>
         /// Vytvoří a vrátí new WinForm control, obsahující kompletní strukturu pro zobrazení dodaných dat
