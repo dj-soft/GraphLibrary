@@ -15,7 +15,7 @@ using System.Xml.Linq;
 using System.Collections;
 
 // Tento soubor obsahuje třídy, které provádějí serializaci a deserializaci libovolného objektu do XML formátu.
-namespace Noris.LCS.Manufacturing.WorkScheduler
+namespace Noris.LCS.Base.WorkScheduler
 {
     // public rozhraní:
     #region class Persist : Třída, která zajišťuje persistenci dat do / z XML formátu

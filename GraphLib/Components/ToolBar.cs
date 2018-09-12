@@ -7,7 +7,7 @@ using Asol.Tools.WorkScheduler.Application;
 using Asol.Tools.WorkScheduler.Data;
 using Asol.Tools.WorkScheduler.Services;
 using Asol.Tools.WorkScheduler.Localizable;
-using Noris.LCS.Manufacturing.WorkScheduler;
+using Noris.LCS.Base.WorkScheduler;
 
 namespace Asol.Tools.WorkScheduler.Components
 {

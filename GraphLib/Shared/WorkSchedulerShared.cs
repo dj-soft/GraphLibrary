@@ -12,7 +12,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 // Tento soubor obsahuje sadu tříd a enumů, které popisují data pro plugin WorkScheduler. Tato data se plní v Greenu a přes XML persistor se předávají do pluginu WorkScheduler.
-namespace Noris.LCS.Manufacturing.WorkScheduler
+namespace Noris.LCS.Base.WorkScheduler
 {
     #region Data předávaná mezi Helios Green a WorkScheduler. Identický balík je v GraphLib\Scheduler\WorkSchedulerDataSync.cs a v Manufacturing\WorkSchedulerShared.cs
     #region GuiData : Kompletní datový balík, jehož data budou zobrazena v pluginu ASOL.WorkScheduler
@@ -41,10 +41,15 @@ namespace Noris.LCS.Manufacturing.WorkScheduler
         /// </summary>
         public GuiData()
         {
+            this.Properties = new GuiProperties() { Name = PROPERTIES_NAME };
             this.ToolbarItems = new GuiToolbarPanel() { Name = TOOLBAR_NAME };
             this.Pages = new GuiPages() { Name = PAGES_NAME };
             this.ContextMenuItems = new GuiContextMenuSet() { Name = CONTEXT_MENU_NAME };
         }
+        /// <summary>
+        /// Název prvku <see cref="Properties"/>
+        /// </summary>
+        public const string PROPERTIES_NAME = "properties";
         /// <summary>
         /// Název prvku <see cref="ToolbarItems"/>
         /// </summary>
@@ -57,6 +62,10 @@ namespace Noris.LCS.Manufacturing.WorkScheduler
         /// Název prvku <see cref="ContextMenuItems"/>
         /// </summary>
         public const string CONTEXT_MENU_NAME = "contextMenu";
+        /// <summary>
+        /// Základní společné vlastnosti pro celý plugin
+        /// </summary>
+        public GuiProperties Properties { get; set; }
         /// <summary>
         /// Prvky zobrazené v Toolbaru nahoře
         /// </summary>
@@ -126,6 +135,20 @@ namespace Noris.LCS.Manufacturing.WorkScheduler
         private XmlPersistState _XmlPersistState;
 
         #endregion
+    }
+    #endregion
+    #region GuiProperties : Základní společné vlastnosti pro celý plugin
+    /// <summary>
+    /// GuiProperties : Základní společné vlastnosti pro celý plugin
+    /// </summary>
+    public class GuiProperties : GuiBase
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public GuiProperties()
+        { }
+        public DateTime VisualRangeBegin
     }
     #endregion
     #region GuiPages : kompletní sada stránek (GuiPage) s daty
@@ -421,6 +444,14 @@ namespace Noris.LCS.Manufacturing.WorkScheduler
                 {
                     this._DataTable = WorkSchedulerSupport.TableDeserialize(this._DataSerial);
                     this._DataTableValid = true;
+                    // Tento krok zajistí, že serializovaný obsah (DataSerial) bude od teď pokládán za neplatný.
+                    // Proč? 
+                    //   Když už někdo čte obsah DataTable, tak jej následně může modifikovat - přidat/odebrat řádek, změnit hodnotu, atd - a my se to nedozvíme.
+                    //   Není ani naším cílem se to dozvědět, to by byla dost zbytečná komplikace.
+                    // Takže pokud poté, co si někdo vyzvedl obsah DataTable (a možná ho modifikoval), a někdo pak bude číst serializovaný obsah (DataSerial),
+                    //   tak tento DataSerial vytvoříme nový, platný z aktuální DataTable.
+                    // Reverzní postup neděláme - že bychom po načtení DataSerial invalidovali DataTable, protože čtením stringu se nemůže nijak změnit jeho obsah.
+                    this._DataSerialValid = false;
                 }
                 return this._DataTable;
             }
@@ -444,9 +475,11 @@ namespace Noris.LCS.Manufacturing.WorkScheduler
         /// { get } vždy vrací platná serializovaná data (primárně z <see cref="DataTable"/> pokud tam jsou, sekundárně z <see cref="DataSerial"/>).
         /// { set } vloží serializovaná data do <see cref="DataSerial"/>, tím zajistí i jejich on-demand promítnutí do <see cref="DataTable"/>.
         /// </summary>
+        [PersistingEnabled(true)]
+        [PropertyName("Data")]
         private string PersistedData
         {
-            get { this._DataSerialValid = false; return this.DataSerial; }
+            get { return this.DataSerial; }
             set { this.DataSerial = value; }
         }
     }
@@ -606,8 +639,9 @@ namespace Noris.LCS.Manufacturing.WorkScheduler
                     "item_class_id int, item_record_id int, parent_class_id int, parent_record_id int, " +
                     "group_class_id int, group_record_id int, data_class_id int, data_record_id" +
                     "begin datetime, end datetime, " +
-                    "layer int, level int, order int, height float, ratio float, " +
-                    "back_color string, line_color string, back_style string";
+                    "layer int, level int, order int, height float, " +
+                    "back_color string, line_color string, back_style string," +
+                    "ratio_begin float, ratio_end float, ratio_back_color string, ratio_line_color string, ratio_line_width int";
         /// <summary>
         /// Jméno prvku GuiGraphItem je vždy rovno textu z <see cref="ItemId"/>. Property Name zde nemá význam setovat.
         /// </summary>
@@ -676,20 +710,68 @@ namespace Noris.LCS.Manufacturing.WorkScheduler
         /// </summary>
         public float Height { get; set; }
         /// <summary>
-        /// Poměrná hodnota "nějakého" splnění v rámci prvku.
-        /// Z databáze se načítá ze sloupce: "ratio", je NEPOVINNÝ.
-        /// </summary>
-        public float? Ratio { get; set; }
-        /// <summary>
         /// Barva pozadí prvku.
+        /// Pokud bude null, pak prvek nebude mít vyplněný svůj prostor (obdélník). Může mít vykreslené okraje (barva <see cref="LineColor"/>).
+        /// Anebo může mít kreslené Ratio (viz property <see cref="RatioBegin"/>, <see cref="RatioEnd"/>, 
+        /// <see cref="RatioBackColor"/>, <see cref="RatioLineColor"/>, <see cref="RatioLineWidth"/>).
         /// Z databáze se načítá ze sloupce: "back_color", je NEPOVINNÝ.
         /// </summary>
         public Color? BackColor { get; set; }
         /// <summary>
         /// Barva linek ohraničení prvku.
+        /// Pokud je null, pak prvek nemá ohraničení pomocí linky (Border).
         /// Z databáze se načítá ze sloupce: "line_color", je NEPOVINNÝ.
         /// </summary>
         public Color? LineColor { get; set; }
+        /// <summary>
+        /// Poměrná hodnota "nějakého" splnění v rámci prvku, na jeho počátku.
+        /// Běžně se vykresluje jako poměrná část prvku, měřeno odspodu, která symbolizuje míru "naplnění" daného úseku.
+        /// Část Ratio má tvar lichoběžníku, a spojuje body Begin = { <see cref="Begin"/>, <see cref="RatioBegin"/> } a { <see cref="End"/>, <see cref="RatioEnd"/> }.
+        /// <para/>
+        /// Pro zjednodušení zadávání: pokud je naplněno <see cref="RatioBegin"/>, ale v <see cref="RatioEnd"/> je null, 
+        /// pak vykreslovací algoritmus předpokládá hodnotu End stejnou jako Begin. To znamená, že pro "obdélníkové" ratio stačí naplnit jen <see cref="RatioBegin"/>.
+        /// Ale opačně to neplatí.
+        /// <para/>
+        /// Z databáze se načítá ze sloupce: "ratio_begin", je NEPOVINNÝ.
+        /// </summary>
+        public float? RatioBegin { get; set; }
+        /// <summary>
+        /// Poměrná hodnota "nějakého" splnění v rámci prvku, na jeho konci.
+        /// Běžně se vykresluje jako poměrná část prvku, měřeno odspodu, která symbolizuje míru "naplnění" daného úseku.
+        /// Část Ratio má tvar lichoběžníku, a spojuje body Begin = { <see cref="Begin"/>, <see cref="RatioBegin"/> } a { <see cref="End"/>, <see cref="RatioEnd"/> }.
+        /// <para/>
+        /// Pro zjednodušení zadávání: pokud je naplněno <see cref="RatioBegin"/>, ale v <see cref="RatioEnd"/> je null, 
+        /// pak vykreslovací algoritmus předpokládá hodnotu End stejnou jako Begin. To znamená, že pro "obdélníkové" ratio stačí naplnit jen <see cref="RatioBegin"/>.
+        /// Ale opačně to neplatí.
+        /// <para/>
+        /// Z databáze se načítá ze sloupce: "ratio_end", je NEPOVINNÝ.
+        /// </summary>
+        public float? RatioEnd { get; set; }
+        /// <summary>
+        /// Barva pozadí prvku, kreslená v části Ratio.
+        /// Použije se tehdy, když hodnota <see cref="RatioBegin"/> a/nebo <see cref="RatioEnd"/> má hodnotu větší než 0f.
+        /// Touto barvou je vykreslena dolní část prvku, která symbolizuje míru "naplnění" daného úseku.
+        /// Tato část má tvar lichoběžníku, dolní okraj je na hodnotě 0, levý okraj má výšku <see cref="RatioBegin"/>, pravý okraj má výšku <see cref="RatioEnd"/>.
+        /// Může sloužit k zobrazení vyčerpané pracovní kapacity, nebo jako lineární částečka grafu sloupcového nebo liniového.
+        /// Z databáze se načítá ze sloupce: "ratio_back_color", je NEPOVINNÝ.
+        /// </summary>
+        public Color? RatioBackColor { get; set; }
+        /// <summary>
+        /// Barva linky, kreslená v úrovni Ratio.
+        /// Použije se tehdy, když hodnota <see cref="RatioBegin"/> a/nebo <see cref="RatioEnd"/> má zadanou hodnotu v rozsahu 0 (včetně) a více.
+        /// Touto barvou je vykreslena přímá linie, která symbolizuje míru "naplnění" daného úseku, 
+        /// a spojuje body Begin = { <see cref="Begin"/>, <see cref="RatioBegin"/> } a { <see cref="End"/>, <see cref="RatioEnd"/> }.
+        /// Z databáze se načítá ze sloupce: "ratio_line_color", je NEPOVINNÝ.
+        /// </summary>
+        public Color? RatioLineColor { get; set; }
+        /// <summary>
+        /// Šířka linky, kreslená v úrovni Ratio.
+        /// Použije se tehdy, když hodnota <see cref="RatioBegin"/> a/nebo <see cref="RatioEnd"/> má zadanou hodnotu v rozsahu 0 (včetně) a více.
+        /// Čárou této šířky je vykreslena přímá linie, která symbolizuje míru "naplnění" daného úseku, 
+        /// a spojuje body Begin = { <see cref="Begin"/>, <see cref="RatioBegin"/> } a { <see cref="End"/>, <see cref="RatioEnd"/> }.
+        /// Z databáze se načítá ze sloupce: "ratio_line_width", je NEPOVINNÝ.
+        /// </summary>
+        public int? RatioLineWidth { get; set; }
         /// <summary>
         /// Styl vzorku kresleného v pozadí.
         /// null = Solid.
@@ -1289,6 +1371,50 @@ namespace Noris.LCS.Manufacturing.WorkScheduler
         }
     }
     #endregion
+    #region GuiRange : rozsah { Begin ÷ End } dvou hodnot stejného datového typu
+    /// <summary>
+    /// GuiRange : rozsah { Begin ÷ End } dvou hodnot stejného datového typu
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public class GuiRange<T> where T : IComparable
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="begin"></param>
+        /// <param name="end"></param>
+        public GuiRange(T begin, T end)
+        {
+            this.Begin = begin;
+            this.End = end;
+        }
+        /// <summary>
+        /// Počátek intervalu, běžně se počítá "včetně"
+        /// </summary>
+        public T Begin { get; protected set; }
+        /// <summary>
+        /// Konec intervalu, běžně se počítá "mimo"
+        /// </summary>
+        public T End { get; protected set; }
+    }
+    /// <summary>
+    /// GuiTimeRange : rozsah { Begin ÷ End } dvou hodnot typu DateTime
+    /// </summary>
+    public class GuiTimeRange : GuiRange<DateTime>, IXmlSerializer
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="begin"></param>
+        /// <param name="end"></param>
+        public GuiTimeRange(DateTime begin, DateTime end) : base(begin, end) { }
+        string IXmlSerializer.XmlSerialData
+        {
+            get { }
+            set { }
+        }
+    }
+    #endregion
     #endregion
     #region Enumy, které se sdílí mezi WorkScheduler a GraphLibrary
     // VAROVÁNÍ : Změna názvu jednotlivých enumů je zásadní změnou, která se musí promítnout i do konstant ve WorkSchedulerSupport a to jak zde, tak v Greenu.
@@ -1615,6 +1741,23 @@ namespace Noris.LCS.Manufacturing.WorkScheduler
         /// </summary>
         public const string KEY_REQUEST_DATA = "Data";
         /// <summary>
+        /// Key v Request: "DataZip"
+        /// </summary>
+        public const string KEY_REQUEST_DATA_ZIP = "DataZip";
+
+        /// <summary>
+        /// Key v Response: Status
+        /// </summary>
+        public const string KEY_RESPONSE_RESULT_STATUS = "ResultStatus";
+        /// <summary>
+        /// Key v Response: Message
+        /// </summary>
+        public const string KEY_RESPONSE_RESULT_MESSAGE = "ResultMessage";
+
+
+        // následující konstanty se zruší:
+        /*
+        /// <summary>
         /// Key v Request: "DataDeclaration"
         /// </summary>
         public const string KEY_REQUEST_DATA_DECLARATION = "DataDeclaration";
@@ -1658,15 +1801,6 @@ namespace Noris.LCS.Manufacturing.WorkScheduler
         /// Struktura tabulky "Table.Graph"
         /// </summary>
         public const string DATA_TABLE_GRAPH_STRUCTURE = "parent_rec_id int; parent_class_id int; item_rec_id int; item_class_id int; group_rec_id int; group_class_id int; data_rec_id int; data_class_id int; layer int; level int; is_user_fixed int; time_begin datetime; time_end datetime; height decimal; ratio decimal; back_color string; join_back_color string; data string";
-
-        /// <summary>
-        /// Key v Response: Status
-        /// </summary>
-        public const string KEY_RESPONSE_RESULT_STATUS = "ResultStatus";
-        /// <summary>
-        /// Key v Response: Message
-        /// </summary>
-        public const string KEY_RESPONSE_RESULT_MESSAGE = "ResultMessage";
 
         /// <summary>
         /// Název GUI obsahu: nic
@@ -1873,7 +2007,7 @@ namespace Noris.LCS.Manufacturing.WorkScheduler
         /// Hodnota proměnné EditMode v tabulce Graph v prvku DATA: Default pro text = ShowCaptionInMouseOver | ShowCaptionInSelected | ShowToolTipFadeIn
         /// </summary>
         public const string DATA_GRAPHITEM_EDITMODE_DefaultText = "DefaultText";
-
+        */
         #endregion
         #region Podpora tvorby tabulek a sloupců
         /// <summary>

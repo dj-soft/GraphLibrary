@@ -11,7 +11,7 @@ using Asol.Tools.WorkScheduler.Application;
 using Asol.Tools.WorkScheduler.Services;
 using Asol.Tools.WorkScheduler.Components;
 using Asol.Tools.WorkScheduler.Components.Graph;
-using Noris.LCS.Manufacturing.WorkScheduler;
+using Noris.LCS.Base.WorkScheduler;
 
 namespace Asol.Tools.WorkScheduler.Scheduler
 {
@@ -158,7 +158,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 this._MainControl.AddToolBarGroups(toolBarGroups.Values);
         }
         /// <summary>
-        /// ContextFunctionItem : adapter mezi <see cref="DataDeclaration"/> pro typ obsahu = <see cref="DataContentType.Button"/>, a položku kontextového menu <see cref="FunctionGlobalItem"/>.
+        /// ContextFunctionItem : adapter mezi <see cref="GuiToolbarItem"/>, a položku kontextového menu <see cref="FunctionGlobalItem"/>.
         /// </summary>
         protected class ToolBarItem : FunctionGlobalItem
         {
@@ -331,7 +331,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             return menuItems;
         }
         /// <summary>
-        /// ContextFunctionItem : adapter mezi <see cref="DataDeclaration"/> pro typ obsahu = <see cref="DataContentType.Function"/>, a položku kontextového menu <see cref="FunctionItem"/>.
+        /// ContextFunctionItem : adapter mezi <see cref="GuiContextMenuItem"/>, a položku kontextového menu <see cref="FunctionItem"/>.
         /// </summary>
         protected class ContextFunctionItem : FunctionItem
         {
@@ -472,94 +472,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
         #region Konverze stringů a enumů
         /// <summary>
-        /// Metoda určí Typ údajů, které obsahuje určitá tabulka, na základě stringu, který je uveden v klíči těchto dat.
-        /// Vrací true = je zadán správný text, false = nesprávný text.
-        /// </summary>
-        /// <param name="text"></param>
-        /// <returns></returns>
-        public static bool TryGetDataTableType(string text, out DataTableType value)
-        {
-            value = GetDataTableType(text);
-            return (value != DataTableType.None);
-        }
-        /// <summary>
-        /// Metoda vrátí Typ údajů, které obsahuje určitá tabulka, na základě stringu, který je uveden v klíči těchto dat.
-        /// </summary>
-        /// <param name="text"></param>
-        /// <returns></returns>
-        public static DataTableType GetDataTableType(string text)
-        {
-            if (String.IsNullOrEmpty(text)) return DataTableType.None;
-            switch (text)
-            {
-                case "Row": return DataTableType.Row;
-                case "Graph": return DataTableType.Graph;
-                case "Rel": return DataTableType.Rel;
-                case "Item": return DataTableType.Item;
-            }
-            return DataTableType.None;
-        }
-        /// <summary>
-        /// Převede string z pole "target" na typovou hodnotu
-        /// </summary>
-        /// <param name="text"></param>
-        /// <returns></returns>
-        public static DataTargetType GetDataTargetType(string text)
-        {
-            if (String.IsNullOrEmpty(text)) return DataTargetType.None;
-            switch (text)
-            {
-                case WorkSchedulerSupport.GUI_TARGET_MAIN: return DataTargetType.Main;
-                case WorkSchedulerSupport.GUI_TARGET_TOOLBAR: return DataTargetType.ToolBar;
-                case WorkSchedulerSupport.GUI_TARGET_TASK: return DataTargetType.Task;
-                case WorkSchedulerSupport.GUI_TARGET_SCHEDULE: return DataTargetType.Schedule;
-                case WorkSchedulerSupport.GUI_TARGET_SOURCE: return DataTargetType.Source;
-                case WorkSchedulerSupport.GUI_TARGET_INFO: return DataTargetType.Info;
-            }
-            return DataTargetType.None;
-        }
-        /// <summary>
-        /// Převede string z pole "content" na typovou hodnotu
-        /// </summary>
-        /// <param name="text"></param>
-        /// <returns></returns>
-        public static DataContentType GetDataContentType(string text)
-        {
-            if (String.IsNullOrEmpty(text)) return DataContentType.None;
-            switch (text)
-            {
-                case WorkSchedulerSupport.GUI_CONTENT_PANEL: return DataContentType.Panel;
-                case WorkSchedulerSupport.GUI_CONTENT_BUTTON: return DataContentType.Button;
-                case WorkSchedulerSupport.GUI_CONTENT_TABLE: return DataContentType.Table;
-                case WorkSchedulerSupport.GUI_CONTENT_FUNCTION: return DataContentType.Function;
-            }
-            return DataContentType.None;
-        }
-        /// <summary>
-        /// Metoda vrátí Pozici grafu v tabulce, na základě stringu, který je předán jako parametr.
-        /// </summary>
-        /// <param name="text"></param>
-        /// <returns></returns>
-        public static DataGraphPositionType GetGraphPosition(string text)
-        {
-            if (String.IsNullOrEmpty(text)) return DataGraphPositionType.None;
-            switch (text)
-            {
-                case WorkSchedulerSupport.DATA_TABLE_POSITION_NONE: return DataGraphPositionType.None;
-
-                case "LastColumn":
-                case WorkSchedulerSupport.DATA_TABLE_POSITION_IN_LAST_COLUMN: return DataGraphPositionType.InLastColumn;
-
-                case "Background":
-                case "Proportional":
-                case WorkSchedulerSupport.DATA_TABLE_POSITION_BACKGROUND_PROPORTIONAL: return DataGraphPositionType.OnBackgroundProportional;
-
-                case "Logarithmic":
-                case WorkSchedulerSupport.DATA_TABLE_POSITION_BACKGROUND_LOGARITHMIC: return DataGraphPositionType.OnBackgroundLogarithmic;
-            }
-            return DataGraphPositionType.None;
-        }
-        /// <summary>
         /// Převede string obsahující číslo na Int32?.
         /// Pokud nebude rozpoznáno, vrací se null.
         /// </summary>
@@ -578,6 +490,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Tato varianta provádí zarovnání do daných mezí.
         /// </summary>
         /// <param name="text"></param>
+        /// <param name="minValue">Dolní mez, včetně</param>
+        /// <param name="maxValue">Horní mez, včetně</param>
         /// <returns></returns>
         public static Int32? GetInt32N(string text, Int32? minValue, Int32? maxValue)
         {
@@ -591,7 +505,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Převede string obsahující barvu na Color?.
         /// String může obsahovat název barvy = některou hodnotu z enumu <see cref="KnownColor"/>, například "Violet";, ignoruje se velikost písmen.
-        /// anebo může být HEX hodnota zadaná ve formě "0x8080C0" nebo "0&226688".
+        /// anebo může být HEX hodnota zadaná ve formě "0x8080C0" nebo "0(and)226688".
         /// Pokud nebude rozpoznáno, vrací se null.
         /// </summary>
         /// <param name="text"></param>
@@ -715,7 +629,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Duplicitní výskyty stejného textu nezpůsobí chybu.
         /// </summary>
         /// <param name="text"></param>
-        /// <param name="delimiter"></param>
+        /// <param name="delimiters"></param>
         /// <returns></returns>
         public static Dictionary<string, string> GetItemsAsDictionary(string text, params string[] delimiters)
         {
@@ -772,6 +686,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
 
         #region Implementace IMainDataInternal
+        /// <summary>
+        /// Zajistí otevření daného formuláře, prostřednictvím aktuálního hostitele <see cref="_AppHost"/>.
+        /// </summary>
+        /// <param name="recordGId"></param>
         protected void RunOpenRecordForm(GId recordGId)
         {
             if (this._HasHost)
@@ -789,9 +707,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Metoda pro daný prvek připraví a vrátí kontextové menu.
         /// </summary>
         /// <param name="graphItem"></param>
+        /// <param name="args"></param>
         /// <returns></returns>
         ToolStripDropDownMenu IMainDataInternal.CreateContextMenu(DataGraphItem graphItem, ItemActionArgs args) { return this.CreateContextMenu(graphItem, args); }
-        IEnumerable<DataDeclaration> IMainDataInternal.DataDeclarations { get { return this.Declarations; } }
         #endregion
     }
     /// <summary>
@@ -811,214 +729,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="args"></param>
         /// <returns></returns>
         ToolStripDropDownMenu CreateContextMenu(DataGraphItem graphItem, ItemActionArgs args);
-        /// <summary>
-        /// Souhrn všech deklarací dat
-        /// </summary>
-        IEnumerable<DataDeclaration> DataDeclarations { get; }
-    }
-    #endregion
-    #region class DataDeclaration : deklarace dat, předaná z volajícího do pluginu, definuje rozsah dat a funkcí
-    /// <summary>
-    /// DataDeclaration : deklarace dat, předaná z volajícího do pluginu, definuje rozsah dat a funkcí
-    /// </summary>
-    public class DataDeclaration
-    {
-        #region Tvorba instance
-        /// <summary>
-        /// Vytvoří a vrátí instanci <see cref="DataDeclaration"/> z datového řádku tabulky, 
-        /// jejíž struktura odpovídá <see cref="WorkSchedulerSupport.KEY_REQUEST_DATA_DECLARATION"/>.
-        /// </summary>
-        /// <param name="row"></param>
-        /// <returns></returns>
-        public static DataDeclaration CreateFrom(MainData mainData, DataRow row)
-        {
-            if (row == null) return null;
-
-            DataDeclaration data = new DataDeclaration(mainData);
-            data.DataId = row.GetValue<int>("data_id");
-            data.Target = Scheduler.MainData.GetDataTargetType(row.GetValue<string>("target"));
-            data.Content = Scheduler.MainData.GetDataContentType(row.GetValue<string>("content"));
-            data.Name = row.GetValue<string>("name");
-            data.Title = row.GetValue<string>("title");
-            data.ToolTip = row.GetValue<string>("tooltip");
-            data.Image = row.GetValue<string>("image");
-            data.Data = row.GetValue<string>("data");
-
-            return data;
-        }
-        /// <summary>
-        /// privátní konstruktor. Instanci lze založit pomocí metody <see cref="CreateFrom(MainData, DataRow)"/>.
-        /// </summary>
-        private DataDeclaration(MainData mainData)
-        {
-            this.MainData = mainData;
-        }
-        /// <summary>
-        /// Vlastník = datová základna, instance třídy <see cref="Scheduler.MainData"/>
-        /// </summary>
-        protected MainData MainData { get; set; }
-        /// <summary>
-        /// Vizualizace
-        /// </summary>
-        /// <returns></returns>
-        public override string ToString()
-        {
-            return "Target: " + this.Target + "; Content: " + this.Content + "; Title: " + this.Title;
-        }
-        #endregion
-        #region Public data
-        /// <summary>
-        /// ID skupiny dat. Jedna skupina dat se vkládá do jednoho controlu <see cref="SchedulerPanel"/>, 
-        /// může jich být více, pak hlavní control <see cref="MainControl"/> obsahuje více panelů.
-        /// </summary>
-        public int DataId { get; private set; }
-        /// <summary>
-        /// Cílový prostor v panelu <see cref="SchedulerPanel"/> pro tuto položku deklarace
-        /// </summary>
-        public DataTargetType Target { get; private set; }
-        /// <summary>
-        /// Typ obsahu v této položce deklarace
-        /// </summary>
-        public DataContentType Content { get; private set; }
-        /// <summary>
-        /// Name = strojový identifikátor, nezobrazuje se - ale používá se při komunikaci
-        /// </summary>
-        public string Name { get; private set; }
-        /// <summary>
-        /// Název položky = stále viditelný text pro tuto položku deklarace
-        /// </summary>
-        public string Title { get; private set; }
-        /// <summary>
-        /// Nápovědný text do ToolTipu k této položce deklarace
-        /// </summary>
-        public string ToolTip { get; private set; }
-        /// <summary>
-        /// Název nebo obsah ikony
-        /// </summary>
-        public string Image { get; private set; }
-        /// <summary>
-        /// Rozšiřující data, podle typu obsahu <see cref="Content"/>
-        /// </summary>
-        public string Data { get; private set; }
-        #endregion
-        #region Vyhledání nadřízených deklarací
-        /// <summary>
-        /// Najde a vrátí deklaraci dat typu <see cref="DataDeclaration.Target"/> == <see cref="DataTargetType.Main"/> 
-        /// pro shodnou verzi dat (<see cref="DataDeclaration.DataId"/>) pro jakou je platný this prvek.
-        /// Pokud takovou deklaraci nenajde, obsahue (vrací) null.
-        /// </summary>
-        public DataDeclaration MainDataDeclaration
-        {
-            get
-            {
-                if (!this._MainDataDeclarationValid)
-                {
-                    this._MainDataDeclaration = ((this.Target == DataTargetType.Main) ? this :
-                        ((IMainDataInternal)this.MainData).DataDeclarations.FirstOrDefault(d => (d.Target == DataTargetType.Main && d.DataId == this.DataId)));
-                    this._MainDataDeclarationValid = true;
-                }
-                return this._MainDataDeclaration;
-            }
-        }
-        /// <summary>
-        /// Platnost dat cache <see cref="_MainDataDeclaration"/>
-        /// </summary>
-        private bool _MainDataDeclarationValid;
-        /// <summary>
-        /// Cache dat pro property <see cref="MainDataDeclaration"/>
-        /// </summary>
-        private DataDeclaration _MainDataDeclaration;
-        #endregion
-    }
-    #endregion
-
-    // Toto se všechno musí zrušit:
-    #region enumy : DataTableType, DataTargetType, DataContentType
-    /// <summary>
-    /// Typ údajů, které obsahuje určitá tabulka
-    /// </summary>
-    public enum DataTableType
-    {
-        /// <summary>
-        /// Neurčeno
-        /// </summary>
-        None,
-        /// <summary>
-        /// Vizuální řádky
-        /// </summary>
-        Row,
-        /// <summary>
-        /// Položky grafu
-        /// </summary>
-        Graph,
-        /// <summary>
-        /// Vztahy mezi položkami grafu
-        /// </summary>
-        Rel,
-        /// <summary>
-        /// Informační texty k položkám grafu
-        /// </summary>
-        Item
-    }
-    /// <summary>
-    /// Cílový prvek položky v deklaraci dat
-    /// </summary>
-    public enum DataTargetType
-    {
-        /// <summary>
-        /// Neurčeno
-        /// </summary>
-        None,
-        /// <summary>
-        /// Funkce v toolbaru
-        /// </summary>
-        ToolBar,
-        /// <summary>
-        /// Main = záhlaví panelu jedné verze dat
-        /// </summary>
-        Main,
-        /// <summary>
-        /// Tabulky v panelu vlevo
-        /// </summary>
-        Task,
-        /// <summary>
-        /// Tabulky v hlavním panelu
-        /// </summary>
-        Schedule,
-        /// <summary>
-        /// Tabulky v panelu vpravo
-        /// </summary>
-        Source,
-        /// <summary>
-        /// Tabulky v panelu dole
-        /// </summary>
-        Info
-    }
-    /// <summary>
-    /// Typ obsahu v deklaraci dat
-    /// </summary>
-    public enum DataContentType
-    {
-        /// <summary>
-        /// Neurčeno
-        /// </summary>
-        None,
-        /// <summary>
-        /// Panel = záhlaví celé verze dat
-        /// </summary>
-        Panel,
-        /// <summary>
-        /// Button = položka ToolBaru
-        /// </summary>
-        Button,
-        /// <summary>
-        /// Table = tabulka
-        /// </summary>
-        Table,
-        /// <summary>
-        /// Function = kontextová funkce
-        /// </summary>
-        Function
     }
     #endregion
 }
