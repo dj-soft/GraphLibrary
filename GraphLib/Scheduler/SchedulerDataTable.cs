@@ -658,10 +658,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
             DataGraphItem item = new DataGraphItem(graphTable);
             // Struktura řádku: parent_rec_id int; parent_class_id int; item_rec_id int; item_class_id int; group_rec_id int; group_class_id int; data_rec_id int; data_class_id int; layer int; level int; is_user_fixed int; time_begin datetime; time_end datetime; height decimal; back_color string; join_back_color string; data string
-            item._ParentGId = GetGId(guiGraphItem.ParentRowId);
-            item._ItemGId = GetGId(guiGraphItem.ItemId);
-            item._GroupGId = GetGId(guiGraphItem.GroupId);
-            item._DataGId = GetGId(guiGraphItem.DataId);
+            item._ParentGId = guiGraphItem.ParentRowId;    // Mezi typy GuiId (=Green) a GId (GraphLibrary) existuje implicitní konverze.
+            item._ItemGId = guiGraphItem.ItemId;           // Takže do zdejších properties se vytvoří new instance GUid, obsahující stejná data jako vstupní GuiId.
+            item._GroupGId = guiGraphItem.GroupId;         // Další důsledek je ten, že zdejší data lze změnit = přemístit na jiný řádek, například.
+            item._DataGId = guiGraphItem.DataId;
             item._Layer = row.GetValue<Int32>("layer");
             item._Level = row.GetValue<Int32>("level");
             item._Order = 0;
@@ -739,23 +739,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 default:
                     break;
             }
-        }
-        /// <summary>
-        /// Metoda z daného řádku načte hodnoty pro číslo třídy a číslo záznamu, a z nich vrátí <see cref="GId"/>.
-        /// Jako název (parametr name) dostává základ jména dvojice sloupců, které obsahují třídu a záznam.
-        /// Například pro dvojici sloupců "parent_rec_id" a "parent_class_id" se jako name předává "parent".
-        /// Pokud sloupce neexistují, dojde k chybě.
-        /// Pokud obsahují null, vrací se null.
-        /// </summary>
-        /// <param name="row"></param>
-        /// <param name="name"></param>
-        /// <returns></returns>
-        protected static GId GetGId(DataRow row, string name)
-        {
-            Int32? classId = row.GetValue<Int32?>(name + "_class_id");
-            Int32? recordId = row.GetValue<Int32?>(name + "_rec_id");
-            if (!(classId.HasValue && recordId.HasValue)) return null;
-            return new GId(classId.Value, recordId.Value);
         }
         /// <summary>
         /// privátní konstruktor. Instanci lze založit pomocí metody <see cref="CreateFrom(MainDataTable, GuiGraphItem)"/>.

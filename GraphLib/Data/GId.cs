@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Noris.LCS.Manufacturing.WorkScheduler;
 
 namespace Asol.Tools.WorkScheduler.Data
 {
@@ -38,6 +39,20 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Privátní uložený hashcode
         /// </summary>
         private int HashCode { get; set; }
+        #endregion
+        #region Implicitní konverze z/na GuiId
+        /// <summary>
+        /// Implicitní konverze z <see cref="GuiId"/> na <see cref="GId"/>.
+        /// Pokud je na vstupu <see cref="GuiId"/> = null, pak na výstupu je <see cref="GId"/> == null.
+        /// </summary>
+        /// <param name="guiId"></param>
+        public static implicit operator GId(GuiId guiId) { return (guiId != null ? new GId(guiId.ClassId, guiId.RecordId) : null); }
+        /// <summary>
+        /// Implicitní konverze z <see cref="GId"/> na <see cref="GuiId"/>.
+        /// Pokud je na vstupu <see cref="GId"/> = null, pak na výstupu je <see cref="GuiId"/> == null.
+        /// </summary>
+        /// <param name="gId"></param>
+        public static implicit operator GuiId(GId gId) { return (gId != null ? new GuiId(gId.ClassId, gId.RecordId) : null); }
         #endregion
         #region Overrides, equals, ==
         /// <summary>
