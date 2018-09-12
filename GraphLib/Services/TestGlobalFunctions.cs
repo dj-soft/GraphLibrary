@@ -5,7 +5,7 @@ using System.Text;
 using System.Drawing;
 using Asol.Tools.WorkScheduler.Application;
 using Asol.Tools.WorkScheduler.Components;
-using Noris.LCS.Manufacturing.WorkScheduler;
+using Noris.LCS.Base.WorkScheduler;
 
 namespace Asol.Tools.WorkScheduler.Services
 {

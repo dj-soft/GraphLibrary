@@ -7,7 +7,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Asol.Tools.WorkScheduler.Components;
 using Asol.Tools.WorkScheduler.Components.Grid;
 using Asol.Tools.WorkScheduler.Application;
-using Noris.LCS.Manufacturing.WorkScheduler;
+using Noris.LCS.Base.WorkScheduler;
 
 namespace Asol.Tools.WorkScheduler.Data
 {
