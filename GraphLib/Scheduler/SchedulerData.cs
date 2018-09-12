@@ -61,6 +61,62 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         private GuiData _GuiData;
         /// <summary>
+        /// Vytvoří a vrátí new WinForm control, obsahující kompletní strukturu pro zobrazení dodaných dat.
+        /// Control rovnou vloží do dodaného Formu.
+        /// Nastaví vlastnosti dodaného Formu podle dat v <see cref="GuiData.Properties"/>.
+        /// </summary>
+        /// <returns></returns>
+        public System.Windows.Forms.Control CreateControlToForm(Form mainForm)
+        {
+            this._ApplyPropertiesToForm(mainForm);         // Nastavíme vlastnosti formu podle GuiProperties
+            this._MainControl = new MainControl(this);     // Vytvoříme new control MainControl
+            this._FillMainControlFromGui();                // Do controlu MainControl vygenerujeme všechny jeho controly
+            mainForm.Controls.Add(this._MainControl);      // Control MainControl vložíme do formu
+            this._MainControl.Dock = DockStyle.Fill;       // Control MainControl roztáhneme na maximum
+            return this._MainControl;                      // hotovo!
+        }
+        /// <summary>
+        /// Do předaného formu vloží data z nastavení v <see cref="GuiProperties"/>
+        /// </summary>
+        /// <param name="mainForm"></param>
+        private void _ApplyPropertiesToForm(Form mainForm)
+        {
+            GuiProperties guiProperties = this._GuiData.Properties;
+            mainForm.FormBorderStyle = _ConvertBorderStyle(guiProperties.PluginFormBorder);
+            mainForm.WindowState = _ConvertWindowState(guiProperties.PluginFormIsMaximized);
+            mainForm.Text = guiProperties.PluginFormTitle;
+        }
+        /// <summary>
+        /// Vrátí WinForm styl borderu podle Plugin stylu.
+        /// Důvod? Nechceme vždycky referencovat WinFormy kvůli <see cref="System.Windows.Forms.FormBorderStyle"/>, stačí nám naklonovaný enum <see cref="PluginFormBorderStyle"/>.
+        /// </summary>
+        /// <param name="style"></param>
+        /// <returns></returns>
+        private static FormBorderStyle _ConvertBorderStyle(PluginFormBorderStyle style)
+        {
+            switch (style)
+            {
+                case PluginFormBorderStyle.None: return FormBorderStyle.None;
+                case PluginFormBorderStyle.FixedSingle: return FormBorderStyle.FixedSingle;
+                case PluginFormBorderStyle.Fixed3D: return FormBorderStyle.Fixed3D;
+                case PluginFormBorderStyle.FixedDialog: return FormBorderStyle.FixedDialog;
+                case PluginFormBorderStyle.Sizable: return FormBorderStyle.Sizable;
+                case PluginFormBorderStyle.FixedToolWindow: return FormBorderStyle.FixedToolWindow;
+                case PluginFormBorderStyle.SizableToolWindow: return FormBorderStyle.SizableToolWindow;
+            }
+            return FormBorderStyle.Sizable;
+        }
+        /// <summary>
+        /// Vrátí WinForm stav okna podle nastavení Pluginu.
+        /// Důvod? Nechceme vždycky referencovat WinFormy kvůli <see cref="System.Windows.Forms.FormWindowState"/>, stačí nám boolean IsMaximized.
+        /// </summary>
+        /// <param name="isMaximized"></param>
+        /// <returns></returns>
+        private static FormWindowState _ConvertWindowState(bool isMaximized)
+        {
+            return (isMaximized ? FormWindowState.Maximized : FormWindowState.Normal);
+        }
+        /// <summary>
         /// Vytvoří a vrátí new WinForm control, obsahující kompletní strukturu pro zobrazení dodaných dat
         /// </summary>
         /// <returns></returns>
@@ -79,7 +135,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this._FillMainControlPagesFromGui();
         }
         /// <summary>
-        /// Reference na hlavní GUI control, který je vytvořen v metodě <see cref="CreateControl"/>
+        /// Reference na hlavní GUI control, který je vytvořen v metodě <see cref="CreateControlToForm(Form)"/>
         /// </summary>
         protected MainControl _MainControl;
         #region Toolbar
@@ -395,16 +451,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
 
 
-        #region Načítání a analýza dodaných dat, verze 1: string
-
-
-        #region Data tabulek
-        /// <summary>
-        /// Seznam obsahující data jednotlivých tabulek
-        /// </summary>
-        protected List<MainDataTable> GraphTableList { get; private set; }
-        #endregion
-        #endregion
         #region Data obrázků
         /// <summary>
         /// Vrátí obrázek daného jména. Může dojít k chybě <see cref="System.ArgumentNullException"/> nebo <see cref="System.Collections.Generic.KeyNotFoundException"/>.
