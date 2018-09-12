@@ -147,8 +147,67 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Konstruktor
         /// </summary>
         public GuiProperties()
-        { }
-        public DateTime VisualRangeBegin
+        {
+            this.PluginFormTitle = "WorkScheduler plugin";
+            this.PluginFormBorder = PluginFormBorderStyle.SizableToolWindow;
+            this.PluginFormIsMaximized = true;
+            this.TotalTimeRange = TotalTimeRangeDefault;
+            this.InitialTimeRange = InitialTimeRangeDefault;
+        }
+        /// <summary>
+        /// Titulek okna pluginu.
+        /// Výchozí hodnota = "WorkScheduler plugin".
+        /// </summary>
+        public string PluginFormTitle { get; set; }
+        /// <summary>
+        /// Typ okrajů okna pluginu.
+        /// Výchozí hodnota = <see cref="PluginFormBorderStyle.SizableToolWindow"/>.
+        /// </summary>
+        public PluginFormBorderStyle PluginFormBorder { get; set; }
+        /// <summary>
+        /// Plugin bude při otevření maximalizován.
+        /// Výchozí hodnota = true
+        /// </summary>
+        public bool PluginFormIsMaximized { get; set; }
+        /// <summary>
+        /// Celkový dostupný časový interval. Časy mimo interval nebude možno zobrazit.
+        /// Výchozí hodnota: -1 rok až +5 roků
+        /// </summary>
+        public GuiTimeRange TotalTimeRange { get; set; }
+        /// <summary>
+        /// Výchozí časový interval, zobrazený po startu pluginu.
+        /// Výchozí hodnota: aktuální týden od pondělí do neděle, +- 8 hodin
+        /// </summary>
+        public GuiTimeRange InitialTimeRange { get; set; }
+
+        /// <summary>
+        /// Defaultní časový interval pro <see cref="TotalTimeRange"/>
+        /// </summary>
+        public static GuiTimeRange TotalTimeRangeDefault
+        {
+            get
+            {
+                DateTime now = DateTime.Now;
+                DateTime begin = new DateTime(now.Year - 1, 1, 1);
+                DateTime end = begin.AddYears(6);
+                return new GuiTimeRange(begin, end);
+            }
+        }
+        /// <summary>
+        /// Defaultní časový interval pro <see cref="InitialTimeRange"/>
+        /// </summary>
+        public static GuiTimeRange InitialTimeRangeDefault
+        {
+            get
+            {
+                DateTime now = DateTime.Now;
+                int dow = (now.DayOfWeek == DayOfWeek.Sunday ? 6 : ((int)now.DayOfWeek) - 1);
+                DateTime begin = new DateTime(now.Year, now.Month, now.Day).AddDays(-dow);
+                DateTime end = begin.AddDays(7d);
+                double add = 6d;
+                return new GuiTimeRange(begin.AddHours(-add), end.AddHours(add));
+            }
+        }
     }
     #endregion
     #region GuiPages : kompletní sada stránek (GuiPage) s daty
@@ -1379,6 +1438,10 @@ namespace Noris.LCS.Base.WorkScheduler
     public class GuiRange<T> where T : IComparable
     {
         /// <summary>
+        /// Bezparametrický konstruktor, pro XML serializaci (Persistor)
+        /// </summary>
+        protected GuiRange() { }
+        /// <summary>
         /// Konstruktor
         /// </summary>
         /// <param name="begin"></param>
@@ -1396,6 +1459,50 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Konec intervalu, běžně se počítá "mimo"
         /// </summary>
         public T End { get; protected set; }
+        /// <summary>
+        /// Do <see cref="Begin"/> a <see cref="End"/> vloží defaultní hodnotu generického typu T.
+        /// </summary>
+        protected void Clear()
+        {
+            this.Begin = default(T);
+            this.End = default(T);
+        }
+        /// <summary>
+        /// Metoda rozdělí dodaný text v místě delimiteru, a do out parametrů uloží text před delimiterem (begin) a za ním (end).
+        /// Pokud by text obsahoval více delimiterů, pak další pozice (za druhým delimiterem) budou zahozeny.
+        /// Vrací true = text byl v pořádku a je rozdělen, nebo false = text nebyl správně.
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="begin"></param>
+        /// <param name="end"></param>
+        /// <returns></returns>
+        protected bool TrySplitPair(string text, out string begin, out string end)
+        {
+            begin = null;
+            end = null;
+            if (String.IsNullOrEmpty(text)) return false;
+            if (!text.Contains(DELIMITER)) return false;
+            string[] items = text.Split(new string[] { DELIMITER }, StringSplitOptions.None);
+            begin = items[0];
+            end = (items.Length > 1 ? items[1] : "");
+            return true;
+        }
+        /// <summary>
+        /// Vrátí korektně spojený text begin + DELIMITER + end.
+        /// Pokud je na vstupu begin nebo end == null, vrací null.
+        /// </summary>
+        /// <param name="begin"></param>
+        /// <param name="end"></param>
+        /// <returns></returns>
+        protected string JoinPair(string begin, string end)
+        {
+            if (begin == null || end == null) return null;
+            return begin + DELIMITER + end;
+        }
+        /// <summary>
+        /// Oddělovač hodnot Begin a End v serializované formě
+        /// </summary>
+        protected const string DELIMITER = "÷";
     }
     /// <summary>
     /// GuiTimeRange : rozsah { Begin ÷ End } dvou hodnot typu DateTime
@@ -1403,15 +1510,31 @@ namespace Noris.LCS.Base.WorkScheduler
     public class GuiTimeRange : GuiRange<DateTime>, IXmlSerializer
     {
         /// <summary>
+        /// Bezparametrický konstruktor, pro XML serializaci (Persistor)
+        /// </summary>
+        protected GuiTimeRange() : base() { }
+        /// <summary>
         /// Konstruktor
         /// </summary>
         /// <param name="begin"></param>
         /// <param name="end"></param>
         public GuiTimeRange(DateTime begin, DateTime end) : base(begin, end) { }
+        /// <summary>
+        /// Explicitní serializace
+        /// </summary>
         string IXmlSerializer.XmlSerialData
         {
-            get { }
-            set { }
+            get { return JoinPair(Convertor.DateTimeToString(this.Begin), Convertor.DateTimeToString(this.End)); }
+            set
+            {
+                this.Clear();
+                string begin, end;
+                if (TrySplitPair(value, out begin, out end))
+                {
+                    this.Begin = (DateTime)Convertor.StringToDateTime(begin);
+                    this.End = (DateTime)Convertor.StringToDateTime(end);
+                }
+            }
         }
     }
     #endregion
@@ -1697,6 +1820,48 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         OnBackgroundLogarithmic
     }
+
+    /// <summary>
+    /// Okraje formuláře
+    /// </summary>
+    public enum PluginFormBorderStyle
+    {
+        /// <summary>
+        /// No border
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// A fixed, single-line border.
+        /// </summary>
+        FixedSingle = 1,
+        /// <summary>
+        /// A fixed, three-dimensional border.
+        /// </summary>
+        Fixed3D = 2,
+        /// <summary>
+        /// A thick, fixed dialog-style border.
+        /// </summary>
+        FixedDialog = 3,
+        /// <summary>
+        /// A resizable border.
+        /// </summary>
+        Sizable = 4,
+        /// <summary>
+        /// A tool window border that is not resizable. A tool window does not appear in
+        /// the taskbar or in the window that appears when the user presses ALT+TAB. Although
+        /// forms that specify System.Windows.Forms.FormBorderStyle.FixedToolWindow typically
+        /// are not shown in the taskbar, you must also ensure that the System.Windows.Forms.Form.ShowInTaskbar
+        /// property is set to false, since its default value is true.
+        /// </summary>
+        FixedToolWindow = 5,
+        /// <summary>
+        /// A resizable tool window border. A tool window does not appear in the taskbar
+        /// or in the window that appears when the user presses ALT+TAB.
+        /// </summary>
+        SizableToolWindow = 6
+    }
+
+
     #endregion
     #region class WorkSchedulerSupport : Třída obsahující konstanty a další podporu WorkScheduleru - identický kód je v Helios Green i v GraphLibrary !!!
     /// <summary>

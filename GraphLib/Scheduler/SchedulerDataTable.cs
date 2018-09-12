@@ -93,34 +93,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             get { return ((this.TableRow != null && this.DataGraphProperties != null) ? this.DataGraphProperties.GraphPosition : DataGraphPositionType.None); }
         }
         /// <summary>
-        /// Časový interval pro výchozí zobrazení grafu
-        /// </summary>
-        protected TimeRange GraphInitialTimeRange
-        {
-            get
-            {
-                TimeRange initialTimeRange = this.MainData.GuiData.InitialTimeRange;
-                if (initialTimeRange == null)
-                    initialTimeRange = this.GraphInitialTimeRangeDefault;
-                return initialTimeRange;
-            }
-        }
-        /// <summary>
-        /// Defaultní časový interval pro výchozí zobrazení grafu
-        /// </summary>
-        protected TimeRange GraphInitialTimeRangeDefault
-        {
-            get
-            {
-                DateTime now = DateTime.Now;
-                int dow = (now.DayOfWeek == DayOfWeek.Sunday ? 6 : ((int)now.DayOfWeek) - 1);
-                DateTime begin = new DateTime(now.Year, now.Month, now.Day).AddDays(-dow);
-                DateTime end = begin.AddDays(7d);
-                double add = 6d;
-                return new TimeRange(begin.AddHours(-add), end.AddHours(add));
-            }
-        }
-        /// <summary>
         /// Vlastnosti tabulky, načtené z DataDeclaration
         /// </summary>
         public DataGraphProperties DataGraphProperties { get; private set; }
@@ -222,7 +194,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 graphColumn.GraphParameters.TimeAxisMode = TimeGraphTimeAxisMode.Standard;
                 graphColumn.GraphParameters.TimeAxisVisibleTickLevel = AxisTickType.StdTick;
                 graphColumn.GraphParameters.InitialResizeMode = AxisResizeContentMode.ChangeScale;
-                graphColumn.GraphParameters.InitialValue = this.GraphInitialTimeRange;
+                graphColumn.GraphParameters.InitialValue = this.MainData.GuiData.Properties.InitialTimeRange;
                 graphColumn.GraphParameters.InteractiveChangeMode = AxisInteractiveChangeMode.Shift;
 
                 this.TableRow.Columns.Add(graphColumn);
@@ -413,17 +385,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         #endregion
 
 
-
-
-        /// <summary>
-        /// Verze dat, do které patří tato tabulka.
-        /// </summary>
-        public Int32? DataId { get { return (this.DataDeclaration != null ? (Int32?)this.DataDeclaration.DataId : (Int32?)null); } }
-        /// <summary>
-        /// Název této tabulky
-        /// </summary>
-        public string TableName { get; private set; }
-       
+        
     
         /// <summary>
         /// Obsluha události, kdy tabulka sama (řádek nebo statický vztah) chce otevírat záznam
@@ -435,18 +397,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.RunOpenRecordForm(e.Value);
         }
         
-        
-        /// <summary>
-        /// Vrátí true, pokud this tabulka odpovídá dané verzi dat a názvu tabulky.
-        /// </summary>
-        /// <param name="dataId"></param>
-        /// <param name="tableName"></param>
-        /// <returns></returns>
-        internal bool EqualsId(int? dataId, string tableName)
-        {
-            if (!String.Equals(this.TableName, tableName, StringComparison.InvariantCulture)) return false;
-            return (this.DataId == dataId);
-        }
         
         
         
@@ -659,8 +609,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             DataGraphItem item = new DataGraphItem(graphTable);
             // Struktura řádku: parent_rec_id int; parent_class_id int; item_rec_id int; item_class_id int; group_rec_id int; group_class_id int; data_rec_id int; data_class_id int; layer int; level int; is_user_fixed int; time_begin datetime; time_end datetime; height decimal; back_color string; join_back_color string; data string
             item._ParentGId = guiGraphItem.ParentRowId;    // Mezi typy GuiId (=Green) a GId (GraphLibrary) existuje implicitní konverze.
-            item._ItemGId = guiGraphItem.ItemId;           // Takže do zdejších properties se vytvoří new instance GUid, obsahující stejná data jako vstupní GuiId.
-            item._GroupGId = guiGraphItem.GroupId;         // Další důsledek je ten, že zdejší data lze změnit = přemístit na jiný řádek, například.
+            item._ItemGId = guiGraphItem.ItemId;           //  Takže do zdejších properties se vytvoří new instance GUid, obsahující stejná data jako vstupní GuiId.
+            item._GroupGId = guiGraphItem.GroupId;         //  Další důsledek je ten, že zdejší data lze změnit = přemístit na jiný řádek, například.
             item._DataGId = guiGraphItem.DataId;
             item._Layer = row.GetValue<Int32>("layer");
             item._Level = row.GetValue<Int32>("level");

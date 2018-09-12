@@ -1296,13 +1296,11 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Výchozí zobrazovaná hodnota
         /// </summary>
-        public TimeRange InitialValue { get { return this._InitialValue; } set { this._InitialValue = value; } }
-        private TimeRange _InitialValue;
+        public TimeRange InitialValue { get { return this._InitialValue; } set { this._InitialValue = value; } } private TimeRange _InitialValue;
         /// <summary>
         /// Možnosti uživatele změnit zobrazený rozsah anebo měřítko
         /// </summary>
-        public virtual AxisInteractiveChangeMode? InteractiveChangeMode { get { return this._InteractiveChangeMode; } set { this._InteractiveChangeMode = value; } }
-        protected AxisInteractiveChangeMode? _InteractiveChangeMode;
+        public virtual AxisInteractiveChangeMode? InteractiveChangeMode { get { return this._InteractiveChangeMode; } set { this._InteractiveChangeMode = value; } } private AxisInteractiveChangeMode? _InteractiveChangeMode;
 
         /// <summary>
         /// Hladina ticků, které se budou v grafu zobrazovat.

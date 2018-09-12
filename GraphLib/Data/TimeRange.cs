@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Noris.LCS.Base.WorkScheduler;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -103,26 +104,64 @@ namespace Asol.Tools.WorkScheduler.Data
         protected static TimeRange Helper { get { if (((object)_Helper) == null) _Helper = new TimeRange(); return _Helper; } } private static TimeRange _Helper;
         #endregion
         #region Operators
+        /// <summary>
+        /// Násobení dvou intervalů = výsledkem je průnik (=společný čas)
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public static TimeRange operator *(TimeRange a, TimeRange b)
         {
             DateTime? begin, end;
             Helper.PrepareIntersect(a, b, out begin, out end);
             return new TimeRange(begin, end);
         }
+        /// <summary>
+        /// Sčítání dvou intervalů = výsledkem je souhrn (=od menšího Begin po větší End)
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public static TimeRange operator +(TimeRange a, TimeRange b)
         {
             DateTime? begin, end;
             Helper.PrepareUnion(a, b, out begin, out end);
             return new TimeRange(begin, end);
         }
+        /// <summary>
+        /// Porovnání dvou intervalů
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public static bool operator ==(TimeRange a, TimeRange b)
         {
             return Helper.IsEqual(a, b);
         }
+        /// <summary>
+        /// Porovnání NOT dvou intervalů
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public static bool operator !=(TimeRange a, TimeRange b)
         {
             return !Helper.IsEqual(a, b);
         }
+        #endregion
+        #region Implicitní konverze z/na GuiId
+        /// <summary>
+        /// Implicitní konverze z <see cref="GuiTimeRange"/> na <see cref="TimeRange"/>.
+        /// Pokud je na vstupu <see cref="GuiTimeRange"/> = null, pak na výstupu je <see cref="GId"/> == null.
+        /// </summary>
+        /// <param name="guiTimeRange"></param>
+        public static implicit operator TimeRange(GuiTimeRange guiTimeRange) { return (guiTimeRange != null ? new TimeRange(guiTimeRange.Begin, guiTimeRange.End) : null); }
+        /// <summary>
+        /// Implicitní konverze z <see cref="TimeRange"/> na <see cref="GuiTimeRange"/>.
+        /// Pokud je na vstupu <see cref="TimeRange"/> = null, pak na výstupu je <see cref="GuiId"/> == null.
+        /// </summary>
+        /// <param name="timeRange"></param>
+        public static implicit operator GuiTimeRange(TimeRange timeRange) { return (timeRange != null && timeRange.IsFilled ? new GuiTimeRange(timeRange.Begin.Value, timeRange.End.Value) : null); }
         #endregion
         #region Public methods - Zoom
         /// <summary>
