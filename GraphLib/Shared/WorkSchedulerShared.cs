@@ -733,14 +733,9 @@ namespace Noris.LCS.Base.WorkScheduler
         public GuiId DataId { get; set; }
         /// <summary>
         /// Datum a čas počátku tohoto prvku.
-        /// Z databáze se načítá ze sloupce: "begin", je POVINNÝ.
+        /// Z databáze se načítá ze sloupce: "begin" a "end", je POVINNÝ.
         /// </summary>
-        public DateTime Begin { get; set; }
-        /// <summary>
-        /// Datum a čas konce tohoto prvku.
-        /// Z databáze se načítá ze sloupce: "end", je POVINNÝ.
-        /// </summary>
-        public DateTime End { get; set; }
+        public GuiTimeRange Time { get; set; }
         /// <summary>
         /// Layer: Vizuální vrstva. Prvky z různých vrstev jsou kresleny "přes sebe" = mohou se překrývat.
         /// Nižší hodnota je kreslena dříve.
@@ -785,7 +780,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <summary>
         /// Poměrná hodnota "nějakého" splnění v rámci prvku, na jeho počátku.
         /// Běžně se vykresluje jako poměrná část prvku, měřeno odspodu, která symbolizuje míru "naplnění" daného úseku.
-        /// Část Ratio má tvar lichoběžníku, a spojuje body Begin = { <see cref="Begin"/>, <see cref="RatioBegin"/> } a { <see cref="End"/>, <see cref="RatioEnd"/> }.
+        /// Část Ratio má tvar lichoběžníku, a spojuje body Begin = { <see cref="Time"/>.Begin, <see cref="RatioBegin"/> } a { <see cref="Time"/>.End, <see cref="RatioEnd"/> }.
         /// <para/>
         /// Pro zjednodušení zadávání: pokud je naplněno <see cref="RatioBegin"/>, ale v <see cref="RatioEnd"/> je null, 
         /// pak vykreslovací algoritmus předpokládá hodnotu End stejnou jako Begin. To znamená, že pro "obdélníkové" ratio stačí naplnit jen <see cref="RatioBegin"/>.
@@ -797,7 +792,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <summary>
         /// Poměrná hodnota "nějakého" splnění v rámci prvku, na jeho konci.
         /// Běžně se vykresluje jako poměrná část prvku, měřeno odspodu, která symbolizuje míru "naplnění" daného úseku.
-        /// Část Ratio má tvar lichoběžníku, a spojuje body Begin = { <see cref="Begin"/>, <see cref="RatioBegin"/> } a { <see cref="End"/>, <see cref="RatioEnd"/> }.
+        /// Část Ratio má tvar lichoběžníku, a spojuje body Begin = { <see cref="Time"/>.Begin, <see cref="RatioBegin"/> } a { <see cref="Time"/>.End, <see cref="RatioEnd"/> }.
         /// <para/>
         /// Pro zjednodušení zadávání: pokud je naplněno <see cref="RatioBegin"/>, ale v <see cref="RatioEnd"/> je null, 
         /// pak vykreslovací algoritmus předpokládá hodnotu End stejnou jako Begin. To znamená, že pro "obdélníkové" ratio stačí naplnit jen <see cref="RatioBegin"/>.
@@ -819,7 +814,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Barva linky, kreslená v úrovni Ratio.
         /// Použije se tehdy, když hodnota <see cref="RatioBegin"/> a/nebo <see cref="RatioEnd"/> má zadanou hodnotu v rozsahu 0 (včetně) a více.
         /// Touto barvou je vykreslena přímá linie, která symbolizuje míru "naplnění" daného úseku, 
-        /// a spojuje body Begin = { <see cref="Begin"/>, <see cref="RatioBegin"/> } a { <see cref="End"/>, <see cref="RatioEnd"/> }.
+        /// a spojuje body Begin = { <see cref="Time"/>.Begin, <see cref="RatioBegin"/> } a { <see cref="Time"/>.End, <see cref="RatioEnd"/> }.
         /// Z databáze se načítá ze sloupce: "ratio_line_color", je NEPOVINNÝ.
         /// </summary>
         public Color? RatioLineColor { get; set; }
@@ -827,7 +822,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Šířka linky, kreslená v úrovni Ratio.
         /// Použije se tehdy, když hodnota <see cref="RatioBegin"/> a/nebo <see cref="RatioEnd"/> má zadanou hodnotu v rozsahu 0 (včetně) a více.
         /// Čárou této šířky je vykreslena přímá linie, která symbolizuje míru "naplnění" daného úseku, 
-        /// a spojuje body Begin = { <see cref="Begin"/>, <see cref="RatioBegin"/> } a { <see cref="End"/>, <see cref="RatioEnd"/> }.
+        /// a spojuje body Begin = { <see cref="Time"/>.Begin, <see cref="RatioBegin"/> } a { <see cref="Time"/>.End, <see cref="RatioEnd"/> }.
         /// Z databáze se načítá ze sloupce: "ratio_line_width", je NEPOVINNÝ.
         /// </summary>
         public int? RatioLineWidth { get; set; }

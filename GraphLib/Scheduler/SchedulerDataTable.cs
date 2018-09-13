@@ -598,6 +598,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         #region Konstrukce, načítání dat, proměné
         /// <summary>
         /// Metoda vytvoří a vrátí instanci položky grafu z dodaného řádku s daty.
+        /// Neexistuje jiná cesta jak vytvořit <see cref="DataGraphItem"/>, než na základě dat v <see cref="GuiGraphItem"/>.
         /// </summary>
         /// <param name="graphTable"></param>
         /// <param name="guiGraphItem"></param>
@@ -605,97 +606,30 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         public static DataGraphItem CreateFrom(MainDataTable graphTable, GuiGraphItem guiGraphItem)
         {
             if (guiGraphItem == null) return null;
+            IMainDataTableInternal iGraphTable = graphTable as IMainDataTableInternal;
 
-            DataGraphItem item = new DataGraphItem(graphTable);
+            DataGraphItem item = new DataGraphItem(graphTable, guiGraphItem);
             // Struktura řádku: parent_rec_id int; parent_class_id int; item_rec_id int; item_class_id int; group_rec_id int; group_class_id int; data_rec_id int; data_class_id int; layer int; level int; is_user_fixed int; time_begin datetime; time_end datetime; height decimal; back_color string; join_back_color string; data string
-            item._ParentGId = guiGraphItem.ParentRowId;    // Mezi typy GuiId (=Green) a GId (GraphLibrary) existuje implicitní konverze.
-            item._ItemGId = guiGraphItem.ItemId;           //  Takže do zdejších properties se vytvoří new instance GUid, obsahující stejná data jako vstupní GuiId.
+            item._ItemGId = guiGraphItem.ItemId;           // Mezi typy GuiId (=Green) a GId (GraphLibrary) existuje implicitní konverze.
+            item._ParentGId = guiGraphItem.ParentRowId;    //  Takže do zdejších properties se vytvoří new instance GUid, obsahující stejná data jako vstupní GuiId.
             item._GroupGId = guiGraphItem.GroupId;         //  Další důsledek je ten, že zdejší data lze změnit = přemístit na jiný řádek, například.
             item._DataGId = guiGraphItem.DataId;
-            item._Layer = row.GetValue<Int32>("layer");
-            item._Level = row.GetValue<Int32>("level");
-            item._Order = 0;
-            item._Height = row.GetValue<float>("height");
-            item._Time = new TimeRange(row.GetValue<DateTime?>("time_begin"), row.GetValue<DateTime?>("time_end"));
-            item._BackColor = MainData.GetColor(row.GetValue<string>("back_color"));
-            item._BorderColor = null;
-            item._BackStyle = null;
-            item._LinkBackColor = MainData.GetColor(row.GetValue<string>("join_back_color"));
-            item._LoadData(row.GetValue<string>("data"));
-
-            // ID pro grafickou vrstvu:
-            IMainDataTableInternal iGraphTable = graphTable as IMainDataTableInternal;
+            item._Time = guiGraphItem.Time;                // Existuje implicitní konverze mezi typy TimeRange a GuiTimeRange.
+            // ID pro grafickou vrstvu: vygenerujeme Int32 klíč pro daný GId, za pomoci indexu uloženého v hlavní tabulce (iGraphTable):
             item._ItemId = iGraphTable.GetId(item.ItemGId);
             item._GroupId = iGraphTable.GetId(item.GroupGId);
+
+            // Ostatní property jsou načítané přímo z item._GuiGraphItem.
 
             return item;
         }
         /// <summary>
-        /// Metoda rozebere string "data" na KeyValues a z nich naplní další nepovinné prvky.
-        /// </summary>
-        /// <param name="data"></param>
-        protected void _LoadData(string data)
-        {
-            this._LoadDataDefault();
-            if (String.IsNullOrEmpty(data)) return;
-
-            // data mají formát: "key: value; key:value; key: value", 
-            // například: "EditMode: ResizeTime + ResizeHeight + MoveToAnotherTime; BackStyle: Percent50; BorderColor: Black"
-            var items = data.ToKeyValues(";", ":", true, true);
-            foreach (var item in items)
-            {
-                string key = item.Key; // .ToLower();
-                switch (key)
-                {
-                    case WorkSchedulerSupport.DATA_GRAPHITEM_EDITMODE:
-                    case "editmode":
-                    case "edit_mode":
-                        this._BehaviorMode = Scheduler.MainData.GetBehaviorMode(item.Value);
-                        break;
-                    case WorkSchedulerSupport.DATA_GRAPHITEM_BACKSTYLE:
-                    case "backstyle":
-                    case "back_style":
-                        // this._BackStyle = Scheduler.MainData.GetHatchStyle(item.Value);
-                        break;
-                    case WorkSchedulerSupport.DATA_GRAPHITEM_BORDERCOLOR:
-                    case "bordercolor":
-                    case "border_color":
-                        this._BorderColor = Scheduler.MainData.GetColor(item.Value);
-                        break;
-                        // ...a další klíče a hodnoty mohou následovat:
-                }
-            }
-        }
-        /// <summary>
-        /// Naplní defaultní hodnoty podle čísla třídy prvku
-        /// </summary>
-        protected void _LoadDataDefault()
-        {
-            int classNumber = (this.ItemGId.ClassId >= 0 ? this.ItemGId.ClassId : -this.ItemGId.ClassId);
-            switch (classNumber)        // Číslo třídy prvku grafu
-            {
-                case GreenClasses.PlanUnitCCl:             // Stav kapacit
-                    this._BackStyle = System.Drawing.Drawing2D.HatchStyle.Percent50;
-                    this._BehaviorMode = GraphItemBehaviorMode.None | GraphItemBehaviorMode.ShowToolTipFadeIn;
-                    break;
-                case GreenClasses.PlanUnitCUnit:           // Jednotka práce
-                    this._BackStyle = null;
-                    this._BehaviorMode = GraphItemBehaviorMode.DefaultWorkTime | GraphItemBehaviorMode.DefaultText;
-                    break;
-                case GreenClasses.ProductOrderOperation:   // Operace VP
-                    this._BackStyle = null;
-                    this._BehaviorMode = GraphItemBehaviorMode.None | GraphItemBehaviorMode.ShowToolTipFadeIn;
-                    break;
-                default:
-                    break;
-            }
-        }
-        /// <summary>
         /// privátní konstruktor. Instanci lze založit pomocí metody <see cref="CreateFrom(MainDataTable, GuiGraphItem)"/>.
         /// </summary>
-        private DataGraphItem(MainDataTable graphTable)
+        private DataGraphItem(MainDataTable graphTable, GuiGraphItem guiGraphItem)
         {
             this._GraphTable = graphTable;
+            this._GuiGraphItem = guiGraphItem;
         }
         /// <summary>
         /// Vizualizace
@@ -703,7 +637,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <returns></returns>
         public override string ToString()
         {
-            return "Item: " + this._ItemGId.ToString() + "; Time: " + this._Time.ToString() + "; Height: " + this._Height.ToString();
+            return "Item: " + this._ItemGId.ToString() + "; Time: " + this._Time.ToString() + "; Height: " + this._GuiGraphItem.Height.ToString();
         }
         /// <summary>
         /// Vlastník = datová základna, instance třídy <see cref="Scheduler.MainData"/>
@@ -713,6 +647,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Vlastník prvku = celá tabulka
         /// </summary>
         private MainDataTable _GraphTable;
+        /// <summary>
+        /// Datový podklad tohoto prvku = data načtená ze systému a předaná v instanci <see cref="GuiGraphItem"/>
+        /// </summary>
+        private GuiGraphItem _GuiGraphItem;
+        /// <summary>
+        /// Vlastník prvku = graf
+        /// </summary>
         private ITimeInteractiveGraph _OwnerGraph;
         private GId _ParentGId;
         private GId _ItemGId;
@@ -720,16 +661,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private GId _DataGId;
         private int _ItemId;
         private int _GroupId;
-        private int _Layer;
-        private int _Level;
-        private int _Order;
-        private float _Height;
-        private GraphItemBehaviorMode _BehaviorMode;
         private TimeRange _Time;
-        private Color? _BackColor;
-        private System.Drawing.Drawing2D.HatchStyle? _BackStyle;
-        private Color? _BorderColor;
-        private Color? _LinkBackColor;
+        /// <summary>
+        /// Vizuální control
+        /// </summary>
         private GTimeGraphItem _GControl;
         #endregion
         #region Aplikační data - identifikátory atd
@@ -738,15 +673,19 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         public MainDataTable GraphTable { get { return this._GraphTable; } }
         /// <summary>
-        /// Veřejný identifikátor MAJITELE PRVKU (obsahuje číslo třídy a číslo záznamu).
-        /// Může jít o Kapacitní plánovací jednotku.
+        /// Datový podklad tohoto prvku = data načtená ze systému a předaná v instanci <see cref="GuiGraphItem"/>
         /// </summary>
-        public GId ParentGId { get { return this._ParentGId; } }
+        public GuiGraphItem GuiGraphItem { get { return this._GuiGraphItem; } }
         /// <summary>
         /// Veřejný identifikátor GRAFICKÉHO PRVKU (obsahuje číslo třídy a číslo záznamu).
         /// Může jít o záznam třídy Stav kapacit, nebo Pracovní jednotka.
         /// </summary>
         public GId ItemGId { get { return this._ItemGId; } }
+        /// <summary>
+        /// Veřejný identifikátor MAJITELE PRVKU (obsahuje číslo třídy a číslo záznamu).
+        /// Může jít o Kapacitní plánovací jednotku.
+        /// </summary>
+        public GId ParentGId { get { return this._ParentGId; } }
         /// <summary>
         /// Veřejný identifikátor SKUPINY PRVKU (obsahuje číslo třídy a číslo záznamu).
         /// Může jít o záznam třídy Paralelní průchod.
@@ -758,47 +697,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         public GId DataGId { get { return this._DataGId; } }
         /// <summary>
-        /// Číslo grafické vrstvy (Z-order).
-        /// </summary>
-        public int Layer { get { return this._Layer; } }
-        /// <summary>
-        /// Číslo grafické hladiny (Y-group).
-        /// </summary>
-        public int Level { get { return this._Level; } }
-        /// <summary>
-        /// Číslo pořadí (sub-Y-group)
-        /// </summary>
-        public int Order { get { return this._Order; } }
-        /// <summary>
-        /// Logická výška grafického prvku, 1=normální jednotková výška
-        /// </summary>
-        public float Height { get { return this._Height; } }
-        /// <summary>
-        /// Režim editovatelnosti položky grafu
-        /// </summary>
-        public GraphItemBehaviorMode EditMode { get { return this._BehaviorMode; } }
-        /// <summary>
         /// Časový interval tohoto prvku
         /// </summary>
         public TimeRange Time { get { return this._Time; } }
-        /// <summary>
-        /// Barva pozadí prvku
-        /// </summary>
-        public Color? BackColor { get { return this._BackColor; } }
-        /// <summary>
-        /// Styl vzorku kresleného v pozadí.
-        /// null = Solid.
-        /// </summary>
-        public System.Drawing.Drawing2D.HatchStyle? BackStyle { get { return this._BackStyle; } }
-        /// <summary>
-        /// Barva okrajů prvku
-        /// </summary>
-        public Color? BorderColor { get { return this._BorderColor; } }
-        /// <summary>
-        /// Barva spojovací linky prvků
-        /// </summary>
-        public Color? LinkBackColor { get { return this._LinkBackColor; } }
-
         #endregion
         #region Podpora pro kreslení a interaktivitu
         /// <summary>
@@ -807,7 +708,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="e">Standardní data pro kreslení</param>
         /// <param name="boundsAbsolute">Absolutní souřadnice tohoto prvku</param>
-        /// <param name="drawMode">Režim kreslení (má význam pro akce Drag & Drop)</param>
+        /// <param name="drawMode">Režim kreslení (má význam pro akce Drag and Drop)</param>
         protected void Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
         {
             this._GControl.DrawItem(e, boundsAbsolute, drawMode);
@@ -817,16 +718,20 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         ITimeInteractiveGraph ITimeGraphItem.OwnerGraph { get { return this._OwnerGraph; } set { this._OwnerGraph = value; } }
         int ITimeGraphItem.ItemId { get { return this._ItemId; } }
         int ITimeGraphItem.GroupId { get { return this._GroupId; } }
-        int ITimeGraphItem.Layer { get { return this._Layer; } }
-        int ITimeGraphItem.Level { get { return this._Level; } }
-        int ITimeGraphItem.Order { get { return this._Order; } }
-        float ITimeGraphItem.Height { get { return this._Height; } }
-        GraphItemBehaviorMode ITimeGraphItem.BehaviorMode { get { return this._BehaviorMode; } }
-        TimeRange ITimeGraphItem.Time { get { return this._Time; } }
-        Color? ITimeGraphItem.BackColor { get { return this._BackColor; } }
-        System.Drawing.Drawing2D.HatchStyle? ITimeGraphItem.BackStyle { get { return this._BackStyle; } }
-        Color? ITimeGraphItem.BorderColor { get { return this._BorderColor; } }
-        Color? ITimeGraphItem.LinkBackColor { get { return this._LinkBackColor; } }
+        TimeRange ITimeGraphItem.Time { get { return this._Time; } set { this._Time = value; } }
+        int ITimeGraphItem.Layer { get { return this._GuiGraphItem.Layer; } }
+        int ITimeGraphItem.Level { get { return this._GuiGraphItem.Level; } }
+        int ITimeGraphItem.Order { get { return this._GuiGraphItem.Order; } }
+        float ITimeGraphItem.Height { get { return this._GuiGraphItem.Height; } }
+        Color? ITimeGraphItem.BackColor { get { return this._GuiGraphItem.BackColor; } }
+        Color? ITimeGraphItem.LineColor { get { return this._GuiGraphItem.LineColor; } }
+        System.Drawing.Drawing2D.HatchStyle? ITimeGraphItem.BackStyle { get { return this._GuiGraphItem.BackStyle; } }
+        float? ITimeGraphItem.RatioBegin { get { return this._GuiGraphItem.RatioBegin; } }
+        float? ITimeGraphItem.RatioEnd { get { return this._GuiGraphItem.RatioEnd; } }
+        Color? ITimeGraphItem.RatioBackColor { get { return this._GuiGraphItem.RatioBackColor; } }
+        Color? ITimeGraphItem.RatioLineColor { get { return this._GuiGraphItem.RatioLineColor; } }
+        int? ITimeGraphItem.RatioLineWidth { get { return this._GuiGraphItem.RatioLineWidth; } }
+        GraphItemBehaviorMode ITimeGraphItem.BehaviorMode { get { return this._GuiGraphItem.BehaviorMode; } }
         GTimeGraphItem ITimeGraphItem.GControl { get { return this._GControl; } set { this._GControl = value; } }
         void ITimeGraphItem.Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode) { this.Draw(e, boundsAbsolute, drawMode); }
         #endregion

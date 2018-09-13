@@ -1485,6 +1485,10 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         Int32 GroupId { get; }
         /// <summary>
+        /// Časový interval tohoto prvku
+        /// </summary>
+        TimeRange Time { get; set; }
+        /// <summary>
         /// Layer: Vizuální vrstva. Prvky z různých vrstev jsou kresleny "přes sebe" = mohou se překrývat.
         /// Nižší hodnota je kreslena dříve.
         /// Například: záporná hodnota Layer reprezentuje "podklad" který se needituje.
@@ -1502,41 +1506,80 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         Int32 Order { get; }
         /// <summary>
-        /// Časový interval tohoto prvku
-        /// </summary>
-        TimeRange Time { get; }
-        /// <summary>
         /// Relativní výška tohoto prvku. Standardní hodnota = 1.0F. Fyzická výška (v pixelech) jednoho prvku je dána součinem 
         /// <see cref="Height"/> * <see cref="GTimeGraph.GraphParameters"/>: <see cref="TimeGraphProperties.OneLineHeight"/>
         /// Prvky s výškou 0 a menší nebudou vykresleny.
         /// </summary>
         float Height { get; }
         /// <summary>
-        /// Režim chování položky grafu (editovatelnost, texty, atd)
-        /// </summary>
-        GraphItemBehaviorMode BehaviorMode { get; }
-        /// <summary>
         /// Barva pozadí prvku.
+        /// Pokud bude null, pak prvek nebude mít vyplněný svůj prostor (obdélník). Může mít vykreslené okraje (barva <see cref="LineColor"/>).
+        /// Anebo může mít kreslené Ratio (viz property <see cref="RatioBegin"/>, <see cref="RatioEnd"/>, 
+        /// <see cref="RatioBackColor"/>, <see cref="RatioLineColor"/>, <see cref="RatioLineWidth"/>).
         /// </summary>
         Color? BackColor { get; }
+        /// <summary>
+        /// Barva linek ohraničení prvku.
+        /// Pokud je null, pak prvek nemá ohraničení pomocí linky (Border).
+        /// </summary>
+        Color? LineColor { get; }
         /// <summary>
         /// Styl vzorku kresleného v pozadí.
         /// null = Solid.
         /// </summary>
         System.Drawing.Drawing2D.HatchStyle? BackStyle { get; }
         /// <summary>
-        /// Barva spojovací linky mezi prvky jedné skupiny.
-        /// Default = null = kreslí se barvou <see cref="BackColor"/>, která je morfována na 50% do barvy DimGray a zprůhledněna na 50%.
+        /// Poměrná hodnota "nějakého" splnění v rámci prvku, na jeho počátku.
+        /// Běžně se vykresluje jako poměrná část prvku, měřeno odspodu, která symbolizuje míru "naplnění" daného úseku.
+        /// Část Ratio má tvar lichoběžníku, a spojuje body Begin = { <see cref="Time"/>.Begin, <see cref="RatioBegin"/> } a { <see cref="Time"/>.End, <see cref="RatioEnd"/> }.
+        /// <para/>
+        /// Pro zjednodušení zadávání: pokud je naplněno <see cref="RatioBegin"/>, ale v <see cref="RatioEnd"/> je null, 
+        /// pak vykreslovací algoritmus předpokládá hodnotu End stejnou jako Begin. To znamená, že pro "obdélníkové" ratio stačí naplnit jen <see cref="RatioBegin"/>.
+        /// Ale opačně to neplatí.
         /// </summary>
-        Color? LinkBackColor { get; }
+        float? RatioBegin { get; }
         /// <summary>
-        /// Barva okraje (ohraničení) prvku.
+        /// Poměrná hodnota "nějakého" splnění v rámci prvku, na jeho konci.
+        /// Běžně se vykresluje jako poměrná část prvku, měřeno odspodu, která symbolizuje míru "naplnění" daného úseku.
+        /// Část Ratio má tvar lichoběžníku, a spojuje body Begin = { <see cref="Time"/>.Begin, <see cref="RatioBegin"/> } a { <see cref="Time"/>.End, <see cref="RatioEnd"/> }.
+        /// <para/>
+        /// Pro zjednodušení zadávání: pokud je naplněno <see cref="RatioBegin"/>, ale v <see cref="RatioEnd"/> je null, 
+        /// pak vykreslovací algoritmus předpokládá hodnotu End stejnou jako Begin. To znamená, že pro "obdélníkové" ratio stačí naplnit jen <see cref="RatioBegin"/>.
+        /// Ale opačně to neplatí.
         /// </summary>
-        Color? BorderColor { get; }
+        float? RatioEnd { get; }
+        /// <summary>
+        /// Barva pozadí prvku, kreslená v části Ratio.
+        /// Použije se tehdy, když hodnota <see cref="RatioBegin"/> a/nebo <see cref="RatioEnd"/> má hodnotu větší než 0f.
+        /// Touto barvou je vykreslena dolní část prvku, která symbolizuje míru "naplnění" daného úseku.
+        /// Tato část má tvar lichoběžníku, dolní okraj je na hodnotě 0, levý okraj má výšku <see cref="RatioBegin"/>, pravý okraj má výšku <see cref="RatioEnd"/>.
+        /// Může sloužit k zobrazení vyčerpané pracovní kapacity, nebo jako lineární částečka grafu sloupcového nebo liniového.
+        /// Z databáze se načítá ze sloupce: "ratio_back_color", je NEPOVINNÝ.
+        /// </summary>
+        Color? RatioBackColor { get; }
+        /// <summary>
+        /// Barva linky, kreslená v úrovni Ratio.
+        /// Použije se tehdy, když hodnota <see cref="RatioBegin"/> a/nebo <see cref="RatioEnd"/> má zadanou hodnotu v rozsahu 0 (včetně) a více.
+        /// Touto barvou je vykreslena přímá linie, která symbolizuje míru "naplnění" daného úseku, 
+        /// a spojuje body Begin = { <see cref="Time"/>.Begin, <see cref="RatioBegin"/> } a { <see cref="Time"/>.End, <see cref="RatioEnd"/> }.
+        /// </summary>
+        Color? RatioLineColor { get; }
+        /// <summary>
+        /// Šířka linky, kreslená v úrovni Ratio.
+        /// Použije se tehdy, když hodnota <see cref="RatioBegin"/> a/nebo <see cref="RatioEnd"/> má zadanou hodnotu v rozsahu 0 (včetně) a více.
+        /// Čárou této šířky je vykreslena přímá linie, která symbolizuje míru "naplnění" daného úseku, 
+        /// a spojuje body Begin = { <see cref="Time"/>.Begin, <see cref="RatioBegin"/> } a { <see cref="Time"/>.End, <see cref="RatioEnd"/> }.
+        /// </summary>
+        int? RatioLineWidth { get; }
+        /// <summary>
+        /// Režim chování položky grafu (editovatelnost, texty, atd).
+        /// </summary>
+        GraphItemBehaviorMode BehaviorMode { get; }
         /// <summary>
         /// Vizuální prvek, který v sobě zahrnuje jak podporu pro vykreslování, tak podporu interaktivity.
         /// A přitom to nevyžaduje od třídy, která fyzicky implementuje <see cref="ITimeGraphItem"/>.
-        /// Aplikační kód (implementační objekt <see cref="ITimeGraphItem"/> se o tuto property nemusí starat, řídící mechanismus sem vloží v případě potřeby new instanci.
+        /// Aplikační kód (implementační objekt <see cref="ITimeGraphItem"/> se o tuto property nemusí starat. Rozhodně ji nemá vlastními silami generovat.
+        /// Řídící mechanismus sem vloží v případě potřeby new instanci.
         /// Implementátor pouze poskytuje úložiště pro tuto instanci.
         /// </summary>
         GTimeGraphItem GControl { get; set; }
@@ -1546,10 +1589,9 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         /// <param name="e">Standardní data pro kreslení</param>
         /// <param name="absoluteBounds">Absolutní souřadnice tohoto prvku</param>
-        /// <param name="drawMode">Režim kreslení (má význam pro akce Drag & Drop)</param>
+        /// <param name="drawMode">Režim kreslení (má význam pro akce Drag and Drop)</param>
         void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, DrawItemMode drawMode);
     }
-
     /// <summary>
     /// Tvar položky grafu
     /// </summary>
@@ -1578,12 +1620,16 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         void ItemDragDropAction(ItemDragDropArgs args);
     }
     #region class CreateTextArgs : 
+    /// <summary>
+    /// Argumenty pro tvobu textu (Caption)
+    /// </summary>
     public class CreateTextArgs : ItemArgs
     {
         #region Konstrukce a proměnné
         /// <summary>
         /// Konstruktor
         /// </summary>
+        /// <param name="graph"></param>
         /// <param name="e"></param>
         /// <param name="fontInfo"></param>
         /// <param name="group"></param>
@@ -1642,6 +1688,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Konstruktor
         /// </summary>
         /// <param name="e"></param>
+        /// <param name="graph"></param>
         /// <param name="group"></param>
         /// <param name="data"></param>
         /// <param name="position"></param>
@@ -1670,6 +1717,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="group"></param>
         /// <param name="data"></param>
         /// <param name="position"></param>
+        /// <param name="targetAbsoluteBounds"></param>
         public ItemDragDropArgs(GDragActionArgs dragArgs, GTimeGraph graph, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position, Rectangle? targetAbsoluteBounds)
             : base(dragArgs.ChangeArgs, graph, group, data, position)
         {

@@ -18,6 +18,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Konstruktor
         /// </summary>
+        /// <param name="parent"></param>
         private GTimeGraphGroup(GTimeGraph parent)
         {
             this._ParentGraph = parent;
@@ -28,7 +29,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Konstruktor s předáním jediné položky
         /// </summary>
-        /// <param name="items"></param>
+        /// <param name="parent"></param>
+        /// <param name="item"></param>
         public GTimeGraphGroup(GTimeGraph parent, ITimeGraphItem item)
             : this(parent)
         {
@@ -40,6 +42,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Konstruktor s předáním skupiny položek, s výpočtem jejich sumárního časového intervalu a výšky
         /// </summary>
+        /// <param name="parent"></param>
         /// <param name="items"></param>
         public GTimeGraphGroup(GTimeGraph parent, IEnumerable<ITimeGraphItem> items)
             : this(parent)
@@ -154,6 +157,9 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
 
             this._IsValidBounds = true;
         }
+        /// <summary>
+        /// Souřadnice na ose S, vizuální (tzn. v pixelech)
+        /// </summary>
         protected Int32Range CoordinateYVisual
         {
             get
@@ -167,7 +173,6 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 return yReal;
             }
         }
-
         /// <summary>
         /// Invaliduje platnost souřadnic Bounds
         /// </summary>
@@ -216,15 +221,16 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         public int ItemCount { get { return this._Items.Length; } }
         /// <summary>
+        /// Souhrnný čas všech prvků v této skupině. Je vypočten při vytvoření prvku.
+        /// Pouze prvek, jehož čas je kladný (End je vyšší než Begin) je zobrazován.
+        /// </summary>
+        public TimeRange Time { get { return this._Time; } set { this._Time = value; } }
+        /// <summary>
         /// Relativní výška tohoto prvku. Standardní hodnota = 1.0F. Fyzická výška (v pixelech) jednoho prvku je dána součinem 
         /// <see cref="Height"/> * <see cref="GTimeGraph.GraphParameters"/>: <see cref="TimeGraphProperties.OneLineHeight"/>
         /// Prvky s výškou 0 a menší nebudou vykresleny.
         /// </summary>
         public float Height { get { return this._Height; } }
-        /// <summary>
-        /// Režim editovatelnosti položky grafu
-        /// </summary>
-        public GraphItemBehaviorMode BehaviorMode { get { return this._FirstItem.BehaviorMode; } }
         /// <summary>
         /// Barva pozadí prvku.
         /// </summary>
@@ -235,19 +241,14 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         public System.Drawing.Drawing2D.HatchStyle? BackStyle { get { return this._FirstItem.BackStyle; } }
         /// <summary>
-        /// Barva spojovací linky mezi prvky jedné skupiny.
-        /// Default = null = kreslí se barvou <see cref="BackColor"/>, která je morfována na 50% do barvy DimGray a zprůhledněna na 50%.
+        /// Barva linek ohraničení prvku.
+        /// Pokud je null, pak prvek nemá ohraničení pomocí linky (Border).
         /// </summary>
-        public Color? LinkBackColor { get { return this._FirstItem.LinkBackColor; } }
+        public Color? LineColor { get { return this._FirstItem.LineColor; } }
         /// <summary>
-        /// Barva okraje (ohraničení) prvku.
+        /// Režim editovatelnosti položky grafu
         /// </summary>
-        public Color? BorderColor { get { return this._FirstItem.BorderColor; } }
-        /// <summary>
-        /// Souhrnný čas všech prvků v této skupině. Je vypočten při vytvoření prvku.
-        /// Pouze prvek, jehož čas je kladný (End je vyšší než Begin) je zobrazován.
-        /// </summary>
-        public TimeRange Time { get { return this._Time; } }
+        public GraphItemBehaviorMode BehaviorMode { get { return this._FirstItem.BehaviorMode; } }
         /// <summary>
         /// Obsahuje true, když tento prvek je vhodné zobrazovat (má kladný čas i výšku).
         /// </summary>
@@ -271,26 +272,27 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         /// <param name="e">Standardní data pro kreslení</param>
         /// <param name="boundsAbsolute">Absolutní souřadnice tohoto prvku</param>
-        /// <param name="drawMode">Režim kreslení (má význam pro akce Drag & Drop)</param>
+        /// <param name="drawMode">Režim kreslení (má význam pro akce Drag and Drop)</param>
         public void Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
         {
             if (!this.IsValidRealTime || this._FirstItem.Layer < 0 || this.ItemCount <= 1) return;
 
-            Color? backColor = this.LinkBackColor;
-            if (!backColor.HasValue)
-                // Nemáme explicitně danou barvu linky => odvodíme ji z barvy pozadí prvku + morphing:
-                backColor = (this.BackColor.HasValue ? this.BackColor.Value : Skin.Graph.ElementBackColor).Morph(Skin.Graph.ElementLinkBackColor);
-            backColor = Color.FromArgb(128, backColor.Value);
-            Color? borderColor = backColor;
+            // Barva pozadí se přebírá z prvního prvku. Pokud prvek nemá barvu pozadí, pak se nekreslí ani spojovací linie:
+            Color? backColor = this.BackColor;
+            if (!backColor.HasValue) return;
 
-            Rectangle boundsLink = boundsAbsolute.Enlarge(-1, -2, -1, -2);
-            backColor = this.GetColorWithOpacity(backColor.Value, e);
-            GPainter.DrawEffect3D(e.Graphics, boundsLink, backColor.Value, System.Windows.Forms.Orientation.Horizontal, this.GControl.InteractiveState, force3D: false);
+            // Reálně použitá barva pozadí pro spojovací linii je částečně (33%) průhledná:
+            Color realColor = Color.FromArgb(170, backColor.Value);
+            realColor = this.GetColorWithOpacity(realColor, e);
+            Rectangle realBounds = boundsAbsolute.Enlarge(-1, -2, -1, -2);
+            GPainter.DrawEffect3D(e.Graphics, realBounds, realColor, System.Windows.Forms.Orientation.Horizontal, this.GControl.InteractiveState, force3D: false);
         }
         /// <summary>
         /// Metoda volaná pro vykreslování obsahu "Přes Child prvky".
         /// </summary>
         /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="drawMode"></param>
         public void DrawOverChilds(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
         {
             if (!this.DrawTextInCurrentState) return;
@@ -404,17 +406,21 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         #region explicit ITimeGraphItem members
         ITimeInteractiveGraph ITimeGraphItem.OwnerGraph { get { return this._OwnerGraph; } set { this._OwnerGraph = value; } }
         int ITimeGraphItem.ItemId { get { return this._ItemId; } }
+        int ITimeGraphItem.GroupId { get { return this._FirstItem.GroupId; } }
+        TimeRange ITimeGraphItem.Time { get { return this._Time; } set { this._Time = value; } }
         int ITimeGraphItem.Layer { get { return this._FirstItem.Layer; } }
         int ITimeGraphItem.Level { get { return this._FirstItem.Level; } }
         int ITimeGraphItem.Order { get { return this._FirstItem.Order; } }
-        int ITimeGraphItem.GroupId { get { return this._FirstItem.GroupId; } }
-        TimeRange ITimeGraphItem.Time { get { return this.Time; } }
         float ITimeGraphItem.Height { get { return this.Height; } }
-        GraphItemBehaviorMode ITimeGraphItem.BehaviorMode { get { return this.BehaviorMode; } }
         Color? ITimeGraphItem.BackColor { get { return this.BackColor; } }
+        Color? ITimeGraphItem.LineColor { get { return this.LineColor; } }
         System.Drawing.Drawing2D.HatchStyle? ITimeGraphItem.BackStyle { get { return this.BackStyle; } }
-        Color? ITimeGraphItem.LinkBackColor { get { return this.LinkBackColor; } }
-        Color? ITimeGraphItem.BorderColor { get { return this.BorderColor; } }
+        float? ITimeGraphItem.RatioBegin { get { return null; } }
+        float? ITimeGraphItem.RatioEnd { get { return null; } }
+        Color? ITimeGraphItem.RatioBackColor { get { return null; } }
+        Color? ITimeGraphItem.RatioLineColor { get { return null; } }
+        int? ITimeGraphItem.RatioLineWidth { get { return null; } }
+        GraphItemBehaviorMode ITimeGraphItem.BehaviorMode { get { return this.BehaviorMode; } }
         GTimeGraphItem ITimeGraphItem.GControl { get { return this.GControl; } set { this.GControl = value; } }
         void ITimeGraphItem.Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode) { this.Draw(e, boundsAbsolute, drawMode); }
         #endregion

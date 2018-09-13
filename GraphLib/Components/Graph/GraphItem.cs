@@ -345,11 +345,11 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 boundsAbsolute.Width = 1;
 
             Color backColor = this._Group.GetColorWithOpacity(this.BackColor, e);
-            Color borderColor = this._Group.GetColorWithOpacity((this.IsSelected ? Color.DarkGreen : this.BorderColor), e);
+            Color lineColor = this._Group.GetColorWithOpacity((this.IsSelected ? Color.DarkGreen : this.BorderColor), e);
             int lineWidth = (this.IsSelected ? 2 : 1);
             if (boundsAbsolute.Width <= 2)
             {
-                e.Graphics.FillRectangle(Skin.Brush(borderColor), boundsAbsolute);
+                e.Graphics.FillRectangle(Skin.Brush(lineColor), boundsAbsolute);
             }
             else
             {
@@ -367,7 +367,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 }
 
                 Rectangle boundsLineAbsolute = boundsAbsolute.Enlarge(1 - lineWidth, 1 - lineWidth, -lineWidth, -lineWidth);
-                e.Graphics.DrawRectangle(Skin.Pen(borderColor, (float)lineWidth), boundsLineAbsolute);
+                e.Graphics.DrawRectangle(Skin.Pen(lineColor, (float)lineWidth), boundsLineAbsolute);
             }
         }
         /// <summary>
