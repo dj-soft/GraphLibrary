@@ -723,6 +723,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         int ITimeGraphItem.Level { get { return this._GuiGraphItem.Level; } }
         int ITimeGraphItem.Order { get { return this._GuiGraphItem.Order; } }
         float ITimeGraphItem.Height { get { return this._GuiGraphItem.Height; } }
+        string ITimeGraphItem.Text { get { return this._GuiGraphItem.Text; } }
+        string ITimeGraphItem.ToolTip { get { return this._GuiGraphItem.ToolTip; } }
         Color? ITimeGraphItem.BackColor { get { return this._GuiGraphItem.BackColor; } }
         Color? ITimeGraphItem.LineColor { get { return this._GuiGraphItem.LineColor; } }
         System.Drawing.Drawing2D.HatchStyle? ITimeGraphItem.BackStyle { get { return this._GuiGraphItem.BackStyle; } }

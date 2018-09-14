@@ -864,6 +864,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Metoda získá text, který se bude vykreslovat do prvku
         /// </summary>
         /// <param name="e"></param>
+        /// <param name="fontInfo"></param>
         /// <param name="group"></param>
         /// <param name="dataItem"></param>
         /// <param name="position"></param>
@@ -902,7 +903,13 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             bool isImmediatelly = data.BehaviorMode.HasFlag(GraphItemBehaviorMode.ShowToolTipImmediatelly);
             if (!isFadeIn && !isImmediatelly) return;
 
-            if (this.HasDataSource)
+            if (!String.IsNullOrEmpty(data.ToolTip))
+            {
+                e.ToolTipData.TitleText = "Informace";
+                e.ToolTipData.InfoText = data.ToolTip;
+                e.ToolTipData.InfoUseTabs = true;
+            }
+            else if (this.HasDataSource)
             {
                 CreateToolTipArgs args = new CreateToolTipArgs(e, this, group, data, position);
                 this.DataSource.CreateToolTip(args);
@@ -1511,6 +1518,18 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Prvky s výškou 0 a menší nebudou vykresleny.
         /// </summary>
         float Height { get; }
+        /// <summary>
+        /// Text pro zobrazení uvnitř tohoto prvku.
+        /// Pokud je null, bude se hledat v tabulce textů.
+        /// Z databáze se načítá ze sloupce: "text", je NEPOVINNÝ.
+        /// </summary>
+        string Text { get; }
+        /// <summary>
+        /// ToolTip pro zobrazení u tohoto tohoto prvku.
+        /// Pokud je null, bude se hledat v tabulce textů.
+        /// Z databáze se načítá ze sloupce: "tooltip", je NEPOVINNÝ.
+        /// </summary>
+        string ToolTip { get; }
         /// <summary>
         /// Barva pozadí prvku.
         /// Pokud bude null, pak prvek nebude mít vyplněný svůj prostor (obdélník). Může mít vykreslené okraje (barva <see cref="LineColor"/>).

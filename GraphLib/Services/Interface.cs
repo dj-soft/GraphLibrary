@@ -312,6 +312,10 @@ namespace Asol.Tools.WorkScheduler.Services
             this.IsVisible = true;
             this.IsEnabled = true;
         }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             return this.TextText;

@@ -440,6 +440,7 @@ namespace Noris.LCS.Base.WorkScheduler
     /// </summary>
     public sealed class GuiTable : GuiBase
     {
+        #region Standardní public properties
         /// <summary>
         /// Konstruktor
         /// </summary>
@@ -577,6 +578,8 @@ namespace Noris.LCS.Base.WorkScheduler
             }
         }
         private DataColumnsExtendedInfo _ColumnsExtendedInfo;
+        #endregion
+        #region Implicitní konverze GuiTable <==> System.Data.DataTable
         /// <summary>
         /// Implicitní konverze z <see cref="GuiTable"/> na <see cref="System.Data.DataTable"/>.
         /// Pokud je na vstupu <see cref="GuiTable"/> = null, pak na výstupu je <see cref="System.Data.DataTable"/> == null.
@@ -591,6 +594,82 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         /// <param name="dataTable"></param>
         public static implicit operator GuiTable(System.Data.DataTable dataTable) { return (dataTable != null ? new GuiTable() { Name = dataTable.TableName, DataSerial = WorkSchedulerSupport.TableSerialize(dataTable) } : null); }
+        #endregion
+        #region Čtení dat z tabulky
+        /// <summary>
+        /// Metoda načte z tabulky čísla typu int z prvního sloupce (kde se očekává číslo záznamu), doplní číslo třídy z Extended properties (default = parametr),
+        /// a vrátí unique pole těchto čísel záznamů.
+        /// Metoda vrací null, pokud neexistuje tabulka, nebo nemá sloupce anebo první sloupec není Int32.
+        /// </summary>
+        /// <param name="classNumber"></param>
+        /// <returns></returns>
+        public GuiId[] GetRecords(int classNumber = 0)
+        {
+            GuiId[] records, duplicites;
+            this._GetRecords(classNumber, out records, out duplicites);
+            return records;
+        }
+        /// <summary>
+        /// Metoda načte z tabulky čísla typu int z prvního sloupce (kde se očekává číslo záznamu), doplní číslo třídy z Extended properties (default = parametr),
+        /// najde duplicitní výskyty a vrátí jejich soupis.
+        /// Metoda vrací null, pokud neexistuje tabulka, nebo nemá sloupce anebo první sloupec není Int32.
+        /// </summary>
+        /// <param name="classNumber"></param>
+        /// <returns></returns>
+        public GuiId[] GetDuplicities(int classNumber = 0)
+        {
+            GuiId[] records, duplicites;
+            this._GetRecords(classNumber, out records, out duplicites);
+            return duplicites;
+        }
+        /// <summary>
+        /// Metoda načte z tabulky čísla typu int z prvního sloupce (kde se očekává číslo záznamu), doplní číslo třídy z Extended properties (default = parametr),
+        /// a do out parametrů uloží jak pole unique záznamů, tak pole duplicitních záznamů.
+        /// Out pole records obsahuje každý záznam pouze jedenkrát; obsahuje záznamy nonduplicitní (tj. ty, které jsou v tabulce jen jedenkrát), a obsahuje i záznamy, které jsou duplicitní (v tabulce se vyskytují vícekrát).
+        /// Out pole duplicites obsahuje jen takové záznamy, které jsou v tabulce více než jednou. V poli duplicites jsou jen jedenkrát. Tyto záznamy jsou uvedeny i v poli records.
+        /// Metoda vrací null, pokud neexistuje tabulka, nebo nemá sloupce anebo první sloupec není Int32.
+        /// </summary>
+        /// <param name="records"></param>
+        /// <param name="duplicites"></param>
+        /// <param name="classNumber"></param>
+        /// <returns></returns>
+        public void GetDuplicityRecords(out GuiId[] records, out GuiId[] duplicites, int classNumber = 0)
+        {
+            this._GetRecords(classNumber, out records, out duplicites);
+        }
+        /// <summary>
+        /// Metoda najde a vrátí unique pole záznamů a unique pole duplicit záznamů.
+        /// </summary>
+        /// <param name="classNumber"></param>
+        /// <param name="records"></param>
+        /// <param name="duplicites"></param>
+        private void _GetRecords(int classNumber, out GuiId[] records, out GuiId[] duplicites)
+        {
+            records = null;
+            duplicites = null;
+            System.Data.DataTable dataTable = this.DataTable;
+            if (dataTable == null || dataTable.Columns.Count == 0) return;
+            var colInfo0 = this.ColumnsExtendedInfo[0];
+            if (colInfo0.ColumnType != typeof(int)) return;
+
+            int? colClassNumber = colInfo0.ClassNumber;
+            int recClassNumber = (colClassNumber.HasValue ? colClassNumber.Value : classNumber);
+           
+            Dictionary<int, GuiId> recordDict = new Dictionary<int, GuiId>();
+            Dictionary<int, GuiId> duplicityDict = new Dictionary<int, GuiId>();
+
+            foreach (DataRow row in dataTable.Rows)
+            {
+                int recRecordNumber = (int)row[0];         // Máme ověřeno, že sloupec [0] obsahuje typ int !
+                if (!recordDict.ContainsKey(recRecordNumber))
+                    recordDict.Add(recRecordNumber, new GuiId(recClassNumber, recRecordNumber));
+                else if (!duplicityDict.ContainsKey(recRecordNumber))
+                    duplicityDict.Add(recRecordNumber, new GuiId(recClassNumber, recRecordNumber));
+            }
+            records = recordDict.Values.ToArray();
+            duplicites = duplicityDict.Values.ToArray();
+        }
+        #endregion
     }
     #endregion
     #region GuiGraphProperties : vlastnosti grafu
@@ -746,10 +825,11 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public const string StructureFull =
                     "item_class_id int, item_record_id int, parent_class_id int, parent_record_id int, " +
-                    "group_class_id int, group_record_id int, data_class_id int, data_record_id" +
+                    "group_class_id int, group_record_id int, data_class_id int, data_record_id int, " +
                     "begin datetime, end datetime, " +
                     "layer int, level int, order int, height float, " +
-                    "back_color string, line_color string, back_style string," +
+                    "text string, tooltip string, " +
+                    "back_color string, line_color string, back_style string, " +
                     "ratio_begin float, ratio_end float, ratio_back_color string, ratio_line_color string, ratio_line_width int";
         /// <summary>
         /// Jméno prvku GuiGraphItem je vždy rovno textu z <see cref="ItemId"/>. Property Name zde nemá význam setovat.
@@ -802,7 +882,7 @@ namespace Noris.LCS.Base.WorkScheduler
         public int Level { get; set; }
         /// <summary>
         /// Order: pořadí prvku při výpočtech souřadnic Y před vykreslováním. 
-        /// Prvky se stejným Order budou tříděny vzestupně podle data počátku <see cref="Begin"/>.
+        /// Prvky se stejným Order budou tříděny vzestupně podle data počátku <see cref="Time"/>.Begin.
         /// Z databáze se načítá ze sloupce: "order", je NEPOVINNÝ.
         /// </summary>
         public int Order { get; set; }
@@ -813,6 +893,18 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Z databáze se načítá ze sloupce: "height", je NEPOVINNÝ.
         /// </summary>
         public float Height { get; set; }
+        /// <summary>
+        /// Text pro zobrazení uvnitř tohoto prvku.
+        /// Pokud je null, bude se hledat v tabulce textů.
+        /// Z databáze se načítá ze sloupce: "text", je NEPOVINNÝ.
+        /// </summary>
+        public string Text { get; set; }
+        /// <summary>
+        /// ToolTip pro zobrazení u tohoto tohoto prvku.
+        /// Pokud je null, bude se hledat v tabulce textů.
+        /// Z databáze se načítá ze sloupce: "tooltip", je NEPOVINNÝ.
+        /// </summary>
+        public string ToolTip { get; set; }
         /// <summary>
         /// Barva pozadí prvku.
         /// Pokud bude null, pak prvek nebude mít vyplněný svůj prostor (obdélník). Může mít vykreslené okraje (barva <see cref="LineColor"/>).
@@ -3443,6 +3535,14 @@ namespace Noris.LCS.Base.WorkScheduler
         /// false pro sloupce "systémové", které se nikdy nezobrazují.
         /// </summary>
         public bool ColumnIsForUser { get { return (this.BrowseColumnType == BrowseColumnType.DataColumn); } }
+        /// <summary>
+        /// Hodnota <see cref="System.Data.DataColumn.DataType"/>
+        /// </summary>
+        public Type ColumnType { get { return this._DataColumn.DataType; } }
+        /// <summary>
+        /// Hodnota <see cref="System.Data.DataColumn.ColumnName"/>
+        /// </summary>
+        public string ColumnName { get { return this._DataColumn.ColumnName; } }
         #endregion
         #region Support
         /// <summary>

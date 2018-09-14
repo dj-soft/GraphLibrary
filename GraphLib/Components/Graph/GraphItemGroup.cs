@@ -289,14 +289,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             if (!this.DrawTextInCurrentState) return;
             Rectangle boundsVisibleAbsolute = Rectangle.Intersect(e.AbsoluteVisibleClip, boundsAbsolute);
 
-            // Text pro aktuální velikost je pravděpodobně uložený v paměti, a pokud není tak jej explicitně zjistíme a do paměti uložíme:
-            string text = this.GetCaptionForSize(boundsAbsolute.Size);
             FontInfo fontInfo = FontInfo.CaptionBold;
-            if (text == null)
-            {   // Získáme text Caption z datového zdroje grafu:
-                text = this._ParentGraph.GraphItemGetCaptionText(e, fontInfo, this, this._FirstItem, GGraphControlPosition.Group, boundsAbsolute, boundsVisibleAbsolute);
-                this.SetCaptionForSize(boundsAbsolute.Size, text);
-            }
+            string text = this.GetCaption(e, boundsAbsolute, boundsVisibleAbsolute, fontInfo);
 
             // Kreslit text:
             if (!String.IsNullOrEmpty(text))
@@ -304,6 +298,31 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 Color foreColor = this.GetColorWithOpacity(this.GControl.BackColor.Contrast(), e);
                 GPainter.DrawString(e.Graphics, boundsAbsolute, text, foreColor, fontInfo, ContentAlignment.MiddleCenter);
             }
+        }
+        /// <summary>
+        /// Metoda vrátí text, který má být zobrazen v grafickém prvku
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="boundsVisibleAbsolute"></param>
+        /// <param name="fontInfo"></param>
+        /// <returns></returns>
+        protected string GetCaption(GInteractiveDrawArgs e, Rectangle boundsAbsolute, Rectangle boundsVisibleAbsolute, FontInfo fontInfo)
+        {
+            // 1. Pokud je text v prvku uveden explicitně, pak jej použijeme:
+            string text = this._FirstItem.Text;
+            if (!String.IsNullOrEmpty(text)) return text;
+
+            // 2. Text pro aktuální velikost je pravděpodobně uložený v paměti (od posledně):
+            Size size = boundsAbsolute.Size;
+            text = this.GetCaptionForSize(size);
+            if (text != null) return text;
+
+            // 3. Pro danou velikost ještě text není zapamatován => Získáme text Caption z datového zdroje grafu a zapamatujeme si ho:
+            text = this._ParentGraph.GraphItemGetCaptionText(e, fontInfo, this, this._FirstItem, GGraphControlPosition.Group, boundsAbsolute, boundsVisibleAbsolute);
+            this.SetCaptionForSize(size, text);
+
+            return text;
         }
         /// <summary>
         /// Vrátí danou barvu, s modifikovanou průhledností Opacity (<see cref="Color.A"/>).
@@ -403,6 +422,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         int ITimeGraphItem.Level { get { return this._FirstItem.Level; } }
         int ITimeGraphItem.Order { get { return this._FirstItem.Order; } }
         float ITimeGraphItem.Height { get { return this.Height; } }
+        string ITimeGraphItem.Text { get { return this._FirstItem.Text; } }
+        string ITimeGraphItem.ToolTip { get { return this._FirstItem.ToolTip; } }
         Color? ITimeGraphItem.BackColor { get { return this.BackColor; } }
         Color? ITimeGraphItem.LineColor { get { return this.LineColor; } }
         System.Drawing.Drawing2D.HatchStyle? ITimeGraphItem.BackStyle { get { return this.BackStyle; } }
