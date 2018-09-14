@@ -481,6 +481,7 @@ namespace Noris.LCS.Base.WorkScheduler
                 this._DataSerial = value;
                 this._DataSerialValid = true;
                 this._DataTableValid = false;
+                this._ColumnsExtendedInfo = null;
             }
         }
         /// <summary>
@@ -519,6 +520,7 @@ namespace Noris.LCS.Base.WorkScheduler
                 this._DataTable = value;
                 this._DataTableValid = true;
                 this._DataSerialValid = false;
+                this._ColumnsExtendedInfo = null;
             }
         }
         /// <summary>
@@ -541,6 +543,38 @@ namespace Noris.LCS.Base.WorkScheduler
             get { return this.DataSerial; }
             set { this.DataSerial = value; }
         }
+        /// <summary>
+        /// Obsahuje rozšiřující informace o sloupcích. Pokud <see cref="DataTable"/> je null, pak i <see cref="ColumnsExtendedInfo"/> je null.
+        /// <para/>
+        /// Typický postup používání:
+        /// <para/>
+        /// Pro získání <see cref="GuiTable"/> s daty z SQL SELECTU a následné doplnění dat do <see cref="DataColumnExtendedInfo"/>:
+        /// <para/>
+        /// <code>
+        /// GuiTable guiTable = SqlSelect.
+        /// </code>
+        /// </summary>
+        /// <remarks>
+        /// Třída <see cref="DataColumnExtendedInfo"/> vždycky čte i ukládá data přímo do <see cref="System.Data.DataColumn.ExtendedProperties"/>, 
+        /// do sloupce pro který je konkrétní instance <see cref="DataColumnExtendedInfo"/> vytvořena.
+        /// Pokud uživatel vloží nějakou novou DataTable, pak je <see cref="ColumnsExtendedInfo"/> invalidováno (vloženo null) a znovu bude vytvořeno on demand pro nové sloupce.
+        /// Data vložená do ExtendedProperties se tím neztrácejí.
+        /// </remarks>
+        [PersistingEnabled(false)]
+        public DataColumnExtendedInfo[] ColumnsExtendedInfo
+        {
+            get
+            {
+                if (this._ColumnsExtendedInfo == null)
+                {
+                    System.Data.DataTable dataTable = this.DataTable;
+                    if (dataTable != null)
+                        this._ColumnsExtendedInfo = DataColumnExtendedInfo.CreateForTable(dataTable);
+                }
+                return this._ColumnsExtendedInfo;
+            }
+        }
+        private DataColumnExtendedInfo[] _ColumnsExtendedInfo;
         /// <summary>
         /// Implicitní konverze z <see cref="GuiTable"/> na <see cref="System.Data.DataTable"/>.
         /// Pokud je na vstupu <see cref="GuiTable"/> = null, pak na výstupu je <see cref="System.Data.DataTable"/> == null.
