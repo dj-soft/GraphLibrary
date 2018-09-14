@@ -1357,6 +1357,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <summary>
         /// Název souboru
         /// </summary>
+        [PersistingEnabled(false)]
         public string ImageFile { get; set; }
         /// <summary>
         /// Binární obsah souboru
@@ -1368,7 +1369,6 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         [PersistingEnabled(false)]
         public Image Image { get; set; }
-
         /// <summary>
         /// Tato property má obsahovat (get vrací, set akceptuje) XML data z celého aktuálního objektu.
         /// </summary>

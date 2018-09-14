@@ -43,9 +43,21 @@ namespace Asol.Tools.WorkScheduler.Application
                 return __Instance;
             }
         }
+        /// <summary>
+        /// Singleton úložiště App
+        /// </summary>
         protected static App __Instance = null;
+        /// <summary>
+        /// Stav inicializace
+        /// </summary>
         protected static InitialisationStatus __InitialisationStatus = InitialisationStatus.None;
+        /// <summary>
+        /// Zámek singletonu
+        /// </summary>
         protected static object __Locker = new object();
+        /// <summary>
+        /// Stavy inicializace
+        /// </summary>
         protected enum InitialisationStatus
         {
             /// <summary>
@@ -66,29 +78,35 @@ namespace Asol.Tools.WorkScheduler.Application
             Working
         }
         #region Constructor, Initialisation
+        /// <summary>
+        /// Konstruktor instance <see cref="App"/>, vyvolá první fázi inicializace <see cref="_InitRaw()"/>.
+        /// Teprve po proběhnutí konstruktoru a uložení instance do singletonu lze provést druhou fázi inicializace <see cref="_InitApp()"/>.
+        /// </summary>
         private App()
         {
             this._InitRaw();
         }
         /// <summary>
-        /// Initialisation without existing Instance property.
-        /// Using of Instance property causing exception (InvalidOperationException).
+        /// První fáze inicializace, kdy ještě není k dispozici property <see cref="Instance"/>.
+        /// Objekty, které se zde inicializují, nesmí používat metody App.
+        /// Použití property <see cref="Instance"/> property vyvolá chybu InvalidOperationException.
         /// </summary>
         private void _InitRaw()
-        {   // These initialisations are independent on App instance, their order has no relevance:
+        {   // Tyto inicializátory NESMÍ používat instanci App. Pořadí inicializátorů je libovolné (každý si udělá jen to svoje).
             this._TraceInit();
             this._NextIdInit();
             this._RegisterInit();
             this._ZoomInit();
         }
         /// <summary>
-        /// Initialisation with existing Instance property.
-        /// You can use a Instance property, but not all parts if Instance are now initialised.
+        /// Druhá fáze inicializace, kdy už je k dispozici property <see cref="Instance"/>.
+        /// Objekty, které se zde inicializují, mohou používat metody App.
         /// </summary>
         private void _InitApp()
-        {   // These initialisations are dependent on App instance, must be run after _InitRaw(), an some initialisers must run after other (ther order is significant):
+        {   // Tyto inicializátory MOHOU používat instanci App. Pořadí inicializátorů je DŮLEŽITÉ, protože již mohou využívat navzájem svých služeb.
             this._PluginInit();
             this._WorkerInit();
+            this._IconsInit();
             this._RunTest();
         }
         #endregion
@@ -96,6 +114,9 @@ namespace Asol.Tools.WorkScheduler.Application
         {
             TestEngine.RunTests(TestType.AllStandard);
         }
+        /// <summary>
+        /// Ukončí aplikaci
+        /// </summary>
         public static void End()
         {
             if (__Instance != null)
@@ -109,10 +130,18 @@ namespace Asol.Tools.WorkScheduler.Application
         }
         #endregion
         #region Run main form
+        /// <summary>
+        /// Spustí main formulář aplikace
+        /// </summary>
+        /// <param name="formType"></param>
         public static void RunMainForm(Type formType)
         {
             Instance._RunMainForm(formType);
         }
+        /// <summary>
+        /// Spustí main formulář aplikace
+        /// </summary>
+        /// <param name="formType"></param>
         private void _RunMainForm(Type formType)
         {
             System.Threading.Thread.CurrentThread.Name = "GUI";
@@ -153,6 +182,9 @@ namespace Asol.Tools.WorkScheduler.Application
         private System.Windows.Forms.Form _AppMainForm;
         #endregion
         #region Trace (write info to trace file)
+        /// <summary>
+        /// Přístup k Trace systému
+        /// </summary>
         public static Trace Trace { get { return Instance._Trace; } }
         /// <summary>
         /// Returns true when specified priority is equal or higher than TracePriority, and request for write to trace has been performed.
@@ -231,6 +263,12 @@ namespace Asol.Tools.WorkScheduler.Application
         private Plugin _Plugin;
         #endregion
         #region Localizable texts
+        /// <summary>
+        /// Přístupový bod pro lokalizaci
+        /// </summary>
+        /// <param name="code"></param>
+        /// <param name="defaultText"></param>
+        /// <returns></returns>
         public static string LocalizeCode(string code, string defaultText)
         {
             return defaultText;
@@ -401,7 +439,7 @@ namespace Asol.Tools.WorkScheduler.Application
         }
         private Dictionary<string, int> _NextId;
         #endregion
-        #region GuiZoom
+        #region Zoom
         /// <summary>
         /// Zde je poskytována veškerá podpora pro zoomování aplikace
         /// </summary>
@@ -414,6 +452,21 @@ namespace Asol.Tools.WorkScheduler.Application
             this._Zoom = new Application.Zoom();
         }
         private Zoom _Zoom;
+        #endregion
+        #region Ikonky aplikace
+        /// <summary>
+        /// Zde je poskytována veškerá podpora pro přístup k ikonkám
+        /// </summary>
+        public static Icons Icons { get { return Instance._Icons; } }
+        /// <summary>
+        /// Inicializuje instanci objektu Icons
+        /// </summary>
+        private void _IconsInit()
+        {
+            string appPath = AppCodePath;
+            this._Icons = new Application.Icons(appPath);
+        }
+        private Icons _Icons;
         #endregion
         #region Register / Config
         public static bool RegisterContainsKey(string key)
@@ -457,6 +510,9 @@ namespace Asol.Tools.WorkScheduler.Application
             if (String.IsNullOrEmpty(key))
                 throw new GraphLibDataException("App.Register: zadaný klíč nesmí být prázdný.");
         }
+        /// <summary>
+        /// Vytvoří new instanci pro registry aplikace (konfigurace)
+        /// </summary>
         private void _RegisterInit()
         {
             this._Register = new Dictionary<string, string>();

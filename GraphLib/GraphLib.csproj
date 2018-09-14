@@ -70,6 +70,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Application\App.cs" />
+    <Compile Include="Application\Icons.cs" />
     <Compile Include="Application\Plugin.cs" />
     <Compile Include="Application\Test.cs" />
     <Compile Include="Application\Trace.cs" />
