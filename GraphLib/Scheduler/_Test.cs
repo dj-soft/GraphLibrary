@@ -47,14 +47,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             workGrid.GraphProperties.InteractiveChangeMode = AxisInteractiveChangeMode.Shift;
             GuiGraphTable workItems = new GuiGraphTable() { Name = "workItems" };
             workGrid.GraphItems.Add(workItems);
-            workItems.Add(new GuiGraphItem() { ItemId = new GuiId(1817, 1), ParentRowId = new GuiId(1364, 1), Begin = new DateTime(2018, 8, 1, 12, 0, 0), End = new DateTime(2018, 8, 1, 16, 0, 0) });
-            workItems.Add(new GuiGraphItem() { ItemId = new GuiId(1817, 2), ParentRowId = new GuiId(1364, 1), Begin = new DateTime(2018, 8, 1, 16, 0, 0), End = new DateTime(2018, 8, 1, 20, 0, 0) });
-            workItems.Add(new GuiGraphItem() { ItemId = new GuiId(1817, 3), ParentRowId = new GuiId(1364, 1), Begin = new DateTime(2018, 8, 1, 21, 0, 0), End = new DateTime(2018, 8, 1, 22, 0, 0) });
+            workItems.Add(new GuiGraphItem() { ItemId = new GuiId(1817, 1), ParentRowId = new GuiId(1364, 1), Time = new GuiTimeRange(new DateTime(2018, 8, 1, 12, 0, 0), new DateTime(2018, 8, 1, 16, 0, 0)) });
+            workItems.Add(new GuiGraphItem() { ItemId = new GuiId(1817, 2), ParentRowId = new GuiId(1364, 1), Time = new GuiTimeRange(new DateTime(2018, 8, 1, 16, 0, 0), new DateTime(2018, 8, 1, 20, 0, 0)) });
+            workItems.Add(new GuiGraphItem() { ItemId = new GuiId(1817, 3), ParentRowId = new GuiId(1364, 1), Time = new GuiTimeRange(new DateTime(2018, 8, 1, 21, 0, 0), new DateTime(2018, 8, 1, 22, 0, 0)) });
 
             GraphItemBehaviorMode graph4BehaviorMode = (GraphItemBehaviorMode.DefaultText | GraphItemBehaviorMode.ResizeTime);
             DateTime graph4Begin = new DateTime(2018, 8, 1, 14, 30, 45, 550);
             DateTime graph4End = new DateTime(2018, 8, 1, 18, 15, 30, 10);
-            workItems.Add(new GuiGraphItem() { ItemId = new GuiId(1817, 4), ParentRowId = new GuiId(1364, 2), Begin = graph4Begin, End = graph4End, BehaviorMode = graph4BehaviorMode });
+            workItems.Add(new GuiGraphItem() { ItemId = new GuiId(1817, 4), ParentRowId = new GuiId(1364, 2), Time = new GuiTimeRange(graph4Begin, graph4End), BehaviorMode = graph4BehaviorMode });
 
             page.MainPanel.Grids.Add(workGrid);
 
@@ -111,10 +111,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
             if (graphItem4B.BehaviorMode != graph4BehaviorMode)
                 throw new AssertFailedException("Deserializovaný grafický prvek 4 nemá správnou hodnotu BehaviorMode, má být " + graph4BehaviorMode + "; je " + graphItem4B.BehaviorMode + ".");
-            if (graphItem4B.Begin != graph4Begin)
-                throw new AssertFailedException("Deserializovaný grafický prvek 4 nemá správnou hodnotu Begin, má být " + graph4Begin + "; je " + graphItem4B.Begin + ".");
-            if (graphItem4B.End != graph4End)
-                throw new AssertFailedException("Deserializovaný grafický prvek 4 nemá správnou hodnotu End, má být " + graph4End + "; je " + graphItem4B.End + ".");
+            if (graphItem4B.Time.Begin != graph4Begin)
+                throw new AssertFailedException("Deserializovaný grafický prvek 4 nemá správnou hodnotu Begin, má být " + graph4Begin + "; je " + graphItem4B.Time.Begin + ".");
+            if (graphItem4B.Time.End != graph4End)
+                throw new AssertFailedException("Deserializovaný grafický prvek 4 nemá správnou hodnotu End, má být " + graph4End + "; je " + graphItem4B.Time.End + ".");
 
         }
     }

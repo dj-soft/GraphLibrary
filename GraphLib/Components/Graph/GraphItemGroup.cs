@@ -276,16 +276,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         public void Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
         {
             if (!this.IsValidRealTime || this._FirstItem.Layer < 0 || this.ItemCount <= 1) return;
-
-            // Barva pozadí se přebírá z prvního prvku. Pokud prvek nemá barvu pozadí, pak se nekreslí ani spojovací linie:
-            Color? backColor = this.BackColor;
-            if (!backColor.HasValue) return;
-
-            // Reálně použitá barva pozadí pro spojovací linii je částečně (33%) průhledná:
-            Color realColor = Color.FromArgb(170, backColor.Value);
-            realColor = this.GetColorWithOpacity(realColor, e);
-            Rectangle realBounds = boundsAbsolute.Enlarge(-1, -2, -1, -2);
-            GPainter.DrawEffect3D(e.Graphics, realBounds, realColor, System.Windows.Forms.Orientation.Horizontal, this.GControl.InteractiveState, force3D: false);
+            this.GControl.DrawItem(e, boundsAbsolute, drawMode);
         }
         /// <summary>
         /// Metoda volaná pro vykreslování obsahu "Přes Child prvky".

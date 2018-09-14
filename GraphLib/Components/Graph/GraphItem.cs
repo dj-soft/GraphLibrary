@@ -33,6 +33,10 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             this._Position = position;
             this.IsSelectable = true;
         }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             return this._Position.ToString() + "; " + base.ToString();
@@ -69,31 +73,23 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         public Int32Range CoordinateX { get; set; }
         /// <summary>
-        /// Barva pozadí tohoto prvku
+        /// Barva pozadí tohoto prvku: tento override vrací průhlednou barvu. Základní metoda nemá kreslit pozadí povinně.
+        /// Více viz <see cref="ItemBackColor"/>.
         /// </summary>
-        public override Color BackColor
-        {
-            get
-            {
-                if (this.BackColorUser.HasValue) return this.BackColorUser.Value;
-                if (this._Owner != null && this._Owner.BackColor.HasValue) return this._Owner.BackColor.Value;
-                return Skin.Graph.ElementBackColor;
-            }
-            set { }
-        }
+        public override Color BackColor { get { return Color.Transparent; } set { } }
+        #endregion
+        #region Čtení dat pro kreslení
         /// <summary>
-        /// Barva okraje prvku
+        /// Barva pozadí prvku grafu, načtená z <see cref="ITimeGraphItem.BackColor"/>. 
+        /// Může být null.
         /// </summary>
-        public Color BorderColor
-        {
-            get
-            {
-                if (this.BorderColorUser.HasValue) return this.BorderColorUser.Value;
-                if (this._Owner != null && this._Owner.BorderColor.HasValue) return this._Owner.BorderColor.Value;
-                return Skin.Graph.ElementBorderColor;
-            }
-        }
-        public Color? BorderColorUser { get; set; }
+        protected Color? ItemBackColor { get { return this._Owner.BackColor; } }
+        /// <summary>
+        /// Barva linky prvku grafu, načtená z <see cref="ITimeGraphItem.LineColor"/>. 
+        /// Může být null.
+        /// </summary>
+        protected Color? ItemLineColor { get { return this._Owner.LineColor; } }
+
         #endregion
         #region Child prvky: přidávání, kolekce
         /// <summary>
@@ -146,6 +142,9 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             this.Graph.GraphItemLeftLongClick(e, this._Group, this._Owner, this._Position);
         }
+        /// <summary>
+        /// true = prvek je vybrán
+        /// </summary>
         public override bool IsSelected
         {
             get { return base.IsSelected; }
@@ -281,6 +280,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Vrací hodnotu ValidityRatio pro vzdálenost v pixelech
         /// </summary>
         /// <param name="distance"></param>
+        /// <param name="maxDistance"></param>
         /// <param name="minValue"></param>
         /// <param name="maxValue"></param>
         /// <returns></returns>
@@ -298,7 +298,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="e">Data pro kreslení</param>
         /// <param name="absoluteBounds">Absolutní souřadnice tohoto prvku, sem by se mělo fyzicky kreslit</param>
         /// <param name="absoluteVisibleBounds">Absolutní souřadnice tohoto prvku, oříznuté do viditelné oblasti.</param>
-        /// <param name="drawMode">Režim kreslení (pomáhá řešit Drag & Drop procesy)</param>
+        /// <param name="drawMode">Režim kreslení (pomáhá řešit Drag and Drop procesy)</param>
         protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
         {
             this._Owner.Draw(e, absoluteBounds, drawMode);
@@ -310,7 +310,9 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Metoda volaná pro vykreslování "Přes Child prvky": převolá se grupa.
         /// </summary>
-        /// <param name="e"></param>
+        /// <param name="e">Standardní data pro kreslení</param>
+        /// <param name="boundsAbsolute">Absolutní souřadnice tohoto prvku</param>
+        /// <param name="drawMode">Režim kreslení (má význam pro akce Drag and Drop)</param>
         protected override void DrawOverChilds(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
         {
             if (this._Position == GGraphControlPosition.Group)
@@ -318,60 +320,92 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         }
         /// <summary>
         /// Metoda je volaná pro vykreslení jedné položky grafu.
+        /// Implementátor může bez nejmenších obav převolat <see cref="GControl"/>.<see cref="GTimeGraphItem.DrawItem(GInteractiveDrawArgs, Rectangle, DrawItemMode)"/>;
+        /// a to jak pro typ prvku <see cref="GGraphControlPosition.Group"/>, tak pro <see cref="GGraphControlPosition.Item"/>.
         /// </summary>
         /// <param name="e">Standardní data pro kreslení</param>
         /// <param name="boundsAbsolute">Absolutní souřadnice tohoto prvku</param>
-        /// <param name="drawMode">Režim kreslení (má význam pro akce Drag & Drop)</param>
+        /// <param name="drawMode">Režim kreslení (má význam pro akce Drag and Drop)</param>
         public void DrawItem(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
         {
-            this.DrawItem(e, boundsAbsolute, drawMode, null);
-        }
-        /// <summary>
-        /// Metoda je volaná pro vykreslení prvku.
-        /// Implementátor může bez nejmenších obav převolat <see cref="GControl"/>.<see cref="GTimeGraphItem.DrawItem(GInteractiveDrawArgs, Rectangle, DrawItemMode, int?)"/> Draw
-        /// </summary>
-        /// <param name="e">Standardní data pro kreslení</param>
-        /// <param name="boundsAbsolute">Absolutní souřadnice tohoto prvku</param>
-        /// <param name="drawMode">Režim kreslení (má význam pro akce Drag & Drop)</param>
-        /// <param name="backColor">Explicitně definovaná barva pozadí</param>
-        /// <param name="borderColor">Explicitně definovaná barva okraje</param>
-        /// <param name="enlargeBounds">Změna rozměru Bounds ve všech směrech</param>
-        public void DrawItem(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode, int? enlargeBounds)
-        {
             if (boundsAbsolute.Height <= 0 || boundsAbsolute.Width < 0) return;
-            if (enlargeBounds.HasValue)
-                boundsAbsolute = boundsAbsolute.Enlarge(enlargeBounds.Value);
             if (boundsAbsolute.Width < 1)
                 boundsAbsolute.Width = 1;
 
-            Color backColor = this._Group.GetColorWithOpacity(this.BackColor, e);
-            Color lineColor = this._Group.GetColorWithOpacity((this.IsSelected ? Color.DarkGreen : this.BorderColor), e);
-            int lineWidth = (this.IsSelected ? 2 : 1);
-            if (boundsAbsolute.Width <= 2)
+            switch (this._Position)
             {
-                e.Graphics.FillRectangle(Skin.Brush(lineColor), boundsAbsolute);
+                case GGraphControlPosition.Group:
+                    this.DrawItemGroup(e, boundsAbsolute, drawMode);
+                    break;
+                case GGraphControlPosition.Item:
+                    this.DrawItemItem(e, boundsAbsolute, drawMode);
+                    break;
             }
-            else
+        }
+        /// <summary>
+        /// Vykreslí prvek typu <see cref="GGraphControlPosition.Group"/> = podklad pod konkrétními prvky = spojovací čára
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="drawMode"></param>
+        protected void DrawItemGroup(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
+        {
+            // Barva pozadí se přebírá z prvního prvku. Pokud prvek nemá barvu pozadí, pak se nekreslí ani spojovací linie:
+            Color? itemBackColor = this.ItemBackColor;
+            if (!itemBackColor.HasValue) return;
+            Color color;
+
+            // Reálně použitá barva pozadí pro spojovací linii je částečně (33%) průhledná:
+            color = Color.FromArgb(170, itemBackColor.Value);
+            color = this._Group.GetColorWithOpacity(color, e);
+            Rectangle realBounds = boundsAbsolute.Enlarge(-1, -2, -1, -2);
+            GPainter.DrawEffect3D(e.Graphics, realBounds, color, System.Windows.Forms.Orientation.Horizontal, this.InteractiveState, force3D: false);
+        }
+        /// <summary>
+        /// Vykreslí prvek typu <see cref="GGraphControlPosition.Item"/> = vlastní grafický prvek
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="drawMode"></param>
+        protected void DrawItemItem(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
+        {
+            Color color;
+            bool isSelected = this.IsSelected;
+
+            // Vykreslit pozadí pod prvkem:
+            Color? itemBackColor = this.ItemBackColor;
+            if (itemBackColor.HasValue)
             {
+                color = this._Group.GetColorWithOpacity(itemBackColor.Value, e);
                 System.Drawing.Drawing2D.HatchStyle? backStyle = this._Owner.BackStyle;
                 if (backStyle.HasValue)
                 {
-                    using (System.Drawing.Drawing2D.HatchBrush hb = new System.Drawing.Drawing2D.HatchBrush(backStyle.Value, backColor, Color.Transparent))
+                    using (System.Drawing.Drawing2D.HatchBrush hb = new System.Drawing.Drawing2D.HatchBrush(backStyle.Value, color, Color.Transparent))
                     {
                         e.Graphics.FillRectangle(hb, boundsAbsolute);
                     }
                 }
                 else
                 {
-                    e.Graphics.FillRectangle(Skin.Brush(backColor), boundsAbsolute);
+                    e.Graphics.FillRectangle(Skin.Brush(color), boundsAbsolute);
                 }
-
-                Rectangle boundsLineAbsolute = boundsAbsolute.Enlarge(1 - lineWidth, 1 - lineWidth, -lineWidth, -lineWidth);
-                e.Graphics.DrawRectangle(Skin.Pen(lineColor, (float)lineWidth), boundsLineAbsolute);
             }
+
+            // Vykreslit orámování prvku:
+            Color? itemLineColor = (this.IsSelected ? (Color?)Skin.Graph.ElementSelectedLineColor : this.ItemLineColor);
+            if (itemLineColor.HasValue)
+            {
+                color = this._Group.GetColorWithOpacity(itemLineColor.Value, e);
+                int lineWidth = (this.IsSelected ? 2 : 1);
+                Rectangle boundsLineAbsolute = boundsAbsolute.Enlarge(1 - lineWidth, 1 - lineWidth, -lineWidth, -lineWidth);
+                e.Graphics.DrawRectangle(Skin.Pen(color, (float)lineWidth), boundsLineAbsolute);
+            }
+
+            // Ratio:
+
         }
         /// <summary>
-        /// Volba, zda metoda <see cref="Repaint()"/> způsobí i vyvolání metody <see cref="Parent"/>.<see cref="IInteractiveParent.Repaint"/>.
+        /// Volba, zda metoda <see cref="InteractiveObject.Repaint()"/> způsobí i vyvolání metody Parent.Repaint().
         /// </summary>
         protected override RepaintParentMode RepaintParent { get { return RepaintParentMode.Always; } }
         #endregion

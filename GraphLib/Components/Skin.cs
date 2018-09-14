@@ -1061,6 +1061,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public Color ElementBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "ElementBackColor", DefaultElementBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "ElementBackColor", value); } }
         public Color ElementBorderColor { get { return this._Owner.GetValue(this._SkinSetKey, "ElementBorderColor", DefaultElementBorderColor); } set { this._Owner.SetValue(this._SkinSetKey, "ElementBorderColor", value); } }
         public Color ElementLinkBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "ElementLinkBackColor", DefaultElementLinkBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "ElementLinkBackColor", value); } }
+        public Color ElementSelectedLineColor { get { return this._Owner.GetValue(this._SkinSetKey, "ElementSelectedLineColor", DefaultElementSelectedLineColor); } set { this._Owner.SetValue(this._SkinSetKey, "ElementSelectedLineColor", value); } }
         public Color BackColor { get { return this._Owner.GetValue(this._SkinSetKey, "BackColor", DefaultBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "BackColor", value); } }
         public Color TimeAxisTickMain { get { return this._Owner.GetValue(this._SkinSetKey, "TimeAxisTickMain", DefaultTimeAxisTickMain); } set { this._Owner.SetValue(this._SkinSetKey, "TimeAxisTickMain", value); } }
         public Color TimeAxisTickSmall { get { return this._Owner.GetValue(this._SkinSetKey, "TimeAxisTickSmall", DefaultTimeAxisTickSmall); } set { this._Owner.SetValue(this._SkinSetKey, "TimeAxisTickSmall", value); } }
@@ -1072,6 +1073,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual Color DefaultElementBackColor { get { return Color.CornflowerBlue; } }
         protected virtual Color DefaultElementBorderColor { get { return Color.BlueViolet; } }
         protected virtual Color DefaultElementLinkBackColor { get { return Color.FromArgb(160, Color.DimGray); } }   // Barva linku obsahuje složku Alpha = 160 == úroveň Morphingu
+        protected virtual Color DefaultElementSelectedLineColor { get { return Color.LightGreen; } }
         protected virtual Color DefaultBackColor { get { return Color.DimGray; } }
         protected virtual Color DefaultTimeAxisTickMain { get { return Color.Gray; } }
         protected virtual Color DefaultTimeAxisTickSmall { get { return Color.Gray; } }

@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 // Tento soubor obsahuje sadu tříd a enumů, které popisují data pro plugin WorkScheduler. Tato data se plní v Greenu a přes XML persistor se předávají do pluginu WorkScheduler.
 namespace Noris.LCS.Base.WorkScheduler
 {
-    #region Data předávaná mezi Helios Green a WorkScheduler. Identický balík je v GraphLib\Scheduler\WorkSchedulerDataSync.cs a v Manufacturing\WorkSchedulerShared.cs
+    #region GuiData předávaná mezi Helios Green a WorkScheduler. Identický balík je v GraphLib\Scheduler\WorkSchedulerDataSync.cs a v Manufacturing\WorkSchedulerShared.cs
     #region GuiData : Kompletní datový balík, jehož data budou zobrazena v pluginu ASOL.WorkScheduler
     /// <summary>
     /// GuiData : Kompletní datový balík, jehož data budou zobrazena v pluginu ASOL.WorkScheduler.
@@ -433,9 +433,9 @@ namespace Noris.LCS.Base.WorkScheduler
         protected override IEnumerable<IGuiItem> Childs { get { return Union(this.Rows, this.GraphItems, this.GraphTexts); } }
     }
     #endregion
-    #region GuiTable : Jedna fyzická tabulka (ekvivalent DataTable, s podporou serializace)
+    #region GuiTable : Jedna fyzická tabulka (ekvivalent DataTable, s podporou serializace a implicitní konverze z/na DataTable)
     /// <summary>
-    /// GuiTable : Jedna fyzická tabulka (ekvivalent DataTable, s podporou serializace)
+    /// GuiTable : Jedna fyzická tabulka (ekvivalent DataTable, s podporou serializace a implicitní konverze z/na DataTable)
     /// </summary>
     public sealed class GuiTable : GuiBase
     {
@@ -541,6 +541,20 @@ namespace Noris.LCS.Base.WorkScheduler
             get { return this.DataSerial; }
             set { this.DataSerial = value; }
         }
+        /// <summary>
+        /// Implicitní konverze z <see cref="GuiTable"/> na <see cref="System.Data.DataTable"/>.
+        /// Pokud je na vstupu <see cref="GuiTable"/> = null, pak na výstupu je <see cref="System.Data.DataTable"/> == null.
+        /// Výstupem je vždy new instance tabulky, která není provázaná s <see cref="DataTable"/> = jde o různé objekty.
+        /// </summary>
+        /// <param name="guiTable"></param>
+        public static implicit operator System.Data.DataTable(GuiTable guiTable) { return (guiTable != null ? WorkSchedulerSupport.TableDeserialize(guiTable.DataSerial) : null); }
+        /// <summary>
+        /// Implicitní konverze z <see cref="System.Data.DataTable"/> na <see cref="GuiTable"/>.
+        /// Pokud je na vstupu <see cref="System.Data.DataTable"/> = null, pak na výstupu je <see cref="GuiTable"/> == null.
+        /// Výstupem je new instance <see cref="GuiTable"/>, jejíž <see cref="DataTable"/> je new objekt, izolovaný od vstupní tabulky.
+        /// </summary>
+        /// <param name="dataTable"></param>
+        public static implicit operator GuiTable(System.Data.DataTable dataTable) { return (dataTable != null ? new GuiTable() { Name = dataTable.TableName, DataSerial = WorkSchedulerSupport.TableSerialize(dataTable) } : null); }
     }
     #endregion
     #region GuiGraphProperties : vlastnosti grafu
@@ -1855,8 +1869,6 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         SizableToolWindow = 6
     }
-
-
     #endregion
     #region class WorkSchedulerSupport : Třída obsahující konstanty a další podporu WorkScheduleru - identický kód je v Helios Green i v GraphLibrary !!!
     /// <summary>
@@ -3125,63 +3137,50 @@ namespace Noris.LCS.Base.WorkScheduler
     {
         #region Konstrukce a načtení dat
         /// <summary>
+        /// Vrací pole informací o všech sloupcích tabulky, pro které načte z Extended properties daného sloupce 
+        /// (tam je uložil Helios Green v metodě BrowseTemplateInfo.GetTemplateData(int, int?, int?, BigFilter, int?)).
+        /// Referenci na sloupce tabulky, předaný sem jako parametr, si this instance ukládá, a dovoluje tyto informace měnit a vkládat změny zase do sloupce.
+        /// </summary>
+        /// <param name="dataTable"></param>
+        /// <returns></returns>
+        public static DataColumnExtendedInfo[] CreateForTable(DataTable dataTable)
+        {
+            int count = dataTable.Columns.Count;
+            DataColumnExtendedInfo[] infos = new DataColumnExtendedInfo[count];
+            for (int c = 0; c < count;c++)
+                infos[c] = new DataColumnExtendedInfo(dataTable.Columns[c]);
+            return infos;
+        }
+        /// <summary>
         /// Vrací informace o daném sloupci, které načte z Extended properties daného sloupce 
-        /// (tam je uložit Helios Green v metodě BrowseTemplateInfo.GetTemplateData(int, int?, int?, BigFilter, int?)).
-        /// Referenci na sloupec, předaný sem jako parametr, si this instance neukládá, data z něj v této metodě fyzicky načte do svých jednoduchých proměnných.
-        /// Sloupec může být poté zahozen, jeho data budou opsána zde.
+        /// (tam je uložil Helios Green v metodě BrowseTemplateInfo.GetTemplateData(int, int?, int?, BigFilter, int?)).
+        /// Referenci na sloupec, předaný sem jako parametr, si this instance ukládá, a dovoluje tyto informace měnit a vkládat změny zase do sloupce.
         /// </summary>
         /// <param name="dataColumn"></param>
         /// <returns></returns>
         public static DataColumnExtendedInfo CreateForColumn(DataColumn dataColumn)
         {
-            DataColumnExtendedInfo info = new DataColumnExtendedInfo();
-            info._LoadFromDataColumn(dataColumn);
+            DataColumnExtendedInfo info = new DataColumnExtendedInfo(dataColumn);
             return info;
         }
         /// <summary>
         /// Konstruktor
         /// </summary>
-        private DataColumnExtendedInfo() { }
-        /// <summary>
-        /// Načte data z ownera do properties
-        /// </summary>
-        private void _LoadFromDataColumn(DataColumn dataColumn)
+        private DataColumnExtendedInfo(DataColumn dataColumn)
         {
-            this.ClassNumber = GetPropertyValue(dataColumn, "ClassNumber", (int?)null);
-            this.TemplateNumber = GetPropertyValue(dataColumn, "TemplateNumber", (int?)null);
-            this.Alias = GetPropertyValue(dataColumn, "Alias", "");
-            this.AllowRowFilter = GetPropertyValue(dataColumn, "AllowRowFilter", true);
-            this.AllowSort = GetPropertyValue(dataColumn, "AllowSort", true);
-            this.BrowseColumnType = GetPropertyValue(dataColumn, "BrowseColumnType", "");
-            this.CodeName_FromSelect = GetPropertyValue(dataColumn, "CodeName_FromSelect", "");
-            this.CodeName_FromTemplate = GetPropertyValue(dataColumn, "CodeName_FromTemplate", "");
-            this.ColRelNum = GetPropertyValue(dataColumn, "ColRelNum", 0);
-            this.ColType = GetPropertyValue(dataColumn, "ColType", "");
-            this.DataTypeRepo = GetPropertyValue(dataColumn, "DataTypeRepo", "");
-            this.DataTypeSystem = GetPropertyValue(dataColumn, "DataTypeSystem", "");
-            this.Format = GetPropertyValue(dataColumn, "Format", "");
-            this.Index = GetPropertyValue(dataColumn, "Index", 0);
-            this.IsVisible = GetPropertyValue(dataColumn, "IsVisible", true);
-            this.Label = GetPropertyValue(dataColumn, "Label", "");
-            this.SortIndex = GetPropertyValue(dataColumn, "SortIndex", (int?)null);
-            this.Width = GetPropertyValue(dataColumn, "Width", 0);
-            this.RelationClassNumber = GetPropertyValue(dataColumn, "RelationClassNumber", (int?)null);
-            this.RelationNumber = GetPropertyValue(dataColumn, "RelationNumber", (int?)null);
-            this.RelationSide = GetPropertyValue(dataColumn, "RelationSide", "");
-            this.RelationVolumeType = GetPropertyValue(dataColumn, "RelationVolumeType", "");
-            this.RelationTableAlias = GetPropertyValue(dataColumn, "RelationTableAlias", "");
+            this._DataColumn = dataColumn;
         }
+        private DataColumn _DataColumn;
         /// <summary>
         /// Vrátí hodnotu požadovaného typu z dané property
         /// </summary>
-        /// <param name="dataColumn"></param>
         /// <param name="propertyName"></param>
         /// <param name="defaultValue"></param>
         /// <returns></returns>
-        protected int GetPropertyValue(DataColumn dataColumn, string propertyName, int defaultValue)
+        protected int GetPropertyValue(string propertyName, int defaultValue)
         {
             object value;
-            if (!this.TryGetPropertyValue(dataColumn, propertyName, out value)) return defaultValue;
+            if (!this.TryGetPropertyValue(propertyName, out value)) return defaultValue;
             if (value is Int32) return (Int32)value;
             if (value is Int16) return (Int32)value;
             int number;
@@ -3191,14 +3190,13 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <summary>
         /// Vrátí hodnotu požadovaného typu z dané property
         /// </summary>
-        /// <param name="dataColumn"></param>
         /// <param name="propertyName"></param>
         /// <param name="defaultValue"></param>
         /// <returns></returns>
-        protected int? GetPropertyValue(DataColumn dataColumn, string propertyName, int? defaultValue)
+        protected int? GetPropertyValue(string propertyName, int? defaultValue)
         {
             object value;
-            if (!this.TryGetPropertyValue(dataColumn, propertyName, out value)) return defaultValue;
+            if (!this.TryGetPropertyValue(propertyName, out value)) return defaultValue;
             if (value is Int32) return (Int32)value;
             if (value is Int16) return (Int32)value;
             int number;
@@ -3208,14 +3206,13 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <summary>
         /// Vrátí hodnotu požadovaného typu z dané property
         /// </summary>
-        /// <param name="dataColumn"></param>
         /// <param name="propertyName"></param>
         /// <param name="defaultValue"></param>
         /// <returns></returns>
-        protected bool GetPropertyValue(DataColumn dataColumn, string propertyName, bool defaultValue)
+        protected bool GetPropertyValue(string propertyName, bool defaultValue)
         {
             object value;
-            if (!this.TryGetPropertyValue(dataColumn, propertyName, out value)) return defaultValue;
+            if (!this.TryGetPropertyValue(propertyName, out value)) return defaultValue;
             if (value == null) return defaultValue;
             if (value is Boolean) return (Boolean)value;
             if (!(value is String)) return defaultValue;
@@ -3225,123 +3222,136 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <summary>
         /// Vrátí hodnotu požadovaného typu z dané property
         /// </summary>
-        /// <param name="dataColumn"></param>
         /// <param name="propertyName"></param>
         /// <param name="defaultValue"></param>
         /// <returns></returns>
-        protected string GetPropertyValue(DataColumn dataColumn, string propertyName, string defaultValue)
+        protected string GetPropertyValue(string propertyName, string defaultValue)
         {
             object value;
-            if (!this.TryGetPropertyValue(dataColumn, propertyName, out value)) return defaultValue;
+            if (!this.TryGetPropertyValue(propertyName, out value)) return defaultValue;
             if (value == null) return defaultValue;
             if (value is String) return (String)value;
             return value.ToString();
         }
         /// <summary>
-        /// POkusí se najít a vrátit hodnotu z dané property
+        /// Pokusí se najít a vrátit hodnotu z dané property
         /// </summary>
-        /// <param name="dataColumn"></param>
         /// <param name="propertyName"></param>
         /// <param name="value"></param>
         /// <returns></returns>
-        protected bool TryGetPropertyValue(DataColumn dataColumn, string propertyName, out object value)
+        protected bool TryGetPropertyValue(string propertyName, out object value)
         {
+            DataColumn dataColumn = this._DataColumn;
             value = null;
             if (dataColumn == null || dataColumn.ExtendedProperties.Count == 0 || !dataColumn.ExtendedProperties.ContainsKey(propertyName)) return false;
             value = dataColumn.ExtendedProperties[propertyName];
             return true;
+        }
+        /// <summary>
+        /// Vloží danou hodnotu do daného klíče
+        /// </summary>
+        /// <param name="propertyName"></param>
+        /// <param name="value"></param>
+        protected void SetPropertyValue(string propertyName, object value)
+        {
+            DataColumn dataColumn = this._DataColumn;
+            if (dataColumn == null) return;
+            if (dataColumn.ExtendedProperties.Count == 0 || !dataColumn.ExtendedProperties.ContainsKey(propertyName))
+                dataColumn.ExtendedProperties.Add(propertyName, value);
+            else
+                dataColumn.ExtendedProperties[propertyName] = value;
         }
         #endregion
         #region Public properties, obsahující hodnoty
         /// <summary>
         /// Číslo třídy, z níž pochází data šablony
         /// </summary>
-        public int? ClassNumber { get; private set; }
+        public int? ClassNumber { get { return this.GetPropertyValue("ClassNumber", (int?)null); } set { this.SetPropertyValue("ClassNumber", value); } }
         /// <summary>
         /// Číslo šablony
         /// </summary>
-        public int? TemplateNumber { get; private set; }
+        public int? TemplateNumber { get { return this.GetPropertyValue("TemplateNumber", (int?)null); } set { this.SetPropertyValue("TemplateNumber", value); } }
         /// <summary>
         /// Alias sloupce = ColumnName
         /// </summary>
-        public string Alias { get; private set; }
+        public string Alias { get { return this.GetPropertyValue("Alias", ""); } set { this.SetPropertyValue("Alias", value); } }
         /// <summary>
         /// Povolit řádkové filtrování
         /// </summary>
-        public bool AllowRowFilter { get; private set; }
+        public bool AllowRowFilter { get { return this.GetPropertyValue("AllowRowFilter", true); } set { this.SetPropertyValue("AllowRowFilter", value); } }
         /// <summary>
         /// Povolit třídění
         /// </summary>
-        public bool AllowSort { get; private set; }
+        public bool AllowSort { get { return this.GetPropertyValue("AllowSort", true); } set { this.SetPropertyValue("AllowSort", value); } }
         /// <summary>
         /// Typ sloupce v přehledu: pomocný, datový, ... Zobrazují se vždy jen sloupce typu DataColumn, ostatní sloupce jsou pomocné.
         /// Aktuálně hodnoty: SubjectNumber, ObjectNumber, DataColumn, RelationHelpfulColumn, TotalCountHelpfulColumn
         /// </summary>
-        public string BrowseColumnType { get; private set; }
+        public string BrowseColumnType { get { return this.GetPropertyValue("BrowseColumnType", ""); } set { this.SetPropertyValue("BrowseColumnType", value); } }
         /// <summary>
         /// Název sloupce v SQL selectu
         /// </summary>
-        public string CodeName_FromSelect { get; private set; }
+        public string CodeName_FromSelect { get { return this.GetPropertyValue("CodeName_FromSelect", ""); } set { this.SetPropertyValue("CodeName_FromSelect", value); } }
         /// <summary>
         /// Název sloupce uvedený v definici šablony
         /// </summary>
-        public string CodeName_FromTemplate { get; private set; }
+        public string CodeName_FromTemplate { get { return this.GetPropertyValue("CodeName_FromTemplate", ""); } set { this.SetPropertyValue("CodeName_FromTemplate", value); } }
         /// <summary>
         /// Číslo vztahu, z něhož pochází tento sloupec
         /// </summary>
-        public int ColRelNum { get; private set; }
+        public int ColRelNum { get { return this.GetPropertyValue("ColRelNum", 0); } set { this.SetPropertyValue("ColRelNum", value); } }
         /// <summary>
         /// Datový typ sloupce - NrsTypes (může se lišit od Repozitory, upravuje se dle dat, která se načtou do přehledu - DDLB, ...)
         /// </summary>
-        public string ColType { get; private set; }
+        public string ColType { get { return this.GetPropertyValue("ColType", ""); } set { this.SetPropertyValue("ColType", value); } }
         /// <summary>
         /// Datový typ sloupce - NrsTypes (definice dle Repozitory - to, co je vidět)
         /// </summary>
-        public string DataTypeRepo { get; private set; }
+        public string DataTypeRepo { get { return this.GetPropertyValue("DataTypeRepo", ""); } set { this.SetPropertyValue("DataTypeRepo", value); } }
         /// <summary>
         /// Datový typ sloupce - c# SystemTypes
         /// </summary>
-        public string DataTypeSystem { get; private set; }
+        public string DataTypeSystem { get { return this.GetPropertyValue("DataTypeSystem", ""); } set { this.SetPropertyValue("DataTypeSystem", value); } }
         /// <summary>
         /// Formát sloupce v přehledu
         /// </summary>
-        public string Format { get; private set; }
+        public string Format { get { return this.GetPropertyValue("Format", ""); } set { this.SetPropertyValue("Format", value); } }
         /// <summary>
         /// Vrátí index sloupce v seznamu sloupců. Pokud sloupec do žádného seznamu nepatří, vrátí -1.
         /// </summary>
-        public int Index { get; private set; }
+        public int Index { get { return this.GetPropertyValue("Index", 0); } set { this.SetPropertyValue("Index", value); } }
         /// <summary>
         /// Informace o viditelnosti sloupce (zda má být vidět v přehledu)
         /// </summary>
-        public bool IsVisible { get; private set; }
+        public bool IsVisible { get { return this.GetPropertyValue("IsVisible", true); } set { this.SetPropertyValue("IsVisible", value); } }
         /// <summary>
         /// Nadpis sloupce v přehledu
         /// </summary>
-        public string Label { get; private set; }
+        public string Label { get { return this.GetPropertyValue("Label", ""); } set { this.SetPropertyValue("Label", value); } }
         /// <summary>
         /// Pořadí sloupce v přehledu - pořadí zobrazení
         /// </summary>
-        public int? SortIndex { get; private set; }
+        public int? SortIndex { get { return this.GetPropertyValue("SortIndex", (int?)null); } set { this.SetPropertyValue("SortIndex", value); } }
         /// <summary>
         /// Šířka sloupce v přehledu
         /// </summary>
-        public int Width { get; private set; }
+        public int Width { get { return this.GetPropertyValue("Width", 0); } set { this.SetPropertyValue("Width", value); } }
         /// <summary>
         /// Číslo třídy vztaženého záznamu v tomto sloupci
         /// </summary>
-        public int? RelationClassNumber { get; private set; }
+        public int? RelationClassNumber { get { return this.GetPropertyValue("RelationClassNumber", (int?)null); } set { this.SetPropertyValue("RelationClassNumber", value); } }
         /// <summary>
         /// Číslo vztahu v tomto sloupci, je rovno <see cref="ColRelNum"/>
         /// </summary>
-        public int? RelationNumber { get; private set; }
+        public int? RelationNumber { get { return this.GetPropertyValue("RelationNumber", (int?)null); } set { this.SetPropertyValue("RelationNumber", value); } }
         /// <summary>
         /// Strana vztahu: Undefined, Left, Right
         /// </summary>
-        public string RelationSide { get; private set; }
+        public string RelationSide { get { return this.GetPropertyValue("RelationSide", ""); } set { this.SetPropertyValue("RelationSide", value); } }
         /// <summary>
         /// Databáze, kde máme hledat vztah (Product, Archival)
         /// </summary>
-        public string RelationVolumeType { get; private set; }
+        public string RelationVolumeType { get { return this.GetPropertyValue("RelationVolumeType", ""); } set { this.SetPropertyValue("RelationVolumeType", value); } }
         /// <summary>
         /// Alias tabulky, která nese číslo záznamu ve vztahu pro jeho rozkliknutí.
         /// Typický obsah: "TabGS_1_4".
@@ -3349,7 +3359,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// $"H_RN_{RelationNumber}_{RelationTableAlias}_RN_H", tedy ve výsledku: "H_RN_102037_TabGS_1_4_RN_H".
         /// Zcela stačí načíst obsah property <see cref="RelationRecordColumnName"/>.
         /// </summary>
-        public string RelationTableAlias { get; private set; }
+        public string RelationTableAlias { get { return this.GetPropertyValue("RelationTableAlias", ""); } set { this.SetPropertyValue("RelationTableAlias", value); } }
         /// <summary>
         /// Název sloupce, který obsahuje číslo záznamu, jehož reference nebo název jsou v aktuálním sloupci zobrazeny.
         /// </summary>
