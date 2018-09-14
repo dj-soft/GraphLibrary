@@ -12,9 +12,10 @@ using System.Text;
 using System.Threading.Tasks;
 
 // Tento soubor obsahuje sadu tříd a enumů, které popisují data pro plugin WorkScheduler. Tato data se plní v Greenu a přes XML persistor se předávají do pluginu WorkScheduler.
+// Tento soubor se nachází jednak v Greenu: Noris\App\Lcs\Base\WorkSchedulerShared.cs, a zcela identický i v GraphLibrary: \GraphLib\Shared\WorkSchedulerShared.cs
 namespace Noris.LCS.Base.WorkScheduler
 {
-    #region GuiData předávaná mezi Helios Green a WorkScheduler. Identický balík je v GraphLib\Scheduler\WorkSchedulerDataSync.cs a v Manufacturing\WorkSchedulerShared.cs
+    #region GuiData předávaná mezi Helios Green a WorkScheduler
     #region GuiData : Kompletní datový balík, jehož data budou zobrazena v pluginu ASOL.WorkScheduler
     /// <summary>
     /// GuiData : Kompletní datový balík, jehož data budou zobrazena v pluginu ASOL.WorkScheduler.
@@ -561,7 +562,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Data vložená do ExtendedProperties se tím neztrácejí.
         /// </remarks>
         [PersistingEnabled(false)]
-        public DataColumnExtendedInfo[] ColumnsExtendedInfo
+        public DataColumnsExtendedInfo ColumnsExtendedInfo
         {
             get
             {
@@ -569,12 +570,13 @@ namespace Noris.LCS.Base.WorkScheduler
                 {
                     System.Data.DataTable dataTable = this.DataTable;
                     if (dataTable != null)
-                        this._ColumnsExtendedInfo = DataColumnExtendedInfo.CreateForTable(dataTable);
+                        this._ColumnsExtendedInfo = DataColumnsExtendedInfo.CreateForTable(dataTable);
                 }
+                this._DataSerial = null;
                 return this._ColumnsExtendedInfo;
             }
         }
-        private DataColumnExtendedInfo[] _ColumnsExtendedInfo;
+        private DataColumnsExtendedInfo _ColumnsExtendedInfo;
         /// <summary>
         /// Implicitní konverze z <see cref="GuiTable"/> na <see cref="System.Data.DataTable"/>.
         /// Pokud je na vstupu <see cref="GuiTable"/> = null, pak na výstupu je <see cref="System.Data.DataTable"/> == null.
@@ -3181,7 +3183,7 @@ namespace Noris.LCS.Base.WorkScheduler
         {
             int count = dataTable.Columns.Count;
             DataColumnExtendedInfo[] infos = new DataColumnExtendedInfo[count];
-            for (int c = 0; c < count;c++)
+            for (int c = 0; c < count; c++)
                 infos[c] = new DataColumnExtendedInfo(dataTable.Columns[c]);
             return infos;
         }
@@ -3295,6 +3297,44 @@ namespace Noris.LCS.Base.WorkScheduler
             else
                 dataColumn.ExtendedProperties[propertyName] = value;
         }
+        /// <summary>
+        /// Metoda vrátí typovou hodnotu <see cref="BrowseColumnType"/> ze stringu
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="defaultValue"></param>
+        /// <returns></returns>
+        protected static BrowseColumnType GetEnum(string text, BrowseColumnType defaultValue)
+        {
+            if (!String.IsNullOrEmpty(text))
+            {
+                switch (text)
+                {
+                    case "SubjectNumber": return BrowseColumnType.SubjectNumber;
+                    case "ObjectNumber": return BrowseColumnType.ObjectNumber;
+                    case "DataColumn": return BrowseColumnType.DataColumn;
+                    case "RelationHelpfulColumn": return BrowseColumnType.RelationHelpfulColumn;
+                    case "TotalCountHelpfulColumn": return BrowseColumnType.TotalCountHelpfulColumn;
+                }
+            }
+            return defaultValue;
+        }
+        /// <summary>
+        /// Metoda vrátí typovou hodnotu <see cref="BrowseColumnType"/> ze stringu
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        protected static string GetText(BrowseColumnType value)
+        {
+            switch (value)
+            {
+                case BrowseColumnType.SubjectNumber: return "SubjectNumber";
+                case BrowseColumnType.ObjectNumber: return "ObjectNumber";
+                case BrowseColumnType.DataColumn: return "DataColumn";
+                case BrowseColumnType.RelationHelpfulColumn: return "RelationHelpfulColumn";
+                case BrowseColumnType.TotalCountHelpfulColumn: return "TotalCountHelpfulColumn";
+            }
+            return "";
+        }
         #endregion
         #region Public properties, obsahující hodnoty
         /// <summary>
@@ -3321,7 +3361,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Typ sloupce v přehledu: pomocný, datový, ... Zobrazují se vždy jen sloupce typu DataColumn, ostatní sloupce jsou pomocné.
         /// Aktuálně hodnoty: SubjectNumber, ObjectNumber, DataColumn, RelationHelpfulColumn, TotalCountHelpfulColumn
         /// </summary>
-        public string BrowseColumnType { get { return this.GetPropertyValue("BrowseColumnType", ""); } set { this.SetPropertyValue("BrowseColumnType", value); } }
+        public BrowseColumnType BrowseColumnType { get { return GetEnum(this.GetPropertyValue("BrowseColumnType", ""), BrowseColumnType.None); } set { this.SetPropertyValue("BrowseColumnType", GetText(value)); } }
         /// <summary>
         /// Název sloupce v SQL selectu
         /// </summary>
@@ -3402,8 +3442,124 @@ namespace Noris.LCS.Base.WorkScheduler
         /// true pokud tento sloupec má být k dispozici uživateli (jeho viditelnost se pak řídí pomocí <see cref="IsVisible"/>),
         /// false pro sloupce "systémové", které se nikdy nezobrazují.
         /// </summary>
-        public bool ColumnIsForUser { get { return (!String.IsNullOrEmpty(this.BrowseColumnType) && this.BrowseColumnType == "DataColumn"); } }
+        public bool ColumnIsForUser { get { return (this.BrowseColumnType == BrowseColumnType.DataColumn); } }
+        #endregion
+        #region Support
+        /// <summary>
+        /// Metoda, která jednoduše nastaví daný sloupec tabulky tak, aby byl zobrazen uživateli v Gridu.
+        /// Metoda nastaví hodnoty podle parametrů, a navíc nastaví: <see cref="BrowseColumnType"/> = <see cref="BrowseColumnType.DataColumn"/>;
+        /// a <see cref="IsVisible"/> = true.
+        /// </summary>
+        /// <param name="label">Titulkový text sloupce</param>
+        /// <param name="width">Šířka sloupce v pixelech</param>
+        /// <param name="allowSort">Povolit třídění, výchozí = true</param>
+        /// <param name="format">Formátovací string pro obsah sloupce, výchozí = null</param>
+        /// <param name="allowRowFilter">Povolit řádkový filtr pro sloupec, výchozí = false</param>
+        public void PrepareDataColumn(string label, int width, bool allowSort = true, string format = null, bool allowRowFilter = false)
+        {
+            this.Label = label;
+            this.Width = width;
+            this.BrowseColumnType = BrowseColumnType.DataColumn;
+            this.IsVisible = true;
+            this.AllowRowFilter = allowRowFilter;
+            this.AllowSort = allowSort;
+            this.Format = format;
+        }
         #endregion
     }
+    /// <summary>
+    /// DataColumnsExtendedInfo : Třída obsahující rozšířené informace o všech sloupcích tabulky <see cref="DataColumn"/>),
+    /// </summary>
+    public class DataColumnsExtendedInfo
+    {
+        #region Konstrukce, načtení dat
+        /// <summary>
+        /// Vytvoří instanci <see cref="DataColumnsExtendedInfo"/> pro sloupce dané tabulky.
+        /// </summary>
+        /// <param name="dataTable"></param>
+        /// <returns></returns>
+        public static DataColumnsExtendedInfo CreateForTable(DataTable dataTable)
+        {
+            if (dataTable == null) return null;
+            return new DataColumnsExtendedInfo(dataTable);
+        }
+        /// <summary>
+        /// Konstruktor, rovnou načte data
+        /// </summary>
+        /// <param name="dataTable"></param>
+        private DataColumnsExtendedInfo(DataTable dataTable)
+        { 
+            int count = dataTable.Columns.Count;
+
+            this._InfoIndexDict = new Dictionary<int, DataColumnExtendedInfo>();
+            this._InfoNameDict = new Dictionary<string, DataColumnExtendedInfo>();
+            for (int c = 0; c < count; c++)
+            {
+                DataColumn column = dataTable.Columns[c];
+                DataColumnExtendedInfo info = DataColumnExtendedInfo.CreateForColumn(column);
+                this._InfoIndexDict.Add(c, info);
+                string key = GetKey(column.ColumnName);
+                if (!this._InfoNameDict.ContainsKey(key))
+                    this._InfoNameDict.Add(key, info);
+            }
+        }
+        private Dictionary<int, DataColumnExtendedInfo> _InfoIndexDict;
+        private Dictionary<string, DataColumnExtendedInfo> _InfoNameDict;
+        private static string GetKey(string columnName)
+        {
+            return (columnName == null ? "" : columnName.Trim().ToLower());
+        }
+        #endregion
+        #region Public properties
+        /// <summary>
+        /// Vrátí <see cref="DataColumnExtendedInfo"/> pro sloupec na daném indexu.
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        public DataColumnExtendedInfo this[int index] { get { return this._InfoIndexDict[index]; } }
+        /// <summary>
+        /// Vrátí <see cref="DataColumnExtendedInfo"/> pro sloupec daného jména.
+        /// </summary>
+        /// <param name="columnName"></param>
+        /// <returns></returns>
+        public DataColumnExtendedInfo this[string columnName] { get { return this._InfoNameDict[GetKey(columnName)]; } }
+        /// <summary>
+        /// Počet položek v tomto úložišti, odpovídá počtu sloupců tabulky
+        /// </summary>
+        public int Count { get { return this._InfoIndexDict.Count; } }
+        #endregion
+    }
+    #region Enum BrowseColumnType
+    /// <summary>
+    /// Typ dat ve sloupci
+    /// </summary>
+    public enum BrowseColumnType
+    {
+        /// <summary>
+        /// Neurčeno
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Číslo [non]subjektu
+        /// </summary>
+        SubjectNumber,
+        /// <summary>
+        /// Číslo objektu
+        /// </summary>
+        ObjectNumber,
+        /// <summary>
+        /// Data zobrazovaná uživateli
+        /// </summary>
+        DataColumn,
+        /// <summary>
+        /// Data pomocná pro řešení statického vztahu
+        /// </summary>
+        RelationHelpfulColumn,
+        /// <summary>
+        /// Informace o počtu záznamů
+        /// </summary>
+        TotalCountHelpfulColumn
+    }
+    #endregion
     #endregion
 }

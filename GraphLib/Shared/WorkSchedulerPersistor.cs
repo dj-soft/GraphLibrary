@@ -15,6 +15,7 @@ using System.Xml.Linq;
 using System.Collections;
 
 // Tento soubor obsahuje třídy, které provádějí serializaci a deserializaci libovolného objektu do XML formátu.
+// Tento soubor se nachází jednak v Greenu: Noris\App\Lcs\Base\WorkSchedulerPersistor.cs, a zcela identický i v GraphLibrary: \GraphLib\Shared\WorkSchedulerPersistor.cs
 namespace Noris.LCS.Base.WorkScheduler
 {
     // public rozhraní:

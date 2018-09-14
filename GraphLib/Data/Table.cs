@@ -1064,7 +1064,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Obsluha události DoubleClick na buňku tabulky
         /// </summary>
         /// <param name="cell"></param>
-        /// <param name="eventSource"></param>
+        /// <param name="e"></param>
         /// <param name="callEvents"></param>
         void ITableEventTarget.CallActiveCellDoubleClick(Cell cell, GInteractiveChangeStateArgs e, bool callEvents)
         {
@@ -1083,7 +1083,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Obsluha události LongClick na buňku tabulky
         /// </summary>
         /// <param name="cell"></param>
-        /// <param name="eventSource"></param>
+        /// <param name="e"></param>
         /// <param name="callEvents"></param>
         void ITableEventTarget.CallActiveCellLongClick(Cell cell, GInteractiveChangeStateArgs e, bool callEvents)
         {
@@ -1101,7 +1101,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Obsluha události RightClick na buňku tabulky
         /// </summary>
         /// <param name="cell"></param>
-        /// <param name="eventSource"></param>
+        /// <param name="e"></param>
         /// <param name="callEvents"></param>
         void ITableEventTarget.CallActiveCellRightClick(Cell cell, GInteractiveChangeStateArgs e, bool callEvents)
         {
@@ -1123,7 +1123,8 @@ namespace Asol.Tools.WorkScheduler.Data
         /// a to na základě detekce obsahu buňky, obsahu sloupce atd.
         /// </summary>
         /// <param name="cell"></param>
-        /// <param name="eventSource"></param>
+        /// <param name="args"></param>
+        /// <param name="callEvents"></param>
         protected virtual void DataCellDoubleClick(Cell cell, GPropertyEventArgs<Cell> args, bool callEvents)
         {
             if (cell == null) return;
@@ -2002,40 +2003,65 @@ namespace Asol.Tools.WorkScheduler.Data
             this.RelationSide = GetRelationSide(extendedInfo);
             this.RelatedRecordColumnName = extendedInfo.RelationRecordColumnName;
         }
+        /// <summary>
+        /// Vrátí typ obsahu pro daný sloupec, podle jeho <see cref="DataColumnExtendedInfo.BrowseColumnType"/> a dalších hodnot
+        /// </summary>
+        /// <param name="extendedInfo"></param>
+        /// <returns></returns>
         protected static ColumnContentType GetColumnContent(DataColumnExtendedInfo extendedInfo)
         {
             if (extendedInfo.Index == 0) return ColumnContentType.RecordId;
             switch (extendedInfo.BrowseColumnType)
             {
-                case "SubjectNumber":
+                case BrowseColumnType.SubjectNumber:
                     return ColumnContentType.RecordId;
-                case "ObjectNumber":
+                case BrowseColumnType.ObjectNumber:
                     return ColumnContentType.EntryId;
-                case "DataColumn":
+                case BrowseColumnType.DataColumn:
                     bool isRelation = (extendedInfo.RelationNumber > 0 && extendedInfo.RelationClassNumber > 0);
                     return (isRelation ? ColumnContentType.RelationRecordData : ColumnContentType.UserData);
-                case "RelationHelpfulColumn":
+                case BrowseColumnType.RelationHelpfulColumn:
                     return ColumnContentType.RelationRecordId;
-                case "TotalCountHelpfulColumn":
+                case BrowseColumnType.TotalCountHelpfulColumn:
                     return ColumnContentType.HiddenData;
             }
             return ColumnContentType.None;
         }
+        /// <summary>
+        /// Vrací formátovací string pro sloupec
+        /// </summary>
+        /// <param name="extendedInfo"></param>
+        /// <returns></returns>
         protected static string GetFormatString(DataColumnExtendedInfo extendedInfo)
         {
             string format = extendedInfo.Format;
             return null;
         }
+        /// <summary>
+        /// Vrací šířku v pixelech pro daný sloupec
+        /// </summary>
+        /// <param name="extendedInfo"></param>
+        /// <returns></returns>
         protected static int? GetWidth(DataColumnExtendedInfo extendedInfo)
         {
             return 1 * extendedInfo.Width;
         }
+        /// <summary>
+        /// Vrací šíslo třídy pro daný sloupec, pokud je zadaná
+        /// </summary>
+        /// <param name="extendedInfo"></param>
+        /// <returns></returns>
         protected static int? GetClassNumber(DataColumnExtendedInfo extendedInfo)
         {
             if (extendedInfo.Index == 0) return extendedInfo.ClassNumber;
             if (extendedInfo.RelationClassNumber.HasValue) return extendedInfo.RelationClassNumber;
             return null;
         }
+        /// <summary>
+        /// Vrací stranu vztahu pro daný sloupec
+        /// </summary>
+        /// <param name="extendedInfo"></param>
+        /// <returns></returns>
         protected static RelationMasterSide? GetRelationSide(DataColumnExtendedInfo extendedInfo)
         {
             if (!extendedInfo.RelationClassNumber.HasValue) return null;
