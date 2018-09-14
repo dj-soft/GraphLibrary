@@ -45,16 +45,17 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             string dataPack = this.SearchForDataPack();
             if (dataPack == null) return;
+            dataPack = Noris.LCS.Base.WorkScheduler.WorkSchedulerSupport.Decompress(dataPack);
+            Noris.LCS.Base.WorkScheduler.GuiData guiData = Noris.LCS.Base.WorkScheduler.Persist.Deserialize(dataPack) as Noris.LCS.Base.WorkScheduler.GuiData;
+            if (guiData == null) return;
 
             try
             {
                 using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority3_BellowNormal, "PluginForm", "InitializeWorkScheduler", ""))
                 {
                     this.MainData = new Scheduler.MainData(this as IAppHost);
-                    this.MainData.LoadData(dataPack);
-                    this.MainControl = this.MainData.CreateControl();
-                    this.Controls.Add(this.MainControl);
-                    this.MainControl.Dock = DockStyle.Fill;
+                    this.MainData.LoadData(guiData);
+                    this.MainData.CreateControlToForm(this);
                 }
             }
             catch (Exception exc)

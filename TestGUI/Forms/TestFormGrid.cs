@@ -10,7 +10,7 @@ using System.Windows.Forms;
 using Asol.Tools.WorkScheduler.Data;
 using Asol.Tools.WorkScheduler.Components;
 using Asol.Tools.WorkScheduler.Components.Graph;
-using Noris.LCS.Manufacturing.WorkScheduler;
+using Noris.LCS.Base.WorkScheduler;
 
 namespace Asol.Tools.WorkScheduler.TestGUI
 {
@@ -348,7 +348,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 item.Height = 5f;
                 item.ToolTip = "Ranní směna";
                 item.BackColor = Color.FromArgb(240, 240, 255);
-                item.BorderColor = Color.Green;
+                item.LineColor = Color.Green;
                 graph.ItemList.Add(item);
 
                 item = new TestGraphItem();
@@ -359,7 +359,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 item.Height = 0.40f;
                 item.ToolTip = "Ranní směna";
                 item.BackColor = Color.FromArgb(240, 240, 255);
-                item.BorderColor = Color.Green;
+                item.LineColor = Color.Green;
                 graph.ItemList.Add(item);
 
 
@@ -375,7 +375,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 item.Height = 5f;
                 item.ToolTip = "Odpolední směna";
                 item.BackColor = Color.FromArgb(240, 255, 240);
-                item.BorderColor = Color.Blue;
+                item.LineColor = Color.Blue;
                 graph.ItemList.Add(item);
 
                 item = new TestGraphItem();
@@ -386,7 +386,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 item.Height = 0.40f;
                 item.ToolTip = "Odpolední směna";
                 item.BackColor = Color.FromArgb(240, 255, 240);
-                item.BorderColor = Color.Blue;
+                item.LineColor = Color.Blue;
                 graph.ItemList.Add(item);
 
                 for (int t = 0; t < 7; t++)
@@ -433,7 +433,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                     item.Height = height;
                     item.ToolTip = tooltip;
                     item.BackColor = backColor;
-                    item.BorderColor = Color.Black;
+                    item.LineColor = Color.Black;
 
                     graph.ItemList.Add(item);
 
@@ -477,7 +477,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                     item.Height = 1f;
                     item.ToolTip = "Ranní směna";
                     item.BackColor = Color.FromArgb(192, 255, 192);
-                    item.BorderColor = Color.FromArgb(128, 160, 128);
+                    item.LineColor = Color.FromArgb(128, 160, 128);
                     graph.ItemList.Add(item);
 
                     for (int t = 0; t < 7; t++)
@@ -505,7 +505,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 item.Height = 0.5f;
                 item.ToolTip = "Přiřazen k operaci " + (10 * (t + 1)).ToString();
                 item.BackColor = Color.FromArgb(230, 216, 255);
-                item.BorderColor = Color.FromArgb(180, 160, 192);
+                item.LineColor = Color.FromArgb(180, 160, 192);
 
                 graph.ItemList.Add(item);
 
@@ -574,20 +574,23 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         #region Public members
         public TestGraphItem()
         {
-            this._ItemId = Application.App.GetNextId(typeof(ITimeGraphItem));
+            this.ItemId = Application.App.GetNextId(typeof(ITimeGraphItem));
         }
         private ITimeInteractiveGraph _OwnerGraph;
         /// <summary>
         /// Jednoznačný identifikátor prvku
         /// </summary>
-        public Int32 ItemId { get { return this._ItemId; } }
-        private Int32 _ItemId;
+        public Int32 ItemId { get; private set; }
         /// <summary>
         /// GroupId: číslo skupiny. Prvky se shodným GroupId budou vykreslovány do společného "rámce", 
         /// a pokud mezi jednotlivými prvky <see cref="ITimeGraphItem"/> se shodným <see cref="GroupId"/> bude na ose X nějaké volné místo,
         /// nebude mezi nimi vykreslován žádný "cizí" prvek.
         /// </summary>
         public Int32 GroupId { get; set; }
+        /// <summary>
+        /// Časový interval tohoto prvku
+        /// </summary>
+        public virtual TimeRange Time { get; set; }
         /// <summary>
         /// Layer: Vizuální vrstva. Prvky z různých vrstev jsou kresleny "přes sebe" = mohou se překrývat.
         /// Nižší hodnota je kreslena dříve.
@@ -606,19 +609,13 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// </summary>
         public Int32 Order { get; set; }
         /// <summary>
-        /// Časový interval tohoto prvku
-        /// </summary>
-        public virtual TimeRange Time { get; set; }
-        /// <summary>
         /// Relativní výška tohoto prvku. Standardní hodnota = 1.0F. Fyzická výška (v pixelech) jednoho prvku je dána součinem 
         /// <see cref="Height"/> * <see cref="GTimeGraph.GraphParameters"/>: <see cref="TimeGraphProperties.OneLineHeight"/>
         /// Prvky s výškou 0 a menší nebudou vykresleny.
         /// </summary>
         public float Height { get; set; }
-        /// <summary>
-        /// Režim editovatelnosti položky grafu
-        /// </summary>
-        public GraphItemBehaviorMode BehaviorMode { get; set; }
+        public string Text { get; set; }
+        public string ToolTip { get; set; }
         /// <summary>
         /// Barva pozadí prvku.
         /// </summary>
@@ -627,7 +624,11 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// Barva spojovací linky mezi prvky jedné skupiny.
         /// Default = null = kreslí se barvou <see cref="BackColor"/>, která je morfována na 50% do barvy DimGray a zprůhledněna na 50%.
         /// </summary>
-        public Color? LinkBackColor { get; set; }
+        public Color? LineColor { get; set; }
+        /// <summary>
+        /// Režim editovatelnosti položky grafu
+        /// </summary>
+        public GraphItemBehaviorMode BehaviorMode { get; set; }
         /// <summary>
         /// Vizuální prvek, který v sobě zahrnuje jak podporu pro vykreslování, tak podporu interaktivity.
         /// A přitom to nevyžaduje od třídy, která fyzicky implementuje <see cref="ITimeGraphItem"/>.
@@ -635,28 +636,27 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// Implementátor pouze poskytuje úložiště pro tuto instanci.
         /// </summary>
         public WorkScheduler.Components.Graph.GTimeGraphItem GControl { get; set; }
-        /// <summary>
-        /// Barva okraje (ohraničení) prvku.
-        /// </summary>
-        public Color? BorderColor { get; set; }
-        public Color? TextColor { get; set; }
-        public string[] Captions { get; set; }
-        public string ToolTip { get; set; }
         #endregion
         #region explicit ITimeGraphItem members
         ITimeInteractiveGraph ITimeGraphItem.OwnerGraph { get { return this._OwnerGraph; } set { this._OwnerGraph = value; } }
-        int ITimeGraphItem.ItemId { get { return this._ItemId; } }
+        int ITimeGraphItem.ItemId { get { return this.ItemId; } }
+        int ITimeGraphItem.GroupId { get { return this.GroupId; } }
+        TimeRange ITimeGraphItem.Time { get { return this.Time; } set { this.Time = value; } }
         int ITimeGraphItem.Layer { get { return this.Layer; } }
         int ITimeGraphItem.Level { get { return this.Level; } }
         int ITimeGraphItem.Order { get { return this.Order; } }
-        int ITimeGraphItem.GroupId { get { return this.GroupId; } }
-        TimeRange ITimeGraphItem.Time { get { return this.Time; } }
         float ITimeGraphItem.Height { get { return this.Height; } }
-        GraphItemBehaviorMode ITimeGraphItem.BehaviorMode { get { return this.BehaviorMode; } }
+        string ITimeGraphItem.Text { get { return this.Text; } }
+        string ITimeGraphItem.ToolTip { get { return this.ToolTip; } }
         Color? ITimeGraphItem.BackColor { get { return this.BackColor; } }
+        Color? ITimeGraphItem.LineColor { get { return this.LineColor; } }
         System.Drawing.Drawing2D.HatchStyle? ITimeGraphItem.BackStyle { get { return null; } }
-        Color? ITimeGraphItem.LinkBackColor { get { return this.LinkBackColor; } }
-        Color? ITimeGraphItem.BorderColor { get { return this.BorderColor; } }
+        float? ITimeGraphItem.RatioBegin { get { return null; } }
+        float? ITimeGraphItem.RatioEnd { get { return null; } }
+        Color? ITimeGraphItem.RatioBackColor { get { return null; } }
+        Color? ITimeGraphItem.RatioLineColor { get { return null; } }
+        int? ITimeGraphItem.RatioLineWidth { get { return null; } }
+        GraphItemBehaviorMode ITimeGraphItem.BehaviorMode { get { return this.BehaviorMode; } }
         WorkScheduler.Components.Graph.GTimeGraphItem ITimeGraphItem.GControl { get { return this.GControl; } set { this.GControl = value; } }
         void ITimeGraphItem.Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode) { this.GControl.DrawItem(e, boundsAbsolute, drawMode); }
         #endregion
