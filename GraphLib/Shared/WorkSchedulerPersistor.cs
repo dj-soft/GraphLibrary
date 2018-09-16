@@ -478,6 +478,8 @@ namespace Noris.LCS.Base.WorkScheduler
                 return value;
             if (DateTime.TryParseExact(text, "F", _Dtfi, System.Globalization.DateTimeStyles.AllowWhiteSpaces | System.Globalization.DateTimeStyles.NoCurrentDateDefault, out value))
                 return value;
+            if (DateTime.TryParse(text, _Dtfi, System.Globalization.DateTimeStyles.AllowWhiteSpaces | System.Globalization.DateTimeStyles.NoCurrentDateDefault, out value))
+                return value;
 
             return DateTime.MinValue;
         }

@@ -14,16 +14,47 @@ namespace Asol.Tools.WorkScheduler.Application
     /// </summary>
     public class Icons
     {
+        #region Konstrukce, výchozí zmapování adresářů a jejich obsahu (nenačítají se obrázky)
+        /// <summary>
+        /// Správce ikonek
+        /// </summary>
+        /// <param name="appPath"></param>
         public Icons(string appPath)
         {
             this._AppPath = appPath;
-            Tuple < string, int, string[]> images = _SearchPicPath(appPath);
-            this._PicPath = images.Item1;
-            this._PicFiles = images.Item3;
+            this._FileDict = new Dictionary<string, string>();
+            this._ImageDict = new Dictionary<string, Image>();
+            Tuple<string, int, string[]> images = _SearchPicPath(appPath);
+            foreach (string fileName in images.Item3)
+            {
+                string ext = System.IO.Path.GetExtension(fileName).ToLower();
+                if (ext == ".png" || ext == ".jpg" || ext == ".gif")
+                {
+                    string key = GetKey(fileName);
+                    if (!this._FileDict.ContainsKey(key))
+                        this._FileDict.Add(key, fileName);
+                }
+            }
         }
+        /// <summary>
+        /// Adresář aplikace
+        /// </summary>
         private string _AppPath;
-        private string _PicPath;
-        private string[] _PicFiles;
+        /// <summary>
+        /// Index souborů, kde klíčem je jméno (získané pomocí <see cref="GetKey(string)"/>, 
+        /// a hodnotu je fullname jména souboru (adresář, jméno, přípona).
+        /// </summary>
+        private Dictionary<string, string> _FileDict;
+        /// <summary>
+        /// Index ikon, kde klíčem je jméno (získané pomocí <see cref="GetKey(string)"/>, 
+        /// a hodnotu je buď načtený obrázek, nebo null (pokud pro daný název neexistuje obrázek).
+        /// </summary>
+        private Dictionary<string, Image> _ImageDict;
+        /// <summary>
+        /// Metoda vyhledá a vrátí adresář, obsahující největší počet souborů.
+        /// </summary>
+        /// <param name="appPath"></param>
+        /// <returns></returns>
         private static Tuple<string, int, string[]> _SearchPicPath(string appPath)
         {
             List<Tuple<string, int, string[]>> paths = new List<Tuple<string, int, string[]>>();
@@ -46,12 +77,31 @@ namespace Asol.Tools.WorkScheduler.Application
             paths.Sort((a, b) => b.Item2.CompareTo(a.Item2));
             return paths[0];
         }
+        /// <summary>
+        /// Vrátí informace o obsahu daného adresáře
+        /// </summary>
+        /// <param name="testPath"></param>
+        /// <returns></returns>
         private static Tuple<string, int, string[]> _SearchOnePath(string testPath)
         {
             if (!System.IO.Directory.Exists(testPath)) return new Tuple<string, int, string[]>(testPath, 0, new string[0]);
             string[] files = System.IO.Directory.GetFiles(testPath, "*.*", System.IO.SearchOption.AllDirectories);
             return new Tuple<string, int, string[]>(testPath, files.Length, files);
         }
+        /// <summary>
+        /// Metoda vrátí klíč pro daný název souboru.
+        /// Klíč neobsahuje adresář ani příponu, ale jméno souboru se nijak jinak nezkrazuje. Je pouze Trim() a ToLower().
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <returns></returns>
+        private static string GetKey(string fileName)
+        {
+            if (String.IsNullOrEmpty(fileName)) return "";
+            string key = System.IO.Path.GetFileNameWithoutExtension(fileName);
+            return key.Trim().ToLower();
+        }
+        #endregion
+        #region Získání obrázku pro dané jméno
         /// <summary>
         /// Indexer vrátí grafickou instanci <see cref="Image"/> pro obrázek daného jména.
         /// Může vrátit null.
@@ -97,9 +147,41 @@ namespace Asol.Tools.WorkScheduler.Application
                 guiImage.Image = null;
             }
         }
+        /// <summary>
+        /// Metoda vrátí Image pro dané jméno.
+        /// </summary>
+        /// <param name="iconName"></param>
+        /// <returns></returns>
         private Image GetImageByName(string iconName)
         {
-            return null;
+            Image image;
+            string key = GetKey(iconName);
+            if (this._ImageDict.TryGetValue(key, out image)) return image;     // Vrátíme Image, nebo i null pokud pro daný klíč něco evidujeme
+            string fileName;
+            if (this._FileDict.TryGetValue(key, out fileName))                 // Pro daný klíč máme soubor?
+                image = GetImage(fileName);
+            this._ImageDict.Add(key, image);
+            return image;
         }
+        /// <summary>
+        /// Metoda vrátí Image z daného souboru.
+        /// Může vrátit null (po jakékoli chybě).
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <returns></returns>
+        private static Image GetImage(string fileName)
+        {
+            Image image = null;
+            try
+            {
+                image = Bitmap.FromFile(fileName);
+            }
+            catch
+            {
+                image = null;
+            }
+            return image;
+        }
+        #endregion
     }
 }

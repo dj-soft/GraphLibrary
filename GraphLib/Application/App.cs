@@ -106,7 +106,7 @@ namespace Asol.Tools.WorkScheduler.Application
         {   // Tyto inicializátory MOHOU používat instanci App. Pořadí inicializátorů je DŮLEŽITÉ, protože již mohou využívat navzájem svých služeb.
             this._PluginInit();
             this._WorkerInit();
-            this._IconsInit();
+            this._ResourcesInit();
             this._RunTest();
         }
         #endregion
@@ -453,20 +453,25 @@ namespace Asol.Tools.WorkScheduler.Application
         }
         private Zoom _Zoom;
         #endregion
-        #region Ikonky aplikace
-        /// <summary>
-        /// Zde je poskytována veškerá podpora pro přístup k ikonkám
-        /// </summary>
-        public static Icons Icons { get { return Instance._Icons; } }
+        #region Ikonky aplikace a další resources
         /// <summary>
         /// Inicializuje instanci objektu Icons
         /// </summary>
-        private void _IconsInit()
+        private void _ResourcesInit()
         {
             string appPath = AppCodePath;
             this._Icons = new Application.Icons(appPath);
+            string resourceFile = System.IO.Path.Combine(appPath, "ASOL.GraphLib.res");
+            this._Resources = new Resources(resourceFile);
         }
-        private Icons _Icons;
+        /// <summary>
+        /// Zde je poskytována veškerá podpora pro přístup k ikonkám
+        /// </summary>
+        public static Icons Icons { get { return Instance._Icons; } } private Icons _Icons;
+        /// <summary>
+        /// Zde je poskytována veškerá podpora pro přístup k resources
+        /// </summary>
+        public static Resources Resources { get { return Instance._Resources; } } private Resources _Resources;
         #endregion
         #region Register / Config
         public static bool RegisterContainsKey(string key)
