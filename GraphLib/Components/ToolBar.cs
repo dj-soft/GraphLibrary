@@ -1407,10 +1407,13 @@ namespace Asol.Tools.WorkScheduler.Components
         protected void DrawItemImage(GInteractiveDrawArgs e, Rectangle boundsAbsolute, FunctionItem activeItem)
         {
             Image image = activeItem.Image;
+            Image imageHot = null;
             if (image != null)
             {
                 Rectangle boundsImageAbsolute = this.BoundsImage.ShiftBy(boundsAbsolute.Location);
-                GPainter.DrawImage(e.Graphics, boundsImageAbsolute, image, activeItem.IsEnabled, ContentAlignment.MiddleCenter);
+                if (this.InteractiveState.IsMouseActive())
+                    imageHot = this._DataItem.ImageHot;
+                GPainter.DrawImage(e.Graphics, boundsImageAbsolute, (imageHot ?? image), activeItem.IsEnabled, ContentAlignment.MiddleCenter);
             }
         }
         protected void DrawItemText(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
