@@ -17,6 +17,7 @@ using System.Threading.Tasks;
 //   Pokud fyzické zdroje ("ASOL.GraphLib.res") jsou novější, pak znovu vygeneruje kompletní obsah souboru "WorkSchedulerResources.cs".
 // Místo, kde je uloženo datum "LastWriteTime" souboru "ASOL.GraphLib.res" je na následujícím řádku:
 //     ResourceFile.LastWriteTime = 2018-09-16 18:30:23.058
+#pragma warning disable 1591
 namespace Noris.LCS.Base.WorkScheduler.Resources.Images
 {
     /// <summary>
@@ -1679,3 +1680,4 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Other
         public const string ThumbsDb = "status/thumbs.db";
     }
 }
+#pragma warning restore 1591

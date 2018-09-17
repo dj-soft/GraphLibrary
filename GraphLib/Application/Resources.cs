@@ -138,6 +138,12 @@ namespace Asol.Tools.WorkScheduler.Application
             }
             catch { }
         }
+        /// <summary>
+        /// Metoda vrátí obsah souboru "WorkSchedulerResources.cs", pro dané datum souboru .res a pro jeho obsah (soupis jeho položek = souborů v ZIPu).
+        /// </summary>
+        /// <param name="resourceDate"></param>
+        /// <param name="fileKeys"></param>
+        /// <returns></returns>
         private static string _SaveResourceClassCreateContent(DateTime resourceDate, IEnumerable<string> fileKeys)
         {
             List<_ResFileInfo> fileList = fileKeys.Select(k => new _ResFileInfo(k)).ToList();
@@ -163,25 +169,26 @@ namespace Asol.Tools.WorkScheduler.Application
             sb.AppendLine("//   Pokud fyzické zdroje (\"ASOL.GraphLib.res\") jsou novější, pak znovu vygeneruje kompletní obsah souboru \"WorkSchedulerResources.cs\".");
             sb.AppendLine("// Místo, kde je uloženo datum \"LastWriteTime\" souboru \"ASOL.GraphLib.res\" je na následujícím řádku:");
             sb.AppendLine("//     ResourceFile.LastWriteTime = " + Noris.LCS.Base.WorkScheduler.Convertor.DateTimeToString(resourceDate));
+            sb.AppendLine("#pragma warning disable 1591");
 
-            var nsGroups = fileList.GroupBy(rfi => rfi.Namespace);
-            foreach (var nsGroup in nsGroups)
-            {
-                sb.AppendLine("namespace Noris.LCS.Base.WorkScheduler.Resources." + nsGroup.Key);
+            var nameSpaces = fileList.GroupBy(rfi => rfi.Namespace);
+            foreach (var nameSpace in nameSpaces)
+            {   // Grupa nameSpace obsahuje všechny položky _ResFileInfo, které mají stejný Namespace:
+                sb.AppendLine("namespace Noris.LCS.Base.WorkScheduler.Resources." + nameSpace.Key);
                 sb.AppendLine("{");
-                var cnGroups = nsGroup.GroupBy(rfi => rfi.ClassName);
-                foreach (var cnGroup in cnGroups)
-                {
-                    List<_ResFileInfo> cnFiles = cnGroup.ToList();
-                    cnFiles.Sort((a, b) => String.Compare(a.FileName, b.FileName));
-                    _ResFileInfo first = cnFiles[0];
+                var classNames = nameSpace.GroupBy(rfi => rfi.ClassName);
+                foreach (var className in classNames)
+                {   // Grupa className obsahuje všechny položky _ResFileInfo, které mají stejný ClassName:
+                    List<_ResFileInfo> classFiles = className.ToList();
+                    classFiles.Sort((a, b) => String.Compare(a.FileName, b.FileName));
+                    _ResFileInfo first = classFiles[0];
                     sb.AppendLine("    /// <summary>");
                     sb.AppendLine("    /// Obsah adresáře " + first.ClassText);
                     sb.AppendLine("    /// </summary>");
                     sb.AppendLine("    public class " + first.ClassName);
                     sb.AppendLine("    {");
 
-                    foreach (_ResFileInfo info in cnGroup)
+                    foreach (_ResFileInfo info in className)
                     {
                         sb.AppendLine("        public const string " + info.FileName + " = \"" + info.Key + "\";");
                     }
@@ -190,9 +197,9 @@ namespace Asol.Tools.WorkScheduler.Application
                 }
                 sb.AppendLine("}");
             }
+            sb.AppendLine("#pragma warning restore 1591");
 
             return sb.ToString();
-
         }
         private class _ResFileInfo
         {
