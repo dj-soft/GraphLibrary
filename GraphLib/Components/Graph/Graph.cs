@@ -905,7 +905,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
 
             if (!String.IsNullOrEmpty(data.ToolTip))
             {
-                e.ToolTipData.TitleText = "Informace";
+                e.ToolTipData.TitleText = (!String.IsNullOrEmpty(data.Text) ? data.Text : "Informace");
                 e.ToolTipData.InfoText = data.ToolTip;
                 e.ToolTipData.InfoUseTabs = true;
             }

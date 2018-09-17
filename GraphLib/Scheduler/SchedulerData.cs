@@ -26,14 +26,22 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Konstruktor pro konkrétního hostitele
         /// </summary>
         /// <param name="host"></param>
-        public MainData(IAppHost host)
+        public MainData(IAppHost host) : this(host, null) { }
+        /// <summary>
+        /// Konstruktor pro konkrétního hostitele a číslo Session
+        /// </summary>
+        /// <param name="host"></param>
+        /// <param name="sessionId"></param>
+        public MainData(IAppHost host, int? sessionId)
         {
             this._AppHost = host;
+            this._SessionId = sessionId;
         }
         /// <summary>
         /// Obsahuje, true pokud máme vztah na datového hostitele
         /// </summary>
         private bool _HasHost { get { return (this._AppHost != null); } }
+        private int? _SessionId;
         /// <summary>
         /// Datový hostitel
         /// </summary>
@@ -231,6 +239,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 this.ItemType = FunctionGlobalItemType.Button;
             }
             /// <summary>
+            /// Obsahuje true v situaci, kdy existuje <see cref="_GuiToolBarItem"/>
+            /// </summary>
+            private bool _HasItem { get { return (this._GuiToolBarItem != null); } }
+            /// <summary>
             /// Z této položky je funkce načtena
             /// </summary>
             private GuiToolbarItem _GuiToolBarItem;
@@ -261,23 +273,27 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             /// <summary>
             /// Obrázek
             /// </summary>
-            public override Image Image { get { return null /* this._Declaration.Image */; } }
+            public override Image Image { get { return (this._HasItem ? App.Resources.GetImage(this._GuiToolBarItem.Image) : null); } }
+            /// <summary>
+            /// Obrázek pro stav MouseActive
+            /// </summary>
+            public override Image ImageHot { get { return (this._HasItem ? App.Resources.GetImage(this._GuiToolBarItem.ImageHot) : null); } }
             /// <summary>
             /// Velikost prvku na toolbaru, vzhledem k výšce toolbaru
             /// </summary>
-            public override FunctionGlobalItemSize Size { get { return this._GuiToolBarItem.Size; } set { this._GuiToolBarItem.Size = value; } }
+            public override FunctionGlobalItemSize Size { get { return (this._HasItem ? this._GuiToolBarItem.Size : base.Size); } set { if (this._HasItem) this._GuiToolBarItem.Size = value; else base.Size = value; } }
             /// <summary>
             /// Explicitně požadovaná šířka prvku v počtu modulů
             /// </summary>
-            public override int? ModuleWidth { get { return this._GuiToolBarItem.ModuleWidth; } set { this._GuiToolBarItem.ModuleWidth = value; } }
+            public override int? ModuleWidth { get { return (this._HasItem ? this._GuiToolBarItem.ModuleWidth : base.ModuleWidth); } set { if (this._HasItem) this._GuiToolBarItem.ModuleWidth = value; else base.ModuleWidth = value; } }
             /// <summary>
             /// Nápověda ke zpracování layoutu této položky
             /// </summary>
-            public override LayoutHint LayoutHint { get { return this._GuiToolBarItem.LayoutHint; } set { this._GuiToolBarItem.LayoutHint = value; } }
+            public override LayoutHint LayoutHint { get { return (this._HasItem ? this._GuiToolBarItem.LayoutHint : base.LayoutHint); } set { if (this._HasItem) this._GuiToolBarItem.LayoutHint = value; else base.LayoutHint = value; } }
             /// <summary>
             /// Název grupy, kde se tento prvek objeví. Nezadaná grupa = implicitní s názvem "FUNKCE".
             /// </summary>
-            public string GroupName { get { return this._GuiToolBarItem.GroupName; } set { this._GuiToolBarItem.GroupName = value; } }
+            public string GroupName { get { return (this._HasItem ? this._GuiToolBarItem.GroupName : ""); } set { if (this._HasItem) this._GuiToolBarItem.GroupName = value; } }
             #endregion
         }
         #endregion

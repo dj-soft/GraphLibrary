@@ -374,9 +374,16 @@ namespace Asol.Tools.WorkScheduler.Services
         /// </summary>
         public virtual Image Image { get; set; }
         /// <summary>
+        /// Image for MouseActive state
+        /// </summary>
+        public virtual Image ImageHot { get; set; }
+        /// <summary>
         /// Set of images for all interactive states and Component sizes
         /// </summary>
-        public virtual TypeArray<GInteractiveState, ComponentSize, Image> Images { get { if (this._Images == null) this._Images = new TypeArray<GInteractiveState, ComponentSize, Image>(); return this._Images; } }
+        public virtual TypeArray<GInteractiveState, ComponentSize, Image> Images
+        {
+            get { if (this._Images == null) this._Images = new TypeArray<GInteractiveState, ComponentSize, Image>(); return this._Images; }
+        }
         private TypeArray<GInteractiveState, ComponentSize, Image> _Images = null;
         /// <summary>
         /// Is this item visible? Default = true

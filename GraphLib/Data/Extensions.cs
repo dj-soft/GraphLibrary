@@ -231,6 +231,35 @@ namespace Asol.Tools.WorkScheduler.Data
             return ContainsAnyFromChars(test, "0123456789");
         }
         #endregion
+        #region DateTime
+        /// <summary>
+        /// Metoda vrátí dané datum (this), kde daná část (a části nižší) jsou nahrazeny hodnotou 0.
+        /// Tedy pokud part = <see cref="DateTimePart.Minutes"/>, pak výsledek obsahuje hodiny, ale místo minut už je 0 (a rovněž sekundy a milisekundy jsou 0).
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="part"></param>
+        /// <returns></returns>
+        public static DateTime TrimPart(this DateTime value, DateTimePart part)
+        {
+            DateTimeKind vk = value.Kind;
+            long ticks = value.Ticks;
+            int dy = value.Year;
+            int dm = value.Month;
+            int dd = value.Day;
+            int th = value.Hour;
+            int tm = value.Minute;
+            int ts = value.Second;
+            int tf = value.Millisecond;
+            switch (part)
+            {
+                case DateTimePart.Hours: return new DateTime(dy, dm, dd, 0, 0, 0, 0, vk);
+                case DateTimePart.Minutes: return new DateTime(dy, dm, dd, th, 0, 0, 0, vk);
+                case DateTimePart.Seconds: return new DateTime(dy, dm, dd, th, tm, 0, 0, vk);
+                case DateTimePart.Miliseconds: return new DateTime(dy, dm, dd, th, tm, ts, 0, vk);
+            }
+            return new DateTime(ticks, vk);
+        }
+        #endregion
         #region Enum
         /// <summary>
         /// Vrátí true, pokud this hodnota (value) obsahuje alespoň jeden nahozený flag z dané sady (flags).
@@ -785,4 +814,32 @@ namespace Asol.Tools.WorkScheduler.Data
         }
         #endregion
     }
+    #region enumy pro DataExtensions
+    /// <summary>
+    /// Část údaje DateTime
+    /// </summary>
+    public enum DateTimePart
+    {
+        /// <summary>
+        /// Neurčeno
+        /// </summary>
+        None,
+        /// <summary>
+        /// Milisekundy
+        /// </summary>
+        Miliseconds,
+        /// <summary>
+        /// Sekundy
+        /// </summary>
+        Seconds,
+        /// <summary>
+        /// Minuty
+        /// </summary>
+        Minutes,
+        /// <summary>
+        /// Hodiny
+        /// </summary>
+        Hours
+    }
+    #endregion
 }

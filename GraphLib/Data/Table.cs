@@ -1936,12 +1936,10 @@ namespace Asol.Tools.WorkScheduler.Data
         /// je <see cref="ColumnContentType.UserData"/> nebo <see cref="ColumnContentType.RelationRecordData"/> nebo <see cref="ColumnContentType.TimeGraphSynchronized"/> nebo <see cref="ColumnContentType.TimeGraphStandalone"/>.
         /// </summary>
         public bool CanBeVisible { get { ColumnContentType cc = this.ColumnContent; return (cc == ColumnContentType.UserData || cc == ColumnContentType.RelationRecordData || cc == ColumnContentType.TimeGraphSynchronized || cc == ColumnContentType.TimeGraphStandalone); } }
-
         /// <summary>
         /// Komparátor pro dvě hodnoty v tomto sloupci, pro třídění podle tohoto sloupce
         /// </summary>
         public Func<object, object, int> ValueComparator { get { return this._ValueComparator; } set { this._ValueComparator = value; } } private Func<object, object, int> _ValueComparator;
-
         /// <summary>
         /// Číslo třídy tohoto záznamu.
         /// U sloupce [0] jde o číslo třídy záznamů v tabulce, 

@@ -506,15 +506,15 @@ namespace Noris.LCS.Base.WorkScheduler
                 {
                     this._DataTable = WorkSchedulerSupport.TableDeserialize(this._DataSerial);
                     this._DataTableValid = true;
-                    // Tento krok zajistí, že serializovaný obsah (DataSerial) bude od teď pokládán za neplatný.
-                    // Proč? 
-                    //   Když už někdo čte obsah DataTable, tak jej následně může modifikovat - přidat/odebrat řádek, změnit hodnotu, atd - a my se to nedozvíme.
-                    //   Není ani naším cílem se to dozvědět, to by byla dost zbytečná komplikace.
-                    // Takže pokud poté, co si někdo vyzvedl obsah DataTable (a možná ho modifikoval), a někdo pak bude číst serializovaný obsah (DataSerial),
-                    //   tak tento DataSerial vytvoříme nový, platný z aktuální DataTable.
-                    // Reverzní postup neděláme - že bychom po načtení DataSerial invalidovali DataTable, protože čtením stringu se nemůže nijak změnit jeho obsah.
-                    this._DataSerialValid = false;
                 }
+                // Tento krok zajistí, že serializovaný obsah (DataSerial) bude od teď pokládán za neplatný.
+                // Proč? 
+                //   Když už někdo čte obsah DataTable, tak jej následně může modifikovat - přidat/odebrat řádek, změnit hodnotu, atd - a my se to nedozvíme.
+                //   Není ani naším cílem se to dozvědět, to by byla dost zbytečná komplikace.
+                // Takže pokud poté, co si někdo vyzvedl obsah DataTable (a možná ho modifikoval), a někdo pak bude číst serializovaný obsah (DataSerial),
+                //   tak tento DataSerial vytvoříme nový, platný z aktuální DataTable.
+                // Reverzní postup neděláme - že bychom po načtení DataSerial invalidovali DataTable, protože čtením stringu se nemůže nijak změnit jeho obsah.
+                this._DataSerialValid = false;
                 return this._DataTable;
             }
             set
@@ -1050,6 +1050,10 @@ namespace Noris.LCS.Base.WorkScheduler
             this.LayoutHint = LayoutHint.Default;
         }
         /// <summary>
+        /// Název nebo binární obsah obrázku pro stav MouseActive
+        /// </summary>
+        public GuiImage ImageHot { get; set; }
+        /// <summary>
         /// Velikost prvku na toolbaru, vzhledem k výšce toolbaru
         /// </summary>
         public FunctionGlobalItemSize Size { get; set; }
@@ -1349,11 +1353,23 @@ namespace Noris.LCS.Base.WorkScheduler
     /// </summary>
     public sealed class GuiImage : IXmlSerializer
     {
+        #region Konstruktor, základní property
         /// <summary>
         /// Konstruktor
         /// </summary>
         public GuiImage()
         { }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            if (!String.IsNullOrEmpty(this.ImageFile)) return "File: " + this.ImageFile;
+            if (this.ImageContent != null) return "Content: " + this.ImageContent.Length.ToString() + " Byte";
+            if (this.Image != null) return "Image: " + this.Image.Size.ToString() + " pixels";
+            return "GuiImage: empty";
+        }
         /// <summary>
         /// Název souboru
         /// </summary>
@@ -1369,6 +1385,8 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         [PersistingEnabled(false)]
         public Image Image { get; set; }
+        #endregion
+        #region Serializace
         /// <summary>
         /// Tato property má obsahovat (get vrací, set akceptuje) XML data z celého aktuálního objektu.
         /// </summary>
@@ -1446,6 +1464,54 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Prefix pro data, pokud pocházejí z <see cref="Image"/>
         /// </summary>
         private const string IMAGE_PREFIX = "I:";
+        #endregion
+        #region Implicitní konverze GuiImage <==> String, Image, Byte[]
+        /// <summary>
+        /// Implicitní konverze z <see cref="GuiImage"/> na <see cref="System.String"/>.
+        /// Pokud je na vstupu <see cref="GuiImage"/> = null, pak na výstupu je <see cref="System.String"/> == null.
+        /// Výstupem je vždy new instance objektu, která není provázaná s <see cref="GuiImage"/> = jde o různé objekty.
+        /// </summary>
+        /// <param name="guiImage"></param>
+        public static implicit operator System.String(GuiImage guiImage) { return (guiImage != null ? guiImage.ImageFile : null); }
+        /// <summary>
+        /// Implicitní konverze z <see cref="System.String"/> na <see cref="GuiImage"/>.
+        /// Pokud je na vstupu <see cref="System.String"/> = null, pak na výstupu je <see cref="GuiImage"/> == null.
+        /// Výstupem je new instance <see cref="GuiImage"/>, jejíž <see cref="ImageFile"/> obsahuje zadaný string.
+        /// Zadané jméno souboru by mělo pocházet z konstant v namespace <see cref="Noris.LCS.Base.WorkScheduler.Resources"/>.
+        /// </summary>
+        /// <param name="imageFile"></param>
+        public static implicit operator GuiImage(System.String imageFile) { return (imageFile != null ? new GuiImage() { ImageFile = imageFile } : null); }
+
+        /// <summary>
+        /// Implicitní konverze z <see cref="GuiImage"/> na <see cref="System.Drawing.Image"/>.
+        /// Pokud je na vstupu <see cref="GuiImage"/> = null, pak na výstupu je <see cref="System.Drawing.Image"/> == null.
+        /// Pokud vstupní instance <see cref="GuiImage"/> má v property <see cref="Image"/> null, vrací se null (tato konverze neslouží ke generování Image).
+        /// </summary>
+        /// <param name="guiImage"></param>
+        public static implicit operator System.Drawing.Image(GuiImage guiImage) { return (guiImage != null ? guiImage.Image : null); }
+        /// <summary>
+        /// Implicitní konverze z <see cref="System.Drawing.Image"/> na <see cref="GuiImage"/>.
+        /// Pokud je na vstupu <see cref="System.Drawing.Image"/> = null, pak na výstupu je <see cref="GuiImage"/> == null.
+        /// Výstupem je new instance <see cref="GuiImage"/>, jejíž <see cref="ImageFile"/> obsahuje zadaný string.
+        /// </summary>
+        /// <param name="image"></param>
+        public static implicit operator GuiImage(System.Drawing.Image image) { return (image != null ? new GuiImage() { Image = image } : null); }
+
+        /// <summary>
+        /// Implicitní konverze z <see cref="GuiImage"/> na <see cref="System.Byte"/>[].
+        /// Pokud je na vstupu <see cref="GuiImage"/> = null, pak na výstupu je <see cref="System.Byte"/>[] == null.
+        /// Výstupem je reference přímo na instanci objektu <see cref="ImageContent"/> (neprovádí se kopie pole).
+        /// </summary>
+        /// <param name="guiImage"></param>
+        public static implicit operator System.Byte[] (GuiImage guiImage) { return (guiImage != null ? guiImage.ImageContent : null); }
+        /// <summary>
+        /// Implicitní konverze z <see cref="System.Byte"/>[] na <see cref="GuiImage"/>.
+        /// Pokud je na vstupu <see cref="System.Byte"/>[] = null, pak na výstupu je <see cref="GuiImage"/> == null.
+        /// Výstupem je new instance <see cref="GuiImage"/>, jejíž <see cref="ImageContent"/> obsahuje referenci na dané pole (neprovádí se kopie pole).
+        /// </summary>
+        /// <param name="imageContent"></param>
+        public static implicit operator GuiImage(System.Byte[] imageContent) { return (imageContent != null ? new GuiImage() { ImageContent = imageContent } : null); }
+        #endregion
     }
     #endregion
     #region GuiId : Identifikátor čísla třídy a čísla záznamu, použitelný i jako klíč v Dictionary.
@@ -3485,7 +3551,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <summary>
         /// Vrátí index sloupce v seznamu sloupců. Pokud sloupec do žádného seznamu nepatří, vrátí -1.
         /// </summary>
-        public int Index { get { return this.GetPropertyValue("Index", 0); } set { this.SetPropertyValue("Index", value); } }
+        public int Index { get { return this._DataColumn.Ordinal; } }
         /// <summary>
         /// Informace o viditelnosti sloupce (zda má být vidět v přehledu)
         /// </summary>

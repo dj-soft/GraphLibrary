@@ -974,6 +974,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Ikonka
         /// </summary>
         protected Image ItemImage { get { return this._DataItem.Image; } }
+        /// <summary>
+        /// Ikonka pro stav MouseActive
+        /// </summary>
+        protected Image ItemImageHot { get { return this._DataItem.ImageHot; } }
         // public FontInfo ItemFont { get { FontInfo itemFont = this._DataItem.Font; return (itemFont != null ? itemFont : FontInfo.Menu); } }
         public FontInfo CurrentItemFont { get { return this.TBarSetting.GetFontInfo(this.ItemSize, this._DataItem.Font); } }
         /// <summary>
@@ -1072,8 +1076,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Return size for image, for this Size and current Toolbar (LayoutInfo, Zoom)
         /// </summary>
-        /// <param name="graphics"></param>
-        /// <param name="text"></param>
+        /// <param name="image"></param>
         /// <returns></returns>
         protected Size GetImageSize(Image image)
         {
@@ -1084,7 +1087,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Return size for image, for this Size and current Toolbar (LayoutInfo, Zoom)
         /// </summary>
-        /// <param name="withThisText"></param>
+        /// <param name="withThisImage"></param>
+        /// <param name="subItems"></param>
         /// <returns></returns>
         protected Size GetImageSizeFromSubItems(bool withThisImage, EList<FunctionItem> subItems)
         {
@@ -1120,6 +1124,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="graphics"></param>
         /// <param name="withThisText"></param>
+        /// <param name="subItems"></param>
+        /// <param name="maxModuleWidth"></param>
         /// <returns></returns>
         protected Size GetTextSizeFromSubItems(Graphics graphics, bool withThisText, EList<FunctionItem> subItems, Int32? maxModuleWidth)
         {
@@ -1254,10 +1260,14 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         protected virtual void DrawStandardLabel(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
         {
-            if (this._DataItem.Image != null)
+            Image image = this._DataItem.Image;
+            Image imageHot = null;
+            if (image != null)
             {
                 Rectangle boundsImageAbsolute = this.BoundsImage.ShiftBy(boundsAbsolute.Location);
-                e.Graphics.DrawImage(this._DataItem.Image, boundsImageAbsolute);
+                if (this.InteractiveState.IsMouseActive())
+                    imageHot = this._DataItem.ImageHot;
+                e.Graphics.DrawImage(imageHot ?? image, boundsImageAbsolute);
             }
 
             string text = this.ItemText;

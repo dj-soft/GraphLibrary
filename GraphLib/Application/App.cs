@@ -462,7 +462,7 @@ namespace Asol.Tools.WorkScheduler.Application
             string appPath = AppCodePath;
             this._Icons = new Application.Icons(appPath);
             string resourceFile = System.IO.Path.Combine(appPath, "ASOL.GraphLib.res");
-            this._Resources = new Resources(resourceFile);
+            this._Resources = new Resources(resourceFile, true);
         }
         /// <summary>
         /// Zde je poskytována veškerá podpora pro přístup k ikonkám

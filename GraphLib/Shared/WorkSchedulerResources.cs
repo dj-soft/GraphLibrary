@@ -15,21 +15,31 @@ using System.Threading.Tasks;
 //   A poté, když plugin běží v rámci VisualStudia (má připojen debugger), a přitom existuje ve vhodném umístění soubor "WorkSchedulerResources.cs",
 //      pak plugin prověří, že soubor "WorkSchedulerResources.cs" obsahuje uložené datum "LastWriteTime" souboru "ASOL.GraphLib.res".
 //   Pokud fyzické zdroje ("ASOL.GraphLib.res") jsou novější, pak znovu vygeneruje kompletní obsah souboru "WorkSchedulerResources.cs".
+// Generátor tohoto souboru je v aplikaci GraphLib, v kódu "GraphLib\Application\Resources.cs".
 // Místo, kde je uloženo datum "LastWriteTime" souboru "ASOL.GraphLib.res" je na následujícím řádku:
-//     ResourceFile.LastWriteTime = 2018-09-16 18:30:23.058
+//     ResourceFile.LastWriteTime = 2018-09-17 12:48:01.915
 #pragma warning disable 1591
 namespace Noris.LCS.Base.WorkScheduler.Resources.Images
 {
+    #region Actions
     /// <summary>
     /// Obsah adresáře Actions
+    /// <para/>
+    /// Programátor, který chce vidět jednotlivé ikonky, si najde soubor "ASOL.GraphLib.res" v adresáři pluginu WorkScheduler,
+    /// zkopíruje si jej do pracovního adresáře, přejmenuje příponu na .zip a rozzipuje.
+    /// <para/>
+    /// Programátor, který chce doplnit další resource, si do výše uvedeného rozbaleného adresáře přidá nové ikony nebno adresář s ikonami nebo jiná data,
+    /// poté celý adresář zazipuje, přejmenuje celý zip na "ASOL.GraphLib.res" a vloží soubor do balíčku WorkScheduleru.
+    /// <para/>
+    /// Poté programátor spustí WorkScheduler z Visual studia v režimu Debug, a plugin při startu nově vygeneruje soubor WorkSchedulerResources.cs, obsahující nově dodané položky jako konstanty.
     /// </summary>
     public class Actions
     {
-        public const string AddToDesktopPng = "actions/add-to-desktop.png";
         public const string AddressBookNew2Png = "actions/address-book-new-2.png";
         public const string AddressBookNew3Png = "actions/address-book-new-3.png";
         public const string AddressBookNew4Png = "actions/address-book-new-4.png";
         public const string AddressBookNewPng = "actions/address-book-new.png";
+        public const string AddToDesktopPng = "actions/add-to-desktop.png";
         public const string AlignHorizontalBottomOutPng = "actions/align-horizontal-bottom-out.png";
         public const string AlignHorizontalCenter2Png = "actions/align-horizontal-center-2.png";
         public const string AlignHorizontalLeftOutPng = "actions/align-horizontal-left-out.png";
@@ -97,16 +107,15 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string BookmarkNewList4Png = "actions/bookmark-new-list-4.png";
         public const string BookmarkNewListPng = "actions/bookmark-new-list.png";
         public const string BookmarkNewPng = "actions/bookmark-new.png";
+        public const string BookmarkPng = "actions/bookmark.png";
         public const string BookmarkSilverPng = "actions/bookmark-silver.png";
+        public const string BookmarksOrganizePng = "actions/bookmarks-organize.png";
         public const string BookmarkToolbar2Png = "actions/bookmark-toolbar-2.png";
         public const string BookmarkToolbar3Png = "actions/bookmark-toolbar-3.png";
         public const string BookmarkToolbar4Png = "actions/bookmark-toolbar-4.png";
         public const string BookmarkToolbarPng = "actions/bookmark-toolbar.png";
-        public const string BookmarkPng = "actions/bookmark.png";
-        public const string BookmarksOrganizePng = "actions/bookmarks-organize.png";
         public const string CallStartPng = "actions/call-start.png";
         public const string CallStopPng = "actions/call-stop.png";
-        public const string CharacterSetPng = "actions/character-set.png";
         public const string ClickPng = "actions/click.png";
         public const string CodeBlockPng = "actions/code-block.png";
         public const string CodeClassPng = "actions/code-class.png";
@@ -114,35 +123,35 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string CodeFunctionPng = "actions/code-function.png";
         public const string CodeVariablePng = "actions/code-variable.png";
         public const string ColorFillPng = "actions/color-fill.png";
-        public const string ColorPickerBlackPng = "actions/color-picker-black.png";
-        public const string ColorPickerGreyPng = "actions/color-picker-grey.png";
-        public const string ColorPickerWhitePng = "actions/color-picker-white.png";
-        public const string ColorPickerPng = "actions/color-picker.png";
         public const string Colorize2Png = "actions/colorize-2.png";
         public const string ColorizePng = "actions/colorize.png";
+        public const string ColorPickerBlackPng = "actions/color-picker-black.png";
+        public const string ColorPickerGreyPng = "actions/color-picker-grey.png";
+        public const string ColorPickerPng = "actions/color-picker.png";
+        public const string ColorPickerWhitePng = "actions/color-picker-white.png";
         public const string Configure2Png = "actions/configure-2.png";
         public const string Configure3Png = "actions/configure-3.png";
         public const string Configure4Png = "actions/configure-4.png";
         public const string Configure5Png = "actions/configure-5.png";
+        public const string ConfigurePng = "actions/configure.png";
         public const string ConfigureShortcutsPng = "actions/configure-shortcuts.png";
         public const string ConfigureToolbarsPng = "actions/configure-toolbars.png";
-        public const string ConfigurePng = "actions/configure.png";
         public const string ContactNew2Png = "actions/contact-new-2.png";
         public const string ContactNew3Png = "actions/contact-new-3.png";
         public const string ContactNew4Png = "actions/contact-new-4.png";
         public const string ContactNewPng = "actions/contact-new.png";
         public const string DashboardShowPng = "actions/dashboard-show.png";
+        public const string DbAdd2Png = "actions/db_add-2.png";
+        public const string DbAddPng = "actions/db_add.png";
+        public const string DbComit2Png = "actions/db_comit-2.png";
+        public const string DbComitPng = "actions/db_comit.png";
         public const string DbPng = "actions/db.png";
-        public const string Db_add2Png = "actions/db_add-2.png";
-        public const string Db_addPng = "actions/db_add.png";
-        public const string Db_comit2Png = "actions/db_comit-2.png";
-        public const string Db_comitPng = "actions/db_comit.png";
-        public const string Db_remove2Png = "actions/db_remove-2.png";
-        public const string Db_removePng = "actions/db_remove.png";
-        public const string Db_status2Png = "actions/db_status-2.png";
-        public const string Db_statusPng = "actions/db_status.png";
-        public const string Db_update2Png = "actions/db_update-2.png";
-        public const string Db_updatePng = "actions/db_update.png";
+        public const string DbRemove2Png = "actions/db_remove-2.png";
+        public const string DbRemovePng = "actions/db_remove.png";
+        public const string DbStatus2Png = "actions/db_status-2.png";
+        public const string DbStatusPng = "actions/db_status.png";
+        public const string DbUpdate2Png = "actions/db_update-2.png";
+        public const string DbUpdatePng = "actions/db_update.png";
         public const string DebugStepInstructionPng = "actions/debug-step-instruction.png";
         public const string DebugStepIntoInstructionPng = "actions/debug-step-into-instruction.png";
         public const string DebugStepIntoPng = "actions/debug-step-into.png";
@@ -177,6 +186,7 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string DialogOkApplyPng = "actions/dialog-ok-apply.png";
         public const string DialogOkPng = "actions/dialog-ok.png";
         public const string DialogYesPng = "actions/dialog-yes.png";
+        public const string DocumentationPng = "actions/documentation.png";
         public const string DocumentClose2Png = "actions/document-close-2.png";
         public const string DocumentClose3Png = "actions/document-close-3.png";
         public const string DocumentClose4Png = "actions/document-close-4.png";
@@ -212,11 +222,11 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string DocumentOpen7Png = "actions/document-open-7.png";
         public const string DocumentOpen8Png = "actions/document-open-8.png";
         public const string DocumentOpenFolderPng = "actions/document-open-folder.png";
+        public const string DocumentOpenPng = "actions/document-open.png";
         public const string DocumentOpenRecent2Png = "actions/document-open-recent-2.png";
         public const string DocumentOpenRecent3Png = "actions/document-open-recent-3.png";
         public const string DocumentOpenRecentPng = "actions/document-open-recent.png";
         public const string DocumentOpenRemotePng = "actions/document-open-remote.png";
-        public const string DocumentOpenPng = "actions/document-open.png";
         public const string DocumentPageSetupPng = "actions/document-page-setup.png";
         public const string DocumentPreviewArchivePng = "actions/document-preview-archive.png";
         public const string DocumentPreviewPng = "actions/document-preview.png";
@@ -227,12 +237,12 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string DocumentPrintFrame2Png = "actions/document-print-frame-2.png";
         public const string DocumentPrintFrame3Png = "actions/document-print-frame-3.png";
         public const string DocumentPrintFrame4Png = "actions/document-print-frame-4.png";
+        public const string DocumentPrintPng = "actions/document-print.png";
         public const string DocumentPrintPreview2Png = "actions/document-print-preview-2.png";
         public const string DocumentPrintPreview3Png = "actions/document-print-preview-3.png";
         public const string DocumentPrintPreview4Png = "actions/document-print-preview-4.png";
         public const string DocumentPrintPreview5Png = "actions/document-print-preview-5.png";
         public const string DocumentPrintPreviewPng = "actions/document-print-preview.png";
-        public const string DocumentPrintPng = "actions/document-print.png";
         public const string DocumentProperties2Png = "actions/document-properties-2.png";
         public const string DocumentProperties3Png = "actions/document-properties-3.png";
         public const string DocumentProperties4Png = "actions/document-properties-4.png";
@@ -264,7 +274,6 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string DocumentSign2Png = "actions/document-sign-2.png";
         public const string DocumentSign3Png = "actions/document-sign-3.png";
         public const string DocumentSignPng = "actions/document-sign.png";
-        public const string DocumentationPng = "actions/documentation.png";
         public const string Download3Png = "actions/download-3.png";
         public const string DownloadLaterPng = "actions/download-later.png";
         public const string DownloadPng = "actions/download.png";
@@ -285,11 +294,11 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string DrawSpiral2Png = "actions/draw-spiral-2.png";
         public const string DrawSquareInvertedCornersPng = "actions/draw-square-inverted-corners.png";
         public const string DrawText2Png = "actions/draw-text-2.png";
-        public const string DrawTrianglePng = "actions/draw-triangle.png";
         public const string DrawTriangle1Png = "actions/draw-triangle1.png";
         public const string DrawTriangle2Png = "actions/draw-triangle2.png";
         public const string DrawTriangle3Png = "actions/draw-triangle3.png";
         public const string DrawTriangle4Png = "actions/draw-triangle4.png";
+        public const string DrawTrianglePng = "actions/draw-triangle.png";
         public const string Edit2Png = "actions/edit-2.png";
         public const string Edit4Png = "actions/edit-4.png";
         public const string Edit5Png = "actions/edit-5.png";
@@ -332,8 +341,8 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string EditDelete6Png = "actions/edit-delete-6.png";
         public const string EditDelete8Png = "actions/edit-delete-8.png";
         public const string EditDelete9Png = "actions/edit-delete-9.png";
-        public const string EditDeleteShredPng = "actions/edit-delete-shred.png";
         public const string EditDeletePng = "actions/edit-delete.png";
+        public const string EditDeleteShredPng = "actions/edit-delete-shred.png";
         public const string EditDestroyPng = "actions/edit-destroy.png";
         public const string EditFind10Png = "actions/edit-find-10.png";
         public const string EditFind2Png = "actions/edit-find-2.png";
@@ -346,10 +355,10 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string EditFindAndReplace2Png = "actions/edit-find-and-replace-2.png";
         public const string EditFindAndReplacePng = "actions/edit-find-and-replace.png";
         public const string EditFindMailPng = "actions/edit-find-mail.png";
+        public const string EditFindPng = "actions/edit-find.png";
         public const string EditFindProjectPng = "actions/edit-find-project.png";
         public const string EditFindReplace4Png = "actions/edit-find-replace-4.png";
         public const string EditFindUserPng = "actions/edit-find-user.png";
-        public const string EditFindPng = "actions/edit-find.png";
         public const string EditGuidesPng = "actions/edit-guides.png";
         public const string EditHistory3Png = "actions/edit-history-3.png";
         public const string EditHistory4Png = "actions/edit-history-4.png";
@@ -363,6 +372,7 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string EditPaste8Png = "actions/edit-paste-8.png";
         public const string EditPaste9Png = "actions/edit-paste-9.png";
         public const string EditPastePng = "actions/edit-paste.png";
+        public const string EditPng = "actions/edit.png";
         public const string EditRedo2Png = "actions/edit-redo-2.png";
         public const string EditRedo3Png = "actions/edit-redo-3.png";
         public const string EditRedo4Png = "actions/edit-redo-4.png";
@@ -391,7 +401,6 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string EditUndo7Png = "actions/edit-undo-7.png";
         public const string EditUndo8Png = "actions/edit-undo-8.png";
         public const string EditUndoPng = "actions/edit-undo.png";
-        public const string EditPng = "actions/edit.png";
         public const string FeedSubscribePng = "actions/feed-subscribe.png";
         public const string FilterPng = "actions/filter.png";
         public const string Flag2Png = "actions/flag-2.png";
@@ -512,16 +521,16 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string GoDown6Png = "actions/go-down-6.png";
         public const string GoDown7Png = "actions/go-down-7.png";
         public const string GoDown9Png = "actions/go-down-9.png";
-        public const string GoDownSearchPng = "actions/go-down-search.png";
         public const string GoDownPng = "actions/go-down.png";
+        public const string GoDownSearchPng = "actions/go-down-search.png";
         public const string GoFirst2Png = "actions/go-first-2.png";
         public const string GoFirst3Png = "actions/go-first-3.png";
         public const string GoFirst4Png = "actions/go-first-4.png";
         public const string GoFirst5Png = "actions/go-first-5.png";
         public const string GoFirst6Png = "actions/go-first-6.png";
+        public const string GoFirstPng = "actions/go-first.png";
         public const string GoFirstViewPagePng = "actions/go-first-view-page.png";
         public const string GoFirstViewPng = "actions/go-first-view.png";
-        public const string GoFirstPng = "actions/go-first.png";
         public const string GoFristViewPng = "actions/go-frist-view.png";
         public const string GoHome10Png = "actions/go-home-10.png";
         public const string GoHome2Png = "actions/go-home-2.png";
@@ -539,15 +548,15 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string GoJumpDeclarationPng = "actions/go-jump-declaration.png";
         public const string GoJumpDefinitionPng = "actions/go-jump-definition.png";
         public const string GoJumpLocationbarPng = "actions/go-jump-locationbar.png";
-        public const string GoJumpTodayPng = "actions/go-jump-today.png";
         public const string GoJumpPng = "actions/go-jump.png";
+        public const string GoJumpTodayPng = "actions/go-jump-today.png";
         public const string GoLast2Png = "actions/go-last-2.png";
         public const string GoLast3Png = "actions/go-last-3.png";
         public const string GoLast4Png = "actions/go-last-4.png";
         public const string GoLast5Png = "actions/go-last-5.png";
+        public const string GoLastPng = "actions/go-last.png";
         public const string GoLastViewPagePng = "actions/go-last-view-page.png";
         public const string GoLastViewPng = "actions/go-last-view.png";
-        public const string GoLastPng = "actions/go-last.png";
         public const string GoNext2Png = "actions/go-next-2.png";
         public const string GoNext3Png = "actions/go-next-3.png";
         public const string GoNext4Png = "actions/go-next-4.png";
@@ -557,10 +566,10 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string GoNext8Png = "actions/go-next-8.png";
         public const string GoNext9Png = "actions/go-next-9.png";
         public const string GoNextContextPng = "actions/go-next-context.png";
+        public const string GoNextPng = "actions/go-next.png";
         public const string GoNextUsePng = "actions/go-next-use.png";
         public const string GoNextViewPagePng = "actions/go-next-view-page.png";
         public const string GoNextViewPng = "actions/go-next-view.png";
-        public const string GoNextPng = "actions/go-next.png";
         public const string GoPrevious2Png = "actions/go-previous-2.png";
         public const string GoPrevious3Png = "actions/go-previous-3.png";
         public const string GoPrevious4Png = "actions/go-previous-4.png";
@@ -570,10 +579,10 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string GoPrevious8Png = "actions/go-previous-8.png";
         public const string GoPrevious9Png = "actions/go-previous-9.png";
         public const string GoPreviousContextPng = "actions/go-previous-context.png";
+        public const string GoPreviousPng = "actions/go-previous.png";
         public const string GoPreviousUsePng = "actions/go-previous-use.png";
         public const string GoPreviousViewPagePng = "actions/go-previous-view-page.png";
         public const string GoPreviousViewPng = "actions/go-previous-view.png";
-        public const string GoPreviousPng = "actions/go-previous.png";
         public const string GoTop2Png = "actions/go-top-2.png";
         public const string GoTop3Png = "actions/go-top-3.png";
         public const string GoTop4Png = "actions/go-top-4.png";
@@ -589,8 +598,8 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string GoUp6Png = "actions/go-up-6.png";
         public const string GoUp7Png = "actions/go-up-7.png";
         public const string GoUp9Png = "actions/go-up-9.png";
-        public const string GoUpSearchPng = "actions/go-up-search.png";
         public const string GoUpPng = "actions/go-up.png";
+        public const string GoUpSearchPng = "actions/go-up-search.png";
         public const string HalfencryptedPng = "actions/halfencrypted.png";
         public const string Help2Png = "actions/help-2.png";
         public const string Help3Png = "actions/help-3.png";
@@ -609,6 +618,7 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string HelpFaqPng = "actions/help-faq.png";
         public const string HelpHintPng = "actions/help-hint.png";
         public const string HelpPng = "actions/help.png";
+        public const string CharacterSetPng = "actions/character-set.png";
         public const string Identity2Png = "actions/identity-2.png";
         public const string IdentityPng = "actions/identity.png";
         public const string ImBanKickUserPng = "actions/im-ban-kick-user.png";
@@ -635,34 +645,34 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string IrcRemoveOperatorPng = "actions/irc-remove-operator.png";
         public const string IrcUnvoicePng = "actions/irc-unvoice.png";
         public const string IrcVoicePng = "actions/irc-voice.png";
-        public const string IrkickPng = "actions/irkick.png";
         public const string Irkickflash2Png = "actions/irkickflash-2.png";
         public const string IrkickflashPng = "actions/irkickflash.png";
         public const string Irkickoff2Png = "actions/irkickoff-2.png";
         public const string IrkickoffPng = "actions/irkickoff.png";
+        public const string IrkickPng = "actions/irkick.png";
+        public const string KalarmDisabled2Png = "actions/kalarm_disabled-2.png";
+        public const string KalarmDisabledPng = "actions/kalarm_disabled.png";
         public const string KalarmPng = "actions/kalarm.png";
-        public const string Kalarm_disabled2Png = "actions/kalarm_disabled-2.png";
-        public const string Kalarm_disabledPng = "actions/kalarm_disabled.png";
-        public const string Kgpg_editPng = "actions/kgpg_edit.png";
-        public const string Kgpg_exportPng = "actions/kgpg_export.png";
-        public const string Kgpg_genPng = "actions/kgpg_gen.png";
-        public const string Kgpg_identityPng = "actions/kgpg_identity.png";
-        public const string Kgpg_importPng = "actions/kgpg_import.png";
-        public const string Kgpg_infoPng = "actions/kgpg_info.png";
-        public const string Kgpg_key1Png = "actions/kgpg_key1.png";
-        public const string Kgpg_key2Png = "actions/kgpg_key2.png";
-        public const string Kgpg_key3Png = "actions/kgpg_key3.png";
-        public const string Kgpg_photoPng = "actions/kgpg_photo.png";
-        public const string Kgpg_showPng = "actions/kgpg_show.png";
-        public const string Kgpg_signPng = "actions/kgpg_sign.png";
-        public const string Kgpg_termPng = "actions/kgpg_term.png";
-        public const string Klipper_docPng = "actions/klipper_doc.png";
-        public const string Klipper_dockPng = "actions/klipper_dock.png";
-        public const string KmixPng = "actions/kmix.png";
+        public const string KgpgEditPng = "actions/kgpg_edit.png";
+        public const string KgpgExportPng = "actions/kgpg_export.png";
+        public const string KgpgGenPng = "actions/kgpg_gen.png";
+        public const string KgpgIdentityPng = "actions/kgpg_identity.png";
+        public const string KgpgImportPng = "actions/kgpg_import.png";
+        public const string KgpgInfoPng = "actions/kgpg_info.png";
+        public const string KgpgKey1Png = "actions/kgpg_key1.png";
+        public const string KgpgKey2Png = "actions/kgpg_key2.png";
+        public const string KgpgKey3Png = "actions/kgpg_key3.png";
+        public const string KgpgPhotoPng = "actions/kgpg_photo.png";
+        public const string KgpgShowPng = "actions/kgpg_show.png";
+        public const string KgpgSignPng = "actions/kgpg_sign.png";
+        public const string KgpgTermPng = "actions/kgpg_term.png";
+        public const string KlipperDockPng = "actions/klipper_dock.png";
+        public const string KlipperDocPng = "actions/klipper_doc.png";
         public const string Kmixdocked2Png = "actions/kmixdocked-2.png";
-        public const string Kmixdocked_error2Png = "actions/kmixdocked_error-2.png";
-        public const string Kmixdocked_mute2Png = "actions/kmixdocked_mute-2.png";
-        public const string Kmixdocked_mutePng = "actions/kmixdocked_mute.png";
+        public const string KmixdockedError2Png = "actions/kmixdocked_error-2.png";
+        public const string KmixdockedMute2Png = "actions/kmixdocked_mute-2.png";
+        public const string KmixdockedMutePng = "actions/kmixdocked_mute.png";
+        public const string KmixPng = "actions/kmix.png";
         public const string ListAdd2Png = "actions/list-add-2.png";
         public const string ListAdd3Png = "actions/list-add-3.png";
         public const string ListAdd4Png = "actions/list-add-4.png";
@@ -682,9 +692,9 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string Lock4Png = "actions/lock-4.png";
         public const string Lock6Png = "actions/lock-6.png";
         public const string LockPinkPng = "actions/lock-pink.png";
-        public const string LockSilverPng = "actions/lock-silver.png";
         public const string LockPng = "actions/lock.png";
-        public const string MailAnti_spamPng = "actions/mail-anti_spam.png";
+        public const string LockSilverPng = "actions/lock-silver.png";
+        public const string MailAntiSpamPng = "actions/mail-anti_spam.png";
         public const string MailAttach2Png = "actions/mail-attach-2.png";
         public const string MailAttachPng = "actions/mail-attach.png";
         public const string MailDelete2Png = "actions/mail-delete-2.png";
@@ -727,8 +737,8 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string MailNew2Png = "actions/mail-new-2.png";
         public const string MailNewPng = "actions/mail-new.png";
         public const string MailOutboxPng = "actions/mail-outbox.png";
-        public const string MailPost_to2Png = "actions/mail-post_to-2.png";
-        public const string MailPost_toPng = "actions/mail-post_to.png";
+        public const string MailPostTo2Png = "actions/mail-post_to-2.png";
+        public const string MailPostToPng = "actions/mail-post_to.png";
         public const string MailQueue2Png = "actions/mail-queue-2.png";
         public const string MailQueue3Png = "actions/mail-queue-3.png";
         public const string MailQueuePng = "actions/mail-queue.png";
@@ -741,19 +751,19 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string MailReplyAll6Png = "actions/mail-reply-all-6.png";
         public const string MailReplyAllPng = "actions/mail-reply-all.png";
         public const string MailReplyListPng = "actions/mail-reply-list.png";
+        public const string MailReplyPng = "actions/mail-reply.png";
         public const string MailReplySender2Png = "actions/mail-reply-sender-2.png";
         public const string MailReplySender3Png = "actions/mail-reply-sender-3.png";
         public const string MailReplySender4Png = "actions/mail-reply-sender-4.png";
         public const string MailReplySenderPng = "actions/mail-reply-sender.png";
-        public const string MailReplyPng = "actions/mail-reply.png";
         public const string MailSend2Png = "actions/mail-send-2.png";
         public const string MailSend3Png = "actions/mail-send-3.png";
         public const string MailSend4Png = "actions/mail-send-4.png";
+        public const string MailSendPng = "actions/mail-send.png";
         public const string MailSendReceive2Png = "actions/mail-send-receive-2.png";
         public const string MailSendReceive3Png = "actions/mail-send-receive-3.png";
         public const string MailSendReceivePng = "actions/mail-send-receive.png";
-        public const string MailSendPng = "actions/mail-send.png";
-        public const string Make_kdevelopPng = "actions/make_kdevelop.png";
+        public const string MakeKdevelopPng = "actions/make_kdevelop.png";
         public const string MarkPng = "actions/mark.png";
         public const string MeasurePng = "actions/measure.png";
         public const string MediaEject2Png = "actions/media-eject-2.png";
@@ -847,11 +857,11 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string NetworkDisconnect2Png = "actions/network-disconnect-2.png";
         public const string NetworkDisconnect3Png = "actions/network-disconnect-3.png";
         public const string NetworkDisconnectPng = "actions/network-disconnect.png";
-        public const string NewTabPng = "actions/new-tab.png";
         public const string NewsSubscribe2Png = "actions/news-subscribe-2.png";
         public const string NewsSubscribePng = "actions/news-subscribe.png";
         public const string NewsUnsubscribe2Png = "actions/news-unsubscribe-2.png";
         public const string NewsUnsubscribePng = "actions/news-unsubscribe.png";
+        public const string NewTabPng = "actions/new-tab.png";
         public const string ObjectFlipHorizontal2Png = "actions/object-flip-horizontal-2.png";
         public const string ObjectFlipHorizontalPng = "actions/object-flip-horizontal.png";
         public const string ObjectFlipVertical2Png = "actions/object-flip-vertical-2.png";
@@ -859,22 +869,22 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string ObjectRotateLeft2Png = "actions/object-rotate-left-2.png";
         public const string ObjectRotateLeft3Png = "actions/object-rotate-left-3.png";
         public const string ObjectRotateLeftPng = "actions/object-rotate-left.png";
+        public const string ObjectRotatePng = "actions/object-rotate.png";
         public const string ObjectRotateRight2Png = "actions/object-rotate-right-2.png";
         public const string ObjectRotateRight3Png = "actions/object-rotate-right-3.png";
         public const string ObjectRotateRightPng = "actions/object-rotate-right.png";
-        public const string ObjectRotatePng = "actions/object-rotate.png";
         public const string OfficeChartAreaPercentagePng = "actions/office-chart-area-percentage.png";
-        public const string OfficeChartAreaStackedPng = "actions/office-chart-area-stacked.png";
         public const string OfficeChartAreaPng = "actions/office-chart-area.png";
+        public const string OfficeChartAreaStackedPng = "actions/office-chart-area-stacked.png";
         public const string OfficeChartBarPercentagePng = "actions/office-chart-bar-percentage.png";
-        public const string OfficeChartBarStackedPng = "actions/office-chart-bar-stacked.png";
         public const string OfficeChartBarPng = "actions/office-chart-bar.png";
+        public const string OfficeChartBarStackedPng = "actions/office-chart-bar-stacked.png";
         public const string OfficeChartLinePercentagePng = "actions/office-chart-line-percentage.png";
-        public const string OfficeChartLineStackedPng = "actions/office-chart-line-stacked.png";
         public const string OfficeChartLinePng = "actions/office-chart-line.png";
+        public const string OfficeChartLineStackedPng = "actions/office-chart-line-stacked.png";
         public const string OfficeChartPiePng = "actions/office-chart-pie.png";
-        public const string OfficeChartPolarStackedPng = "actions/office-chart-polar-stacked.png";
         public const string OfficeChartPolarPng = "actions/office-chart-polar.png";
+        public const string OfficeChartPolarStackedPng = "actions/office-chart-polar-stacked.png";
         public const string OfficeChartRingPng = "actions/office-chart-ring.png";
         public const string OfficeChartScatterPng = "actions/office-chart-scatter.png";
         public const string Openterm2Png = "actions/openterm-2.png";
@@ -914,14 +924,14 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string RunBuildFile2Png = "actions/run-build-file-2.png";
         public const string RunBuildFile3Png = "actions/run-build-file-3.png";
         public const string RunBuildFilePng = "actions/run-build-file.png";
-        public const string RunBuildInstallRootPng = "actions/run-build-install-root.png";
         public const string RunBuildInstallPng = "actions/run-build-install.png";
-        public const string RunBuildPrunePng = "actions/run-build-prune.png";
+        public const string RunBuildInstallRootPng = "actions/run-build-install-root.png";
         public const string RunBuildPng = "actions/run-build.png";
+        public const string RunBuildPrunePng = "actions/run-build-prune.png";
         public const string RunRebuild2Png = "actions/run-rebuild-2.png";
         public const string RunRebuildPng = "actions/run-rebuild.png";
-        public const string SelectRectangularPng = "actions/select-rectangular.png";
         public const string SelectPng = "actions/select.png";
+        public const string SelectRectangularPng = "actions/select-rectangular.png";
         public const string ServicesPng = "actions/services.png";
         public const string Share3Png = "actions/share-3.png";
         public const string ShowMenuPng = "actions/show-menu.png";
@@ -978,9 +988,9 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string TabNew8Png = "actions/tab-new-8.png";
         public const string TabNew9Png = "actions/tab-new-9.png";
         public const string TabNewBackgroundPng = "actions/tab-new-background.png";
+        public const string TabNewPng = "actions/tab-new.png";
         public const string TabNewRaised2Png = "actions/tab-new-raised-2.png";
         public const string TabNewRaisedPng = "actions/tab-new-raised.png";
-        public const string TabNewPng = "actions/tab-new.png";
         public const string TabPng = "actions/tab.png";
         public const string TextFieldPng = "actions/text-field.png";
         public const string TextFrameLinkPng = "actions/text-frame-link.png";
@@ -988,8 +998,8 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string TextSpeakPng = "actions/text-speak.png";
         public const string Thumbnail2Png = "actions/thumbnail-2.png";
         public const string ThumbnailPng = "actions/thumbnail.png";
-        public const string Toggle_log2Png = "actions/toggle_log-2.png";
-        public const string Toggle_logPng = "actions/toggle_log.png";
+        public const string ToggleLog2Png = "actions/toggle_log-2.png";
+        public const string ToggleLogPng = "actions/toggle_log.png";
         public const string ToolAnimatorPng = "actions/tool-animator.png";
         public const string ToolsCheckSpelling3Png = "actions/tools-check-spelling-3.png";
         public const string ToolsCheckSpelling4Png = "actions/tools-check-spelling-4.png";
@@ -1015,12 +1025,12 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string TrashEmpty3Png = "actions/trash-empty-3.png";
         public const string TrashEmptyPng = "actions/trash-empty.png";
         public const string UninstallProductPng = "actions/uninstall-product.png";
+        public const string UpdateDriversPng = "actions/update_drivers.png";
+        public const string UpdateMiscPng = "actions/update_misc.png";
         public const string UpdateProductPng = "actions/update-product.png";
-        public const string Update_driversPng = "actions/update_drivers.png";
-        public const string Update_miscPng = "actions/update_misc.png";
-        public const string Update_recommendedPng = "actions/update_recommended.png";
-        public const string Update_recommended1Png = "actions/update_recommended1.png";
-        public const string Upgrade_miscPng = "actions/upgrade_misc.png";
+        public const string UpdateRecommended1Png = "actions/update_recommended1.png";
+        public const string UpdateRecommendedPng = "actions/update_recommended.png";
+        public const string UpgradeMiscPng = "actions/upgrade_misc.png";
         public const string UserDelete2Png = "actions/user-delete-2.png";
         public const string UserGroupDelete2Png = "actions/user-group-delete-2.png";
         public const string UserGroupNew2Png = "actions/user-group-new-2.png";
@@ -1038,9 +1048,10 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string ViewCalendarListPng = "actions/view-calendar-list.png";
         public const string ViewCalendarMonth2Png = "actions/view-calendar-month-2.png";
         public const string ViewCalendarMonthPng = "actions/view-calendar-month.png";
+        public const string ViewCalendarPng = "actions/view-calendar.png";
         public const string ViewCalendarTasksPng = "actions/view-calendar-tasks.png";
-        public const string ViewCalendarTimeSpentPng = "actions/view-calendar-time-spent.png";
         public const string ViewCalendarTimelinePng = "actions/view-calendar-timeline.png";
+        public const string ViewCalendarTimeSpentPng = "actions/view-calendar-time-spent.png";
         public const string ViewCalendarTodoPng = "actions/view-calendar-todo.png";
         public const string ViewCalendarUpcomingDaysPng = "actions/view-calendar-upcoming-days.png";
         public const string ViewCalendarUpcomingEventsPng = "actions/view-calendar-upcoming-events.png";
@@ -1048,11 +1059,6 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string ViewCalendarWeekPng = "actions/view-calendar-week.png";
         public const string ViewCalendarWorkweek2Png = "actions/view-calendar-workweek-2.png";
         public const string ViewCalendarWorkweekPng = "actions/view-calendar-workweek.png";
-        public const string ViewCalendarPng = "actions/view-calendar.png";
-        public const string ViewChoose2Png = "actions/view-choose-2.png";
-        public const string ViewChoose3Png = "actions/view-choose-3.png";
-        public const string ViewChoose4Png = "actions/view-choose-4.png";
-        public const string ViewChoosePng = "actions/view-choose.png";
         public const string ViewClosePng = "actions/view-close.png";
         public const string ViewFileColumnsPng = "actions/view-file-columns.png";
         public const string ViewFilterPng = "actions/view-filter.png";
@@ -1065,6 +1071,10 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string ViewFullscreen8Png = "actions/view-fullscreen-8.png";
         public const string ViewFullscreenPng = "actions/view-fullscreen.png";
         public const string ViewHistoryPng = "actions/view-history.png";
+        public const string ViewChoose2Png = "actions/view-choose-2.png";
+        public const string ViewChoose3Png = "actions/view-choose-3.png";
+        public const string ViewChoose4Png = "actions/view-choose-4.png";
+        public const string ViewChoosePng = "actions/view-choose.png";
         public const string ViewLeftClosePng = "actions/view-left-close.png";
         public const string ViewListDetails2Png = "actions/view-list-details-2.png";
         public const string ViewListDetails3Png = "actions/view-list-details-3.png";
@@ -1113,8 +1123,8 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string ViewPimTasksPng = "actions/view-pim-tasks.png";
         public const string ViewPresentationPng = "actions/view-presentation.png";
         public const string ViewPreviewPng = "actions/view-preview.png";
-        public const string ViewProcessAllTreePng = "actions/view-process-all-tree.png";
         public const string ViewProcessAllPng = "actions/view-process-all.png";
+        public const string ViewProcessAllTreePng = "actions/view-process-all-tree.png";
         public const string ViewProcessOwnPng = "actions/view-process-own.png";
         public const string ViewProcessSystemPng = "actions/view-process-system.png";
         public const string ViewProcessUsersPng = "actions/view-process-users.png";
@@ -1206,8 +1216,41 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string ZoomOutPng = "actions/zoom-out.png";
         public const string ZoomPng = "actions/zoom.png";
     }
+    #endregion
+    #region Asol
+    /// <summary>
+    /// Obsah adresáře Asol
+    /// <para/>
+    /// Programátor, který chce vidět jednotlivé ikonky, si najde soubor "ASOL.GraphLib.res" v adresáři pluginu WorkScheduler,
+    /// zkopíruje si jej do pracovního adresáře, přejmenuje příponu na .zip a rozzipuje.
+    /// <para/>
+    /// Programátor, který chce doplnit další resource, si do výše uvedeného rozbaleného adresáře přidá nové ikony nebno adresář s ikonami nebo jiná data,
+    /// poté celý adresář zazipuje, přejmenuje celý zip na "ASOL.GraphLib.res" a vloží soubor do balíčku WorkScheduleru.
+    /// <para/>
+    /// Poté programátor spustí WorkScheduler z Visual studia v režimu Debug, a plugin při startu nově vygeneruje soubor WorkSchedulerResources.cs, obsahující nově dodané položky jako konstanty.
+    /// </summary>
+    public class Asol
+    {
+        public const string GoHome4Png = "asol/go-home-4.png";
+        public const string GoNextViewPng = "asol/go-next-view.png";
+        public const string GoPreviousViewPng = "asol/go-previous-view.png";
+        public const string ViewCalendarDay2Png = "asol/view-calendar-day-2.png";
+        public const string ViewCalendarMonth2Png = "asol/view-calendar-month-2.png";
+        public const string ViewCalendarWeek2Png = "asol/view-calendar-week-2.png";
+        public const string ViewCalendarWorkweek2Png = "asol/view-calendar-workweek-2.png";
+    }
+    #endregion
+    #region Categories
     /// <summary>
     /// Obsah adresáře Categories
+    /// <para/>
+    /// Programátor, který chce vidět jednotlivé ikonky, si najde soubor "ASOL.GraphLib.res" v adresáři pluginu WorkScheduler,
+    /// zkopíruje si jej do pracovního adresáře, přejmenuje příponu na .zip a rozzipuje.
+    /// <para/>
+    /// Programátor, který chce doplnit další resource, si do výše uvedeného rozbaleného adresáře přidá nové ikony nebno adresář s ikonami nebo jiná data,
+    /// poté celý adresář zazipuje, přejmenuje celý zip na "ASOL.GraphLib.res" a vloží soubor do balíčku WorkScheduleru.
+    /// <para/>
+    /// Poté programátor spustí WorkScheduler z Visual studia v režimu Debug, a plugin při startu nově vygeneruje soubor WorkSchedulerResources.cs, obsahující nově dodané položky jako konstanty.
     /// </summary>
     public class Categories
     {
@@ -1221,9 +1264,9 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string ApplicationsDevelopment4Png = "categories/applications-development-4.png";
         public const string ApplicationsDevelopment5Png = "categories/applications-development-5.png";
         public const string ApplicationsDevelopment6Png = "categories/applications-development-6.png";
+        public const string ApplicationsDevelopmentPng = "categories/applications-development.png";
         public const string ApplicationsDevelopmentTranslationPng = "categories/applications-development-translation.png";
         public const string ApplicationsDevelopmentWebPng = "categories/applications-development-web.png";
-        public const string ApplicationsDevelopmentPng = "categories/applications-development.png";
         public const string ApplicationsEducationLanguagePng = "categories/applications-education-language.png";
         public const string ApplicationsEducationMathematicsPng = "categories/applications-education-mathematics.png";
         public const string ApplicationsEducationPng = "categories/applications-education.png";
@@ -1290,6 +1333,7 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string PreferencesOther2Png = "categories/preferences-other-2.png";
         public const string PreferencesOther3Png = "categories/preferences-other-3.png";
         public const string PreferencesOtherPng = "categories/preferences-other.png";
+        public const string PreferencesPng = "categories/preferences.png";
         public const string PreferencesSystem2Png = "categories/preferences-system-2.png";
         public const string PreferencesSystem3Png = "categories/preferences-system-3.png";
         public const string PreferencesSystem4Png = "categories/preferences-system-4.png";
@@ -1297,33 +1341,79 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string PreferencesSystemNetwork3Png = "categories/preferences-system-network-3.png";
         public const string PreferencesSystemNetworkPng = "categories/preferences-system-network.png";
         public const string PreferencesSystemPng = "categories/preferences-system.png";
-        public const string PreferencesPng = "categories/preferences.png";
         public const string System2Png = "categories/system-2.png";
         public const string SystemHelp2Png = "categories/system-help-2.png";
         public const string SystemHelp3Png = "categories/system-help-3.png";
         public const string SystemHelpPng = "categories/system-help.png";
         public const string SystemSettings2Png = "categories/system-settings-2.png";
     }
+    #endregion
+    #region Small16
+    /// <summary>
+    /// Obsah adresáře Small16
+    /// <para/>
+    /// Programátor, který chce vidět jednotlivé ikonky, si najde soubor "ASOL.GraphLib.res" v adresáři pluginu WorkScheduler,
+    /// zkopíruje si jej do pracovního adresáře, přejmenuje příponu na .zip a rozzipuje.
+    /// <para/>
+    /// Programátor, který chce doplnit další resource, si do výše uvedeného rozbaleného adresáře přidá nové ikony nebno adresář s ikonami nebo jiná data,
+    /// poté celý adresář zazipuje, přejmenuje celý zip na "ASOL.GraphLib.res" a vloží soubor do balíčku WorkScheduleru.
+    /// <para/>
+    /// Poté programátor spustí WorkScheduler z Visual studia v režimu Debug, a plugin při startu nově vygeneruje soubor WorkSchedulerResources.cs, obsahující nově dodané položky jako konstanty.
+    /// </summary>
+    public class Small16
+    {
+        public const string BulletBlackPng = "small16/bullet-black.png";
+        public const string BulletBluePng = "small16/bullet-blue.png";
+        public const string BulletGreenPng = "small16/bullet-green.png";
+        public const string BulletOrangePng = "small16/bullet-orange.png";
+        public const string BulletPinkPng = "small16/bullet-pink.png";
+        public const string BulletPurplePng = "small16/bullet-purple.png";
+        public const string BulletRedPng = "small16/bullet-red.png";
+        public const string BulletStarPng = "small16/bullet-star.png";
+        public const string BulletWhitePng = "small16/bullet-white.png";
+        public const string BulletYellowPng = "small16/bullet-yellow.png";
+        public const string DialogAccept2Png = "small16/dialog-accept-2.png";
+        public const string DialogAcceptPng = "small16/dialog-accept.png";
+        public const string DialogApplyPng = "small16/dialog-apply.png";
+        public const string DialogBlockPng = "small16/dialog-block.png";
+        public const string DialogCancel2Png = "small16/dialog-cancel-2.png";
+        public const string DialogCancel3Png = "small16/dialog-cancel-3.png";
+        public const string DialogOk5Png = "small16/dialog-ok-5.png";
+        public const string DialogOkApply2Png = "small16/dialog-ok-apply-2.png";
+        public const string DialogOkApply4Png = "small16/dialog-ok-apply-4.png";
+        public const string GoDown2Png = "small16/go-down-2.png";
+        public const string GoUp2Png = "small16/go-up-2.png";
+    }
+    #endregion
+    #region Status
     /// <summary>
     /// Obsah adresáře Status
+    /// <para/>
+    /// Programátor, který chce vidět jednotlivé ikonky, si najde soubor "ASOL.GraphLib.res" v adresáři pluginu WorkScheduler,
+    /// zkopíruje si jej do pracovního adresáře, přejmenuje příponu na .zip a rozzipuje.
+    /// <para/>
+    /// Programátor, který chce doplnit další resource, si do výše uvedeného rozbaleného adresáře přidá nové ikony nebno adresář s ikonami nebo jiná data,
+    /// poté celý adresář zazipuje, přejmenuje celý zip na "ASOL.GraphLib.res" a vloží soubor do balíčku WorkScheduleru.
+    /// <para/>
+    /// Poté programátor spustí WorkScheduler z Visual studia v režimu Debug, a plugin při startu nově vygeneruje soubor WorkSchedulerResources.cs, obsahující nově dodané položky jako konstanty.
     /// </summary>
     public class Status
     {
-        public const string Anonymous_simple_weather_symbols_1Png = "status/anonymous_simple_weather_symbols_1.png";
-        public const string Anonymous_simple_weather_symbols_10Png = "status/anonymous_simple_weather_symbols_10.png";
-        public const string Anonymous_simple_weather_symbols_11Png = "status/anonymous_simple_weather_symbols_11.png";
-        public const string Anonymous_simple_weather_symbols_12Png = "status/anonymous_simple_weather_symbols_12.png";
-        public const string Anonymous_simple_weather_symbols_13Png = "status/anonymous_simple_weather_symbols_13.png";
-        public const string Anonymous_simple_weather_symbols_14Png = "status/anonymous_simple_weather_symbols_14.png";
-        public const string Anonymous_simple_weather_symbols_15Png = "status/anonymous_simple_weather_symbols_15.png";
-        public const string Anonymous_simple_weather_symbols_2Png = "status/anonymous_simple_weather_symbols_2.png";
-        public const string Anonymous_simple_weather_symbols_3Png = "status/anonymous_simple_weather_symbols_3.png";
-        public const string Anonymous_simple_weather_symbols_4Png = "status/anonymous_simple_weather_symbols_4.png";
-        public const string Anonymous_simple_weather_symbols_5Png = "status/anonymous_simple_weather_symbols_5.png";
-        public const string Anonymous_simple_weather_symbols_6Png = "status/anonymous_simple_weather_symbols_6.png";
-        public const string Anonymous_simple_weather_symbols_7Png = "status/anonymous_simple_weather_symbols_7.png";
-        public const string Anonymous_simple_weather_symbols_8Png = "status/anonymous_simple_weather_symbols_8.png";
-        public const string Anonymous_simple_weather_symbols_9Png = "status/anonymous_simple_weather_symbols_9.png";
+        public const string AnonymousSimpleWeatherSymbols10Png = "status/anonymous_simple_weather_symbols_10.png";
+        public const string AnonymousSimpleWeatherSymbols11Png = "status/anonymous_simple_weather_symbols_11.png";
+        public const string AnonymousSimpleWeatherSymbols12Png = "status/anonymous_simple_weather_symbols_12.png";
+        public const string AnonymousSimpleWeatherSymbols13Png = "status/anonymous_simple_weather_symbols_13.png";
+        public const string AnonymousSimpleWeatherSymbols14Png = "status/anonymous_simple_weather_symbols_14.png";
+        public const string AnonymousSimpleWeatherSymbols15Png = "status/anonymous_simple_weather_symbols_15.png";
+        public const string AnonymousSimpleWeatherSymbols1Png = "status/anonymous_simple_weather_symbols_1.png";
+        public const string AnonymousSimpleWeatherSymbols2Png = "status/anonymous_simple_weather_symbols_2.png";
+        public const string AnonymousSimpleWeatherSymbols3Png = "status/anonymous_simple_weather_symbols_3.png";
+        public const string AnonymousSimpleWeatherSymbols4Png = "status/anonymous_simple_weather_symbols_4.png";
+        public const string AnonymousSimpleWeatherSymbols5Png = "status/anonymous_simple_weather_symbols_5.png";
+        public const string AnonymousSimpleWeatherSymbols6Png = "status/anonymous_simple_weather_symbols_6.png";
+        public const string AnonymousSimpleWeatherSymbols7Png = "status/anonymous_simple_weather_symbols_7.png";
+        public const string AnonymousSimpleWeatherSymbols8Png = "status/anonymous_simple_weather_symbols_8.png";
+        public const string AnonymousSimpleWeatherSymbols9Png = "status/anonymous_simple_weather_symbols_9.png";
         public const string AppointmentMissedPng = "status/appointment-missed.png";
         public const string AppointmentSoonPng = "status/appointment-soon.png";
         public const string AudioVolumeHigh2Png = "status/audio-volume-high-2.png";
@@ -1366,6 +1456,13 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string BatteryCaution3Png = "status/battery-caution-3.png";
         public const string BatteryCautionChargingPng = "status/battery-caution-charging.png";
         public const string BatteryCautionPng = "status/battery-caution.png";
+        public const string BatteryEmpty2Png = "status/battery-empty-2.png";
+        public const string BatteryEmptyChargingPng = "status/battery-empty-charging.png";
+        public const string BatteryEmptyPng = "status/battery-empty.png";
+        public const string BatteryFullChargingPng = "status/battery-full-charging.png";
+        public const string BatteryFullPng = "status/battery-full.png";
+        public const string BatteryHighChargingPng = "status/battery-high-charging.png";
+        public const string BatteryHighPng = "status/battery-high.png";
         public const string BatteryChargedPng = "status/battery-charged.png";
         public const string BatteryCharging000Png = "status/battery-charging-000.png";
         public const string BatteryCharging010Png = "status/battery-charging-010.png";
@@ -1384,13 +1481,6 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string BatteryChargingCautionPng = "status/battery-charging-caution.png";
         public const string BatteryChargingLowPng = "status/battery-charging-low.png";
         public const string BatteryChargingPng = "status/battery-charging.png";
-        public const string BatteryEmpty2Png = "status/battery-empty-2.png";
-        public const string BatteryEmptyChargingPng = "status/battery-empty-charging.png";
-        public const string BatteryEmptyPng = "status/battery-empty.png";
-        public const string BatteryFullChargingPng = "status/battery-full-charging.png";
-        public const string BatteryFullPng = "status/battery-full.png";
-        public const string BatteryHighChargingPng = "status/battery-high-charging.png";
-        public const string BatteryHighPng = "status/battery-high.png";
         public const string BatteryLow2Png = "status/battery-low-2.png";
         public const string BatteryLow3Png = "status/battery-low-3.png";
         public const string BatteryLowChargingPng = "status/battery-low-charging.png";
@@ -1424,8 +1514,8 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string DialogWarningPng = "status/dialog-warning.png";
         public const string Disc00Png = "status/disc-00.png";
         public const string Disc05Png = "status/disc-05.png";
-        public const string Disc10Png = "status/disc-10.png";
         public const string Disc100Png = "status/disc-100.png";
+        public const string Disc10Png = "status/disc-10.png";
         public const string Disc15Png = "status/disc-15.png";
         public const string Disc20Png = "status/disc-20.png";
         public const string Disc25Png = "status/disc-25.png";
@@ -1482,8 +1572,8 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string MailReadPng = "status/mail-read.png";
         public const string MailReplied2Png = "status/mail-replied-2.png";
         public const string MailRepliedPng = "status/mail-replied.png";
-        public const string MailSignedVerifiedPng = "status/mail-signed-verified.png";
         public const string MailSignedPng = "status/mail-signed.png";
+        public const string MailSignedVerifiedPng = "status/mail-signed-verified.png";
         public const string MailUnread2Png = "status/mail-unread-2.png";
         public const string MailUnread3Png = "status/mail-unread-3.png";
         public const string MailUnreadNewPng = "status/mail-unread-new.png";
@@ -1513,10 +1603,10 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string NetworkGsmFullPng = "status/network-gsm-full.png";
         public const string NetworkGsmHFullPng = "status/network-gsm-h-full.png";
         public const string NetworkGsmHHighPng = "status/network-gsm-h-high.png";
+        public const string NetworkGsmHighPng = "status/network-gsm-high.png";
         public const string NetworkGsmHLowPng = "status/network-gsm-h-low.png";
         public const string NetworkGsmHMediumPng = "status/network-gsm-h-medium.png";
         public const string NetworkGsmHNonePng = "status/network-gsm-h-none.png";
-        public const string NetworkGsmHighPng = "status/network-gsm-high.png";
         public const string NetworkGsmLowPng = "status/network-gsm-low.png";
         public const string NetworkGsmMediumPng = "status/network-gsm-medium.png";
         public const string NetworkGsmNonePng = "status/network-gsm-none.png";
@@ -1527,9 +1617,9 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string NetworkReceive2Png = "status/network-receive-2.png";
         public const string NetworkReceivePng = "status/network-receive.png";
         public const string NetworkTransmit2Png = "status/network-transmit-2.png";
+        public const string NetworkTransmitPng = "status/network-transmit.png";
         public const string NetworkTransmitReceive2Png = "status/network-transmit-receive-2.png";
         public const string NetworkTransmitReceivePng = "status/network-transmit-receive.png";
-        public const string NetworkTransmitPng = "status/network-transmit.png";
         public const string NetworkWirelessDisconnectedPng = "status/network-wireless-disconnected.png";
         public const string NetworkWirelessEncrypted2Png = "status/network-wireless-encrypted-2.png";
         public const string NetworkWirelessEncrypted3Png = "status/network-wireless-encrypted-3.png";
@@ -1547,10 +1637,10 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string PrinterError3Png = "status/printer-error-3.png";
         public const string PrinterError4Png = "status/printer-error-4.png";
         public const string PrinterErrorPng = "status/printer-error.png";
+        public const string PrinterPng = "status/printer.png";
         public const string PrinterPrinting2Png = "status/printer-printing-2.png";
         public const string PrinterPrinting3Png = "status/printer-printing-3.png";
         public const string PrinterPrintingPng = "status/printer-printing.png";
-        public const string PrinterPng = "status/printer.png";
         public const string ScriptErrorPng = "status/script-error.png";
         public const string SecurityHigh2Png = "status/security-high-2.png";
         public const string SecurityHighPng = "status/security-high.png";
@@ -1573,13 +1663,13 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string TaskPastDuePng = "status/task-past-due.png";
         public const string UpsCautionChargingPng = "status/ups-caution-charging.png";
         public const string UpsCautionPng = "status/ups-caution.png";
-        public const string UpsChargedPng = "status/ups-charged.png";
         public const string UpsEmptyChargingPng = "status/ups-empty-charging.png";
         public const string UpsEmptyPng = "status/ups-empty.png";
         public const string UpsFullChargingPng = "status/ups-full-charging.png";
         public const string UpsFullPng = "status/ups-full.png";
         public const string UpsHighChargingPng = "status/ups-high-charging.png";
         public const string UpsHighPng = "status/ups-high.png";
+        public const string UpsChargedPng = "status/ups-charged.png";
         public const string UpsLowChargingPng = "status/ups-low-charging.png";
         public const string UpsLowPng = "status/ups-low.png";
         public const string UpsMediumChargingPng = "status/ups-medium-charging.png";
@@ -1635,19 +1725,19 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string WeatherShowers3Png = "status/weather-showers-3.png";
         public const string WeatherShowersDayPng = "status/weather-showers-day.png";
         public const string WeatherShowersNightPng = "status/weather-showers-night.png";
+        public const string WeatherShowersPng = "status/weather-showers.png";
         public const string WeatherShowersScattered2Png = "status/weather-showers-scattered-2.png";
         public const string WeatherShowersScattered3Png = "status/weather-showers-scattered-3.png";
         public const string WeatherShowersScatteredDayPng = "status/weather-showers-scattered-day.png";
         public const string WeatherShowersScatteredNightPng = "status/weather-showers-scattered-night.png";
         public const string WeatherShowersScatteredPng = "status/weather-showers-scattered.png";
-        public const string WeatherShowersPng = "status/weather-showers.png";
         public const string WeatherSnow2Png = "status/weather-snow-2.png";
         public const string WeatherSnow3Png = "status/weather-snow-3.png";
+        public const string WeatherSnowPng = "status/weather-snow.png";
         public const string WeatherSnowRainPng = "status/weather-snow-rain.png";
         public const string WeatherSnowScatteredDayPng = "status/weather-snow-scattered-day.png";
         public const string WeatherSnowScatteredNightPng = "status/weather-snow-scattered-night.png";
         public const string WeatherSnowScatteredPng = "status/weather-snow-scattered.png";
-        public const string WeatherSnowPng = "status/weather-snow.png";
         public const string WeatherStorm2Png = "status/weather-storm-2.png";
         public const string WeatherStorm3Png = "status/weather-storm-3.png";
         public const string WeatherStormDayPng = "status/weather-storm-day.png";
@@ -1655,29 +1745,6 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
         public const string WeatherStormPng = "status/weather-storm.png";
         public const string WindowSuppressedPng = "status/window-suppressed.png";
     }
-}
-namespace Noris.LCS.Base.WorkScheduler.Resources.Other
-{
-    /// <summary>
-    /// Obsah adresáře Actions
-    /// </summary>
-    public class Actions
-    {
-        public const string ThumbsDb = "actions/thumbs.db";
-    }
-    /// <summary>
-    /// Obsah adresáře Categories
-    /// </summary>
-    public class Categories
-    {
-        public const string ThumbsDb = "categories/thumbs.db";
-    }
-    /// <summary>
-    /// Obsah adresáře Status
-    /// </summary>
-    public class Status
-    {
-        public const string ThumbsDb = "status/thumbs.db";
-    }
+    #endregion
 }
 #pragma warning restore 1591
