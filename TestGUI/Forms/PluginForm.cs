@@ -114,23 +114,23 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         }
         #endregion
         #region Implementace Scheduler.IAppHost
-        /// <summary>
-        /// Tato metoda zajistí otevření formuláře daného záznamu.
-        /// Pouze převolá odpovídající metodu v <see cref="MainData"/>.
-        /// </summary>
-        /// <param name="recordGId"></param>
-        void IAppHost.RunOpenRecordForm(GId recordGId)
+        void IAppHost.RunOpenRecordsForm(RunOpenRecordsArgs args)
         {
-            ShowMsg("Rád bych otevřel záznam:~" + recordGId.ToString() + ";~~ale jsem jen obyčejný testovací formulář.");
+            ShowMsg("Rád bych otevřel záznam:~" + args.GuiIds.FirstOrDefault().ToString() + ";~~ale jsem jen obyčejný testovací formulář.");
         }
-        /// <summary>
-        /// Metoda, která zajistí provedení dané funkce
-        /// </summary>
-        /// <param name="runArgs"></param>
-        void IAppHost.RunContextFunction(RunContextFunctionArgs runArgs)
+        void IAppHost.RunToolBarFunction(RunToolbarFunctionArgs args)
         {
-            ShowMsg("Rád bych provedl funkci:~" + runArgs.MenuItemText + ";~~ale jsem jen obyčejný testovací formulář.");
+            ShowMsg("Rád bych provedl funkci toolbaru:~" + args.GuiToolbarItem.ToString() + ";~~ale jsem jen obyčejný testovací formulář.");
         }
+        void IAppHost.RunToolBarSelectedChange(RunToolbarFunctionArgs args)
+        {
+            ShowMsg("Rád bych provedl akci SelectedChange na položce toolbaru:~" + args.GuiToolbarItem.ToString() + ";~~ale jsem jen obyčejný testovací formulář.");
+        }
+        void IAppHost.RunContextFunction(RunContextFunctionArgs args)
+        {
+            ShowMsg("Rád bych provedl kontextovou funkci:~" + args.GuiContextMenuItem.ToString() + ";~~ale jsem jen obyčejný testovací formulář.");
+        }
+
         protected void ShowMsg(string message)
         {
             message = message.Replace("~", Environment.NewLine);
