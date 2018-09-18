@@ -1838,6 +1838,14 @@ namespace Asol.Tools.WorkScheduler.Components
                     break;
             }
         }
+        /// <summary>
+        /// DoubleClick na položce Toolbaru budeme interpretovat jako obyčejný Click.
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void AfterStateChangedLeftDoubleClick(GInteractiveChangeStateArgs e)
+        {
+            this.AfterStateChangedLeftClick(e);
+        }
         #endregion
     }
     #endregion

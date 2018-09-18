@@ -511,7 +511,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             {   // Akce typu Ctrl+DoubleClick na grafickém prvku si žádá otevření formuláře:
                 DataGraphItem graphItem = this.GetActionGraphItem(args);
                 if (graphItem != null)
-                    this.RunOpenRecordForm(graphItem.DataGId);
+                    this.RunOpenRecordForm(graphItem.RecordGId);
             }
         }
         /// <summary>
@@ -696,6 +696,23 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Může jít o Operaci výrobního příkazu.
         /// </summary>
         public GId DataGId { get { return this._DataGId; } }
+        /// <summary>
+        /// Veřejný identifikátor ZÁZNAMU K OTEVŘENÍ: obsahuje číslo třídy a číslo záznamu.
+        /// Jako <see cref="RecordGId"/> se vrací nejvhodnější identifikátor, který má být otevřen po provedení Ctrl + DoubleClick na tomto prvku.
+        /// Pokud je zadán <see cref="DataGId"/>, vrací se ten. Jako další se může vrátit <see cref="ItemGId"/> anebo <see cref="GroupGId"/>; v tomto pořadí.
+        /// Ale nevrací se <see cref="ParentGId"/> (to je řádek, nikoli prvek).
+        /// Může být null, pokud nic z uvedeného není zadané.
+        /// </summary>
+        public GId RecordGId
+        {
+            get
+            {
+                if (this._DataGId != null) return this._DataGId;
+                if (this._ItemGId != null) return this._ItemGId;
+                if (this._GroupGId != null) return this._GroupGId;
+                return null;
+            }
+        }
         /// <summary>
         /// Časový interval tohoto prvku
         /// </summary>

@@ -587,9 +587,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             /// </summary>
             public override string ToolTipText { get { return this._GuiContextMenuItem.ToolTip; } }
             /// <summary>
-            /// Obrázek
+            /// Obrázek pro položku menu
             /// </summary>
-            public override Image Image { get { return null /* this._GuiContextMenuItem.Image */ ; } }
+            public override Image Image { get { return Application.App.Resources.GetImage(this._GuiContextMenuItem.Image); } }
             #endregion
             #region Určení dostupnosti položky pro konkrétní situaci
             /// <summary>
@@ -621,6 +621,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (items == ToolbarSystemItem.None) return;
 
             this._ToolbarTimeGroup = new FunctionGlobalGroup() { Title = "ČASOVÁ OSA", ToolTipTitle = "Posuny časové osy, změna měřítka", Order = "A1" };
+            this._TimeAxisCurrentZoom = ToolbarSystemItem.TimeAxisZoomWholeWeek;
             if (items.HasFlag(ToolbarSystemItem.TimeAxisZoomOneDay))
                 this._ToolbarTimeGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_Day, R.Images.Asol.ViewCalendarDay2Png, null, "Jeden den", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemOnSameRow, isSelectable: true, selectionGroupName: "TimeZoom", userData: ToolbarSystemItem.TimeAxisZoomOneDay));
             if (items.HasFlag(ToolbarSystemItem.TimeAxisZoomWorkWeek))
@@ -631,11 +632,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 this._ToolbarTimeGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_Month, R.Images.Asol.ViewCalendarMonth2Png, null, "Měsíc 30 dní", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemSkipToNextRow, isSelectable: true, selectionGroupName: "TimeZoom", userData: ToolbarSystemItem.TimeAxisZoomMonth));
 
             if (items.HasFlag(ToolbarSystemItem.TimeAxisGoPrev))
-                this._ToolbarTimeGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_GoPrev, R.Images.Asol.GoPreviousViewPng, null, "Zpět = doleva = do minulosti", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemOnSameRow, userData: ToolbarSystemItem.TimeAxisGoPrev));
+                this._ToolbarTimeGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_GoPrev, R.Images.Asol.GoPreviousViewPng, null, "Zpět = doleva = do minulosti", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemOnSameRow, moduleWidth: 1, userData: ToolbarSystemItem.TimeAxisGoPrev));
             if (items.HasFlag(ToolbarSystemItem.TimeAxisGoHome))
                 this._ToolbarTimeGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_GoHome, R.Images.Asol.GoHome4Png, null, "Aktuální čas", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemOnSameRow, moduleWidth: 2, userData: ToolbarSystemItem.TimeAxisGoHome));
             if (items.HasFlag(ToolbarSystemItem.TimeAxisGoNext))
-                this._ToolbarTimeGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_GoNext, R.Images.Asol.GoNextViewPng, null, "Vpřed = doprava = do budoucnosti", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemOnSameRow, userData: ToolbarSystemItem.TimeAxisGoNext));
+                this._ToolbarTimeGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_GoNext, R.Images.Asol.GoNextViewPng, null, "Vpřed = doprava = do budoucnosti", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemOnSameRow, moduleWidth: 1, userData: ToolbarSystemItem.TimeAxisGoNext));
 
             this._MainControl.AddToolBarGroup(this._ToolbarTimeGroup);
         }
@@ -646,19 +647,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="item"></param>
         private void _TimeAxisToolBarSelected(FunctionItem item)
         {
+            /*
             if (!item.IsSelected) return;        // Sem chodí obě události: jak pro objekt, jehož IsSelected je nyní false, tak i pro objekt s IsSelected true.
             if (!(item.UserData is ToolbarSystemItem)) return;               // V UserData je uložena hodnota ToolbarSystemItem, odpovídající konkrétní funkcionalitě.
             this._TimeAxisToolBarAction((ToolbarSystemItem)item.UserData);
-
-            switch (item.Name)
-            {
-                case _Tlb_TimeAxis_Day:
-                case _Tlb_TimeAxis_WorkWeek:
-                case _Tlb_TimeAxis_WholeWeek:
-                case _Tlb_TimeAxis_Month:
-                    this._MainControl.SynchronizedTime.Value = new TimeRange(new DateTime(2018, 9, 1), new DateTime(2018, 9, 12));
-                    break;
-            }
+            */
         }
         /// <summary>
         /// Metoda se volá po akci Click na systémové položce ToolBaru. 
@@ -677,41 +670,50 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="action"></param>
         private void _TimeAxisToolBarAction(ToolbarSystemItem action)
         {
-            action = (ToolbarSystemItem)(this._GuiToolbarPanel.ToolbarShowSystemItems & ToolbarSystemItem.TimeAxisAll);
+            action = (ToolbarSystemItem)(action & ToolbarSystemItem.TimeAxisAll);
             if (action == ToolbarSystemItem.None) return;
+
+            // Pokud požadovaná akce je nějaký Zoom, pak nastavím tento Zoom jako "aktuální":
+            ToolbarSystemItem zoom = (action & ToolbarSystemItem.TimeAxisZoomAll);
+            if (zoom != ToolbarSystemItem.None)
+                this._TimeAxisCurrentZoom = zoom;
+
+            // Změna času:
             TimeRange currentTime = this._MainControl.SynchronizedTime.Value;
-            TimeRange actionTime = _TimeAxisGetNewTime(currentTime, action);
+            TimeRange actionTime = _TimeAxisGetNewTime(currentTime, null, action, this._TimeAxisCurrentZoom);
             if (actionTime != null)
                 this._MainControl.SynchronizedTime.Value = actionTime;
         }
         /// <summary>
         /// Vrátí nový časový interval pro časovou osu pro současný interval a daný požadavek
         /// </summary>
-        /// <param name="currentTime"></param>
+        /// <param name="currentTime">TimeRange pro akce GoPrev a GoNext</param>
+        /// <param name="currentDate">Pivot datum pro akce Zoom</param>
         /// <param name="action"></param>
+        /// <param name="zoom">Aktuální zoom pro výpočet nového času v režimu posunu (akce TimeAxisGo*) </param>
         /// <returns></returns>
-        private static TimeRange _TimeAxisGetNewTime(TimeRange currentTime, ToolbarSystemItem action)
+        private static TimeRange _TimeAxisGetNewTime(TimeRange currentTime, DateTime? currentDate, ToolbarSystemItem action, ToolbarSystemItem zoom)
         {
+            DateTime date = (currentDate.HasValue ? currentDate.Value : (currentTime != null ? currentTime.Center.Value : DateTime.Now));
             switch (action)
             {
-                case ToolbarSystemItem.TimeAxisZoomOneDay: return _TimeAxisGetNewTimeZoomOneDay(currentTime);
-                case ToolbarSystemItem.TimeAxisZoomWorkWeek: return _TimeAxisGetNewTimeZoomWorkWeek(currentTime);
-                case ToolbarSystemItem.TimeAxisZoomWholeWeek: return _TimeAxisGetNewTimeZoomWholeWeek(currentTime);
-                case ToolbarSystemItem.TimeAxisZoomMonth: return _TimeAxisGetNewTimeZoomMonth(currentTime);
-                case ToolbarSystemItem.TimeAxisGoPrev: return _TimeAxisGetNewTimeGoPrev(currentTime);
-                case ToolbarSystemItem.TimeAxisGoHome: return _TimeAxisGetNewTimeGoHome(currentTime);
-                case ToolbarSystemItem.TimeAxisGoNext: return _TimeAxisGetNewTimeGoNext(currentTime);
+                case ToolbarSystemItem.TimeAxisZoomOneDay: return _TimeAxisGetNewTimeZoomOneDay(date);
+                case ToolbarSystemItem.TimeAxisZoomWorkWeek: return _TimeAxisGetNewTimeZoomWorkWeek(date);
+                case ToolbarSystemItem.TimeAxisZoomWholeWeek: return _TimeAxisGetNewTimeZoomWholeWeek(date);
+                case ToolbarSystemItem.TimeAxisZoomMonth: return _TimeAxisGetNewTimeZoomMonth(date);
+                case ToolbarSystemItem.TimeAxisGoPrev: return _TimeAxisGetNewTimeGoPrev(currentTime, zoom);
+                case ToolbarSystemItem.TimeAxisGoHome: return _TimeAxisGetNewTimeGoHome(currentTime, zoom);
+                case ToolbarSystemItem.TimeAxisGoNext: return _TimeAxisGetNewTimeGoNext(currentTime, zoom);
             }
             return null;
         }
         /// <summary>
         /// Vrátí nový časový interval pro časovou osu pro současný interval a požadavek <see cref="ToolbarSystemItem.TimeAxisZoomOneDay"/>
         /// </summary>
-        /// <param name="currentTime"></param>
+        /// <param name="center"></param>
         /// <returns></returns>
-        private static TimeRange _TimeAxisGetNewTimeZoomOneDay(TimeRange currentTime)
+        private static TimeRange _TimeAxisGetNewTimeZoomOneDay(DateTime center)
         {
-            DateTime center = currentTime.Center.Value;
             DateTime begin = center.Date;
             DateTime end = begin.AddDays(1d);
             TimeRange time = new TimeRange(begin, end);
@@ -720,11 +722,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Vrátí nový časový interval pro časovou osu pro současný interval a požadavek <see cref="ToolbarSystemItem.TimeAxisZoomWorkWeek"/>
         /// </summary>
-        /// <param name="currentTime"></param>
+        /// <param name="center"></param>
         /// <returns></returns>
-        private static TimeRange _TimeAxisGetNewTimeZoomWorkWeek(TimeRange currentTime)
+        private static TimeRange _TimeAxisGetNewTimeZoomWorkWeek(DateTime center)
         {
-            DateTime center = currentTime.Center.Value;
             DateTime begin = center.Date.FirstDayOf(DateTimePart.Week);
             DateTime end = begin.AddDays(5d);
             TimeRange time = new TimeRange(begin, end);
@@ -733,11 +734,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Vrátí nový časový interval pro časovou osu pro současný interval a požadavek <see cref="ToolbarSystemItem.TimeAxisZoomWholeWeek"/>
         /// </summary>
-        /// <param name="currentTime"></param>
+        /// <param name="center"></param>
         /// <returns></returns>
-        private static TimeRange _TimeAxisGetNewTimeZoomWholeWeek(TimeRange currentTime)
+        private static TimeRange _TimeAxisGetNewTimeZoomWholeWeek(DateTime center)
         {
-            DateTime center = currentTime.Center.Value;
             DateTime begin = center.Date.FirstDayOf(DateTimePart.Week);
             DateTime end = begin.AddDays(7d);
             TimeRange time = new TimeRange(begin, end);
@@ -746,11 +746,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Vrátí nový časový interval pro časovou osu pro současný interval a požadavek <see cref="ToolbarSystemItem.TimeAxisZoomMonth"/>
         /// </summary>
-        /// <param name="currentTime"></param>
+        /// <param name="center"></param>
         /// <returns></returns>
-        private static TimeRange _TimeAxisGetNewTimeZoomMonth(TimeRange currentTime)
+        private static TimeRange _TimeAxisGetNewTimeZoomMonth(DateTime center)
         {
-            DateTime center = currentTime.Center.Value;
             DateTime begin = center.Date.FirstDayOf(DateTimePart.Month);
             DateTime end = begin.AddMonths(1);
             TimeRange time = new TimeRange(begin, end);
@@ -760,28 +759,40 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Vrátí nový časový interval pro časovou osu pro současný interval a požadavek <see cref="ToolbarSystemItem.TimeAxisGoPrev"/>
         /// </summary>
         /// <param name="currentTime"></param>
+        /// <param name="zoom">Aktuální zoom pro výpočet nového času v režimu posunu (akce TimeAxisGo*) </param>
         /// <returns></returns>
-        private static TimeRange _TimeAxisGetNewTimeGoPrev(TimeRange currentTime)
+        private static TimeRange _TimeAxisGetNewTimeGoPrev(TimeRange currentTime, ToolbarSystemItem zoom)
         {
-            return null;
+            DateTime date = currentTime.Begin.Value;
+            return _TimeAxisGetNewTime(null, date, zoom, ToolbarSystemItem.None);
         }
         /// <summary>
         /// Vrátí nový časový interval pro časovou osu pro současný interval a požadavek <see cref="ToolbarSystemItem.TimeAxisGoHome"/>
         /// </summary>
         /// <param name="currentTime"></param>
+        /// <param name="zoom">Aktuální zoom pro výpočet nového času v režimu posunu (akce TimeAxisGo*) </param>
         /// <returns></returns>
-        private static TimeRange _TimeAxisGetNewTimeGoHome(TimeRange currentTime)
+        private static TimeRange _TimeAxisGetNewTimeGoHome(TimeRange currentTime, ToolbarSystemItem zoom)
         {
-            return null;
+            DateTime date = DateTime.Now;
+            return _TimeAxisGetNewTime(null, date, zoom, ToolbarSystemItem.None);
         }
         /// <summary>
         /// Vrátí nový časový interval pro časovou osu pro současný interval a požadavek <see cref="ToolbarSystemItem.TimeAxisGoNext"/>
         /// </summary>
         /// <param name="currentTime"></param>
+        /// <param name="zoom">Aktuální zoom pro výpočet nového času v režimu posunu (akce TimeAxisGo*) </param>
         /// <returns></returns>
-        private static TimeRange _TimeAxisGetNewTimeGoNext(TimeRange currentTime)
+        private static TimeRange _TimeAxisGetNewTimeGoNext(TimeRange currentTime, ToolbarSystemItem zoom)
         {
-            return null;
+            DateTime date = currentTime.End.Value;
+            // Specialitky: pokud je zoom = WorkWeek, pak nemůžu jít GoNext tak, abych jako Date bral prostý čas End stávajícího intervalu.
+            //  Proč? Protože pátek. Konec pracovního týdne je pátek (respektive currentTime.End je sobota brzy ráno),
+            //          a z tohoto datumu se jako nový počátek odvodí zase to naše pondělí :-).
+            //        A ani termín Begin.AddDays(7) není OK, protože Begin má typicky hodnotu Neděle pozdě večer (to vše kvůli _TimeAxisEnlargeRatio).
+            if (zoom == ToolbarSystemItem.TimeAxisZoomWorkWeek)
+                date = currentTime.Center.Value.AddDays(7);
+            return _TimeAxisGetNewTime(null, date, zoom, ToolbarSystemItem.None);
         }
         /// <summary>
         /// Poměr zvětšení časového intervalu nad rámec matematicky přesného výpočtu
@@ -791,6 +802,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Grupa v ToolBaru s položkami pro časovou osu
         /// </summary>
         private FunctionGlobalGroup _ToolbarTimeGroup;
+        /// <summary>
+        /// Aktuální Zoom aplikovaný na Main časovou osu.
+        /// Obsahuje pouze hodnoty z rozsahu <see cref="ToolbarSystemItem.TimeAxisZoomAll"/>.
+        /// </summary>
+        private ToolbarSystemItem _TimeAxisCurrentZoom;
         private const string _Tlb_TimeAxis_Day = "TimeAxisOneDay";
         private const string _Tlb_TimeAxis_WorkWeek = "TimeAxisWorkWeek";
         private const string _Tlb_TimeAxis_WholeWeek = "TimeAxisWholeWeek";
