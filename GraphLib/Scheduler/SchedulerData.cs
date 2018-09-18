@@ -12,6 +12,7 @@ using Asol.Tools.WorkScheduler.Services;
 using Asol.Tools.WorkScheduler.Components;
 using Asol.Tools.WorkScheduler.Components.Graph;
 using Noris.LCS.Base.WorkScheduler;
+using R = Noris.LCS.Base.WorkScheduler.Resources;
 
 namespace Asol.Tools.WorkScheduler.Scheduler
 {
@@ -21,7 +22,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     /// </summary>
     public class MainData : IMainDataInternal, IFunctionProvider
     {
-        #region Konstrukce a proměnné
+        #region Konstrukce a privátní proměnné
         /// <summary>
         /// Konstruktor pro konkrétního hostitele
         /// </summary>
@@ -46,9 +47,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Datový hostitel
         /// </summary>
         private IAppHost _AppHost;
+        private GuiData _GuiData;
         PluginActivity IPlugin.Activity { get { return PluginActivity.Standard; } }
         #endregion
-        #region Technika zpracování serializovaných prvků typu GuiItem
+        #region Public metody a properties
         /// <summary>
         /// Načte data ze strukturovaného objektu <see cref="GuiData"/>
         /// </summary>
@@ -60,14 +62,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this._LoadGuiPanels(guiData.Pages);
             this._LoadGuiContext(guiData.ContextMenuItems);
         }
-        /// <summary>
-        /// Hlavní objekt s daty <see cref="GuiData"/>
-        /// </summary>
-        public GuiData GuiData { get { return this._GuiData; } }
-        /// <summary>
-        /// Hlavní objekt s daty <see cref="GuiData"/>
-        /// </summary>
-        private GuiData _GuiData;
         /// <summary>
         /// Vytvoří a vrátí new WinForm control, obsahující kompletní strukturu pro zobrazení dodaných dat.
         /// Control rovnou vloží do dodaného Formu.
@@ -83,6 +77,22 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this._MainControl.Dock = DockStyle.Fill;       // Control MainControl roztáhneme na maximum
             return this._MainControl;                      // hotovo!
         }
+        /// <summary>
+        /// Vytvoří a vrátí new WinForm control, obsahující kompletní strukturu pro zobrazení dodaných dat
+        /// </summary>
+        /// <returns></returns>
+        public System.Windows.Forms.Control CreateControl()
+        {
+            this._MainControl = new MainControl(this);
+            this._FillMainControlFromGui();
+            return this._MainControl;
+        }
+        /// <summary>
+        /// Hlavní objekt s daty <see cref="GuiData"/>
+        /// </summary>
+        public GuiData GuiData { get { return this._GuiData; } }
+        #endregion
+        #region Vytváření controlu, jeho vložení do Formu
         /// <summary>
         /// Do předaného formu vloží data z nastavení v <see cref="GuiProperties"/>
         /// </summary>
@@ -125,27 +135,76 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             return (isMaximized ? FormWindowState.Maximized : FormWindowState.Normal);
         }
         /// <summary>
-        /// Vytvoří a vrátí new WinForm control, obsahující kompletní strukturu pro zobrazení dodaných dat
-        /// </summary>
-        /// <returns></returns>
-        public System.Windows.Forms.Control CreateControl()
-        {
-            this._MainControl = new MainControl(this);
-            this._FillMainControlFromGui();
-            return this._MainControl;
-        }
-        /// <summary>
         /// Z dat dodaných v prvcích GuiItem vytvoří vizuální controly a vloží je do Main WinForm controlu
         /// </summary>
         private void _FillMainControlFromGui()
         {
-            this._FillMainControlToolbarFromGui();
+            this._FillMainControlToolbar();
             this._FillMainControlPagesFromGui();
         }
         /// <summary>
         /// Reference na hlavní GUI control, který je vytvořen v metodě <see cref="CreateControlToForm(Form)"/>
         /// </summary>
         protected MainControl _MainControl;
+        #endregion
+        #region Vyvolání akcí z pluginu do hostitele (otevření záznamu, spuštění funkcí, podpora editace)
+        /// <summary>
+        /// Metoda vyvolá akci RunOpenRecordsForm do AppHost
+        /// </summary>
+        /// <param name="recordGId"></param>
+        private void _CallHostRunOpenRecordsForm(GId recordGId)
+        {
+            if (recordGId == null || recordGId.RecordId == 0) return;
+            GuiId[] guiIds = new GuiId[] { new GuiId(recordGId.ClassId, recordGId.RecordId) };
+            this._CallHostRunOpenRecordsForm(guiIds);
+        }
+        /// <summary>
+        /// Metoda vyvolá akci RunOpenRecordsForm do AppHost
+        /// </summary>
+        /// <param name="guiIds"></param>
+        private void _CallHostRunOpenRecordsForm(IEnumerable<GuiId> guiIds)
+        {
+            if (this._HasHost)
+                this._AppHost.RunOpenRecordsForm(new RunOpenRecordsArgs(this._SessionId, guiIds));
+            else
+                System.Windows.Forms.MessageBox.Show("Rád bych otevřel vybrané záznamy,\r\nale není zadán datový hostitel.");
+        }
+        /// <summary>
+        /// Metoda vyvolá akci RunToolBarFunction do AppHost
+        /// </summary>
+        /// <param name="guiToolbarItem"></param>
+        private void _CallHostRunToolBarFunction(GuiToolbarItem guiToolbarItem)
+        {
+            if (this._HasHost)
+                this._AppHost.RunToolBarFunction(new RunToolbarFunctionArgs(this._SessionId, guiToolbarItem));
+            else
+                System.Windows.Forms.MessageBox.Show("Rád bych provedl funkci ToolBaru «" + guiToolbarItem.Title + "»,\r\nale není zadán datový hostitel.");
+        }
+        /// <summary>
+        /// Metoda vyvolá akci RunToolBarFunction do AppHost
+        /// </summary>
+        /// <param name="guiToolbarItem"></param>
+        private void _CallHostRunToolBarSelectedChange(GuiToolbarItem guiToolbarItem)
+        {
+            if (this._HasHost)
+                this._AppHost.RunToolBarSelectedChange(new RunToolbarFunctionArgs(this._SessionId, guiToolbarItem));
+            else
+                System.Windows.Forms.MessageBox.Show("Rád bych vyvolal akci SelectedChange pro položku ToolBaru «" + guiToolbarItem.Title + "»,\r\nale není zadán datový hostitel.");
+        }
+        /// <summary>
+        /// Metoda vyvolá akci RunToolBarFunction do AppHost
+        /// </summary>
+        /// <param name="guiContextMenuItem"></param>
+        /// <param name="itemArgs"></param>
+        private void _CallHostRunContextFunction(GuiContextMenuItem guiContextMenuItem, ItemActionArgs itemArgs)
+        {
+            if (this._HasHost)
+                this._AppHost.RunContextFunction(new RunContextFunctionArgs(this._SessionId, guiContextMenuItem));
+            else
+                System.Windows.Forms.MessageBox.Show("Rád bych provedl kontextovou funkci «" + guiContextMenuItem.Title + "»,\r\nale není zadán datový hostitel.");
+        }
+
+        #endregion
         #region Toolbar
         /// <summary>
         /// Načte položky do Toolbaru z dodaných dat Gui
@@ -162,40 +221,71 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Z dat v <see cref="_GuiToolbarPanel"/> naplní toolbar
         /// </summary>
-        private void _FillMainControlToolbarFromGui()
+        private void _FillMainControlToolbar()
         {
             this._MainControl.ClearToolBar();
             this._MainControl.ToolBarVisible = this._GuiToolbarPanel.ToolbarVisible;
-            this._FillMainControlToolbarSystemFromGui();
-            this._FillMainControlToolbarDataFromGui();
-            this._MainControl.ToolBarItemClicked += _MainControl_ToolBarItemClicked;
+            this._FillMainControlToolbarFromSystem();
+            this._FillMainControlToolbarFromGui();
+            this._MainControl.ToolBarItemClicked += _ToolBarItemClicked;
+            this._MainControl.ToolBarItemSelectedChange += _ToolBarItemSelectedChange;
         }
         /// <summary>
         /// Do toolbaru vloží systémové funkce
         /// </summary>
-        private void _FillMainControlToolbarSystemFromGui()
+        private void _FillMainControlToolbarFromSystem()
         {
-            if (!this._GuiToolbarPanel.ToolbarShowSystemItems) return;
+            if (!this._GuiToolbarPanel.ToolbarVisible) return;
+            // Systémové položky Toolbaru jsou položky třídy FunctionGlobalItem, nemají v sobě instanci GuiToolbarItem.
 
-            FunctionGlobalGroup group = new FunctionGlobalGroup();
-            group.Title = "ÚPRAVY";
-            group.Order = "A1";
-            group.ToolTipTitle = "Úpravy zadaných dat";
-
-            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Small, Image = Components.IconStandard.EditUndo, Text = "Zpět", IsEnabled = false, LayoutHint = LayoutHint.NextItemSkipToNextRow, UserData = "EditUndo" });
-            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Small, Image = Components.IconStandard.EditRedo, Text = "Vpřed", IsEnabled = true, UserData = "EditRedo" });
-            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Separator, Size = FunctionGlobalItemSize.Whole });
-            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Half, Image = Components.IconStandard.Refresh, Text = "Přenačíst", ToolTip = "Zruší všechny provedené změny a znovu načte data z databáze", IsEnabled = true, UserData = "Refresh" });
-            group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Half, Image = Components.IconStandard.DocumentSave, Text = "Uložit", ToolTip = "Uloží všechny provedené změny do databáze", IsEnabled = false, UserData = "DocumentSave" });
-
-            this._MainControl.AddToolBarGroup(group);
+            this._TimeAxisToolBarInit();
+        }
+        /// <summary>
+        /// Metoda vytvoří a vrátí prvek FunctionGlobalItem pro dané zadání
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="image"></param>
+        /// <param name="text"></param>
+        /// <param name="toolTip"></param>
+        /// <param name="size"></param>
+        /// <param name="imageHot"></param>
+        /// <param name="itemType"></param>
+        /// <param name="layoutHint"></param>
+        /// <param name="moduleWidth"></param>
+        /// <param name="isSelectable"></param>
+        /// <param name="isSelected"></param>
+        /// <param name="selectionGroupName"></param>
+        /// <param name="userData"></param>
+        /// <returns></returns>
+        private FunctionGlobalItem _CreateToolbarItem(string name, string image, string text, string toolTip,
+            FunctionGlobalItemSize size = FunctionGlobalItemSize.Half, string imageHot = null, FunctionGlobalItemType itemType = FunctionGlobalItemType.Button,
+            LayoutHint layoutHint = LayoutHint.Default, int? moduleWidth = null,
+            bool isSelectable = false, bool isSelected = false, string selectionGroupName = null, object userData = null)
+        {
+            FunctionGlobalItem functionItem = new FunctionGlobalItem(this);
+            functionItem.Name = name;
+            functionItem.Image = Application.App.Resources.GetImage(image);
+            functionItem.Text = text;
+            functionItem.ToolTip = toolTip;
+            functionItem.Size = size;
+            functionItem.ImageHot = Application.App.Resources.GetImage(imageHot);
+            functionItem.ItemType = itemType;
+            functionItem.LayoutHint = layoutHint;
+            functionItem.ModuleWidth = moduleWidth;
+            functionItem.IsSelectable = isSelectable;
+            functionItem.IsSelected = isSelected;
+            functionItem.SelectionGroupName = selectionGroupName;
+            functionItem.UserData = userData;
+            return functionItem;
         }
         /// <summary>
         /// Do toolbaru vloží aplikační funkce
         /// </summary>
-        private void _FillMainControlToolbarDataFromGui()
+        private void _FillMainControlToolbarFromGui()
         {
+            if (!this._GuiToolbarPanel.ToolbarVisible) return;
             if (this._GuiToolbarPanel.Items == null) return;
+            // Aplikační položky Toolbaru jsou položky třídy ToolBarItem, mají v sobě instanci GuiToolbarItem:
 
             // Nejprve sestavíme jednotlivé grupy pro prvky, podle názvu grup kam chtějí tyto prvky jít:
             Dictionary<string, FunctionGlobalGroup> toolBarGroups = new Dictionary<string, FunctionGlobalGroup>();
@@ -222,7 +312,62 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 this._MainControl.AddToolBarGroups(toolBarGroups.Values);
         }
         /// <summary>
-        /// ContextFunctionItem : adapter mezi <see cref="GuiToolbarItem"/>, a položku kontextového menu <see cref="FunctionGlobalItem"/>.
+        /// Obsluha události ItemSelectedChange na ToolBaru
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _ToolBarItemSelectedChange(object sender, FunctionItemEventArgs args)
+        {
+            GuiToolbarItem guiToolbarItem = _GetGuiToolBarItem(args);
+            if (guiToolbarItem != null)
+                this._CallHostRunToolBarSelectedChange(guiToolbarItem);
+            else
+                this._ToolBarItemSystemSelectedChange(args.Item);
+        }
+        /// <summary>
+        /// Obsluha události ItemClick na ToolBaru
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _ToolBarItemClicked(object sender, FunctionItemEventArgs args)
+        {
+            GuiToolbarItem guiToolbarItem = _GetGuiToolBarItem(args);
+            if (guiToolbarItem != null)
+                this._CallHostRunToolBarFunction(guiToolbarItem);
+            else
+                this._ToolBarItemSystemClick(args.Item);
+        }
+        /// <summary>
+        /// Obsluha události ItemSelectedChange na Systémové položce ToolBaru
+        /// </summary>
+        /// <param name="item"></param>
+        private void _ToolBarItemSystemSelectedChange(FunctionItem item)
+        {
+            this._TimeAxisToolBarSelected(item);
+        }
+        /// <summary>
+        /// Obsluha události ItemClick na Systémové položce ToolBaru
+        /// </summary>
+        /// <param name="item"></param>
+        private void _ToolBarItemSystemClick(FunctionItem item)
+        {
+            this._TimeAxisToolBarClick(item);
+        }
+        /// <summary>
+        /// Metoda vrátí instanci <see cref="GuiToolbarItem"/> pro položku toolbaru z dodaného argumentu.
+        /// Pokud argument obsahuje položku, která nepochází z <see cref="GuiToolbarItem"/>, 
+        /// pak jde o systémovou položku toolbaru, tato metoda vrací null a požadovaná akce se řeší interně.
+        /// </summary>
+        /// <param name="args"></param>
+        /// <returns></returns>
+        private static GuiToolbarItem _GetGuiToolBarItem(FunctionItemEventArgs args)
+        {
+            ToolBarItem toolBarItem = args.Item as ToolBarItem;
+            if (toolBarItem == null) return null;
+            return toolBarItem.GuiToolbarItem;
+        }
+        /// <summary>
+        /// ContextFunctionItem : adapter mezi <see cref="GuiToolbarItem"/>, a položkou kontextového menu <see cref="FunctionGlobalItem"/>.
         /// </summary>
         protected class ToolBarItem : FunctionGlobalItem
         {
@@ -262,6 +407,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             }
             #endregion
             #region Public property FunctionGlobalItem, načítané z GuiToolbarItem, a explicitně přidané
+            /// <summary>
+            /// GUI Prvek toolbaru, z něhož je tato položka vytvořena. Jde o data dodaná z aplikace.
+            /// </summary>
+            public GuiToolbarItem GuiToolbarItem { get { return this._GuiToolBarItem; } }
             /// <summary>
             /// Text do funkce
             /// </summary>
@@ -345,8 +494,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Souhrn všech definovaných funkcí pro všechna kontextová menu v systému.
         /// Souhrn je načten z <see cref="GuiContextMenuSet"/> v metodě <see cref="_LoadGuiContext(GuiContextMenuSet)"/>, 
-        /// z tohoto souhrnu jsou následně vybírány funkce pro konkrétní situaci v metodě <see cref="_GetContextMenuItems(DataGraphItem, ItemActionArgs)"/>, 
-        /// a z nich je pak vytvořeno fyzické kontextové menu v metodě <see cref="CreateContextMenu(DataGraphItem, ItemActionArgs)"/>.
+        /// z tohoto souhrnu je vytvořeno kontextové menu pro konkrétní situaci, v metodě <see cref="CreateContextMenu(DataGraphItem, ItemActionArgs)"/>.
         /// </summary>
         protected ContextFunctionItem[] _ContextFunctions;
         /// <summary>
@@ -357,50 +505,39 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <returns></returns>
         protected ToolStripDropDownMenu CreateContextMenu(DataGraphItem graphItem, ItemActionArgs args)
         {
-            IEnumerable<FunctionItem> menuItems = this._GetContextMenuItems(graphItem, args);
-            ToolStripDropDownMenu toolStripMenu = FunctionItem.CreateDropDownMenuFrom(menuItems);
-            return toolStripMenu;
+            if (this._ContextFunctions == null || this._ContextFunctions.Length == 0) return null;              // Nejsou data => není menu.
+            ContextFunctionItem[] items = this._ContextFunctions.Where(cfi => cfi.IsValidFor(null)).ToArray();  // Vybereme jen ty funkce, které jsou vhodné pro daný prvek
+            if (items.Length == 0) return null;         // Nic se nehodí => nic se nezobrazí
+
+            // Celkové menu:
+            ToolStripDropDownMenu menu = FunctionItem.CreateDropDownMenuFrom(items, m =>
+            {   // Tuto akci vyvolá metoda CreateDropDownMenuFrom() po vytvoření menu, ale před přidáním položek:
+                m.Tag = args;
+                m.Items.Add(new ToolStripLabel("NABÍDKA FUNKCÍ"));
+                m.Items.Add(new ToolStripSeparator());
+            });
+
+            menu.ItemClicked += this.ContextMenuItemClicked;
+            return menu;
         }
         /// <summary>
-        /// Metoda najde a vrátí soupis položek, popisujících jednotlivé funkce <see cref="FunctionItem"/>, 
-        /// které mají být zobrazeny jako Kontextové menu pro daný prvek grafu.
+        /// Obsluha kliknutí na položku kontextového menu
         /// </summary>
-        /// <param name="graphItem"></param>
-        /// <param name="args"></param>
-        /// <returns></returns>
-        private IEnumerable<FunctionItem> _GetContextMenuItems(DataGraphItem graphItem, ItemActionArgs args)
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ContextMenuItemClicked(object sender, ToolStripItemClickedEventArgs e)
         {
-            // graphItem.GraphTable;
-            List<FunctionItem> menuItems = new List<FunctionItem>();
+            ToolStripDropDownMenu menu = sender as ToolStripDropDownMenu;
+            if (menu == null) return;
+            menu.Hide();
 
+            // Vyjmeme data:  a) stav grafu,   b) data konkrétní vybrané funkce:
+            ItemActionArgs itemArgs = menu.Tag as ItemActionArgs;
+            ContextFunctionItem funcArgs = e.ClickedItem.Tag as ContextFunctionItem;
+            GuiContextMenuItem guiContextMenuItem = (funcArgs != null ? funcArgs.GuiContextMenuItem : null);
+            if (guiContextMenuItem == null) return;
 
-            ToolStripDropDownMenu menu = new ToolStripDropDownMenu();
-            menu.Text = "nabídka funkcí";
-            menu.DropShadowEnabled = true;
-            menu.RenderMode = ToolStripRenderMode.System;
-            menu.Tag = args;
-
-            ToolStripLabel menuTitle = new ToolStripLabel("NABÍDKA FUNKCÍ");
-            // menuTitle.BackColor = Color.DarkBlue;
-            menu.Items.Add(menuTitle);
-
-            menu.Items.Add(new ToolStripSeparator());
-
-            ToolStripMenuItem menuItem = new ToolStripMenuItem("Změnit čas události", IconStandard.BulletBlue16);
-            menuItem.Tag = "Změna času";
-            if (graphItem != null)
-                menu.Items.Add(menuItem);
-
-            if (graphItem == null)
-                menu.Items.Add("Přidej stav kapacit");
-
-            menu.Items.Add("Přidej další pracovní linku");
-
-            if (graphItem != null)
-                menu.Items.Add("Změnit čas směny");
-
-            menu.ItemClicked += ContextMenuItemClicked;
-            return menuItems;
+            this._CallHostRunContextFunction(guiContextMenuItem, itemArgs);
         }
         /// <summary>
         /// ContextFunctionItem : adapter mezi <see cref="GuiContextMenuItem"/>, a položku kontextového menu <see cref="FunctionItem"/>.
@@ -436,7 +573,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 return funcItem;
             }
             #endregion
-            #region Public property FunctionItem, načítané z DataDeclaration
+            #region Public property FunctionItem, načítané z GuiContextMenuItem
+            /// <summary>
+            /// Z této deklarace je funkce načtena
+            /// </summary>
+            public GuiContextMenuItem GuiContextMenuItem { get { return this._GuiContextMenuItem; } }
             /// <summary>
             /// Text do funkce
             /// </summary>
@@ -453,228 +594,218 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             #region Určení dostupnosti položky pro konkrétní situaci
             /// <summary>
             /// Vrátí true, pokud tato položka kontextového menu se má použít pro prvek, jehož <see cref="GuiBase.FullName"/> je v parametru.
+            /// Pokud tato metoda vrátí true, bude tato položka zařazena do menu.
+            /// Položka si v této metodě může sama určit, zda bude v menu zobrazena jako Enabled nebo Disabled:
+            /// Pokud chce být zobrazena, ale jako Disabled, pak si v této metodě nastaví <see cref="FunctionItem.IsEnabled"/> = false, a pak vrátí true.
+            /// Následně bude vyvolána metoda <see cref="FunctionItem.CreateWinFormItem()"/>, která vygeneruje WinForm položku s odpovídající hodnotou <see cref="System.Windows.Forms.ToolStripMenuItem.Enabled"/>.
+            /// Obdobně se do položky menu přebírají hodnoty <see cref="System.Windows.Forms.ToolStripMenuItem.CheckOnClick"/> (z <see cref="FunctionItem.IsSelectable"/>);
+            /// a <see cref="System.Windows.Forms.ToolStripMenuItem.Checked"/> (z <see cref="FunctionItem.IsSelected"/>).
             /// </summary>
             /// <param name="fullName"></param>
             /// <returns></returns>
             public bool IsValidFor(string fullName)
             {
-                return false;
+                this.IsEnabled = true;
+                return true;
             }
             #endregion
         }
         #endregion
-        #endregion
-
-
-
-        #region Data obrázků
+        #region Časová osa - tvorba menu v ToolBaru, a obsluha akcí tohoto menu
         /// <summary>
-        /// Vrátí obrázek daného jména. Může dojít k chybě <see cref="System.ArgumentNullException"/> nebo <see cref="System.Collections.Generic.KeyNotFoundException"/>.
+        /// Inicializace položek ToolBaru pro časovou osu
         /// </summary>
-        /// <param name="imageName"></param>
-        /// <returns></returns>
-        protected Image GetImage(string imageName)
+        private void _TimeAxisToolBarInit()
         {
-            return this.ImageDict[imageName];
+            ToolbarSystemItem items = (ToolbarSystemItem)(this._GuiToolbarPanel.ToolbarShowSystemItems & ToolbarSystemItem.TimeAxisAll);
+            if (items == ToolbarSystemItem.None) return;
+
+            this._ToolbarTimeGroup = new FunctionGlobalGroup() { Title = "ČASOVÁ OSA", ToolTipTitle = "Posuny časové osy, změna měřítka", Order = "A1" };
+            if (items.HasFlag(ToolbarSystemItem.TimeAxisZoomOneDay))
+                this._ToolbarTimeGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_Day, R.Images.Asol.ViewCalendarDay2Png, null, "Jeden den", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemOnSameRow, isSelectable: true, selectionGroupName: "TimeZoom", userData: ToolbarSystemItem.TimeAxisZoomOneDay));
+            if (items.HasFlag(ToolbarSystemItem.TimeAxisZoomWorkWeek))
+                this._ToolbarTimeGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_WorkWeek, R.Images.Asol.ViewCalendarWorkweek2Png, null, "Pracovní týden Po-Pá", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemOnSameRow, isSelectable: true, selectionGroupName: "TimeZoom", userData: ToolbarSystemItem.TimeAxisZoomWorkWeek));
+            if (items.HasFlag(ToolbarSystemItem.TimeAxisZoomWorkWeek))
+                this._ToolbarTimeGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_WholeWeek, R.Images.Asol.ViewCalendarWeek2Png, null, "Celý týden Po-Ne", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemOnSameRow, isSelectable: true, isSelected: true, selectionGroupName: "TimeZoom", userData: ToolbarSystemItem.TimeAxisZoomWholeWeek));
+            if (items.HasFlag(ToolbarSystemItem.TimeAxisZoomMonth))
+                this._ToolbarTimeGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_Month, R.Images.Asol.ViewCalendarMonth2Png, null, "Měsíc 30 dní", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemSkipToNextRow, isSelectable: true, selectionGroupName: "TimeZoom", userData: ToolbarSystemItem.TimeAxisZoomMonth));
+
+            if (items.HasFlag(ToolbarSystemItem.TimeAxisGoPrev))
+                this._ToolbarTimeGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_GoPrev, R.Images.Asol.GoPreviousViewPng, null, "Zpět = doleva = do minulosti", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemOnSameRow, userData: ToolbarSystemItem.TimeAxisGoPrev));
+            if (items.HasFlag(ToolbarSystemItem.TimeAxisGoHome))
+                this._ToolbarTimeGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_GoHome, R.Images.Asol.GoHome4Png, null, "Aktuální čas", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemOnSameRow, moduleWidth: 2, userData: ToolbarSystemItem.TimeAxisGoHome));
+            if (items.HasFlag(ToolbarSystemItem.TimeAxisGoNext))
+                this._ToolbarTimeGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_GoNext, R.Images.Asol.GoNextViewPng, null, "Vpřed = doprava = do budoucnosti", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemOnSameRow, userData: ToolbarSystemItem.TimeAxisGoNext));
+
+            this._MainControl.AddToolBarGroup(this._ToolbarTimeGroup);
         }
         /// <summary>
-        /// Zkusí najít obrázek daného jména. Nedojde k chybě.
+        /// Metoda se volá po akci SelectedChange na systémové položce ToolBaru. 
+        /// Metoda zjistí, zda akce se týká časové osy, a pokud ano pak ji vyřeší.
         /// </summary>
-        /// <param name="imageName"></param>
-        /// <param name="image"></param>
-        /// <returns></returns>
-        protected bool TryGetImage(string imageName, out Image image)
+        /// <param name="item"></param>
+        private void _TimeAxisToolBarSelected(FunctionItem item)
         {
-            image = null;
-            if (String.IsNullOrEmpty(imageName)) return false;
-            return this.ImageDict.TryGetValue(imageName, out image);
-        }
-        /// <summary>
-        /// Z dodaných dat (data) deserializuje Image a ten uloží pod danám názvem (imageName) do <see cref="ImageDict"/>.
-        /// Chyby odchytí a ignoruje.
-        /// </summary>
-        /// <param name="data"></param>
-        /// <param name="imageName"></param>
-        private void _LoadDataImage(string data, string imageName)
-        {
-            if (String.IsNullOrEmpty(data) || String.IsNullOrEmpty(imageName)) return;
-            if (this.ImageDict.ContainsKey(imageName)) return;
+            if (!item.IsSelected) return;        // Sem chodí obě události: jak pro objekt, jehož IsSelected je nyní false, tak i pro objekt s IsSelected true.
+            if (!(item.UserData is ToolbarSystemItem)) return;               // V UserData je uložena hodnota ToolbarSystemItem, odpovídající konkrétní funkcionalitě.
+            this._TimeAxisToolBarAction((ToolbarSystemItem)item.UserData);
 
-            try
+            switch (item.Name)
             {
-                Image image = WorkSchedulerSupport.ImageDeserialize(data);
-                this.ImageDict.Add(imageName, image);
+                case _Tlb_TimeAxis_Day:
+                case _Tlb_TimeAxis_WorkWeek:
+                case _Tlb_TimeAxis_WholeWeek:
+                case _Tlb_TimeAxis_Month:
+                    this._MainControl.SynchronizedTime.Value = new TimeRange(new DateTime(2018, 9, 1), new DateTime(2018, 9, 12));
+                    break;
             }
-            catch (Exception)
-            { }
         }
         /// <summary>
-        /// Klíč z requestu typu "Image.imagename.cokoli dalšího" rozdělí na části, 
-        /// z nichž název obrázku (zde "imagename") uloží do out imageName.
-        /// Vrací true, pokud vstupující klíč obsahuje vyhovující data, nebo vrací false, pokud na vstupu je něco nerozpoznatelného.
+        /// Metoda se volá po akci Click na systémové položce ToolBaru. 
+        /// Metoda zjistí, zda akce se týká časové osy, a pokud ano pak ji vyřeší.
         /// </summary>
-        /// <param name="key"></param>
-        /// <param name="imageName"></param>
-        /// <returns></returns>
-        protected static bool IsKeyRequestImage(string key, out string imageName)
+        /// <param name="item"></param>
+        private void _TimeAxisToolBarClick(FunctionItem item)
         {
-            imageName = null;
-            if (String.IsNullOrEmpty(key)) return false;
-            string[] parts = key.Split('.');
-            if (parts.Length < 2) return false;
-            if (parts[0] != "Image") return false;
-            imageName = parts[1];
-            return (!String.IsNullOrEmpty(imageName));
+            if (!(item.UserData is ToolbarSystemItem)) return;               // V UserData je uložena hodnota ToolbarSystemItem, odpovídající konkrétní funkcionalitě.
+            this._TimeAxisToolBarAction((ToolbarSystemItem)item.UserData);
         }
         /// <summary>
-        /// Dictionary obsahující data jednotlivých obrázků
+        /// Metoda provede požadovanou akci s časovou osou.
+        /// Pokud se akce netýká časové osy, nic nedělá.
         /// </summary>
-        protected Dictionary<string, Image> ImageDict { get; private set; }
-        #endregion
-
-        #region Konverze stringů a enumů
-        /// <summary>
-        /// Převede string obsahující číslo na Int32?.
-        /// Pokud nebude rozpoznáno, vrací se null.
-        /// </summary>
-        /// <param name="text"></param>
-        /// <returns></returns>
-        public static Int32? GetInt32N(string text)
+        /// <param name="action"></param>
+        private void _TimeAxisToolBarAction(ToolbarSystemItem action)
         {
-            Int32 number;
-            if (String.IsNullOrEmpty(text)) return null;
-            if (!Int32.TryParse(text, out number)) return null;
-            return number;
+            action = (ToolbarSystemItem)(this._GuiToolbarPanel.ToolbarShowSystemItems & ToolbarSystemItem.TimeAxisAll);
+            if (action == ToolbarSystemItem.None) return;
+            TimeRange currentTime = this._MainControl.SynchronizedTime.Value;
+            TimeRange actionTime = _TimeAxisGetNewTime(currentTime, action);
+            if (actionTime != null)
+                this._MainControl.SynchronizedTime.Value = actionTime;
         }
         /// <summary>
-        /// Převede string obsahující číslo na Int32?.
-        /// Pokud nebude rozpoznáno, vrací se null.
-        /// Tato varianta provádí zarovnání do daných mezí.
+        /// Vrátí nový časový interval pro časovou osu pro současný interval a daný požadavek
         /// </summary>
-        /// <param name="text"></param>
-        /// <param name="minValue">Dolní mez, včetně</param>
-        /// <param name="maxValue">Horní mez, včetně</param>
+        /// <param name="currentTime"></param>
+        /// <param name="action"></param>
         /// <returns></returns>
-        public static Int32? GetInt32N(string text, Int32? minValue, Int32? maxValue)
+        private static TimeRange _TimeAxisGetNewTime(TimeRange currentTime, ToolbarSystemItem action)
         {
-            Int32 number;
-            if (String.IsNullOrEmpty(text)) return null;
-            if (!Int32.TryParse(text, out number)) return null;
-            if (maxValue.HasValue && number > maxValue.Value) return maxValue;
-            if (minValue.HasValue && number < minValue.Value) return minValue;
-            return number;
-        }
-        /// <summary>
-        /// Převede string obsahující barvu na Color?.
-        /// String může obsahovat název barvy = některou hodnotu z enumu <see cref="KnownColor"/>, například "Violet";, ignoruje se velikost písmen.
-        /// anebo může být HEX hodnota zadaná ve formě "0x8080C0" nebo "0(and)226688".
-        /// Pokud nebude rozpoznáno, vrací se null.
-        /// </summary>
-        /// <param name="text"></param>
-        /// <returns></returns>
-        public static Color? GetColor(string text)
-        {
-            Color? color = null;
-            if (String.IsNullOrEmpty(text)) return color;
-            Dictionary<string, Color?> colorDict = _ColorDict;
-            if (colorDict == null)
+            switch (action)
             {
-                colorDict = new Dictionary<string, Color?>();
-                _ColorDict = colorDict;
+                case ToolbarSystemItem.TimeAxisZoomOneDay: return _TimeAxisGetNewTimeZoomOneDay(currentTime);
+                case ToolbarSystemItem.TimeAxisZoomWorkWeek: return _TimeAxisGetNewTimeZoomWorkWeek(currentTime);
+                case ToolbarSystemItem.TimeAxisZoomWholeWeek: return _TimeAxisGetNewTimeZoomWholeWeek(currentTime);
+                case ToolbarSystemItem.TimeAxisZoomMonth: return _TimeAxisGetNewTimeZoomMonth(currentTime);
+                case ToolbarSystemItem.TimeAxisGoPrev: return _TimeAxisGetNewTimeGoPrev(currentTime);
+                case ToolbarSystemItem.TimeAxisGoHome: return _TimeAxisGetNewTimeGoHome(currentTime);
+                case ToolbarSystemItem.TimeAxisGoNext: return _TimeAxisGetNewTimeGoNext(currentTime);
             }
-            string name = text.Trim().ToLower();
-            if (colorDict.TryGetValue(name, out color)) return color;
-
-            WorkSchedulerSupport.TryColorDeserialize(name, out color);
-            
-            if (!colorDict.ContainsKey(name))
-                colorDict.Add(name, color);
-            return color;
+            return null;
         }
         /// <summary>
-        /// Cache pro rychlejší konverzi názvů barev na Color hodnoty.
+        /// Vrátí nový časový interval pro časovou osu pro současný interval a požadavek <see cref="ToolbarSystemItem.TimeAxisZoomOneDay"/>
         /// </summary>
-        private static Dictionary<string, Color?> _ColorDict;
-
-        /// <summary>
-        /// Daný řetězec rozdělí na jednotlivé prvky v místě daného oddělovače, a z prvků sestaví Dictionary, kde klíčem i hodnotou je string.
-        /// Duplicitní výskyty stejného textu nezpůsobí chybu.
-        /// </summary>
-        /// <param name="text"></param>
-        /// <param name="delimiters"></param>
+        /// <param name="currentTime"></param>
         /// <returns></returns>
-        public static Dictionary<string, string> GetItemsAsDictionary(string text, params string[] delimiters)
+        private static TimeRange _TimeAxisGetNewTimeZoomOneDay(TimeRange currentTime)
         {
-            Dictionary<string, string> result = new Dictionary<string, string>();
-            string[] items = text.Split(delimiters, StringSplitOptions.RemoveEmptyEntries);
-            foreach (string item in items)
-            {
-                if (!String.IsNullOrEmpty(item) && !result.ContainsKey(item))
-                    result.Add(item, item);
-            }
-            return result;
-        }
-        #endregion
-        
-        #region Eventy z GUI controlu
-        /// <summary>
-        /// Obsluha události Click na ToolBaru
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="args"></param>
-        private void _MainControl_ToolBarItemClicked(object sender, FunctionItemEventArgs args)
-        {
-            
+            DateTime center = currentTime.Center.Value;
+            DateTime begin = center.Date;
+            DateTime end = begin.AddDays(1d);
+            TimeRange time = new TimeRange(begin, end);
+            return time.ZoomToRatio(time.Center.Value, _TimeAxisEnlargeRatio);
         }
         /// <summary>
-        /// Obsluha kliknutí na položku kontextového menu
+        /// Vrátí nový časový interval pro časovou osu pro současný interval a požadavek <see cref="ToolbarSystemItem.TimeAxisZoomWorkWeek"/>
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void ContextMenuItemClicked(object sender, ToolStripItemClickedEventArgs e)
+        /// <param name="currentTime"></param>
+        /// <returns></returns>
+        private static TimeRange _TimeAxisGetNewTimeZoomWorkWeek(TimeRange currentTime)
         {
-            ToolStripDropDownMenu menu = sender as ToolStripDropDownMenu;
-            if (menu == null) return;
-            menu.Hide();
-            ItemActionArgs itemArgs = menu.Tag as ItemActionArgs;
-
-            string funcArgs = e.ClickedItem.Tag as string;
-
-            RunContextFunctionArgs runArgs = new RunContextFunctionArgs()
-            {
-                GraphItemArgs = itemArgs,
-                MenuItemText = funcArgs
-            };
-            if (this._HasHost)
-            {
-                this._AppHost.RunContextFunction(runArgs);
-            }
-            else
-                System.Windows.Forms.MessageBox.Show("Rád bych provedl funkci " + runArgs.MenuItemText + ",\r\n ale není zadán datový hostitel.");
+            DateTime center = currentTime.Center.Value;
+            DateTime begin = center.Date.FirstDayOf(DateTimePart.Week);
+            DateTime end = begin.AddDays(5d);
+            TimeRange time = new TimeRange(begin, end);
+            return time.ZoomToRatio(time.Center.Value, _TimeAxisEnlargeRatio);
         }
-
+        /// <summary>
+        /// Vrátí nový časový interval pro časovou osu pro současný interval a požadavek <see cref="ToolbarSystemItem.TimeAxisZoomWholeWeek"/>
+        /// </summary>
+        /// <param name="currentTime"></param>
+        /// <returns></returns>
+        private static TimeRange _TimeAxisGetNewTimeZoomWholeWeek(TimeRange currentTime)
+        {
+            DateTime center = currentTime.Center.Value;
+            DateTime begin = center.Date.FirstDayOf(DateTimePart.Week);
+            DateTime end = begin.AddDays(7d);
+            TimeRange time = new TimeRange(begin, end);
+            return time.ZoomToRatio(time.Center.Value, _TimeAxisEnlargeRatio);
+        }
+        /// <summary>
+        /// Vrátí nový časový interval pro časovou osu pro současný interval a požadavek <see cref="ToolbarSystemItem.TimeAxisZoomMonth"/>
+        /// </summary>
+        /// <param name="currentTime"></param>
+        /// <returns></returns>
+        private static TimeRange _TimeAxisGetNewTimeZoomMonth(TimeRange currentTime)
+        {
+            DateTime center = currentTime.Center.Value;
+            DateTime begin = center.Date.FirstDayOf(DateTimePart.Month);
+            DateTime end = begin.AddMonths(1);
+            TimeRange time = new TimeRange(begin, end);
+            return time.ZoomToRatio(time.Center.Value, _TimeAxisEnlargeRatio);
+        }
+        /// <summary>
+        /// Vrátí nový časový interval pro časovou osu pro současný interval a požadavek <see cref="ToolbarSystemItem.TimeAxisGoPrev"/>
+        /// </summary>
+        /// <param name="currentTime"></param>
+        /// <returns></returns>
+        private static TimeRange _TimeAxisGetNewTimeGoPrev(TimeRange currentTime)
+        {
+            return null;
+        }
+        /// <summary>
+        /// Vrátí nový časový interval pro časovou osu pro současný interval a požadavek <see cref="ToolbarSystemItem.TimeAxisGoHome"/>
+        /// </summary>
+        /// <param name="currentTime"></param>
+        /// <returns></returns>
+        private static TimeRange _TimeAxisGetNewTimeGoHome(TimeRange currentTime)
+        {
+            return null;
+        }
+        /// <summary>
+        /// Vrátí nový časový interval pro časovou osu pro současný interval a požadavek <see cref="ToolbarSystemItem.TimeAxisGoNext"/>
+        /// </summary>
+        /// <param name="currentTime"></param>
+        /// <returns></returns>
+        private static TimeRange _TimeAxisGetNewTimeGoNext(TimeRange currentTime)
+        {
+            return null;
+        }
+        /// <summary>
+        /// Poměr zvětšení časového intervalu nad rámec matematicky přesného výpočtu
+        /// </summary>
+        private static decimal _TimeAxisEnlargeRatio { get { return 1.04m; } }
+        /// <summary>
+        /// Grupa v ToolBaru s položkami pro časovou osu
+        /// </summary>
+        private FunctionGlobalGroup _ToolbarTimeGroup;
+        private const string _Tlb_TimeAxis_Day = "TimeAxisOneDay";
+        private const string _Tlb_TimeAxis_WorkWeek = "TimeAxisWorkWeek";
+        private const string _Tlb_TimeAxis_WholeWeek = "TimeAxisWholeWeek";
+        private const string _Tlb_TimeAxis_Month = "TimeAxisMonth";
+        private const string _Tlb_TimeAxis_GoPrev = "TimeAxisGoPrev";
+        private const string _Tlb_TimeAxis_GoHome = "TimeAxisGoHome";
+        private const string _Tlb_TimeAxis_GoNext = "TimeAxisGoNext";
         #endregion
-
-
-
         #region Implementace IMainDataInternal
-        /// <summary>
-        /// Zajistí otevření daného formuláře, prostřednictvím aktuálního hostitele <see cref="_AppHost"/>.
-        /// </summary>
-        /// <param name="recordGId"></param>
-        protected void RunOpenRecordForm(GId recordGId)
-        {
-            if (this._HasHost)
-                this._AppHost.RunOpenRecordForm(recordGId);
-            else
-                System.Windows.Forms.MessageBox.Show("Rád bych otevřel záznam " + recordGId.ToString() + ",\r\nale není zadán datový hostitel.");
-        }
         /// <summary>
         /// Tato metoda zajistí otevření formuláře daného záznamu.
         /// Pouze převolá odpovídající metodu v <see cref="MainData"/>.
         /// </summary>
         /// <param name="recordGId"></param>
-        void IMainDataInternal.RunOpenRecordForm(GId recordGId) { this.RunOpenRecordForm(recordGId); }
+        void IMainDataInternal.RunOpenRecordForm(GId recordGId) { this._CallHostRunOpenRecordsForm(recordGId); }
         /// <summary>
         /// Metoda pro daný prvek připraví a vrátí kontextové menu.
         /// </summary>

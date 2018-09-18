@@ -993,7 +993,7 @@ namespace Noris.LCS.Base.WorkScheduler
         public GuiToolbarPanel()
         {
             this.ToolbarVisible = true;
-            this.ToolbarShowSystemItems = true;
+            this.ToolbarShowSystemItems = ToolbarSystemItem.TimeAxisZoomDWM | ToolbarSystemItem.TimeAxisGoAll;
             this.Items = new List<GuiToolbarItem>();
         }
         /// <summary>
@@ -1001,9 +1001,9 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public bool ToolbarVisible { get; set; }
         /// <summary>
-        /// Zobrazovat systémové položky v Toolbaru?
+        /// Které systémové položky zobrazovat v Toolbaru?
         /// </summary>
-        public bool ToolbarShowSystemItems { get; set; }
+        public ToolbarSystemItem ToolbarShowSystemItems { get; set; }
         /// <summary>
         /// Všechny položky obsažené v Toolbaru
         /// </summary>
@@ -1842,6 +1842,85 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Následující prvek musí být na novém odstavci
         /// </summary>
         NextItemSkipToNextTable = 0x0040
+    }
+    /// <summary>
+    /// Položky systémového menu, které mají být zobrazeny
+    /// </summary>
+    [Flags]
+    public enum ToolbarSystemItem : UInt64
+    {
+        /// <summary>
+        /// Nezadáno
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Časová osa, Zoom: Jedna hodina
+        /// </summary>
+        TimeAxisZoomHour = 0x00000001,
+        /// <summary>
+        /// Časová osa, Zoom: Půl dne
+        /// </summary>
+        TimeAxisZoomHalfDay = 0x00000002,
+        /// <summary>
+        /// Časová osa, Zoom: Celý den
+        /// </summary>
+        TimeAxisZoomOneDay = 0x00000004,
+        /// <summary>
+        /// Časová osa, Zoom: Pracovní týden (Po-Pá)
+        /// </summary>
+        TimeAxisZoomWorkWeek = 0x00000008,
+        /// <summary>
+        /// Časová osa, Zoom: Celý týden (Po-Ne)
+        /// </summary>
+        TimeAxisZoomWholeWeek = 0x00000010,
+        /// <summary>
+        /// Časová osa, Zoom: Dekáda (deset dní)
+        /// </summary>
+        TimeAxisZoomDayDecade = 0x00000020,
+        /// <summary>
+        /// Časová osa, Zoom: Měsíc
+        /// </summary>
+        TimeAxisZoomMonth = 0x00000040,
+        /// <summary>
+        /// Časová osa, Zoom: Tři měsíce = čtvrtletí
+        /// </summary>
+        TimeAxisZoomQuarter = 0x00000080,
+        /// <summary>
+        /// Časová osa, Zoom: Šest měsíců = půl roku
+        /// </summary>
+        TimeAxisZoomHalfYear = 0x00000100,
+        /// <summary>
+        /// Časová osa, Zoom: Celý rok
+        /// </summary>
+        TimeAxisZoomWholeYear = 0x00000200,
+        /// <summary>
+        /// Časová osa, Zoom: Den + Pracovní týden + Celý týden + Měsíc
+        /// </summary>
+        TimeAxisZoomDWM = TimeAxisZoomOneDay | TimeAxisZoomWorkWeek | TimeAxisZoomWholeWeek | TimeAxisZoomMonth,
+        /// <summary>
+        /// Časová osa, Zoom: úplně všechno
+        /// </summary>
+        TimeAxisZoomAll = 0x000003FF,
+        /// <summary>
+        /// Časová osa, Přejdi na: minulá stránka
+        /// </summary>
+        TimeAxisGoPrev = 0x00001000,
+        /// <summary>
+        /// Časová osa, Přejdi na: aktuální datum
+        /// </summary>
+        TimeAxisGoHome = 0x00002000,
+        /// <summary>
+        /// Časová osa, Přejdi na: budoucí stránka
+        /// </summary>
+        TimeAxisGoNext = 0x00004000,
+        /// <summary>
+        /// Časová osa, Přejdi na: vše (minulá, aktuální, budoucí)
+        /// </summary>
+        TimeAxisGoAll = TimeAxisGoPrev | TimeAxisGoHome | TimeAxisGoNext,
+        /// <summary>
+        /// Časová osa, souhrn všech akcí
+        /// </summary>
+        TimeAxisAll = TimeAxisZoomAll | TimeAxisGoAll
     }
     /// <summary>
     /// Režim, jak osa reaguje na změnu velikosti.

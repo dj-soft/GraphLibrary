@@ -237,7 +237,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Tedy pokud part = <see cref="DateTimePart.Minutes"/>, pak výsledek obsahuje hodiny, ale místo minut už je 0 (a rovněž sekundy a milisekundy jsou 0).
         /// </summary>
         /// <param name="value"></param>
-        /// <param name="part"></param>
+        /// <param name="part">Odříznutá část. Smí být pouze: Miliseconds, Seconds, Minutes, Hours. Jiné jsou ignorovány.</param>
         /// <returns></returns>
         public static DateTime TrimPart(this DateTime value, DateTimePart part)
         {
@@ -258,6 +258,46 @@ namespace Asol.Tools.WorkScheduler.Data
                 case DateTimePart.Miliseconds: return new DateTime(dy, dm, dd, th, tm, ts, 0, vk);
             }
             return new DateTime(ticks, vk);
+        }
+        /// <summary>
+        /// Vrátí první den daného úseku. Vrácený čas = 00:00.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="part"></param>
+        /// <returns></returns>
+        public static DateTime FirstDayOf(this DateTime value, DateTimePart part)
+        {
+            DateTimeKind vk = value.Kind;
+            long ticks = value.Ticks;
+            int dy = value.Year;
+            int dm = value.Month;
+            int dd = value.Day;
+            int dw = (int)value.DayOfWeek;       // Pondělí = 1, Sobota = 6, Neděle = 0
+            if (dw == 0) dw = 7;                 // Pondělí = 1, Sobota = 6, Neděle = 7
+            switch (part)
+            {
+                case DateTimePart.Day:
+                    return new DateTime(dy, dm, dd, 0, 0, 0, 0, vk);
+                case DateTimePart.Week:
+                    if (dw == 1)
+                        return new DateTime(dy, dm, dd, 0, 0, 0, 0, vk);
+                    return new DateTime(dy, dm, dd, 0, 0, 0, 0, vk).AddDays(1 - dw);
+                case DateTimePart.Decade:
+                    dd = 1 + 10 * ((dd - 1) / 10);    // Pro dny {1-10} = 1, pro {11-20} = 11, pro {21-30} = 21, pro {31} = 31
+                    if (dd >= 30) dd = 21;            // Čtvrtá dekáda (den 31) není, přidává se k dekádě {21-31}
+                    return new DateTime(dy, dm, dd, 0, 0, 0, 0, vk);
+                case DateTimePart.Month:
+                    return new DateTime(dy, dm, 1, 0, 0, 0, 0, vk);
+                case DateTimePart.Quarter:
+                    dm = 1 + 3 * ((dm - 1) / 3);
+                    return new DateTime(dy, dm, 1, 0, 0, 0, 0, vk);
+                case DateTimePart.HalfYear:
+                    dm = 1 + 6 * ((dm - 1) / 6);
+                    return new DateTime(dy, dm, 1, 0, 0, 0, 0, vk);
+                case DateTimePart.Year:
+                    return new DateTime(dy, 1, 1, 0, 0, 0, 0, vk);
+            }
+            return new DateTime(dy, dm, dd, 0, 0, 0, 0, vk);
         }
         #endregion
         #region Enum
@@ -839,7 +879,35 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// Hodiny
         /// </summary>
-        Hours
+        Hours,
+        /// <summary>
+        /// Den
+        /// </summary>
+        Day,
+        /// <summary>
+        /// Týden
+        /// </summary>
+        Week,
+        /// <summary>
+        /// Dekáda
+        /// </summary>
+        Decade,
+        /// <summary>
+        /// Měsíc
+        /// </summary>
+        Month,
+        /// <summary>
+        /// Čtvrtletí
+        /// </summary>
+        Quarter,
+        /// <summary>
+        /// Pololetí
+        /// </summary>
+        HalfYear,
+        /// <summary>
+        /// Rok
+        /// </summary>
+        Year
     }
     #endregion
 }

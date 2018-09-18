@@ -276,6 +276,10 @@ namespace Asol.Tools.WorkScheduler.Components
         private List<GToolbarGroup> _ToolbarItemList;
         #endregion
         #region Layout of toolbar - Check, Invalidate, Prepare
+        /// <summary>
+        /// Zajistí platnost layoutu Toolbaru v aktuální situaci
+        /// </summary>
+        /// <param name="graphics"></param>
         protected void CheckLayout(Graphics graphics)
         {
             bool isValidSize = (this._LayoutSize == this.TBarSetting.ToolbarSize);
@@ -283,21 +287,28 @@ namespace Asol.Tools.WorkScheduler.Components
             if (isValidSize && (graphics != null && this._LayoutValidGraphics)) return;
             this.PrepareLayout(graphics);
         }
+        /// <summary>
+        /// Zneplatní layout Toolbaru
+        /// </summary>
         protected void InvalidateLayout()
         {
             this._LayoutValidDefault = false;
             this._LayoutValidGraphics = false;
         }
+        /// <summary>
+        /// Nově připraví layout Toolbaru
+        /// </summary>
+        /// <param name="graphics"></param>
         protected void PrepareLayout(Graphics graphics)
         {
             if (graphics != null)
-            {
+            {   // S reálnou grafikou
                 this.PrepareLayoutRun(graphics);
                 this._LayoutValidDefault = true;
                 this._LayoutValidGraphics = true;
             }
             else
-            {
+            {   // S náhradní grafikou (jde jen o měření velikosti textu v pixelech)
                 using (Image img = new Bitmap(1024, 96))
                 using (Graphics grp = Graphics.FromImage(img))
                 {
@@ -310,6 +321,10 @@ namespace Asol.Tools.WorkScheduler.Components
         private ComponentSize _LayoutSize;
         private bool _LayoutValidDefault;
         private bool _LayoutValidGraphics;
+        /// <summary>
+        /// Provede přípravu layoutu s dodanou grafikou
+        /// </summary>
+        /// <param name="graphics"></param>
         protected void PrepareLayoutRun(Graphics graphics)
         {
             int x = this.TBarSetting.ContentBounds.X;                // Prepare this.TBarSetting for current ToolbarSize, when current item is null or has not valid Size
@@ -329,6 +344,12 @@ namespace Asol.Tools.WorkScheduler.Components
             get { return this._ToolbarSize; }
             set { this.SetToolbarSize(value, ProcessAction.All, EventSourceType.ValueChange | EventSourceType.ApplicationCode); ; }
         }
+        /// <summary>
+        /// Nastaví velikost toolbaru a zajistí návazné akce
+        /// </summary>
+        /// <param name="toolbarSize"></param>
+        /// <param name="actions"></param>
+        /// <param name="eventSource"></param>
         protected virtual void SetToolbarSize(ComponentSize toolbarSize, ProcessAction actions, EventSourceType eventSource)
         {
             ComponentSize sizeNew = toolbarSize;
@@ -380,48 +401,98 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 this.ToolbarSize = toolbarSize;
                 this.ItemDict = new Dictionary<FunctionGlobalItemSize, LayoutSettingTItemInfo>();
-                switch (toolbarSize)
+                bool isNew = true;
+                if (isNew)
                 {
-                    case ComponentSize.Small:
-                        this.HeightModule = 6;
-                        this.PixelPerModule = 10;
-                        this.ContentBounds = new Rectangle(2, 1, 1000, 60);
-                        this.TitleBounds = new Rectangle(0, 64, 1000, 16);
-                        this.ToolbarBounds = new Rectangle(0, 0, 1000, 80);
-                        this.TitleZoom = 0.80f;
-                        this.ItemDict.Add(FunctionGlobalItemSize.Micro, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Micro, 1, 10, 1, 8, 0, 0f));
-                        this.ItemDict.Add(FunctionGlobalItemSize.Small, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Small, 2, 20, 1, 18, 18, 0.50f));
-                        this.ItemDict.Add(FunctionGlobalItemSize.Half, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Half, 3, 30, 1, 28, 20, 0.75f));
-                        this.ItemDict.Add(FunctionGlobalItemSize.Large, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Large, 4, 40, 1, 38, 22, 0.85f));
-                        this.ItemDict.Add(FunctionGlobalItemSize.Whole, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Whole, 6, 60, 1, 38, 22, 0.95f));
-                        break;
-                    case ComponentSize.Large:
-                        this.HeightModule = 6;
-                        this.PixelPerModule = 20;
-                        this.ContentBounds = new Rectangle(1, 1, 1000, 120);
-                        this.TitleBounds = new Rectangle(0, 124, 1000, 24);
-                        this.ToolbarBounds = new Rectangle(0, 0, 1000, 148);
-                        this.TitleZoom = 1.05f;
-                        this.ItemDict.Add(FunctionGlobalItemSize.Micro, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Micro, 1, 20, 2, 16, 0, 0f));
-                        this.ItemDict.Add(FunctionGlobalItemSize.Small, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Small, 2, 40, 2, 36, 22, 0.95f));
-                        this.ItemDict.Add(FunctionGlobalItemSize.Half, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Half, 3, 60, 2, 56, 24, 1.05f));
-                        this.ItemDict.Add(FunctionGlobalItemSize.Large, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Large, 4, 80, 3, 72, 26, 1.10f));
-                        this.ItemDict.Add(FunctionGlobalItemSize.Whole, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Whole, 6, 120, 3, 90, 26, 1.15f));
-                        break;
-                    case ComponentSize.Medium:
-                    default:
-                        this.HeightModule = 6;
-                        this.PixelPerModule = 15;
-                        this.ContentBounds = new Rectangle(1, 1, 1000, 90);
-                        this.TitleBounds = new Rectangle(0, 94, 1000, 20);
-                        this.ToolbarBounds = new Rectangle(0, 0, 1000, 114);
-                        this.TitleZoom = 1.00f;
-                        this.ItemDict.Add(FunctionGlobalItemSize.Micro, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Micro, 1, 15, 1, 12, 0, 0f));
-                        this.ItemDict.Add(FunctionGlobalItemSize.Small, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Small, 2, 30, 1, 24, 24, 0.85f));
-                        this.ItemDict.Add(FunctionGlobalItemSize.Half, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Half, 3, 45, 1, 42, 24, 0.95f));
-                        this.ItemDict.Add(FunctionGlobalItemSize.Large, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Large, 4, 60, 2, 56, 26, 1.00f));
-                        this.ItemDict.Add(FunctionGlobalItemSize.Whole, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Whole, 6, 90, 2, 64, 26, 1.10f));
-                        break;
+                    switch (toolbarSize)
+                    {
+                        case ComponentSize.Small:
+                            this.HeightModule = 6;
+                            this.PixelPerModule = 10;
+                            this.ContentBounds = new Rectangle(2, 1, 1000, 60);
+                            this.TitleBounds = new Rectangle(0, 64, 1000, 16);
+                            this.ToolbarBounds = new Rectangle(0, 0, 1000, 80);
+                            this.TitleZoom = 0.80f;
+                            this.ItemDict.Add(FunctionGlobalItemSize.Micro, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Micro, 1, 10, 1,  8,  0, 0f));
+                            this.ItemDict.Add(FunctionGlobalItemSize.Small, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Small, 2, 20, 2, 16, 18, 0.50f));
+                            this.ItemDict.Add(FunctionGlobalItemSize.Half,  new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Half,  3, 30, 3, 24, 20, 0.75f));
+                            this.ItemDict.Add(FunctionGlobalItemSize.Large, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Large, 4, 40, 3, 32, 22, 0.85f));
+                            this.ItemDict.Add(FunctionGlobalItemSize.Whole, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Whole, 6, 60, 4, 38, 22, 0.95f));
+                            break;
+                        case ComponentSize.Large:
+                            this.HeightModule = 6;
+                            this.PixelPerModule = 20;
+                            this.ContentBounds = new Rectangle(1, 1, 1000, 120);
+                            this.TitleBounds = new Rectangle(0, 124, 1000, 24);
+                            this.ToolbarBounds = new Rectangle(0, 0, 1000, 148);
+                            this.TitleZoom = 1.05f;
+                            this.ItemDict.Add(FunctionGlobalItemSize.Micro, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Micro, 1,  20, 2, 16,  0, 0f));
+                            this.ItemDict.Add(FunctionGlobalItemSize.Small, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Small, 2,  40, 3, 32, 22, 0.95f));
+                            this.ItemDict.Add(FunctionGlobalItemSize.Half,  new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Half,  3,  60, 4, 48, 24, 1.05f));
+                            this.ItemDict.Add(FunctionGlobalItemSize.Large, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Large, 4,  80, 4, 72, 26, 1.10f));
+                            this.ItemDict.Add(FunctionGlobalItemSize.Whole, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Whole, 6, 120, 6, 96, 26, 1.15f));
+                            break;
+                        case ComponentSize.Medium:
+                        default:
+                            this.HeightModule = 6;
+                            this.PixelPerModule = 15;
+                            this.ContentBounds = new Rectangle(1, 1, 1000, 90);
+                            this.TitleBounds = new Rectangle(0, 94, 1000, 20);
+                            this.ToolbarBounds = new Rectangle(0, 0, 1000, 114);
+                            this.TitleZoom = 1.00f;
+                            this.ItemDict.Add(FunctionGlobalItemSize.Micro, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Micro, 1, 15, 2, 12,  0, 0f));
+                            this.ItemDict.Add(FunctionGlobalItemSize.Small, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Small, 2, 30, 3, 24, 24, 0.85f));
+                            this.ItemDict.Add(FunctionGlobalItemSize.Half,  new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Half,  3, 45, 4, 36, 24, 0.95f));
+                            this.ItemDict.Add(FunctionGlobalItemSize.Large, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Large, 4, 60, 6, 48, 26, 1.00f));
+                            this.ItemDict.Add(FunctionGlobalItemSize.Whole, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Whole, 6, 90, 6, 64, 26, 1.10f));
+                            break;
+                    }
+                }
+                else
+                {   // Dřívější layout
+                    switch (toolbarSize)
+                    {
+                        case ComponentSize.Small:
+                            this.HeightModule = 6;
+                            this.PixelPerModule = 10;
+                            this.ContentBounds = new Rectangle(2, 1, 1000, 60);
+                            this.TitleBounds = new Rectangle(0, 64, 1000, 16);
+                            this.ToolbarBounds = new Rectangle(0, 0, 1000, 80);
+                            this.TitleZoom = 0.80f;
+                            this.ItemDict.Add(FunctionGlobalItemSize.Micro, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Micro, 1, 10, 1, 8, 0, 0f));
+                            this.ItemDict.Add(FunctionGlobalItemSize.Small, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Small, 2, 20, 1, 18, 18, 0.50f));
+                            this.ItemDict.Add(FunctionGlobalItemSize.Half, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Half, 3, 30, 1, 28, 20, 0.75f));
+                            this.ItemDict.Add(FunctionGlobalItemSize.Large, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Large, 4, 40, 1, 38, 22, 0.85f));
+                            this.ItemDict.Add(FunctionGlobalItemSize.Whole, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Whole, 6, 60, 1, 38, 22, 0.95f));
+                            break;
+                        case ComponentSize.Large:
+                            this.HeightModule = 6;
+                            this.PixelPerModule = 20;
+                            this.ContentBounds = new Rectangle(1, 1, 1000, 120);
+                            this.TitleBounds = new Rectangle(0, 124, 1000, 24);
+                            this.ToolbarBounds = new Rectangle(0, 0, 1000, 148);
+                            this.TitleZoom = 1.05f;
+                            this.ItemDict.Add(FunctionGlobalItemSize.Micro, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Micro, 1, 20, 2, 16, 0, 0f));
+                            this.ItemDict.Add(FunctionGlobalItemSize.Small, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Small, 2, 40, 2, 36, 22, 0.95f));
+                            this.ItemDict.Add(FunctionGlobalItemSize.Half, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Half, 3, 60, 2, 56, 24, 1.05f));
+                            this.ItemDict.Add(FunctionGlobalItemSize.Large, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Large, 4, 80, 3, 72, 26, 1.10f));
+                            this.ItemDict.Add(FunctionGlobalItemSize.Whole, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Whole, 6, 120, 3, 90, 26, 1.15f));
+                            break;
+                        case ComponentSize.Medium:
+                        default:
+                            this.HeightModule = 6;
+                            this.PixelPerModule = 15;
+                            this.ContentBounds = new Rectangle(1, 1, 1000, 90);
+                            this.TitleBounds = new Rectangle(0, 94, 1000, 20);
+                            this.ToolbarBounds = new Rectangle(0, 0, 1000, 114);
+                            this.TitleZoom = 1.00f;
+                            this.ItemDict.Add(FunctionGlobalItemSize.Micro, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Micro, 1, 15, 1, 12, 0, 0f));
+                            this.ItemDict.Add(FunctionGlobalItemSize.Small, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Small, 2, 30, 1, 24, 24, 0.85f));
+                            this.ItemDict.Add(FunctionGlobalItemSize.Half, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Half, 3, 45, 1, 42, 24, 0.95f));
+                            this.ItemDict.Add(FunctionGlobalItemSize.Large, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Large, 4, 60, 2, 56, 26, 1.00f));
+                            this.ItemDict.Add(FunctionGlobalItemSize.Whole, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Whole, 6, 90, 2, 64, 26, 1.10f));
+                            break;
+                    }
                 }
             }
             private Dictionary<FunctionGlobalItemSize, LayoutSettingTItemInfo> ItemDict;
@@ -538,6 +609,17 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public class LayoutSettingTItemInfo
         {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="owner"></param>
+            /// <param name="size"></param>
+            /// <param name="moduleCount"></param>
+            /// <param name="modulePixel"></param>
+            /// <param name="offsetPixel"></param>
+            /// <param name="imagePixel"></param>
+            /// <param name="textHeight"></param>
+            /// <param name="textZoom"></param>
             public LayoutSettingTItemInfo(LayoutSettingTBarInfo owner, FunctionGlobalItemSize size, int moduleCount, int modulePixel, int offsetPixel, int imagePixel, int textHeight, float textZoom)
             {
                 this._Owner = owner;
@@ -558,29 +640,41 @@ namespace Asol.Tools.WorkScheduler.Components
             private int _TextHeight;
             private float _TextZoom;
             /// <summary>
-            /// Number of modules for this size (1 - 6)
+            /// Počet modulů v této velikosti (1 - 6)
             /// </summary>
             public int ModuleCount { get { return _ModuleCount; } }
             /// <summary>
-            /// Size of one item of this size in pixels
+            /// Počet pixelů na jeden modul v této velikosti (Micro má 10 px)
             /// </summary>
             public int ModulePixel { get { return _ModulePixel; } }
             /// <summary>
-            /// Size for Image in this item
+            /// Mezera mezi prvky v pixelech, typicky odsazené textu od ikony, atd.
+            /// </summary>
+            public int OffsetPixel { get { return _OffsetPixel; } }
+            /// <summary>
+            /// Velikost Image v pixelech v této velikosti, tak aby okolo UÍmage byl přiměřený okraj 
+            /// a aby Image měla rozumnou velikost v pixelech (například 16 pixelů je rozumější než 17 pixelů).
             /// </summary>
             public Size ImageSize { get { return new Size(_ImagePixel, _ImagePixel); } }
             /// <summary>
-            /// Height of text, maximal
+            /// Maximální výška textu v pixelech
             /// </summary>
             public int TextHeight { get { return _TextHeight; } }
             /// <summary>
-            /// Zoom for text in this item
+            /// Zoom pro text v této velikosti
             /// </summary>
             public float TextZoom { get { return _TextZoom; } }
         }
         #endregion
         #region InteractiveContainer : Interactivity, Draw
+        /// <summary>
+        /// Vizuální potomci
+        /// </summary>
         protected override IEnumerable<IInteractiveItem> Childs { get { this.CheckLayout(null); return this.GetAllItems(); } }
+        /// <summary>
+        /// Vrátí všechny potomky
+        /// </summary>
+        /// <returns></returns>
         protected List<IInteractiveItem> GetAllItems()
         {
             List<IInteractiveItem> items = new List<IInteractiveItem>(base.Childs);
@@ -593,7 +687,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e">Data pro kreslení</param>
         /// <param name="absoluteBounds">Absolutní souřadnice tohoto prvku, sem by se mělo fyzicky kreslit</param>
         /// <param name="absoluteVisibleBounds">Absolutní souřadnice tohoto prvku, oříznuté do viditelné oblasti.</param>
-        /// <param name="drawMode">Režim kreslení (pomáhá řešit Drag & Drop procesy)</param>
+        /// <param name="drawMode">Režim kreslení (pomáhá řešit Drag and Drop procesy)</param>
         protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
         {
             this.CheckLayout(e.Graphics);
@@ -604,6 +698,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Draw background for toolbar. Can be called from GToolbarGroup.
         /// </summary>
         /// <param name="graphics"></param>
+        /// <param name="absoluteBounds"></param>
         /// <param name="boundsDraw"></param>
         internal void DrawToolbarBackground(Graphics graphics, Rectangle absoluteBounds, Rectangle? boundsDraw)
         {
@@ -614,6 +709,16 @@ namespace Asol.Tools.WorkScheduler.Components
                 toolbarBounds.Width = boundsDraw.Value.Width;
             }
             GPainter.DrawAreaBase(graphics, toolbarBounds, Skin.ToolBar.BackColor, GInteractiveState.MouseOver, System.Windows.Forms.Orientation.Horizontal, null, null);
+        }
+        /// <summary>
+        /// Tuto metodu volá interaktivní prvek po změně <see cref="FunctionItem.IsSelected"/>, úkolem je vyvolat event <see cref="GToolBar.ItemSelectedChange"/>.
+        /// </summary>
+        /// <param name="dataGroup"></param>
+        /// <param name="activeItem"></param>
+        internal void OnItemSelectedChange(FunctionGlobalGroup dataGroup, FunctionItem activeItem)
+        {
+            if (this.ItemSelectedChange != null)
+                this.ItemSelectedChange(this, new FunctionItemEventArgs(activeItem));
         }
         /// <summary>
         /// Tuto metodu volá interaktivní prvek po kliknutí na něj, úkolem je vyvolat event <see cref="GToolBar.ItemClicked"/>.
@@ -636,6 +741,10 @@ namespace Asol.Tools.WorkScheduler.Components
                 this.ItemSubItemsEnumerateBefore(this, new FunctionItemEventArgs(activeItem));
         }
         /// <summary>
+        /// Událost vyvolaná po změně <see cref="FunctionItem.IsSelected"/>
+        /// </summary>
+        public event FunctionItemEventHandler ItemSelectedChange;
+        /// <summary>
         /// Událost vyvolaná po kliknutí na určitý prvek ToolBaru
         /// </summary>
         public event FunctionItemEventHandler ItemClicked;
@@ -648,7 +757,7 @@ namespace Asol.Tools.WorkScheduler.Components
     #endregion
     #region class ToolbarGroup
     /// <summary>
-    /// One visual group on toolbar
+    /// Jedna vizuální skupina prvků v toolbaru
     /// </summary>
     internal class GToolbarGroup : InteractiveContainer
     {
@@ -683,7 +792,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Add one GToolbarGroup into Childs and into _ToolbarItemList.
         /// </summary>
-        /// <param name="group"></param>
+        /// <param name="item"></param>
         private void _AddGToolbarItem(GToolbarItem item)
         {
             this.AddItem(item);
@@ -747,7 +856,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Prepare Layout (=this.Bounds and all Items.Bounds) for this Group
         /// </summary>
         /// <param name="graphics"></param>
-        /// <param name="toolbarBounds"></param>
+        /// <param name="x"></param>
         internal void PrepareLayout(Graphics graphics, ref int x)
         {
             // 1. prepare ModuleSize and PixelSize:
@@ -880,7 +989,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e">Data pro kreslení</param>
         /// <param name="absoluteBounds">Absolutní souřadnice tohoto prvku, sem by se mělo fyzicky kreslit</param>
         /// <param name="absoluteVisibleBounds">Absolutní souřadnice tohoto prvku, oříznuté do viditelné oblasti.</param>
-        /// <param name="drawMode">Režim kreslení (pomáhá řešit Drag & Drop procesy)</param>
+        /// <param name="drawMode">Režim kreslení (pomáhá řešit Drag and Drop procesy)</param>
         protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
         {
             this.Toolbar.DrawToolbarBackground(e.Graphics, absoluteBounds, absoluteBounds);    // Nebudeme volat bázovou metodu, ta stejně kreslí jen pozadí.
@@ -899,28 +1008,328 @@ namespace Asol.Tools.WorkScheduler.Components
             if (!String.IsNullOrEmpty(this.DataTitle))
                 GPainter.DrawString(e.Graphics, titleAbsoluteBounds, this.DataTitle, Skin.ToolBar.TextColor, tBarSetting.TitleFont, ContentAlignment.MiddleCenter);
         }
+        /// <summary>
+        /// Metoda vrací všechny členy selectovací skupiny (<see cref="FunctionItem.SelectionGroupName"/>) daného jména.
+        /// Pokud je na vstupu prázdné jméno skupiny, vrací se null.
+        /// Pokud je jméno zadané, ale ve skupině by nebyl žádný prvek, vrací se prázdný seznam.
+        /// Do výběru se dostávají i prvky, které mají <see cref="FunctionItem.IsSelectable"/> = false.
+        /// Na předvybrané členy skupiny se aplikuje i filtr dle parametru itemFilter, pokud je zadán.
+        /// </summary>
+        /// <param name="selectionGroupName"></param>
+        /// <param name="itemFilter"></param>
+        /// <returns></returns>
+        internal List<FunctionGlobalItem> GetGroup(string selectionGroupName, Func<FunctionGlobalItem, bool> itemFilter)
+        {
+            if (String.IsNullOrEmpty(selectionGroupName)) return null;
+            List<FunctionGlobalItem> result = new List<FunctionGlobalItem>();
+            foreach (var tItem in this._ToolbarItemList)
+            {
+                FunctionGlobalItem item = tItem.DataItem;
+                if (String.IsNullOrEmpty(item.SelectionGroupName) || !String.Equals(item.SelectionGroupName, selectionGroupName, StringComparison.InvariantCulture)) continue;
+                if ((itemFilter != null) && !itemFilter(item)) continue;
+                result.Add(item);
+            }
+            return result;
+        }
         #endregion
     }
     #endregion
-    #region class ToolbarItem
-    internal class GToolbarItem : InteractiveContainer, ILayoutItem
+    #region class ToolbarItem a konkrétní potomci pro konkrétní typy
+    /// <summary>
+    /// Konkrétní položka Toolbaru: Separator
+    /// </summary>
+    internal class GToolbarSeparator : GToolbarItem
     {
-        #region Constructor, basic properties
-        private GToolbarItem(GToolbarGroup toolbarGroup, FunctionGlobalItem dataItem)
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="toolbarGroup"></param>
+        /// <param name="dataItem"></param>
+        internal GToolbarSeparator(GToolbarGroup toolbarGroup, FunctionGlobalItem dataItem) : base(toolbarGroup, dataItem) { }
+        internal override void PrepareLayout(Graphics graphics)
+        {
+            this.PixelSizeMin = new Size(5, this.TBarSetting.ContentBounds.Height);
+            this.ModuleSize = new Size(0, this.TBarSetting.HeightModule);
+        }
+        protected override void DrawItem(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
+        {
+            e.Graphics.DrawLine(Skin.Pen(Skin.ToolBar.SeparatorDarkColor), absoluteBounds.X + 3, absoluteBounds.Y, absoluteBounds.X + 3, absoluteBounds.Bottom);
+            e.Graphics.DrawLine(Skin.Pen(Skin.ToolBar.SeparatorLightColor), absoluteBounds.X + 4, absoluteBounds.Y, absoluteBounds.X + 4, absoluteBounds.Bottom);
+        }
+    }
+    /// <summary>
+    /// Konkrétní položka Toolbaru: Label
+    /// </summary>
+    internal class GToolbarLabel : GToolbarItem
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="toolbarGroup"></param>
+        /// <param name="dataItem"></param>
+        internal GToolbarLabel(GToolbarGroup toolbarGroup, FunctionGlobalItem dataItem) : base(toolbarGroup, dataItem) { }
+        internal override void PrepareLayout(Graphics graphics)
+        {
+            this.PrepareBoundsCommon(graphics);
+        }
+        protected override void DrawItem(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
+        {
+            this.DrawItemImage(e, absoluteBounds);
+            this.DrawItemText(e, absoluteBounds);
+            /*
+            Image image = this._DataItem.Image;
+            Image imageHot = null;
+            if (image != null)
+            {
+                Rectangle boundsImageAbsolute = this.BoundsImage.ShiftBy(absoluteBounds.Location);
+                if (this.InteractiveState.IsMouseActive())
+                    imageHot = this._DataItem.ImageHot;
+                e.Graphics.DrawImage(imageHot ?? image, boundsImageAbsolute);
+            }
+
+            string text = this.ItemText;
+            if (!String.IsNullOrEmpty(text))
+            {
+                Rectangle boundsTextAbsolute = this.BoundsText.ShiftBy(absoluteBounds.Location);
+                FontInfo fontInfo = this.CurrentItemFont;
+                GPainter.DrawString(e.Graphics, boundsTextAbsolute, text, Skin.ToolBar.TextColor, fontInfo, ContentAlignment.MiddleCenter);
+            }
+            */
+        }
+    }
+    /// <summary>
+    /// Konkrétní položka Toolbaru: Image
+    /// </summary>
+    internal class GToolbarImage : GToolbarItem
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="toolbarGroup"></param>
+        /// <param name="dataItem"></param>
+        internal GToolbarImage(GToolbarGroup toolbarGroup, FunctionGlobalItem dataItem) : base(toolbarGroup, dataItem) { }
+        internal override void PrepareLayout(Graphics graphics)
+        {
+            this.PrepareBoundsCommon(graphics);
+        }
+        protected override void DrawItem(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
+        {
+            this.DrawItemImage(e, absoluteBounds);
+            this.DrawItemText(e, absoluteBounds);
+            /*
+            if (this._DataItem.Image != null)
+            {
+                Rectangle boundsImageAbsolute = this.BoundsImage.ShiftBy(absoluteBounds.Location);
+                e.Graphics.DrawImage(this._DataItem.Image, boundsImageAbsolute);
+            }
+
+            string text = this.ItemText;
+            if (!String.IsNullOrEmpty(text))
+            {
+                Rectangle boundsTextAbsolute = this.BoundsText.ShiftBy(absoluteBounds.Location);
+                FontInfo fontInfo = this.CurrentItemFont;
+                GPainter.DrawString(e.Graphics, boundsTextAbsolute, text, Skin.ToolBar.TextColor, fontInfo, ContentAlignment.MiddleCenter);
+            }
+            */
+        }
+    }
+    /// <summary>
+    /// Konkrétní položka Toolbaru: Button
+    /// </summary>
+    internal class GToolbarButton : GToolbarItem
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="toolbarGroup"></param>
+        /// <param name="dataItem"></param>
+        internal GToolbarButton(GToolbarGroup toolbarGroup, FunctionGlobalItem dataItem) : base(toolbarGroup, dataItem) { }
+        /// <summary>
+        /// Obsahuje true pro selectovaný button
+        /// </summary>
+        public override bool IsSelected
+        {
+            get { return (this._DataItem.IsSelectable && this._DataItem.IsSelected); }
+            set { if (this._DataItem.IsSelectable) this._DataItem.IsSelected = value; }
+        }
+        internal override void PrepareLayout(Graphics graphics)
+        {
+            this.PrepareBoundsCommon(graphics);
+        }
+        protected override void DrawItem(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
+        {
+            string name = this.DataItem.Name;
+            this.DrawItemBackground(e, absoluteBounds, this.IsSelected);
+            this.DrawItemImage(e, absoluteBounds);
+            this.DrawItemText(e, absoluteBounds);
+            this.DrawItemSelection(e, absoluteBounds, this.IsSelected);
+        }
+        protected override void AfterStateChangedLeftClick(GInteractiveChangeStateArgs e)
+        {
+            if (this._DataItem.IsSelectable)
+                this.IsSelectedChange();
+            this.CallItemClick();
+        }
+        /// <summary>
+        /// Metoda zajistí změnu stavu <see cref="IsSelected"/> pro tento prvek, 
+        /// a pokud tento prvek je členem nějaké selectovací grupy, pak najde i ostatní členy grupy a vyřeší to i pro ně.
+        /// Metoda je volána před voláním <see cref="GToolbarItem.CallItemClick()"/>, 
+        /// protože event Click má být volán už se správnou hodnotou <see cref="FunctionItem.IsSelected"/>.
+        /// </summary>
+        protected void IsSelectedChange()
+        {
+            List<FunctionGlobalItem> itemGroup = this._ToolbarGroup.GetGroup(this._DataItem.SelectionGroupName, i => (i.ItemType == FunctionGlobalItemType.Button));
+            if (itemGroup == null)
+            {   // null = není zadána grupa => v tom případě this button je CheckBox:
+                bool newSelected = !this.IsSelected;
+                this.IsSelected = newSelected;
+                this.CallItemSelectedChange(this.DataItem);
+            }
+            else
+            {   // máme grupu => v tom případě this button je OptionButton:
+                FunctionGlobalItem currentItem = this.DataItem;
+                // Projdeme všechny prvky grupy, pro prvky kromě this nastavíme IsSelected = false, 
+                // na konci pro this prvek nastavíme IsSelected = true, přiměřeně voláme event ItemSelectedChange:
+                foreach (FunctionGlobalItem item in itemGroup)
+                {
+                    if (!Object.ReferenceEquals(item, currentItem))
+                        // Toto je jiný prvek, než this => ten má mít IsSelected = false:
+                        this.IsSelectedSetValue(item, false);
+                }
+                // Náš prvek má mít IsSelected = true:
+                this.IsSelectedSetValue(currentItem, true);
+            }
+        }
+        /// <summary>
+        /// Zajistí, že daný prvek bude mít hodnotu <see cref="FunctionItem.IsSelected"/> = daná hodnota.
+        /// Pokud prvek tuto hodnotu nemá, bude do něj vložena a vyvolá se patřičný event.
+        /// Pokud hodnotu již má, nic nemění a nedělá.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="value"></param>
+        protected void IsSelectedSetValue(FunctionGlobalItem item, bool value)
+        {
+            if (item.IsSelected != value)
+            {
+                item.IsSelected = value;
+                this.CallItemSelectedChange(item);
+            }
+        }
+    }
+    /// <summary>
+    /// Konkrétní položka Toolbaru: ComboBox
+    /// </summary>
+    internal class GToolbarComboBox : GToolbarItem
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="toolbarGroup"></param>
+        /// <param name="dataItem"></param>
+        internal GToolbarComboBox(GToolbarGroup toolbarGroup, FunctionGlobalItem dataItem) : base(toolbarGroup, dataItem) { }
+        internal override void PrepareLayout(Graphics graphics)
+        {
+            EList<FunctionItem> subItems = this.ItemSubItems;
+            this.PrepareBoundsCommon(graphics,
+                g => this.GetImageSizeFromSubItems(true, subItems),
+                g => this.GetTextSizeFromSubItems(g, true, subItems, 7));
+
+        }
+        protected override void DrawItem(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
+        {
+            this.DrawItemBackground(e, absoluteBounds, isSelected: false, roundCorner: 1, forceBorder: true);
+            FunctionItem activeItem = this._DataItem.Value as FunctionItem;
+            if (activeItem == null) activeItem = this._DataItem;
+            this.DrawItemImage(e, absoluteBounds, activeItem);
+            this.DrawItemText(e, absoluteBounds, activeItem);
+            this.DrawItemIcon(e, absoluteBounds);
+        }
+        protected override string CurrentToolTip
+        {
+            get
+            {
+                FunctionItem activeItem = this._DataItem.Value as FunctionItem;
+                return (activeItem != null ? activeItem.ToolTipText : this.ItemToolTip);
+            }
+        }
+        protected override void AfterStateChangedLeftClick(GInteractiveChangeStateArgs e)
+        {
+            var host = this.Host;
+            if (host == null) return;
+
+            Rectangle bounds = this.BoundsAbsolute;
+            Point point = new Point(bounds.X, bounds.Bottom - 1);
+
+            EList<FunctionItem> subItems = this.ItemSubItems;
+            System.Windows.Forms.ToolStripDropDownMenu menu = FunctionItem.CreateDropDownMenuFrom(subItems);
+            menu.MinimumSize = new Size(bounds.Width, 0); // 3 * this.TItemSetting.ModulePixel);
+            menu.ItemClicked += new System.Windows.Forms.ToolStripItemClickedEventHandler(_ComboMenu_ItemClicked);
+            menu.Show(host, point, System.Windows.Forms.ToolStripDropDownDirection.BelowRight);
+        }
+        private void _ComboMenu_ItemClicked(object sender, System.Windows.Forms.ToolStripItemClickedEventArgs e)
+        {
+            FunctionItem item = e.ClickedItem.Tag as FunctionItem;
+            if (e.ClickedItem is System.Windows.Forms.ToolStripSeparator || item == null) return;
+
+            System.Windows.Forms.ToolStrip owner = e.ClickedItem.Owner;
+            if (owner != null) owner.Hide();
+
+            this._DataItem.Value = item;
+            this.CallItemClick(item);
+            this.Parent.Repaint();
+        }
+    }
+    /// <summary>
+    /// Bázová abstraktní třída pro konkrétní položky Toolbaru
+    /// </summary>
+    internal abstract class GToolbarItem : InteractiveContainer, ILayoutItem
+    {
+        #region Konstruktor, základní properties
+        /// <summary>
+        /// Konstruktor abstraktní třídy je protected, používají ho potomci
+        /// </summary>
+        /// <param name="toolbarGroup"></param>
+        /// <param name="dataItem"></param>
+        protected GToolbarItem(GToolbarGroup toolbarGroup, FunctionGlobalItem dataItem)
         {
             this._ToolbarGroup = toolbarGroup;
             this._DataItem = dataItem;
         }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             if (this._DataItem != null)
                 return this.ItemSize.ToString() + " " + this.ItemType.ToString() + ": " + this.ItemText;
             return this.ItemSize.ToString() + " " + this.ItemType.ToString();
         }
+        /// <summary>
+        /// Factory creator
+        /// </summary>
+        /// <param name="toolbarGroup"></param>
+        /// <param name="dataItem"></param>
+        /// <returns></returns>
         internal static GToolbarItem CreateFrom(GToolbarGroup toolbarGroup, FunctionGlobalItem dataItem)
         {
-            return new GToolbarItem(toolbarGroup, dataItem);
+            switch (dataItem.ItemType)
+            {
+                case FunctionGlobalItemType.None: return null;
+                case FunctionGlobalItemType.Separator: return new GToolbarSeparator(toolbarGroup, dataItem);
+                case FunctionGlobalItemType.Label: return new GToolbarLabel(toolbarGroup, dataItem);
+                case FunctionGlobalItemType.Image: return new GToolbarImage(toolbarGroup, dataItem);
+                case FunctionGlobalItemType.Button: return new GToolbarButton(toolbarGroup, dataItem);
+                case FunctionGlobalItemType.ComboBox: return new GToolbarComboBox(toolbarGroup, dataItem);
+
+            }
+            return null;
         }
+        /// <summary>
+        /// Metoda vrátí separátor = oddělovač
+        /// </summary>
+        /// <param name="toolbarGroup"></param>
+        /// <returns></returns>
         internal static GToolbarItem CreateSeparator(GToolbarGroup toolbarGroup)
         {
             FunctionGlobalItem dataItem = new FunctionGlobalItem(toolbarGroup.Provider)
@@ -928,32 +1337,42 @@ namespace Asol.Tools.WorkScheduler.Components
                 ItemType = FunctionGlobalItemType.Separator,
                 Size = FunctionGlobalItemSize.Whole
             };
-            return new GToolbarItem(toolbarGroup, dataItem);
+            return new GToolbarSeparator(toolbarGroup, dataItem);
         }
-        private GToolbarGroup _ToolbarGroup;
-        private FunctionGlobalItem _DataItem;
         /// <summary>
-        /// Provider of functions in this group = Service of type IFunctionGlobal
+        /// Grupa, do níž patří tento prvek
+        /// </summary>
+        protected GToolbarGroup _ToolbarGroup;
+        /// <summary>
+        /// Datový základ tohoto prvku
+        /// </summary>
+        protected FunctionGlobalItem _DataItem;
+        /// <summary>
+        /// Poskytovatel funkcí v této grupě = služba typu IFunctionGlobal
         /// </summary>
         public IFunctionProvider Provider { get { return this._DataItem.Provider; } }
         /// <summary>
-        /// Type of owner of this group = Service of type IFunctionGlobal
+        /// Typ konkrétního vlastníka této grupy = služba typu IFunctionGlobal
         /// </summary>
         public Type ProviderType { get { return this._DataItem.ProviderType; } }
         /// <summary>
-        /// Toolbar in which is this group located.
+        /// Toolbar, do kterého náleží tato grupa
         /// </summary>
         internal GToolBar Toolbar { get { return this._ToolbarGroup.Toolbar; } }
         /// <summary>
-        /// Setting for layout on current toolbar (by ToolbarSize)
+        /// Setting pro celý Toolbar
         /// </summary>
         internal GToolBar.LayoutSettingTBarInfo TBarSetting { get { return this.Toolbar.TBarSetting; } }
         /// <summary>
-        /// Setting for layout current Item by ItemSize
+        /// Setting pro tento prvek
         /// </summary>
         internal GToolBar.LayoutSettingTItemInfo TItemSetting { get { return this.Toolbar.TBarSetting.GetInfoForSize(this.ItemSize); } }
         #endregion
         #region Data from DataItem
+        /// <summary>
+        /// Vlastní datový prvek, nad kterým je postaven tento prvek Toolbaru
+        /// </summary>
+        public FunctionGlobalItem DataItem { get { return this._DataItem; } }
         /// <summary>
         /// Typ prvku GlobalItem
         /// </summary>
@@ -978,30 +1397,30 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Ikonka pro stav MouseActive
         /// </summary>
         protected Image ItemImageHot { get { return this._DataItem.ImageHot; } }
-        // public FontInfo ItemFont { get { FontInfo itemFont = this._DataItem.Font; return (itemFont != null ? itemFont : FontInfo.Menu); } }
         public FontInfo CurrentItemFont { get { return this.TBarSetting.GetFontInfo(this.ItemSize, this._DataItem.Font); } }
         /// <summary>
-        /// Text for item. When ItemSize is Micro, then Text is empty.
+        /// Text pro tento prvek.
+        /// Pokud velikost prvku je Micro, pak Text je prázdný.
         /// </summary>
         public string ItemText { get { return (this._DataItem.Size == FunctionGlobalItemSize.Micro ? "" : this._DataItem.TextText); } }
         /// <summary>
-        /// ToolTip for item.
+        /// ToolTip pro tento prvek.
         /// </summary>
         public string ItemToolTip { get { return this._DataItem.ToolTipText; } }
         /// <summary>
-        /// Is Visible?
+        /// Je prvek viditelný?
         /// </summary>
         public override bool IsVisible { get { return this._DataItem.IsVisible; } set { this._DataItem.IsVisible = value; base.IsVisible = value; } }
         /// <summary>
-        /// Is Enabled?
+        /// Je prvek dostupný?
         /// </summary>
         public override bool IsEnabled { get { return this._DataItem.IsEnabled; } set { this._DataItem.IsEnabled = value; base.IsEnabled = value; } }
         /// <summary>
-        /// SubItem array (for ComboBox, SplitButton, and so on)
+        /// Pole podpoložek prvku (ComboBox, SplitButton, atd)
         /// </summary>
         public EList<FunctionItem> ItemSubItems { get { this.CallSubItemsEnumerateBefore(); this._DataItem.OnSubItemsEnumerateBefore(); return this._DataItem.SubItems; } }
         /// <summary>
-        /// true when item has down arrow (ComboBox, SplitButton)
+        /// Obsahuje true, pokud prvek má mít šipku dolů pro rozbalení (ComboBox vždy, Button jen tehdy, když má nějaké <see cref="ItemSubItems"/>)
         /// </summary>
         public bool HasDownArrow
         {
@@ -1020,59 +1439,116 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Prepare layout of this item in ToolbarGroup. ILayoutItem explicit members
         /// <summary>
-        /// Prepare Layout for this item:
-        /// Calculate inner Bounds (BoundsImage and BoundsText, they are relative to this.Bounds).
-        /// Then calculate this.Size as "minimum" size for this item.
-        /// Do not calculate this.Bounds, this is dependent on layout of neighborough items.
-        /// This will be calculated in FinaliseLayout() method.
+        /// Potomek v této metodě Určí minimální velikost pro tento prvek.
+        /// Nepočítá konkrétní Bounds, protože to počítá engine Layout.
         /// </summary>
         /// <param name="graphics"></param>
-        internal void PrepareLayout(Graphics graphics)
+        internal abstract void PrepareLayout(Graphics graphics);
+        /// <summary>
+        /// Připraví data pro layout aktuálního prvku, společná metoda
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="getImageSize"></param>
+        /// <param name="getTextSize"></param>
+        protected void PrepareBoundsCommon(Graphics graphics, Func<Graphics, Size> getImageSize = null, Func<Graphics, Size> getTextSize = null)
         {
-            switch (this.ItemType)
-            {
-                case FunctionGlobalItemType.Separator:
-                    this.PrepareBoundsSeparator(graphics);
-                    break;
-                case FunctionGlobalItemType.Label:
-                    this.PrepareBoundsLabel(graphics);
-                    break;
-                case FunctionGlobalItemType.Button:
-                    this.PrepareBoundsButton(graphics);
-                    break;
-                case FunctionGlobalItemType.ComboBox:
-                    this.PrepareBoundsComboBox(graphics);
-                    break;
-                case FunctionGlobalItemType.Image:
-                    this.PrepareBoundsImage(graphics);
-                    break;
+            GToolBar.LayoutSettingTBarInfo tBarSetting = this.TBarSetting;
+            GToolBar.LayoutSettingTItemInfo itemSetting = this.TItemSetting;
+
+            Size sizeImage = (getImageSize != null ? getImageSize(graphics) : this.GetImageSize(this.ItemImage));      // Velikost pro prvek: Velká ikona = obrázek tlačítka
+            Size sizeText = (getTextSize != null ? getTextSize(graphics) : this.GetTextSize(graphics, this.ItemText)); // Velikost pro prvek: Text tlačítka
+            Size sizeIcon = this.GetIconSize(this.HasDownArrow);               // Ikona reprezentující rozbalovací tlačítko u combo boxu
+            if (sizeText.Height > itemSetting.TextHeight) sizeText.Height = itemSetting.TextHeight;
+
+            if (this.ItemSize == FunctionGlobalItemSize.Whole)
+            {   // Celá výška toolbaru: nahoře je Image, pod ním je Text, obě jsou zarovnány na svislý střed:
+                int textIconWidth = sizeText.Width + sizeIcon.Width;               // Šířka textové části = text + šipka dolů
+                int w = (sizeImage.Width > textIconWidth ? sizeImage.Width : textIconWidth);
+                int c = 2 + (w / 2);
+                int y = 2;
+                this.BoundsImage = new Rectangle(c - (sizeImage.Width / 2), y, sizeImage.Width, sizeImage.Height);
+                if (sizeImage.Height > 0) y = y + sizeImage.Height + 2;
+                this.BoundsText = new Rectangle(c - (textIconWidth / 2), y, sizeText.Width, sizeText.Height);
+                this.BoundsIcon = new Rectangle(this.BoundsText.Right, this.BoundsText.Y, sizeIcon.Width, sizeText.Height);
+                if (sizeText.Height > 0) y = y + sizeText.Height + 2;
+
+                int modulesWidth = tBarSetting.GetModuleCount(w + 4);
+                int modulesHeight = this.TBarSetting.HeightModule;
+                this.ModuleSize = new Size(modulesWidth, modulesHeight);
+                this.PixelSizeMin = tBarSetting.GetPixelSize(this.ModuleSize);
+            }
+            else
+            {   // Menší velikosti: Image je vlevo, vedle něj vpravo text, zarovnání je na vodorovnou osu linku:
+                int h = itemSetting.ModulePixel;
+                int s = itemSetting.OffsetPixel;
+                int c = (h / 2);
+                int x = 0;
+
+                if (sizeImage.Width > 0 && sizeImage.Height > 0)
+                {
+                    int y = c - (sizeImage.Height / 2);
+                    x = y;
+                    this.BoundsImage = new Rectangle(x, y, sizeImage.Width, sizeImage.Height);
+                    x = this.BoundsImage.Right + s;
+                }
+                else
+                {
+                    this.BoundsImage = Rectangle.Empty;
+                    x = s;
+                }
+
+                if (sizeText.Width > 0 && sizeText.Height > 0)
+                {
+                    int y = c - (sizeText.Height / 2);
+                    this.BoundsText = new Rectangle(x, y, sizeText.Width, sizeText.Height);
+                    x = this.BoundsText.Right + s;
+                }
+                else
+                {
+                    this.BoundsText = Rectangle.Empty;
+                }
+
+                if (sizeIcon.Width > 0)
+                {
+                    this.BoundsIcon = new Rectangle(x, 2, sizeIcon.Width, h - 4);
+                    x = this.BoundsIcon.Right + 3;
+                }
+                else
+                {
+                    this.BoundsIcon = Rectangle.Empty;
+                }
+
+                int modulesWidth = tBarSetting.GetModuleCount(x);
+                int modulesHeight = itemSetting.ModuleCount;
+                this.ModuleSize = new Size(modulesWidth, modulesHeight);
+                this.PixelSizeMin = tBarSetting.GetPixelSize(this.ModuleSize);
             }
         }
         /// <summary>
-        /// Bounds for draw Image, relative to this.Bounds!!!
+        /// Fyzické souřadnice pro kreslení Image, relativně k this.Bounds
         /// </summary>
-        protected Rectangle BoundsImage;
+        protected Rectangle BoundsImage { get; set; }
         /// <summary>
-        /// Bounds for draw Text, relative to this.Bounds!!!
+        /// Fyzické souřadnice pro kreslení Text, relativně k this.Bounds
         /// </summary>
-        protected Rectangle BoundsText;
+        protected Rectangle BoundsText { get; set; }
         /// <summary>
-        /// Bounds for draw Icon (down arrow), relative to this.Bounds!!!
+        /// Fyzické souřadnice pro kreslení Icon (šipka dolů), relativně k this.Bounds
         /// </summary>
-        protected Rectangle BoundsIcon;
+        protected Rectangle BoundsIcon { get; set; }
         /// <summary>
-        /// Minimum Size in pixel of this item, by Image, Size, Text, Font.
+        /// Minimální velikost pro tento prvek, v pixelech, podle Image, Text, Size, Font
         /// </summary>
-        internal Size PixelSizeMin { get; private set; }
+        public Size PixelSizeMin { get; protected set; }
         /// <summary>
-        /// Size of this item in "modules", where "1" = size of Micro icon without text.
-        /// When item has any text, then its ModuleSize.Width is rounded to nearest higher Width.
+        /// Velikost tohoto prvku v "modulech", kde 1 modul je velikost elementu Micro bez textu.
+        /// POkud prvek má nějaký text, pak je jeho velikost v modulech zarovnaná nahoru.
         /// </summary>
-        internal Size ModuleSize { get; private set; }
+        public Size ModuleSize { get; protected set; }
         /// <summary>
-        /// Position of this item in "modules", from process in LayoutEngine algorithm
+        /// Souřadnice tohoto prvku v "modulech", výsledek procesu LayoutEngine
         /// </summary>
-        internal Rectangle? ModuleBounds { get; private set; }
+        public Rectangle? ModuleBounds { get; protected set; }
         /// <summary>
         /// Return size for image, for this Size and current Toolbar (LayoutInfo, Zoom)
         /// </summary>
@@ -1175,230 +1651,18 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         Rectangle? ILayoutItem.ItemBounds { get { return this.ModuleBounds; } set { this.ModuleBounds = value; } }
         #endregion
-        #region Společné metody pro přípravu layoutu
-        /// <summary>
-        /// Připraví data pro layout aktuálního prvku, společná metoda
-        /// </summary>
-        /// <param name="graphics"></param>
-        protected void PrepareBoundsCommon(Graphics graphics)
-        {
-            this.PrepareBoundsCommon(graphics, null, null);
-        }
-        /// <summary>
-        /// Připraví data pro layout aktuálního prvku, společná metoda
-        /// </summary>
-        /// <param name="graphics"></param>
-        protected void PrepareBoundsCommon(Graphics graphics, Func<Graphics, Size> getImageSize, Func<Graphics, Size> getTextSize)
-        {
-            GToolBar.LayoutSettingTBarInfo tBarSetting = this.TBarSetting;
-            GToolBar.LayoutSettingTItemInfo itemSetting = this.TItemSetting;
-
-            Size sizeImage = (getImageSize != null ? getImageSize(graphics) : this.GetImageSize(this.ItemImage));      // Velikost pro prvek: Velká ikona = obrázek tlačítka
-            Size sizeText = (getTextSize != null ? getTextSize(graphics) : this.GetTextSize(graphics, this.ItemText)); // Velikost pro prvek: Text tlačítka
-            Size sizeIcon = this.GetIconSize(this.HasDownArrow);               // Ikona reprezentující rozbalovací tlačítko u combo boxu
-            if (sizeText.Height > itemSetting.TextHeight) sizeText.Height = itemSetting.TextHeight;
-            int textIconWidth = sizeText.Width + sizeIcon.Width;               // Šířka textové části = text + šipka dolů
-
-            if (this.ItemSize == FunctionGlobalItemSize.Whole)
-            {   // Celá výška toolbaru: nahoře je Image, pod ním je Text, obě jsou zarovnány na svislý střed:
-                int w = (sizeImage.Width > textIconWidth ? sizeImage.Width : textIconWidth);
-                int c = 2 + (w / 2);
-                int y = 2;
-                this.BoundsImage = new Rectangle(c - (sizeImage.Width / 2), y, sizeImage.Width, sizeImage.Height);
-                if (sizeImage.Height > 0) y = y + sizeImage.Height + 2;
-                this.BoundsText = new Rectangle(c - (textIconWidth / 2), y, sizeText.Width, sizeText.Height);
-                this.BoundsIcon = new Rectangle(this.BoundsText.Right, this.BoundsText.Y, sizeIcon.Width, sizeText.Height);
-                if (sizeText.Height > 0) y = y + sizeText.Height + 2;
-
-                int modulesWidth = tBarSetting.GetModuleCount(w + 4);
-                int modulesHeight = this.TBarSetting.HeightModule;
-                this.ModuleSize = new Size(modulesWidth, modulesHeight);
-                this.PixelSizeMin = tBarSetting.GetPixelSize(this.ModuleSize);
-            }
-            else
-            {   // Small item: small image on left, before text, horizontally aligned to Y center:
-                int h = itemSetting.ModulePixel;
-                int c = (h / 2);
-                int x = 2;
-                this.BoundsImage = new Rectangle(x, c - (sizeImage.Height / 2), sizeImage.Width, sizeImage.Height);
-                if (sizeImage.Width > 0) x = x + sizeImage.Width;
-                if (sizeImage.Width > 0 && sizeText.Width > 0) x = x + 4;
-                this.BoundsText = new Rectangle(x, c - (sizeText.Height / 2), sizeText.Width, sizeText.Height);
-                if (sizeText.Width > 0) x = x + sizeText.Width + 3;
-                this.BoundsIcon = new Rectangle(x, 2, sizeIcon.Width, h - 4);
-                if (sizeIcon.Width > 0) x = x + sizeIcon.Width + 3;
-
-                int modulesWidth = tBarSetting.GetModuleCount(x);
-                int modulesHeight = itemSetting.ModuleCount;
-                this.ModuleSize = new Size(modulesWidth, modulesHeight);
-                this.PixelSizeMin = tBarSetting.GetPixelSize(this.ModuleSize);
-            }
-        }
-        #endregion
-        #region ItemType Separator: specific methods
-        protected virtual void PrepareBoundsSeparator(Graphics graphics)
-        {
-            this.PixelSizeMin = new Size(5, this.TBarSetting.ContentBounds.Height);
-            this.ModuleSize = new Size(0, this.TBarSetting.HeightModule);
-        }
-        protected virtual void DrawStandardSeparator(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
-        {
-            e.Graphics.DrawLine(Skin.Pen(Skin.ToolBar.SeparatorDarkColor), boundsAbsolute.X + 3, boundsAbsolute.Y, boundsAbsolute.X + 3, boundsAbsolute.Bottom);
-            e.Graphics.DrawLine(Skin.Pen(Skin.ToolBar.SeparatorLightColor), boundsAbsolute.X + 4, boundsAbsolute.Y, boundsAbsolute.X + 4, boundsAbsolute.Bottom);
-        }
-        protected virtual string GetToolTipTextSeparator()
-        {
-            return this.ItemToolTip;
-        }
-        protected virtual void LeftClickSeparator(GInteractiveChangeStateArgs e)
-        { }
-        #endregion
-        #region ItemType Label: specific methods
-        protected virtual void PrepareBoundsLabel(Graphics graphics)
-        {
-            this.PrepareBoundsCommon(graphics);
-        }
-        protected virtual void DrawStandardLabel(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
-        {
-            Image image = this._DataItem.Image;
-            Image imageHot = null;
-            if (image != null)
-            {
-                Rectangle boundsImageAbsolute = this.BoundsImage.ShiftBy(boundsAbsolute.Location);
-                if (this.InteractiveState.IsMouseActive())
-                    imageHot = this._DataItem.ImageHot;
-                e.Graphics.DrawImage(imageHot ?? image, boundsImageAbsolute);
-            }
-
-            string text = this.ItemText;
-            if (!String.IsNullOrEmpty(text))
-            {
-                Rectangle boundsTextAbsolute = this.BoundsText.ShiftBy(boundsAbsolute.Location);
-                FontInfo fontInfo = this.CurrentItemFont;
-                GPainter.DrawString(e.Graphics, boundsTextAbsolute, text, Skin.ToolBar.TextColor, fontInfo, ContentAlignment.MiddleCenter);
-            }
-        }
-        protected virtual string GetToolTipTextLabel()
-        {
-            return this.ItemToolTip;
-        }
-        protected virtual void LeftClickLabel(GInteractiveChangeStateArgs e)
-        {
-            this.CallItemAction();
-        }
-        #endregion
-        #region ItemType Button: specific methods
-        protected virtual void PrepareBoundsButton(Graphics graphics)
-        {
-            this.PrepareBoundsCommon(graphics);
-        }
-        protected virtual void DrawStandardButton(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
-        {
-            this.DrawItemBackground(e, boundsAbsolute);
-            this.DrawItemImage(e, boundsAbsolute);
-            this.DrawItemText(e, boundsAbsolute);
-        }
-        protected virtual string GetToolTipTextButton()
-        {
-            return this.ItemToolTip;
-        }
-        protected virtual void LeftClickButton(GInteractiveChangeStateArgs e)
-        {
-            this.CallItemAction();
-        }
-        #endregion
-        #region ItemType ComboBox: specific methods
-        protected virtual void PrepareBoundsComboBox(Graphics graphics)
-        {
-            EList<FunctionItem> subItems = this.ItemSubItems;
-            this.PrepareBoundsCommon(graphics, 
-                g => this.GetImageSizeFromSubItems(true, subItems), 
-                g => this.GetTextSizeFromSubItems(g, true, subItems, 7));
-        }
-        protected virtual void DrawStandardComboBox(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
-        {
-            this.DrawItemBackground(e, boundsAbsolute, 1, true);
-            FunctionItem activeItem = this._DataItem.Value as FunctionItem;
-            if (activeItem == null) activeItem = this._DataItem;
-            this.DrawItemImage(e, boundsAbsolute, activeItem);
-            this.DrawItemText(e, boundsAbsolute, activeItem);
-            this.DrawItemIcon(e, boundsAbsolute);
-        }
-        protected virtual string GetToolTipTextComboBox()
-        {
-            FunctionItem activeItem = this._DataItem.Value as FunctionItem;
-            return (activeItem != null ? activeItem.ToolTipText : this.ItemToolTip);
-        }
-        protected virtual void LeftClickComboBox(GInteractiveChangeStateArgs e)
-        {
-            var host = this.Host;
-            if (host == null) return;
-
-            Rectangle bounds = this.BoundsAbsolute;
-            Point point = new Point(bounds.X, bounds.Bottom - 1);
-
-            EList<FunctionItem> subItems = this.ItemSubItems;
-            System.Windows.Forms.ToolStripDropDownMenu menu = FunctionItem.CreateDropDownMenuFrom(subItems);
-            menu.MinimumSize = new Size(bounds.Width, 0); // 3 * this.TItemSetting.ModulePixel);
-            menu.ItemClicked += new System.Windows.Forms.ToolStripItemClickedEventHandler(_ComboMenu_ItemClicked);
-            menu.Show(host, point, System.Windows.Forms.ToolStripDropDownDirection.BelowRight);
-        }
-        private void _ComboMenu_ItemClicked(object sender, System.Windows.Forms.ToolStripItemClickedEventArgs e)
-        {
-            FunctionItem item = e.ClickedItem.Tag as FunctionItem;
-            if (e.ClickedItem is System.Windows.Forms.ToolStripSeparator || item == null) return;
-
-            System.Windows.Forms.ToolStrip owner = e.ClickedItem.Owner;
-            if (owner != null) owner.Hide();
-
-            this._DataItem.Value = item;
-            this.CallItemAction(item);
-            this.Parent.Repaint();
-        }
-        #endregion
-        #region ItemType Image: specific methods
-        protected virtual void PrepareBoundsImage(Graphics graphics)
-        {
-            this.PrepareBoundsCommon(graphics);
-        }
-        protected virtual void DrawStandardImage(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
-        {
-            if (this._DataItem.Image != null)
-            {
-                Rectangle boundsImageAbsolute = this.BoundsImage.ShiftBy(boundsAbsolute.Location);
-                e.Graphics.DrawImage(this._DataItem.Image, boundsImageAbsolute);
-            }
-
-            string text = this.ItemText;
-            if (!String.IsNullOrEmpty(text))
-            {
-                Rectangle boundsTextAbsolute = this.BoundsText.ShiftBy(boundsAbsolute.Location);
-                FontInfo fontInfo = this.CurrentItemFont;
-                GPainter.DrawString(e.Graphics, boundsTextAbsolute, text, Skin.ToolBar.TextColor, fontInfo, ContentAlignment.MiddleCenter);
-            }
-        }
-        protected virtual string GetToolTipTextImage()
-        {
-            return this.ItemToolTip;
-        }
-        protected virtual void LeftClickImage(GInteractiveChangeStateArgs e)
-        {
-            this.CallItemAction();
-        }
-        #endregion
-        #region Common Draw and Click methods
-        protected void DrawItemBackground(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
-        {
-            this.DrawItemBackground(e, boundsAbsolute, 2, false);
-        }
-        protected void DrawItemBackground(GInteractiveDrawArgs e, Rectangle boundsAbsolute, int roundCorner, bool forceBorder)
+        #region Společné podpůrné metody pro potomky
+        protected void DrawItemBackground(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool isSelected = false, int roundCorner = 2, bool forceBorder = false)
         {
             bool isEnabled = this.IsEnabled;
-            bool drawBackground = isEnabled && this.IsMouseActive;
+            bool drawBackground = isEnabled && (this.IsMouseActive || isSelected);
             bool drawBorders = forceBorder || (isEnabled && this.IsMouseDown);
 
             if (drawBackground || drawBorders)
-                GPainter.DrawButtonBase(e.Graphics, boundsAbsolute, Skin.ToolBar.ItemBackColor, this.InteractiveState, System.Windows.Forms.Orientation.Horizontal, roundCorner, null, null, drawBackground, drawBorders, Skin.ToolBar.ItemBorderColor);
+            {
+                Color backColor = (!isSelected ? Skin.ToolBar.ItemBackColor : Skin.ToolBar.ItemSelectedBackColor);
+                GPainter.DrawButtonBase(e.Graphics, boundsAbsolute, backColor, this.InteractiveState, System.Windows.Forms.Orientation.Horizontal, roundCorner, null, null, drawBackground, drawBorders, Skin.ToolBar.ItemBorderColor);
+            }
         }
         protected void DrawItemImage(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
         {
@@ -1406,11 +1670,13 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         protected void DrawItemImage(GInteractiveDrawArgs e, Rectangle boundsAbsolute, FunctionItem activeItem)
         {
+            if (this.BoundsImage.Width <= 0) return;
+
             Image image = activeItem.Image;
             Image imageHot = null;
             if (image != null)
             {
-                Rectangle boundsImageAbsolute = this.BoundsImage.ShiftBy(boundsAbsolute.Location);
+                Rectangle boundsImageAbsolute = this.GetAbsoluteBoundsForPart(boundsAbsolute, this.BoundsImage); // this.BoundsImage.ShiftBy(boundsAbsolute.Location);
                 if (this.InteractiveState.IsMouseActive())
                     imageHot = this._DataItem.ImageHot;
                 GPainter.DrawImage(e.Graphics, boundsImageAbsolute, (imageHot ?? image), activeItem.IsEnabled, ContentAlignment.MiddleCenter);
@@ -1422,10 +1688,12 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         protected void DrawItemText(GInteractiveDrawArgs e, Rectangle boundsAbsolute, FunctionItem activeItem)
         {
+            if (this.BoundsText.Width <= 0) return;
+
             string text = (activeItem != null ? this.ItemSize == FunctionGlobalItemSize.Micro ? "" : activeItem.TextText : null);
             if (!String.IsNullOrEmpty(text))
             {
-                Rectangle boundsTextAbsolute = this.BoundsText.ShiftBy(boundsAbsolute.Location);
+                Rectangle boundsTextAbsolute = this.GetAbsoluteBoundsForPart(boundsAbsolute, this.BoundsText); // this.BoundsText.ShiftBy(boundsAbsolute.Location);
                 FontInfo fontInfo = this.CurrentItemFont;
                 Color textColor = Skin.ModifyForeColorByState(Skin.ToolBar.TextColor, this.InteractiveState);
                 GPainter.DrawString(e.Graphics, boundsTextAbsolute, text, textColor, fontInfo, ContentAlignment.MiddleCenter);
@@ -1433,15 +1701,44 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         protected void DrawItemIcon(GInteractiveDrawArgs e, Rectangle boundsAbsolute)
         {
-            Rectangle boundsIconAbsolute = this.BoundsIcon.ShiftBy(boundsAbsolute.Location);
+            if (this.BoundsIcon.Width <= 0) return;
+
+            Rectangle boundsIconAbsolute = this.GetAbsoluteBoundsForPart(boundsAbsolute, this.BoundsIcon); // this.BoundsIcon.ShiftBy(boundsAbsolute.Location);
             int w = boundsIconAbsolute.Width;
             if (w <= 0) return;
             int x = boundsIconAbsolute.X;
             int y  = boundsIconAbsolute.Y;
             int h = boundsIconAbsolute.Height;
             int b = boundsIconAbsolute.Bottom;
-            e.Graphics.DrawLine(Skin.Pen(Color.DimGray), x, y + 2, x, b - 3);
-            e.Graphics.DrawLine(Skin.Pen(Color.LightGray), x + 1, y + 2, x + 1, b - 3);
+            e.Graphics.DrawLine(Skin.Pen(Skin.ToolBar.SeparatorDarkColor), x, y + 2, x, b - 3);
+            e.Graphics.DrawLine(Skin.Pen(Skin.ToolBar.SeparatorLightColor), x + 1, y + 2, x + 1, b - 3);
+        }
+        /// <summary>
+        /// Metoda vykreslí ohraničení okolo prvku v případě, že je isSelected.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="isSelected"></param>
+        protected void DrawItemSelection(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool isSelected)
+        {
+            if (!isSelected) return;
+            Rectangle boundsSelection = boundsAbsolute.Enlarge(-1);
+            e.Graphics.DrawRectangle(Skin.Pen(Skin.ToolBar.ItemSelectedLineColor), boundsSelection);
+        }
+        /// <summary>
+        /// Metoda vrátí absolutní souřadnice prostoru (boundsPart), který je zadán jako relativní, a to vzhledem k teoretické velikosti <see cref="PixelSizeMin"/>.
+        /// Jsou zadány absolutní souřadnice prostoru prvku (boundsAbsolute), jehož velikost (Size) může být větší než velikost <see cref="PixelSizeMin"/>.
+        /// To je dáno generátorem layoutu.
+        /// </summary>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="boundsPart"></param>
+        /// <param name="alignment"></param>
+        /// <returns></returns>
+        protected Rectangle GetAbsoluteBoundsForPart(Rectangle boundsAbsolute, Rectangle boundsPart, ContentAlignment alignment = ContentAlignment.MiddleCenter)
+        {
+            Size originalSize = this.PixelSizeMin;         // Do této teoretické velikosti byly zarovnány souřadnice jednotlivých součástí prvku, tedy i (boundsPart)
+            Rectangle originalBounds = originalSize.AlignTo(boundsAbsolute, alignment);  // Aktuální absolutní souřadnice původního zamýšleného prostoru PixelSizeMin
+            return boundsPart.ShiftBy(originalBounds.Location);
         }
         protected virtual void CallSubItemsEnumerateBefore()
         {
@@ -1452,49 +1749,71 @@ namespace Asol.Tools.WorkScheduler.Components
             this._ToolbarGroup.DataGroup.OnSubItemsEnumerateBefore(activeItem);
             this._ToolbarGroup.Toolbar.OnItemSubItemsEnumerateBefore(this._ToolbarGroup.DataGroup, activeItem);
         }
-        protected virtual void CallItemAction()
+        protected virtual void CallItemClick()
         {
-            this.CallItemAction(this._DataItem);
+            this.CallItemClick(this._DataItem);
         }
-        protected virtual void CallItemAction(FunctionItem activeItem)
+        protected virtual void CallItemClick(FunctionItem activeItem)
         {
-            this._ToolbarGroup.DataGroup.OnItemAction(activeItem);
+            this._ToolbarGroup.DataGroup.OnItemClicked(activeItem);
             if (activeItem.Parent != null)
-                activeItem.Parent.OnSubItemsClick(this._DataItem);
+                activeItem.Parent.OnSubItemsClick(activeItem);
             activeItem.OnClick();
             this._ToolbarGroup.Toolbar.OnItemClicked(this._ToolbarGroup.DataGroup, activeItem);
         }
+        protected virtual void CallItemSelectedChange(FunctionItem activeItem)
+        {
+            this._ToolbarGroup.DataGroup.OnItemSelectedChange(activeItem);
+            if (activeItem.Parent != null)
+                activeItem.Parent.OnSubItemsSelectedChange(activeItem);
+            activeItem.OnSelectedChange();
+            this._ToolbarGroup.Toolbar.OnItemSelectedChange(this._ToolbarGroup.DataGroup, activeItem);
+        }
         #endregion
-        #region InteractiveContainer : Interactivity, Draw
+        #region Draw, Interaktivita
         /// <summary>
         /// Vykreslí jeden prvek
         /// </summary>
         /// <param name="e">Data pro kreslení</param>
         /// <param name="absoluteBounds">Absolutní souřadnice tohoto prvku, sem by se mělo fyzicky kreslit</param>
         /// <param name="absoluteVisibleBounds">Absolutní souřadnice tohoto prvku, oříznuté do viditelné oblasti.</param>
-        /// <param name="drawMode">Režim kreslení (pomáhá řešit Drag & Drop procesy)</param>
+        /// <param name="drawMode">Režim kreslení (pomáhá řešit Drag and Drop procesy)</param>
         protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
         {
             if (!this.IsVisible) return;
-            switch (this.ItemType)
-            {
-                case FunctionGlobalItemType.Separator:
-                    this.DrawStandardSeparator(e, absoluteBounds);
-                    break;
-                case FunctionGlobalItemType.Label:
-                    this.DrawStandardLabel(e, absoluteBounds);
-                    break;
-                case FunctionGlobalItemType.Button:
-                    this.DrawStandardButton(e, absoluteBounds);
-                    break;
-                case FunctionGlobalItemType.ComboBox:
-                    this.DrawStandardComboBox(e, absoluteBounds);
-                    break;
-                case FunctionGlobalItemType.Image:
-                    this.DrawStandardImage(e, absoluteBounds);
-                    break;
-            }
+            this.DrawItem(e, absoluteBounds, absoluteVisibleBounds, drawMode);
         }
+        /// <summary>
+        /// V této metodě potomek zajistí vykreslení sebe sama.
+        /// Může k tomu využívat bázové metody pro kreslení, a může je kombinovat s vlastními metodami.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="absoluteBounds"></param>
+        /// <param name="absoluteVisibleBounds"></param>
+        /// <param name="drawMode"></param>
+        protected abstract void DrawItem(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode);
+        /// <summary>
+        /// Připraví data pro zobrazení ToolTipu. Metodu volá předek.
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void PrepareToolTip(GInteractiveChangeStateArgs e)
+        {
+            string toolTip = this.CurrentToolTip;
+            if (String.IsNullOrEmpty(toolTip)) return;
+            e.ToolTipData.InfoText = toolTip;
+
+            string toolTipTitle = this._ToolbarGroup.DataToolTipTitle;
+            e.ToolTipData.TitleText = (!String.IsNullOrEmpty(toolTipTitle) ? toolTipTitle : this._ToolbarGroup.DataTitle);
+        }
+        /// <summary>
+        /// Potomek může přepsat a zobrazovat tak svůj tooltip.
+        /// Bázová třída vrací <see cref="ItemToolTip"/>.
+        /// </summary>
+        protected virtual string CurrentToolTip { get { return this.ItemToolTip; } }
+        /// <summary>
+        /// Interaktivita prvku
+        /// </summary>
+        /// <param name="e"></param>
         protected override void AfterStateChanged(GInteractiveChangeStateArgs e)
         {
             bool isEnabled = this.IsEnabled;
@@ -1516,55 +1835,6 @@ namespace Asol.Tools.WorkScheduler.Components
                 case GInteractiveChangeState.MouseLeave:
                     if (isEnabled)
                         this.Parent.Repaint();
-                    break;
-            }
-        }
-        /// <summary>
-        /// Připraví data pro zobrazení ToolTipu. Metodu volá předek.
-        /// </summary>
-        /// <param name="e"></param>
-        protected override void PrepareToolTip(GInteractiveChangeStateArgs e)
-        {
-            string toolTip = this.GetToolTipText();
-            if (String.IsNullOrEmpty(toolTip)) return;
-            e.ToolTipData.InfoText = toolTip;
-
-            string toolTipTitle = this._ToolbarGroup.DataToolTipTitle;
-            e.ToolTipData.TitleText = (!String.IsNullOrEmpty(toolTipTitle) ? toolTipTitle : this._ToolbarGroup.DataTitle);
-        }
-        protected virtual string GetToolTipText()
-        {
-            switch (this.ItemType)
-            {
-                case FunctionGlobalItemType.Separator: return this.GetToolTipTextSeparator();
-                case FunctionGlobalItemType.Label: return this.GetToolTipTextLabel();
-                case FunctionGlobalItemType.Button: return this.GetToolTipTextButton();
-                case FunctionGlobalItemType.ComboBox: return this.GetToolTipTextComboBox();
-                case FunctionGlobalItemType.Image: return this.GetToolTipTextImage();
-            }
-            return this.ItemToolTip;
-        }
-        protected override void AfterStateChangedLeftClick(GInteractiveChangeStateArgs e)
-        {
-            base.AfterStateChangedLeftClick(e);
-
-            if (!this.IsVisible || !this.IsEnabled) return;
-            switch (this.ItemType)
-            {
-                case FunctionGlobalItemType.Separator:
-                    this.LeftClickSeparator(e);
-                    break;
-                case FunctionGlobalItemType.Label:
-                    this.LeftClickLabel(e);
-                    break;
-                case FunctionGlobalItemType.Button:
-                    this.LeftClickButton(e);
-                    break;
-                case FunctionGlobalItemType.ComboBox:
-                    this.LeftClickComboBox(e);
-                    break;
-                case FunctionGlobalItemType.Image:
-                    this.LeftClickImage(e);
                     break;
             }
         }

@@ -130,10 +130,23 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this._ToolBar = new GToolBar() { Bounds = new Rectangle(0, 0, 1024, 64) };
             this._ToolBar.ToolbarSizeChanged += _ToolBarSizeChanged;
             this.AddItem(this._ToolBar);
+            this._ToolBar.ItemSelectedChange += _ToolBar_ItemSelectedChange;
             this._ToolBar.ItemClicked += _ToolBar_ItemClicked;
         }
         /// <summary>
-        /// Tuto metodu volá interaktivní prvek (<see cref="GToolBar"/>) po kliknutí na něj, úkolem je vyvolat event <see cref="MainControl.ToolBarItemClicked"/>.
+        /// Tuto metodu volá interaktivní prvek (<see cref="GToolBar"/>) po změně IsSelected na některém jeho prvku,
+        /// úkolem je vyvolat event <see cref="MainControl.ToolBarItemSelectedChange"/>.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _ToolBar_ItemSelectedChange(object sender, FunctionItemEventArgs args)
+        {
+            if (this.ToolBarItemSelectedChange != null)
+                this.ToolBarItemSelectedChange(this, args);
+        }
+        /// <summary>
+        /// Tuto metodu volá interaktivní prvek (<see cref="GToolBar"/>) po kliknutí na některý z jeho prvků,
+        /// úkolem je vyvolat event <see cref="MainControl.ToolBarItemClicked"/>.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="args"></param>
@@ -142,6 +155,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (this.ToolBarItemClicked != null)
                 this.ToolBarItemClicked(this, args);
         }
+        /// <summary>
+        /// Událost vyvolaná po změně IsSelected na určitém prvku ToolBaru
+        /// </summary>
+        public event FunctionItemEventHandler ToolBarItemSelectedChange;
         /// <summary>
         /// Událost vyvolaná po kliknutí na určitý prvek ToolBaru
         /// </summary>

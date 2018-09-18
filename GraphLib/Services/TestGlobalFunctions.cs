@@ -49,7 +49,7 @@ namespace Asol.Tools.WorkScheduler.Services
             group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Small, Image = Components.IconStandard.DocumentSaveAs, Text = "Založit jako...", ToolTip = "Založí někam dokument tak, že nebude k nalezení", LayoutHint = LayoutHint.NextItemSkipToNextRow });
             group.Items.Add(new FunctionGlobalItem(this) { ItemType = FunctionGlobalItemType.Button, Size = FunctionGlobalItemSize.Half, Image = Components.IconStandard.DocumentExport, Text = "Exportovat dokument", ToolTip = "Exportuje dokument tak, aby jej všichni viděli", LayoutHint = LayoutHint.NextItemSkipToNextRow });
 
-            group.ItemAction += new FunctionItemEventHandler(_ItemInGroupClick);
+            group.ItemClicked += new FunctionItemEventHandler(_ItemInGroupClick);
             
             return group;
         }
@@ -93,7 +93,7 @@ namespace Asol.Tools.WorkScheduler.Services
             FunctionGlobalItem fItem = group.Items[0];
 
             group.SubItemsEnumerateBefore += _ItemInGroup_SubItemsEnumerateBefore;
-            group.ItemAction += _ItemInGroupClick;
+            group.ItemClicked += _ItemInGroupClick;
 
             return group;
         }

@@ -2017,7 +2017,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         public static bool IsMouseActive(this GInteractiveState state)
         {
-            return state.HasFlag(GInteractiveState.FlagDown | GInteractiveState.FlagDown | GInteractiveState.FlagDrag | GInteractiveState.FlagFrame);
+            GInteractiveState anyState = GInteractiveState.FlagOver | GInteractiveState.FlagDown | GInteractiveState.FlagDown | GInteractiveState.FlagDrag | GInteractiveState.FlagFrame;
+            return ((state & anyState) != 0);
         }
         /// <summary>
         /// Vrací true, pokud interaktivní stav je jeden z: LeftDown, RightDown.
@@ -2026,7 +2027,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         public static bool IsMouseDown(this GInteractiveState state)
         {
-            return state.HasFlag(GInteractiveState.FlagDown);
+            GInteractiveState anyState = GInteractiveState.FlagDown;
+            return ((state & anyState) != 0);
         }
         #endregion
         #region Rectangle a Padding: Rectangle.Add(), Rectangle.Sub(Padding)

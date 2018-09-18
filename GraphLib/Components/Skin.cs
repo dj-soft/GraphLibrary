@@ -817,6 +817,9 @@ namespace Asol.Tools.WorkScheduler.Components
         public Color BackColor { get { return this._Owner.GetValue(this._SkinSetKey, "BackColor", DefaultBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "BackColor", value); } }
         public Color TextColor { get { return this._Owner.GetValue(this._SkinSetKey, "TextColor", DefaultTextColor); } set { this._Owner.SetValue(this._SkinSetKey, "TextColor", value); } }
         public Color ItemBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "ItemBackColor", DefaultItemBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "ItemBackColor", value); } }
+        public Color ItemSelectedBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "ItemSelectedBackColor", DefaultItemSelectedBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "ItemSelectedBackColor", value); } }
+        public Color ItemSelectedLineColor { get { return this._Owner.GetValue(this._SkinSetKey, "ItemSelectedLineColor", DefaultItemSelectedLineColor); } set { this._Owner.SetValue(this._SkinSetKey, "ItemSelectedLineColor", value); } }
+
         public Color ItemBorderColor { get { return this._Owner.GetValue(this._SkinSetKey, "ItemBorderColor", DefaultItemBorderColor); } set { this._Owner.SetValue(this._SkinSetKey, "ItemBorderColor", value); } }
         public Color TitleBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "TitleBackColor", DefaultTitleBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "TitleBackColor", value); } }
         public Color SeparatorLightColor { get { return this._Owner.GetValue(this._SkinSetKey, "SeparatorLightColor", DefaultSeparatorLightColor); } set { this._Owner.SetValue(this._SkinSetKey, "SeparatorLightColor", value); } }
@@ -827,6 +830,8 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual Color DefaultBackColor { get { return Color.FromArgb(255, 240, 240, 240); } }
         protected virtual Color DefaultTextColor { get { return Color.Black; } }
         protected virtual Color DefaultItemBackColor { get { return Color.FromArgb(255, 224, 224, 240); } }
+        protected virtual Color DefaultItemSelectedBackColor { get { return Color.FromArgb(255, 240, 240, 160); } }
+        protected virtual Color DefaultItemSelectedLineColor { get { return Color.DimGray; } }
         protected virtual Color DefaultItemBorderColor { get { return Color.DimGray; } }
         protected virtual Color DefaultTitleBackColor { get { return Color.FromArgb(128, 240, 224, 246); } }
         protected virtual Color DefaultSeparatorLightColor { get { return Color.LightGray; } }
