@@ -5,6 +5,9 @@ using System.Text;
 
 namespace Asol.Tools.WorkScheduler.TestGUI
 {
+
+
+
     public class Tests
     {
         internal static void TestLinq(int loops)
