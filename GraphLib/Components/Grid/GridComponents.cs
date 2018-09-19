@@ -502,6 +502,12 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             {
                 this._TimeAxis = new GTimeAxis();
                 Components.Graph.TimeGraphProperties graphParameters = this.OwnerColumn.GraphParameters;
+
+                // Maximální hodnota na časové ose dosažitelná:
+                if (graphParameters != null)
+                    this._TimeAxis.ValueLimit = graphParameters.MaximalValue;
+
+                // Výchozí hodnota na časové ose:
                 TimeRange value = this._TimeAxis.Value;
                 if (_TimeAxisInitialValue != null) value = _TimeAxisInitialValue;
                 if (graphParameters != null)

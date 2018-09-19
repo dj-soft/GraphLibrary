@@ -251,23 +251,23 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Současně je ukládá do <see cref="_DataTableList"/>.
         /// </summary>
         /// <param name="guiPanel"></param>
-        /// <param name="grid"></param>
+        /// <param name="gGrid"></param>
         /// <returns></returns>
-        private bool _LoadDataToGrid(GuiPanel guiPanel, GGrid grid)
+        private bool _LoadDataToGrid(GuiPanel guiPanel, GGrid gGrid)
         {
             if (guiPanel == null || guiPanel.Grids.Count == 0) return false;
 
-            if (grid.SynchronizedTime == null)
-                grid.SynchronizedTime = this.SynchronizedTime;
+            if (gGrid.SynchronizedTime == null)
+                gGrid.SynchronizedTime = this.SynchronizedTime;
 
             foreach (GuiGrid guiGrid in guiPanel.Grids)
             {
-                MainDataTable graphTable = new MainDataTable(this._MainControl.MainData, guiGrid);
+                MainDataTable graphTable = new MainDataTable(this, gGrid, guiGrid);
                 if (graphTable.TableRow == null) continue;
 
                 this._DataTableList.Add(graphTable);
 
-                grid.AddTable(graphTable.TableRow);
+                gGrid.AddTable(graphTable.TableRow);
             }
             return true;
         }
@@ -284,15 +284,16 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
             foreach (GuiGrid guiGrid in guiPanel.Grids)
             {
-                MainDataTable graphTable = new MainDataTable(this._MainControl.MainData, guiGrid);
+                GGrid gGrid = new GGrid();
+                gGrid.SynchronizedTime = this.SynchronizedTime;
+
+                MainDataTable graphTable = new MainDataTable(this, gGrid, guiGrid);
                 if (graphTable.TableRow == null) continue;
 
                 this._DataTableList.Add(graphTable);
 
-                GGrid grid = new GGrid();
-                grid.SynchronizedTime = this.SynchronizedTime;
-                grid.AddTable(graphTable.TableRow);
-                tabs.AddTabItem(grid, guiGrid.Title, guiGrid.ToolTip);
+                gGrid.AddTable(graphTable.TableRow);
+                tabs.AddTabItem(gGrid, guiGrid.Title, guiGrid.ToolTip);
             }
             return true;
         }
@@ -321,6 +322,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private bool _IsChildValid;
         #endregion
         #region Public data
+        /// <summary>
+        /// Reference na Main control (toolbar, panel)
+        /// </summary>
+        public MainControl MainControl { get { return this._MainControl; } }
         /// <summary>
         /// Titulek celých dat, zobrazí se v TabHeaderu, pokud bude datových zdrojů více než 1
         /// </summary>

@@ -599,7 +599,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Prověří platnost zdejších dat s ohledem na aktuální hodnoty časové osy <see cref="_TimeConvertor"/>.
         /// Pokud zdejší data jsou vypočítaná pro identický stav časové osy, nechá data beze změn, 
-        /// jinak přenačte data osy a invaliduje seznam viditelných dat : <see cref="Invalidate(InvalidateItems)"/> pro hodnotu <see cref="InvalidateItems.VisibleGroups"/>.
+        /// jinak přenačte data osy a invaliduje seznam viditelných dat : <see cref="Invalidate(InvalidateItems)"/> pro hodnotu <see cref="InvalidateItems.CoordinateX"/>.
         /// </summary>
         protected void CheckValidTimeAxis()
         {
@@ -608,7 +608,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         }
         /// <summary>
         /// Přenačte do sebe soupis odpovídajících dat z <see cref="_TimeConvertor"/>, 
-        /// a invaliduje seznam viditelných dat : <see cref="Invalidate(InvalidateItems)"/> pro hodnotu <see cref="InvalidateItems.VisibleGroups"/>.
+        /// a invaliduje seznam viditelných dat : <see cref="Invalidate(InvalidateItems)"/> pro hodnotu <see cref="InvalidateItems.CoordinateX"/>.
         /// </summary>
         protected void RecalculateTimeAxis()
         {
@@ -1301,6 +1301,10 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Výchozí zobrazovaná hodnota
         /// </summary>
         public TimeRange InitialValue { get { return this._InitialValue; } set { this._InitialValue = value; } } private TimeRange _InitialValue;
+        /// <summary>
+        /// Maximální dosažitelná hodnota (aby nám uživatel neodroloval úplně mimoň)
+        /// </summary>
+        public TimeRange MaximalValue { get { return this._MaximalValue; } set { this._MaximalValue = value; } } private TimeRange _MaximalValue;
         /// <summary>
         /// Možnosti uživatele změnit zobrazený rozsah anebo měřítko
         /// </summary>

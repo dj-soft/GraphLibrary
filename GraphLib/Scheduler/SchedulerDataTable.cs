@@ -25,18 +25,32 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Konstruktor, automaticky provede načtení dat z dat guiGrid
         /// </summary>
-        /// <param name="mainData"></param>
-        /// <param name="guiGrid"></param>
-        public MainDataTable(MainData mainData, GuiGrid guiGrid)
+        /// <param name="panel">Vizuální panel, v němž bude this table umístěna</param>
+        /// <param name="gGrid">Vizuální grid, v němž bude this table umístěna</param>
+        /// <param name="guiGrid">Data pro tuto tabulku</param>
+        public MainDataTable(SchedulerPanel panel, GGrid gGrid, GuiGrid guiGrid)
         {
-            this.MainData = mainData;
+            this.Panel = panel;
+            this.GGrid = gGrid;
             this.GuiGrid = guiGrid;
             this.LoadData();
         }
         /// <summary>
-        /// Vlastník = instance třídy <see cref="Scheduler.MainData"/>
+        /// Vlastník tabulky = SchedulerPanel, jeden z několika (možných) panelů v controlu
         /// </summary>
-        internal MainData MainData { get; private set; }
+        internal SchedulerPanel Panel { get; private set; }
+        /// <summary>
+        /// Vizuální Grid, v němž bude umístěna tabulka řádků <see cref="TableRow"/>.
+        /// </summary>
+        internal GGrid GGrid { get; private set; }
+        /// <summary>
+        /// Main control = celý vizuální control se všemi prvky (Toolbar, panely) = instance třídy <see cref="Scheduler.MainControl"/>
+        /// </summary>
+        internal MainControl MainControl { get { return this.Panel.MainControl; } }
+        /// <summary>
+        /// Main data = celý datový objekt Scheduleru. instance třídy <see cref="Scheduler.MainData"/>
+        /// </summary>
+        internal MainData MainData { get { return this.MainControl.MainData; } }
         /// <summary>
         /// Instance <see cref="GuiGrid"/>, která tvoří datový základ této tabulky
         /// </summary>
@@ -179,6 +193,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="graphPosition"></param>
         protected void LoadDataPrepareTableForGraphs(DataGraphPositionType graphPosition)
         {
+            TimeGraphProperties graphProperties = new TimeGraphProperties();
             if (graphPosition == DataGraphPositionType.InLastColumn)
             {
                 Column graphColumn = new Column("__time__graph__");
@@ -190,22 +205,24 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 graphColumn.ColumnProperties.IsVisible = true;
                 graphColumn.ColumnProperties.WidthMininum = 250;
 
-                graphColumn.GraphParameters = new TimeGraphProperties();
-                graphColumn.GraphParameters.TimeAxisMode = TimeGraphTimeAxisMode.Standard;
-                graphColumn.GraphParameters.TimeAxisVisibleTickLevel = AxisTickType.StdTick;
-                graphColumn.GraphParameters.InitialResizeMode = AxisResizeContentMode.ChangeScale;
-                graphColumn.GraphParameters.InitialValue = this.MainData.GuiData.Properties.InitialTimeRange;
-                graphColumn.GraphParameters.InteractiveChangeMode = AxisInteractiveChangeMode.Shift;
+                graphProperties.TimeAxisMode = TimeGraphTimeAxisMode.Standard;
+                graphProperties.TimeAxisVisibleTickLevel = AxisTickType.StdTick;
+                graphProperties.InitialResizeMode = this.DataGraphProperties.AxisResizeMode;       // AxisResizeContentMode.ChangeScale;
+                graphProperties.InitialValue = this.MainControl.SynchronizedTime.Value;
+                graphProperties.MaximalValue = this.MainData.GuiData.Properties.TotalTimeRange;
+                graphProperties.InteractiveChangeMode = this.DataGraphProperties.InteractiveChangeMode;
+                graphProperties.Opacity = this.DataGraphProperties.Opacity;
+                graphColumn.GraphParameters = graphProperties;
 
                 this.TableRow.Columns.Add(graphColumn);
                 this.TableRowGraphColumn = graphColumn;
             }
             else
             {
-                this.TableRow.GraphParameters = new TimeGraphProperties();
-                this.TableRow.GraphParameters.TimeAxisMode = this.TimeAxisMode;
-                this.TableRow.GraphParameters.TimeAxisVisibleTickLevel = AxisTickType.BigTick;
-                this.TableRow.GraphParameters.Opacity = 96;
+                graphProperties.TimeAxisMode = this.TimeAxisMode;
+                graphProperties.TimeAxisVisibleTickLevel = AxisTickType.BigTick;
+                graphProperties.Opacity = this.DataGraphProperties.Opacity;
+                this.TableRow.GraphParameters = graphProperties;
             }
         }
         /// <summary>
@@ -221,13 +238,17 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             gTimeGraph.DataSource = this;
             gTimeGraph.GraphId = this.GetId(row.RecordGId);
 
+            ITimeInteractiveGraph iTimeGraph = gTimeGraph as ITimeInteractiveGraph;
+
             if (graphPosition == DataGraphPositionType.InLastColumn)
             {
+                iTimeGraph.TimeAxisConvertor = this.TableRowGraphColumn.ColumnHeader.TimeConvertor;
                 Cell graphCell = row[this.TableRowGraphColumn];
                 graphCell.Value = gTimeGraph;
             }
             else
             {
+                iTimeGraph.TimeAxisConvertor = this.GGrid.SynchronizedTimeConvertor;
                 row.BackgroundValue = gTimeGraph;
             }
 

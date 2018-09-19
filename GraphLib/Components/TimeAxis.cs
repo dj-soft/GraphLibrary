@@ -330,6 +330,18 @@ namespace Asol.Tools.WorkScheduler.Components
             this._ValueSynchronizer = valueSynchronizer;
         }
         /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            TimeRange value = this.Value;
+            string text = (this._HasTimeAxis ? "From TimeAxis: " + value.ToString() :
+                          (this._HasValueSynchronizer ? "From Synchronizer: " + value.ToString() :
+                          (this._HasValue ? "From Value: " + value.ToString() : "Value is NULL")));
+            return text;
+        }
+        /// <summary>
         /// Lokální hodnota
         /// </summary>
         private TimeRange _Value;
@@ -348,7 +360,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// true pokud máme <see cref="_ValueSynchronizer"/>
         /// </summary>
-        private bool _HasValueSynchronizer{ get { return (this._ValueSynchronizer != null); } }
+        private bool _HasValueSynchronizer { get { return (this._ValueSynchronizer != null); } }
+        /// <summary>
+        /// true pokud máme přímo zadanou hodnotu v <see cref="_Value"/>
+        /// </summary>
+        private bool _HasValue { get { return (this._Value != null); } }
         #endregion
         #region Public prvky, implicitní implementace ITimeAxisConvertor
         /// <summary>
