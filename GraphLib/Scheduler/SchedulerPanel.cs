@@ -353,7 +353,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Synchronizační element časové osy
         /// </summary>
-        public ValueSynchronizer<TimeRange> SynchronizedTime { get { return this._MainControl.SynchronizedTime; } }
+        public ValueTimeRangeSynchronizer SynchronizedTime { get { return this._MainControl.SynchronizedTime; } }
         #endregion
     }
 }

@@ -399,7 +399,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="currentContainer"></param>
         /// <param name="currentLayer">Vrstva, jejíž souřadnice řešíme. Každý prvek může mít souřadnice různé podle toho, o kterou vrstvu se jedná. 
-        /// To je důsledek procesu Drag & Drop, kdy ve standardní vrstvě se prvek nachází na výchozích souřadnicích Bounds, 
+        /// To je důsledek procesu Drag and Drop, kdy ve standardní vrstvě se prvek nachází na výchozích souřadnicích Bounds, 
         /// ale ve vrstvě <see cref="GInteractiveDrawLayer.Interactive"/> je na souřadnicích Drag.</param>
         /// <returns></returns>
         public static BoundsInfo CreateForContainer(IInteractiveParent currentContainer, GInteractiveDrawLayer currentLayer)
@@ -413,7 +413,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="forItem"></param>
         /// <param name="asContainer"></param>
         /// <param name="currentLayer">Vrstva, jejíž souřadnice řešíme. Každý prvek může mít souřadnice různé podle toho, o kterou vrstvu se jedná. 
-        /// To je důsledek procesu Drag & Drop, kdy ve standardní vrstvě se prvek nachází na výchozích souřadnicích Bounds, 
+        /// To je důsledek procesu Drag and Drop, kdy ve standardní vrstvě se prvek nachází na výchozích souřadnicích Bounds, 
         /// ale ve vrstvě <see cref="GInteractiveDrawLayer.Interactive"/> je na souřadnicích Drag.</param>
         /// <returns></returns>
         private static BoundsInfo _CreateForItem(IInteractiveParent forItem, bool asContainer, GInteractiveDrawLayer currentLayer)
@@ -491,7 +491,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="container"></param>
         /// <param name="relativeBounds"></param>
         /// <param name="currentLayer">Vrstva, jejíž souřadnice řešíme. Každý prvek může mít souřadnice různé podle toho, o kterou vrstvu se jedná. 
-        /// To je důsledek procesu Drag & Drop, kdy ve standardní vrstvě se prvek nachází na výchozích souřadnicích Bounds, 
+        /// To je důsledek procesu Drag and Drop, kdy ve standardní vrstvě se prvek nachází na výchozích souřadnicích Bounds, 
         /// ale ve vrstvě <see cref="GInteractiveDrawLayer.Interactive"/> je na souřadnicích Drag.</param>
         /// <returns></returns>
         public static Rectangle GetAbsoluteBoundsInContainer(IInteractiveParent container, Rectangle relativeBounds, GInteractiveDrawLayer currentLayer)
@@ -519,7 +519,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="parent"></param>
         /// <param name="currentLayer">Vrstva, jejíž souřadnice řešíme. Každý prvek může mít souřadnice různé podle toho, o kterou vrstvu se jedná. 
-        /// To je důsledek procesu Drag & Drop, kdy ve standardní vrstvě se prvek nachází na výchozích souřadnicích Bounds, 
+        /// To je důsledek procesu Drag and Drop, kdy ve standardní vrstvě se prvek nachází na výchozích souřadnicích Bounds, 
         /// ale ve vrstvě <see cref="GInteractiveDrawLayer.Interactive"/> je na souřadnicích Drag.</param>
         /// <returns></returns>
         protected static Rectangle GetParentClientBounds(IInteractiveParent parent, GInteractiveDrawLayer currentLayer)

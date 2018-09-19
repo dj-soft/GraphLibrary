@@ -464,15 +464,15 @@ namespace Asol.Tools.WorkScheduler.Components
                 scope.Result = "MouseDragFrameBegin";
             }
             else if (this._MouseCurrentItem.SearchForDraggableItem())
-            {   // Našli jsme nějaký prvek, který je ochotný s sebou nechat vláčet (v jeho aktuiálním stavu podporuje Drag & Drop):
-                // Myš se právě nyní pohnula z "Silent zone" (oblast okolo místa, kde byla myš zmáčknuta) => Drag & Drop začíná:
+            {   // Našli jsme nějaký prvek, který je ochotný s sebou nechat vláčet (v jeho aktuiálním stavu podporuje Drag and Drop):
+                // Myš se právě nyní pohnula z "Silent zone" (oblast okolo místa, kde byla myš zmáčknuta) => Drag and Drop začíná:
                 this._MouseDragState = MouseMoveDragState.DragMove;
                 this._MouseDragMoveBegin(e);
                 this._MouseDragMoveStep(e);
                 scope.Result = "MouseDragMoveBegin";
             }
             else
-            {   // Neexistuje prvek vhodný pro Drag & Drop => nastavíme stav Cancel:
+            {   // Neexistuje prvek vhodný pro Drag and Drop => nastavíme stav Cancel:
                 this._MouseDragState = MouseMoveDragState.None;
                 this._MouseDragMoveItemOffset = null;
                 this._CurrentMouseDragCanceled = true;
@@ -487,7 +487,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected MouseMoveDragState _GetMouseMoveDragState(Point mousePoint)
         {
             // Pokud byl dán Cancel, pak bez ohledu na další vracím None:
-            if (this._CurrentMouseDragCanceled) return MouseMoveDragState.None;          // Proces Drag & Drop probíhal, ale byl stornován (klávesou Escape)
+            if (this._CurrentMouseDragCanceled) return MouseMoveDragState.None;          // Proces Drag and Drop probíhal, ale byl stornován (klávesou Escape)
 
             // Pokud control již rozhodl o stavu, pak jej vrátíme bez dalšího zkoumání:
             MouseMoveDragState state = this._MouseDragState;
@@ -520,7 +520,7 @@ namespace Asol.Tools.WorkScheduler.Components
             Start,
             /// <summary>
             /// Myš je zmáčknutá a pohybuje se, již je mimo startovní prostor,
-            /// a aplikace se rozhodla pro přetahování určitého objektu pomocí myši (DragMove : Drag & Drop).
+            /// a aplikace se rozhodla pro přetahování určitého objektu pomocí myši (DragMove : Drag and Drop).
             /// </summary>
             DragMove,
             /// <summary>
@@ -633,7 +633,7 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Řízení konkrétních aktivit myši, již rozčleněné; volání jednoduchých interaktivních metod (Over, Fell, Raise, Whell)
         /// <summary>
-        /// Tato akce se volá výhradně když se myš pohybuje bez Drag & Drop = bez stisknutého tlačítka
+        /// Tato akce se volá výhradně když se myš pohybuje bez Drag and Drop = bez stisknutého tlačítka
         /// </summary>
         /// <param name="e"></param>
         private void _MouseOver(MouseEventArgs e)
@@ -700,7 +700,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this._ItemMouseCallStateChangedEvent(this._MouseCurrentItem, change, this._MouseCurrentRelativePoint, recurseToSolver: true);   // recurseToSolver = true => opakovat volání akce, dokud ji některý prvek v hierarchii nevyřeší.
         }
         #endregion
-        #region Řízení procesu MouseDragMove = přesouvání prvku Drag & Drop
+        #region Řízení procesu MouseDragMove = přesouvání prvku Drag and Drop
         private void _MouseDragMoveBegin(MouseEventArgs e)
         {
             // Relativní pozice myši v okamžiku MouseDown, nikoli aktuální pozice (ta už je přesunutá = mimo prostor _CurrentMouseDragStart):
@@ -2630,11 +2630,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         internal bool CanFrameSelect { get { return (this.HasItem && this.ActiveItem.IsSelectParent); } }
         /// <summary>
-        /// Metoda najde v this objektu prvek, který podporuje Drag & Drop.
-        /// Hledá počínaje od prvku <see cref="ActiveItem"/> (navrchu), a pokud ten nepodporuje Drag & Drop, tak hledá směrem k jeho Parentům.
+        /// Metoda najde v this objektu prvek, který podporuje Drag and Drop.
+        /// Hledá počínaje od prvku <see cref="ActiveItem"/> (navrchu), a pokud ten nepodporuje Drag and Drop, tak hledá směrem k jeho Parentům.
         /// Pokud takový najde, pak vrací true.
         /// Pokud najde vhodný prvek na pozici "nižší" než je aktuální prvek <see cref="ActiveItem"/>, tak tento "aktivuje" (a poté vrátí true).
-        /// Aktivace = od této chvíle bude aktivním prvkem ten, který podporuje Drag & Drop, a ne prvky "vyšší". Vyšší prvky budou "zapomenuty".
+        /// Aktivace = od této chvíle bude aktivním prvkem ten, který podporuje Drag and Drop, a ne prvky "vyšší". Vyšší prvky budou "zapomenuty".
         /// </summary>
         /// <returns></returns>
         internal bool SearchForDraggableItem()

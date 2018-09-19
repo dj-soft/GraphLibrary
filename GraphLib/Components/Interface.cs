@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Drawing;
 using System.Windows.Forms;
+using Asol.Tools.WorkScheduler.Data;
 
 namespace Asol.Tools.WorkScheduler.Components
 {
@@ -75,13 +76,13 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         Boolean IsFramed { get; set; }
         /// <summary>
-        /// Pokud je true, pak tažení myší na tomto prvku nebude interpretováno jako Drag & Drop, ale jako SelectArea.
+        /// Pokud je true, pak tažení myší na tomto prvku nebude interpretováno jako Drag and Drop, ale jako SelectArea.
         /// Tzn. zahájení akce (Mouse Down + Mouse Move) zahájí SelectArea akci (namísto Drag Drop), začne se vykreslovat SelectFrame (do Interactive vrstvy),
         /// a začnou se vybírat controly spadající do výběru (které mají <see cref="IsSelectable"/> == true).
         /// </summary>
         Boolean IsSelectParent { get; }
         /// <summary>
-        /// Pokud je true, pak tažení myší na tomto prvku bude interpretováno jako Drag & Drop tohoto prvku.
+        /// Pokud je true, pak tažení myší na tomto prvku bude interpretováno jako Drag and Drop tohoto prvku.
         /// </summary>
         Boolean IsDragEnabled { get; }
         /// <summary>
@@ -129,7 +130,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         void AfterStateChanged(GInteractiveChangeStateArgs e);
         /// <summary>
-        /// Tato metoda je volaná postupně pro jednotlivé fáze akce Drag & Drop.
+        /// Tato metoda je volaná postupně pro jednotlivé fáze akce Drag and Drop.
         /// </summary>
         /// <param name="e"></param>
         void DragAction(GDragActionArgs e);
@@ -144,7 +145,7 @@ namespace Asol.Tools.WorkScheduler.Components
         void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds);
         /// <summary>
         /// Pokud je zde true, pak v procesu kreslení prvku je po standardním vykreslení this prvku <see cref="Draw(GInteractiveDrawArgs, Rectangle, Rectangle)"/> 
-        /// a po standardním vykreslení všech <see cref="Childs"/> prvků ještě vyvolána metoda <see cref="DrawOverChilds(GInteractiveDrawArgs)"/> pro this prvek.
+        /// a po standardním vykreslení všech <see cref="Childs"/> prvků ještě vyvolána metoda <see cref="DrawOverChilds(GInteractiveDrawArgs, Rectangle, Rectangle)"/> pro this prvek.
         /// </summary>
         bool NeedDrawOverChilds { get; }
         /// <summary>
@@ -157,6 +158,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="absoluteVisibleBounds">Absolutní souřadnice tohoto prvku, oříznuté do viditelné oblasti.</param>
         void DrawOverChilds(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds);
     }
+    /// <summary>
+    /// Interface předepisující členy pro typ, který je parentem interaktivního prvků.
+    /// Tím může být jak jiný interaktivní prvek, anebo základní interaktivní Control.
+    /// </summary>
     public interface IInteractiveParent
     {
         /// <summary>
@@ -211,6 +216,11 @@ namespace Asol.Tools.WorkScheduler.Components
     /// </summary>
     public interface IDrawItem
     {
+        /// <summary>
+        /// Metoda pro vykreslení obsahu prvku
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
         void Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute);
     }
     #endregion
@@ -249,7 +259,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public virtual bool SelectParent { get { return this.GetBitValue(BitSelectParent); } set { this.SetBitValue(BitSelectParent, value); } }
         /// <summary>
-        /// Pokud je true, pak tažení myší na tomto prvku bude interpretováno jako Drag & Drop tohoto prvku.
+        /// Pokud je true, pak tažení myší na tomto prvku bude interpretováno jako Drag and Drop tohoto prvku.
         /// </summary>
         public virtual bool DragEnabled { get { return this.GetBitValue(BitDragEnabled); } set { this.SetBitValue(BitDragEnabled, value); } }
 
@@ -268,15 +278,45 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             get { return BitInteractive | BitVisible | BitEnabled ; }
         }
+        /// <summary>
+        /// Konkrétní bit pro úschovu konkrétní hodnoty
+        /// </summary>
         public const UInt32 BitInteractive = 0x0001;
+        /// <summary>
+        /// Konkrétní bit pro úschovu konkrétní hodnoty
+        /// </summary>
         public const UInt32 BitVisible = 0x0002;
+        /// <summary>
+        /// Konkrétní bit pro úschovu konkrétní hodnoty
+        /// </summary>
         public const UInt32 BitEnabled = 0x0004;
+        /// <summary>
+        /// Konkrétní bit pro úschovu konkrétní hodnoty
+        /// </summary>
         public const UInt32 BitSelectable = 0x0010;
+        /// <summary>
+        /// Konkrétní bit pro úschovu konkrétní hodnoty
+        /// </summary>
         public const UInt32 BitSelected = 0x0020;
+        /// <summary>
+        /// Konkrétní bit pro úschovu konkrétní hodnoty
+        /// </summary>
         public const UInt32 BitFramed = 0x0040;
+        /// <summary>
+        /// Konkrétní bit pro úschovu konkrétní hodnoty
+        /// </summary>
         public const UInt32 BitSelectParent = 0x0080;
+        /// <summary>
+        /// Konkrétní bit pro úschovu konkrétní hodnoty
+        /// </summary>
         public const UInt32 BitDragEnabled = 0x010;
+        /// <summary>
+        /// Konkrétní bit pro úschovu konkrétní hodnoty
+        /// </summary>
         public const UInt32 BitHoldMouse = 0x0200;
+        /// <summary>
+        /// Konkrétní bit pro úschovu konkrétní hodnoty
+        /// </summary>
         public const UInt32 BitSuppressEvents = 0x1000;
     }
     #endregion
@@ -300,12 +340,6 @@ namespace Asol.Tools.WorkScheduler.Components
     /// <param name="e"></param>
     public delegate void GPropertyEvent<T>(object sender, GPropertyEventArgs<T> e);
     /// <summary>
-    /// Delegát pro handlery události, kdy došlo ke změně hodnoty na GInteractiveControl
-    /// </summary>
-    /// <param name="sender"></param>
-    /// <param name="e"></param>
-    public delegate void GPropertyChangedHandler<T>(object sender, GPropertyChangeArgs<T> e);
-    /// <summary>
     /// Delegate for handlers for Drawing into User Area
     /// </summary>
     /// <param name="sender"></param>
@@ -316,6 +350,12 @@ namespace Asol.Tools.WorkScheduler.Components
     /// </summary>
     public class GPropertyEventArgs<T> : EventArgs
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="eventSource"></param>
+        /// <param name="interactiveArgs"></param>
         public GPropertyEventArgs(T value, EventSourceType eventSource = EventSourceType.InteractiveChanged, GInteractiveChangeStateArgs interactiveArgs = null)
         {
             this.Value = value;
@@ -344,61 +384,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Výchozí hodnota je false.
         /// </summary>
         public bool Cancel { get; set; }
-    }
-    /// <summary>
-    /// Data pro eventhandler navázaný na změnu nějaké hodnoty v GInteractiveControl
-    /// </summary>
-    public class GPropertyChangeArgs<T> : EventArgs
-    {
-        public GPropertyChangeArgs(T oldvalue, T newValue, EventSourceType eventSource)
-        {
-            this.OldValue = oldvalue;
-            this.NewValue = newValue;
-            this.EventSource = eventSource;
-            this.CorrectValue = newValue;
-            this.Cancel = false;
-        }
-        /// <summary>
-        /// Hodnota platná před změnou
-        /// </summary>
-        public T OldValue { get; private set; }
-        /// <summary>
-        /// Hodnota platná po změně
-        /// </summary>
-        public T NewValue { get; private set; }
-        /// <summary>
-        /// Zdroj události
-        /// </summary>
-        public EventSourceType EventSource { get; private set; }
-        /// <summary>
-        /// Hodnota odpovídající aplikační logice, hodnotu nastavuje eventhandler.
-        /// Výchozí hodnota je NewValue.
-        /// Komponenta by na tuto korigovanou hodnotu měla reagovat.
-        /// </summary>
-        public T CorrectValue { get; set; }
-        /// <summary>
-        /// Požadavek aplikačního kódu na zrušení této změny = ponechat OldValue.
-        /// Výchozí hodnota je false.
-        /// </summary>
-        public bool Cancel { get; set; }
-        /// <summary>
-        /// true pokud hodnota CorrectValue je odlišná od OldValue, false pokud jsou shodné.
-        /// Pokud typ hodnoty není IComparable, pak se vrací true vždy.
-        /// </summary>
-        public bool IsChangeValue
-        {
-            get
-            {
-                IComparable a = this.OldValue as IComparable;
-                IComparable b = this.CorrectValue as IComparable;
-                if (a == null || b == null) return true;
-                return (a.CompareTo(b) != 0);
-            }
-        }
-        /// <summary>
-        /// Výsledná hodnota (pokud je Cancel == true, pak OldValue, jinak CorrectValue).
-        /// </summary>
-        public T ResultValue { get { return (this.Cancel ? this.OldValue : this.CorrectValue); } }
     }
     /// <summary>
     /// Data pro handlery interaktivních událostí v GInteractiveControl
@@ -666,6 +651,13 @@ namespace Asol.Tools.WorkScheduler.Components
     public class GDragActionArgs : EventArgs
     {
         #region Konstruktor
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="changeArgs"></param>
+        /// <param name="dragAction"></param>
+        /// <param name="mouseDownAbsolutePoint"></param>
+        /// <param name="mouseCurrentAbsolutePoint"></param>
         public GDragActionArgs(GInteractiveChangeStateArgs changeArgs, DragActionType dragAction, Point mouseDownAbsolutePoint, Point? mouseCurrentAbsolutePoint)
         {
             this._ChangeArgs = changeArgs;
@@ -954,6 +946,9 @@ namespace Asol.Tools.WorkScheduler.Components
     [Flags]
     public enum GInteractiveStyles : int
     {
+        /// <summary>
+        /// Žádný styl
+        /// </summary>
         None = 0,
         /// <summary>
         /// Area is active for mouse move
@@ -967,6 +962,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Area can be double-clicked (left, right)
         /// </summary>
         DoubleClick = 0x0004,
+        /// <summary>
         /// Area can be long-clicked (left, right) (MouseDown - long pause - MouseUp)
         /// </summary>
         LongClick = 0x0004,
@@ -1115,16 +1111,28 @@ namespace Asol.Tools.WorkScheduler.Components
     /// </summary>
     public enum GInteractiveChangeState
     {
+        /// <summary>
+        /// Žádná změna
+        /// </summary>
         None = 0,
+        /// <summary>
+        /// Myš vstoupila nad prvek
+        /// </summary>
         MouseEnter,
         /// <summary>
-        /// Is called only for item with style containing CallMouseOver !
+        /// Myš se pohybuje nad prvkem. 
+        /// Akce se volá pouze pokud styl obsahuje hodnotu <see cref="GInteractiveStyles.CallMouseOver"/>.
         /// </summary>
         MouseOver,
+        /// <summary>
+        /// Myš se pohybuje nad prvkem, prvek není Enabled.
+        /// Akce se volá pouze pokud styl obsahuje hodnotu <see cref="GInteractiveStyles.CallMouseOver"/>.
+        /// </summary>
         MouseOverDisabled,
+        /// <summary>
+        /// Myš opustila prvek.
+        /// </summary>
         MouseLeave,
-        MouseEnterSubItem,
-        MouseLeaveSubItem,
         /// <summary>
         /// Stisknutí levého (hlavního) tlačítka myši.
         /// Po této akci může následovat akce Drag and Drop anebo Select Frame. 
@@ -1191,8 +1199,17 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         LeftDragMoveEnd,
 
+        /// <summary>
+        /// Výběr prvků stylem Drag and Frame, levá myš, začátek akce
+        /// </summary>
         LeftDragFrameBegin,
+        /// <summary>
+        /// Výběr prvků stylem Drag and Frame, průběh akce
+        /// </summary>
         LeftDragFrameSelect,
+        /// <summary>
+        /// Výběr prvků stylem Drag and Frame, konec akce
+        /// </summary>
         LeftDragFrameDone,
 
         /// <summary>
@@ -1254,18 +1271,51 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         RightDragMoveEnd,
 
+        /// <summary>
+        /// Výběr prvků stylem Drag and Frame, pravá myš, začátek akce
+        /// </summary>
         RightDragFrameBegin,
+        /// <summary>
+        /// Výběr prvků stylem Drag and Frame, pravá myš, průběh akce
+        /// </summary>
         RightDragFrameSelect,
+        /// <summary>
+        /// Výběr prvků stylem Drag and Frame, pravá myš, konec akce
+        /// </summary>
         RightDragFrameDone,
 
+        /// <summary>
+        /// Vstup klávesnicového focusu do prvku
+        /// </summary>
         KeyboardFocusEnter,
+        /// <summary>
+        /// Klávesnicová akce: PreviewKeyDown
+        /// </summary>
         KeyboardPreviewKeyDown,
+        /// <summary>
+        /// Klávesnicová akce: KeyDown
+        /// </summary>
         KeyboardKeyDown,
+        /// <summary>
+        /// Klávesnicová akce: KeyUp
+        /// </summary>
         KeyboardKeyUp,
+        /// <summary>
+        /// Klávesnicová akce: KeyPress
+        /// </summary>
         KeyboardKeyPress,
+        /// <summary>
+        /// Odchod klávesnicového focusu z prvku
+        /// </summary>
         KeyboardFocusLeave,
 
+        /// <summary>
+        /// Kolečko myši, směr nahoru: v dokumentu směr k nižším číslům řádku
+        /// </summary>
         WheelUp,
+        /// <summary>
+        /// Kolečko myši, směr dolů: v dokumentu směr k vyšším číslům řádku
+        /// </summary>
         WheelDown,
 
         /// <summary>
@@ -1297,17 +1347,41 @@ namespace Asol.Tools.WorkScheduler.Components
         Dynamic = 4
     }
     /// <summary>
-    /// Action durig drag one object over another objects
+    /// Akce volané v průběhu Drag and Drop pro konkrétní objekt
     /// </summary>
     public enum DragActionType : int
     {
+        /// <summary>
+        /// Nic
+        /// </summary>
         None,
+        /// <summary>
+        /// Začátek přetahování daného objektu
+        /// </summary>
         DragThisStart,
+        /// <summary>
+        /// Průběh přetahování daného objektu
+        /// </summary>
         DragThisMove,
+        /// <summary>
+        /// Zrušení přetahování daného objektu (ESCAPE při stisknuté myši)
+        /// </summary>
         DragThisCancel,
+        /// <summary>
+        /// Umístění přetahovaného objektu na nové místo = uvolnění tlačítka myši bez předchozího ESCAPE
+        /// </summary>
         DragThisDrop,
+        /// <summary>
+        /// Dokončení přetahování daného objektu = jak stornovaného, tak platného (společná akce pro úklid)
+        /// </summary>
         DragThisEnd,
+        /// <summary>
+        /// Nad this objektem se právě přetahuje jiný objekt
+        /// </summary>
         DragAnotherMove,
+        /// <summary>
+        /// Do this objektu byl umístěn jiný objekt (na přemisťovaném objektu proběhla akce <see cref="DragActionType.DragThisDrop"/>.
+        /// </summary>
         DragAnotherDrop
     }
     /// <summary>
@@ -1334,6 +1408,9 @@ namespace Asol.Tools.WorkScheduler.Components
     [Flags]
     public enum ProcessAction
     {
+        /// <summary>
+        /// Neurčeno
+        /// </summary>
         None = 0,
         /// <summary>
         /// Recalc and store new Value
@@ -1390,55 +1467,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Combined value for Silent SetValue: (RecalcValue | RecalcInnerData | PrepareInnerItems) | CallChangedEvents, not RecalcInnerData + PrepareInnerItems
         /// </summary>
         SilentValueDrawActions = SilentValueActions | CallDraw
-    }
-    /// <summary>
-    /// Specifies the source that caused this change
-    /// </summary>
-    [Flags]
-    public enum EventSourceType
-    {
-        None=0,
-        /// <summary>
-        /// Change to Value property directly (from code or from GUI, by flag ApplicationCode or InteractiveChange)
-        /// </summary>
-        ValueChanging = 0x0001,
-        /// <summary>
-        /// Change to Value property directly (from code or from GUI, by flag ApplicationCode or InteractiveChange)
-        /// </summary>
-        ValueChange = 0x0002,
-        /// <summary>
-        /// Change to ValueRange property (from code or from GUI, by flag ApplicationCode or InteractiveChange)
-        /// </summary>
-        ValueRangeChange = 0x0010,
-        /// <summary>
-        /// Change to Scale property (from code or from GUI, by flag ApplicationCode or InteractiveChange)
-        /// </summary>
-        ValueScaleChange = 0x0020,
-        /// <summary>
-        /// Change to ScaleRange property (from code or from GUI, by flag ApplicationCode or InteractiveChange)
-        /// </summary>
-        ValueScaleRangeChange = 0x0040,
-        /// <summary>
-        /// Change of control visual size
-        /// </summary>
-        BoundsChange = 0x0100,
-        /// <summary>
-        /// Change of control Orientation
-        /// </summary>
-        OrientationChange = 0x0200,
-        /// <summary>
-        /// Application code is source of change (set new value to property)
-        /// </summary>
-        ApplicationCode = 0x1000,
-        /// <summary>
-        /// Interactive action is source of change (user was entered / dragged new value).
-        /// Change of value is still in process (Drag). After DragEnd will be sent event with source = InteractiveChanged.
-        /// </summary>
-        InteractiveChanging = 0x2000,
-        /// <summary>
-        /// Interactive action is source of change (user was entered / dragged new value)
-        /// </summary>
-        InteractiveChanged = 0x4000
     }
     /// <summary>
     /// Režim překreslení objektu Parent při překreslení objektu this.

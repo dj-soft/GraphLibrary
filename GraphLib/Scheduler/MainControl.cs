@@ -86,12 +86,12 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Synchronizační element časové osy
         /// </summary>
-        public ValueSynchronizer<TimeRange> SynchronizedTime
+        public ValueTimeRangeSynchronizer SynchronizedTime
         {
-            get { if (this._SynchronizedTime == null) this._SynchronizedTime = new ValueSynchronizer<TimeRange>(); return this._SynchronizedTime; }
+            get { if (this._SynchronizedTime == null) this._SynchronizedTime = new ValueTimeRangeSynchronizer(); return this._SynchronizedTime; }
             set { this._SynchronizedTime = value; }
         }
-        private ValueSynchronizer<TimeRange> _SynchronizedTime;
+        private ValueTimeRangeSynchronizer _SynchronizedTime;
 
         #endregion
         #region ToolBar

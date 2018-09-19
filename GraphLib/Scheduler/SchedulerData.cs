@@ -466,6 +466,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             this._MainControl.ClearPages();
             this._MainControl.SynchronizedTime.Value = this.GuiData.Properties.InitialTimeRange;
+            this._MainControl.SynchronizedTime.ValueLimit = this.GuiData.Properties.TotalTimeRange;
             foreach (GuiPage guiPage in this._GuiPages.Pages)
                 this._MainControl.AddPage(guiPage);
         }

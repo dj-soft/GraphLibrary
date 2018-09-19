@@ -325,7 +325,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Konstruktor pro konvertor provázaný se synchronizerem hodnoty
         /// </summary>
         /// <param name="valueSynchronizer"></param>
-        public TimeAxisConvertor(ValueSynchronizer<TimeRange> valueSynchronizer)
+        public TimeAxisConvertor(ValueTimeRangeSynchronizer valueSynchronizer)
         {
             this._ValueSynchronizer = valueSynchronizer;
         }
@@ -352,7 +352,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Synchronizer hodnoty
         /// </summary>
-        private ValueSynchronizer<TimeRange> _ValueSynchronizer;
+        private ValueTimeRangeSynchronizer _ValueSynchronizer;
         /// <summary>
         /// true pokud máme <see cref="_TimeAxis"/>
         /// </summary>

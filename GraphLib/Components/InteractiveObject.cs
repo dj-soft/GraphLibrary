@@ -6,6 +6,7 @@ using System.Windows.Forms;
 using System.Drawing;
 using System.ComponentModel;
 using System.Drawing.Drawing2D;
+using Asol.Tools.WorkScheduler.Data;
 
 namespace Asol.Tools.WorkScheduler.Components
 {
@@ -149,7 +150,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected virtual GInteractiveStyles Style { get { return this._Style; } set { this._Style = value; } } private GInteractiveStyles _Style = GInteractiveStyles.StandardMouseInteractivity;
         /// <summary>
-        /// Režim pro kreslení prvku v době Drag & Drop.
+        /// Režim pro kreslení prvku v době Drag and Drop.
         /// Je spojeno s hodnotami <see cref="Style"/>.
         /// </summary>
         protected DragDrawGhostMode DragDrawGhostMode
@@ -617,7 +618,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e">Data pro kreslení</param>
         /// <param name="absoluteBounds">Absolutní souřadnice tohoto prvku, sem by se mělo fyzicky kreslit</param>
         /// <param name="absoluteVisibleBounds">Absolutní souřadnice tohoto prvku, oříznuté do viditelné oblasti.</param>
-        /// <param name="drawMode">Režim kreslení (pomáhá řešit Drag & Drop procesy)</param>
+        /// <param name="drawMode">Režim kreslení (pomáhá řešit Drag and Drop procesy)</param>
         protected virtual void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
         {
             Color backColor = this.BackColor;
@@ -630,8 +631,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Bázová třída <see cref="InteractiveObject"/> v této metodě nedělá nic.
         /// </summary>
         /// <param name="e">Data pro kreslení</param>
-        /// <param name="boundsAbsolute">Absolutní souřadnice pro kreslení (pomáhá řešit Drag & Drop procesy)</param>
-        /// <param name="drawMode">Režim kreslení (pomáhá řešit Drag & Drop procesy)</param>
+        /// <param name="boundsAbsolute">Absolutní souřadnice pro kreslení (pomáhá řešit Drag and Drop procesy)</param>
+        /// <param name="drawMode">Režim kreslení (pomáhá řešit Drag and Drop procesy)</param>
         protected virtual void DrawOverChilds(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
         { }
         #endregion
@@ -886,13 +887,13 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public virtual bool IsFramed { get { return this.Is.Framed; } set { this.Is.Framed = value; } }
         /// <summary>
-        /// Pokud je true, pak tažení myší na tomto prvku nebude interpretováno jako Drag & Drop, ale jako SelectArea.
+        /// Pokud je true, pak tažení myší na tomto prvku nebude interpretováno jako Drag and Drop, ale jako SelectArea.
         /// Tzn. zahájení akce (Mouse Down + Mouse Move) zahájí SelectArea akci (namísto Drag Drop), začne se vykreslovat SelectFrame (do Interactive vrstvy),
         /// a začnou se vybírat controly spadající do výběru (které mají <see cref="IsSelectable"/> == true).
         /// </summary>
         public virtual bool IsSelectParent { get { return this.Is.SelectParent; } set { this.Is.SelectParent = value; } }
         /// <summary>
-        /// Pokud je true, pak tažení myší na tomto prvku bude interpretováno jako Drag & Drop tohoto prvku.
+        /// Pokud je true, pak tažení myší na tomto prvku bude interpretováno jako Drag and Drop tohoto prvku.
         /// </summary>
         public virtual bool IsDragEnabled { get { return this.Is.DragEnabled; } set { this.Is.DragEnabled = value; } }
         /// <summary>
@@ -983,11 +984,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         Standard = 1,
         /// <summary>
-        /// Ghost, kreslený v procesu Drag & Drop (buď na původní pozici, nebo na pozici přesouvané)
+        /// Ghost, kreslený v procesu Drag and Drop (buď na původní pozici, nebo na pozici přesouvané)
         /// </summary>
         Ghost = 2,
         /// <summary>
-        /// Toto vykreslování se provádí v procesu Drag & Drop.
+        /// Toto vykreslování se provádí v procesu Drag and Drop.
         /// Ale teprve ostatní hodnoty konkrétně určují, 
         /// </summary>
         InDragProcess = 0x010,
@@ -995,7 +996,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Prvek je vykreslován do svých vlastních souřadnic <see cref="InteractiveObject.Bounds"/>.
         /// Tato hodnota je nastavena pouze tehdy, když je nastavena hodnota <see cref="InDragProcess"/>, 
         /// a aktuálně se provádí vykreslení do vrstvy <see cref="GInteractiveDrawLayer.Standard"/>.
-        /// Při vykreslování mimo proces Drag & Drop se tato hodnota nenastavuje (i přesto, že se kreslí do originálních souřadnic a do standardní vrstvy).
+        /// Při vykreslování mimo proces Drag and Drop se tato hodnota nenastavuje (i přesto, že se kreslí do originálních souřadnic a do standardní vrstvy).
         /// </summary>
         OriginalBounds = 0x100,
         /// <summary>
@@ -1018,7 +1019,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Konstruktor.
         /// Do stylu tohoto objektu přidá hodnotu <see cref="GInteractiveStyles.DragDrawGhostOriginal"/>,
-        /// která provede to, že objekt je při procesu Drag & Drop vykreslen do původní pozice jako Ghost, a do Drag pozice jako Standard.
+        /// která provede to, že objekt je při procesu Drag and Drop vykreslen do původní pozice jako Ghost, a do Drag pozice jako Standard.
         /// </summary>
         public InteractiveDragObject() : base()
         {
@@ -1129,7 +1130,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this.BoundsDragTarget = targetRelativeBounds;
         }
         /// <summary>
-        /// Volá se při ukončení Drag & Drop, při akci <see cref="DragActionType.DragThisDrop"/>, pro aktivní objekt (=ten který je přesouván).
+        /// Volá se při ukončení Drag and Drop, při akci <see cref="DragActionType.DragThisDrop"/>, pro aktivní objekt (=ten který je přesouván).
         /// Bázová metoda <see cref="InteractiveDragObject.DragThisDropToBounds(GDragActionArgs, Rectangle)"/> vepíše předané souřadnice (parametr targetRelativeBounds) 
         /// do this.Bounds pomocí metody <see cref="InteractiveObject.SetBounds(Rectangle, ProcessAction, EventSourceType)"/>.
         /// Pokud potomek chce modifikovat cílové souřadnice, stačí změnit hodnotu parametru targetRelativeBounds.
@@ -1149,24 +1150,24 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual void DragThisOverEnd(GDragActionArgs e)
         { }
         /// <summary>
-        /// Souřadnice (Bounds) tohoto objektu, platné před začátkem procesu Drag & Drop.
+        /// Souřadnice (Bounds) tohoto objektu, platné před začátkem procesu Drag and Drop.
         /// Jde o souřadnice relativní, obdobně jako <see cref="InteractiveObject.Bounds"/>.
-        /// Do těchto souřadnic je objekt v době Drag & Drop vykreslován jako Ghost, pokud styl obsahuje <see cref="GInteractiveStyles.DragDrawGhostOriginal"/>.
-        /// Mimo proces Drag & Drop je zde null.
+        /// Do těchto souřadnic je objekt v době Drag and Drop vykreslován jako Ghost, pokud styl obsahuje <see cref="GInteractiveStyles.DragDrawGhostOriginal"/>.
+        /// Mimo proces Drag and Drop je zde null.
         /// </summary>
         protected virtual Rectangle? BoundsDragOrigin { get; set; }
         /// <summary>
-        /// Souřadnice (Bounds) tohoto objektu, kde se aktuálně nachází v procesu Drag & Drop.
+        /// Souřadnice (Bounds) tohoto objektu, kde se aktuálně nachází v procesu Drag and Drop.
         /// Jde o souřadnice relativní, obdobně jako <see cref="InteractiveObject.Bounds"/>.
-        /// Do těchto souřadnic je objekt v době Drag & Drop vykreslován jako Ghost, pokud styl obsahuje <see cref="GInteractiveStyles.DragDrawGhostInteractive"/>,
+        /// Do těchto souřadnic je objekt v době Drag and Drop vykreslován jako Ghost, pokud styl obsahuje <see cref="GInteractiveStyles.DragDrawGhostInteractive"/>,
         /// anebo jako standardní objektu pokud styl obsahuje <see cref="GInteractiveStyles.DragDrawGhostOriginal"/>.
-        /// Mimo proces Drag & Drop je zde null.
+        /// Mimo proces Drag and Drop je zde null.
         /// <para/>
         /// Tato hodnota se reálně propisuje do property <see cref="InteractiveObject.BoundsInteractive"/>.
         /// </summary>
         protected virtual Rectangle? BoundsDragTarget { get { return this.BoundsInteractive; } set { this.BoundsInteractive = value; } }
         /// <summary>
-        /// Vrstvy, které se mají překreslovat v době procesu Drag & Drop.
+        /// Vrstvy, které se mají překreslovat v době procesu Drag and Drop.
         /// </summary>
         protected virtual GInteractiveDrawLayer DragDrawToLayers { get { return (GInteractiveDrawLayer.Standard | GInteractiveDrawLayer.Interactive); } }
         /// <summary>
@@ -1193,7 +1194,7 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Draw
         /// <summary>
-        /// Metoda řeší kreslení prvku, který může být v procesu Drag & Drop
+        /// Metoda řeší kreslení prvku, který může být v procesu Drag and Drop
         /// </summary>
         /// <param name="e">Data pro kreslení</param>
         /// <param name="absoluteBounds">Absolutní souřadnice tohoto prvku, sem by se mělo fyzicky kreslit</param>
@@ -1232,7 +1233,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         /// <summary>
         /// Tato metoda určí souřadnice, kam se má objekt vykreslit, a režim kreslení (Standard, Ghost), pro aktuální situaci objektu.
-        /// Reaguje na Drag & Drop, řeší souřadnice objektu v procesu Drag & Drop, bere v potaz styl objektu DragDrawGhostOriginal / DragDrawGhostInteractive.
+        /// Reaguje na Drag and Drop, řeší souřadnice objektu v procesu Drag and Drop, bere v potaz styl objektu DragDrawGhostOriginal / DragDrawGhostInteractive.
         /// Výsledné absolutní souřadnice pro kreslení a reřim kreslení dává do out parametrů.
         /// Vrací true = má se kreslit / false = nemá se kreslit.
         /// <para/>
@@ -1245,7 +1246,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="currentLayer">Vrstva, která se nyní kreslí</param>
         /// <param name="absoluteBoundsItem">Vstup: Absolutní souřadnice prvku, běžná (odvozená od <see cref="IInteractiveItem.Bounds"/>)</param>
-        /// <param name="absoluteBoundsDraw">Výstup: Absolutní souřadnice, kam se bude prvek vykreslovat (souvisí s procesem Drag & Drop)</param>
+        /// <param name="absoluteBoundsDraw">Výstup: Absolutní souřadnice, kam se bude prvek vykreslovat (souvisí s procesem Drag and Drop)</param>
         /// <param name="drawMode">Režim kreslení prvku v aktuální situaci</param>
         protected virtual bool PrepareDrawDataByDragData(GInteractiveDrawLayer currentLayer, Rectangle absoluteBoundsItem, out Rectangle absoluteBoundsDraw, out DrawItemMode drawMode, out int? drawOpacity)
         {
@@ -1257,7 +1258,7 @@ namespace Asol.Tools.WorkScheduler.Components
             bool runDraw = true;
 
             if (this.IsDragged && this.BoundsDragOrigin.HasValue)
-            {   // Aktuálně PROBÍHÁ Drag & Drop:
+            {   // Aktuálně PROBÍHÁ Drag and Drop:
                 if (currentLayer == GInteractiveDrawLayer.Standard)
                 {   // Nyní kreslíme do vrstvy Standard, tedy kreslíme do výchozích souřadnic BoundsDragOrigin:
                     absoluteBoundsDraw = BoundsInfo.GetAbsoluteBoundsInContainer(this.Parent, this.BoundsDragOrigin.Value);
@@ -1271,7 +1272,7 @@ namespace Asol.Tools.WorkScheduler.Components
                         drawMode |= DrawItemMode.Standard;
                     else
                         // Pokud není specifikován ani jeden styl (DragDrawGhostOriginal ani DragDrawGhostInteractive),
-                        //  pak v procesu Drag & Drop nebude do standardní vrstvy kresleno nic (objekt se skutečně ihned odsouvá jinam).
+                        //  pak v procesu Drag and Drop nebude do standardní vrstvy kresleno nic (objekt se skutečně ihned odsouvá jinam).
                         //  Objekt bude kreslen jako Standard pouze do vrstvy Interactive, na souřadnice Target.
                         runDraw = false;
                 }
@@ -1298,7 +1299,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 drawMode = DrawItemMode.Ghost;
             }
             else
-            {   // Aktuálně NEPROBÍHÁ Drag & Drop, a prvek se kreslí do standardní vrstvy => jde o dočista normální kreslení:
+            {   // Aktuálně NEPROBÍHÁ Drag and Drop, a prvek se kreslí do standardní vrstvy => jde o dočista normální kreslení:
                 absoluteBoundsDraw = absoluteBoundsItem;
                 drawMode = DrawItemMode.Standard;
             }

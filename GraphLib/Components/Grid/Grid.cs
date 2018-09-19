@@ -899,7 +899,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Pozor, smí být null, pokud GGrid není zapojen do synchronního okruhu.
         /// Pak změna jeho časové osy se nepromítne nikam jinam.
         /// </summary>
-        public ValueSynchronizer<TimeRange> SynchronizedTime
+        public ValueTimeRangeSynchronizer SynchronizedTime
         {
             get { return this._SynchronizedTime; }
             set
@@ -1001,7 +1001,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Instance synchronní hodnoty času přes veškeré objekty
         /// </summary>
-        private ValueSynchronizer<TimeRange> _SynchronizedTime;
+        private ValueTimeRangeSynchronizer _SynchronizedTime;
         #endregion
         #region Invalidace, resety, refreshe
         /// <summary>
