@@ -722,9 +722,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// v režimu <see cref="TimeGraphTimeAxisMode.Standard"/>
         /// </summary>
         /// <param name="groupItem">Jedna ucelená skupina grafických prvků <see cref="ITimeGraphItem"/></param>
-        /// <param name="visibleItems">Výstupní seznam, do něhož se vkládají viditelné prvky</param>
-        /// <param name="groupCount">Počet viditelných prvků group, pro statistiku</param>
-        /// <param name="itemsCount">Počet zpracovaných prvků typu <see cref="ITimeGraphItem"/>, pro statistiku</param>
+        /// <param name="offsetX">Ofset na ose X = posun prvků</param>
+        /// <param name="counters">Počitadla</param>
         protected void RecalculateCoordinateXStandard(GTimeGraphGroup groupItem, int offsetX, int[] counters)
         {
             if (!groupItem.IsValidRealTime) return;
@@ -743,9 +742,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// v režimu <see cref="TimeGraphTimeAxisMode.ProportionalScale"/>
         /// </summary>
         /// <param name="groupItem">Jedna ucelená skupina grafických prvků <see cref="ITimeGraphItem"/></param>
-        /// <param name="visibleItems">Výstupní seznam, do něhož se vkládají viditelné prvky</param>
-        /// <param name="groupCount">Počet viditelných prvků group, pro statistiku</param>
-        /// <param name="itemsCount">Počet zpracovaných prvků typu <see cref="ITimeGraphItem"/>, pro statistiku</param>
+        /// <param name="offsetX">Ofset na ose X = posun prvků</param>
+        /// <param name="counters">Počitadla</param>
         protected void RecalculateCoordinateXProportional(GTimeGraphGroup groupItem, int offsetX, int[] counters)
         {
             if (!groupItem.IsValidRealTime) return;
@@ -764,9 +762,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// v režimu <see cref="TimeGraphTimeAxisMode.LogarithmicScale"/>
         /// </summary>
         /// <param name="groupItem">Jedna ucelená skupina grafických prvků <see cref="ITimeGraphItem"/></param>
-        /// <param name="visibleItems">Výstupní seznam, do něhož se vkládají viditelné prvky</param>
-        /// <param name="groupCount">Počet viditelných prvků group, pro statistiku</param>
-        /// <param name="itemsCount">Počet zpracovaných prvků typu <see cref="ITimeGraphItem"/>, pro statistiku</param>
+        /// <param name="offsetX">Ofset na ose X = posun prvků</param>
+        /// <param name="counters">Počitadla</param>
         protected void RecalculateCoordinateXLogarithmic(GTimeGraphGroup groupItem, int offsetX, int[] counters)
         {
             if (!groupItem.IsValidRealTime) return;
