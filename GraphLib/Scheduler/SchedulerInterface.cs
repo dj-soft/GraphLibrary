@@ -55,7 +55,10 @@ namespace Asol.Tools.WorkScheduler
         /// <summary>
         /// Test před zavřením okna.
         /// Předává se pouze hodnota <see cref="AppHostRequestArgs.SessionId"/>, ale žádná data.
-        /// Jako odpověď se očekává <see cref="GuiResponse"/>
+        /// Jako odpověď se očekává <see cref="GuiResponse.Message"/>: pokud bude neprázdné, jde o dotaz před ukončením. 
+        /// V tom případě se zobrazí dialog podle <see cref="GuiResponse.Dialog"/>.
+        /// Pokud bude <see cref="GuiResponse.Message"/> prázdné, dialog nebude, okno se zavře.
+        /// Při zavření okna se odešle command <see cref="CloseWindow"/>.
         /// </summary>
         public const string QueryCloseWindow = "QueryCloseWindow";
         /// <summary>
@@ -77,14 +80,14 @@ namespace Asol.Tools.WorkScheduler
         /// </summary>
         /// <param name="sessionId">SessionId dat</param>
         /// <param name="command">Požadovaná akce, typicky některá z konstant v <see cref="AppHostCommand"/>.</param>
-        /// <param name="data">Informace o požadavku, například button / kontextová funkce, plus data o stavu GUI. Předává se do aplikační funkce.</param>
+        /// <param name="request">Data pro požadavek. Předává se do aplikační funkce.</param>
         /// <param name="userData">Libovolná uživatelská data, která si připraví GUI v místě, kde vzniká požadavek; a která následně vyhodnotí v místě, kde se zpracovává odpověď. Nepředává se do aplikační funkce.</param>
         /// <param name="callBackAction"></param>
-        public AppHostRequestArgs(int? sessionId, string command, object data, object userData = null, Action<AppHostResponseArgs> callBackAction = null)
+        public AppHostRequestArgs(int? sessionId, string command, GuiRequest request, object userData = null, Action<AppHostResponseArgs> callBackAction = null)
         {
             this.SessionId = sessionId;
             this.Command = command;
-            this.Data = Persist.Serialize(data);
+            this.Request = request;
             this.UserData = userData;
             this.CallBackAction = callBackAction;
         }
@@ -97,10 +100,17 @@ namespace Asol.Tools.WorkScheduler
         /// </summary>
         public string Command { get; protected set; }
         /// <summary>
-        /// Data : informace o požadavku, například button / kontextová funkce, plus data o stavu GUI. 
+        /// Data pro požadavek. 
+        /// Zde je uložena standardní instance.
+        /// </summary>
+        public GuiRequest Request { get; protected set; }
+        /// <summary>
+        /// Data pro požadavek. 
+        /// Zde je uložena serializovaná forma instance GuiRequest.
         /// Předává se do aplikační funkce.
         /// </summary>
-        public string Data { get; protected set; }
+        public string Data { get { if (this._Data == null) this._Data = WorkSchedulerSupport.Compress(Persist.Serialize(this.Request)); return this._Data; } }
+        private string _Data;
         /// <summary>
         /// Libovolná uživatelská data, která si připraví GUI v místě, kde vzniká požadavek; a která následně vyhodnotí v místě, kde se zpracovává odpověď. 
         /// Nepředává se do aplikační funkce.
@@ -153,7 +163,21 @@ namespace Asol.Tools.WorkScheduler
         /// ukládá tam zazipovaný text obsahující serializovanou formu objektu <see cref="GuiResponse"/>.
         /// Deserializaci a vyhodnocení si provádí metoda <see cref="AppHostRequestArgs.CallBackAction"/>.
         /// </summary>
-        public string Data { get; set; }
+        public string Data { get { return this._Data; } set { this._Data = value; this._GuiResponse = null; } }
+        private string _Data;
+        /// <summary>
+        /// Data z aplikační funkce, již deserializovaná
+        /// </summary>
+        public GuiResponse GuiResponse
+        {
+            get
+            {
+                if (this._GuiResponse == null && this._Data != null)
+                    this._GuiResponse = Persist.Deserialize(WorkSchedulerSupport.Decompress(this._Data)) as GuiResponse;
+                return this._GuiResponse;
+            }
+        }
+        private GuiResponse _GuiResponse;
     }
     /// <summary>
     /// Stavy, jak může požadavek skončit

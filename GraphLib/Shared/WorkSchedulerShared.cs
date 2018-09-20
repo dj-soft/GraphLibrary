@@ -1792,7 +1792,8 @@ namespace Noris.LCS.Base.WorkScheduler
 
         /// <summary>
         /// Textová zpráva uživateli.
-        /// Používá se například při testu na zavření okna WorkScheduleru, obsahuje typicky: "Data jsou změněna. Přijdete o ně. Zavřít?"
+        /// Používá se například při testu na zavření okna WorkScheduleru, 
+        /// obsahuje typicky: "Data jsou změněna. Přijdete o ně. Zavřít?"
         /// </summary>
         public string Message { get; set; }
         /// <summary>

@@ -164,10 +164,12 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="guiIds"></param>
         private void _CallHostRunOpenRecordsForm(IEnumerable<GuiId> guiIds)
         {
-            if (this._HasHost)
-                this._AppHost.RunOpenRecordsForm(new RunOpenRecordsArgs(this._SessionId, guiIds));
-            else
-                System.Windows.Forms.MessageBox.Show("Rád bych otevřel vybrané záznamy,\r\nale není zadán datový hostitel.");
+            if (!this._CheckAppHost("Rád bych otevřel vybrané záznamy")) return;
+
+            GuiRequest request = new GuiRequest();
+            request.RecordsToOpen = guiIds.ToArray();
+            AppHostRequestArgs args = new AppHostRequestArgs(this._SessionId, AppHostCommand.OpenRecords, request, null, null);
+            this._AppHost.CallAppHostFunction(args);
         }
         /// <summary>
         /// Metoda vyvolá akci RunToolBarFunction do AppHost
@@ -175,21 +177,28 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="guiToolbarItem"></param>
         private void _CallHostRunToolBarFunction(GuiToolbarItem guiToolbarItem)
         {
-            if (this._HasHost)
-                this._AppHost.RunToolBarFunction(new RunToolbarFunctionArgs(this._SessionId, guiToolbarItem));
-            else
-                System.Windows.Forms.MessageBox.Show("Rád bych provedl funkci ToolBaru «" + guiToolbarItem.Title + "»,\r\nale není zadán datový hostitel.");
+            if (!this._CheckAppHost("Rád bych provedl funkci ToolBaru «" + guiToolbarItem.Title + "»")) return;
+
+            GuiRequest request = new GuiRequest();
+            request.ToolbarItem = guiToolbarItem;
+            AppHostRequestArgs args = new AppHostRequestArgs(this._SessionId, AppHostCommand.ToolbarClick, request, null, this._ResponseHostRunToolBarFunction);
+            this._AppHost.CallAppHostFunction(args);
         }
+        /// <summary>
+        /// Tato metoda zpracuje odpověď z aplikačního kódu, kterou tento posílá po provedení funkce ToolbarClick
+        /// </summary>
+        /// <param name="args"></param>
+        private void _ResponseHostRunToolBarFunction(AppHostResponseArgs args)
+        {
+        }
+
         /// <summary>
         /// Metoda vyvolá akci RunToolBarFunction do AppHost
         /// </summary>
         /// <param name="guiToolbarItem"></param>
         private void _CallHostRunToolBarSelectedChange(GuiToolbarItem guiToolbarItem)
         {
-            if (this._HasHost)
-                this._AppHost.RunToolBarSelectedChange(new RunToolbarFunctionArgs(this._SessionId, guiToolbarItem));
-            else
-                System.Windows.Forms.MessageBox.Show("Rád bych vyvolal akci SelectedChange pro položku ToolBaru «" + guiToolbarItem.Title + "»,\r\nale není zadán datový hostitel.");
+            // Domníváme se, že tohle aplikační kód nemusí řešit. Dostane k řešení ToolbarClick.
         }
         /// <summary>
         /// Metoda vyvolá akci RunToolBarFunction do AppHost
@@ -198,12 +207,33 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="itemArgs"></param>
         private void _CallHostRunContextFunction(GuiContextMenuItem guiContextMenuItem, ItemActionArgs itemArgs)
         {
-            if (this._HasHost)
-                this._AppHost.RunContextFunction(new RunContextFunctionArgs(this._SessionId, guiContextMenuItem));
-            else
-                System.Windows.Forms.MessageBox.Show("Rád bych provedl kontextovou funkci «" + guiContextMenuItem.Title + "»,\r\nale není zadán datový hostitel.");
-        }
+            if (!this._CheckAppHost("Rád bych provedl kontextovou funkci «" + guiContextMenuItem.Title + "»")) return;
 
+            GuiRequest request = new GuiRequest();
+            request.ContextMenuItem = guiContextMenuItem;
+            AppHostRequestArgs args = new AppHostRequestArgs(this._SessionId, AppHostCommand.ContextMenuClick, request, null, this._ResponseHostRunContextMenuClick);
+            this._AppHost.CallAppHostFunction(args);
+        }
+        /// <summary>
+        /// Tato metoda zpracuje odpověď z aplikačního kódu, kterou tento posílá po provedení funkce ContextMenuClick
+        /// </summary>
+        /// <param name="args"></param>
+        private void _ResponseHostRunContextMenuClick(AppHostResponseArgs args)
+        {
+        }
+        /// <summary>
+        /// Prověří existenci AppHost.
+        /// Pokud je, vrací true.
+        /// Pokud není, dá hlášku a vrací false.
+        /// </summary>
+        /// <param name="message"></param>
+        /// <returns></returns>
+        private bool _CheckAppHost(string message)
+        {
+            if (this._HasHost) return true;
+            System.Windows.Forms.MessageBox.Show(message + ",\r\nale není zadán datový hostitel.");
+            return false;
+        }
         #endregion
         #region Toolbar
         /// <summary>
