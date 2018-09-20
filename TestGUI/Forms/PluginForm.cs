@@ -114,21 +114,30 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         }
         #endregion
         #region Implementace Scheduler.IAppHost
-        void IAppHost.RunOpenRecordsForm(RunOpenRecordsArgs args)
+        void IAppHost.CallAppHostFunction(AppHostRequestArgs args)
         {
-            ShowMsg("Rád bych otevřel záznam:~" + args.GuiIds.FirstOrDefault().ToString() + ";~~ale jsem jen obyčejný testovací formulář.");
+            switch (args.Command)
+            {
+                case AppHostCommand.OpenRecords:
+                    ShowMsg("Rád bych otevřel záznam:~" + args.Request.RecordsToOpen.FirstOrDefault().ToString() + ";~~ale jsem jen obyčejný testovací formulář.");
+                    break;
+                case AppHostCommand.ToolbarClick:
+                    ShowMsg("Rád bych otevřel záznam:~" + args.Request.ToolbarItem.ToString() + ";~~ale jsem jen obyčejný testovací formulář.");
+                    this._SendResponse(args, null);
+                    break;
+                case AppHostCommand.ContextMenuClick:
+                    ShowMsg("Rád bych otevřel záznam:~" + args.Request.ContextMenuItem.ToString() + ";~~ale jsem jen obyčejný testovací formulář.");
+                    this._SendResponse(args, null);
+                    break;
+            }
         }
-        void IAppHost.RunToolBarFunction(RunToolbarFunctionArgs args)
+        protected void _SendResponse(AppHostRequestArgs request, AppHostResponseArgs response)
         {
-            ShowMsg("Rád bych provedl funkci toolbaru:~" + args.GuiToolbarItem.ToString() + ";~~ale jsem jen obyčejný testovací formulář.");
-        }
-        void IAppHost.RunToolBarSelectedChange(RunToolbarFunctionArgs args)
-        {
-            ShowMsg("Rád bych provedl akci SelectedChange na položce toolbaru:~" + args.GuiToolbarItem.ToString() + ";~~ale jsem jen obyčejný testovací formulář.");
-        }
-        void IAppHost.RunContextFunction(RunContextFunctionArgs args)
-        {
-            ShowMsg("Rád bych provedl kontextovou funkci:~" + args.GuiContextMenuItem.ToString() + ";~~ale jsem jen obyčejný testovací formulář.");
+            if (request.CallBackAction == null) return;
+
+            AppHostResponseArgs args = new AppHostResponseArgs(request);
+            args.Result = AppHostActionResult.Success;
+            request.CallBackAction(args);
         }
 
         protected void ShowMsg(string message)
