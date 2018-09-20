@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 // Tento soubor se nachází jednak v Greenu: Noris\App\Lcs\Base\WorkSchedulerShared.cs, a zcela identický i v GraphLibrary: \GraphLib\Shared\WorkSchedulerShared.cs
 namespace Noris.LCS.Base.WorkScheduler
 {
-    #region GuiData předávaná mezi Helios Green a WorkScheduler
+    #region GuiData : data předávaná mezi Helios Green a WorkScheduler
     #region GuiData : Kompletní datový balík, jehož data budou zobrazena v pluginu ASOL.WorkScheduler
     /// <summary>
     /// GuiData : Kompletní datový balík, jehož data budou zobrazena v pluginu ASOL.WorkScheduler.
@@ -1741,6 +1741,50 @@ namespace Noris.LCS.Base.WorkScheduler
         }
     }
     #endregion
+    #endregion
+    #region GuiRequest : data předávaná z WorkScheduler do Helios Green jako součást požadavku
+    /// <summary>
+    /// GuiRequest : data předávaná z WorkScheduler do Helios Green jako součást požadavku
+    /// </summary>
+    public class GuiRequest
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public GuiRequest() { }
+        /// <summary>
+        /// Pole záznamů k otevření
+        /// </summary>
+        public GuiId[] RecordsToOpen { get; set; }
+        /// <summary>
+        /// Položka Toolbaru, která vyvolala akci
+        /// </summary>
+        public GuiToolbarItem ToolbarItem { get; set; }
+        /// <summary>
+        /// Kontextová funkce, která vyvolala akci
+        /// </summary>
+        public GuiContextMenuItem ContextMenuItem { get; set; }
+    }
+    #endregion
+    #region GuiResponse : data předávaná z Helios Green do WorkScheduler jako součást response
+    /// <summary>
+    /// GuiResponse : data předávaná z Helios Green do WorkScheduler jako součást response
+    /// </summary>
+    public class GuiResponse
+    {
+
+        /// <summary>
+        /// Textová zpráva uživateli.
+        /// Používá se například při testu na zavření okna WorkScheduleru, obsahuje typicky: "Data jsou změněna. Přijdete o ně. Zavřít?"
+        /// </summary>
+        public string Message { get; set; }
+
+    }
+    [Flags]
+    public enum GuiDialogResponse
+    {
+
+    }
     #endregion
     #region Enumy, které se sdílí mezi WorkScheduler a GraphLibrary
     // VAROVÁNÍ : Změna názvu jednotlivých enumů je zásadní změnou, která se musí promítnout i do konstant ve WorkSchedulerSupport a to jak zde, tak v Greenu.
