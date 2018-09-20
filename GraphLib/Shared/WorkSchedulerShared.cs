@@ -1764,6 +1764,10 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Kontextová funkce, která vyvolala akci
         /// </summary>
         public GuiContextMenuItem ContextMenuItem { get; set; }
+        /// <summary>
+        /// Aktuální hodnota časové osy
+        /// </summary>
+        public GuiTimeRange TimeAxisValue { get; set; }
     }
     #endregion
     #region GuiResponse : data předávaná z Helios Green do WorkScheduler jako součást response
@@ -1772,18 +1776,73 @@ namespace Noris.LCS.Base.WorkScheduler
     /// </summary>
     public class GuiResponse
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public GuiResponse() { }
+
+
+        /// <summary>
+        /// Požadovaná hodnota časové osy. 
+        /// Bude aplikována, pokud není null.
+        /// Hodnota bude vždy zarovnána do <see cref="GuiProperties.TotalTimeRange"/>
+        /// </summary>
+        public GuiTimeRange TimeAxisValue { get; set; }
+
 
         /// <summary>
         /// Textová zpráva uživateli.
         /// Používá se například při testu na zavření okna WorkScheduleru, obsahuje typicky: "Data jsou změněna. Přijdete o ně. Zavřít?"
         /// </summary>
         public string Message { get; set; }
-
+        /// <summary>
+        /// Možnosti dialogu s uživatelem.
+        /// Používá se například při testu na zavření okna WorkScheduleru, pro <see cref="Message"/> obsahuje hodnoty <see cref="GuiDialogResponse.YesNo"/>.
+        /// </summary>
+        public GuiDialogResponse Dialog { get; set; }
     }
+    /// <summary>
+    /// Dialog, možnosti a odpovědi
+    /// </summary>
     [Flags]
     public enum GuiDialogResponse
     {
-
+        /// <summary>
+        /// Žádný dialog
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Tlačítko OK
+        /// </summary>
+        Ok = 0x0001,
+        /// <summary>
+        /// Tlačítko ANO
+        /// </summary>
+        Yes = 0x0002,
+        /// <summary>
+        /// Tlačítko NE
+        /// </summary>
+        No = 0x0004,
+        /// <summary>
+        /// Tlačítko STORNO
+        /// </summary>
+        Cancel = 0x0008,
+        /// <summary>
+        /// Tlačítko ZNOVU
+        /// </summary>
+        Retry = 0x0010,
+        /// <summary>
+        /// Tlačítko MOŽNÁ
+        /// </summary>
+        Maybe = 0x1000,
+        /// <summary>
+        /// Tlačítka OK a STORNO
+        /// </summary>
+        OkCancel = Ok | Cancel,
+        /// <summary>
+        /// Tlačítka ANO a NE
+        /// </summary>
+        YesNo = Yes | No
     }
     #endregion
     #region Enumy, které se sdílí mezi WorkScheduler a GraphLibrary
