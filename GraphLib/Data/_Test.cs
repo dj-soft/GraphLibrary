@@ -1,11 +1,12 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Noris.LCS.Base.WorkScheduler;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+
+using Noris.LCS.Base.WorkScheduler;
 
 namespace Asol.Tools.WorkScheduler.Data
 {
@@ -31,15 +32,18 @@ namespace Asol.Tools.WorkScheduler.Data
         public void TestXmlPersist()
         {
             TestPersist orig = new TestPersist();
-            orig.GuiId = new GuiId(1180, 123456);
+            GuiId guiId = new GuiId(1180, 123456);
+            orig.GuiId = guiId;
 
+            GuiId guiId0 = new GuiId(21, 1234);
+            GuiId guiId5 = new GuiId(26, 6789);
             orig.GuiIdList = new List<GuiId>();
-            orig.GuiIdList.Add(new GuiId(21, 1234));
+            orig.GuiIdList.Add(guiId0);
             orig.GuiIdList.Add(new GuiId(22, 2345));
-            orig.GuiIdList.Add(new GuiId(23, 3456));
+            orig.GuiIdList.Add(null);                    // new GuiId(23, 3456));
             orig.GuiIdList.Add(new GuiId(24, 4567));
             orig.GuiIdList.Add(new GuiId(25, 5678));
-            orig.GuiIdList.Add(new GuiId(26, 6789));
+            orig.GuiIdList.Add(guiId5);
 
             orig.Tabulka = new string[30, 6];
             for (int r = 0; r < 30; r++)
@@ -47,18 +51,41 @@ namespace Asol.Tools.WorkScheduler.Data
                     orig.Tabulka[r, c] = "Pozice(" + r + "," + c + ")";
 
             orig.Sachovnice = new Dictionary<GuiId, Rectangle>();
-            orig.Sachovnice.Add(new GuiId(1, 101), new Rectangle(1, 1, 1, 1));
+            GuiId key0 = new GuiId(1, 101);
+            GuiId key5 = new GuiId(1, 106);
+            orig.Sachovnice.Add(key0, new Rectangle(1, 1, 1, 1));
             orig.Sachovnice.Add(new GuiId(1, 102), new Rectangle(2, 2, 2, 2));
             orig.Sachovnice.Add(new GuiId(1, 103), new Rectangle(3, 3, 3, 3));
             orig.Sachovnice.Add(new GuiId(1, 104), new Rectangle(4, 4, 4, 4));
             orig.Sachovnice.Add(new GuiId(1, 105), new Rectangle(5, 5, 5, 5));
-            orig.Sachovnice.Add(new GuiId(1, 106), new Rectangle(6, 6, 6, 6));
+            orig.Sachovnice.Add(key5, new Rectangle(6, 6, 6, 6));
 
             string xml = Persist.Serialize(orig);
 
             TestPersist copy = Persist.Deserialize(xml) as TestPersist;
 
             // Test shodného obsahu:
+            if (copy.GuiId == null) throw new AssertFailedException("TestPersist.GuiId is null");
+            if (copy.GuiId != guiId) throw new AssertFailedException("TestPersist.GuiId is not equal to original");
+
+            if (copy.GuiIdList == null) throw new AssertFailedException("TestPersist.GuiIdList is null");
+            if (copy.GuiIdList.Count != 6) throw new AssertFailedException("TestPersist.GuiIdList has bad count");
+            if (copy.GuiIdList[0] != guiId0) throw new AssertFailedException("TestPersist.GuiIdList[0] is not equal to original");
+            if (copy.GuiIdList[2] != null) throw new AssertFailedException("TestPersist.GuiIdList[2] is not null");
+            if (copy.GuiIdList[5] != guiId5) throw new AssertFailedException("TestPersist.GuiIdList[5] is not equal to original");
+
+            if (copy.Tabulka == null) throw new AssertFailedException("TestPersist.Tabulka is null");
+            if (copy.Tabulka.Rank != 2) throw new AssertFailedException("TestPersist.Tabulka has Rank != 2");
+            if (copy.Tabulka.GetLength(0) != 30) throw new AssertFailedException("TestPersist.Tabulka has Length(0) != 30");
+            if (copy.Tabulka.GetLength(1) != 6) throw new AssertFailedException("TestPersist.Tabulka has Length(1) != 6");
+
+            if (copy.Sachovnice == null) throw new AssertFailedException("TestPersist.Sachovnice is null");
+            if (copy.Sachovnice.Count != 6) throw new AssertFailedException("TestPersist.Sachovnice has bad count");
+            if (!copy.Sachovnice.ContainsKey(key0)) throw new AssertFailedException("TestPersist.Sachovnice does not contains key0");
+            if (copy.Sachovnice[key0].Top != 1) throw new AssertFailedException("TestPersist.Sachovnice in [key0] has bad value");
+            if (!copy.Sachovnice.ContainsKey(key5)) throw new AssertFailedException("TestPersist.Sachovnice does not contains key5");
+            if (copy.Sachovnice[key5].Top != 6) throw new AssertFailedException("TestPersist.Sachovnice in [key5] has bad value");
+
 
 
         }

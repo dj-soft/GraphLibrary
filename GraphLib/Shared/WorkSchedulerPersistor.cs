@@ -2402,12 +2402,12 @@ namespace Noris.LCS.Base.WorkScheduler
             IList iList = data as IList;
             if (iList == null) return null;
 
-            NotifyData(data, XmlPersistState.LoadBegin);
-
             args.DataTypeInfo = this._TypeLibrary.GetInfo(data.GetType());           // Reálný Type + jeho property
             Type itemType = args.DataTypeInfo.ItemDataType;
             if (itemType == null)
                 itemType = args.DataTypeInfo.GetGenericType(0);
+
+            NotifyData(data, XmlPersistState.LoadBegin);
 
             string itemName = (args.PropInfo != null && !String.IsNullOrEmpty(args.PropInfo.XmlItemName) ? args.PropInfo.XmlItemName : "Item");
             foreach (XmElement xmEle in args.XmElement.XmElements)
@@ -2467,7 +2467,44 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <returns></returns>
         private object IDictionaryTypeCreate(XmlPersistLoadArgs args)
         {
-            return null;
+            object data = _ObjectCreate(args.DataType);
+            IDictionary iDict = data as IDictionary;
+            if (iDict == null) return null;
+
+            args.DataTypeInfo = this._TypeLibrary.GetInfo(data.GetType());           // Reálný Type + jeho property
+            Type keyType = args.DataTypeInfo.GetGenericType(0);
+            Type valueType = args.DataTypeInfo.GetGenericType(1);
+
+            NotifyData(data, XmlPersistState.LoadBegin);
+
+            string itemName = (args.PropInfo != null && !String.IsNullOrEmpty(args.PropInfo.XmlItemName) ? args.PropInfo.XmlItemName : "Entry");
+            foreach (XmElement xmEle in args.XmElement.XmElements)
+            {
+                if (xmEle.Name == itemName)
+                {   // Element má odpovídající jméno. 
+                    object key = null;
+                    object value = null;
+                    // Buď obsahuje atribut, nebo podřízený element s názvem Value:
+                    XmAttribute atValue;
+                    XmElement elValue;
+                    if (_FindAttrElementByName(xmEle, "Key", false, out elValue, out atValue))
+                    {
+                        XmlPersistLoadArgs itemArgs = this._CreateLoadArgs(args.Parameters, null, keyType, elValue, atValue);
+                        key = this._CreateObjectOfType(itemArgs);
+                    }
+                    if (_FindAttrElementByName(xmEle, "Value", false, out elValue, out atValue))
+                    {
+                        XmlPersistLoadArgs itemArgs = this._CreateLoadArgs(args.Parameters, null, valueType, elValue, atValue);
+                        value = this._CreateObjectOfType(itemArgs);
+                    }
+                    if (key != null)
+                        iDict.Add(key, value);
+                }
+            }
+
+            NotifyData(data, XmlPersistState.LoadDone);
+
+            return iDict;
         }
         #endregion
         #region Compound typy: Save, Create
@@ -2814,6 +2851,9 @@ namespace Noris.LCS.Base.WorkScheduler
             internal PersistArgs Parameters { get; private set; }
             internal TypeLibrary.PropInfo PropInfo { get; private set; }
             internal Type DataType { get; private set; }
+            /// <summary>
+            /// Údaje o datovém typu
+            /// </summary>
             internal TypeLibrary.TypeInfo DataTypeInfo { get; set; }
             internal XmElement XmElement { get; private set; }
             internal XmAttribute XmAttribute { get; private set; }
