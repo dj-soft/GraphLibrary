@@ -115,13 +115,13 @@ namespace Asol.Tools.WorkScheduler
         /// </summary>
         public string Message { get; set; }
         /// <summary>
-        /// Výpis zásobníku po chybě (<see cref="AppHostActionResult.Error"/>).
+        /// Výpis zásobníku po chybě (<see cref="AppHostActionResult.EndWithError"/>).
         /// </summary>
         public string StackTrace { get; set; }
         /// <summary>
         /// Data, která vrátila aplikační funkce. 
         /// Prázdný string = funkce doběhla, ale nevrátila data.
-        /// Null = funkce nedoběhla (<see cref="Result"/> je buď <see cref="AppHostActionResult.Error"/> nebo <see cref="AppHostActionResult.Failure"/>).
+        /// Null = funkce nedoběhla (<see cref="Result"/> je buď <see cref="AppHostActionResult.EndWithError"/> nebo <see cref="AppHostActionResult.Failure"/>).
         /// Aplikační funkce ukládá svoje výstupní data do NrsCowley.ServiceGateOutputUserData, 
         /// ukládá tam zazipovaný text obsahující serializovanou formu objektu <see cref="GuiResponse"/>.
         /// Deserializaci a vyhodnocení si provádí metoda <see cref="AppHostRequestArgs.CallBackAction"/>.
@@ -160,13 +160,17 @@ namespace Asol.Tools.WorkScheduler
         /// </summary>
         SuccessWithWarning,
         /// <summary>
-        /// Chyba, kterou hlásí aplikační funkce
+        /// Chyba, kterou hlásí aplikační funkce, ale přesto pokračovala a doběhla
         /// </summary>
-        Error,
+        EndWithError,
+        /// <summary>
+        /// Chyba, kdy aplikační funkce skončila chybou a dál neběžela
+        /// </summary>
+        Failure,
         /// <summary>
         /// Selhání, kdy nedošlo ani ke spuštění funkce
         /// </summary>
-        Failure
+        NotResponse
     }
     #endregion
 }

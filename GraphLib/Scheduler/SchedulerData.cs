@@ -159,7 +159,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this._CallHostRunOpenRecordsForm(guiIds);
         }
         /// <summary>
-        /// Metoda vyvolá akci RunOpenRecordsForm do AppHost
+        /// Metoda vyvolá akci OpenRecords do AppHost
         /// </summary>
         /// <param name="guiIds"></param>
         private void _CallHostRunOpenRecordsForm(IEnumerable<GuiId> guiIds)
@@ -167,12 +167,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (!this._CheckAppHost("Rád bych otevřel vybrané záznamy")) return;
 
             GuiRequest request = new GuiRequest();
+            request.Command = GuiRequest.COMMAND_OpenRecords;
             request.RecordsToOpen = guiIds.ToArray();
-            AppHostRequestArgs args = new AppHostRequestArgs(this._SessionId, AppHostCommand.OpenRecords, request, null, null);
+            AppHostRequestArgs args = new AppHostRequestArgs(this._SessionId, request, null, null);
             this._AppHost.CallAppHostFunction(args);
         }
         /// <summary>
-        /// Metoda vyvolá akci RunToolBarFunction do AppHost
+        /// Metoda vyvolá akci ToolbarClick do AppHost
         /// </summary>
         /// <param name="guiToolbarItem"></param>
         private void _CallHostRunToolBarFunction(GuiToolbarItem guiToolbarItem)
@@ -180,8 +181,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (!this._CheckAppHost("Rád bych provedl funkci ToolBaru «" + guiToolbarItem.Title + "»")) return;
 
             GuiRequest request = new GuiRequest();
+            request.Command = GuiRequest.COMMAND_ToolbarClick;
             request.ToolbarItem = guiToolbarItem;
-            AppHostRequestArgs args = new AppHostRequestArgs(this._SessionId, AppHostCommand.ToolbarClick, request, null, this._ResponseHostRunToolBarFunction);
+            AppHostRequestArgs args = new AppHostRequestArgs(this._SessionId, request, null, this._ResponseHostRunToolBarFunction);
             this._AppHost.CallAppHostFunction(args);
         }
         /// <summary>
@@ -201,7 +203,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             // Domníváme se, že tohle aplikační kód nemusí řešit. Dostane k řešení ToolbarClick.
         }
         /// <summary>
-        /// Metoda vyvolá akci RunToolBarFunction do AppHost
+        /// Metoda vyvolá akci ContextMenuClick do AppHost
         /// </summary>
         /// <param name="guiContextMenuItem"></param>
         /// <param name="itemArgs"></param>
@@ -210,8 +212,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (!this._CheckAppHost("Rád bych provedl kontextovou funkci «" + guiContextMenuItem.Title + "»")) return;
 
             GuiRequest request = new GuiRequest();
+            request.Command = GuiRequest.COMMAND_ContextMenuClick;
             request.ContextMenuItem = guiContextMenuItem;
-            AppHostRequestArgs args = new AppHostRequestArgs(this._SessionId, AppHostCommand.ContextMenuClick, request, null, this._ResponseHostRunContextMenuClick);
+            AppHostRequestArgs args = new AppHostRequestArgs(this._SessionId, request, null, this._ResponseHostRunContextMenuClick);
             this._AppHost.CallAppHostFunction(args);
         }
         /// <summary>

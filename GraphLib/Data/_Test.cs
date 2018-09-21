@@ -1,6 +1,8 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Noris.LCS.Base.WorkScheduler;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -21,9 +23,55 @@ namespace Asol.Tools.WorkScheduler.Data
         {
           
         }
+        #region Serializace testy
+        /// <summary>
+        /// Test XML Serializace a Deserializace
+        /// </summary>
+        [TestMethod]
+        public void TestXmlPersist()
+        {
+            TestPersist orig = new TestPersist();
+            orig.GuiId = new GuiId(1180, 123456);
+
+            orig.GuiIdList = new List<GuiId>();
+            orig.GuiIdList.Add(new GuiId(21, 1234));
+            orig.GuiIdList.Add(new GuiId(22, 2345));
+            orig.GuiIdList.Add(new GuiId(23, 3456));
+            orig.GuiIdList.Add(new GuiId(24, 4567));
+            orig.GuiIdList.Add(new GuiId(25, 5678));
+            orig.GuiIdList.Add(new GuiId(26, 6789));
+
+            orig.Tabulka = new string[30, 6];
+            for (int r = 0; r < 30; r++)
+                for (int c = 0; c < 6; c++)
+                    orig.Tabulka[r, c] = "Pozice(" + r + "," + c + ")";
+
+            orig.Sachovnice = new Dictionary<GuiId, Rectangle>();
+            orig.Sachovnice.Add(new GuiId(1, 101), new Rectangle(1, 1, 1, 1));
+            orig.Sachovnice.Add(new GuiId(1, 102), new Rectangle(2, 2, 2, 2));
+            orig.Sachovnice.Add(new GuiId(1, 103), new Rectangle(3, 3, 3, 3));
+            orig.Sachovnice.Add(new GuiId(1, 104), new Rectangle(4, 4, 4, 4));
+            orig.Sachovnice.Add(new GuiId(1, 105), new Rectangle(5, 5, 5, 5));
+            orig.Sachovnice.Add(new GuiId(1, 106), new Rectangle(6, 6, 6, 6));
+
+            string xml = Persist.Serialize(orig);
+
+            TestPersist copy = Persist.Deserialize(xml) as TestPersist;
+
+            // Test shodného obsahu:
 
 
-
+        }
+        internal class TestPersist
+        {
+            [PropertyName("GuiID_položka")]
+            public GuiId GuiId { get; set; }
+            public List<GuiId> GuiIdList { get; set; }
+            public string[,] Tabulka { get; set; }
+            public Dictionary<GuiId, Rectangle> Sachovnice { get; set; }
+        }
+        #endregion
+        #region ServiceGate XML response testy
         /// <summary>
         /// Test zpracování XML response
         /// </summary>
@@ -140,5 +188,6 @@ namespace Asol.Tools.WorkScheduler.Data
         protected const string Response1 = "<?xml version=\"1.0\" encoding=\"utf-8\"?><RUNRESULT STATE=\"FAIL\" START=\"2018-09-19 15:20:23\" STOP=\"2018-09-19 15:24:35\" DATABASENUMBER=\"0\"><DETAIL LEVEL=\"SYSTEM\" errorMessage=\"Key «ClassNumber» value «9999» [System.Int32] was not found in the store «Noris.Repo.ClassStoreDefinition» !\" WHEN=\"2018-09-19 15:24:35\"><TEXT>System.Collections.Generic.KeyNotFoundException: Key «ClassNumber» value «9999» [System.Int32] was not... ...ServiceGate\\Processor.cs:line 398</TEXT></DETAIL></RUNRESULT>";
         protected const string Response2 = "<?xml version=\"1.0\" encoding=\"utf-8\"?><RUNRESULT STATE=\"FAIL\" START=\"2018-09-19 15:26:46\" STOP=\"2018-09-19 15:27:08\" DATABASENUMBER=\"0\"><DETAIL LEVEL=\"APPLICATION\" errorMessage=\"Exception of type 'Noris.Srv.StopProcessException' was thrown.\" WHEN=\"2018-09-19 15:27:08\"><TEXT>Noris.Srv.StopProcessException: Exception of type 'Noris.Srv.StopProcessException' was thrown.   at Noris.Message.StopProcess() ....ServiceGate\\Processor.cs:line 398</TEXT></DETAIL></RUNRESULT>";
         protected const string Response3 = "<?xml version=\"1.0\" encoding=\"utf-8\"?><RUNRESULT STATE=\"SUCCESS\" START=\"2018-09-19 15:28:08\" STOP=\"2018-09-19 15:30:31\" DATABASENUMBER=\"999999001\"><DETAIL /><USERDATA Base64Conversion=\"No\">OK</USERDATA><auditlog id=\"198689\" state=\"success\" /></RUNRESULT>";
+        #endregion
     }
 }

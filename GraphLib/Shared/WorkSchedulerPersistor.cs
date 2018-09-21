@@ -1872,11 +1872,11 @@ namespace Noris.LCS.Base.WorkScheduler
                     case TypeLibrary.XmlPersistenceType.Enum:
                         return this.EnumTypeCreate(args);
                     case TypeLibrary.XmlPersistenceType.Array:
-                        break;
+                        return this.ArrayTypeCreate(args);
                     case TypeLibrary.XmlPersistenceType.IList:
                         return this.IListTypeCreate(args);
                     case TypeLibrary.XmlPersistenceType.IDictionary:
-                        return null; // this._DictionaryTypeCreate(args);
+                        return this.IDictionaryTypeCreate(args);
                     case TypeLibrary.XmlPersistenceType.Compound:
                         return this.CompoundTypeCreate(args);
                 }
@@ -2050,70 +2050,27 @@ namespace Noris.LCS.Base.WorkScheduler
 
             // Pokud se skutečný Type objektu s daty liší od očekávaného typu, vepíšu jeho Type jako atribut:
             SaveTypeAttribute(args, xmlArrayElement);
-            Array a = args.Data as Array;
+            Array array = args.Data as Array;
             Type itemType = args.DataTypeInfo.ItemDataType;
 
-            // Rozměry pole:  [0÷2,0÷45] :
-            string range = "";
-            for (int r = 0; r < a.Rank; r++)
-                range += (range.Length == 0 ? "" : ",") + a.GetLowerBound(r).ToString() + "+" + a.GetLength(r).ToString();
-            // range += (range.Length == 0 ? "" : ",") + a.GetLowerBound(r).ToString() + "÷" + a.GetUpperBound(r).ToString();
-            range = "[" + range + "]";
-            CreateAttribute("Array.Range", range, xmlArrayElement);
+            // Správce indexů pole:
+            _ArrayIndices arrayIndices = new _ArrayIndices(array);
 
-            // Low a High Bounds:
-            int[] indicesLow = new int[a.Rank];
-            int[] indicesHigh = new int[a.Rank];
-            for (int r = 0; r < a.Rank; r++)
-            {
-                indicesLow[r] = a.GetLowerBound(r);
-                indicesHigh[r] = a.GetUpperBound(r);
-            }
+            // Rozměry pole:  [0+2,0+45] :
+            CreateAttribute("Array.Range", arrayIndices.Serial, xmlArrayElement);
 
             // Výpis všech Items:
-            int[] indices = new int[a.Rank];               // Aktuální mapa dimenzí (průběžně se bude měnit)
-            indicesLow.CopyTo(indices, 0);
             string itemName = args.GetItemName("Item");
-            while (true)
+            for (int[] indices = arrayIndices.FirstIndices(); arrayIndices.IsValidIndices(indices); indices = arrayIndices.NextIndices(indices))
             {
-                // Načtu hodnotu prvku adresovaného pointerem indices, a vepíšu jej do výstupu:
-                bool valid = true;
-                for (int r = 0; r < a.Rank; r++)
-                {
-                    if (indices[r] < 0 || indices[r] > indicesHigh[r])
-                    {
-                        valid = false;
-                        break;
-                    }
-                }
-                if (valid)
-                {
-                    object item = a.GetValue(indices);
-                    XmlElement xmlItemElement = CreateElement(itemName, xmlArrayElement);
-                    // Vypíšu indices:
-                    string ptr = "";
-                    for (int r = 0; r < a.Rank; r++)
-                        ptr += (ptr.Length == 0 ? "" : ",") + indices[r].ToString();
-                    CreateAttribute(itemName + ".Indices", "[" + ptr + "]", xmlItemElement);
+                XmlElement xmlItemElement = CreateElement(itemName, xmlArrayElement);
+                // Vypíšu indices:
+                CreateAttribute(itemName + ".Indices", _ArrayIndices.SerialIndices(indices), xmlItemElement);
 
-                    // Vypíšu obsah itemu:
-                    if (item != null)
-                        this.SaveObject(new XmlPersistSaveArgs(item, "Value", itemType, xmlItemElement, this._TypeLibrary));
-                }
-
-                // Pokročím na další indices nebo skončím:
-                bool end = true;
-                for (int r = a.Rank - 1; r >= 0; r--)     // Dimenze: 2,1,0 (pořadí indexu v adresaci prvku pole N-té dimenze)
-                {
-                    indices[r]++;                         // Postupně zvyšuji index v dané dimenzi (zprava): [0,0,0], [0,0,1], [0,0,2], [0,1,0], [0,1,1], ...
-                    if (indices[r] <= indicesHigh[r])     // Pokud tato dimenze není dokončena, vyběhnu s příznakem !end:
-                    {
-                        end = false;
-                        break;
-                    }
-                    indices[r] = indicesLow[r];           // Tuto dimenzi nastavím na Low, a buď jdu dál (zvýším další dimenzi) nebo skončím (vše je hotovo).
-                }
-                if (end) break;
+                // Vypíšu obsah itemu:
+                object item = array.GetValue(indices);
+                if (item != null)
+                    this.SaveObject(new XmlPersistSaveArgs(item, "Value", itemType, xmlItemElement, this._TypeLibrary));
             }
         }
         /// <summary>
@@ -2123,7 +2080,287 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <returns></returns>
         private object ArrayTypeCreate(XmlPersistLoadArgs args)
         {
-            return null;
+            XmAttribute xmAtt;
+            if (!args.XmElement.TryGetAttribute("Array", out xmAtt)) return null;
+
+            _ArrayIndices arrayIndices = new _ArrayIndices(xmAtt.Range);
+            Type itemType = args.DataTypeInfo.ItemDataType;
+            Array array = arrayIndices.CreateArray(itemType);
+            if (array == null) return null;
+
+            string itemName = (args.PropInfo != null && !String.IsNullOrEmpty(args.PropInfo.XmlItemName) ? args.PropInfo.XmlItemName : "Item");
+            foreach (XmElement xmEle in args.XmElement.XmElements)
+            {
+                if (xmEle.Name == itemName)
+                {   // Element má odpovídající jméno. 
+                    XmAttribute itemAttribute;
+                    if (xmEle.TryGetAttribute(itemName, out itemAttribute) && itemAttribute.Indices != null)
+                    {   // V elementu jsme našli atribut: Item.Indices="[0,5,20]" nesoucí indexy aktuálního prvku:
+                        int[] indices = _ArrayIndices.DeSerialIndices(itemAttribute.Indices);
+                        if (indices.Length == arrayIndices.Rank)
+                        {   // Deserializované indexy mají správný počet položek pro naše pole:
+                            object value = null;
+                            // Element xmEle: buď obsahuje atribut, nebo podřízený element s názvem "Value":
+                            XmAttribute atValue;
+                            XmElement elValue;
+                            if (_FindAttrElementByName(xmEle, "Value", false, out elValue, out atValue))
+                            {
+                                XmlPersistLoadArgs itemArgs = this._CreateLoadArgs(args.Parameters, null, itemType, elValue, atValue);
+                                value = this._CreateObjectOfType(itemArgs);
+                            }
+                            array.SetValue(value, indices);
+                        }
+                    }
+                }
+            }
+
+            return array;
+        }
+        /// <summary>
+        /// Třída pro analýzu rozměrů pole, serializaci a deserializaci rozměrů, a pro enumeraci přes všechny buňky pole
+        /// </summary>
+        private class _ArrayIndices
+        {
+            #region Konstruktory, základní data, serializace, deserializace
+            /// <summary>
+            /// Konstruktor pro konkrétní pole
+            /// </summary>
+            /// <param name="array"></param>
+            public _ArrayIndices(Array array)
+            {
+                if (array != null)
+                {
+                    int rank = array.Rank;
+                    this.Rank = rank;
+                    this.IndicesRange = new int[this.Rank, 3];
+                    for (int r = 0; r < rank; r++)
+                    {
+                        this.IndicesRange[r, 0] = array.GetLowerBound(r);
+                        this.IndicesRange[r, 1] = array.GetLength(r);
+                        this.IndicesRange[r, 2] = array.GetUpperBound(r);
+                    }
+                }
+            }
+            /// <summary>
+            /// Konstruktor pro serializovanou deklaraci pole
+            /// </summary>
+            /// <param name="serial"></param>
+            public _ArrayIndices(string serial)
+            {
+                string[] parts = DeSerialString(serial);             // Ze stringu "[0+10,0+20,0+30]" vrací části "0+10"; "0+20"; "0+30".
+                if (parts != null)
+                {
+                    int rank = parts.Length;
+                    int[,] indices = new int[rank, 3];
+                    bool isValid = (rank > 0);
+                    for (int r = 0; r < rank; r++)
+                    {
+                        string[] items = parts[r].Split('+');        // "0+10"  =>  "0"; "10"
+                        int lowerBounds, length;
+                        if (items.Length == 2 && Int32.TryParse(items[0].Trim(), out lowerBounds) && Int32.TryParse(items[1].Trim(), out length))
+                        {
+                            indices[r, 0] = lowerBounds;
+                            indices[r, 1] = length;
+                            indices[r, 2] = lowerBounds + length - 1;
+                        }
+                        else
+                        {
+                            isValid = false;
+                            break;
+                        }
+                    }
+
+                    if (isValid)
+                    {
+                        this.Rank = rank;
+                        this.IndicesRange = indices;
+                    }
+                }
+            }
+            /// <summary>
+            /// Obsahuje serializovanou hodnotu rozměrů pole, například pole deklarované new int[10,20,30] zde obsahuje text: "[0+10,0+20,0+30]".
+            /// Z této serializované formy lze následně vytvořit new instanci <see cref="_ArrayIndices"/> konstruktorem <see cref="_ArrayIndices(String)"/>.
+            /// </summary>
+            public string Serial
+            {
+                get
+                {
+                    string serial = "[";
+                    for (int r = 0; r < this.Rank; r++)
+                        serial += (r == 0 ? "" : ",") + this.IndicesRange[r, 0].ToString() + "+" + this.IndicesRange[r, 1].ToString();
+                    serial += "]";
+                    return serial;
+                }
+            }
+            /// <summary>
+            /// Počet dimenzí pole = počet číslic v adrese buňky, 
+            /// například pole deklarované new int[10,20,30] má <see cref="Rank"/> = 3
+            /// </summary>
+            public int Rank { get; private set; }
+            /// <summary>
+            /// Rozsah jednotlivých dimenzí, 
+            /// například pole deklarované new int[10,20,30] má <see cref="IndicesRange"/> obsahující tři řádky, což odpovídá <see cref="Rank"/> (první index pole <see cref="IndicesRange"/> má hodnoty 0,1,2).
+            /// Každý řádek obsahuje tři čísla, kde první číslo = <see cref="IndicesRange"/>[r, 0] obsahuje dolní index pole = <see cref="Array.GetLowerBound(int)"/>, což je nejčastěji 0.
+            /// Druhé číslo v řádku <see cref="IndicesRange"/>[r, 1] obsahuje počet prvků pole = <see cref="Array.GetLength(int)"/>.
+            /// Třetí číslo v řádku <see cref="IndicesRange"/>[r, 2] obsahuje horní index pole = <see cref="Array.GetUpperBound(int)"/>.
+            /// </summary>
+            public int[,] IndicesRange { get; private set; }
+            #endregion
+            #region Generátor pole pro dané rozměry
+            /// <summary>
+            /// Metoda vytvoří a vrátí pole daného typu prvku, s rozměry uloženými v this instanci.
+            /// </summary>
+            /// <param name="elementType"></param>
+            /// <returns></returns>
+            public Array CreateArray(Type elementType)
+            {
+                int rank = this.Rank;
+                if (rank <= 0) return null;
+                int[] lowerBounds = new int[rank];
+                int[] lengths = new int[rank];
+                for (int r = 0; r < rank; r++)
+                {
+                    lowerBounds[r] = this.IndicesRange[r, 0];
+                    lengths[r] = this.IndicesRange[r, 1];
+                }
+                return Array.CreateInstance(elementType, lengths, lowerBounds);
+            }
+            #endregion
+            #region Static Serializace indexu prvku
+            /// <summary>
+            /// Vrátí serializovaný index jednoduchého pole, např. pro pole int[] = { 0, 5, 60} vrátí string "[0,5,60]"
+            /// </summary>
+            /// <param name="indices"></param>
+            /// <returns></returns>
+            public static string SerialIndices(int[] indices)
+            {
+                if (indices == null) return "[]";
+                int rank = indices.Length;
+                string serial = "[";
+                for (int r = 0; r < rank; r++)
+                    serial += (r == 0 ? "" : ",") + indices[r].ToString();
+                return serial + "]";
+            }
+            /// <summary>
+            /// Vrátí deserializovaný index jednoduchého pole, např. pro string "[0,5,60]" vrátí pole int[] = { 0, 5, 60}
+            /// </summary>
+            /// <param name="serial"></param>
+            /// <returns></returns>
+            public static int[] DeSerialIndices(string serial)
+            {
+                int[] indices = null;
+                string[] parts = DeSerialString(serial);            // Ze stringu "[0,5,60]" vrací části "0"; "5"; "60".
+                if (parts != null)
+                {
+                    int rank = parts.Length;
+                    indices = new int[rank];
+                    for (int r = 0; r < rank; r++)
+                    {
+                        int index;
+                        if (Int32.TryParse(parts[r].Trim(), out index))
+                            indices[r] = index;
+                    }
+                }
+                return indices;
+            }
+            /// <summary>
+            /// Vrátí jednotlivé prvky ze serializovaného stringu.
+            /// String musí mít formu "[x,y,z]", výstupem je pole { "x"; "y"; "z" }.
+            /// </summary>
+            /// <param name="serial"></param>
+            /// <returns></returns>
+            private static string[] DeSerialString(string serial)
+            {
+                string[] parts = null;
+                if (!String.IsNullOrEmpty(serial))
+                {
+                    string text = serial.Trim();
+                    if (text.Length > 2 && text.StartsWith("[") && text.EndsWith("]"))   // "[0+10,0+20,0+30]"
+                    {
+                        text = text.Substring(1, text.Length - 2).Trim();                // "0+10,0+20,0+30"
+                        parts = text.Split(',');                                         // "0+10"; "0+20"; "0+30"
+                    }
+                }
+                return parts;
+            }
+            #endregion
+            #region Enumerace
+            /// <summary>
+            /// Metoda vygeneruje a vrátí první sadu idnexů, ukazující typicky na [0,0,...].
+            /// Sadu si interně zapamatuje.
+            /// <para/>
+            /// Typické použití: for (int[] indices = <see cref="_ArrayIndices.FirstIndices()"/>; 
+            /// <see cref="_ArrayIndices.IsValidIndices"/>(indices); 
+            /// indices = <see cref="_ArrayIndices.NextIndices"/>(indices)) { akce ... }
+            /// </summary>
+            /// <returns></returns>
+            public int[] FirstIndices()
+            {
+                int[] indices = _FirstIndices;
+                return indices;
+            }
+            /// <summary>
+            /// Vrací true, pokud daná sada indexů je platná
+            /// </summary>
+            /// <param name="indices"></param>
+            public bool IsValidIndices(int[] indices)
+            {
+                if (indices == null) return false;
+                int rank = this.Rank;
+                if (rank <= 0 || indices.Length != rank) return false;
+                for (int r = 0; r < rank; r++)
+                {
+                    if ((indices[r] < this.IndicesRange[r, 0]) || (indices[r] > this.IndicesRange[r, 2])) return false;
+                }
+                return true;
+            }
+            /// <summary>
+            /// Vrátí sadu indexu ukazující na další prvek pole. Může vrátit sadu, ukazující za poslední prvek; pak podmínka IsValidIndices(indices) vrací false.
+            /// </summary>
+            /// <param name="indices"></param>
+            /// <returns></returns>
+            public int[] NextIndices(int[] indices)
+            {
+                int rank = this.Rank;
+                if (rank <= 0) return null;
+                int[] next = new int[rank];
+                indices.CopyTo(next, 0);
+
+                // Nejprve zajistím Lower values:
+                for (int r = 0; r < rank; r++)
+                {
+                    if (next[r] < this.IndicesRange[r, 0]) next[r] = this.IndicesRange[r, 0];
+                }
+
+                // Nyní provedu Increment, v pořadí od posledního prvku pole:
+                for (int r = (rank - 1); r >= 0; r--)
+                {
+                    next[r] = next[r] + 1;
+                    // Pokud navýšený index nepřesáhl UpperBounds, je to OK a končíme. 
+                    // Pokud jej přesáhl, ale je to na pozici 0, končíme taky; výsledek (next) je sice nevalidní, ale to je řešeno v testu IsValidIndices(), tam se vrátí false.
+                    if (next[r] <= this.IndicesRange[r, 2] || r == 0) break;
+                    // Na dané pozici dáme index = LowerBounds, a jdeme na další pozici (doleva):
+                    next[r] = this.IndicesRange[r, 0];
+                }
+
+                return next;
+            }
+            /// <summary>
+            /// Obsahuje pole indexů prvního prvku, typicky [0,0,0].
+            /// </summary>
+            private int[] _FirstIndices
+            {
+                get
+                {
+                    int rank = this.Rank;
+                    if (rank <= 0) return null;
+                    int[] indices = new int[rank];
+                    for (int r = 0; r < rank; r++)
+                        indices[r] = this.IndicesRange[r, 0];
+                    return indices;
+                }
+            }
+            #endregion
         }
         #endregion
         #region IList typy: Save, Create
@@ -2173,7 +2410,6 @@ namespace Noris.LCS.Base.WorkScheduler
                 itemType = args.DataTypeInfo.GetGenericType(0);
 
             string itemName = (args.PropInfo != null && !String.IsNullOrEmpty(args.PropInfo.XmlItemName) ? args.PropInfo.XmlItemName : "Item");
-
             foreach (XmElement xmEle in args.XmElement.XmElements)
             {
                 if (xmEle.Name == itemName)
@@ -2207,7 +2443,6 @@ namespace Noris.LCS.Base.WorkScheduler
 
             // Pokud se skutečný Type objektu s daty liší od očekávaného typu, vepíšu jeho Type jako atribut:
             SaveTypeAttribute(args, xmlDictElement);
-
 
             IDictionary iDict = args.Data as IDictionary;
             if (iDict == null) return;

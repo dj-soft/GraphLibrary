@@ -1753,6 +1753,30 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiRequest() { }
         /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            if (String.IsNullOrEmpty(this.Command)) return "Undefined command.";
+            string text = "Command: " + this.Command;
+            switch (this.Command)
+            {
+                case COMMAND_OpenRecords:
+                    return text + ((this.RecordsToOpen != null && this.RecordsToOpen.Length > 0) ? "; Record: " + this.RecordsToOpen[0].ToString() : "; no RecordsToOpen");
+                case COMMAND_ToolbarClick:
+                    return text + ((this.ToolbarItem != null) ? "; ToolbarItem: " + this.ToolbarItem.ToString() : "; no ToolbarItem");
+                case COMMAND_ContextMenuClick:
+                    return text + ((this.ContextMenuItem != null) ? "; ContextMenuItem: " + this.ContextMenuItem.ToString() : "; no ContextMenuItem");
+
+                case COMMAND_QueryCloseWindow:
+                    return text;
+                case COMMAND_CloseWindow:
+                    return text;
+            }
+            return base.ToString();
+        }
+        /// <summary>
         /// Požadovaná akce, typicky některá z konstant v <see cref="GuiRequest"/>
         /// </summary>
         public string Command { get; set; }
@@ -1775,36 +1799,36 @@ namespace Noris.LCS.Base.WorkScheduler
         #region Konstanty - commandy
         /// <summary>
         /// Otevřít záznamy.
-        /// Data v <see cref="AppHostRequestArgs.Data"/> obsahují instanci <see cref="GuiRequest"/>, kde je naplněna property <see cref="GuiRequest.RecordsToOpen"/>
+        /// Objekt <see cref="GuiRequest"/> nese záznamy k otevření v property <see cref="GuiRequest.RecordsToOpen"/>.
         /// </summary>
-        public const string COMMAN_OpenRecords = "OpenRecords";
+        public const string COMMAND_OpenRecords = "OpenRecords";
         /// <summary>
         /// Bylo kliknuto na tlačítko Toolbaru, které obsahuje jednoduchou funkci.
-        /// Data v <see cref="AppHostRequestArgs.Data"/> obsahují instanci <see cref="GuiRequest"/>, kde je naplněna property <see cref="GuiRequest.ToolbarItem"/> 
+        /// Objekt <see cref="GuiRequest"/> nese informaci o konkrétním tlačítku toolbaru v property <see cref="GuiRequest.ToolbarItem"/> 
         /// </summary>
-        public const string COMMAN_ToolbarClick = "ToolbarClick";
+        public const string COMMAND_ToolbarClick = "ToolbarClick";
         /// <summary>
         /// Bylo kliknuto na kontextovou funkci.
-        /// Data v <see cref="AppHostRequestArgs.Data"/> obsahují instanci <see cref="GuiRequest"/>, kde je naplněna property <see cref="GuiRequest.ToolbarItem"/> 
+        /// Objekt <see cref="GuiRequest"/> nese informaci o konkrétní kontextové funkci v property <see cref="GuiRequest.ToolbarItem"/> 
         /// </summary>
-        public const string COMMAN_ContextMenuClick = "ContextMenuClick";
+        public const string COMMAND_ContextMenuClick = "ContextMenuClick";
 
 
         /// <summary>
         /// Test před zavřením okna.
-        /// Předává se pouze hodnota <see cref="AppHostRequestArgs.SessionId"/>, ale žádná data.
+        /// Nepředávají se žádná upřesňující data.
         /// Jako odpověď se očekává <see cref="GuiResponse.Message"/>: pokud bude neprázdné, jde o dotaz před ukončením. 
         /// V tom případě se zobrazí dialog podle <see cref="GuiResponse.Dialog"/>.
         /// Pokud bude <see cref="GuiResponse.Message"/> prázdné, dialog nebude, okno se zavře.
-        /// Při zavření okna se odešle command <see cref="COMMAN_CloseWindow"/>.
+        /// Při zavření okna se odešle command <see cref="COMMAND_CloseWindow"/>.
         /// </summary>
-        public const string COMMAN_QueryCloseWindow = "QueryCloseWindow";
+        public const string COMMAND_QueryCloseWindow = "QueryCloseWindow";
         /// <summary>
         /// Zavírá se okno už doopravdy.
-        /// Předává se pouze hodnota <see cref="AppHostRequestArgs.SessionId"/>, ale žádná data.
+        /// Nepředávají se žádná upřesňující data.
         /// Vyšší aplikace si má zahodit svoje data svázaná s tímto pluginem.
         /// </summary>
-        public const string COMMAN_CloseWindow = "CloseWindow";
+        public const string COMMAND_CloseWindow = "CloseWindow";
         #endregion
     }
     #endregion
@@ -1818,8 +1842,10 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Konstruktor
         /// </summary>
         public GuiResponse() { }
-
-
+        /// <summary>
+        /// Stav dokončení funkce
+        /// </summary>
+        public GuiResponseState ResponseState { get; set; }
         /// <summary>
         /// Požadovaná hodnota časové osy. 
         /// Bude aplikována, pokud není null.
@@ -1832,6 +1858,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Textová zpráva uživateli.
         /// Používá se například při testu na zavření okna WorkScheduleru, 
         /// obsahuje typicky: "Data jsou změněna. Přijdete o ně. Zavřít?"
+        /// Anebo se plní při stavu Warning nebo Error.
         /// </summary>
         public string Message { get; set; }
         /// <summary>
@@ -1839,6 +1866,29 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Používá se například při testu na zavření okna WorkScheduleru, pro <see cref="Message"/> obsahuje hodnoty <see cref="GuiDialogResponse.YesNo"/>.
         /// </summary>
         public GuiDialogResponse Dialog { get; set; }
+
+        /// <summary>
+        /// Statický konstruktor, který vrací new instanci <see cref="GuiResponse"/>, kde <see cref="GuiResponse.ResponseState"/> = <see cref="GuiResponseState.Success"/>.
+        /// </summary>
+        public static GuiResponse Success() { return new GuiResponse() { ResponseState = GuiResponseState.Success }; }
+        /// <summary>
+        /// Statický konstruktor, který vrací new instanci <see cref="GuiResponse"/>, kde <see cref="GuiResponse.ResponseState"/> = <see cref="GuiResponseState.Warning"/>, a nastaví danou zprávu do <see cref="Message"/>.
+        /// </summary>
+        public static GuiResponse Warning(string message) { return new GuiResponse() { ResponseState = GuiResponseState.Warning, Message = message }; }
+        /// <summary>
+        /// Statický konstruktor, který vrací new instanci <see cref="GuiResponse"/>, kde <see cref="GuiResponse.ResponseState"/> = <see cref="GuiResponseState.Error"/>, a nastaví danou zprávu do <see cref="Message"/>.
+        /// </summary>
+        public static GuiResponse Error(string message) { return new GuiResponse() { ResponseState = GuiResponseState.Error, Message = message }; }
+    }
+    /// <summary>
+    /// Stav dokončení funkce
+    /// </summary>
+    public enum GuiResponseState
+    {
+        None = 0,
+        Success,
+        Warning,
+        Error
     }
     /// <summary>
     /// Dialog, možnosti a odpovědi
