@@ -23,19 +23,12 @@ namespace Asol.Tools.WorkScheduler
     {
         /// <summary>
         /// Metoda, která zajistí provedení akce na aplikačním serveru.
-        /// Touto cestou se řeší všechny akce: Otevření formuláře, Vyvolání funkce z toolbaru, Vyvolání kontextové funkce, Změna grafického prvku, ...
+        /// Touto cestou se řeší všechny akce: Otevření formuláře, Vyvolání funkce z toolbaru, Vyvolání kontextové funkce, Změna grafického prvku, ..., Zavření okna.
+        /// Požadavek se může provádět asynchronně.
+        /// Po jeho doběhnutí se volá metoda <see cref="AppHostRequestArgs.CallBackAction"/>.
         /// </summary>
         /// <param name="args">Data pro funkci</param>
         void CallAppHostFunction(AppHostRequestArgs args);
-    }
-    #endregion
-    #region class AppHostCommand : Konstanty = příkazy (Command) pro IAppHost.CallAppHostFunction
-    /// <summary>
-    /// AppHostCommand : Konstanty = příkazy (Command) pro <see cref="IAppHost.CallAppHostFunction(AppHostRequestArgs)"/>
-    /// </summary>
-    public class AppHostCommand
-    {
-
     }
     #endregion
     #region Argumenty metod IAppHost
@@ -48,9 +41,9 @@ namespace Asol.Tools.WorkScheduler
         /// Konstruktor
         /// </summary>
         /// <param name="sessionId">SessionId dat</param>
-        /// <param name="request">Data pro požadavek. Předává se do aplikační funkce.</param>
+        /// <param name="request">Data pro požadavek. Předává se do aplikační funkce. Jde o instanci třídy <see cref="GuiRequest"/>, konkrétní požadavek je spcifikován v <see cref="GuiRequest.Command"/>, jeho text pochází z konstant {<see cref="GuiRequest.COMMAND_OpenRecords"/> atd.} </param>
         /// <param name="userData">Libovolná uživatelská data, která si připraví GUI v místě, kde vzniká požadavek; a která následně vyhodnotí v místě, kde se zpracovává odpověď. Nepředává se do aplikační funkce.</param>
-        /// <param name="callBackAction"></param>
+        /// <param name="callBackAction">Metoda, která bude zavolána po doběhnutí požadavku. Požadavek se provádí asynchronně.</param>
         public AppHostRequestArgs(int? sessionId, GuiRequest request, object userData = null, Action<AppHostResponseArgs> callBackAction = null)
         {
             this.SessionId = sessionId;
