@@ -8,6 +8,7 @@ using System.Text;
 using System.Windows.Forms;
 using Asol.Tools.WorkScheduler.Data;
 using Asol.Tools.WorkScheduler.Scheduler;
+using Noris.LCS.Base.WorkScheduler;
 
 namespace Asol.Tools.WorkScheduler.TestGUI
 {
@@ -116,20 +117,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         #region Implementace Scheduler.IAppHost
         void IAppHost.CallAppHostFunction(AppHostRequestArgs args)
         {
-            switch (args.Command)
-            {
-                case AppHostCommand.OpenRecords:
-                    ShowMsg("Rád bych otevřel záznam:~" + args.Request.RecordsToOpen.FirstOrDefault().ToString() + ";~~ale jsem jen obyčejný testovací formulář.");
-                    break;
-                case AppHostCommand.ToolbarClick:
-                    ShowMsg("Rád bych otevřel záznam:~" + args.Request.ToolbarItem.ToString() + ";~~ale jsem jen obyčejný testovací formulář.");
-                    this._SendResponse(args, null);
-                    break;
-                case AppHostCommand.ContextMenuClick:
-                    ShowMsg("Rád bych otevřel záznam:~" + args.Request.ContextMenuItem.ToString() + ";~~ale jsem jen obyčejný testovací formulář.");
-                    this._SendResponse(args, null);
-                    break;
-            }
+            ShowMsg("Rád bych provedl požadovanou akci:~" + args.Request.ToString() + ";~~ale jsem jen obyčejný testovací formulář.");
+            if (args.CallBackAction != null)
+                this._SendResponse(args, null);
         }
         protected void _SendResponse(AppHostRequestArgs request, AppHostResponseArgs response)
         {
