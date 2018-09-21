@@ -1753,6 +1753,10 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiRequest() { }
         /// <summary>
+        /// Požadovaná akce, typicky některá z konstant v <see cref="GuiRequest"/>
+        /// </summary>
+        public string Command { get; set; }
+        /// <summary>
         /// Pole záznamů k otevření
         /// </summary>
         public GuiId[] RecordsToOpen { get; set; }
@@ -1768,6 +1772,40 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Aktuální hodnota časové osy
         /// </summary>
         public GuiTimeRange TimeAxisValue { get; set; }
+        #region Konstanty - commandy
+        /// <summary>
+        /// Otevřít záznamy.
+        /// Data v <see cref="AppHostRequestArgs.Data"/> obsahují instanci <see cref="GuiRequest"/>, kde je naplněna property <see cref="GuiRequest.RecordsToOpen"/>
+        /// </summary>
+        public const string COMMAN_OpenRecords = "OpenRecords";
+        /// <summary>
+        /// Bylo kliknuto na tlačítko Toolbaru, které obsahuje jednoduchou funkci.
+        /// Data v <see cref="AppHostRequestArgs.Data"/> obsahují instanci <see cref="GuiRequest"/>, kde je naplněna property <see cref="GuiRequest.ToolbarItem"/> 
+        /// </summary>
+        public const string COMMAN_ToolbarClick = "ToolbarClick";
+        /// <summary>
+        /// Bylo kliknuto na kontextovou funkci.
+        /// Data v <see cref="AppHostRequestArgs.Data"/> obsahují instanci <see cref="GuiRequest"/>, kde je naplněna property <see cref="GuiRequest.ToolbarItem"/> 
+        /// </summary>
+        public const string COMMAN_ContextMenuClick = "ContextMenuClick";
+
+
+        /// <summary>
+        /// Test před zavřením okna.
+        /// Předává se pouze hodnota <see cref="AppHostRequestArgs.SessionId"/>, ale žádná data.
+        /// Jako odpověď se očekává <see cref="GuiResponse.Message"/>: pokud bude neprázdné, jde o dotaz před ukončením. 
+        /// V tom případě se zobrazí dialog podle <see cref="GuiResponse.Dialog"/>.
+        /// Pokud bude <see cref="GuiResponse.Message"/> prázdné, dialog nebude, okno se zavře.
+        /// Při zavření okna se odešle command <see cref="COMMAN_CloseWindow"/>.
+        /// </summary>
+        public const string COMMAN_QueryCloseWindow = "QueryCloseWindow";
+        /// <summary>
+        /// Zavírá se okno už doopravdy.
+        /// Předává se pouze hodnota <see cref="AppHostRequestArgs.SessionId"/>, ale žádná data.
+        /// Vyšší aplikace si má zahodit svoje data svázaná s tímto pluginem.
+        /// </summary>
+        public const string COMMAN_CloseWindow = "CloseWindow";
+        #endregion
     }
     #endregion
     #region GuiResponse : data předávaná z Helios Green do WorkScheduler jako součást response

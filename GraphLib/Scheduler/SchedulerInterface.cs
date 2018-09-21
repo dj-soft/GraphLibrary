@@ -35,38 +35,7 @@ namespace Asol.Tools.WorkScheduler
     /// </summary>
     public class AppHostCommand
     {
-        /// <summary>
-        /// Otevřít záznamy.
-        /// Data v <see cref="AppHostRequestArgs.Data"/> obsahují instanci <see cref="GuiRequest"/>, kde je naplněna property <see cref="GuiRequest.RecordsToOpen"/>
-        /// </summary>
-        public const string OpenRecords = "OpenRecords";
-        /// <summary>
-        /// Bylo kliknuto na tlačítko Toolbaru, které obsahuje jednoduchou funkci.
-        /// Data v <see cref="AppHostRequestArgs.Data"/> obsahují instanci <see cref="GuiRequest"/>, kde je naplněna property <see cref="GuiRequest.ToolbarItem"/> 
-        /// </summary>
-        public const string ToolbarClick = "ToolbarClick";
-        /// <summary>
-        /// Bylo kliknuto na kontextovou funkci.
-        /// Data v <see cref="AppHostRequestArgs.Data"/> obsahují instanci <see cref="GuiRequest"/>, kde je naplněna property <see cref="GuiRequest.ToolbarItem"/> 
-        /// </summary>
-        public const string ContextMenuClick = "ContextMenuClick";
 
-
-        /// <summary>
-        /// Test před zavřením okna.
-        /// Předává se pouze hodnota <see cref="AppHostRequestArgs.SessionId"/>, ale žádná data.
-        /// Jako odpověď se očekává <see cref="GuiResponse.Message"/>: pokud bude neprázdné, jde o dotaz před ukončením. 
-        /// V tom případě se zobrazí dialog podle <see cref="GuiResponse.Dialog"/>.
-        /// Pokud bude <see cref="GuiResponse.Message"/> prázdné, dialog nebude, okno se zavře.
-        /// Při zavření okna se odešle command <see cref="CloseWindow"/>.
-        /// </summary>
-        public const string QueryCloseWindow = "QueryCloseWindow";
-        /// <summary>
-        /// Zavírá se okno už doopravdy.
-        /// Předává se pouze hodnota <see cref="AppHostRequestArgs.SessionId"/>, ale žádná data.
-        /// Vyšší aplikace si má zahodit svoje data svázaná s tímto pluginem.
-        /// </summary>
-        public const string CloseWindow = "CloseWindow";
     }
     #endregion
     #region Argumenty metod IAppHost
@@ -79,14 +48,12 @@ namespace Asol.Tools.WorkScheduler
         /// Konstruktor
         /// </summary>
         /// <param name="sessionId">SessionId dat</param>
-        /// <param name="command">Požadovaná akce, typicky některá z konstant v <see cref="AppHostCommand"/>.</param>
         /// <param name="request">Data pro požadavek. Předává se do aplikační funkce.</param>
         /// <param name="userData">Libovolná uživatelská data, která si připraví GUI v místě, kde vzniká požadavek; a která následně vyhodnotí v místě, kde se zpracovává odpověď. Nepředává se do aplikační funkce.</param>
         /// <param name="callBackAction"></param>
-        public AppHostRequestArgs(int? sessionId, string command, GuiRequest request, object userData = null, Action<AppHostResponseArgs> callBackAction = null)
+        public AppHostRequestArgs(int? sessionId, GuiRequest request, object userData = null, Action<AppHostResponseArgs> callBackAction = null)
         {
             this.SessionId = sessionId;
-            this.Command = command;
             this.Request = request;
             this.UserData = userData;
             this.CallBackAction = callBackAction;
@@ -95,10 +62,6 @@ namespace Asol.Tools.WorkScheduler
         /// SessionId dat
         /// </summary>
         public int? SessionId { get; protected set; }
-        /// <summary>
-        /// Command : příkaz (typ akce), typicky některá z konstant v <see cref="AppHostCommand"/>.
-        /// </summary>
-        public string Command { get; protected set; }
         /// <summary>
         /// Data pro požadavek. 
         /// Zde je uložena standardní instance.
