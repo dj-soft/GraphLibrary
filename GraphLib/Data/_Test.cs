@@ -8,7 +8,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using Noris.LCS.Base.WorkScheduler;
 
-namespace Asol.Tools.WorkScheduler.Data
+namespace Asol.Tools.WorkScheduler.Data.Test
 {
     /// <summary>
     /// Třída obsahující testy dat
@@ -50,7 +50,7 @@ namespace Asol.Tools.WorkScheduler.Data
                 for (int c = 0; c < 6; c++)
                     orig.Tabulka[r, c] = "Pozice(" + r + "," + c + ")";
 
-            orig.Sachovnice = new Dictionary<GuiId, Rectangle>();
+            orig.Sachovnice = new TestDictionary();
             GuiId key1 = new GuiId(1, 101);
             GuiId key6 = new GuiId(1, 106);
             orig.Sachovnice.Add(key1, new Rectangle(1, 1, 1, 1));
@@ -94,8 +94,10 @@ namespace Asol.Tools.WorkScheduler.Data
             public GuiId GuiId { get; set; }
             public List<GuiId> GuiIdList { get; set; }
             public string[,] Tabulka { get; set; }
-            public Dictionary<GuiId, Rectangle> Sachovnice { get; set; }
+            public TestDictionary Sachovnice { get; set; }
         }
+        internal class TestDictionary : Dictionary<GuiId, Rectangle>
+        { }
         #endregion
         #region ServiceGate XML response testy
         /// <summary>

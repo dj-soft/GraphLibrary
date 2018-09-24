@@ -2562,9 +2562,9 @@ namespace Noris.LCS.Base.WorkScheduler
             }
         }
         /// <summary>
-        /// DOPLNIT !!!
+        /// Z dodaného readeru načte a sestaví objekt uložený jako Dictionary
         /// </summary>
-        /// <param name="args"></param>
+        /// <param name="args">Kompletní datový balík</param>
         /// <returns></returns>
         private object IDictionaryTypeCreate(XmlPersistLoadArgs args)
         {
