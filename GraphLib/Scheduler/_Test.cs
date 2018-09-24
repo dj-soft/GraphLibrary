@@ -54,11 +54,15 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             GraphItemBehaviorMode graph4BehaviorMode = (GraphItemBehaviorMode.DefaultText | GraphItemBehaviorMode.ResizeTime);
             DateTime graph4Begin = new DateTime(2018, 8, 1, 14, 30, 45, 550);
             DateTime graph4End = new DateTime(2018, 8, 1, 18, 15, 30, 10);
-            workItems.Add(new GuiGraphItem() { ItemId = new GuiId(1817, 4), ParentRowId = new GuiId(1364, 2), Time = new GuiTimeRange(graph4Begin, graph4End), BehaviorMode = graph4BehaviorMode });
+            GuiGraphItem guiItem4 = new GuiGraphItem() { ItemId = new GuiId(1817, 4), ParentRowId = new GuiId(1364, 2), Time = new GuiTimeRange(graph4Begin, graph4End), BehaviorMode = graph4BehaviorMode };
+            workItems.Add(guiItem4);
 
             page.MainPanel.Grids.Add(workGrid);
 
             data.Finalise();
+
+            string guiMainItems = workItems.FullName;
+            string guiItem4Path = guiItem4.FullName;
 
             IGuiItem item1 = data.FindByFullName(@"Data\toolBar\tlbSave");
             IGuiItem item2 = data.FindByFullName(@"Data\contextMenu\cnxAddWork");
@@ -103,9 +107,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (workClonText != workGridText)
                 throw new AssertFailedException("Deserializovaný objekt neobsahuje odpovídající obsah v WorkGridu, má být " + workGridText + "; je " + workClonText + ".");
 
-            GuiGraphTable workItemsB = data.FindByFullName(@"Data\pageMain\mainPanel\workGrid\workItems") as GuiGraphTable;
+            GuiGraphTable workItemsB = data.FindByFullName(guiMainItems) as GuiGraphTable;
 
-            GuiGraphItem graphItem4B = data.FindByFullName(@"Data\pageMain\mainPanel\workGrid\workItems\1817:4") as GuiGraphItem;
+            GuiGraphItem graphItem4B = data.FindByFullName(guiItem4Path) as GuiGraphItem;
             if (graphItem4B == null)
                 throw new AssertFailedException("Deserializovaný objekt neobsahuje grafický prvek 4.");
 
