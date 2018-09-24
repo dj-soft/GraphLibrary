@@ -41,9 +41,15 @@ namespace Asol.Tools.WorkScheduler
         /// Konstruktor
         /// </summary>
         /// <param name="sessionId">SessionId dat</param>
-        /// <param name="request">Data pro požadavek. Předává se do aplikační funkce. Jde o instanci třídy <see cref="GuiRequest"/>, konkrétní požadavek je spcifikován v <see cref="GuiRequest.Command"/>, jeho text pochází z konstant {<see cref="GuiRequest.COMMAND_OpenRecords"/> atd.} </param>
-        /// <param name="userData">Libovolná uživatelská data, která si připraví GUI v místě, kde vzniká požadavek; a která následně vyhodnotí v místě, kde se zpracovává odpověď. Nepředává se do aplikační funkce.</param>
-        /// <param name="callBackAction">Metoda, která bude zavolána po doběhnutí požadavku. Požadavek se provádí asynchronně.</param>
+        /// <param name="request">Data pro požadavek. Předává se do aplikační funkce. 
+        /// Jde o instanci třídy <see cref="GuiRequest"/>.
+        /// Konkrétní požadavek je specifikován v <see cref="GuiRequest.Command"/>, jeho hodnota pochází z konstant {<see cref="GuiRequest.COMMAND_OpenRecords"/> atd}.</param>
+        /// <param name="userData">Libovolná uživatelská data, která si připraví GUI v místě, kde vzniká požadavek; a která následně vyhodnotí v místě, kde se zpracovává odpověď. 
+        /// Nepředává se do aplikační funkce.</param>
+        /// <param name="callBackAction">Metoda, která bude zavolána po doběhnutí požadavku.
+        /// Požadavek se zpracovává asynchronně, odpověď (response) přijde v jiném threadu, a do threadu GUI je invokována.
+        /// Tato metoda dostává data ve formě <see cref="AppHostResponseArgs"/>, součástí dat je i původní požadavek (zdejší argument request) a v něm tedy i přidaná data (zdejší argument userData).
+        /// </param>
         public AppHostRequestArgs(int? sessionId, GuiRequest request, object userData = null, Action<AppHostResponseArgs> callBackAction = null)
         {
             this.SessionId = sessionId;

@@ -1744,7 +1744,14 @@ namespace Noris.LCS.Base.WorkScheduler
     #endregion
     #region GuiRequest : data předávaná z WorkScheduler do Helios Green jako součást požadavku
     /// <summary>
-    /// GuiRequest : data předávaná z WorkScheduler do Helios Green jako součást požadavku
+    /// GuiRequest : data předávaná z WorkScheduler do Helios Green jako součást požadavku.
+    /// GUI vrstva pluginu WorkScheduler (GraphLibrary) tato data vygeneruje ze svého aktuálního stavu, a předá je do klientského pluginu ASOL.WorkScheduler.
+    /// Klientský plugin (v Connector.cs) vyvolá servisní funkci, a do ní předá serializovaný obraz této instance (do ServiceGateUserData).
+    /// Servisní funkce si převezme serializovaný obraz a deserializuje zpět instanci <see cref="GuiRequest"/>, najde její <see cref="GuiRequest.Command"/>
+    /// a vyvolá odpovídající metodu. Ta zajistí zpracování požadavku, a nakonec vytvoří new instanci třídy <see cref="GuiResponse"/>, do které vloží výsledná data.
+    /// Ta se vracejí ze servisní funkce v serializované podobě (v ServiceGateUserData) zpátky do klientského pluginu.
+    /// Klientský plugin data najde, deserializuje, spojí je s původním požadavkem <see cref="GuiRequest"/> a předá do GUI vrstvy pluginu WorkScheduler (GraphLibrary).
+    /// Tam pak může dojít k požadované reakci, například přemístění prvku grafu, nebo změna jeho charakteru.
     /// </summary>
     public class GuiRequest
     {
@@ -1812,6 +1819,11 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Objekt <see cref="GuiRequest"/> nese informaci o konkrétní kontextové funkci v property <see cref="GuiRequest.ToolbarItem"/> 
         /// </summary>
         public const string COMMAND_ContextMenuClick = "ContextMenuClick";
+        /// <summary>
+        /// Byl přemístěn prvek grafu.
+        /// Aplikační servisní funkce může určit správnější cílové umístění na základě rozsáhlejších informací a algoritmů, než má k dispozici plugin.
+        /// </summary>
+        public const string COMMAND_GraphItemMove = "GraphItemMove";
 
 
         /// <summary>

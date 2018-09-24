@@ -51,18 +51,19 @@ namespace Asol.Tools.WorkScheduler.Data
                     orig.Tabulka[r, c] = "Pozice(" + r + "," + c + ")";
 
             orig.Sachovnice = new Dictionary<GuiId, Rectangle>();
-            GuiId key0 = new GuiId(1, 101);
-            GuiId key5 = new GuiId(1, 106);
-            orig.Sachovnice.Add(key0, new Rectangle(1, 1, 1, 1));
+            GuiId key1 = new GuiId(1, 101);
+            GuiId key6 = new GuiId(1, 106);
+            orig.Sachovnice.Add(key1, new Rectangle(1, 1, 1, 1));
             orig.Sachovnice.Add(new GuiId(1, 102), new Rectangle(2, 2, 2, 2));
             orig.Sachovnice.Add(new GuiId(1, 103), new Rectangle(3, 3, 3, 3));
             orig.Sachovnice.Add(new GuiId(1, 104), new Rectangle(4, 4, 4, 4));
             orig.Sachovnice.Add(new GuiId(1, 105), new Rectangle(5, 5, 5, 5));
-            orig.Sachovnice.Add(key5, new Rectangle(6, 6, 6, 6));
+            orig.Sachovnice.Add(key6, new Rectangle(6, 6, 6, 6));
 
-            string xml = Persist.Serialize(orig);
+            string zip = Persist.Serialize(orig, PersistArgs.Compressed);
+            string xml = Persist.Serialize(orig, PersistArgs.Default);
 
-            TestPersist copy = Persist.Deserialize(xml) as TestPersist;
+            TestPersist copy = Persist.Deserialize(zip) as TestPersist;
 
             // Test shodného obsahu:
             if (copy.GuiId == null) throw new AssertFailedException("TestPersist.GuiId is null");
@@ -78,16 +79,14 @@ namespace Asol.Tools.WorkScheduler.Data
             if (copy.Tabulka.Rank != 2) throw new AssertFailedException("TestPersist.Tabulka has Rank != 2");
             if (copy.Tabulka.GetLength(0) != 30) throw new AssertFailedException("TestPersist.Tabulka has Length(0) != 30");
             if (copy.Tabulka.GetLength(1) != 6) throw new AssertFailedException("TestPersist.Tabulka has Length(1) != 6");
+            if (copy.Tabulka[12,2] != "Pozice(12,2)") throw new AssertFailedException("TestPersist.Tabulka has bad value in cell [12,2]");
 
             if (copy.Sachovnice == null) throw new AssertFailedException("TestPersist.Sachovnice is null");
             if (copy.Sachovnice.Count != 6) throw new AssertFailedException("TestPersist.Sachovnice has bad count");
-            if (!copy.Sachovnice.ContainsKey(key0)) throw new AssertFailedException("TestPersist.Sachovnice does not contains key0");
-            if (copy.Sachovnice[key0].Top != 1) throw new AssertFailedException("TestPersist.Sachovnice in [key0] has bad value");
-            if (!copy.Sachovnice.ContainsKey(key5)) throw new AssertFailedException("TestPersist.Sachovnice does not contains key5");
-            if (copy.Sachovnice[key5].Top != 6) throw new AssertFailedException("TestPersist.Sachovnice in [key5] has bad value");
-
-
-
+            if (!copy.Sachovnice.ContainsKey(key1)) throw new AssertFailedException("TestPersist.Sachovnice does not contains key0");
+            if (copy.Sachovnice[key1].Top != 1) throw new AssertFailedException("TestPersist.Sachovnice in [key0] has bad value");
+            if (!copy.Sachovnice.ContainsKey(key6)) throw new AssertFailedException("TestPersist.Sachovnice does not contains key5");
+            if (copy.Sachovnice[key6].Top != 6) throw new AssertFailedException("TestPersist.Sachovnice in [key5] has bad value");
         }
         internal class TestPersist
         {

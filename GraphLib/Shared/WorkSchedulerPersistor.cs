@@ -13,6 +13,7 @@ using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Linq;
 using System.Collections;
+using System.IO;
 
 // Tento soubor obsahuje třídy, které provádějí serializaci a deserializaci libovolného objektu do XML formátu.
 // Tento soubor se nachází jednak v Greenu: Noris\App\Lcs\Base\WorkSchedulerPersistor.cs, a zcela identický i v GraphLibrary: \GraphLib\Shared\WorkSchedulerPersistor.cs
@@ -28,7 +29,8 @@ namespace Noris.LCS.Base.WorkScheduler
         #region Statické public metody
         /// <summary>
         /// Zajistí persistenci (uložení = serializaci) datového objektu do stringu podle implicitních parametrů.
-		/// Vrátí stringovou reprezentaci objektu.
+		/// Vrátí stringovou reprezentaci objektu s defaultním nastavením.
+        /// Změnu nastavení lze specifikovat zadáním druhého parametru, třídy <see cref="PersistArgs"/>.
         /// </summary>
         /// <param name="data"></param>
         /// <returns></returns>
@@ -39,6 +41,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <summary>
         /// Zajistí persistenci (uložení = serializaci) datového objektu do stringu podle daných parametrů.
 		/// Pokud je v parametru vyplněn soubor (XmlFile), pak je XML uložen do daného souboru, v korektním kódování UTF-8 (včetně záhlaví XML!)
+        /// Parametry lze snadno získat ze statických property <see cref="PersistArgs.Default"/>, <see cref="PersistArgs.Compressed"/>, <see cref="PersistArgs.MinimalXml"/>...
 		/// Vrátí stringovou reprezentaci objektu.
 		/// </summary>
         /// <param name="data"></param>
@@ -50,6 +53,7 @@ namespace Noris.LCS.Base.WorkScheduler
         }
         /// <summary>
         /// Vytvoří objekt ze serializovaného stavu, který je dodán jako string do této metody.
+        /// Změnu nastavení lze specifikovat zadáním druhého parametru, třídy <see cref="PersistArgs"/>.
         /// </summary>
         /// <param name="source"></param>
         /// <returns></returns>
@@ -59,6 +63,7 @@ namespace Noris.LCS.Base.WorkScheduler
         }
         /// <summary>
 		/// Vytvoří objekt ze serializovaného stavu, který je definován v argumentu (může to být string, nebo soubor).
+        /// Parametry lze snadno získat ze statických property <see cref="PersistArgs.Default"/>, <see cref="PersistArgs.Compressed"/>, <see cref="PersistArgs.MinimalXml"/>...
         /// </summary>
         /// <param name="parameters"></param>
         /// <returns></returns>
@@ -79,7 +84,8 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <summary>
         /// Určená data rekonstruuje a naplní je do předaného objektu.
         /// Předaný objekt nemůže být null, protože se nepředává jako reference (ref).
-		/// Pokud by měl být objekt null, je třeba využít metodu Persist.Deserialize().
+        /// Pokud by měl být objekt null, je třeba využít metodu Persist.Deserialize().
+        /// Parametry lze snadno získat ze statických property <see cref="PersistArgs.Default"/>, <see cref="PersistArgs.Compressed"/>, <see cref="PersistArgs.MinimalXml"/>...
         /// </summary>
         /// <param name="parameters"></param>
         /// <param name="data"></param>
@@ -111,10 +117,9 @@ namespace Noris.LCS.Base.WorkScheduler
         {
             if (source == null) return null;
             PersistArgs parameters = PersistArgs.Default;
-            if (source.Trim().StartsWith("<"))
-                parameters.XmlContent = source;
-            else
-                parameters.XmlFile = source;
+            if (source.Trim().StartsWith(PersistArgs.XmlStringHeader)) parameters.XmlContent = source;  // XML obsah
+            else if (source.Contains("\\")) parameters.XmlFile = source;       // Soubor (obsahuje adresáře)
+            else parameters.DataContent = source;                              // ZIP obsah (ten neobsahuje lomítka)
             return parameters;
         }
         #endregion
@@ -142,6 +147,7 @@ namespace Noris.LCS.Base.WorkScheduler
             xs.NewLineOnAttributes = false;
             xs.OmitXmlDeclaration = false;
             this.WriterSettings = xs;
+            this.CompressMode = XmlCompressMode.None;
         }
         /// <summary>
         /// Defaultní parametry
@@ -171,6 +177,27 @@ namespace Noris.LCS.Base.WorkScheduler
             }
         }
         /// <summary>
+        /// Parametry pro vytváření komprimovaného stingu, s minimální XML režií
+        /// </summary>
+        public static PersistArgs Compressed
+        {
+            get
+            {
+                PersistArgs args = new PersistArgs();
+                args.WriterSettings.ConformanceLevel = ConformanceLevel.Document;
+                args.WriterSettings.Encoding = Encoding.UTF8;
+                args.WriterSettings.CheckCharacters = false;
+                args.WriterSettings.Indent = false;
+                args.WriterSettings.IndentChars = "";
+                args.WriterSettings.NewLineHandling = NewLineHandling.None;
+                args.WriterSettings.NewLineChars = Environment.NewLine;
+                args.WriterSettings.NewLineOnAttributes = false;
+                args.WriterSettings.OmitXmlDeclaration = false;
+                args.CompressMode = XmlCompressMode.Compress;
+                return args;
+            }
+        }
+        /// <summary>
         /// Nastavení pro zápis XML
         /// </summary>
         public XmlWriterSettings WriterSettings { get; set; }
@@ -179,16 +206,30 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public string XmlFile { get; set; }
         /// <summary>
-        /// Obsah XML dat.
-        /// Při načítání (Load), pokud je určen soubor XmlFile, je obsah uložen sem (obsah souboru se načte a vloží do XmlContent). 
-        /// Pokud při Load není soubor XmlFile určen, přebírá se XML text odsud.
-        /// Při ukládání (Save) je obsah XML vždy uložen i sem.
+        /// Čitelný obsah XML dat.
+        /// Pokud vstupní data <see cref="DataContent"/> jsou komprimovaná, pak zde v <see cref="XmlContent"/> jsou data přítomna v neserializované podobě.
         /// </summary>
         public string XmlContent { get; set; }
+        /// <summary>
+        /// Serializovaná data.
+        /// Zde mohou být data v komprimované podobě.
+        /// Do této property se při deserializaci mají ukládat data zvenku (tj. i ze souboru), zde proběhne jejich detekce a případná dekomprimace do property <see cref="XmlContent"/>.
+        /// Při serializaci se mají výstupní data číst odsud, zde budou v případě požadavku na komprimaci <see cref="CompressMode"/> uložena komprimovaná.
+        /// </summary>
+        public string DataContent { get; set; }
+        /// <summary>
+        /// Režim komprimace.
+        /// Defaultní je <see cref="XmlCompressMode.None"/> = výstupní string není komprimovaný.
+        /// </summary>
+        public XmlCompressMode CompressMode { get; set; }
         /// <summary>
         /// Stav deserializace = obsahuje případné problémy
         /// </summary>
         public XmlDeserializeStatus DeserializeStatus { get; set; }
+        /// <summary>
+        /// Začátek XML stringu pro jeho detekci: "<?xml version="
+        /// </summary>
+        public static string XmlStringHeader { get { return "<?xml version="; } }
     }
     /// <summary>
     /// Stav serializace/deserializace
@@ -219,6 +260,24 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Chybný formát hodnot
         /// </summary>
         BadFormatValue
+    }
+    /// <summary>
+    /// Režim komprimace serializovaného stringu
+    /// </summary>
+    public enum XmlCompressMode
+    {
+        /// <summary>
+        /// Bez komprimace, čitelný text.
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Komprimovaný string.
+        /// </summary>
+        Compress,
+        /// <summary>
+        /// Automaticky: při serializaci se komprimace použije jen tehdy, pokud délka čitelného XML stringu přesáhne 2KB.
+        /// </summary>
+        Auto
     }
     #endregion
 
@@ -1621,11 +1680,12 @@ namespace Noris.LCS.Base.WorkScheduler
             using (XmlPersist xmlPersist = new XmlPersist())
             {
                 parameters.XmlContent = xmlPersist._Serialize(data, parameters);
+                _PrepareDataFromXml(parameters);
             }
             if (parameters.XmlFile != null)
-                SaveXmlToFile(parameters.XmlContent, parameters.XmlFile);
+                SaveXmlToFile(parameters.DataContent, parameters.XmlFile);
 
-            return parameters.XmlContent;
+            return parameters.DataContent;
         }
         /// <summary>
         /// Uloží daný XML obsah do daného souboru.
@@ -1647,6 +1707,7 @@ namespace Noris.LCS.Base.WorkScheduler
         {
             using (XmlPersist xmlPersist = new XmlPersist())
             {
+                _PrepareXmlFromData(parameters);
                 return xmlPersist._Deserialize(parameters);
             }
         }
@@ -1660,6 +1721,7 @@ namespace Noris.LCS.Base.WorkScheduler
         {
             using (XmlPersist xmlPersist = new XmlPersist())
             {
+                _PrepareXmlFromData(parameters);
                 object result = xmlPersist._Deserialize(parameters);
                 xmlPersist._CloneProperties(result, data);
             }
@@ -1667,7 +1729,8 @@ namespace Noris.LCS.Base.WorkScheduler
         #endregion
         #region Privátní výkonné metody: Save
         /// <summary>
-        /// Serializuje daný objekt s danými parametry
+        /// Serializuje daný objekt s danými parametry.
+        /// Výstupem je XML string.
         /// </summary>
         /// <param name="data"></param>
         /// <param name="parameters"></param>
@@ -1740,6 +1803,7 @@ namespace Noris.LCS.Base.WorkScheduler
         #region Privátní výkonné metody: Load
         /// <summary>
         /// Z dodaného XML obsahu sestaví a vrátí odpovídající objekt.
+        /// Vstupní string se serializovaným obsahem očekává v <see cref="PersistArgs.XmlContent"/>.
         /// </summary>
         /// <param name="parameters"></param>
         /// <returns></returns>
@@ -1750,8 +1814,6 @@ namespace Noris.LCS.Base.WorkScheduler
             XmDocument xmDoc = null;
             if (!String.IsNullOrEmpty(parameters.XmlContent))
                 xmDoc = XmDocument.CreateFromString(parameters.XmlContent);
-            else if (!String.IsNullOrEmpty(parameters.XmlFile))
-                xmDoc = XmDocument.CreateFromFile(parameters.XmlFile);
             if (xmDoc == null)
             {
                 parameters.DeserializeStatus = XmlDeserializeStatus.NotInput;
@@ -1923,12 +1985,51 @@ namespace Noris.LCS.Base.WorkScheduler
             }
         }
         #endregion
+        #region Privátní výkonné metody: komprimace a dekomprimace
+        /// <summary>
+        /// Metoda zajistí provedení komprimace dodaných XML dat podle nastavení v parametru.
+        /// </summary>
+        /// <param name="parameters"></param>
+        /// <returns></returns>
+        private static void _PrepareDataFromXml(PersistArgs parameters)
+        {
+            string xmlContent = parameters.XmlContent;
+            string dataContent = xmlContent;
+            XmlCompressMode mode = parameters.CompressMode;
+            if (xmlContent != null && (mode == XmlCompressMode.Compress || (mode == XmlCompressMode.Auto && xmlContent.Length >= 2048)))
+                dataContent = Compress(xmlContent, false);
+            parameters.DataContent = dataContent;
+        }
+        /// <summary>
+        /// Metoda zajistí provedení dekomprimace dodaných XML dat.
+        /// Zajistí načtení dat ze souboru <see cref="PersistArgs.XmlFile"/>, pokud je to zapotřebí.
+        /// Zajistí dekomprimaci z <see cref="PersistArgs.DataContent"/>, pokud tam jsou data komprimovaná.
+        /// Výsledkem je, že v property <see cref="PersistArgs.XmlContent"/> je čitelný serializovaný obsah.
+        /// </summary>
+        /// <param name="parameters"></param>
+        private static void _PrepareXmlFromData(PersistArgs parameters)
+        {
+            // a) načíst ze souboru, pokud nemám jiná data zadaná:
+            if (String.IsNullOrEmpty(parameters.XmlContent) && String.IsNullOrEmpty(parameters.DataContent) && !String.IsNullOrEmpty(parameters.XmlFile))
+                parameters.DataContent = System.IO.File.ReadAllText(parameters.XmlFile, Encoding.UTF8);
+            // b) zpracovat data do xml, včetně dekomprimace:
+            if (String.IsNullOrEmpty(parameters.XmlContent) && !String.IsNullOrEmpty(parameters.DataContent))
+            {
+                string dataContent = parameters.DataContent;
+                if (dataContent.Trim().StartsWith(PersistArgs.XmlStringHeader, StringComparison.InvariantCultureIgnoreCase))
+                    parameters.XmlContent = dataContent;
+                else
+                    // Máme data, ale nezačínají tak, jak by měla (""), zkusíme provést dekomprimaci:
+                    parameters.XmlContent = TryDecompress(dataContent);
+            }
+        }
+        #endregion
         #region Simple typy: Save, Create
         /// <summary>
-		/// Daný objekt (data) konvertuje pomocí TypeConvertoru pro Simple typ, a výslednou hodnotu vloží do atributu daného jména.
-		/// </summary>
+        /// Daný objekt (data) konvertuje pomocí TypeConvertoru pro Simple typ, a výslednou hodnotu vloží do atributu daného jména.
+        /// </summary>
         /// <param name="args">Kompletní datový balík</param>
-		private void SimpleTypeSave(XmlPersistSaveArgs args)
+        private void SimpleTypeSave(XmlPersistSaveArgs args)
         {
             NotifyData(args.Data, XmlPersistState.SaveBegin);
 
@@ -2743,6 +2844,74 @@ namespace Noris.LCS.Base.WorkScheduler
                 if (xmlPersistState == XmlPersistState.LoadDone || xmlPersistState == XmlPersistState.SaveDone)
                     xmlPers.XmlPersistState = XmlPersistState.None;
             }
+        }
+        #endregion
+        #region Komprimace a dekomprimace stringu
+        /// <summary>
+        /// Metoda vrátí daný string KOMPRIMOVANÝ pomocí <see cref="System.IO.Compression.GZipStream"/>, převedený do Base64 stringu.
+        /// Standardní serializovanou DataTable tato komprimace zmenší na cca 3-5% původní délky stringu.
+        /// </summary>
+        /// <param name="source">Vstupní string</param>
+        /// <param name="splitToRows">Rozdělit výstupní komprimát na řádky (použije se <see cref="Base64FormattingOptions.InsertLineBreaks"/>).</param>
+        /// <returns></returns>
+        public static string Compress(string source, bool splitToRows = false)
+        {
+            if (source == null || source.Length == 0) return source;
+
+            string target = null;
+            byte[] inpBuffer = System.Text.Encoding.UTF8.GetBytes(source);
+            using (System.IO.MemoryStream inpStream = new MemoryStream(inpBuffer))
+            using (System.IO.MemoryStream outStream = new MemoryStream())
+            {
+                using (System.IO.Compression.GZipStream zipStream = new System.IO.Compression.GZipStream(outStream, System.IO.Compression.CompressionMode.Compress))
+                {
+                    inpStream.CopyTo(zipStream);
+                }   // Obsah streamu outStream je použitelný až po Dispose streamu GZipStream !
+                outStream.Flush();
+                byte[] outBuffer = outStream.ToArray();
+                Base64FormattingOptions options = (splitToRows ? Base64FormattingOptions.InsertLineBreaks : Base64FormattingOptions.None);
+                target = System.Convert.ToBase64String(outBuffer, options);
+            }
+            return target;
+        }
+        /// <summary>
+        /// Metoda vrátí daný string DEKOMPRIMOVANÝ pomocí <see cref="System.IO.Compression.GZipStream"/>, převedený z Base64 stringu.
+        /// Pokud někde dojde k chybě, vrátí null ale ne chybu.
+        /// </summary>
+        /// <param name="source"></param>
+        /// <returns></returns>
+        public static string TryDecompress(string source)
+        {
+            try
+            {
+                return Decompress(source);
+            }
+            catch { }
+            return null;
+        }
+        /// <summary>
+        /// Metoda vrátí daný string DEKOMPRIMOVANÝ pomocí <see cref="System.IO.Compression.GZipStream"/>, převedený z Base64 stringu.
+        /// </summary>
+        /// <param name="source"></param>
+        /// <returns></returns>
+        public static string Decompress(string source)
+        {
+            if (source == null || source.Length == 0) return source;
+
+            string target = null;
+            byte[] inpBuffer = System.Convert.FromBase64String(source);
+            using (System.IO.MemoryStream inpStream = new MemoryStream(inpBuffer))
+            using (System.IO.MemoryStream outStream = new MemoryStream())
+            {
+                using (System.IO.Compression.GZipStream zipStream = new System.IO.Compression.GZipStream(inpStream, System.IO.Compression.CompressionMode.Decompress))
+                {
+                    zipStream.CopyTo(outStream);
+                }   // Obsah streamu outStream je použitelný až po Dispose streamu GZipStream !
+                outStream.Flush();
+                byte[] outBuffer = outStream.ToArray();
+                target = System.Text.Encoding.UTF8.GetString(outBuffer);
+            }
+            return target;
         }
         #endregion
         #region class XmlPersistSaveArgs : sada parametrů předávaných mezi vnitřními metodami XmlPersist při serializaci objektu
