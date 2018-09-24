@@ -292,12 +292,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             FontInfo fontInfo = FontInfo.CaptionBold;
             string text = this.GetCaption(e, boundsAbsolute, boundsVisibleAbsolute, fontInfo);
 
-            // Kreslit text:
-            if (!String.IsNullOrEmpty(text))
-            {
-                Color foreColor = this.GetColorWithOpacity(this.GControl.BackColor.Contrast(), e);
-                GPainter.DrawString(e.Graphics, boundsAbsolute, text, foreColor, fontInfo, ContentAlignment.MiddleCenter);
-            }
+            if (String.IsNullOrEmpty(text)) return;
+            this.GControl.DrawText(e, boundsVisibleAbsolute, text, fontInfo);
         }
         /// <summary>
         /// Metoda vrátí text, který má být zobrazen v grafickém prvku

@@ -1876,8 +1876,8 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             if (cell.Row.IsActive)
             {
                 Rectangle boundsActive = boundsAbsolute.Enlarge(0, 0, 0, -1);
-                Color colorTop = color.Morph(Skin.Modifiers.Effect3DDark, Skin.Modifiers.Effect3DRatio);
-                Color colorBottom = color.Morph(Skin.Modifiers.Effect3DLight, Skin.Modifiers.Effect3DRatio);
+                Color colorTop = Skin.Modifiers.GetColor3DBorderDark(color);
+                Color colorBottom = Skin.Modifiers.GetColor3DBorderLight(color);
                 GPainter.DrawBorder(e.Graphics, boundsActive, RectangleSide.Top | RectangleSide.Bottom, null, colorTop, null, colorBottom, null);
             }
         }

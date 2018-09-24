@@ -1055,7 +1055,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     if (this._IsDragEnabledCurrent)
                     {
                         this.BoundsDragOrigin = this.Bounds;
-                        this.DragThisStartBounds(e, this.Bounds);
+                        this.DragThisStart(e, this.Bounds);
                         this.RepaintToLayers = this.DragDrawToLayers;
                     }
                     break;
@@ -1063,7 +1063,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     if (this._IsDragEnabledCurrent && e.DragToRelativeBounds.HasValue)
                     {
                         this.BoundsDragTarget = e.DragToRelativeBounds.Value;
-                        this.DragThisOverBounds(e, e.DragToRelativeBounds.Value);
+                        this.DragThisOverPoint(e, e.DragToRelativeBounds.Value);
                         this.RepaintToLayers = this.DragDrawToLayers;
                     }
                     break;
@@ -1077,7 +1077,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 case DragActionType.DragThisDrop:
                     if (this._IsDragEnabledCurrent && this.BoundsDragTarget.HasValue)
                     {
-                        this.DragThisDropToBounds(e, this.BoundsDragTarget.Value);
+                        this.DragThisDropToPoint(e, this.BoundsDragTarget.Value);
                         this.RepaintToLayers = this.DragDrawToLayers;
                     }
                     break;
@@ -1086,14 +1086,14 @@ namespace Asol.Tools.WorkScheduler.Components
                     this.BoundsDragTarget = null;
                     this._IsDragEnabledCurrent = false;
                     this.Repaint();
-                    this.DragThisOverEnd(e);
+                    this.DragThisEnd(e);
                     this.DragThisOverEndFinal(e);
                     break;
             }
         }
         /// <summary>
         /// Metoda provádí úklid vnitřních dat procesu Drag and Drop po jeho skončení.
-        /// Metoda je volána v průběhu akce <see cref="DragActionType.DragThisEnd"/>, po proběhnutí metody <see cref="DragThisOverEnd(GDragActionArgs)"/>.
+        /// Metoda je volána v průběhu akce <see cref="DragActionType.DragThisEnd"/>, po proběhnutí metody <see cref="DragThisEnd(GDragActionArgs)"/>.
         /// </summary>
         protected void DragThisOverEndFinal(GDragActionArgs e)
         {
@@ -1110,34 +1110,34 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Volá se na začátku procesu přesouvání, pro aktivní objekt.
         /// Bázová třída už má uloženy výchozí souřadnice objektu do <see cref="BoundsDragOrigin"/>.
-        /// Bázová metoda <see cref="DragThisStartBounds(GDragActionArgs, Rectangle)"/> nic nedělá.
+        /// Bázová metoda <see cref="DragThisStart(GDragActionArgs, Rectangle)"/> nic nedělá.
         /// </summary>
         /// <param name="e"></param>
         /// <param name="targetRelativeBounds"></param>
-        protected virtual void DragThisStartBounds(GDragActionArgs e, Rectangle targetRelativeBounds)
+        protected virtual void DragThisStart(GDragActionArgs e, Rectangle targetRelativeBounds)
         { }
         /// <summary>
         /// Volá se v procesu přesouvání, pro aktivní objekt.
         /// Bázová třída v době volání této metody má uložené cílové souřadnice (dle parametru targetRelativeBounds) v proměnné <see cref="BoundsDragTarget"/>.
         /// Potomek může tuto souřadnici v této metodě změnit, a upravenou ji vložit do <see cref="BoundsDragTarget"/>.
         /// Anebo může zavolat base.DragThisOverBounds(e, upravená souřadnice), bázová metoda tuto upravenou hodnotu opět uloží do <see cref="BoundsDragTarget"/>.
-        /// Bázovou metodu <see cref="InteractiveDragObject.DragThisOverBounds(GDragActionArgs, Rectangle)"/> ale obecně není nutno volat.
+        /// Bázovou metodu <see cref="InteractiveDragObject.DragThisOverPoint(GDragActionArgs, Rectangle)"/> ale obecně není nutno volat.
         /// </summary>
         /// <param name="e"></param>
         /// <param name="targetRelativeBounds"></param>
-        protected virtual void DragThisOverBounds(GDragActionArgs e, Rectangle targetRelativeBounds)
+        protected virtual void DragThisOverPoint(GDragActionArgs e, Rectangle targetRelativeBounds)
         {
             this.BoundsDragTarget = targetRelativeBounds;
         }
         /// <summary>
         /// Volá se při ukončení Drag and Drop, při akci <see cref="DragActionType.DragThisDrop"/>, pro aktivní objekt (=ten který je přesouván).
-        /// Bázová metoda <see cref="InteractiveDragObject.DragThisDropToBounds(GDragActionArgs, Rectangle)"/> vepíše předané souřadnice (parametr targetRelativeBounds) 
+        /// Bázová metoda <see cref="InteractiveDragObject.DragThisDropToPoint(GDragActionArgs, Rectangle)"/> vepíše předané souřadnice (parametr targetRelativeBounds) 
         /// do this.Bounds pomocí metody <see cref="InteractiveObject.SetBounds(Rectangle, ProcessAction, EventSourceType)"/>.
         /// Pokud potomek chce modifikovat cílové souřadnice, stačí změnit hodnotu parametru targetRelativeBounds.
         /// </summary>
         /// <param name="e"></param>
         /// <param name="targetRelativeBounds"></param>
-        protected virtual void DragThisDropToBounds(GDragActionArgs e, Rectangle targetRelativeBounds)
+        protected virtual void DragThisDropToPoint(GDragActionArgs e, Rectangle targetRelativeBounds)
         {
             this.SetBounds(targetRelativeBounds, ProcessAction.DragValueActions, EventSourceType.InteractiveChanged | EventSourceType.BoundsChange);
         }
@@ -1147,7 +1147,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Bázová třída InteractiveDragObject nedělá nic.
         /// </summary>
         /// <param name="e"></param>
-        protected virtual void DragThisOverEnd(GDragActionArgs e)
+        protected virtual void DragThisEnd(GDragActionArgs e)
         { }
         /// <summary>
         /// Souřadnice (Bounds) tohoto objektu, platné před začátkem procesu Drag and Drop.
@@ -1172,7 +1172,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual GInteractiveDrawLayer DragDrawToLayers { get { return (GInteractiveDrawLayer.Standard | GInteractiveDrawLayer.Interactive); } }
         /// <summary>
         /// Sem si instance může uložit referenci na objekt, do kterého by měla být vložena po Dropnutí v procesu Drag and Drop.
-        /// Hodnota je nastavena na null na konci akce <see cref="DragActionType.DragThisEnd"/>, po proběhnutí metody <see cref="DragThisOverEnd(GDragActionArgs)"/>.
+        /// Hodnota je nastavena na null na konci akce <see cref="DragActionType.DragThisEnd"/>, po proběhnutí metody <see cref="DragThisEnd(GDragActionArgs)"/>.
         /// </summary>
         protected virtual IInteractiveItem DragDropTargetItem { get; set; }
         /// <summary>
@@ -1180,7 +1180,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Pokud je nastavena hodnota 0, pak se kreslení do Standard vrstvy neprovádí.
         /// Pokud je nastavena hodnota větší než 0, pak se provádí kreslení s nastavením grafiky na patřičnou transparentnost (s použitím ColorMatrix).
         /// Pokud je zde hodnota null, pak se kreslení provádí, ale grafika se nijak nemodifikuje (stejně jako při hodnotě 255).
-        /// Hodnota je nastavena na null na konci akce <see cref="DragActionType.DragThisEnd"/>, po proběhnutí metody <see cref="DragThisOverEnd(GDragActionArgs)"/>.
+        /// Hodnota je nastavena na null na konci akce <see cref="DragActionType.DragThisEnd"/>, po proběhnutí metody <see cref="DragThisEnd(GDragActionArgs)"/>.
         /// </summary>
         protected virtual int? DragDropDrawStandardOpacity { get; set; }
         /// <summary>
@@ -1188,7 +1188,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Pokud je nastavena hodnota 0, pak se kreslení do Interactive vrstvy neprovádí.
         /// Pokud je nastavena hodnota větší než 0, pak se provádí kreslení s nastavením grafiky na patřičnou transparentnost (s použitím ColorMatrix).
         /// Pokud je zde hodnota null, pak se kreslení provádí, ale grafika se nijak nemodifikuje (stejně jako při hodnotě 255).
-        /// Hodnota je nastavena na null na konci akce <see cref="DragActionType.DragThisEnd"/>, po proběhnutí metody <see cref="DragThisOverEnd(GDragActionArgs)"/>.
+        /// Hodnota je nastavena na null na konci akce <see cref="DragActionType.DragThisEnd"/>, po proběhnutí metody <see cref="DragThisEnd(GDragActionArgs)"/>.
         /// </summary>
         protected virtual int? DragDropDrawInteractiveOpacity { get; set; }
         #endregion

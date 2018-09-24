@@ -689,7 +689,8 @@ namespace Asol.Tools.WorkScheduler.Components
         public Color TextColorDisable { get { return this._Owner.GetValue(this._SkinSetKey, "TextColorDisable", DefaultTextColorDisable); } set { this._Owner.SetValue(this._SkinSetKey, "TextColorDisable", value); } }
         public Color Effect3DDark { get { return this._Owner.GetValue(this._SkinSetKey, "Effect3DDark", DefaultEffect3DDark); } set { this._Owner.SetValue(this._SkinSetKey, "Effect3DDark", value); } }
         public Color Effect3DLight { get { return this._Owner.GetValue(this._SkinSetKey, "Effect3DLight", DefaultEffect3DLight); } set { this._Owner.SetValue(this._SkinSetKey, "Effect3DLight", value); } }
-        public float Effect3DRatio { get { return this._Owner.GetValue(this._SkinSetKey, "Effect3DRatio", DefaultEffect3DRatio); } set { this._Owner.SetValue(this._SkinSetKey, "Effect3DRatio", value); } }
+        public float Effect3DBackgroundRatio { get { return this._Owner.GetValue(this._SkinSetKey, "Effect3DBackgroundRatio", DefaultEffect3DBackgroundRatio); } set { this._Owner.SetValue(this._SkinSetKey, "Effect3DBackgroundRatio", value); } }
+        public float Effect3DBorderRatio { get { return this._Owner.GetValue(this._SkinSetKey, "Effect3DRatio", DefaultEffect3DRatio); } set { this._Owner.SetValue(this._SkinSetKey, "Effect3DRatio", value); } }
         #endregion
         #region Default colors
         // Modifier colors: Alpha value (0-255) represents Morphing value (0-1) !!!
@@ -710,14 +711,15 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual Color DefaultTextColorDown { get { return Color.FromArgb(96, Color.DarkViolet); } }
         protected virtual Color DefaultTextColorDrag { get { return Color.FromArgb(96, Color.DarkViolet); } }
         protected virtual Color DefaultTextColorDisable { get { return Color.FromArgb(160, Color.Gray); } }
-        protected virtual Color DefaultEffect3DDark { get { return Color.DarkGray; } }
+        protected virtual Color DefaultEffect3DDark { get { return Color.Black; } }
         protected virtual Color DefaultEffect3DLight { get { return Color.White; } }
+        protected virtual float DefaultEffect3DBackgroundRatio { get { return 0.20f; } }
         protected virtual float DefaultEffect3DRatio { get { return 0.40f; } }
         #endregion
         #region Servis
         public Color GetColor3DBorderLight(Color borderColor)
         {
-            return borderColor.Morph(this.Effect3DLight, this.Effect3DRatio);
+            return borderColor.Morph(this.Effect3DLight, this.Effect3DBorderRatio);
         }
         public Color GetColor3DBorderLight(Color borderColor, float ratio)
         {
@@ -725,12 +727,30 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         public Color GetColor3DBorderDark(Color borderColor)
         {
-            return borderColor.Morph(this.Effect3DDark, this.Effect3DRatio);
+            return borderColor.Morph(this.Effect3DDark, this.Effect3DBorderRatio);
         }
         public Color GetColor3DBorderDark(Color borderColor, float ratio)
         {
             return borderColor.Morph(this.Effect3DDark, ratio);
         }
+
+        public Color GetColor3DBackgroundLight(Color borderColor)
+        {
+            return borderColor.Morph(this.Effect3DLight, this.Effect3DBackgroundRatio);
+        }
+        public Color GetColor3DBackgroundLight(Color borderColor, float ratio)
+        {
+            return borderColor.Morph(this.Effect3DLight, ratio);
+        }
+        public Color GetColor3DBackgroundDark(Color borderColor)
+        {
+            return borderColor.Morph(this.Effect3DDark, this.Effect3DBackgroundRatio);
+        }
+        public Color GetColor3DBackgroundDark(Color borderColor, float ratio)
+        {
+            return borderColor.Morph(this.Effect3DDark, ratio);
+        }
+
         #endregion
     }
     /// <summary>

@@ -555,13 +555,20 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             switch (args.DragAction)
             {
                 case DragActionType.DragThisStart:
+                    // Tady toho není moc k řešení...
                     break;
                 case DragActionType.DragThisMove:
+                    // Tady by se mělo řešit umístění (targetBounds) na ose Y, abych prvek přetahoval:
+                    //  a) ve svém grafu (=vodorovně) 
+                    //  b) do cizích grafů (=svisle): v původním čase
+                    xxx
                     break;
                 case DragActionType.DragThisDrop:
+                    // Tady by se měla volat metoda AppHost => aplikační funkce pro přepočet grafu:
 
                     break;
                 case DragActionType.DragThisEnd:
+                    // 
                     args.ParentGraph.Refresh();
                     break;
             }

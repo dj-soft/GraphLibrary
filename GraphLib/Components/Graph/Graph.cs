@@ -1800,6 +1800,10 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Výchozí hodnota je k dispozici v <see cref="DragArgs"/>, tam ji měnit nelze.
         /// </summary>
         public Rectangle? DragToAbsoluteBounds { get { return this._DragToRelativeBounds.Add(this._AbsOrigin); } set { this._DragToRelativeBounds = value.Sub(this._AbsOrigin); } }
+        /// <summary>
+        /// Absolutní souřadnice prvku na výchozí pozici = odkud se začal přesouvat
+        /// </summary>
+        public Rectangle OriginalAbsoluteBounds { get { return this._DragArgs.BoundsInfo.CurrentAbsBounds; } }
         #endregion
         #region Properties WriteInit
         /// <summary>
@@ -1930,6 +1934,9 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         public IInteractiveItem TargetDropItem { get; set; }
         #endregion
     }
+    /// <summary>
+    /// Umístění cílového prostoru pro prvek grafu
+    /// </summary>
     [Flags]
     public enum ItemDragTargetType
     {

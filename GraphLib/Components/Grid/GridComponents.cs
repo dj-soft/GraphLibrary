@@ -647,7 +647,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         /// <param name="e"></param>
         /// <param name="targetRelativeBounds"></param>
-        protected override void DragThisOverBounds(GDragActionArgs e, Rectangle targetRelativeBounds)
+        protected override void DragThisOverPoint(GDragActionArgs e, Rectangle targetRelativeBounds)
         {
             // base třída je ochotná přesunout this objekt do libovolného místa (to je ostatně její velké pozitivum).
             // Ale ColumnHeader má mít prostor pro posun omezen jen na vhodná místa mezi ostatními sloupci:
@@ -658,7 +658,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
 
             // V této chvíli si base třída zapracuje "upravené" souřadnice (bounds) do this objektu,
             //  takže this záhlaví se bude vykreslovat "jako duch" v tomto omezeném prostoru:
-            base.DragThisOverBounds(e, modifiedBounds);
+            base.DragThisOverPoint(e, modifiedBounds);
 
             // Vyhledáme okolní sloupce, mezi které bychom rádi vložili this sloupec:
             Column prevColumn, nextColumn;
@@ -672,7 +672,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         /// <param name="e"></param>
         /// <param name="boundsTarget"></param>
-        protected override void DragThisDropToBounds(GDragActionArgs e, Rectangle boundsTarget)
+        protected override void DragThisDropToPoint(GDragActionArgs e, Rectangle boundsTarget)
         {
             if (this.DragThisToColumnOrder.HasValue)
                 this.OwnerGGrid.ColumnMoveTo(this.OwnerColumn, this.DragThisToColumnOrder.Value);
@@ -682,9 +682,9 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// Účelem je provést úklid po skončení přetahování.
         /// </summary>
         /// <param name="e"></param>
-        protected override void DragThisOverEnd(GDragActionArgs e)
+        protected override void DragThisEnd(GDragActionArgs e)
         {
-            base.DragThisOverEnd(e);
+            base.DragThisEnd(e);
             this.OwnerGTable.Columns.ForEachItem(c => c.ColumnHeader.ResetInsertMark());
             this.DragThisToColumnOrder = null;
         }

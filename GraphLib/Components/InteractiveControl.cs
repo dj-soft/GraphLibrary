@@ -2225,7 +2225,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         protected Color DrawBorderGet3DColor(RectangleSide side, Color color, bool is3DSunken)
         {
-            float ratio = Skin.Modifiers.Effect3DRatio;
+            float ratio = Skin.Modifiers.Effect3DBorderRatio;
             Color dark = Skin.Modifiers.Effect3DDark;
             Color light = Skin.Modifiers.Effect3DLight;
             switch (side)

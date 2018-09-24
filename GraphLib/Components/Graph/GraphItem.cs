@@ -1,4 +1,5 @@
 ﻿using Asol.Tools.WorkScheduler.Data;
+using Noris.LCS.Base.WorkScheduler;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -8,7 +9,6 @@ using System.Threading.Tasks;
 
 namespace Asol.Tools.WorkScheduler.Components.Graph
 {
-    #region class GTimeGraphItem : vizuální a interaktivní control, který se vkládá do implementace ITimeGraphItem
     /// <summary>
     /// GTimeGraphItem : vizuální a interaktivní control, který se vkládá do implementace ITimeGraphItem.
     /// Tento prvek je zobrazován ve dvou režimech: buď jako přímý child prvek vizuálního grafu, pak reprezentuje grupu prvků (i kdyby grupa měla jen jeden prvek),
@@ -89,6 +89,16 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Může být null.
         /// </summary>
         protected Color? ItemLineColor { get { return this._Owner.LineColor; } }
+        /// <summary>
+        /// Barva pozadí části Ratio, načtená z <see cref="ITimeGraphItem.RatioBackColor"/>. 
+        /// Může být null.
+        /// </summary>
+        protected Color? RatioBackColor { get { return this._Owner.RatioBackColor; } }
+        /// <summary>
+        /// Barva linie části Ratio, načtená z <see cref="ITimeGraphItem.RatioLineColor"/>. 
+        /// Může být null.
+        /// </summary>
+        protected Color? RatioLineColor { get { return this._Owner.RatioLineColor; } }
 
         #endregion
         #region Child prvky: přidávání, kolekce
@@ -160,7 +170,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             }
         }
         #endregion
-        #region Přetahování (Drag & Drop) : týká se výhradně prvků typu Group!
+        #region Přetahování (Drag and Drop) : týká se výhradně prvků typu Group!
         /// <summary>
         /// Vrací true, pokud daný prvek může být přemísťován.
         /// </summary>
@@ -169,26 +179,46 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             get { return (this._Position == GGraphControlPosition.Group && this._Group.IsDragEnabled); }
             set { }
         }
-        protected override void DragThisStartBounds(GDragActionArgs e, Rectangle targetRelativeBounds)
+        /// <summary>
+        /// Volá se na začátku procesu přesouvání, pro aktivní objekt.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="targetRelativeBounds"></param>
+        protected override void DragThisStart(GDragActionArgs e, Rectangle targetRelativeBounds)
         {
             this.DragDropGroupCallSource(e, ref targetRelativeBounds);
-            base.DragThisStartBounds(e, targetRelativeBounds);
+            base.DragThisStart(e, targetRelativeBounds);
         }
-        protected override void DragThisOverBounds(GDragActionArgs e, Rectangle targetRelativeBounds)
+        /// <summary>
+        /// Volá se v procesu přesouvání, pro aktivní objekt.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="targetRelativeBounds"></param>
+        protected override void DragThisOverPoint(GDragActionArgs e, Rectangle targetRelativeBounds)
         {
             this.DragDropGroupCallSource(e, ref targetRelativeBounds);
-            base.DragThisOverBounds(e, targetRelativeBounds);
+            base.DragThisOverPoint(e, targetRelativeBounds);
         }
-        protected override void DragThisDropToBounds(GDragActionArgs e, Rectangle targetRelativeBounds)
+        /// <summary>
+        /// Volá se při ukončení Drag and Drop, při akci <see cref="DragActionType.DragThisDrop"/>, pro aktivní objekt (=ten který je přesouván).
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="targetRelativeBounds"></param>
+        protected override void DragThisDropToPoint(GDragActionArgs e, Rectangle targetRelativeBounds)
         {
             this.DragDropGroupCallSource(e, ref targetRelativeBounds);
-            base.DragThisDropToBounds(e, targetRelativeBounds);
+            base.DragThisDropToPoint(e, targetRelativeBounds);
         }
-        protected override void DragThisOverEnd(GDragActionArgs e)
+        /// <summary>
+        /// Je voláno po skončení přetahování, ať už skončilo OK (=Drop) nebo Escape (=Cancel).
+        /// Účelem je provést úklid aplikačních dat po skončení přetahování.
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void DragThisEnd(GDragActionArgs e)
         {
             Rectangle targetRelativeBounds = Rectangle.Empty;
             this.DragDropGroupCallSource(e, ref targetRelativeBounds);
-            base.DragThisOverEnd(e);
+            base.DragThisEnd(e);
             this._Group.DragDropDrawInteractiveOpacity = null;
         }
         /// <summary>
@@ -236,7 +266,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             // On by mohl i zařídit "scrollování" v čase (osa X => TimeAxis) nebo v místě (osa Y => řádek, kam položku přesunout):
             this.Graph.DragDropGroupCallSource(args);
 
-            // Převezmu výsledky (buď defaultní, nebo modifikované datovým zdrojem):
+            // Převezmu výsledky (buď defaultní, nebo modifikované aplikační logikou):
             this.DragDropTargetItem = args.TargetDropItem;
             this._Group.DragDropDrawInteractiveOpacity = args.TargetValidityOpacity;
             if (args.DragToAbsoluteBounds.HasValue)
@@ -291,7 +321,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             return minValue + ((maxDistance - distance) / maxDistance) * (maxValue - minValue);
         }
         #endregion
-        #region Kreslení prvku
+        #region Kreslení prvku - řízení a obecná rovina
         /// <summary>
         /// Vykreslí this prvek
         /// </summary>
@@ -343,6 +373,12 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             }
         }
         /// <summary>
+        /// Volba, zda metoda <see cref="InteractiveObject.Repaint()"/> způsobí i vyvolání metody Parent.Repaint().
+        /// </summary>
+        protected override RepaintParentMode RepaintParent { get { return RepaintParentMode.Always; } }
+        #endregion
+        #region Fyzické kreslení grupy (= spojovací linie a text)
+        /// <summary>
         /// Vykreslí prvek typu <see cref="GGraphControlPosition.Group"/> = podklad pod konkrétními prvky = spojovací čára
         /// </summary>
         /// <param name="e"></param>
@@ -352,15 +388,39 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             // Barva pozadí se přebírá z prvního prvku. Pokud prvek nemá barvu pozadí, pak se nekreslí ani spojovací linie:
             Color? itemBackColor = this.ItemBackColor;
-            if (!itemBackColor.HasValue) return;
-            Color color;
+            if (itemBackColor.HasValue)
+            {
+                // Reálně použitá barva pozadí pro spojovací linii je částečně (33%) průhledná:
+                Color color = this._Group.GetColorWithOpacity(Color.FromArgb(170, itemBackColor.Value), e);
 
-            // Reálně použitá barva pozadí pro spojovací linii je částečně (33%) průhledná:
-            color = Color.FromArgb(170, itemBackColor.Value);
-            color = this._Group.GetColorWithOpacity(color, e);
-            Rectangle realBounds = boundsAbsolute.Enlarge(-1, -2, -1, -2);
-            GPainter.DrawEffect3D(e.Graphics, realBounds, color, System.Windows.Forms.Orientation.Horizontal, this.InteractiveState, force3D: false);
+                Rectangle boundsTop, boundsCenter, boundsBottom;
+                _CreateBounds(boundsAbsolute, false, out boundsTop, out boundsCenter, out boundsBottom);
+
+                float? effect3D = this._GetEffect3D(false);
+                GPainter.DrawEffect3D(e.Graphics, boundsCenter, color, System.Windows.Forms.Orientation.Horizontal, effect3D, null);
+            }
         }
+        /// <summary>
+        /// Vykreslí text dané grupy
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="text"></param>
+        /// <param name="fontInfo"></param>
+        internal void DrawText(GInteractiveDrawArgs e, Rectangle boundsAbsolute, string text, FontInfo fontInfo)
+        {
+            Color? itemBackColor = this.ItemBackColor;
+            if (!itemBackColor.HasValue)
+                itemBackColor = this.RatioBackColor;
+            if (!itemBackColor.HasValue)
+                itemBackColor = Skin.Graph.BackColor;
+            Color foreColor = itemBackColor.Value.Contrast();
+            Rectangle boundsText = boundsAbsolute;
+            boundsText.Y = boundsText.Y - 1;               // Vlastnost Windows: nahoru se text o 1px posunout může.
+            GPainter.DrawString(e.Graphics, boundsText, text, foreColor, fontInfo, ContentAlignment.MiddleCenter);
+        }
+        #endregion
+        #region Fyzické kreslení prvku
         /// <summary>
         /// Vykreslí prvek typu <see cref="GGraphControlPosition.Item"/> = vlastní grafický prvek
         /// </summary>
@@ -379,24 +439,33 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 color = this._Group.GetColorWithOpacity(itemBackColor.Value, e);
                 System.Drawing.Drawing2D.HatchStyle? backStyle = this._Owner.BackStyle;
                 if (backStyle.HasValue)
-                {
+                {   // Máme-li BackStyle : neřešíme interaktivitu myši, ani vykreslení 3D efektu:
                     using (System.Drawing.Drawing2D.HatchBrush hb = new System.Drawing.Drawing2D.HatchBrush(backStyle.Value, color, Color.Transparent))
                     {
                         e.Graphics.FillRectangle(hb, boundsAbsolute);
                     }
                 }
                 else
-                {
-                    e.Graphics.FillRectangle(Skin.Brush(color), boundsAbsolute);
+                {   // Nemáme-li BackStyle : řešíme interaktivitu myši i vykreslení 3D efektu:
+                    Rectangle boundsTop, boundsCenter, boundsBottom;
+                    _CreateBounds(boundsAbsolute, true, out boundsTop, out boundsCenter, out boundsBottom);
+
+                    float? effect3D = this._GetEffect3D(true);
+                    GPainter.DrawEffect3D(e.Graphics, boundsCenter, color, System.Windows.Forms.Orientation.Horizontal, effect3D, null);
+
+                    Color colorTop = Skin.Modifiers.GetColor3DBorderLight(color, 0.50f);
+                    e.Graphics.FillRectangle(Skin.Brush(colorTop), boundsTop);
+                    Color colorBottom = Skin.Modifiers.GetColor3DBorderDark(color, 0.50f);
+                    e.Graphics.FillRectangle(Skin.Brush(colorBottom), boundsBottom);
                 }
             }
 
             // Vykreslit orámování prvku:
-            Color? itemLineColor = (this.IsSelected ? (Color?)Skin.Graph.ElementSelectedLineColor : this.ItemLineColor);
+            Color? itemLineColor = (isSelected ? (Color?)Skin.Graph.ElementSelectedLineColor : this.ItemLineColor);
             if (itemLineColor.HasValue)
             {
                 color = this._Group.GetColorWithOpacity(itemLineColor.Value, e);
-                int lineWidth = (this.IsSelected ? 2 : 1);
+                int lineWidth = (isSelected ? 2 : 1);
                 Rectangle boundsLineAbsolute = boundsAbsolute.Enlarge(1 - lineWidth, 1 - lineWidth, -lineWidth, -lineWidth);
                 e.Graphics.DrawRectangle(Skin.Pen(color, (float)lineWidth), boundsLineAbsolute);
             }
@@ -404,12 +473,29 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             // Ratio:
 
         }
-        /// <summary>
-        /// Volba, zda metoda <see cref="InteractiveObject.Repaint()"/> způsobí i vyvolání metody Parent.Repaint().
-        /// </summary>
-        protected override RepaintParentMode RepaintParent { get { return RepaintParentMode.Always; } }
+        private static void _CreateBounds(Rectangle boundsAbsolute, bool forItem, out Rectangle boundsTop, out Rectangle boundsCenter, out Rectangle boundsBottom)
+        {
+            int h = boundsAbsolute.Height;                 // Výška celková
+            int hb = (h < 10 || !forItem ? 1 : 2);         // Výška proužku "horní a dolní okraj"
+            int hc = h - 2 * hb;                           // Výška vlastního prvku po zmenšení o okraje
+
+            int y = boundsAbsolute.Y;
+            boundsTop = new Rectangle(boundsAbsolute.X, y, boundsAbsolute.Width, hb); y += hb;
+            boundsCenter = new Rectangle(boundsAbsolute.X, boundsAbsolute.Y + hb, boundsAbsolute.Width, hc); y += hc;
+            boundsBottom = new Rectangle(boundsAbsolute.X, boundsAbsolute.Y + hb + hc, boundsAbsolute.Width, hb); y += hb;
+        }
+        private float? _GetEffect3D(bool forItem)
+        {
+            GraphItemBehaviorMode behavior = this._Owner.BehaviorMode;
+            bool isEditable = behavior.HasAnyFlag(GraphItemBehaviorMode.AnyMove | GraphItemBehaviorMode.ResizeTime | GraphItemBehaviorMode.ResizeHeight);
+            float? effect3D = (isEditable ? GPainter.GetEffect3D(this.InteractiveState) : (float?)-0.10f);
+            if (effect3D.HasValue && effect3D.Value != 0f)
+                effect3D = effect3D.Value * (forItem ? 1.25f : 0.75f);
+            return effect3D;
+        }
         #endregion
     }
+    #region enum GGraphControlPosition
     /// <summary>
     /// Pozice GUI controlu pro prvek grafu
     /// </summary>
