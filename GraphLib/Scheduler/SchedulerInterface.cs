@@ -71,7 +71,7 @@ namespace Asol.Tools.WorkScheduler
         /// Zde je uložena serializovaná forma instance GuiRequest.
         /// Předává se do aplikační funkce.
         /// </summary>
-        public string Data { get { if (this._Data == null) this._Data = WorkSchedulerSupport.Compress(Persist.Serialize(this.Request)); return this._Data; } }
+        public string Data { get { if (this._Data == null) this._Data = Persist.Serialize(this.Request, PersistArgs.Compressed); return this._Data; } }
         private string _Data;
         /// <summary>
         /// Libovolná uživatelská data, která si připraví GUI v místě, kde vzniká požadavek; a která následně vyhodnotí v místě, kde se zpracovává odpověď. 
