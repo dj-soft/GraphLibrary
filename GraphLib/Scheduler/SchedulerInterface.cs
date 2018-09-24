@@ -111,8 +111,15 @@ namespace Asol.Tools.WorkScheduler
         /// <summary>
         /// Chybová nebo Warningová hláška. 
         /// Pokud <see cref="Result"/> je <see cref="AppHostActionResult.Success"/>, pak je zde prázdný string.
+        /// Tato hláška obsahuje i kód hlášky na začátku, typicky: "[RecordNotFound] Záznam xxx nebyl nalezen."
+        /// Naproti tomu property <see cref="UserMessage"/> obsahuje hlášku bez tohoto kódu chyby.
         /// </summary>
-        public string Message { get; set; }
+        public string FullMessage { get; set; }
+        /// Chybová nebo Warningová hláška. 
+        /// Pokud <see cref="Result"/> je <see cref="AppHostActionResult.Success"/>, pak je zde prázdný string.
+        /// Tato hláška NEOBSAHUJE kód hlášky na začátku, její obsah je určen přímo pro uživatele, např.: "Záznam xxx nebyl nalezen."
+        /// Naproti tomu property <see cref="FullMessage"/> obsahuje hlášku VČETNĚ kódu chyby.
+        public string UserMessage { get; set; }
         /// <summary>
         /// Výpis zásobníku po chybě (<see cref="AppHostActionResult.EndWithError"/>).
         /// </summary>
