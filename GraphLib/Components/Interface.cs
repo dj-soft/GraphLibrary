@@ -681,6 +681,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public GInteractiveState TargetState { get { return this._ChangeArgs.TargetState; } }
         /// <summary>
+        /// Data pro tooltip.
+        /// Tuto property lze setovat, nebo ji lze rovnou naplnit (je autoinicializační).
+        /// </summary>
+        public ToolTipData ToolTipData { get { return this._ChangeArgs.ToolTipData; } }
+        /// <summary>
         /// Souřadnice prvku výchozí před zahájením akce Drag and Drop, relativní koordináty. 
         /// </summary>
         public Rectangle? DragOriginRelativeBounds { get { return this._ChangeArgs.DragMoveOriginBounds; } }
@@ -703,7 +708,6 @@ namespace Asol.Tools.WorkScheduler.Components
                 return boundsInfo.GetAbsBounds(dragToRelativeBounds.Value);
             }
         }
-
         /// <summary>
         /// Aktivní prvek.
         /// </summary>

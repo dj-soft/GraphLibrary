@@ -232,6 +232,12 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         public float Height { get { return this._Height; } }
         /// <summary>
+        /// GroupId: číslo skupiny. Prvky se shodným GroupId budou vykreslovány do společného "rámce", 
+        /// a pokud mezi jednotlivými prvky <see cref="ITimeGraphItem"/> se shodným <see cref="GroupId"/> bude na ose X nějaké volné místo,
+        /// nebude mezi nimi vykreslován žádný "cizí" prvek.
+        /// </summary>
+        public int GroupId { get { return this._FirstItem.GroupId; } }
+        /// <summary>
         /// Barva pozadí prvku.
         /// </summary>
         public Color? BackColor { get { return this._FirstItem.BackColor; } }

@@ -725,15 +725,16 @@ namespace Asol.Tools.WorkScheduler.Components
                     item.Repaint();
         }
         #endregion
-        #region Instanční podpora, protected
+        #endregion
+        #region Podpora pro hledání parentů: SearchForParent(), SearchForItem()
         /// <summary>
         /// Metoda vyhledá nejbližšího parenta daného typu.
         /// Může vrátit null.
         /// Sebe sama netestuje!
         /// </summary>
-        /// <param name="parentType"></param>
+        /// <param name="parentType">Typ objektu, který hledáme.</param>
         /// <returns></returns>
-        protected IInteractiveParent SearchForParent(Type parentType)
+        public IInteractiveParent SearchForParent(Type parentType)
         {
             return SearchForParent(this, parentType);
         }
@@ -742,9 +743,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Může vrátit null.
         /// Sebe sama netestuje!
         /// </summary>
-        /// <param name="parentType"></param>
+        /// <param name="item">První prvek v řadě, bude se prohledávat jeho hierarchie směrem k Parent</param>
+        /// <param name="parentType">Typ objektu, který hledáme.</param>
         /// <returns></returns>
-        protected static IInteractiveParent SearchForParent(IInteractiveItem item, Type parentType)
+        public static IInteractiveParent SearchForParent(IInteractiveItem item, Type parentType)
         {
             return SearchForItem(item, false, i => (i.GetType() == parentType));
         }
@@ -753,9 +755,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Může vrátit null.
         /// Sebe sama netestuje!
         /// </summary>
-        /// <param name="filter"></param>
+        /// <param name="filter">Filtrační podmínka</param>
         /// <returns></returns>
-        protected IInteractiveParent SearchForParent(Func<IInteractiveParent,bool> filter)
+        public IInteractiveParent SearchForParent(Func<IInteractiveParent,bool> filter)
         {
             return SearchForItem(this, false, filter);
         }
@@ -764,9 +766,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Může vrátit null.
         /// Sebe sama netestuje!
         /// </summary>
-        /// <param name="filter"></param>
+        /// <param name="item">První prvek v řadě, bude se prohledávat jeho hierarchie směrem k Parent</param>
+        /// <param name="filter">Filtrační podmínka</param>
         /// <returns></returns>
-        protected static IInteractiveParent SearchForParent(IInteractiveItem item, Func<IInteractiveParent, bool> filter)
+        public static IInteractiveParent SearchForParent(IInteractiveItem item, Func<IInteractiveParent, bool> filter)
         {
             return SearchForItem(item, false, filter);
         }
@@ -778,11 +781,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="item">První prvek v řadě, bude se prohledávat jeho hierarchie směrem k Parent</param>
         /// <param name="withCurrent">Testovat i sebe? false = ne (hledám parenty), true = ano (i prvek item může vyhovovat)</param>
-        /// <param name="parentType">Typ objektu, který hledáme.</param>
+        /// <param name="itemType">Typ objektu, který hledáme.</param>
         /// <returns></returns>
-        protected static IInteractiveParent SearchForItem(IInteractiveItem item, bool withCurrent, Type parentType)
+        public static IInteractiveParent SearchForItem(IInteractiveItem item, bool withCurrent, Type itemType)
         {
-            return SearchForItem(item, withCurrent, i => (i.GetType() == parentType));
+            return SearchForItem(item, withCurrent, i => (i.GetType() == itemType));
         }
         /// <summary>
         /// Metoda vyhledá nejbližší prvek, vyhovujícího danému filtru.
@@ -794,7 +797,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="withCurrent">Testovat i sebe? false = ne (hledám parenty), true = ano (i prvek item může vyhovovat)</param>
         /// <param name="filter">Filtrační podmínka</param>
         /// <returns></returns>
-        protected static IInteractiveParent SearchForItem(IInteractiveItem item, bool withCurrent, Func<IInteractiveParent, bool> filter)
+        public static IInteractiveParent SearchForItem(IInteractiveItem item, bool withCurrent, Func<IInteractiveParent, bool> filter)
         {
             if (item == null) return null;
             IInteractiveParent testItem = (withCurrent ? item : item.Parent);  // První prvek, který budeme testovat
@@ -808,7 +811,6 @@ namespace Asol.Tools.WorkScheduler.Components
             }
             return null;                                                       // Neúspěch
         }
-        #endregion
         #endregion
         #region Suppress events
         /// <summary>

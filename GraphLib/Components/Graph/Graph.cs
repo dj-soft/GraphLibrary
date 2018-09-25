@@ -981,6 +981,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Metoda zajistí zpracování události LeftDoubleCLick na grafickém prvku (data) na dané pozici (position).
         /// </summary>
         /// <param name="e"></param>
+        /// <param name="group"></param>
         /// <param name="data"></param>
         /// <param name="position"></param>
         internal void GraphItemLeftDoubleClick(GInteractiveChangeStateArgs e, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position)
@@ -1001,6 +1002,10 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             ItemActionArgs args = new ItemActionArgs(e, this, group, data, position);
             this.DataSource.ItemLongClick(args);
         }
+        /// <summary>
+        /// Zavolá datový zdroj pro řízení akce Drag and Drop
+        /// </summary>
+        /// <param name="args"></param>
         internal void DragDropGroupCallSource(ItemDragDropArgs args)
         {
             if (!this.HasDataSource) return;
@@ -1240,6 +1245,54 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             /// </summary>
             Childs = AllGroups << 1,
             Repaint = Childs << 1
+        }
+        #endregion
+        #region Konverze času a pixelů
+        /// <summary>
+        /// Metoda vrátí čas, odpovídající dané relativní souřadnici X.
+        /// </summary>
+        /// <param name="relativePositionX"></param>
+        /// <returns></returns>
+        public DateTime? GetTimeForPosition(int relativePositionX)
+        {
+            if (this._TimeConvertor == null) return null;
+            int pixel = relativePositionX - this._TimeConvertor.FirstPixel;
+            int targetSize = this.Bounds.Width;
+            switch (this.GraphParameters.TimeAxisMode)
+            {
+                case TimeGraphTimeAxisMode.ProportionalScale:
+                    return this._TimeConvertor.GetProportionalTime(pixel, targetSize);
+                case TimeGraphTimeAxisMode.LogarithmicScale:
+                    return this._TimeConvertor.GetLogarithmicTime(pixel, targetSize, this.GraphParameters.LogarithmicRatio);
+                case TimeGraphTimeAxisMode.Standard:
+                default:
+                    return this._TimeConvertor.GetProportionalTime(pixel, targetSize);
+            }
+        }
+        /// <summary>
+        /// Metoda vrátí relativní souřadnici X, odpovídající danému času.
+        /// </summary>
+        /// <param name="time"></param>
+        /// <returns></returns>
+        public int? GetPositionForTime(DateTime time)
+        {
+            if (this._TimeConvertor == null) return null;
+            int targetSize = this.Bounds.Width;
+            double axisPixel = 0d;
+            switch (this.GraphParameters.TimeAxisMode)
+            {
+                case TimeGraphTimeAxisMode.ProportionalScale:
+                    axisPixel = this._TimeConvertor.GetProportionalPixel(time, targetSize);
+                    break;
+                case TimeGraphTimeAxisMode.LogarithmicScale:
+                    axisPixel = this._TimeConvertor.GetLogarithmicPixel(time, targetSize, this.GraphParameters.LogarithmicRatio);
+                    break;
+                case TimeGraphTimeAxisMode.Standard:
+                default:
+                    axisPixel = this._TimeConvertor.GetProportionalPixel(time, targetSize);
+                    break;
+            }
+            return this._TimeConvertor.FirstPixel + (int)(Math.Round(axisPixel, 0));
         }
         #endregion
         #region Obecná static podpora pro grafy
@@ -1780,6 +1833,11 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         public DragActionType DragAction { get { return this._DragArgs.DragAction; } }
         /// <summary>
+        /// Data pro tooltip.
+        /// Tuto property lze setovat, nebo ji lze rovnou naplnit (je autoinicializační).
+        /// </summary>
+        public ToolTipData ToolTipData { get { return this._DragArgs.ToolTipData; } }
+        /// <summary>
         /// Absolutní souřadnice myši, kde se nachází nyní.
         /// Může být null pouze při akci <see cref="DragAction"/> == <see cref="DragActionType.DragThisCancel"/>.
         /// </summary>
@@ -1808,7 +1866,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         #region Properties WriteInit
         /// <summary>
         /// Obsahuje false po iniciaci. V tomto stavu lze vkládat hodnoty do všech "WriteInit" properties:
-        /// <see cref="ParentGraph"/>, <see cref="ParentTable"/>, <see cref="TargetItem"/>, <see cref="TargetGraph"/>, <see cref="TargetTable"/> (označeny "WriteInit").
+        /// <see cref="ParentGraph"/>, <see cref="ParentTable"/> (označeny "WriteInit").
         /// Po vložení všech hodnot se nastaví <see cref="IsFinalised"/> na true.
         /// Poté již nelze setovat data do "WriteInit" properties, a nelze vložit hodnotu false do property <see cref="IsFinalised"/>.
         /// </summary>
@@ -1825,19 +1883,16 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         public Grid.GTable ParentTable { get { return this._ParentTable; } set { this._CheckSet(); this._ParentTable = value; } } private Grid.GTable _ParentTable;
         /// <summary>
         /// Interaktivní cílový prvek, nad nímž se nyní nachází ukazatel myši = na tento prvek "by se aktuální prvek grafu přemístil".
-        /// "WriteInit" property.
         /// </summary>
-        public IInteractiveItem TargetItem { get { return this._TargetItem; } set { this._CheckSet(); this._TargetItem = value; } } private IInteractiveItem _TargetItem;
+        public IInteractiveItem TargetItem { get { return this._TargetItem; } set { this._TargetItem = value; } } private IInteractiveItem _TargetItem;
         /// <summary>
         /// Cílový graf, nad nímž se nyní nachází ukazatel myši = do tohoto grafu "by se aktuální prvek grafu přemístil".
-        /// "WriteInit" property.
         /// </summary>
-        public GTimeGraph TargetGraph { get { return this._TargetGraph; } set { this._CheckSet(); this._TargetGraph = value; } } private GTimeGraph _TargetGraph;
+        public GTimeGraph TargetGraph { get { return this._TargetGraph; } set { this._TargetGraph = value; } } private GTimeGraph _TargetGraph;
         /// <summary>
         /// Cílová tabulka, nad níž se nyní nachází ukazatel myši = do této tabulky "by se aktuální prvek grafu přemístil".
-        /// "WriteInit" property.
         /// </summary>
-        public Grid.GTable TargetTable { get { return this._TargetTable; } set { this._CheckSet(); this._TargetTable = value; } } private Grid.GTable _TargetTable;
+        public Grid.GTable TargetTable { get { return this._TargetTable; } set { this._TargetTable = value; } } private Grid.GTable _TargetTable;
         #endregion
         #region Dopočítané vstupní proměnné
         /// <summary>
@@ -1905,6 +1960,29 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
 
                 return homeBounds;
             }
+        }
+        #endregion
+        #region Podpůrné metody
+        /// <summary>
+        /// Metoda vyhledá objekty <see cref="TargetItem"/>, <see cref="TargetGraph"/>, <see cref="TargetTable"/> pro danou absolutní souřadnici.
+        /// </summary>
+        /// <param name="targetAbsolutePoint">Absolutní souřadnice, která má být target</param>
+        public void SearchForTargets(Point targetAbsolutePoint)
+        {
+            IInteractiveItem item = this._DragArgs.FindItemAtPoint(targetAbsolutePoint);
+            this.TargetItem = item;
+            this.TargetGraph = InteractiveObject.SearchForItem(item, true, typeof(GTimeGraph)) as GTimeGraph;
+            this.TargetTable = InteractiveObject.SearchForItem(item, true, typeof(Grid.GTable)) as Grid.GTable;
+        }
+        /// <summary>
+        /// Metoda vrátí čas, odpovídající dané absolutní souřadnici X
+        /// </summary>
+        /// <param name="absolutePositionX"></param>
+        /// <returns></returns>
+        public DateTime? GetTimeForPosition(int absolutePositionX)
+        {
+            int relativePositionX = this.DragArgs.BoundsInfo.GetRelPoint(new Point(absolutePositionX, 0)).X;
+            return this.Graph.GetTimeForPosition(relativePositionX);
         }
         #endregion
         #region Výstupní proměnné
@@ -1988,6 +2066,14 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
     /// </summary>
     public abstract class ItemInteractiveArgs : ItemArgs
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="graph"></param>
+        /// <param name="group"></param>
+        /// <param name="data"></param>
+        /// <param name="position"></param>
         public ItemInteractiveArgs(GInteractiveChangeStateArgs e, GTimeGraph graph, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position)
             : base(graph, group, data, position)
         {

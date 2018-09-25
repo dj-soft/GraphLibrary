@@ -362,6 +362,17 @@ namespace Asol.Tools.WorkScheduler.Components
             return new Point(basePoint.X - subPoint.X, basePoint.Y - subPoint.Y);
         }
         /// <summary>
+        /// Returns a point = basePoint - (subpoint X, Y)
+        /// </summary>
+        /// <param name="basePoint"></param>
+        /// <param name="subX"></param>
+        /// <param name="subY"></param>
+        /// <returns></returns>
+        public static Point Sub(this Point basePoint, int subX, int subY)
+        {
+            return new Point(basePoint.X - subX, basePoint.Y - subY);
+        }
+        /// <summary>
         /// Returns a point = basePoint - addpoint
         /// </summary>
         /// <param name="basePoint"></param>

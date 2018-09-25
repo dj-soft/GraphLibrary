@@ -335,6 +335,24 @@ namespace Asol.Tools.WorkScheduler.Components
             return absoluteBounds.Sub(this._OriginX, this._OriginY);
         }
         /// <summary>
+        /// Vrátí daný relativní bod posunutý do absolutních koordinátů (k souřadnici se přičte <see cref="_OriginX"/>, <see cref="_OriginY"/>)
+        /// </summary>
+        /// <param name="relativePoint"></param>
+        /// <returns></returns>
+        public Point GetAbsPoint(Point relativePoint)
+        {
+            return relativePoint.Add(this._OriginX, this._OriginY);
+        }
+        /// <summary>
+        /// Vrátí daný absolutní bod posunutý do relativních koordinátů (od souřadnice se odečte <see cref="_OriginX"/>, <see cref="_OriginY"/>)
+        /// </summary>
+        /// <param name="absolutePoint"></param>
+        /// <returns></returns>
+        public Point GetRelPoint(Point absolutePoint)
+        {
+            return absolutePoint.Sub(this._OriginX, this._OriginY);
+        }
+        /// <summary>
         /// Vrátí danou relativní souřadnici posunutou do absolutních koordinátů (k souřadnici se přičte <see cref="_OriginX"/>, <see cref="_OriginY"/>),
         /// a oříznutou do viditelných souřadnic.
         /// </summary>

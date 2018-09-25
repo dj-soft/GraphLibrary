@@ -247,16 +247,14 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             */
 
             // Najdu prvek, nad nímž se aktuálně pohybuji:
-            IInteractiveItem item = e.FindItemAtPoint(e.MouseCurrentAbsolutePoint.Value);
-            Rectangle targetAbsoluteBounds = e.BoundsInfo.GetAbsBounds(targetRelativeBounds);
 
             // Sestavím argument (pro this prvek) a doplním do něj údaje o dalších prvcích:
+            Rectangle targetAbsoluteBounds = e.BoundsInfo.GetAbsBounds(targetRelativeBounds);
             ItemDragDropArgs args = new ItemDragDropArgs(e, this.Graph, this._Group, this._Owner, this._Position, targetAbsoluteBounds);
             args.ParentGraph = this.Graph;
             args.ParentTable = this.SearchForParent(typeof(Grid.GTable)) as Grid.GTable;
-            args.TargetItem = item;
-            args.TargetGraph = SearchForItem(item, true, typeof(GTimeGraph)) as GTimeGraph;
-            args.TargetTable = SearchForItem(item, true, typeof(Grid.GTable)) as Grid.GTable;
+            args.SearchForTargets(e.MouseCurrentAbsolutePoint.Value);
+
             args.IsFinalised = true;
 
             // Předem připravím "defaultní" výsledky (ale datový zdroj, který se vyvolá v následujícím řádku) má plnou moc nastavit libovolné výsledky po svém:

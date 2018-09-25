@@ -12,6 +12,7 @@ using Asol.Tools.WorkScheduler.Services;
 using Asol.Tools.WorkScheduler.Components;
 using Asol.Tools.WorkScheduler.Components.Graph;
 using Noris.LCS.Base.WorkScheduler;
+using Asol.Tools.WorkScheduler.Components.Grid;
 
 namespace Asol.Tools.WorkScheduler.Scheduler
 {
@@ -439,7 +440,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 this.IMainData.RunOpenRecordForm(recordGId);
         }
         #endregion
-        #region Implementace ITimeGraphDataSource: Zdroj dat pro grafy
+        #region Implementace ITimeGraphDataSource: Zdroj dat pro grafy: tvorba textu, tooltipu, kontextové menu, podpora Drag and Drop
         /// <summary>
         /// Připraví text pro položku grafu
         /// </summary>
@@ -558,20 +559,135 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                     // Tady toho není moc k řešení...
                     break;
                 case DragActionType.DragThisMove:
-                    // Tady by se mělo řešit umístění (targetBounds) na ose Y, abych prvek přetahoval:
-                    //  a) ve svém grafu (=vodorovně) 
-                    //  b) do cizích grafů (=svisle): v původním čase
-                    xxx
+                    // Tady by se mělo řešit umístění (targetBounds) na ose Y, abych prvek přetahoval přiměřeně:
+                    this.ItemDragDropMove(args);
                     break;
                 case DragActionType.DragThisDrop:
                     // Tady by se měla volat metoda AppHost => aplikační funkce pro přepočet grafu:
-
+                    this.ItemDragDropDrop(args);
                     break;
                 case DragActionType.DragThisEnd:
                     // 
                     args.ParentGraph.Refresh();
                     break;
             }
+        }
+        /// <summary>
+        /// Scheduler určuje souřadnici prvku v procesu Drag and Drop,
+        /// v akci Move = prvek se pouze přesouvá pomocí myši, ale ještě nebyl nikam umístěn.
+        /// </summary>
+        /// <param name="args"></param>
+        protected void ItemDragDropMove(ItemDragDropArgs args)
+        {
+            DragSchedulerData data = this.PrepareDragSchedulerData(args);
+            args.DragToAbsoluteBounds = data.TargetBounds;
+            args.ToolTipData.AnimationType = TooltipAnimationType.Instant;
+            args.ToolTipData.TitleText = (data.IsChangeRow ? "Přemístění na jiný řádek" : "Přemístění v rámci řádku");
+            args.ToolTipData.InfoText = "Čas: " + data.TargetTime.ToString();
+        }
+        /// <summary>
+        /// Scheduler vyvolá aplikační logiku, která určí definitivní umístění prvku v procesu Drag and Drop,
+        /// v akci Drop = prvek byl vizuálně umístěn.
+        /// </summary>
+        /// <param name="args"></param>
+        protected void ItemDragDropDrop(ItemDragDropArgs args)
+        {
+            // Tady by se měla volat metoda AppHost => aplikační funkce pro přepočet grafu:
+            DragSchedulerData data = this.PrepareDragSchedulerData(args);
+            this.MainData
+
+
+
+        }
+        /// <summary>
+        /// Metoda vrátí instanci <see cref="DragSchedulerData"/> obsahující data na úrovni Scheduleru z dat Drag and Drop z úrovně GUI.
+        /// </summary>
+        /// <param name="args"></param>
+        /// <returns></returns>
+        protected DragSchedulerData PrepareDragSchedulerData(ItemDragDropArgs args)
+        {
+            DragSchedulerData data = new DragSchedulerData();
+            data.DragGroup = this.GetGId(args.Group.GroupId);
+            data.SourceRow = this.GetGraphRowGid(args.ParentGraph);
+            data.SourceTime = args.Group.Time;
+            data.SourceBounds = args.OriginalAbsoluteBounds;
+            data.TargetRow = this.GetGraphRowGid(args.TargetGraph);
+
+            // Umístění cíle, časová/místní příchylnost k původní hodnotě:
+            Rectangle sourceBounds = data.SourceBounds;
+            Rectangle targetBounds = args.DragToAbsoluteBounds.Value;
+            int distX = (targetBounds.X - sourceBounds.X);
+            int absDX = ((distX < 0) ? -distX : distX);
+            if (!data.IsChangeRow)
+            {   // Ve stejném řádku:
+                if (absDX < 5)
+                    targetBounds.X = sourceBounds.X;
+                targetBounds.Y = sourceBounds.Y;
+            }
+            else
+            {   // V jiném řádku:
+                if (absDX < 15)
+                    targetBounds.X = sourceBounds.X;
+            }
+            data.TargetBounds = targetBounds;
+
+            // Odvodit cílový čas:
+            DateTime? begin = args.GetTimeForPosition(targetBounds.X);
+            data.TargetTime = TimeRange.CreateFromBeginSize(begin.Value, data.SourceTime.Size.Value);
+
+            return data;
+        }
+        /// <summary>
+        /// Metoda vrací <see cref="GId"/> řádku, na němž je umístěn daný graf.
+        /// </summary>
+        /// <param name="graph"></param>
+        /// <returns></returns>
+        protected GId GetGraphRowGid(GTimeGraph graph)
+        {
+            if (graph == null) return null;
+            GRow gRow = graph.SearchForParent(typeof(GRow)) as GRow;
+            if (gRow == null) return null;
+            return gRow.OwnerRow.RecordGId;
+        }
+        /// <summary>
+        /// Analyzovaná data na úrovni Scheduleru, pro akce při přemísťování prvku na úrovni GUI
+        /// </summary>
+        protected class DragSchedulerData
+        {
+            /// <summary>
+            /// GId grupy, která se přemisťuje.
+            /// Vždy se přemisťuje celá grupa, nikdy ne jednotlivý prvek.
+            /// </summary>
+            public GId DragGroup { get; set; }
+            /// <summary>
+            /// Řádek, na němž byl umístěn prvek na začátku.
+            /// Může být tentýž, jako cílový (<see cref="TargetRow"/>).
+            /// </summary>
+            public GId SourceRow { get; set; }
+            /// <summary>
+            /// Cílový řádek, kam má být prvek přemístěn.
+            /// </summary>
+            public GId TargetRow { get; set; }
+            /// <summary>
+            /// Původní čas prvku před přemístěním
+            /// </summary>
+            public TimeRange SourceTime { get; set; }
+            /// <summary>
+            /// Cílový čas prvku po přemístění
+            /// </summary>
+            public TimeRange TargetTime { get; set; }
+            /// <summary>
+            /// Absolutní souřadnice prvku před přemístěním
+            /// </summary>
+            public Rectangle SourceBounds { get; set; }
+            /// <summary>
+            /// Absolutní souřadnice prvku po přemístění
+            /// </summary>
+            public Rectangle TargetBounds { get; set; }
+            /// <summary>
+            /// Obsahuje true, pokud dochází ke změně řádku
+            /// </summary>
+            public bool IsChangeRow { get { return (this.SourceRow != this.TargetRow); } }
         }
         void ITimeGraphDataSource.CreateText(CreateTextArgs args) { this.GraphItemPrepareText(args); }
         void ITimeGraphDataSource.CreateToolTip(CreateToolTipArgs args) { this.GraphItemPrepareToolTip(args); }

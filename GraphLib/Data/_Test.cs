@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+using Asol.Tools.WorkScheduler.Data;
 using Noris.LCS.Base.WorkScheduler;
 
 namespace Asol.Tools.WorkScheduler.Data.Test
@@ -24,6 +25,46 @@ namespace Asol.Tools.WorkScheduler.Data.Test
         {
           
         }
+
+        #region Testy různých Data/Extension metod
+        /// <summary>
+        /// Testy různých Data/Extension metod
+        /// </summary>
+        [TestMethod]
+        public void TestExtensions()
+        {
+            _TestTimeRound(TimeSpan.FromSeconds(782.45d), 
+                           TimeSpan.FromSeconds(900d),
+                           new DateTime(2018, 9, 18, 6, 38, 5, 405, DateTimeKind.Local),
+                           new DateTime(2018, 9, 18, 6, 45, 0, 0, DateTimeKind.Local));
+
+            _TestTimeRound(TimeSpan.FromSeconds(84.12d),
+                           TimeSpan.FromSeconds(300d),
+                           new DateTime(2018, 9, 18, 6, 38, 5, 405, DateTimeKind.Local),
+                           new DateTime(2018, 9, 18, 6, 40, 0, 0, DateTimeKind.Local));
+
+            _TestTimeRound(TimeSpan.FromMinutes(42.5d),
+                           TimeSpan.FromMinutes(60d),
+                           new DateTime(2018, 9, 18, 23, 38, 1, 105, DateTimeKind.Local),
+                           new DateTime(2018, 9, 19, 0, 0, 0, 0, DateTimeKind.Local));
+
+        }
+        /// <summary>
+        /// Test pro jednu sadu hodnot
+        /// </summary>
+        /// <param name="timeRaw"></param>
+        /// <param name="timeExp"></param>
+        /// <param name="dateRaw"></param>
+        /// <param name="dateExp"></param>
+        private static void _TestTimeRound(TimeSpan timeRaw, TimeSpan timeExp, DateTime dateRaw, DateTime dateExp)
+        {
+            TimeSpan timeRound = timeRaw.GetRoundTimeBase();
+            if (timeRound != timeExp) throw new AssertFailedException("TimeSpan.GetRoundTimeBase() error: expected value: " + timeExp.ToString() + ", returned value " + timeRound.ToString() + ".");
+
+            DateTime dateRound = dateRaw.RoundTime(timeRound);
+            if (dateRound != dateExp) throw new AssertFailedException("TestExtensions.RoundTime() error: expected time: " + dateExp.ToString("hh:MM:ss.fff") + ", returned time " + dateRound.ToString("hh:MM:ss.fff") + ".");
+        }
+        #endregion
         #region Serializace testy
         /// <summary>
         /// Test XML Serializace a Deserializace

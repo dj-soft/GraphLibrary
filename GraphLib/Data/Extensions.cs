@@ -231,7 +231,7 @@ namespace Asol.Tools.WorkScheduler.Data
             return ContainsAnyFromChars(test, "0123456789");
         }
         #endregion
-        #region DateTime
+        #region DateTime, TimeSpan
         /// <summary>
         /// Metoda vrátí dané datum (this), kde daná část (a části nižší) jsou nahrazeny hodnotou 0.
         /// Tedy pokud part = <see cref="DateTimePart.Minutes"/>, pak výsledek obsahuje hodiny, ale místo minut už je 0 (a rovněž sekundy a milisekundy jsou 0).
@@ -298,6 +298,82 @@ namespace Asol.Tools.WorkScheduler.Data
                     return new DateTime(dy, 1, 1, 0, 0, 0, 0, vk);
             }
             return new DateTime(dy, dm, dd, 0, 0, 0, 0, vk);
+        }
+        /// <summary>
+        /// Metoda vrací hodnotu, vypočtenou zaokrouhlením this data na daný časový úsek (round).
+        /// Časový úsek má být nejvýše roven 1 dni, proto se metoda jmenuje <see cref="RoundTime(DateTime, TimeSpan)"/>.
+        /// <para/>
+        /// Například hodnotu {2018-09-25 10:14:36.245} pro round = 30 minut zaokrouhlí na {2018-09-25 10:00:00.000}.
+        /// Například hodnotu {2018-09-25 10:14:36.245} pro round = 5 minut zaokrouhlí na {2018-09-25 10:15:00.000}.
+        /// Například hodnotu {2018-09-25 23:12:45.740} pro round = 2 hodiny zaokrouhlí na {2018-09-26 00:00:00.000}.
+        /// <para/>
+        /// Zaokrouhlovací úsek je možno získat pomocí (extension) metody TimeSpan.GetRoundTimeBase().
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="round"></param>
+        /// <returns></returns>
+        public static DateTime RoundTime(this DateTime value, TimeSpan round)
+        {
+            if (round.Days > 0) round = TimeSpan.FromDays(1d);
+            DateTime date = value.Date;
+            TimeSpan time = value.TimeOfDay;
+            int mod = (int)((time.Ticks * 2L) / round.Ticks);        // Dvojnásobek počtu podílů: zadaný čas / zaokrouhlovací jednotka
+            if ((mod % 2) == 1) mod++;                               // Tady jsem se vyhnul zaokrouhlování
+            long roundTicks = (mod / 2) * round.Ticks;               // Zaokrouhlený zadaný čas, v počtu ticků
+            TimeSpan roundTime = TimeSpan.FromTicks(roundTicks);
+            return date + roundTime;
+        }
+        /// <summary>
+        /// Metoda vrátí nejbližší vyšší rozumný časový úsek pro zaokrouhlování času, pro aktuální (this) časový úsek.
+        /// Aktuální úsek může být vypočten například matematicky, a mít "nezarovnanou" hodnotu, například 03:41:18.458.
+        /// Výstupní čas bude nejbližší větší časový úsek, lidsky pochopitelný, například 06:00:00.000.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static TimeSpan GetRoundTimeBase(this TimeSpan value)
+        {
+            if (value.TotalDays >= 1d) return TimeSpan.FromDays(1d);
+            double hours = value.TotalHours;
+            if (hours > 1d)
+            {
+                if (hours > 12d) return TimeSpan.FromHours(24d);
+                if (hours > 6d) return TimeSpan.FromHours(12d);
+                if (hours > 3d) return TimeSpan.FromHours(6d);
+                return TimeSpan.FromHours(3d);
+            }
+
+            double minutes = value.TotalMinutes;
+            if (minutes > 1d)
+            {
+                if (minutes > 30d) return TimeSpan.FromMinutes(60d);
+                if (minutes > 15d) return TimeSpan.FromMinutes(30d);
+                if (minutes > 10d) return TimeSpan.FromMinutes(15d);
+                if (minutes > 5d) return TimeSpan.FromMinutes(10d);
+                return TimeSpan.FromMinutes(5d);
+            }
+
+            double seconds = value.TotalSeconds;
+            if (seconds > 1d)
+            {
+                if (seconds > 30d) return TimeSpan.FromSeconds(60d);
+                if (seconds > 15d) return TimeSpan.FromSeconds(30d);
+                if (seconds > 10d) return TimeSpan.FromSeconds(15d);
+                if (seconds > 5d) return TimeSpan.FromSeconds(10d);
+                return TimeSpan.FromSeconds(5d);
+            }
+
+            double milliSeconds = value.TotalMilliseconds;
+            if (milliSeconds > 1d)
+            {
+                if (milliSeconds > 500d) return TimeSpan.FromMilliseconds(1000d);
+                if (milliSeconds > 100d) return TimeSpan.FromMilliseconds(500d);
+                if (milliSeconds > 50d) return TimeSpan.FromMilliseconds(100d);
+                if (milliSeconds > 10d) return TimeSpan.FromMilliseconds(50d);
+                if (milliSeconds > 5d) return TimeSpan.FromMilliseconds(10d);
+                return TimeSpan.FromMilliseconds(5d);
+            }
+
+            return TimeSpan.FromMilliseconds(1d);
         }
         #endregion
         #region Enum

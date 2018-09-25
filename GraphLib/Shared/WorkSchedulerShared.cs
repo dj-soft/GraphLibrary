@@ -1800,9 +1800,13 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiContextMenuItem ContextMenuItem { get; set; }
         /// <summary>
-        /// Aktuální hodnota časové osy
+        /// Informace o prvku, který je přesouván (Drag and Drop) na jiné místo
         /// </summary>
-        public GuiTimeRange TimeAxisValue { get; set; }
+        public GuiRequestGraphItemMove GraphItemMove { get; set; }
+        /// <summary>
+        /// Aktuální stav okna WorkScheduler
+        /// </summary>
+        public GuiRequestCurrentState CurrentState { get; set; }
         #region Konstanty - commandy
         /// <summary>
         /// Otevřít záznamy.
@@ -1842,6 +1846,85 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public const string COMMAND_CloseWindow = "CloseWindow";
         #endregion
+    }
+    /// <summary>
+    /// Informace o prvku, který je přesouván (Drag and Drop) na jiné místo
+    /// </summary>
+    public class GuiRequestGraphItemMove
+    {
+        /// <summary>
+        /// Prvek, který je přesouván
+        /// </summary>
+        public GuiRequestGraphItem ActiveItem { get; set; }
+        /// <summary>
+        /// Jeho výchozí čas
+        /// </summary>
+        public GuiTimeRange SourceTime { get; set; }
+        /// <summary>
+        /// Cílový řádek
+        /// </summary>
+        public GuiId SourceRow { get; set; }
+        /// <summary>
+        /// Cílový čas
+        /// </summary>
+        public GuiTimeRange TargetTime { get; set; }
+    }
+    /// <summary>
+    /// GuiCurrentState : stav okna Scheduleru v době události.
+    /// Popisuje mj. vybrané položky grafů a vybrané řádky tabulek.
+    /// Neobsahuje informace o aktuální akci, ty jsou přidány do specifických properties přímo do instance třídy <see cref="GuiRequest"/>.
+    /// </summary>
+    public class GuiRequestCurrentState
+    {
+        /// <summary>
+        /// Aktuální hodnota časové osy
+        /// </summary>
+        public GuiTimeRange TimeAxisValue { get; set; }
+        /// <summary>
+        /// Aktivní řádek, je nanejvýše jeden
+        /// </summary>
+        public GuiRequestRow ActiveRow { get; set; }
+        /// <summary>
+        /// Aktuálně označené řádky tabulek v aktuálním okně.
+        /// Řádky tabulek lze označovat ikonkou.
+        /// </summary>
+        public GuiRequestRow[] SelectedRows { get; set; }
+        /// <summary>
+        /// Aktuálně označené prvky grafů tabulek v aktuálním okně.
+        /// Prvky grafů lze označovat klikáním nebo framováním.
+        /// </summary>
+        public GuiRequestGraphItem[] SelectedGraphItems { get; set; }
+    }
+    /// <summary>
+    /// Plný identifikátor řádku tabulky, obsahuje FullName tabulky a <see cref="GuiId"/> řádku tabulky.
+    /// </summary>
+    public class GuiRequestRow
+    {
+        /// <summary>
+        /// Název tabulky, pochází z <see cref="GuiGrid"/>.FullName
+        /// </summary>
+        public string TableName { get; set; }
+        /// <summary>
+        /// ID řádku tabulky, pochází z prvního sloupce tabulky <see cref="GuiGrid.Rows"/>, v kombinaci s číslem třídy v properties sloupce [0]
+        /// </summary>
+        public GuiId RowId { get; set; }
+    }
+    /// <summary>
+    /// Plný identifikátor prvku grafu, obsahuje FullName tabulky, <see cref="GuiId"/> řádku tabulky, a identifikátor prvku grafu.
+    /// </summary>
+    public class GuiRequestGraphItem
+    {
+        /// <summary>
+        /// Název tabulky, pochází z <see cref="GuiGrid"/>.FullName
+        /// </summary>
+        public string TableName { get; set; }
+        /// <summary>
+        /// ID řádku tabulky, pochází z prvního sloupce tabulky <see cref="GuiGrid.Rows"/>, v kombinaci s číslem třídy v properties sloupce [0]
+        /// </summary>
+        public GuiId RowId { get; set; }
+        public GuiId GroupId { get; set; }
+        public GuiId ItemId { get; set; }
+        public GuiId DataId { get; set; }
     }
     #endregion
     #region GuiResponse : data předávaná z Helios Green do WorkScheduler jako součást response
