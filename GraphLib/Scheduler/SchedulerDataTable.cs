@@ -436,8 +436,12 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="recordGId"></param>
         protected void RunOpenRecordForm(GId recordGId)
         {
-            if (this.MainData != null)
-                this.IMainData.RunOpenRecordForm(recordGId);
+            if (this.MainData == null) return;
+
+            GuiRequest request = new GuiRequest();
+            request.Command = GuiRequest.COMMAND_OpenRecords;
+            request.RecordsToOpen = new GuiId[] { recordGId };
+            this.IMainData.CallAppHostFunction(request, null);
         }
         #endregion
         #region Implementace ITimeGraphDataSource: Zdroj dat pro grafy: tvorba textu, tooltipu, kontextové menu, podpora Drag and Drop
@@ -594,7 +598,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             // Tady by se měla volat metoda AppHost => aplikační funkce pro přepočet grafu:
             DragSchedulerData data = this.PrepareDragSchedulerData(args);
-            this.MainData
+            this.IMainData.CallAppHostFunction();
 
 
 

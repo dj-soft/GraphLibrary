@@ -147,94 +147,31 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         protected MainControl _MainControl;
         #endregion
-        #region Vyvolání akcí z pluginu do hostitele (otevření záznamu, spuštění funkcí, podpora editace)
+        #region Vyvolání akcí z pluginu do hostitele IAppHost
         /// <summary>
-        /// Metoda vyvolá akci RunOpenRecordsForm do AppHost
+        /// Metoda zavolá hostitele <see cref="_AppHost"/>, jeho metodu <see cref="IAppHost.CallAppHostFunction(AppHostRequestArgs)"/>,
+        /// předá jí aktuální <see cref="_SessionId"/> a požadavek, a zajistí zavolání metody (callBackAction) po doběhnutí funkce.
         /// </summary>
-        /// <param name="recordGId"></param>
-        private void _CallHostRunOpenRecordsForm(GId recordGId)
+        /// <param name="request"></param>
+        /// <param name="callBackAction"></param>
+        private void _CallAppHostFunction(GuiRequest request, Action<AppHostResponseArgs> callBackAction)
         {
-            if (recordGId == null || recordGId.RecordId == 0) return;
-            GuiId[] guiIds = new GuiId[] { new GuiId(recordGId.ClassId, recordGId.RecordId) };
-            this._CallHostRunOpenRecordsForm(guiIds);
-        }
-        /// <summary>
-        /// Metoda vyvolá akci OpenRecords do AppHost
-        /// </summary>
-        /// <param name="guiIds"></param>
-        private void _CallHostRunOpenRecordsForm(IEnumerable<GuiId> guiIds)
-        {
-            if (!this._CheckAppHost("Rád bych otevřel vybrané záznamy")) return;
-
-            GuiRequest request = new GuiRequest();
-            request.Command = GuiRequest.COMMAND_OpenRecords;
-            request.RecordsToOpen = guiIds.ToArray();
+            if (!this._CheckAppHost(request)) return;
             AppHostRequestArgs args = new AppHostRequestArgs(this._SessionId, request, null, null);
             this._AppHost.CallAppHostFunction(args);
         }
         /// <summary>
-        /// Metoda vyvolá akci ToolbarClick do AppHost
-        /// </summary>
-        /// <param name="guiToolbarItem"></param>
-        private void _CallHostRunToolBarFunction(GuiToolbarItem guiToolbarItem)
-        {
-            if (!this._CheckAppHost("Rád bych provedl funkci ToolBaru «" + guiToolbarItem.Title + "»")) return;
-
-            GuiRequest request = new GuiRequest();
-            request.Command = GuiRequest.COMMAND_ToolbarClick;
-            request.ToolbarItem = guiToolbarItem;
-            AppHostRequestArgs args = new AppHostRequestArgs(this._SessionId, request, null, this._ResponseHostRunToolBarFunction);
-            this._AppHost.CallAppHostFunction(args);
-        }
-        /// <summary>
-        /// Tato metoda zpracuje odpověď z aplikačního kódu, kterou tento posílá po provedení funkce ToolbarClick
-        /// </summary>
-        /// <param name="args"></param>
-        private void _ResponseHostRunToolBarFunction(AppHostResponseArgs args)
-        {
-        }
-
-        /// <summary>
-        /// Metoda vyvolá akci RunToolBarFunction do AppHost
-        /// </summary>
-        /// <param name="guiToolbarItem"></param>
-        private void _CallHostRunToolBarSelectedChange(GuiToolbarItem guiToolbarItem)
-        {
-            // Domníváme se, že tohle aplikační kód nemusí řešit. Dostane k řešení ToolbarClick.
-        }
-        /// <summary>
-        /// Metoda vyvolá akci ContextMenuClick do AppHost
-        /// </summary>
-        /// <param name="guiContextMenuItem"></param>
-        /// <param name="itemArgs"></param>
-        private void _CallHostRunContextFunction(GuiContextMenuItem guiContextMenuItem, ItemActionArgs itemArgs)
-        {
-            if (!this._CheckAppHost("Rád bych provedl kontextovou funkci «" + guiContextMenuItem.Title + "»")) return;
-
-            GuiRequest request = new GuiRequest();
-            request.Command = GuiRequest.COMMAND_ContextMenuClick;
-            request.ContextMenuItem = guiContextMenuItem;
-            AppHostRequestArgs args = new AppHostRequestArgs(this._SessionId, request, null, this._ResponseHostRunContextMenuClick);
-            this._AppHost.CallAppHostFunction(args);
-        }
-        /// <summary>
-        /// Tato metoda zpracuje odpověď z aplikačního kódu, kterou tento posílá po provedení funkce ContextMenuClick
-        /// </summary>
-        /// <param name="args"></param>
-        private void _ResponseHostRunContextMenuClick(AppHostResponseArgs args)
-        {
-        }
-        /// <summary>
-        /// Prověří existenci AppHost.
-        /// Pokud je, vrací true.
+        /// Prověří správnost zadání requestu a existenci AppHost.
+        /// Pokud je vše OK, vrací true.
         /// Pokud není, dá hlášku a vrací false.
         /// </summary>
-        /// <param name="message"></param>
+        /// <param name="request"></param>
         /// <returns></returns>
-        private bool _CheckAppHost(string message)
+        private bool _CheckAppHost(GuiRequest request)
         {
             if (this._HasHost) return true;
-            System.Windows.Forms.MessageBox.Show(message + ",\r\nale není zadán datový hostitel.");
+            string message = "Je vyžadováno provedení funkce IAppHost:\r\n" + request.ToString() + ",\r\nale není zadán datový hostitel.";
+            System.Windows.Forms.MessageBox.Show(message);
             return false;
         }
         #endregion
@@ -353,9 +290,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             GuiToolbarItem guiToolbarItem = _GetGuiToolBarItem(args);
             if (guiToolbarItem != null)
-                this._CallHostRunToolBarSelectedChange(guiToolbarItem);
+                this._ToolBarItemSelectedChangeApplication(guiToolbarItem);
             else
-                this._ToolBarItemSystemSelectedChange(args.Item);
+                this._ToolBarItemSelectedChangeSystem(args.Item);
         }
         /// <summary>
         /// Obsluha události ItemClick na ToolBaru
@@ -366,15 +303,43 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             GuiToolbarItem guiToolbarItem = _GetGuiToolBarItem(args);
             if (guiToolbarItem != null)
-                this._CallHostRunToolBarFunction(guiToolbarItem);
+                this._ToolBarItemClickApplication(guiToolbarItem);
             else
-                this._ToolBarItemSystemClick(args.Item);
+                this._ToolBarItemClickSystem(args.Item);
+        }
+        /// <summary>
+        /// Obsluha události ItemSelectedChange na Aplikační položce ToolBaru.
+        /// Tuto akci zatím do aplikační funkce NEPŘEDÁVÁME. Neřešíme tedy ani její Response.
+        /// </summary>
+        /// <param name="guiToolbarItem"></param>
+        private void _ToolBarItemSelectedChangeApplication(GuiToolbarItem guiToolbarItem)
+        {
+            /* Tuto akci zatím do aplikační funkce NEPŘEDÁVÁME. Neřešíme tedy ani její Response. */
+        }
+        /// <summary>
+        /// Obsluha události ItemClick na Aplikační položce ToolBaru
+        /// </summary>
+        /// <param name="guiToolbarItem"></param>
+        private void _ToolBarItemClickApplication(GuiToolbarItem guiToolbarItem)
+        {
+            GuiRequest request = new GuiRequest();
+            request.Command = GuiRequest.COMMAND_ToolbarClick;
+            request.ToolbarItem = guiToolbarItem;
+            request.CurrentState = this._CreateGuiCurrentState();
+            this._CallAppHostFunction(request, this._ToolBarItemClickApplicationResponse);
+        }
+        /// <summary>
+        /// Zpracování odpovědi z aplikační funkce, na událost ItemClick na Aplikační položce ToolBaru
+        /// </summary>
+        /// <param name="response"></param>
+        private void _ToolBarItemClickApplicationResponse(AppHostResponseArgs response)
+        {
         }
         /// <summary>
         /// Obsluha události ItemSelectedChange na Systémové položce ToolBaru
         /// </summary>
         /// <param name="item"></param>
-        private void _ToolBarItemSystemSelectedChange(FunctionItem item)
+        private void _ToolBarItemSelectedChangeSystem(FunctionItem item)
         {
             this._TimeAxisToolBarSelected(item);
         }
@@ -382,7 +347,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Obsluha události ItemClick na Systémové položce ToolBaru
         /// </summary>
         /// <param name="item"></param>
-        private void _ToolBarItemSystemClick(FunctionItem item)
+        private void _ToolBarItemClickSystem(FunctionItem item)
         {
             this._TimeAxisToolBarClick(item);
         }
@@ -570,9 +535,30 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             ItemActionArgs itemArgs = menu.Tag as ItemActionArgs;
             ContextFunctionItem funcArgs = e.ClickedItem.Tag as ContextFunctionItem;
             GuiContextMenuItem guiContextMenuItem = (funcArgs != null ? funcArgs.GuiContextMenuItem : null);
-            if (guiContextMenuItem == null) return;
-
-            this._CallHostRunContextFunction(guiContextMenuItem, itemArgs);
+            if (guiContextMenuItem != null)
+                // Kontextové menu obsahuje výhradně aplikační funkce (GuiContextMenuItem):
+                this._ContextMenuItemClickApplication(guiContextMenuItem, itemArgs);
+        }
+        /// <summary>
+        /// Obsluha události ItemClick na Aplikační položce kontextového menu
+        /// </summary>
+        /// <param name="guiContextMenuItem"></param>
+        /// <param name="itemArgs"></param>
+        private void _ContextMenuItemClickApplication(GuiContextMenuItem guiContextMenuItem, ItemActionArgs itemArgs)
+        {
+            GuiRequest request = new GuiRequest();
+            request.Command = GuiRequest.COMMAND_ContextMenuClick;
+            request.ContextMenuItem = guiContextMenuItem;
+            request.ActiveGraphItem = itemArgs.Group;
+            request.CurrentState = this._CreateGuiCurrentState();
+            this._CallAppHostFunction(request, this._ContextMenuItemClickApplicationResponse);
+        }
+        /// <summary>
+        /// Zpracování odpovědi z aplikační funkce, na událost ItemClick na Aplikační položce ToolBaru
+        /// </summary>
+        /// <param name="response"></param>
+        private void _ContextMenuItemClickApplicationResponse(AppHostResponseArgs response)
+        {
         }
         /// <summary>
         /// ContextFunctionItem : adapter mezi <see cref="GuiContextMenuItem"/>, a položku kontextového menu <see cref="FunctionItem"/>.
@@ -678,6 +664,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Metoda se volá po akci SelectedChange na systémové položce ToolBaru. 
         /// Metoda zjistí, zda akce se týká časové osy, a pokud ano pak ji vyřeší.
+        /// Pokud se akce nijak netýká časové osy, pak nic neprovádí (není tedy problém ji zavolat).
         /// </summary>
         /// <param name="item"></param>
         private void _TimeAxisToolBarSelected(FunctionItem item)
@@ -691,6 +678,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Metoda se volá po akci Click na systémové položce ToolBaru. 
         /// Metoda zjistí, zda akce se týká časové osy, a pokud ano pak ji vyřeší.
+        /// Pokud se akce nijak netýká časové osy, pak nic neprovádí (není tedy problém ji zavolat).
         /// </summary>
         /// <param name="item"></param>
         private void _TimeAxisToolBarClick(FunctionItem item)
@@ -850,13 +838,50 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private const string _Tlb_TimeAxis_GoHome = "TimeAxisGoHome";
         private const string _Tlb_TimeAxis_GoNext = "TimeAxisGoNext";
         #endregion
-        #region Implementace IMainDataInternal
+        #region Otevření formulářů záznamů
         /// <summary>
-        /// Tato metoda zajistí otevření formuláře daného záznamu.
-        /// Pouze převolá odpovídající metodu v <see cref="MainData"/>.
+        /// Metoda vyvolá akci RunOpenRecordsForm do AppHost
         /// </summary>
         /// <param name="recordGId"></param>
-        void IMainDataInternal.RunOpenRecordForm(GId recordGId) { this._CallHostRunOpenRecordsForm(recordGId); }
+        private void _CallHostRunOpenRecordsForm(GId recordGId)
+        {
+            if (recordGId == null || recordGId.RecordId == 0) return;
+            GuiId[] guiIds = new GuiId[] { new GuiId(recordGId.ClassId, recordGId.RecordId) };
+            this._CallHostRunOpenRecordsForm(guiIds);
+        }
+        /// <summary>
+        /// Metoda vyvolá akci OpenRecords do AppHost
+        /// </summary>
+        /// <param name="guiIds"></param>
+        private void _CallHostRunOpenRecordsForm(IEnumerable<GuiId> guiIds)
+        {
+            GuiRequest request = new GuiRequest();
+            request.Command = GuiRequest.COMMAND_OpenRecords;
+            request.RecordsToOpen = guiIds.ToArray();
+            this._CallAppHostFunction(request, null);
+        }
+        #endregion
+        #region Sestavení instance GuiRequestCurrentState, obsahující stav celého Scheduleru
+        /// <summary>
+        /// Metoda vytvoří new instanci <see cref="GuiRequestCurrentState"/>, a naplní do ní údaje o aktuálním stavu celého okna.
+        /// Data se předávají do servisní funkce v aplikační vrstvě.
+        /// </summary>
+        /// <returns></returns>
+        private GuiRequestCurrentState _CreateGuiCurrentState()
+        {
+            GuiRequestCurrentState currentState = new GuiRequestCurrentState();
+            currentState.TimeAxisValue = this._MainControl.SynchronizedTime.Value;
+
+            return currentState;
+        }
+        #endregion
+        #region Implementace IMainDataInternal
+        /// <summary>
+        /// Metoda zavolá hostitele a předá mu požadavek.
+        /// </summary>
+        /// <param name="request"></param>
+        /// <param name="callBackAction"></param>
+        void IMainDataInternal.CallAppHostFunction(GuiRequest request, Action<AppHostResponseArgs> callBackAction) { this._CallAppHostFunction(request, callBackAction); }
         /// <summary>
         /// Metoda pro daný prvek připraví a vrátí kontextové menu.
         /// </summary>
@@ -872,10 +897,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     public interface IMainDataInternal
     {
         /// <summary>
-        /// Metoda, která zajistí otevření formuláře daného záznamu.
+        /// Metoda zavolá hostitele a předá mu požadavek.
         /// </summary>
-        /// <param name="recordGId">Identifikátor záznamu</param>
-        void RunOpenRecordForm(GId recordGId);
+        /// <param name="request"></param>
+        /// <param name="callBackAction"></param>
+        void CallAppHostFunction(GuiRequest request, Action<AppHostResponseArgs> callBackAction);
         /// <summary>
         /// Metoda pro daný prvek připraví a vrátí kontextové menu.
         /// </summary>

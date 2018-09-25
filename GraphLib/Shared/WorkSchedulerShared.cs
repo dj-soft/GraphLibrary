@@ -1800,6 +1800,10 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiContextMenuItem ContextMenuItem { get; set; }
         /// <summary>
+        /// Aktivní prvek grafu, jehož se akce týká (buď kliknutí na kontextové menu, nebo interaktivní změna prvku = přesouvání / resize)
+        /// </summary>
+        public GuiRequestGraphItem ActiveGraphItem { get; set; }
+        /// <summary>
         /// Informace o prvku, který je přesouván (Drag and Drop) na jiné místo
         /// </summary>
         public GuiRequestGraphItemMove GraphItemMove { get; set; }
