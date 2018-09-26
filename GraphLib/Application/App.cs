@@ -303,11 +303,9 @@ namespace Asol.Tools.WorkScheduler.Application
         /// </summary>
         /// <typeparam name="TRequest">Type of request</typeparam>
         /// <param name="priorityId">ID for priority. See also CurrentPriorityId property.</param>
-        /// <param name="name">name of request. Can be null. Is defined only for debug and messages purposes.</param>
         /// <param name="workMethod">Working method. Must accept one parameter of type (TRequest). This method will be called in background thread.</param>
         /// <param name="workData">Data for Working method.</param>
         /// <param name="callbackMethod">Callback method, will be called after Working method will ends.</param>
-        /// <param name="exceptionMethod">Exception method, will be called on Exception in Working method. Can be null.</param>
         public static void ProcessRequestOnbackground<TRequest>(int priorityId, Action<TRequest> workMethod, TRequest workData, Action<TRequest> callbackMethod)
         {
             Instance._Worker.AddRequest<TRequest>(priorityId, workMethod, workData, callbackMethod);
@@ -357,11 +355,9 @@ namespace Asol.Tools.WorkScheduler.Application
         /// <typeparam name="TRequest">Type of request</typeparam>
         /// <typeparam name="TResponse">Type of response</typeparam>
         /// <param name="priorityId">ID for priority. See also CurrentPriorityId property.</param>
-        /// <param name="name">name of request. Can be null. Is defined only for debug and messages purposes.</param>
         /// <param name="workMethod">Working method. Must accept one parameter of type (TRequest). This method will be called in background thread. Must return response of type (TResponse)</param>
         /// <param name="workData">Data for Working method.</param>
         /// <param name="callbackMethod">Callback method, will be called after Working method will ends. Must accept one parameter of type (TResponse)</param>
-        /// <param name="exceptionMethod">Exception method, will be called on Exception in Working method. Can be null.</param>
         public static void ProcessRequestOnbackground<TRequest, TResponse>(int priorityId, Func<TRequest, TResponse> workMethod, TRequest workData, Action<TRequest, TResponse> callbackMethod)
         {
             Instance._Worker.AddRequest<TRequest, TResponse>(priorityId, workMethod, workData, callbackMethod);
@@ -474,16 +470,32 @@ namespace Asol.Tools.WorkScheduler.Application
         public static Resources Resources { get { return Instance._Resources; } } private Resources _Resources;
         #endregion
         #region Register / Config
+        /// <summary>
+        /// Vrací true, když rregistr obsahuje daný klíč
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
         public static bool RegisterContainsKey(string key)
         {
             _RegisterCheckKey(key);
             return Instance._Register.ContainsKey(key);
         }
+        /// <summary>
+        /// Načte hodnotu z klíče registru
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
         public static string RegisterRead(string key)
         {
             _RegisterCheckKey(key);
             return Instance._Register[key];
         }
+        /// <summary>
+        /// Načte hodnotu z klíče registru, string
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="defaultValue"></param>
+        /// <returns></returns>
         public static string RegisterRead(string key, string defaultValue)
         {
             _RegisterCheckKey(key);
@@ -491,11 +503,22 @@ namespace Asol.Tools.WorkScheduler.Application
             if (Instance._Register.TryGetValue(key, out value)) return value;
             return defaultValue;
         }
+        /// <summary>
+        /// Zkusí načíst hodnotu z klíče registru, vrací true = úspěch
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
         public static bool RegisterTryGetValue(string key, out string value)
         {
             _RegisterCheckKey(key);
             return Instance._Register.TryGetValue(key, out value);
         }
+        /// <summary>
+        /// Uloží hodnotu do registru
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
         public static void RegisterStore(string key, string value)
         {
             _RegisterCheckKey(key);
@@ -504,12 +527,21 @@ namespace Asol.Tools.WorkScheduler.Application
             else
                 Instance._Register.Add(key, value);
         }
+        /// <summary>
+        /// Odebere klíč z registru
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
         public static void RegisterRemove(string key, string value)
         {
             _RegisterCheckKey(key);
             if (Instance._Register.ContainsKey(key))
                 Instance._Register.Remove(key);
         }
+        /// <summary>
+        /// Zkontroluje správnost zadání klíče
+        /// </summary>
+        /// <param name="key"></param>
         private static void _RegisterCheckKey(string key)
         {
             if (String.IsNullOrEmpty(key))
@@ -597,7 +629,16 @@ namespace Asol.Tools.WorkScheduler.Application
     /// </summary>
     public class GraphLibException : ApplicationException
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="message"></param>
         public GraphLibException(string message) : base(message) { }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="innerException"></param>
         public GraphLibException(string message, Exception innerException) : base(message, innerException) { }
     }
     /// <summary>
@@ -607,7 +648,16 @@ namespace Asol.Tools.WorkScheduler.Application
     /// </summary>
     public class GraphLibDataException : ApplicationException
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="message"></param>
         public GraphLibDataException(string message) : base(message) { }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="innerException"></param>
         public GraphLibDataException(string message, Exception innerException) : base(message, innerException) { }
     }
     /// <summary>
@@ -618,7 +668,16 @@ namespace Asol.Tools.WorkScheduler.Application
     /// </summary>
     public class GraphLibCodeException : ApplicationException
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="message"></param>
         public GraphLibCodeException(string message) : base(message) { }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="innerException"></param>
         public GraphLibCodeException(string message, Exception innerException) : base(message, innerException) { }
     }
     /// <summary>
@@ -628,7 +687,16 @@ namespace Asol.Tools.WorkScheduler.Application
     /// </summary>
     public class GraphLibUserException : ApplicationException
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="message"></param>
         public GraphLibUserException(string message) : base(message) { }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="innerException"></param>
         public GraphLibUserException(string message, Exception innerException) : base(message, innerException) { }
     }
     #endregion

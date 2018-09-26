@@ -64,11 +64,20 @@ namespace Asol.Tools.WorkScheduler.Data
         private const char TEMP_CHAR = (char)1234;
         #endregion
         #region Public constructors, properties
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="name"></param>
         public DataPersistValue(string name)
         {
             this._Name = name;
             this._Values = new List<string>();
         }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="values"></param>
         public DataPersistValue(string name, params object[] values)
         {
             this._Name = name;
@@ -149,7 +158,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// Add a new values
         /// </summary>
-        /// <param name="value"></param>
+        /// <param name="values"></param>
         public void AddRange(params object[] values)
         {
             foreach (object value in values)
@@ -304,9 +313,13 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         /// <param name="value"></param>
         public void Add(IDataPersistent value) { this.Add((value == null ? null : value.PersistentValue)); }
-
         #endregion
         #region Convertors
+        /// <summary>
+        /// Vrátí daný string ve stavu, kdy může být serializován
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
         public static string ToPersist(string value)
         {
             if (value == null) return NULL;
@@ -321,6 +334,11 @@ namespace Asol.Tools.WorkScheduler.Data
 
             return text;
         }
+        /// <summary>
+        /// Vrátí string v původním stavu před serializací
+        /// </summary>
+        /// <param name="persist"></param>
+        /// <returns></returns>
         public static string ToString(string persist)
         {
             if (persist == null) return null;
@@ -336,69 +354,139 @@ namespace Asol.Tools.WorkScheduler.Data
             
             return text;
         }
+        /// <summary>
+        /// Vrátí danou hodnotu ve stavu, kdy může být serializována
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
         public static string ToPersist(bool value)
         {
             return (value ? "Y" : "N");
         }
+        /// <summary>
+        /// Vrátí hodnotu daného typu ze serializovaného stringu
+        /// </summary>
+        /// <param name="persist"></param>
+        /// <returns></returns>
         public static bool ToBoolean(string persist)
         {
             if (!String.IsNullOrEmpty(persist) && ("AaYy1".IndexOf(persist[0]) >= 0)) return true;
             return false;
         }
+        /// <summary>
+        /// Vrátí danou hodnotu ve stavu, kdy může být serializována
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
         public static string ToPersist(short value)
         {
             return value.ToString();
         }
+        /// <summary>
+        /// Vrátí hodnotu daného typu ze serializovaného stringu
+        /// </summary>
+        /// <param name="persist"></param>
+        /// <returns></returns>
         public static short ToInt16(string persist)
         {
             short value;
             if (!String.IsNullOrEmpty(persist) && Int16.TryParse(persist, out value)) return value;
             return (short)0;
         }
+        /// <summary>
+        /// Vrátí danou hodnotu ve stavu, kdy může být serializována
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
         public static string ToPersist(int value)
         {
             return value.ToString();
         }
+        /// <summary>
+        /// Vrátí hodnotu daného typu ze serializovaného stringu
+        /// </summary>
+        /// <param name="persist"></param>
+        /// <returns></returns>
         public static int ToInt32(string persist)
         {
             int value;
             if (!String.IsNullOrEmpty(persist) && Int32.TryParse(persist, out value)) return value;
             return 0;
         }
+        /// <summary>
+        /// Vrátí danou hodnotu ve stavu, kdy může být serializována
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
         public static string ToPersist(long value)
         {
             return value.ToString();
         }
+        /// <summary>
+        /// Vrátí hodnotu daného typu ze serializovaného stringu
+        /// </summary>
+        /// <param name="persist"></param>
+        /// <returns></returns>
         public static long ToInt64(string persist)
         {
             long value;
             if (!String.IsNullOrEmpty(persist) && Int64.TryParse(persist, out value)) return value;
             return 0L;
         }
+        /// <summary>
+        /// Vrátí danou hodnotu ve stavu, kdy může být serializována
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
         public static string ToPersist(short? value)
         {
             return (value.HasValue ? value.Value.ToString() : "");
         }
+        /// <summary>
+        /// Vrátí hodnotu daného typu ze serializovaného stringu
+        /// </summary>
+        /// <param name="persist"></param>
+        /// <returns></returns>
         public static short? ToInt16N(string persist)
         {
             short value;
             if (!String.IsNullOrEmpty(persist) && Int16.TryParse(persist, out value)) return value;
             return (short?)null;
         }
+        /// <summary>
+        /// Vrátí danou hodnotu ve stavu, kdy může být serializována
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
         public static string ToPersist(int? value)
         {
             return (value.HasValue ? value.Value.ToString() : "");
         }
+        /// <summary>
+        /// Vrátí hodnotu daného typu ze serializovaného stringu
+        /// </summary>
+        /// <param name="persist"></param>
+        /// <returns></returns>
         public static int? ToInt32N(string persist)
         {
             int value;
             if (!String.IsNullOrEmpty(persist) && Int32.TryParse(persist, out value)) return value;
             return (int?)null;
         }
+        /// <summary>
+        /// Vrátí danou hodnotu ve stavu, kdy může být serializována
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
         public static string ToPersist(long? value)
         {
             return (value.HasValue ? value.Value.ToString() : "");
         }
+        /// <summary>
+        /// Vrátí hodnotu daného typu ze serializovaného stringu
+        /// </summary>
+        /// <param name="persist"></param>
+        /// <returns></returns>
         public static long? ToInt64N(string persist)
         {
             long value;
@@ -413,6 +501,9 @@ namespace Asol.Tools.WorkScheduler.Data
     /// </summary>
     public interface IDataPersistent
     {
+        /// <summary>
+        /// Serializovaná hodnota celé instance
+        /// </summary>
         string PersistentValue { get; set; }
     }
 }

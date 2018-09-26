@@ -18,6 +18,9 @@ namespace Asol.Tools.WorkScheduler.Data
     public class CollectIdx<T> : IEnumerable<T>, IDisposable where T : IIdKey
     {
         #region Konstrukce
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public CollectIdx()
         {
             this.DisableKeyLogic = false;
@@ -37,6 +40,10 @@ namespace Asol.Tools.WorkScheduler.Data
             if (!disableKeyLogic)
                 this.DataKey = new EDictionary<string, T>();
         }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             return "Collection of types:" + typeof(T).Name + "; ItemCount=" + this.DataId.Count + "; KeyCount=" + (DisableKeyLogic ? "disabled" : this.DataKey.Count.ToString());
@@ -281,6 +288,9 @@ namespace Asol.Tools.WorkScheduler.Data
         {
             return this.DataId.Values.GetEnumerator();
         }
+        /// <summary>
+        /// Dispose
+        /// </summary>
         public void Dispose()
         {
             this.Clear();
@@ -320,7 +330,14 @@ namespace Asol.Tools.WorkScheduler.Data
     public class EDictionary<TKey, TValue> : IEnumerable<TValue>, IEnumerable
     {
         #region Konstrukce
+        /// <summary>
+        /// Úložiště Diuctionary
+        /// </summary>
         protected Dictionary<TKey, TValue> Dict;
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             return "EDictionary<" + typeof(TKey).GetType().Name + ", " + typeof(TValue).GetType().Name + ">; ItemCount=" + this.Dict.Count.ToString();
@@ -333,6 +350,9 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Pokud je třeba vyvolat výjimku, pak ji musí vyvolat handler.
         /// </summary>
         public event EDictionaryEventBeforeHandler ItemAddBefore;
+        /// <summary>
+        /// Event volaný po přidání nové položky. 
+        /// </summary>
         public event EDictionaryEventAfterHandler ItemAddAfter;
         /// <summary>
         /// Event volaný před vrácením nalezené položky. 
@@ -340,6 +360,9 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Pokud je třeba vyvolat výjimku, pak ji musí vyvolat handler.
         /// </summary>
         public event EDictionaryEventBeforeHandler ItemGetBefore;
+        /// <summary>
+        /// Event volaný po vrácení nalezené položky. 
+        /// </summary>
         public event EDictionaryEventAfterHandler ItemGetAfter;
         /// <summary>
         /// Event volaný před vložením existující položky v metodě this[] set. 
@@ -347,20 +370,31 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Pokud je třeba vyvolat výjimku, pak ji musí vyvolat handler.
         /// </summary>
         public event EDictionaryEventBeforeHandler ItemSetBefore;
+        /// <summary>
+        /// Event volaný po vložení existující položky v metodě this[] set. 
+        /// </summary>
         public event EDictionaryEventAfterHandler ItemSetAfter;
         /// <summary>
+        /// Event volaný před odebráním existující položky.
         /// Occurs before a item has been removed.
         /// Eventhandler can Cancel this remove process (item then remaining in Dictionary).
         /// If exception is need, then it must thrown eventhandler.
         /// </summary>
         public event EDictionaryEventBeforeHandler ItemRemoveBefore;
+        /// <summary>
+        /// Event volaný po odebrání existující položky.
+        /// </summary>
         public event EDictionaryEventAfterHandler ItemRemoveAfter;
         /// <summary>
+        /// Event volaný před změnou existující položky.
         /// Occurs before a item an change is occured.
         /// Eventhandler can Cancel this remove process (item then remaining in Dictionary).
         /// If exception is need, then it must thrown eventhandler.
         /// </summary>
         public event EDictionaryEventBeforeHandler DictionaryChangeBefore;
+        /// <summary>
+        /// Event volaný po změně existující položky.
+        /// </summary>
         public event EDictionaryEventAfterHandler DictionaryChangeAfter;
 
         /// <summary>
@@ -380,8 +414,23 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public class EDictionaryBeforeEventArgs : EDictionaryEventArgs
         {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="changeType"></param>
             public EDictionaryBeforeEventArgs(CollectionChangeType changeType) : base(changeType) { this.Cancel = false; }
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="changeType"></param>
+            /// <param name="value"></param>
             public EDictionaryBeforeEventArgs(CollectionChangeType changeType, TValue value) : base(changeType, value) { this.Cancel = false; }
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="changeType"></param>
+            /// <param name="key"></param>
+            /// <param name="value"></param>
             public EDictionaryBeforeEventArgs(CollectionChangeType changeType, TKey key, TValue value) : base(changeType, key, value) { this.Cancel = false; }
             /// <summary>
             /// Eventhandler může zakázat operaci
@@ -393,8 +442,23 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public class EDictionaryAfterEventArgs : EDictionaryEventArgs
         {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="changeType"></param>
             public EDictionaryAfterEventArgs(CollectionChangeType changeType) : base(changeType) { }
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="changeType"></param>
+            /// <param name="value"></param>
             public EDictionaryAfterEventArgs(CollectionChangeType changeType, TValue value) : base(changeType, value) { }
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="changeType"></param>
+            /// <param name="key"></param>
+            /// <param name="value"></param>
             public EDictionaryAfterEventArgs(CollectionChangeType changeType, TKey key, TValue value) : base(changeType, key, value) { }
         }
         /// <summary>
@@ -402,18 +466,33 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public class EDictionaryEventArgs : EventArgs
         {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="changeType"></param>
             public EDictionaryEventArgs(CollectionChangeType changeType)
             {
                 this.ChangeType = changeType;
                 this.Key = default(TKey);
                 this.Value = default(TValue);
             }
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="changeType"></param>
+            /// <param name="value"></param>
             public EDictionaryEventArgs(CollectionChangeType changeType, TValue value)
             {
                 this.ChangeType = changeType;
                 this.Key = default(TKey);
                 this.Value = value;
             }
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="changeType"></param>
+            /// <param name="key"></param>
+            /// <param name="value"></param>
             public EDictionaryEventArgs(CollectionChangeType changeType, TKey key, TValue value)
             {
                 this.ChangeType = changeType;
@@ -435,6 +514,11 @@ namespace Asol.Tools.WorkScheduler.Data
         }
         #endregion
         #region Protected podpora eventů
+        /// <summary>
+        /// Vrací true, pokud lze přidat data
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
         protected virtual bool CanAddItem(TValue value)
         {
             bool result = true;
@@ -454,6 +538,12 @@ namespace Asol.Tools.WorkScheduler.Data
             }
             return result;
         }
+        /// <summary>
+        /// Vrací true, pokud lze přidat data
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
         protected virtual bool CanAddItem(TKey key, TValue value)
         {
             bool result = true;
@@ -473,6 +563,10 @@ namespace Asol.Tools.WorkScheduler.Data
             }
             return result;
         }
+        /// <summary>
+        /// Háček při přidání hodnoty
+        /// </summary>
+        /// <param name="value"></param>
         protected virtual void OnAddItemAfter(TValue value)
         {
             if (this.ItemAddAfter != null)
@@ -486,6 +580,11 @@ namespace Asol.Tools.WorkScheduler.Data
                 this.DictionaryChangeAfter(this, args);
             }
         }
+        /// <summary>
+        /// Háček při přidání hodnoty
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
         protected virtual void OnAddItemAfter(TKey key, TValue value)
         {
             if (this.ItemAddAfter != null)
@@ -499,6 +598,12 @@ namespace Asol.Tools.WorkScheduler.Data
                 this.DictionaryChangeAfter(this, args);
             }
         }
+        /// <summary>
+        /// Zjistí, zda lze získat položku
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
         protected virtual bool CanGetItem(TKey key, TValue value)
         {
             bool result = true;
@@ -511,6 +616,11 @@ namespace Asol.Tools.WorkScheduler.Data
             }
             return result;
         }
+        /// <summary>
+        /// Háček po získání hodnoty
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
         protected virtual void OnGetItemAfter(TKey key, TValue value)
         {
             if (this.ItemGetAfter != null)
@@ -519,6 +629,12 @@ namespace Asol.Tools.WorkScheduler.Data
                 this.ItemGetAfter(this, args);
             }
         }
+        /// <summary>
+        /// Zjistí, zda lze vepsat položku
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
         protected virtual bool CanSetItem(TKey key, TValue value)
         {
             bool result = true;
@@ -538,6 +654,11 @@ namespace Asol.Tools.WorkScheduler.Data
             }
             return result;
         }
+        /// <summary>
+        /// Háček po vepsání hodnoty
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
         protected virtual void OnSetItemAfter(TKey key, TValue value)
         {
             if (this.ItemSetAfter != null)
@@ -551,6 +672,11 @@ namespace Asol.Tools.WorkScheduler.Data
                 this.DictionaryChangeAfter(this, args);
             }
         }
+        /// <summary>
+        /// Zjistí, zda lze odebrat položku
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
         protected virtual bool CanRemoveItem(TKey key)
         {
             bool result = true;
@@ -570,6 +696,12 @@ namespace Asol.Tools.WorkScheduler.Data
             }
             return result;
         }
+        /// <summary>
+        /// Zjistí, zda lze odebrat položku
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
         protected virtual bool CanRemoveItem(TKey key, TValue value)
         {
             bool result = true;
@@ -589,6 +721,11 @@ namespace Asol.Tools.WorkScheduler.Data
             }
             return result;
         }
+        /// <summary>
+        /// Háček po odebrání hodnoty
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
         protected virtual void OnRemoveItemAfter(TKey key, TValue value)
         {
             if (this.ItemRemoveAfter != null)
@@ -602,6 +739,11 @@ namespace Asol.Tools.WorkScheduler.Data
                 this.DictionaryChangeAfter(this, args);
             }
         }
+        /// <summary>
+        /// Zjistí, zda lze změnit obsah Dictionary
+        /// </summary>
+        /// <param name="changeType"></param>
+        /// <returns></returns>
         protected virtual bool CanChangeDictionary(CollectionChangeType changeType)
         {
             bool result = true;
@@ -614,6 +756,13 @@ namespace Asol.Tools.WorkScheduler.Data
             }
             return result;
         }
+        /// <summary>
+        /// Zjistí, zda lze změnit obsah Dictionary
+        /// </summary>
+        /// <param name="changeType"></param>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
         protected virtual bool CanChangeDictionary(CollectionChangeType changeType, TKey key, TValue value)
         {
             bool result = true;
@@ -626,6 +775,10 @@ namespace Asol.Tools.WorkScheduler.Data
             }
             return result;
         }
+        /// <summary>
+        /// Háček volaný po změně obsahu Dictionary
+        /// </summary>
+        /// <param name="changeType"></param>
         protected virtual void OnChangeDictionaryAfter(CollectionChangeType changeType)
         {
             if (this.DictionaryChangeAfter != null)
@@ -634,6 +787,12 @@ namespace Asol.Tools.WorkScheduler.Data
                 this.DictionaryChangeAfter(this, args);
             }
         }
+        /// <summary>
+        /// Háček volaný po změně obsahu Dictionary
+        /// </summary>
+        /// <param name="changeType"></param>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
         protected virtual void OnChangeDictionaryAfter(CollectionChangeType changeType, TKey key, TValue value)
         {
             if (this.DictionaryChangeAfter != null)
@@ -644,33 +803,31 @@ namespace Asol.Tools.WorkScheduler.Data
         }
         #endregion
         #region Public Dictionary members (adapter to Dictionary)
-        /// Summary:
-        ///     Initializes a new instance of the System.Collections.Generic.Dictionary<TKey,TValue>
-        ///     class that is empty, has the default initial capacity, and uses the default
-        ///     equality comparer for the key type.
+
+        /// <summary>
+        /// Initializes a new instance of the System.Collections.Generic.Dictionary&lt;TKey,TValue&gt;
+        /// class that is empty, has the default initial capacity, and uses the default
+        /// equality comparer for the key type.
+        /// </summary>
         public EDictionary()
         {
             this.Dict = new Dictionary<TKey, TValue>();
             this.LastValueReset();
         }
         /// <summary>
-        ///     Initializes a new instance of the System.Collections.Generic.Dictionary<TKey,TValue>
-        ///     class that contains elements copied from the specified System.Collections.Generic.IDictionary<TKey,TValue>
-        ///     and uses the default equality comparer for the key type.
-        /// Exceptions:
-        ///   System.ArgumentNullException:
-        ///     dictionary is null.
-        ///
-        ///   System.ArgumentException:
-        ///     dictionary contains one or more duplicate keys.
+        /// Initializes a new instance of the System.Collections.Generic.Dictionary&lt;TKey,TValue&gt;
+        /// class that contains elements copied from the specified System.Collections.Generic.IDictionary&lt;TKey,TValue&gt;
+        /// and uses the default equality comparer for the key type.
         /// </summary>
+        /// <exception cref="System.ArgumentNullException">dictionary is null</exception>
+        /// <exception cref="System.ArgumentException">dictionary contains one or more duplicate keys</exception>
         public EDictionary(IDictionary<TKey, TValue> dictionary)
         {
             this.Dict = new Dictionary<TKey, TValue>(dictionary);
             this.LastValueReset();
         }
         /// <summary>
-        ///     Initializes a new instance of the System.Collections.Generic.Dictionary<TKey,TValue>
+        ///     Initializes a new instance of the System.Collections.Generic.Dictionary&lt;TKey,TValue&gt;
         ///     class that is empty, has the default initial capacity, and uses the specified
         ///     System.Collections.Generic.IEqualityComparer&lt;T&gt;.
         ///
@@ -685,13 +842,13 @@ namespace Asol.Tools.WorkScheduler.Data
             this.Dict = new Dictionary<TKey, TValue>(comparer);
         }
         /// <summary>
-        ///     Initializes a new instance of the System.Collections.Generic.Dictionary<TKey,TValue>
+        ///     Initializes a new instance of the System.Collections.Generic.Dictionary&lt;TKey,TValue&gt;
         ///     class that is empty, has the specified initial capacity, and uses the default
         ///     equality comparer for the key type.
         ///
         /// Parameters:
         ///   capacity:
-        ///     The initial number of elements that the System.Collections.Generic.Dictionary<TKey,TValue>
+        ///     The initial number of elements that the System.Collections.Generic.Dictionary&lt;TKey,TValue&gt;
         ///     can contain.
         ///
         /// Exceptions:
@@ -703,14 +860,14 @@ namespace Asol.Tools.WorkScheduler.Data
             this.Dict = new Dictionary<TKey, TValue>(capacity);
         }
         /// <summary>
-        ///     Initializes a new instance of the System.Collections.Generic.Dictionary<TKey,TValue>
-        ///     class that contains elements copied from the specified System.Collections.Generic.IDictionary<TKey,TValue>
+        ///     Initializes a new instance of the System.Collections.Generic.Dictionary&lt;TKey,TValue&gt;
+        ///     class that contains elements copied from the specified System.Collections.Generic.IDictionary&lt;TKey,TValue&gt;
         ///     and uses the specified System.Collections.Generic.IEqualityComparer&lt;T&gt;.
         ///
         /// Parameters:
         ///   dictionary:
-        ///     The System.Collections.Generic.IDictionary<TKey,TValue> whose elements are
-        ///     copied to the new System.Collections.Generic.Dictionary<TKey,TValue>.
+        ///     The System.Collections.Generic.IDictionary&lt;TKey,TValue&gt; whose elements are
+        ///     copied to the new System.Collections.Generic.Dictionary&lt;TKey,TValue&gt;.
         ///
         ///   comparer:
         ///     The System.Collections.Generic.IEqualityComparer&lt;T&gt; implementation to use
@@ -729,13 +886,13 @@ namespace Asol.Tools.WorkScheduler.Data
             this.Dict = new Dictionary<TKey, TValue>(dictionary, comparer);
         }
         /// <summary>
-        ///     Initializes a new instance of the System.Collections.Generic.Dictionary<TKey,TValue>
+        ///     Initializes a new instance of the System.Collections.Generic.Dictionary&lt;TKey,TValue&gt;
         ///     class that is empty, has the specified initial capacity, and uses the specified
         ///     System.Collections.Generic.IEqualityComparer&lt;T&gt;.
         ///
         /// Parameters:
         ///   capacity:
-        ///     The initial number of elements that the System.Collections.Generic.Dictionary<TKey,TValue>
+        ///     The initial number of elements that the System.Collections.Generic.Dictionary&lt;TKey,TValue&gt;
         ///     can contain.
         ///
         ///   comparer:
@@ -757,34 +914,34 @@ namespace Asol.Tools.WorkScheduler.Data
         ///
         /// Returns:
         ///     The System.Collections.Generic.IEqualityComparer&lt;T&gt; generic interface implementation
-        ///     that is used to determine equality of keys for the current System.Collections.Generic.Dictionary<TKey,TValue>
+        ///     that is used to determine equality of keys for the current System.Collections.Generic.Dictionary&lt;TKey,TValue&gt;
         ///     and to provide hash values for the keys.
         /// </summary>
         public IEqualityComparer<TKey> Comparer
         { get { return this.Dict.Comparer; } }
         /// <summary>
-        ///     Gets the number of key/value pairs contained in the System.Collections.Generic.Dictionary<TKey,TValue>.
+        ///     Gets the number of key/value pairs contained in the System.Collections.Generic.Dictionary&lt;TKey,TValue&gt;.
         ///
         /// Returns:
-        ///     The number of key/value pairs contained in the System.Collections.Generic.Dictionary<TKey,TValue>.
+        ///     The number of key/value pairs contained in the System.Collections.Generic.Dictionary&lt;TKey,TValue&gt;.
         /// </summary>
         public int Count
         { get { return this.Dict.Count; } }
         /// <summary>
-        ///     Gets a collection containing the keys in the System.Collections.Generic.Dictionary<TKey,TValue>.
+        ///     Gets a collection containing the keys in the System.Collections.Generic.Dictionary&lt;TKey,TValue&gt;.
         ///
         /// Returns:
-        ///     A System.Collections.Generic.Dictionary<TKey,TValue>.KeyCollection containing
-        ///     the keys in the System.Collections.Generic.Dictionary<TKey,TValue>.
+        ///     A System.Collections.Generic.Dictionary&lt;TKey,TValue&gt;.KeyCollection containing
+        ///     the keys in the System.Collections.Generic.Dictionary&lt;TKey,TValue&gt;.
         /// </summary>
         public Dictionary<TKey, TValue>.KeyCollection Keys
         { get { return this.Dict.Keys; } }
         /// <summary>
-        ///     Gets a collection containing the values in the System.Collections.Generic.Dictionary<TKey,TValue>.
+        ///     Gets a collection containing the values in the System.Collections.Generic.Dictionary&lt;TKey,TValue&gt;.
         ///
         /// Returns:
-        ///     A System.Collections.Generic.Dictionary<TKey,TValue>.ValueCollection containing
-        ///     the values in the System.Collections.Generic.Dictionary<TKey,TValue>.
+        ///     A System.Collections.Generic.Dictionary&lt;TKey,TValue&gt;.ValueCollection containing
+        ///     the values in the System.Collections.Generic.Dictionary&lt;TKey,TValue&gt;.
         /// </summary>
         public Dictionary<TKey, TValue>.ValueCollection Values
         { get { return this.Dict.Values; } }
@@ -873,7 +1030,7 @@ namespace Asol.Tools.WorkScheduler.Data
         ///     key is null.
         ///
         ///   System.ArgumentException:
-        ///     An element with the same key already exists in the System.Collections.Generic.Dictionary<TKey,TValue>.
+        ///     An element with the same key already exists in the System.Collections.Generic.Dictionary&lt;TKey,TValue&gt;.
         /// </summary>
         public void Add(TKey key, TValue value)
         {
@@ -887,7 +1044,7 @@ namespace Asol.Tools.WorkScheduler.Data
                 this.LastValueReset();
         }
         /// <summary>
-        ///     Removes all keys and values from the System.Collections.Generic.Dictionary<TKey,TValue>.
+        ///     Removes all keys and values from the System.Collections.Generic.Dictionary&lt;TKey,TValue&gt;.
         /// </summary>
         public void Clear()
         {
@@ -899,15 +1056,15 @@ namespace Asol.Tools.WorkScheduler.Data
             this.LastValueReset();
         }
         /// <summary>
-        ///     Determines whether the System.Collections.Generic.Dictionary<TKey,TValue>
+        ///     Determines whether the System.Collections.Generic.Dictionary&lt;TKey,TValue&gt;
         ///     contains the specified key.
         ///
         /// Parameters:
         ///   key:
-        ///     The key to locate in the System.Collections.Generic.Dictionary<TKey,TValue>.
+        ///     The key to locate in the System.Collections.Generic.Dictionary&lt;TKey,TValue&gt;.
         ///
         /// Returns:
-        ///     true if the System.Collections.Generic.Dictionary<TKey,TValue> contains an
+        ///     true if the System.Collections.Generic.Dictionary&lt;TKey,TValue&gt; contains an
         ///     element with the specified key; otherwise, false.
         ///
         /// Exceptions:
@@ -926,16 +1083,16 @@ namespace Asol.Tools.WorkScheduler.Data
             return found;
         }
         /// <summary>
-        ///     Determines whether the System.Collections.Generic.Dictionary<TKey,TValue>
+        ///     Determines whether the System.Collections.Generic.Dictionary&lt;TKey,TValue&gt;
         ///     contains a specific value.
         ///
         /// Parameters:
         ///   value:
-        ///     The value to locate in the System.Collections.Generic.Dictionary<TKey,TValue>.
+        ///     The value to locate in the System.Collections.Generic.Dictionary&lt;TKey,TValue&gt;.
         ///     The value can be null for reference types.
         ///
         /// Returns:
-        ///     true if the System.Collections.Generic.Dictionary<TKey,TValue> contains an
+        ///     true if the System.Collections.Generic.Dictionary&lt;TKey,TValue&gt; contains an
         ///     element with the specified value; otherwise, false.
         /// </summary>
         public bool ContainsValue(TValue value)
@@ -943,11 +1100,11 @@ namespace Asol.Tools.WorkScheduler.Data
             return this.Dict.ContainsValue(value);
         }
         /// <summary>
-        ///     Returns an enumerator that iterates through the System.Collections.Generic.Dictionary<TKey,TValue>.
+        ///     Returns an enumerator that iterates through the System.Collections.Generic.Dictionary&lt;TKey,TValue&gt;.
         ///
         /// Returns:
-        ///     A System.Collections.Generic.Dictionary<TKey,TValue>.Enumerator structure
-        ///     for the System.Collections.Generic.Dictionary<TKey,TValue>.
+        ///     A System.Collections.Generic.Dictionary&lt;TKey,TValue&gt;.Enumerator structure
+        ///     for the System.Collections.Generic.Dictionary&lt;TKey,TValue&gt;.
         /// </summary>
         public Dictionary<TKey, TValue>.Enumerator GetEnumerator()
         {
@@ -955,18 +1112,18 @@ namespace Asol.Tools.WorkScheduler.Data
         }
         /// <summary>
         ///     Implements the System.Runtime.Serialization.ISerializable interface and returns
-        ///     the data needed to serialize the System.Collections.Generic.Dictionary<TKey,TValue>
+        ///     the data needed to serialize the System.Collections.Generic.Dictionary&lt;TKey,TValue&gt;
         ///     instance.
         ///
         /// Parameters:
         ///   info:
         ///     A System.Runtime.Serialization.SerializationInfo object that contains the
-        ///     information required to serialize the System.Collections.Generic.Dictionary<TKey,TValue>
+        ///     information required to serialize the System.Collections.Generic.Dictionary&lt;TKey,TValue&gt;
         ///     instance.
         ///
         ///   context:
         ///     A System.Runtime.Serialization.StreamingContext structure that contains the
-        ///     source and destination of the serialized stream associated with the System.Collections.Generic.Dictionary<TKey,TValue>
+        ///     source and destination of the serialized stream associated with the System.Collections.Generic.Dictionary&lt;TKey,TValue&gt;
         ///     instance.
         ///
         /// Exceptions:
@@ -989,13 +1146,13 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Exceptions:
         ///   System.Runtime.Serialization.SerializationException:
         ///     The System.Runtime.Serialization.SerializationInfo object associated with
-        ///     the current System.Collections.Generic.Dictionary<TKey,TValue> instance is
+        ///     the current System.Collections.Generic.Dictionary&lt;TKey,TValue&gt; instance is
         ///     invalid.
         /// </summary>
         public virtual void OnDeserialization(object sender)
         { }
         /// <summary>
-        ///     Removes the value with the specified key from the System.Collections.Generic.Dictionary<TKey,TValue>.
+        ///     Removes the value with the specified key from the System.Collections.Generic.Dictionary&lt;TKey,TValue&gt;.
         ///
         /// Parameters:
         ///   key:
@@ -1003,7 +1160,7 @@ namespace Asol.Tools.WorkScheduler.Data
         ///
         /// Returns:
         ///     true if the element is successfully found and removed; otherwise, false.
-        ///     This method returns false if key is not found in the System.Collections.Generic.Dictionary<TKey,TValue>.
+        ///     This method returns false if key is not found in the System.Collections.Generic.Dictionary&lt;TKey,TValue&gt;.
         ///
         /// Exceptions:
         ///   System.ArgumentNullException:
@@ -1042,7 +1199,7 @@ namespace Asol.Tools.WorkScheduler.Data
         ///     value parameter. This parameter is passed uninitialized.
         ///
         /// Returns:
-        ///     true if the System.Collections.Generic.Dictionary<TKey,TValue> contains an
+        ///     true if the System.Collections.Generic.Dictionary&lt;TKey,TValue&gt; contains an
         ///     element with the specified key; otherwise, false.
         ///
         /// Exceptions:
@@ -1161,7 +1318,14 @@ namespace Asol.Tools.WorkScheduler.Data
     public class EList<T> : IEnumerable<T>, IEnumerable
     {
         #region Konstrukce
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         protected List<T> List;
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             return "EList<" + typeof(T).GetType().NsName() + ">; ItemCount=" + this.List.Count.ToString();
@@ -1233,9 +1397,29 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public class EListBeforeEventArgs : EListEventArgs 
         {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="changeType"></param>
             public EListBeforeEventArgs(CollectionChangeType changeType) : base(changeType) { this.Cancel = false; }
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="changeType"></param>
+            /// <param name="item"></param>
             public EListBeforeEventArgs(CollectionChangeType changeType, T item) : base(changeType, item) { this.Cancel = false; }
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="changeType"></param>
+            /// <param name="index"></param>
             public EListBeforeEventArgs(CollectionChangeType changeType, Int32? index) : base(changeType, index) { this.Cancel = false; }
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="changeType"></param>
+            /// <param name="item"></param>
+            /// <param name="index"></param>
             public EListBeforeEventArgs(CollectionChangeType changeType, T item, Int32? index) : base(changeType, item, index) { this.Cancel = false; }
             /// <summary>
             /// Eventhandler can Cancel current action
@@ -1247,9 +1431,29 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public class EListAfterEventArgs : EListEventArgs
         {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="changeType"></param>
             public EListAfterEventArgs(CollectionChangeType changeType) : base(changeType) { }
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="changeType"></param>
+            /// <param name="item"></param>
             public EListAfterEventArgs(CollectionChangeType changeType, T item) : base(changeType, item) { }
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="changeType"></param>
+            /// <param name="index"></param>
             public EListAfterEventArgs(CollectionChangeType changeType, Int32? index) : base(changeType, index) { }
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="changeType"></param>
+            /// <param name="item"></param>
+            /// <param name="index"></param>
             public EListAfterEventArgs(CollectionChangeType changeType, T item, Int32? index) : base(changeType, item, index) { }
         }
         /// <summary>
@@ -1257,24 +1461,44 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public class EListEventArgs : EventArgs
         {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="changeType"></param>
             public EListEventArgs(CollectionChangeType changeType)
             {
                 this.ChangeType = changeType;
                 this.Item = default(T);
                 this.Index = null;
             }
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="changeType"></param>
+            /// <param name="item"></param>
             public EListEventArgs(CollectionChangeType changeType, T item)
             {
                 this.ChangeType = changeType;
                 this.Item = item;
                 this.Index = null;
             }
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="changeType"></param>
+            /// <param name="index"></param>
             public EListEventArgs(CollectionChangeType changeType, Int32? index)
             {
                 this.ChangeType = changeType;
                 this.Item = default(T);
                 this.Index = index;
             }
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="changeType"></param>
+            /// <param name="item"></param>
+            /// <param name="index"></param>
             public EListEventArgs(CollectionChangeType changeType, T item, Int32? index)
             {
                 this.ChangeType = changeType;

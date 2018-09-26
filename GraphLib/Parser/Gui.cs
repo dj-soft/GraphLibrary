@@ -140,6 +140,7 @@ namespace Asol.Tools.WorkScheduler.TextParser
         /// </summary>
         /// <param name="selectionStart"></param>
         /// <param name="selectionLength"></param>
+        /// <param name="indexIsTxt"></param>
         public void SelectRange(int selectionStart, int selectionLength, bool indexIsTxt)
         {
             if (indexIsTxt)
@@ -264,6 +265,9 @@ namespace Asol.Tools.WorkScheduler.TextParser
         [Category(GuiConst.CATEGORY_ASOL)]
         [Description("Událost po změně textu do stavového řádku")]
         public event EventHandler StatusMessageChanged;
+        /// <summary>
+        /// Vyvolá event StatusMessageChanged
+        /// </summary>
         protected virtual void OnStatusMessageChanged()
         {
             if (this.StatusMessageChanged != null)
@@ -323,6 +327,9 @@ namespace Asol.Tools.WorkScheduler.TextParser
                 }
             }
         }
+        /// <summary>
+        /// Před změnou segmentu v editoru
+        /// </summary>
         protected virtual void OnEditorSegmentsChangedBefore()
         {
             if (!this.SuppressEditorSegmentsChangedEvents && this.EditorSegmentsChangedBefore != null)
@@ -338,6 +345,9 @@ namespace Asol.Tools.WorkScheduler.TextParser
                 }
             }
         }
+        /// <summary>
+        /// Po změně segmentu v editoru
+        /// </summary>
         protected virtual void OnEditorSegmentsChangedAfter()
         {
             if (!this.SuppressEditorSegmentsChangedEvents && this.EditorSegmentsChangedAfter != null)
@@ -353,6 +363,9 @@ namespace Asol.Tools.WorkScheduler.TextParser
                 }
             }
         }
+        /// <summary>
+        /// Potlačí provedení událostí <see cref="EditorSegmentsChangedBefore"/> a <see cref="EditorSegmentsChangedAfter"/>
+        /// </summary>
         protected bool SuppressEditorSegmentsChangedEvents = false;
         /// <summary>
         /// Zjistí, zda daný text je jiný, než který se posledně parsoval
@@ -446,6 +459,10 @@ namespace Asol.Tools.WorkScheduler.TextParser
             }
         }
         private RtfCoder _RtfCoder = null;
+        /// <summary>
+        /// Dispose
+        /// </summary>
+        /// <param name="disposing"></param>
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);
@@ -517,11 +534,18 @@ namespace Asol.Tools.WorkScheduler.TextParser
     /// </summary>
     public class GuiRtfTextBox : RichTextBox
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public GuiRtfTextBox()
         {
             this.SetStyle(ControlStyles.OptimizedDoubleBuffer, true);
             this.DetectUrls = false;
         }
+        /// <summary>
+        /// Překreslení obsahu, pokud není pozastaveno
+        /// </summary>
+        /// <param name="e"></param>
         protected override void OnPaint(PaintEventArgs e)
         {
             // Po dobu, kdy je nastaveno this.SuspendPaint se pokusím pozastavit vykreslování, aby okno s textboxem příliš neblikalo:
@@ -529,6 +553,10 @@ namespace Asol.Tools.WorkScheduler.TextParser
             if (!SuspendPaint)
                 base.OnPaint(e);
         }
+        /// <summary>
+        /// Obsluha WndProc
+        /// </summary>
+        /// <param name="m"></param>
         protected override void WndProc(ref Message m)
         {
             // Za stavu Suspend si střádám všechny message kvůli debugu:
@@ -540,8 +568,17 @@ namespace Asol.Tools.WorkScheduler.TextParser
             if (!(this.SuspendPaint && (m.Msg == WM_PAINT)))
                 base.WndProc(ref m);
         }
+        /// <summary>
+        /// Pozastavení kreslení
+        /// </summary>
         public bool SuspendPaint { get; set; }
+        /// <summary>
+        /// Konstanta události GetText
+        /// </summary>
         public const int WM_GETTEXT = 0x000D;
+        /// <summary>
+        /// Konstanta události Paint
+        /// </summary>
         public const int WM_PAINT = 0x000F;
         internal string WmMsg = "";
         #region Řádkování, pozicování textu, řešení CrLf - Cr
@@ -577,6 +614,9 @@ namespace Asol.Tools.WorkScheduler.TextParser
     public class GuiTreeView : System.Windows.Forms.TreeView
     {
         #region Konstrukce
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public GuiTreeView()
         {
             this._WmIgnoreInit();
@@ -666,6 +706,9 @@ namespace Asol.Tools.WorkScheduler.TextParser
         {
             this._TreeFill();
         }
+        /// <summary>
+        /// Čas posledního zpracování dat
+        /// </summary>
         [Browsable(true)]
         [Category(GuiConst.CATEGORY_ASOL)]
         [Description("Čas posledního zpracování dat.")]
@@ -675,6 +718,9 @@ namespace Asol.Tools.WorkScheduler.TextParser
         /// Událost po změně textu do stavového řádku
         /// </summary>
         public event EventHandler StatusMessageChanged;
+        /// <summary>
+        /// Vyvolá event <see cref="StatusMessageChanged"/>
+        /// </summary>
         protected virtual void OnStatusMessageChanged()
         {
             if (this.StatusMessageChanged != null)
@@ -800,6 +846,10 @@ namespace Asol.Tools.WorkScheduler.TextParser
             // this._WmIgnore.Add(0x113F, null);
             // this._WmIgnore.Add(0x204E, null);
         }
+        /// <summary>
+        /// Obsluha kreslení
+        /// </summary>
+        /// <param name="e"></param>
         protected override void OnPaint(PaintEventArgs e)
         {
             // Po dobu, kdy je nastaveno this.SuspendPaint se pokusím pozastavit vykreslování, aby okno s textboxem příliš neblikalo:
@@ -809,6 +859,10 @@ namespace Asol.Tools.WorkScheduler.TextParser
             else
             { }
         }
+        /// <summary>
+        /// Obsluha WndProc
+        /// </summary>
+        /// <param name="m"></param>
         protected override void WndProc(ref Message m)
         {
             if (!this.SuspendPaint)
@@ -835,8 +889,17 @@ namespace Asol.Tools.WorkScheduler.TextParser
                 }
             }
         }
+        /// <summary>
+        /// Je pozastaveno kreslení
+        /// </summary>
         public bool SuspendPaint { get; set; }
+        /// <summary>
+        /// Ignorované zprávy WndProc
+        /// </summary>
         private Hashtable _WmIgnore;
+        /// <summary>
+        /// Souhrn událostí WM
+        /// </summary>
         private List<WM> _WmList = null;
         #endregion
     }

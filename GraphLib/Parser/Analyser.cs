@@ -12,6 +12,9 @@ namespace Asol.Tools.WorkScheduler.TextParser
     /// </summary>
     public class SyntacticSettingLibrary
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public SyntacticSettingLibrary()
         {
             this._SequenceDict = new Dictionary<string, SyntacticSettingSequence>();
@@ -20,11 +23,12 @@ namespace Asol.Tools.WorkScheduler.TextParser
         #region Načtení stringu definujícího syntaxi konkrétního jazyka, syntaxe je definovaná ve formátu MSDN
         /// <summary>
         /// Načte string definující syntaxi konkrétního jazyka. 
-        /// Syntaxe je definovaná ve formátu MSDN: 
-        /// "&lt;SELECT statement&gt; ::=  SELECT [ ALL | DISTINCT ] [ TOP ( expression ) [ PERCENT ] [ WITH TIES ] ] <select_list>  [ INTO new_table ] 
-        /// [ FROM { <table_source> } [ ,...n ] ] [ WHERE <search_condition> ] [ <GROUP BY> ]  [ HAVING < search_condition > ] "
+        /// Syntaxe je definovaná ve formátu MSDN:
+        /// "&lt;SELECT statement&gt; ::=  SELECT [ ALL | DISTINCT ] [ TOP ( expression ) [ PERCENT ] [ WITH TIES ] ] &lt;select_list&gt;  [ INTO new_table ] 
+        /// [ FROM { &lt;table_source&gt; } [ ,...n ] ] [ WHERE &lt;search_condition&gt; ] [ &lt;GROUP BY&gt; ]  [ HAVING &lt; search_condition &gt; ] "
         /// </summary>
         /// <param name="syntax"></param>
+        /// <param name="showExceptions"></param>
         public void LoadMsdnSyntax(string syntax, bool showExceptions)
         {
             if (!showExceptions)
@@ -63,8 +67,8 @@ namespace Asol.Tools.WorkScheduler.TextParser
         /// <summary>
         /// Načte string definující syntaxi konkrétního jazyka. 
         /// Syntaxe je definovaná ve formátu MSDN: 
-        /// "&lt;SELECT statement&gt; ::=  SELECT [ ALL | DISTINCT ] [ TOP ( expression ) [ PERCENT ] [ WITH TIES ] ] <select_list>  [ INTO new_table ] 
-        /// [ FROM { <table_source> } [ ,...n ] ] [ WHERE <search_condition> ] [ <GROUP BY> ]  [ HAVING < search_condition > ] "
+        /// "&lt;SELECT statement&gt; ::=  SELECT [ ALL | DISTINCT ] [ TOP ( expression ) [ PERCENT ] [ WITH TIES ] ] &lt;select_list&gt;  [ INTO new_table ] 
+        /// [ FROM { &lt;table_source&gt; } [ ,...n ] ] [ WHERE &lt;search_condition&gt; ] [ &lt;GROUP BY&gt; ]  [ HAVING &lt; search_condition &gt; ] "
         /// </summary>
         /// <param name="syntax"></param>
         public void LoadMsdnSyntax(string syntax)
@@ -140,9 +144,6 @@ namespace Asol.Tools.WorkScheduler.TextParser
             this._SequenceDict.Add(commandName, null);
         }
         #endregion
-
-
-
         #region Sample pro testování: Deklarace jazyka T-SQL ve formátu MSDN
         public const string T_SQL_SETTING = @"
 <SELECT statement> ::=  
@@ -309,12 +310,27 @@ ORDER BY order_by_expression
     public class SyntacticSettingSequence : SyntacticSettingItem
     {
         #region Konstruktor, public property
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public SyntacticSettingSequence()
             : base()
         { }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="library"></param>
+        /// <param name="parentItem"></param>
         public SyntacticSettingSequence(SyntacticSettingLibrary library, SyntacticSettingItem parentItem)
             : base(library, parentItem)
         { }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="parentItem"></param>
+        /// <param name="name"></param>
+        /// <param name="keyword"></param>
+        /// <param name="isCaseSensitive"></param>
         public SyntacticSettingSequence(SyntacticSettingItem parentItem, string name, string keyword, bool isCaseSensitive)
             : base(parentItem, keyword, isCaseSensitive)
         {
@@ -347,7 +363,7 @@ ORDER BY order_by_expression
         /// </summary>
         public int ItemsCount { get { return this._Items.Count; } }
         /// <summary>
-        /// Zkrácený text: "[ FROM { <table_source> } [ ,...n ] ]"
+        /// Zkrácený text: "[ FROM { &lt;table_source&gt; } [ ,...n ] ]"
         /// </summary>
         public override string ShortText
         {
@@ -357,7 +373,7 @@ ORDER BY order_by_expression
             }
         }
         /// <summary>
-        /// Plný text: "[ FROM { <table_source> } [ ,...n ] ]", obsahuje 
+        /// Plný text: "[ FROM { &lt;table_source&gt; } [ ,...n ] ]", obsahuje 
         /// </summary>
         public override string LongText
         {
@@ -381,8 +397,7 @@ ORDER BY order_by_expression
         /// ale nadřízený algoritmus může hledat dané slovo v dalších strukturách, protože žádná ze zdejších položek nebyla povinná (mohou se přeskočit).
         /// </summary>
         /// <param name="word"></param>
-        /// <param name="isCaseSensitive"></param>
-        /// <param name="foundList"></param>
+        /// <param name="searchNext"></param>
         public override SyntacticSettingItem SearchKeyword(string word, out bool searchNext)
         {
             searchNext = true;
@@ -397,6 +412,7 @@ ORDER BY order_by_expression
         /// Vyhledá klíčové slovo odpovídající danému slovu, ale následující v našem seznamu za daným klíčovým slovem (originItem), nikoli od první položky.
         /// </summary>
         /// <param name="word"></param>
+        /// <param name="originItem"></param>
         /// <param name="searchNext"></param>
         /// <returns></returns>
         public override SyntacticSettingItem SearchNextKeyword(SyntacticSettingItem originItem, string word, out bool searchNext)
@@ -413,12 +429,27 @@ ORDER BY order_by_expression
     public class SyntacticSettingPhrase : SyntacticSettingItem
     {
         #region Konstruktor, public property
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public SyntacticSettingPhrase()
             : base()
         { }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="library"></param>
+        /// <param name="parentItem"></param>
         public SyntacticSettingPhrase(SyntacticSettingLibrary library, SyntacticSettingItem parentItem)
             : base(library, parentItem)
         { }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="parentItem"></param>
+        /// <param name="name"></param>
+        /// <param name="keyword"></param>
+        /// <param name="isCaseSensitive"></param>
         public SyntacticSettingPhrase(SyntacticSettingItem parentItem, string name, string keyword, bool isCaseSensitive)
             : base(parentItem, keyword, isCaseSensitive)
         {
@@ -457,7 +488,7 @@ ORDER BY order_by_expression
         /// </summary>
         public bool IsArbitrary { get { return (this.VariationCount == 0); } }
         /// <summary>
-        /// Zkrácený text: "[ FROM { <table_source> } [ ,...n ] ]"
+        /// Zkrácený text: "[ FROM { &lt;table_source&gt; } [ ,...n ] ]"
         /// </summary>
         public override string ShortText
         {
@@ -474,7 +505,7 @@ ORDER BY order_by_expression
             }
         }
         /// <summary>
-        /// Plný text: "[ FROM { <table_source> } [ ,...n ] ]", obsahuje 
+        /// Plný text: "[ FROM { &lt;table_source&gt; } [ ,...n ] ]", obsahuje 
         /// </summary>
         public override string LongText
         {
@@ -517,8 +548,7 @@ ORDER BY order_by_expression
         /// ale nadřízený algoritmus může hledat dané slovo v dalších strukturách, protože žádná ze zdejších položek nebyla povinná (mohou se přeskočit).
         /// </summary>
         /// <param name="word"></param>
-        /// <param name="isCaseSensitive"></param>
-        /// <param name="foundList"></param>
+        /// <param name="searchNext"></param>
         public override SyntacticSettingItem SearchKeyword(string word, out bool searchNext)
         {
             searchNext = true;
@@ -547,6 +577,9 @@ ORDER BY order_by_expression
     public class SyntacticSettingItem
     {
         #region Konstruktor, public property
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         protected SyntacticSettingItem()
         {
             this.ParentItem = null;
@@ -554,6 +587,11 @@ ORDER BY order_by_expression
             this.Keyword = null;
             this.Init();
         }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="library"></param>
+        /// <param name="parentItem"></param>
         protected SyntacticSettingItem(SyntacticSettingLibrary library, SyntacticSettingItem parentItem)
         {
             this.Library = library;
@@ -562,6 +600,12 @@ ORDER BY order_by_expression
             this.Keyword = null;
             this.Init();
         }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="parentItem"></param>
+        /// <param name="keyword"></param>
+        /// <param name="isCaseSensitive"></param>
         protected SyntacticSettingItem(SyntacticSettingItem parentItem, string keyword, bool isCaseSensitive)
         {
             this.ParentItem = parentItem;
@@ -663,6 +707,7 @@ ORDER BY order_by_expression
         /// <summary>
         /// Vyhledá klíčové slovo odpovídající danému slovu, ale následující v našem seznamu za daným klíčovým slovem (originItem), nikoli od první položky.
         /// </summary>
+        /// <param name="originItem"></param>
         /// <param name="word"></param>
         /// <param name="searchNext"></param>
         /// <returns></returns>
@@ -694,9 +739,21 @@ ORDER BY order_by_expression
     /// </summary>
     public enum SyntacticSettingItemType
     {
+        /// <summary>
+        /// Nezadáno
+        /// </summary>
         None = 0,
+        /// <summary>
+        /// Slovo
+        /// </summary>
         Word,
+        /// <summary>
+        /// Fráze
+        /// </summary>
         Phrase,
+        /// <summary>
+        /// Věta
+        /// </summary>
         Sequence
     }
     #endregion

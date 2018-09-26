@@ -10,8 +10,8 @@ namespace Asol.Tools.WorkScheduler.Data
     /// Třída, která dovoluje získávat pro daný aplikační klíč unikátní Int32 index, a následně pro daný Int32 index vrátí vstupní aplikační klíč.
     /// Použití: pokud máme část aplikace, která vyžaduje jednoznačné Int32 klíče, ale datová část aplikace má klíče jiného typu (GUID, UInt64, GId),
     /// pak je nutné zajistit konverzi klíčů oběma směry. K tomu lze použít <see cref="Index{TKey}"/>.
-    /// Instance třídy <see cref="Index{TKey}"/> jednak dokáže získat Int32 hodnotu indexu pro daný <see cref="TKey"/> aplikační klíč, 
-    /// a rovněž dokáže vrátit <see cref="TKey"/> aplikační klíč pro daný Int32 index.
+    /// Instance třídy <see cref="Index{TKey}"/> jednak dokáže získat Int32 hodnotu indexu pro daný <typeparamref name="TKey"/> aplikační klíč, 
+    /// a rovněž dokáže vrátit <typeparamref name="TKey"/> aplikační klíč pro daný Int32 index.
     /// <para/>
     /// Instance třídy <see cref="Index{TKey}"/> dovoluje i tvorbu Int32 indexu v globálním rozsahu (jednoznačný Int32 index přes více nebo všechny instance).
     /// </summary>
@@ -37,6 +37,10 @@ namespace Asol.Tools.WorkScheduler.Data
             this._IndexLast = 0;
             this._InstanceSyncLock = new object();
         }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             return "Index<int, " + typeof(TKey).Name + "; Count: " + this._IndexInt.Count.ToString();
@@ -53,7 +57,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public IndexScopeType IndexScope { get { return this._IndexScope; } }
         /// <summary>
-        /// Pro daný <see cref="TKey"/> klíč vrátí jeho Int32 index.
+        /// Pro daný <typeparamref name="TKey"/> klíč vrátí jeho Int32 index.
         /// Pokud v této instanci dosud klíč není, založí nový index a vrátí jej.
         /// Jednoznačnost nového indexu je dána rozsahem platnosti <see cref="IndexScope"/>
         /// </summary>
@@ -70,7 +74,7 @@ namespace Asol.Tools.WorkScheduler.Data
             return index;
         }
         /// <summary>
-        /// Pro daný Int32 index vrátí jeho <see cref="TKey"/> klíč.
+        /// Pro daný Int32 index vrátí jeho <typeparamref name="TKey"/> klíč.
         /// Pokud index neexistuje, dojde k chybě (lze použít metody <see cref="TryGetKey(int, out TKey)"/> nebo <see cref="ContainsIndex(int)"/>).
         /// </summary>
         /// <param name="index"></param>
@@ -99,7 +103,7 @@ namespace Asol.Tools.WorkScheduler.Data
             return this._IndexInt.ContainsKey(index);
         }
         /// <summary>
-        /// Vrací true, pokud existuje záznam pro daný <see cref="TKey"/> klíč
+        /// Vrací true, pokud existuje záznam pro daný <typeparamref name="TKey"/> klíč
         /// </summary>
         /// <param name="key"></param>
         /// <returns></returns>
@@ -108,7 +112,7 @@ namespace Asol.Tools.WorkScheduler.Data
             return this._IndexKey.ContainsKey(key);
         }
         /// <summary>
-        /// Pro daný <see cref="TKey"/> klíč vrátí jeho Int32 index.
+        /// Pro daný <typeparamref name="TKey"/> klíč vrátí jeho Int32 index.
         /// Pokud v této instanci dosud klíč není, založí nový index a vrátí jej.
         /// Jednoznačnost nového indexu je dána rozsahem platnosti <see cref="IndexScope"/>
         /// </summary>
@@ -123,7 +127,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <returns></returns>
         public TKey this[int index] { get { return this.GetKey(index); } }
         /// <summary>
-        /// Do obou interních dictionary přidá index a jeho <see cref="TKey"/> key
+        /// Do obou interních dictionary přidá index a jeho <typeparamref name="TKey"/> key
         /// </summary>
         /// <param name="index"></param>
         /// <param name="key"></param>
@@ -159,7 +163,7 @@ namespace Asol.Tools.WorkScheduler.Data
             }
         }
         /// <summary>
-        /// Odebere jednu položku dle daného klíče <see cref="TKey"/>.
+        /// Odebere jednu položku dle daného klíče <typeparamref name="TKey"/>.
         /// Pokud neexistuje, k chybě nedojde,
         /// </summary>
         /// <param name="key"></param>
@@ -182,7 +186,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public IEnumerable<int> Indexes { get { return this._IndexInt.Keys; } }
         /// <summary>
-        /// Kolekce <see cref="TKey"/> klíčů
+        /// Kolekce <typeparamref name="TKey"/> klíčů
         /// </summary>
         public IEnumerable<TKey> Keys { get { return this._IndexKey.Keys; } }
         #endregion
