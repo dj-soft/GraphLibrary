@@ -163,7 +163,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="timeRange"></param>
         public static implicit operator GuiTimeRange(TimeRange timeRange) { return (timeRange != null && timeRange.IsFilled ? new GuiTimeRange(timeRange.Begin.Value, timeRange.End.Value) : null); }
         #endregion
-        #region Public methods - Zoom
+        #region Public methods - Zoom, Shift
         /// <summary>
         /// Returns a new instance created from current instance, which Time is (ratio * this.Time) and center of zooming is on specified date.
         /// </summary>
@@ -192,7 +192,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Returns a new instance created from current instance, which Time is specified and center of zooming is on specified date.
         /// </summary>
         /// <param name="center"></param>
-        /// <param name="time"></param>
+        /// <param name="size"></param>
         /// <returns></returns>
         public TimeRange ZoomToSize(DateTime center, TimeSpan size)
         {
@@ -204,12 +204,23 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Returns a new instance created from current instance, which Time is (ratio * this.Time) and center of zooming is on specified relative position.
         /// </summary>
         /// <param name="relativePivot"></param>
-        /// <param name="ratio"></param>
+        /// <param name="size"></param>
         /// <returns></returns>
         public TimeRange ZoomToSize(double relativePivot, TimeSpan? size)
         {
             DateTime? begin, end;
             this.PrepareZoomToSizeOnRelativePivot((decimal)relativePivot, size, out begin, out end);
+            return new TimeRange(begin, end);
+        }
+        /// <summary>
+        /// Vrátí new instanci, která vychází z dat v this, ale je o (time) posunutá.
+        /// </summary>
+        /// <param name="time"></param>
+        /// <returns></returns>
+        public TimeRange ShiftByTime(TimeSpan time)
+        {
+            DateTime? begin = (this.Begin.HasValue ? (DateTime?)(this.Begin + time) : (DateTime?)null);
+            DateTime? end = (this.End.HasValue ? (DateTime?)(this.End + time) : (DateTime?)null);
             return new TimeRange(begin, end);
         }
         /// <summary>

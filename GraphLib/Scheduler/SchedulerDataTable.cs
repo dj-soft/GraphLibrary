@@ -490,9 +490,32 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="data"></param>
         protected void ItemDragDropDropGuiResponse(DragSchedulerData data)
         {
-
-
-
+            // 1) Proběhne změna na všech prvcích grupy (data.DragGroupItems):
+            //   a) Změna jejich času: o daný offset (rozdíl času cílového - původního)
+            //   b) Změna hodnoty ParentGId = příslušnost do řádku
+            // 2) Pokud se mění řádek, pak:
+            //   a) ze zdrojového grafu se prvky odeberou
+            //   b) do cílového grafu se prvky přidají
+            // 3) Zavolá se Refresh na oba grafy (pokud jsou dva)
+            bool isChangeRow = data.IsChangeRow;
+            bool isChangeTime = data.IsChangeTime;
+            TimeSpan? timeOffset = data.ShiftTime;
+            foreach (DataGraphItem item in data.DragGroupItems)
+            {
+                if (isChangeRow)
+                {
+                    data.SourceGraph.ItemList.Remove(item);
+                    item.ParentGId = data.TargetRow;
+                    data.TargetGraph.ItemList.Add(item);
+                }
+                if (isChangeTime)
+                {
+                    item.Time = item.Time.ShiftByTime(timeOffset.Value);
+                }
+            }
+            data.SourceGraph.Refresh();
+            if (isChangeRow)
+                data.TargetGraph.Refresh();
 
         }
         /// <summary>
@@ -523,22 +546,30 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             Rectangle targetBounds = args.DragToAbsoluteBounds.Value;
             int distX = (targetBounds.X - sourceBounds.X);
             int absDX = ((distX < 0) ? -distX : distX);
+            bool isChangeTime = true;
             if (!data.IsChangeRow)
             {   // Ve stejném řádku:
-                if (absDX < 5)
-                    targetBounds.X = sourceBounds.X;
+                if (absDX < 5) isChangeTime = false;
                 targetBounds.Y = sourceBounds.Y;
             }
             else
             {   // V jiném řádku:
-                if (absDX < 15)
-                    targetBounds.X = sourceBounds.X;
+                if (absDX < 15) isChangeTime = false;
+                
+            }
+
+            // Odvodit cílový čas nebo korigovat cílovou souřadnici:
+            if (isChangeTime)
+            {   // Pokud je reálně požadována změna času:
+                DateTime? begin = args.GetTimeForPosition(targetBounds.X);
+                data.TargetTime = TimeRange.CreateFromBeginSize(begin.Value, data.SourceTime.Size.Value);
+            }
+            else
+            {   // Není tu změna času:
+                data.TargetTime = data.SourceTime.Clone;
+                targetBounds.X = sourceBounds.X;
             }
             data.TargetBounds = targetBounds;
-
-            // Odvodit cílový čas:
-            DateTime? begin = args.GetTimeForPosition(targetBounds.X);
-            data.TargetTime = TimeRange.CreateFromBeginSize(begin.Value, data.SourceTime.Size.Value);
 
             return data;
         }
@@ -594,7 +625,15 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             /// <summary>
             /// Obsahuje true, pokud dochází ke změně řádku
             /// </summary>
-            public bool IsChangeRow { get { return (this.SourceRow != this.TargetRow); } }
+            public bool IsChangeRow { get { return (this.SourceRow != null && this.TargetRow != null && this.SourceRow != this.TargetRow); } }
+            /// <summary>
+            /// Obsahuje true, pokud dochází ke změně času
+            /// </summary>
+            public bool IsChangeTime { get { return (this.SourceTime != null && this.TargetTime != null && this.SourceTime != this.TargetTime); } }
+            /// <summary>
+            /// Posun času: target = source + ShiftTime.Value; ale pokud <see cref="IsChangeTime"/> je false, pak zde je null.
+            /// </summary>
+            public TimeSpan? ShiftTime { get { return (this.IsChangeTime ? (TimeSpan?)(this.TargetTime.Begin.Value - this.SourceTime.Begin.Value) : (TimeSpan?)null); } }
         }
         #endregion
         #region Implementace ITimeGraphDataSource: Zdroj dat pro grafy: tvorba textu, tooltipu, kontextové menu, podpora Drag and Drop
@@ -884,12 +923,33 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Vlastník prvku = graf
         /// </summary>
         private ITimeInteractiveGraph _OwnerGraph;
+        /// <summary>
+        /// Řádek, kde je prvek vykreslen
+        /// </summary>
         private GId _ParentGId;
+        /// <summary>
+        /// GId prvku, pochází z datového zdroje, obsahuje číslo třídy a záznamu
+        /// </summary>
         private GId _ItemGId;
+        /// <summary>
+        /// GId skupiny, pochází z datového zdroje, obsahuje číslo třídy a záznamu
+        /// </summary>
         private GId _GroupGId;
+        /// <summary>
+        /// GId datového záznamu, pochází z datového zdroje, obsahuje číslo třídy a záznamu
+        /// </summary>
         private GId _DataGId;
+        /// <summary>
+        /// ID prvku, používá se v grafickém controlu
+        /// </summary>
         private int _ItemId;
+        /// <summary>
+        /// ID skupiny, používá se v grafickém controlu
+        /// </summary>
         private int _GroupId;
+        /// <summary>
+        /// Čas prvku
+        /// </summary>
         private TimeRange _Time;
         /// <summary>
         /// Vizuální control
@@ -914,7 +974,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Veřejný identifikátor MAJITELE PRVKU (obsahuje číslo třídy a číslo záznamu).
         /// Může jít o Kapacitní plánovací jednotku.
         /// </summary>
-        public GId ParentGId { get { return this._ParentGId; } }
+        public GId ParentGId { get { return this._ParentGId; } set { this._ParentGId = value; } }
         /// <summary>
         /// Veřejný identifikátor SKUPINY PRVKU (obsahuje číslo třídy a číslo záznamu).
         /// Může jít o záznam třídy Paralelní průchod.
@@ -945,7 +1005,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Časový interval tohoto prvku
         /// </summary>
-        public TimeRange Time { get { return this._Time; } }
+        public TimeRange Time { get { return this._Time; } set { this._Time = value; } }
         #endregion
         #region Podpora pro kreslení a interaktivitu
         /// <summary>
