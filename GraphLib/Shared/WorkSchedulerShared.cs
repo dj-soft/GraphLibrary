@@ -2018,19 +2018,32 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <returns></returns>
         public override string ToString()
         {
-            string text = "ActiveItem: " + (this.ActiveItem != null ? this.ActiveItem.ToString() : "{Null}");
-            if (this.ActiveItem != null && this.TargetRow != null && this.ActiveItem.RowId != this.TargetRow)
+            string text = "MoveItems: ";
+            if (this.MoveItems != null)
+            {
+                int count = this.MoveItems.Length;
+                if (count > 0)
+                    text += this.MoveItems[0].ToString();
+                if (count > 1)
+                    text += ", ...";
+            }
+            else
+                text += "{Null}";
+            if (this.TargetRow != null)
                 text += "; TargetRow: " + this.TargetRow.ToString();
             if (this.SourceTime != null && this.TargetTime != null && this.SourceTime != this.TargetTime)
                 text += "; ChangeTime from: " + this.SourceTime.ToString() + " to: " + this.TargetTime.ToString();
             return text;
         }
         /// <summary>
-        /// Prvek, který je přesouván
+        /// Soubor prvků, které jsou přesouvány.
+        /// V této property se nacházejí všechny prvky jedné skupiny <see cref="GuiGraphItem.GroupId"/>, neboť přesouvání se provádí vždy pro celé skupiny.
+        /// Pokud prvek grafu nepatří do žádné skupiny (jeho <see cref="GuiGraphItem.GroupId"/> je null), pak tvoří svoji vlastní soukromou skupinu, a přesouvá se sám.
         /// </summary>
-        public GuiGridItemId ActiveItem { get; set; }
+        public GuiGridItemId[] MoveItems { get; set; }
         /// <summary>
-        /// Výchozí čas prvku, před přesouváním
+        /// Výchozí čas prvku, před přesouváním.
+        /// Pokud prvek patří do skupiny (<see cref="MoveItems"/> obsahuje více než jeden prvek), pak je zde v <see cref="SourceTime"/> sumární čas celé skupiny.
         /// </summary>
         public GuiTimeRange SourceTime { get; set; }
         /// <summary>
@@ -2038,7 +2051,8 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiId TargetRow { get; set; }
         /// <summary>
-        /// Cílový čas (tam by to uživatel rád umístil)
+        /// Cílový čas (tam by to uživatel rád umístil).
+        /// Jedná se o čas <see cref="SourceTime"/>, posunutý na jiné místo, beze změny délky časového intervalu.
         /// </summary>
         public GuiTimeRange TargetTime { get; set; }
     }

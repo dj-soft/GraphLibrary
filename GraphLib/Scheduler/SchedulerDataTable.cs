@@ -470,6 +470,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             // Tady by se měla volat metoda AppHost => aplikační funkce pro přepočet grafu:
             DragSchedulerData data = this.PrepareDragSchedulerData(args);
+            GuiRequestGraphItemMove guiData = this.PrepareRequestGraphItemMove(data);
 
             // Nejprve provedu vizuální přemístění na "grafický" cíl, to proto že aplikační funkce může:  a) neexistovat  b) dlouho trvat:
             this.ItemDragDropDropGuiResponse(data);
@@ -480,7 +481,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             {
                 GuiRequest request = new GuiRequest();
                 request.Command = GuiRequest.COMMAND_GraphItemMove;
-                request.GraphItemMove = new GuiRequestGraphItemMove();
+                request.GraphItemMove = guiData;
                 this.IMainData.CallAppHostFunction(request, this.ItemDragDropDropAppResponse);
             }
         }
@@ -572,6 +573,21 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             data.TargetBounds = targetBounds;
 
             return data;
+        }
+        /// <summary>
+        /// Metoda z dat v <see cref="DragSchedulerData"/> (interní data Scheduleru) 
+        /// vytvoří a vrátí new instanci třídy <see cref="GuiRequestGraphItemMove"/> (externí data, která se předávají do aplikační logiky).
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        protected GuiRequestGraphItemMove PrepareRequestGraphItemMove(DragSchedulerData data)
+        {
+            GuiRequestGraphItemMove guiData = new GuiRequestGraphItemMove();
+            guiData.MoveItems = data.DragGroupItems.Select(i => this.GetGridItemId(i)).ToArray();
+            guiData.SourceTime = data.SourceTime;
+            guiData.TargetRow = data.TargetRow;
+            guiData.TargetTime = data.TargetTime;
+            return guiData;
         }
         /// <summary>
         /// Analyzovaná data na úrovni Scheduleru, pro akce při přemísťování prvku na úrovni GUI
