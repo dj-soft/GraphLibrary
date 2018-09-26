@@ -42,11 +42,16 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiData()
         {
+            this.Name = DATA_NAME;
             this.Properties = new GuiProperties() { Name = PROPERTIES_NAME };
             this.ToolbarItems = new GuiToolbarPanel() { Name = TOOLBAR_NAME };
             this.Pages = new GuiPages() { Name = PAGES_NAME };
             this.ContextMenuItems = new GuiContextMenuSet() { Name = CONTEXT_MENU_NAME };
         }
+        /// <summary>
+        /// Výchozí název celého objektu <see cref="GuiData"/>
+        /// </summary>
+        public const string DATA_NAME = "Data";
         /// <summary>
         /// Název prvku <see cref="Properties"/>
         /// </summary>
@@ -91,12 +96,21 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Metoda zajistí, že všichni členové tohoto balíku dat budou mít přísup ke svému parentovi.
         /// Tím dojde i k tomu, že každý prvek datového balíku bude mít platnou hodnotu ve své property <see cref="GuiBase.FullName"/>.
         /// </summary>
-        public void Finalise()
+        public void FillParents()
         {
             this.FillParentToChilds();
         }
         /// <summary>
-        /// Metoda najde prvek na základě jeho plného jména
+        /// Metoda provede kompletní finalizaci dat v objektu.
+        /// Aktuálně provede pouze metodu <see cref="FillParents()"/>.
+        /// </summary>
+        public void Finalise()
+        {
+            this.FillParents();
+        }
+        /// <summary>
+        /// Metoda najde první vyhovující prvek na základě jeho plného jména.
+        /// Pokud by více prvků v jedné úrovni mělo shodné jméno (což je prakticky přípustné), pak se pracuje jen s prvním z nich.
         /// </summary>
         /// <param name="fullName"></param>
         /// <returns></returns>
@@ -1127,9 +1141,33 @@ namespace Noris.LCS.Base.WorkScheduler
         public GuiContextMenuItem()
         { }
         /// <summary>
-        /// Definice, kde se smí tato funkce zobrazovat.
+        /// Definice prvků, pro které se má tato funkce zobrazovat.
+        /// <para/>
+        /// Pravidla pro zadávání textu: 
+        /// Text má obsahovat klíč prvku (řádku, grafu) ve formě FullName gridu, kde je grafický prvek zobrazen + volitelně číslo třídy grafického prvku.
+        /// FullName gridu lze přečíst z konkrétního objektu <see cref="GuiGrid"/> poté, kdy je tento Grid plně zařazen do struktur <see cref="GuiData"/>, 
+        /// a na tomto hlavním objektu proběhla metoda <see cref="GuiData.FillParents()"/> (metodu lze spouštět kdykoliv, i opakovaně).
+        /// FullName gridu <see cref="GuiGrid"/> má formu: "Data\pageMain\mainPanel\workGrid". Více viz <see cref="GuiBase.FullName"/>.
+        /// Text pro definici <see cref="VisibleFor"/> i <see cref="EnableFor"/> obsahuje FullName gridu, volitelně pak dvojtečku a číslo třídy prvku grafu, pro který je funkce určená.
+        /// Číslo třídy: může jich být uvedeno více, oddělené čárkami.
+        /// Definice může obsahovat více prvků, oddělených středníkem.
+        /// Definice může v rámci FullName obsahovat hvězdičku, která nahrazuje část FullName (nebo i celou hodnotu FullName).
+        /// <para/>
+        /// Příklady celého textu:
+        /// "Data\pageMain\mainPanel\workGrid:1190": funkce je dostupná pro hlavní stranu (pageMain), hlavní panel (mainPanel), pro jednu tabulku (workGrid), pro prvky třídy 1190;
+        /// "Data\pageMain\*:1190": funkce je dostupná pro hlavní stranu (pageMain), pro všechny panely a tabulky, pro prvky třídy 1190;
+        /// "Data\pageMain\*": funkce je dostupná pro hlavní stranu (pageMain), pro všechny panely a tabulky, pro prvky všech tříd;
+        /// "Data\pageMain\*:1190,1815": funkce je dostupná pro hlavní stranu (pageMain), pro všechny panely a tabulky, pro prvky tříd 1190 a 1815
         /// </summary>
-        public string ShowOnlyFor { get; set; }
+        public string VisibleFor { get; set; }
+        /// <summary>
+        /// Definice prvků, pro které má být tato funkce dostupná.
+        /// Pokud bude prázdné, pak bude funkce dostupná pro všechny prvky, kde se funkce bude zobrazovat.
+        /// Jakmile začne aplikace zadávat <see cref="EnableFor"/>, pak musí akceptovat, že pro nezadané prvky bude funkce Not Enabled.
+        /// <para/>
+        /// Pravidla pro zadávání textu: stejná jako pro <see cref="VisibleFor"/>.
+        /// </summary>
+        public string EnableFor { get; set; }
     }
     #endregion
     #region GuiTextItem : Vizuální prvek v GUI, obsahuje Name, Title, ToolTip a Image
@@ -1176,9 +1214,12 @@ namespace Noris.LCS.Base.WorkScheduler
             return "[" + this.Name + "]";
         }
         /// <summary>
-        /// Klíčové jméno, používané v aplikaci jako strojový název prvku
+        /// Klíčové jméno, používané v aplikaci jako strojový název prvku.
+        /// <see cref="Name"/> nesmí obsahovat zpětné lomítko (při pokusu o jeho použití je nahrazeno obyčejným lomítkem).
+        /// Jméno nikdy není null; při vložení hodnoty null je vložena stringová konstanta "{Null}".
         /// </summary>
-        public virtual string Name { get; set; }
+        public virtual string Name { get { return this._Name; } set { this._Name = (value == null ? NAME_NULL : value.Replace(NAME_SEPARATOR, "/")); } }
+        private string _Name = NAME_NULL;
         /// <summary>
         /// Libovolná aplikační data, která neprochází serializací.
         /// Toto je prostor, který může využít aplikace k uložení svých dat nad rámec dat třídy, protože Gui třídy jsou sealed 
@@ -1211,6 +1252,12 @@ namespace Noris.LCS.Base.WorkScheduler
         /// obsahuje veškerá jména (<see cref="IGuiItem.Name"/>) oddělená zpětným lomítkem,
         /// až k this jménu <see cref="Name"/>.
         /// Největší možná délka <see cref="FullName"/> je 1024 znaků.
+        /// <see cref="FullName"/> nezačíná zpětným lomítkem, má typicky tvar: "Data\pageMain\mainPanel\workGrid".
+        /// V uvedené ukázce, jednotlivé složky jména:
+        /// - "Data" je implicitní Name prvku <see cref="GuiData"/>, ale toto jméno lze přepsat;
+        /// - "pageMain" je název stránky, definuje aplikace
+        /// - "mainPanel" je konstantní název hlavního panelu, aplikace běžně nepřepisuje (ale může)
+        /// - "workGrid" je název konkrétní tabulky <see cref="GuiGrid"/> (tabulka obsahuje řádky, prvky grafů a textové prvky). Název definuje aplikace.
         /// </summary>
         [PersistingEnabled(false)]
         public string FullName
@@ -1222,7 +1269,7 @@ namespace Noris.LCS.Base.WorkScheduler
                 IGuiItem item = this;
                 while (item != null)
                 {
-                    fullName = (item.Name == null ? "NULL" : item.Name) + separator + fullName;
+                    fullName = item.Name + separator + fullName;
                     if (fullName.Length > 1024) break;
                     if (separator.Length == 0) separator = NAME_SEPARATOR;
                     item = item.Parent;
@@ -1234,6 +1281,10 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Oddělovač úrovní jmen ve <see cref="FullName"/>
         /// </summary>
         protected const string NAME_SEPARATOR = "\\";
+        /// <summary>
+        /// Náhradní jméno namísto hodnoty null
+        /// </summary>
+        protected const string NAME_NULL = "{Null}";
         #endregion
         #region Servis pro potomky: Vložení Parenta do Childs; tvorba Union()
         /// <summary>
@@ -1257,7 +1308,8 @@ namespace Noris.LCS.Base.WorkScheduler
             }
         }
         /// <summary>
-        /// Metoda najde prvek na základě jeho plného jména
+        /// Metoda najde první vyhovující prvek na základě jeho plného jména.
+        /// Pokud by více prvků v jedné úrovni mělo shodné jméno (což je prakticky přípustné), pak se pracuje jen s prvním z nich.
         /// </summary>
         /// <param name="fullName"></param>
         /// <returns></returns>
@@ -1330,7 +1382,9 @@ namespace Noris.LCS.Base.WorkScheduler
     public interface IGuiItem
     {
         /// <summary>
-        /// Klíčové jméno, používané v aplikaci jako strojový název prvku
+        /// Klíčové jméno, používané v aplikaci jako strojový název prvku.
+        /// <see cref="Name"/> nesmí obsahovat zpětné lomítko (při pokusu o jeho použití je nahrazeno obyčejným lomítkem).
+        /// Jméno nikdy není null; při vložení hodnoty null je vložena stringová konstanta "{Null}".
         /// </summary>
         string Name { get; }
         /// <summary>
@@ -1638,8 +1692,9 @@ namespace Noris.LCS.Base.WorkScheduler
     /// GuiRange : rozsah { Begin ÷ End } dvou hodnot stejného datového typu
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class GuiRange<T> where T : IComparable
+    public abstract class GuiRange<T> : IXmlSerializer where T : IComparable
     {
+        #region Konstruktor, Vizualizace, Begin, End, Clear()
         /// <summary>
         /// Bezparametrický konstruktor, pro XML serializaci (Persistor)
         /// </summary>
@@ -1655,6 +1710,14 @@ namespace Noris.LCS.Base.WorkScheduler
             this.End = end;
         }
         /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return this.Begin + " ÷ " + this.End;
+        }
+        /// <summary>
         /// Počátek intervalu, běžně se počítá "včetně"
         /// </summary>
         public T Begin { get; protected set; }
@@ -1662,6 +1725,8 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Konec intervalu, běžně se počítá "mimo"
         /// </summary>
         public T End { get; protected set; }
+        #endregion
+        #region Podpora pro serializaci: Clear(), TrySplitPair(), JoinPair()
         /// <summary>
         /// Do <see cref="Begin"/> a <see cref="End"/> vloží defaultní hodnotu generického typu T.
         /// </summary>
@@ -1706,12 +1771,98 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Oddělovač hodnot Begin a End v serializované formě
         /// </summary>
         protected const string DELIMITER = "÷";
+        #endregion
+        #region IXmlSerializer
+        /// <summary>
+        /// Explicitní serializace
+        /// </summary>
+        string IXmlSerializer.XmlSerialData
+        {
+            get { return JoinPair(GetSerial(this.Begin), GetSerial(this.End)); }
+            set
+            {
+                this.Clear();
+                string begin, end;
+                if (TrySplitPair(value, out begin, out end))
+                {
+                    this.Begin = GetValue(begin);
+                    this.End = GetValue(end);
+                }
+            }
+        }
+        /// <summary>
+        /// Vrátí serializovanou formu dané typové hodnoty
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        protected abstract string GetSerial(T value);
+        /// <summary>
+        /// Vrátí deserializovanou typovou hodnotu ze serializované formy
+        /// </summary>
+        /// <param name="serial"></param>
+        /// <returns></returns>
+        protected abstract T GetValue(string serial);
+        #endregion
+        #region Override ==  !=
+        /// <summary>
+        /// GetHashCode()
+        /// </summary>
+        /// <returns></returns>
+        public override int GetHashCode()
+        {
+            return this.Begin.GetHashCode() ^ this.End.GetHashCode();
+        }
+        /// <summary>
+        /// Equals() - pro použití GID v Hashtabulkách
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        public override bool Equals(object obj)
+        {
+            return (_IsEqual(this, obj as GuiRange<T>));
+        }
+        /// <summary>
+        /// Porovnání dvou instancí této struktury, zda obsahují shodná data
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        private static bool _IsEqual(GuiRange<T> a, GuiRange<T> b)
+        {
+            bool an = ((object)a) == null;
+            bool bn = ((object)b) == null;
+            if (an && bn) return true;           // null == null
+            if (an || bn) return false;          // (any object) != null
+            return (a.Begin.CompareTo(b.Begin) == 0 && a.End.CompareTo(b.End) == 0);
+        }
+        /// <summary>
+        /// Operátor "je rovno"
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static bool operator ==(GuiRange<T> a, GuiRange<T> b)
+        {
+            return _IsEqual(a, b);
+        }
+        /// <summary>
+        /// Operátor "není rovno"
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static bool operator !=(GuiRange<T> a, GuiRange<T> b)
+        {
+            return !_IsEqual(a, b);
+        }
+        #endregion
     }
     /// <summary>
-    /// GuiTimeRange : rozsah { Begin ÷ End } dvou hodnot typu DateTime
+    /// GuiTimeRange : rozsah { Begin ÷ End } dvou hodnot typu <see cref="DateTime"/>
     /// </summary>
     public class GuiTimeRange : GuiRange<DateTime>, IXmlSerializer
     {
+        #region Konstruktory
         /// <summary>
         /// Bezparametrický konstruktor, pro XML serializaci (Persistor)
         /// </summary>
@@ -1722,23 +1873,21 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <param name="begin"></param>
         /// <param name="end"></param>
         public GuiTimeRange(DateTime begin, DateTime end) : base(begin, end) { }
+        #endregion
+        #region Abstract overrides
         /// <summary>
-        /// Explicitní serializace
+        /// Vrátí serializovanou formu dané typové hodnoty
         /// </summary>
-        string IXmlSerializer.XmlSerialData
-        {
-            get { return JoinPair(Convertor.DateTimeToString(this.Begin), Convertor.DateTimeToString(this.End)); }
-            set
-            {
-                this.Clear();
-                string begin, end;
-                if (TrySplitPair(value, out begin, out end))
-                {
-                    this.Begin = (DateTime)Convertor.StringToDateTime(begin);
-                    this.End = (DateTime)Convertor.StringToDateTime(end);
-                }
-            }
-        }
+        /// <param name="value"></param>
+        /// <returns></returns>
+        protected override string GetSerial(DateTime value) { return Convertor.DateTimeToString(value); }
+        /// <summary>
+        /// Vrátí deserializovanou typovou hodnotu ze serializované formy
+        /// </summary>
+        /// <param name="serial"></param>
+        /// <returns></returns>
+        protected override DateTime GetValue(string serial) { return (DateTime)Convertor.StringToDateTime(serial); }
+        #endregion
     }
     #endregion
     #endregion
@@ -1775,6 +1924,8 @@ namespace Noris.LCS.Base.WorkScheduler
                     return text + ((this.ToolbarItem != null) ? "; ToolbarItem: " + this.ToolbarItem.ToString() : "; no ToolbarItem");
                 case COMMAND_ContextMenuClick:
                     return text + ((this.ContextMenuItem != null) ? "; ContextMenuItem: " + this.ContextMenuItem.ToString() : "; no ContextMenuItem");
+                case COMMAND_GraphItemMove:
+                    return text + ((this.GraphItemMove != null) ? "; GraphItemMove: " + this.GraphItemMove.ToString() : "; no GraphItemMove");
 
                 case COMMAND_QueryCloseWindow:
                     return text;
@@ -1802,7 +1953,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <summary>
         /// Aktivní prvek grafu, jehož se akce týká (buď kliknutí na kontextové menu, nebo interaktivní změna prvku = přesouvání / resize)
         /// </summary>
-        public GuiRequestGraphItem ActiveGraphItem { get; set; }
+        public GuiGridItemId ActiveGraphItem { get; set; }
         /// <summary>
         /// Informace o prvku, který je přesouván (Drag and Drop) na jiné místo
         /// </summary>
@@ -1857,19 +2008,37 @@ namespace Noris.LCS.Base.WorkScheduler
     public class GuiRequestGraphItemMove
     {
         /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public GuiRequestGraphItemMove()
+        { }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            string text = "ActiveItem: " + (this.ActiveItem != null ? this.ActiveItem.ToString() : "{Null}");
+            if (this.ActiveItem != null && this.TargetRow != null && this.ActiveItem.RowId != this.TargetRow)
+                text += "; TargetRow: " + this.TargetRow.ToString();
+            if (this.SourceTime != null && this.TargetTime != null && this.SourceTime != this.TargetTime)
+                text += "; ChangeTime from: " + this.SourceTime.ToString() + " to: " + this.TargetTime.ToString();
+            return text;
+        }
+        /// <summary>
         /// Prvek, který je přesouván
         /// </summary>
-        public GuiRequestGraphItem ActiveItem { get; set; }
+        public GuiGridItemId ActiveItem { get; set; }
         /// <summary>
-        /// Jeho výchozí čas
+        /// Výchozí čas prvku, před přesouváním
         /// </summary>
         public GuiTimeRange SourceTime { get; set; }
         /// <summary>
-        /// Cílový řádek
+        /// Cílový řádek (tam by to uživatel rád umístil)
         /// </summary>
-        public GuiId SourceRow { get; set; }
+        public GuiId TargetRow { get; set; }
         /// <summary>
-        /// Cílový čas
+        /// Cílový čas (tam by to uživatel rád umístil)
         /// </summary>
         public GuiTimeRange TargetTime { get; set; }
     }
@@ -1887,48 +2056,86 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <summary>
         /// Aktivní řádek, je nanejvýše jeden
         /// </summary>
-        public GuiRequestRow ActiveRow { get; set; }
+        public GuiGridRowId ActiveRow { get; set; }
         /// <summary>
         /// Aktuálně označené řádky tabulek v aktuálním okně.
         /// Řádky tabulek lze označovat ikonkou.
         /// </summary>
-        public GuiRequestRow[] SelectedRows { get; set; }
+        public GuiGridRowId[] SelectedRows { get; set; }
         /// <summary>
         /// Aktuálně označené prvky grafů tabulek v aktuálním okně.
         /// Prvky grafů lze označovat klikáním nebo framováním.
         /// </summary>
-        public GuiRequestGraphItem[] SelectedGraphItems { get; set; }
+        public GuiGridItemId[] SelectedGraphItems { get; set; }
     }
     /// <summary>
-    /// Plný identifikátor řádku tabulky, obsahuje FullName tabulky a <see cref="GuiId"/> řádku tabulky.
+    /// Plný identifikátor prvku tabulky:
+    /// obsahuje FullName tabulky, <see cref="GuiId"/> řádku tabulky, a pokud se jedná o prvek grafu, pak i jeho identifikátor.
+    /// Umožňuje aplikaci najít data tohoto řádku na základě všech identifikátorů.
     /// </summary>
-    public class GuiRequestRow
+    public class GuiGridItemId : GuiGridRowId
     {
         /// <summary>
-        /// Název tabulky, pochází z <see cref="GuiGrid"/>.FullName
+        /// Konstruktor
         /// </summary>
-        public string TableName { get; set; }
+        public GuiGridItemId()
+        { }
         /// <summary>
-        /// ID řádku tabulky, pochází z prvního sloupce tabulky <see cref="GuiGrid.Rows"/>, v kombinaci s číslem třídy v properties sloupce [0]
+        /// Vizualizace
         /// </summary>
-        public GuiId RowId { get; set; }
-    }
-    /// <summary>
-    /// Plný identifikátor prvku grafu, obsahuje FullName tabulky, <see cref="GuiId"/> řádku tabulky, a identifikátor prvku grafu.
-    /// </summary>
-    public class GuiRequestGraphItem
-    {
+        /// <returns></returns>
+        public override string ToString()
+        {
+            string text = base.ToString();
+            if (this.ItemId != null)
+                text += "; ItemId: " + this.ItemId.ToString();
+            if (this.GroupId != null)
+                text += "; GroupId: " + this.GroupId.ToString();
+            return text;
+        }
         /// <summary>
-        /// Název tabulky, pochází z <see cref="GuiGrid"/>.FullName
+        /// <see cref="GuiId"/> prvku grafu, jeho GroupId, pochází z <see cref="GuiGraphItem.GroupId"/>
         /// </summary>
-        public string TableName { get; set; }
-        /// <summary>
-        /// ID řádku tabulky, pochází z prvního sloupce tabulky <see cref="GuiGrid.Rows"/>, v kombinaci s číslem třídy v properties sloupce [0]
-        /// </summary>
-        public GuiId RowId { get; set; }
         public GuiId GroupId { get; set; }
+        /// <summary>
+        /// <see cref="GuiId"/> prvku grafu, jeho ItemId, pochází z <see cref="GuiGraphItem.ItemId"/>
+        /// </summary>
         public GuiId ItemId { get; set; }
+        /// <summary>
+        /// <see cref="GuiId"/> prvku grafu, jeho DataId, pochází z <see cref="GuiGraphItem.DataId"/>
+        /// </summary>
         public GuiId DataId { get; set; }
+    }
+    /// <summary>
+    /// Plný identifikátor řádku tabulky:
+    /// obsahuje FullName tabulky a <see cref="GuiId"/> řádku tabulky.
+    /// </summary>
+    public class GuiGridRowId
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public GuiGridRowId()
+        { }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            string text = "TableName: " + (this.TableName != null ? this.TableName : "{Null}");
+            if (this.RowId != null)
+                text += "; RowId: " + this.RowId.ToString();
+            return text;
+        }
+        /// <summary>
+        /// Název tabulky, pochází z <see cref="GuiGrid"/>.FullName
+        /// </summary>
+        public string TableName { get; set; }
+        /// <summary>
+        /// <see cref="GuiId"/> řádku tabulky, pochází z prvního sloupce tabulky <see cref="GuiGrid.Rows"/>, v kombinaci s číslem třídy v properties sloupce [0]
+        /// </summary>
+        public GuiId RowId { get; set; }
     }
     #endregion
     #region GuiResponse : data předávaná z Helios Green do WorkScheduler jako součást response
@@ -1984,9 +2191,21 @@ namespace Noris.LCS.Base.WorkScheduler
     /// </summary>
     public enum GuiResponseState
     {
+        /// <summary>
+        /// Neurčeno
+        /// </summary>
         None = 0,
+        /// <summary>
+        /// S úspěchem
+        /// </summary>
         Success,
+        /// <summary>
+        /// S varováním
+        /// </summary>
         Warning,
+        /// <summary>
+        /// S chybou
+        /// </summary>
         Error
     }
     /// <summary>

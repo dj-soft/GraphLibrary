@@ -26,6 +26,44 @@ namespace Asol.Tools.WorkScheduler.Data.Test
           
         }
 
+        #region Test Regex
+        /// <summary>
+        /// Test Regex
+        /// </summary>
+        [TestMethod]
+        public void TestRegex()
+        {
+            System.Text.RegularExpressions.Regex regex = null;
+
+            regex = RegexSupport.CreateWildcardsRegex(@"Data\Page\*\Grid?");
+            //       Wildcards =          @"Data\Page\*\Grid?"
+            bool isMatch11 = regex.IsMatch(@"Data\Page\Panel\Grid1");          // true, jinak chyba:
+            if (!isMatch11) throw new AssertFailedException("Chyba Regex 11");
+
+            bool isMatch12 = regex.IsMatch(@"Data\Page\Mini\Grid1");           // true, jinak chyba:
+            if (!isMatch12) throw new AssertFailedException("Chyba Regex 12");
+
+            bool isMatch13 = regex.IsMatch(@"Data\Page\Panel\Grid2");          // true, jinak chyba:
+            if (!isMatch13) throw new AssertFailedException("Chyba Regex 13");
+
+            bool isMatch14 = regex.IsMatch(@"Data\Pag1\Panel\Grid1");          // false, jinak chyba:
+            if (isMatch14) throw new AssertFailedException("Chyba Regex 14");
+
+            regex = RegexSupport.CreateWildcardsRegex(@"*\Page\*\G*");
+            //       Wildcards =          @"*\Page\*\G*"
+            bool isMatch21 = regex.IsMatch(@"Gui\Page\\Gcdef1");               // true, jinak chyba:
+            if (!isMatch21) throw new AssertFailedException("Chyba Regex 21");
+
+            bool isMatch22 = regex.IsMatch(@"Gui\Page12\Aaa\G12");             // false, jinak chyba:
+            if (isMatch22) throw new AssertFailedException("Chyba Regex 22");
+
+            bool isMatch23 = regex.IsMatch(@"D\Page\25\Gcdef1");               // true, jinak chyba:
+            if (!isMatch23) throw new AssertFailedException("Chyba Regex 23");
+
+            bool isMatch24 = regex.IsMatch(@"C\Page\\E21");                    // false, jinak chyba:
+            if (isMatch24) throw new AssertFailedException("Chyba Regex 24");
+        }
+        #endregion
         #region Testy různých Data/Extension metod
         /// <summary>
         /// Testy různých Data/Extension metod

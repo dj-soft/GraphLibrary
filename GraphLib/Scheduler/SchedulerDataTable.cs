@@ -53,6 +53,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         internal MainData MainData { get { return this.MainControl.MainData; } }
         /// <summary>
+        /// Obsahuje true, pokud máme instanci <see cref="MainData"/>
+        /// </summary>
+        internal bool HasMainData { get { return this.MainData != null; } }
+        /// <summary>
         /// Instance <see cref="GuiGrid"/>, která tvoří datový základ této tabulky
         /// </summary>
         internal GuiGrid GuiGrid { get; private set; }
@@ -307,6 +311,18 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             return dataGraphItem;
         }
         /// <summary>
+        /// Metoda vrací <see cref="GId"/> řádku, na němž je umístěn daný graf.
+        /// </summary>
+        /// <param name="graph"></param>
+        /// <returns></returns>
+        protected GId GetGraphRowGid(GTimeGraph graph)
+        {
+            if (graph == null) return null;
+            GRow gRow = graph.SearchForParent(typeof(GRow)) as GRow;
+            if (gRow == null) return null;
+            return gRow.OwnerRow.RecordGId;
+        }
+        /// <summary>
         /// Dictionary všech instancí grafů, které jsou vytvořeny do řádků zdejší tabulky <see cref="TableRow"/>.
         /// Klíčem je GId řádku. Zde jsou grafy jak "plné", umístěné v samostatném sloupci, tak i grafy "na pozadí".
         /// </summary>
@@ -405,10 +421,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         public Dictionary<GId, Row> TableTextRowDict { get; private set; }
         #endregion
-
-
-        
-    
+        #region Otevření formuláře záznamu
         /// <summary>
         /// Obsluha události, kdy tabulka sama (řádek nebo statický vztah) chce otevírat záznam
         /// </summary>
@@ -418,17 +431,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             this.RunOpenRecordForm(e.Value);
         }
-        
-        
-        
-        
-        #region Explicitní implementace IDataGraphTableInternal
-        int IMainDataTableInternal.GetId(GId gId) { return this.GetId(gId); }
-        GId IMainDataTableInternal.GetGId(int id) { return this.GetGId(id); }
-        DataGraphItem IMainDataTableInternal.GetGraphItem(int id) { return this.GetGraphItem(id); }
-        DataGraphItem IMainDataTableInternal.GetGraphItem(GId gId) { return this.GetGraphItem(gId); }
-        #endregion
-        #region Komunikace s hlavním zdrojem dat (MainData)
         /// <summary>
         /// Tato metoda zajistí otevření formuláře daného záznamu.
         /// Pouze převolá odpovídající metodu v <see cref="MainData"/>.
@@ -436,12 +438,163 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="recordGId"></param>
         protected void RunOpenRecordForm(GId recordGId)
         {
-            if (this.MainData == null) return;
+            if (this.HasMainData)
+            {
+                GuiRequest request = new GuiRequest();
+                request.Command = GuiRequest.COMMAND_OpenRecords;
+                request.RecordsToOpen = new GuiId[] { recordGId };
+                this.IMainData.CallAppHostFunction(request, null);
+            }
+        }
+        #endregion
+        #region Přemísťování prvku odněkud někam, včetně aplikační logiky
+        /// <summary>
+        /// Scheduler určuje souřadnici prvku v procesu Drag and Drop,
+        /// v akci Move = prvek se pouze přesouvá pomocí myši, ale ještě nebyl nikam umístěn.
+        /// </summary>
+        /// <param name="args"></param>
+        protected void ItemDragDropMove(ItemDragDropArgs args)
+        {
+            DragSchedulerData data = this.PrepareDragSchedulerData(args);
+            args.DragToAbsoluteBounds = data.TargetBounds;
+            args.ToolTipData.AnimationType = TooltipAnimationType.Instant;
+            args.ToolTipData.TitleText = (data.IsChangeRow ? "Přemístění na jiný řádek" : "Přemístění v rámci řádku");
+            args.ToolTipData.InfoText = "Čas: " + data.TargetTime.ToString();
+        }
+        /// <summary>
+        /// Scheduler vyvolá aplikační logiku, která určí definitivní umístění prvku v procesu Drag and Drop,
+        /// v akci Drop = prvek byl vizuálně umístěn.
+        /// </summary>
+        /// <param name="args"></param>
+        protected void ItemDragDropDrop(ItemDragDropArgs args)
+        {
+            // Tady by se měla volat metoda AppHost => aplikační funkce pro přepočet grafu:
+            DragSchedulerData data = this.PrepareDragSchedulerData(args);
 
-            GuiRequest request = new GuiRequest();
-            request.Command = GuiRequest.COMMAND_OpenRecords;
-            request.RecordsToOpen = new GuiId[] { recordGId };
-            this.IMainData.CallAppHostFunction(request, null);
+            // Nejprve provedu vizuální přemístění na "grafický" cíl, to proto že aplikační funkce může:  a) neexistovat  b) dlouho trvat:
+            this.ItemDragDropDropGuiResponse(data);
+
+            // Následně vyvolám (asynchronní) spuštění aplikační funkce, která zajistí komplexní přepočty a vrátí nová data, 
+            //  její response se řeší v metodě ItemDragDropDropAppResponse():
+            if (this.HasMainData)
+            {
+                GuiRequest request = new GuiRequest();
+                request.Command = GuiRequest.COMMAND_GraphItemMove;
+                request.GraphItemMove = new GuiRequestGraphItemMove();
+                this.IMainData.CallAppHostFunction(request, this.ItemDragDropDropAppResponse);
+            }
+        }
+        /// <summary>
+        /// Metoda provede přemístění prvků grafu na požadovanou cílovou pozici, na základě GUI dat.
+        /// </summary>
+        /// <param name="data"></param>
+        protected void ItemDragDropDropGuiResponse(DragSchedulerData data)
+        {
+
+
+
+
+        }
+        /// <summary>
+        /// Metoda, která obdrží odpovědi z aplikační funkce, a podle nich zajistí patřičné změny v tabulkách.
+        /// </summary>
+        /// <param name="response"></param>
+        protected void ItemDragDropDropAppResponse(AppHostResponseArgs response)
+        { }
+        /// <summary>
+        /// Metoda vrátí instanci <see cref="DragSchedulerData"/> obsahující data na úrovni Scheduleru z dat Drag and Drop z úrovně GUI.
+        /// </summary>
+        /// <param name="args"></param>
+        /// <returns></returns>
+        protected DragSchedulerData PrepareDragSchedulerData(ItemDragDropArgs args)
+        {
+            DragSchedulerData data = new DragSchedulerData();
+            data.DragGroupGId = this.GetGId(args.Group.GroupId);
+            data.DragGroupItems = args.Group.Items.Where(i => i is DataGraphItem).Cast<DataGraphItem>().ToArray();
+            data.SourceGraph = args.ParentGraph;
+            data.SourceRow = this.GetGraphRowGid(args.ParentGraph);
+            data.SourceTime = args.Group.Time;
+            data.SourceBounds = args.OriginalAbsoluteBounds;
+            data.TargetGraph = args.TargetGraph;
+            data.TargetRow = this.GetGraphRowGid(args.TargetGraph);
+
+            // Umístění cíle, časová/místní příchylnost k původní hodnotě:
+            Rectangle sourceBounds = data.SourceBounds;
+            Rectangle targetBounds = args.DragToAbsoluteBounds.Value;
+            int distX = (targetBounds.X - sourceBounds.X);
+            int absDX = ((distX < 0) ? -distX : distX);
+            if (!data.IsChangeRow)
+            {   // Ve stejném řádku:
+                if (absDX < 5)
+                    targetBounds.X = sourceBounds.X;
+                targetBounds.Y = sourceBounds.Y;
+            }
+            else
+            {   // V jiném řádku:
+                if (absDX < 15)
+                    targetBounds.X = sourceBounds.X;
+            }
+            data.TargetBounds = targetBounds;
+
+            // Odvodit cílový čas:
+            DateTime? begin = args.GetTimeForPosition(targetBounds.X);
+            data.TargetTime = TimeRange.CreateFromBeginSize(begin.Value, data.SourceTime.Size.Value);
+
+            return data;
+        }
+        /// <summary>
+        /// Analyzovaná data na úrovni Scheduleru, pro akce při přemísťování prvku na úrovni GUI
+        /// </summary>
+        protected class DragSchedulerData
+        {
+            /// <summary>
+            /// GId grupy, která se přemisťuje.
+            /// Vždy se přemisťuje celá grupa, nikdy ne jednotlivý prvek.
+            /// </summary>
+            public GId DragGroupGId { get; set; }
+            /// <summary>
+            /// Jednotlivé prvky grupy, které jsou její součástí a mají se přemístit.
+            /// Vždy se přemisťuje celá grupa, nikdy ne jednotlivý prvek.
+            /// </summary>
+            public DataGraphItem[] DragGroupItems { get; set; }
+            /// <summary>
+            /// Graf, v němž byl umístěn prvek na začátku.
+            /// Může být tentýž, jako cílový (<see cref="TargetGraph"/>).
+            /// </summary>
+            public GTimeGraph SourceGraph { get; set; }
+            /// <summary>
+            /// Řádek, na němž byl umístěn prvek na začátku.
+            /// Může být tentýž, jako cílový (<see cref="TargetRow"/>).
+            /// </summary>
+            public GId SourceRow { get; set; }
+            /// <summary>
+            /// Graf, kam má být prvek přemístěn.
+            /// </summary>
+            public GTimeGraph TargetGraph { get; set; }
+            /// <summary>
+            /// Cílový řádek, kam má být prvek přemístěn.
+            /// </summary>
+            public GId TargetRow { get; set; }
+            /// <summary>
+            /// Původní čas prvku před přemístěním
+            /// </summary>
+            public TimeRange SourceTime { get; set; }
+            /// <summary>
+            /// Cílový čas prvku po přemístění
+            /// </summary>
+            public TimeRange TargetTime { get; set; }
+            /// <summary>
+            /// Absolutní souřadnice prvku před přemístěním
+            /// </summary>
+            public Rectangle SourceBounds { get; set; }
+            /// <summary>
+            /// Absolutní souřadnice prvku po přemístění
+            /// </summary>
+            public Rectangle TargetBounds { get; set; }
+            /// <summary>
+            /// Obsahuje true, pokud dochází ke změně řádku
+            /// </summary>
+            public bool IsChangeRow { get { return (this.SourceRow != this.TargetRow); } }
         }
         #endregion
         #region Implementace ITimeGraphDataSource: Zdroj dat pro grafy: tvorba textu, tooltipu, kontextové menu, podpora Drag and Drop
@@ -451,7 +604,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="args"></param>
         protected void GraphItemPrepareText(CreateTextArgs args)
         {
-            DataGraphItem graphItem = this.GetActionGraphItem(args);
+            DataGraphItem graphItem = this.GetActiveGraphItem(args);
             if (graphItem == null) return;
 
             Row infoRow = this.GetTableInfoRow(graphItem);
@@ -487,7 +640,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="args"></param>
         protected void GraphItemPrepareToolTip(CreateToolTipArgs args)
         {
-            DataGraphItem graphItem = this.GetActionGraphItem(args);
+            DataGraphItem graphItem = this.GetActiveGraphItem(args);
             if (graphItem == null) return;
 
             Row infoRow = this.GetTableInfoRow(graphItem);
@@ -515,7 +668,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <returns></returns>
         protected ToolStripDropDownMenu GetContextMenuForGraph(ItemActionArgs args)
         {
-            return this.IMainData.CreateContextMenu(null, args);
+            GuiGridItemId gridItemId = this.GetGridItemId(args);
+            return this.IMainData.CreateContextMenu(gridItemId);
         }
         /// <summary>
         /// Uživatel chce vidět kontextové menu na daném prvku grafu
@@ -524,8 +678,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <returns></returns>
         protected ToolStripDropDownMenu GetContextMenuForItem(ItemActionArgs args)
         {
-            DataGraphItem graphItem = this.GetActionGraphItem(args);                               // Prvek, na nějž se kliklo
-            return this.IMainData.CreateContextMenu(graphItem, args);
+            GuiGridItemId gridItemId = this.GetGridItemId(args);
+            return this.IMainData.CreateContextMenu(gridItemId);
         }
         /// <summary>
         /// Uživatel dal doubleclick na grafický prvek
@@ -535,17 +689,55 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             if (args.ModifierKeys == Keys.Control)
             {   // Akce typu Ctrl+DoubleClick na grafickém prvku si žádá otevření formuláře:
-                DataGraphItem graphItem = this.GetActionGraphItem(args);
+                DataGraphItem graphItem = this.GetActiveGraphItem(args);
                 if (graphItem != null)
                     this.RunOpenRecordForm(graphItem.RecordGId);
             }
         }
         /// <summary>
-        /// Metoda najde a vrátí grafický prvek zdejší třídy <see cref="DataGraphItem"/> pro daný interaktivní prvek.
+        /// Metoda vytvoří, naplní a vrátí identifikátor prvku <see cref="GuiGridItemId"/>, podle údajů v daném interaktivním argumentu.
+        /// </summary>
+        /// <param name="args">Interaktivní argument</param>
+        /// <returns></returns>
+        private GuiGridItemId GetGridItemId(ItemActionArgs args)
+        {
+            GuiGridItemId gridItemId = new GuiGridItemId();
+            gridItemId.TableName = this.GuiGrid.FullName;            // Konstantní jméno FullName this tabulky (třída GuiGrid)
+            gridItemId.RowId = this.GetGraphRowGid(args.Graph);      // Z grafu najdu jeho řádek a jeho GId řádku, ten se (implicitně) převede na GuiId
+            DataGraphItem graphItem = this.GetActiveGraphItem(args); // Najde prvek odpovídající args.CurrentItem, nebo args.GroupedItems[0]
+            if (graphItem != null)
+            {   // Pokud mám prvek, pak do resultu vložím jeho GId (převedené na GuiId):
+                gridItemId.ItemId = graphItem.ItemGId;
+                gridItemId.GroupId = graphItem.GroupGId;
+                gridItemId.DataId = graphItem.DataGId;
+            }
+            return gridItemId;
+        }
+        /// <summary>
+        /// Metoda vytvoří, naplní a vrátí identifikátor prvku <see cref="GuiGridItemId"/>, podle údajů v daném prvku grafu.
+        /// </summary>
+        /// <param name="graphItem">Prvek grafu</param>
+        /// <returns></returns>
+        private GuiGridItemId GetGridItemId(DataGraphItem graphItem)
+        {
+            GuiGridItemId gridItemId = new GuiGridItemId();
+            gridItemId.TableName = this.GuiGrid.FullName;            // Konstantní jméno FullName this tabulky (třída GuiGrid)
+            if (graphItem != null)
+            {   // Pokud mám prvek, pak do resultu vložím jeho GId (převedené na GuiId):
+                gridItemId.RowId = graphItem.ParentGId;              // Parentem je GID řádku
+                gridItemId.ItemId = graphItem.ItemGId;
+                gridItemId.GroupId = graphItem.GroupGId;
+                gridItemId.DataId = graphItem.DataGId;
+            }
+            return gridItemId;
+        }
+        /// <summary>
+        /// Metoda najde a vrátí grafický prvek zdejší třídy <see cref="DataGraphItem"/> pro daný interaktivní prvek, 
+        /// uvedený v interaktivním argumentu <see cref="ItemArgs"/>.
         /// </summary>
         /// <param name="args"></param>
         /// <returns></returns>
-        protected DataGraphItem GetActionGraphItem(ItemArgs args)
+        protected DataGraphItem GetActiveGraphItem(ItemArgs args)
         {
             int itemId = (args.CurrentItem != null ? args.CurrentItem.ItemId : (args.GroupedItems.Length > 0 ? args.GroupedItems[0].ItemId : 0));
             if (itemId <= 0) return null;
@@ -576,123 +768,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                     break;
             }
         }
-        /// <summary>
-        /// Scheduler určuje souřadnici prvku v procesu Drag and Drop,
-        /// v akci Move = prvek se pouze přesouvá pomocí myši, ale ještě nebyl nikam umístěn.
-        /// </summary>
-        /// <param name="args"></param>
-        protected void ItemDragDropMove(ItemDragDropArgs args)
-        {
-            DragSchedulerData data = this.PrepareDragSchedulerData(args);
-            args.DragToAbsoluteBounds = data.TargetBounds;
-            args.ToolTipData.AnimationType = TooltipAnimationType.Instant;
-            args.ToolTipData.TitleText = (data.IsChangeRow ? "Přemístění na jiný řádek" : "Přemístění v rámci řádku");
-            args.ToolTipData.InfoText = "Čas: " + data.TargetTime.ToString();
-        }
-        /// <summary>
-        /// Scheduler vyvolá aplikační logiku, která určí definitivní umístění prvku v procesu Drag and Drop,
-        /// v akci Drop = prvek byl vizuálně umístěn.
-        /// </summary>
-        /// <param name="args"></param>
-        protected void ItemDragDropDrop(ItemDragDropArgs args)
-        {
-            // Tady by se měla volat metoda AppHost => aplikační funkce pro přepočet grafu:
-            DragSchedulerData data = this.PrepareDragSchedulerData(args);
-            this.IMainData.CallAppHostFunction();
-
-
-
-        }
-        /// <summary>
-        /// Metoda vrátí instanci <see cref="DragSchedulerData"/> obsahující data na úrovni Scheduleru z dat Drag and Drop z úrovně GUI.
-        /// </summary>
-        /// <param name="args"></param>
-        /// <returns></returns>
-        protected DragSchedulerData PrepareDragSchedulerData(ItemDragDropArgs args)
-        {
-            DragSchedulerData data = new DragSchedulerData();
-            data.DragGroup = this.GetGId(args.Group.GroupId);
-            data.SourceRow = this.GetGraphRowGid(args.ParentGraph);
-            data.SourceTime = args.Group.Time;
-            data.SourceBounds = args.OriginalAbsoluteBounds;
-            data.TargetRow = this.GetGraphRowGid(args.TargetGraph);
-
-            // Umístění cíle, časová/místní příchylnost k původní hodnotě:
-            Rectangle sourceBounds = data.SourceBounds;
-            Rectangle targetBounds = args.DragToAbsoluteBounds.Value;
-            int distX = (targetBounds.X - sourceBounds.X);
-            int absDX = ((distX < 0) ? -distX : distX);
-            if (!data.IsChangeRow)
-            {   // Ve stejném řádku:
-                if (absDX < 5)
-                    targetBounds.X = sourceBounds.X;
-                targetBounds.Y = sourceBounds.Y;
-            }
-            else
-            {   // V jiném řádku:
-                if (absDX < 15)
-                    targetBounds.X = sourceBounds.X;
-            }
-            data.TargetBounds = targetBounds;
-
-            // Odvodit cílový čas:
-            DateTime? begin = args.GetTimeForPosition(targetBounds.X);
-            data.TargetTime = TimeRange.CreateFromBeginSize(begin.Value, data.SourceTime.Size.Value);
-
-            return data;
-        }
-        /// <summary>
-        /// Metoda vrací <see cref="GId"/> řádku, na němž je umístěn daný graf.
-        /// </summary>
-        /// <param name="graph"></param>
-        /// <returns></returns>
-        protected GId GetGraphRowGid(GTimeGraph graph)
-        {
-            if (graph == null) return null;
-            GRow gRow = graph.SearchForParent(typeof(GRow)) as GRow;
-            if (gRow == null) return null;
-            return gRow.OwnerRow.RecordGId;
-        }
-        /// <summary>
-        /// Analyzovaná data na úrovni Scheduleru, pro akce při přemísťování prvku na úrovni GUI
-        /// </summary>
-        protected class DragSchedulerData
-        {
-            /// <summary>
-            /// GId grupy, která se přemisťuje.
-            /// Vždy se přemisťuje celá grupa, nikdy ne jednotlivý prvek.
-            /// </summary>
-            public GId DragGroup { get; set; }
-            /// <summary>
-            /// Řádek, na němž byl umístěn prvek na začátku.
-            /// Může být tentýž, jako cílový (<see cref="TargetRow"/>).
-            /// </summary>
-            public GId SourceRow { get; set; }
-            /// <summary>
-            /// Cílový řádek, kam má být prvek přemístěn.
-            /// </summary>
-            public GId TargetRow { get; set; }
-            /// <summary>
-            /// Původní čas prvku před přemístěním
-            /// </summary>
-            public TimeRange SourceTime { get; set; }
-            /// <summary>
-            /// Cílový čas prvku po přemístění
-            /// </summary>
-            public TimeRange TargetTime { get; set; }
-            /// <summary>
-            /// Absolutní souřadnice prvku před přemístěním
-            /// </summary>
-            public Rectangle SourceBounds { get; set; }
-            /// <summary>
-            /// Absolutní souřadnice prvku po přemístění
-            /// </summary>
-            public Rectangle TargetBounds { get; set; }
-            /// <summary>
-            /// Obsahuje true, pokud dochází ke změně řádku
-            /// </summary>
-            public bool IsChangeRow { get { return (this.SourceRow != this.TargetRow); } }
-        }
         void ITimeGraphDataSource.CreateText(CreateTextArgs args) { this.GraphItemPrepareText(args); }
         void ITimeGraphDataSource.CreateToolTip(CreateToolTipArgs args) { this.GraphItemPrepareToolTip(args); }
         void ITimeGraphDataSource.GraphRightClick(ItemActionArgs args) { args.ContextMenu = this.GetContextMenuForGraph(args); }
@@ -701,6 +776,12 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         void ITimeGraphDataSource.ItemLongClick(ItemActionArgs args) { }
         void ITimeGraphDataSource.ItemChange(ItemChangeArgs args) { }
         void ITimeGraphDataSource.ItemDragDropAction(ItemDragDropArgs args) { this.ItemDragDropAction(args); }
+        #endregion
+        #region Implementace IDataGraphTableInternal: Přístup k vnitřním datům tabulky
+        int IMainDataTableInternal.GetId(GId gId) { return this.GetId(gId); }
+        GId IMainDataTableInternal.GetGId(int id) { return this.GetGId(id); }
+        DataGraphItem IMainDataTableInternal.GetGraphItem(int id) { return this.GetGraphItem(id); }
+        DataGraphItem IMainDataTableInternal.GetGraphItem(GId gId) { return this.GetGraphItem(gId); }
         #endregion
     }
     /// <summary>

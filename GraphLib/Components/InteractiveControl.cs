@@ -19,10 +19,16 @@ namespace Asol.Tools.WorkScheduler.Components
     public partial class GInteractiveControl : GControlLayered, IInteractiveParent
     {
         #region Konstruktor
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public GInteractiveControl()
         {
             this.Init();
         }
+        /// <summary>
+        /// Akce Resize
+        /// </summary>
         protected override void OnResizeControl()
         {
             base.OnResizeControl();
@@ -43,11 +49,17 @@ namespace Asol.Tools.WorkScheduler.Components
             this._DrawSupportInit();
             this._BackThreadInit();
         }
+        /// <summary>
+        /// Po dokončení Dispose
+        /// </summary>
         protected override void OnAfterDisposed()
         {
             base.OnAfterDisposed();
             this._BackThreadDone();
         }
+        /// <summary>
+        /// Souhrn prvků umístěných přímo na Controlu
+        /// </summary>
         protected List<IInteractiveItem> ItemsList
         {
             get
@@ -65,13 +77,13 @@ namespace Asol.Tools.WorkScheduler.Components
             this._KeyboardCurrentItem = null;
         }
         #region Obsluha override metod (z WinForm.Control) pro Focus a Keyboard
+        /// <summary>
+        /// Focus vstupuje do controlu
+        /// </summary>
+        /// <param name="e"></param>
         protected override void OnEnter(EventArgs e)
         {
-            using (new InteractiveProcessingScope(this))
-            {
-                this._OnEnter(e);
-                base.OnEnter(e);
-            }
+            this.InteractiveAction(GInteractiveChangeState.KeyboardFocusEnter, () => this._OnEnter(e), () => base.OnEnter(e));
         }
         private void _OnEnter(EventArgs e)
         {
@@ -91,33 +103,33 @@ namespace Asol.Tools.WorkScheduler.Components
                 }
             }
         }
+        /// <summary>
+        /// Focus vstupuje do controlu
+        /// </summary>
+        /// <param name="e"></param>
         protected override void OnGotFocus(EventArgs e)
         {
-            using (new InteractiveProcessingScope(this))
-            {
-                this._OnGotFocus(e);
-                base.OnGotFocus(e);
-            }
+            this.InteractiveAction(GInteractiveChangeState.KeyboardFocusEnter, () => this._OnGotFocus(e), () => base.OnGotFocus(e));
         }
         private void _OnGotFocus(EventArgs e)
         { }
+        /// <summary>
+        /// Focus odchází z controlu
+        /// </summary>
+        /// <param name="e"></param>
         protected override void OnLostFocus(EventArgs e)
         {
-            using (new InteractiveProcessingScope(this))
-            {
-                this._OnLostFocus(e);
-                base.OnLostFocus(e);
-            }
+            this.InteractiveAction(GInteractiveChangeState.KeyboardFocusLeave, () => this._OnLostFocus(e), () => base.OnLostFocus(e));
         }
         private void _OnLostFocus(EventArgs e)
         { }
+        /// <summary>
+        /// Focus odchází z controlu
+        /// </summary>
+        /// <param name="e"></param>
         protected override void OnLeave(EventArgs e)
         {
-            using (new InteractiveProcessingScope(this))
-            {
-                this._OnLeave(e);
-                base.OnLeave(e);
-            }
+            this.InteractiveAction(GInteractiveChangeState.KeyboardFocusLeave, () => this._OnLeave(e), () => base.OnLeave(e));
         }
         private void _OnLeave(EventArgs e)
         {
@@ -135,13 +147,13 @@ namespace Asol.Tools.WorkScheduler.Components
                 }
             }
         }
+        /// <summary>
+        /// Akce PreviewKeyDown
+        /// </summary>
+        /// <param name="e"></param>
         protected override void OnPreviewKeyDown(PreviewKeyDownEventArgs e)
         {
-            using (new InteractiveProcessingScope(this))
-            {
-                this._OnPreviewKeyDown(e);
-                base.OnPreviewKeyDown(e);
-            }
+            this.InteractiveAction(GInteractiveChangeState.KeyboardPreviewKeyDown, () => this._OnPreviewKeyDown(e), () => base.OnPreviewKeyDown(e));
         }
         private void _OnPreviewKeyDown(PreviewKeyDownEventArgs e)
         {
@@ -161,13 +173,13 @@ namespace Asol.Tools.WorkScheduler.Components
                 }
             }
         }
+        /// <summary>
+        /// Akce KeyDown
+        /// </summary>
+        /// <param name="e"></param>
         protected override void OnKeyDown(KeyEventArgs e)
         {
-            using (new InteractiveProcessingScope(this))
-            {
-                this._OnKeyDown(e);
-                base.OnKeyDown(e);
-            }
+            this.InteractiveAction(GInteractiveChangeState.KeyboardKeyDown, () => this._OnKeyDown(e), () => base.OnKeyDown(e));
         }
         private void _OnKeyDown(KeyEventArgs e)
         {
@@ -204,13 +216,13 @@ namespace Asol.Tools.WorkScheduler.Components
                 }
             }
         }
+        /// <summary>
+        /// Akce KeyUp
+        /// </summary>
+        /// <param name="e"></param>
         protected override void OnKeyUp(KeyEventArgs e)
         {
-            using (new InteractiveProcessingScope(this))
-            {
-                this._OnKeyUp(e);
-                base.OnKeyUp(e);
-            }
+            this.InteractiveAction(GInteractiveChangeState.KeyboardKeyUp, () => this._OnKeyUp(e), () => base.OnKeyUp(e));
         }
         private void _OnKeyUp(KeyEventArgs e)
         {
@@ -230,13 +242,13 @@ namespace Asol.Tools.WorkScheduler.Components
                 }
             }
         }
+        /// <summary>
+        /// Akce KeyPress
+        /// </summary>
+        /// <param name="e"></param>
         protected override void OnKeyPress(KeyPressEventArgs e)
         {
-            using (new InteractiveProcessingScope(this))
-            {
-                this._OnKeyPress(e);
-                base.OnKeyPress(e);
-            }
+            this.InteractiveAction(GInteractiveChangeState.KeyboardKeyPress, () => this._OnKeyPress(e), () => base.OnKeyPress(e));
         }
         private void _OnKeyPress(KeyPressEventArgs e)
         {
@@ -264,6 +276,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="itemPrev"></param>
         /// <param name="itemNext"></param>
+        /// <param name="forceLeave"></param>
         private void _ItemKeyboardExchange(IInteractiveItem itemPrev, IInteractiveItem itemNext, bool forceLeave)
         {
             // We solve Keyboard focus change.
@@ -323,6 +336,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="item"></param>
         /// <param name="change"></param>
+        /// <param name="previewArgs"></param>
+        /// <param name="keyArgs"></param>
+        /// <param name="keyPressArgs"></param>
         private void _ItemKeyboardCallEvent(IInteractiveItem item, GInteractiveChangeState change, PreviewKeyDownEventArgs previewArgs, KeyEventArgs keyArgs, KeyPressEventArgs keyPressArgs)
         {
             if ((item.Style & GInteractiveStyles.KeyboardInput) != 0)
@@ -361,13 +377,13 @@ namespace Asol.Tools.WorkScheduler.Components
             this._DragStartSize = SystemInformation.DragSize;
         }
         #region Obsluha override metod (z WinForm.Control) pro myš
+        /// <summary>
+        /// Akce MouseEnter
+        /// </summary>
+        /// <param name="e"></param>
         protected override void OnMouseEnter(EventArgs e)
         {
-            using (new InteractiveProcessingScope(this))
-            {
-                this._OnMouseEnter(e);
-                base.OnMouseEnter(e);
-            }
+            this.InteractiveAction(GInteractiveChangeState.MouseEnter, () => this._OnMouseEnter(e), () => base.OnMouseEnter(e));
         }
         private void _OnMouseEnter(EventArgs e)
         {
@@ -384,13 +400,13 @@ namespace Asol.Tools.WorkScheduler.Components
                 }
             }
         }
+        /// <summary>
+        /// Akce MouseMove
+        /// </summary>
+        /// <param name="e"></param>
         protected override void OnMouseMove(MouseEventArgs e)
         {
-            using (new InteractiveProcessingScope(this))
-            {
-                this._OnMouseMove(e);
-                base.OnMouseMove(e);
-            }
+            this.InteractiveAction(GInteractiveChangeState.MouseOver, () => this._OnMouseMove(e), () => base.OnMouseMove(e));
         }
         private void _OnMouseMove(MouseEventArgs e)
         {
@@ -456,14 +472,15 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="scope"></param>
         private void _MouseDragStartDetect(MouseEventArgs e, ITraceScope scope)
         {
-            if (this._MouseCurrentItem.CanFrameSelect)
+            GActivePosition mouseCurrentItem = this._MouseCurrentItem;
+            if (mouseCurrentItem.CanFrameSelect)
             {   // Aktuální prvek podporuje Select pomocí Frame (tzn. má vlastnost <see cref="IInteractiveItem.IsSelectParent"/>)
                 this._MouseDragState = MouseMoveDragState.DragFrame;
                 this._MouseDragFrameBegin(e);
                 this._MouseDragFrameStep(e);
                 scope.Result = "MouseDragFrameBegin";
             }
-            else if (this._MouseCurrentItem.SearchForDraggableItem())
+            else if (mouseCurrentItem.SearchForDraggableItem())
             {   // Našli jsme nějaký prvek, který je ochotný s sebou nechat vláčet (v jeho aktuiálním stavu podporuje Drag and Drop):
                 // Myš se právě nyní pohnula z "Silent zone" (oblast okolo místa, kde byla myš zmáčknuta) => Drag and Drop začíná:
                 this._MouseDragState = MouseMoveDragState.DragMove;
@@ -529,13 +546,13 @@ namespace Asol.Tools.WorkScheduler.Components
             /// </summary>
             DragFrame
         }
+        /// <summary>
+        /// Akce MouseDown
+        /// </summary>
+        /// <param name="e"></param>
         protected override void OnMouseDown(MouseEventArgs e)
         {
-            using (new InteractiveProcessingScope(this))
-            {
-                this._OnMouseDown(e);
-                base.OnMouseDown(e);
-            }
+            this.InteractiveAction(GInteractiveChangeState.LeftDown, () => this._OnMouseDown(e), () => base.OnMouseDown(e));
         }
         private void _OnMouseDown(MouseEventArgs e)
         {
@@ -552,13 +569,13 @@ namespace Asol.Tools.WorkScheduler.Components
                 }
             }
         }
+        /// <summary>
+        /// Akce MouseUp
+        /// </summary>
+        /// <param name="e"></param>
         protected override void OnMouseUp(MouseEventArgs e)
         {
-            using (new InteractiveProcessingScope(this))
-            {
-                this._OnMouseUp(e);
-                base.OnMouseUp(e);
-            }
+            this.InteractiveAction(GInteractiveChangeState.LeftUp, () => this._OnMouseUp(e), () => base.OnMouseUp(e));
         }
         private void _OnMouseUp(MouseEventArgs e)
         {
@@ -582,13 +599,13 @@ namespace Asol.Tools.WorkScheduler.Components
                 }
             }
         }
+        /// <summary>
+        /// Akce MouseWheel
+        /// </summary>
+        /// <param name="e"></param>
         protected override void OnMouseWheel(MouseEventArgs e)
         {
-            using (new InteractiveProcessingScope(this))
-            {
-                this._OnMouseWheel(e);
-                base.OnMouseWheel(e);
-            }
+            this.InteractiveAction(GInteractiveChangeState.WheelUp, () => this._OnMouseWheel(e), () => base.OnMouseWheel(e));
         }
         private void _OnMouseWheel(MouseEventArgs e)
         {
@@ -605,13 +622,13 @@ namespace Asol.Tools.WorkScheduler.Components
                 }
             }
         }
+        /// <summary>
+        /// Akce MouseLeave
+        /// </summary>
+        /// <param name="e"></param>
         protected override void OnMouseLeave(EventArgs e)
         {
-            using (new InteractiveProcessingScope(this))
-            {
-                this._OnMouseLeave(e);
-                base.OnMouseLeave(e);
-            }
+            this.InteractiveAction(GInteractiveChangeState.MouseLeave, () => this._OnMouseLeave(e), () => base.OnMouseLeave(e));
         }
         private void _OnMouseLeave(EventArgs e)
         {
@@ -638,16 +655,17 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         private void _MouseOver(MouseEventArgs e)
         {
+            GActivePosition mouseCurrentItem = this._MouseCurrentItem;
             if (e != null)
             {
                 GActivePosition gci = this.FindActivePositionAtPoint(e.Location, true);
-                this._ItemMouseExchange(this._MouseCurrentItem, gci, this._MouseCurrentRelativePoint);
+                this._ItemMouseExchange(mouseCurrentItem, gci, this._MouseCurrentRelativePoint);
                 this._ToolTipMouseMove(this._MouseCurrentAbsolutePoint);
             }
             else
             {
                 this._MouseCurrentRelativePoint = null;
-                this._ItemMouseExchange(this._MouseCurrentItem, null, null);
+                this._ItemMouseExchange(mouseCurrentItem, null, null);
                 this._ActivateCursor(SysCursorType.Default);
             }
         }
@@ -655,7 +673,8 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             GActivePosition gci = this.FindActivePositionAtPoint(e.Location, false);
 
-            this._ItemMouseExchange(this._MouseCurrentItem, gci, this._MouseCurrentRelativePoint);
+            GActivePosition mouseCurrentItem = this._MouseCurrentItem;
+            this._ItemMouseExchange(mouseCurrentItem, gci, this._MouseCurrentRelativePoint);
             this._ItemKeyboardExchange(this._KeyboardCurrentItem, gci.ActiveItem, false);
 
             this._MouseDownAbsolutePoint = e.Location;
@@ -663,54 +682,57 @@ namespace Asol.Tools.WorkScheduler.Components
             this._MouseDownButtons = e.Button;
             this._MouseDragStartBounds = e.Location.CreateRectangleFromCenter(this._DragStartSize);
             this._MouseDragMoveItemOffset = null;
-            this._ItemMouseCallStateChangedEvent(this._MouseCurrentItem, GInteractiveChangeState.LeftDown, this._MouseCurrentRelativePoint);
+            this._ItemMouseCallStateChangedEvent(mouseCurrentItem, GInteractiveChangeState.LeftDown, this._MouseCurrentRelativePoint);
         }
         private void _MouseRaise(MouseEventArgs e)
         {
-            if (this._MouseCurrentItem != null)
+            GActivePosition mouseCurrentItem = this._MouseCurrentItem;
+            if (mouseCurrentItem != null)
             {
-                this._MouseCurrentItem.CurrentTime = DateTime.Now;
+                mouseCurrentItem.CurrentTime = DateTime.Now;
                 this._MouseCurrentRelativePoint = this._GetRelativePointToCurrentItem(e.Location);
-                this._ItemMouseCallStateChangedEvent(this._MouseCurrentItem, GInteractiveChangeState.LeftUp, this._MouseCurrentRelativePoint);
-                if (this._MouseCurrentItem.CanDoubleClick && GActivePosition.IsDoubleClick(this._MouseClickedItem, this._MouseCurrentItem))
+                this._ItemMouseCallStateChangedEvent(mouseCurrentItem, GInteractiveChangeState.LeftUp, this._MouseCurrentRelativePoint);
+                if (mouseCurrentItem.CanDoubleClick && GActivePosition.IsDoubleClick(this._MouseClickedItem, mouseCurrentItem))
                 {
-                    this._ItemMouseCallStateChangedEvent(this._MouseCurrentItem, GInteractiveChangeState.LeftDoubleClick, this._MouseCurrentRelativePoint);
+                    this._ItemMouseCallStateChangedEvent(mouseCurrentItem, GInteractiveChangeState.LeftDoubleClick, this._MouseCurrentRelativePoint);
                 }
-                else if (this._MouseCurrentItem.CanLongClick && GActivePosition.IsLongClick(this._MouseDownTime, this._MouseCurrentItem))
+                else if (mouseCurrentItem.CanLongClick && GActivePosition.IsLongClick(this._MouseDownTime, mouseCurrentItem))
                 {
-                    this._ItemMouseCallStateChangedEvent(this._MouseCurrentItem, GInteractiveChangeState.LeftLongClick, this._MouseCurrentRelativePoint);
+                    this._ItemMouseCallStateChangedEvent(mouseCurrentItem, GInteractiveChangeState.LeftLongClick, this._MouseCurrentRelativePoint);
                     if (this._MouseDownButtons == MouseButtons.Left || this._MouseDownButtons == MouseButtons.Right)
-                        this._ItemMouseCallContextMenu(this._MouseCurrentItem, GInteractiveChangeState.LeftLongClick, this._MouseCurrentRelativePoint);
+                        this._ItemMouseCallContextMenu(mouseCurrentItem, GInteractiveChangeState.LeftLongClick, this._MouseCurrentRelativePoint);
                 }
-                else if (this._MouseCurrentItem.CanClick)
+                else if (mouseCurrentItem.CanClick)
                 {
-                    this._ItemMouseCallStateChangedEvent(this._MouseCurrentItem, GInteractiveChangeState.LeftClick, this._MouseCurrentRelativePoint);
+                    this._ItemMouseCallStateChangedEvent(mouseCurrentItem, GInteractiveChangeState.LeftClick, this._MouseCurrentRelativePoint);
                     if (this._MouseDownButtons == MouseButtons.Right)
-                        this._ItemMouseCallContextMenu(this._MouseCurrentItem, GInteractiveChangeState.LeftLongClick, this._MouseCurrentRelativePoint);
+                        this._ItemMouseCallContextMenu(mouseCurrentItem, GInteractiveChangeState.LeftLongClick, this._MouseCurrentRelativePoint);
                 }
-                this._MouseClickedItem = this._MouseCurrentItem;
+                this._MouseClickedItem = mouseCurrentItem;
             }
             this._MouseDownReset();
         }
         private void _MouseOneWheel(MouseEventArgs e)
         {
             GActivePosition gci = this.FindActivePositionAtPoint(e.Location, false);
-            this._ItemMouseExchange(this._MouseCurrentItem, gci, this._MouseCurrentRelativePoint);
+            GActivePosition mouseCurrentItem = this._MouseCurrentItem;
+            this._ItemMouseExchange(mouseCurrentItem, gci, this._MouseCurrentRelativePoint);
             GInteractiveChangeState change = (e.Delta > 0 ? GInteractiveChangeState.WheelUp : GInteractiveChangeState.WheelDown);
-            this._ItemMouseCallStateChangedEvent(this._MouseCurrentItem, change, this._MouseCurrentRelativePoint, recurseToSolver: true);   // recurseToSolver = true => opakovat volání akce, dokud ji některý prvek v hierarchii nevyřeší.
+            this._ItemMouseCallStateChangedEvent(mouseCurrentItem, change, this._MouseCurrentRelativePoint, recurseToSolver: true);   // recurseToSolver = true => opakovat volání akce, dokud ji některý prvek v hierarchii nevyřeší.
         }
         #endregion
         #region Řízení procesu MouseDragMove = přesouvání prvku Drag and Drop
         private void _MouseDragMoveBegin(MouseEventArgs e)
         {
             // Relativní pozice myši v okamžiku MouseDown, nikoli aktuální pozice (ta už je přesunutá = mimo prostor _CurrentMouseDragStart):
-            this._MouseCurrentRelativePoint = _GetRelativePoint(this._MouseDownAbsolutePoint.Value, this._MouseCurrentItem);
-            if (this._MouseCurrentItem.CanDrag)
+            GActivePosition mouseCurrentItem = this._MouseCurrentItem;
+            this._MouseCurrentRelativePoint = _GetRelativePoint(this._MouseDownAbsolutePoint.Value, mouseCurrentItem);
+            if (mouseCurrentItem.CanDrag)
             {
-                this._MouseCurrentItem.CurrentTime = DateTime.Now;
-                this._MouseDragMoveItem = this._MouseCurrentItem;
-                this._MouseDragMoveItemOriginBounds = this._MouseCurrentItem.ActiveItem.Bounds;
-                var stateArgs = this._ItemMouseCallStateChangedEvent(this._MouseCurrentItem, GInteractiveChangeState.LeftDragMoveBegin, this._MouseCurrentRelativePoint);
+                mouseCurrentItem.CurrentTime = DateTime.Now;
+                this._MouseDragMoveItem = mouseCurrentItem;
+                this._MouseDragMoveItemOriginBounds = mouseCurrentItem.ActiveItem.Bounds;
+                var stateArgs = this._ItemMouseCallStateChangedEvent(mouseCurrentItem, GInteractiveChangeState.LeftDragMoveBegin, this._MouseCurrentRelativePoint);
                 if (stateArgs.UserDragPoint.HasValue)
                     this._UserDragPointOffset = stateArgs.UserDragPoint.Value.Sub(this._MouseDownAbsolutePoint.Value);
             }
@@ -719,26 +741,28 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         private void _MouseDragMoveStep(MouseEventArgs e)
         {
-            if (this._MouseDragMoveItem != null && this._MouseCurrentItem.CanDrag)
+            GActivePosition mouseCurrentItem = this._MouseCurrentItem;
+            if (this._MouseDragMoveItem != null && mouseCurrentItem.CanDrag)
             {
-                this._MouseCurrentItem.CurrentTime = DateTime.Now;
+                mouseCurrentItem.CurrentTime = DateTime.Now;
                 Point? userDragPoint = null;
                 if (this._UserDragPointOffset.HasValue)
                     userDragPoint = e.Location.Add(this._UserDragPointOffset.Value);
-                this._MouseCurrentRelativePoint = _GetRelativePoint(e.Location, this._MouseCurrentItem);
+                this._MouseCurrentRelativePoint = _GetRelativePoint(e.Location, mouseCurrentItem);
                 Point shift = e.Location.Sub(this._MouseDownAbsolutePoint.Value);
                 Rectangle dragToArea = this._MouseDragMoveItemOriginBounds.Value.ShiftBy(shift);
-                this._ItemMouseCallStateChangedEvent(this._MouseCurrentItem, GInteractiveChangeState.LeftDragMoveStep, this._MouseCurrentRelativePoint,
+                this._ItemMouseCallStateChangedEvent(mouseCurrentItem, GInteractiveChangeState.LeftDragMoveStep, this._MouseCurrentRelativePoint,
                     dragToArea: dragToArea, userDragPoint: userDragPoint);
             }
         }
         private void _MouseDragMoveCancel()
         {
-            if (this._MouseDragMoveItem != null && this._MouseCurrentItem.CanDrag)
+            GActivePosition mouseCurrentItem = this._MouseCurrentItem;
+            if (this._MouseDragMoveItem != null && mouseCurrentItem.CanDrag)
             {
-                this._MouseCurrentItem.CurrentTime = DateTime.Now;
-                this._ItemMouseCallStateChangedEvent(this._MouseCurrentItem, GInteractiveChangeState.LeftDragMoveCancel);
-                this._ItemMouseCallStateChangedEvent(this._MouseCurrentItem, GInteractiveChangeState.LeftDragMoveEnd);
+                mouseCurrentItem.CurrentTime = DateTime.Now;
+                this._ItemMouseCallStateChangedEvent(mouseCurrentItem, GInteractiveChangeState.LeftDragMoveCancel);
+                this._ItemMouseCallStateChangedEvent(mouseCurrentItem, GInteractiveChangeState.LeftDragMoveEnd);
                 this._RepaintAllItems = true;
                 this._MouseDragMoveItem = null;
             }
@@ -747,13 +771,14 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         private void _MouseDragMoveDone(MouseEventArgs e)
         {
-            this._MouseCurrentRelativePoint = _GetRelativePoint(e.Location, this._MouseCurrentItem);
-            this._ItemMouseCallStateChangedEvent(this._MouseCurrentItem, GInteractiveChangeState.LeftUp, this._MouseCurrentRelativePoint);
-            if (this._MouseDragMoveItem != null && this._MouseCurrentItem.CanDrag)
+            GActivePosition mouseCurrentItem = this._MouseCurrentItem;
+            this._MouseCurrentRelativePoint = _GetRelativePoint(e.Location, mouseCurrentItem);
+            this._ItemMouseCallStateChangedEvent(mouseCurrentItem, GInteractiveChangeState.LeftUp, this._MouseCurrentRelativePoint);
+            if (this._MouseDragMoveItem != null && mouseCurrentItem.CanDrag)
             {
-                this._MouseCurrentItem.CurrentTime = DateTime.Now;
-                this._ItemMouseCallStateChangedEvent(this._MouseCurrentItem, GInteractiveChangeState.LeftDragMoveDone, this._MouseCurrentRelativePoint);
-                this._ItemMouseCallStateChangedEvent(this._MouseCurrentItem, GInteractiveChangeState.LeftDragMoveEnd);
+                mouseCurrentItem.CurrentTime = DateTime.Now;
+                this._ItemMouseCallStateChangedEvent(mouseCurrentItem, GInteractiveChangeState.LeftDragMoveDone, this._MouseCurrentRelativePoint);
+                this._ItemMouseCallStateChangedEvent(mouseCurrentItem, GInteractiveChangeState.LeftDragMoveEnd);
             }
             this._MouseDragMoveItem = null;
             this._MouseDragState = MouseMoveDragState.None;
@@ -798,19 +823,19 @@ namespace Asol.Tools.WorkScheduler.Components
         /// This offset will be added to MouseLocation (in control coordinates) during drag, and sent to DragMove events.
         /// </summary>
         private Point? _UserDragPointOffset { get; set; }
-
         #endregion
         #region Řízení procesu MouseDragFrame = výběr prvků zarámováním, včetně vykreslení
         private void _MouseDragFrameBegin(MouseEventArgs e)
         {
             // Relativní pozice myši v okamžiku MouseDown, nikoli aktuální pozice (ta už je mimo prostor _CurrentMouseDragStart):
-            this._MouseCurrentRelativePoint = _GetRelativePoint(this._MouseDownAbsolutePoint.Value, this._MouseCurrentItem);
-            if (this._MouseCurrentItem.CanFrameSelect)
+            GActivePosition mouseCurrentItem = this._MouseCurrentItem;
+            this._MouseCurrentRelativePoint = _GetRelativePoint(this._MouseDownAbsolutePoint.Value, mouseCurrentItem);
+            if (mouseCurrentItem.CanFrameSelect)
             {
-                this._MouseCurrentItem.CurrentTime = DateTime.Now;
-                this._MouseDragFrameItem = this._MouseCurrentItem;
+                mouseCurrentItem.CurrentTime = DateTime.Now;
+                this._MouseDragFrameItem = mouseCurrentItem;
                 this._MouseDragFrameSelectedItems = new IInteractiveItem[0];
-                var args = this._ItemMouseCallStateChangedEvent(this._MouseCurrentItem, GInteractiveChangeState.LeftDragFrameBegin, this._MouseCurrentRelativePoint);
+                var args = this._ItemMouseCallStateChangedEvent(mouseCurrentItem, GInteractiveChangeState.LeftDragFrameBegin, this._MouseCurrentRelativePoint);
                 this._MouseDragFrameWorkArea = args.DragFrameWorkArea;
             }
             this._MouseDragStartBounds = null;
@@ -846,6 +871,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="item"></param>
         /// <param name="itemAbsoluteVisibleBounds"></param>
+        /// <param name="frameBounds"></param>
         /// <returns></returns>
         private bool _MouseDragFrameFilterScan(IInteractiveItem item, Rectangle itemAbsoluteVisibleBounds, Rectangle frameBounds)
         {
@@ -856,6 +882,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="item"></param>
         /// <param name="itemAbsoluteVisibleBounds"></param>
+        /// <param name="frameBounds"></param>
         /// <returns></returns>
         private bool _MouseDragFrameFilterAccept(IInteractiveItem item, Rectangle itemAbsoluteVisibleBounds, Rectangle frameBounds)
         {
@@ -920,6 +947,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// When no button pressed, or state is not button-dependent, then unchanged state is returned.
         /// </summary>
         /// <param name="state"></param>
+        /// <param name="isEnabled"></param>
         /// <returns></returns>
         private GInteractiveChangeState _GetStateForCurrentMouseButton(GInteractiveChangeState state, bool isEnabled)
         {
@@ -930,6 +958,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// When no button pressed, or state is not button-dependent, then unchanged state is returned.
         /// </summary>
         /// <param name="state"></param>
+        /// <param name="mouseDownButtons"></param>
+        /// <param name="isEnabled"></param>
         /// <returns></returns>
         private static GInteractiveChangeState _GetStateForMouseButton(GInteractiveChangeState state, MouseButtons? mouseDownButtons, bool isEnabled)
         {
@@ -992,6 +1022,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Return a state (static) after specified change (dynamic event)
         /// </summary>
         /// <param name="change"></param>
+        /// <param name="isEnabled"></param>
         /// <returns></returns>
         private static GInteractiveState _GetStateAfterChange(GInteractiveChangeState change, bool isEnabled)
         {
@@ -1075,6 +1106,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="gcItemPrev"></param>
         /// <param name="gcItemNext"></param>
+        /// <param name="mouseRelativePoint"></param>
         private void _ItemMouseExchange(GActivePosition gcItemPrev, GActivePosition gcItemNext, Point? mouseRelativePoint)
         {
             List<GActivePosition.GActiveItem> leaveList, enterList;
@@ -1124,10 +1156,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// a použije reálnou hodnotu, například <see cref="GInteractiveChangeState.RightDown"/>.
         /// Využívá k tomu metodu <see cref="_GetStateForCurrentMouseButton(GInteractiveChangeState, bool)"/>.</param>
         /// <param name="mouseRelativePoint"></param>
-        /// <param name="dragToArea"></param>
         /// <param name="recurseToSolver"></param>
+        /// <param name="dragToArea"></param>
         /// <param name="userDragPoint"></param>
-        /// <param name="frameWorkArea"></param>
+        /// <param name="fillArgs"></param>
         private GInteractiveChangeStateArgs _ItemMouseCallStateChangedEvent(GActivePosition activePosition, GInteractiveChangeState change,
             Point? mouseRelativePoint = null, bool recurseToSolver = false, Rectangle? dragToArea = null, Point? userDragPoint = null,
             Action<GInteractiveChangeStateArgs> fillArgs = null)
@@ -1159,6 +1191,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Detect Dragging states and call item.DragAction() method.
         /// </summary>
+        /// <param name="item"></param>
         /// <param name="stateArgs"></param>
         private void _ItemMouseCallDragEvent(IInteractiveItem item, GInteractiveChangeStateArgs stateArgs)
         {
@@ -1253,10 +1286,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// When CurrentItem not exists return null.
         /// </summary>
         /// <param name="point"></param>
+        /// <param name="activePosition"></param>
         /// <returns></returns>
-        protected static Point? _GetRelativePoint(Point point, GActivePosition gCurrentItem)
+        protected static Point? _GetRelativePoint(Point point, GActivePosition activePosition)
         {
-            return (gCurrentItem == null ? (Point?)null : (Point?)gCurrentItem.GetRelativePointToCurrentItem(point));
+            return (activePosition == null ? (Point?)null : (Point?)activePosition.GetRelativePointToCurrentItem(point));
         }
         #endregion
         #region Myší proměnné
@@ -1279,7 +1313,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Current item with any mouse-interaction, can be null
         /// </summary>
-        private GActivePosition _MouseCurrentItem { get; set; }
+        private GActivePosition _MouseCurrentItem { get { return this.__MouseCurrentItem; } set { this.__MouseCurrentItem = value; } } private GActivePosition __MouseCurrentItem;
         /// <summary>
         /// Item, which was last clicked.
         /// </summary>
@@ -1533,6 +1567,9 @@ namespace Asol.Tools.WorkScheduler.Components
         private ProgressItem _ProgressItem;
         #endregion
         #region Draw
+        /// <summary>
+        /// true = můžeme kreslit?
+        /// </summary>
         protected override bool CanDraw { get { return (this._DrawState == InteractiveDrawState.Standard || this._DrawState == InteractiveDrawState.InteractiveRepaint); } }
         /// <summary>
         /// Initialize Draw subsystem.
@@ -1690,6 +1727,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected class DrawRequest
         {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
             public DrawRequest()
             {
                 this.ProcessedItems = new Dictionary<uint, IInteractiveItem>();
@@ -1698,6 +1738,13 @@ namespace Asol.Tools.WorkScheduler.Components
                 this.DynamicItems = new List<DrawRequestItem>();
                 this.DrawAllItems = false;
             }
+            /// <summary>
+            /// Konstruktor s daty
+            /// </summary>
+            /// <param name="drawAllItems"></param>
+            /// <param name="drawFrameSelect"></param>
+            /// <param name="toolTipItem"></param>
+            /// <param name="progressItem"></param>
             public DrawRequest(bool drawAllItems, bool drawFrameSelect, ToolTipItem toolTipItem, ProgressItem progressItem)
                 : this()
             {
@@ -1929,7 +1976,7 @@ namespace Asol.Tools.WorkScheduler.Components
             /// </summary>
             public GInteractiveDrawLayer Layer { get; private set; }
             /// <summary>
-            /// Obsahuje true, pokud tento požadavek je určen pro volání metody <see cref="IInteractiveItem.DrawOverChilds(GInteractiveDrawArgs)"/>.
+            /// Obsahuje true, pokud tento požadavek je určen pro volání metody <see cref="IInteractiveItem.DrawOverChilds(GInteractiveDrawArgs, Rectangle, Rectangle)"/>.
             /// Pokud je false, má se volat standardní metoda <see cref="IInteractiveItem.Draw(GInteractiveDrawArgs, Rectangle, Rectangle)"/>.
             /// </summary>
             public bool IsDrawOverChilds { get; private set; }
@@ -2030,7 +2077,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// které jsou instancované na třídě GInteractiveControl, proto je jejich použití velice rychlé.
         /// </summary>
         /// <param name="graphics">Grafika</param>
-        /// <param name="absoluteBounds">Souřadnice v koordinátech Controlu</param>
+        /// <param name="bounds">Souřadnice v koordinátech Controlu</param>
         /// <param name="backColor">Barva pozadí</param>
         /// <param name="enlarge">Použít dané rozšíření</param>
         /// <param name="enlargeL">Rozšíření doleva</param>
@@ -2341,6 +2388,9 @@ namespace Asol.Tools.WorkScheduler.Components
         protected decimal StopwatchAverageTime { get { return (this._StopwatchQueue.Count == 0 ? 0m : this._StopwatchQueue.Average()); } }
         private Queue<decimal> _StopwatchQueue;
         private decimal _StopwatchFrequency;
+        /// <summary>
+        /// Stopky
+        /// </summary>
         protected System.Diagnostics.Stopwatch Stopwatch { get; private set; }
         #endregion
         #region Background Thread: animations, tooltip fader...
@@ -2486,7 +2536,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Add more interactive items.
         /// Does not trigger Draw().
         /// </summary>
-        /// <param name="item"></param>
+        /// <param name="items"></param>
         public void AddItems(params IInteractiveItem[] items)
         {
             foreach (IInteractiveItem item in items)
@@ -2496,7 +2546,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Add more interactive items.
         /// Does not trigger Draw().
         /// </summary>
-        /// <param name="item"></param>
+        /// <param name="items"></param>
         public void AddItems(IEnumerable<IInteractiveItem> items)
         {
             if (items != null)
@@ -2524,28 +2574,85 @@ namespace Asol.Tools.WorkScheduler.Components
             if (this.InteractiveStateChanged != null)
                 this.InteractiveStateChanged(this, e);
         }
+        /// <summary>
+        /// Háček volaný při změně stavu, pro potomky
+        /// </summary>
+        /// <param name="e"></param>
         protected virtual void OnInteractiveStateChanged(GInteractiveChangeStateArgs e) { }
         /// <summary>
         /// Event after change of interactive state
         /// </summary>
         public event GInteractiveChangeStateHandler InteractiveStateChanged;
         #endregion
-        #region Příznak aktuálního zpracování interaktivního procesu
+        #region Provádění interaktivního procesu, příznaky aktuálního zpracování interaktivního procesu
+        /// <summary>
+        /// Metoda zajistí provedení daných akcí pro danou změnu stavu.
+        /// Současně poskytuje error handling (try - catch - trace).
+        /// Akce action1 se provede jen tehdy, pokud na začátku není zpracováván žádný proces (<see cref="InteractiveProcessing"/> je false).
+        /// Akce action2 se provede vždy.
+        /// </summary>
+        /// <param name="changeState"></param>
+        /// <param name="action1"></param>
+        /// <param name="action2"></param>
+        protected void InteractiveAction(GInteractiveChangeState changeState, Action action1, Action action2)
+        {
+            try
+            {
+                bool isProcessing = this.InteractiveProcessing;
+                using (new InteractiveProcessingScope(this, changeState))
+                {
+                    if (!isProcessing)
+                    {
+                        if (action1 != null) action1();
+                    }
+                    if (action2 != null) action2();
+                }
+            }
+            catch (Exception exc)
+            {
+                App.Trace.Exception(exc, "InteractiveAction error; changeState = " + changeState.ToString());
+            }
+        }
         /// <summary>
         /// Obsahuje false v běžném (mrtvém) stavu, obsahuje true pokud právě probíhá obsluha jakékoli interaktivní události
         /// </summary>
-        public bool InteractiveProcessing { get; protected set; }
+        protected bool InteractiveProcessing { get { return this._InteractiveProcessing; } set { this._InteractiveProcessing = value; } } private bool _InteractiveProcessing;
+        /// <summary>
+        /// Akce, která se právě zpracovává
+        /// </summary>
+        protected GInteractiveChangeState? InteractiveProcessingAction { get; set; }
+        /// <summary>
+        /// Třída zajišťující scope zpracování jedné události v controlu <see cref="GInteractiveControl"/>.
+        /// Po dobu tohoto scope je nastaveno <see cref="GInteractiveControl.InteractiveProcessing"/> = true.
+        /// </summary>
         protected class InteractiveProcessingScope : IDisposable
         {
-            public InteractiveProcessingScope(GInteractiveControl control)
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="control"></param>
+            public InteractiveProcessingScope(GInteractiveControl control) : this(control, GInteractiveChangeState.None)
+            { }
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="control"></param>
+            /// <param name="state"></param>
+            public InteractiveProcessingScope(GInteractiveControl control, GInteractiveChangeState state)
             {
                 this._Control = control;
+                this._OldProcessing = control.InteractiveProcessing;
+                this._OldProcessingAction = control.InteractiveProcessingAction;
                 this._Control.InteractiveProcessing = true;
+                this._Control.InteractiveProcessingAction = state;
             }
             private GInteractiveControl _Control;
+            private bool _OldProcessing;
+            private GInteractiveChangeState? _OldProcessingAction;
             void IDisposable.Dispose()
             {
-                this._Control.InteractiveProcessing = false;
+                this._Control.InteractiveProcessingAction = this._OldProcessingAction;
+                this._Control.InteractiveProcessing = this._OldProcessing;
                 this._Control = null;
             }
         }
@@ -2709,7 +2816,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Prefered current item above other items.
         /// Accept disabled items (by parameter withDisabled).
         /// </summary>
+        /// <param name="hostSize"></param>
+        /// <param name="items"></param>
+        /// <param name="prevItem"></param>
         /// <param name="mouseAbsolutePoint"></param>
+        /// <param name="withDisabled"></param>
+        /// <param name="priorityItems"></param>
         /// <returns></returns>
         public static GActivePosition FindItemAtPoint(Size hostSize, List<IInteractiveItem> items, GActivePosition prevItem, Point mouseAbsolutePoint, bool withDisabled, params IInteractiveItem[] priorityItems)
         {
@@ -2720,7 +2832,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Prefered current item above other items.
         /// Accept disabled items (by parameter withDisabled).
         /// </summary>
+        /// <param name="hostSize"></param>
+        /// <param name="itemList"></param>
+        /// <param name="prevItem"></param>
         /// <param name="mouseAbsolutePoint"></param>
+        /// <param name="withDisabled"></param>
+        /// <param name="priorityItems"></param>
         /// <returns></returns>
         private static GActivePosition _FindItemAtPoint(Size hostSize, List<IInteractiveItem> itemList, GActivePosition prevItem, Point mouseAbsolutePoint, bool withDisabled, IInteractiveItem[] priorityItems)
         {
@@ -2750,10 +2867,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Prvek musí být viditelný, musí být (enabled nebo se hledají i non-enabled prvky), musí být aktivní na dané souřadnici.
         /// Metoda prohledává stejným způsobem i Child prvky nalezeného prvku, pokud existují.
         /// </summary>
+        /// <param name="hostSize"></param>
         /// <param name="items"></param>
         /// <param name="mouseAbsolutePoint"></param>
         /// <param name="withDisabled"></param>
-        /// <param name="holdList"></param>
+        /// <param name="holdItems"></param>
         /// <returns></returns>
         private void _FindItemAtPoint(Size hostSize, IInteractiveItem[] items, Point mouseAbsolutePoint, bool withDisabled, GActiveItem[] holdItems)
         {
@@ -2933,6 +3051,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Metoda najde a vrátí prvky, které se nacházejí na daných souřadnicích, a které vyhovují daným filtrům.
         /// </summary>
+        /// <param name="hostSize"></param>
         /// <param name="items"></param>
         /// <param name="frameBounds"></param>
         /// <param name="filterScan"></param>
