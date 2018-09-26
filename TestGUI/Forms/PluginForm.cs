@@ -117,9 +117,20 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         #region Implementace Scheduler.IAppHost
         void IAppHost.CallAppHostFunction(AppHostRequestArgs args)
         {
-            ShowMsg("Rád bych provedl požadovanou akci:~" + args.Request.ToString() + ";~~ale jsem jen obyčejný testovací formulář.");
+            if (NeedMessage(args.Request))
+                ShowMsg("Rád bych provedl požadovanou akci:~" + args.Request.ToString() + ";~~ale jsem jen obyčejný testovací formulář.");
             if (args.CallBackAction != null)
                 this._SendResponse(args, null);
+        }
+        protected static bool NeedMessage(GuiRequest request)
+        {
+            switch (request.Command)
+            {   // Tyto příkazy NEBUDOU hlásit uživateli okno typu "Rád bych provedl požadovanou akci" :
+                case GuiRequest.COMMAND_GraphItemMove:
+                case GuiRequest.COMMAND_CloseWindow:
+                    return false;
+            }
+            return true;
         }
         protected void _SendResponse(AppHostRequestArgs request, AppHostResponseArgs response)
         {
