@@ -1511,14 +1511,4 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
     }
     #endregion
-    #region class InteractiveProperties
-    /// <summary>
-    /// InteractiveProperties : souhrn všech vlastností jednoho interaktivního prvku
-    /// </summary>
-    public class InteractivePropertiesx 
-    {
-
-
-    }
-    #endregion
 }
