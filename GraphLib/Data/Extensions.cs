@@ -400,6 +400,21 @@ namespace Asol.Tools.WorkScheduler.Data
         {
             return ((value & flags) != 0);
         }
+        /// <summary>
+        /// Vrátí hodnotu enumu, kde budou shozeny dané flagy.
+        /// Výsledek je nutno konvertovat z Int32 na daný enum.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="flags"></param>
+        /// <returns></returns>
+        public static int RemoveFlags<T>(this T value, T flags) where T : IConvertible
+        {
+            IFormatProvider p = System.Globalization.NumberFormatInfo.CurrentInfo;
+            int v = value.ToInt32(p);
+            int f = flags.ToInt32(p);
+            int r = v & (Int32.MaxValue ^ f);        // Požadované bity (flags) budou mít hodnotu 0, ostatní zůstanou beze změny
+            return r;
+        }
         #endregion
         #region IEnumerable
         /// <summary>

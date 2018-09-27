@@ -148,21 +148,21 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 int y2 = CalculateLayoutOne(this._BottomPanelIsVisible, y3, y2old, y3 - maxh, y3 - MinGridHeight);
                 int b = y2 - (this._BottomPanelIsVisible ? sp : 0);
 
-                bool isChangeChildItems = (this._LeftPanelTabs.IsVisible != this._LeftPanelIsVisible) ||
-                                          (this._LeftPanelSplitter.IsVisible != this._LeftPanelIsVisible) ||
-                                          (this._MainPanelGrid.IsVisible != this._MainPanelIsVisible) ||
-                                          (this._RightPanelSplitter.IsVisible != this._RightPanelIsVisible) ||
-                                          (this._RightPanelTabs.IsVisible != this._RightPanelIsVisible) ||
-                                          (this._BottomPanelSplitter.IsVisible != this._BottomPanelIsVisible) ||
-                                          (this._BottomPanelTabs.IsVisible != this._BottomPanelIsVisible);
+                bool isChangeChildItems = (this._LeftPanelTabs.Is.Visible != this._LeftPanelIsVisible) ||
+                                          (this._LeftPanelSplitter.Is.Visible != this._LeftPanelIsVisible) ||
+                                          (this._MainPanelGrid.Is.Visible != this._MainPanelIsVisible) ||
+                                          (this._RightPanelSplitter.Is.Visible != this._RightPanelIsVisible) ||
+                                          (this._RightPanelTabs.Is.Visible != this._RightPanelIsVisible) ||
+                                          (this._BottomPanelSplitter.Is.Visible != this._BottomPanelIsVisible) ||
+                                          (this._BottomPanelTabs.Is.Visible != this._BottomPanelIsVisible);
 
-                this._LeftPanelTabs.IsVisible = this._LeftPanelIsVisible;
-                this._LeftPanelSplitter.IsVisible = this._LeftPanelIsVisible;
-                this._MainPanelGrid.IsVisible = this._MainPanelIsVisible;
-                this._RightPanelSplitter.IsVisible = this._RightPanelIsVisible;
-                this._RightPanelTabs.IsVisible = this._RightPanelIsVisible;
-                this._BottomPanelSplitter.IsVisible = this._BottomPanelIsVisible;
-                this._BottomPanelTabs.IsVisible = this._BottomPanelIsVisible;
+                this._LeftPanelTabs.Is.Visible = this._LeftPanelIsVisible;
+                this._LeftPanelSplitter.Is.Visible = this._LeftPanelIsVisible;
+                this._MainPanelGrid.Is.Visible = this._MainPanelIsVisible;
+                this._RightPanelSplitter.Is.Visible = this._RightPanelIsVisible;
+                this._RightPanelTabs.Is.Visible = this._RightPanelIsVisible;
+                this._BottomPanelSplitter.Is.Visible = this._BottomPanelIsVisible;
+                this._BottomPanelTabs.Is.Visible = this._BottomPanelIsVisible;
 
                 if (this._LeftPanelIsVisible)
                 {

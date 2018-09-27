@@ -57,7 +57,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             Size size = this.ClientSize;
             int y = 0;
-            if (this._ToolBar.IsVisible)
+            if (this._ToolBar.Is.Visible)
             {
                 int th = this._ToolBar.Bounds.Height;
                 this._ToolBar.Bounds = new Rectangle(y, 0, size.Width, th);
@@ -98,7 +98,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Bude zobrazován ToolBar?
         /// </summary>
-        public bool ToolBarVisible { get { return this._ToolBar.IsVisible; } set { this._ToolBar.IsVisible = value; this.CalculateLayout(); } }
+        public bool ToolBarVisible { get { return this._ToolBar.Is.Visible; } set { this._ToolBar.Is.Visible = value; this.CalculateLayout(); } }
         /// <summary>
         /// Přidá grupu do toolbaru
         /// </summary>
@@ -130,7 +130,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this._ToolBar = new GToolBar() { Bounds = new Rectangle(0, 0, 1024, 64) };
             this._ToolBar.ToolbarSizeChanged += _ToolBarSizeChanged;
             this.AddItem(this._ToolBar);
-            this._ToolBar.ItemSelectedChange += _ToolBar_ItemSelectedChange;
+            this._ToolBar.ItemCheckedChange += _ToolBar_ItemSelectedChange;
             this._ToolBar.ItemClicked += _ToolBar_ItemClicked;
         }
         /// <summary>

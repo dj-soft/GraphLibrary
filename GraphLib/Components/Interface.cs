@@ -45,54 +45,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         IEnumerable<IInteractiveItem> Childs { get; }
         /// <summary>
-        /// Je prvek interaktivní?
-        /// Pokud je true, pak prvek může být nalezen a aktivován myší.
+        /// Souhrn veškerých vlastností a stylu tohoto prvku.
         /// </summary>
-        Boolean IsInteractive { get; }
-        /// <summary>
-        /// Je prvek viditelný?
-        /// Pokud je true, pak prvek bude vykreslován.
-        /// </summary>
-        Boolean IsVisible { get; set; }
-        /// <summary>
-        /// When true, then item can be interactive (and can be Drawed).
-        /// When false, then item can NOT be interactive, but can be Drawed.
-        /// Is valid only when IsVisible is true. If IsVisible is false, then item can not be nor visible, nor active.
-        /// </summary>
-        Boolean IsEnabled { get; }
-        /// <summary>
-        /// Pokud je true, pak tento prvek může být vybrán = selectován (Click myší, nebo Ctrl+Click myší, nebo zarámováním).
-        /// Hodnota, zda je prvek vybrán je vložena do property <see cref="IsSelected"/>.
-        /// </summary>
-        Boolean IsSelectable { get; }
-        /// <summary>
-        /// Do této property je vkládáno true po výběru prvku, a false po zrušení výběru.
-        /// </summary>
-        Boolean IsSelected { get; set; }
-        /// <summary>
-        /// Je aktuálně zarámován (pro budoucí selectování)?
-        /// Zarámovaný prvek (v procesu hromadného označování myší SelectFrame) má <see cref="IsFramed"/> = true, ale hodnotu <see cref="IsSelected"/> má beze změn.
-        /// Teprve na konci procesu SelectFrame se pro dotčené objekty (které mají <see cref="IsFramed"/> = true) nastaví i <see cref="IsSelected"/> = true.
-        /// </summary>
-        Boolean IsFramed { get; set; }
-        /// <summary>
-        /// Pokud je true, pak tažení myší na tomto prvku nebude interpretováno jako Drag and Drop, ale jako SelectArea.
-        /// Tzn. zahájení akce (Mouse Down + Mouse Move) zahájí SelectArea akci (namísto Drag Drop), začne se vykreslovat SelectFrame (do Interactive vrstvy),
-        /// a začnou se vybírat controly spadající do výběru (které mají <see cref="IsSelectable"/> == true).
-        /// </summary>
-        Boolean IsSelectParent { get; }
-        /// <summary>
-        /// Pokud je true, pak tažení myší na tomto prvku bude interpretováno jako Drag and Drop tohoto prvku.
-        /// </summary>
-        Boolean IsDragEnabled { get; }
-        /// <summary>
-        /// Hold a mouse attention.
-        /// When a item is drawed to Interactive layer (in MouseOver, MouseDrag and in other active states), this is: above other subitem, 
-        /// then is advisable "hold mouse attention" for this item before other items.
-        /// But when active item is drawed under other items, then hold mouse attention is not recommended 
-        /// (in example for back area of movable item, before its grips).
-        /// </summary>
-        Boolean HoldMouse { get; }
+        InteractiveProperties Is { get; }
         /// <summary>
         /// Order for this item
         /// </summary>
@@ -108,7 +63,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Obsahuje vrstvy, do nichž se tento objekt kreslí standardně.
         /// Tuto hodnotu vloží metoda <see cref="InteractiveObject.Repaint()"/> do <see cref="RepaintToLayers"/>.
-        /// Vrstva <see cref="GInteractiveDrawLayer.None"/> není vykreslována (objekt je tedy vždy neviditelný), ale na rozdíl od <see cref="IsVisible"/> je takový objekt interaktivní.
+        /// Vrstva <see cref="GInteractiveDrawLayer.None"/> není vykreslována (objekt je tedy vždy neviditelný), ale na rozdíl od <see cref="InteractiveProperties.Visible"/> je takový objekt interaktivní.
         /// </summary>
         GInteractiveDrawLayer StandardDrawToLayer { get; }
         /// <summary>
@@ -157,6 +112,19 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="absoluteBounds">Absolutní souřadnice tohoto prvku, sem by se mělo fyzicky kreslit</param>
         /// <param name="absoluteVisibleBounds">Absolutní souřadnice tohoto prvku, oříznuté do viditelné oblasti.</param>
         void DrawOverChilds(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds);
+
+
+        /// <summary>
+        /// Do této property je vkládáno true po výběru prvku, a false po zrušení výběru.
+        /// </summary>
+        Boolean IsSelected { get; set; }
+        /// <summary>
+        /// Je aktuálně zarámován (pro budoucí selectování)?
+        /// Zarámovaný prvek (v procesu hromadného označování myší SelectFrame) má <see cref="IsFramed"/> = true, ale hodnotu <see cref="IsSelected"/> má beze změn.
+        /// Teprve na konci procesu SelectFrame se pro dotčené objekty (které mají <see cref="IsFramed"/> = true) nastaví i <see cref="IsSelected"/> = true.
+        /// </summary>
+        Boolean IsFramed { get; set; }
+        
     }
     /// <summary>
     /// Interface předepisující členy pro typ, který je parentem interaktivního prvků.
@@ -249,11 +217,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Je aktuálně selectován?
         /// </summary>
-        public virtual bool Selected { get { return this.GetBitValue(BitSelected); } set { this.SetBitValue(BitSelected, value); } }
-        /// <summary>
-        /// Je aktuálně zarámován (pro budoucí selectování)?
-        /// </summary>
-        public virtual bool Framed { get { return this.GetBitValue(BitFramed); } set { this.SetBitValue(BitFramed, value); } }
+        public virtual bool IsChecked { get { return this.GetBitValue(BitSelected); } set { this.SetBitValue(BitSelected, value); } }
         /// <summary>
         /// Může zahájit akci SelectFrame?
         /// </summary>
@@ -271,6 +235,94 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Suppressed events?
         /// </summary>
         public bool SuppressEvents { get { return this.GetBitValue(BitSuppressEvents); } set { this.SetBitValue(BitSuppressEvents, value); } }
+
+        /// <summary>
+        /// Prvek je obecně myšoaktivní
+        /// </summary>
+        public bool MouseActive { get { return this.GetBitValue(xxx); } set { this.SetBitValue(xxx, value); } }
+        /// <summary>
+        /// Prvek chce dostávat i eventy o každém pohybu myši nad prvkem (MouseOver)
+        /// </summary>
+        public bool MouseMoveOver { get { return this.GetBitValue(xxx); } set { this.SetBitValue(xxx, value); } }
+        /// <summary>
+        /// Prvek může dostávat Mouse Click eventy
+        /// </summary>
+        public bool MouseClick { get { return this.GetBitValue(xxx); } set { this.SetBitValue(xxx, value); } }
+        /// <summary>
+        /// Prvek může dostávat Mouse DoubleClick eventy
+        /// </summary>
+        public bool MouseDoubleClick { get { return this.GetBitValue(xxx); } set { this.SetBitValue(xxx, value); } }
+        /// <summary>
+        /// Prvek může dostávat Mouse LongClick eventy
+        /// </summary>
+        public bool MouseLongClick { get { return this.GetBitValue(xxx); } set { this.SetBitValue(xxx, value); } }
+        
+        /// <summary>
+        /// Call event MouseOver for MouseMove for each pixel (none = call only MouseEnter and MouseLeave)
+        /// </summary>
+        CallMouseOver = 0x0010,
+        /// <summary>
+        /// Area can be dragged
+        /// </summary>
+        Drag = 0x0020,
+        /// <summary>
+        /// Enables move of item
+        /// </summary>
+        DragMove = 0x0100,
+        /// <summary>
+        /// Enables resize of item in X axis
+        /// </summary>
+        DragResizeX = 0x0200,
+        /// <summary>
+        /// Enables resize of item in Y axis
+        /// </summary>
+        DragResizeY = 0x0400,
+        /// <summary>
+        /// Item can be selected
+        /// </summary>
+        Select = 0x1000,
+        /// <summary>
+        /// Item can be dragged only in selected state
+        /// </summary>
+        DragOnlySelected = 0x2000,
+        /// <summary>
+        /// During drag and resize operation: Draw ghost image as Interactive layer (=Ghost is moved with mouse on Interactive layer, original image is on Standard layer)
+        /// Without values (DragDrawGhostInteractive and DragDrawGhostOriginal) is during Drag operation item drawed to Interactive layer, and Original bounds are empty (no draw to Standard layer)
+        /// </summary>
+        DragDrawGhostInteractive = 0x4000,
+        /// <summary>
+        /// During drag and resize operation: Draw ghost image into Standard layer (=Standard image of control is moved with mouse on Interactive layer, Ghost image is painted on Standard layer)
+        /// Without values (DragDrawGhostInteractive and DragDrawGhostOriginal) is during Drag operation item drawed to Interactive layer, and Original bounds are empty (no draw to Standard layer)
+        /// </summary>
+        DragDrawGhostOriginal = 0x8000,
+        /// <summary>
+        /// Can accept an keyboard input.
+        /// Note: There is no need to set the KeyboardInput flag to accept the cancellation of Drag action (which is: Escape key during Drag)
+        /// </summary>
+        KeyboardInput = 0x00010000,
+        /// <summary>
+        /// Enables resize of item in X and Y axis
+        /// </summary>
+        DragResize = DragResizeX | DragResizeY | Drag,
+        /// <summary>
+        /// Enables move and resize of item
+        /// </summary>
+        DragMoveResize = DragMove | DragResizeX | DragResizeY | Drag,
+        /// <summary>
+        /// Standard Mouse = Mouse | Click | LongClick | DoubleClick | Drag | Select. 
+        /// Not contain CallMouseOver.
+        /// </summary>
+        StandardMouseInteractivity = Mouse | Click | LongClick | DoubleClick | Drag | Select,
+        /// <summary>
+        /// All Mouse = StandardMouseInteractivity + CallMouseOver (= Mouse | Click | LongClick | DoubleClick | Drag | Select | CallMouseOver).
+        /// </summary>
+        AllMouseInteractivity = StandardMouseInteractivity | CallMouseOver,
+        /// <summary>
+        /// StandardKeyboardInetractivity = StandardMouseInteractivity except Drag + KeyboardInput (= Mouse | Click | LongClick | DoubleClick | Select | KeyboardInput)
+        /// </summary>
+        StandardKeyboardInteractivity = Mouse | Click | LongClick | DoubleClick | Select | KeyboardInput
+
+
         /// <summary>
         /// Default value for new instances
         /// </summary>
@@ -299,9 +351,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public const UInt32 BitSelected = 0x0020;
         /// <summary>
-        /// Konkrétní bit pro úschovu konkrétní hodnoty
+        /// 
         /// </summary>
-        public const UInt32 BitFramed = 0x0040;
+        public const UInt32 Bit____ = 0x0040;
         /// <summary>
         /// Konkrétní bit pro úschovu konkrétní hodnoty
         /// </summary>
@@ -1141,14 +1193,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Stisknutí levého (hlavního) tlačítka myši.
         /// Po této akci může následovat akce Drag and Drop anebo Select Frame. 
         /// Anebo prosté zvednutí myši <see cref="LeftUp"/>,
-        /// následované <see cref="LeftDoubleClick"/>, nebo <see cref="LeftLongClick"/>, nebo <see cref="LeftClick"/>, podle stylu kliknutí.
+        /// následované <see cref="LeftDoubleClick"/>, nebo <see cref="LeftLongClick"/>, nebo (<see cref="LeftClick"/> nebo <see cref="LeftClickSelected"/>), podle stylu kliknutí a vlastností.
         /// </summary>
         LeftDown,
         /// <summary>
         /// Zvednutí levého (hlavního) tlačítka myši.
         /// Tato událost je volána jen tehdy, když neprobíhal proces Drag and Drop a ani Select Frame.
         /// Po této události okamžitě bude volána jedna z akcí: 
-        /// <see cref="LeftDoubleClick"/>, nebo <see cref="LeftLongClick"/>, nebo <see cref="LeftClick"/>, podle stylu kliknutí.
+        /// <see cref="LeftDoubleClick"/>, nebo <see cref="LeftLongClick"/>, nebo (<see cref="LeftClick"/> nebo <see cref="LeftClickSelected"/>), podle stylu kliknutí a vlastností.
         /// </summary>
         LeftUp,
         /// <summary>
@@ -1169,6 +1221,16 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Před touto událostí je vyvolána událost <see cref="LeftUp"/>.
         /// </summary>
         LeftClick,
+
+        /// <summary>
+        /// Změna hodnoty <see cref="IInteractiveItem.IsSelected"/> pomocí levého tlačítka myši.
+        /// Provádí se namísto akce <see cref="LeftClick"/>, pro objekt který má nastaveno <see cref="InteractiveProperties.Selectable"/> == true.
+        /// Na takovém objektu tedy neproběhne akce <see cref="LeftClick"/>, ale jen <see cref="LeftClickSelected"/>!
+        /// Hodnota <see cref="IInteractiveItem.IsSelected"/> je již změněna, proběhla i metoda Repaint() na objektu.
+        /// Aplikace nemusí již nijak reagovat, ale může.
+        /// Před touto událostí je vyvolána událost <see cref="LeftUp"/>.
+        /// </summary>
+        LeftClickSelected,
 
         /// <summary>
         /// Událost je volána v okamžiku, kdy je jisté, že začíná proces DragMove na levé myši.

@@ -152,23 +152,6 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             this.Graph.GraphItemLeftLongClick(e, this._Group, this._Owner, this._Position);
         }
-        /// <summary>
-        /// true = prvek je vybrán
-        /// </summary>
-        public override bool IsSelected
-        {
-            get { return base.IsSelected; }
-            set
-            {
-                bool oldValue = base.IsSelected;
-                bool newValue = value;
-                if (oldValue != newValue)
-                {
-                    base.IsSelected = newValue;
-                    this.Repaint();
-                }
-            }
-        }
         #endregion
         #region Přetahování (Drag and Drop) : týká se výhradně prvků typu Group!
         /// <summary>

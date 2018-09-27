@@ -211,7 +211,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         }
         private static void _PrepareChildOne(IInteractiveItem item, IInteractiveParent parent, Rectangle itemBounds, List<IInteractiveItem> childList, ref Point lastPoint)
         {
-            if (item == null || !item.IsVisible) return;
+            if (item == null || !item.Is.Visible) return;
             if (item.Parent == null) item.Parent = parent;
             if (item.Bounds != itemBounds) item.Bounds = itemBounds;
             childList.Add(item);

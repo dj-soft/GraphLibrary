@@ -344,7 +344,7 @@ namespace Asol.Tools.WorkScheduler.Components
             if ((item.Style & GInteractiveStyles.KeyboardInput) != 0)
             {
                 GInteractiveChangeState realChange = change;
-                GInteractiveState targetState = _GetStateAfterChange(realChange, item.IsEnabled);
+                GInteractiveState targetState = _GetStateAfterChange(realChange, item.Is.Enabled);
                 BoundsInfo boundsInfo = BoundsInfo.CreateForChild(item);
                 GInteractiveChangeStateArgs stateArgs = new GInteractiveChangeStateArgs(boundsInfo, realChange, targetState, this.FindNewItemAtPoint, previewArgs, keyArgs, keyPressArgs);
                 stateArgs.UserDragPoint = null;
@@ -372,7 +372,7 @@ namespace Asol.Tools.WorkScheduler.Components
         #region Myš (události z WinForm Controlu, jejich řešení v GInteractiveControl)
         private void _MouseEventsInit()
         {
-            this._MouseCurrentItem = null;
+            this._CurrentActiveItem = null;
             this._MouseDragMoveItem = null;
             this._DragStartSize = SystemInformation.DragSize;
         }
@@ -472,8 +472,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="scope"></param>
         private void _MouseDragStartDetect(MouseEventArgs e, ITraceScope scope)
         {
-            GActivePosition mouseCurrentItem = this._MouseCurrentItem;
-            if (mouseCurrentItem.CanFrameSelect)
+            GActivePosition mouseCurrentItem = this._CurrentActiveItem;
+            if (mouseCurrentItem.ItemIsSelectParent)
             {   // Aktuální prvek podporuje Select pomocí Frame (tzn. má vlastnost <see cref="IInteractiveItem.IsSelectParent"/>)
                 this._MouseDragState = MouseMoveDragState.DragFrame;
                 this._MouseDragFrameBegin(e);
@@ -655,96 +655,115 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         private void _MouseOver(MouseEventArgs e)
         {
-            GActivePosition mouseCurrentItem = this._MouseCurrentItem;
+            GActivePosition oldActiveItem = this._CurrentActiveItem;
             if (e != null)
             {
-                GActivePosition gci = this.FindActivePositionAtPoint(e.Location, true);
-                this._ItemMouseExchange(mouseCurrentItem, gci, this._MouseCurrentRelativePoint);
+                GActivePosition newActiveItem = this.FindActivePositionAtPoint(e.Location, true);
+                this._ItemMouseExchange(oldActiveItem, newActiveItem, this._MouseCurrentRelativePoint);
                 this._ToolTipMouseMove(this._MouseCurrentAbsolutePoint);
             }
             else
             {
                 this._MouseCurrentRelativePoint = null;
-                this._ItemMouseExchange(mouseCurrentItem, null, null);
+                this._ItemMouseExchange(oldActiveItem, null, null);
                 this._ActivateCursor(SysCursorType.Default);
             }
         }
         private void _MouseFell(MouseEventArgs e)
         {
-            GActivePosition gci = this.FindActivePositionAtPoint(e.Location, false);
-
-            GActivePosition mouseCurrentItem = this._MouseCurrentItem;
-            this._ItemMouseExchange(mouseCurrentItem, gci, this._MouseCurrentRelativePoint);
-            this._ItemKeyboardExchange(this._KeyboardCurrentItem, gci.ActiveItem, false);
+            GActivePosition oldActiveItem = this._CurrentActiveItem;
+            GActivePosition newActiveItem = this.FindActivePositionAtPoint(e.Location, false);
+            newActiveItem.CurrentStateFill(e.Location);
+            this._ItemMouseExchange(oldActiveItem, newActiveItem, this._MouseCurrentRelativePoint);
+            this._ItemKeyboardExchange(this._KeyboardCurrentItem, newActiveItem.ActiveItem, false);
 
             this._MouseDownAbsolutePoint = e.Location;
             this._MouseDownTime = DateTime.Now;
             this._MouseDownButtons = e.Button;
             this._MouseDragStartBounds = e.Location.CreateRectangleFromCenter(this._DragStartSize);
             this._MouseDragMoveItemOffset = null;
-            this._ItemMouseCallStateChangedEvent(mouseCurrentItem, GInteractiveChangeState.LeftDown, this._MouseCurrentRelativePoint);
+            this._ItemMouseCallStateChangedEvent(newActiveItem, GInteractiveChangeState.LeftDown, newActiveItem.CurrentMouseRelativePoint);
         }
+        /// <summary>
+        /// Voláno při zvednutí tlačítka myši (=konec kliknutí), v situaci kdy NEPROBÍHALA žádná akce "Drag and Drop", ani "Drag and Frame". 
+        /// Jde o prosté kliknutí na místě.
+        /// Zde se řeší: DoubleClick, LongClick, LeftClickSelect, Click, Kontextové menu.
+        /// </summary>
+        /// <param name="e"></param>
         private void _MouseRaise(MouseEventArgs e)
         {
-            GActivePosition mouseCurrentItem = this._MouseCurrentItem;
-            if (mouseCurrentItem != null)
+            GActivePosition oldActiveItem = this._CurrentActiveItem;
+            MouseButtons mouseButtons = (this._MouseDownButtons.HasValue ? this._MouseDownButtons.Value : MouseButtons.None);
+            bool mouseButtonsLeft = (mouseButtons == MouseButtons.Left);
+            bool mouseButtonsRight = (mouseButtons == MouseButtons.Right);
+            Keys modifierKeys = Control.ModifierKeys;
+            if (oldActiveItem != null)
             {
-                mouseCurrentItem.CurrentTime = DateTime.Now;
-                this._MouseCurrentRelativePoint = this._GetRelativePointToCurrentItem(e.Location);
-                this._ItemMouseCallStateChangedEvent(mouseCurrentItem, GInteractiveChangeState.LeftUp, this._MouseCurrentRelativePoint);
-                if (mouseCurrentItem.CanDoubleClick && GActivePosition.IsDoubleClick(this._MouseClickedItem, mouseCurrentItem))
-                {
-                    this._ItemMouseCallStateChangedEvent(mouseCurrentItem, GInteractiveChangeState.LeftDoubleClick, this._MouseCurrentRelativePoint);
+                oldActiveItem.CurrentStateFill(e.Location);
+
+                this._ItemMouseCallStateChangedEvent(oldActiveItem, GInteractiveChangeState.LeftUp, oldActiveItem.CurrentMouseRelativePoint);
+                if (oldActiveItem.CanDoubleClick && GActivePosition.IsDoubleClick(this._MouseClickedItem, oldActiveItem))
+                {   // Double click:
+                    this._ItemMouseCallStateChangedEvent(oldActiveItem, GInteractiveChangeState.LeftDoubleClick, oldActiveItem.CurrentMouseRelativePoint);
                 }
-                else if (mouseCurrentItem.CanLongClick && GActivePosition.IsLongClick(this._MouseDownTime, mouseCurrentItem))
-                {
-                    this._ItemMouseCallStateChangedEvent(mouseCurrentItem, GInteractiveChangeState.LeftLongClick, this._MouseCurrentRelativePoint);
-                    if (this._MouseDownButtons == MouseButtons.Left || this._MouseDownButtons == MouseButtons.Right)
-                        this._ItemMouseCallContextMenu(mouseCurrentItem, GInteractiveChangeState.LeftLongClick, this._MouseCurrentRelativePoint);
+                else if (oldActiveItem.CanLongClick && GActivePosition.IsLongClick(this._MouseDownTime, oldActiveItem))
+                {   // Long click:
+                    this._ItemMouseCallStateChangedEvent(oldActiveItem, GInteractiveChangeState.LeftLongClick, oldActiveItem.CurrentMouseRelativePoint);
+                    if (mouseButtonsLeft || mouseButtonsRight)
+                        this._ItemMouseCallContextMenu(oldActiveItem, GInteractiveChangeState.LeftLongClick, oldActiveItem.CurrentMouseRelativePoint);
                 }
-                else if (mouseCurrentItem.CanClick)
-                {
-                    this._ItemMouseCallStateChangedEvent(mouseCurrentItem, GInteractiveChangeState.LeftClick, this._MouseCurrentRelativePoint);
-                    if (this._MouseDownButtons == MouseButtons.Right)
-                        this._ItemMouseCallContextMenu(mouseCurrentItem, GInteractiveChangeState.LeftLongClick, this._MouseCurrentRelativePoint);
+                else if (oldActiveItem.CanClick)
+                {   // Single click:
+                    if (mouseButtonsLeft && oldActiveItem.ItemIsSelectable)
+                        this._ItemMouseLeftClickSelect(oldActiveItem, modifierKeys);
+                    else
+                        this._ItemMouseCallStateChangedEvent(oldActiveItem, GInteractiveChangeState.LeftClick, oldActiveItem.CurrentMouseRelativePoint);
+                    if (mouseButtonsRight)
+                        this._ItemMouseCallContextMenu(oldActiveItem, GInteractiveChangeState.LeftClick, oldActiveItem.CurrentMouseRelativePoint);
                 }
-                this._MouseClickedItem = mouseCurrentItem;
+                this._MouseClickedItem = oldActiveItem;
             }
             this._MouseDownReset();
         }
+        /// <summary>
+        /// Kolečko myši
+        /// </summary>
+        /// <param name="e"></param>
         private void _MouseOneWheel(MouseEventArgs e)
         {
-            GActivePosition gci = this.FindActivePositionAtPoint(e.Location, false);
-            GActivePosition mouseCurrentItem = this._MouseCurrentItem;
-            this._ItemMouseExchange(mouseCurrentItem, gci, this._MouseCurrentRelativePoint);
+            GActivePosition oldActiveItem = this._CurrentActiveItem;
+            GActivePosition newActiveItem = this.FindActivePositionAtPoint(e.Location, false);
+            newActiveItem.CurrentStateFill(e.Location);
+            this._ItemMouseExchange(oldActiveItem, newActiveItem, this._MouseCurrentRelativePoint);
             GInteractiveChangeState change = (e.Delta > 0 ? GInteractiveChangeState.WheelUp : GInteractiveChangeState.WheelDown);
-            this._ItemMouseCallStateChangedEvent(mouseCurrentItem, change, this._MouseCurrentRelativePoint, recurseToSolver: true);   // recurseToSolver = true => opakovat volání akce, dokud ji některý prvek v hierarchii nevyřeší.
+            this._ItemMouseCallStateChangedEvent(newActiveItem, change, newActiveItem.CurrentMouseRelativePoint, recurseToSolver: true);   // recurseToSolver = true => opakovat volání akce, dokud ji některý prvek v hierarchii nevyřeší.
         }
         #endregion
         #region Řízení procesu MouseDragMove = přesouvání prvku Drag and Drop
         private void _MouseDragMoveBegin(MouseEventArgs e)
         {
             // Relativní pozice myši v okamžiku MouseDown, nikoli aktuální pozice (ta už je přesunutá = mimo prostor _CurrentMouseDragStart):
-            GActivePosition mouseCurrentItem = this._MouseCurrentItem;
-            this._MouseCurrentRelativePoint = _GetRelativePoint(this._MouseDownAbsolutePoint.Value, mouseCurrentItem);
+            GActivePosition mouseCurrentItem = this._CurrentActiveItem;
+            Point downPoint = this._MouseDownAbsolutePoint.Value;
+            this._MouseCurrentRelativePoint = _GetRelativePoint(downPoint, mouseCurrentItem);
             if (mouseCurrentItem.CanDrag)
             {
-                mouseCurrentItem.CurrentTime = DateTime.Now;
+                mouseCurrentItem.CurrentStateFill(downPoint);
                 this._MouseDragMoveItem = mouseCurrentItem;
                 this._MouseDragMoveItemOriginBounds = mouseCurrentItem.ActiveItem.Bounds;
                 var stateArgs = this._ItemMouseCallStateChangedEvent(mouseCurrentItem, GInteractiveChangeState.LeftDragMoveBegin, this._MouseCurrentRelativePoint);
                 if (stateArgs.UserDragPoint.HasValue)
-                    this._UserDragPointOffset = stateArgs.UserDragPoint.Value.Sub(this._MouseDownAbsolutePoint.Value);
+                    this._UserDragPointOffset = stateArgs.UserDragPoint.Value.Sub(downPoint);
             }
-            this._MouseDragMoveItemOffset = this._GetRelativePointToCurrentItem(this._MouseDownAbsolutePoint.Value);
+            this._MouseDragMoveItemOffset = this._GetRelativePointToCurrentItem(downPoint);
             this._MouseDragStartBounds = null;
         }
         private void _MouseDragMoveStep(MouseEventArgs e)
         {
-            GActivePosition mouseCurrentItem = this._MouseCurrentItem;
+            GActivePosition mouseCurrentItem = this._CurrentActiveItem;
             if (this._MouseDragMoveItem != null && mouseCurrentItem.CanDrag)
             {
-                mouseCurrentItem.CurrentTime = DateTime.Now;
+                mouseCurrentItem.CurrentStateFill(e.Location);
                 Point? userDragPoint = null;
                 if (this._UserDragPointOffset.HasValue)
                     userDragPoint = e.Location.Add(this._UserDragPointOffset.Value);
@@ -757,10 +776,10 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         private void _MouseDragMoveCancel()
         {
-            GActivePosition mouseCurrentItem = this._MouseCurrentItem;
+            GActivePosition mouseCurrentItem = this._CurrentActiveItem;
             if (this._MouseDragMoveItem != null && mouseCurrentItem.CanDrag)
             {
-                mouseCurrentItem.CurrentTime = DateTime.Now;
+                mouseCurrentItem.CurrentStateFill(null);
                 this._ItemMouseCallStateChangedEvent(mouseCurrentItem, GInteractiveChangeState.LeftDragMoveCancel);
                 this._ItemMouseCallStateChangedEvent(mouseCurrentItem, GInteractiveChangeState.LeftDragMoveEnd);
                 this._RepaintAllItems = true;
@@ -771,12 +790,12 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         private void _MouseDragMoveDone(MouseEventArgs e)
         {
-            GActivePosition mouseCurrentItem = this._MouseCurrentItem;
+            GActivePosition mouseCurrentItem = this._CurrentActiveItem;
             this._MouseCurrentRelativePoint = _GetRelativePoint(e.Location, mouseCurrentItem);
             this._ItemMouseCallStateChangedEvent(mouseCurrentItem, GInteractiveChangeState.LeftUp, this._MouseCurrentRelativePoint);
             if (this._MouseDragMoveItem != null && mouseCurrentItem.CanDrag)
             {
-                mouseCurrentItem.CurrentTime = DateTime.Now;
+                mouseCurrentItem.CurrentStateFill(e.Location);
                 this._ItemMouseCallStateChangedEvent(mouseCurrentItem, GInteractiveChangeState.LeftDragMoveDone, this._MouseCurrentRelativePoint);
                 this._ItemMouseCallStateChangedEvent(mouseCurrentItem, GInteractiveChangeState.LeftDragMoveEnd);
             }
@@ -824,19 +843,31 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         private Point? _UserDragPointOffset { get; set; }
         #endregion
-        #region Řízení procesu MouseDragFrame = výběr prvků zarámováním, včetně vykreslení
+        #region Řízení procesu LeftClick => Select, a MouseDragFrame => výběr prvků zarámováním, včetně vykreslení
+        /// <summary>
+        /// Uživatel provedl LeftClick na prvku, který má nastaveno <see cref="InteractiveProperties.Selectable"/>, proto by měl být změněn stav <see cref="IInteractiveItem.IsSelected"/>.
+        /// </summary>
+        /// <param name="newActiveItem"></param>
+        /// <param name="modifierKeys"></param>
+        private void _ItemMouseLeftClickSelect(GActivePosition newActiveItem, Keys modifierKeys)
+        {
+            bool leaveOther = modifierKeys.HasFlag(Keys.Control);
+            this.Selector.ChangeSelection(newActiveItem.ActiveItem, leaveOther);
+            this._ItemMouseCallStateChangedEvent(newActiveItem, GInteractiveChangeState.LeftDragFrameSelect, newActiveItem.CurrentMouseRelativePoint);
+        }
         private void _MouseDragFrameBegin(MouseEventArgs e)
         {
             // Relativní pozice myši v okamžiku MouseDown, nikoli aktuální pozice (ta už je mimo prostor _CurrentMouseDragStart):
-            GActivePosition mouseCurrentItem = this._MouseCurrentItem;
+            GActivePosition mouseCurrentItem = this._CurrentActiveItem;
+            Point downPoint = this._MouseDownAbsolutePoint.Value;
             this._MouseCurrentRelativePoint = _GetRelativePoint(this._MouseDownAbsolutePoint.Value, mouseCurrentItem);
-            if (mouseCurrentItem.CanFrameSelect)
+            if (mouseCurrentItem.ItemIsSelectParent)
             {
-                mouseCurrentItem.CurrentTime = DateTime.Now;
+                mouseCurrentItem.CurrentStateFill(downPoint);
                 this._MouseDragFrameItem = mouseCurrentItem;
                 this._MouseDragFrameSelectedItems = new IInteractiveItem[0];
-                var args = this._ItemMouseCallStateChangedEvent(mouseCurrentItem, GInteractiveChangeState.LeftDragFrameBegin, this._MouseCurrentRelativePoint);
-                this._MouseDragFrameWorkArea = args.DragFrameWorkArea;
+                var stateArgs = this._ItemMouseCallStateChangedEvent(mouseCurrentItem, GInteractiveChangeState.LeftDragFrameBegin, this._MouseCurrentRelativePoint);
+                this._MouseDragFrameWorkArea = stateArgs.DragFrameWorkArea;
             }
             this._MouseDragStartBounds = null;
         }
@@ -858,8 +889,10 @@ namespace Asol.Tools.WorkScheduler.Components
             IInteractiveItem[] newItems, oldItems;
             currentFrameSelectedItems.GetDifferentialArray(this._MouseDragFrameSelectedItems, i => i.Id, out newItems, out oldItems);
 
+            // qqq;
+
             foreach (IInteractiveItem newItem in newItems)
-                newItem.IsSelected = newItem.IsSelectable;
+                newItem.IsSelected = newItem.Is.Selectable;
 
             foreach (IInteractiveItem oldItem in oldItems)
                 oldItem.IsSelected = false;
@@ -875,7 +908,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         private bool _MouseDragFrameFilterScan(IInteractiveItem item, Rectangle itemAbsoluteVisibleBounds, Rectangle frameBounds)
         {
-            return (item.IsVisible && item.IsEnabled);
+            return (item.Is.Visible && item.Is.Enabled);
         }
         /// <summary>
         /// Metoda vrací true, pokud daný prvek má být akceptován do výstupního pole DragFrame
@@ -886,7 +919,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         private bool _MouseDragFrameFilterAccept(IInteractiveItem item, Rectangle itemAbsoluteVisibleBounds, Rectangle frameBounds)
         {
-            if (!(item.IsVisible && item.IsEnabled && item.IsSelectable)) return false;
+            if (!(item.Is.Visible && item.Is.Enabled && item.Is.Selectable)) return false;
             int itemPixels = itemAbsoluteVisibleBounds.GetArea();
             Rectangle selectedBounds = Rectangle.Intersect(itemAbsoluteVisibleBounds, frameBounds);
             int selectedPixels = selectedBounds.GetArea();
@@ -1045,6 +1078,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 case GInteractiveChangeState.LeftDragFrameDone: return GInteractiveState.MouseOver;
                 case GInteractiveChangeState.LeftUp: return GInteractiveState.MouseOver;
                 case GInteractiveChangeState.LeftClick: return GInteractiveState.MouseOver;
+                case GInteractiveChangeState.LeftClickSelected: return GInteractiveState.MouseOver;
                 case GInteractiveChangeState.LeftLongClick: return GInteractiveState.MouseOver;
                 case GInteractiveChangeState.LeftDoubleClick: return GInteractiveState.MouseOver;
                 case GInteractiveChangeState.RightDown: return GInteractiveState.RightDown;
@@ -1102,15 +1136,17 @@ namespace Asol.Tools.WorkScheduler.Components
             this._ItemMouseExchange(gcItemPrev, gcItemNext, null);
         }
         /// <summary>
-        /// Call events MouseLeave and MouseEnter when neccessary
+        /// Zajistí přechod mezi dosud aktivním prvkem (oldActiveItem) a nově aktivním prvkem (newActiveItem).
+        /// Tedy zajistí vyvolání eventů MouseLeave a MouseEnter pro prvky, které to potřebují.
+        /// Nakonec uloží (newActiveItem) do <see cref="_CurrentActiveItem"/>.
         /// </summary>
-        /// <param name="gcItemPrev"></param>
-        /// <param name="gcItemNext"></param>
+        /// <param name="oldActiveItem"></param>
+        /// <param name="newActiveItem"></param>
         /// <param name="mouseRelativePoint"></param>
-        private void _ItemMouseExchange(GActivePosition gcItemPrev, GActivePosition gcItemNext, Point? mouseRelativePoint)
+        private void _ItemMouseExchange(GActivePosition oldActiveItem, GActivePosition newActiveItem, Point? mouseRelativePoint)
         {
             List<GActivePosition.GActiveItem> leaveList, enterList;
-            GActivePosition.MapExchange(gcItemPrev, gcItemNext, out leaveList, out enterList);
+            GActivePosition.MapExchange(oldActiveItem, newActiveItem, out leaveList, out enterList);
 
             foreach (GActivePosition.GActiveItem activeItem in leaveList)
                 this._CallItemStateChangedEventEnterLeave(activeItem, GInteractiveChangeState.MouseLeave);
@@ -1118,10 +1154,10 @@ namespace Asol.Tools.WorkScheduler.Components
             foreach (GActivePosition.GActiveItem activeItem in enterList)
                 this._CallItemStateChangedEventEnterLeave(activeItem, GInteractiveChangeState.MouseEnter);
 
-            if (gcItemNext != null && gcItemNext.CanOver)
-                this._ItemMouseCallStateChangedEvent(gcItemNext, GInteractiveChangeState.MouseOver, mouseRelativePoint);
+            if (newActiveItem != null && newActiveItem.CanOver)
+                this._ItemMouseCallStateChangedEvent(newActiveItem, GInteractiveChangeState.MouseOver, mouseRelativePoint);
 
-            this._MouseCurrentItem = gcItemNext;
+            this._CurrentActiveItem = newActiveItem;
         }
         /// <summary>
         /// Metoda zavolá klíčovou událost <see cref="IInteractiveItem.AfterStateChanged(GInteractiveChangeStateArgs)"/> pro aktivní prvek dle parametru "item", 
@@ -1132,7 +1168,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="change"></param>
         private void _CallItemStateChangedEventEnterLeave(GActivePosition.GActiveItem activeItem, GInteractiveChangeState change)
         {
-            bool isEnabled = activeItem.Item.IsEnabled;
+            bool isEnabled = activeItem.Item.Is.Enabled;
             GInteractiveChangeState realChange = this._GetStateForCurrentMouseButton(change, isEnabled);
             var targetState = _GetStateAfterChange(realChange, isEnabled);
             GInteractiveChangeStateArgs stateArgs = new GInteractiveChangeStateArgs(activeItem.BoundsInfo, realChange, targetState, this.FindNewItemAtPoint);
@@ -1231,15 +1267,15 @@ namespace Asol.Tools.WorkScheduler.Components
         private void _MouseAllReset()
         {
             this._MouseDownReset();
-            this._MouseCurrentItem = null;
+            this._CurrentActiveItem = null;
             this._MouseCurrentRelativePoint = null;
             this._CurrentCursorType = null;
         }
         /// <summary>
         /// Vytvoří a vrátí instanci <see cref="GActivePosition"/>, která bude obsahovat plnou cestu k prvku, který je na dané absolutní souřadnici.
-        /// Dovolí najít i prvky, které mají <see cref="IInteractiveItem.IsEnabled"/> = false.
-        /// Tato metoda nebere ohled na aktuálně nalezený prvek (<see cref="_MouseCurrentItem"/>), ignoruje tedy vlastnost <see cref="IInteractiveItem.HoldMouse"/> prvku,
-        /// který je nalezen jako aktivní v <see cref="_MouseCurrentItem"/>.
+        /// Dovolí najít i prvky, které mají <see cref="InteractiveProperties.Enabled"/> = false.
+        /// Tato metoda nebere ohled na aktuálně nalezený prvek (<see cref="_CurrentActiveItem"/>), ignoruje tedy vlastnost <see cref="InteractiveProperties.HoldMouse"/> prvku,
+        /// který je nalezen jako aktivní v <see cref="_CurrentActiveItem"/>.
         /// Tato metoda se používá jako delegát "item searcher" (searchItemMethod) v konstruktoru argumentu <see cref="GInteractiveChangeStateArgs"/>,
         /// a slouží aplikačnímu kódu, proto se liší od běžné metody <see cref="FindActivePositionAtPoint(Point, bool)"/>.
         /// </summary>
@@ -1253,18 +1289,20 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         /// <summary>
         /// Vytvoří a vrátí instanci <see cref="GActivePosition"/>, která bude obsahovat plnou cestu k prvku, který je na dané absolutní souřadnici.
-        /// Dovolí najít i prvky, které mají <see cref="IInteractiveItem.IsEnabled"/> = false.
-        /// Tato metoda BERE ohled na aktuálně nalezený prvek (<see cref="_MouseCurrentItem"/>), a pokud má vlastnost <see cref="IInteractiveItem.HoldMouse"/> = true, 
+        /// Dovolí najít i prvky, které mají <see cref="InteractiveProperties.Enabled"/> = false.
+        /// Tato metoda BERE ohled na aktuálně nalezený prvek (<see cref="_CurrentActiveItem"/>), a pokud má vlastnost <see cref="InteractiveProperties.HoldMouse"/> = true, 
         /// pak tomuto prvku dává přednost (pokud to lze).
+        /// <para/>
+        /// Tato metoda NEZMĚNÍ obsah <see cref="_CurrentActiveItem"/>, ale ZMĚNÍ obsah <see cref="_MouseCurrentRelativePoint"/>.
         /// </summary>
         /// <param name="mouseAbsolutePoint"></param>
         /// <param name="withDisabled"></param>
         /// <returns></returns>
         protected GActivePosition FindActivePositionAtPoint(Point mouseAbsolutePoint, bool withDisabled)
         {
-            GActivePosition activePosition = (this._ProgressItem.IsVisible
-                ? GActivePosition.FindItemAtPoint(this.ClientSize, this.ItemsList, this._MouseCurrentItem, mouseAbsolutePoint, withDisabled, this._ProgressItem)
-                : GActivePosition.FindItemAtPoint(this.ClientSize, this.ItemsList, this._MouseCurrentItem, mouseAbsolutePoint, withDisabled));
+            GActivePosition activePosition = (this._ProgressItem.Is.Visible
+                ? GActivePosition.FindItemAtPoint(this.ClientSize, this.ItemsList, this._CurrentActiveItem, mouseAbsolutePoint, withDisabled, this._ProgressItem)
+                : GActivePosition.FindItemAtPoint(this.ClientSize, this.ItemsList, this._CurrentActiveItem, mouseAbsolutePoint, withDisabled));
 
             this._MouseCurrentRelativePoint = _GetRelativePoint(mouseAbsolutePoint, activePosition);
             return activePosition;
@@ -1278,7 +1316,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         protected Point? _GetRelativePointToCurrentItem(Point point)
         {
-            return _GetRelativePoint(point, this._MouseCurrentItem);
+            return _GetRelativePoint(point, this._CurrentActiveItem);
         }
         /// <summary>
         /// Return relative position of specified point to specified GCurrentItem (its CurrentItem.ActiveBounds.Location).
@@ -1313,7 +1351,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Current item with any mouse-interaction, can be null
         /// </summary>
-        private GActivePosition _MouseCurrentItem { get { return this.__MouseCurrentItem; } set { this.__MouseCurrentItem = value; } } private GActivePosition __MouseCurrentItem;
+        private GActivePosition _CurrentActiveItem { get { return this.__MouseCurrentItem; } set { this.__MouseCurrentItem = value; } } private GActivePosition __MouseCurrentItem;
         /// <summary>
         /// Item, which was last clicked.
         /// </summary>
@@ -1423,7 +1461,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="mouseRelativePoint"></param>
         private void _ItemMouseCallContextMenu(GActivePosition gcItem, GInteractiveChangeState change, Point? mouseRelativePoint)
         {
-            this._ItemMouseCallStateChangedEvent(this._MouseCurrentItem, GInteractiveChangeState.GetContextMenu, this._MouseCurrentRelativePoint);
+            this._ItemMouseCallStateChangedEvent(this._CurrentActiveItem, GInteractiveChangeState.GetContextMenu, this._MouseCurrentRelativePoint);
         }
         /// <summary>
         /// Pokud se v argumentu <see cref="GInteractiveChangeStateArgs"/> nachází kontextové menu, uschová si jej pro pozdější použití.
@@ -1566,6 +1604,21 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         private ProgressItem _ProgressItem;
         #endregion
+        #region Selector
+        /// <summary>
+        /// Instance objektu třídy <see cref="Selector"/>, řeší výběr prvků.
+        /// </summary>
+        public Selector Selector
+        {
+            get
+            {
+                if (this._Selector == null)
+                    this._Selector = new Selector();
+                return this._Selector;
+            }
+        }
+        private Selector _Selector;
+        #endregion
         #region Draw
         /// <summary>
         /// true = můžeme kreslit?
@@ -1624,11 +1677,11 @@ namespace Asol.Tools.WorkScheduler.Components
                     }
                 }
 
-                if (this._ProgressItem.IsVisible || this._ToolTip.NeedDraw)
+                if (this._ProgressItem.Is.Visible || this._ToolTip.NeedDraw)
                 {
                     e.CopyContentOfLayer(e.ValidLayer, 3);
                     Graphics graphics3 = e.GraphicsForLayer(3);
-                    if (this._ProgressItem.IsVisible)
+                    if (this._ProgressItem.Is.Visible)
                         this._ProgressItem.Draw(graphics3);
                     if (this._ToolTip.NeedDraw)
                         this._ToolTip.Draw(graphics3);
@@ -1751,7 +1804,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 this.DrawAllItems = drawAllItems;
                 this.DrawFrameSelect = drawFrameSelect;
                 this.DrawToolTip = (toolTipItem != null && toolTipItem.NeedDraw);
-                this.DrawProgress = (progressItem != null && progressItem.IsVisible);
+                this.DrawProgress = (progressItem != null && progressItem.Is.Visible);
             }
 
             /// <summary>
@@ -1849,7 +1902,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     if (item.Parent == null) item.Parent = parent;
 
                     // Pokud prvek není Visible, nebudeme jej dávat k vykreslení, a to ani jeho Childs:
-                    if (!item.IsVisible) continue;
+                    if (!item.Is.Visible) continue;
 
                     // Abychom se nezacyklili = jeden prvek smí být vidět jen jedenkrát:
                     if (this.ProcessedItems.ContainsKey(item.Id)) continue;
@@ -2682,7 +2735,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this.HasItem = false;
             this.MouseAbsolutePoint = mouseAbsolutePoint;
             this.BeginTime = DateTime.Now;
-            this.CurrentTime = this.BeginTime;
+            this.CurrentStateFill(mouseAbsolutePoint);
         }
         /// <summary>
         /// Soupis všech prvků, nalezených v této instanci.
@@ -2725,17 +2778,42 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Čas prvního eventu (když byla instance <see cref="GActivePosition"/> vytvořena)
         /// </summary>
         public DateTime BeginTime { get; protected set; }
+        #endregion
+        #region CurrentState
+        /// <summary>
+        /// Metoda naplní hodnoty <see cref="CurrentMouseRelativePoint"/>, <see cref="CurrentTime"/>, <see cref="CurrentModifierKeys"/>.
+        /// </summary>
+        /// <param name="mouseAbsolutePoint"></param>
+        internal void CurrentStateFill(Point? mouseAbsolutePoint)
+        {
+            this.CurrentMouseRelativePoint = (mouseAbsolutePoint.HasValue ? this.GetRelativePointToCurrentItem(mouseAbsolutePoint.Value) : (Point?)null);
+            this.CurrentTime = DateTime.Now;
+            this.CurrentModifierKeys = Control.ModifierKeys;
+        }
+        /// <summary>
+        /// Aktuální relativní pozice myši
+        /// </summary>
+        public Point? CurrentMouseRelativePoint { get; protected set; }
         /// <summary>
         /// Čas právě probíhajícího eventu
         /// </summary>
-        public DateTime CurrentTime { get; set; }
+        public DateTime CurrentTime { get; protected set; }
+        /// <summary>
+        /// Aktuálně stisknuté modifikační klávesy
+        /// </summary>
+        public Keys CurrentModifierKeys { get; protected set; }
         #endregion
         #region Property from this.CurrentItem.Style, IsEnabled, IsVisible
         /// <summary>
-        /// true pokud aktuální prvek má nastaveno (<see cref="IInteractiveItem.IsSelectParent"/> == true), 
+        /// Obsahuje true pokud aktuální prvek má nastaveno (<see cref="InteractiveProperties.Selectable"/> == true), 
+        /// tzn. je to prvek, který umožňuje provádět změnu <see cref="IInteractiveItem.IsSelected"/> pomocí LeftClick
+        /// </summary>
+        internal bool ItemIsSelectable { get { return (this.HasItem && this.ActiveItem.Is.Selectable); } }
+        /// <summary>
+        /// Obsahuje true pokud aktuální prvek má nastaveno (<see cref="InteractiveProperties.SelectParent"/> == true), 
         /// tzn. je to prvek, který umožňuje provádět "na sobě" výběr svých Childs pomocí MouseFrame selectování
         /// </summary>
-        internal bool CanFrameSelect { get { return (this.HasItem && this.ActiveItem.IsSelectParent); } }
+        internal bool ItemIsSelectParent { get { return (this.HasItem && this.ActiveItem.Is.SelectParent); } }
         /// <summary>
         /// Metoda najde v this objektu prvek, který podporuje Drag and Drop.
         /// Hledá počínaje od prvku <see cref="ActiveItem"/> (navrchu), a pokud ten nepodporuje Drag and Drop, tak hledá směrem k jeho Parentům.
@@ -2751,7 +2829,7 @@ namespace Asol.Tools.WorkScheduler.Components
             int foundIndex = -1;
             for (int i = lastIndex; i >= 0; i--)
             {
-                if (this.Items[i].Item.IsEnabled && this.Items[i].Item.IsDragEnabled)
+                if (this.Items[i].Item.Is.Enabled && this.Items[i].Item.Is.DragEnabled)
                 {
                     foundIndex = i;
                     break;
@@ -2800,11 +2878,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Current item is not null and IsEnabled?
         /// </summary>
-        public bool IsEnabled { get { return (this.HasItem && this.ActiveItem.IsEnabled); } }
+        public bool IsEnabled { get { return (this.HasItem && this.ActiveItem.Is.Enabled); } }
         /// <summary>
         /// Current item is not null and IsVisible?
         /// </summary>
-        public bool IsVisible { get { return (this.HasItem && this.ActiveItem.IsVisible); } }
+        public bool IsVisible { get { return (this.HasItem && this.ActiveItem.Is.Visible); } }
         private bool _HasStyle(GInteractiveStyles style)
         {
             return (this.HasItem && ((this.ActiveItem.Style & style) != 0));
@@ -2888,7 +2966,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 if (holdQueue != null && holdQueue.Count > 0)
                 {   // Máme hledat nejprve v "přidržených" prvcích?
                     GActiveItem fip = holdQueue.Dequeue();
-                    if (fip.Item.HoldMouse)
+                    if (fip.Item.Is.HoldMouse)
                     {
                         isFound = _TryFindItemInList(items, boundsInfo, mouseAbsolutePoint, withDisabled, fip.Item, out foundItem);
                         if (!isFound)
@@ -2959,7 +3037,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Hledá v daném poli od konce prvek, který je aktivní na dané absolutní souřadnici.
         /// Pokud je zadán preferovaný prvek (preferredItem), kontroluje pouze tento prvek (pokud existuje, a vyhoví podmínkám).
-        /// prvek musí být <see cref="IInteractiveItem.IsVisible"/>, musí být <see cref="IInteractiveItem.IsEnabled"/> nebo musí být povoleno vyhledání i Disabled prvků,
+        /// prvek musí být <see cref="InteractiveProperties.Visible"/>, musí být <see cref="InteractiveProperties.Enabled"/> nebo musí být povoleno vyhledání i Disabled prvků,
         /// a prvek musí být interaktivní na dané souřadnici.
         /// Výstup: true pokud je nalezeno (pak je nalezený prvek uložen v out parametru foundItem).
         /// </summary>
@@ -2978,8 +3056,8 @@ namespace Asol.Tools.WorkScheduler.Components
             {   // Hledáme v poli prvků od konce = vizuálně od nejvýše vykresleného prvku:
                 IInteractiveItem item = items[idx];
                 if ((preferredItem == null || Object.ReferenceEquals(preferredItem, item))
-                    && item.IsVisible
-                    && (withDisabled || item.IsEnabled)
+                    && item.Is.Visible
+                    && (withDisabled || item.Is.Enabled)
                     && item.IsActiveAtPoint(mouseRelativePoint))
                 {   // Daný prvek vyhovuje => máme hotovo:
                     foundItem = item;
@@ -3079,7 +3157,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 {
                     if (scanDict.ContainsKey(currentItem.Id)) continue;
                     scanDict.Add(currentItem.Id, currentItem);
-                    if (!currentItem.IsVisible || !currentItem.IsEnabled) continue;
+                    if (!currentItem.Is.Visible || !currentItem.Is.Enabled) continue;
 
                     currentBoundsInfo.CurrentItem = currentItem;
                     Rectangle currentItemBounds = currentBoundsInfo.CurrentAbsVisibleBounds;

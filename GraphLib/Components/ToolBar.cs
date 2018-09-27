@@ -711,14 +711,14 @@ namespace Asol.Tools.WorkScheduler.Components
             GPainter.DrawAreaBase(graphics, toolbarBounds, Skin.ToolBar.BackColor, GInteractiveState.MouseOver, System.Windows.Forms.Orientation.Horizontal, null, null);
         }
         /// <summary>
-        /// Tuto metodu volá interaktivní prvek po změně <see cref="FunctionItem.IsSelected"/>, úkolem je vyvolat event <see cref="GToolBar.ItemSelectedChange"/>.
+        /// Tuto metodu volá interaktivní prvek po změně <see cref="FunctionItem.IsChecked"/>, úkolem je vyvolat event <see cref="GToolBar.ItemCheckedChange"/>.
         /// </summary>
         /// <param name="dataGroup"></param>
         /// <param name="activeItem"></param>
-        internal void OnItemSelectedChange(FunctionGlobalGroup dataGroup, FunctionItem activeItem)
+        internal void OnItemCheckedChange(FunctionGlobalGroup dataGroup, FunctionItem activeItem)
         {
-            if (this.ItemSelectedChange != null)
-                this.ItemSelectedChange(this, new FunctionItemEventArgs(activeItem));
+            if (this.ItemCheckedChange != null)
+                this.ItemCheckedChange(this, new FunctionItemEventArgs(activeItem));
         }
         /// <summary>
         /// Tuto metodu volá interaktivní prvek po kliknutí na něj, úkolem je vyvolat event <see cref="GToolBar.ItemClicked"/>.
@@ -741,9 +741,9 @@ namespace Asol.Tools.WorkScheduler.Components
                 this.ItemSubItemsEnumerateBefore(this, new FunctionItemEventArgs(activeItem));
         }
         /// <summary>
-        /// Událost vyvolaná po změně <see cref="FunctionItem.IsSelected"/>
+        /// Událost vyvolaná po změně <see cref="FunctionItem.IsChecked"/>
         /// </summary>
-        public event FunctionItemEventHandler ItemSelectedChange;
+        public event FunctionItemEventHandler ItemCheckedChange;
         /// <summary>
         /// Událost vyvolaná po kliknutí na určitý prvek ToolBaru
         /// </summary>
@@ -1009,10 +1009,10 @@ namespace Asol.Tools.WorkScheduler.Components
                 GPainter.DrawString(e.Graphics, titleAbsoluteBounds, this.DataTitle, Skin.ToolBar.TextColor, tBarSetting.TitleFont, ContentAlignment.MiddleCenter);
         }
         /// <summary>
-        /// Metoda vrací všechny členy selectovací skupiny (<see cref="FunctionItem.SelectionGroupName"/>) daného jména.
+        /// Metoda vrací všechny členy selectovací skupiny (<see cref="FunctionItem.CheckedGroupName"/>) daného jména.
         /// Pokud je na vstupu prázdné jméno skupiny, vrací se null.
         /// Pokud je jméno zadané, ale ve skupině by nebyl žádný prvek, vrací se prázdný seznam.
-        /// Do výběru se dostávají i prvky, které mají <see cref="FunctionItem.IsSelectable"/> = false.
+        /// Do výběru se dostávají i prvky, které mají <see cref="FunctionItem.IsCheckable"/> = false.
         /// Na předvybrané členy skupiny se aplikuje i filtr dle parametru itemFilter, pokud je zadán.
         /// </summary>
         /// <param name="selectionGroupName"></param>
@@ -1025,7 +1025,7 @@ namespace Asol.Tools.WorkScheduler.Components
             foreach (var tItem in this._ToolbarItemList)
             {
                 FunctionGlobalItem item = tItem.DataItem;
-                if (String.IsNullOrEmpty(item.SelectionGroupName) || !String.Equals(item.SelectionGroupName, selectionGroupName, StringComparison.InvariantCulture)) continue;
+                if (String.IsNullOrEmpty(item.CheckedGroupName) || !String.Equals(item.CheckedGroupName, selectionGroupName, StringComparison.InvariantCulture)) continue;
                 if ((itemFilter != null) && !itemFilter(item)) continue;
                 result.Add(item);
             }
@@ -1145,12 +1145,13 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="dataItem"></param>
         internal GToolbarButton(GToolbarGroup toolbarGroup, FunctionGlobalItem dataItem) : base(toolbarGroup, dataItem) { }
         /// <summary>
-        /// Obsahuje true pro selectovaný button
+        /// Tato hodnota vyjadřuje "označení" prvku, typicky zaškrtávátko. 
+        /// Je plně v rukou prvku, nikoli interaktivního controlu (na rozdíl od <see cref="InteractiveObject.IsSelected"/>.
         /// </summary>
-        public override bool IsSelected
+        public override bool IsChecked
         {
-            get { return (this._DataItem.IsSelectable && this._DataItem.IsSelected); }
-            set { if (this._DataItem.IsSelectable) this._DataItem.IsSelected = value; }
+            get { return (this._DataItem.IsCheckable && this._DataItem.IsChecked); }
+            set { if (this._DataItem.IsCheckable) this._DataItem.IsChecked = value; }
         }
         internal override void PrepareLayout(Graphics graphics)
         {
@@ -1159,60 +1160,60 @@ namespace Asol.Tools.WorkScheduler.Components
         protected override void DrawItem(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
         {
             string name = this.DataItem.Name;
-            this.DrawItemBackground(e, absoluteBounds, this.IsSelected);
+            this.DrawItemBackground(e, absoluteBounds, this.IsChecked);
             this.DrawItemImage(e, absoluteBounds);
             this.DrawItemText(e, absoluteBounds);
-            this.DrawItemSelection(e, absoluteBounds, this.IsSelected);
+            this.DrawItemSelection(e, absoluteBounds, this.IsChecked);
         }
         protected override void AfterStateChangedLeftClick(GInteractiveChangeStateArgs e)
         {
-            if (this._DataItem.IsSelectable)
-                this.IsSelectedChange();
+            if (this._DataItem.IsCheckable)
+                this.IsCheckedChange();
             this.CallItemClick();
         }
         /// <summary>
-        /// Metoda zajistí změnu stavu <see cref="IsSelected"/> pro tento prvek, 
+        /// Metoda zajistí změnu stavu <see cref="IsChecked"/> pro tento prvek, 
         /// a pokud tento prvek je členem nějaké selectovací grupy, pak najde i ostatní členy grupy a vyřeší to i pro ně.
         /// Metoda je volána před voláním <see cref="GToolbarItem.CallItemClick()"/>, 
-        /// protože event Click má být volán už se správnou hodnotou <see cref="FunctionItem.IsSelected"/>.
+        /// protože event Click má být volán už se správnou hodnotou <see cref="FunctionItem.IsChecked"/>.
         /// </summary>
-        protected void IsSelectedChange()
+        protected void IsCheckedChange()
         {
-            List<FunctionGlobalItem> itemGroup = this._ToolbarGroup.GetGroup(this._DataItem.SelectionGroupName, i => (i.ItemType == FunctionGlobalItemType.Button));
+            List<FunctionGlobalItem> itemGroup = this._ToolbarGroup.GetGroup(this._DataItem.CheckedGroupName, i => (i.ItemType == FunctionGlobalItemType.Button));
             if (itemGroup == null)
             {   // null = není zadána grupa => v tom případě this button je CheckBox:
-                bool newSelected = !this.IsSelected;
-                this.IsSelected = newSelected;
-                this.CallItemSelectedChange(this.DataItem);
+                bool newIsChecked = !this.IsChecked;
+                this.IsChecked = newIsChecked;
+                this.CallItemCheckedChange(this.DataItem);
             }
             else
             {   // máme grupu => v tom případě this button je OptionButton:
                 FunctionGlobalItem currentItem = this.DataItem;
-                // Projdeme všechny prvky grupy, pro prvky kromě this nastavíme IsSelected = false, 
-                // na konci pro this prvek nastavíme IsSelected = true, přiměřeně voláme event ItemSelectedChange:
+                // Projdeme všechny prvky grupy, pro prvky kromě this nastavíme IsChecked = false, 
+                // na konci pro this prvek nastavíme IsChecked = true, přiměřeně voláme event ItemSelectedChange:
                 foreach (FunctionGlobalItem item in itemGroup)
                 {
                     if (!Object.ReferenceEquals(item, currentItem))
-                        // Toto je jiný prvek, než this => ten má mít IsSelected = false:
-                        this.IsSelectedSetValue(item, false);
+                        // Toto je jiný prvek, než this => ten má mít IsChecked = false:
+                        this.IsCheckedSetValue(item, false);
                 }
-                // Náš prvek má mít IsSelected = true:
-                this.IsSelectedSetValue(currentItem, true);
+                // Náš prvek má mít IsChecked = true:
+                this.IsCheckedSetValue(currentItem, true);
             }
         }
         /// <summary>
-        /// Zajistí, že daný prvek bude mít hodnotu <see cref="FunctionItem.IsSelected"/> = daná hodnota.
+        /// Zajistí, že daný prvek bude mít hodnotu <see cref="FunctionItem.IsChecked"/> = daná hodnota.
         /// Pokud prvek tuto hodnotu nemá, bude do něj vložena a vyvolá se patřičný event.
         /// Pokud hodnotu již má, nic nemění a nedělá.
         /// </summary>
         /// <param name="item"></param>
         /// <param name="value"></param>
-        protected void IsSelectedSetValue(FunctionGlobalItem item, bool value)
+        protected void IsCheckedSetValue(FunctionGlobalItem item, bool value)
         {
-            if (item.IsSelected != value)
+            if (item.IsChecked != value)
             {
-                item.IsSelected = value;
-                this.CallItemSelectedChange(item);
+                item.IsChecked = value;
+                this.CallItemCheckedChange(item);
             }
         }
     }
@@ -1290,10 +1291,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="toolbarGroup"></param>
         /// <param name="dataItem"></param>
-        protected GToolbarItem(GToolbarGroup toolbarGroup, FunctionGlobalItem dataItem)
+        protected GToolbarItem(GToolbarGroup toolbarGroup, FunctionGlobalItem dataItem) : base()
         {
             this._ToolbarGroup = toolbarGroup;
             this._DataItem = dataItem;
+            this.Style = (GInteractiveStyles)this.Style.RemoveFlags(GInteractiveStyles.DoubleClick);       // Toolbar není zvědav na doubleclicky!
         }
         /// <summary>
         /// Vizualizace
@@ -1761,13 +1763,13 @@ namespace Asol.Tools.WorkScheduler.Components
             activeItem.OnClick();
             this._ToolbarGroup.Toolbar.OnItemClicked(this._ToolbarGroup.DataGroup, activeItem);
         }
-        protected virtual void CallItemSelectedChange(FunctionItem activeItem)
+        protected virtual void CallItemCheckedChange(FunctionItem activeItem)
         {
-            this._ToolbarGroup.DataGroup.OnItemSelectedChange(activeItem);
+            this._ToolbarGroup.DataGroup.OnItemCheckedChange(activeItem);
             if (activeItem.Parent != null)
-                activeItem.Parent.OnSubItemsSelectedChange(activeItem);
-            activeItem.OnSelectedChange();
-            this._ToolbarGroup.Toolbar.OnItemSelectedChange(this._ToolbarGroup.DataGroup, activeItem);
+                activeItem.Parent.OnSubItemsCheckedChange(activeItem);
+            activeItem.OnCheckedChange();
+            this._ToolbarGroup.Toolbar.OnItemCheckedChange(this._ToolbarGroup.DataGroup, activeItem);
         }
         #endregion
         #region Draw, Interaktivita
@@ -1780,7 +1782,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="drawMode">Režim kreslení (pomáhá řešit Drag and Drop procesy)</param>
         protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
         {
-            if (!this.IsVisible) return;
+            if (!this.Is.Visible) return;
             this.DrawItem(e, absoluteBounds, absoluteVisibleBounds, drawMode);
         }
         /// <summary>
@@ -1837,14 +1839,6 @@ namespace Asol.Tools.WorkScheduler.Components
                         this.Parent.Repaint();
                     break;
             }
-        }
-        /// <summary>
-        /// DoubleClick na položce Toolbaru budeme interpretovat jako obyčejný Click.
-        /// </summary>
-        /// <param name="e"></param>
-        protected override void AfterStateChangedLeftDoubleClick(GInteractiveChangeStateArgs e)
-        {
-            this.AfterStateChangedLeftClick(e);
         }
         #endregion
     }

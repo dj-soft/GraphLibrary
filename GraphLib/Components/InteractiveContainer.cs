@@ -19,7 +19,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// InteractiveContainer constructor : create ItemList
         /// </summary>
-        public InteractiveContainer()
+        public InteractiveContainer() : base()
         {
             this._ItemList = new EList<IInteractiveItem>();
             this._ItemList.ItemAddBefore += new EList<IInteractiveItem>.EListEventBeforeHandler(_ItemList_ItemAddBefore);

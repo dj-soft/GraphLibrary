@@ -261,9 +261,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             functionItem.ItemType = itemType;
             functionItem.LayoutHint = layoutHint;
             functionItem.ModuleWidth = moduleWidth;
-            functionItem.IsSelectable = isSelectable;
-            functionItem.IsSelected = isSelected;
-            functionItem.SelectionGroupName = selectionGroupName;
+            functionItem.IsCheckable = isSelectable;
+            functionItem.IsChecked = isSelected;
+            functionItem.CheckedGroupName = selectionGroupName;
             functionItem.UserData = userData;
             return functionItem;
         }
@@ -639,8 +639,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             /// Položka si v této metodě může sama určit, zda bude v menu zobrazena jako Enabled nebo Disabled:
             /// Pokud chce být zobrazena, ale jako Disabled, pak si v této metodě nastaví <see cref="FunctionItem.IsEnabled"/> = false, a pak vrátí true.
             /// Následně bude vyvolána metoda <see cref="FunctionItem.CreateWinFormItem()"/>, která vygeneruje WinForm položku s odpovídající hodnotou <see cref="System.Windows.Forms.ToolStripMenuItem.Enabled"/>.
-            /// Obdobně se do položky menu přebírají hodnoty <see cref="System.Windows.Forms.ToolStripMenuItem.CheckOnClick"/> (z <see cref="FunctionItem.IsSelectable"/>);
-            /// a <see cref="System.Windows.Forms.ToolStripMenuItem.Checked"/> (z <see cref="FunctionItem.IsSelected"/>).
+            /// Obdobně se do položky menu přebírají hodnoty <see cref="System.Windows.Forms.ToolStripMenuItem.CheckOnClick"/> (z <see cref="FunctionItem.IsCheckable"/>);
+            /// a <see cref="System.Windows.Forms.ToolStripMenuItem.Checked"/> (z <see cref="FunctionItem.IsChecked"/>).
             /// <para/>
             /// Metoda je volána po každém RightClick, když se má zobrazit kontextové menu, a je volána pro každou definovanou položku kontextového menu.
             /// Její vyhodnocení by nemělo trvat déle než 1ms.

@@ -472,6 +472,10 @@ namespace Asol.Tools.WorkScheduler.Components
                     this.Repaint();
                     this.AfterStateChangedLeftClick(e);
                     break;
+                case GInteractiveChangeState.LeftClickSelected:
+                    this.Repaint();
+                    this.AfterStateChangedLeftClickSelected(e);
+                    break;
                 case GInteractiveChangeState.LeftDoubleClick:
                     this.Repaint();
                     this.AfterStateChangedLeftDoubleClick(e);
@@ -537,6 +541,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         protected virtual void AfterStateChangedLeftClick(GInteractiveChangeStateArgs e) { }
         /// <summary>
+        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = LeftClickSelected
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void AfterStateChangedLeftClickSelected(GInteractiveChangeStateArgs e) { }
+        /// <summary>
         /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = LeftDoubleClick
         /// </summary>
         /// <param name="e"></param>
@@ -558,7 +567,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual void AfterStateChangedWheel(GInteractiveChangeStateArgs e) { }
         /// <summary>
         /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = LeftDragFrameBegin i RightDragFrameBegin.
-        /// Tato metoda se volá pro objekt, na němž akce DragFrame začíná (objekt má <see cref="IInteractiveItem.IsSelectParent"/> == true),
+        /// Tato metoda se volá pro objekt, na němž akce DragFrame začíná (objekt má <see cref="InteractiveProperties.SelectParent"/> == true),
         /// a nyní na něm byla zmáčknutá myš a začíná se označovat oblast výběru.
         /// Objekt může omezit rozsah oblasti tak, že nastaví do argumentu e hodnotu <see cref="GInteractiveChangeStateArgs.DragFrameWorkArea"/> na požadovanou oblast.
         /// </summary>
@@ -567,13 +576,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = LeftDragFrameSelect i RightDragFrameSelect.
         /// Metoda se volá do jednotlivých objektů, které by měly být selectovány.
-        /// Objekt by si měl sám nastavit <see cref="IInteractiveItem.IsSelected"/> = true; a nejspíš i zajistit překreslení: <see cref="InteractiveObject.Repaint()"/>.
+        /// Objekt sám si nic nastavovat nemusí, to řeší control.
         /// </summary>
         /// <param name="e"></param>
         protected virtual void AfterStateChangedDragFrameSelect(GInteractiveChangeStateArgs e) { }
         /// <summary>
         /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = LeftDragFrameDone i RightDragFrameDone.
-        /// Tato metoda se volá pro objekt, na němž akce DragFrame začala (dříve proběhla akce <see cref="GInteractiveChangeState.LeftDragFrameBegin"/> nebo <see cref="GInteractiveChangeState.RightDragFrameBegin"/>).
+        /// Tato metoda se volá pro objekt, na němž akce DragFrame začala (dříve proběhla akce <see cref="GInteractiveChangeState.LeftDragFrameBegin"/> 
+        /// nebo <see cref="GInteractiveChangeState.RightDragFrameBegin"/>).
         /// </summary>
         /// <param name="e"></param>
         protected virtual void AfterStateChangedDragFrameDone(GInteractiveChangeStateArgs e) { }
@@ -849,7 +859,23 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         #endregion
-        #region InteractiveStyle - properties
+        #region Interaktivní vlastnosti
+        /// <summary>
+        /// Tato hodnota vyjadřuje výběr prvků ze strany hostitele, k další editaci / Copy and Paste / atd.
+        /// Hostitel tuto hodnotu nastavuje tehdy, když <see cref="IsSelectable"/> je true, jinak ne.
+        /// Hodnota je evidována centrálně v instanci <see cref="GInteractiveControl.Selector"/>.
+        /// Tato hodnota neobsahuje stav Framování (v procesu Drag and Frame), ten je k dispozici v <see cref="IsFramed"/>.
+        /// </summary>
+        public virtual bool IsSelected { get { var host = this.Host; return (host != null ? host.Selector.IsSelected(this) : false); } set { var host = this.Host; if (host != null) host.Selector.SetSelected(this, value); } }
+        /// <summary>
+        /// Je aktuálně zarámován (pro budoucí selectování)?
+        /// Zarámovaný prvek (v procesu hromadného označování myší SelectFrame) má <see cref="IsFramed"/> = true, ale hodnotu <see cref="IsSelected"/> má beze změn.
+        /// Teprve na konci procesu SelectFrame se pro dotčené objekty (které mají <see cref="IsFramed"/> = true) nastaví i <see cref="IsSelected"/> = true.
+        /// </summary>
+        public virtual bool IsFramed { get { var host = this.Host; return (host != null ? host.Selector.IsFramed(this) : false); } set { var host = this.Host; if (host != null) host.Selector.SetFramed(this, value); } }
+
+
+
         /// <summary>
         /// true when this.Style contains KeyboardInput
         /// </summary>
@@ -861,67 +887,23 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Boolean repository
         /// <summary>
-        /// Is Interactive?
-        /// </summary>
-        public virtual bool IsInteractive { get { return this.Is.Interactive; } set { this.Is.Interactive = value; } }
-        /// <summary>
-        /// Is Visible?
-        /// </summary>
-        public virtual bool IsVisible { get { return this.Is.Visible; } set { this.Is.Visible = value; } }
-        /// <summary>
-        /// Is Enabled?
-        /// </summary>
-        public virtual bool IsEnabled { get { return this.Is.Enabled; } set { this.Is.Enabled = value; } }
-        /// <summary>
-        /// Pokud je true, pak tento prvek může být vybrán = selectován (Click myší, nebo Ctrl+Click myší, nebo zarámováním).
-        /// Hodnota, zda je prvek vybrán je vložena do property <see cref="IsSelected"/>.
-        /// </summary>
-        public virtual bool IsSelectable { get { return this.Is.Selectable; } set { this.Is.Selectable = value; } }
-        /// <summary>
-        /// Do této property je vkládáno true po výběru prvku, a false po zrušení výběru.
-        /// Prvek nemá vloženo true pokud je zatím jen zarámován (<see cref="IsFramed"/>), to se provede na konci framování.
-        /// </summary>
-        public virtual bool IsSelected { get { return this.Is.Selected; } set { this.Is.Selected = value; } }
-        /// <summary>
-        /// Je aktuálně zarámován (pro budoucí selectování)?
-        /// Zarámovaný prvek (v procesu hromadného označování myší SelectFrame) má <see cref="IsFramed"/> = true, ale hodnotu <see cref="IsSelected"/> má beze změn.
-        /// Teprve na konci procesu SelectFrame se pro dotčené objekty (které mají <see cref="IsFramed"/> = true) nastaví i <see cref="IsSelected"/> = true.
-        /// </summary>
-        public virtual bool IsFramed { get { return this.Is.Framed; } set { this.Is.Framed = value; } }
-        /// <summary>
-        /// Pokud je true, pak tažení myší na tomto prvku nebude interpretováno jako Drag and Drop, ale jako SelectArea.
-        /// Tzn. zahájení akce (Mouse Down + Mouse Move) zahájí SelectArea akci (namísto Drag Drop), začne se vykreslovat SelectFrame (do Interactive vrstvy),
-        /// a začnou se vybírat controly spadající do výběru (které mají <see cref="IsSelectable"/> == true).
-        /// </summary>
-        public virtual bool IsSelectParent { get { return this.Is.SelectParent; } set { this.Is.SelectParent = value; } }
-        /// <summary>
-        /// Pokud je true, pak tažení myší na tomto prvku bude interpretováno jako Drag and Drop tohoto prvku.
-        /// </summary>
-        public virtual bool IsDragEnabled { get { return this.Is.DragEnabled; } set { this.Is.DragEnabled = value; } }
-        /// <summary>
         /// Is HoldMouse?
         /// </summary>
-        public virtual bool IsHoldMouse { get { return this.Is.HoldMouse; } set { this.Is.HoldMouse = value; } }
+        public virtual bool IsHoldMouse { }
         /// <summary>
         /// All interactive boolean properties
         /// </summary>
-        protected InteractiveProperties Is { get { if (this._Is == null) this._Is = new InteractiveProperties(); return this._Is; } } private InteractiveProperties _Is;
+        public InteractiveProperties Is { get { if (this._Is == null) this._Is = InteractiveProperties.Default; return this._Is; } protected set { this._Is = value; } } private InteractiveProperties _Is;
         #endregion
         #region IInteractiveItem + IInteractiveParent members
-        IEnumerable<IInteractiveItem> IInteractiveItem.Childs { get { return this.Childs; } }
         Rectangle IInteractiveItem.Bounds { get { return this.Bounds; } set { this.Bounds = value; } }
         Rectangle? IInteractiveItem.BoundsInteractive { get { return this.BoundsInteractive; } }
-        Padding? IInteractiveItem.ClientBorder { get { return this.ClientBorder; } set { this.ClientBorder = value; } }
         Padding? IInteractiveItem.InteractivePadding { get { return this.InteractivePadding; } set { this.InteractivePadding = value; } }
-        Boolean IInteractiveItem.IsInteractive { get { return this.IsInteractive; } }
-        Boolean IInteractiveItem.IsVisible { get { return this.IsVisible; } set { this.IsVisible = value; } }
-        Boolean IInteractiveItem.IsEnabled { get { return this.IsEnabled; } }
-        Boolean IInteractiveItem.IsSelectable { get { return this.IsSelectable; } }
+        Padding? IInteractiveItem.ClientBorder { get { return this.ClientBorder; } set { this.ClientBorder = value; } }
+        IEnumerable<IInteractiveItem> IInteractiveItem.Childs { get { return this.Childs; } }
+        InteractiveProperties IInteractiveItem.Is { get { return this.Is; } }
         Boolean IInteractiveItem.IsSelected { get { return this.IsSelected; } set { this.IsSelected = value; } }
-        Boolean IInteractiveItem.IsFramed { get { return this.Is.Framed; } set { this.Is.Framed = value; } }
-        Boolean IInteractiveItem.IsSelectParent { get { return this.IsSelectParent; } }
-        Boolean IInteractiveItem.IsDragEnabled { get { return this.IsDragEnabled; } }
-        Boolean IInteractiveItem.HoldMouse { get { return this.IsHoldMouse; } }
+        Boolean IInteractiveItem.IsFramed { get { return this.IsFramed; } set { this.IsFramed = value; } }
         ZOrder IInteractiveItem.ZOrder { get { return this.ZOrder; } }
         GInteractiveDrawLayer IInteractiveItem.StandardDrawToLayer { get { return this.StandardDrawToLayer; } }
         GInteractiveDrawLayer IInteractiveItem.RepaintToLayers { get { return this.RepaintToLayers; } set { this.RepaintToLayers = value; } }
@@ -1053,7 +1035,7 @@ namespace Asol.Tools.WorkScheduler.Components
             switch (e.DragAction)
             {
                 case DragActionType.DragThisStart:
-                    this._IsDragEnabledCurrent = this.IsDragEnabled;
+                    this._IsDragEnabledCurrent = this.Is.DragEnabled;
                     if (this._IsDragEnabledCurrent)
                     {
                         this.BoundsDragOrigin = this.Bounds;
@@ -1104,7 +1086,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this.DragDropDrawInteractiveOpacity = null;
         }
         /// <summary>
-        /// Hodnota převzatá z <see cref="IInteractiveItem.IsDragEnabled"/> v době, kdy začala akce <see cref="DragActionType.DragThisStart"/>.
+        /// Hodnota převzatá z <see cref="InteractiveProperties.DragEnabled"/> v době, kdy začala akce <see cref="DragActionType.DragThisStart"/>.
         /// Je platná až do akce <see cref="DragActionType.DragThisEnd"/>.
         /// Při další akci Drag bude znovu vyhodnocena.
         /// </summary>
@@ -1567,6 +1549,16 @@ namespace Asol.Tools.WorkScheduler.Components
 
 
         #endregion
+    }
+    #endregion
+    #region class InteractiveProperties
+    /// <summary>
+    /// InteractiveProperties : souhrn všech vlastností jednoho interaktivního prvku
+    /// </summary>
+    public class InteractivePropertiesx 
+    {
+
+
     }
     #endregion
 }

@@ -12,7 +12,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             this._ProgressData = new ProgressData();
             this.Parent = host;
-            this.IsVisible = false;
+            this.Is.Visible = false;
         }
         private ProgressData _ProgressData;
 
@@ -67,7 +67,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// true when progress window has been drawed
         /// </summary>
-        public bool NeedDraw { get { return this.IsVisible; } }
+        public bool NeedDraw { get { return this.Is.Visible; } }
         internal void Draw(System.Drawing.Graphics graphics)
         {
             GInteractiveControl host = this.Host;

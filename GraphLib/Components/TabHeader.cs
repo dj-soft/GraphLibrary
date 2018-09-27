@@ -32,7 +32,7 @@ namespace Asol.Tools.WorkScheduler.Components
 
             this._TabHeader = new GTabHeader(this) { Position = RectangleSide.Top };
             this._TabItemCollapse = this._TabHeader.AddHeader(TabItemKeyCollapse, "", Components.IconStandard.GoTop, tabOrder: 99999);
-            this._TabItemCollapse.IsVisible = this._TabItemCollapseIsAvailable;
+            this._TabItemCollapse.Is.Visible = this._TabItemCollapseIsAvailable;
             this._TabHeader.ActivePageChanged += _TabHeader_ActiveItemChanged;
             this._TabOrderData = 1;
 
@@ -615,9 +615,9 @@ namespace Asol.Tools.WorkScheduler.Components
                 if (linkItem != null)
                 {
                     bool isVisible = (activeItem != null && Object.ReferenceEquals(tabItem, activeItem));
-                    if (linkItem.IsVisible != isVisible)
+                    if (linkItem.Is.Visible != isVisible)
                     {
-                        linkItem.IsVisible = isVisible;
+                        linkItem.Is.Visible = isVisible;
                         if (isVisible)
                             linkItem.Repaint();
                         else
@@ -768,7 +768,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected void PrepareContent(Graphics graphics)
         {
             // Pole setříděných a viditelných záhlaví:
-            List<GTabPage> sortedList = new List<GTabPage>(this._PageList.Where(i => i.IsVisible));
+            List<GTabPage> sortedList = new List<GTabPage>(this._PageList.Where(i => i.Is.Visible));
             int count = sortedList.Count;
             if (count > 1) sortedList.Sort(GTabPage.CompareByOrder);
 

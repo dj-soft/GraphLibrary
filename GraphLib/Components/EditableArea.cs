@@ -411,7 +411,7 @@ namespace Asol.Tools.WorkScheduler.Components
             /// <param name="e"></param>
             protected virtual void DrawItem(GInteractiveDrawArgs e)
             {
-                if (!this.IsVisible) return;
+                if (!this.Is.Visible) return;
 
                 Rectangle bounds;
                 switch (this.ItemType)
@@ -562,16 +562,6 @@ namespace Asol.Tools.WorkScheduler.Components
                     if (childItem != null)
                         e.RequiredCursorType = childItem.OverCursorType;
                     e.RepaintAllItems = true;
-                    break;
-                case GInteractiveChangeState.LeftClick:
-                    if (this.CanSelect)
-                    {
-                        this.IsSelected = !this.IsSelected;
-                        if (this.IsSelected)
-                            this.RepaintToLayers = GInteractiveDrawLayer.Standard;
-                        else
-                            e.RepaintAllItems = true;                 // Deselection must draw all surface.
-                    }
                     break;
                 default:
                     var s = e.ChangeState;

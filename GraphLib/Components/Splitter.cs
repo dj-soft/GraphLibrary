@@ -28,7 +28,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this._SplitterActiveOverlap = 1;
             this._DragResponse = DragResponseType.InDragMove;
             this._IsResizeToLinkItems = true;
-            this.IsDragEnabled = true;
+            this.Is.DragEnabled = true;
         }
         /// <summary>
         /// ToString()
@@ -872,7 +872,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         protected override void AfterStateChanged(GInteractiveChangeStateArgs e)
         {
-            if (!this.IsVisible) return;
+            if (!this.Is.Visible) return;
 
             bool repaintParent = false;
             switch (e.ChangeState)
@@ -936,7 +936,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="absoluteVisibleBounds">Absolutní souřadnice tohoto prvku, oříznuté do viditelné oblasti.</param>
         protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds)
         {
-            if (!this.IsVisible || this._SplitterVisibleWidth <= 0) return;
+            if (!this.Is.Visible || this._SplitterVisibleWidth <= 0) return;
  
             Size size = absoluteBounds.Size;
             if (size.Width <= 0 || size.Height <= 0) return;

@@ -227,7 +227,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Vloží danou orientaci, zavolá ChildItemsCalculate()...
         /// </summary>
-        /// <param name="bounds"></param>
+        /// <param name="orientation"></param>
+        /// <param name="actions"></param>
+        /// <param name="eventSource"></param>
         internal void SetOrientation(Orientation orientation, ProcessAction actions, EventSourceType eventSource)
         {
             Orientation oldOrientation = this._Orientation;
@@ -247,7 +249,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Přizpůsobí this.OrientationCurrent podle this.OrientationUser a this.VisibleRelativeBounds
         /// </summary>
-        /// <param name="raiseOnDrawRequest">Raise the DrawRequest event and method when OrientationCurrent is changed</param>
+        /// <param name="actions"></param>
+        /// <param name="eventSource"></param>
         internal void DetectOrientation(ProcessAction actions, EventSourceType eventSource)
         {
             Orientation oldOrientation = this._Orientation;
@@ -276,10 +279,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Provede požadované akce (ValueAlign, ScrollDataValidate, InnerBoundsReset, OnValueChanged).
         /// </summary>
         /// <param name="value"></param>
-        /// <param name="align"></param>
-        /// <param name="scroll"></param>
-        /// <param name="callInnerReset"></param>
-        /// <param name="callEvents"></param>
+        /// <param name="actions"></param>
+        /// <param name="eventSource"></param>
         protected void SetValue(DecimalNRange value, ProcessAction actions, EventSourceType eventSource)
         {
             if (value == null) return;
@@ -305,11 +306,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Uloží danou hodnotu do this._ValueTotal.
         /// Provede požadované akce (ValueAlign, ScrollDataValidate, InnerBoundsReset, OnValueChanged).
         /// </summary>
-        /// <param name="value"></param>
-        /// <param name="align"></param>
-        /// <param name="scroll"></param>
-        /// <param name="callInnerReset"></param>
-        /// <param name="callEvents"></param>
+        /// <param name="valueTotal"></param>
+        /// <param name="actions"></param>
+        /// <param name="eventSource"></param>
         protected void SetValueTotal(DecimalNRange valueTotal, ProcessAction actions, EventSourceType eventSource)
         {
             if (valueTotal == null) return;
@@ -471,7 +470,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Return SizeRange in pixels from value (booth in absolute coordinates)
         /// </summary>
         /// <param name="value"></param>
-        /// <param name="roundToInt"></param>
         /// <returns></returns>
         private DecimalNRange _GetValueFromPixel(DecimalNRange value)
         {
@@ -484,6 +482,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Result can be rounded or unrounded, ba parameter roundToInt.
         /// </summary>
         /// <param name="value"></param>
+        /// <param name="roundToInt"></param>
         /// <returns></returns>
         private decimal _GetPixelFromValue(decimal value, bool roundToInt)
         {
@@ -494,7 +493,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Return absolute value for specified absolute pixel.
         /// </summary>
-        /// <param name="data"></param>
+        /// <param name="pixel"></param>
         /// <returns></returns>
         private decimal _GetValueFromPixel(decimal pixel)
         {
@@ -507,6 +506,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Result can be rounded or unrounded, ba parameter roundToInt.
         /// </summary>
         /// <param name="value"></param>
+        /// <param name="roundToInt"></param>
         /// <returns></returns>
         private decimal _GetPixelDistanceFromValue(decimal value, bool roundToInt)
         {
@@ -786,6 +786,9 @@ namespace Asol.Tools.WorkScheduler.Components
         private decimal ChildDataThumbOffset;
         #endregion
         #region Child items, Init, Filter and Cache, Type-properties
+        /// <summary>
+        /// Vrací pole Child prvků
+        /// </summary>
         protected override IEnumerable<IInteractiveItem> Childs { get { return this.GetSubItems(); } }
         /// <summary>
         /// Vytvoří všechny Child items
@@ -879,10 +882,14 @@ namespace Asol.Tools.WorkScheduler.Components
                 this.ImageType = LinearShapeType.None;
                 this.OverCursorType = null;
                 this.DragCursorType = null;
-                this.IsDragEnabled = (itemType == ChildItemType.Thumb);
-                this.IsHoldMouse = false;
-                this.IsEnabled = isEnabled;
+                this.Is.DragEnabled = (itemType == ChildItemType.Thumb);
+                this.Is.HoldMouse = false;
+                this.Is.Enabled = isEnabled;
             }
+            /// <summary>
+            /// Vizualizace Child prvku
+            /// </summary>
+            /// <returns></returns>
             public override string ToString()
             {
                 return this.ItemType.ToString() + ": " + this.Bounds.ToString() + "; Owner: " + this.Owner.ToString();
@@ -975,14 +982,41 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected enum ChildItemType : int
         {
+            /// <summary>
+            /// None
+            /// </summary>
             None = 0,
+            /// <summary>
+            /// MinArrow
+            /// </summary>
             MinArrow,
+            /// <summary>
+            /// MinArea
+            /// </summary>
             MinArea,
+            /// <summary>
+            /// Thumb
+            /// </summary>
             Thumb,
+            /// <summary>
+            /// MaxArea
+            /// </summary>
             MaxArea,
+            /// <summary>
+            /// MaxArrow
+            /// </summary>
             MaxArrow,
+            /// <summary>
+            /// Data
+            /// </summary>
             Data,
+            /// <summary>
+            /// AllArea
+            /// </summary>
             AllArea,
+            /// <summary>
+            /// CenterThumb
+            /// </summary>
             CenterThumb
         }
         #endregion
@@ -1000,6 +1034,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Called after any interactive change value of State
         /// </summary>
         /// <param name="e"></param>
+        /// <param name="childItem"></param>
         protected void AfterStateChanged(GInteractiveChangeStateArgs e, ChildItem childItem)
         {
             if (!this.IsEnabled) return;
@@ -1136,7 +1171,13 @@ namespace Asol.Tools.WorkScheduler.Components
 
             return (int)thumb;
         }
+        /// <summary>
+        /// Typ aktivního Child prvku
+        /// </summary>
         protected ChildItemType ActiveChildType { get { return (this.ActiveChild != null ? this.ActiveChild.ItemType : ChildItemType.None); } }
+        /// <summary>
+        /// Aktivní prvek Child
+        /// </summary>
         protected ChildItem ActiveChild { get; set; }
         #endregion
         #region Draw + implementace IScrollBarPaintData
@@ -1154,6 +1195,9 @@ namespace Asol.Tools.WorkScheduler.Components
             else
                 GPainter.DrawAreaBase(e.Graphics, absoluteBounds, Skin.ScrollBar.BackColorArea, this.Orientation, null, null);
         }
+        /// <summary>
+        /// Defaultní barva BackColor
+        /// </summary>
         protected override Color DefaultBackColor { get { return Skin.ScrollBar.BackColorArea; } }
         /// <summary>
         /// Vyvolá událost <see cref="UserDraw"/> pro uživatelské kreslení pozadí ScrollBaru

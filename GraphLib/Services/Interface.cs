@@ -176,7 +176,7 @@ namespace Asol.Tools.WorkScheduler.Services
         #endregion
         #region Events
         /// <summary>
-        /// Událost volaná po změně hodnoty <see cref="FunctionItem.IsSelected"/> na prvku v rámci této grupy (Button).
+        /// Událost volaná po změně hodnoty <see cref="FunctionItem.IsChecked"/> na prvku v rámci této grupy (Button).
         /// Tato událost je vyvolána před událostí Click.
         /// </summary>
         public event FunctionItemEventHandler ItemSelectedChange;
@@ -200,7 +200,7 @@ namespace Asol.Tools.WorkScheduler.Services
         /// <summary>
         /// Vyvolá event <see cref="ItemSelectedChange"/> na této grupě.
         /// </summary>
-        internal virtual void OnItemSelectedChange(FunctionItem item)
+        internal virtual void OnItemCheckedChange(FunctionItem item)
         {
             if (this.ItemSelectedChange != null)
                 this.ItemSelectedChange(this, new FunctionItemEventArgs(item));
@@ -412,25 +412,25 @@ namespace Asol.Tools.WorkScheduler.Services
         /// </summary>
         public virtual bool IsEnabled { get; set; }
         /// <summary>
-        /// Obsahuje true pokud this prvek může být <see cref="IsSelected"/> = být označen jako aktivní
+        /// Obsahuje true pokud this prvek může být <see cref="IsChecked"/> = být označen jako "aktivní"
         /// </summary>
-        public virtual bool IsSelectable { get; set; }
+        public virtual bool IsCheckable { get; set; }
         /// <summary>
         /// Obsahuje true, pokud tento prvek je aktivní (má u sebe zaškrtávátko)
         /// </summary>
-        public virtual bool IsSelected { get; set; }
+        public virtual bool IsChecked { get; set; }
         /// <summary>
         /// Obsahuje název skupiny prvků, které se vzájemně chovají jako OptionGroup.
-        /// To znamená, že právě jeden z prvků skupiny může být <see cref="IsSelected"/> = být označen jako aktivní.
+        /// To znamená, že právě jeden z prvků skupiny může být <see cref="IsChecked"/> = být označen jako aktivní.
         /// Chování:
-        /// a) Pokud je <see cref="SelectionGroupName"/> prázdné, pak se button chová jako CheckBox: změna jeho hodnoty <see cref="IsSelected"/> neovlivní žádný jiný prvek.
-        /// Kliknutí na takový prvek mění hodnotu <see cref="IsSelected"/> z false na true a naopak = lze jej shodit na false.
-        /// b) Pokud je <see cref="SelectionGroupName"/> prázdné, pak se button chová jako RadioButton: kliknutí na neoznačený button jej označí a současně odznačí ostatní buttony v grupě.
+        /// a) Pokud je <see cref="CheckedGroupName"/> prázdné, pak se button chová jako CheckBox: změna jeho hodnoty <see cref="IsChecked"/> neovlivní žádný jiný prvek.
+        /// Kliknutí na takový prvek mění hodnotu <see cref="IsChecked"/> z false na true a naopak = lze jej shodit na false.
+        /// b) Pokud je <see cref="CheckedGroupName"/> prázdné, pak se button chová jako RadioButton: kliknutí na neoznačený button jej označí a současně odznačí ostatní buttony v grupě.
         /// Opakované kliknutí na označený button jej neodznačí.
-        /// Prvky jedné grupy <see cref="SelectionGroupName"/> se musí nacházet v jedné grafické skupině (platí pro Toolbar).
+        /// Prvky jedné grupy <see cref="CheckedGroupName"/> se musí nacházet v jedné grafické skupině (platí pro Toolbar).
         /// Pokud by byly umístěny v jiné grupě, nebudou považovány za jednu skupinu, ale více oddělených skupin.
         /// </summary>
-        public virtual string SelectionGroupName { get; set; }
+        public virtual string CheckedGroupName { get; set; }
 
         /// <summary>
         /// Any Value for this function.
@@ -445,11 +445,11 @@ namespace Asol.Tools.WorkScheduler.Services
         #endregion
         #region Events
         /// <summary>
-        /// Akce volaná po změně <see cref="IsSelected"/> na tomto prvku.
+        /// Akce volaná po změně <see cref="IsChecked"/> na tomto prvku.
         /// </summary>
         public event FunctionItemEventHandler SelectedChange;
         /// <summary>
-        /// Akce volaná po změně <see cref="IsSelected"/> na některém z podřízených prvků tohoto prvku.
+        /// Akce volaná po změně <see cref="IsChecked"/> na některém z podřízených prvků tohoto prvku.
         /// </summary>
         public event FunctionItemEventHandler SubItemsSelectedChange;
         /// <summary>
@@ -468,7 +468,7 @@ namespace Asol.Tools.WorkScheduler.Services
         /// <summary>
         /// Vyvolá event SelectedChange
         /// </summary>
-        internal virtual void OnSelectedChange()
+        internal virtual void OnCheckedChange()
         {
             if (this.SelectedChange != null)
                 this.SelectedChange(this, new FunctionItemEventArgs(this));
@@ -485,7 +485,7 @@ namespace Asol.Tools.WorkScheduler.Services
         /// Vvyolá event SubItemsSelectedChange
         /// </summary>
         /// <param name="subItem">SubItem clicked</param>
-        internal virtual void OnSubItemsSelectedChange(FunctionItem subItem)
+        internal virtual void OnSubItemsCheckedChange(FunctionItem subItem)
         {
             if (this.SubItemsSelectedChange != null)
                 this.SubItemsSelectedChange(this, new FunctionItemEventArgs(subItem));
@@ -588,8 +588,8 @@ namespace Asol.Tools.WorkScheduler.Services
                     item.AutoToolTip = true;
                 }
                 item.Enabled = this.IsEnabled;
-                item.CheckOnClick = this.IsSelectable;
-                item.Checked = this.IsSelected;
+                item.CheckOnClick = this.IsCheckable;
+                item.Checked = this.IsChecked;
 
                 // SubItems dáme rekurzivně:
                 var subItems = CreateWinFormItems(this.SubItems);

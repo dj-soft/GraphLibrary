@@ -701,7 +701,7 @@ namespace Asol.Tools.WorkScheduler.Components
             if (tables == null)
             {   // Tabulky v TablesAll mají být sice VŠECHNY, ale jen ty všechny, které se uživateli mohou zobrazit při vhodném scrollování gridu nahoru/dolů.
                 //  Proto v nich NESMÍ být tabulky, které jsou označeny jako IsVisible = false.
-                List<GTable> tableList = this._Tables.Where(t => t.IsVisible).ToList();
+                List<GTable> tableList = this._Tables.Where(t => t.Is.Visible).ToList();
                 if (tableList.Count > 1)
                     tableList.Sort(GTable.CompareOrder);
                 tables = tableList.ToArray();
@@ -1072,7 +1072,7 @@ namespace Asol.Tools.WorkScheduler.Components
             if (!items.HasFlag(InvalidateItem.OnlyForGrid) && callTables)                // Invalidaci tabulek volám jen tehdy, když aktuální invalidace není "Jen pro grid", a podle významu se má týkat i tabulek...
             {
                 InvalidateItem itemsTable = items | InvalidateItem.OnlyForTable;         // Nastavím bit, že navazující invalidace se má provést už jen v tabulkách, ale nemá se volat do Gridu!   Viz začátek zdejší metody.
-                foreach (GTable table in this._Tables.Where(t => t.IsVisible))
+                foreach (GTable table in this._Tables.Where(t => t.Is.Visible))
                     table.Invalidate(itemsTable);
             }
 
