@@ -95,11 +95,11 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this.ContainerArea1 = new InteractiveContainer() { Bounds = new Rectangle(280, 160, 300, 180), BackColor = Color.Salmon };
             this._ActiveList.Add(this.ContainerArea1);
 
-            this.ContainerArea1.AddItem(new GMovableItem() { Bounds = new Rectangle(5, 5, 70, 20), BackColor = Color.DarkOrange, DragDrawGhost = DragDrawGhostMode.DragOnlyStandard });
-            this.ContainerArea1.AddItem(new GMovableItem() { Bounds = new Rectangle(105, 5, 70, 20), BackColor = Color.DarkBlue, DragDrawGhost = DragDrawGhostMode.DragWithGhostAtOriginal });
-            this.ContainerArea1.AddItem(new GMovableItem() { Bounds = new Rectangle(5, 40, 70, 20), BackColor = Color.DarkGreen, DragDrawGhost = DragDrawGhostMode.DragWithGhostOnInteractive });
-            this.ContainerArea1.AddItem(new GMovableItem() { Bounds = new Rectangle(105, 40, 70, 20), BackColor = Color.DarkGreen, DragDrawGhost = DragDrawGhostMode.DragWithGhostOnInteractive });
-            
+            this.ContainerArea1.AddItem(new GMovableItem() { Bounds = new Rectangle(5, 5, 70, 20), BackColor = Color.DarkOrange });   // , DragDrawGhost = DragDrawGhostMode.DragOnlyStandard
+            this.ContainerArea1.AddItem(new GMovableItem() { Bounds = new Rectangle(105, 5, 70, 20), BackColor = Color.DarkBlue });   // , DragDrawGhost = DragDrawGhostMode.DragWithGhostAtOriginal 
+            this.ContainerArea1.AddItem(new GMovableItem() { Bounds = new Rectangle(5, 40, 70, 20), BackColor = Color.DarkGreen });   // , DragDrawGhost = DragDrawGhostMode.DragWithGhostOnInteractive
+            this.ContainerArea1.AddItem(new GMovableItem() { Bounds = new Rectangle(105, 40, 70, 20), BackColor = Color.DarkGreen }); // , DragDrawGhost = DragDrawGhostMode.DragWithGhostOnInteractive 
+
 
             this._GInteractiveControl.Items = this._ActiveList;
             this._GInteractiveControl.ResizeControl += new EventHandler(_GInteractiveControl_ResizeBeforeDraw);
@@ -160,16 +160,16 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         private void checkBox1_CheckedChanged(object sender, EventArgs e)
         {
             bool enabled = this._AxisEnabledCheck.Checked;
-            this._TimeAxis.IsEnabled = enabled;
-            this._SizeAxisH.IsEnabled = enabled;
-            this._SizeAxisV.IsEnabled = enabled;
+            this._TimeAxis.Is.Enabled = enabled;
+            this._SizeAxisH.Is.Enabled = enabled;
+            this._SizeAxisV.Is.Enabled = enabled;
         }
     }
     public class TestActiveItem : InteractiveDragObject, IInteractiveItem
     {
         public TestActiveItem()
         {
-            this.Style |= GInteractiveStyles.DragDrawGhostInteractive;
+            this.Is.DrawDragMoveGhostInteractive = true;
         }
         protected Rectangle? OriginalBounds { get; set; }
         public Color Color { get; set; }
