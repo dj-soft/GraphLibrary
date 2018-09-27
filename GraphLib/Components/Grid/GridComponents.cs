@@ -20,13 +20,19 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <summary>
         /// Konstruktor
         /// </summary>
-        protected GComponent()
-        { }
+        protected GComponent() : base()
+        {
+            this.Is.GetMouseDragMove = this.GetMouseDragMove;
+        }
         /// <summary>
         /// Souřadnice headeru.
         /// Vložením nové hodnoty do souřadnic dojde i k správnému umístění Splitteru, který je součástí tohoto headeru, a případně i časové osy (pokud je součástí ColumnHeaderu).
         /// </summary>
         public override Rectangle Bounds { get { return base.Bounds; } set { base.Bounds = value; } }        // tahle property je tu jen kvůli XML komentáři, který je odlišný od base třídy :-)
+        /// <summary>
+        /// Po změně souřadnic
+        /// </summary>
+        /// <param name="args"></param>
         protected override void OnBoundsChanged(GPropertyChangeArgs<Rectangle> args)
         {
             base.OnBoundsChanged(args);
@@ -61,14 +67,15 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <summary>
         /// true pokud tento prvek může být přetahován myší jinam
         /// </summary>
-        public override bool IsDragEnabled { get { return false; } }
-        protected virtual bool NeedDebug { get { return false; } }
+        protected virtual bool GetMouseDragMove(bool value) { return false; }
         /// <summary>
         /// Kreslí prvek standardně (včetně kompletního obsahu).
         /// Může to být do vrstvy Standard i do jiné vrstvy, záleží na nastavení režimu Drag.
         /// </summary>
         /// <param name="e"></param>
-        /// <param name="boundsAbsolute"></param>
+        /// <param name="absoluteBounds"></param>
+        /// <param name="absoluteVisibleBounds"></param>
+        /// <param name="drawMode"></param>
         protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
         {
             Application.App.Trace.Info(Application.TracePriority.Priority1_ElementaryTimeDebug, this.GetType().Name, "Draw", "Component", this.ToString(), "BoundsAbsolute: " + absoluteBounds.ToString());
@@ -324,6 +331,10 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         protected GSplitter _ColumnSplitter;
         #endregion
         #region Interaktivita
+        /// <summary>
+        /// Interaktivita
+        /// </summary>
+        /// <param name="e"></param>
         protected override void AfterStateChangedLeftClick(GInteractiveChangeStateArgs e)
         {
             this.OwnerGTable.TableHeaderClick(e);
@@ -365,6 +376,10 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
     public class GColumnHeader : GComponent
     {
         #region Konstruktor, data
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="column"></param>
         public GColumnHeader(Column column)
             : base()
         {
@@ -418,7 +433,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         public GSplitter ColumnSplitter { get { return this._ColumnSplitter; } }
         /// <summary>
-        /// true pokud má být zobrazen splitter za tímto sloupcem, závisí na (OwnerTable.AllowColumnResize && OwnerColumn.AllowColumnResize)
+        /// true pokud má být zobrazen splitter za tímto sloupcem, závisí na (OwnerTable.AllowColumnResize and OwnerColumn.AllowColumnResize)
         /// </summary>
         public bool ColumnSplitterVisible { get { return (this.OwnerTable.AllowColumnResize && this.OwnerColumn.ColumnProperties.AllowColumnResize); } }
         /// <summary>
@@ -467,7 +482,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         public bool UseTimeAxis { get { return this.OwnerColumn.ColumnProperties.UseTimeAxis; } }
         /// <summary>
         /// Obsahuje true, pokud se pro sloupec má zobrazit časová osa v záhlaví, a tato časová osa se má synchronizovat do dalších Gridů a objektů.
-        /// To je jen tehdy, když sloupec obsahuje časový graf (<see cref="ColumnContent"/> == <see cref="ColumnContentType.TimeGraphSynchronized"/>).
+        /// To je jen tehdy, když sloupec obsahuje časový graf (<see cref="ColumnProperties.ColumnContent"/> == <see cref="ColumnContentType.TimeGraphSynchronized"/>).
         /// </summary>
         public bool UseTimeAxisSynchronized { get { return this.OwnerColumn.ColumnProperties.UseTimeAxisSynchronized; } }
         /// <summary>
@@ -583,6 +598,9 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         private GTimeAxis _TimeAxis;
         #endregion
         #region Childs items : záhlaví sloupce může obsahovat TimeAxis
+        /// <summary>
+        /// Child prvky
+        /// </summary>
         protected override IEnumerable<IInteractiveItem> Childs { get { this._ChildArrayCheck(); return this._ChildList; } }
         private void _ChildArrayCheck()
         {
@@ -632,6 +650,10 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                 e.ToolTipData.Opacity = 240;
             }
         }
+        /// <summary>
+        /// Po kliknutí na záhlaví
+        /// </summary>
+        /// <param name="e"></param>
         protected override void AfterStateChangedLeftClick(GInteractiveChangeStateArgs e)
         {
             this.OwnerGTable.ColumnHeaderClick(e, this.OwnerColumn);
@@ -641,7 +663,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <summary>
         /// Můžeme tento sloupec přemístit jinam? Závisí na OwnerTable.AllowColumnReorder
         /// </summary>
-        public override bool IsDragEnabled { get { return this.OwnerTable.AllowColumnReorder; } set { } }
+        protected override bool GetMouseDragMove(bool value) { return this.OwnerTable.AllowColumnReorder; }
         /// <summary>
         /// Volá se v procesu přesouvání. Zarovná souřadnice do povoleného rozmezí a najde sloupce, kam by se měl přesun provést.
         /// </summary>
@@ -811,7 +833,9 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// Where is change, there will set DrawToLayer...
         /// </summary>
         /// <param name="prevColumn"></param>
+        /// <param name="prevMark"></param>
         /// <param name="nextColumn"></param>
+        /// <param name="nextMark"></param>
         private void _DragThisMarkHeaders(Column prevColumn, int prevMark, Column nextColumn, int nextMark)
         {
             int prevId = (prevColumn != null ? prevColumn.ColumnId : -1);
@@ -840,6 +864,13 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         protected Int32? DragThisToColumnOrder { get; set; }
         #endregion
         #region Draw - kreslení záhlaví sloupce : ikona, text, značky při procesu Drag
+        /// <summary>
+        /// Vykreslí obsah
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="drawAsGhost"></param>
+        /// <param name="opacity"></param>
         protected override void DrawContent(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
         {
             base.DrawContent(e, boundsAbsolute, drawAsGhost, opacity);
@@ -935,6 +966,9 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
     }
     #endregion
     #region Třída GRow : vizuální třída pro zobrazování podkladu řádku (základní barva nebo podkladový graf nebo jiná data)
+    /// <summary>
+    /// GRow : vizuální třída pro zobrazování podkladu řádku (základní barva nebo podkladový graf nebo jiná data)
+    /// </summary>
     public class GRow : GComponent
     {
         #region Konstruktor, data
@@ -1088,6 +1122,10 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
     public class GRowHeader : GComponent
     {
         #region Konstruktor, data
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="row"></param>
         public GRowHeader(Row row)
             : base()
         {
@@ -1181,6 +1219,10 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         protected GSplitter _RowSplitter;
         #endregion
         #region Interaktivita
+        /// <summary>
+        /// Po změně interaktivního stavu
+        /// </summary>
+        /// <param name="e"></param>
         protected override void AfterStateChanged(GInteractiveChangeStateArgs e)
         {
             base.AfterStateChanged(e);
@@ -1195,13 +1237,30 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                     break;
             }
         }
+        /// <summary>
+        /// Po kliknutí na záhlaví řádku
+        /// </summary>
+        /// <param name="e"></param>
         protected override void AfterStateChangedLeftClick(GInteractiveChangeStateArgs e)
         {
             this.OwnerGTable.RowHeaderClick(e, this.OwnerRow);
         }
-        public override bool IsDragEnabled { get { return this.OwnerTable.AllowRowReorder; } set { } }
+        /// <summary>
+        /// Je povoleno provést Drag and Drop
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        protected override bool GetMouseDragMove(bool value) { return this.OwnerTable.AllowRowReorder; }
+
         #endregion
         #region Draw - kreslení záhlaví řádku
+        /// <summary>
+        /// Vykreslí obsah záhlaví řádku
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="drawAsGhost"></param>
+        /// <param name="opacity"></param>
         protected override void DrawContent(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
         {
             base.DrawContent(e, boundsAbsolute, drawAsGhost, opacity);
@@ -1263,7 +1322,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             }
         }
         /// <summary>
-        /// Volba, zda metoda <see cref="Repaint()"/> způsobí i vyvolání metody <see cref="Parent"/>.<see cref="IInteractiveParent.Repaint"/>.
+        /// Volba, zda metoda Repaint() způsobí i vyvolání metody Repaint() i v Parentovi
         /// </summary>
         protected override RepaintParentMode RepaintParent { get { return RepaintParentMode.Always; } }
         #endregion
@@ -1276,6 +1335,10 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
     public class GCell : GComponent
     {
         #region Konstruktor, data
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="cell"></param>
         public GCell(Cell cell)
         {
             this._Cell = cell;
@@ -1347,6 +1410,10 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         protected override TableAreaType ComponentType { get { return TableAreaType.Cell; } }
         #endregion
         #region Interaktivita
+        /// <summary>
+        /// Po změně interaktivního stavu
+        /// </summary>
+        /// <param name="e"></param>
         protected override void AfterStateChanged(GInteractiveChangeStateArgs e)
         {
             base.AfterStateChanged(e);
@@ -1485,13 +1552,13 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         #endregion
         #region Childs
         /// <summary>
-        /// Child prvky buňky: typicky null nebo pole obsahující jediný prvek typu <see cref="ITimeInteractiveGraph"/>
+        /// Child prvky buňky: typicky null nebo pole obsahující jediný prvek typu <see cref="Graph.ITimeInteractiveGraph"/>
         /// </summary>
         protected override IEnumerable<IInteractiveItem> Childs { get { this.CheckValidChilds(); return this._Childs; } } private IInteractiveItem[] _Childs;
         /// <summary>
         /// Zajistí platnost obsahu pole <see cref="_Childs"/>.
         /// Pole může být null (běžná situace) 
-        /// nebo může obsahovat jeden prvek typu <see cref="ITimeInteractiveGraph"/> v případě, kdy <see cref="OwnerCell"/> obsahuej hodnotu typu <see cref="TableValueType.ITimeInteractiveGraph"/>.
+        /// nebo může obsahovat jeden prvek typu <see cref="Graph.ITimeInteractiveGraph"/> v případě, kdy <see cref="OwnerCell"/> obsahuej hodnotu typu <see cref="TableValueType.ITimeInteractiveGraph"/>.
         /// </summary>
         protected void CheckValidChilds()
         {
@@ -1504,7 +1571,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <summary>
         /// Metoda vrátí pole Child v případě, kdy typ hodnoty v buňce je <see cref="TableValueType.ITimeInteractiveGraph"/>.
         /// Metoda zajistí, že graf, uložený jako Value v buňce <see cref="OwnerCell"/> bude korektně naplněn,
-        /// tzn. bude mít navázaný konvertor časové osy <see cref="ITimeInteractiveGraph.TimeConvertor"/> a bude mít nastavenho parenta <see cref="IInteractiveParent.Parent"/> = this.
+        /// tzn. bude mít navázaný konvertor časové osy <see cref="Graph.ITimeInteractiveGraph.TimeAxisConvertor"/> a bude mít nastavenho parenta <see cref="IInteractiveParent.Parent"/> = this.
         /// </summary>
         /// <returns></returns>
         protected IInteractiveItem[] GetChildsITimeInteractiveGraph()
@@ -1536,7 +1603,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             this.DrawDebugBorder(e, boundsAbsolute, opacity);
         }
         /// <summary>
-        /// Volba, zda metoda <see cref="Repaint()"/> způsobí i vyvolání metody <see cref="Parent"/>.<see cref="IInteractiveParent.Repaint"/>.
+        /// Volba, zda metoda Repaint() způsobí i vyvolání metody Parent.Repaint()
         /// </summary>
         protected override RepaintParentMode RepaintParent { get { return RepaintParentMode.Always; } }
         #endregion
@@ -1548,6 +1615,9 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
     /// </summary>
     public enum TableAreaType
     {
+        /// <summary>
+        /// Nezadáno
+        /// </summary>
         None,
         /// <summary>
         /// Prostor všech tabulek

@@ -146,30 +146,15 @@ namespace Asol.Tools.WorkScheduler.Components
             if (host != null) host.Refresh();
         }
         /// <summary>
-        /// Interactive style
-        /// </summary>
-        protected virtual GInteractiveStyles Style { get { return this._Style; } set { this._Style = value; } } private GInteractiveStyles _Style = GInteractiveStyles.StandardMouseInteractivity;
-        /// <summary>
         /// Režim pro kreslení prvku v době Drag and Drop.
-        /// Je spojeno s hodnotami <see cref="Style"/>.
         /// </summary>
         protected DragDrawGhostMode DragDrawGhostMode
         {
             get
             {
-                GInteractiveStyles style = this.Style;
-                if (style.HasFlag(GInteractiveStyles.DragDrawGhostInteractive)) return DragDrawGhostMode.DragWithGhostOnInteractive;
-                if (style.HasFlag(GInteractiveStyles.DragDrawGhostOriginal)) return DragDrawGhostMode.DragWithGhostAtOriginal;
+                if (this.Is.DrawDragMoveGhostInteractive) return DragDrawGhostMode.DragWithGhostOnInteractive;
+                if (this.Is.DrawDragMoveGhostStandard) return DragDrawGhostMode.DragWithGhostAtOriginal;
                 return DragDrawGhostMode.DragOnlyStandard; 
-            }
-            set
-            {
-                int storage = (int)this.Style;
-                bool ghostInteractive = (value == DragDrawGhostMode.DragWithGhostOnInteractive);
-                storage = BitStorage.SetBitValue(storage, (int)GInteractiveStyles.DragDrawGhostInteractive, ghostInteractive);
-                bool ghostAtStandard = (value == DragDrawGhostMode.DragWithGhostAtOriginal);
-                storage = BitStorage.SetBitValue(storage, (int)GInteractiveStyles.DragDrawGhostOriginal, ghostAtStandard);
-                this.Style = (GInteractiveStyles)storage;
             }
         }
         /// <summary>
@@ -355,14 +340,13 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected virtual GInteractiveDrawLayer RepaintToLayers { get; set; }
         /// <summary>
-        /// Pokud je zde true, pak v procesu kreslení prvku je po standardním vykreslení this prvku <see cref="Draw(GInteractiveDrawArgs)"/> 
-        /// a po standardním vykreslení všech <see cref="Childs"/> prvků ještě vyvolána metoda <see cref="DrawOverChilds(GInteractiveDrawArgs)"/> pro this prvek.
+        /// Pokud je zde true, pak v procesu kreslení prvku je po standardním vykreslení this prvku <see cref="Draw(GInteractiveDrawArgs, Rectangle, Rectangle)"/> 
+        /// a po standardním vykreslení všech <see cref="Childs"/> prvků ještě vyvolána metoda <see cref="DrawOverChilds(GInteractiveDrawArgs, Rectangle, DrawItemMode)"/> pro this prvek.
         /// </summary>
         protected virtual bool NeedDrawOverChilds { get; set; }
         /// <summary>
         /// Zajistí, že this prvek bude standardně vykreslen včetně všech svých <see cref="Childs"/>.
         /// </summary>
-        /// <param name="item"></param>
         protected virtual void Repaint()
         {
             this.RepaintToLayers = this.StandardDrawToLayer;
@@ -380,7 +364,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Aktuální stav tohoto objektu po dokončení aktuálního eventu (ne před ním)
         /// </summary>
-        public GInteractiveState InteractiveState { get { return (this.IsEnabled ? this._InteractiveState : GInteractiveState.Disabled); } protected set { this._InteractiveState = value; } } private GInteractiveState _InteractiveState;
+        public GInteractiveState InteractiveState { get { return (this.Is.Enabled ? this._InteractiveState : GInteractiveState.Disabled); } protected set { this._InteractiveState = value; } } private GInteractiveState _InteractiveState;
         /// <summary>
         /// Obsahuje true, pokud this objekt je nyní přemisťován akcí DragMove 
         /// (<see cref="InteractiveState"/> je <see cref="GInteractiveState.LeftDrag"/> nebo <see cref="GInteractiveState.RightDrag"/>)
@@ -434,8 +418,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         protected virtual void AfterStateChanged(GInteractiveChangeStateArgs e)
         {
-            bool isEnabled = this.IsEnabled;
-            if (!IsEnabled) return;
+            bool isEnabled = this.Is.Enabled;
+            if (!isEnabled) return;
 
             switch (e.ChangeState)
             {
@@ -602,7 +586,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual void DragAction(GDragActionArgs e) { }
         /// <summary>
         /// Výchozí metoda pro kreslení prvku, volaná z jádra systému.
-        /// Třída <see cref="InteractiveObject"/> vyvolá metodu <see cref="Draw(GInteractiveDrawArgs, Rectangle, DrawItemMode)"/>.
+        /// Třída <see cref="InteractiveObject"/> vyvolá metodu <see cref="Draw(GInteractiveDrawArgs, Rectangle, Rectangle, DrawItemMode)"/>.
         /// </summary>
         /// <param name="e">Kreslící argument</param>
         /// <param name="absoluteBounds">Absolutní souřadnice tohoto prvku, sem by se mělo fyzicky kreslit</param>
@@ -842,6 +826,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected class SuppressEventClass : IDisposable
         {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="owner"></param>
             public SuppressEventClass(InteractiveObject owner)
             {
                 this._Owner = owner;
@@ -862,7 +850,7 @@ namespace Asol.Tools.WorkScheduler.Components
         #region Interaktivní vlastnosti
         /// <summary>
         /// Tato hodnota vyjadřuje výběr prvků ze strany hostitele, k další editaci / Copy and Paste / atd.
-        /// Hostitel tuto hodnotu nastavuje tehdy, když <see cref="IsSelectable"/> je true, jinak ne.
+        /// Hostitel tuto hodnotu nastavuje tehdy, když <see cref="InteractiveProperties.Selectable"/> je true, jinak ne.
         /// Hodnota je evidována centrálně v instanci <see cref="GInteractiveControl.Selector"/>.
         /// Tato hodnota neobsahuje stav Framování (v procesu Drag and Frame), ten je k dispozici v <see cref="IsFramed"/>.
         /// </summary>
@@ -873,27 +861,13 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Teprve na konci procesu SelectFrame se pro dotčené objekty (které mají <see cref="IsFramed"/> = true) nastaví i <see cref="IsSelected"/> = true.
         /// </summary>
         public virtual bool IsFramed { get { var host = this.Host; return (host != null ? host.Selector.IsFramed(this) : false); } set { var host = this.Host; if (host != null) host.Selector.SetFramed(this, value); } }
-
-
-
-        /// <summary>
-        /// true when this.Style contains KeyboardInput
-        /// </summary>
-        protected bool StyleHasKeyboard { get { return this.Style.HasFlag(GInteractiveStyles.KeyboardInput); } }
-        /// <summary>
-        /// true when this.Style contains Drag
-        /// </summary>
-        protected bool StyleHasDrag { get { return this.Style.HasFlag(GInteractiveStyles.Drag); } }
+        
         #endregion
         #region Boolean repository
         /// <summary>
-        /// Is HoldMouse?
-        /// </summary>
-        public virtual bool IsHoldMouse { }
-        /// <summary>
         /// All interactive boolean properties
         /// </summary>
-        public InteractiveProperties Is { get { if (this._Is == null) this._Is = InteractiveProperties.Default; return this._Is; } protected set { this._Is = value; } } private InteractiveProperties _Is;
+        public InteractiveProperties Is { get { if (this._Is == null) this._Is = new InteractiveProperties(); return this._Is; } protected set { this._Is = value; } } private InteractiveProperties _Is;
         #endregion
         #region IInteractiveItem + IInteractiveParent members
         Rectangle IInteractiveItem.Bounds { get { return this.Bounds; } set { this.Bounds = value; } }
@@ -922,7 +896,6 @@ namespace Asol.Tools.WorkScheduler.Components
         UInt32 IInteractiveParent.Id { get { return this._Id; } }
         GInteractiveControl IInteractiveParent.Host { get { return this.Host; } }
         IInteractiveParent IInteractiveParent.Parent { get { return this.Parent; } set { this.Parent = value; } }
-        GInteractiveStyles IInteractiveParent.Style { get { return this.Style; } }
         Size IInteractiveParent.ClientSize { get { return this.ClientSize; } }
         void IInteractiveParent.Repaint() { this.Repaint(); }
         #endregion
@@ -945,6 +918,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Jednoznačné ID tohoto objektu
         /// </summary>
         protected UInt32 _Id = ++LastId;
+        /// <summary>
+        /// ID posledně přidělené nějakému prvku
+        /// </summary>
         protected static UInt32 LastId = 0;
         /// <summary>
         /// Returns unique ID for new IInteractiveItem object
@@ -1002,27 +978,12 @@ namespace Asol.Tools.WorkScheduler.Components
         #region Konstruktory
         /// <summary>
         /// Konstruktor.
-        /// Do stylu tohoto objektu přidá hodnotu <see cref="GInteractiveStyles.DragDrawGhostOriginal"/>,
-        /// která provede to, že objekt je při procesu Drag and Drop vykreslen do původní pozice jako Ghost, a do Drag pozice jako Standard.
         /// </summary>
         public InteractiveDragObject() : base()
         {
-            this.Style |= GInteractiveStyles.DragDrawGhostOriginal;
-            this.IsDragEnabled = true;
-        }
-        /// <summary>
-        /// Konstruktor.
-        /// Do stylu tohoto objektu přidá dodanou hodnotu stylu.
-        /// Je tedy na potomkovi, jaký styl kreslení si zadá.
-        /// Vhodné hodnoty jsou:
-        /// <see cref="GInteractiveStyles.DragDrawGhostOriginal"/> = ghost je na originální souřadnici a standard objekt se přesouvá;
-        /// <see cref="GInteractiveStyles.DragDrawGhostInteractive"/> = ghost se přesouvá, a na originální souřadnici se stále nachází standard objekt;
-        /// <see cref="GInteractiveStyles.None"/> = 
-        /// </summary>
-        /// <param name="dragStyles"
-        public InteractiveDragObject(GInteractiveStyles dragStyles) : base()
-        {
-            this.Style |= dragStyles;
+            this.Is.DrawDragMoveGhostStandard = true;
+            this.Is.DrawDragMoveGhostInteractive = false;
+            this.Is.MouseDragMove = true;
         }
         #endregion
         #region Interactivity - Dragging
@@ -1035,7 +996,7 @@ namespace Asol.Tools.WorkScheduler.Components
             switch (e.DragAction)
             {
                 case DragActionType.DragThisStart:
-                    this._IsDragEnabledCurrent = this.Is.DragEnabled;
+                    this._IsDragEnabledCurrent = this.Is.MouseDragMove;
                     if (this._IsDragEnabledCurrent)
                     {
                         this.BoundsDragOrigin = this.Bounds;
@@ -1086,7 +1047,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this.DragDropDrawInteractiveOpacity = null;
         }
         /// <summary>
-        /// Hodnota převzatá z <see cref="InteractiveProperties.DragEnabled"/> v době, kdy začala akce <see cref="DragActionType.DragThisStart"/>.
+        /// Hodnota převzatá z <see cref="InteractiveProperties.MouseDragMove"/> v době, kdy začala akce <see cref="DragActionType.DragThisStart"/>.
         /// Je platná až do akce <see cref="DragActionType.DragThisEnd"/>.
         /// Při další akci Drag bude znovu vyhodnocena.
         /// </summary>
@@ -1136,15 +1097,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Souřadnice (Bounds) tohoto objektu, platné před začátkem procesu Drag and Drop.
         /// Jde o souřadnice relativní, obdobně jako <see cref="InteractiveObject.Bounds"/>.
-        /// Do těchto souřadnic je objekt v době Drag and Drop vykreslován jako Ghost, pokud styl obsahuje <see cref="GInteractiveStyles.DragDrawGhostOriginal"/>.
         /// Mimo proces Drag and Drop je zde null.
         /// </summary>
         protected virtual Rectangle? BoundsDragOrigin { get; set; }
         /// <summary>
         /// Souřadnice (Bounds) tohoto objektu, kde se aktuálně nachází v procesu Drag and Drop.
         /// Jde o souřadnice relativní, obdobně jako <see cref="InteractiveObject.Bounds"/>.
-        /// Do těchto souřadnic je objekt v době Drag and Drop vykreslován jako Ghost, pokud styl obsahuje <see cref="GInteractiveStyles.DragDrawGhostInteractive"/>,
-        /// anebo jako standardní objektu pokud styl obsahuje <see cref="GInteractiveStyles.DragDrawGhostOriginal"/>.
         /// Mimo proces Drag and Drop je zde null.
         /// <para/>
         /// Tato hodnota se reálně propisuje do property <see cref="InteractiveObject.BoundsInteractive"/>.
@@ -1221,9 +1179,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Výsledné absolutní souřadnice pro kreslení a reřim kreslení dává do out parametrů.
         /// Vrací true = má se kreslit / false = nemá se kreslit.
         /// <para/>
-        /// Bázová třída InteractiveDragObject v této metodě reaguje na styl <see cref="InteractiveObject.Style"/>, 
-        /// a podle vlastností stylu <see cref="GInteractiveStyles.DragDrawGhostOriginal"/> a <see cref="GInteractiveStyles.DragDrawGhostInteractive"/>
-        /// řídí vykreslení do souřadnic výchozích (BoundsDragOrigin) a do souřadnic Dragging (BoundsDragTarget), 
+        /// Bázová třída  řídí vykreslení do souřadnic výchozích (BoundsDragOrigin) a do souřadnic Dragging (BoundsDragTarget), 
         /// do vrstev Standard a Interactive.
         /// <para/>
         /// Pokud chce potomek kreslit prvek v době přetahování jinam, může tuto metodu přepsat.
@@ -1232,10 +1188,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="absoluteBoundsItem">Vstup: Absolutní souřadnice prvku, běžná (odvozená od <see cref="IInteractiveItem.Bounds"/>)</param>
         /// <param name="absoluteBoundsDraw">Výstup: Absolutní souřadnice, kam se bude prvek vykreslovat (souvisí s procesem Drag and Drop)</param>
         /// <param name="drawMode">Režim kreslení prvku v aktuální situaci</param>
+        /// <param name="drawOpacity"></param>
         protected virtual bool PrepareDrawDataByDragData(GInteractiveDrawLayer currentLayer, Rectangle absoluteBoundsItem, out Rectangle absoluteBoundsDraw, out DrawItemMode drawMode, out int? drawOpacity)
         {
-            bool ghostInOriginalBounds = ((this.Style & GInteractiveStyles.DragDrawGhostOriginal) != 0);
-            bool ghostInDraggedBounds = ((this.Style & GInteractiveStyles.DragDrawGhostInteractive) != 0);
+            bool ghostInOriginalBounds = this.Is.DrawDragMoveGhostStandard;
+            bool ghostInDraggedBounds = this.Is.DrawDragMoveGhostInteractive;
             absoluteBoundsDraw = Rectangle.Empty;
             drawMode = DrawItemMode.InDragProcess;
             drawOpacity = null;
@@ -1327,7 +1284,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         /// <summary>
         /// Current value of this object.
-        /// Setting value to this property does not call any event (action = <seealso cref="Asol.Tools.WorkScheduler.Components.ProcessAction.SilentValueActions"SilentValueActions/>)
+        /// Setting value to this property does not call any event (action = <seealso cref="Asol.Tools.WorkScheduler.Components.ProcessAction.SilentValueActions"/>)
         /// </summary>
         public virtual TValue ValueSilent
         {
@@ -1465,12 +1422,15 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Is called after ValueRange change, from SetValueRange() method, without any conditions (even if action is None).
         /// </summary>
-        /// <param name="oldValue">Old value range, before change</param>
-        /// <param name="newValue">New value range. Use this value rather than this.Value</param>
+        /// <param name="oldValueRange">Old value range, before change</param>
+        /// <param name="newValueRange">New value range. Use this value rather than this.Value</param>
         /// <param name="actions">Akce k provedení</param>
         /// <param name="eventSource">Zdroj této události</param>
         protected virtual void SetValueRangeAfterChange(TRange oldValueRange, TRange newValueRange, ref ProcessAction actions, EventSourceType eventSource)
         { }
+        /// <summary>
+        /// Rozsah hodnot
+        /// </summary>
         protected TRange _ValueRange;
 
         /// <summary>

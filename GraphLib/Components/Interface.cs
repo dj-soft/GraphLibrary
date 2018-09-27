@@ -150,10 +150,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         Size ClientSize { get; }
         /// <summary>
-        /// Interaktivní styl = dostupné chování objektu
-        /// </summary>
-        GInteractiveStyles Style { get; }
-        /// <summary>
         /// Zajistí vykreslení sebe a svých Childs
         /// </summary>
         void Repaint();
@@ -194,182 +190,249 @@ namespace Asol.Tools.WorkScheduler.Components
     #endregion
     #region class InteractiveProperties : Bit storage for Interactive Properties of IInteractiveItem objects.
     /// <summary>
-    /// InteractiveProperties : Bit storage for Interactive Properties of IInteractiveItem objects.
+    /// InteractiveProperties : Bitové úložiště pro různé Boolean Properties pro IInteractiveItem objekt.
     /// </summary>
     public class InteractiveProperties : BitStorage
     {
+        #region Konstruktory, hromadné setování
         /// <summary>
-        /// Interactive?
+        /// Konstruktor
         /// </summary>
-        public bool Interactive { get { return this.GetBitValue(BitInteractive); } set { this.SetBitValue(BitInteractive, value); } }
+        public InteractiveProperties() : base() { }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="bits"></param>
+        public InteractiveProperties(Bit bits) : base((uint)bits) { }
+        /// <summary>
+        /// Vloží danou hodnotu
+        /// </summary>
+        /// <param name="bits"></param>
+        public void Set(Bit bits)
+        {
+            this.Value = (uint)bits;
+        }
+        #endregion
+        #region Konkrétní properties
+        /// <summary>
+        /// Je prvek interaktivní?
+        /// </summary>
+        public bool Interactive { get { return this.GetBitValue((uint)Bit.Interactive, GetInteractive); } set { this.SetBitValue((uint)Bit.Interactive, value, SetInteractive); } }
+        /// <summary>
+        /// Funkce, která vrací explicitní hodnotu <see cref="Interactive"/>
+        /// </summary>
+        public Func<bool, bool> GetInteractive;
+        /// <summary>
+        /// Akce, která setuje hodnotu <see cref="Interactive"/> nad rámec základní třídy
+        /// </summary>
+        public Action<bool> SetInteractive;
+
         /// <summary>
         /// Visible?
         /// </summary>
-        public bool Visible { get { return this.GetBitValue(BitVisible); } set { this.SetBitValue(BitVisible, value); } }
+        public bool Visible { get { return this.GetBitValue((uint)Bit.Visible, GetVisible); } set { this.SetBitValue((uint)Bit.Visible, value, SetVisible); } }
+        /// <summary>
+        /// Funkce, která vrací explicitní hodnotu <see cref="Visible"/>
+        /// </summary>
+        public Func<bool, bool> GetVisible;
+        /// <summary>
+        /// Akce, která setuje hodnotu <see cref="Visible"/> nad rámec základní třídy
+        /// </summary>
+        public Action<bool> SetVisible;
+
         /// <summary>
         /// Enabled?
         /// </summary>
-        public bool Enabled { get { return this.GetBitValue(BitEnabled); } set { this.SetBitValue(BitEnabled, value); } }
+        public bool Enabled { get { return this.GetBitValue((uint)Bit.Enabled, GetEnabled); } set { this.SetBitValue((uint)Bit.Enabled, value, SetEnabled); } }
+        /// <summary>
+        /// Funkce, která vrací explicitní hodnotu <see cref="Enabled"/>
+        /// </summary>
+        public Func<bool, bool> GetEnabled;
+        /// <summary>
+        /// Akce, která setuje hodnotu <see cref="Enabled"/> nad rámec základní třídy
+        /// </summary>
+        public Action<bool> SetEnabled;
+
+        /// <summary>
+        /// Je aktuálně označen (Checked)?
+        /// </summary>
+        public virtual bool Checked { get { return this.GetBitValue((uint)Bit.Checked, GetChecked); } set { this.SetBitValue((uint)Bit.Checked, value, SetChecked); } }
+        /// <summary>
+        /// Funkce, která vrací explicitní hodnotu <see cref="Checked"/>
+        /// </summary>
+        public Func<bool, bool> GetChecked;
+        /// <summary>
+        /// Akce, která setuje hodnotu <see cref="Checked"/> nad rámec základní třídy
+        /// </summary>
+        public Action<bool> SetChecked;
+
         /// <summary>
         /// Lze selectovat?
         /// </summary>
-        public virtual bool Selectable { get { return this.GetBitValue(BitSelectable); } set { this.SetBitValue(BitSelectable, value); } }
+        public virtual bool Selectable { get { return this.GetBitValue((uint)Bit.Selectable, GetSelectable); } set { this.SetBitValue((uint)Bit.Selectable, value, SetSelectable); } }
         /// <summary>
-        /// Je aktuálně selectován?
+        /// Funkce, která vrací explicitní hodnotu <see cref="Selectable"/>
         /// </summary>
-        public virtual bool IsChecked { get { return this.GetBitValue(BitSelected); } set { this.SetBitValue(BitSelected, value); } }
+        public Func<bool, bool> GetSelectable;
         /// <summary>
-        /// Může zahájit akci SelectFrame?
+        /// Akce, která setuje hodnotu <see cref="Selectable"/> nad rámec základní třídy
         /// </summary>
-        public virtual bool SelectParent { get { return this.GetBitValue(BitSelectParent); } set { this.SetBitValue(BitSelectParent, value); } }
+        public Action<bool> SetSelectable;
+
         /// <summary>
-        /// Pokud je true, pak tažení myší na tomto prvku bude interpretováno jako Drag and Drop tohoto prvku.
+        /// Může se na tomto prvku zahájit akce SelectFrame?
         /// </summary>
-        public virtual bool DragEnabled { get { return this.GetBitValue(BitDragEnabled); } set { this.SetBitValue(BitDragEnabled, value); } }
+        public virtual bool SelectParent { get { return this.GetBitValue((uint)Bit.SelectParent, GetSelectParent); } set { this.SetBitValue((uint)Bit.SelectParent, value, SetSelectParent); } }
+        /// <summary>
+        /// Funkce, která vrací explicitní hodnotu <see cref="SelectParent"/>
+        /// </summary>
+        public Func<bool, bool> GetSelectParent;
+        /// <summary>
+        /// Akce, která setuje hodnotu <see cref="SelectParent"/> nad rámec základní třídy
+        /// </summary>
+        public Action<bool> SetSelectParent;
 
         /// <summary>
         /// Hold mouse?
         /// </summary>
-        public bool HoldMouse { get { return this.GetBitValue(BitHoldMouse); } set { this.SetBitValue(BitHoldMouse, value); } }
+        public bool HoldMouse { get { return this.GetBitValue((uint)Bit.HoldMouse); } set { this.SetBitValue((uint)Bit.HoldMouse, value); } }
+     
         /// <summary>
         /// Suppressed events?
         /// </summary>
-        public bool SuppressEvents { get { return this.GetBitValue(BitSuppressEvents); } set { this.SetBitValue(BitSuppressEvents, value); } }
-
+        public bool SuppressEvents { get { return this.GetBitValue((uint)Bit.SuppressEvents); } set { this.SetBitValue((uint)Bit.SuppressEvents, value); } }
+     
         /// <summary>
         /// Prvek je obecně myšoaktivní
         /// </summary>
-        public bool MouseActive { get { return this.GetBitValue(xxx); } set { this.SetBitValue(xxx, value); } }
+        public bool MouseActive { get { return this.GetBitValue((uint)Bit.MouseActive); } set { this.SetBitValue((uint)Bit.MouseActive, value); } }
+       
         /// <summary>
         /// Prvek chce dostávat i eventy o každém pohybu myši nad prvkem (MouseOver)
         /// </summary>
-        public bool MouseMoveOver { get { return this.GetBitValue(xxx); } set { this.SetBitValue(xxx, value); } }
+        public bool MouseMoveOver { get { return this.GetBitValue((uint)Bit.MouseMoveOver); } set { this.SetBitValue((uint)Bit.MouseMoveOver, value); } }
+        
         /// <summary>
         /// Prvek může dostávat Mouse Click eventy
         /// </summary>
-        public bool MouseClick { get { return this.GetBitValue(xxx); } set { this.SetBitValue(xxx, value); } }
+        public bool MouseClick { get { return this.GetBitValue((uint)Bit.MouseClick); } set { this.SetBitValue((uint)Bit.MouseClick, value); } }
+        
         /// <summary>
         /// Prvek může dostávat Mouse DoubleClick eventy
         /// </summary>
-        public bool MouseDoubleClick { get { return this.GetBitValue(xxx); } set { this.SetBitValue(xxx, value); } }
+        public bool MouseDoubleClick { get { return this.GetBitValue((uint)Bit.MouseDoubleClick); } set { this.SetBitValue((uint)Bit.MouseDoubleClick, value); } }
+        
         /// <summary>
         /// Prvek může dostávat Mouse LongClick eventy
         /// </summary>
-        public bool MouseLongClick { get { return this.GetBitValue(xxx); } set { this.SetBitValue(xxx, value); } }
-        
-        /// <summary>
-        /// Call event MouseOver for MouseMove for each pixel (none = call only MouseEnter and MouseLeave)
-        /// </summary>
-        CallMouseOver = 0x0010,
-        /// <summary>
-        /// Area can be dragged
-        /// </summary>
-        Drag = 0x0020,
-        /// <summary>
-        /// Enables move of item
-        /// </summary>
-        DragMove = 0x0100,
-        /// <summary>
-        /// Enables resize of item in X axis
-        /// </summary>
-        DragResizeX = 0x0200,
-        /// <summary>
-        /// Enables resize of item in Y axis
-        /// </summary>
-        DragResizeY = 0x0400,
-        /// <summary>
-        /// Item can be selected
-        /// </summary>
-        Select = 0x1000,
-        /// <summary>
-        /// Item can be dragged only in selected state
-        /// </summary>
-        DragOnlySelected = 0x2000,
-        /// <summary>
-        /// During drag and resize operation: Draw ghost image as Interactive layer (=Ghost is moved with mouse on Interactive layer, original image is on Standard layer)
-        /// Without values (DragDrawGhostInteractive and DragDrawGhostOriginal) is during Drag operation item drawed to Interactive layer, and Original bounds are empty (no draw to Standard layer)
-        /// </summary>
-        DragDrawGhostInteractive = 0x4000,
-        /// <summary>
-        /// During drag and resize operation: Draw ghost image into Standard layer (=Standard image of control is moved with mouse on Interactive layer, Ghost image is painted on Standard layer)
-        /// Without values (DragDrawGhostInteractive and DragDrawGhostOriginal) is during Drag operation item drawed to Interactive layer, and Original bounds are empty (no draw to Standard layer)
-        /// </summary>
-        DragDrawGhostOriginal = 0x8000,
-        /// <summary>
-        /// Can accept an keyboard input.
-        /// Note: There is no need to set the KeyboardInput flag to accept the cancellation of Drag action (which is: Escape key during Drag)
-        /// </summary>
-        KeyboardInput = 0x00010000,
-        /// <summary>
-        /// Enables resize of item in X and Y axis
-        /// </summary>
-        DragResize = DragResizeX | DragResizeY | Drag,
-        /// <summary>
-        /// Enables move and resize of item
-        /// </summary>
-        DragMoveResize = DragMove | DragResizeX | DragResizeY | Drag,
-        /// <summary>
-        /// Standard Mouse = Mouse | Click | LongClick | DoubleClick | Drag | Select. 
-        /// Not contain CallMouseOver.
-        /// </summary>
-        StandardMouseInteractivity = Mouse | Click | LongClick | DoubleClick | Drag | Select,
-        /// <summary>
-        /// All Mouse = StandardMouseInteractivity + CallMouseOver (= Mouse | Click | LongClick | DoubleClick | Drag | Select | CallMouseOver).
-        /// </summary>
-        AllMouseInteractivity = StandardMouseInteractivity | CallMouseOver,
-        /// <summary>
-        /// StandardKeyboardInetractivity = StandardMouseInteractivity except Drag + KeyboardInput (= Mouse | Click | LongClick | DoubleClick | Select | KeyboardInput)
-        /// </summary>
-        StandardKeyboardInteractivity = Mouse | Click | LongClick | DoubleClick | Select | KeyboardInput
-
+        public bool MouseLongClick { get { return this.GetBitValue((uint)Bit.MouseLongClick); } set { this.SetBitValue((uint)Bit.MouseLongClick, value); } }
 
         /// <summary>
-        /// Default value for new instances
+        /// Prvek může být přemísťován pomocí Drag and Drop
+        /// </summary>
+        public bool MouseDragMove { get { return this.GetBitValue((uint)Bit.MouseDragMove, GetMouseDragMove); } set { this.SetBitValue((uint)Bit.MouseDragMove, value, SetMouseDragMove); } }
+        /// <summary>
+        /// Funkce, která vrací explicitní hodnotu <see cref="MouseDragMove"/>
+        /// </summary>
+        public Func<bool, bool> GetMouseDragMove;
+        /// <summary>
+        /// Akce, která setuje hodnotu <see cref="MouseDragMove"/> nad rámec základní třídy
+        /// </summary>
+        public Action<bool> SetMouseDragMove;
+
+        /// <summary>
+        /// Prvek může být interaktivně upravován ve směru X (šířka) pomocí Drag and Drop
+        /// </summary>
+        public bool MouseDragResizeX { get { return this.GetBitValue((uint)Bit.MouseDragResizeX); } set { this.SetBitValue((uint)Bit.MouseDragResizeX, value); } }
+   
+        /// <summary>
+        /// Prvek může být interaktivně upravován ve směru Y (výška) pomocí Drag and Drop
+        /// </summary>
+        public bool MouseDragResizeY { get { return this.GetBitValue((uint)Bit.MouseDragResizeY); } set { this.SetBitValue((uint)Bit.MouseDragResizeY, value); } }
+     
+        /// <summary>
+        /// Při procesu Drag and Drop se má vykreslovat Ghost do vrstvy Interactive. 
+        /// Ve vrstvě Standard zůstane objekt vykreslen v plné barvě.
+        /// </summary>
+        public bool DrawDragMoveGhostInteractive { get { return this.GetBitValue((uint)Bit.DrawDragMoveGhostInteractive); } set { this.SetBitValue((uint)Bit.DrawDragMoveGhostInteractive, value); } }
+      
+        /// <summary>
+        /// Při procesu Drag and Drop se má vykreslit Ghost do vrstvy Standard. 
+        /// Ve vrstvě Interactive bude objekt vykreslován v plné barvě.
+        /// </summary>
+        public bool DrawDragMoveGhostStandard { get { return this.GetBitValue((uint)Bit.DrawDragMoveGhostStandard); } set { this.SetBitValue((uint)Bit.DrawDragMoveGhostStandard, value); } }
+    
+        /// <summary>
+        /// Prvek může dostávat klávesnicové události.
+        /// </summary>
+        public bool KeyboardInput { get { return this.GetBitValue((uint)Bit.KeyboardInput); } set { this.SetBitValue((uint)Bit.KeyboardInput, value); } }
+
+        #endregion
+        #region Enum Bit a jeho defaultní hodnoty
+        /// <summary>
+        /// Bity odpovídající jednotlivým hodnotám
+        /// </summary>
+        [Flags]
+        public enum Bit : uint
+        {
+            /// <summary>Žádný bit</summary>
+            None = 0,
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost</summary>
+            Interactive = 0x00000001,
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost</summary>
+            Visible = 0x00000002,
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost</summary>
+            Enabled = 0x00000004,
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost</summary>
+            Checked = 0x00000008,
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost</summary>
+            Selectable = 0x00000010,
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost</summary>
+            SelectParent = 0x00000020,
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost</summary>
+            HoldMouse = 0x00000040,
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost</summary>
+            SuppressEvents = 0x00000080,
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost</summary>
+            MouseActive = 0x00000100,
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost</summary>
+            MouseMoveOver = 0x00000200,
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost</summary>
+            MouseClick = 0x00000400,
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost</summary>
+            MouseDoubleClick = 0x00000800,
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost</summary>
+            MouseLongClick = 0x00001000,
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost</summary>
+            MouseDragMove = 0x00002000,
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost</summary>
+            MouseDragResizeX = 0x00004000,
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost</summary>
+            MouseDragResizeY = 0x00008000,
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost</summary>
+            DrawDragMoveGhostInteractive = 0x00010000,
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost</summary>
+            DrawDragMoveGhostStandard = 0x00020000,
+            /// <summary>Konkrétní jeden bit pro odpovídající vlastnost</summary>
+            KeyboardInput = 0x00040000,
+
+            /// <summary>
+            /// Defaultní sada pro běžný prvek běžně aktivní na myš, vyjma MouseMoveOver. Nemá žádné Drag vlastnosti.
+            /// </summary>
+            DefaultMouseProperties = Interactive | Visible | Enabled | MouseActive | MouseClick | MouseDoubleClick | MouseLongClick,
+            /// <summary>
+            /// Defaultní sada pro běžný prvek běžně aktivní na myš, včetně MouseMoveOver. Nemá žádné Drag vlastnosti.
+            /// </summary>
+            DefaultMouseOverProperties = DefaultMouseProperties | MouseMoveOver,
+        }
+        /// <summary>
+        /// Defaultní hodnota pro bezparametrický konstruktor = <see cref="Bit.DefaultMouseProperties"/>
         /// </summary>
         protected override uint DefaultValue
         {
-            get { return BitInteractive | BitVisible | BitEnabled ; }
+            get { return ((uint)Bit.DefaultMouseProperties) ; }
         }
-        /// <summary>
-        /// Konkrétní bit pro úschovu konkrétní hodnoty
-        /// </summary>
-        public const UInt32 BitInteractive = 0x0001;
-        /// <summary>
-        /// Konkrétní bit pro úschovu konkrétní hodnoty
-        /// </summary>
-        public const UInt32 BitVisible = 0x0002;
-        /// <summary>
-        /// Konkrétní bit pro úschovu konkrétní hodnoty
-        /// </summary>
-        public const UInt32 BitEnabled = 0x0004;
-        /// <summary>
-        /// Konkrétní bit pro úschovu konkrétní hodnoty
-        /// </summary>
-        public const UInt32 BitSelectable = 0x0010;
-        /// <summary>
-        /// Konkrétní bit pro úschovu konkrétní hodnoty
-        /// </summary>
-        public const UInt32 BitSelected = 0x0020;
-        /// <summary>
-        /// 
-        /// </summary>
-        public const UInt32 Bit____ = 0x0040;
-        /// <summary>
-        /// Konkrétní bit pro úschovu konkrétní hodnoty
-        /// </summary>
-        public const UInt32 BitSelectParent = 0x0080;
-        /// <summary>
-        /// Konkrétní bit pro úschovu konkrétní hodnoty
-        /// </summary>
-        public const UInt32 BitDragEnabled = 0x010;
-        /// <summary>
-        /// Konkrétní bit pro úschovu konkrétní hodnoty
-        /// </summary>
-        public const UInt32 BitHoldMouse = 0x0200;
-        /// <summary>
-        /// Konkrétní bit pro úschovu konkrétní hodnoty
-        /// </summary>
-        public const UInt32 BitSuppressEvents = 0x1000;
+        #endregion
     }
     #endregion
     #region Delegates and EventArgs
@@ -1000,7 +1063,7 @@ namespace Asol.Tools.WorkScheduler.Components
     /// Specifies action to be taken on object.
     /// </summary>
     [Flags]
-    public enum GInteractiveStyles : int
+    public enum GInteractiveStylesXxx : int
     {
         /// <summary>
         /// Žádný styl

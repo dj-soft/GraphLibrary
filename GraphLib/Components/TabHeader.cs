@@ -155,6 +155,13 @@ namespace Asol.Tools.WorkScheduler.Components
         private const string TabItemKeyCollapse = "CollapseItem";
         #endregion
         #region Layout
+        /// <summary>
+        /// Připraví souřadnice vnitřních prvků
+        /// </summary>
+        /// <param name="oldBounds"></param>
+        /// <param name="newBounds"></param>
+        /// <param name="actions"></param>
+        /// <param name="eventSource"></param>
         protected override void SetBoundsPrepareInnerItems(Rectangle oldBounds, Rectangle newBounds, ref ProcessAction actions, EventSourceType eventSource)
         {
             base.SetBoundsPrepareInnerItems(oldBounds, newBounds, ref actions, eventSource);
@@ -405,11 +412,20 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         #endregion
         #region Draw, Childs
+        /// <summary>
+        /// Child prvky
+        /// </summary>
         protected override IEnumerable<IInteractiveItem> Childs { get { this.CheckChilds(); return this._TabControlChilds; } }
+        /// <summary>
+        /// Invaliduje Child prvky
+        /// </summary>
         protected void InvalidateChilds()
         {
             this._TabControlChilds = null;
         }
+        /// <summary>
+        /// Zajistí platnost pole Child prvků
+        /// </summary>
         protected void CheckChilds()
         {
             if (this._TabControlChilds != null) return;
@@ -526,6 +542,13 @@ namespace Asol.Tools.WorkScheduler.Components
             this._HeaderSizeRange = new Int32Range(50, 600);
             this.__ActiveIndex = -1;
         }
+        /// <summary>
+        /// Připraví souřadnice vnitřních prvků
+        /// </summary>
+        /// <param name="oldBounds"></param>
+        /// <param name="newBounds"></param>
+        /// <param name="actions"></param>
+        /// <param name="eventSource"></param>
         protected override void SetBoundsPrepareInnerItems(Rectangle oldBounds, Rectangle newBounds, ref ProcessAction actions, EventSourceType eventSource)
         {
             this.InvalidateChildItems();
@@ -915,10 +938,13 @@ namespace Asol.Tools.WorkScheduler.Components
         protected override RepaintParentMode RepaintParent { get { return RepaintParentMode.OnBackColorAlpha; } }
         /// <summary>
         /// Aby fungovalo přemalování parenta v režimu <see cref="RepaintParentMode.OnBackColorAlpha"/>, musíme vracet korektní barvu BackColor.
-        /// Výchozí je <see cref="Skin.TabHeader.SpaceColor"/>.
+        /// Výchozí je <see cref="Skin.TabHeader"/>.SpaceColor
         /// </summary>
         public override Color BackColor { get { return (this._BackColorExplicit.HasValue ? this._BackColorExplicit.Value : Skin.TabHeader.SpaceColor); } set { this._BackColorExplicit = value; base.BackColor = value; } }
         private Color? _BackColorExplicit;
+        /// <summary>
+        /// Child prvky
+        /// </summary>
         protected override IEnumerable<IInteractiveItem> Childs { get { return this.GetChilds(null); } }
         #endregion
         #region Implementace ITabHeaderInternal
@@ -929,12 +955,30 @@ namespace Asol.Tools.WorkScheduler.Components
         FontInfo ITabHeaderInternal.CurrentFont { get { return this.CurrentFont.Clone; } }
         #endregion
     }
+    /// <summary>
+    /// Interface pro přístup k interním prvkům třídy <see cref="GTabHeader"/>
+    /// </summary>
     public interface ITabHeaderInternal
     {
+        /// <summary>
+        /// Invaliduje Child prvky, po změně
+        /// </summary>
         void InvalidateChildItems();
+        /// <summary>
+        /// Vrací pozici, kde má být Header
+        /// </summary>
         RectangleSide Position { get; }
+        /// <summary>
+        /// true = záhlaví je svislé
+        /// </summary>
         bool HeaderIsVertical { get; }
+        /// <summary>
+        /// true = záhlaví je vodorovné
+        /// </summary>
         bool HeaderIsHorizontal { get; }
+        /// <summary>
+        /// Aktuální font
+        /// </summary>
         FontInfo CurrentFont { get; }
     }
     #endregion
@@ -949,6 +993,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Konstruktor
         /// </summary>
         /// <param name="tabHeader"></param>
+        /// <param name="key"></param>
         /// <param name="text"></param>
         /// <param name="image"></param>
         /// <param name="dataControl"></param>
@@ -963,6 +1008,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this._TabOrder = tabOrder;
             this._DataControl = dataControl;
             this.TabHeaderInvalidate();
+            this.Is.SetVisible = this._SetVisible;
         }
         /// <summary>
         /// Zajistí invalidaci obsahu v <see cref="TabHeader"/>
@@ -1018,9 +1064,13 @@ namespace Asol.Tools.WorkScheduler.Components
         public IInteractiveItem DataControl { get { return this._DataControl; } set { this._DataControl = value; } }
         private IInteractiveItem _DataControl;
         /// <summary>
-        /// Viditelnost záhlaví
+        /// Viditelnost záhlaví.
+        /// Set metoda, použitá v <see cref="InteractiveProperties"/> po setování hodnoty Visible.
         /// </summary>
-        public override bool IsVisible { get { return base.IsVisible; } set { base.IsVisible = value; this.TabHeaderInvalidate(); } }
+        private void _SetVisible(bool value)
+        {
+            this.TabHeaderInvalidate();
+        }
         /// <summary>
         /// Obsahuje true, pokud this záhlaví je aktivní
         /// </summary>
@@ -1230,10 +1280,9 @@ namespace Asol.Tools.WorkScheduler.Components
             GPainter.DrawTabHeaderItem(e.Graphics, absoluteBounds, this);
         }
         /// <summary>
-        /// Zajistí vyvolání háčku <see cref="OnTabHeaderPaintBackGround(Graphics, Rectangle)"/> a eventu <see cref="TabPagePaintBackGround"/>.
+        /// Zajistí vyvolání háčku <see cref="OnTabItemPaintBackGround(object, GUserDrawArgs)"/> a eventu <see cref="TabPagePaintBackGround"/>.
         /// </summary>
         /// <param name="graphics"></param>
-        /// <param name="drawLayer"></param>
         /// <param name="bounds"></param>
         protected void CallUserDataDraw(Graphics graphics, Rectangle bounds)
         {
@@ -1246,8 +1295,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Háček pro uživatelské kreslení pozadí záhlaví
         /// </summary>
-        /// <param name="graphics"></param>
-        /// <param name="bounds"></param>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         protected virtual void OnTabItemPaintBackGround(object sender, GUserDrawArgs e) { }
         /// <summary>
         /// Event pro uživatelské kreslení pozadí záhlaví
@@ -1277,7 +1326,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         #region Implementace ITabHeaderItemPaintData : pro vykreslení záhlaví pomocí Painteru
         RectangleSide ITabHeaderItemPaintData.Position { get { return this.Position; } }
-        bool ITabHeaderItemPaintData.IsEnabled { get { return this.IsEnabled; } }
+        bool ITabHeaderItemPaintData.IsEnabled { get { return this.Is.Enabled; } }
         Color? ITabHeaderItemPaintData.BackColor { get { return this.BackColor; } }
         bool ITabHeaderItemPaintData.IsActive { get { return this.IsActiveHeader; } }
         FontInfo ITabHeaderItemPaintData.Font { get { return this.GetCurrentFont(); } }

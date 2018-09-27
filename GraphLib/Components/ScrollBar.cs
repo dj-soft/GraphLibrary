@@ -196,7 +196,7 @@ namespace Asol.Tools.WorkScheduler.Components
 
                 this.ValueTotal = new DecimalNRange(0, dataSize);
                 this.Value = new DecimalNRange(dataBegin, dataBegin + visualSize);
-                this.IsEnabled = (dataSize > visualSize);
+                this.Is.Enabled = (dataSize > visualSize);
             }
         }
         #endregion
@@ -691,8 +691,8 @@ namespace Asol.Tools.WorkScheduler.Components
                     this.ChildDataValue = this._GetPixelFromValue(value, false);
                     this.ChildDataThumb = new DecimalNRange(this.ChildDataValue.Begin.Value - this.ChildDataThumbOffset, this.ChildDataValue.End.Value + this.ChildDataThumbOffset);
                 }
-                this.ChildItemMinArrow.IsEnabled = true;
-                this.ChildItemMaxArrow.IsEnabled = true;
+                this.ChildItemMinArrow.Is.Enabled = true;
+                this.ChildItemMaxArrow.Is.Enabled = true;
             }
             else
             {   // Hodnota Value je nesprávná (její Size je 0 nebo záporná):
@@ -700,8 +700,8 @@ namespace Asol.Tools.WorkScheduler.Components
                 this.ChildDataValue = new DecimalNRange(0m, 0m);
                 this.ChildDataThumbOffset = 0m;
                 this.ChildDataThumb = this.ChildDataValue.Clone;
-                this.ChildItemMinArrow.IsEnabled = false;
-                this.ChildItemMaxArrow.IsEnabled = false;
+                this.ChildItemMinArrow.Is.Enabled = false;
+                this.ChildItemMaxArrow.Is.Enabled = false;
             }
             // Zaokrouhlit ChildDataThumb na Int32:
             decimal thumbBegin = this.ChildDataThumb.Begin.Value;
@@ -746,8 +746,8 @@ namespace Asol.Tools.WorkScheduler.Components
             this.ChildItemMaxArea.Bounds = Rectangle.Empty;
             this.ChildItemMaxArrow.Bounds = Rectangle.Empty;
 
-            this.ChildItemMinArrow.IsEnabled = false;
-            this.ChildItemMaxArrow.IsEnabled = false;
+            this.ChildItemMinArrow.Is.Enabled = false;
+            this.ChildItemMaxArrow.Is.Enabled = false;
         }
         /// <summary>
         /// Rozmezí pixelů celé oblasti DataArea, nad touto oblastí se může pohybovat Thumb.
@@ -844,10 +844,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         protected IEnumerable<InteractiveObject> GetSubItems()
         {
-            if (this.Items == null || this.LastStyle != this.Style)
+            if (this.Items == null)
             {
-                this.Items = this.ChildItemDict.Values.Where(i => i.IsEnabled).ToArray();
-                this.LastStyle = this.Style;
+                this.Items = this.ChildItemDict.Values.Where(i => i.Is.Enabled).ToArray();
             }
             return this.Items;
         }
@@ -859,10 +858,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Array of currently visibled Child items (in current Style), cached
         /// </summary>
         protected InteractiveObject[] Items;
-        /// <summary>
-        /// Interactive style, for which is filtered and cached Child items from ChildItemDict.Values into this.Items
-        /// </summary>
-        protected GInteractiveStyles LastStyle = GInteractiveStyles.None;
         #region class ChildItem : class for child items in ScrollBar (functional interactive areas), enum ChildItemType : type of specific Child item
         /// <summary>
         /// ChildItem : class for child items in ScrollBar (functional interactive areas)
@@ -882,7 +877,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 this.ImageType = LinearShapeType.None;
                 this.OverCursorType = null;
                 this.DragCursorType = null;
-                this.Is.DragEnabled = (itemType == ChildItemType.Thumb);
+                this.Is.MouseDragMove = (itemType == ChildItemType.Thumb);
                 this.Is.HoldMouse = false;
                 this.Is.Enabled = isEnabled;
             }
@@ -917,7 +912,7 @@ namespace Asol.Tools.WorkScheduler.Components
             /// <summary>
             /// This SubItem can be dragged?
             /// </summary>
-            public bool CanDrag { get { return (this.IsEnabled && this.ItemType == ChildItemType.Thumb); } }
+            public bool CanDrag { get { return (this.Is.Enabled && this.ItemType == ChildItemType.Thumb); } }
             /// <summary>
             /// Is this SubItem currently active SubItem of Owner?
             /// </summary>
@@ -925,7 +920,7 @@ namespace Asol.Tools.WorkScheduler.Components
             /// <summary>
             /// Interactive State of this item
             /// </summary>
-            public GInteractiveState ItemState { get { return (this.IsActiveChild ? this.InteractiveState : (this.Owner.IsEnabled ? GInteractiveState.Enabled : GInteractiveState.Disabled)); } }
+            public GInteractiveState ItemState { get { return (this.IsActiveChild ? this.InteractiveState : (this.Owner.Is.Enabled ? GInteractiveState.Enabled : GInteractiveState.Disabled)); } }
             /// <summary>
             /// true when this is dragged (CurrentState is LeftDrag or RightDrag)
             /// </summary>
@@ -1037,7 +1032,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="childItem"></param>
         protected void AfterStateChanged(GInteractiveChangeStateArgs e, ChildItem childItem)
         {
-            if (!this.IsEnabled) return;
+            if (!this.Is.Enabled) return;
 
             ChildItemType itemType = (childItem == null ? ChildItemType.None : childItem.ItemType);
             switch (e.ChangeState)
@@ -1060,7 +1055,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     this.RepaintToLayers = GInteractiveDrawLayer.Standard;
                     break;
                 case GInteractiveChangeState.LeftDown:
-                    if (childItem != null && childItem.IsEnabled && (itemType == ChildItemType.MinArrow || itemType == ChildItemType.MinArea || itemType == ChildItemType.MaxArea || itemType == ChildItemType.MaxArrow))
+                    if (childItem != null && childItem.Is.Enabled && (itemType == ChildItemType.MinArrow || itemType == ChildItemType.MinArea || itemType == ChildItemType.MaxArea || itemType == ChildItemType.MaxArrow))
                         this.CalculateBoundsInteractiveClick(childItem);
                     this.RepaintToLayers = GInteractiveDrawLayer.Standard;
                     break;
@@ -1225,7 +1220,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected GInteractiveDrawLayer CurrentDrawLayer { get; set; }
         #region Implementace IScrollBarPaintData : podpora pro univerzální vykreslení ScrollBaru
         Orientation IScrollBarPaintData.Orientation { get { return this.Orientation; } }
-        bool IScrollBarPaintData.IsEnabled { get { return this.IsEnabled; } }
+        bool IScrollBarPaintData.IsEnabled { get { return this.Is.Enabled; } }
         Rectangle IScrollBarPaintData.ScrollBarBounds { get { return this.ChildItemAllArea.Bounds; } }
         Color IScrollBarPaintData.ScrollBarBackColor { get { return this.BackColor; } }
         Rectangle IScrollBarPaintData.MinButtonBounds { get { return this.ChildItemMinArrow.Bounds; } }

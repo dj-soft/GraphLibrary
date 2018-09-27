@@ -288,8 +288,8 @@ namespace Asol.Tools.WorkScheduler.Components
             itemNext = _ItemKeyboardSearchKeyboardInput(itemNext);
 
             // Keyboard focus change is simpliest:
-            bool existsPrev = (itemPrev != null && itemPrev.Style.HasFlag(GInteractiveStyles.KeyboardInput));
-            bool existsNext = (itemNext != null && itemNext.Style.HasFlag(GInteractiveStyles.KeyboardInput));
+            bool existsPrev = (itemPrev != null && itemPrev.Is.KeyboardInput);
+            bool existsNext = (itemNext != null && itemNext.Is.KeyboardInput);
             if (!existsPrev && !existsNext) return;                                      // booth is null (=paranoia)
             if (Object.ReferenceEquals((existsPrev ? itemPrev : null), (existsNext ? itemNext : null))) return;        // no change
 
@@ -306,7 +306,7 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         /// <summary>
-        /// Vrátí prvek (daný, nebo jeho parenta), jehož <see cref="IInteractiveParent.Style"/> obsahuje <see cref="GInteractiveStyles.KeyboardInput"/>.
+        /// Vrátí prvek (daný, nebo jeho parenta), jehož <see cref="InteractiveProperties.KeyboardInput"/> je true.
         /// Can return null.
         /// </summary>
         /// <param name="item"></param>
@@ -319,7 +319,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 if (scanned.ContainsKey(item.Id))
                     return null;
                 scanned.Add(item.Id, null);
-                if (item != null && item.Style.HasFlag(GInteractiveStyles.KeyboardInput))
+                if (item != null && item.Is.KeyboardInput)
                     return item;
                 if (item.Parent == null)
                     return null;
@@ -341,7 +341,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="keyPressArgs"></param>
         private void _ItemKeyboardCallEvent(IInteractiveItem item, GInteractiveChangeState change, PreviewKeyDownEventArgs previewArgs, KeyEventArgs keyArgs, KeyPressEventArgs keyPressArgs)
         {
-            if ((item.Style & GInteractiveStyles.KeyboardInput) != 0)
+            if (item.Is.KeyboardInput)
             {
                 GInteractiveChangeState realChange = change;
                 GInteractiveState targetState = _GetStateAfterChange(realChange, item.Is.Enabled);
@@ -2714,7 +2714,6 @@ namespace Asol.Tools.WorkScheduler.Components
         UInt32 IInteractiveParent.Id { get { return 0; } }
         GInteractiveControl IInteractiveParent.Host { get { return this; } }
         IInteractiveParent IInteractiveParent.Parent { get { return null; } set { } }
-        GInteractiveStyles IInteractiveParent.Style { get { return GInteractiveStyles.None; } }
         Size IInteractiveParent.ClientSize { get { return this.ClientSize; } }
         void IInteractiveParent.Repaint() { this.Repaint(); }
         #endregion
@@ -2829,7 +2828,7 @@ namespace Asol.Tools.WorkScheduler.Components
             int foundIndex = -1;
             for (int i = lastIndex; i >= 0; i--)
             {
-                if (this.Items[i].Item.Is.Enabled && this.Items[i].Item.Is.DragEnabled)
+                if (this.Items[i].Item.Is.Enabled && this.Items[i].Item.Is.MouseDragMove)
                 {
                     foundIndex = i;
                     break;
@@ -2850,31 +2849,31 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Style of current item contain Mouse?
         /// </summary>
-        public bool CanMouse { get { return _HasStyle(GInteractiveStyles.Mouse); } }
+        public bool CanMouse { get { return (this.HasItem && this.ActiveItem.Is.MouseActive); } }
         /// <summary>
         /// Style of current item contain Click?
         /// </summary>
-        public bool CanClick { get { return _HasStyle(GInteractiveStyles.Click); } }
+        public bool CanClick { get { return (this.HasItem && this.ActiveItem.Is.MouseClick); } }
         /// <summary>
         /// Style of current item contain LongClick?
         /// </summary>
-        public bool CanLongClick { get { return _HasStyle(GInteractiveStyles.LongClick); } }
+        public bool CanLongClick { get { return (this.HasItem && this.ActiveItem.Is.MouseLongClick); } }
         /// <summary>
         /// Style of current item contain DoubleClick?
         /// </summary>
-        public bool CanDoubleClick { get { return _HasStyle(GInteractiveStyles.DoubleClick); } }
+        public bool CanDoubleClick { get { return (this.HasItem && this.ActiveItem.Is.MouseDoubleClick); } }
         /// <summary>
         /// Style of current item contain Drag and is Enabled?
         /// </summary>
-        public bool CanDrag { get { return _HasStyle(GInteractiveStyles.Drag) && this.IsEnabled; } }
+        public bool CanDrag { get { return (this.HasItem && this.ActiveItem.Is.MouseDragMove && this.IsEnabled); } }
         /// <summary>
         /// Style of current item contain CallMouseOver?
         /// </summary>
-        public bool CanOver { get { return _HasStyle(GInteractiveStyles.CallMouseOver); } }
+        public bool CanOver { get { return (this.HasItem && this.ActiveItem.Is.MouseMoveOver); } }
         /// <summary>
         /// Style of current item contain KeyboardInput?
         /// </summary>
-        public bool CanKeyboard { get { return _HasStyle(GInteractiveStyles.KeyboardInput); } }
+        public bool CanKeyboard { get { return (this.HasItem && this.ActiveItem.Is.KeyboardInput); } }
         /// <summary>
         /// Current item is not null and IsEnabled?
         /// </summary>
@@ -2883,10 +2882,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Current item is not null and IsVisible?
         /// </summary>
         public bool IsVisible { get { return (this.HasItem && this.ActiveItem.Is.Visible); } }
-        private bool _HasStyle(GInteractiveStyles style)
-        {
-            return (this.HasItem && ((this.ActiveItem.Style & style) != 0));
-        }
         #endregion
         #region Základní metody: FindItemAtPoint(), MapExchange()
         /// <summary>
@@ -3231,15 +3226,6 @@ namespace Asol.Tools.WorkScheduler.Components
             /// Souřadnice prvku <see cref="Item"/> v absolutních koordinátech Controlu
             /// </summary>
             public Rectangle ItemAbsBounds { get { return this.BoundsInfo.CurrentAbsBounds; } }
-            /// <summary>
-            /// Vrací true, pokud zdejší prvek má nastaven daný styl
-            /// </summary>
-            /// <param name="style"></param>
-            /// <returns></returns>
-            public bool HasStyle(GInteractiveStyles style)
-            {
-                return ((this.Item.Style & style) != 0);
-            }
         }
         #endregion
         #region Static services

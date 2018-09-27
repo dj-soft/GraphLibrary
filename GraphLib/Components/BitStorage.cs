@@ -27,13 +27,20 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             this._Value = defaultValue;
         }
+        /// <summary>
+        /// Aktuální numerická hodnota = všechny bity
+        /// </summary>
+        protected UInt32 Value { get { return this._Value; } set { this._Value = value; } }
+        /// <summary>
+        /// Úložiště hodnoty
+        /// </summary>
         private UInt32 _Value;
         /// <summary>
         /// Default value for new instance
         /// </summary>
         protected abstract UInt32 DefaultValue { get; }
         /// <summary>
-        /// Return true / false from bit mask (one bit set).
+        /// Vrátí true / false pro daný bit
         /// </summary>
         /// <param name="mask">Bit mask (for example: 0x02000 = bit 13)</param>
         /// <returns></returns>
@@ -42,7 +49,20 @@ namespace Asol.Tools.WorkScheduler.Components
             return ((this._Value & mask) != 0);
         }
         /// <summary>
-        /// Return true / false from bit mask (one bit set).
+        /// Vrátí true / false pro daný bit
+        /// </summary>
+        /// <param name="mask">Bit mask (for example: 0x02000 = bit 13)</param>
+        /// <param name="getMethod">Metoda, která vrací reálnou hodnotu ovlivněnou konkrétním stavem aplikace. Jako vstup dostává bse hodnotu.</param>
+        /// <returns></returns>
+        public bool GetBitValue(UInt32 mask, Func<bool, bool> getMethod)
+        {
+            bool value = ((this._Value & mask) != 0);
+            if (getMethod != null)
+                value = getMethod(value);
+            return value;
+        }
+        /// <summary>
+        /// Nastaví do daného bitu danou hodnotu.
         /// </summary>
         /// <param name="mask">Bit mask (for example: 0x02000 = bit 13)</param>
         /// <param name="value">New value: true = set bit, false = reset bit</param>
@@ -50,6 +70,20 @@ namespace Asol.Tools.WorkScheduler.Components
         public void SetBitValue(UInt32 mask, bool value)
         {
             this._Value = SetBitValue(this._Value, mask, value);
+        }
+        /// <summary>
+        /// Nastaví do daného bitu danou hodnotu.
+        /// </summary>
+        /// <param name="mask">Bit mask (for example: 0x02000 = bit 13)</param>
+        /// <param name="value">New value: true = set bit, false = reset bit</param>
+        /// <param name="setMethod">Metoda, která převezme setovanou hodnotu a uloží ji do konkrétní aplikace</param>
+        /// <returns></returns>
+        public void SetBitValue(UInt32 mask, bool value, Action<bool> setMethod)
+        {
+            this._Value = SetBitValue(this._Value, mask, value);
+            if (setMethod != null)
+                setMethod(value);
+
         }
         /// <summary>
         /// Return a new value for storage, where bit[s] by mask are set/cleared by value.

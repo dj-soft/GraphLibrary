@@ -10,13 +10,19 @@ using Asol.Tools.WorkScheduler.Data;
 
 namespace Asol.Tools.WorkScheduler.Components
 {
+    /// <summary>
+    /// Prostor pro dokument
+    /// </summary>
     public class GDocumentArea : VirtualInteractiveContainer, IInteractiveItem, IVirtualConvertor
     {
         #region Constructor, public properties and events
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public GDocumentArea()
         {
             this.DocumentSize = new SizeD(210m, 297m);
-            this.Style = GInteractiveStyles.AllMouseInteractivity;
+            this.Is.Set(InteractiveProperties.Bit.DefaultMouseProperties);
 
             GVirtualMovableItem gea = new GVirtualMovableItem(this) { VirtualBounds = new Rectangle(0, 0, 100, 50), BackColor = Color.Red };
             this.AddItem(gea);
@@ -47,7 +53,10 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         #endregion
         #region Draw to Graphic
-
+        /// <summary>
+        /// Vykreslí pozadí
+        /// </summary>
+        /// <param name="e"></param>
         protected override void PaintBackground(GInteractiveDrawArgs e)
         {
             base.PaintBackground(e);
@@ -273,8 +282,16 @@ namespace Asol.Tools.WorkScheduler.Components
             if (this.MaximalBoundsChanged != null)
                 this.MaximalBoundsChanged(this, EventArgs.Empty);
         }
+        /// <summary>
+        /// Po změně Bounds
+        /// </summary>
         protected virtual void OnMaximalBoundsChanged()
         { }
+        /// <summary>
+        /// Vykreslí list
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
         protected void PaintSheet(Graphics graphics, Rectangle bounds)
         {
             RectangleD documentL = this.DocumentBounds;

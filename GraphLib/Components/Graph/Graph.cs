@@ -49,7 +49,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             this._ItemList = new EList<ITimeGraphItem>();
             this._ItemList.ItemAddAfter += new EList<ITimeGraphItem>.EListEventAfterHandler(_ItemList_ItemAddAfter);
             this._ItemList.ItemRemoveAfter += new EList<ITimeGraphItem>.EListEventAfterHandler(_ItemList_ItemRemoveAfter);
-            this.IsSelectParent = true;
+            this.Is.SelectParent = true;
         }
         /// <summary>
         /// Všechny prvky grafu (časové úseky)
@@ -938,6 +938,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Metoda zajistí zpracování události RightClick na grafickém prvku (data) na dané pozici (position).
         /// </summary>
         /// <param name="e"></param>
+        /// <param name="group"></param>
         /// <param name="data"></param>
         /// <param name="position"></param>
         internal void GraphItemRightClick(GInteractiveChangeStateArgs e, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position)
@@ -994,6 +995,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Metoda zajistí zpracování události LeftLongCLick na grafickém prvku (data) na dané pozici (position).
         /// </summary>
         /// <param name="e"></param>
+        /// <param name="group"></param>
         /// <param name="data"></param>
         /// <param name="position"></param>
         internal void GraphItemLeftLongClick(GInteractiveChangeStateArgs e, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position)
@@ -1036,12 +1038,21 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         }
         #endregion
         #region Podpora pro Selectování DragFrame
+        /// <summary>
+        /// Začíná proces Drag and Frame
+        /// </summary>
+        /// <param name="e"></param>
         protected override void AfterStateChangedDragFrameBegin(GInteractiveChangeStateArgs e)
         {
             Rectangle dragFrameWorkArea = this.BoundsAbsolute;
             this.DragFrameWorkAreaModifyByTable(e, ref dragFrameWorkArea);
             e.DragFrameWorkArea = dragFrameWorkArea;
         }
+        /// <summary>
+        /// Modifikuje prostor Drag and Frame podle tabulky
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="dragFrameWorkArea"></param>
         protected void DragFrameWorkAreaModifyByTable(GInteractiveChangeStateArgs e, ref Rectangle dragFrameWorkArea)
         {
             Grid.GTable table = this.SearchForParent(typeof(Grid.GTable)) as Grid.GTable;
@@ -1156,7 +1167,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         #endregion
         #region Invalidace je řešená jedním vstupním bodem
         /// <summary>
-        /// Zajistí vykreslení this prvku <see cref="Repaint()"/>, včetně překreslení Host controlu <see cref="GInteractiveControl"/>.
+        /// Zajistí vykreslení this prvku Repaint(), včetně překreslení Host controlu <see cref="GInteractiveControl"/>.
         /// </summary>
         public override void Refresh()
         {
@@ -1212,6 +1223,9 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         [Flags]
         protected enum InvalidateItems : int
         {
+            /// <summary>
+            /// Nic
+            /// </summary>
             None = 0,
             /// <summary>
             /// Souřadnice na ose X
@@ -1244,6 +1258,9 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             /// Pole vizuálních Child prvků grafu.
             /// </summary>
             Childs = AllGroups << 1,
+            /// <summary>
+            /// Překreslení
+            /// </summary>
             Repaint = Childs << 1
         }
         #endregion
@@ -1301,6 +1318,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         /// <param name="mode"></param>
         /// <param name="state"></param>
+        /// <param name="isSelected"></param>
         /// <returns></returns>
         internal static bool IsCaptionVisible(GraphItemBehaviorMode mode, GInteractiveState state, bool isSelected)
         {
@@ -1395,7 +1413,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Pokud graf obsahuje více položek pro jeden časový úsek (a položky jsou ze stejné vrstvy <see cref="ITimeGraphItem.Layer"/>, pak tyto prvky jsou kresleny nad sebe.
         /// Výška grafu pak bude součtem výšky těchto prvků (=logická výška), násobená výškou <see cref="OneLineHeight"/> (pixely na jednotku výšky prvku).
         /// <para/>
-        /// Lze vložit hodnotu null, pak se bude vracet defaultní výška (<see cref="Skin.Graph.LineHeight"/>).
+        /// Lze vložit hodnotu null, pak se bude vracet defaultní výška (<see cref="Skin.Graph"/>.LineHeight)
         /// Čtení hodnoty nikdy nevrací null, vždy lze pracovat s GraphLineHeight.Value.
         /// </summary>
         public int? OneLineHeight
@@ -1428,7 +1446,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
 
         /// <summary>
         /// Rozmezí výšky celého grafu, v pixelech.
-        /// Výchozí hodnota je null, pak se použije rozmezí <see cref="Skin.Graph.DefaultTotalHeightMin"/> až <see cref="Skin.Graph.DefaultTotalHeightMax"/>
+        /// Výchozí hodnota je null, pak se použije rozmezí <see cref="Skin.Graph"/>.DefaultTotalHeightMin až <see cref="Skin.Graph"/>.DefaultTotalHeightMax
         /// </summary>
         public Int32NRange TotalHeightRange
         {
@@ -1672,8 +1690,14 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
     {
         // VAROVÁNÍ : Změna názvu jednotlivých enumů je zásadní změnou, která se musí promítnout i do konstant ve WorkSchedulerSupport a to jak zde, tak v Greenu.
         //            Hodnoty se z Greenu předávají v textové formě, a tady v GUI se z textu získávají parsováním (Enum.TryParse()) !
-
+        
+        /// <summary>
+        /// Výchozí
+        /// </summary>
         Default = 0,
+        /// <summary>
+        /// Obdélník
+        /// </summary>
         Rectangle
     }
     #endregion
@@ -1683,13 +1707,45 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
     /// </summary>
     public interface ITimeGraphDataSource
     {
+        /// <summary>
+        /// Připraví text do prvku
+        /// </summary>
+        /// <param name="args"></param>
         void CreateText(CreateTextArgs args);
+        /// <summary>
+        /// Připraví ToolTip pro prvek
+        /// </summary>
+        /// <param name="args"></param>
         void CreateToolTip(CreateToolTipArgs args);
+        /// <summary>
+        /// Vyřeší RightClick na grafu
+        /// </summary>
+        /// <param name="args"></param>
         void GraphRightClick(ItemActionArgs args);
+        /// <summary>
+        /// Vyřeší RightClick na prvku
+        /// </summary>
+        /// <param name="args"></param>
         void ItemRightClick(ItemActionArgs args);
+        /// <summary>
+        /// Vyřeší Double Click na prvku
+        /// </summary>
+        /// <param name="args"></param>
         void ItemDoubleClick(ItemActionArgs args);
+        /// <summary>
+        /// Vyřeší Long Click na prvku
+        /// </summary>
+        /// <param name="args"></param>
         void ItemLongClick(ItemActionArgs args);
+        /// <summary>
+        /// Řeší změnu prvku
+        /// </summary>
+        /// <param name="args"></param>
         void ItemChange(ItemChangeArgs args);
+        /// <summary>
+        /// Řeší Drag and Drop
+        /// </summary>
+        /// <param name="args"></param>
         void ItemDragDropAction(ItemDragDropArgs args);
     }
     #region class CreateTextArgs : 
@@ -2018,13 +2074,21 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
     [Flags]
     public enum ItemDragTargetType
     {
+        /// <summary>Nic</summary>
         None = 0,
+        /// <summary>Na tentýž prvek</summary>
         OnItem = 0x0001,
+        /// <summary>Na tentýž graf</summary>
         OnSameGraph = 0x0010,
+        /// <summary>Na jiný graf</summary>
         OnOtherGraph = 0x0020,
+        /// <summary>Na nějaký graf</summary>
         OnGraph = OnSameGraph | OnOtherGraph,
+        /// <summary>Na stejnou tabulku</summary>
         OnSameTable = 0x0100,
+        /// <summary>Na jinou tabulku</summary>
         OnOtherTable = 0x0200,
+        /// <summary>Na nějakou tabulku</summary>
         OnTable = OnSameTable | OnOtherTable
     }
     #endregion
@@ -2106,6 +2170,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Konstruktor
         /// </summary>
+        /// <param name="graph"></param>
         /// <param name="group"></param>
         /// <param name="data"></param>
         /// <param name="position"></param>

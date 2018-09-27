@@ -22,7 +22,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this._ValueTotal = new DecimalRange(0m, 1m);
             this._Visualiser = new LinearTrackBar(System.Windows.Forms.Orientation.Horizontal);
             this._VisualiserType = TrackBarVisualiserType.LinearHorizontal;
-            this.Style = this.Style | GInteractiveStyles.CallMouseOver;
+            this.Is.MouseMoveOver = true;
             this.BackColor = Skin.TrackBar.BackColorTrack;
         }
         #endregion
@@ -83,10 +83,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Provede požadované akce (ValueAlign, ScrollDataValidate, InnerBoundsReset, OnValueChanged).
         /// </summary>
         /// <param name="value"></param>
-        /// <param name="align"></param>
-        /// <param name="scroll"></param>
-        /// <param name="callInnerReset"></param>
-        /// <param name="callEvents"></param>
+        /// <param name="actions"></param>
+        /// <param name="eventSource"></param>
         protected void SetValue(Decimal value, ProcessAction actions, EventSourceType eventSource)
         {
             Decimal oldValue = this._Value;
@@ -111,11 +109,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Uloží danou hodnotu do this._ValueTotal.
         /// Provede požadované akce (ValueAlign, ScrollDataValidate, InnerBoundsReset, OnValueChanged).
         /// </summary>
-        /// <param name="value"></param>
-        /// <param name="align"></param>
-        /// <param name="scroll"></param>
-        /// <param name="callInnerReset"></param>
-        /// <param name="callEvents"></param>
+        /// <param name="valueTotal"></param>
+        /// <param name="actions"></param>
+        /// <param name="eventSource"></param>
         protected void SetValueTotal(DecimalRange valueTotal, ProcessAction actions, EventSourceType eventSource)
         {
             if (valueTotal == null) return;
@@ -225,20 +221,36 @@ namespace Asol.Tools.WorkScheduler.Components
 
         #endregion
         #region ChildItems
+        /// <summary>
+        /// Child items
+        /// </summary>
         protected override IEnumerable<IInteractiveItem> Childs { get { this.ChildItemsCheck(); return this._Childs; } }
+        /// <summary>
+        /// Resetuje Child items
+        /// </summary>
         protected void ChildItemsReset()
         {
             this._Childs = null;
         }
+        /// <summary>
+        /// Zajistí platnost Child items
+        /// </summary>
         protected void ChildItemsCheck()
         {
             if (this._Childs != null) return;
             this._Childs = this.Visualiser.ChildItems;
             // qqq;
         }
+        /// <summary>
+        /// Child items
+        /// </summary>
         protected IInteractiveItem[] _Childs;
         #endregion
         #region Interaktivita a Draw
+        /// <summary>
+        /// Po změně interaktivního stavu
+        /// </summary>
+        /// <param name="e"></param>
         protected override void AfterStateChanged(GInteractiveChangeStateArgs e)
         {
             base.AfterStateChanged(e);
@@ -306,9 +318,17 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public enum TrackBarVisualiserType
         {
+            /// <summary>
+            /// Vodorovný lineární
+            /// </summary>
             LinearHorizontal,
+            /// <summary>
+            /// Svislý lineární
+            /// </summary>
             LinearVertical,
-
+            /// <summary>
+            /// Externě dodaný
+            /// </summary>
             Custom
         }
         /// <summary>
@@ -348,21 +368,46 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         #endregion
         #region LinearTrackBar : konkrétní vizualizer pro vodorovný i svislý trackbar s lineární hodnotou
+        /// <summary>
+        /// LinearTrackBar : konkrétní vizualizer pro vodorovný i svislý trackbar s lineární hodnotou
+        /// </summary>
         public class LinearTrackBar : ITrackBarVisualiser
         {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
             public LinearTrackBar()
             {
                 this.Orientation = System.Windows.Forms.Orientation.Horizontal;
             }
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="orientation"></param>
             public LinearTrackBar(System.Windows.Forms.Orientation orientation)
             {
                 this.Orientation = orientation;
             }
-
+            /// <summary>
+            /// Orientace
+            /// </summary>
             protected System.Windows.Forms.Orientation Orientation { get; private set; }
+            /// <summary>
+            /// Reference na TrackBar
+            /// </summary>
             protected GTrackBar TrackBar { get; set; }
+            /// <summary>
+            /// Typ vizualizeru
+            /// </summary>
             protected TrackBarVisualiserType VisualiserType { get { return (this.Orientation == System.Windows.Forms.Orientation.Horizontal ? TrackBarVisualiserType.LinearHorizontal : TrackBarVisualiserType.LinearVertical); } }
+            /// <summary>
+            /// Child prvky
+            /// </summary>
             protected IInteractiveItem[] ChildItems { get { return new IInteractiveItem[0]; } }
+            /// <summary>
+            /// Řeší interaktivitu
+            /// </summary>
+            /// <param name="e"></param>
             protected void AfterStateChanged(GInteractiveChangeStateArgs e)
             {
                 switch (e.ChangeState)

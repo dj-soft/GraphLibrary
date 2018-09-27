@@ -31,7 +31,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             this._InteractiveParent = interactiveParent;
             this._Group = group;
             this._Position = position;
-            this.IsSelectable = true;
+            this.Is.Selectable = true;
+            this.Is.GetMouseDragMove = this._GetMouseDragMove;
         }
         /// <summary>
         /// Vizualizace
@@ -156,11 +157,11 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         #region Přetahování (Drag and Drop) : týká se výhradně prvků typu Group!
         /// <summary>
         /// Vrací true, pokud daný prvek může být přemísťován.
+        /// Get metoda použitá v <see cref="InteractiveProperties"/> objektu pro získání hodnoty MouseDragMove.
         /// </summary>
-        public override bool IsDragEnabled
+        private bool _GetMouseDragMove(bool value)
         {
-            get { return (this._Position == GGraphControlPosition.Group && this._Group.IsDragEnabled); }
-            set { }
+            return (this._Position == GGraphControlPosition.Group && this._Group.IsDragEnabled);
         }
         /// <summary>
         /// Volá se na začátku procesu přesouvání, pro aktivní objekt.

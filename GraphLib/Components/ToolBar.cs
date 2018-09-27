@@ -1143,15 +1143,25 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="toolbarGroup"></param>
         /// <param name="dataItem"></param>
-        internal GToolbarButton(GToolbarGroup toolbarGroup, FunctionGlobalItem dataItem) : base(toolbarGroup, dataItem) { }
-        /// <summary>
-        /// Tato hodnota vyjadřuje "označení" prvku, typicky zaškrtávátko. 
-        /// Je plně v rukou prvku, nikoli interaktivního controlu (na rozdíl od <see cref="InteractiveObject.IsSelected"/>.
-        /// </summary>
-        public override bool IsChecked
+        internal GToolbarButton(GToolbarGroup toolbarGroup, FunctionGlobalItem dataItem) : base(toolbarGroup, dataItem)
         {
-            get { return (this._DataItem.IsCheckable && this._DataItem.IsChecked); }
-            set { if (this._DataItem.IsCheckable) this._DataItem.IsChecked = value; }
+            this.Is.GetChecked = this._GetChecked;
+            this.Is.SetChecked = this._SetChecked;
+        }
+        /// <summary>
+        /// Vrací reálnou hodnotu IsChecked, z navázaného prvku <see cref="FunctionItem.IsChecked"/>.
+        /// </summary>
+        private bool _GetChecked(bool value)
+        {
+            return (this._DataItem.IsCheckable && this._DataItem.IsChecked);
+        }
+        /// <summary>
+        /// Reálně uloží danou hodnotu do navázaného prvku <see cref="FunctionItem.IsChecked"/>.
+        /// </summary>
+        /// <param name="value"></param>
+        private void _SetChecked(bool value)
+        {
+            if (this._DataItem.IsCheckable) this._DataItem.IsChecked = value;
         }
         internal override void PrepareLayout(Graphics graphics)
         {
@@ -1160,10 +1170,10 @@ namespace Asol.Tools.WorkScheduler.Components
         protected override void DrawItem(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
         {
             string name = this.DataItem.Name;
-            this.DrawItemBackground(e, absoluteBounds, this.IsChecked);
+            this.DrawItemBackground(e, absoluteBounds, this.Is.Checked);
             this.DrawItemImage(e, absoluteBounds);
             this.DrawItemText(e, absoluteBounds);
-            this.DrawItemSelection(e, absoluteBounds, this.IsChecked);
+            this.DrawItemSelection(e, absoluteBounds, this.Is.Checked);
         }
         protected override void AfterStateChangedLeftClick(GInteractiveChangeStateArgs e)
         {
@@ -1172,7 +1182,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this.CallItemClick();
         }
         /// <summary>
-        /// Metoda zajistí změnu stavu <see cref="IsChecked"/> pro tento prvek, 
+        /// Metoda zajistí změnu stavu <see cref="InteractiveProperties.Checked"/> pro tento prvek, 
         /// a pokud tento prvek je členem nějaké selectovací grupy, pak najde i ostatní členy grupy a vyřeší to i pro ně.
         /// Metoda je volána před voláním <see cref="GToolbarItem.CallItemClick()"/>, 
         /// protože event Click má být volán už se správnou hodnotou <see cref="FunctionItem.IsChecked"/>.
@@ -1182,8 +1192,8 @@ namespace Asol.Tools.WorkScheduler.Components
             List<FunctionGlobalItem> itemGroup = this._ToolbarGroup.GetGroup(this._DataItem.CheckedGroupName, i => (i.ItemType == FunctionGlobalItemType.Button));
             if (itemGroup == null)
             {   // null = není zadána grupa => v tom případě this button je CheckBox:
-                bool newIsChecked = !this.IsChecked;
-                this.IsChecked = newIsChecked;
+                bool newIsChecked = !this.Is.Checked;
+                this.Is.Checked = newIsChecked;
                 this.CallItemCheckedChange(this.DataItem);
             }
             else
@@ -1295,7 +1305,11 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             this._ToolbarGroup = toolbarGroup;
             this._DataItem = dataItem;
-            this.Style = (GInteractiveStyles)this.Style.RemoveFlags(GInteractiveStyles.DoubleClick);       // Toolbar není zvědav na doubleclicky!
+            this.Is.GetVisible = this._GetVisible;
+            this.Is.SetVisible = this._SetVisible;
+            this.Is.GetEnabled = this._GetEnabled;
+            this.Is.SetEnabled = this._SetEnabled;
+            this.Is.MouseDoubleClick = false;        // Toolbar není zvědav na doubleclicky!
         }
         /// <summary>
         /// Vizualizace
@@ -1412,11 +1426,19 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Je prvek viditelný?
         /// </summary>
-        public override bool IsVisible { get { return this._DataItem.IsVisible; } set { this._DataItem.IsVisible = value; base.IsVisible = value; } }
+        private bool _GetVisible(bool value) { return this._DataItem.IsVisible; }
+        /// <summary>
+        /// Je prvek viditelný!
+        /// </summary>
+        private void _SetVisible(bool value) { this._DataItem.IsVisible = value; }
         /// <summary>
         /// Je prvek dostupný?
         /// </summary>
-        public override bool IsEnabled { get { return this._DataItem.IsEnabled; } set { this._DataItem.IsEnabled = value; base.IsEnabled = value; } }
+        private bool _GetEnabled(bool value) { return this._DataItem.IsEnabled; }
+        /// <summary>
+        /// Je prvek dostupný!
+        /// </summary>
+        private void _SetEnabled(bool value) { this._DataItem.IsEnabled = value; }
         /// <summary>
         /// Pole podpoložek prvku (ComboBox, SplitButton, atd)
         /// </summary>
@@ -1656,7 +1678,7 @@ namespace Asol.Tools.WorkScheduler.Components
         #region Společné podpůrné metody pro potomky
         protected void DrawItemBackground(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool isSelected = false, int roundCorner = 2, bool forceBorder = false)
         {
-            bool isEnabled = this.IsEnabled;
+            bool isEnabled = this.Is.Enabled;
             bool drawBackground = isEnabled && (this.IsMouseActive || isSelected);
             bool drawBorders = forceBorder || (isEnabled && this.IsMouseDown);
 
@@ -1818,7 +1840,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         protected override void AfterStateChanged(GInteractiveChangeStateArgs e)
         {
-            bool isEnabled = this.IsEnabled;
+            bool isEnabled = this.Is.Enabled;
             base.AfterStateChanged(e);
             switch (e.ChangeState)
             {

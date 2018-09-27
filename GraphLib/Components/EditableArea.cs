@@ -17,6 +17,10 @@ namespace Asol.Tools.WorkScheduler.Components
     public class GVirtualMovableItem : GMovableItem, IInteractiveItem
     {
         #region Constructor + Standard bounds overrides
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="virtualConvertor"></param>
         public GVirtualMovableItem(IVirtualConvertor virtualConvertor)
         {
             this._VirtualConvertor = virtualConvertor;
@@ -113,10 +117,15 @@ namespace Asol.Tools.WorkScheduler.Components
     /// </summary>
     public class GMovableItem : InteractiveDragObject, IInteractiveItem
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public GMovableItem()
         {
-            this.Style = GInteractiveStyles.AllMouseInteractivity | GInteractiveStyles.DragResizeX | GInteractiveStyles.DragResizeY | GInteractiveStyles.DragOnlySelected
-                | GInteractiveStyles.DragDrawGhostOriginal;
+            this.Is.Set(InteractiveProperties.Bit.DefaultMouseOverProperties
+                      | InteractiveProperties.Bit.MouseDragResizeX
+                      | InteractiveProperties.Bit.MouseDragResizeY
+                      | InteractiveProperties.Bit.DrawDragMoveGhostStandard);
                 
             this.BackColor = Skin.Button.BackColor;
             this.ChildItemsInit();
@@ -125,7 +134,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Mode for drawing a ghost during Drag operation
         /// </summary>
-        public DragDrawGhostMode DragDrawGhost { get { return this.DragDrawGhostMode; } set { this.DragDrawGhostMode = value; } }
+        public DragDrawGhostMode DragDrawGhost { get { return this.DragDrawGhostMode; } }
         /// <summary>
         /// Bounds of this object in time of begin of dragging.
         /// Its drawed as Ghost on this coordinates, when DragWithGhost is true.
@@ -134,27 +143,27 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Item can be interactive moved
         /// </summary>
-        protected bool CanItemMove { get { return ((this.Style & GInteractiveStyles.DragMove) != 0); } }
+        protected bool CanItemMove { get { return this.Is.MouseDragMove; } }
         /// <summary>
         /// Item can be interactive resized on X axis
         /// </summary>
-        protected bool CanItemResizeX { get { return ((this.Style & GInteractiveStyles.DragResizeX) != 0); } }
+        protected bool CanItemResizeX { get { return this.Is.MouseDragResizeX; } }
         /// <summary>
         /// Item can be interactive resized on Y axis
         /// </summary>
-        protected bool CanItemResizeY { get { return ((this.Style & GInteractiveStyles.DragResizeY) != 0); } }
+        protected bool CanItemResizeY { get { return this.Is.MouseDragResizeY; } }
         /// <summary>
         /// Item can be interactive resized on X and Y axis
         /// </summary>
-        protected bool CanItemResize { get { return (this.CanItemResizeX && this.CanItemResizeY); } }
+        protected bool CanItemResize { get { return (this.Is.MouseDragResizeX && this.Is.MouseDragResizeY); } }
         /// <summary>
         /// Item can be interactive selected
         /// </summary>
-        protected bool CanSelect { get { return ((this.Style & GInteractiveStyles.Select) != 0); } }
+        protected bool CanSelect { get { return this.Is.Selectable; } }
         /// <summary>
         /// Item can be dragged (move and resize) only after selection
         /// </summary>
-        protected bool CanDragOnlySelected { get { return ((this.Style & GInteractiveStyles.DragOnlySelected) != 0); } }
+        protected bool CanDragOnlySelected { get { return false; } }
         #endregion
         #region Child items, Init, Filter and Cache, Type-properties
         /// <summary>
@@ -214,22 +223,31 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         protected IEnumerable<InteractiveObject> GetSubItems()
         {
-            if (this.Items == null || this.LastStyle != this.Style)
+            if (this.Items == null)
             {
-                this.Items = this.ChildItemDict.Values.Where(i => i.IsEnabled).ToArray();
-                this.LastStyle = this.Style;
+                this.Items = this.ChildItemDict.Values.Where(i => i.Is.Enabled).ToArray();
             }
             return this.Items;
         }
+        /// <summary>Konkrétní Child prvek</summary>
         protected ChildItem ItemArea { get { return this.ChildItemDict[ChildItemType.Area]; } }
+        /// <summary>Konkrétní Child prvek</summary>
         protected ChildItem ItemBorder { get { return this.ChildItemDict[ChildItemType.Border]; } }
+        /// <summary>Konkrétní Child prvek</summary>
         protected ChildItem ItemTopLeft { get { return this.ChildItemDict[ChildItemType.TopLeft]; } }
+        /// <summary>Konkrétní Child prvek</summary>
         protected ChildItem ItemTop { get { return this.ChildItemDict[ChildItemType.Top]; } }
+        /// <summary>Konkrétní Child prvek</summary>
         protected ChildItem ItemTopRight { get { return this.ChildItemDict[ChildItemType.TopRight]; } }
+        /// <summary>Konkrétní Child prvek</summary>
         protected ChildItem ItemRight { get { return this.ChildItemDict[ChildItemType.Right]; } }
+        /// <summary>Konkrétní Child prvek</summary>
         protected ChildItem ItemBottomRight { get { return this.ChildItemDict[ChildItemType.BottomRight]; } }
+        /// <summary>Konkrétní Child prvek</summary>
         protected ChildItem ItemBottom { get { return this.ChildItemDict[ChildItemType.Bottom]; } }
+        /// <summary>Konkrétní Child prvek</summary>
         protected ChildItem ItemBottomLeft { get { return this.ChildItemDict[ChildItemType.BottomLeft]; } }
+        /// <summary>Konkrétní Child prvek</summary>
         protected ChildItem ItemLeft { get { return this.ChildItemDict[ChildItemType.Left]; } }
         /// <summary>
         /// Is enabled SubItem of specified type in current Style?
@@ -295,10 +313,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected InteractiveObject[] Items;
         /// <summary>
-        /// Interactive style, for which is filtered and cached Child items from ChildItemDict.Values into this.Items
-        /// </summary>
-        protected GInteractiveStyles LastStyle = GInteractiveStyles.None;
-        /// <summary>
         /// 2 = Active border (EditableSubItem.ActiveOverhead)
         /// </summary>
         protected const int ACTIVE_BORDER = 2;
@@ -312,6 +326,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected class ChildItem : InteractiveObject
         {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="owner"></param>
+            /// <param name="itemType"></param>
+            /// <param name="overCursorType"></param>
+            /// <param name="dragCursorType"></param>
+            /// <param name="activeOverhead"></param>
             public ChildItem(GMovableItem owner, ChildItemType itemType, SysCursorType? overCursorType, SysCursorType? dragCursorType, int activeOverhead)
             {
                 this.Parent = owner;
@@ -319,7 +341,13 @@ namespace Asol.Tools.WorkScheduler.Components
                 this.OverCursorType = overCursorType;
                 this.DragCursorType = dragCursorType;
                 this.InteractivePadding = new Padding(activeOverhead);
+                this.Is.GetEnabled = this._GetEnabled;
+                this.Is.GetVisible = this._GetVisible;
             }
+            /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns></returns>
             public override string ToString()
             {
                 return this.ItemType.ToString() + ": " + this.Bounds.ToString() + "; Owner: " + this.Owner.ToString();
@@ -343,11 +371,17 @@ namespace Asol.Tools.WorkScheduler.Components
             /// <summary>
             /// Is this SubItem Enabled by Owner.Style ?
             /// </summary>
-            public override bool IsEnabled { get { return this.Owner.IsEnabledChildItemType(this.ItemType); } set { } }
+            private bool _GetEnabled(bool value)
+            {
+                return this.Owner.IsEnabledChildItemType(this.ItemType);
+            }
             /// <summary>
             /// Is this SubItem Visible by Owner.Style and Owner.State ?
             /// </summary>
-            public override bool IsVisible { get { return this.Owner.IsVisibleChildItemType(this.ItemType); } set { } }
+            private bool _GetVisible(bool value)
+            {
+                return this.Owner.IsVisibleChildItemType(this.ItemType);
+            }
             /// <summary>
             /// Hold a mouse attention.
             /// When a item is drawed to Interactive layer (in MouseOver, MouseDrag and in other active states), this is: above other subitem, 
@@ -359,7 +393,7 @@ namespace Asol.Tools.WorkScheduler.Components
             /// <summary>
             /// Can drag this SubItem
             /// </summary>
-            public bool CanDrag { get { return (this.IsEnabled); } }
+            public bool CanDrag { get { return (this.Is.Enabled); } }
             /// <summary>
             /// Is this SubItem currently active SubItem of Owner?
             /// </summary>
@@ -461,16 +495,27 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected enum ChildItemType : int
         {
+            /// <summary>Konkrétní typ prvku</summary>
             None = 0,
+            /// <summary>Konkrétní typ prvku</summary>
             Area,
+            /// <summary>Konkrétní typ prvku</summary>
             Border,
+            /// <summary>Konkrétní typ prvku</summary>
             TopLeft,
+            /// <summary>Konkrétní typ prvku</summary>
             Top,
+            /// <summary>Konkrétní typ prvku</summary>
             TopRight,
+            /// <summary>Konkrétní typ prvku</summary>
             Right,
+            /// <summary>Konkrétní typ prvku</summary>
             BottomRight,
+            /// <summary>Konkrétní typ prvku</summary>
             Bottom,
+            /// <summary>Konkrétní typ prvku</summary>
             BottomLeft,
+            /// <summary>Konkrétní typ prvku</summary>
             Left
         }
         #endregion
@@ -488,6 +533,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Called after any interactive change value of State
         /// </summary>
         /// <param name="e"></param>
+        /// <param name="childItem"></param>
         protected void AfterStateChanged(GInteractiveChangeStateArgs e, ChildItem childItem)
         {
             if (childItem != null)

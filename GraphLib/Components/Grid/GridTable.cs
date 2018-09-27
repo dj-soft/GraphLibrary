@@ -38,9 +38,12 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             this.InitHeaderSplitter();
             this.InitTableSplitter();
         }
+        /// <summary>
+        /// Inicializace interaktivity
+        /// </summary>
         protected void InitInteractive()
         {
-            this.Style = GInteractiveStyles.AllMouseInteractivity | GInteractiveStyles.KeyboardInput;
+            this.Is.Set(InteractiveProperties.Bit.DefaultMouseProperties | InteractiveProperties.Bit.KeyboardInput);
         }
         void IDisposable.Dispose()
         {
@@ -52,6 +55,10 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             this._SetTableOrder();
             this._Table = null;
         }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             return "GTable for " + this.DataTable.ToString();
@@ -911,7 +918,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <summary>
         /// Nastaví danou buňku jako aktivní, případně vyvolá event ActiveRowChanged, nastaví daný řádek tak aby byl vidět
         /// </summary>
-        /// <param name="newActiveRow"></param>
+        /// <param name="newActiveCell"></param>
         /// <param name="eventSource"></param>
         /// <param name="scrollToVisible"></param>
         protected void SetActiveCell(Cell newActiveCell, EventSourceType eventSource, bool scrollToVisible)
@@ -966,6 +973,9 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             if (isChange)
                 this.ScrollRowsReload();
         }
+        /// <summary>
+        /// Přenačte řádky po Scrollu
+        /// </summary>
         protected void ScrollRowsReload()
         {
             this.Invalidate(InvalidateItem.RowScroll);
@@ -986,7 +996,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// Zajistí vyvolání metody Repaint pro ColumnHeader i pro všechny Cell.Control ve viditelných řádcích v daném sloupci.
         /// Je vhodné volat po změně na časové ose tohoto sloupce.
         /// </summary>
-        /// <param name="row"></param>
+        /// <param name="column"></param>
         protected void RepaintColumn(Column column)
         {
             if (column == null) return;
@@ -1363,7 +1373,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// Metoda vyvolá <see cref="GGrid.OnChangeTimeAxis(int?, int, GPropertyChangeArgs{TimeRange})"/>, tím dojde k synchronizaci Value z this tabulky a aktuálního sloupce do okolních tabulek stejného Gridu.
         /// Metoda dále zajistí překreslení všech Cell pro daný sloupec ve všech viditelných řádcích této tabulky.
         /// </summary>
-        /// <param name="columnId">Identifikace sloupce</param>
+        /// <param name="column">Identifikace sloupce</param>
         /// <param name="e">Data o změně</param>
         internal void OnChangeTimeAxis(Column column, GPropertyChangeArgs<TimeRange> e)
         {
@@ -1410,6 +1420,10 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         }
         #endregion
         #region Interaktivita vlastní GTable
+        /// <summary>
+        /// Řeší interaktivitu
+        /// </summary>
+        /// <param name="e"></param>
         protected override void AfterStateChanged(GInteractiveChangeStateArgs e)
         {   // Když už tady musí být override AfterStateChanged() (to kdyby to někoho napadlo), tak MUSÍ volat base metodu!
             base.AfterStateChanged(e);
@@ -1455,6 +1469,10 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             if (this._HotRow != null)
                 this.SetHotRow(null, EventSourceType.InteractiveChanged);
         }
+        /// <summary>
+        /// Po opuštění Focusu
+        /// </summary>
+        /// <param name="e"></param>
         protected override void AfterStateChangedFocusLeave(GInteractiveChangeStateArgs e)
         {
             base.AfterStateChangedFocusLeave(e);
@@ -1589,6 +1607,13 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             base.Draw(e, absoluteBounds, absoluteVisibleBounds);
             // Všechno ostatní (záhlaví sloupců, řádky, scrollbary, splittery) si malují Childs samy.
         }
+        /// <summary>
+        /// Ořízne grafiku na cílový prostor
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="absoluteBounds"></param>
+        /// <param name="absoluteVisibleBounds"></param>
+        /// <returns></returns>
         protected bool GraphicClip(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds)
         {
             // Ořezáváme jen při kreslení do vrstvy Standard, jinak ne:
@@ -1615,7 +1640,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         #region Draw : podpora pro kreslení obsahu řádků (pozadí, gridlines, hodnota)
         /// <summary>
         /// Metoda zajistí vykreslení pasivního obsahu dané buňky nebo řádku daného typu.
-        /// Aktivní obsah (v současné době <see cref="ITimeInteractiveGraph"/>) se vykresluje automaticky jako Child prvek své buňky / řádku.
+        /// Aktivní obsah (v současné době <see cref="Graph.ITimeInteractiveGraph"/>) se vykresluje automaticky jako Child prvek své buňky / řádku.
         /// Zdejší metoda pro něj pouze vykreslí pozadí řádku pod grafem.
         /// </summary>
         /// <param name="e"></param>
@@ -1669,6 +1694,8 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         /// <param name="e"></param>
         /// <param name="boundsAbsolute"></param>
+        /// <param name="row"></param>
+        /// <param name="cell"></param>
         private void DrawNull(GInteractiveDrawArgs e, Rectangle boundsAbsolute, Row row, Cell cell)
         { }
         /// <summary>
@@ -1676,6 +1703,8 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         /// <param name="e"></param>
         /// <param name="boundsAbsolute"></param>
+        /// <param name="row"></param>
+        /// <param name="cell"></param>
         /// <param name="value"></param>
         private void DrawContentText(GInteractiveDrawArgs e, Rectangle boundsAbsolute, Row row, Cell cell, object value)
         {
@@ -1703,6 +1732,8 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         /// <param name="e"></param>
         /// <param name="boundsAbsolute"></param>
+        /// <param name="row"></param>
+        /// <param name="cell"></param>
         /// <param name="image"></param>
         private void DrawContentImage(GInteractiveDrawArgs e, Rectangle boundsAbsolute, Row row, Cell cell, Image image)
         {
@@ -1717,6 +1748,8 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         /// <param name="e"></param>
         /// <param name="boundsAbsolute"></param>
+        /// <param name="row"></param>
+        /// <param name="cell"></param>
         /// <param name="drawItem"></param>
         private void DrawIDrawItem(GInteractiveDrawArgs e, Rectangle boundsAbsolute, Row row, Cell cell, IDrawItem drawItem)
         {
@@ -1730,7 +1763,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="boundsAbsolute"></param>
         /// <param name="row"></param>
         /// <param name="cell"></param>
-        /// <param name="drawItem"></param>
+        /// <param name="value"></param>
         private void DrawContentRelation(GInteractiveDrawArgs e, Rectangle boundsAbsolute, Row row, Cell cell, object value)
         {
             GPainter.DrawRelationGrid(e.Graphics, boundsAbsolute);
@@ -1740,6 +1773,8 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         /// <param name="e"></param>
         /// <param name="boundsAbsolute"></param>
+        /// <param name="row"></param>
+        /// <param name="cell"></param>
         /// <param name="graph"></param>
         private void DrawContentInteractiveTimeGraph(GInteractiveDrawArgs e, Rectangle boundsAbsolute, Row row, Cell cell, Components.Graph.ITimeInteractiveGraph graph)
         {
@@ -1757,6 +1792,8 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         /// <param name="e"></param>
         /// <param name="boundsAbsolute"></param>
+        /// <param name="row"></param>
+        /// <param name="cell"></param>
         /// <param name="graph"></param>
         private void DrawContentTimeGraph(GInteractiveDrawArgs e, Rectangle boundsAbsolute, Row row, Cell cell, Components.Graph.ITimeGraph graph)
         {
@@ -1851,6 +1888,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         /// <param name="e"></param>
         /// <param name="boundsAbsolute"></param>
+        /// <param name="row"></param>
         /// <param name="cell"></param>
         private void DrawRowBackColor(GInteractiveDrawArgs e, Rectangle boundsAbsolute, Row row, Cell cell)
         {
@@ -1881,6 +1919,11 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                 GPainter.DrawBorder(e.Graphics, boundsActive, RectangleSide.Top | RectangleSide.Bottom, null, colorTop, null, colorBottom, null);
             }
         }
+        /// <summary>
+        /// Vrátí strany z typu borderu
+        /// </summary>
+        /// <param name="linesType"></param>
+        /// <returns></returns>
         protected static RectangleSide GetSidesFromLines(BorderLinesType linesType)
         {
             RectangleSide side = RectangleSide.None;
@@ -2028,13 +2071,21 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
 
             return ratio;
         }
+        /// <summary>Konstanta pro Morphing</summary>
         protected const float MORPH_RATIO_ACTIVE_CELL = 0.80f;
+        /// <summary>Konstanta pro Morphing</summary>
         protected const float MORPH_RATIO_ACTIVE_ROW = 0.65f;
+        /// <summary>Konstanta pro Morphing</summary>
         protected const float MORPH_RATIO_MOUSEHOT_CELL = 0.25f;
+        /// <summary>Konstanta pro Morphing</summary>
         protected const float MORPH_RATIO_MOUSEHOT_ROW = 0.10f;
+        /// <summary>Konstanta pro Morphing</summary>
         protected const float MORPH_RATIO_ACTIVE_NOFOCUS = 0.25f;
+        /// <summary>Konstanta pro Morphing</summary>
         protected const float MORPH_RATIO_MOUSEHOT_NOFOCUS = 0.05f;
+        /// <summary>Konstanta pro Morphing</summary>
         protected const float EFFECT_3D_ACTIVE_ROW = 0.45f;
+        /// <summary>Konstanta pro Morphing</summary>
         protected const float EFFECT_3D_MOUSEHOT_ROW = 0.30f;
         #endregion
         #region Defaultní hodnoty
@@ -2048,60 +2099,114 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         public int DefaultRowHeaderWidth { get { return 25; } }
         #endregion
         #region Převolávač událostí z GTable do DataTable
+        /// <summary>
+        /// Vyvolá událost CallActiveRowChanged
+        /// </summary>
+        /// <param name="oldActiveRow"></param>
+        /// <param name="newActiveRow"></param>
+        /// <param name="eventSource"></param>
         protected void CallActiveRowChanged(Row oldActiveRow, Row newActiveRow, EventSourceType eventSource)
         {
             ITableEventTarget target = (this.DataTable as ITableEventTarget);
             if (target != null)
                 target.CallActiveRowChanged(oldActiveRow, newActiveRow, eventSource, !this.IsSuppressedEvent);
         }
+        /// <summary>
+        /// Vyvolá událost CallHotRowChanged
+        /// </summary>
+        /// <param name="oldHotRow"></param>
+        /// <param name="newHotRow"></param>
+        /// <param name="eventSource"></param>
         protected void CallHotRowChanged(Row oldHotRow, Row newHotRow, EventSourceType eventSource)
         {
             ITableEventTarget target = (this.DataTable as ITableEventTarget);
             if (target != null)
                 target.CallHotRowChanged(oldHotRow, newHotRow, eventSource, !this.IsSuppressedEvent);
         }
+        /// <summary>
+        /// Vyvolá událost CallHotCellChanged
+        /// </summary>
+        /// <param name="oldHotCell"></param>
+        /// <param name="newHotCell"></param>
+        /// <param name="eventSource"></param>
         protected void CallHotCellChanged(Cell oldHotCell, Cell newHotCell, EventSourceType eventSource)
         {
             ITableEventTarget target = (this.DataTable as ITableEventTarget);
             if (target != null)
                 target.CallHotCellChanged(oldHotCell, newHotCell, eventSource, !this.IsSuppressedEvent);
         }
+        /// <summary>
+        /// Vyvolá událost CallActiveCellChanged
+        /// </summary>
+        /// <param name="oldActiveCell"></param>
+        /// <param name="newActiveCell"></param>
+        /// <param name="eventSource"></param>
         protected void CallActiveCellChanged(Cell oldActiveCell, Cell newActiveCell, EventSourceType eventSource)
         {
             ITableEventTarget target = (this.DataTable as ITableEventTarget);
             if (target != null)
                 target.CallActiveCellChanged(oldActiveCell, oldActiveCell, eventSource, !this.IsSuppressedEvent);
         }
+        /// <summary>
+        /// Vyvolá událost CallCellMouseEnter
+        /// </summary>
+        /// <param name="cell"></param>
+        /// <param name="e"></param>
         protected void CallCellMouseEnter(Cell cell, GInteractiveChangeStateArgs e)
         {
             ITableEventTarget target = (this.DataTable as ITableEventTarget);
             if (target != null)
                 target.CallCellMouseEnter(cell, e, !this.IsSuppressedEvent);
         }
+        /// <summary>
+        /// Vyvolá událost CallCellMouseLeave
+        /// </summary>
+        /// <param name="cell"></param>
+        /// <param name="e"></param>
         protected void CallCellMouseLeave(Cell cell, GInteractiveChangeStateArgs e)
         {
             ITableEventTarget target = (this.DataTable as ITableEventTarget);
             if (target != null)
                 target.CallCellMouseLeave(cell, e, !this.IsSuppressedEvent);
         }
+        /// <summary>
+        /// Vyvolá událost CallActiveCellClick
+        /// </summary>
+        /// <param name="cell"></param>
+        /// <param name="e"></param>
         protected void CallActiveCellClick(Cell cell, GInteractiveChangeStateArgs e)
         {
             ITableEventTarget target = (this.DataTable as ITableEventTarget);
             if (target != null)
                 target.CallActiveCellClick(cell, e, !this.IsSuppressedEvent);
         }
+        /// <summary>
+        /// Vyvolá událost CallActiveCellDoubleClick
+        /// </summary>
+        /// <param name="cell"></param>
+        /// <param name="e"></param>
         protected void CallActiveCellDoubleClick(Cell cell, GInteractiveChangeStateArgs e)
         {
             ITableEventTarget target = (this.DataTable as ITableEventTarget);
             if (target != null)
                 target.CallActiveCellDoubleClick(cell, e, !this.IsSuppressedEvent);
         }
+        /// <summary>
+        /// Vyvolá událost CallActiveCellLongClick
+        /// </summary>
+        /// <param name="cell"></param>
+        /// <param name="e"></param>
         protected void CallActiveCellLongClick(Cell cell, GInteractiveChangeStateArgs e)
         {
             ITableEventTarget target = (this.DataTable as ITableEventTarget);
             if (target != null)
                 target.CallActiveCellLongClick(cell, e, !this.IsSuppressedEvent);
         }
+        /// <summary>
+        /// Vyvolá událost CallActiveCellRightClick
+        /// </summary>
+        /// <param name="cell"></param>
+        /// <param name="e"></param>
         protected void CallActiveCellRightClick(Cell cell, GInteractiveChangeStateArgs e)
         {
             ITableEventTarget target = (this.DataTable as ITableEventTarget);

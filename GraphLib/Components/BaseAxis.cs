@@ -30,7 +30,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public GBaseAxis()
         {
-            this.Is.DragEnabled = true;
+            this.Is.MouseDragMove = true;
+            this.Is.MouseMoveOver = true;
             this.PrepareInitialValues();
             this.PrepareVisual();
             this.PrepareArrangement();
@@ -1991,10 +1992,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected AxisInteractiveState _AxisState;
         /// <summary>
-        /// Styl tohoto prvku
-        /// </summary>
-        protected override GInteractiveStyles Style { get { return GInteractiveStyles.AllMouseInteractivity; } set { } }
-        /// <summary>
         /// Called after any interactive change value of State
         /// </summary>
         /// <param name="e"></param>
@@ -2315,7 +2312,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="absoluteBounds"></param>
         protected void DrawBackground(Graphics graphics, Rectangle absoluteBounds)
         {
-            GPainter.DrawAxisBackground(graphics, absoluteBounds, this.OrientationDraw, this.IsEnabled, this.InteractiveState, this.BackColor, this.BackColor3DEffect);
+            GPainter.DrawAxisBackground(graphics, absoluteBounds, this.OrientationDraw, this.Is.Enabled, this.InteractiveState, this.BackColor, this.BackColor3DEffect);
         }
         /// <summary>
         /// Draw Mouse point (a glare ellipse), when point location is stored in MouseOverRelativePoint or MouseDownRelativePoint (when HasValue)
