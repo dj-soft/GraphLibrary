@@ -13,18 +13,34 @@ namespace Asol.Tools.WorkScheduler.Data
     /// <typeparam name="TValue"></typeparam>
     public class TypeArray<TKey1, TKey2, TValue>
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public TypeArray()
         {
             this._Dictionary = new Dictionary<TKey1, Dictionary<TKey2, TValue>>();
         }
         private Dictionary<TKey1, Dictionary<TKey2, TValue>> _Dictionary;
-
+        /// <summary>
+        /// Odstraní všechny prvky
+        /// </summary>
         public void Clear()
         {
             this._Dictionary.Clear();
         }
+        /// <summary>
+        /// Počet prvků v celém poli
+        /// </summary>
         public int CountTotal { get { return this._Dictionary.Sum(d => d.Value.Count); } }
-        
+        /// <summary>
+        /// Přístup k hodnotě pole.
+        /// Pokus o přístup {get} k dosud neexistujícímu prvku nezpůsobí chybu, vrací default(<typeparamref name="TValue"/>).
+        /// Existenci hodnoty pro dané klíče lze zjistit pomocí metody <see cref="ContainsKey(TKey1, TKey2)"/>.
+        /// Zápis hodnoty {set} do dosud neexistujícího prvku nezpůsobí chybu, prvek korektně uloží.
+        /// </summary>
+        /// <param name="key1"></param>
+        /// <param name="key2"></param>
+        /// <returns></returns>
         public TValue this[TKey1 key1, TKey2 key2]
         {
             get
@@ -47,11 +63,25 @@ namespace Asol.Tools.WorkScheduler.Data
                     dict2[key2] = value;
             }
         }
+        /// <summary>
+        /// Vrátí true, pokud pro dané klíče již existuje uložená hodnota.
+        /// </summary>
+        /// <param name="key1"></param>
+        /// <param name="key2"></param>
+        /// <returns></returns>
         public bool ContainsKey(TKey1 key1, TKey2 key2)
         {
             TValue value;
             return this.TryGetValue(key1, key2, out value);
         }
+        /// <summary>
+        /// Pokusí se získat hodnotu pro dané klíče.
+        /// Pokud dosud neexistuje, vrací false; a out hodnota value je = default(<typeparamref name="TValue"/>).
+        /// </summary>
+        /// <param name="key1"></param>
+        /// <param name="key2"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
         public bool TryGetValue(TKey1 key1, TKey2 key2, out TValue value)
         {
             value = default(TValue);

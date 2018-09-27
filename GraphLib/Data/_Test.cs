@@ -8,6 +8,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using Asol.Tools.WorkScheduler.Data;
 using Noris.LCS.Base.WorkScheduler;
+using Asol.Tools.WorkScheduler.Data.Parsing;
 
 namespace Asol.Tools.WorkScheduler.Data.Test
 {
@@ -26,6 +27,45 @@ namespace Asol.Tools.WorkScheduler.Data.Test
           
         }
 
+        #region Testy Parseru
+        /// <summary>
+        /// Test Parseru
+        /// </summary>
+        [TestMethod]
+        public void TestParserSql()
+        {
+            string sql1 = @"SELECT (SELECT top 1 sklad FROM lcs.sk_hlavicka h WHERE h.cislo_subjektu = s.cislo_subjektu)
+ ,s.*
+FROM lcs. [subjekty] s with (updlock, holdlock)
+   /* podmnožina hlaviček pro pořadač 15307 a sklady s referencí 6%, a doklady s referencí obsahující 3 */
+inner join (select * from lcs.sk_hlavicka where cislo_poradace = 15307) x on x.cislo_subjektu = s.cislo_subjektu 
+    and (x.sklad in (select sk.cislo_subjektu from lcs.sk_sklad sk join lcs.subjekty su on su.cislo_subjektu = sk.cislo_subjektu where su.reference_subjektu like '6%'))
+where s.reference_subjektu like '%3%' or s.nazev_subjektu = 'Kontra''A';
+
+DECLARE @cislo INT;
+SET @cislo = 15307;
+";
+            ParsedItem result = Parser.ParseString(sql1, DefaultSettings.MsSql);
+            string sql2 = result.Text;
+            string sql3 = ((IParsedItemExtended)result).TextEdit;
+
+            string rtf = ((IParsedItemExtended)result).RtfText;
+
+            string segmentName = DefaultSettings.SQL_CODE;
+            string tables = "";
+            result.ScanItems(
+                null,
+                f => (f.SegmentName == segmentName),
+                t =>
+                {
+                    if (t.ItemType == Data.Parsing.ItemType.Text)
+                    {
+                        tables += t.Text + "; ";
+                    }
+                    return null;
+                });
+        }
+        #endregion
         #region Test Regex
         /// <summary>
         /// Test Regex

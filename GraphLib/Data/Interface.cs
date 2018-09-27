@@ -5,6 +5,7 @@ using System.Text;
 
 namespace Asol.Tools.WorkScheduler.Data
 {
+    #region interface IOwnerProperty<T>
     /// <summary>
     /// Interface, který dovoluje vložit referenci na libovolného vlastníka
     /// </summary>
@@ -15,9 +16,6 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         T Owner { get; set; }
     }
-
-    #region MyRegion
-
     #endregion
     #region delegate GPropertyChangedHandler, class GPropertyChangeArgs, enum EventSourceType
     /// <summary>

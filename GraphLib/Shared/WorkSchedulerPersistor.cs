@@ -227,7 +227,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public XmlDeserializeStatus DeserializeStatus { get; set; }
         /// <summary>
-        /// Začátek XML stringu pro jeho detekci: "<?xml version="
+        /// Začátek XML stringu pro jeho detekci: "&lt;?xml version="
         /// </summary>
         public static string XmlStringHeader { get { return "<?xml version="; } }
     }
