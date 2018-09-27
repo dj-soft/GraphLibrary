@@ -17,11 +17,19 @@ namespace Asol.Tools.WorkScheduler.Data
     public abstract class BaseRange<TEdge, TSize>
     {
         #region Konstruktory, public proměnné
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public BaseRange()
         {
             this.Begin = default(TEdge);
             this.End = default(TEdge);
         }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="begin"></param>
+        /// <param name="end"></param>
         public BaseRange(TEdge begin, TEdge end)
         {
             this.Begin = begin;
@@ -147,6 +155,8 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         /// <param name="center"></param>
         /// <param name="ratio"></param>
+        /// <param name="begin">Out počátek</param>
+        /// <param name="end">Out konec</param>
         /// <returns></returns>
         protected void PrepareZoomToRatio(TEdge center, decimal ratio, out TEdge begin, out TEdge end)
         {
@@ -171,8 +181,10 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// Returns a new instance created from current instance, which Size is specified, and center of zooming is on specified date.
         /// </summary>
-        /// <param name="center"></param>
-        /// <param name="time"></param>
+        /// <param name="center">Středový bod = pivot</param>
+        /// <param name="size">Cílová velikost</param>
+        /// <param name="begin">Out počátek</param>
+        /// <param name="end">Out konec</param>
         /// <returns></returns>
         protected void PrepareZoomToSizeOnCenterPoint(TEdge center, TSize size, out TEdge begin, out TEdge end)
         {
@@ -196,8 +208,10 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// Returns a new instance created from current instance, which Time is (ratio * this.Time) and center of zooming is on specified relative position.
         /// </summary>
-        /// <param name="relativePivot"></param>
-        /// <param name="ratio"></param>
+        /// <param name="relativePivot">Relativní pozice pivota</param>
+        /// <param name="size">Cílová velikost</param>
+        /// <param name="begin">Out počátek</param>
+        /// <param name="end">Out konec</param>
         /// <returns></returns>
         protected void PrepareZoomToSizeOnRelativePivot(decimal relativePivot, TSize size, out TEdge begin, out TEdge end)
         {
@@ -824,7 +838,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// Return point "begin" for specified "End" and "Size" (return end - size).
         /// </summary>
-        /// <param name="begin"></param>
+        /// <param name="end"></param>
         /// <param name="size"></param>
         /// <returns></returns>
         public abstract TEdge SubEdge(TEdge end, TSize size);
@@ -873,11 +887,19 @@ namespace Asol.Tools.WorkScheduler.Data
     public abstract class BaseVector<TPoint>
     {
         #region Constructors, public properties
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public BaseVector()
         {
             this.Point = default(TPoint);
             this.Direction = Direction.None;
         }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="point"></param>
+        /// <param name="direction"></param>
         public BaseVector(TPoint point, Direction direction)
         {
             this.Point = point;
@@ -1004,6 +1026,9 @@ namespace Asol.Tools.WorkScheduler.Data
     /// </summary>
     public enum Direction
     {
+        /// <summary>
+        /// Neurčeno
+        /// </summary>
         None,
         /// <summary>
         /// To higher values (positive numbers, future times)

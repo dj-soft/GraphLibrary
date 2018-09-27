@@ -7,20 +7,22 @@ using System.Drawing;
 using System.ComponentModel;
 using System.Collections;
 
-namespace Asol.Tools.WorkScheduler.TextParser
+using Parsing = Asol.Tools.WorkScheduler.Data.Parsing;
+
+namespace Asol.Tools.WorkScheduler.Components
 {
+    #region class SyntaxEditorPanel : Panel, který zapouzdřuje editor textu spojený s Parserem se zvýrazněním syntaxe
     /// <summary>
-    /// Panel, který zapouzdřuje editor textu spojený s Parserem se zvýrazněním syntaxe (za pomoci RTF editoru).
+    /// SyntaxEditorPanel : Panel, který zapouzdřuje editor textu spojený s Parserem se zvýrazněním syntaxe (za pomoci RTF editoru).
     /// Editor má dvě zásadní property: ParserSetting (sem se vkládají pravidla pro parsování), EditedText (vstup / výstup textu), a událost EditedTextChanged (vyvolá se po každé změně textu).
-    /// 
     /// </summary>
-    public class GuiRtfEditor : Panel
+    public class SyntaxEditorPanel : Panel
     {
         #region Konstrukce, proměnné
         /// <summary>
         /// Vytvoří Editor
         /// </summary>
-        public GuiRtfEditor()
+        public SyntaxEditorPanel()
         {
             this.InitComponents();
         }
@@ -28,7 +30,7 @@ namespace Asol.Tools.WorkScheduler.TextParser
         {
             this.DoubleBuffered = true;
 
-            this.RtfEditor = new GuiRtfTextBox();
+            this.RtfEditor = new SyntaxEditorTextBox();
             this.RtfEditor.Dock = DockStyle.Fill;
             this.RtfEditor.TextChanged += new EventHandler(this._RtfEditor_TextChanged);
             this.Controls.Add(this.RtfEditor);
@@ -42,11 +44,11 @@ namespace Asol.Tools.WorkScheduler.TextParser
         /// <summary>
         /// Objekt RTF editoru
         /// </summary>
-        private GuiRtfTextBox RtfEditor;
+        private SyntaxEditorTextBox RtfEditor;
         /// <summary>
         /// Úložiště pro property ParserSetting
         /// </summary>
-        private ParserSetting _ParserSetting;
+        private Parsing.Setting _ParserSetting;
         #endregion
         #region Public property, eventy, metody
         /// <summary>
@@ -55,12 +57,12 @@ namespace Asol.Tools.WorkScheduler.TextParser
         /// </summary>
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public ParserSetting ParserSetting
+        internal Parsing.Setting ParserSetting
         {
             get
             {
                 if (this._ParserSetting == null)
-                    this._ParserSetting = ParserDefaultSetting.MsSql;  // ParserDefaultSetting.MsSql
+                    this._ParserSetting = Parsing.DefaultSettings.MsSql;
                 return this._ParserSetting;
             }
             set
@@ -177,18 +179,18 @@ namespace Asol.Tools.WorkScheduler.TextParser
         /// </summary>
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public GuiRtfTextBox RtfTextBox { get { return this.RtfEditor; } }
+        public SyntaxEditorTextBox RtfTextBox { get { return this.RtfEditor; } }
         /// <summary>
         /// Parsované segmenty aktuálního textu. Po každé změně textu jsou aktuální.
         /// </summary>
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public IEnumerable<ParserSegment> EditorSegments
+        internal Parsing.ParsedItem EditorSegment
         {
-            get { return this._EditorSegments; }
-            private set { this.OnEditorSegmentsChangedBefore();  this._EditorSegments = value; this.OnEditorSegmentsChangedAfter(); }
+            get { return this._EditorSegment; }
+            private set { this.OnEditorSegmentsChangedBefore();  this._EditorSegment = value; this.OnEditorSegmentsChangedAfter(); }
         }
-        private IEnumerable<ParserSegment> _EditorSegments;
+        private Parsing.ParsedItem _EditorSegment;
         /// <summary>
         /// Metoda vrátí index znaku v RTF controlu pro zadaný index znaku TXT.
         /// Rozdíl je dán jedním znakem za každý zlom řádku: v TXT formátu je konec řádku reprezentován dvěma znaky (CR a LF), 
@@ -434,31 +436,14 @@ namespace Asol.Tools.WorkScheduler.TextParser
         /// <returns></returns>
         private string RtfTextGetSyntaxColor(string text)
         {
-            ParserSetting setting = this.ParserSetting;
+            Parsing.Setting setting = this.ParserSetting;
 
             System.Diagnostics.Stopwatch sw = System.Diagnostics.Stopwatch.StartNew();
-            List<ParserSegment> segments = Parser.ParseString(text, setting);
+            Parsing.ParsedItem segment = Parsing.Parser.ParseString(text, setting);
             this.LastParsingTime = (decimal)sw.ElapsedTicks / (decimal)System.Diagnostics.Stopwatch.Frequency;
-
-            this.EditorSegments = segments;                          // Tady se vyvolá event EditorSegmentsChangedBefore i EditorSegmentsChangedAfter. Pokud je na this editor napojen GuiTreeView, pak nyní dojde k jeho přenačtení...
-            if (segments == null || segments.Count == 0) return null;
-            string rtfText = ParserSegment.GetFormattedText(segments, this.RtfCoder);
-            this.RtfCoder.Clear();                                   // RtfCoder si po použití ponechává v paměti data, ale my je už nepotřebujeme...
-            return rtfText;
+            this.EditorSegment = segment;                  // Tady se vyvolá event EditorSegmentsChangedBefore i EditorSegmentsChangedAfter. Pokud je na this editor napojen GuiTreeView, pak nyní dojde k jeho přenačtení...
+            return ((Parsing.IParsedItemExtended)segment).RtfText;
         }
-        /// <summary>
-        /// Instance RtfCoderu
-        /// </summary>
-        protected RtfCoder RtfCoder
-        {
-            get
-            {
-                if (this._RtfCoder == null)
-                    this._RtfCoder = new RtfCoder();
-                return this._RtfCoder;
-            }
-        }
-        private RtfCoder _RtfCoder = null;
         /// <summary>
         /// Dispose
         /// </summary>
@@ -466,12 +451,6 @@ namespace Asol.Tools.WorkScheduler.TextParser
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);
-            RtfCoder rtfCoder = this._RtfCoder;
-            if (rtfCoder != null)
-            {
-                ((IDisposable)rtfCoder).Dispose();
-                this._RtfCoder = null;
-            }
         }
         /// <summary>
         /// true potlačí event _RtfEditor_TextChanged a tedy i EditedTextChanged.
@@ -528,16 +507,17 @@ namespace Asol.Tools.WorkScheduler.TextParser
         private Timer _Timer;
         #endregion
     }
-    #region class GuiRtfTextBox : RTF editor (RichTextBox)
+    #endregion
+    #region class SyntaxEditorTextBox : RTF editor (RichTextBox)
     /// <summary>
-    /// EditorTextBox : RTF editor (RichTextBox)
+    /// SyntaxEditorTextBox : RTF editor (RichTextBox)
     /// </summary>
-    public class GuiRtfTextBox : RichTextBox
+    public class SyntaxEditorTextBox : RichTextBox
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public GuiRtfTextBox()
+        public SyntaxEditorTextBox()
         {
             this.SetStyle(ControlStyles.OptimizedDoubleBuffer, true);
             this.DetectUrls = false;
@@ -607,17 +587,17 @@ namespace Asol.Tools.WorkScheduler.TextParser
         #endregion
     }
     #endregion
-    #region class GuiTreeView : zobrazovač struktury segmentů a hodnot
+    #region class SyntaxEditorTreeView : zobrazovač struktury segmentů a hodnot ve formě TreeView
     /// <summary>
-    /// GuiTreeView : zobrazovač struktury segmentů a hodnot
+    /// SyntaxEditorTreeView : zobrazovač struktury segmentů a hodnot
     /// </summary>
-    public class GuiTreeView : System.Windows.Forms.TreeView
+    public class SyntaxEditorTreeView : System.Windows.Forms.TreeView
     {
         #region Konstrukce
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public GuiTreeView()
+        public SyntaxEditorTreeView()
         {
             this._WmIgnoreInit();
             this.AfterSelect += _AfterSelect;
@@ -629,7 +609,7 @@ namespace Asol.Tools.WorkScheduler.TextParser
         /// </summary>
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public GuiRtfEditor ParserEditor
+        public SyntaxEditorPanel ParserEditor
         {
             get { return this._ParserEditor; }
             set
@@ -641,42 +621,42 @@ namespace Asol.Tools.WorkScheduler.TextParser
                     this._LinkEditor(this._ParserEditor, true);
             }
         }
-        private GuiRtfEditor _ParserEditor;
+        private SyntaxEditorPanel _ParserEditor;
         /// <summary>
         /// Segmenty, které zde ve stromu zobrazujeme
         /// </summary>
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public IEnumerable<ParserSegment> EditorSegments
+        internal Parsing.ParsedItem EditorSegment
         {
-            get { return this._EditorSegments; }
-            set { this._EditorSegments = value; this._TreeFill(); }
+            get { return this._EditorSegment; }
+            set { this._EditorSegment = value; this._TreeFill(); }
         }
-        private IEnumerable<ParserSegment> _EditorSegments;
+        private Parsing.ParsedItem _EditorSegment;
         /// <summary>
         /// Zaháčkuje/Odháčkuje this handler _EditorSegmentsChangedAfter do eventu editor.EditorSegmentsChangedAfter.
         /// Převezme segmenty které jsou aktuálně platné v editoru (nebo své segmenty nuluje).
         /// </summary>
         /// <param name="editor"></param>
         /// <param name="link"></param>
-        private void _LinkEditor(GuiRtfEditor editor, bool link)
+        private void _LinkEditor(SyntaxEditorPanel editor, bool link)
         {
             if (editor == null) return;
 
             if (link)
             {
                 editor.EditorSegmentsChangedAfter += _EditorSegmentsChangedAfter;
-                this.EditorSegments = editor.EditorSegments;
+                this.EditorSegment = editor.EditorSegment;
             }
             else
             {
                 editor.EditorSegmentsChangedAfter -= _EditorSegmentsChangedAfter;
-                this.EditorSegments = null;
+                this.EditorSegment = null;
             }
         }
         private void _EditorSegmentsChangedAfter(object sender, EventArgs e)
         {
-            this.EditorSegments = (this._ParserEditor == null ? null : this._ParserEditor.EditorSegments);
+            this.EditorSegment = (this._ParserEditor == null ? null : this._ParserEditor.EditorSegment);
         }
         /// <summary>
         /// Zpráva která má být zobrazena ve stavovém řádku.
@@ -734,6 +714,8 @@ namespace Asol.Tools.WorkScheduler.TextParser
             System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
 
             TreeNode node = new TreeNode();
+            node.Text = "RTF document";
+            node.ToolTipText = "Main level of RTF document";
             try
             {
                 this.SuspendPaint = true;
@@ -743,20 +725,20 @@ namespace Asol.Tools.WorkScheduler.TextParser
                 this.Nodes.Clear();
                 this.ShowNodeToolTips = true;
                 sw.Start();
-                if (this._EditorSegments != null)
-                {
-                    foreach (ParserSegment segment in this._EditorSegments)
-                        this._TreeFillOne(node.Nodes, segment);
-                }
+                _TreeFillOne(this._EditorSegment, node, this.ShowBlankItems, this.ShowCommentItems);
             }
             finally
             {
-                TreeNode[] nodes = new TreeNode[node.Nodes.Count];
-                node.Nodes.CopyTo(nodes, 0);
-                if (nodes.Length == 1 && !nodes[0].IsExpanded)
-                    nodes[0].Expand();
+                node.Expand();
+                this.Nodes.Add(node);
 
-                this.Nodes.AddRange(nodes);
+                //  původně
+                // TreeNode[] nodes = new TreeNode[node.Nodes.Count];
+                // node.Nodes.CopyTo(nodes, 0);
+                // if (nodes.Length == 1 && !nodes[0].IsExpanded)
+                //      nodes[0].Expand();
+                // this.Nodes.AddRange(nodes);
+
                 sw.Stop();
 
                 if (this._WmList != null && this._WmList.Count > 0)
@@ -770,46 +752,41 @@ namespace Asol.Tools.WorkScheduler.TextParser
             this.LastWorkingTime = (decimal)sw.ElapsedTicks / (decimal)System.Diagnostics.Stopwatch.Frequency;
             this.StatusMessage = "Loading segments done.";
         }
-        private void _TreeFillOne(TreeNodeCollection collection, ParserSegment segment)
+        /// <summary>
+        /// Úkolem této metody je: 
+        ///  - vepsat data z daného prvku <see cref="Parsing.ParsedItem"/> do doadného nodu stromu <see cref="TreeNode"/>;
+        ///  - pokud daný prvek obsahuje vnořené prvky, pak je projít; pro každý prvek vytvořit nový sub-node a zařadit jej do do daného node;
+        ///  - a rekurzivně zavolat tuto metodu pro vnořený prvek a sub-node.
+        /// projít všechny vnořené prvky daného parsovaného prvku (item), a tyto prvky přímo vložit kolekce daného nodu.
+        /// Pokud některý prvek obsahuje sub-prvky, pak rekurzivně zavolat tuto metodu, předat jí prvek, a odpovídající kolekci subnodů.
+        /// </summary>
+        /// <param name="item">Zdroj dat = parsovaný prvek</param>
+        /// <param name="node">Cíl dat = prvek TreeNode</param>
+        /// <param name="addBlank">Vkládat i Blank prvky</param>
+        /// <param name="addComment">Vkládat i komentáře a další nerelevantní prvky</param>
+        private static void _TreeFillOne(Parsing.ParsedItem item, TreeNode node, bool addBlank, bool addComment)
         {
-            TreeNode node, child;
-            node = new TreeNode(segment.SimplifiedText);
-            node.ToolTipText = "Segment = head node";
-            node.Tag = segment;
+            if (item == null) return;
 
-            bool addBlank = this.ShowBlankItems;
-            bool addComment = this.ShowCommentItems;
+            Parsing.IParsedItemExtended eItem = item as Parsing.IParsedItemExtended;
 
-            // collection.Add(node);
-            foreach (ParserSegmentValue item in segment.Values)
+            node.Text = item.Text;
+            node.ToolTipText = item.ItemType.ToString() + "; " + eItem.Setting.SegmentName;
+            node.Tag = item;
+
+            if (!item.HasItems) return;
+
+            foreach (Parsing.ParsedItem subItem in item.Items)
             {
-                switch (item.ValueType)
-                {
-                    case ParserSegmentValueType.Blank:
-                    case ParserSegmentValueType.Delimiter:
-                    case ParserSegmentValueType.Text:
-                        if (item.ValueType == ParserSegmentValueType.Blank && !addBlank) break;
+                Parsing.IParsedItemExtended eSubItem = subItem as Parsing.IParsedItemExtended;
 
-                        child = new TreeNode(item.Text);
-                        
-                        string tip = "Value";
-                        if (!String.IsNullOrEmpty(item.ValueName)) tip += ", name: " + item.ValueName;
-                        tip += ", type: " + item.ValueType.ToString();
-                        child.ToolTipText = tip;
-                    
-                        child.Tag = item;
-                        collection.Add(child);
-                        break;
-                    case ParserSegmentValueType.InnerSegment:
-                        if (item.InnerSegment.IsComment && !addComment) break;
+                if (eSubItem.IsComment && !addComment) continue;
+                if (!eSubItem.IsRelevant && !addBlank) continue;
 
-                        child = new TreeNode(item.Text);
-                        child.ToolTipText = "InnerSegment, name: " + item.InnerSegment.SegmentName + ", item count: " + item.InnerSegment.ValueCount.ToString();
-                        child.Tag = item;
-                        collection.Add(child);
-                        _TreeFillOne(child.Nodes, item.InnerSegment);
-                        break;
-                }
+                TreeNode subNode = new TreeNode();
+                node.Nodes.Add(subNode);
+
+                _TreeFillOne(subItem, subNode, addBlank, addComment);
             }
         }
         #endregion
@@ -823,11 +800,12 @@ namespace Asol.Tools.WorkScheduler.TextParser
         }
         private void _AfterSelectNode(TreeNode treeNode)
         {
-            ParserSegmentValue item = treeNode.Tag as ParserSegmentValue;
+            Parsing.ParsedItem item = treeNode.Tag as Parsing.ParsedItem;
             if (item == null) return;
+            Parsing.IParsedItemExtended eItem = item as Parsing.IParsedItemExtended;
 
-            int begin = item.BeginAt;
-            int end = item.EndBefore;
+            int begin = eItem.BeginPointer;
+            int end = eItem.EndPointer;
             this._ParserEditor.SelectRange(begin, end - begin, true);
         }
         #endregion

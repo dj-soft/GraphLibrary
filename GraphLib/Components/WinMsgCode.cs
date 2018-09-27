@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Asol.Tools.WorkScheduler.TextParser
+namespace Asol.Tools.WorkScheduler.Components
 {
     /// <summary>
     /// Windows Messages

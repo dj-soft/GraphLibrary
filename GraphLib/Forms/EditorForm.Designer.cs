@@ -1,4 +1,6 @@
-﻿namespace Asol.Tools.WorkScheduler.Forms
+﻿using Asol.Tools.WorkScheduler.Components;
+
+namespace Asol.Tools.WorkScheduler.Forms
 {
     partial class EditorForm
     {
@@ -28,7 +30,7 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this._Editor = new TextParser.GuiRtfEditor();
+            this._Editor = new SyntaxEditorPanel();
             this.SuspendLayout();
             // 
             // _Editor
@@ -56,6 +58,6 @@
 
         #endregion
 
-        private TextParser.GuiRtfEditor _Editor;
+        private SyntaxEditorPanel _Editor;
     }
 }

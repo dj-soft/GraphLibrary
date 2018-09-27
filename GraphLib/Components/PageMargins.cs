@@ -8,6 +8,9 @@ using System.Drawing.Drawing2D;
 
 namespace Asol.Tools.WorkScheduler.Components
 {
+    /// <summary>
+    /// Třída pro řešení okrajů stránky
+    /// </summary>
     public class PageMargins : VirtualInteractiveContainer, IInteractiveItem
     {
         /// <summary>

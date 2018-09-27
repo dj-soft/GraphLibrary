@@ -92,24 +92,23 @@
     <Compile Include="Components\Layout.cs" />
     <Compile Include="Components\Progress.cs" />
     <Compile Include="Components\Skin.cs" />
+    <Compile Include="Components\SyntaxEditor.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Components\TabHeader.cs" />
     <Compile Include="Components\ToolBar.cs" />
     <Compile Include="Components\ToolTip.cs" />
+    <Compile Include="Components\WinMsgCode.cs" />
     <Compile Include="Data\GId.cs" />
     <Compile Include="Data\Index.cs" />
     <Compile Include="Data\Interface.cs" />
+    <Compile Include="Data\Parser.cs" />
     <Compile Include="Data\Regex.cs" />
     <Compile Include="Data\Text.cs" />
     <Compile Include="Data\TypeArray.cs" />
     <Compile Include="Data\ValueSynchronizer.cs" />
     <Compile Include="Data\_Test.cs" />
     <Compile Include="Localizable\Text.cs" />
-    <Compile Include="Parser\Analyser.cs" />
-    <Compile Include="Parser\Gui.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Include="Parser\ParserStream.cs" />
-    <Compile Include="Parser\WinMsgCode.cs" />
     <Compile Include="Rtf\RtfDocument.cs" />
     <Compile Include="Rtf\RtfPaint.cs" />
     <Compile Include="Scheduler\Constants.cs" />
@@ -167,9 +166,6 @@
     <Compile Include="Forms\EditorForm.Designer.cs">
       <DependentUpon>EditorForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Parser\Parser.cs" />
-    <Compile Include="Parser\ParserSetting.cs" />
-    <Compile Include="Parser\RtfCoder.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\TestGlobalFunctions.cs" />
     <Compile Include="Shared\WorkSchedulerPersistor.cs" />

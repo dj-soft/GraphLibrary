@@ -43,7 +43,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Vrátí instanci třídy <see cref="BoundsInfo"/> pro daný control
         /// </summary>
-        /// <param name="item"></param>
         /// <param name="absOriginPoint"></param>
         /// <param name="absVisibleBounds"></param>
         /// <returns></returns>

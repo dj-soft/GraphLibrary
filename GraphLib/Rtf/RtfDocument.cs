@@ -2,16 +2,26 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-
-using Asol.Tools.WorkScheduler.TextParser;
 using System.Drawing;
+
+using Parsing = Asol.Tools.WorkScheduler.Data.Parsing;
+
 
 namespace Asol.Tools.WorkScheduler.Rtf
 {
+    /// <summary>
+    /// Logický obraz RTF dokumentu
+    /// </summary>
     public class RtfDocument
     {
+        /// <summary>
+        /// Konstruktor dokumentu
+        /// </summary>
         public RtfDocument()
         { }
+        /// <summary>
+        /// RTF text dokumentu
+        /// </summary>
         public string RtfText
         {
             get
@@ -26,7 +36,9 @@ namespace Asol.Tools.WorkScheduler.Rtf
             }
         }
         private string _RtfText;
-      
+        /// <summary>
+        /// Invaliduje obsah dokumentu, volá se po vložení nového RTF obsahu
+        /// </summary>
         private void InvalidateDocument()
         {
             this._RtfText = null;
@@ -35,73 +47,73 @@ namespace Asol.Tools.WorkScheduler.Rtf
             this._Colors = new Dictionary<string, RtfColor>();
             this._RtfErrors = "";
         }
+        /// <summary>
+        /// Načte a analyzuje dodaný RTF text
+        /// </summary>
         private void _LoadRtfText()
         {
             if (String.IsNullOrEmpty(this._RtfText)) return;
 
-            using (Parser parser = new Parser(TextParser.ParserDefaultSetting.Rtf))
-            {
-                List<ParserSegment> segmentList = parser.ParseString(this._RtfText);
-                ParserSegment rtfSegment = _GetMainRtfSegment(segmentList);
-                if (rtfSegment != null)
-                    this._ProcessRtfDocument(rtfSegment);
-            }
+            Parsing.ParsedItem rootItem = Parsing.Parser.ParseString(this._RtfText, Parsing.DefaultSettings.Rtf);
+            this._ProcessRtfDocument(rootItem);
         }
-        private void _ProcessRtfDocument(TextParser.ParserSegment parserSegment)
+        /// <summary>
+        /// Analyzuje parsovaný RTF text
+        /// </summary>
+        /// <param name="rootItem"></param>
+        private void _ProcessRtfDocument(Parsing.ParsedItem rootItem)
         {
-            foreach (var item in parserSegment.Values)
+            if (rootItem == null || rootItem.ItemCount <= 0) return;
+
+            foreach (Parsing.ParsedItem item in rootItem.Items)
             {
-                switch (item.ValueType)
+                switch (item.ItemType)
                 {
-                    case TextParser.ParserSegmentValueType.None:
-                    case TextParser.ParserSegmentValueType.Blank:
+                    case Data.Parsing.ItemType.None:
+                    case Data.Parsing.ItemType.Blank:
                         break;
-                    case TextParser.ParserSegmentValueType.Text:
-                        if (item.HasContent)
+                    case Data.Parsing.ItemType.Text:
+                        this._ProcessRtfText(item);
+                        break;
+                    case Data.Parsing.ItemType.Delimiter:
+                        break;
+                    case Data.Parsing.ItemType.Array:
+                        if (item.HasItems)
                         {
-                            this._ProcessRtfContent(item);
-                        }
-                        break;
-                    case TextParser.ParserSegmentValueType.Delimiter:
-                        if (item.HasContent)
-                        { }
-                        break;
-                    case TextParser.ParserSegmentValueType.InnerSegment:
-                        if (item.HasInnerSegment)
-                        {
-                            switch (item.InnerSegment.SegmentName)
+                            switch (item.SegmentName)
                             {
-                                case ParserDefaultSetting.RTF_ENTITY:
-                                    this._ProcessRtfEntity(item.InnerSegment);
+                                case Parsing.DefaultSettings.RTF_ENTITY:
+                                    this._ProcessRtfEntity(item);
                                     break;
-                                case ParserDefaultSetting.RTF_BLOCK:
-                                    this._ProcessRtfBlock(item.InnerSegment);
+                                case Parsing.DefaultSettings.RTF_BLOCK:
+                                    this._ProcessRtfBlock(item);
                                     break;
-                                case ParserDefaultSetting.RTF_CHAR2:
-                                    this._ProcessRtfChar2(item.InnerSegment);
+                                case Parsing.DefaultSettings.RTF_CHAR2:
+                                    this._ProcessRtfChar2(item);
                                     break;
-                                case ParserDefaultSetting.RTF_CHARUNICODE:
-                                    this._ProcessRtfCharUnicode(item.InnerSegment);
+                                case Parsing.DefaultSettings.RTF_CHARUNICODE:
+                                    this._ProcessRtfCharUnicode(item);
                                     break;
                                 default:
-                                    this._ProcessAddRtfError("Segment", item.InnerSegment.SegmentName);
+                                    this._ProcessAddRtfError("Segment", item.SegmentName);
                                     break;
                             }
                         }
                         break;
                     default:
-                        this._ProcessAddRtfError("ValueType", item.ValueType.ToString());
+                        this._ProcessAddRtfError("ItemType", item.ItemType.ToString());
                         break;
                 }
             }
         }
 
-        private void _ProcessRtfEntity(ParserSegment rtfSegment)
+        private void _ProcessRtfEntity(Parsing.ParsedItem item)
         {
-            foreach (ParserSegmentValue parsedValue in rtfSegment.Values)
+            if (!item.HasItems) return;
+            foreach (Parsing.ParsedItem subItem in item.Items)
             {
                 string rtfValue;
-                string rtfEntity = GetRtfEntity(parsedValue, out rtfValue);
+                string rtfEntity = GetRtfEntity(subItem, out rtfValue);
                 switch (rtfEntity)
                 {
                     case "viewkind":
@@ -113,17 +125,17 @@ namespace Asol.Tools.WorkScheduler.Rtf
             
         }
         #region Parse RTF inner blocks
-        private void _ProcessRtfBlock(ParserSegment rtfSegment)
+        private void _ProcessRtfBlock(Parsing.ParsedItem item)
         {
-            if (rtfSegment.ValueCount == 0) return;
-            string rtfEntity = GetRtfEntityFirst(rtfSegment);
+            if (!item.HasItems) return;
+            string rtfEntity = GetRtfEntityFirst(item);
             switch (rtfEntity)
             {
                 case "fonttbl":
-                    this._ProcessRtfBlockFontTable(rtfSegment);
+                    this._ProcessRtfBlockFontTable(item);
                     break;
                 case "colortbl":
-                    this._ProcessRtfBlockFColor(rtfSegment);
+                    this._ProcessRtfBlockFColor(item);
                     break;
                 default:
                     this._ProcessAddRtfError("Block", rtfEntity);
@@ -135,33 +147,32 @@ namespace Asol.Tools.WorkScheduler.Rtf
         /// <summary>
         /// Find and return parsed segment for RTF document.
         /// </summary>
-        /// <param name="segmentList"></param>
+        /// <param name="item"></param>
         /// <returns></returns>
-        private ParserSegment _GetMainRtfSegment(List<ParserSegment> segmentList)
+        private Parsing.ParsedItem _GetMainRtfSegment(Parsing.ParsedItem item)
         {
-            if (segmentList.Count > 0 && segmentList[0].SegmentName == TextParser.ParserDefaultSetting.RTF_NONE && segmentList[0].ValueCount > 0)
-            {
-                ParserSegmentValue rtfFirstValue = segmentList[0].ValueList[0];
-                if (rtfFirstValue.HasInnerSegment && rtfFirstValue.InnerSegment.SegmentName == TextParser.ParserDefaultSetting.RTF_DOCUMENT)
-                    return rtfFirstValue.InnerSegment;
-            }
-            return null;
+            Parsing.ParsedItem rtfItem = null;
+            if (item.SegmentName == Parsing.DefaultSettings.RTF_NONE && item.HasItems)
+                rtfItem = item;
+            else if (item.HasItems && item.Items[0].SegmentName == Parsing.DefaultSettings.RTF_NONE && item.Items[0].HasItems)
+                rtfItem = item.Items[0];
+            return rtfItem;
         }
         /// <summary>
         /// Split value (for example: "charset238") to name ("charset") and numeric value ("238").
         /// </summary>
-        /// <param name="parserValue"></param>
+        /// <param name="item"></param>
         /// <returns></returns>
-        protected static string GetRtfEntity(ParserSegmentValue parserValue)
+        private static string GetRtfEntity(Parsing.ParsedItem item)
         {
             string rtfValue;
-            return GetRtfEntity(parserValue, out rtfValue);
+            return GetRtfEntity(item, out rtfValue);
         }
-        protected static string GetRtfEntity(ParserSegmentValue parserValue, out string rtfValue)
+        private static string GetRtfEntity(Parsing.ParsedItem item, out string rtfValue)
         {
             rtfValue = "";
-            if (parserValue == null) return "";
-            string rtfEntity = parserValue.InnerText;
+            if (item == null) return "";
+            string rtfEntity = item.Text;
             int firstValue = rtfEntity.IndexOfAny(ValuesArrayNumSpace);
             if (firstValue > 0)
             {
@@ -173,80 +184,81 @@ namespace Asol.Tools.WorkScheduler.Rtf
         /// <summary>
         /// Array of char: 0 1 2 3 4 5 6 7 8 9
         /// </summary>
-        protected static char[] ValuesArrayNum { get { if (_ValuesArrayNum == null) _ValuesArrayNum = "0123456789".ToArray(); return _ValuesArrayNum; } } private static char[] _ValuesArrayNum;
+        private static char[] ValuesArrayNum { get { if (_ValuesArrayNum == null) _ValuesArrayNum = "0123456789".ToArray(); return _ValuesArrayNum; } } private static char[] _ValuesArrayNum;
         /// <summary>
         /// Array of char: {Space} 0 1 2 3 4 5 6 7 8 9
         /// </summary>
-        protected static char[] ValuesArrayNumSpace { get { if (_ValuesArrayNumSpace == null) _ValuesArrayNumSpace = " 0123456789".ToArray(); return _ValuesArrayNumSpace; } } private static char[] _ValuesArrayNumSpace;
-        protected static string GetRtfEntityFirst(ParserSegment parserSegment)
+        private static char[] ValuesArrayNumSpace { get { if (_ValuesArrayNumSpace == null) _ValuesArrayNumSpace = " 0123456789".ToArray(); return _ValuesArrayNumSpace; } } private static char[] _ValuesArrayNumSpace;
+        private static string GetRtfEntityFirst(Parsing.ParsedItem item)
         {
-            ParserSegmentValue foundValue = GetFirstParserValue(parserSegment);
+            Parsing.ParsedItem foundValue = GetFirstParserValue(item);
             return GetRtfEntity(foundValue);
         }
-        protected static string GetRtfEntityFirst(ParserSegment parserSegment, out string rtfValue)
+        private static string GetRtfEntityFirst(Parsing.ParsedItem item, out string rtfValue)
         {
-            ParserSegmentValue foundValue = GetFirstParserValue(parserSegment);
+            Parsing.ParsedItem foundValue = GetFirstParserValue(item);
             return GetRtfEntity(foundValue, out rtfValue);
         }
-        protected static ParserSegmentValue GetFirstParserValue(ParserSegment parserSegment)
+        private static Parsing.ParsedItem GetFirstParserValue(Parsing.ParsedItem item)
         {
             // Search for First-First-First-... value:
-            ParserSegment scanSegment = parserSegment;
-            ParserSegmentValue foundValue = null;
+            Parsing.ParsedItem scanItem = item;
             while (true)
             {
-                ParserSegmentValue parserValue = (scanSegment != null && scanSegment.ValueCount > 0 ? scanSegment.ValueList[0] : null);
-                if (parserValue == null)
-                    // Current scanSegment has no values => exit from loop, we found "foundValue" value.
-                    break;
-                if (parserValue.HasInnerSegment)
-                {   // First value has inner segment => scan "recursively" this segment:
-                    foundValue = parserValue;        // current value (parserValue) can be last found value...
-                    scanSegment = parserValue.InnerSegment;
-                    continue;
-                }
-                if (parserValue.HasContent)
-                    foundValue = parserValue;        // current value (parserValue) is last found value
-                break;
+                if (!scanItem.HasItems) break;
+                scanItem = scanItem.Items[0];
             }
-            return foundValue;
+            return scanItem;
         }
+        /// <summary>
+        /// Třída pro uchování názvu a hodnoty
+        /// </summary>
         protected struct NameValue
         {
 
             private string _Name;
             private string _Value;
-            private int _ValueInt;
+            private int? _ValueInt;
+            /// <summary>
+            /// Jméno
+            /// </summary>
             public string Name { get { return this._Name; } }
+            /// <summary>
+            /// Hodnota
+            /// </summary>
             public string Value { get { return this._Value; } }
-            public int ValueInt { get { return this._ValueInt; } }
-        }
-        #endregion
-        #region Setting
-
-        protected class RtfSetting
-        {
-
+            /// <summary>
+            /// Hodnota jako číslo
+            /// </summary>
+            public int? ValueInt { get { return this._ValueInt; } }
         }
         #endregion
         #region Content
-
-        protected void _ProcessRtfContent(ParserSegmentValue item)
+        /// <summary>
+        /// Zpracuje textový obsah prvku
+        /// </summary>
+        /// <param name="item"></param>
+        private void _ProcessRtfText(Parsing.ParsedItem item)
         {
             
         }
 
-        private void _ProcessRtfChar2(ParserSegment parserSegment)
+        private void _ProcessRtfChar2(Parsing.ParsedItem parserSegment)
         {
            
         }
 
-        private void _ProcessRtfCharUnicode(ParserSegment parserSegment)
+        private void _ProcessRtfCharUnicode(Parsing.ParsedItem parserSegment)
         {
             
         }
-
+        /// <summary>
+        /// Soupis prvků obsahu
+        /// </summary>
         protected List<RtfContent> _Content;
+        /// <summary>
+        /// Jeden prvek obsahu
+        /// </summary>
         protected class RtfContent
         { }
         #endregion
@@ -254,39 +266,41 @@ namespace Asol.Tools.WorkScheduler.Rtf
         /// <summary>
         /// Process FontTable (=all fonts) from segment (parameter)
         /// </summary>
-        /// <param name="rtfSegment"></param>
-        protected void _ProcessRtfBlockFontTable(ParserSegment rtfSegment)
+        /// <param name="item"></param>
+        private void _ProcessRtfBlockFontTable(Parsing.ParsedItem item)
         {   // for example:  \fonttbl{\f0\fswiss\fcharset238{\*\fname Arial;}Arial CE;}{\f1\fmodern\fprq1\fcharset238 Envy Code R;}...{\f6\fnil\fcharset2 Symbol;}
             //               \fonttbl{\f0\fswiss\fcharset238{\*\fname Arial;}Arial CE;}{\f1\fmodern\fprq1\fcharset238 Envy Code R;}{\f2\fmodern\fprq1\fcharset0 Envy Code R;}{\f3\fnil\fprq2\fcharset238 Gentium Basic;}{\f4\fnil\fprq2\fcharset0 Gentium Basic;}{\f5\fnil\fcharset0 ;}{\f6\fnil\fcharset2 Symbol;}
-            for (int i = 1 /* Skip index [0], contains value with keyword "fonttbl" ! */; i < rtfSegment.ValueCount; i++)
+            if (item.ItemCount < 1) return;
+            for (int i = 1 /* Skip index [0], contains value with keyword "fonttbl" ! */; i < item.ItemCount; i++)
             {
-                ParserSegmentValue parsedValue = rtfSegment.ValueList[i];
-                if (parsedValue.HasInnerSegment)
-                    this._ProcessRtfBlockFontOne(parsedValue.InnerSegment);
+                Parsing.ParsedItem subItem = item.Items[i];
+                if (subItem.HasItems)
+                    this._ProcessRtfBlockFontOne(subItem);
             }
         }
         /// <summary>
         /// Process one font
         /// </summary>
-        /// <param name="rtfSegment"></param>
-        protected void _ProcessRtfBlockFontOne(ParserSegment rtfSegment)
+        /// <param name="item"></param>
+        private void _ProcessRtfBlockFontOne(Parsing.ParsedItem item)
         {   // for example: \f0\fswiss\fcharset238{\*\fname Arial;}Arial CE;
             //              \f2\fmodern\fprq1\fcharset0 Envy Code R;
+            if (!item.HasItems) return;
             RtfFont rtfFont = new RtfFont();
-            for (int index = 0; index < rtfSegment.ValueCount; index++)
+            for (int index = 0; index < item.ItemCount; index++)
             {
-                ParserSegmentValue parsedValue = rtfSegment.ValueList[index];
-                if (parsedValue.HasInnerSegment)
+                Parsing.ParsedItem subItem = item.Items[index];
+                Parsing.IParsedItemExtended eSubItem = subItem as Parsing.IParsedItemExtended;
+                if (subItem.HasItems)
                 {
-                    ParserSegment segment = parsedValue.InnerSegment;
                     if (index == 0)
                     {   // Font number in table:
-                        rtfFont.Key = segment.InnerText;                                 // f2
+                        rtfFont.Key = item.TextInner;                                    // f2
                     }
                     else
                     {
                         string rtfValue;
-                        string rtfEntity = GetRtfEntityFirst(segment, out rtfValue);     // "fswiss", "fcharset"+"238", 
+                        string rtfEntity = GetRtfEntityFirst(subItem, out rtfValue);     // "fswiss", "fcharset"+"238", 
                         switch (rtfEntity)
                         {
                             case "fswiss":
@@ -298,7 +312,7 @@ namespace Asol.Tools.WorkScheduler.Rtf
                                 break;
                             case "fcharset":
                                 rtfFont.CharSet = rtfValue;
-                                this._ProcessRtfBlockFontName(rtfSegment, ref index, rtfFont);
+                                this._ProcessRtfBlockFontName(item, ref index, rtfFont);
                                 break;
                             default:
                                 this._ProcessAddRtfError("FontItem", rtfEntity);
@@ -319,19 +333,19 @@ namespace Asol.Tools.WorkScheduler.Rtf
         /// <summary>
         /// Process font name
         /// </summary>
-        /// <param name="rtfSegment"></param>
+        /// <param name="item"></param>
         /// <param name="index"></param>
         /// <param name="rtfFont"></param>
-        private void _ProcessRtfBlockFontName(ParserSegment rtfSegment, ref int index, RtfFont rtfFont)
+        private void _ProcessRtfBlockFontName(Parsing.ParsedItem item, ref int index, RtfFont rtfFont)
         {
             index++;
-            while (index < rtfSegment.ValueCount)
+            while (index < item.ItemCount)
             {
-                ParserSegmentValue parsedValue = rtfSegment.ValueList[index];
+                Parsing.ParsedItem subItem = item.Items[index];
                 index++;
-                if (parsedValue.ValueType == ParserSegmentValueType.Text)
+                if (subItem.ItemType == Data.Parsing.ItemType.Text)
                 {
-                    rtfFont.Name = parsedValue.Text.TrimEnd(';', ' ');
+                    rtfFont.Name = subItem.Text.TrimEnd(';', ' ');
                     break;
                 }
             }
@@ -345,6 +359,10 @@ namespace Asol.Tools.WorkScheduler.Rtf
         /// </summary>
         protected class RtfFont
         {
+            /// <summary>
+            /// Vizualizace fontu
+            /// </summary>
+            /// <returns></returns>
             public override string ToString()
             {
                 return this.Key + ": " + this.Name + " (charset: " + this.CharSet + "; family: " + this.Family + ")";
@@ -373,26 +391,25 @@ namespace Asol.Tools.WorkScheduler.Rtf
         }
         #endregion
         #region Colors
-        protected void _ProcessRtfBlockFColor(ParserSegment rtfSegment)
+        private void _ProcessRtfBlockFColor(Parsing.ParsedItem item)
         {   // For example:   {\colortbl ;\red255\green0\blue0;\red0\green128\blue0;\red0\green0\blue255;}
             int colorIndex = 0;
             int index = 2;
-            int count = rtfSegment.ValueCount;
+            int count = item.ItemCount;
             while (index < count)
             {
                 if ((index + 2) >= count) break;
-                this._ProcessRtfBlockFColorOne(rtfSegment, ref index, ref colorIndex);
+                this._ProcessRtfBlockFColorOne(item, ref index, ref colorIndex);
             }
         }
 
-        private void _ProcessRtfBlockFColorOne(ParserSegment rtfSegment, ref int index, ref int colorIndex)
+        private void _ProcessRtfBlockFColorOne(Parsing.ParsedItem item, ref int index, ref int colorIndex)
         {
             int r, g, b;
 
-            if (!this._ProcessRtfBlockFColorValue(rtfSegment, ref index, "red", out r)) return;
-            if (!this._ProcessRtfBlockFColorValue(rtfSegment, ref index, "green", out g)) return;
-            if (!this._ProcessRtfBlockFColorValue(rtfSegment, ref index, "blue", out b)) return;
-
+            if (!this._ProcessRtfBlockFColorValue(item, ref index, "red", out r)) return;
+            if (!this._ProcessRtfBlockFColorValue(item, ref index, "green", out g)) return;
+            if (!this._ProcessRtfBlockFColorValue(item, ref index, "blue", out b)) return;
             
             RtfColor rtfColor = new RtfColor();
             rtfColor.Key = (++colorIndex).ToString();
@@ -400,27 +417,45 @@ namespace Asol.Tools.WorkScheduler.Rtf
             this._Colors.Add(rtfColor.Key, rtfColor);
         }
 
-        private bool _ProcessRtfBlockFColorValue(ParserSegment rtfSegment, ref int index, string name, out int value)
+        private bool _ProcessRtfBlockFColorValue(Parsing.ParsedItem item, ref int index, string name, out int value)
         {
             value = 0;
-            string rtfValue, rtfEntity;
-            rtfEntity = GetRtfEntity(rtfSegment.ValueList[index++], out rtfValue);     // "", "red"+"255", 
+            string rtfEntity, rtfValue;
+            rtfEntity = GetRtfEntity(item.Items[index++], out rtfValue);     // "", "red"+"255", 
             if (rtfEntity != name) return false;
             if (!Int32.TryParse(rtfValue, out value)) return false;
             return (value >= 0 && value <= 255);
         }
         private Dictionary<string, RtfColor> _Colors;
+        /// <summary>
+        /// RTF barva
+        /// </summary>
         protected class RtfColor
         {
+            /// <summary>
+            /// Klíč
+            /// </summary>
             public string Key { get; set; }
+            /// <summary>
+            /// Barva
+            /// </summary>
             public Color Color { get; set; }
         }
         #endregion
         #region Errors
+        /// <summary>
+        /// Zaloguje chybu při analýze (jde o nedostatečné schopnosti analyzeru), 
+        /// pro další rozšiřování analyzeru.
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="name"></param>
         protected void _ProcessAddRtfError(string type, string name)
         {
             this._RtfErrors += type + "\t" + name + "\r\n";
         }
+        /// <summary>
+        /// Suma chyb
+        /// </summary>
         protected string _RtfErrors;
         #endregion
         #region Test RTF texts

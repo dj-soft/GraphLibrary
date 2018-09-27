@@ -255,7 +255,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// For orientation Top + Bottom return X, for orientation LeftDown + RightDown return Y, for orientation LeftUp + RightUp returns -Y.
         /// </summary>
         /// <param name="shift"></param>
-        /// <param name="orientation"></param>
         /// <returns></returns>
         protected int GetShiftByOrientation(Point shift)
         {
@@ -350,6 +349,9 @@ namespace Asol.Tools.WorkScheduler.Components
             get { return this._ResizeContentMode; }
             set { this._ResizeContentMode = value; }
         }
+        /// <summary>
+        /// Režim změny obsahu po změně rozměru.
+        /// </summary>
         protected AxisResizeContentMode _ResizeContentMode = AxisResizeContentMode.ChangeValueEnd;
         /// <summary>
         /// Možnosti uživatele změnit zobrazený rozsah anebo měřítko
@@ -359,6 +361,9 @@ namespace Asol.Tools.WorkScheduler.Components
             get { return this._InteractiveChangeMode; }
             set { this._InteractiveChangeMode = value; }
         }
+        /// <summary>
+        /// Možnosti uživatele změnit zobrazený rozsah anebo měřítko
+        /// </summary>
         protected AxisInteractiveChangeMode _InteractiveChangeMode = AxisInteractiveChangeMode.All;
         /// <summary>
         /// Contains true, when is valid all: Value and Scale and Visual
@@ -402,7 +407,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected bool IsVisualValid { get { return (this.PixelSize >= this.PixelSizeMinimum); } }
         /// <summary>
-        /// Contains true, when is valid all: Value and Scale and Visual (this.IsValueValid && this.IsScaleValid && this.IsVisualValid)
+        /// Contains true, when is valid all: Value and Scale and Visual (this.IsValueValid AND this.IsScaleValid AND this.IsVisualValid)
         /// </summary>
         protected bool IsAxisValid { get { return this.IsValueValid && this.IsScaleValid && this.IsVisualValid; } }
         /// <summary>
@@ -437,7 +442,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         /// <summary>
         /// Vrátí relativní pozici v pixelech v relativních koordinátech (k this.Bounds) ve směru X nebo Y podle <see cref="OrientationCurrent"/>, 
-        /// pro daný <see cref="TTick"/> (tedy pro logickou hodnotu).
+        /// pro daný <typeparamref name="TTick"/> (tedy pro logickou hodnotu).
         /// Může vrátit null, pokud metoda <see cref="GetAxisUnits(TSize)"/> vrátí null.
         /// </summary>
         /// <param name="tick">Logická hodnota</param>
@@ -448,7 +453,7 @@ namespace Asol.Tools.WorkScheduler.Components
             return (pixels.HasValue ? (Int32?)(Math.Round(this.PixelPointFromDistance(pixels.Value), 0)) : (Int32?)null);  // returns (PixelFirst + pixels.Value)
         }
         /// <summary>
-        /// Vrátí vzdálenost v pixelech pro danou vzdálenost logickou <see cref="TSize"/>.
+        /// Vrátí vzdálenost v pixelech pro danou vzdálenost logickou <typeparamref name="TSize"/>.
         /// Může vrátit null, pokud metoda <see cref="GetAxisUnits(TSize)"/> vrátí null.
         /// </summary>
         /// <param name="size">Logická vzdálenost</param>
@@ -513,7 +518,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="originalValue">Old value of range</param>
         /// <param name="pivotPoint">Fixed point = Pivot point (same point on old value and on new value)</param>
-        /// <param name="newSize">New Size</param>
+        /// <param name="zoomRatio"></param>
         /// <returns></returns>
         public virtual TValue CalculateValueByRatio(TValue originalValue, TTick pivotPoint, double zoomRatio)
         {
@@ -683,7 +688,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Accomodate this.OrientationCurrent to this.OrientationUser and this.VisibleRelativeBounds
         /// </summary>
-        /// <param name="raiseOnDrawRequest">Raise the DrawRequest event and method when OrientationCurrent is changed</param>
+        /// <param name="actions">Akce</param>
+        /// <param name="eventSource">Zdroj události</param>
         internal void DetectOrientation(ProcessAction actions, EventSourceType eventSource)
         {
             decimal oldPixel = this.PixelSize;
@@ -1017,6 +1023,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// When is there a change of value, then events specified in (actions) parameter is raised.
         /// </summary>
         /// <param name="scale"></param>
+        /// <param name="pivotPoint">Pevný bod, relativní pozice</param>
         /// <param name="actions">Actions to be taken</param>
         /// <param name="eventSource">Source of this event, will be send to event handlers</param>
         internal void SetScale(decimal scale, decimal? pivotPoint, ProcessAction actions, EventSourceType eventSource)
@@ -1049,7 +1056,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// When is new value equal to current value, ends (no events is called).
         /// When is there a change of value, then events specified in (actions) parameter is raised.
         /// </summary>
-        /// <param name="scale"></param>
+        /// <param name="scaleRange"></param>
         /// <param name="actions">Actions to be taken</param>
         /// <param name="eventSource">Source of this event, will be send to event handlers</param>
         internal void SetScaleLimit(DecimalNRange scaleRange, ProcessAction actions, EventSourceType eventSource)
@@ -1286,6 +1293,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="value"></param>
         /// <param name="scale"></param>
         /// <param name="pivotRatio"></param>
+        /// <param name="align"></param>
         /// <returns></returns>
         private TValue _ChangeValueToScaleAlign(TValue value, decimal scale, decimal? pivotRatio, bool align)
         {
@@ -1437,6 +1445,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected class ArrangementSet
         {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="axis"></param>
             public ArrangementSet(GBaseAxis<TTick, TSize, TValue> axis)
             {
                 this.Axis = axis;
@@ -1570,6 +1582,10 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 this.AxisCycle = axisCycle;
             }
+            /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns></returns>
             public override string ToString()
             {
                 return "Arrangement: " + this.StdLabelItem.ToString() + " (" + this.StdTickItem.ToString() + ")";
@@ -1656,6 +1672,8 @@ namespace Asol.Tools.WorkScheduler.Components
             /// </summary>
             /// <param name="tickType"></param>
             /// <param name="tickDict"></param>
+            /// <param name="lastTickDict"></param>
+            /// <param name="currentPixelOffset"></param>
             internal void CalculateTicksLine(AxisTickType tickType, Dictionary<TTick, BaseTick<TTick>> tickDict, Dictionary<TTick, BaseTick<TTick>> lastTickDict, ref int? currentPixelOffset)
             {
                 ArrangementItem item = this.GetArrangementItemForTick(tickType);
@@ -1718,6 +1736,13 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected class ArrangementItem
         {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="tickType"></param>
+            /// <param name="interval"></param>
+            /// <param name="textFormat"></param>
+            /// <param name="owner"></param>
             public ArrangementItem(AxisTickType tickType, TSize interval, string textFormat, ArrangementOne owner)
             {
                 this.Owner = owner;
@@ -1727,6 +1752,10 @@ namespace Asol.Tools.WorkScheduler.Components
                 this._UnitSize = (unitSize.HasValue && unitSize.Value > 0m ? unitSize.Value : 0m);
                 this.TextFormat = textFormat;
             }
+            /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns></returns>
             public override string ToString()
             {
                 return AxisTickToShort(this.TickType) + ": " + this.Interval.ToString();
@@ -1954,9 +1983,16 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Interaktivita osy - data a metody
         /// <summary>
-        /// Interactive state of axis
+        /// Interaktivní stav osy
         /// </summary>
-        public AxisInteractiveState AxisState { get { return this._AxisState; } } protected AxisInteractiveState _AxisState;
+        public AxisInteractiveState AxisState { get { return this._AxisState; } }
+        /// <summary>
+        /// Interaktivní stav osy
+        /// </summary>
+        protected AxisInteractiveState _AxisState;
+        /// <summary>
+        /// Styl tohoto prvku
+        /// </summary>
         protected override GInteractiveStyles Style { get { return GInteractiveStyles.AllMouseInteractivity; } set { } }
         /// <summary>
         /// Called after any interactive change value of State
@@ -2200,7 +2236,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Create and return text for tooltip for specified relative point
         /// </summary>
-        /// <param name="relativePoint"></param>
+        /// <param name="value"></param>
         /// <returns></returns>
         private string _CreateToolTip(TValue value)
         {
@@ -2602,6 +2638,12 @@ namespace Asol.Tools.WorkScheduler.Components
     public class GBaseAxisTickPainter : IDisposable
     {
         #region Konstrukce, property, Dispose
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <param name="orientation"></param>
+        /// <param name="verticalText"></param>
         public GBaseAxisTickPainter(Rectangle bounds, AxisOrientation orientation, bool verticalText)
         {
             this.Bounds = bounds;
@@ -2773,6 +2815,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="tick"></param>
         /// <param name="point1"></param>
         /// <param name="point2"></param>
+        /// <param name="pen"></param>
         /// <returns></returns>
         protected bool CalculateLinePoints(VisualTick tick, out Point point1, out Point point2, out Pen pen)
         {
@@ -2839,9 +2882,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Calculate coordinates of text for label for specified Tick.
         /// Value point1 is line point, near to text.
         /// </summary>
+        /// <param name="graphics">Grafika, pomáhá umístit text</param>
         /// <param name="tick"></param>
         /// <param name="point1"></param>
         /// <param name="textBound"></param>
+        /// <param name="brush"></param>
         /// <returns></returns>
         protected bool CalculateTextBounds(Graphics graphics, VisualTick tick, Point point1, out Rectangle textBound, out Brush brush)
         {
@@ -2971,7 +3016,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Vytvoří instanci Ticku
         /// </summary>
         /// <param name="tickType">Type of this tick</param>
-        /// <param name="value">Logical value of tick (DateTime for TimeAxis, Decimal for SizeAxis...)</param>
         /// <param name="relativePixel">Cordinate of tick in pixels, relative to the begin of axis. Value 0 = at begin of Axis (at point Axis.RelativeVisualBounds.Left, .Top, .Bottom)</param>
         /// <param name="sizeRatio">Standard ratio length of tick between 0 and 1. Title has length = 1.00, SubTitle = 0.90, SignificantTick = 0.75, RegularTick = 0.60.</param>
         /// <param name="text">Displayed value of tick</param>
@@ -2984,6 +3028,10 @@ namespace Asol.Tools.WorkScheduler.Components
             this.Text = text;
             this.Alignment = alignment;
         }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             return this.Text + "; AtPixel=" + this.RelativePixel.ToString() + "; " + this.TickType.ToString();
