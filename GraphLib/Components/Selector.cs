@@ -102,6 +102,10 @@ namespace Asol.Tools.WorkScheduler.Components
             if (isSelected != oldSelected)
                 item.Repaint();
         }
+        /// <summary>
+        /// Obsahuje souhrn všech aktuálně selectovaných prvků
+        /// </summary>
+        public IEnumerable<IInteractiveItem> SelectedItems { get { this._PrepareForUse(); return this._Selected.Values; } }
         #endregion
         #region Framování
         /// <summary>

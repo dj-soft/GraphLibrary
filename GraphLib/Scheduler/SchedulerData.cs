@@ -1063,7 +1063,22 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             GuiRequestCurrentState currentState = new GuiRequestCurrentState();
             currentState.TimeAxisValue = this._MainControl.SynchronizedTime.Value;
 
+            List<GuiGridItemId> gridItemList = new List<GuiGridItemId>();
+            foreach (IInteractiveItem item in this._MainControl.Selector.SelectedItems)
+            {
+                GuiGridItemId gridItem = this._GetGuiGridItem(item);
+                if (gridItem != null)
+                    gridItemList.Add(gridItem);
+            }
+            currentState.SelectedGraphItems = gridItemList.ToArray();
+
             return currentState;
+        }
+        private GuiGridItemId _GetGuiGridItem(IInteractiveItem item)
+        {
+            GTimeGraphItem graphItem = item as GTimeGraphItem;
+            if (graphItem == null) return null;
+
         }
         #endregion
         #region Implementace IMainDataInternal
