@@ -716,8 +716,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 {   // Single click:
                     if (mouseButtonsLeft && oldActiveItem.ItemIsSelectable)
                         this._ItemMouseLeftClickSelect(oldActiveItem, modifierKeys);
-                    else
-                        this._ItemMouseCallStateChangedEvent(oldActiveItem, GInteractiveChangeState.LeftClick, oldActiveItem.CurrentMouseRelativePoint);
+                    this._ItemMouseCallStateChangedEvent(oldActiveItem, GInteractiveChangeState.LeftClick, oldActiveItem.CurrentMouseRelativePoint);
                     if (mouseButtonsRight)
                         this._ItemMouseCallContextMenu(oldActiveItem, GInteractiveChangeState.LeftClick, oldActiveItem.CurrentMouseRelativePoint);
                 }
@@ -843,137 +842,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         private Point? _UserDragPointOffset { get; set; }
         #endregion
-        #region Řízení procesu LeftClick => Select, a MouseDragFrame => výběr prvků zarámováním, včetně vykreslení
-        /// <summary>
-        /// Uživatel provedl LeftClick na prvku, který má nastaveno <see cref="InteractiveProperties.Selectable"/>, proto by měl být změněn stav <see cref="IInteractiveItem.IsSelected"/>.
-        /// </summary>
-        /// <param name="newActiveItem"></param>
-        /// <param name="modifierKeys"></param>
-        private void _ItemMouseLeftClickSelect(GActivePosition newActiveItem, Keys modifierKeys)
-        {
-            bool leaveOther = modifierKeys.HasFlag(Keys.Control);
-            this.Selector.ChangeSelection(newActiveItem.ActiveItem, leaveOther);
-            this._ItemMouseCallStateChangedEvent(newActiveItem, GInteractiveChangeState.LeftDragFrameSelect, newActiveItem.CurrentMouseRelativePoint);
-        }
-        private void _MouseDragFrameBegin(MouseEventArgs e)
-        {
-            // Relativní pozice myši v okamžiku MouseDown, nikoli aktuální pozice (ta už je mimo prostor _CurrentMouseDragStart):
-            GActivePosition mouseCurrentItem = this._CurrentActiveItem;
-            Point downPoint = this._MouseDownAbsolutePoint.Value;
-            this._MouseCurrentRelativePoint = _GetRelativePoint(this._MouseDownAbsolutePoint.Value, mouseCurrentItem);
-            if (mouseCurrentItem.ItemIsSelectParent)
-            {
-                mouseCurrentItem.CurrentStateFill(downPoint);
-                this._MouseDragFrameItem = mouseCurrentItem;
-                this._MouseDragFrameSelectedItems = new IInteractiveItem[0];
-                var stateArgs = this._ItemMouseCallStateChangedEvent(mouseCurrentItem, GInteractiveChangeState.LeftDragFrameBegin, this._MouseCurrentRelativePoint);
-                this._MouseDragFrameWorkArea = stateArgs.DragFrameWorkArea;
-            }
-            this._MouseDragStartBounds = null;
-        }
-        private void _MouseDragFrameStep(MouseEventArgs e)
-        {
-            if (!this._MouseDownAbsolutePoint.HasValue) return;
-            Rectangle frameBounds = DrawingExtensions.FromPoints(this._MouseDownAbsolutePoint.Value, e.Location);
-            if (this._MouseDragFrameWorkArea.HasValue)
-                frameBounds = Rectangle.Intersect(this._MouseDragFrameWorkArea.Value, frameBounds);
-
-            this._MouseDragFrameCurrentBounds = frameBounds;
-
-            Tuple<IInteractiveItem, Rectangle>[] items = GActivePosition.FindItemsAtBounds(this.ClientSize, this.ItemsList, frameBounds,
-                (i, b) => _MouseDragFrameFilterScan(i, b, frameBounds),
-                (i, b) => _MouseDragFrameFilterAccept(i, b, frameBounds)
-                );
-
-            IInteractiveItem[] currentFrameSelectedItems = items.Select(i => i.Item1).ToArray();
-            IInteractiveItem[] newItems, oldItems;
-            currentFrameSelectedItems.GetDifferentialArray(this._MouseDragFrameSelectedItems, i => i.Id, out newItems, out oldItems);
-
-            // qqq;
-
-            foreach (IInteractiveItem newItem in newItems)
-                newItem.IsSelected = newItem.Is.Selectable;
-
-            foreach (IInteractiveItem oldItem in oldItems)
-                oldItem.IsSelected = false;
-
-            this._MouseDragFrameSelectedItems = currentFrameSelectedItems;
-        }
-        /// <summary>
-        /// Metoda vrací true, pokud daný prvek může být scanován co do jeho Childs prvků
-        /// </summary>
-        /// <param name="item"></param>
-        /// <param name="itemAbsoluteVisibleBounds"></param>
-        /// <param name="frameBounds"></param>
-        /// <returns></returns>
-        private bool _MouseDragFrameFilterScan(IInteractiveItem item, Rectangle itemAbsoluteVisibleBounds, Rectangle frameBounds)
-        {
-            return (item.Is.Visible && item.Is.Enabled);
-        }
-        /// <summary>
-        /// Metoda vrací true, pokud daný prvek má být akceptován do výstupního pole DragFrame
-        /// </summary>
-        /// <param name="item"></param>
-        /// <param name="itemAbsoluteVisibleBounds"></param>
-        /// <param name="frameBounds"></param>
-        /// <returns></returns>
-        private bool _MouseDragFrameFilterAccept(IInteractiveItem item, Rectangle itemAbsoluteVisibleBounds, Rectangle frameBounds)
-        {
-            if (!(item.Is.Visible && item.Is.Enabled && item.Is.Selectable)) return false;
-            int itemPixels = itemAbsoluteVisibleBounds.GetArea();
-            Rectangle selectedBounds = Rectangle.Intersect(itemAbsoluteVisibleBounds, frameBounds);
-            int selectedPixels = selectedBounds.GetArea();
-            float selectedRatio = (itemPixels <= 0 ? 1f : ((float)selectedPixels / (float)itemPixels));
-            return (selectedRatio >= 0.25f);
-        }
-        private void _MouseDragFrameCancel()
-        {
-
-        }
-        private void _MouseDragFrameDone(MouseEventArgs e)
-        {
-
-
-            this._MouseDragFrameCurrentBounds = null;
-            this._MouseDragState = MouseMoveDragState.None;
-            this._MouseDownReset();
-        }
-        /// <summary>
-        /// Obsahuje true, pokud se má kreslit FrameBounds = oblast selectování (<see cref="_MouseDragFrameCurrentBounds"/>).
-        /// </summary>
-        private bool _NeedDrawFrameBounds { get { return (this._MouseDragFrameCurrentBounds.HasValue && this._MouseDragFrameCurrentBounds.Value.HasPixels()); } }
-        /// <summary>
-        /// Zajistí vykreslení oblasti FrameSelect
-        /// </summary>
-        /// <param name="graphics"></param>
-        /// <param name="layer"></param>
-        private void _PaintFrameBounds(Graphics graphics, GInteractiveDrawLayer layer)
-        {
-            GPainter.DrawFrameSelect(graphics, this._MouseDragFrameCurrentBounds.Value);
-        }
-        /// <summary>
-        /// Prvek, který je Parentem aktuální akce DragFrame.
-        /// </summary>
-        private GActivePosition _MouseDragFrameItem { get; set; }
-        /// <summary>
-        /// Pole prvků, které jsou aktuálně vybrány prostřednictvím DragFrame.
-        /// Mimo proces DragFrame je null.
-        /// </summary>
-        private IInteractiveItem[] _MouseDragFrameSelectedItems;
-        /// <summary>
-        /// Souřadnice prostoru, do něhož má být omezen proces DragFrame.
-        /// Prostor deklaruje prvek Parent na začátku procesu DragFrame ve své události .
-        /// Následný proces DragFrame pak ořezává reálně zadaný prostor selectovaný pohybem myši pouze do této oblasti.
-        /// Může být null, pak nebude prostor omezen.
-        /// </summary>
-        private Rectangle? _MouseDragFrameWorkArea { get; set; }
-        /// <summary>
-        /// Souřadnice prostoru, který je aktuálně zarámován v režimu DragFrame.
-        /// Měl by být vykreslen do Interactive vrstvy grafiky.
-        /// Pokud je null, pak se nekreslí.
-        /// </summary>
-        private Rectangle? _MouseDragFrameCurrentBounds { get; set; }
-        #endregion
         #region Metody pro volání interaktivních metod na prvcích IInteractiveItem.AfterStateChanged() atd
         /// <summary>
         /// Return change state for current mousebutton (_CurrentMouseDownButtons), for change specified for left button.
@@ -1078,7 +946,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 case GInteractiveChangeState.LeftDragFrameDone: return GInteractiveState.MouseOver;
                 case GInteractiveChangeState.LeftUp: return GInteractiveState.MouseOver;
                 case GInteractiveChangeState.LeftClick: return GInteractiveState.MouseOver;
-                case GInteractiveChangeState.LeftClickSelected: return GInteractiveState.MouseOver;
+                case GInteractiveChangeState.LeftClickSelect: return GInteractiveState.MouseOver;
                 case GInteractiveChangeState.LeftLongClick: return GInteractiveState.MouseOver;
                 case GInteractiveChangeState.LeftDoubleClick: return GInteractiveState.MouseOver;
                 case GInteractiveChangeState.RightDown: return GInteractiveState.RightDown;
@@ -1257,6 +1125,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this._MouseDragStartBounds = null;
             this._MouseDragMoveItemOffset = null;
             this._CurrentMouseDragCanceled = false;
+            this._MouseDragFrameActive = false;
             this._MouseDragMoveItemOriginBounds = null;
             this._UserDragPointOffset = null;
         }
@@ -1604,7 +1473,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         private ProgressItem _ProgressItem;
         #endregion
-        #region Selector
+        #region Selector, a obecně Selectování pomocí myši (LeftClick) a Označování (Drag and Frame)
         /// <summary>
         /// Instance objektu třídy <see cref="Selector"/>, řeší výběr prvků.
         /// </summary>
@@ -1618,6 +1487,153 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         private Selector _Selector;
+        /// <summary>
+        /// Uživatel provedl LeftClick na prvku, který má nastaveno <see cref="InteractiveProperties.Selectable"/>, proto by měl být změněn stav <see cref="IInteractiveItem.IsSelected"/>.
+        /// </summary>
+        /// <param name="newActiveItem"></param>
+        /// <param name="modifierKeys"></param>
+        private void _ItemMouseLeftClickSelect(GActivePosition newActiveItem, Keys modifierKeys)
+        {
+            bool leaveOther = modifierKeys.HasFlag(Keys.Control);
+            this.Selector.ChangeSelection(newActiveItem.ActiveItem, leaveOther);
+            this._ItemMouseCallStateChangedEvent(newActiveItem, GInteractiveChangeState.LeftClickSelect, newActiveItem.CurrentMouseRelativePoint);
+        }
+        /// <summary>
+        /// Zahájení označování Drag and Frame.
+        /// Tato metoda se volá v situaci, kdy je detekován Drag proces (MouseDown a poté MouseMove) na prvku, který nepodporuje MouseDrag, ale podporuje SelectParent.
+        /// </summary>
+        /// <param name="e"></param>
+        private void _MouseDragFrameBegin(MouseEventArgs e)
+        {
+            // Relativní pozice myši v okamžiku MouseDown, nikoli aktuální pozice (ta už je mimo prostor _CurrentMouseDragStart):
+            GActivePosition mouseCurrentItem = this._CurrentActiveItem;
+            Point downPoint = this._MouseDownAbsolutePoint.Value;
+            this._MouseCurrentRelativePoint = _GetRelativePoint(this._MouseDownAbsolutePoint.Value, mouseCurrentItem);
+            if (mouseCurrentItem.ItemIsSelectParent)
+            {
+                mouseCurrentItem.CurrentStateFill(downPoint);
+                this._MouseDragFrameParentItem = mouseCurrentItem;
+                var stateArgs = this._ItemMouseCallStateChangedEvent(mouseCurrentItem, GInteractiveChangeState.LeftDragFrameBegin, this._MouseCurrentRelativePoint);
+                this._MouseDragFrameWorkArea = stateArgs.DragFrameWorkArea;
+            }
+
+            // V Selectoru: zrušit dosavadní Framed (to je jen pro jistotu):
+            this.Selector.ClearFramed();
+            // ... a pokud NENÍ stisknut CTRL, pak zrušit i prvky Selected:
+            Keys modifierKeys = Control.ModifierKeys;
+            bool leaveOther = modifierKeys.HasFlag(Keys.Control);
+            if (!leaveOther)
+                this.Selector.ClearSelected();
+
+            this._MouseDragFrameActive = true;
+            this._MouseDragStartBounds = null;
+        }
+        /// <summary>
+        /// Jeden krok v procesu Drag and Frame = selectování rámečkem.
+        /// Určí se prostor, který je označen; najde se prvky, které v něm leží (jsou dostupné, selectovatelné, a označené alespoň z 25%);
+        /// a následně se prvky označí jako IsFramed (pomocí Selectoru).
+        /// </summary>
+        /// <param name="e"></param>
+        private void _MouseDragFrameStep(MouseEventArgs e)
+        {
+            if (!this._MouseDownAbsolutePoint.HasValue) return;
+            if (!this._MouseDragFrameActive) return;
+            Rectangle frameBounds = DrawingExtensions.FromPoints(this._MouseDownAbsolutePoint.Value, e.Location);
+            if (this._MouseDragFrameWorkArea.HasValue)
+                frameBounds = Rectangle.Intersect(this._MouseDragFrameWorkArea.Value, frameBounds);
+
+            this._MouseDragFrameCurrentBounds = frameBounds;
+
+            Tuple<IInteractiveItem, Rectangle>[] items = GActivePosition.FindItemsAtBounds(this.ClientSize, this.ItemsList, frameBounds,
+                (i, b) => _MouseDragFrameFilterScan(i, b, frameBounds),
+                (i, b) => _MouseDragFrameFilterAccept(i, b, frameBounds)
+                );
+
+            this.Selector.SetFramedItems(items.Select(i => i.Item1));
+        }
+        /// <summary>
+        /// Metoda vrací true, pokud daný prvek může být scanován co do jeho Childs prvků
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="itemAbsoluteVisibleBounds"></param>
+        /// <param name="frameBounds"></param>
+        /// <returns></returns>
+        private bool _MouseDragFrameFilterScan(IInteractiveItem item, Rectangle itemAbsoluteVisibleBounds, Rectangle frameBounds)
+        {
+            return (item.Is.Visible && item.Is.Enabled);
+        }
+        /// <summary>
+        /// Metoda vrací true, pokud daný prvek má být akceptován do výstupního pole DragFrame
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="itemAbsoluteVisibleBounds"></param>
+        /// <param name="frameBounds"></param>
+        /// <returns></returns>
+        private bool _MouseDragFrameFilterAccept(IInteractiveItem item, Rectangle itemAbsoluteVisibleBounds, Rectangle frameBounds)
+        {
+            if (!(item.Is.Visible && item.Is.Enabled && item.Is.Selectable)) return false;
+            int itemPixels = itemAbsoluteVisibleBounds.GetArea();
+            Rectangle selectedBounds = Rectangle.Intersect(itemAbsoluteVisibleBounds, frameBounds);
+            int selectedPixels = selectedBounds.GetArea();
+            float selectedRatio = (itemPixels <= 0 ? 1f : ((float)selectedPixels / (float)itemPixels));
+            return (selectedRatio >= 0.25f);
+        }
+        /// <summary>
+        /// Po stisku Escape při Drag and Frame
+        /// </summary>
+        private void _MouseDragFrameCancel()
+        {
+            if (!this._MouseDragFrameActive) return;
+            this._Selector.ClearFramed();
+            this._MouseDragFrameActive = false;
+        }
+        private void _MouseDragFrameDone(MouseEventArgs e)
+        {
+            if (this._MouseDragFrameActive)
+            {
+                this.Selector.MoveFramedToSelected();
+            }
+
+            this._MouseDragFrameCurrentBounds = null;
+            this._MouseDragState = MouseMoveDragState.None;
+            this._MouseDownReset();
+        }
+        /// <summary>
+        /// Obsahuje true, pokud se má kreslit FrameBounds = oblast selectování (<see cref="_MouseDragFrameCurrentBounds"/>).
+        /// </summary>
+        private bool _NeedDrawFrameBounds { get { return (this._MouseDragFrameCurrentBounds.HasValue && this._MouseDragFrameCurrentBounds.Value.HasPixels()); } }
+        /// <summary>
+        /// Zajistí vykreslení oblasti FrameSelect
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="layer"></param>
+        private void _PaintFrameBounds(Graphics graphics, GInteractiveDrawLayer layer)
+        {
+            if (!this._MouseDragFrameActive) return;
+            GPainter.DrawFrameSelect(graphics, this._MouseDragFrameCurrentBounds.Value);
+        }
+        /// <summary>
+        /// Aktivita procesu Drag and Frame: true po startu (<see cref="_MouseDragFrameBegin(MouseEventArgs)"/>), 
+        /// false po cancelu (<see cref="_MouseDragFrameCancel()"/>) nebo po skončení (<see cref="_MouseDragFrameDone(MouseEventArgs)"/>).
+        /// </summary>
+        private bool _MouseDragFrameActive { get; set; }
+        /// <summary>
+        /// Prvek, který je Parentem aktuální akce Drag and Frame.
+        /// </summary>
+        private GActivePosition _MouseDragFrameParentItem { get; set; }
+        /// <summary>
+        /// Souřadnice prostoru, do něhož má být omezen proces Drag and Frame.
+        /// Prostor deklaruje prvek Parent na začátku procesu Drag and Frame ve své události .
+        /// Následný proces DragFrame pak ořezává reálně zadaný prostor selectovaný pohybem myši pouze do této oblasti.
+        /// Může být null, pak nebude prostor omezen.
+        /// </summary>
+        private Rectangle? _MouseDragFrameWorkArea { get; set; }
+        /// <summary>
+        /// Souřadnice prostoru, který je aktuálně zarámován v režimu DragFrame.
+        /// Měl by být vykreslen do Interactive vrstvy grafiky.
+        /// Pokud je null, pak se nekreslí.
+        /// </summary>
+        private Rectangle? _MouseDragFrameCurrentBounds { get; set; }
         #endregion
         #region Draw
         /// <summary>

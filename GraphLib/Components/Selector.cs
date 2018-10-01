@@ -143,6 +143,55 @@ namespace Asol.Tools.WorkScheduler.Components
             if (isFramed != oldFramed)
                 item.Repaint();
         }
+        /// <summary>
+        /// Metoda zajistí, že ve stavu Framed budou jen předané prvky.
+        /// To znamená, že prvky, které nejsou předané v parametru, budou z pole Framed odebrány.
+        /// Dále se zajistí, že prvky budou v poli Framed přidány v pořadí, v jakém jsou na vstupu.
+        /// </summary>
+        /// <param name="items"></param>
+        public void SetFramedItems(IEnumerable<IInteractiveItem> items)
+        {
+            if (items == null) return;
+            this._PrepareForUse();
+            var itemDict = items.GetDictionary(i => i.Id, true);
+
+            // a) odeberu prvky, které jsou ve this._Framed a nyní nejsou na vstupu:
+            this._Framed.RemoveWhere((id, item) =>
+            {   // Pokud vstupní pole (itemDict) NEOBSAHUJE klíč prvku z Dictionary this._Framed, pak bude (remove) = true:
+                bool remove = !itemDict.ContainsKey(id);
+                if (remove)
+                    // Prvky, které z Dictionary this._Framed budou odebrány, musíme překreslit:
+                    item.Repaint();
+                return remove;
+            });
+
+            // b) přidám prvky, které jsou nyní na vstupu, ale ještě nejsou v Dictionary this._Framed:
+            foreach (IInteractiveItem item in items)
+            {
+                if (!this._Framed.ContainsKey(item.Id))
+                {
+                    this._Framed.Add(item.Id, item);
+                    item.Repaint();
+                }
+            }
+        }
+        /// <summary>
+        /// Přenese prvky Framed do prvků Selected, seznam Framed vyprázdní.
+        /// Zajistí Repaint pro prvky, jichž se přenos týká.
+        /// </summary>
+        public void MoveFramedToSelected()
+        {
+            this._PrepareForUse();
+            foreach (IInteractiveItem item in this._Framed.Values)
+            {
+                if (!this._Selected.ContainsKey(item.Id))
+                {
+                    this._Selected.Add(item.Id, item);
+                }
+                item.Repaint();
+            }
+            this._Framed.Clear();
+        }
         #endregion
     }
 }

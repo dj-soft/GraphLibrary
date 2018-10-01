@@ -31,7 +31,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             this._InteractiveParent = interactiveParent;
             this._Group = group;
             this._Position = position;
-            this.Is.Selectable = true;
+            this.Is.GetSelectable = this._GetSelectable;
             this.Is.GetMouseDragMove = this._GetMouseDragMove;
         }
         /// <summary>
@@ -122,12 +122,54 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         #endregion
         #region Interaktivita
         /// <summary>
+        /// Při každé změně interaktivity
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void AfterStateChanged(GInteractiveChangeStateArgs e)
+        {
+            base.AfterStateChanged(e);
+            this.GroupInteractiveState = e.TargetState;
+        }
+        /// <summary>
+        /// Interaktivní stav grupy
+        /// </summary>
+        protected GInteractiveState GroupInteractiveState
+        {
+            get
+            {
+                if (this._Position == GGraphControlPosition.Group && this._GroupState.HasValue) return this._GroupState.Value;
+                if (this._Group != null && this._Group.GControl._GroupState.HasValue) return this._Group.GControl._GroupState.Value;
+                return this.InteractiveState;
+            }
+            set
+            {
+                if (this._Position == GGraphControlPosition.Group) this._GroupState = value;
+                else if (this._Position == GGraphControlPosition.Item && this._Group != null) this._Group.GControl._GroupState = value;
+            }
+        }
+        /// <summary>
+        /// Stav tohoto prvku, pokud prvek je typu Group.
+        /// Pro jiné prvky je null.
+        /// Využívá se při vykreslování prvků.
+        /// </summary>
+        protected GInteractiveState? _GroupState;
+        /// <summary>
         /// Metoda zajistí přípravu ToolTipu pro zdejší prvek (data) na dané pozici (position).
         /// </summary>
         /// <param name="e"></param>
         protected override void PrepareToolTip(GInteractiveChangeStateArgs e)
         {
             this.Graph.GraphItemPrepareToolTip(e, this._Group, this._Owner, this._Position);
+        }
+        /// <summary>
+        /// Metoda zajistí provedení Select pro moji Parent grupu (pokud já jsem Item)
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void AfterStateChangedLeftClick(GInteractiveChangeStateArgs e)
+        {
+            if (this._Position == GGraphControlPosition.Item)
+                this._Group.GControl.ChangeSelect();
+            base.AfterStateChangedLeftClick(e);
         }
         /// <summary>
         /// Metoda zajistí zpracování události RightCLick na grafickém prvku (data) na dané pozici (position).
@@ -152,6 +194,17 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         protected override void AfterStateChangedLeftLongClick(GInteractiveChangeStateArgs e)
         {
             this.Graph.GraphItemLeftLongClick(e, this._Group, this._Owner, this._Position);
+        }
+        /// <summary>
+        /// Hodnota Selectable :
+        /// a) Selectovat lze jen Group prvky, nikoli Item;
+        /// b) Selectovat lze jen ty Item prvky, které je možno nějak editovat (posunout...)
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        private bool _GetSelectable(bool value)
+        {
+            return (this._Position == GGraphControlPosition.Group && this._Group.IsDragEnabled);
         }
         #endregion
         #region Přetahování (Drag and Drop) : týká se výhradně prvků typu Group!
@@ -375,11 +428,9 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 // Reálně použitá barva pozadí pro spojovací linii je částečně (33%) průhledná:
                 Color color = this._Group.GetColorWithOpacity(Color.FromArgb(170, itemBackColor.Value), e);
 
-                Rectangle boundsTop, boundsCenter, boundsBottom;
-                _CreateBounds(boundsAbsolute, false, out boundsTop, out boundsCenter, out boundsBottom);
-
+                Rectangle[] boundsParts = _CreateBounds(boundsAbsolute, this._Position, false);
                 float? effect3D = this._GetEffect3D(false);
-                GPainter.DrawEffect3D(e.Graphics, boundsCenter, color, System.Windows.Forms.Orientation.Horizontal, effect3D, null);
+                GPainter.DrawEffect3D(e.Graphics, boundsParts[0], color, System.Windows.Forms.Orientation.Horizontal, effect3D, null);
             }
         }
         /// <summary>
@@ -402,7 +453,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             GPainter.DrawString(e.Graphics, boundsText, text, foreColor, fontInfo, ContentAlignment.MiddleCenter);
         }
         #endregion
-        #region Fyzické kreslení prvku
+        #region Fyzické kreslení konkrétního prvku
         /// <summary>
         /// Vykreslí prvek typu <see cref="GGraphControlPosition.Item"/> = vlastní grafický prvek
         /// </summary>
@@ -411,11 +462,24 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="drawMode"></param>
         protected void DrawItemItem(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
         {
+            // bool isSelectable = this.Is.Selectable;
+
+            // Stav IsSelected a IsFramed budeme vždy přebírat z Grupy, protože Select a Framed se řeší na úrovni Grupy:
+            GTimeGraphItem groupItem = (this._Position == GGraphControlPosition.Group ? this :
+                                        this._Position == GGraphControlPosition.Item ? this._Group.GControl : null);
+
+            bool isSelected = (groupItem != null ? groupItem.IsSelected : false);
+            bool isFramed = (groupItem != null ? groupItem.IsFramed : false);
+            bool isActive = (isSelected | isFramed);
+
+            Rectangle[] boundsParts = _CreateBounds(boundsAbsolute, this._Position, isActive);
+
             Color color;
-            bool isSelected = this.IsSelected;
+            Color? itemBackColor = this.ItemBackColor;
+            Color? borderColor = null;
 
             // Vykreslit pozadí pod prvkem:
-            Color? itemBackColor = this.ItemBackColor;
+            bool drawSelect = true;
             if (itemBackColor.HasValue)
             {
                 color = this._Group.GetColorWithOpacity(itemBackColor.Value, e);
@@ -429,50 +493,82 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 }
                 else
                 {   // Nemáme-li BackStyle : řešíme interaktivitu myši i vykreslení 3D efektu:
-                    Rectangle boundsTop, boundsCenter, boundsBottom;
-                    _CreateBounds(boundsAbsolute, true, out boundsTop, out boundsCenter, out boundsBottom);
-
                     float? effect3D = this._GetEffect3D(true);
-                    GPainter.DrawEffect3D(e.Graphics, boundsCenter, color, System.Windows.Forms.Orientation.Horizontal, effect3D, null);
+                    GPainter.DrawEffect3D(e.Graphics, boundsParts[0], color, System.Windows.Forms.Orientation.Horizontal, effect3D, null);
 
-                    Color colorTop = Skin.Modifiers.GetColor3DBorderLight(color, 0.50f);
-                    e.Graphics.FillRectangle(Skin.Brush(colorTop), boundsTop);
-                    Color colorBottom = Skin.Modifiers.GetColor3DBorderDark(color, 0.50f);
-                    e.Graphics.FillRectangle(Skin.Brush(colorBottom), boundsBottom);
+                    borderColor = (isSelected ? Skin.Graph.ElementSelectedLineColor :
+                                  (isFramed ? Skin.Graph.ElementFramedLineColor : color));
+                    Color colorTop = Skin.Modifiers.GetColor3DBorderLight(borderColor.Value, 0.50f);
+                    e.Graphics.FillRectangle(Skin.Brush(colorTop), boundsParts[2]);
+                    Color colorBottom = Skin.Modifiers.GetColor3DBorderDark(borderColor.Value, 0.50f);
+                    e.Graphics.FillRectangle(Skin.Brush(colorBottom), boundsParts[4]);
+
+                    if (isSelected || isFramed)
+                    {
+                        e.Graphics.FillRectangle(Skin.Brush(borderColor.Value), boundsParts[1]);
+                        e.Graphics.FillRectangle(Skin.Brush(borderColor.Value), boundsParts[3]);
+                    }
+
+                    drawSelect = false;
                 }
             }
 
             // Vykreslit orámování prvku:
-            Color? itemLineColor = (isSelected ? (Color?)Skin.Graph.ElementSelectedLineColor : this.ItemLineColor);
-            if (itemLineColor.HasValue)
+            if (drawSelect && (isSelected || isFramed))
             {
-                color = this._Group.GetColorWithOpacity(itemLineColor.Value, e);
-                int lineWidth = (isSelected ? 2 : 1);
-                Rectangle boundsLineAbsolute = boundsAbsolute.Enlarge(1 - lineWidth, 1 - lineWidth, -lineWidth, -lineWidth);
-                e.Graphics.DrawRectangle(Skin.Pen(color, (float)lineWidth), boundsLineAbsolute);
+                Color? itemLineColor = (isSelected ? (Color?)Skin.Graph.ElementSelectedLineColor : this.ItemLineColor);
+                if (itemLineColor.HasValue)
+                {
+                    color = this._Group.GetColorWithOpacity(itemLineColor.Value, e);
+                    int lineWidth = (isSelected ? 2 : 1);
+                    Rectangle boundsLineAbsolute = boundsAbsolute.Enlarge(1 - lineWidth, 1 - lineWidth, -lineWidth, -lineWidth);
+                    e.Graphics.DrawRectangle(Skin.Pen(color, (float)lineWidth), boundsLineAbsolute);
+                }
             }
 
             // Ratio:
 
         }
-        private static void _CreateBounds(Rectangle boundsAbsolute, bool forItem, out Rectangle boundsTop, out Rectangle boundsCenter, out Rectangle boundsBottom)
+        /// <summary>
+        /// Vytvoří pole souřadnic, které obsahuje pět prvků:
+        /// [0]: střed; [1]: levý kraj; [2]: horní kraj; [3]: pravý kraj; [4]: dolní kraj;
+        /// </summary>
+        /// <param name="boundsAbsolute">Souřadnice prvku absolutní</param>
+        /// <param name="position">Pozice prvku (Group / Item)</param>
+        /// <param name="isActive">Prvek je Selected nebo Framed?</param>
+        private static Rectangle[] _CreateBounds(Rectangle boundsAbsolute, GGraphControlPosition position, bool isActive)
         {
-            int h = boundsAbsolute.Height;                 // Výška celková
-            int hb = (h < 10 || !forItem ? 1 : 2);         // Výška proužku "horní a dolní okraj"
-            int hc = h - 2 * hb;                           // Výška vlastního prvku po zmenšení o okraje
-
+            int x = boundsAbsolute.X;
             int y = boundsAbsolute.Y;
-            boundsTop = new Rectangle(boundsAbsolute.X, y, boundsAbsolute.Width, hb); y += hb;
-            boundsCenter = new Rectangle(boundsAbsolute.X, boundsAbsolute.Y + hb, boundsAbsolute.Width, hc); y += hc;
-            boundsBottom = new Rectangle(boundsAbsolute.X, boundsAbsolute.Y + hb + hc, boundsAbsolute.Width, hb); y += hb;
+            int w = boundsAbsolute.Width;
+            int h = boundsAbsolute.Height;
+            int wb = (w <= 2 ? 0 : ((w < 5) ? 1 : (isActive ? 2 : 1)));
+            int hb = (h <= 2 ? 0 : ((h < 10 || position == GGraphControlPosition.Group) ? 1 : (isActive ? 3 : 2)));    // Výška proužku "horní a dolní okraj"
+            int hc = h - 2 * hb;
+
+            Rectangle[] boundsParts = new Rectangle[5];
+            boundsParts[0] = new Rectangle(x, y + hb, w, hc);                  // Střední prostor
+            boundsParts[0] = new Rectangle(x, y, w, h);                        // Střední prostor
+            boundsParts[1] = new Rectangle(x, y + hb, wb, hc + hb);            // Levý okraj
+            boundsParts[2] = new Rectangle(x, y, w, hb);                       // Horní okraj
+            boundsParts[3] = new Rectangle(x + w - wb, y, wb, hc + hb);        // Pravý okraj
+            boundsParts[4] = new Rectangle(x, y + hb + hc, w, hb);             // Dolní okraj
+
+            return boundsParts;
         }
+        /// <summary>
+        /// Vrátí úroveň 3D efektu pro this prvek
+        /// </summary>
+        /// <param name="forItem"></param>
+        /// <returns></returns>
         private float? _GetEffect3D(bool forItem)
         {
             GraphItemBehaviorMode behavior = this._Owner.BehaviorMode;
             bool isEditable = behavior.HasAnyFlag(GraphItemBehaviorMode.AnyMove | GraphItemBehaviorMode.ResizeTime | GraphItemBehaviorMode.ResizeHeight);
-            float? effect3D = (isEditable ? GPainter.GetEffect3D(this.InteractiveState) : (float?)-0.10f);
+            GInteractiveState state = this.GroupInteractiveState;
+            float? effect3D = (isEditable ? GPainter.GetEffect3D(state) : (float?)-0.10f);
             if (effect3D.HasValue && effect3D.Value != 0f)
-                effect3D = effect3D.Value * (forItem ? 1.25f : 0.75f);
+                effect3D = effect3D.Value * (forItem ? 1.25f : 0.90f);
             return effect3D;
         }
         #endregion

@@ -456,7 +456,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     this.Repaint();
                     this.AfterStateChangedLeftClick(e);
                     break;
-                case GInteractiveChangeState.LeftClickSelected:
+                case GInteractiveChangeState.LeftClickSelect:
                     this.Repaint();
                     this.AfterStateChangedLeftClickSelected(e);
                     break;
@@ -861,7 +861,28 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Teprve na konci procesu SelectFrame se pro dotčené objekty (které mají <see cref="IsFramed"/> = true) nastaví i <see cref="IsSelected"/> = true.
         /// </summary>
         public virtual bool IsFramed { get { var host = this.Host; return (host != null ? host.Selector.IsFramed(this) : false); } set { var host = this.Host; if (host != null) host.Selector.SetFramed(this, value); } }
-        
+        /// <summary>
+        /// Metoda změní stav Selected na tomto prvku, stejně jako by na prvku kliknul uživatel levou myší.
+        /// Tzn.: Pokud aktuálně je držena klávesa CTRL, pak se stav ostatních selectovaných prvků nezmění;
+        /// pokud ale CTRL není držen, pak ostatní prvky budou odselectovány.
+        /// </summary>
+        public void ChangeSelect()
+        {
+            Keys modifierKeys = Control.ModifierKeys;
+            bool leaveOther = modifierKeys.HasFlag(Keys.Control);
+            this.ChangeSelect(leaveOther);
+        }
+        /// <summary>
+        /// Metoda změní stav Selected na tomto prvku.
+        /// Stav Selected pro ostatní prvky je dán parametrem leaveOther:
+        /// Pokud leaveOther je true, pak se stav ostatních selectovaných prvků nezmění (jako by byl stisknut CTRL);
+        /// pokud leaveOther je false, pak ostatní prvky budou odselectovány (jako by CTRL nebyl držen).
+        /// </summary>
+        public void ChangeSelect(bool leaveOther)
+        {
+            if (this.Host != null)
+                this.Host.Selector.ChangeSelection(this, leaveOther);
+        }
         #endregion
         #region Boolean repository
         /// <summary>

@@ -191,6 +191,15 @@ namespace Asol.Tools.WorkScheduler.Components
     #region class InteractiveProperties : Bit storage for Interactive Properties of IInteractiveItem objects.
     /// <summary>
     /// InteractiveProperties : Bitové úložiště pro různé Boolean Properties pro IInteractiveItem objekt.
+    /// Hodnoty bitů lze setovat i číst.
+    /// Čtení i ukládání hodnoty lze převést na dynamické = lze zadat přiměřenou metodu, 
+    /// která konkrétní hodnotu pro konkrétní prvek vrátí/uloží odjinud, než ze statického úložiště.
+    /// Tak například pro konkrétní typ prvku lze hodnotu <see cref="Selectable"/> číst (nebo i zkombinovat) z jejích vnitřních dat tak, 
+    /// že se do objektu <see cref="InteractiveProperties"/> zadá metoda <see cref="GetSelectable"/>, pak tato metoda vrací hodnotu true/false
+    /// podle stavu konkrétního objektu. Metody typu Get* vždy dostávají jeden parametr <see cref="Boolean"/> = hodnotu uloženou ve statickém bitovém úložišti.
+    /// Konkrétní metody Get* tuto hodnou mohou ignorovat, nebo vrátit, nebo k ní přihlédnout.
+    /// <para/>
+    /// Pokud některá bitová property nemá odpovídající sadu Get/Set metod, není problém je doplnit.
     /// </summary>
     public class InteractiveProperties : BitStorage
     {
@@ -1256,14 +1265,15 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Stisknutí levého (hlavního) tlačítka myši.
         /// Po této akci může následovat akce Drag and Drop anebo Select Frame. 
         /// Anebo prosté zvednutí myši <see cref="LeftUp"/>,
-        /// následované <see cref="LeftDoubleClick"/>, nebo <see cref="LeftLongClick"/>, nebo (<see cref="LeftClick"/> nebo <see cref="LeftClickSelected"/>), podle stylu kliknutí a vlastností.
+        /// následované <see cref="LeftDoubleClick"/>, nebo <see cref="LeftLongClick"/>, nebo (<see cref="LeftClick"/> nebo <see cref="LeftClickSelect"/>), podle stylu kliknutí a vlastností.
         /// </summary>
         LeftDown,
         /// <summary>
         /// Zvednutí levého (hlavního) tlačítka myši.
         /// Tato událost je volána jen tehdy, když neprobíhal proces Drag and Drop a ani Select Frame.
         /// Po této události okamžitě bude volána jedna z akcí: 
-        /// <see cref="LeftDoubleClick"/>, nebo <see cref="LeftLongClick"/>, nebo (<see cref="LeftClick"/> nebo <see cref="LeftClickSelected"/>), podle stylu kliknutí a vlastností.
+        /// <see cref="LeftDoubleClick"/>, nebo <see cref="LeftLongClick"/>, nebo <see cref="LeftClickSelect"/> a <see cref="LeftClick"/>,
+        /// podle stylu kliknutí a vlastností.
         /// </summary>
         LeftUp,
         /// <summary>
@@ -1281,19 +1291,21 @@ namespace Asol.Tools.WorkScheduler.Components
         LeftLongClick,
         /// <summary>
         /// Click levým (hlavním) tlačítkem myši.
-        /// Před touto událostí je vyvolána událost <see cref="LeftUp"/>.
+        /// Před touto událostí je vyvolána událost <see cref="LeftUp"/>,
+        /// a pokud objekt má nastaveno <see cref="InteractiveProperties.Selectable"/> == true, 
+        /// tak těsně před <see cref="LeftClick"/> proběhne i <see cref="LeftClickSelect"/>.
         /// </summary>
         LeftClick,
 
         /// <summary>
         /// Změna hodnoty <see cref="IInteractiveItem.IsSelected"/> pomocí levého tlačítka myši.
-        /// Provádí se namísto akce <see cref="LeftClick"/>, pro objekt který má nastaveno <see cref="InteractiveProperties.Selectable"/> == true.
-        /// Na takovém objektu tedy neproběhne akce <see cref="LeftClick"/>, ale jen <see cref="LeftClickSelected"/>!
+        /// Provádí se před akcí <see cref="LeftClick"/>, pro objekt který má nastaveno <see cref="InteractiveProperties.Selectable"/> == true.
+        /// Teprve poté na tomto objektu proběhne akce <see cref="LeftClick"/>.
         /// Hodnota <see cref="IInteractiveItem.IsSelected"/> je již změněna, proběhla i metoda Repaint() na objektu.
         /// Aplikace nemusí již nijak reagovat, ale může.
         /// Před touto událostí je vyvolána událost <see cref="LeftUp"/>.
         /// </summary>
-        LeftClickSelected,
+        LeftClickSelect,
 
         /// <summary>
         /// Událost je volána v okamžiku, kdy je jisté, že začíná proces DragMove na levé myši.

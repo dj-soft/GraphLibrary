@@ -294,7 +294,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                     Interval<float> useSpace = summary.SearchForSpace(searchFrom, size, (a, b) => (a + b));
 
                     // Nalezený logický prostor Y vložíme do grupy:
-                    group.CoordinateYLogical = useSpace;
+                    group.CoordinateYLogical = useSpace.ValueClone;
 
                     // Nalezený logický prostor (useSpace) vepíšeme do všech prvků na časové ose (patří do layerUsing):
                     intervalWorkItems.ForEachItem(pni => pni.Value.Value.Add(useSpace));

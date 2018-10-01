@@ -509,8 +509,8 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Metoda vrátí souhrn prvků, které jsou přítomny v this (currentValues), ale nejsou přítomny v předchozím stavu (oldValues).
         /// Porovnání se provádí pomocí klíče v Dictionary.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
         /// <typeparam name="TKey"></typeparam>
+        /// <typeparam name="TValue"></typeparam>
         /// <param name="currentValues"></param>
         /// <param name="oldValues"></param>
         /// <returns></returns>
@@ -532,9 +532,9 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         /// <typeparam name="TKey"></typeparam>
         /// <typeparam name="TValue"></typeparam>
-        /// <param name="collection"></param>
-        /// <param name="keySelector"></param>
-        /// <param name="skipDuplicityItems"></param>
+        /// <param name="collection">Kolekce</param>
+        /// <param name="keySelector">Funkce pro získání klíče ze záznamu</param>
+        /// <param name="skipDuplicityItems">true = pokud je klíč ve vstupním poli vícekrát, pak ve výstupní Dictionary bude jen jednou (ten první výskyt), ale nedojde k chybě. Hodnota false = při duplicitě dojde k chybě.</param>
         /// <returns></returns>
         public static Dictionary<TKey, TValue> GetDictionary<TKey, TValue>(this IEnumerable<TValue> collection, Func<TValue, TKey> keySelector, bool skipDuplicityItems)
         {
@@ -551,6 +551,49 @@ namespace Asol.Tools.WorkScheduler.Data
                 }
             }
             return dictionary;
+        }
+        /// <summary>
+        /// Metoda z this dictionary odebere všechny výskyty daných klíčů.
+        /// </summary>
+        /// <typeparam name="TKey"></typeparam>
+        /// <typeparam name="TValue"></typeparam>
+        /// <param name="dictionary"></param>
+        /// <param name="keys"></param>
+        /// <returns></returns>
+        public static void RemoveKeys<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, IEnumerable<TKey> keys)
+        {
+            if (dictionary == null || dictionary.Count == 0 || keys == null) return;
+            foreach (TKey key in keys)
+            {
+                if (dictionary.ContainsKey(key))
+                {
+                    dictionary.Remove(key);
+                    if (dictionary.Count == 0)
+                        return;
+                }
+            }
+        }
+        /// <summary>
+        /// Metoda z this dictionary odebere všechny položky, které vyhovují danému filtru
+        /// </summary>
+        /// <typeparam name="TKey"></typeparam>
+        /// <typeparam name="TValue"></typeparam>
+        /// <param name="dictionary"></param>
+        /// <param name="filter">Filtr: dostane hodnotu klíče, vrací: true = odebrat z Dictionary, false = ponechat</param>
+        /// <returns></returns>
+        public static void RemoveWhere<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, Func<TKey, TValue, bool> filter)
+        {
+            if (dictionary == null || dictionary.Count == 0 || filter == null) return;
+            KeyValuePair<TKey, TValue>[] pairs = dictionary.ToArray();  // Pole prvků, přítomných v Dictionary, musí se získat do izolovaného pole,
+            foreach (KeyValuePair<TKey, TValue> pair in pairs)          //  protože tento soupis klíčů budeme enumerovat, a přitom z Dictionary budeme odebírat prvky,
+            {                                                           //  což by způsobilo chybu pokud bychom enumerovali přímo Dictionary.
+                if (filter(pair.Key, pair.Value))
+                {
+                    dictionary.Remove(pair.Key);                        // Odebereme záznam, pro jehož klíč bylo vráceno true z filtru.
+                    if (dictionary.Count == 0)
+                        return;
+                }
+            }
         }
         #endregion
         #region List<T>

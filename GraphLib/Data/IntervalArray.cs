@@ -145,7 +145,7 @@ namespace Asol.Tools.WorkScheduler.Data
 
                 if (Interval<TValue>.IsWholeBefore(relation.Value))
                 {   // If addItem is whole before scanItem, then insert addItem before scanItem, and Add will ends:
-                    scanItem.InsertBefore(addItem);
+                    scanItem.InsertBefore(addItem.ValueClone);
                     if (scanIsFirst)
                         this.First = scanItem.First;
                     break;
@@ -166,7 +166,7 @@ namespace Asol.Tools.WorkScheduler.Data
                     }
                     else
                     {   // addItem can not be merged with Next item: only merge with scanItem item, and exit:
-                        scanItem.MergeWith(addItem);
+                        scanItem.MergeWith(addItem.ValueClone);
                         break;
                     }
                 }
@@ -175,7 +175,7 @@ namespace Asol.Tools.WorkScheduler.Data
                 {   // Tested item is whole AFTER current scan item:
                     if (!scanItem.HasNext)
                     {   // scanItem has not Next item, then addItem will be inserted after scanItem, and exit:
-                        scanItem.InsertAfter(addItem);
+                        scanItem.InsertAfter(addItem.ValueClone);
                         break;
                     }
                     // scanItem has Next item, but addItem is not mergable with scanItem.
@@ -486,6 +486,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// This is: this item will contain Begin = Min(Begins); End = Max(End
         /// </summary>
         /// <param name="item"></param>
+        /// <param name="relation"></param>
         internal void MergeWith(Interval<TValue> item, IntervalRelation? relation)
         {
             if (item == null || !item.IsFilled) return;
@@ -974,7 +975,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Merge values (Begin and End) from parameter item into this values.
         /// Does not link any Next nor Prev from item into this! Merge only Begin, End.
         /// </summary>
-        /// <param name="item"></param>
+        /// <param name="other"></param>
         public void MergeWith(TItem other)
         {
             if (this.Value != null && this.Value is IMergeable && other != null && other is IMergeable)
@@ -984,7 +985,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Merge values (Begin and End) from parameter item into this values.
         /// Does not link any Next nor Prev from item into this! Merge only Begin, End.
         /// </summary>
-        /// <param name="item"></param>
+        /// <param name="other"></param>
         public void MergeWith(PrevNextItem<TItem> other)
         {
             if (this.Value != null && this.Value is IMergeable && other != null && other.Value is IMergeable)
