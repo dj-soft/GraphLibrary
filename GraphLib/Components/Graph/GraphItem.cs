@@ -428,7 +428,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 // Reálně použitá barva pozadí pro spojovací linii je částečně (33%) průhledná:
                 Color color = this._Group.GetColorWithOpacity(Color.FromArgb(170, itemBackColor.Value), e);
 
-                Rectangle[] boundsParts = _CreateBounds(boundsAbsolute, this._Position, false);
+                Rectangle[] boundsParts = _CreateBounds(boundsAbsolute, this._Position, false, false, false);
                 float? effect3D = this._GetEffect3D(false);
                 GPainter.DrawEffect3D(e.Graphics, boundsParts[0], color, System.Windows.Forms.Orientation.Horizontal, effect3D, null);
             }
@@ -472,7 +472,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             bool isFramed = (groupItem != null ? groupItem.IsFramed : false);
             bool isActive = (isSelected | isFramed);
 
-            Rectangle[] boundsParts = _CreateBounds(boundsAbsolute, this._Position, isActive);
+            Rectangle[] boundsParts = _CreateBounds(boundsAbsolute, this._Position, this.IsFirstItem, this.IsLastItem, isActive);
 
             Color color;
             Color? itemBackColor = this.ItemBackColor;
@@ -505,8 +505,10 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
 
                     if (isSelected || isFramed)
                     {
-                        e.Graphics.FillRectangle(Skin.Brush(borderColor.Value), boundsParts[1]);
-                        e.Graphics.FillRectangle(Skin.Brush(borderColor.Value), boundsParts[3]);
+                        if (this.IsFirstItem)
+                            e.Graphics.FillRectangle(Skin.Brush(borderColor.Value), boundsParts[1]);
+                        if (this.IsLastItem)
+                            e.Graphics.FillRectangle(Skin.Brush(borderColor.Value), boundsParts[3]);
                     }
 
                     drawSelect = false;
@@ -535,8 +537,10 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         /// <param name="boundsAbsolute">Souřadnice prvku absolutní</param>
         /// <param name="position">Pozice prvku (Group / Item)</param>
+        /// <param name="isFirst">Prvek je prvním v grupě?</param>
+        /// <param name="isLast">Prvek je posledním v grupě?</param>
         /// <param name="isActive">Prvek je Selected nebo Framed?</param>
-        private static Rectangle[] _CreateBounds(Rectangle boundsAbsolute, GGraphControlPosition position, bool isActive)
+        private static Rectangle[] _CreateBounds(Rectangle boundsAbsolute, GGraphControlPosition position, bool isFirst, bool isLast, bool isActive)
         {
             int x = boundsAbsolute.X;
             int y = boundsAbsolute.Y;
@@ -547,11 +551,15 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             int hc = h - 2 * hb;
 
             Rectangle[] boundsParts = new Rectangle[5];
-            boundsParts[0] = new Rectangle(x, y + hb, w, hc);                  // Střední prostor
-            boundsParts[0] = new Rectangle(x, y, w, h);                        // Střední prostor
-            boundsParts[1] = new Rectangle(x, y + hb, wb, hc + hb);            // Levý okraj
+            if (position == GGraphControlPosition.Group)
+                boundsParts[0] = new Rectangle(x, y + hb, w, hc);              // Střední prostor pro Group
+            else
+                boundsParts[0] = new Rectangle(x, y, w, h);                    // Střední prostor pro Item
+            if (isFirst)
+                boundsParts[1] = new Rectangle(x, y + hb, wb, hc + hb);        // Levý okraj
             boundsParts[2] = new Rectangle(x, y, w, hb);                       // Horní okraj
-            boundsParts[3] = new Rectangle(x + w - wb, y, wb, hc + hb);        // Pravý okraj
+            if (isLast)
+                boundsParts[3] = new Rectangle(x + w - wb, y, wb, hc + hb);    // Pravý okraj
             boundsParts[4] = new Rectangle(x, y + hb + hc, w, hb);             // Dolní okraj
 
             return boundsParts;
@@ -570,6 +578,32 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             if (effect3D.HasValue && effect3D.Value != 0f)
                 effect3D = effect3D.Value * (forItem ? 1.25f : 0.90f);
             return effect3D;
+        }
+        /// <summary>
+        /// Obsahuje true, pokud this prvek reprezentuje Item, který je prvním v grupě
+        /// </summary>
+        protected bool IsFirstItem
+        {
+            get
+            {
+                if (this._Position != GGraphControlPosition.Item) return false;
+                ITimeGraphItem dataItem = this._Owner;
+                ITimeGraphItem firstItem = this._Group.Items[0];
+                return (Object.ReferenceEquals(dataItem, firstItem));
+            }
+        }
+        /// <summary>
+        /// Obsahuje true, pokud this prvek reprezentuje Item, který je posledním v grupě
+        /// </summary>
+        protected bool IsLastItem
+        {
+            get
+            {
+                if (this._Position != GGraphControlPosition.Item) return false;
+                ITimeGraphItem dataItem = this._Owner;
+                ITimeGraphItem lastItem = this._Group.Items[this._Group.ItemCount - 1];
+                return (Object.ReferenceEquals(dataItem, lastItem));
+            }
         }
         #endregion
     }

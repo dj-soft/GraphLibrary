@@ -68,13 +68,16 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             if (item == null) return;
             this._PrepareForUse();
+            uint id = item.Id;
+            bool isSelected = this._Selected.ContainsKey(id);
             if (!leaveOther && this._Selected.Count > 0)
                 this.ClearSelected();
 
-            uint id = item.Id;
-            if (!this._Selected.ContainsKey(id))
+            isSelected = !isSelected;                           // Máme provést změnu!
+            bool isExists = this._Selected.ContainsKey(id);
+            if (isSelected && !isExists)
                 this._Selected.Add(id, item);
-            else
+            else if (!isSelected && isExists)
                 this._Selected.Remove(id);
             item.Repaint();
         }
