@@ -1687,7 +1687,7 @@ namespace Noris.LCS.Base.WorkScheduler
         }
     }
     #endregion
-    #region GuiRange : rozsah { Begin ÷ End } dvou hodnot stejného datového typu
+    #region GuiRange : rozsah { Begin ÷ End } dvou hodnot stejného datového typu; class GuiTimeRange, GuiSingleRange
     /// <summary>
     /// GuiRange : rozsah { Begin ÷ End } dvou hodnot stejného datového typu
     /// </summary>
@@ -1889,6 +1889,38 @@ namespace Noris.LCS.Base.WorkScheduler
         protected override DateTime GetValue(string serial) { return (DateTime)Convertor.StringToDateTime(serial); }
         #endregion
     }
+    /// <summary>
+    /// GuiSingleRange : rozsah { Begin ÷ End } dvou hodnot typu <see cref="Single"/>
+    /// </summary>
+    public class GuiSingleRange : GuiRange<Single>, IXmlSerializer
+    {
+        #region Konstruktory
+        /// <summary>
+        /// Bezparametrický konstruktor, pro XML serializaci (Persistor)
+        /// </summary>
+        protected GuiSingleRange() : base() { }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="begin"></param>
+        /// <param name="end"></param>
+        public GuiSingleRange(Single begin, Single end) : base(begin, end) { }
+        #endregion
+        #region Abstract overrides
+        /// <summary>
+        /// Vrátí serializovanou formu dané typové hodnoty
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        protected override string GetSerial(Single value) { return Convertor.SingleToString(value); }
+        /// <summary>
+        /// Vrátí deserializovanou typovou hodnotu ze serializované formy
+        /// </summary>
+        /// <param name="serial"></param>
+        /// <returns></returns>
+        protected override Single GetValue(string serial) { return (Single)Convertor.StringToSingle(serial); }
+        #endregion
+    }
     #endregion
     #endregion
     #region GuiRequest : data předávaná z WorkScheduler do Helios Green jako součást požadavku
@@ -1921,11 +1953,14 @@ namespace Noris.LCS.Base.WorkScheduler
                 case COMMAND_OpenRecords:
                     return text + ((this.RecordsToOpen != null && this.RecordsToOpen.Length > 0) ? "; Record: " + this.RecordsToOpen[0].ToString() : "; no RecordsToOpen");
                 case COMMAND_ToolbarClick:
-                    return text + ((this.ToolbarItem != null) ? "; ToolbarItem: " + this.ToolbarItem.ToString() : "; no ToolbarItem");
+                    return text + ((this.ToolbarItem != null) ? "; Item: " + this.ToolbarItem.ToString() : "; ToolbarItem is null");
                 case COMMAND_ContextMenuClick:
-                    return text + ((this.ContextMenuItem != null) ? "; ContextMenuItem: " + this.ContextMenuItem.ToString() : "; no ContextMenuItem");
+                    return text + ((this.ContextMenuItem != null) ? "; Item: " + this.ContextMenuItem.ToString() : "; ContextMenuItem is null");
                 case COMMAND_GraphItemMove:
-                    return text + ((this.GraphItemMove != null) ? "; GraphItemMove: " + this.GraphItemMove.ToString() : "; no GraphItemMove");
+                    return text + ((this.GraphItemMove != null) ? "; Item: " + this.GraphItemMove.ToString() : "; GraphItemMove is null");
+                case COMMAND_GraphItemResize:
+                    return text + ((this.GraphItemResize != null) ? "; Item: " + this.GraphItemResize.ToString() : "; GraphItemResize is null");
+
 
                 case COMMAND_QueryCloseWindow:
                     return text;
@@ -1955,9 +1990,13 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiGridItemId ActiveGraphItem { get; set; }
         /// <summary>
-        /// Informace o prvku, který je přesouván (Drag and Drop) na jiné místo
+        /// Informace o přesunu prvku (který je přesouván procesem Drag and Drop) na jiné místo: prvek, původní a nové umístění v čase a prostoru
         /// </summary>
         public GuiRequestGraphItemMove GraphItemMove { get; set; }
+        /// <summary>
+        /// Informace o změně velikosti prvku (který je upravován procesem Drag and Drop) na jinou velikost: prvek, původní a nová velikost
+        /// </summary>
+        public GuiRequestGraphItemResize GraphItemResize { get; set; }
         /// <summary>
         /// Aktuální stav okna WorkScheduler
         /// </summary>
@@ -1980,9 +2019,20 @@ namespace Noris.LCS.Base.WorkScheduler
         public const string COMMAND_ContextMenuClick = "ContextMenuClick";
         /// <summary>
         /// Byl přemístěn prvek grafu.
+        /// Objekt <see cref="GuiRequest"/> nese informaci o konkrétním aktivním prvku grafu v property <see cref="GuiRequest.ActiveGraphItem"/>,
+        /// a informaci o pohybu prvku v property <see cref="GuiRequest.GraphItemMove"/> (sada prvků v pohybu, výchozí řádek a čas, cílový řádek a čas).
+        /// Kompletní údaje o stavu GUI jsou v <see cref="GuiRequest.CurrentState"/>.
         /// Aplikační servisní funkce může určit správnější cílové umístění na základě rozsáhlejších informací a algoritmů, než má k dispozici plugin.
         /// </summary>
         public const string COMMAND_GraphItemMove = "GraphItemMove";
+        /// <summary>
+        /// Byl změněn prvek grafu (změněna byla jeho šířka / výška).
+        /// Objekt <see cref="GuiRequest"/> nese informaci o konkrétním aktivním prvku grafu v property <see cref="GuiRequest.ActiveGraphItem"/>,
+        /// a informaci o změně prvku v property <see cref="GuiRequest.GraphItemResize"/> (změněný prvek, výchozí výška nebo čas, cílová výška nebo čas).
+        /// Kompletní údaje o stavu GUI jsou v <see cref="GuiRequest.CurrentState"/>.
+        /// Aplikační servisní funkce může zareagovat úpravou svých dat, a případně přeplánováním.
+        /// </summary>
+        public const string COMMAND_GraphItemResize = "GraphItemResize";
 
 
         /// <summary>
@@ -2003,7 +2053,7 @@ namespace Noris.LCS.Base.WorkScheduler
         #endregion
     }
     /// <summary>
-    /// Informace o prvku, který je přesouván (Drag and Drop) na jiné místo
+    /// Informace o přesunu prvku (který je přesouván procesem Drag and Drop) na jiné místo: prvek, původní a nové umístění v čase a prostoru
     /// </summary>
     public class GuiRequestGraphItemMove
     {
@@ -2029,10 +2079,11 @@ namespace Noris.LCS.Base.WorkScheduler
             }
             else
                 text += "{Null}";
-            if (this.TargetRow != null)
-                text += "; TargetRow: " + this.TargetRow.ToString();
+
+            if (this.SourceRow != null && this.TargetRow != null && this.SourceRow != this.TargetRow)
+                text += "; Change Row; From: " + this.SourceRow.ToString() + "; To: " + this.TargetRow.ToString();
             if (this.SourceTime != null && this.TargetTime != null && this.SourceTime != this.TargetTime)
-                text += "; ChangeTime from: " + this.SourceTime.ToString() + " to: " + this.TargetTime.ToString();
+                text += "; Change Time; From: " + this.SourceTime.ToString() + "; To: " + this.TargetTime.ToString();
             return text;
         }
         /// <summary>
@@ -2041,6 +2092,10 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Pokud prvek grafu nepatří do žádné skupiny (jeho <see cref="GuiGraphItem.GroupId"/> je null), pak tvoří svoji vlastní soukromou skupinu, a přesouvá se sám.
         /// </summary>
         public GuiGridItemId[] MoveItems { get; set; }
+        /// <summary>
+        /// Zdrojový řádek, před přesouváním.
+        /// </summary>
+        public GuiId SourceRow { get; set; }
         /// <summary>
         /// Výchozí čas prvku, před přesouváním.
         /// Pokud prvek patří do skupiny (<see cref="MoveItems"/> obsahuje více než jeden prvek), pak je zde v <see cref="SourceTime"/> sumární čas celé skupiny.
@@ -2053,6 +2108,59 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <summary>
         /// Cílový čas (tam by to uživatel rád umístil).
         /// Jedná se o čas <see cref="SourceTime"/>, posunutý na jiné místo, beze změny délky časového intervalu.
+        /// </summary>
+        public GuiTimeRange TargetTime { get; set; }
+    }
+    /// <summary>
+    /// Informace o změně velikosti prvku (který je upravován procesem Drag and Drop) na jinou velikost: prvek, původní a nová velikost
+    /// </summary>
+    public class GuiRequestGraphItemResize
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public GuiRequestGraphItemResize()
+        { }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            string text = "ResizeItem: ";
+            if (this.ResizeItem != null)
+                text += this.ResizeItem.ToString();
+            else
+                text += "{Null}";
+
+            if (this.SourceHeight != null && this.TargetHeight != null && this.SourceHeight != this.TargetHeight)
+                text += "; Resize Height; From: " + this.SourceHeight.ToString() + "; To: " + this.TargetHeight.ToString();
+            if (this.SourceTime != null && this.TargetTime != null && this.SourceTime != this.TargetTime)
+                text += "; Resize Time; From: " + this.SourceTime.ToString() + "; To: " + this.TargetTime.ToString();
+            return text;
+        }
+        /// <summary>
+        /// Prvek, kterého se Resize týká
+        /// </summary>
+        public GuiGridItemId ResizeItem { get; set; }
+        /// <summary>
+        /// Původní výška prvku grafu (od-do v grafu).
+        /// </summary>
+        public GuiSingleRange SourceHeight { get; set; }
+        /// <summary>
+        /// Výchozí čas prvku, před změnou.
+        /// </summary>
+        public GuiTimeRange SourceTime { get; set; }
+        /// <summary>
+        /// Cílová výška prvku grafu (tam by to uživatel rád natáhl).
+        /// Pokud se změna týká šířky prvku, pak je zde null.
+        /// Pokud je zde hodnota, pak se může lišit od <see cref="SourceHeight"/> buď v hodnotě Begin, nebo End (nelze najednou měnit obě hodnoty, to by bylo Move a ne Resize).
+        /// </summary>
+        public GuiSingleRange TargetHeight { get; set; }
+        /// <summary>
+        /// Cílový čas (tam by to uživatel rád natáhl).
+        /// Pokud se změna týká výšky prvku, pak je zde null.
+        /// Pokud je zde hodnota, pak se může lišit od <see cref="SourceTime"/> buď v hodnotě Begin, nebo End (nelze najednou měnit obě hodnoty, to by bylo Move a ne Resize).
         /// </summary>
         public GuiTimeRange TargetTime { get; set; }
     }

@@ -132,8 +132,7 @@ namespace Asol.Tools.WorkScheduler
         /// ukládá tam zazipovaný text obsahující serializovanou formu objektu <see cref="GuiResponse"/>.
         /// Deserializaci a vyhodnocení si provádí metoda <see cref="AppHostRequestArgs.CallBackAction"/>.
         /// </summary>
-        public string Data { get { return this._Data; } set { this._Data = value; this._GuiResponse = null; } }
-        private string _Data;
+        public string Data { get { return this._Data; } set { this._Data = value; this._GuiResponse = null; this._GuiResponseDeserialized = false; } }
         /// <summary>
         /// Data z aplikační funkce, již deserializovaná
         /// </summary>
@@ -141,12 +140,27 @@ namespace Asol.Tools.WorkScheduler
         {
             get
             {
-                if (this._GuiResponse == null && this._Data != null)
+                if (this._GuiResponse == null && this._Data != null && !this._GuiResponseDeserialized)
+                {
+                    this._GuiResponseDeserialized = true;
                     this._GuiResponse = Persist.Deserialize(WorkSchedulerSupport.Decompress(this._Data)) as GuiResponse;
+                }
                 return this._GuiResponse;
             }
         }
+        /// <summary>
+        /// Stringová data odpovědi, budou deserializována do <see cref="_GuiResponse"/>.
+        /// </summary>
+        private string _Data;
+        /// <summary>
+        /// Strukturovaná data odpovědi ve formě <see cref="GuiResponse"/>
+        /// </summary>
         private GuiResponse _GuiResponse;
+        /// <summary>
+        /// Příznak, že již jednou proběhl pokus o deserializaci dat z <see cref="_Data"/> do <see cref="_GuiResponse"/>.
+        /// Opakování deserializace nemá význam.
+        /// </summary>
+        private bool _GuiResponseDeserialized;
     }
     /// <summary>
     /// Stavy, jak může požadavek skončit

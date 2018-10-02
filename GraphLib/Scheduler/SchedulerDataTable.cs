@@ -513,7 +513,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             // Tady by se měla volat metoda AppHost => aplikační funkce pro přepočet grafu:
             DragSchedulerData data = this.PrepareDragSchedulerData(args);
-            GuiRequestGraphItemMove guiData = this.PrepareRequestGraphItemMove(data);
+            GuiGridItemId gridItemId = this.GetGridItemId(args);
+            GuiRequestGraphItemMove guiItemMoveData = this.PrepareRequestGraphItemMove(data);
 
             // Nejprve provedu vizuální přemístění na "grafický" cíl, to proto že aplikační funkce může:  a) neexistovat  b) dlouho trvat:
             this.ItemDragDropDropGuiResponse(data);
@@ -524,7 +525,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             {
                 GuiRequest request = new GuiRequest();
                 request.Command = GuiRequest.COMMAND_GraphItemMove;
-                request.GraphItemMove = guiData;
+                request.ActiveGraphItem = gridItemId;
+                request.GraphItemMove = guiItemMoveData;
+                request.CurrentState = this.IMainData.CreateGuiCurrentState();
                 this.IMainData.CallAppHostFunction(request, this.ItemDragDropDropAppResponse);
             }
         }
@@ -567,7 +570,15 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="response"></param>
         protected void ItemDragDropDropAppResponse(AppHostResponseArgs response)
-        { }
+        {
+            if (response == null || response.GuiResponse == null) return;
+            GuiResponse guiResponse = response.GuiResponse;
+
+
+#warning TODO dodělat zpracování response!!!
+
+
+        }
         /// <summary>
         /// Metoda vrátí instanci <see cref="DragSchedulerData"/> obsahující data na úrovni Scheduleru z dat Drag and Drop z úrovně GUI.
         /// </summary>
@@ -627,6 +638,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             GuiRequestGraphItemMove guiData = new GuiRequestGraphItemMove();
             guiData.MoveItems = data.DragGroupItems.Select(i => this.GetGridItemId(i)).ToArray();
+            guiData.SourceRow = data.SourceRow;
             guiData.SourceTime = data.SourceTime;
             guiData.TargetRow = data.TargetRow;
             guiData.TargetTime = data.TargetTime;
@@ -793,6 +805,24 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             }
         }
         /// <summary>
+        /// Metoda vytvoří, naplní a vrátí identifikátor prvku <see cref="GuiGridItemId"/>, podle údajů v daném prvku grafu.
+        /// </summary>
+        /// <param name="graphItem">Prvek grafu</param>
+        /// <returns></returns>
+        private GuiGridItemId GetGridItemId(DataGraphItem graphItem)
+        {
+            GuiGridItemId gridItemId = new GuiGridItemId();
+            gridItemId.TableName = this.GuiGrid.FullName;            // Konstantní jméno FullName this tabulky (třída GuiGrid)
+            if (graphItem != null)
+            {   // Pokud mám prvek, pak do resultu vložím jeho GId (převedené na GuiId):
+                gridItemId.RowId = graphItem.RowGId;                 // Parentem je GID řádku
+                gridItemId.ItemId = graphItem.ItemGId;
+                gridItemId.GroupId = graphItem.GroupGId;
+                gridItemId.DataId = graphItem.DataGId;
+            }
+            return gridItemId;
+        }
+        /// <summary>
         /// Metoda vytvoří, naplní a vrátí identifikátor prvku <see cref="GuiGridItemId"/>, podle údajů v daném interaktivním argumentu.
         /// </summary>
         /// <param name="args">Interaktivní argument</param>
@@ -812,17 +842,18 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             return gridItemId;
         }
         /// <summary>
-        /// Metoda vytvoří, naplní a vrátí identifikátor prvku <see cref="GuiGridItemId"/>, podle údajů v daném prvku grafu.
+        /// Metoda vytvoří, naplní a vrátí identifikátor prvku <see cref="GuiGridItemId"/>, podle údajů v daném interaktivním argumentu.
         /// </summary>
-        /// <param name="graphItem">Prvek grafu</param>
+        /// <param name="args">Interaktivní argument</param>
         /// <returns></returns>
-        private GuiGridItemId GetGridItemId(DataGraphItem graphItem)
+        private GuiGridItemId GetGridItemId(ItemInteractiveArgs args)
         {
             GuiGridItemId gridItemId = new GuiGridItemId();
             gridItemId.TableName = this.GuiGrid.FullName;            // Konstantní jméno FullName this tabulky (třída GuiGrid)
+            gridItemId.RowId = this.GetGraphRowGid(args.Graph);      // Z grafu najdu jeho řádek a jeho GId řádku, ten se (implicitně) převede na GuiId
+            DataGraphItem graphItem = this.GetActiveGraphItem(args); // Najde prvek odpovídající args.CurrentItem, nebo args.GroupedItems[0]
             if (graphItem != null)
             {   // Pokud mám prvek, pak do resultu vložím jeho GId (převedené na GuiId):
-                gridItemId.RowId = graphItem.RowGId;              // Parentem je GID řádku
                 gridItemId.ItemId = graphItem.ItemGId;
                 gridItemId.GroupId = graphItem.GroupGId;
                 gridItemId.DataId = graphItem.DataGId;

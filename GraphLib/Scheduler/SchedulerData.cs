@@ -1115,6 +1115,12 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="gridItemId">Identifikátor gridu, řádku, a prvku grafu</param>
         /// <returns></returns>
         ToolStripDropDownMenu IMainDataInternal.CreateContextMenu(GuiGridItemId gridItemId) { return this.CreateContextMenu(gridItemId); }
+        /// <summary>
+        /// Metoda vrátí aktuální stav celého GUI, pro použití v <see cref="GuiRequest.CurrentState"/>.
+        /// </summary>
+        /// <returns></returns>
+        GuiRequestCurrentState IMainDataInternal.CreateGuiCurrentState() { return this._CreateGuiCurrentState(); }
+
         #endregion
     }
     /// <summary>
@@ -1134,6 +1140,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="gridItemId">Identifikátor gridu, řádku, a prvku grafu</param>
         /// <returns></returns>
         ToolStripDropDownMenu CreateContextMenu(GuiGridItemId gridItemId);
+        /// <summary>
+        /// Metoda vrátí aktuální stav celého GUI, pro použití v <see cref="GuiRequest.CurrentState"/>.
+        /// </summary>
+        /// <returns></returns>
+        GuiRequestCurrentState CreateGuiCurrentState();
     }
     #endregion
 }
