@@ -172,13 +172,20 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Metoda zavolá hostitele <see cref="_AppHost"/>, jeho metodu <see cref="IAppHost.CallAppHostFunction(AppHostRequestArgs)"/>,
         /// předá jí aktuální <see cref="_SessionId"/> a požadavek, a zajistí zavolání metody (callBackAction) po doběhnutí funkce.
         /// </summary>
-        /// <param name="request"></param>
-        /// <param name="callBackAction"></param>
-        private void _CallAppHostFunction(GuiRequest request, Action<AppHostResponseArgs> callBackAction)
+        /// <param name="request">Požadavek</param>
+        /// <param name="callBackAction">Odkaz na metodu, která dostane řízení po asynchronním doběhnutí akce v hostiteli</param>
+        /// <param name="userData">Libovolná další data, která chce dostat metoda (callBackAction). Tato data se nijak nezpracovávají v hostiteli.</param>
+        private void _CallAppHostFunction(GuiRequest request, Action<AppHostResponseArgs> callBackAction, object userData = null)
         {
-            if (!this._CheckAppHost(request)) return;
-            AppHostRequestArgs args = new AppHostRequestArgs(this._SessionId, request, null, null);
-            this._AppHost.CallAppHostFunction(args);
+            AppHostRequestArgs requestArgs = new AppHostRequestArgs(this._SessionId, request, userData, callBackAction);
+            if (this._VerifyAppHost(request))
+            {   // Máme-li hostitele, předáme mu požadavek. Hostitel musí zavolat callBackAction i po chybách:
+                this._AppHost.CallAppHostFunction(requestArgs);
+            }
+            else if (callBackAction != null)
+            {   // Nemáme hostitele. Pokud volající očekává vyvolání callBackAction, musíme mu ho dát:
+                this._CallBackActionErrorNoHost(requestArgs);
+            }
         }
         /// <summary>
         /// Prověří správnost zadání requestu a existenci AppHost.
@@ -187,12 +194,24 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        private bool _CheckAppHost(GuiRequest request)
+        private bool _VerifyAppHost(GuiRequest request)
         {
             if (this._HasHost) return true;
             string message = "Je vyžadováno provedení funkce IAppHost:\r\n" + request.ToString() + ",\r\nale není zadán datový hostitel.";
             System.Windows.Forms.MessageBox.Show(message);
             return false;
+        }
+        /// <summary>
+        /// Metoda zavolá metodu <see cref="AppHostRequestArgs.CallBackAction"/> a předá jí chybovou hlášku o tom, že neexistuje IAppHost.
+        /// </summary>
+        /// <param name="requestArgs"></param>
+        private void _CallBackActionErrorNoHost(AppHostRequestArgs requestArgs)
+        {
+            AppHostResponseArgs responseArgs = new AppHostResponseArgs(requestArgs);
+            responseArgs.Result = AppHostActionResult.NotResponse;
+            responseArgs.UserMessage = "Není zadán datový hostitel.";
+            responseArgs.FullMessage = "[IAppHost does not exists] " + responseArgs.UserMessage;
+            requestArgs.CallBackAction(responseArgs);
         }
         #endregion
         #region Toolbar
