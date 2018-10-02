@@ -1066,19 +1066,36 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             List<GuiGridItemId> gridItemList = new List<GuiGridItemId>();
             foreach (IInteractiveItem item in this._MainControl.Selector.SelectedItems)
             {
-                GuiGridItemId gridItem = this._GetGuiGridItem(item);
-                if (gridItem != null)
-                    gridItemList.Add(gridItem);
+                GuiGridItemId[] gridItems = this._GetGuiGridItems(item);
+                if (gridItems != null)
+                    gridItemList.AddRange(gridItems);
             }
             currentState.SelectedGraphItems = gridItemList.ToArray();
 
             return currentState;
         }
-        private GuiGridItemId _GetGuiGridItem(IInteractiveItem item)
+        /// <summary>
+        /// Metoda pro daný prvek <see cref="IInteractiveItem"/> zjistí, zda se jedná o prvek grafu. Pokud ne, pak vrací null.
+        /// Pokud ano, pak určí, zda jde o grupu nebo o jednotlivý prvek. Pro grupu najde její jednotlivé prvky.
+        /// 
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        private GuiGridItemId[] _GetGuiGridItems(IInteractiveItem item)
         {
             GTimeGraphItem graphItem = item as GTimeGraphItem;
             if (graphItem == null) return null;
+            List<ITimeGraphItem> dataItems = new List<ITimeGraphItem>();
+            switch (graphItem.Position)
+            {
+                case GGraphControlPosition.Group:
+                    dataItems.AddRange(graphItem.DataItems);
+                    break;
+                case GGraphControlPosition.Item:
 
+
+            else if ()
+                dataItems.AddRange(graphItem.DataItems);
         }
         #endregion
         #region Implementace IMainDataInternal

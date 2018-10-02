@@ -78,6 +78,11 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Více viz <see cref="ItemBackColor"/>.
         /// </summary>
         public override Color BackColor { get { return Color.Transparent; } set { } }
+        /// <summary>
+        /// Pozice tohoto prvku (Group / Item)
+        /// </summary>
+        public GGraphControlPosition Position { get { return this._Position; } }
+
         #endregion
         #region Čtení dat pro kreslení
         /// <summary>
