@@ -5,152 +5,285 @@ using System.Text;
 
 namespace Asol.Tools.WorkScheduler.Scheduler
 {
-    public class Constants
-    {
-    }
     #region class GreenClasses
     /// <summary>
-    /// 
+    /// Konstanty Helios Green
     /// </summary>
     public class GreenClasses
     {
         #region Konstanty - čísla tříd
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int SourceCharacteristic = 1141;    // Klasifikace
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int Processing = 1142;    // Zpracování
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int Workplace = 1143;    // Pracoviště
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int StandardMfrOperations = 1144;    // Standardní operace
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int ConstrElement = 1151;    // Dílec
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int StructureMod = 1153;    // K modifikace
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int ProtocolChng = 1154;    // Protokol změny
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int OperationMod = 1155;    // T modifikace
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int Structure = 1156;    // Komponenta kusovníku
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int Operation = 1157;    // Operace postupu
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int PlanUnitS = 1160;    // Plánovací jednotka S zdrojů
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int AStructureMod = 1161;    // K modifikace STPV
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int AStructure = 1162;    // Komponenta kusovníku STPV
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int AOperationMod = 1163;    // T modifikace STPV
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int AOperation = 1164;    // Operace postupu STPV
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int AStructOperRel = 1165;    // Komponenta operace STPV
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int ExpHdr = 1167;    // Uložené rozpady - Hlavička
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int StructOperRel = 1176;    // Komponenta operace
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int ResourceAllocation = 1177;    // Zdroj operace
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int MfrModulConfig = 1178;    // Konfigurace modulu Výroba
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int PlanUnitSSl = 1179;    // Plánovací jednotka S stav skladu
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int PlanUnitSAxis = 1180;    // Plánovací jednotka S osa
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int PlanUnitSAxisRel = 1183;    // Plánovací jednotka S osa vztahy
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int StockOfDep = 1184;    // Sklady útvaru
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int AlternativeSource = 1185;    // Alternativní komponenta
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int ConstrElementConfig = 1187;    // Konfigurace katalogu dílců
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int ProductOrder = 1188;    // Výrobní příkaz
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int ProductOrderStructure = 1189;    // Komponenta výrobního příkazu
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int ProductOrderOperation = 1190;    // Operace výrobního příkazu
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int ProductOrderConfig = 1191;    // Konfigurace výrobního příkazu
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int OtherCosts = 1193;    // Ostatní náklady standardní
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int OtherCostsPO = 1194;    // Ostatní náklady VP
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int AConstrElement = 1195;    // Dílec plánovací jednotky
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int MfrTariffSet = 1209;    // Sady výrobních sazeb
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int OverheadCosts = 1210;    // Režie
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int PricingComponent = 1211;    // Složka kalkulace
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int OverheadCostsSet = 1212;    // Sady režií
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int MfrTariff = 1213;    // Výrobní sazby
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int PricingPar = 1214;    // Parametry kalkulací
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int Pricing = 1215;    // Kalkulace
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int ExpStructure = 1218;    // Uložené rozpady - Kusovník
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int PricingDetail = 1219;    // Detail kalkulace
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int OperationReport = 1232;    // Odvedení operace
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int BusinessPlan = 1255;    // Obchodní plán
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int BusinessPlanConfig = 1260;    // Konfigurace obchodního plánu
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int ProductOrderCosts = 1268;    // Výrobní pohyb
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int CumulDocWIP = 1269;    // Kumulovaný doklad NV
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int AccountingStandardWIP = 1275;    // Předpis kontací NV
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int MRPProtocol = 1276;    // MRP protokol
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int OperativeWIP = 1307;    // Operativní rozpracovanost výroby
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int Reject = 1309;    // Vyřazení
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int PricingFlow = 1318;    // Postupová kalkulace
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int DefectCode = 1324;    // Kód závady
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int PriceArraySl = 1325;    // Cenový vektor stavu skladu
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int WIP = 1332;    // Nedokončená výroba
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int WIPLevel = 1335;    // Stav nedokončené výroby
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int WIPByOper = 1336;    // Nedokončená výroba po operacích
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int WIPDetail = 1337;    // Nedokončená výroba detail
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int PlanCVersion = 1362;    // Kapacitní plán verze
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int PlanUnitCTask = 1363;    // Kapacitní úkol
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int PlanUnitC = 1364;    // Kapacitní plánovací jednotka
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int PlanUnitCCl = 1365;    // Stav kapacit
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int PlanUnitSCRel = 1366;    // Kapacitní úkoly a S osa vztahy
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int PlanUnitCClRel = 1367;    // Kap. úkoly a stav kap. vztahy
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int InventuraNV = 1370;    // Inventura NV
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int KonfiguraceInventuryNV = 1374;    // Konfigurace inventury NV
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int PUSAxisLink = 1386;    // Zajištění požadavku
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int AAlternativeSource = 1390;    // Alternativní komponenta STPV
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int TestDataConsistence = 1393;    // Test konzistence dat
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int PlanCTaskLink = 1395;    // Vztahy kapacitních úkolů
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int OtherCostsDevelop = 1411;    // Ostatní náklady VTPV
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int OtherCostsRatif = 1412;    // Ostatní náklady STPV
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int CumulDocWIPConfig = 1427;    // Konfigurace kumul.dokl.NV
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int MoveTimeMatrix = 1438;    // Matice mezioperačních časů
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int AResourceAllocation = 1439;    // Zdroj operace STPV
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int ProductOrderResourceAlloc = 1441;    // Zdroj operace VP
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int RequirementCategories = 1455;    // Kategorie požadavků
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int PlanRealLink = 1482;    // Propojení plánu a reality obj.
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int ImpConstrElement = 1490;    // Dílec importního TPV
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int ImpStructure = 1491;    // Komponenta importního TPV
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int ImpOperation = 1492;    // Operace importního TPV
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int ImpOperationMod = 1493;    // T modifikace importního TPV
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int ImpKmenovaKarta = 1500;    // Kmenová karta importního TPV
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int ImpResourceAllocation = 1501;    // Zdroj operace ITPV
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int WorkEvidenceConfig = 1518;    // Konfigurace evidence činností
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int WorkEvidence = 1519;    // Evidence činností
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int ActionCode = 1520;    // Kód akce
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int TerminalData = 1521;    // Data terminálů
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int TerminalDevice = 1527;    // Terminál
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int Tools = 1535;    // Nářadí
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int ToolsType = 1542;    // Typ nářadí
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int PlanCSourceLink = 1592;    // Vztahy kap. jednotek a zdrojů
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int AlternativeOperation = 1595;    // Alternativní operace
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int AlternativeAOperation = 1596;    // Alternativní operace STPV
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int AlternativePoOperation = 1597;    // Alternativní operace VP
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int CallOffIn = 1628;    // Odvolávka přijatá
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int CallOffInConfig = 1630;    // Konfigurace odvolávek přijat.
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int CallOffInItem = 1631;    // Odvolávka přijatá položka
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int PlanUnitCPass = 1815;    // Kapacitní úkol, paralelní průchod
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int PlanUnitCTime = 1816;    // Kapacitní úkol, pracovní čas
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int PlanUnitCUnit = 1817;    // Kapacitní úkol, pracovní jednotka
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int PlanUnitCDesk = 1818;    // Stav kapacit, kapacitní linka
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int CheckPlan = 1892;    // Kontrolní plán
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int ACheckPlan = 1893;    // Kontrolní plán STPV
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int BatchNumberStatus = 1901;    // Stav šarže
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int WorkTeam = 1902;    // Pracovní tým
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int OperationReportWorkers = 1903;    // Zaměstnanci odvedení operace
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int InventoryFindWip = 1949;    // Inventurní nález NV
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int CallOffInPack = 1960;    // Odvolávka přijatá balení
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int CallOffInDeliv = 1961;    // Odvolávka přijatá dodávky
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int SchedulerConfig = 1963;    // Konfigurace modulu Scheduler
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int EDIUdajeProExpozituru = 2028;    // EDI údaje pro expozituru cizí
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int EDIUdajeDodavatele = 2029;    // EDI údaje dodavatele
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int TextFMEA = 2062;    // Text FMEA
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int FMEASTPV = 2064;    // FMEA STPV
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int FMEA = 2065;    // FMEA
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int MrpBussinesCaseInfo = 2178;    // MRP informace obch. případu
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int TextCheckPlan = 2186;    // Text kontrolního plánu
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int NonconformanceStats = 2198;    // Statistika neshod
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int WorkReportStats = 2207;    // Statistika odvedení práce
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int SumarVyrobnichPohybu = 2210;    // Sumář výrobních pohybů
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int PricingItem = 2234;    // Kalkulace položka
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int OfferBudget = 2266;    // Rozpočet nabídky
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int CallOffOut = 2296;    // Odvolávka vydaná
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int CallOffOutConfig = 2297;    // Konfigurace odvolávek vydaných
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int PricingElement = 2298;    // Položka kalkulace
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int CallOffOutItem = 2299;    // Odvolávka vydaná položka
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int PlanUnitCritical = 2391;    // Kritická položka plánu výroby
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int PricingDetailDecomp = 2409;    // Rozpad detailní kalkulace
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int BatchNumberDecomp = 2444;    // Rozpad šarže
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int AuditlogMessagesConfig = 2496;    // Konfigurace zpráv auditlogu
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int SimulCustOrderHead = 2499;    // Simulace zákaznické objednávky
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int SimulCustOrderEntry = 2500;    // Simulace zákaz. obj., položka
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int WorkshopPlan = 2540;    // Dílenský plán
 
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int ResourcesCalendar = 1196;    // Kalendář zdrojů
+        /// <summary>Konkrétní třída Helios Green</summary>
         public const int ResourcesCalendarData = 1207;    // Položky kalendáře zdrojů
         #endregion
         #region Čísla a názvy tříd Helios Green

@@ -521,6 +521,10 @@ namespace Asol.Tools.WorkScheduler.Components
     public struct RectangleD
     {
         #region Constructors, properties
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="source"></param>
         public RectangleD(RectangleD source)
         {
             this._X = source._X;
@@ -528,6 +532,10 @@ namespace Asol.Tools.WorkScheduler.Components
             this._Width = source._Width;
             this._Height = source._Height;
         }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="source"></param>
         public RectangleD(RectangleF source)
         {
             this._X = (decimal)source.X;
@@ -535,6 +543,10 @@ namespace Asol.Tools.WorkScheduler.Components
             this._Width = (decimal)source.Width;
             this._Height = (decimal)source.Height;
         }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="source"></param>
         public RectangleD(Rectangle source)
         {
             this._X = (decimal)source.X;
@@ -542,6 +554,13 @@ namespace Asol.Tools.WorkScheduler.Components
             this._Width = (decimal)source.Width;
             this._Height = (decimal)source.Height;
         }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="width"></param>
+        /// <param name="height"></param>
         public RectangleD(decimal x, decimal y, decimal width, decimal height)
         {
             this._X = x;
@@ -549,6 +568,11 @@ namespace Asol.Tools.WorkScheduler.Components
             this._Width = width;
             this._Height = height;
         }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="location"></param>
+        /// <param name="size"></param>
         public RectangleD(PointD location, SizeD size)
         {
             this._X = location.X;
@@ -556,18 +580,44 @@ namespace Asol.Tools.WorkScheduler.Components
             this._Width = size.Width;
             this._Height = size.Height;
         }
+        /// <summary>
+        /// Konstruktor statický
+        /// </summary>
+        /// <param name="point1"></param>
+        /// <param name="point2"></param>
+        /// <returns></returns>
         public static RectangleD FromPoints(PointD point1, PointD point2)
         {
             return FromLTRB(point1.X, point1.Y, point2.X, point2.Y);
         }
+        /// <summary>
+        /// Konstruktor statický
+        /// </summary>
+        /// <param name="point1"></param>
+        /// <param name="point2"></param>
+        /// <returns></returns>
         public static RectangleD FromPoints(Point point1, Point point2)
         {
             return FromLTRB(point1.X, point1.Y, point2.X, point2.Y);
         }
+        /// <summary>
+        /// Konstruktor statický
+        /// </summary>
+        /// <param name="point1"></param>
+        /// <param name="point2"></param>
+        /// <returns></returns>
         public static RectangleD FromPoints(PointF point1, PointF point2)
         {
             return FromLTRB((decimal)point1.X, (decimal)point1.Y, (decimal)point2.X, (decimal)point2.Y);
         }
+        /// <summary>
+        /// Konstruktor statický
+        /// </summary>
+        /// <param name="left"></param>
+        /// <param name="top"></param>
+        /// <param name="right"></param>
+        /// <param name="bottom"></param>
+        /// <returns></returns>
         public static RectangleD FromLTRB(decimal left, decimal top, decimal right, decimal bottom)
         {
             decimal x = (left < right ? left : right);
@@ -576,78 +626,171 @@ namespace Asol.Tools.WorkScheduler.Components
             decimal h = (top < bottom ? bottom - top : top - bottom);
             return new RectangleD(x, y, w, h);
         }
+        /// <summary>
+        /// Prázdné souřadnice (0,0,0,0)
+        /// </summary>
         public static readonly RectangleD Empty = new RectangleD();
         private decimal _X;
         private decimal _Y;
         private decimal _Width;
         private decimal _Height;
+        /// <summary>
+        /// Override HasCode
+        /// </summary>
+        /// <returns></returns>
         public override int GetHashCode()
         {
             return ((this._X.GetHashCode() << 24) ^ (this._Y.GetHashCode() << 16) ^ (this._Width.GetHashCode() << 8) ^ (this._Height.GetHashCode()));
         }
+        /// <summary>
+        /// Override Equals
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
         public override bool Equals(object obj)
         {
             if (obj == null || !(obj is RectangleD)) return false;
             RectangleD other = (RectangleD)obj;
             return (this == other);
         }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             return "{X=" + this._X.ToString() + "; Y=" + this._Y.ToString() + "; Width=" + this._Width.ToString() + "; Height=" + this._Height.ToString() + "}";
         }
+        /// <summary>
+        /// Porovnání dvou instancí
+        /// </summary>
+        /// <param name="left"></param>
+        /// <param name="right"></param>
+        /// <returns></returns>
         public static bool operator ==(RectangleD left, RectangleD right)
         {
             return (left._X == right._X && left._Y == right._Y && left._Width == right._Width && left._Height == right._Height);
         }
+        /// <summary>
+        /// Porovnání dvou instancí
+        /// </summary>
+        /// <param name="left"></param>
+        /// <param name="right"></param>
+        /// <returns></returns>
         public static bool operator !=(RectangleD left, RectangleD right)
         {
             return (left._X != right._X || left._Y != right._Y || left._Width != right._Width || left._Height == right._Height);
         }
-
+        /// <summary>
+        /// Souřadnice X
+        /// </summary>
         public decimal X { get { return this._X; } set { this._X = value; } }
+        /// <summary>
+        /// Souřadnice Y
+        /// </summary>
         public decimal Y { get { return this._Y; } set { this._Y = value; } }
+        /// <summary>
+        /// Rozměr Šířka
+        /// </summary>
         public decimal Width { get { return this._Width; } set { this._Width = value; } }
+        /// <summary>
+        /// Rozměr Výška
+        /// </summary>
         public decimal Height { get { return this._Height; } set { this._Height = value; } }
 
+        /// <summary>
+        /// Souřadnice Left = X
+        /// </summary>
         [Browsable(false)]
         public decimal Left { get { return this._X; } }
+        /// <summary>
+        /// Souřadnice Top = Y
+        /// </summary>
         [Browsable(false)]
         public decimal Top { get { return this._Y; } }
+        /// <summary>
+        /// Souřadnice Right = X + Width
+        /// </summary>
         [Browsable(false)]
         public decimal Right { get { return this._X + this._Width; } }
+        /// <summary>
+        /// Souřadnice Bottom = Y + Height
+        /// </summary>
         [Browsable(false)]
         public decimal Bottom { get { return this._Y + this._Height; } }
-        [Browsable(false)]
 
+        /// <summary>
+        /// true pokud je souřadnice celá prázdná (0,0,0,0)
+        /// </summary>
+        [Browsable(false)]
         public bool IsEmpty { get { return (this._X == 0m && this._Y == 0m && this._Width == 0m && this._Height == 0m); } }
 
+        /// <summary>
+        /// Souřadnice počátku
+        /// </summary>
         [Browsable(false)]
         public PointD Location { get { return new PointD(this._X, this._Y); } set { this._X = value.X; this._Y = value.Y; } }
+        /// <summary>
+        /// Velikost prostoru
+        /// </summary>
         [Browsable(false)]
         public SizeD Size { get { return new SizeD(this._Width, this._Height); } set { this._Width = value.Width; this._Height = value.Height; } }
+        /// <summary>
+        /// Střed prostoru
+        /// </summary>
         [Browsable(false)]
         public PointD Center { get { return new PointD(this._X + this._Width / 2m, this._Y + this._Height / 2m); } }
+        /// <summary>
+        /// Pravý dolní bod
+        /// </summary>
         [Browsable(false)]
         public PointD Last { get { return new PointD(this.Right, this.Bottom); } }
         #endregion
         #region Public methods
+        /// <summary>
+        /// Vrací true, pokud this prostor obsahuje daný bod, body na koncové souřadnici (Right, Bottom) se nepočítají
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <returns></returns>
         public bool Contains(decimal x, decimal y)
         {
             return this._Contains(x, y, false);
         }
+        /// <summary>
+        /// Vrací true, pokud this prostor obsahuje daný bod, body na koncové souřadnici (Right, Bottom) se nepočítají
+        /// </summary>
+        /// <param name="point"></param>
+        /// <returns></returns>
         public bool Contains(PointD point)
         {
             return this._Contains(point.X, point.Y, false);
         }
+        /// <summary>
+        /// Vrací true, pokud this prostor obsahuje jiný daný prostor, zcela
+        /// </summary>
+        /// <param name="rect"></param>
+        /// <returns></returns>
         public bool Contains(RectangleD rect)
         {
             return (this._Contains(rect._X, rect._Y, false) && this._Contains(rect.Right, rect.Bottom, true));
         }
+        /// <summary>
+        /// Vrací true, pokud this prostor obsahuje daný bod, body na koncové souřadnici (Right, Bottom) se počítají podle parametru includeEnd
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="includeEnd"></param>
+        /// <returns></returns>
         private bool _Contains(decimal x, decimal y, bool includeEnd)
         {
             return (x >= this._X && (x < this.Right || (includeEnd && x == this.Right)) &&
                     y >= this._Y && (y < this.Bottom || (includeEnd && y == this.Bottom)));
         }
+        /// <summary>
+        /// Zvětší this prostor o danou velikost na každou stranu
+        /// </summary>
+        /// <param name="size"></param>
         public void Inflate(SizeD size)
         {
             this._X -= size.Width;
@@ -655,6 +798,11 @@ namespace Asol.Tools.WorkScheduler.Components
             this._Width += (size.Width + size.Width);
             this._Height += (size.Height + size.Height);
         }
+        /// <summary>
+        /// Zvětší this prostor o danou velikost na každou stranu
+        /// </summary>
+        /// <param name="width"></param>
+        /// <param name="height"></param>
         public void Inflate(decimal width, decimal height)
         {
             this._X -= width;
@@ -662,20 +810,39 @@ namespace Asol.Tools.WorkScheduler.Components
             this._Width += (width + width);
             this._Height += (height + height);
         }
+        /// <summary>
+        /// Vrátí daný prostor zvětšený o danou velikost na každou stranu
+        /// </summary>
+        /// <param name="rect"></param>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <returns></returns>
         public static RectangleD Inflate(RectangleD rect, decimal x, decimal y)
         {
             return new RectangleD(rect.X - x, rect.Y - y, rect.Width + 2m * x, rect.Height + 2m * y);
         }
-        public void Offset(PointD pos)
+        /// <summary>
+        /// Posunout this prostor o daný offset
+        /// </summary>
+        /// <param name="offset"></param>
+        public void Move(PointD offset)
         {
-            this._X += pos.X;
-            this._Y += pos.Y;
+            this._X += offset.X;
+            this._Y += offset.Y;
         }
-        public void Offset(decimal x, decimal y)
+        /// <summary>
+        /// Posunout this prostor o daný offset
+        /// </summary>
+        /// <param name="offsetX"></param>
+        /// <param name="offsetY"></param>
+        public void Move(decimal offsetX, decimal offsetY)
         {
-            this._X += x;
-            this._Y += y;
-        }
+            this._X += offsetX;
+            this._Y += offsetY;
+        }/// <summary>
+        /// Ořízne this prostor daným jiným prostorem
+        /// </summary>
+        /// <param name="rect"></param>
         public void Intersect(RectangleD rect)
         {
             decimal x, y, r, b;
@@ -684,6 +851,12 @@ namespace Asol.Tools.WorkScheduler.Components
             else
                 this._Set(x, y, r - x, b - y);
         }
+        /// <summary>
+        /// Vrátí průsečík dvou prostorů
+        /// </summary>
+        /// <param name="r1"></param>
+        /// <param name="r2"></param>
+        /// <returns></returns>
         public static RectangleD Intersect(RectangleD r1, RectangleD r2)
         {
             decimal x, y, r, b;
@@ -856,10 +1029,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public static Vector Empty { get { return new Vector(); } }
         /// <summary>
-        /// Vrátí úhel v rozsahu 0 (včetně) až 360 (mimo)
+        /// Maximální úhel ve stupních = 360d
         /// </summary>
-        /// <param name="angle"></param>
-        /// <returns></returns>
         public static double ANGLE_MAX = 360d;
         /// <summary>
         /// Vloží úhel a délku vektoru. Zápornou délku obrátí do opačného úhlu.
@@ -959,30 +1130,69 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         #endregion
         #region Operátory, HashCode a Equals
+        /// <summary>
+        /// Je rovno?
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public static bool operator ==(Vector a, Vector b)
         {
             return (a._Angle == b._Angle && a._Length == b._Length);
         }
+        /// <summary>
+        /// Není rovno?
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public static bool operator !=(Vector a, Vector b)
         {
             return (a._Angle != b._Angle || a._Length != b._Length);
         }
+        /// <summary>
+        /// Součet vektorů
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public static Vector operator +(Vector a, Vector b)
         {
             return new Vector(a.TargetD + b.TargetD);
         }
+        /// <summary>
+        /// Rozdíl vektorů
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public static Vector operator -(Vector a, Vector b)
         {
             return new Vector(a.TargetD - b.TargetD);
         }
+        /// <summary>
+        /// Násobení Length vektoru daným koeficientem
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="coefficient"></param>
+        /// <returns></returns>
         public static Vector operator *(Vector a, double coefficient)
         {
             return new Vector(a._Angle, coefficient * a._Length);
         }
+        /// <summary>
+        /// Override HashCode
+        /// </summary>
+        /// <returns></returns>
         public override int GetHashCode()
         {
             return (this._Angle.GetHashCode() << 16) | (this._Length.GetHashCode());
         }
+        /// <summary>
+        /// Override Equals
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
         public override bool Equals(object obj)
         {
             if (!(obj is Vector)) return false;

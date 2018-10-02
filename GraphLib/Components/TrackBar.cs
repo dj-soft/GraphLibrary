@@ -442,16 +442,39 @@ namespace Asol.Tools.WorkScheduler.Components
                         break;
                 }
             }
+            /// <summary>
+            /// Vrací hodnotou pro daný bod
+            /// </summary>
+            /// <param name="point"></param>
+            /// <returns></returns>
             protected Decimal GetValueForPoint(Point point)
             {
                 return 0m;
             }
+            /// <summary>
+            /// Vrací bod pro danou hodnotu
+            /// </summary>
+            /// <param name="value"></param>
+            /// <returns></returns>
             protected Point GetPointForValue(Decimal value)
             {
                 return Point.Empty;
             }
+            /// <summary>
+            /// Boud myši
+            /// </summary>
             protected Point? MouseOverPoint { get; set; }
+            /// <summary>
+            /// Bod přetahování
+            /// </summary>
             protected Point? MouseDragPoint { get; set; }
+            /// <summary>
+            /// Vykreslení
+            /// </summary>
+            /// <param name="e"></param>
+            /// <param name="absoluteBounds"></param>
+            /// <param name="absoluteVisibleBounds"></param>
+            /// <param name="drawMode"></param>
             protected void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
             {
                 Rectangle trackBounds = absoluteBounds.Enlarge(-6, -5, -7, -5);

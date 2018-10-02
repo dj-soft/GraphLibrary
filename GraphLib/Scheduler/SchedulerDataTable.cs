@@ -284,14 +284,37 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                             this.TimeGraphItemDict.Add(dataGraphItem.ItemGId, dataGraphItem);
 
                         GTimeGraph gTimeGraph;
-                        if (this.TimeGraphDict.TryGetValue(dataGraphItem.ParentGId, out gTimeGraph))
+                        if (this.TimeGraphDict.TryGetValue(dataGraphItem.RowGId, out gTimeGraph))
                             gTimeGraph.ItemList.Add(dataGraphItem);
                     }
                 }
             }
         }
+
         /// <summary>
-        /// 
+        /// Metoda pro daný prvek <see cref="IInteractiveItem"/> zjistí, zda se jedná o prvek grafu <see cref="GTimeGraphItem"/>. Pokud ne, pak vrací null.
+        /// Pokud ano, pak z vizuálního prvku grafu načte všechny datové prvky grafu = kolekce <see cref="ITimeGraphItem"/>.
+        /// Najde odpovídající Schedulerovou tabulku, do které patří daný prvek grafu <see cref="MainDataTable"/>.
+        /// Z tabulky <see cref="MainDataTable"/> si nechá určit identifikátory <see cref="GuiGridItemId"/> nalezených prvků grafů, a ty vrátí.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="wholeGroup">Vrátit všechny prvky i tehdy, když daný prvek reprezentuje jednu položku?</param>
+        /// <returns></returns>
+        public static GuiGridItemId[] GetGuiGridItems(IInteractiveItem item, bool wholeGroup)
+        {
+            GTimeGraphItem graphItem = item as GTimeGraphItem;
+            if (graphItem == null) return null;
+            ITimeGraphItem[] dataItems = graphItem.GetDataItems(wholeGroup);             // Najdu datové prvky odpovídající vizuálnímu prvku, najdu všechny prvky grupy
+            if (dataItems == null || dataItems.Length == 0) return null;
+            GTable gTable = graphItem.SearchForParent(typeof(GTable)) as GTable;         // Najdu vizuální tabulku, v níž daný prvek grafu bydlí
+            if (gTable == null) return null;
+            MainDataTable mainDataTable = gTable.DataTable.UserData as MainDataTable;    // Ve vizuální tabulce najdu její datový základ, a jeho UserData by měla být instance MainDataTable
+            if (mainDataTable == null) return null;
+
+            return mainDataTable.GetGuiGridItems(dataItems);                             // Instance MainDataTable vrátí identifikátory předaných prvků.
+        }
+        /// <summary>
+        /// Metoda pro dané prvky <see cref="ITimeGraphItem"/> najde a vrátí pole jejich identifikátorů <see cref="GuiGridItemId"/>.
         /// </summary>
         /// <param name="dataItems"></param>
         /// <returns></returns>
@@ -388,7 +411,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         protected Row GetTableInfoRow(DataGraphItem graphItem)
         {
             if (graphItem == null) return null;
-            return this.GetTableInfoRow(graphItem.ItemGId, graphItem.GroupGId, graphItem.DataGId, graphItem.ParentGId);
+            return this.GetTableInfoRow(graphItem.ItemGId, graphItem.GroupGId, graphItem.DataGId, graphItem.RowGId);
         }
         /// <summary>
         /// Metoda se pokusí najít první řádek z tabulky INFO, obsahující textové informace pro některý GID.
@@ -526,7 +549,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 if (isChangeRow)
                 {
                     data.SourceGraph.ItemList.Remove(item);
-                    item.ParentGId = data.TargetRow;
+                    item.RowGId = data.TargetRow;
                     data.TargetGraph.ItemList.Add(item);
                 }
                 if (isChangeTime)
@@ -799,7 +822,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             gridItemId.TableName = this.GuiGrid.FullName;            // Konstantní jméno FullName this tabulky (třída GuiGrid)
             if (graphItem != null)
             {   // Pokud mám prvek, pak do resultu vložím jeho GId (převedené na GuiId):
-                gridItemId.RowId = graphItem.ParentGId;              // Parentem je GID řádku
+                gridItemId.RowId = graphItem.RowGId;              // Parentem je GID řádku
                 gridItemId.ItemId = graphItem.ItemGId;
                 gridItemId.GroupId = graphItem.GroupGId;
                 gridItemId.DataId = graphItem.DataGId;
@@ -915,7 +938,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             DataGraphItem item = new DataGraphItem(graphTable, guiGraphItem);
             // Struktura řádku: parent_rec_id int; parent_class_id int; item_rec_id int; item_class_id int; group_rec_id int; group_class_id int; data_rec_id int; data_class_id int; layer int; level int; is_user_fixed int; time_begin datetime; time_end datetime; height decimal; back_color string; join_back_color string; data string
             item._ItemGId = guiGraphItem.ItemId;           // Mezi typy GuiId (=Green) a GId (GraphLibrary) existuje implicitní konverze.
-            item._ParentGId = guiGraphItem.ParentRowId;    //  Takže do zdejších properties se vytvoří new instance GUid, obsahující stejná data jako vstupní GuiId.
+            item._RowGId = guiGraphItem.RowId;             //  Takže do zdejších properties se vytvoří new instance GUid, obsahující stejná data jako vstupní GuiId.
             item._GroupGId = guiGraphItem.GroupId;         //  Další důsledek je ten, že zdejší data lze změnit = přemístit na jiný řádek, například.
             item._DataGId = guiGraphItem.DataId;
             item._Time = guiGraphItem.Time;                // Existuje implicitní konverze mezi typy TimeRange a GuiTimeRange.
@@ -962,7 +985,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Řádek, kde je prvek vykreslen
         /// </summary>
-        private GId _ParentGId;
+        private GId _RowGId;
         /// <summary>
         /// GId prvku, pochází z datového zdroje, obsahuje číslo třídy a záznamu
         /// </summary>
@@ -1007,10 +1030,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         public GId ItemGId { get { return this._ItemGId; } }
         /// <summary>
-        /// Veřejný identifikátor MAJITELE PRVKU (obsahuje číslo třídy a číslo záznamu).
+        /// Veřejný identifikátor řádku, kam prvek patří (obsahuje číslo třídy a číslo záznamu).
         /// Může jít o Kapacitní plánovací jednotku.
         /// </summary>
-        public GId ParentGId { get { return this._ParentGId; } set { this._ParentGId = value; } }
+        public GId RowGId { get { return this._RowGId; } set { this._RowGId = value; } }
         /// <summary>
         /// Veřejný identifikátor SKUPINY PRVKU (obsahuje číslo třídy a číslo záznamu).
         /// Může jít o záznam třídy Paralelní průchod.
@@ -1025,7 +1048,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Veřejný identifikátor ZÁZNAMU K OTEVŘENÍ: obsahuje číslo třídy a číslo záznamu.
         /// Jako <see cref="RecordGId"/> se vrací nejvhodnější identifikátor, který má být otevřen po provedení Ctrl + DoubleClick na tomto prvku.
         /// Pokud je zadán <see cref="DataGId"/>, vrací se ten. Jako další se může vrátit <see cref="ItemGId"/> anebo <see cref="GroupGId"/>; v tomto pořadí.
-        /// Ale nevrací se <see cref="ParentGId"/> (to je řádek, nikoli prvek).
+        /// Ale nevrací se <see cref="RowGId"/> (to je řádek, nikoli prvek).
         /// Může být null, pokud nic z uvedeného není zadané.
         /// </summary>
         public GId RecordGId

@@ -7,63 +7,138 @@ using Asol.Tools.WorkScheduler.Data;
 namespace Asol.Tools.WorkScheduler.Application
 {
     /// <summary>
-    /// Trace : class for write trace informations
+    /// Trace : třída pro zapisování údajů do trace
     /// </summary>
     public class Trace
     {
         #region Public: TraceInfo, Flush, End
+        /// <summary>
+        /// Zapíše Informaci
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="method"></param>
+        /// <param name="result"></param>
+        /// <param name="items"></param>
         public void Info(string type, string method, string result, params string[] items)
         {
             if (App.TraceForPriority(TracePriority.Priority5_Normal))
                 this._TraceWrite(null, LEVEL_INFO, "", type, method, result, false, items);
         }
+        /// <summary>
+        /// Zapíše Informaci
+        /// </summary>
+        /// <param name="priority"></param>
+        /// <param name="type"></param>
+        /// <param name="method"></param>
+        /// <param name="result"></param>
+        /// <param name="items"></param>
         public void Info(TracePriority priority, string type, string method, string result, params string[] items)
         {
             if (App.TraceForPriority(priority))
                 this._TraceWrite(null, LEVEL_INFO, "", type, method, result, false, items);
         }
+        /// <summary>
+        /// Zapíše Informaci, ihned
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="method"></param>
+        /// <param name="result"></param>
+        /// <param name="items"></param>
         public void InfoNow(string type, string method, string result, params string[] items)
         {
             if (App.TraceForPriority(TracePriority.Priority5_Normal))
                 this._TraceWrite(null, LEVEL_INFO, "", type, method, result, true, items);
         }
+        /// <summary>
+        /// Zapíše Informaci, ihned
+        /// </summary>
+        /// <param name="priority"></param>
+        /// <param name="type"></param>
+        /// <param name="method"></param>
+        /// <param name="result"></param>
+        /// <param name="items"></param>
         public void InfoNow(TracePriority priority, string type, string method, string result, params string[] items)
         {
             if (App.TraceForPriority(priority))
                 this._TraceWrite(null, LEVEL_INFO, "", type, method, result, true, items);
         }
+        /// <summary>
+        /// Zapíše Warning
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="method"></param>
+        /// <param name="result"></param>
+        /// <param name="items"></param>
         public void Warning(string type, string method, string result, params string[] items)
         {
             if (App.TraceForPriority(TracePriority.Priority5_Normal))
                 this._TraceWrite(null, LEVEL_WARNING, "", type, method, result, false, items);
         }
+        /// <summary>
+        /// Zapíše Warning
+        /// </summary>
+        /// <param name="priority"></param>
+        /// <param name="type"></param>
+        /// <param name="method"></param>
+        /// <param name="result"></param>
+        /// <param name="items"></param>
         public void Warning(TracePriority priority, string type, string method, string result, params string[] items)
         {
             if (App.TraceForPriority(priority))
                 this._TraceWrite(null, LEVEL_WARNING, "", type, method, result, false, items);
         }
+        /// <summary>
+        /// Zapíše Warning, ihned
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="method"></param>
+        /// <param name="result"></param>
+        /// <param name="items"></param>
         public void WarningNow(string type, string method, string result, params string[] items)
         {
             if (App.TraceForPriority(TracePriority.Priority5_Normal))
                 this._TraceWrite(null, LEVEL_WARNING, "", type, method, result, true, items);
         }
+        /// <summary>
+        /// Zapíše Warning, ihned
+        /// </summary>
+        /// <param name="priority"></param>
+        /// <param name="type"></param>
+        /// <param name="method"></param>
+        /// <param name="result"></param>
+        /// <param name="items"></param>
         public void WarningNow(TracePriority priority, string type, string method, string result, params string[] items)
         {
             if (App.TraceForPriority(priority))
                 this._TraceWrite(null, LEVEL_WARNING, "", type, method, result, true, items);
         }
+        /// <summary>
+        /// Zapíše Error
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="method"></param>
+        /// <param name="result"></param>
+        /// <param name="items"></param>
         public void Error(string type, string method, string result, params string[] items)
         {
             if (App.TraceForPriority(TracePriority.Priority5_Normal))
                 this._TraceWrite(null, LEVEL_ERROR, "", type, method, result, true, items);
         }
+        /// <summary>
+        /// Zapíše Error
+        /// </summary>
+        /// <param name="priority"></param>
+        /// <param name="type"></param>
+        /// <param name="method"></param>
+        /// <param name="result"></param>
+        /// <param name="items"></param>
         public void Error(TracePriority priority, string type, string method, string result, params string[] items)
         {
             if (App.TraceForPriority(priority))
                 this._TraceWrite(null, LEVEL_ERROR, "", type, method, result, true, items);
         }
         /// <summary>
-        /// Perform Flush on stream of trace file
+        /// Provede Flush na výstupní soubor
         /// </summary>
         public void Flush()
         {
@@ -78,6 +153,11 @@ namespace Asol.Tools.WorkScheduler.Application
         }
         #endregion
         #region Exception
+        /// <summary>
+        /// Zapíše Exception + informace
+        /// </summary>
+        /// <param name="exc"></param>
+        /// <param name="items"></param>
         public void Exception(Exception exc, params string[] items)
         {
             if (exc == null) return;
@@ -98,21 +178,55 @@ namespace Asol.Tools.WorkScheduler.Application
         }
         #endregion
         #region Scope
+        /// <summary>
+        /// Otevře Scope (dá Begin), jehož Dispose zapíše párový End
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="method"></param>
+        /// <param name="result"></param>
+        /// <param name="items"></param>
+        /// <returns></returns>
         public ITraceScope Scope(string type, string method, string result, params string[] items)
         {
             bool isReal = App.TraceForPriority(TracePriority.Priority5_Normal);
             return TraceScope.GetScope(this, false, isReal, type, method, result, items);
         }
+        /// <summary>
+        /// Otevře Scope (dá Begin), jehož Dispose zapíše párový End
+        /// </summary>
+        /// <param name="priority"></param>
+        /// <param name="type"></param>
+        /// <param name="method"></param>
+        /// <param name="result"></param>
+        /// <param name="items"></param>
+        /// <returns></returns>
         public ITraceScope Scope(TracePriority priority, string type, string method, string result, params string[] items)
         {
             bool isReal = App.TraceForPriority(priority);
             return TraceScope.GetScope(this, false, isReal, type, method, result, items);
         }
+        /// <summary>
+        /// Otevře Scope (dá Begin), ihned, jehož Dispose zapíše párový End
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="method"></param>
+        /// <param name="result"></param>
+        /// <param name="items"></param>
+        /// <returns></returns>
         public ITraceScope ScopeNow(string type, string method, string result, params string[] items)
         {
             bool isReal = App.TraceForPriority(TracePriority.Priority5_Normal);
             return TraceScope.GetScope(this, true, isReal, type, method, result, items);
         }
+        /// <summary>
+        /// Otevře Scope (dá Begin), ihned, jehož Dispose zapíše párový End
+        /// </summary>
+        /// <param name="priority"></param>
+        /// <param name="type"></param>
+        /// <param name="method"></param>
+        /// <param name="result"></param>
+        /// <param name="items"></param>
+        /// <returns></returns>
         public ITraceScope ScopeNow(TracePriority priority, string type, string method, string result, params string[] items)
         {
             bool isReal = App.TraceForPriority(priority);
@@ -434,7 +548,7 @@ namespace Asol.Tools.WorkScheduler.Application
         /// <summary>
         /// Scan existing trace file (within Stream) for last Line and last Pair value, store its into 
         /// </summary>
-        /// <param name="file"></param>
+        /// <param name="reader"></param>
         private void _TraceAnalyse(System.IO.StreamReader reader)
         {
             if (reader.BaseStream == null) return;
@@ -489,6 +603,9 @@ namespace Asol.Tools.WorkScheduler.Application
             }
             return result;
         }
+        /// <summary>
+        /// Titulkový řádek trace
+        /// </summary>
         public static string TraceTitle { get { return "Line;Date;Time;Microsec;Thread;Level;Scope;Object;Method;Result;Info".Replace(";", "\t"); } }
         private bool _TraceIsActive { get { return (!this._TraceIsDisable && this._TraceStream != null); } }
         private bool _TraceIsDisable;
@@ -510,14 +627,23 @@ namespace Asol.Tools.WorkScheduler.Application
         private long _TraceLastTick;
         #endregion
         #region Constants
+        /// <summary>Konkrétní konstanta do sloupce Level</summary>
         protected const string LEVEL_RUN = "Run";
+        /// <summary>Konkrétní konstanta do sloupce Level</summary>
         protected const string LEVEL_EXIT = "Exit";
+        /// <summary>Konkrétní konstanta do sloupce Level</summary>
         protected const string LEVEL_INFO = "Info";
+        /// <summary>Konkrétní konstanta do sloupce Level</summary>
         protected const string LEVEL_WARNING = "Warn";
+        /// <summary>Konkrétní konstanta do sloupce Level</summary>
         protected const string LEVEL_ERROR = "Error";
+        /// <summary>Konkrétní konstanta do sloupce Level</summary>
         protected const string LEVEL_EXCEPTION = "Exception";
+        /// <summary>Konkrétní konstanta do sloupce Level</summary>
         protected const string LEVEL_EXCEPTION_INFO = "ExceptionInfo";
+        /// <summary>Konkrétní konstanta do sloupce Level</summary>
         protected const string LEVEL_SCOPE_BEGIN = "Begin";
+        /// <summary>Konkrétní konstanta do sloupce Level</summary>
         protected const string LEVEL_SCOPE_END = "End";
         #endregion
     }

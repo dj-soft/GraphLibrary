@@ -441,10 +441,25 @@ namespace Asol.Tools.WorkScheduler.Data
             result.AddRange(appendItems);
             return result;
         }
+        /// <summary>
+        /// Vrátí nejbližší následující prvek z kolekce
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="collection"></param>
+        /// <param name="currentItem"></param>
+        /// <returns></returns>
         public static T GetNearestItem<T>(this IEnumerable<T> collection, T currentItem)
         {
             return GetNearestItem(collection, currentItem, Direction.Positive);
         }
+        /// <summary>
+        /// Vrátí nejbližší sousední prvek z kolekce
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="collection"></param>
+        /// <param name="currentItem"></param>
+        /// <param name="nearestSide"></param>
+        /// <returns></returns>
         public static T GetNearestItem<T>(this IEnumerable<T> collection, T currentItem, Data.Direction nearestSide)
         {
             if (collection == null) return default(T);
@@ -593,6 +608,26 @@ namespace Asol.Tools.WorkScheduler.Data
                     if (dictionary.Count == 0)
                         return;
                 }
+            }
+        }
+        /// <summary>
+        /// Metoda do this Dictionary přidá nové prvky z pole items (tj. ty, které tam dosud nejsou), na základě klíče prvku, vytvořeného pomocí funkce (keySelector).
+        /// </summary>
+        /// <typeparam name="TKey"></typeparam>
+        /// <typeparam name="TValue"></typeparam>
+        /// <param name="dictionary"></param>
+        /// <param name="items"></param>
+        /// <param name="keySelector"></param>
+        public static void AddNewItems<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, IEnumerable<TValue> items, Func<TValue, TKey> keySelector)
+        {
+            if (dictionary == null || items == null || keySelector == null) return;
+            foreach (TValue item in items)
+            {
+                if (item == null) continue;
+                TKey key = keySelector(item);
+                if (key == null) continue;
+                if (!dictionary.ContainsKey(key))
+                    dictionary.Add(key, item);
             }
         }
         #endregion

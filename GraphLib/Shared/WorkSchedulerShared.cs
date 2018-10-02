@@ -833,12 +833,12 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Obsahuje sloupce, které jsou povinné.
         /// Pokud dodaná data nebudou obsahovat některý z uvedených sloupců, načítání se neprovede.
         /// </summary>
-        public const string StructureLiable = "item_class_id int, item_record_id int, parent_class_id int, parent_record_id int, begin datetime, end datetime";
+        public const string StructureLiable = "item_class_id int, item_record_id int, row_class_id int, row_record_id int, begin datetime, end datetime";
         /// <summary>
         /// Obsahuje všechny sloupce, které jsou načítané do dat třídy <see cref="GuiGraphItem"/>, tj. i ty nepovinné.
         /// </summary>
         public const string StructureFull =
-                    "item_class_id int, item_record_id int, parent_class_id int, parent_record_id int, " +
+                    "item_class_id int, item_record_id int, row_class_id int, row_record_id int, " +
                     "group_class_id int, group_record_id int, data_class_id int, data_record_id int, " +
                     "begin datetime, end datetime, " +
                     "layer int, level int, order int, height float, " +
@@ -860,9 +860,9 @@ namespace Noris.LCS.Base.WorkScheduler
         public GuiId ItemId { get; set; }
         /// <summary>
         /// ID řádku, v jehož grafu se má tento prvek zobrazovat.
-        /// Z databáze se načítá ze sloupců: "parent_class_id", "parent_record_id", je POVINNÝ.
+        /// Z databáze se načítá ze sloupců: "row_class_id", "row_record_id", je POVINNÝ.
         /// </summary>
-        public GuiId ParentRowId { get; set; }
+        public GuiId RowId { get; set; }
         /// <summary>
         /// GroupId: číslo skupiny. Prvky se shodným GroupId budou vykreslovány do společného "rámce", 
         /// a pokud mezi jednotlivými prvky grafu se shodným <see cref="GroupId"/> bude na ose X nějaké volné místo,
@@ -2769,7 +2769,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <summary>
         /// Struktura tabulky "Table.Graph"
         /// </summary>
-        public const string DATA_TABLE_GRAPH_STRUCTURE = "parent_rec_id int; parent_class_id int; item_rec_id int; item_class_id int; group_rec_id int; group_class_id int; data_rec_id int; data_class_id int; layer int; level int; is_user_fixed int; time_begin datetime; time_end datetime; height decimal; ratio decimal; back_color string; join_back_color string; data string";
+        public const string DATA_TABLE_GRAPH_STRUCTURE = "row_rec_id int; row_class_id int; item_rec_id int; item_class_id int; group_rec_id int; group_class_id int; data_rec_id int; data_class_id int; layer int; level int; is_user_fixed int; time_begin datetime; time_end datetime; height decimal; ratio decimal; back_color string; join_back_color string; data string";
 
         /// <summary>
         /// Název GUI obsahu: nic

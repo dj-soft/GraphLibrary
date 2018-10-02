@@ -297,7 +297,7 @@ namespace Asol.Tools.WorkScheduler.Components
             RectangleD documentL = this.DocumentBounds;
 
             RectangleD shadowL = documentL;
-            shadowL.Offset(2.5m, 2.5m);
+            shadowL.Move(2.5m, 2.5m);
             Rectangle? shadowP = this.ConvertToPixelFromLogical(shadowL);
             if (!shadowP.HasValue) return;
             graphics.FillRectangle(Brushes.Black, shadowP.Value);

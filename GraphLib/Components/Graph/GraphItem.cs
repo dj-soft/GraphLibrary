@@ -92,7 +92,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Pokud this prvek je typu <see cref="Position"/> == <see cref="GGraphControlPosition.Item"/>, pak se řídí parametrem wholeGroup:
         /// a) true = najde všechny prvky své skupiny; b) false = vrátí jen svůj datový prvek.
         /// </summary>
-        /// <param name="wholeGroup"></param>
+        /// <param name="wholeGroup">Vrátit všechny prvky i tehdy, když daný prvek reprezentuje jednu položku?</param>
         /// <returns></returns>
         public ITimeGraphItem[] GetDataItems(bool wholeGroup)
         {

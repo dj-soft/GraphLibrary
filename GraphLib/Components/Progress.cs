@@ -6,8 +6,15 @@ using System.Drawing;
 
 namespace Asol.Tools.WorkScheduler.Components
 {
+    /// <summary>
+    /// Třída pro zobrazení okna postupu operace
+    /// </summary>
     public class ProgressItem : InteractiveContainer
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="host"></param>
         public ProgressItem(GInteractiveControl host)
         {
             this._ProgressData = new ProgressData();
@@ -25,21 +32,65 @@ namespace Asol.Tools.WorkScheduler.Components
             get { return this._ProgressData; }
             set { this._ProgressData = value; }
         }
+        /// <summary>
+        /// true = máme data
+        /// </summary>
         protected bool HasData { get { return (this._ProgressData != null); } }
+        /// <summary>
+        /// Stav postupu
+        /// </summary>
         protected float DataRatio { get { return (this.HasData ? this._ProgressData.Ratio : 0f); } }
+        /// <summary>
+        /// Lze dát Storno?
+        /// </summary>
         protected bool DataCanCancel { get { return (this.HasData ? this._ProgressData.CanCancel : false); } }
+        /// <summary>
+        /// Bylo dáno Storno?
+        /// </summary>
         protected bool DataIsCancelled { get { return (this.HasData ? this._ProgressData.IsCancelled : false); } }
+        /// <summary>
+        /// Průhlednost
+        /// </summary>
         protected Int32? DataOpacity { get { return (this.HasData ? this._ProgressData.Opacity : null); } }
+        /// <summary>
+        /// Barva pozadí
+        /// </summary>
         protected Color DataBackColor { get { return (this.HasData && this._ProgressData.BackColor.HasValue ? this._ProgressData.BackColor.Value : this.DefaultBackColor).SetOpacity(this.DataOpacity); } }
+        /// <summary>
+        /// Barva popředí
+        /// </summary>
         protected Color DataForeColor { get { return (this.HasData && this._ProgressData.ForeColor.HasValue ? this._ProgressData.ForeColor.Value : this.DefaultForeColor); } }
+        /// <summary>
+        /// Barva pozadí progresu
+        /// </summary>
         protected Color DataProgressBackColor { get { return (this.HasData && this._ProgressData.ProgressBackColor.HasValue ? this._ProgressData.ProgressBackColor.Value : this.DefaultProgressBackColor).SetOpacity(this.DataOpacity); } }
+        /// <summary>
+        /// Barva popředí progresu
+        /// </summary>
         protected Color DataProgressForeColor { get { return (this.HasData && this._ProgressData.ProgressForeColor.HasValue ? this._ProgressData.ProgressForeColor.Value : this.DefaultProgressForeColor); } }
+        /// <summary>
+        /// Text v progresu
+        /// </summary>
         protected string DataInfoCurrent { get { return (this.HasData ? this._ProgressData.InfoCurrent : null); } }
+        /// <summary>
+        /// Řada předešlých textů
+        /// </summary>
         protected List<string> DataInfoPrevious { get { return (this.HasData ? this._ProgressData.InfoPrevious : null); } }
-
+        /// <summary>
+        /// Výchozí barva pozadí
+        /// </summary>
         protected override Color DefaultBackColor { get { return Color.DarkOrchid; } }
+        /// <summary>
+        /// Výchozí barva popředí
+        /// </summary>
         protected Color DefaultForeColor { get { return this.DataBackColor.Contrast(); } }
+        /// <summary>
+        /// Výchozí barva pozadí progresu
+        /// </summary>
         protected Color DefaultProgressBackColor { get { return Color.LightGray; } }
+        /// <summary>
+        /// Výchozí barva popředí progresu
+        /// </summary>
         protected Color DefaultProgressForeColor { get { return Color.MediumBlue; } }
         #endregion
         /// <summary>
@@ -60,6 +111,10 @@ namespace Asol.Tools.WorkScheduler.Components
             Rectangle bounds = hostBounds.Center().CreateRectangleFromCenter(size);
             this.Bounds = bounds;
         }
+        /// <summary>
+        /// Po změně stavu
+        /// </summary>
+        /// <param name="e"></param>
         protected override void AfterStateChanged(GInteractiveChangeStateArgs e)
         {
             base.AfterStateChanged(e);
@@ -125,9 +180,15 @@ namespace Asol.Tools.WorkScheduler.Components
             return percent.ToString("##0.0").Trim() + " %";
         }
     }
+    /// <summary>
+    /// Data progresu = nevizuální čistý datový objekt
+    /// </summary>
     public class ProgressData
     {
         #region Private variables
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public ProgressData()
         {
             this.Reset();
@@ -247,6 +308,5 @@ namespace Asol.Tools.WorkScheduler.Components
             get { return this._InfoPrevious; }
             set { this._InfoPrevious = value; }
         }
-
     }
 }

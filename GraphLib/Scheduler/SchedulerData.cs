@@ -1063,37 +1063,24 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             GuiRequestCurrentState currentState = new GuiRequestCurrentState();
             currentState.TimeAxisValue = this._MainControl.SynchronizedTime.Value;
-
-            List<GuiGridItemId> gridItemList = new List<GuiGridItemId>();
-            foreach (IInteractiveItem item in this._MainControl.Selector.SelectedItems)
-            {
-                GuiGridItemId[] gridItems = this._GetGuiGridItems(item);
-                if (gridItems != null)
-                    gridItemList.AddRange(gridItems);
-            }
-            currentState.SelectedGraphItems = gridItemList.ToArray();
+            currentState.SelectedGraphItems = this._CreateGuiCurrentSelectedGraphItems();
 
             return currentState;
         }
         /// <summary>
-        /// Metoda pro daný prvek <see cref="IInteractiveItem"/> zjistí, zda se jedná o prvek grafu. Pokud ne, pak vrací null.
-        /// Pokud ano, pak určí, zda jde o grupu nebo o jednotlivý prvek. Pro grupu najde její jednotlivé prvky.
-        /// 
+        /// Metoda najde všechny aktuálně vybrané prvky grafů v GUI (s pomocí instance <see cref="Selector"/>),
+        /// a vrátí pole jejich identifikátorů <see cref="GuiGridItemId"/>.
         /// </summary>
-        /// <param name="item"></param>
         /// <returns></returns>
-        private GuiGridItemId[] _GetGuiGridItems(IInteractiveItem item)
+        private GuiGridItemId[] _CreateGuiCurrentSelectedGraphItems()
         {
-            GTimeGraphItem graphItem = item as GTimeGraphItem;
-            if (graphItem == null) return null;
-            ITimeGraphItem[] dataItems = graphItem.GetDataItems(true);                   // Najdu datové prvky odpovídající vizuálnímu prvku, najdu všechny prvky grupy
-            if (dataItems == null || dataItems.Length == 0) return null;
-            GTable gTable = graphItem.SearchForParent(typeof(GTable)) as GTable;         // Najdu vizuální tabulku, v níž daný prvek grafu bydlí
-            if (gTable == null) return null;
-            MainDataTable mainDataTable = gTable.DataTable.UserData as MainDataTable;    // Ve vizuální tabulce najdu její datový základ, a jeho UserData by měla být instance MainDataTable
-            if (mainDataTable == null) return null;
-
-            return mainDataTable.GetGuiGridItems(dataItems);                             // Instance MainDataTable vrátí identifikátory předaných prvků.
+            Dictionary<GuiId, GuiGridItemId> gridItemDict = new Dictionary<GuiId, GuiGridItemId>();
+            foreach (IInteractiveItem item in this._MainControl.Selector.SelectedItems)
+            {
+                GuiGridItemId[] gridItems = MainDataTable.GetGuiGridItems(item, true);   // Pro daný prvek IInteractiveItem získá pole identifikátorů GuiGridItemId
+                gridItemDict.AddNewItems(gridItems, g => g.ItemId);            // Do gridItemDict přidá jen ty prvky z pole gridItems, které mají jiný ItemId, než prvky již existující.
+            }
+            return gridItemDict.Values.ToArray();
         }
         #endregion
         #region Implementace IMainDataInternal

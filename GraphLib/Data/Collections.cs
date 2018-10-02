@@ -1520,6 +1520,11 @@ namespace Asol.Tools.WorkScheduler.Data
         }
         #endregion
         #region Protected podpora eventů
+        /// <summary>
+        /// Mohu přidat daný prvek?
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
         protected virtual bool CanAddItem(T item)
         {
             bool result = true;
@@ -1539,6 +1544,12 @@ namespace Asol.Tools.WorkScheduler.Data
             }
             return result;
         }
+        /// <summary>
+        /// Mohu přidat daný prvek?
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="index"></param>
+        /// <returns></returns>
         protected virtual bool CanAddItem(T item, Int32? index)
         {
             bool result = true;
@@ -1558,6 +1569,10 @@ namespace Asol.Tools.WorkScheduler.Data
             }
             return result;
         }
+        /// <summary>
+        /// Po přidání daného prvku
+        /// </summary>
+        /// <param name="item"></param>
         protected virtual void OnAddItemAfter(T item)
         {
             if (this.ItemAddAfter != null)
@@ -1571,6 +1586,11 @@ namespace Asol.Tools.WorkScheduler.Data
                 this.ListChangeAfter(this, args);
             }
         }
+        /// <summary>
+        /// Po přidání daného prvku
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="index"></param>
         protected virtual void OnAddItemAfter(T item, Int32? index)
         {
             if (this.ItemAddAfter != null)
@@ -1584,6 +1604,12 @@ namespace Asol.Tools.WorkScheduler.Data
                 this.ListChangeAfter(this, args);
             }
         }
+        /// <summary>
+        /// Mohu získat (číst) daný prvek?
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="index"></param>
+        /// <returns></returns>
         protected virtual bool CanGetItem(T item, Int32? index)
         {
             bool result = true;
@@ -1596,9 +1622,20 @@ namespace Asol.Tools.WorkScheduler.Data
             }
             return result;
         }
+        /// <summary>
+        /// Po načtení daného prvku
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="index"></param>
         protected virtual void OnGetItemAfter(T item, Int32? index)
         {
         }
+        /// <summary>
+        /// Mohu vložit (zapsat) daný prvek?
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="index"></param>
+        /// <returns></returns>
         protected virtual bool CanSetItem(T item, Int32? index)
         {
             bool result = true;
@@ -1618,6 +1655,11 @@ namespace Asol.Tools.WorkScheduler.Data
             }
             return result;
         }
+        /// <summary>
+        /// Po zapsání daného prvku
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="index"></param>
         protected virtual void OnSetItemAfter(T item, Int32? index)
         {
             if (this.ItemSetAfter != null)
@@ -1631,6 +1673,12 @@ namespace Asol.Tools.WorkScheduler.Data
                 this.ListChangeAfter(this, args);
             }
         }
+        /// <summary>
+        /// Mohu odebrat (remove) daný prvek?
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="index"></param>
+        /// <returns></returns>
         protected virtual bool CanRemoveItem(T item, Int32? index)
         {
             bool result = true;
@@ -1650,6 +1698,11 @@ namespace Asol.Tools.WorkScheduler.Data
             }
             return result;
         }
+        /// <summary>
+        /// Po odebrání daného prvku
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="index"></param>
         protected virtual void OnRemoveItemAfter(T item, Int32? index)
         {
             if (this.ItemRemoveAfter != null)
@@ -1663,6 +1716,11 @@ namespace Asol.Tools.WorkScheduler.Data
                 this.ListChangeAfter(this, args);
             }
         }
+        /// <summary>
+        /// Mohu změnit seznam, daným způsobem?
+        /// </summary>
+        /// <param name="changeType"></param>
+        /// <returns></returns>
         protected virtual bool CanChangeList(CollectionChangeType changeType)
         {
             bool result = true;
@@ -1675,6 +1733,13 @@ namespace Asol.Tools.WorkScheduler.Data
             }
             return result;
         }
+        /// <summary>
+        /// Mohu změnit seznam, daným způsobem?
+        /// </summary>
+        /// <param name="changeType"></param>
+        /// <param name="item"></param>
+        /// <param name="index"></param>
+        /// <returns></returns>
         protected virtual bool CanChangeList(CollectionChangeType changeType, T item, Int32? index)
         {
             bool result = true;
@@ -1687,6 +1752,10 @@ namespace Asol.Tools.WorkScheduler.Data
             }
             return result;
         }
+        /// <summary>
+        /// Po změně seznamu
+        /// </summary>
+        /// <param name="changeType"></param>
         protected virtual void OnChangeListAfter(CollectionChangeType changeType)
         {
             if (this.ListChangeAfter != null)
@@ -1695,6 +1764,12 @@ namespace Asol.Tools.WorkScheduler.Data
                 this.ListChangeAfter(this, args);
             }
         }
+        /// <summary>
+        /// Po změně seznamu
+        /// </summary>
+        /// <param name="changeType"></param>
+        /// <param name="item"></param>
+        /// <param name="index"></param>
         protected virtual void OnChangeListAfter(CollectionChangeType changeType, T item, Int32? index)
         {
             if (this.ListChangeAfter != null)
@@ -1745,50 +1820,26 @@ namespace Asol.Tools.WorkScheduler.Data
             this.TypeOfTImplementsIIdKey = (this.TypeOfT.FindInterfaces((t, p) => (t == iIdKey), null).Length > 0);
         }
         /// <summary>
-        /// Informace o typu <see cref="T"/>
+        /// Informace o typu <typeparamref name="T"/>
         /// </summary>
         protected Type TypeOfT { get; private set; }
         /// <summary>
-        /// true pokud typ <see cref="T"/> implementuje interface <see cref="IIdKey"/>.
+        /// true pokud typ <typeparamref name="T"/> implementuje interface <see cref="IIdKey"/>.
         /// </summary>
         protected bool TypeOfTImplementsIIdKey { get; private set; }
-        // Summary:
-        //     Gets or sets the total number of elements the internal data structure can
-        //     hold without resizing.
-        //
-        // Returns:
-        //     The number of elements that the System.Collections.Generic.List&lt;T&gt; can contain
-        //     before resizing is required.
-        //
-        // Exceptions:
-        //   System.ArgumentOutOfRangeException:
-        //     System.Collections.Generic.List&lt;T&gt;.Capacity is set to a value that is less
-        //     than System.Collections.Generic.List&lt;T&gt;.Count.
-        //
-        //   System.OutOfMemoryException:
-        //     There is not enough memory available on the system.
+        /// <summary>
+        /// Gets or sets the total number of elements the internal data structure can hold without resizing.
+        /// </summary>
         public int Capacity { get { return this.List.Capacity; } set { this.List.Capacity = value; } }
-        //
-        // Summary:
-        //     Gets the number of elements actually contained in the System.Collections.Generic.List&lt;T&gt;.
-        //
-        // Returns:
-        //     The number of elements actually contained in the System.Collections.Generic.List&lt;T&gt;.
+        /// <summary>
+        /// Gets the number of elements actually contained in the <see cref="List{T}"/>
+        /// </summary>
         public int Count { get { return this.List.Count; } }
-
-        // Summary:
-        //     Gets or sets the element at the specified index.
-        //
-        // Parameters:
-        //   index:
-        //     The zero-based index of the element to get or set.
-        //
-        // Returns:
-        //     The element at the specified index.
-        //
-        // Exceptions:
-        //   System.ArgumentOutOfRangeException:
-        //     index is less than 0.-or-index is equal to or greater than System.Collections.Generic.List&lt;T&gt;.Count.
+        /// <summary>
+        /// Gets or sets the element at the specified index.
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
         public T this[int index]
         {
             get
@@ -1810,6 +1861,12 @@ namespace Asol.Tools.WorkScheduler.Data
                 }
             }
         }
+        /// <summary>
+        /// Gets or sets the element at the specified key.
+        /// Je použitelné pouze tehdy, když typ <typeparamref name="T"/> implementuje <see cref="IIdKey"/>.
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
         public T this[string key]
         {
             get
@@ -1883,42 +1940,17 @@ namespace Asol.Tools.WorkScheduler.Data
         /// no larger element, the bitwise complement of System.Collections.Generic.List&lt;T&gt;.Count.
         /// </returns>
         public int BinarySearch(T item, IComparer<T> comparer) { return this.List.BinarySearch(item, comparer); }
-        // Summary:
-        //     Searches a range of elements in the sorted System.Collections.Generic.List&lt;T&gt;
-        //     for an element using the specified comparer and returns the zero-based index
-        //     of the element.
-        //
-        // Parameters:
-        //   index:
-        //     The zero-based starting index of the range to search.
-        //
-        //   count:
-        //     The length of the range to search.
-        //
-        //   item:
-        //     The object to locate. The value can be null for reference types.
-        //
-        //   comparer:
-        //     The System.Collections.Generic.IComparer&lt;T&gt; implementation to use when comparing
-        //     elements, or null to use the default comparer System.Collections.Generic.Comparer&lt;T&gt;.Default.
-        //
-        // Returns:
-        //     The zero-based index of item in the sorted System.Collections.Generic.List&lt;T&gt;,
-        //     if item is found; otherwise, a negative number that is the bitwise complement
-        //     of the index of the next element that is larger than item or, if there is
-        //     no larger element, the bitwise complement of System.Collections.Generic.List&lt;T&gt;.Count.
-        //
-        // Exceptions:
-        //   System.ArgumentOutOfRangeException:
-        //     index is less than 0.-or-count is less than 0.
-        //
-        //   System.ArgumentException:
-        //     index and count do not denote a valid range in the System.Collections.Generic.List&lt;T&gt;.
-        //
-        //   System.InvalidOperationException:
-        //     comparer is null, and the default comparer System.Collections.Generic.Comparer&lt;T&gt;.Default
-        //     cannot find an implementation of the System.IComparable&lt;T&gt; generic interface
-        //     or the System.IComparable interface for type T.
+        /// <summary>
+        /// Searches a range of elements in the sorted System.Collections.Generic.List&lt;T&gt;
+        ///     for an element using the specified comparer and returns the zero-based index
+        ///     of the element.
+        /// </summary>
+        /// <param name="index">The zero-based starting index of the range to search.</param>
+        /// <param name="count">The length of the range to search.</param>
+        /// <param name="item">The object to locate. The value can be null for reference types.</param>
+        /// <param name="comparer">The System.Collections.Generic.IComparer&lt;T&gt; implementation to use when comparing
+        ///     elements, or null to use the default comparer System.Collections.Generic.Comparer&lt;T&gt;.Default.</param>
+        /// <returns></returns>
         public int BinarySearch(int index, int count, T item, IComparer<T> comparer) { return this.List.BinarySearch(index, count, item, comparer); }
         /// <summary>
         /// Removes all elements from the System.Collections.Generic.List&lt;T&gt;.
@@ -1934,159 +1966,49 @@ namespace Asol.Tools.WorkScheduler.Data
                 this.OnChangeListAfter(CollectionChangeType.Clear);
             }
         }
-        //
-        // Summary:
-        //     Determines whether an element is in the System.Collections.Generic.List&lt;T&gt;.
-        //
-        // Parameters:
-        //   item:
-        //     The object to locate in the System.Collections.Generic.List&lt;T&gt;. The value
-        //     can be null for reference types.
-        //
-        // Returns:
-        //     true if item is found in the System.Collections.Generic.List&lt;T&gt;; otherwise,
-        //     false.
+        /// <summary>
+        /// Determines whether an element is in the System.Collections.Generic.List&lt;T&gt;.
+        /// </summary>
+        /// <param name="item">The object to locate in the System.Collections.Generic.List&lt;T&gt;. The value can be null for reference types.</param>
+        /// <returns></returns>
         public bool Contains(T item) { return this.List.Contains(item); }
-        //
-        // Summary:
-        //     Converts the elements in the current System.Collections.Generic.List&lt;T&gt; to
-        //     another type, and returns a list containing the converted elements.
-        //
-        // Parameters:
-        //   converter:
-        //     A System.Converter<TInput,TOutput> delegate that converts each element from
-        //     one type to another type.
-        //
-        // Type parameters:
-        //   TOutput:
-        //     The type of the elements of the target array.
-        //
-        // Returns:
-        //     A System.Collections.Generic.List&lt;T&gt; of the target type containing the converted
-        //     elements from the current System.Collections.Generic.List&lt;T&gt;.
-        //
-        // Exceptions:
-        //   System.ArgumentNullException:
-        //     converter is null.
+        /// <summary>
+        /// Converts the elements in the current System.Collections.Generic.List&lt;T&gt; to another type, and returns a list containing the converted elements.
+        /// </summary>
+        /// <typeparam name="TOutput">The type of the elements of the target array.</typeparam>
+        /// <param name="converter">A System.Converter&lt;TInput,TOutput&gt; delegate that converts each element from one type to another type.</param>
+        /// <returns></returns>
         public List<TOutput> ConvertAll<TOutput>(Converter<T, TOutput> converter) { return this.List.ConvertAll(converter); }
-        //
-        // Summary:
-        //     Copies the entire System.Collections.Generic.List&lt;T&gt; to a compatible one-dimensional
-        //     array, starting at the beginning of the target array.
-        //
-        // Parameters:
-        //   array:
-        //     The one-dimensional System.Array that is the destination of the elements
-        //     copied from System.Collections.Generic.List&lt;T&gt;. The System.Array must have
-        //     zero-based indexing.
-        //
-        // Exceptions:
-        //   System.ArgumentNullException:
-        //     array is null.
-        //
-        //   System.ArgumentException:
-        //     The number of elements in the source System.Collections.Generic.List&lt;T&gt; is
-        //     greater than the number of elements that the destination array can contain.
+        /// <summary>
+        /// Copies the entire System.Collections.Generic.List&lt;T&gt; to a compatible one-dimensional array, starting at the beginning of the target array.
+        /// </summary>
+        /// <param name="array">The one-dimensional System.Array that is the destination of the elements copied from System.Collections.Generic.List&lt;T&gt;. The System.Array must have zero-based indexing.</param>
         public void CopyTo(T[] array) { this.List.CopyTo(array); }
-        //
-        // Summary:
-        //     Copies the entire System.Collections.Generic.List&lt;T&gt; to a compatible one-dimensional
-        //     array, starting at the specified index of the target array.
-        //
-        // Parameters:
-        //   array:
-        //     The one-dimensional System.Array that is the destination of the elements
-        //     copied from System.Collections.Generic.List&lt;T&gt;. The System.Array must have
-        //     zero-based indexing.
-        //
-        //   arrayIndex:
-        //     The zero-based index in array at which copying begins.
-        //
-        // Exceptions:
-        //   System.ArgumentNullException:
-        //     array is null.
-        //
-        //   System.ArgumentOutOfRangeException:
-        //     arrayIndex is less than 0.
-        //
-        //   System.ArgumentException:
-        //     The number of elements in the source System.Collections.Generic.List&lt;T&gt; is
-        //     greater than the available space from arrayIndex to the end of the destination
-        //     array.
+        /// <summary>
+        /// Copies the entire System.Collections.Generic.List&lt;T&gt; to a compatible one-dimensionalarray, starting at the specified index of the target array.
+        /// </summary>
+        /// <param name="array">The one-dimensional System.Array that is the destination of the elements copied from System.Collections.Generic.List&lt;T&gt;. The System.Array must have zero-based indexing.</param>
+        /// <param name="arrayIndex">The zero-based index in array at which copying begins.</param>
         public void CopyTo(T[] array, int arrayIndex) { this.List.CopyTo(array, arrayIndex); }
-        //
-        // Summary:
-        //     Copies a range of elements from the System.Collections.Generic.List&lt;T&gt; to
-        //     a compatible one-dimensional array, starting at the specified index of the
-        //     target array.
-        //
-        // Parameters:
-        //   index:
-        //     The zero-based index in the source System.Collections.Generic.List&lt;T&gt; at
-        //     which copying begins.
-        //
-        //   array:
-        //     The one-dimensional System.Array that is the destination of the elements
-        //     copied from System.Collections.Generic.List&lt;T&gt;. The System.Array must have
-        //     zero-based indexing.
-        //
-        //   arrayIndex:
-        //     The zero-based index in array at which copying begins.
-        //
-        //   count:
-        //     The number of elements to copy.
-        //
-        // Exceptions:
-        //   System.ArgumentNullException:
-        //     array is null.
-        //
-        //   System.ArgumentOutOfRangeException:
-        //     index is less than 0.-or-arrayIndex is less than 0.-or-count is less than
-        //     0.
-        //
-        //   System.ArgumentException:
-        //     index is equal to or greater than the System.Collections.Generic.List&lt;T&gt;.Count
-        //     of the source System.Collections.Generic.List&lt;T&gt;.-or-The number of elements
-        //     from index to the end of the source System.Collections.Generic.List&lt;T&gt; is
-        //     greater than the available space from arrayIndex to the end of the destination
-        //     array.
+        /// <summary>
+        /// Copies a range of elements from the System.Collections.Generic.List&lt;T&gt; to a compatible one-dimensional array, starting at the specified index of the target array.
+        /// </summary>
+        /// <param name="index">The zero-based index in the source System.Collections.Generic.List&lt;T&gt; at which copying begins.</param>
+        /// <param name="array">The one-dimensional System.Array that is the destination of the elements copied from System.Collections.Generic.List&lt;T&gt;. The System.Array must have zero-based indexing.</param>
+        /// <param name="arrayIndex">The zero-based index in array at which copying begins.</param>
+        /// <param name="count">The number of elements to copy.</param>
         public void CopyTo(int index, T[] array, int arrayIndex, int count) { this.List.CopyTo(index, array, arrayIndex, count); }
-        //
-        // Summary:
-        //     Determines whether the System.Collections.Generic.List&lt;T&gt; contains elements
-        //     that match the conditions defined by the specified predicate.
-        //
-        // Parameters:
-        //   match:
-        //     The System.Predicate&lt;T&gt; delegate that defines the conditions of the elements
-        //     to search for.
-        //
-        // Returns:
-        //     true if the System.Collections.Generic.List&lt;T&gt; contains one or more elements
-        //     that match the conditions defined by the specified predicate; otherwise,
-        //     false.
-        //
-        // Exceptions:
-        //   System.ArgumentNullException:
-        //     match is null.
+        /// <summary>
+        /// Determines whether the System.Collections.Generic.List&lt;T&gt; contains elements that match the conditions defined by the specified predicate.
+        /// </summary>
+        /// <param name="match">The System.Predicate&lt;T&gt; delegate that defines the conditions of the elements to search for.</param>
+        /// <returns></returns>
         public bool Exists(Predicate<T> match) { return this.List.Exists(match); }
-        //
-        // Summary:
-        //     Searches for an element that matches the conditions defined by the specified
-        //     predicate, and returns the first occurrence within the entire System.Collections.Generic.List&lt;T&gt;.
-        //
-        // Parameters:
-        //   match:
-        //     The System.Predicate&lt;T&gt; delegate that defines the conditions of the element
-        //     to search for.
-        //
-        // Returns:
-        //     The first element that matches the conditions defined by the specified predicate,
-        //     if found; otherwise, the default value for type T.
-        //
-        // Exceptions:
-        //   System.ArgumentNullException:
-        //     match is null.
+        /// <summary>
+        /// Searches for an element that matches the conditions defined by the specified predicate, and returns the first occurrence within the entire System.Collections.Generic.List&lt;T&gt;.
+        /// </summary>
+        /// <param name="match"> The System.Predicate&lt;T&gt; delegate that defines the conditions of the element to search for.</param>
+        /// <returns></returns>
         public T Find(Predicate<T> match) { return this.List.Find(match); }
         //
         // Summary:
@@ -2847,18 +2769,27 @@ namespace Asol.Tools.WorkScheduler.Data
     /// </summary>
     public enum CollectionChangeType
     {
+        /// <summary>Neurčeno</summary>
         None,
+        /// <summary>Konkrétní akce</summary>
         Add,
+        /// <summary>Konkrétní akce</summary>
         AddRange,
+        /// <summary>Konkrétní akce</summary>
         Get,
+        /// <summary>Konkrétní akce</summary>
         Set,
+        /// <summary>Konkrétní akce</summary>
         Remove,
+        /// <summary>Konkrétní akce</summary>
         RemoveAll,
+        /// <summary>Konkrétní akce</summary>
         ChangeOrder,
+        /// <summary>Konkrétní akce</summary>
         Clear
     }
     #endregion
-    #region Collection : Ancestor for typed, public read-only collections.
+    #region Collection : Předek pro typové kolekce, read-only
     /// <summary>
     /// Collection : Ancestor for typed, public read-only collections.
     /// External code can not Add or Remove item, nor call Clear. 
@@ -2868,16 +2799,34 @@ namespace Asol.Tools.WorkScheduler.Data
     /// <typeparam name="T"></typeparam>
     public class Collection<T> : IEnumerable<T>, IEnumerable
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public Collection()
         {
             this.ItemList = new List<T>();
         }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="items"></param>
         public Collection(IEnumerable<T> items)
         {
             this.ItemList = new List<T>(items);
         }
+        /// <summary>
+        /// Počet prvků
+        /// </summary>
         public int Count { get { return this.ItemList.Count; } }
+        /// <summary>
+        /// Přístup k prvku
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
         public T this[int index] { get { return this.ItemList[index]; } }
+        /// <summary>
+        /// Prvky
+        /// </summary>
         protected List<T> ItemList;
         IEnumerator IEnumerable.GetEnumerator()
         {
