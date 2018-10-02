@@ -11,6 +11,7 @@ using Asol.Tools.WorkScheduler.Application;
 using Asol.Tools.WorkScheduler.Services;
 using Asol.Tools.WorkScheduler.Components;
 using Asol.Tools.WorkScheduler.Components.Graph;
+using Asol.Tools.WorkScheduler.Components.Grid;
 using Noris.LCS.Base.WorkScheduler;
 using R = Noris.LCS.Base.WorkScheduler.Resources;
 
@@ -1085,17 +1086,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             GTimeGraphItem graphItem = item as GTimeGraphItem;
             if (graphItem == null) return null;
-            List<ITimeGraphItem> dataItems = new List<ITimeGraphItem>();
-            switch (graphItem.Position)
-            {
-                case GGraphControlPosition.Group:
-                    dataItems.AddRange(graphItem.DataItems);
-                    break;
-                case GGraphControlPosition.Item:
+            ITimeGraphItem[] dataItems = graphItem.GetDataItems(true);                   // Najdu datové prvky odpovídající vizuálnímu prvku, najdu všechny prvky grupy
+            if (dataItems == null || dataItems.Length == 0) return null;
+            GTable gTable = graphItem.SearchForParent(typeof(GTable)) as GTable;         // Najdu vizuální tabulku, v níž daný prvek grafu bydlí
+            if (gTable == null) return null;
+            MainDataTable mainDataTable = gTable.DataTable.UserData as MainDataTable;    // Ve vizuální tabulce najdu její datový základ, a jeho UserData by měla být instance MainDataTable
+            if (mainDataTable == null) return null;
 
-
-            else if ()
-                dataItems.AddRange(graphItem.DataItems);
+            return mainDataTable.GetGuiGridItems(dataItems);                             // Instance MainDataTable vrátí identifikátory předaných prvků.
         }
         #endregion
         #region Implementace IMainDataInternal

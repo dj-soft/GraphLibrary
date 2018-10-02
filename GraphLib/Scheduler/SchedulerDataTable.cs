@@ -162,6 +162,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             this.TableRow = Table.CreateFrom(this.GuiGrid.Rows.DataTable);
             this.TableRow.OpenRecordForm += _TableRow_OpenRecordForm;
+            this.TableRow.UserData = this;
             if (this.TableRow.AllowPrimaryKey) this.TableRow.HasPrimaryIndex = true;
         }
         /// <summary>
@@ -288,6 +289,25 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                     }
                 }
             }
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="dataItems"></param>
+        /// <returns></returns>
+        public GuiGridItemId[] GetGuiGridItems(IEnumerable<ITimeGraphItem> dataItems)
+        {
+            if (dataItems == null) return null;
+            List<GuiGridItemId> gridItemIdList = new List<GuiGridItemId>();
+            foreach (ITimeGraphItem dataItem in dataItems)
+            {
+                DataGraphItem gridItem = dataItem as DataGraphItem;
+                if (dataItem == null) continue;
+                GuiGridItemId gridItemId = this.GetGridItemId(gridItem);
+                if (gridItemId == null) continue;
+                gridItemIdList.Add(gridItemId);
+            }
+            return gridItemIdList.ToArray();
         }
         /// <summary>
         /// Najde a vrátí položku grafu podle jeho ID

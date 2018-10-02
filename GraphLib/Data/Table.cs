@@ -94,6 +94,11 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public int TableId { get { return this._TableId; } }
         private int _TableId;
+        /// <summary>
+        /// Libovolná uživatelská data
+        /// </summary>
+        public object UserData { get { return this._UserData; } set { this._UserData = value; } }
+        private object _UserData;
         #endregion
         #region GTable - Linkování datové tabulky do grafické tabulky
         /// <summary>

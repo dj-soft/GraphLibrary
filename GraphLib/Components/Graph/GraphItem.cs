@@ -68,6 +68,10 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         internal GTimeGraph Graph { get { return this._Group.Graph; } }
         /// <summary>
+        /// Skupina, do které tento vizuální interaktivní prvek patří.
+        /// </summary>
+        internal GTimeGraphGroup Group { get { return this._Group; } }
+        /// <summary>
         /// Souřadnice na ose X. Jednotkou jsou pixely.
         /// Tato osa je společná jak pro virtuální, tak pro reálné souřadnice.
         /// Hodnota 0 odpovídá prvnímu viditelnému pixelu vlevo.
@@ -82,7 +86,27 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Pozice tohoto prvku (Group / Item)
         /// </summary>
         public GGraphControlPosition Position { get { return this._Position; } }
-
+        /// <summary>
+        /// Metoda vrátí datové prvky, pro které je vytvořen tento vizuální prvek.
+        /// Pokud this prvek je typu <see cref="Position"/> == <see cref="GGraphControlPosition.Group"/>, pak vrátí datové prvky ze všech svých prvků.
+        /// Pokud this prvek je typu <see cref="Position"/> == <see cref="GGraphControlPosition.Item"/>, pak se řídí parametrem wholeGroup:
+        /// a) true = najde všechny prvky své skupiny; b) false = vrátí jen svůj datový prvek.
+        /// </summary>
+        /// <param name="wholeGroup"></param>
+        /// <returns></returns>
+        public ITimeGraphItem[] GetDataItems(bool wholeGroup)
+        {
+            switch (this.Position)
+            {
+                case GGraphControlPosition.Group:
+                    return this.Group.Items;
+                case GGraphControlPosition.Item:
+                    if (wholeGroup)
+                        return this.Group.Items;
+                    return new ITimeGraphItem[] { this._Owner };
+            }
+            return null;
+        }
         #endregion
         #region Čtení dat pro kreslení
         /// <summary>
