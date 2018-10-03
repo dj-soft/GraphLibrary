@@ -423,7 +423,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 GToolBarRefreshMode itemMode = toolBarItem.RefreshFrom(guiToolbarItem);
                 refreshMode = (GToolBarRefreshMode)((int)refreshMode | (int)itemMode);
             }
-
             this._MainControl.RefreshToolBar(refreshMode);
         }
         /// <summary>
@@ -580,6 +579,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             /// GUI Prvek toolbaru, z něhož je tato položka vytvořena. Jde o data dodaná z aplikace.
             /// </summary>
             public GuiToolbarItem GuiToolbarItem { get { return this._GuiToolBarItem; } }
+            /// <summary>
+            /// Jméno tohoto prvku, prostor pro aplikační identifikátor položky
+            /// </summary>
+            public override string Name { get { return (this._HasItem ? this._GuiToolBarItem.Name : base.Name); } set { if (this._HasItem) this._GuiToolBarItem.Name = value; else base.Name = value; } }
             /// <summary>
             /// Text do funkce
             /// </summary>
@@ -781,6 +784,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             /// </summary>
             private GuiContextMenuItem _GuiContextMenuItem;
             /// <summary>
+            /// true pokud je reálně přítomna položka <see cref="_GuiContextMenuItem"/>
+            /// </summary>
+            private bool _HasItem { get { return (this._GuiContextMenuItem != null); } }
+            /// <summary>
             /// Vytvoří a vrátí new instanci <see cref="ContextFunctionItem"/> pro data definovaná v <see cref="GuiContextMenuItem"/>.
             /// Může vrátit null pro neplatné zadání.
             /// </summary>
@@ -800,6 +807,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             /// Z této deklarace je funkce načtena
             /// </summary>
             public GuiContextMenuItem GuiContextMenuItem { get { return this._GuiContextMenuItem; } }
+            /// <summary>
+            /// Jméno tohoto prvku, prostor pro aplikační identifikátor položky
+            /// </summary>
+            public override string Name { get { return (this._HasItem ? this._GuiContextMenuItem.Name : base.Name); } set { if (this._HasItem) this._GuiContextMenuItem.Name = value; else base.Name = value; } }
             /// <summary>
             /// Text do funkce
             /// </summary>
@@ -1210,6 +1221,47 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private const string _Tlb_TimeAxis_GoHome = "TimeAxisGoHome";
         private const string _Tlb_TimeAxis_GoNext = "TimeAxisGoNext";
         #endregion
+        #region Přichytávání prvků grafu při jeho posouvání procesem Drag and Drop
+        /// <summary>
+        /// Metoda má za úkol modifikovat data při procesu Drag and Drop pro grafický prvek.
+        /// Jde o to, že při přetahování prvků můžeme chtít, aby se prvek "přichytával" 
+        /// buď k původnímu času, nebo k okolním bližším prvkům, nebo k zaokrouhlenému času na ose.
+        /// </summary>
+        /// <param name="moveInfo"></param>
+        private void _AdjustGraphItemDragMove(GraphItemDragMoveInfo moveInfo)
+        {
+            Rectangle sourceBounds = moveInfo.SourceBounds;
+            Rectangle targetBounds = moveInfo.TargetBounds;
+
+            // Umístění cíle, časová/místní příchylnost k původní hodnotě:
+            int distX = (targetBounds.X - sourceBounds.X);
+            int absDX = ((distX < 0) ? -distX : distX);
+            bool isChangeTime = true;
+            if (!moveInfo.IsChangeRow)
+            {   // Ve stejném řádku:
+                if (absDX < 5) isChangeTime = false;
+                targetBounds.Y = sourceBounds.Y;
+            }
+            else
+            {   // V jiném řádku:
+                if (absDX < 15) isChangeTime = false;
+
+            }
+
+            // Odvodit cílový čas nebo korigovat cílovou souřadnici:
+            if (isChangeTime)
+            {   // Pokud je reálně požadována změna času:
+                DateTime? begin = moveInfo.GetTimeForPosition(targetBounds.X);
+                moveInfo.TargetTime = TimeRange.CreateFromBeginSize(begin.Value, moveInfo.SourceTime.Size.Value);
+            }
+            else
+            {   // Není tu změna času:
+                moveInfo.TargetTime = moveInfo.SourceTime.Clone;
+                targetBounds.X = sourceBounds.X;
+            }
+            moveInfo.TargetBounds = targetBounds;
+        }
+        #endregion
         #region Otevření formulářů záznamů
         /// <summary>
         /// Metoda vyvolá akci RunOpenRecordsForm do AppHost
@@ -1361,6 +1413,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <returns></returns>
         GuiRequestCurrentState IMainDataInternal.CreateGuiCurrentState() { return this._CreateGuiCurrentState(); }
         /// <summary>
+        /// Metoda má za úkol modifikovat data při procesu Drag and Drop pro grafický prvek.
+        /// Jde o to, že při přetahování prvků můžeme chtít, aby se prvek "přichytával" 
+        /// buď k původnímu času, nebo k okolním bližším prvkům, nebo k zaokrouhlenému času na ose.
+        /// </summary>
+        /// <param name="moveInfo"></param>
+        void IMainDataInternal.AdjustGraphItemDragMove(GraphItemDragMoveInfo moveInfo) { this._AdjustGraphItemDragMove(moveInfo); }
+        /// <summary>
         /// Metoda zpracuje odpovědi z aplikace.
         /// </summary>
         /// <param name="guiResponse"></param>
@@ -1390,10 +1449,98 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <returns></returns>
         GuiRequestCurrentState CreateGuiCurrentState();
         /// <summary>
+        /// Metoda má za úkol modifikovat data při procesu Drag and Drop pro grafický prvek.
+        /// Jde o to, že při přetahování prvků můžeme chtít, aby se prvek "přichytával" 
+        /// buď k původnímu času, nebo k okolním bližším prvkům, nebo k zaokrouhlenému času na ose.
+        /// </summary>
+        /// <param name="moveInfo"></param>
+        void AdjustGraphItemDragMove(GraphItemDragMoveInfo moveInfo);
+        /// <summary>
         /// Metoda zpracuje odpovědi z aplikace.
         /// </summary>
         /// <param name="guiResponse"></param>
         void ProcessResponse(GuiResponse guiResponse);
     }
     #endregion
+    #region class GraphItemDragMoveInfo : Analyzovaná data na úrovni Scheduleru, pro akce při přemísťování prvku na úrovni GUI
+    /// <summary>
+    /// GraphItemDragMoveInfo : Analyzovaná data na úrovni Scheduleru, pro akce při přemísťování prvku na úrovni GUI
+    /// </summary>
+    public class GraphItemDragMoveInfo
+    {
+        /// <summary>
+        /// GId grupy, která se přemisťuje.
+        /// Vždy se přemisťuje celá grupa, nikdy ne jednotlivý prvek.
+        /// </summary>
+        public GId DragGroupGId { get; set; }
+        /// <summary>
+        /// Jednotlivé prvky grupy, které jsou její součástí a mají se přemístit.
+        /// Vždy se přemisťuje celá grupa, nikdy ne jednotlivý prvek.
+        /// </summary>
+        public DataGraphItem[] DragGroupItems { get; set; }
+        /// <summary>
+        /// Typ aktuální akce Drag and Drop
+        /// </summary>
+        public DragActionType DragAction { get; set; }
+        /// <summary>
+        /// Absolutní pozice myši v okamžiku vzniku akce.
+        /// Jde o bod, který se nachází někde uvnitř <see cref="SourceBounds"/>, jinak by se prvek nezačal přemísťovat.
+        /// Z umístění tohoto bodu lze určit, zda myš byla blíže k počátku, středu nebo konci prvku.
+        /// </summary>
+        public Point? SourceMousePoint { get; set; }
+        /// <summary>
+        /// Graf, v němž byl umístěn prvek na začátku.
+        /// Může být tentýž, jako cílový (<see cref="TargetGraph"/>).
+        /// </summary>
+        public GTimeGraph SourceGraph { get; set; }
+        /// <summary>
+        /// Řádek, na němž byl umístěn prvek na začátku.
+        /// Může být tentýž, jako cílový (<see cref="TargetRow"/>).
+        /// </summary>
+        public GId SourceRow { get; set; }
+        /// <summary>
+        /// Graf, kam má být prvek přemístěn.
+        /// </summary>
+        public GTimeGraph TargetGraph { get; set; }
+        /// <summary>
+        /// Cílový řádek, kam má být prvek přemístěn.
+        /// </summary>
+        public GId TargetRow { get; set; }
+        /// <summary>
+        /// Původní čas prvku před přemístěním
+        /// </summary>
+        public TimeRange SourceTime { get; set; }
+        /// <summary>
+        /// Cílový čas prvku po přemístění
+        /// </summary>
+        public TimeRange TargetTime { get; set; }
+        /// <summary>
+        /// Absolutní souřadnice prvku před přemístěním
+        /// </summary>
+        public Rectangle SourceBounds { get; set; }
+        /// <summary>
+        /// Absolutní souřadnice prvku po přemístění
+        /// </summary>
+        public Rectangle TargetBounds { get; set; }
+        /// <summary>
+        /// Obsahuje true, pokud dochází ke změně řádku
+        /// </summary>
+        public bool IsChangeRow { get { return (this.SourceRow != null && this.TargetRow != null && this.SourceRow != this.TargetRow); } }
+        /// <summary>
+        /// Obsahuje true, pokud dochází ke změně času
+        /// </summary>
+        public bool IsChangeTime { get { return (this.SourceTime != null && this.TargetTime != null && this.SourceTime != this.TargetTime); } }
+        /// <summary>
+        /// Posun času: target = source + ShiftTime.Value; ale pokud <see cref="IsChangeTime"/> je false, pak zde je null.
+        /// </summary>
+        public TimeSpan? ShiftTime { get { return (this.IsChangeTime ? (TimeSpan?)(this.TargetTime.Begin.Value - this.SourceTime.Begin.Value) : (TimeSpan?)null); } }
+        /// <summary>
+        /// Funkce vrátí čas, odpovídající dané absolutní souřadnici X.
+        /// Vstupem je absolutní souřadnice X, výstupem datum a čas na dané souřadnici.
+        /// </summary>
+        /// <returns></returns>
+        public Func<int, DateTime?> GetTimeForPosition;
+    }
+    #endregion
+
 }

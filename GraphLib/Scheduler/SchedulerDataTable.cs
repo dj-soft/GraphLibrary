@@ -592,7 +592,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="args"></param>
         protected void ItemDragDropMove(ItemDragDropArgs args)
         {
-            DragSchedulerData data = this.PrepareDragSchedulerData(args);
+            GraphItemDragMoveInfo data = this.PrepareDragSchedulerData(args);
             args.DragToAbsoluteBounds = data.TargetBounds;
             args.ToolTipData.AnimationType = TooltipAnimationType.Instant;
             args.ToolTipData.TitleText = (data.IsChangeRow ? "Přemístění na jiný řádek" : "Přemístění v rámci řádku");
@@ -606,7 +606,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         protected void ItemDragDropDrop(ItemDragDropArgs args)
         {
             // Tady by se měla volat metoda AppHost => aplikační funkce pro přepočet grafu:
-            DragSchedulerData data = this.PrepareDragSchedulerData(args);
+            GraphItemDragMoveInfo data = this.PrepareDragSchedulerData(args);
             GuiGridItemId gridItemId = this.GetGridItemId(args);
             GuiRequestGraphItemMove guiItemMoveData = this.PrepareRequestGraphItemMove(data);
 
@@ -629,7 +629,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Metoda provede přemístění prvků grafu na požadovanou cílovou pozici, na základě GUI dat.
         /// </summary>
         /// <param name="data"></param>
-        protected void ItemDragDropDropGuiResponse(DragSchedulerData data)
+        protected void ItemDragDropDropGuiResponse(GraphItemDragMoveInfo data)
         {
             // 1) Proběhne změna na všech prvcích grupy (data.DragGroupItems):
             //   a) Změna jejich času: o daný offset (rozdíl času cílového - původního)
@@ -671,61 +671,46 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.IMainData.ProcessResponse(guiResponse);
         }
         /// <summary>
-        /// Metoda vrátí instanci <see cref="DragSchedulerData"/> obsahující data na úrovni Scheduleru z dat Drag and Drop z úrovně GUI.
+        /// Metoda vrátí instanci <see cref="GraphItemDragMoveInfo"/> obsahující data na úrovni Scheduleru z dat Drag and Drop z úrovně GUI.
         /// </summary>
         /// <param name="args"></param>
         /// <returns></returns>
-        protected DragSchedulerData PrepareDragSchedulerData(ItemDragDropArgs args)
+        protected GraphItemDragMoveInfo PrepareDragSchedulerData(ItemDragDropArgs args)
         {
-            DragSchedulerData data = new DragSchedulerData();
-            data.DragGroupGId = this.GetGId(args.Group.GroupId);
-            data.DragGroupItems = args.Group.Items.Where(i => i is DataGraphItem).Cast<DataGraphItem>().ToArray();
-            data.SourceGraph = args.ParentGraph;
-            data.SourceRow = this.GetGraphRowGid(args.ParentGraph);
-            data.SourceTime = args.Group.Time;
-            data.SourceBounds = args.OriginalAbsoluteBounds;
-            data.TargetGraph = args.TargetGraph;
-            data.TargetRow = this.GetGraphRowGid(args.TargetGraph);
-
-            // Umístění cíle, časová/místní příchylnost k původní hodnotě:
-            Rectangle sourceBounds = data.SourceBounds;
+            // Základní data bez modifikací:
+            TimeRange sourceTime = args.Group.Time;
+            Rectangle sourceBounds = args.OriginalAbsoluteBounds;
             Rectangle targetBounds = args.DragToAbsoluteBounds.Value;
-            int distX = (targetBounds.X - sourceBounds.X);
-            int absDX = ((distX < 0) ? -distX : distX);
-            bool isChangeTime = true;
-            if (!data.IsChangeRow)
-            {   // Ve stejném řádku:
-                if (absDX < 5) isChangeTime = false;
-                targetBounds.Y = sourceBounds.Y;
-            }
-            else
-            {   // V jiném řádku:
-                if (absDX < 15) isChangeTime = false;
-                
-            }
+            DateTime? targetTimeBegin = args.GetTimeForPosition(targetBounds.X);
+            TimeRange targetTime = TimeRange.CreateFromBeginSize(targetTimeBegin.Value, sourceTime.Size.Value);
 
-            // Odvodit cílový čas nebo korigovat cílovou souřadnici:
-            if (isChangeTime)
-            {   // Pokud je reálně požadována změna času:
-                DateTime? begin = args.GetTimeForPosition(targetBounds.X);
-                data.TargetTime = TimeRange.CreateFromBeginSize(begin.Value, data.SourceTime.Size.Value);
-            }
-            else
-            {   // Není tu změna času:
-                data.TargetTime = data.SourceTime.Clone;
-                targetBounds.X = sourceBounds.X;
-            }
-            data.TargetBounds = targetBounds;
+            GraphItemDragMoveInfo moveInfo = new GraphItemDragMoveInfo();
+            moveInfo.DragGroupGId = this.GetGId(args.Group.GroupId);
+            moveInfo.DragGroupItems = args.Group.Items.Where(i => i is DataGraphItem).Cast<DataGraphItem>().ToArray();
+            moveInfo.DragAction = args.DragAction;
+            moveInfo.SourceMousePoint = args.ActionPoint;
+            moveInfo.SourceGraph = args.ParentGraph;
+            moveInfo.SourceRow = this.GetGraphRowGid(args.ParentGraph);
+            moveInfo.SourceTime = sourceTime;
+            moveInfo.SourceBounds = sourceBounds;
+            moveInfo.TargetGraph = args.TargetGraph;
+            moveInfo.TargetRow = this.GetGraphRowGid(args.TargetGraph);
+            moveInfo.TargetTime = targetTime;
+            moveInfo.TargetBounds = targetBounds;
+            moveInfo.GetTimeForPosition = args.GetTimeForPosition;
 
-            return data;
+            // Modifikace dat pomocí magnetů:
+            this.IMainData.AdjustGraphItemDragMove(moveInfo);
+
+            return moveInfo;
         }
         /// <summary>
-        /// Metoda z dat v <see cref="DragSchedulerData"/> (interní data Scheduleru) 
+        /// Metoda z dat v <see cref="GraphItemDragMoveInfo"/> (interní data Scheduleru) 
         /// vytvoří a vrátí new instanci třídy <see cref="GuiRequestGraphItemMove"/> (externí data, která se předávají do aplikační logiky).
         /// </summary>
         /// <param name="data"></param>
         /// <returns></returns>
-        protected GuiRequestGraphItemMove PrepareRequestGraphItemMove(DragSchedulerData data)
+        protected GuiRequestGraphItemMove PrepareRequestGraphItemMove(GraphItemDragMoveInfo data)
         {
             GuiRequestGraphItemMove guiData = new GuiRequestGraphItemMove();
             guiData.MoveItems = data.DragGroupItems.Select(i => this.GetGridItemId(i)).ToArray();
@@ -734,68 +719,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             guiData.TargetRow = data.TargetRow;
             guiData.TargetTime = data.TargetTime;
             return guiData;
-        }
-        /// <summary>
-        /// Analyzovaná data na úrovni Scheduleru, pro akce při přemísťování prvku na úrovni GUI
-        /// </summary>
-        protected class DragSchedulerData
-        {
-            /// <summary>
-            /// GId grupy, která se přemisťuje.
-            /// Vždy se přemisťuje celá grupa, nikdy ne jednotlivý prvek.
-            /// </summary>
-            public GId DragGroupGId { get; set; }
-            /// <summary>
-            /// Jednotlivé prvky grupy, které jsou její součástí a mají se přemístit.
-            /// Vždy se přemisťuje celá grupa, nikdy ne jednotlivý prvek.
-            /// </summary>
-            public DataGraphItem[] DragGroupItems { get; set; }
-            /// <summary>
-            /// Graf, v němž byl umístěn prvek na začátku.
-            /// Může být tentýž, jako cílový (<see cref="TargetGraph"/>).
-            /// </summary>
-            public GTimeGraph SourceGraph { get; set; }
-            /// <summary>
-            /// Řádek, na němž byl umístěn prvek na začátku.
-            /// Může být tentýž, jako cílový (<see cref="TargetRow"/>).
-            /// </summary>
-            public GId SourceRow { get; set; }
-            /// <summary>
-            /// Graf, kam má být prvek přemístěn.
-            /// </summary>
-            public GTimeGraph TargetGraph { get; set; }
-            /// <summary>
-            /// Cílový řádek, kam má být prvek přemístěn.
-            /// </summary>
-            public GId TargetRow { get; set; }
-            /// <summary>
-            /// Původní čas prvku před přemístěním
-            /// </summary>
-            public TimeRange SourceTime { get; set; }
-            /// <summary>
-            /// Cílový čas prvku po přemístění
-            /// </summary>
-            public TimeRange TargetTime { get; set; }
-            /// <summary>
-            /// Absolutní souřadnice prvku před přemístěním
-            /// </summary>
-            public Rectangle SourceBounds { get; set; }
-            /// <summary>
-            /// Absolutní souřadnice prvku po přemístění
-            /// </summary>
-            public Rectangle TargetBounds { get; set; }
-            /// <summary>
-            /// Obsahuje true, pokud dochází ke změně řádku
-            /// </summary>
-            public bool IsChangeRow { get { return (this.SourceRow != null && this.TargetRow != null && this.SourceRow != this.TargetRow); } }
-            /// <summary>
-            /// Obsahuje true, pokud dochází ke změně času
-            /// </summary>
-            public bool IsChangeTime { get { return (this.SourceTime != null && this.TargetTime != null && this.SourceTime != this.TargetTime); } }
-            /// <summary>
-            /// Posun času: target = source + ShiftTime.Value; ale pokud <see cref="IsChangeTime"/> je false, pak zde je null.
-            /// </summary>
-            public TimeSpan? ShiftTime { get { return (this.IsChangeTime ? (TimeSpan?)(this.TargetTime.Begin.Value - this.SourceTime.Begin.Value) : (TimeSpan?)null); } }
         }
         #endregion
         #region Implementace ITimeGraphDataSource: Zdroj dat pro grafy: tvorba textu, tooltipu, kontextové menu, podpora Drag and Drop

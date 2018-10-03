@@ -372,7 +372,7 @@ namespace Asol.Tools.WorkScheduler.Services
         /// <summary>
         /// Jméno tohoto prvku, prostor pro aplikační identifikátor položky
         /// </summary>
-        public string Name { get; set; }
+        public virtual string Name { get; set; }
         /// <summary>
         /// Provider of this function
         /// </summary>

@@ -843,12 +843,12 @@ namespace Noris.LCS.Base.WorkScheduler
                     "ratio_begin float, ratio_end float, ratio_back_color string, ratio_line_color string, ratio_line_width int";
     }
     /// <summary>
-    /// Bázová třída pro ředávání dat o grafických položkách.
+    /// Bázová třída pro předávání dat o grafických položkách.
     /// Existují dva potomci: 
     /// 1. <see cref="GuiGraphItem"/> pro předávání základního balíku dat po jejich načtení, je umístěn v hierarchické struktuře, 
     /// obsahuje navíc <see cref="GuiGraphItem.StructureFull"/> a <see cref="GuiGraphItem.StructureLiable"/>;
-    /// 2. <see cref="GuiGridGraphItem"/> pro předávání změnových dat, obsahuje navíc 
-    /// 
+    /// 2. <see cref="GuiGridGraphItem"/> pro předávání změnových dat, 
+    /// obsahuje navíc <see cref="GuiGridGraphItem.TableName"/> pro určení tabulky, kam se má prvek přidat.
     /// </summary>
     public abstract class GuiGraphBaseItem : GuiBase
     {

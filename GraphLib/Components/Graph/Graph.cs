@@ -1991,7 +1991,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         public GDragActionArgs DragArgs { get { return this._DragArgs; } }
         /// <summary>
-        /// Typ aktuální akce
+        /// Typ aktuální akce Drag and Drop
         /// </summary>
         public DragActionType DragAction { get { return this._DragArgs.DragAction; } }
         /// <summary>

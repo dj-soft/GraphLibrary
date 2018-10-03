@@ -132,7 +132,16 @@ namespace Asol.Tools.WorkScheduler
         /// ukládá tam zazipovaný text obsahující serializovanou formu objektu <see cref="GuiResponse"/>.
         /// Deserializaci a vyhodnocení si provádí metoda <see cref="AppHostRequestArgs.CallBackAction"/>.
         /// </summary>
-        public string Data { get { return this._Data; } set { this._Data = value; this._GuiResponse = null; this._GuiResponseDeserialized = false; } }
+        public string Data
+        {
+            get { return this._Data; }
+            set
+            {
+                this._Data = value;
+                this._GuiResponse = null;
+                this._GuiResponseDeserialized = false;
+            }
+        }
         /// <summary>
         /// Data z aplikační funkce, již deserializovaná
         /// </summary>
@@ -143,9 +152,15 @@ namespace Asol.Tools.WorkScheduler
                 if (this._GuiResponse == null && this._Data != null && !this._GuiResponseDeserialized)
                 {
                     this._GuiResponseDeserialized = true;
-                    this._GuiResponse = Persist.Deserialize(WorkSchedulerSupport.Decompress(this._Data)) as GuiResponse;
+                    this._GuiResponse = Persist.Deserialize(this._Data) as GuiResponse;
                 }
                 return this._GuiResponse;
+            }
+            set
+            {
+                this._GuiResponse = value;
+                this._Data = (this._GuiResponse != null ? Persist.Serialize(this._GuiResponse, PersistArgs.Compressed) : null);
+                this._GuiResponseDeserialized = true;
             }
         }
         /// <summary>
