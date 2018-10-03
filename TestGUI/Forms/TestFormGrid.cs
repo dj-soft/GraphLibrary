@@ -349,7 +349,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 item.ToolTip = "Ranní směna";
                 item.BackColor = Color.FromArgb(240, 240, 255);
                 item.LineColor = Color.Green;
-                graph.ItemList.Add(item);
+                graph.AddGraphItem(item);
 
                 item = new TestGraphItem();
                 item.Layer = workLayer;
@@ -360,7 +360,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 item.ToolTip = "Ranní směna";
                 item.BackColor = Color.FromArgb(240, 240, 255);
                 item.LineColor = Color.Green;
-                graph.ItemList.Add(item);
+                graph.AddGraphItem(item);
 
 
 
@@ -376,7 +376,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 item.ToolTip = "Odpolední směna";
                 item.BackColor = Color.FromArgb(240, 255, 240);
                 item.LineColor = Color.Blue;
-                graph.ItemList.Add(item);
+                graph.AddGraphItem(item);
 
                 item = new TestGraphItem();
                 item.Layer = workLayer;
@@ -387,7 +387,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 item.ToolTip = "Odpolední směna";
                 item.BackColor = Color.FromArgb(240, 255, 240);
                 item.LineColor = Color.Blue;
-                graph.ItemList.Add(item);
+                graph.AddGraphItem(item);
 
                 for (int t = 0; t < 7; t++)
                 {
@@ -435,7 +435,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                     item.BackColor = backColor;
                     item.LineColor = Color.Black;
 
-                    graph.ItemList.Add(item);
+                    graph.AddGraphItem(item);
 
                     start = end + TimeSpan.FromMinutes(15 * Rand.Next(0, 1 * 24 * 4));
                 }
@@ -478,7 +478,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                     item.ToolTip = "Ranní směna";
                     item.BackColor = Color.FromArgb(192, 255, 192);
                     item.LineColor = Color.FromArgb(128, 160, 128);
-                    graph.ItemList.Add(item);
+                    graph.AddGraphItem(item);
 
                     for (int t = 0; t < 7; t++)
                     {
@@ -507,7 +507,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 item.BackColor = Color.FromArgb(230, 216, 255);
                 item.LineColor = Color.FromArgb(180, 160, 192);
 
-                graph.ItemList.Add(item);
+                graph.AddGraphItem(item);
 
                 start = end.AddMinutes(15 * Rand.Next(4, 1 * 24 * 4));
             }
