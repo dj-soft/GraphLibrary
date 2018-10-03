@@ -377,6 +377,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="response"></param>
         private void _ToolBarItemClickApplicationResponse(AppHostResponseArgs response)
         {
+            this._ProcessResponse(response.GuiResponse);
         }
         /// <summary>
         /// Obsluha události ItemSelectedChange na Systémové položce ToolBaru
@@ -756,6 +757,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="response"></param>
         private void _ContextMenuItemClickApplicationResponse(AppHostResponseArgs response)
         {
+            this._ProcessResponse(response.GuiResponse);
         }
         /// <summary>
         /// ContextFunctionItem : adapter mezi <see cref="GuiContextMenuItem"/>, a položku kontextového menu <see cref="FunctionItem"/>.
