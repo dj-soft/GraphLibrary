@@ -47,6 +47,10 @@ namespace Asol.Tools.WorkScheduler.Data
             this._Denominator = denominator;
             this._CheckFraction();
         }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             return (this._Integral != 0 ? this._Integral.ToString() + " " : "") + (this._Numerator == 0 ? "" : (this._Numerator.ToString() + "/" + this._Denominator.ToString()).Trim());
@@ -141,7 +145,9 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// Vrátí daný zlomek, zjednodušený do normalizovaného tvaru (má část Integral podle potřeby, nemá záporný jmenovatel, zlomková část je zjednodušená na společného dělitele)
         /// </summary>
-        /// <param name="f"></param>
+        /// <param name="integral"></param>
+        /// <param name="numerator"></param>
+        /// <param name="denominator"></param>
         /// <returns></returns>
         public static Fraction Simplify(int integral, int numerator, int denominator)
         {

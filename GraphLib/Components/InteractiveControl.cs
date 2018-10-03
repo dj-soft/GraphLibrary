@@ -1383,15 +1383,16 @@ namespace Asol.Tools.WorkScheduler.Components
         private void _ToolTipInit()
         {
             this._ToolTip = new ToolTipItem(this);
-            this._ToolTip.TimerDrawRequest += new EventHandler(_ToolTip_TimerDrawRequest);
+            this._ToolTip.TimerDrawRequest += _ToolTip_TimerDrawRequest;
         }
         /// <summary>
         /// Handler for event ToolTipItem.TimerDrawRequest
         /// </summary>
         /// <param name="sender"></param>
-        /// <param name="e"></param>
-        void _ToolTip_TimerDrawRequest(object sender, EventArgs e)
+        /// <param name="args"></param>
+        void _ToolTip_TimerDrawRequest(object sender, GPropertyEventArgs<float> args)
         {
+
         }
         /// <summary>
         /// Store definitions for tooltip from data object (TooltipData) to visual object (ToolTipItem)

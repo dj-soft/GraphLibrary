@@ -245,6 +245,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Souhrn všech tabulek této stránky, bez ohledu na to ve kterém panelu se nacházejí
         /// </summary>
+        public IEnumerable<MainDataTable> DataTables { get { return this._DataTableList; } }
+        /// <summary>
+        /// Souhrn všech tabulek této stránky, bez ohledu na to ve kterém panelu se nacházejí
+        /// </summary>
         private List<MainDataTable> _DataTableList;
         /// <summary>
         /// Metoda načte všechny tabulky typu <see cref="GuiGrid"/> z dodaného <see cref="GuiPanel"/> a vloží je do dodaného vizuálního objektu <see cref="GGrid"/>.
@@ -272,7 +276,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             return true;
         }
         /// <summary>
-        /// Metoda načte všechny tabulky typu <see cref="GuiGrid"/> z dodaného <see cref="GuiPanel"/> a vloží je jako nové Taby do do dodaného vizuálního objektu <see cref="GTabContainer"/>.
+        /// Metoda načte všechny tabulky typu <see cref="GuiGrid"/> z dodaného <see cref="GuiPanel"/> a vloží je jako nové Taby do dodaného vizuálního objektu <see cref="GTabContainer"/>.
         /// Současně je ukládá do <see cref="_DataTableList"/>.
         /// </summary>
         /// <param name="guiPanel"></param>

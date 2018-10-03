@@ -43,18 +43,6 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         #endregion
         #region Rozmístění vnitřních prvků gridu - souřadnice pro prostor tabulek a scrollbarů
-        public override Rectangle Bounds
-        {
-            get
-            {
-                return base.Bounds;
-            }
-
-            set
-            {
-                base.Bounds = value;
-            }
-        }
         /// <summary>
         /// Je voláno po změně Bounds, z metody SetBound(), pokud je vyžadována akce PrepareInnerItems.
         /// Přepočte umístění vnitřních prvků objektu, podle rozměrů this.BoundsClient.Size
@@ -682,6 +670,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Tato property nikdy nevrací null, ale může vrátit kolekci s počtem = 0 prvků (pokud neexistují tabulky).
         /// </summary>
         protected GTable[] TablesAll { get { this._TablesAllCheck(); return this._TablesAll; } }
+        /// <summary>
+        /// Součet velikostí (Height) všech tabulek v gridu
+        /// </summary>
         protected int TablesAllDataSize { get { this._TablesAllDataSizeCheck(); return this._TablesAllDataSize.Value; } }
         /// <summary>
         /// Soupis viditelných grafických objektů tabulek, setříděný podle TableOrder, se správně napočtenou hodnotou ISequenceLayout.Begin a End (=datová oblast).
@@ -1153,6 +1144,10 @@ namespace Asol.Tools.WorkScheduler.Components
         private bool _ChildArrayValid;
         #endregion
         #region Interaktivita vlastního Gridu
+        /// <summary>
+        /// Interaktivita Gridu jako celku je potlačena
+        /// </summary>
+        /// <param name="e"></param>
         protected override void AfterStateChanged(GInteractiveChangeStateArgs e)
         {
             // GGrid sám o sobě není interaktivní. Interaktivní jsou jeho Childs.
@@ -1220,10 +1215,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Master column, nikdy není null
         /// </summary>
         private Column _MasterColumn;
-        /// <summary>
-        /// Aktuální pořadí
-        /// </summary>
-        private int _SortOrder;
         #endregion
         #region Public rozhraní: Master, properties, AddColumn(), CompareOrder()
         /// <summary>
@@ -1264,7 +1255,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public bool UseTimeAxis { get { return this._MasterColumn.ColumnProperties.UseTimeAxis; } }
         /// <summary>
         /// Obsahuje true, pokud se pro sloupec má zobrazit časová osa v záhlaví, a tato časová osa se má synchronizovat do dalších Gridů a objektů.
-        /// To je jen tehdy, když sloupec obsahuje časový graf (<see cref="ColumnContent"/> == <see cref="ColumnContentType.TimeGraphSynchronized"/>).
+        /// To je jen tehdy, když sloupec obsahuje časový graf (<see cref="ColumnProperties.ColumnContent"/> == <see cref="ColumnContentType.TimeGraphSynchronized"/>).
         /// </summary>
         public bool UseTimeAxisSynchronized { get { return this._MasterColumn.ColumnProperties.UseTimeAxisSynchronized; } }
         /// <summary>
@@ -1410,8 +1401,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Vytvoří pozicioner pro obsah.
         /// </summary>
         /// <param name="firstPixel">Pozice prvního vizuálního pixelu, kde se začínají zobrazovat data</param>
+        /// <param name="dataSizeAddSpace"></param>
         /// <param name="getVisualSizeMethod">Metoda, která vrátí počet vizuálních pixelů, na nichž se zobrazují data. Jde o čistý prostor pro data, nezahrnuje žádný Header ani Footer nebo Scrollbar.</param>
         /// <param name="getDataSizeMethod">Metoda, která vrátí velikost dat = počet pixelů, které by obsadila data zobrazená najednou. Bez rezervy, bez přídavku.</param>
+        /// <param name="getVisualFirstPixel"></param>
+        /// <param name="setVisualFirstPixel"></param>
         internal GridPosition(int firstPixel, int dataSizeAddSpace, Func<int> getVisualSizeMethod, Func<int> getDataSizeMethod, Func<int> getVisualFirstPixel, Action<int> setVisualFirstPixel)
         {
             this.VisualFirstPixel = firstPixel;
@@ -1422,6 +1416,10 @@ namespace Asol.Tools.WorkScheduler.Components
             this._DataSizeAddSpace = dataSizeAddSpace;
             this._DataVisibleReserve = DefaultDataVisibleReserve;
         }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             int visualBegin = this.VisualFirstPixel;
@@ -1513,7 +1511,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Hodnota 0 pak zobrazuje "matematicky správně".
         /// Záporná hodnota v DataSizeAddSpace zařídí, že daný bude zobrazen počet pixelů dat nahoře/vlevo:
         /// např. -40 zajistí, že při posunu scrollbaru na konec dráhy se zobrazí nahoře 40 pixelů dat, a celý zbytek bude prázdný.
-        /// </summary>
         /// </summary>
         public int DataSizeAddSpace { get { return this._DataSizeAddSpace; } set { this._DataSizeAddSpace = value; } } private int _DataSizeAddSpace;
         /// <summary>

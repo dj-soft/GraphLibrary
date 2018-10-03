@@ -232,6 +232,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         private void _FillMainControlToolbar()
         {
+            this._ToolBarGuiItems = new List<ToolBarItem>();
             this._MainControl.ClearToolBar();
             this._MainControl.ToolBarVisible = this._GuiToolbarPanel.ToolbarVisible;
             this._FillMainControlToolbarFromSystem();
@@ -313,7 +314,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 }
                 ToolBarItem item = ToolBarItem.Create(this, guiToolBarItem);
                 if (item != null)
+                {
                     group.Items.Add(item);
+                    this._ToolBarGuiItems.Add(item);
+                }
             }
 
             // Výsledky (jednotlivé grupy, kde každá obsahuje sadu prvků = buttonů) vložím do předaného pole:
@@ -404,6 +408,29 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             return toolBarItem.GuiToolbarItem;
         }
         /// <summary>
+        /// Metoda najde a aktualizuje položky Toolbaru z dat v dodaném soupisu.
+        /// </summary>
+        /// <param name="toolbarItems"></param>
+        private void _ToolBarRefreshFromResponse(IEnumerable<GuiToolbarItem> toolbarItems)
+        {
+            if (toolbarItems == null) return;
+            GToolBarRefreshMode refreshMode = GToolBarRefreshMode.None;
+            foreach (GuiToolbarItem guiToolbarItem in toolbarItems)
+            {
+                ToolBarItem toolBarItem = _ToolBarGuiItems.FirstOrDefault(t => String.Equals(t.Name, guiToolbarItem.Name, StringComparison.InvariantCulture));
+                if (toolBarItem == null) continue;
+                GToolBarRefreshMode itemMode = toolBarItem.RefreshFrom(guiToolbarItem);
+                refreshMode = (GToolBarRefreshMode)((int)refreshMode | (int)itemMode);
+            }
+
+            this._MainControl.RefreshToolBar(refreshMode);
+        }
+        /// <summary>
+        /// Soupis aplikačních položek Toolbaru (tj. položky, vytvářené z dat <see cref="GuiToolbarItem"/> v metodě <see cref="_FillMainControlToolbarFromGui()"/>, 
+        /// při prvotním načítání a tvorbě celého controlu.
+        /// </summary>
+        private List<ToolBarItem> _ToolBarGuiItems;
+        /// <summary>
         /// ContextFunctionItem : adapter mezi <see cref="GuiToolbarItem"/>, a položkou kontextového menu <see cref="FunctionGlobalItem"/>.
         /// </summary>
         protected class ToolBarItem : FunctionGlobalItem
@@ -441,6 +468,103 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
                 ToolBarItem toolBarItem = new ToolBarItem(provider, guiToolBarItem);
                 return toolBarItem;
+            }
+            #endregion
+            #region RefreshFrom
+            /// <summary>
+            /// Metoda do this prvku opíše nové hodnoty z dodaného objektu.
+            /// Neukládá do sebe nově dodaný objekt, jen jeho hodnoty.
+            /// Řeší hodnoty pro tyto properties:
+            /// <see cref="GuiTextItem.Title"/>, <see cref="GuiTextItem.ToolTip"/>, <see cref="GuiTextItem.Image"/>, <see cref="GuiToolbarItem.ImageHot"/>, 
+            /// <see cref="GuiToolbarItem.Visible"/>, <see cref="GuiToolbarItem.Enable"/>, <see cref="GuiToolbarItem.Size"/>, 
+            /// <see cref="GuiToolbarItem.ModuleWidth"/>, <see cref="GuiToolbarItem.LayoutHint"/>.
+            /// Vrací rozsah změn = potřebné oblasti pro refresh Toolbaru.
+            /// </summary>
+            /// <param name="guiToolbarItem"></param>
+            /// <returns></returns>
+            public GToolBarRefreshMode RefreshFrom(GuiToolbarItem guiToolbarItem)
+            {
+                GToolBarRefreshMode refreshMode = GToolBarRefreshMode.None;
+                GuiToolbarItem refrData = guiToolbarItem;
+                if (refrData == null) return refreshMode;
+                GuiToolbarItem currData = this._GuiToolBarItem;
+                if (currData == null) return refreshMode;
+
+                if (_Changed(currData.Title, refrData.Title, GToolBarRefreshMode.RefreshLayout, ref refreshMode))
+                    currData.Title = refrData.Title;
+                if (_Changed(currData.ToolTip, refrData.ToolTip, GToolBarRefreshMode.None, ref refreshMode))
+                    currData.ToolTip = refrData.ToolTip;
+                if (_Changed(currData.Image, refrData.Image, GToolBarRefreshMode.RefreshLayout, ref refreshMode))
+                    currData.Image = refrData.Image;
+                if (_Changed(currData.ImageHot, refrData.ImageHot, GToolBarRefreshMode.RefreshLayout, ref refreshMode))
+                    currData.ImageHot = refrData.ImageHot;
+                if (_Changed(currData.Visible, refrData.Visible, GToolBarRefreshMode.RefreshLayout, ref refreshMode))
+                    currData.Visible = refrData.Visible;
+                if (_Changed(currData.Enable, refrData.Enable, GToolBarRefreshMode.RefreshControl, ref refreshMode))
+                    currData.Enable = refrData.Enable;
+                if (_Changed(currData.Size, refrData.Size, GToolBarRefreshMode.RefreshLayout, ref refreshMode))
+                    currData.Size = refrData.Size;
+                if (_Changed(currData.ModuleWidth, refrData.ModuleWidth, GToolBarRefreshMode.RefreshLayout, ref refreshMode))
+                    currData.ModuleWidth = refrData.ModuleWidth;
+                if (_Changed(currData.LayoutHint, refrData.LayoutHint, GToolBarRefreshMode.RefreshLayout, ref refreshMode))
+                    currData.LayoutHint = refrData.LayoutHint;
+
+                return refreshMode;
+            }
+            private static bool _Changed(string oldValue, string newValue, GToolBarRefreshMode result, ref GToolBarRefreshMode refreshMode)
+            {
+                if (newValue == null) return false;                  // Pokud newValue není zadáno, pak nejde o změnu (jen nebyl nový údaj vepsán).
+                if (String.Equals(oldValue, newValue, StringComparison.InvariantCulture)) return false;
+                refreshMode = (GToolBarRefreshMode)((int)refreshMode | (int)result);
+                return true;
+            }
+            private static bool _Changed(bool oldValue, bool newValue, GToolBarRefreshMode result, ref GToolBarRefreshMode refreshMode)
+            {
+                if (oldValue == newValue) return false;
+                refreshMode = (GToolBarRefreshMode)((int)refreshMode | (int)result);
+                return true;
+            }
+            private static bool _Changed(FunctionGlobalItemSize oldValue, FunctionGlobalItemSize newValue, GToolBarRefreshMode result, ref GToolBarRefreshMode refreshMode)
+            {
+                if (oldValue == newValue) return false;
+                refreshMode = (GToolBarRefreshMode)((int)refreshMode | (int)result);
+                return true;
+            }
+            private static bool _Changed(LayoutHint oldValue, LayoutHint newValue, GToolBarRefreshMode result, ref GToolBarRefreshMode refreshMode)
+            {
+                if (oldValue == newValue) return false;
+                refreshMode = (GToolBarRefreshMode)((int)refreshMode | (int)result);
+                return true;
+            }
+            private static bool _Changed(int? oldValue, int? newValue, GToolBarRefreshMode result, ref GToolBarRefreshMode refreshMode)
+            {
+                if (!newValue.HasValue) return false;                // Pokud newValue není zadáno, pak nejde o změnu (jen nebyl nový údaj vepsán).
+                if (oldValue.HasValue && oldValue.Value == newValue.Value) return false;         // Pokud oldValue má hodnotu, a hodnota je beze změny, pak nejde o změnu.
+                // Jde o změnu (buď z null na not null, anebo změnu hodnoty):
+                refreshMode = (GToolBarRefreshMode)((int)refreshMode | (int)result);
+                return true;
+            }
+            private static bool _Changed(GuiImage oldValue, GuiImage newValue, GToolBarRefreshMode result, ref GToolBarRefreshMode refreshMode)
+            {
+                if (newValue == null) return false;                  // Pokud newValue není zadáno, pak nejde o změnu (jen nebyl nový údaj vepsán).
+                bool on = (oldValue == null);
+                bool nn = (newValue == null);
+                if (on && nn)
+                    // Oba jsou null => to není změna:
+                    return false;
+                if (on)
+                {   // Pouze oldValue je null => to je změna (protože newValue není null):
+                    refreshMode = (GToolBarRefreshMode)((int)refreshMode | (int)result);
+                    return true;
+                }
+                // Oba nejsou null, podíváme se dovnitř:
+                if (oldValue.ImageFile != null || newValue.ImageFile != null)
+                {   // Některý Image je definován názvem souboru => porovnáme stringy:
+                    return _Changed(oldValue.ImageFile, newValue.ImageFile, result, ref refreshMode);
+                }
+                // Dál do hloubky nejdeme, vrátíme true = jde o změnu:
+                refreshMode = (GToolBarRefreshMode)((int)refreshMode | (int)result);
+                return true;
             }
             #endregion
             #region Public property FunctionGlobalItem, načítané z GuiToolbarItem, a explicitně přidané
@@ -506,7 +630,27 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this._MainControl.SynchronizedTime.ValueLimit = this.GuiData.Properties.TotalTimeRange;
             foreach (GuiPage guiPage in this._GuiPages.Pages)
                 this._MainControl.AddPage(guiPage);
+            this._FillDataTables();
         }
+        /// <summary>
+        /// Souhrn všech datových tabulek ze všech panelů.
+        /// Každá tabulka má své unikátní jméno (alespoň měla by mít), uložené v <see cref="MainDataTable.TableName"/>.
+        /// </summary>
+        public MainDataTable[] DataTables { get { return this._DataTables; } }
+        /// <summary>
+        /// Metoda načte souhrn všech tabulek <see cref="MainDataTable"/> ze všech vytvořených panelů do <see cref="_DataTables"/>.
+        /// </summary>
+        private void _FillDataTables()
+        {
+            List<MainDataTable> tableList = new List<MainDataTable>();
+            foreach (SchedulerPanelInfo panel in this._MainControl.SchedulerPanels)
+                tableList.AddRange(panel.SchedulerPanel.DataTables);
+            this._DataTables = tableList.ToArray();
+        }
+        /// <summary>
+        /// Souhrn všech datových tabulek ze všech panelů.
+        /// </summary>
+        private MainDataTable[] _DataTables;
         #endregion
         #region Kontextové menu
         /// <summary>
@@ -1102,6 +1246,85 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             return gridItemDict.Values.ToArray();
         }
         #endregion
+        #region Zpracování odpovědi (data v GuiResponse) z aplikace poté, kdy doběhla aplikační funkce
+        /// <summary>
+        /// Metoda zpracuje odpovědi z aplikace.
+        /// </summary>
+        /// <param name="guiResponse"></param>
+        private void _ProcessResponse(GuiResponse guiResponse)
+        {
+            if (guiResponse == null) return;
+
+            Dictionary<string, MainDataTable> mainTableDict = this.DataTables.Where(t => t.TableName != null).GetDictionary(t => t.TableName, true);
+            Dictionary<uint, GTimeGraph> refreshGraphDict = new Dictionary<uint, GTimeGraph>();
+            this._ProcessResponseToolbarItems(guiResponse.ToolbarItems);
+            this._ProcessResponseTime(guiResponse.TimeAxisValue);
+            this._ProcessResponseRemoveItems(guiResponse.RemoveItems, mainTableDict, refreshGraphDict);
+            this._ProcessResponseAddItems(guiResponse.AddItems, mainTableDict, refreshGraphDict);
+            this._ProcessResponseRefreshGraphs(refreshGraphDict.Values);
+
+        }
+        /// <summary>
+        /// Zpracuje odpověď z aplikace, část: <see cref="GuiResponse.ToolbarItems"/>
+        /// </summary>
+        /// <param name="toolbarItems"></param>
+        private void _ProcessResponseToolbarItems(GuiToolbarItem[] toolbarItems)
+        {
+            if (toolbarItems == null) return;
+            this._ToolBarRefreshFromResponse(toolbarItems);
+        }
+        /// <summary>
+        /// Zpracuje odpověď z aplikace, část: <see cref="GuiResponse.TimeAxisValue"/>
+        /// </summary>
+        /// <param name="timeRange"></param>
+        private void _ProcessResponseTime(GuiTimeRange timeRange)
+        {
+            if (timeRange == null) return;
+            this._MainControl.SynchronizedTime.Value = timeRange;
+        }
+        /// <summary>
+        /// Zpracuje odpověď z aplikace, část: <see cref="GuiResponse.RemoveItems"/>
+        /// </summary>
+        /// <param name="removeItems"></param>
+        /// <param name="mainTableDict">Index tabulek podle jejich jména</param>
+        /// <param name="refreshGraphDict">Index grafů, kterých se týkají změny, a na nichž na závěr provedeme Refresh</param>
+        private void _ProcessResponseRemoveItems(GuiGridItemId[] removeItems, Dictionary<string, MainDataTable> mainTableDict, Dictionary<uint, GTimeGraph> refreshGraphDict)
+        {
+            if (removeItems == null) return;
+            foreach (GuiGridItemId removeItem in removeItems)
+            {
+                if (removeItem == null || removeItem.TableName == null) continue;
+                MainDataTable mainDataTable;
+                if (mainTableDict.TryGetValue(removeItem.TableName, out mainDataTable))
+                    mainDataTable.RemoveGraphItem(removeItem, refreshGraphDict);
+            }
+        }
+        /// <summary>
+        /// Zpracuje odpověď z aplikace, část: <see cref="GuiResponse.AddItems"/>
+        /// </summary>
+        /// <param name="addItems"></param>
+        /// <param name="mainTableDict">Index tabulek podle jejich jména</param>
+        /// <param name="refreshGraphDict">Index grafů, kterých se týkají změny, a na nichž na závěr provedeme Refresh</param>
+        private void _ProcessResponseAddItems(GuiGridGraphItem[] addItems, Dictionary<string, MainDataTable> mainTableDict, Dictionary<uint, GTimeGraph> refreshGraphDict)
+        {
+            if (addItems == null) return;
+            foreach (GuiGridGraphItem addItem in addItems)
+            {
+                if (addItem == null || addItem.TableName == null) continue;
+                MainDataTable mainDataTable;
+                if (mainTableDict.TryGetValue(addItem.TableName, out mainDataTable))
+                    mainDataTable.AddGraphItem(addItem, refreshGraphDict);
+            }
+        }
+        /// <summary>
+        /// Metoda provede Refresh na všech grafech, které se nacházejí v parametru refreshGraphDict.
+        /// </summary>
+        /// <param name="refreshGraphs"></param>
+        private void _ProcessResponseRefreshGraphs(IEnumerable<GTimeGraph> refreshGraphs)
+        {
+            refreshGraphs.ForEachItem(g => g.Refresh());
+        }
+        #endregion
         #region Implementace IMainDataInternal
         /// <summary>
         /// Metoda zavolá hostitele a předá mu požadavek.
@@ -1120,7 +1343,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <returns></returns>
         GuiRequestCurrentState IMainDataInternal.CreateGuiCurrentState() { return this._CreateGuiCurrentState(); }
-
+        /// <summary>
+        /// Metoda zpracuje odpovědi z aplikace.
+        /// </summary>
+        /// <param name="guiResponse"></param>
+        void IMainDataInternal.ProcessResponse(GuiResponse guiResponse) { this._ProcessResponse(guiResponse); }
         #endregion
     }
     /// <summary>
@@ -1145,6 +1372,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <returns></returns>
         GuiRequestCurrentState CreateGuiCurrentState();
+        /// <summary>
+        /// Metoda zpracuje odpovědi z aplikace.
+        /// </summary>
+        /// <param name="guiResponse"></param>
+        void ProcessResponse(GuiResponse guiResponse);
     }
     #endregion
 }

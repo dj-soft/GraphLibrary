@@ -41,12 +41,20 @@ namespace Asol.Tools.WorkScheduler.Components
 
         #endregion
         #region Přidávání tabulky / Gridu
+        /// <summary>
+        /// Přidá tabulku
+        /// </summary>
+        /// <param name="table"></param>
         public void AddTable(Table table)
         {
             GGrid grid = new GGrid(this);
             grid.AddTable(table);
             this._AddGrid(grid);
         }
+        /// <summary>
+        /// Přidá grid
+        /// </summary>
+        /// <param name="grid"></param>
         public void AddGrid(GGrid grid)
         {
             this._AddGrid(grid);
@@ -69,14 +77,21 @@ namespace Asol.Tools.WorkScheduler.Components
 
         #endregion
         #region Přepínání TabHeader, aktivní Grid
-
+        /// <summary>
+        /// Zobrazit tabulku i pro jeden Grid
+        /// </summary>
         public bool ShowHeaderForOnlyTable;
 
         #endregion
         #region Draw, Interactivity, Childs
-
+        /// <summary>
+        /// Potomstvo
+        /// </summary>
         protected override IEnumerable<IInteractiveItem> Childs { get { return this.GetChilds(); } }
-
+        /// <summary>
+        /// Vrátí potomky
+        /// </summary>
+        /// <returns></returns>
         protected IInteractiveItem[] GetChilds()
         {
             if (this._ChildItems == null)
@@ -85,10 +100,16 @@ namespace Asol.Tools.WorkScheduler.Components
             }
             return this._ChildItems;
         }
+        /// <summary>
+        /// Invaliduje potomky
+        /// </summary>
         protected void InvalidateChilds()
         {
             this._ChildItems = null;
         }
+        /// <summary>
+        /// Potomci
+        /// </summary>
         protected IInteractiveItem[] _ChildItems;
         #endregion
     }

@@ -462,7 +462,7 @@ namespace Asol.Tools.WorkScheduler.Components
     /// </summary>
     /// <param name="sender"></param>
     /// <param name="e"></param>
-    public delegate void GPropertyEvent<T>(object sender, GPropertyEventArgs<T> e);
+    public delegate void GPropertyEventHandler<T>(object sender, GPropertyEventArgs<T> e);
     /// <summary>
     /// Delegate for handlers for Drawing into User Area
     /// </summary>
@@ -483,14 +483,20 @@ namespace Asol.Tools.WorkScheduler.Components
         public GPropertyEventArgs(T value, EventSourceType eventSource = EventSourceType.InteractiveChanged, GInteractiveChangeStateArgs interactiveArgs = null)
         {
             this.Value = value;
+            this.ValueNew = value;
             this.EventSource = eventSource;
             this.InteractiveArgs = interactiveArgs;
             this.Cancel = false;
         }
         /// <summary>
-        /// Objekt, kde došlo k události
+        /// Hodnota
         /// </summary>
         public T Value { get; private set; }
+        /// <summary>
+        /// Hodnota upravená aplikačním kódem.
+        /// Výchozí stav = shodný s <see cref="Value"/>.
+        /// </summary>
+        public T ValueNew { get; set; }
         /// <summary>
         /// Zdroj události
         /// </summary>
@@ -1249,12 +1255,12 @@ namespace Asol.Tools.WorkScheduler.Components
         MouseEnter,
         /// <summary>
         /// Myš se pohybuje nad prvkem. 
-        /// Akce se volá pouze pokud styl obsahuje hodnotu <see cref="GInteractiveStyles.CallMouseOver"/>.
+        /// Akce se volá pouze pokud vlastnosti objektu mají nastaveno <see cref="InteractiveProperties.MouseMoveOver"/> == true.
         /// </summary>
         MouseOver,
         /// <summary>
         /// Myš se pohybuje nad prvkem, prvek není Enabled.
-        /// Akce se volá pouze pokud styl obsahuje hodnotu <see cref="GInteractiveStyles.CallMouseOver"/>.
+        /// Akce se volá pouze pokud vlastnosti objektu mají nastaveno <see cref="InteractiveProperties.MouseMoveOver"/> == true.
         /// </summary>
         MouseOverDisabled,
         /// <summary>

@@ -11,9 +11,9 @@ using Noris.LCS.Base.WorkScheduler;
 
 namespace Asol.Tools.WorkScheduler.Components
 {
-    #region class Toolbar
+    #region class GToolBar : Toolbar kreslený jako panel
     /// <summary>
-    /// Toolbar kreslený jako panel
+    /// GToolBar : Toolbar kreslený jako panel
     /// </summary>
     public class GToolBar : InteractiveContainer
     {
@@ -682,6 +682,24 @@ namespace Asol.Tools.WorkScheduler.Components
             return items;
         }
         /// <summary>
+        /// Provede řízený refresh layoutu a controlu, podle požadavku
+        /// </summary>
+        /// <param name="refreshMode">Co je třeba refreshovat</param>
+        public void Refresh(GToolBarRefreshMode refreshMode)
+        {
+            bool needRefresh = false;
+            if (refreshMode.HasFlag(GToolBarRefreshMode.RefreshLayout))
+            {
+                this.InvalidateLayout();
+                needRefresh = true;
+            }
+
+            if (needRefresh || refreshMode.HasFlag(GToolBarRefreshMode.RefreshControl))
+            {
+                base.Refresh();
+            }
+        }
+        /// <summary>
         /// Vykreslí Toolbar
         /// </summary>
         /// <param name="e">Data pro kreslení</param>
@@ -755,9 +773,9 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
     }
     #endregion
-    #region class ToolbarGroup
+    #region class GToolbarGroup : Jedna vizuální skupina prvků v toolbaru
     /// <summary>
-    /// Jedna vizuální skupina prvků v toolbaru
+    /// GToolbarGroup : Jedna vizuální skupina prvků v toolbaru
     /// </summary>
     internal class GToolbarGroup : InteractiveContainer
     {
@@ -859,13 +877,16 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="x"></param>
         internal void PrepareLayout(Graphics graphics, ref int x)
         {
-            // 1. prepare ModuleSize and PixelSize:
-            foreach (GToolbarItem item in this._ToolbarItemList)
+            // 1. Only Visible items:
+            GToolbarItem[] items = this._ToolbarItemList.Where(t => t.Is.Visible).ToArray();
+
+            // 2. prepare ModuleSize and PixelSize:
+            foreach (GToolbarItem item in items)
                 item.PrepareLayout(graphics);
 
-            // 2. Arrange items to layout:
+            // 3. Arrange items to layout:
             int tableX = this.TBarSetting.ContentBounds.X;
-            List<ILayoutItem> layoutItemList = new List<ILayoutItem>(this._ToolbarItemList);
+            List<ILayoutItem> layoutItemList = new List<ILayoutItem>(items);
             LayoutEngineArgs layoutArgs = this.PrepareLayoutArgs();
             while (true)
             {   // One call LayoutEngine.CreateLayout() create one "table" (visual group) from items:
@@ -875,7 +896,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 layoutArgs.PrepareNextProcess(false, false);
             }
 
-            // 3. Group Bounds:
+            // 4. Group Bounds:
             var tBarSetting = this.TBarSetting;
             int groupX = x;
             int groupY = tBarSetting.ToolbarBounds.Y;
@@ -1034,7 +1055,7 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
     }
     #endregion
-    #region class ToolbarItem a konkrétní potomci pro konkrétní typy
+    #region class GToolbarItem a konkrétní potomci pro konkrétní typy
     /// <summary>
     /// Konkrétní položka Toolbaru: Separator
     /// </summary>
@@ -1863,6 +1884,32 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         #endregion
+    }
+    #endregion
+    #region enum atd
+    /// <summary>
+    /// Režim provedení refresh a Invalidate pro ToolBar, poté kdy byla provedena metoda
+    /// </summary>
+    [Flags]
+    public enum GToolBarRefreshMode
+    {
+        /// <summary>
+        /// Netřeba provádět nic
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Je třeba provést přepočet celého Layoutu.
+        /// Používá se po změně hodnot, které mají vliv na layout: Size, Width, Hint, Text
+        /// </summary>
+        RefreshLayout = 0x0001,
+        /// <summary>
+        /// Je třeba provést překreslení controlu (základní Refresh())
+        /// </summary>
+        RefreshControl = 0x0002,
+        /// <summary>
+        /// Refresh Layoutu i Controlu
+        /// </summary>
+        All = RefreshLayout | RefreshControl
     }
     #endregion
 }

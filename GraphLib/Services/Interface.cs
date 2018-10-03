@@ -32,6 +32,10 @@ namespace Asol.Tools.WorkScheduler.Services
     /// </summary>
     public abstract class DataSourceRequest
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="progressData"></param>
         public DataSourceRequest(Data.ProgressData progressData)
         {
             this._ProgressData = progressData;
@@ -46,10 +50,17 @@ namespace Asol.Tools.WorkScheduler.Services
     /// </summary>
     public class DataSourceResponse
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="request"></param>
         public DataSourceResponse(DataSourceRequest request)
         {
             this.Request = request;
         }
+        /// <summary>
+        /// Požadavek
+        /// </summary>
         public DataSourceRequest Request { get; private set; }
     }
     #endregion
@@ -92,8 +103,15 @@ namespace Asol.Tools.WorkScheduler.Services
         /// </summary>
         public GToolBar ToolBar { get; private set; }
     }
+    /// <summary>
+    /// Požadavek
+    /// </summary>
     public class FunctionGlobalCheckGuiRequest
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="items"></param>
         public FunctionGlobalCheckGuiRequest(FunctionGlobalGroup[] items)
         {
             this.Items = items;
@@ -103,8 +121,14 @@ namespace Asol.Tools.WorkScheduler.Services
         /// </summary>
         public FunctionGlobalGroup[] Items { get; private set; }
     }
+    /// <summary>
+    /// Odpověď
+    /// </summary>
     public class FunctionGlobalPrepareResponse
     {
+        /// <summary>
+        /// Položky
+        /// </summary>
         public FunctionGlobalGroup[] Items { get; set; }
     }
     /// <summary>
@@ -113,6 +137,9 @@ namespace Asol.Tools.WorkScheduler.Services
     public class FunctionGlobalGroup
     {
         #region Properties
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public FunctionGlobalGroup()
         {
             this._Id = App.GetNextId(typeof(FunctionGlobalGroup));
@@ -120,6 +147,10 @@ namespace Asol.Tools.WorkScheduler.Services
             this.IsVisible = true;
             this.LayoutWidth = 24;
         }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="provider"></param>
         public FunctionGlobalGroup(IFunctionGlobal provider)
             : this()
         {

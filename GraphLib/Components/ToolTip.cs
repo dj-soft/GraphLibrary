@@ -157,6 +157,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Shape type of ToolTip
         /// </summary>
         protected static TooltipShapeType DefaultShapeType { get { return TooltipShapeType.Rectangle; } }
+        /// <summary>
         /// Color for Border line
         /// </summary>
         protected static Color DefaultBorderColor { get { return Skin.ToolTip.BorderColor; } }
@@ -342,6 +343,9 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             this.Point = this._MouseLocationCurrent;
         }
+        /// <summary>
+        /// true when this phase need another animation
+        /// </summary>
         protected bool AnimationActive { get { return this.AnimationCurrentState.IsActive; } }
         /// <summary>
         /// Data for current animation state
@@ -360,8 +364,19 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Dictionary with all animation states
         /// </summary>
         protected Dictionary<AnimationPhase, AnimationState> _AnimationDict;
+        /// <summary>
+        /// Stav animace
+        /// </summary>
         protected class AnimationState
         {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="phase"></param>
+            /// <param name="tickStep"></param>
+            /// <param name="alphaBegin"></param>
+            /// <param name="alphaEnd"></param>
+            /// <param name="nextPhase"></param>
             public AnimationState(AnimationPhase phase, int tickStep, float alphaBegin, float alphaEnd, AnimationPhase nextPhase)
             {
                 this.Phase = phase;
@@ -535,9 +550,46 @@ namespace Asol.Tools.WorkScheduler.Components
             /// </summary>
             public bool IsActive { get { return (this.TickStep > 0 && this.TimeRemaining > 0); } }
         }
-        protected enum AnimationPhase { None, Wait, RepeatedWait, FadeIn, Show, FadeOut, End }
+        /// <summary>
+        /// Fáze animace (FadeIn a FadeOut)
+        /// </summary>
+        protected enum AnimationPhase
+        {
+            /// <summary>
+            /// Není animace
+            /// </summary>
+            None,
+            /// <summary>
+            /// Čekám před zahájením FadeIn, první čekání po najetí myší na prvek
+            /// </summary>
+            Wait,
+            /// <summary>
+            /// Čekám před zahájením FadeIn, opakované čekání po zhasnutí Tooltipu, před opakovaným rozsvícením
+            /// </summary>
+            RepeatedWait,
+            /// <summary>
+            /// Fáze FadeIn = postupné rozsvěcování
+            /// </summary>
+            FadeIn,
+            /// <summary>
+            /// Fáze Show = Tooltip plně svítí, čeká na fázi FadeOut (zhasnutí)
+            /// </summary>
+            Show,
+            /// <summary>
+            /// Fáze FadeIn = postupné zhasínání
+            /// </summary>
+            FadeOut,
+            /// <summary>
+            /// End = konec, je zhasnuto, už se nerozsvítí
+            /// </summary>
+            End
+        }
         #endregion
         #region Constructor, protected and private members
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="owner"></param>
         internal ToolTipItem(Control owner)
         {
             this._Owner = owner;
@@ -578,35 +630,40 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             if (!this.NeedDraw) return;
             if (!this.ToolTipExist) return;
-            this.CheckValid(graphics);
-
             float alpha = this.AnimationAlpha;
-            
-            string text = (this._Data != null ? this._Data.InfoText : "null");
-            Application.App.Trace.Info(Application.TracePriority.Priority2_Lowest, "ToolTipItem", "Draw", "Run", "Text: " + text, "AnimationAlpha: " + alpha.ToString());
+            if (alpha > 0f)
+                this.CallTimerDrawRequest(ref alpha);
 
-            if (this._Image != null && this._TargetBounds.HasValue && alpha > 0f)
+            if (alpha > 0f)
             {
-                Rectangle bounds = this._TargetBounds.Value;
-                
-                if (alpha >= 1f)
-                {   // Full opacity => Draw image (this._Image, cached content of ToolTip) without any alpha channel modification:
-                    graphics.DrawImage(this._Image, bounds);
-                }
-                else
-                {   // Draw tooltip from Image, with modification of alpha channel:
-                    using (System.Drawing.Imaging.ImageAttributes imageAttributes = new System.Drawing.Imaging.ImageAttributes())
-                    {
-                        System.Drawing.Imaging.ColorMatrix colorMatrix = this.ColorMatrixForAlpha(alpha, true);
-                        imageAttributes.SetColorMatrix(colorMatrix, System.Drawing.Imaging.ColorMatrixFlag.Default, System.Drawing.Imaging.ColorAdjustType.Bitmap);
+                this.CheckValid(graphics);
+                string text = (this._Data != null ? this._Data.InfoText : "null");
+                Application.App.Trace.Info(Application.TracePriority.Priority2_Lowest, "ToolTipItem", "Draw", "Run", "Text: " + text, "AnimationAlpha: " + alpha.ToString());
+                if (this._Image != null && this._TargetBounds.HasValue)
+                {
+                    Rectangle bounds = this._TargetBounds.Value;
+                    if (alpha >= 1f)
+                    {   // Full opacity => Draw image (this._Image, cached content of ToolTip) without any alpha channel modification:
+                        graphics.DrawImage(this._Image, bounds);
+                    }
+                    else
+                    {   // Draw tooltip from Image, with modification of alpha channel:
+                        using (System.Drawing.Imaging.ImageAttributes imageAttributes = new System.Drawing.Imaging.ImageAttributes())
+                        {
+                            System.Drawing.Imaging.ColorMatrix colorMatrix = this.ColorMatrixForAlpha(alpha, true);
+                            imageAttributes.SetColorMatrix(colorMatrix, System.Drawing.Imaging.ColorMatrixFlag.Default, System.Drawing.Imaging.ColorAdjustType.Bitmap);
 
-                        Rectangle srcRect = new Rectangle(0, 0, bounds.Width, bounds.Height);
-                        graphics.DrawImage(this._Image, bounds, 0, 0, bounds.Width, bounds.Height, GraphicsUnit.Pixel, imageAttributes);
+                            Rectangle srcRect = new Rectangle(0, 0, bounds.Width, bounds.Height);
+                            graphics.DrawImage(this._Image, bounds, 0, 0, bounds.Width, bounds.Height, GraphicsUnit.Pixel, imageAttributes);
+                        }
                     }
                 }
-
             }
         }
+        /// <summary>
+        /// Vykreslí text
+        /// </summary>
+        /// <param name="graphics"></param>
         protected void DrawInfoText(Graphics graphics)
         {
             if (!this.InfoUseTabs)
@@ -617,11 +674,32 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region TimerDraw
         /// <summary>
-        /// This event is called when ToolTip want be drawed by its own initiative.
+        /// Zavolá event <see cref="TimerDrawRequest"/>
         /// </summary>
-        public event EventHandler TimerDrawRequest;
+        protected void CallTimerDrawRequest(ref float alpha)
+        {
+            GPropertyEventArgs<float> args = new GPropertyEventArgs<float>(alpha, EventSourceType.ValueChange);
+            this.OnTimerDrawRequest(args);
+            if (this.TimerDrawRequest != null)
+                this.TimerDrawRequest(this, args);
+            alpha = args.ValueNew;
+        }
+        /// <summary>
+        /// Virtuální háček pro potomky, volaný před eventem <see cref="TimerDrawRequest"/>.
+        /// </summary>
+        protected virtual void OnTimerDrawRequest(GPropertyEventArgs<float> args)
+        { }
+        /// <summary>
+        /// Event volaný před kreslením Tooltipu.
+        /// V procesu FadeIn a FadeOut je volán při každé změně hodnoty alpha.
+        /// Hodnota alpha je v rozsahu 0 (mimo, alpha == 0 = nekreslí se) až 1 (včetně = plná barva bez průhlednosti).
+        /// </summary>
+        public event GPropertyEventHandler<float> TimerDrawRequest;
         #endregion
         #region ToolTip as Rectangle (Calculations and Draw)
+        /// <summary>
+        /// Vypočítá vnitřní souřadnice pro tvar Rectangle
+        /// </summary>
         protected void CalculateRectangle()
         {
             this._CalculateTotalBoundsRelative();
@@ -639,6 +717,10 @@ namespace Asol.Tools.WorkScheduler.Components
                 this._TitlePath.AddLine(lineBounds.X + 1, lineBounds.Y, lineBounds.Right - 5, lineBounds.Y);
             }
         }
+        /// <summary>
+        /// Vykreslí Tooltip jako Rectangle
+        /// </summary>
+        /// <param name="graphics"></param>
         private void DrawRectangle(Graphics graphics)
         {
             using (GPainter.GraphicsUseSmooth(graphics))
@@ -672,6 +754,9 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         #endregion
         #region ToolTip as RoundRectangle (Calculations and Draw)
+        /// <summary>
+        /// Vypočítá vnitřní souřadnice pro tvar RoundRectangle
+        /// </summary>
         protected void CalculateRoundRectangle()
         {
             this._CalculateTotalBoundsRelative();
@@ -688,6 +773,10 @@ namespace Asol.Tools.WorkScheduler.Components
                 this._TitlePath.AddLine(lineBounds.X + 1, lineBounds.Y, lineBounds.Right - 5, lineBounds.Y);
             }
         }
+        /// <summary>
+        /// Vykreslí Tooltip jako RoundRectangle
+        /// </summary>
+        /// <param name="graphics"></param>
         private void DrawRoundRectangle(Graphics graphics)
         {
             using (GPainter.GraphicsUseSmooth(graphics))
@@ -721,18 +810,30 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         #endregion
         #region ToolTip as Ellipse (Calculations and Draw)
+        /// <summary>
+        /// Vypočítá vnitřní souřadnice pro tvar Ellipse
+        /// </summary>
         protected void CalculateEllipse()
         { }
+        /// <summary>
+        /// Vykreslí Tooltip jako Ellipse
+        /// </summary>
+        /// <param name="graphics"></param>
         private void DrawEllipse(Graphics graphics)
-        {
-        }
+        { }
         #endregion
         #region ToolTip as Window (Calculations and Draw)
+        /// <summary>
+        /// Vypočítá vnitřní souřadnice pro tvar Window
+        /// </summary>
         protected void CalculateWindow()
         { }
+        /// <summary>
+        /// Vykreslí Tooltip jako Window
+        /// </summary>
+        /// <param name="graphics"></param>
         private void DrawWindow(Graphics graphics)
-        {
-        }
+        { }
         #endregion
         #region Invalidate, CheckValid - common calculation methods and properties
         /// <summary>
@@ -745,6 +846,10 @@ namespace Asol.Tools.WorkScheduler.Components
             this.InvalidateBounds();
             this.InvalidateImage();
         }
+        /// <summary>
+        /// Zajistí validitu dat
+        /// </summary>
+        /// <param name="graphics"></param>
         protected void CheckValid(Graphics graphics)
         {
             if (!this.ToolTipExist) return;
@@ -756,7 +861,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         #region Size for Title, Text, Icon, Total
         /// <summary>
-        /// Invalidate sizes
+        /// Invaliduje Size
         /// </summary>
         protected void InvalidateSize()
         {
@@ -819,6 +924,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="graphics"></param>
         /// <param name="text"></param>
         /// <param name="font"></param>
+        /// <param name="maxSize"></param>
+        /// <param name="maxHeight"></param>
         /// <returns></returns>
         protected Size _CalculateLineSize(Graphics graphics, string text, FontInfo font, SizeF maxSize, float maxHeight)
         {
@@ -832,6 +939,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="graphics"></param>
         /// <param name="text"></param>
         /// <param name="font"></param>
+        /// <param name="area"></param>
         /// <returns></returns>
         protected Size _CalculateLineSize(Graphics graphics, string text, FontInfo font, SizeF area)
         {
@@ -844,6 +952,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="graphics"></param>
         /// <param name="text"></param>
+        /// <param name="useTabs"></param>
         /// <param name="font"></param>
         /// <param name="maxSize"></param>
         /// <param name="maxHeight"></param>
@@ -858,6 +967,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Calculate size for icon, with maxSize
         /// </summary>
         /// <param name="image"></param>
+        /// <param name="maxSize"></param>
         /// <returns></returns>
         protected Size _CalculateIconSize(Image image, Size maxSize)
         {
@@ -1008,6 +1118,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected class TextCell
         {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="text"></param>
+            /// <param name="size"></param>
             public TextCell(string text, Size size)
             {
                 this.Text = text;
@@ -1126,6 +1241,9 @@ namespace Asol.Tools.WorkScheduler.Components
                     break;
             }
         }
+        /// <summary>
+        /// Vypočte relativní souřadnice pro pořadí: Ikona před titulkem
+        /// </summary>
         protected void _CalculateTotalBoundsRelativeIBT()
         {
             int shadowSize = (this._ShadowSize.HasValue ? this._ShadowSize.Value : 0);
@@ -1206,6 +1324,9 @@ namespace Asol.Tools.WorkScheduler.Components
             this._TotalBounds = totalBounds;
             this._OuterBounds = outerBounds;
         }
+        /// <summary>
+        /// Vypočte relativní souřadnice pro pořadí: Titulek nad ikonou
+        /// </summary>
         protected void _CalculateTotalBoundsRelativeTBI()
         {
             int shadowSize = (this._ShadowSize.HasValue ? this._ShadowSize.Value : 0);
@@ -1310,17 +1431,28 @@ namespace Asol.Tools.WorkScheduler.Components
         protected Rectangle? _OuterBounds;
         #endregion
         #region Image created for current tooltip
+        /// <summary>
+        /// Invaliduje obraz tooltipu
+        /// </summary>
         protected void InvalidateImage()
         {
             if (this._Image != null) this._Image.Dispose();
             this._Image = null;
         }
+        /// <summary>
+        /// Zajistí platnost obrazu tooltipu
+        /// </summary>
+        /// <param name="graphics"></param>
         protected void CheckValidImage(Graphics graphics)
         {
             if (this._Image != null) return;
 
             this.CalculateImage(graphics);
         }
+        /// <summary>
+        /// Vypočte obraz tooltipu
+        /// </summary>
+        /// <param name="graphics"></param>
         protected void CalculateImage(Graphics graphics)
         {
             Size size = this._OuterBounds.Value.Size;
@@ -1346,7 +1478,11 @@ namespace Asol.Tools.WorkScheduler.Components
                 }
             }
         }
-
+        /// <summary>
+        /// Vykreslí stín
+        /// </summary>
+        /// <param name="imgGraphics"></param>
+        /// <param name="size"></param>
         private void DrawShadow(Graphics imgGraphics, Size size)
         {
             int shadowSize = (this._ShadowSize.HasValue ? this._ShadowSize.Value : 0);
@@ -1355,19 +1491,33 @@ namespace Asol.Tools.WorkScheduler.Components
             Rectangle bounds = this._TotalBounds.Value;
             GPainter.DrawShadow(imgGraphics, bounds, shadowSize, false);
         }
+        /// <summary>
+        /// Obraz tooltipu
+        /// </summary>
         protected Image _Image; // Bitmap
         #endregion
         #region Absolute location for ToolTip
+        /// <summary>
+        /// Invaliduje umístění
+        /// </summary>
         protected void InvalidateLocation()
         {
             this._TargetBounds = null;
         }
+        /// <summary>
+        /// Zajistí platnost umístění
+        /// </summary>
+        /// <param name="graphics"></param>
         protected void CheckValidLocation(Graphics graphics)
         {
             if (this._TargetBounds.HasValue) return;
 
             this.CalculateLocation(graphics);
         }
+        /// <summary>
+        /// Vypočte platné umístění
+        /// </summary>
+        /// <param name="graphics"></param>
         protected void CalculateLocation(Graphics graphics)
         {
             if (!this._Point.HasValue || !this._TotalBounds.HasValue) return;
@@ -1398,6 +1548,10 @@ namespace Asol.Tools.WorkScheduler.Components
         protected Rectangle? _TargetBounds;
         #endregion
         #region Color matrix for draw image with alpha channel (opacity) controlled by animations
+        /// <summary>
+        /// Inicializace ColorMatrix pro vykreslování tooltipu.
+        /// FadeIn a FadeOut se realizuje jako vykreslení obrazu tooltipu s proměnnou maskou průhlednosti.
+        /// </summary>
         private void ColorMatrixInit()
         {
             // Identity matrix :
@@ -1425,6 +1579,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Returns color matrix (for modifications of colors on image) in DrawImage process.
         /// </summary>
         /// <param name="alpha"></param>
+        /// <param name="asGray"></param>
         /// <returns></returns>
         private System.Drawing.Imaging.ColorMatrix ColorMatrixForAlpha(float alpha, bool asGray)
         {
@@ -1505,6 +1660,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Space between Info and Image text area
         /// </summary>
         protected static int InfoImageSpace { get { return 6; } }
+        /// <summary>
+        /// Posun textu oproti bodu počátku
+        /// </summary>
         protected static Point TextShift { get { return new Point(3, 1); } }
         /// <summary>
         /// Margin between ToolTip and its Inner parts (Icon, texts)
@@ -1536,10 +1694,13 @@ namespace Asol.Tools.WorkScheduler.Components
     #endregion
     #region class ToolTipData : pouze data tooltip
     /// <summary>
-    /// ToolTipData : Data for Tooltip object
+    /// ToolTipData : Data pro Tooltip, jednoduchý datový objekt.
     /// </summary>
     public class ToolTipData : IDisposable
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public ToolTipData()
         {
             this.AnimationType = TooltipAnimationType.DefaultFade;
@@ -1729,12 +1890,30 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         Instant
     }
+    /// <summary>
+    /// Tvar Tooltipu
+    /// </summary>
     public enum TooltipShapeType
     {
+        /// <summary>
+        /// Neurčeno
+        /// </summary>
         None,
+        /// <summary>
+        /// Obdélník
+        /// </summary>
         Rectangle,
+        /// <summary>
+        /// Zakulacený obdélník
+        /// </summary>
         RoundRectangle,
+        /// <summary>
+        /// Elipsa
+        /// </summary>
         Ellipse,
+        /// <summary>
+        /// Wokno
+        /// </summary>
         Window
     }
     /// <summary>

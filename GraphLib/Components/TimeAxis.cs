@@ -220,8 +220,17 @@ namespace Asol.Tools.WorkScheduler.Components
             this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromDays(2),           TimeSpan.FromDays(31),          TimeSpan.FromDays(91),          TimeSpan.FromDays(183),         dm, TimeSpan.FromDays(366), dmyy, dmyy, AxisCycle_Month, this));
             this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromDays(7),           TimeSpan.FromDays(91),          TimeSpan.FromDays(183),         TimeSpan.FromDays(366),         yy, TimeSpan.FromDays(732), dmyy, dmyy, AxisCycle_Month, this));
         }
+        /// <summary>
+        /// Označení cyklu Den
+        /// </summary>
         protected const string AxisCycle_Day = "AxisCycle.Day";
+        /// <summary>
+        /// Označení cyklu Týden
+        /// </summary>
         protected const string AxisCycle_Week = "AxisCycle.Week";
+        /// <summary>
+        /// Označení cyklu Měsíc
+        /// </summary>
         protected const string AxisCycle_Month = "AxisCycle.Month";
         #endregion
         #region Tooltip pro časovou osu
@@ -251,6 +260,11 @@ namespace Asol.Tools.WorkScheduler.Components
                     break;
             }
         }
+        /// <summary>
+        /// Připraví text pro Tooltip
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
         protected override string PrepareToolTipText(DateTime? value)
         {
             if (!value.HasValue) return "";
@@ -565,6 +579,13 @@ namespace Asol.Tools.WorkScheduler.Components
             TimeSpan timeRoundPixel = timeOnePixel.GetRoundTimeBase();                       // Zaokrouhlovací základna, pro 209 sekund = 300 sekund
             return timeRaw.RoundTime(timeRoundPixel);                                        // Zaokrouhlí čas na pětiminuty
         }
+        /// <summary>
+        /// Vrátí datum pro daný pixel na logaritmické ose
+        /// </summary>
+        /// <param name="pixel"></param>
+        /// <param name="targetSize"></param>
+        /// <param name="proportionalRatio"></param>
+        /// <returns></returns>
         protected DateTime? GetLogarithmicValue(int pixel, int targetSize, float proportionalRatio)
         {
             if (!this.IsValid(pixel, targetSize)) return null;

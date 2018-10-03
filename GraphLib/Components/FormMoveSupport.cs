@@ -34,6 +34,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Současně lze předat controly, které se mají zaregistrovat.
         /// </summary>
         /// <param name="form"></param>
+        /// <param name="controls"></param>
         public FormMoveSupport(Form form, params Control[] controls)
         {
             this._Form = form;
@@ -128,6 +129,11 @@ namespace Asol.Tools.WorkScheduler.Components
     /// </summary>
     public interface IFormMoveNotification
     {
+        /// <summary>
+        /// Oznámení o změně stavu procesu přesouvání (začátek, průběh, konec)
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
         void FormMoveNotification(object sender, FormMoveNotificationArgs args);
     }
     /// <summary>
@@ -135,6 +141,10 @@ namespace Asol.Tools.WorkScheduler.Components
     /// </summary>
     public class FormMoveNotificationArgs
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="state"></param>
         public FormMoveNotificationArgs(FormMoveNotificationState state)
         {
             this.State = state;
@@ -149,6 +159,9 @@ namespace Asol.Tools.WorkScheduler.Components
     /// </summary>
     public enum FormMoveNotificationState
     {
+        /// <summary>
+        /// Neurčeno
+        /// </summary>
         None,
         /// <summary>
         /// Stiskla se myš, ale to ještě neznamená zahájení pohybu.

@@ -46,32 +46,14 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         public GTimeGraph()
         {
-            this._ItemList = new EList<ITimeGraphItem>();
-            this._ItemList.ItemAddAfter += new EList<ITimeGraphItem>.EListEventAfterHandler(_ItemList_ItemAddAfter);
-            this._ItemList.ItemRemoveAfter += new EList<ITimeGraphItem>.EListEventAfterHandler(_ItemList_ItemRemoveAfter);
+            this._ItemDict = new Dictionary<int, ITimeGraphItem>();
             this.Is.SelectParent = true;
         }
         /// <summary>
-        /// Všechny prvky grafu (časové úseky)
-        /// </summary>
-        public EList<ITimeGraphItem> ItemList { get { return this._ItemList; } } private EList<ITimeGraphItem> _ItemList;
-        /// <summary>
         /// ID tohoto grafu. Hodnotu nastavuje aplikační kód dle své potřeby, hodnota je vkládána do identifikátorů odesílaných do handlerů událostí v grafu.
-        /// Graf sám o sobě tuto hodnotu nepotřebuje.
+        /// Graf sám o sobě tuto hodnotu nepotřebuje a ani nenastavuje.
         /// </summary>
         public int GraphId { get; set; }
-        /// <summary>
-        /// Eventhandler události: do <see cref="ItemList"/> byla přidána položka
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="args"></param>
-        private void _ItemList_ItemAddAfter(object sender, EList<ITimeGraphItem>.EListAfterEventArgs args) { args.Item.OwnerGraph = this; this.Invalidate(InvalidateItems.AllGroups); }
-        /// <summary>
-        /// Eventhandler události: z <see cref="ItemList"/> byla odebrána položka
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="args"></param>
-        private void _ItemList_ItemRemoveAfter(object sender, EList<ITimeGraphItem>.EListAfterEventArgs args) { args.Item.OwnerGraph = null; this.Invalidate(InvalidateItems.AllGroups); }
         /// <summary>
         /// Zdroj dat, nepovinný
         /// </summary>
@@ -145,6 +127,130 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         private TimeGraphProperties _GraphParameters;
         private TimeGraphProperties _GraphParametersDefault;
         #endregion
+        #region Prvky grafu
+        /// <summary>
+        /// Vloží daný prvek do this grafu.
+        /// Při duplicitě klíče ItemId hlásí chybu (pokud není zadáno ignoreDuplicity = true).
+        /// Vrací true = prvek byl vložen, nebo false = prvek již existoval a neměla se hlásit chyba.
+        /// </summary>
+        /// <param name="graphItem">Položka</param>
+        /// <param name="ignoreDuplicity">Ignorovat duplicity</param>
+        public bool AddGraphItem(ITimeGraphItem graphItem, bool ignoreDuplicity = false)
+        {
+            return this._AddGraphItems(graphItem, ignoreDuplicity);
+        }
+        /// <summary>
+        /// Vloží daný prvek do this grafu.
+        /// Při duplicitě klíče ItemId hlásí chybu (pokud není zadáno ignoreDuplicity = true).
+        /// </summary>
+        /// <param name="graphItems">Položky</param>
+        /// <param name="ignoreDuplicity">Ignorovat duplicity</param>
+        public void AddGraphItems(IEnumerable<ITimeGraphItem> graphItems, bool ignoreDuplicity = false)
+        {
+            if (graphItems == null) return;
+            graphItems.ForEachItem(i => this._AddGraphItems(i, ignoreDuplicity));
+        }
+        /// <summary>
+        /// Fyzicky vloží daný prvek do this grafu
+        /// </summary>
+        /// <param name="graphItem">Položka</param>
+        /// <param name="ignoreDuplicity">Ignorovat duplicity</param>
+        private bool _AddGraphItems(ITimeGraphItem graphItem, bool ignoreDuplicity)
+        {
+            if (graphItem == null) return false;
+            if (this._ItemDict.ContainsKey(graphItem.ItemId))
+            {
+                if (ignoreDuplicity) return false;
+                throw new GraphLibDataException("Do jednoho grafu nelze vložit více položek se stejným klíčem ITimeGraphItem.ItemId: " + graphItem.ItemId.ToString() + ".");
+            }
+            graphItem.OwnerGraph = this;
+            this._ItemDict.Add(graphItem.ItemId, graphItem);
+            this.Invalidate(InvalidateItems.AllGroups);
+            return true;
+        }
+        /// <summary>
+        /// Odebere z grafu daný prvek (podle jeho ItemId).
+        /// Pokud daný klíč neexistuje, hlásí chybu (pokud není zadáno ignoreMissing = true).
+        /// </summary>
+        /// <param name="graphItem"></param>
+        /// <param name="ignoreMissing">Ignorovat chybějící prvek podle daného klíče</param>
+        public bool RemoveGraphItem(ITimeGraphItem graphItem, bool ignoreMissing = false)
+        {
+            return this._RemoveGraphItem(graphItem, ignoreMissing);
+        }
+        /// <summary>
+        /// Odebere z grafu prvek s daným klíčem ItemId.
+        /// Pokud daný klíč neexistuje, hlásí chybu (pokud není zadáno ignoreMissing = true).
+        /// </summary>
+        /// <param name="itemId">ItemId prvku</param>
+        /// <param name="ignoreMissing">Ignorovat chybějící prvek podle daného klíče</param>
+        public bool RemoveGraphItem(int itemId, bool ignoreMissing = false)
+        {
+            return this._RemoveGraphItem(itemId, ignoreMissing);
+        }
+        /// <summary>
+        /// Odebere z grafu dané prvky (podle jejich ItemId).
+        /// Pokud daný klíč neexistuje, hlásí chybu (pokud není zadáno ignoreMissing = true).
+        /// </summary>
+        /// <param name="graphItems">Prvky grafu</param>
+        /// <param name="ignoreMissing">Ignorovat chybějící prvek podle daného klíče</param>
+        public void RemoveGraphItems(IEnumerable<ITimeGraphItem> graphItems, bool ignoreMissing = false)
+        {
+            if (graphItems == null) return;
+            graphItems.ForEachItem(i => this._RemoveGraphItem(i, ignoreMissing));
+        }
+        /// <summary>
+        /// Odebere z grafu prvky s danými klíči ItemId.
+        /// Pokud daný klíč neexistuje, hlásí chybu (pokud není zadáno ignoreMissing = true).
+        /// </summary>
+        /// <param name="itemIds">ItemId prvky</param>
+        /// <param name="ignoreMissing">Ignorovat chybějící prvek podle daného klíče</param>
+        public void RemoveGraphItems(IEnumerable<int> itemIds, bool ignoreMissing = false)
+        {
+            if (itemIds == null) return;
+            itemIds.ForEachItem(i => this._RemoveGraphItem(i, ignoreMissing));
+        }
+        /// <summary>
+        /// Fyzicky odebere daný prvek z this grafu
+        /// </summary>
+        /// <param name="graphItem">Prvek, jehož ItemId bude použito jako klíč prvku, který se bude odebírat</param>
+        /// <param name="ignoreMissing"></param>
+        private bool _RemoveGraphItem(ITimeGraphItem graphItem, bool ignoreMissing)
+        {
+            if (graphItem == null) return false;
+            return this._RemoveGraphItem(graphItem.ItemId, ignoreMissing);
+        }
+        /// <summary>
+        /// Fyzicky odebere daný prvek z this grafu
+        /// </summary>
+        /// <param name="itemId"></param>
+        /// <param name="ignoreMissing"></param>
+        private bool _RemoveGraphItem(int itemId, bool ignoreMissing)
+        {
+            ITimeGraphItem graphItem;
+            if (!this._ItemDict.TryGetValue(itemId, out graphItem))
+            {
+                if (ignoreMissing) return false;
+                throw new GraphLibDataException("Z grafu nelze odebrat prvek s klíčem ITimeGraphItem.ItemId: " + itemId.ToString() + ", prvek v něm není přítomen.");
+            }
+            this._ItemDict.Remove(itemId);
+            graphItem.OwnerGraph = null;
+            this.Invalidate(InvalidateItems.AllGroups);
+            return true;
+        }
+        /// <summary>
+        /// Počet prvků grafu
+        /// </summary>
+        public int ItemCount { get { return this._ItemDict.Count; } }
+        /// <summary>
+        /// Všechny prvky this grafu
+        /// </summary>
+        public IEnumerable<ITimeGraphItem> GraphItems { get { return this._ItemDict.Values; } }
+        /// <summary>
+        /// Index prvků
+        /// </summary>
+        private Dictionary<int, ITimeGraphItem> _ItemDict;
+        #endregion
         #region AllGroupList : Seskupování položek z this.ItemList do skupin GTimeGraphGroup, setřídění těchto skupin podle vrstev a hladin na logické ose Y
         /// <summary>
         /// Prověří platnost zdejších dat s ohledem na aktuální logické souřadnice Y.
@@ -158,7 +264,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 this.RecalculateAllGroupList();
         }
         /// <summary>
-        /// Vypočítá logické souřadnice Y pro všechny položky pole <see cref="ItemList"/>.
+        /// Vypočítá logické souřadnice Y pro všechny položky pole <see cref="GraphItems"/>.
         /// Naplní hodnoty: <see cref="GTimeGraphGroup.CoordinateYLogical"/> a <see cref="GTimeGraphGroup.CoordinateYVirtual"/>, 
         /// připraví kalkulátor <see cref="CalculatorY"/>.
         /// </summary>
@@ -169,13 +275,13 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 int layers = 0;
                 int levels = 0;
                 int groups = 0;
-                int items = this.ItemList.Count;
+                int items = this.ItemCount;
 
                 this._AllGroupList = new List<List<GTimeGraphGroup>>();
                 Interval<float> totalLogicalY = new Interval<float>(0f, 0f, true);
 
                 // Vytvoříme oddělené skupiny prvků, podle jejich příslušnosti do grafické vrstvy (ITimeGraphItem.Layer), vzestupně:
-                List<IGrouping<int, ITimeGraphItem>> layerGroups = this.ItemList.GroupBy(i => i.Layer).ToList();
+                List<IGrouping<int, ITimeGraphItem>> layerGroups = this.GraphItems.GroupBy(i => i.Layer).ToList();
                 if (layerGroups.Count > 1)
                     layerGroups.Sort((a, b) => a.Key.CompareTo(b.Key));        // Vrstvy setřídit podle Key = ITimeGraphItem.Layer, vzestupně
                 layers = layerGroups.Count;

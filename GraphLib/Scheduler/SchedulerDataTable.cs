@@ -61,6 +61,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         internal GuiGrid GuiGrid { get; private set; }
         /// <summary>
+        /// Plné jméno this tabulky, pochází z <see cref="GuiGrid"/>.FullName.
+        /// Slouží k vyhledání konkrétní tabulky podle jejího názvu, a k pojmenování konkrétních prvků z této tabulky odesílaných dále.
+        /// </summary>
+        internal string TableName { get; private set; }
+        /// <summary>
         /// Vlastník přetypovaný na IMainDataInternal
         /// </summary>
         protected IMainDataInternal IMainData { get { return (this.MainData as IMainDataInternal); } }
@@ -79,6 +84,105 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.LoadDataLoadTexts();
         }
         #endregion
+        #region Zpracování odpovědi z GuiResponse: přidání nových prků do grafů, odebrání prvků grafu
+        /// <summary>
+        /// Přidá daný prvek jako nový do odpovídajícího grafu (podle jeho řádky).
+        /// </summary>
+        /// <param name="addItem"></param>
+        /// <param name="refreshGraphDict"></param>
+        public void AddGraphItem(GuiGraphBaseItem addItem, Dictionary<uint, GTimeGraph> refreshGraphDict = null)
+        {
+            GTimeGraph modifiedGraph = this._AddGraphItem(addItem);
+            _RefreshModifiedGraph(modifiedGraph, refreshGraphDict);
+        }
+        /// <summary>
+        /// Metoda z dodaného prvku <see cref="GuiGraphBaseItem"/> vytvoří prvek grafu <see cref="DataGraphItem"/>, 
+        /// prvek uloží do Dictionary <see cref="TimeGraphItemDict"/>,
+        /// podle jeho řádku <see cref="DataGraphItem.RowGId"/> najde v Dictionary <see cref="TimeGraphDict"/> graf, a do něj vloží grafický prvek.
+        /// Vrací referenci na zmíněný modifikovaný graf.
+        /// </summary>
+        /// <param name="addItem"></param>
+        /// <returns></returns>
+        private GTimeGraph _AddGraphItem(GuiGraphBaseItem addItem)
+        {
+            GTimeGraph modifiedGraph = null;
+
+            if (addItem == null) return modifiedGraph;
+            DataGraphItem dataGraphItem = DataGraphItem.CreateFrom(this, addItem);
+            if (dataGraphItem == null) return modifiedGraph;
+
+            if (!this.TimeGraphItemDict.ContainsKey(dataGraphItem.ItemGId))
+                this.TimeGraphItemDict.Add(dataGraphItem.ItemGId, dataGraphItem);
+
+            GTimeGraph gTimeGraph;
+            if (this.TimeGraphDict.TryGetValue(dataGraphItem.RowGId, out gTimeGraph))
+            {
+                bool isAdded = gTimeGraph.AddGraphItem(dataGraphItem);
+                if (isAdded)
+                    modifiedGraph = gTimeGraph;
+            }
+            return modifiedGraph;
+        }
+        /// <summary>
+        /// Odebere daný prvek z grafu v patřičné řádce v this tabulce.
+        /// </summary>
+        /// <param name="removeItem"></param>
+        /// <param name="refreshGraphDict"></param>
+        public void RemoveGraphItem(GuiGridItemId removeItem, Dictionary<uint, GTimeGraph> refreshGraphDict = null)
+        {
+            GTimeGraph modifiedGraph = this._RemoveGraphItem(removeItem);
+            _RefreshModifiedGraph(modifiedGraph, refreshGraphDict);
+        }
+        /// <summary>
+        /// Metoda najde daný prvek v this tabulce a odebere jej.
+        /// Najde odpovídající graf k tomuto prvku, a z tohoto grafu tento prvek odebere.
+        /// Modifikovaný graf vrátí.
+        /// Pokud nebylo co modifikovat, vrací null.
+        /// </summary>
+        /// <param name="removeItem"></param>
+        /// <returns></returns>
+        private GTimeGraph _RemoveGraphItem(GuiGridItemId removeItem)
+        {
+            GTimeGraph modifiedGraph = null;
+            if (removeItem == null || removeItem.ItemId == null) return modifiedGraph;
+
+            GId itemGId = removeItem.ItemId;
+            DataGraphItem dataGraphItem;
+            if (this.TimeGraphItemDict.TryGetValue(itemGId, out dataGraphItem))
+                this.TimeGraphItemDict.Remove(itemGId);
+
+            GId rowGId = (dataGraphItem != null ? dataGraphItem.RowGId : (GId)removeItem.RowId);
+            GTimeGraph gTimeGraph;
+            if (dataGraphItem != null && rowGId != null && this.TimeGraphDict.TryGetValue(rowGId, out gTimeGraph))
+            {
+                bool isRemoved = gTimeGraph.RemoveGraphItem(dataGraphItem);
+                if (isRemoved)
+                    modifiedGraph = gTimeGraph;
+            }
+            return modifiedGraph;
+        }
+        /// <summary>
+        /// Zajistí provedení Refresh() na modifikovaném grafu:
+        /// Buď je zadána Dictionary s grafy pro hromadný Refresh, pak aktuální graf do ní přidá;
+        /// Anebo není Dictionary zadána, a pak provede Refresh na grafu ihned.
+        /// </summary>
+        /// <param name="modifiedGraph"></param>
+        /// <param name="refreshGraphDict"></param>
+        private static void _RefreshModifiedGraph(GTimeGraph modifiedGraph, Dictionary<uint, GTimeGraph> refreshGraphDict)
+        {
+            if (modifiedGraph == null) return;
+
+            if (refreshGraphDict != null)
+            {
+                if (!refreshGraphDict.ContainsKey(modifiedGraph.Id))
+                    refreshGraphDict.Add(modifiedGraph.Id, modifiedGraph);
+            }
+            else
+            {
+                modifiedGraph.Refresh();
+            }
+        }
+        #endregion
         #region Vlastnosti grafů a další property
         /// <summary>
         /// Načte vlastnosti grafů z <see cref="GuiGraphProperties"/> do <see cref="DataGraphProperties"/>.
@@ -86,6 +190,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         protected void LoadDataGraphProperties()
         {
             this.DataGraphProperties = DataGraphProperties.CreateFrom(this, this.GuiGrid.GraphProperties);
+            this.TableName = this.GuiGrid.FullName;
         }
         /// <summary>
         /// Režim časové osy v grafu, podle zadání v deklaraci
@@ -276,21 +381,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 {
                     if (guiGraphTable == null || guiGraphTable.Count == 0) continue;
                     foreach (GuiGraphItem guiGraphItem in guiGraphTable.GraphItems)
-                    {
-                        DataGraphItem dataGraphItem = DataGraphItem.CreateFrom(this, guiGraphItem);
-                        if (dataGraphItem == null) continue;
-
-                        if (!this.TimeGraphItemDict.ContainsKey(dataGraphItem.ItemGId))
-                            this.TimeGraphItemDict.Add(dataGraphItem.ItemGId, dataGraphItem);
-
-                        GTimeGraph gTimeGraph;
-                        if (this.TimeGraphDict.TryGetValue(dataGraphItem.RowGId, out gTimeGraph))
-                            gTimeGraph.ItemList.Add(dataGraphItem);
-                    }
+                        this._AddGraphItem(guiGraphItem);
                 }
             }
         }
-
         /// <summary>
         /// Metoda pro daný prvek <see cref="IInteractiveItem"/> zjistí, zda se jedná o prvek grafu <see cref="GTimeGraphItem"/>. Pokud ne, pak vrací null.
         /// Pokud ano, pak z vizuálního prvku grafu načte všechny datové prvky grafu = kolekce <see cref="ITimeGraphItem"/>.
@@ -551,9 +645,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             {
                 if (isChangeRow)
                 {
-                    data.SourceGraph.ItemList.Remove(item);
+                    data.SourceGraph.RemoveGraphItem(item);
                     item.RowGId = data.TargetRow;
-                    data.TargetGraph.ItemList.Add(item);
+                    data.TargetGraph.AddGraphItem(item);
                 }
                 if (isChangeTime)
                 {
@@ -574,10 +668,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (response == null || response.GuiResponse == null) return;
             GuiResponse guiResponse = response.GuiResponse;
 
-
-#warning TODO dodělat zpracování response!!!
-
-
+            this.IMainData.ProcessResponse(guiResponse);
         }
         /// <summary>
         /// Metoda vrátí instanci <see cref="DragSchedulerData"/> obsahující data na úrovni Scheduleru z dat Drag and Drop z úrovně GUI.
@@ -812,7 +903,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private GuiGridItemId GetGridItemId(DataGraphItem graphItem)
         {
             GuiGridItemId gridItemId = new GuiGridItemId();
-            gridItemId.TableName = this.GuiGrid.FullName;            // Konstantní jméno FullName this tabulky (třída GuiGrid)
+            gridItemId.TableName = this.TableName;                   // Konstantní jméno FullName this tabulky (třída GuiGrid)
             if (graphItem != null)
             {   // Pokud mám prvek, pak do resultu vložím jeho GId (převedené na GuiId):
                 gridItemId.RowId = graphItem.RowGId;                 // Parentem je GID řádku
@@ -830,7 +921,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private GuiGridItemId GetGridItemId(ItemActionArgs args)
         {
             GuiGridItemId gridItemId = new GuiGridItemId();
-            gridItemId.TableName = this.GuiGrid.FullName;            // Konstantní jméno FullName this tabulky (třída GuiGrid)
+            gridItemId.TableName = this.TableName;                   // Konstantní jméno FullName this tabulky (třída GuiGrid)
             gridItemId.RowId = this.GetGraphRowGid(args.Graph);      // Z grafu najdu jeho řádek a jeho GId řádku, ten se (implicitně) převede na GuiId
             DataGraphItem graphItem = this.GetActiveGraphItem(args); // Najde prvek odpovídající args.CurrentItem, nebo args.GroupedItems[0]
             if (graphItem != null)
@@ -849,7 +940,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private GuiGridItemId GetGridItemId(ItemInteractiveArgs args)
         {
             GuiGridItemId gridItemId = new GuiGridItemId();
-            gridItemId.TableName = this.GuiGrid.FullName;            // Konstantní jméno FullName this tabulky (třída GuiGrid)
+            gridItemId.TableName = this.TableName;                   // Konstantní jméno FullName this tabulky (třída GuiGrid)
             gridItemId.RowId = this.GetGraphRowGid(args.Graph);      // Z grafu najdu jeho řádek a jeho GId řádku, ten se (implicitně) převede na GuiId
             DataGraphItem graphItem = this.GetActiveGraphItem(args); // Najde prvek odpovídající args.CurrentItem, nebo args.GroupedItems[0]
             if (graphItem != null)
@@ -961,7 +1052,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="graphTable"></param>
         /// <param name="guiGraphItem"></param>
         /// <returns></returns>
-        public static DataGraphItem CreateFrom(MainDataTable graphTable, GuiGraphItem guiGraphItem)
+        public static DataGraphItem CreateFrom(MainDataTable graphTable, GuiGraphBaseItem guiGraphItem)
         {
             if (guiGraphItem == null) return null;
             IMainDataTableInternal iGraphTable = graphTable as IMainDataTableInternal;
@@ -982,9 +1073,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             return item;
         }
         /// <summary>
-        /// privátní konstruktor. Instanci lze založit pomocí metody <see cref="CreateFrom(MainDataTable, GuiGraphItem)"/>.
+        /// privátní konstruktor. Instanci lze založit pomocí metody <see cref="CreateFrom(MainDataTable, GuiGraphBaseItem)"/>.
         /// </summary>
-        private DataGraphItem(MainDataTable graphTable, GuiGraphItem guiGraphItem)
+        private DataGraphItem(MainDataTable graphTable, GuiGraphBaseItem guiGraphItem)
         {
             this._GraphTable = graphTable;
             this._GuiGraphItem = guiGraphItem;
@@ -1008,7 +1099,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Datový podklad tohoto prvku = data načtená ze systému a předaná v instanci <see cref="GuiGraphItem"/>
         /// </summary>
-        private GuiGraphItem _GuiGraphItem;
+        private GuiGraphBaseItem _GuiGraphItem;
         /// <summary>
         /// Vlastník prvku = graf
         /// </summary>
@@ -1054,7 +1145,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Datový podklad tohoto prvku = data načtená ze systému a předaná v instanci <see cref="GuiGraphItem"/>
         /// </summary>
-        public GuiGraphItem GuiGraphItem { get { return this._GuiGraphItem; } }
+        public GuiGraphBaseItem GuiGraphItem { get { return this._GuiGraphItem; } }
         /// <summary>
         /// Veřejný identifikátor GRAFICKÉHO PRVKU (obsahuje číslo třídy a číslo záznamu).
         /// Může jít o záznam třídy Stav kapacit, nebo Pracovní jednotka.

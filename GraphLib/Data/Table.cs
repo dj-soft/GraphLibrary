@@ -1027,7 +1027,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// Událost, která se vyvolá při vstupu myši nad danou buňku, bez Drag, bez Click
         /// </summary>
-        public event GPropertyEvent<Cell> CellMouseEnter;
+        public event GPropertyEventHandler<Cell> CellMouseEnter;
         /// <summary>
         /// Obsluha události MouseLeave z buňky tabulky
         /// </summary>
@@ -1045,7 +1045,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// Událost, která se vyvolá při opuštění myši z dané buňku, bez Drag, bez Click
         /// </summary>
-        public event GPropertyEvent<Cell> CellMouseLeave;
+        public event GPropertyEventHandler<Cell> CellMouseLeave;
 
         /// <summary>
         /// Obsluha události Click na buňku tabulky
@@ -1064,7 +1064,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// Událost, která se vyvolá Click na dané buňce tabulky
         /// </summary>
-        public event GPropertyEvent<Cell> ActiveCellClick;
+        public event GPropertyEventHandler<Cell> ActiveCellClick;
         /// <summary>
         /// Obsluha události DoubleClick na buňku tabulky
         /// </summary>
@@ -1083,7 +1083,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// Událost, která se vyvolá DoubleClick na dané buňce tabulky
         /// </summary>
-        public event GPropertyEvent<Cell> ActiveCellDoubleClick;
+        public event GPropertyEventHandler<Cell> ActiveCellDoubleClick;
         /// <summary>
         /// Obsluha události LongClick na buňku tabulky
         /// </summary>
@@ -1101,7 +1101,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// Událost, která se vyvolá LongClick na dané buňce tabulky
         /// </summary>
-        public event GPropertyEvent<Cell> ActiveCellLongClick;
+        public event GPropertyEventHandler<Cell> ActiveCellLongClick;
         /// <summary>
         /// Obsluha události RightClick na buňku tabulky
         /// </summary>
@@ -1119,7 +1119,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// Událost, která se vyvolá RightClick na dané buňce tabulky
         /// </summary>
-        public event GPropertyEvent<Cell> ActiveCellRightClick;
+        public event GPropertyEventHandler<Cell> ActiveCellRightClick;
         #endregion
         #region Eventy volané z tabulky na základě logických dat
         /// <summary>
