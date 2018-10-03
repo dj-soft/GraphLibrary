@@ -147,5 +147,21 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             System.Windows.Forms.MessageBox.Show((this as IWin32Window), message, "Problém:", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
         #endregion
+        /*
+
+GuiRequest typu:
+Command = "ToolbarClick"
+kde 	FullName	"tlbCube"	string
+
+vrací GuiResponse, který říká: 
+Upravit Toolbar položky: tlbSave a tlbCube:
+
+Výsledkem je AppHostResponseArgs:
+		Data	"H4sIAAAAAAAEAJWRzU4CMRSFX6Xp1tD50RghM0MEjSEQSJgRY4yLOzMXrJSWtB0iD+fS97LlJ8zCjZvb3p5z+520Sf9rI8gOteFKpjRiISUoK1VzuUppY5ed6Jb2s2TrHcaitGTRMjv3UCNYrFMah9FdJwo74TWJw14c9W5C1o26J4fSKa1hx2v2CRIqXNMsqcFClixANEgOlRX7LaZ0qjQ3bDLM2QAMshel13n1gXUjULOnhs/RbJU0SMkDB6FWfkK67nyeW5copXlTVWiMAxVKiRL0yOLGkHutYc/mIFfO8xZexe/O4SXiCxvJmrsxL3nhmO5RQinO8fK98caBuxRB0pOYUqsbF2IKG78XZQ471xbceu15Mvv5piTIksBT/gZG/wQuQZg2cdiUF6LE8Swvxq9taNB+CNceWG49fkRw+eTsFw7ZY5kYAgAA"	string
+		Result	Success	Asol.Tools.WorkScheduler.AppHostActionResult
+
+a to se odešle do callBackAction
+
+        */
     }
 }
