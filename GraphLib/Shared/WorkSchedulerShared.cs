@@ -1075,10 +1075,6 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiToolbarItem()
         {
-            this.Size = FunctionGlobalItemSize.Half;
-            this.LayoutHint = LayoutHint.Default;
-            this.Visible = true;
-            this.Enable = true;
         }
         /// <summary>
         /// Název nebo binární obsah obrázku pro stav MouseActive
@@ -1086,28 +1082,32 @@ namespace Noris.LCS.Base.WorkScheduler
         public GuiImage ImageHot { get; set; }
         /// <summary>
         /// Velikost prvku na toolbaru, vzhledem k výšce toolbaru
+        /// Výchozí hodnota = null, bude interpretována jako Half.
         /// </summary>
-        public FunctionGlobalItemSize Size { get; set; }
+        public FunctionGlobalItemSize? Size { get; set; }
         /// <summary>
         /// Explicitně požadovaná šířka prvku v počtu modulů, opatrně s ohledem na obsah textu
         /// </summary>
         public int? ModuleWidth { get; set; }
         /// <summary>
-        /// Nápověda ke zpracování layoutu této položky (jak se tato položka řadí za ostatní položky)
+        /// Nápověda ke zpracování layoutu této položky (jak se tato položka řadí za ostatní položky).
+        /// Výchozí hodnota = null, bude interpretována jako Default.
         /// </summary>
-        public LayoutHint LayoutHint { get; set; }
+        public LayoutHint? LayoutHint { get; set; }
         /// <summary>
         /// Název grupy, v níž bude tato položka toolbaru zařazena. Nezadáno = bude v implicitní skupině "FUNKCE".
         /// </summary>
         public string GroupName { get; set; }
         /// <summary>
-        /// true = prvek je viditelný (true = výchozí hodnota)
+        /// true = prvek je viditelný.
+        /// Výchozí hodnota = null, bude interpretována jako true.
         /// </summary>
-        public bool Visible { get; set; }
+        public bool? Visible { get; set; }
         /// <summary>
-        /// true = prvek je dostupný (true = výchozí hodnota)
+        /// true = prvek je dostupný.
+        /// Výchozí hodnota = null, bude interpretována jako true.
         /// </summary>
-        public bool Enable { get; set; }
+        public bool? Enable { get; set; }
     }
     #endregion
     #region GuiContextMenuSet : Všechny položky všech Kontextových menu

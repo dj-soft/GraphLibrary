@@ -444,7 +444,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             protected ToolBarItem(IFunctionProvider provider, GuiToolbarItem guiToolBarItem) : base(provider)
             {
                 this._GuiToolBarItem = guiToolBarItem;
-                this.Size = FunctionGlobalItemSize.Half;
                 this.ItemType = FunctionGlobalItemType.Button;
             }
             /// <summary>
@@ -518,21 +517,29 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 refreshMode = (GToolBarRefreshMode)((int)refreshMode | (int)result);
                 return true;
             }
-            private static bool _Changed(bool oldValue, bool newValue, GToolBarRefreshMode result, ref GToolBarRefreshMode refreshMode)
+            private static bool _Changed(bool? oldValue, bool? newValue, GToolBarRefreshMode result, ref GToolBarRefreshMode refreshMode)
             {
+                if (!newValue.HasValue) return false;                // Pokud newValue není zadáno, pak nejde o změnu (jen nebyl nový údaj vepsán).
+                if (oldValue.HasValue && oldValue.Value == newValue.Value) return false;         // Pokud oldValue má hodnotu, a hodnota je beze změny, pak nejde o změnu.
                 if (oldValue == newValue) return false;
+                // Jde o změnu (buď z null na not null, anebo změnu hodnoty):
                 refreshMode = (GToolBarRefreshMode)((int)refreshMode | (int)result);
                 return true;
             }
-            private static bool _Changed(FunctionGlobalItemSize oldValue, FunctionGlobalItemSize newValue, GToolBarRefreshMode result, ref GToolBarRefreshMode refreshMode)
+            private static bool _Changed(FunctionGlobalItemSize? oldValue, FunctionGlobalItemSize? newValue, GToolBarRefreshMode result, ref GToolBarRefreshMode refreshMode)
             {
+                if (!newValue.HasValue) return false;                // Pokud newValue není zadáno, pak nejde o změnu (jen nebyl nový údaj vepsán).
+                if (oldValue.HasValue && oldValue.Value == newValue.Value) return false;         // Pokud oldValue má hodnotu, a hodnota je beze změny, pak nejde o změnu.
                 if (oldValue == newValue) return false;
+                // Jde o změnu (buď z null na not null, anebo změnu hodnoty):
                 refreshMode = (GToolBarRefreshMode)((int)refreshMode | (int)result);
                 return true;
             }
-            private static bool _Changed(LayoutHint oldValue, LayoutHint newValue, GToolBarRefreshMode result, ref GToolBarRefreshMode refreshMode)
+            private static bool _Changed(LayoutHint? oldValue, LayoutHint? newValue, GToolBarRefreshMode result, ref GToolBarRefreshMode refreshMode)
             {
-                if (oldValue == newValue) return false;
+                if (!newValue.HasValue) return false;                // Pokud newValue není zadáno, pak nejde o změnu (jen nebyl nový údaj vepsán).
+                if (oldValue.HasValue && oldValue.Value == newValue.Value) return false;         // Pokud oldValue má hodnotu, a hodnota je beze změny, pak nejde o změnu.
+                // Jde o změnu (buď z null na not null, anebo změnu hodnoty):
                 refreshMode = (GToolBarRefreshMode)((int)refreshMode | (int)result);
                 return true;
             }
@@ -589,9 +596,17 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             /// </summary>
             public override Image ImageHot { get { return (this._HasItem ? App.Resources.GetImage(this._GuiToolBarItem.ImageHot) : null); } }
             /// <summary>
+            /// Položka je viditelná?
+            /// </summary>
+            public override bool IsVisible { get { return (this._HasItem ? (this._GuiToolBarItem.Visible.HasValue ? this._GuiToolBarItem.Visible.Value : true) : base.IsVisible); } set { if (this._HasItem) this._GuiToolBarItem.Visible = value; else base.IsVisible = value; } }
+            /// <summary>
+            /// Položka je Enabled?
+            /// </summary>
+            public override bool IsEnabled { get { return (this._HasItem ? (this._GuiToolBarItem.Enable.HasValue ? this._GuiToolBarItem.Enable.Value : true) : base.IsEnabled); } set { if (this._HasItem) this._GuiToolBarItem.Enable = value; else base.IsEnabled = value; } }
+            /// <summary>
             /// Velikost prvku na toolbaru, vzhledem k výšce toolbaru
             /// </summary>
-            public override FunctionGlobalItemSize Size { get { return (this._HasItem ? this._GuiToolBarItem.Size : base.Size); } set { if (this._HasItem) this._GuiToolBarItem.Size = value; else base.Size = value; } }
+            public override FunctionGlobalItemSize Size { get { return (this._HasItem ? (this._GuiToolBarItem.Size.HasValue ? this._GuiToolBarItem.Size.Value : FunctionGlobalItemSize.Half) : base.Size); } set { if (this._HasItem) this._GuiToolBarItem.Size = value; else base.Size = value; } }
             /// <summary>
             /// Explicitně požadovaná šířka prvku v počtu modulů
             /// </summary>
@@ -599,7 +614,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             /// <summary>
             /// Nápověda ke zpracování layoutu této položky
             /// </summary>
-            public override LayoutHint LayoutHint { get { return (this._HasItem ? this._GuiToolBarItem.LayoutHint : base.LayoutHint); } set { if (this._HasItem) this._GuiToolBarItem.LayoutHint = value; else base.LayoutHint = value; } }
+            public override LayoutHint LayoutHint { get { return (this._HasItem ? (this._GuiToolBarItem.LayoutHint.HasValue ? this._GuiToolBarItem.LayoutHint.Value : LayoutHint.Default) : base.LayoutHint); } set { if (this._HasItem) this._GuiToolBarItem.LayoutHint = value; else base.LayoutHint = value; } }
             /// <summary>
             /// Název grupy, kde se tento prvek objeví. Nezadaná grupa = implicitní s názvem "FUNKCE".
             /// </summary>
