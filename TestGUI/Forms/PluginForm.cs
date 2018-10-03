@@ -114,54 +114,135 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             return (fileName != null ? System.IO.File.ReadAllText(fileName) : null);
         }
         #endregion
-        #region Implementace Scheduler.IAppHost
-        void IAppHost.CallAppHostFunction(AppHostRequestArgs args)
+        #region Implementace Scheduler.IAppHost, offline řešení požadovaných commandů
+        void IAppHost.CallAppHostFunction(AppHostRequestArgs appRequest)
         {
-            if (NeedMessage(args.Request))
-                ShowMsg("Rád bych provedl požadovanou akci:~" + args.Request.ToString() + ";~~ale jsem jen obyčejný testovací formulář.");
-            if (args.CallBackAction != null)
-                this._SendResponse(args, null);
-        }
-        protected static bool NeedMessage(GuiRequest request)
-        {
-            switch (request.Command)
-            {   // Tyto příkazy NEBUDOU hlásit uživateli okno typu "Rád bych provedl požadovanou akci" :
-                case GuiRequest.COMMAND_GraphItemMove:
-                case GuiRequest.COMMAND_CloseWindow:
-                    return false;
+            AppHostResponseArgs appResponse = CreateResponse(appRequest);
+
+            if (appResponse == null)
+            {
+                ShowMsg("Rád bych provedl požadovanou akci:~" + appRequest.Request.ToString() + ";~~ale jsem jen obyčejný testovací formulář.");
+                appResponse = new AppHostResponseArgs(appRequest);
+                appResponse.Result = AppHostActionResult.Failure;
             }
-            return true;
+            if (appRequest.CallBackAction != null)
+                this._SendResponse(appRequest, appResponse);
         }
-        protected void _SendResponse(AppHostRequestArgs request, AppHostResponseArgs response)
+        /// <summary>
+        /// Vrátí response na daný request
+        /// </summary>
+        /// <param name="appRequest"></param>
+        /// <returns></returns>
+        private static AppHostResponseArgs CreateResponse(AppHostRequestArgs appRequest)
         {
-            if (request.CallBackAction == null) return;
-
-            AppHostResponseArgs args = new AppHostResponseArgs(request);
-            args.Result = AppHostActionResult.Success;
-            request.CallBackAction(args);
+            GuiRequest guiRequest = appRequest.Request;
+            GuiResponse guiResponse = null;
+            switch (guiRequest.Command)
+            {
+                case GuiRequest.COMMAND_ToolbarClick:
+                    guiResponse = CreateResponseToolbarClick(guiRequest);
+                    break;
+                case GuiRequest.COMMAND_ContextMenuClick:
+                    guiResponse = CreateResponseContextMenuClick(guiRequest);
+                    break;
+                case GuiRequest.COMMAND_GraphItemMove:
+                case GuiRequest.COMMAND_GraphItemResize:
+                    guiResponse = GuiResponse.Success();
+                    break;
+                case GuiRequest.COMMAND_OpenRecords:
+                    guiResponse = CreateResponseOpenRecords(guiRequest);
+                    break;
+                case GuiRequest.COMMAND_QueryCloseWindow:
+                case GuiRequest.COMMAND_CloseWindow:
+                    guiResponse = GuiResponse.Success();
+                    break;
+            }
+            if (guiResponse == null) return null;
+            AppHostResponseArgs appResponse = new AppHostResponseArgs(appRequest);
+            appResponse.Result = AppHostActionResult.Success;
+            appResponse.GuiResponse = guiResponse;
+            return appResponse;
         }
+        /// <summary>
+        /// Vrátí response na akci ToolbarClick
+        /// </summary>
+        /// <param name="guiRequest"></param>
+        /// <returns></returns>
+        private static GuiResponse CreateResponseToolbarClick(GuiRequest guiRequest)
+        {
+            GuiResponse guiResponse = null;
+            string txtResponse;
+            if (guiRequest.ToolbarItem == null) return guiResponse;
+            switch (guiRequest.ToolbarItem.Name)
+            {
+                case "tlbSave":
+                    txtResponse = "H4sIAAAAAAAEAJWRy27CMBBFf8XytsJJQPSBkqBCqwqBQCIpVVV1MUkG6mJsZDuofFyX/a/aPEQW3XQz1vje8bnyxP2vjSA71IYrmdCIhZSgLFXF5SqhtV22omvaT+OtdxiL0pJFw+zcQ41gsUpoO4xuW1HYCjukHfa6N72wy+460cmhdEIr2PGKfYKEEtc0jSuwkMYLEDWSQ2X5fosJnSrNDZsMMzYAg+xF6XVWfmBVC9TsqeZzNFslDVLywEGolZ+QrjvfZ9YlSmhWlyUa40C5UqIAPbK4MeRea9izOciV87yFV+135/AS8YWNZMXdmJe8cEz3KKEQ53jZ3njjwD2KIOlJTOgShM80hY1rrCgy2Lk259aLEp8ns59vSoI0Djzob2b0T6bVdRM5rIsLcjzL8vFrkxg0P8K1B5A7j4sILktOfwHf/4QrGAIAAA==";
+                    guiResponse = Persist.Deserialize(txtResponse) as GuiResponse;
+                    break;
+                case "tlbCube":
+                    txtResponse = "H4sIAAAAAAAEAJWR0U7CMBSGX6XpraHbAMWQbUTQGAKBhE2MMV6cbQeslJa0HZGH89L3sgUMu/DGm9Oe/v/p96eNB59bQfaoDVcyoRELKUFZqorLdUJru2pFN3SQxjvvMBalJcuG2blHGsFildB2GN22orAVdkg77F/3+p0u63W6Z4fSCa1gzyv2ARJK3NA0rsBCGi9B1EiOleWHHSZ0pjQ3bDrK2BAMsmelN1n5jlUtULPHmi/Q7JQ0SMk9B6HWfkK67vc8sy5RQrO6LNEYB8qVEgXoscWtIXdaw4EtQK6d5zW8ar85h5eIL2wsK+7GvOSFU7oHCYX4jZcdjDcO3aUIkp7FhFpduxAz2Pq9KDLYuzbn1mtP0/n3FyVBGgee8jcw+idwBcI0iaO6uBAlTuZZPnlpQoPmQ7j2yHLr6SOCyyenP1pKJiIYAgAA";
+                    guiResponse = Persist.Deserialize(txtResponse) as GuiResponse;
+                    break;
+            }
+            return guiResponse;
+        }
+        /// <summary>
+        /// Vrátí response na akci ContextMenuClick
+        /// </summary>
+        /// <param name="guiRequest"></param>
+        /// <returns></returns>
+        private static GuiResponse CreateResponseContextMenuClick(GuiRequest guiRequest)
+        {
+            return null;
+        }
+        /// <summary>
+        /// Vrátí response na akci OpenRecords
+        /// </summary>
+        /// <param name="guiRequest"></param>
+        /// <returns></returns>
+        private static GuiResponse CreateResponseOpenRecords(GuiRequest guiRequest)
+        {
+            if (guiRequest.RecordsToOpen != null && guiRequest.RecordsToOpen.Length > 0)
+            {
+                GuiId guiId = guiRequest.RecordsToOpen[0];
+                string text = "Nyní by se měl otevřít formulář záznamu:~~" + guiId.ToString();
+                ShowMsg(null, text);
+            }
+            return GuiResponse.Success();
+        }
+        /// <summary>
+        /// Zavolá callback akci
+        /// </summary>
+        /// <param name="appRequest"></param>
+        /// <param name="appResponse"></param>
+        protected void _SendResponse(AppHostRequestArgs appRequest, AppHostResponseArgs appResponse)
+        {
+            if (appRequest.CallBackAction == null) return;
 
+            if (appResponse == null)
+            {
+                appResponse = new AppHostResponseArgs(appRequest);
+                appResponse.Result = AppHostActionResult.Success;
+            }
+            appRequest.CallBackAction(appResponse);
+        }
+        /// <summary>
+        /// Zobrazí hlášku jako Warning
+        /// </summary>
+        /// <param name="message"></param>
         protected void ShowMsg(string message)
         {
+            ShowMsg((this as IWin32Window), message);
+        }
+        /// <summary>
+        /// Zobrazí hlášku jako Warning
+        /// </summary>
+        /// <param name="message"></param>
+        protected static void ShowMsg(IWin32Window owner, string message)
+        {
             message = message.Replace("~", Environment.NewLine);
-            System.Windows.Forms.MessageBox.Show((this as IWin32Window), message, "Problém:", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            System.Windows.Forms.MessageBox.Show(owner, message, "Problém:", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
         #endregion
-        /*
-
-GuiRequest typu:
-Command = "ToolbarClick"
-kde 	FullName	"tlbCube"	string
-
-vrací GuiResponse, který říká: 
-Upravit Toolbar položky: tlbSave a tlbCube:
-
-Výsledkem je AppHostResponseArgs:
-		Data	"H4sIAAAAAAAEAJWRzU4CMRSFX6Xp1tD50RghM0MEjSEQSJgRY4yLOzMXrJSWtB0iD+fS97LlJ8zCjZvb3p5z+520Sf9rI8gOteFKpjRiISUoK1VzuUppY5ed6Jb2s2TrHcaitGTRMjv3UCNYrFMah9FdJwo74TWJw14c9W5C1o26J4fSKa1hx2v2CRIqXNMsqcFClixANEgOlRX7LaZ0qjQ3bDLM2QAMshel13n1gXUjULOnhs/RbJU0SMkDB6FWfkK67nyeW5copXlTVWiMAxVKiRL0yOLGkHutYc/mIFfO8xZexe/O4SXiCxvJmrsxL3nhmO5RQinO8fK98caBuxRB0pOYUqsbF2IKG78XZQ471xbceu15Mvv5piTIksBT/gZG/wQuQZg2cdiUF6LE8Swvxq9taNB+CNceWG49fkRw+eTsFw7ZY5kYAgAA"	string
-		Result	Success	Asol.Tools.WorkScheduler.AppHostActionResult
-
-a to se odešle do callBackAction
-
-        */
     }
 }
