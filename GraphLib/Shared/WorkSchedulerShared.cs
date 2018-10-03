@@ -994,6 +994,184 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GraphItemBehaviorMode BehaviorMode { get; set; }
     }
+    /// <summary>
+    /// 
+    /// </summary>
+    public abstract class GuiGraphBaseItem : GuiBase
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public GuiGraphItem()
+        {
+            this.Height = 1f;
+            this.BehaviorMode = GraphItemBehaviorMode.DefaultText;
+        }
+        /// <summary>
+        /// Obsahuje sloupce, které jsou povinné.
+        /// Pokud dodaná data nebudou obsahovat některý z uvedených sloupců, načítání se neprovede.
+        /// </summary>
+        public const string StructureLiable = "item_class_id int, item_record_id int, row_class_id int, row_record_id int, begin datetime, end datetime";
+        /// <summary>
+        /// Obsahuje všechny sloupce, které jsou načítané do dat třídy <see cref="GuiGraphItem"/>, tj. i ty nepovinné.
+        /// </summary>
+        public const string StructureFull =
+                    "item_class_id int, item_record_id int, row_class_id int, row_record_id int, " +
+                    "group_class_id int, group_record_id int, data_class_id int, data_record_id int, " +
+                    "begin datetime, end datetime, " +
+                    "layer int, level int, order int, height float, " +
+                    "text string, tooltip string, " +
+                    "back_color string, line_color string, back_style string, " +
+                    "ratio_begin float, ratio_end float, ratio_back_color string, ratio_line_color string, ratio_line_width int";
+        /// <summary>
+        /// Jméno prvku GuiGraphItem je vždy rovno textu z <see cref="ItemId"/>. Property Name zde nemá význam setovat.
+        /// </summary>
+        public override string Name
+        {
+            get { return (this.ItemId != null ? this.ItemId.Name : "NULL"); }
+            set { }
+        }
+        /// <summary>
+        /// ID položky časového grafu (ID obdélníčku).
+        /// Z databáze se načítá ze sloupců: "item_class_id", "item_record_id", je POVINNÝ.
+        /// </summary>
+        public GuiId ItemId { get; set; }
+        /// <summary>
+        /// ID řádku, v jehož grafu se má tento prvek zobrazovat.
+        /// Z databáze se načítá ze sloupců: "row_class_id", "row_record_id", je POVINNÝ.
+        /// </summary>
+        public GuiId RowId { get; set; }
+        /// <summary>
+        /// GroupId: číslo skupiny. Prvky se shodným GroupId budou vykreslovány do společného "rámce", 
+        /// a pokud mezi jednotlivými prvky grafu se shodným <see cref="GroupId"/> bude na ose X nějaké volné místo,
+        /// nebude mezi nimi vykreslován žádný "cizí" prvek.
+        /// Z databáze se načítá ze sloupců: "group_class_id", "group_record_id", je NEPOVINNÝ.
+        /// </summary>
+        public GuiId GroupId { get; set; }
+        /// <summary>
+        /// ID datového záznamu, jehož formulář se má rozkliknout po Ctrl + DoubleKliknutí na záznam.
+        /// Z databáze se načítá ze sloupců: "data_class_id", "data_record_id", je NEPOVINNÝ.
+        /// </summary>
+        public GuiId DataId { get; set; }
+        /// <summary>
+        /// Datum a čas počátku tohoto prvku.
+        /// Z databáze se načítá ze sloupce: "begin" a "end", je POVINNÝ.
+        /// </summary>
+        public GuiTimeRange Time { get; set; }
+        /// <summary>
+        /// Layer: Vizuální vrstva. Prvky z různých vrstev jsou kresleny "přes sebe" = mohou se překrývat.
+        /// Nižší hodnota je kreslena dříve.
+        /// Například: záporná hodnota Layer reprezentuje "podklad" který se needituje.
+        /// Z databáze se načítá ze sloupce: "layer", je NEPOVINNÝ.
+        /// </summary>
+        public int Layer { get; set; }
+        /// <summary>
+        /// Level: Vizuální hladina. Prvky v jedné hladině jsou kresleny do společného vodorovného pásu, 
+        /// další prvky ve vyšší hladině jsou všechny zase vykresleny ve svém odděleném pásu (nad tímto nižším pásem). 
+        /// Nespadnou do prvků nižšího pásu i když by v něm bylo volné místo.
+        /// Z databáze se načítá ze sloupce: "level", je NEPOVINNÝ.
+        /// </summary>
+        public int Level { get; set; }
+        /// <summary>
+        /// Order: pořadí prvku při výpočtech souřadnic Y před vykreslováním. 
+        /// Prvky se stejným Order budou tříděny vzestupně podle data počátku <see cref="Time"/>.Begin.
+        /// Z databáze se načítá ze sloupce: "order", je NEPOVINNÝ.
+        /// </summary>
+        public int Order { get; set; }
+        /// <summary>
+        /// Relativní výška tohoto prvku. Standardní hodnota = 1.0F. Fyzická výška (v pixelech) jednoho prvku je dána součinem 
+        /// <see cref="Height"/> * <see cref="GuiGraphProperties.GraphLineHeight"/>
+        /// Prvky s výškou 0 a menší nebudou vykresleny.
+        /// Z databáze se načítá ze sloupce: "height", je NEPOVINNÝ.
+        /// </summary>
+        public float Height { get; set; }
+        /// <summary>
+        /// Text pro zobrazení uvnitř tohoto prvku.
+        /// Pokud je null, bude se hledat v tabulce textů.
+        /// Z databáze se načítá ze sloupce: "text", je NEPOVINNÝ.
+        /// </summary>
+        public string Text { get; set; }
+        /// <summary>
+        /// ToolTip pro zobrazení u tohoto tohoto prvku.
+        /// Pokud je null, bude se hledat v tabulce textů.
+        /// Z databáze se načítá ze sloupce: "tooltip", je NEPOVINNÝ.
+        /// </summary>
+        public string ToolTip { get; set; }
+        /// <summary>
+        /// Barva pozadí prvku.
+        /// Pokud bude null, pak prvek nebude mít vyplněný svůj prostor (obdélník). Může mít vykreslené okraje (barva <see cref="LineColor"/>).
+        /// Anebo může mít kreslené Ratio (viz property <see cref="RatioBegin"/>, <see cref="RatioEnd"/>, 
+        /// <see cref="RatioBackColor"/>, <see cref="RatioLineColor"/>, <see cref="RatioLineWidth"/>).
+        /// Z databáze se načítá ze sloupce: "back_color", je NEPOVINNÝ.
+        /// </summary>
+        public Color? BackColor { get; set; }
+        /// <summary>
+        /// Barva linek ohraničení prvku.
+        /// Pokud je null, pak prvek nemá ohraničení pomocí linky (Border).
+        /// Z databáze se načítá ze sloupce: "line_color", je NEPOVINNÝ.
+        /// </summary>
+        public Color? LineColor { get; set; }
+        /// <summary>
+        /// Poměrná hodnota "nějakého" splnění v rámci prvku, na jeho počátku.
+        /// Běžně se vykresluje jako poměrná část prvku, měřeno odspodu, která symbolizuje míru "naplnění" daného úseku.
+        /// Část Ratio má tvar lichoběžníku, a spojuje body Begin = { <see cref="Time"/>.Begin, <see cref="RatioBegin"/> } a { <see cref="Time"/>.End, <see cref="RatioEnd"/> }.
+        /// <para/>
+        /// Pro zjednodušení zadávání: pokud je naplněno <see cref="RatioBegin"/>, ale v <see cref="RatioEnd"/> je null, 
+        /// pak vykreslovací algoritmus předpokládá hodnotu End stejnou jako Begin. To znamená, že pro "obdélníkové" ratio stačí naplnit jen <see cref="RatioBegin"/>.
+        /// Ale opačně to neplatí.
+        /// <para/>
+        /// Z databáze se načítá ze sloupce: "ratio_begin", je NEPOVINNÝ.
+        /// </summary>
+        public float? RatioBegin { get; set; }
+        /// <summary>
+        /// Poměrná hodnota "nějakého" splnění v rámci prvku, na jeho konci.
+        /// Běžně se vykresluje jako poměrná část prvku, měřeno odspodu, která symbolizuje míru "naplnění" daného úseku.
+        /// Část Ratio má tvar lichoběžníku, a spojuje body Begin = { <see cref="Time"/>.Begin, <see cref="RatioBegin"/> } a { <see cref="Time"/>.End, <see cref="RatioEnd"/> }.
+        /// <para/>
+        /// Pro zjednodušení zadávání: pokud je naplněno <see cref="RatioBegin"/>, ale v <see cref="RatioEnd"/> je null, 
+        /// pak vykreslovací algoritmus předpokládá hodnotu End stejnou jako Begin. To znamená, že pro "obdélníkové" ratio stačí naplnit jen <see cref="RatioBegin"/>.
+        /// Ale opačně to neplatí.
+        /// <para/>
+        /// Z databáze se načítá ze sloupce: "ratio_end", je NEPOVINNÝ.
+        /// </summary>
+        public float? RatioEnd { get; set; }
+        /// <summary>
+        /// Barva pozadí prvku, kreslená v části Ratio.
+        /// Použije se tehdy, když hodnota <see cref="RatioBegin"/> a/nebo <see cref="RatioEnd"/> má hodnotu větší než 0f.
+        /// Touto barvou je vykreslena dolní část prvku, která symbolizuje míru "naplnění" daného úseku.
+        /// Tato část má tvar lichoběžníku, dolní okraj je na hodnotě 0, levý okraj má výšku <see cref="RatioBegin"/>, pravý okraj má výšku <see cref="RatioEnd"/>.
+        /// Může sloužit k zobrazení vyčerpané pracovní kapacity, nebo jako lineární částečka grafu sloupcového nebo liniového.
+        /// Z databáze se načítá ze sloupce: "ratio_back_color", je NEPOVINNÝ.
+        /// </summary>
+        public Color? RatioBackColor { get; set; }
+        /// <summary>
+        /// Barva linky, kreslená v úrovni Ratio.
+        /// Použije se tehdy, když hodnota <see cref="RatioBegin"/> a/nebo <see cref="RatioEnd"/> má zadanou hodnotu v rozsahu 0 (včetně) a více.
+        /// Touto barvou je vykreslena přímá linie, která symbolizuje míru "naplnění" daného úseku, 
+        /// a spojuje body Begin = { <see cref="Time"/>.Begin, <see cref="RatioBegin"/> } a { <see cref="Time"/>.End, <see cref="RatioEnd"/> }.
+        /// Z databáze se načítá ze sloupce: "ratio_line_color", je NEPOVINNÝ.
+        /// </summary>
+        public Color? RatioLineColor { get; set; }
+        /// <summary>
+        /// Šířka linky, kreslená v úrovni Ratio.
+        /// Použije se tehdy, když hodnota <see cref="RatioBegin"/> a/nebo <see cref="RatioEnd"/> má zadanou hodnotu v rozsahu 0 (včetně) a více.
+        /// Čárou této šířky je vykreslena přímá linie, která symbolizuje míru "naplnění" daného úseku, 
+        /// a spojuje body Begin = { <see cref="Time"/>.Begin, <see cref="RatioBegin"/> } a { <see cref="Time"/>.End, <see cref="RatioEnd"/> }.
+        /// Z databáze se načítá ze sloupce: "ratio_line_width", je NEPOVINNÝ.
+        /// </summary>
+        public int? RatioLineWidth { get; set; }
+        /// <summary>
+        /// Styl vzorku kresleného v pozadí.
+        /// null = Solid.
+        /// Z databáze se načítá ze sloupce: "back_style", je NEPOVINNÝ.
+        /// </summary>
+        public System.Drawing.Drawing2D.HatchStyle? BackStyle { get; set; }
+        /// <summary>
+        /// Režim chování položky grafu (editovatelnost, texty, atd).
+        /// Tato hodnota se nenačítá z SQL SELECTU, musí se naplnit ručně.
+        /// </summary>
+        public GraphItemBehaviorMode BehaviorMode { get; set; }
+    }
     #endregion
     #region GuiToolbarPanel : Celý Toolbar
     /// <summary>
@@ -1260,7 +1438,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// - "workGrid" je název konkrétní tabulky <see cref="GuiGrid"/> (tabulka obsahuje řádky, prvky grafů a textové prvky). Název definuje aplikace.
         /// </summary>
         [PersistingEnabled(false)]
-        public string FullName
+        public virtual string FullName
         {
             get
             {
@@ -2266,6 +2444,7 @@ namespace Noris.LCS.Base.WorkScheduler
     /// </summary>
     public class GuiResponse
     {
+        #region Konstrukce, základní stavové property: ResponseState, Message, Dialog
         /// <summary>
         /// Konstruktor
         /// </summary>
@@ -2274,14 +2453,6 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Stav dokončení funkce
         /// </summary>
         public GuiResponseState ResponseState { get; set; }
-        /// <summary>
-        /// Požadovaná hodnota časové osy. 
-        /// Bude aplikována, pokud není null.
-        /// Hodnota bude vždy zarovnána do <see cref="GuiProperties.TotalTimeRange"/>
-        /// </summary>
-        public GuiTimeRange TimeAxisValue { get; set; }
-
-
         /// <summary>
         /// Textová zpráva uživateli.
         /// Používá se například při testu na zavření okna WorkScheduleru, 
@@ -2294,7 +2465,22 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Používá se například při testu na zavření okna WorkScheduleru, pro <see cref="Message"/> obsahuje hodnoty <see cref="GuiDialogResponse.YesNo"/>.
         /// </summary>
         public GuiDialogResponse Dialog { get; set; }
+        #endregion
+        #region Data, která se promítají do GUI: TimeAxisValue
+        /// <summary>
+        /// Požadovaná hodnota časové osy. 
+        /// Bude aplikována, pokud není null.
+        /// Hodnota bude vždy zarovnána do <see cref="GuiProperties.TotalTimeRange"/>
+        /// </summary>
+        public GuiTimeRange TimeAxisValue { get; set; }
+        /// <summary>
+        /// Pole prvků grafů, které se mají z GUI odebrat
+        /// </summary>
+        public GuiGridItemId[] RemoveItems { get; set; }
+        qqq;
 
+        #endregion
+        #region Statické konstruktory: Success, Warning, Error
         /// <summary>
         /// Statický konstruktor, který vrací new instanci <see cref="GuiResponse"/>, kde <see cref="GuiResponse.ResponseState"/> = <see cref="GuiResponseState.Success"/>.
         /// </summary>
@@ -2307,7 +2493,10 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Statický konstruktor, který vrací new instanci <see cref="GuiResponse"/>, kde <see cref="GuiResponse.ResponseState"/> = <see cref="GuiResponseState.Error"/>, a nastaví danou zprávu do <see cref="Message"/>.
         /// </summary>
         public static GuiResponse Error(string message) { return new GuiResponse() { ResponseState = GuiResponseState.Error, Message = message }; }
+        #endregion
     }
+    public class GuiGridGraphItem : GuiGraphItem
+    { }
     /// <summary>
     /// Stav dokončení funkce
     /// </summary>
