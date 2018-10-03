@@ -1232,6 +1232,16 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             Rectangle sourceBounds = moveInfo.SourceBounds;
             Rectangle targetBounds = moveInfo.TargetBounds;
+            TimeRange targetTime = moveInfo.TargetTime;
+
+            // 1. Přichytávání přemísťovaného prvku k vhodné straně nejbližšího přiléhajícímu prvku v cílovém grafu:
+            AdjustGraphItemSide nearSide = _AdjustGetNearSide(moveInfo);       // Podle pozice myši vzhledem k prvku určíme stranu prvku (Begin/End), která se má přichytávat:
+            DateTime? nearTime = _AdjustSearchNearTime(moveInfo, nearSide);
+
+            // 2. Přichytávání k výchozímu času:
+            // 3. Přichytávání k zaokrouhlenému času:
+
+
 
             // Umístění cíle, časová/místní příchylnost k původní hodnotě:
             int distX = (targetBounds.X - sourceBounds.X);
@@ -1261,6 +1271,78 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             }
             moveInfo.TargetBounds = targetBounds;
         }
+
+        private DateTime? _AdjustSearchNearTime(GraphItemDragMoveInfo moveInfo, AdjustGraphItemSide nearSide)
+        {
+            GTimeGraph targetGraph = moveInfo.TargetGraph;
+            int itemId = moveInfo.DragItemId;
+            int groupId = moveInfo.DragGroupId;
+            DateTime timePoint = (nearSide == AdjustGraphItemSide.Begin ? moveInfo.TargetTime.Begin.Value : moveInfo.TargetTime.End.Value);
+            int xc = (nearSide == AdjustGraphItemSide.Begin ? moveInfo.TargetBounds.X : moveInfo.TargetBounds.Right - 1);
+            int w1 = AdjustSearchNearPixels;
+            DateTime? begin = moveInfo.GetTimeForPosition(xc - w1);
+            DateTime? end = moveInfo.GetTimeForPosition(xc + w1);
+            TimeRange timeWindow = new TimeRange(begin, end);
+            DateTime? nearTime = targetGraph.SearchNearTime(
+                group =>
+                {
+                    if (groupId != 0 && group.GroupId == groupId) return null;           // Pokud prohlížíme zdrojový prvek, pak jej nebereme = vracíme null
+                    if (groupId == 0 && group.Items[0].ItemId == itemId) return null;    // Pokud prohlížíme zdrojový prvek, pak jej nebereme = vracíme null
+                    // Pokud nearSide = Begin (našeho prvku), pak nás zajímá End sousedního prvku = hledáme NÁVAZNOST, nikoli SHODU:
+                    return (nearSide == AdjustGraphItemSide.Begin ? group.Time.End : group.Time.Begin);
+                },
+                timePoint, timeWindow
+                );
+            return nearTime;
+        }
+
+        /// <summary>
+        /// Vrátí stranu prvku, která je blíže k místu prvku, za který byl prvek uchopen myší.
+        /// </summary>
+        /// <param name="moveInfo"></param>
+        /// <returns></returns>
+        private AdjustGraphItemSide _AdjustGetNearSide(GraphItemDragMoveInfo moveInfo)
+        {
+            if (!moveInfo.SourceMousePoint.HasValue) return AdjustGraphItemSide.Begin;
+            Int32Range boundsX = Int32Range.CreateFromRectangle(moveInfo.SourceBounds, Orientation.Horizontal);
+            int mouseX = moveInfo.SourceMousePoint.Value.X;
+            decimal w = boundsX.Size;
+            decimal z = AdjustSideMinSize;
+            if (w <= z) return AdjustGraphItemSide.Begin;
+            decimal t = z + (AdjustSideRatio * (w - z));
+            decimal x = (mouseX - boundsX.Begin);
+            return ((x <= t) ? AdjustGraphItemSide.Begin : AdjustGraphItemSide.End);
+        }
+        /// <summary>
+        /// Vrátí opačnou stranu <see cref="AdjustGraphItemSide"/> ke straně zadané
+        /// </summary>
+        /// <param name="nearSide"></param>
+        /// <returns></returns>
+        protected AdjustGraphItemSide _AdjustGetOppositeSide(AdjustGraphItemSide nearSide)
+        {
+            return (nearSide == AdjustGraphItemSide.End ? AdjustGraphItemSide.Begin : AdjustGraphItemSide.End);
+        }
+        /// <summary>
+        /// Strana aktuálního prvku pro jeho přichytávání
+        /// </summary>
+        protected enum AdjustGraphItemSide
+        {
+            /// <summary>
+            /// Neurčeno
+            /// </summary>
+            None,
+            /// <summary>
+            /// Počátek
+            /// </summary>
+            Begin,
+            /// <summary>
+            /// Konec
+            /// </summary>
+            End
+        }
+        protected const decimal AdjustSideMinSize = 15m;
+        protected const decimal AdjustSideRatio = 0.65m;
+        protected const int AdjustSearchNearPixels = 10;
         #endregion
         #region Otevření formulářů záznamů
         /// <summary>
@@ -1468,6 +1550,15 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     /// </summary>
     public class GraphItemDragMoveInfo
     {
+        /// <summary>
+        /// ID prvku, který se přemisťuje
+        /// </summary>
+        public int DragItemId { get; set; }
+        /// <summary>
+        /// Id grupy, která se přemisťuje.
+        /// Vždy se přemisťuje celá grupa, nikdy ne jednotlivý prvek.
+        /// </summary>
+        public int DragGroupId { get; set; }
         /// <summary>
         /// GId grupy, která se přemisťuje.
         /// Vždy se přemisťuje celá grupa, nikdy ne jednotlivý prvek.

@@ -1418,6 +1418,39 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             return this._TimeConvertor.FirstPixel + (int)(Math.Round(axisPixel, 0));
         }
         #endregion
+        #region Podpora pro aplikační vrstvu
+        /// <summary>
+        /// Metoda najde a vrátí čas nejbližší danému středu ze všech skupin prvků.
+        /// </summary>
+        /// <param name="timeSelector">Funkce, která z dodané grupy prvků vrátí její čas. Pokud vrátí null, prvek se dále neakceptuje.</param>
+        /// <param name="timePoint">Časový okamžik, ke kterému měříme vzdálenost</param>
+        /// <param name="timeWindow">Volitelně časové okno, v němž musí být obsažen čas prvku vrácený z metody timeSelector, aby byl akceptován. Hodnota null = akceptujeme vše.</param>
+        /// <returns></returns>
+        public DateTime? SearchNearTime(Func<GTimeGraphGroup, DateTime?> timeSelector, DateTime timePoint, TimeRange timeWindow = null)
+        {
+            List<Tuple<TimeSpan, DateTime>> timeList = new List<Tuple<TimeSpan, DateTime>>();
+            bool hasWindow = (timeWindow != null);
+            this.AllGroupScan(group =>
+            {
+                DateTime? time = timeSelector(group);
+                if (time.HasValue)
+                {
+                    bool accept = (hasWindow ? timeWindow.Contains(time) : true);
+                    if (accept)
+                    {
+                        TimeSpan span = (time.Value < timePoint ? (timePoint - time.Value) : (time.Value - timePoint));
+                        timeList.Add(new Tuple<TimeSpan, DateTime>(span, time.Value));
+                    }
+                }
+            });
+            int count = timeList.Count;
+            if (count == 0) return null;
+            if (count > 1)
+                timeList.Sort((a, b) => a.Item1.CompareTo(b.Item1));
+            return timeList[0].Item2;
+        }
+
+        #endregion
         #region Obecná static podpora pro grafy
         /// <summary>
         /// Vrací true, pokud se v daném režimu chování a za daného stavu má zobrazovat Caption
@@ -2284,7 +2317,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             this.Graph = graph;
             this.Group = group;
-            this.CurrentItem = (position == GGraphControlPosition.Item ? data : null);
+            this.CurrentItem = (position == GGraphControlPosition.Item ? data : group.Items[0]);
             this.Position = position;
         }
         /// <summary>

@@ -685,7 +685,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             TimeRange targetTime = TimeRange.CreateFromBeginSize(targetTimeBegin.Value, sourceTime.Size.Value);
 
             GraphItemDragMoveInfo moveInfo = new GraphItemDragMoveInfo();
-            moveInfo.DragGroupGId = this.GetGId(args.Group.GroupId);
+            moveInfo.DragItemId = args.CurrentItem.ItemId;
+            moveInfo.DragGroupId = args.Group.GroupId;
+            moveInfo.DragGroupGId = this.GetGId(moveInfo.DragGroupId);
             moveInfo.DragGroupItems = args.Group.Items.Where(i => i is DataGraphItem).Cast<DataGraphItem>().ToArray();
             moveInfo.DragAction = args.DragAction;
             moveInfo.SourceMousePoint = args.ActionPoint;
