@@ -17,6 +17,10 @@ namespace Asol.Tools.WorkScheduler.Components
     public class FontInfo
     {
         #region Font properties
+        /// <summary>
+        /// Override GetHashCode
+        /// </summary>
+        /// <returns></returns>
         public override int GetHashCode()
         {
             return ((this.FontType.GetHashCode() << 24)
@@ -25,6 +29,11 @@ namespace Asol.Tools.WorkScheduler.Components
                   ^ (this.Italic ? 2 : 0)
                   ^ (this.Underline ? 1 : 0));
         }
+        /// <summary>
+        /// Override Equals
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
         public override bool Equals(object obj)
         {
             FontInfo other = obj as FontInfo;
@@ -35,6 +44,10 @@ namespace Asol.Tools.WorkScheduler.Components
                  && (this.Italic == other.Italic)
                  && (this.Underline == other.Underline));
         }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             return this.FontType.ToString()
@@ -165,8 +178,17 @@ namespace Asol.Tools.WorkScheduler.Components
         /// StatusFont with normal size. Allways return new instance <see cref="FontInfo"/>.
         /// </summary>
         public static FontInfo Status { get { return new FontInfo() { FontType = FontSetType.StatusFont, RelativeSize = SizeStandard, Bold = false, Italic = false, Underline = false }; } }
+        /// <summary>
+        /// Konstanta pro Zoom pro menší písma
+        /// </summary>
         protected const int SizeSmall = 85;
+        /// <summary>
+        /// Konstanta pro Zoom pro standardní písma
+        /// </summary>
         protected const int SizeStandard = 100;
+        /// <summary>
+        /// Konstanta pro Zoom pro větší písma
+        /// </summary>
         protected const int SizeBig = 115;
         #endregion
         #region Get font from cache; Create new font
@@ -305,19 +327,30 @@ namespace Asol.Tools.WorkScheduler.Components
         private static object __FontLock = new object();
         #endregion
     }
+    #region enum FontSetType
     /// <summary>
     /// Type of font
     /// </summary>
     public enum FontSetType
     {
+        /// <summary>Konkrétní typ písma</summary>
         DefaultFont,
+        /// <summary>Konkrétní typ písma</summary>
         DialogFont,
+        /// <summary>Konkrétní typ písma</summary>
         MenuFont,
+        /// <summary>Konkrétní typ písma</summary>
         CaptionFont,
+        /// <summary>Konkrétní typ písma</summary>
         IconTitleFont,
+        /// <summary>Konkrétní typ písma</summary>
         MessageBoxFont,
+        /// <summary>Konkrétní typ písma</summary>
         SmallCaptionFont,
+        /// <summary>Konkrétní typ písma</summary>
         StatusFont,
+        /// <summary>Konkrétní typ písma</summary>
         ExplicitFont
     }
+    #endregion
 }

@@ -1417,10 +1417,25 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             }
             return this._TimeConvertor.FirstPixel + (int)(Math.Round(axisPixel, 0));
         }
+        /// <summary>
+        /// Metoda vrátí dané datum zaokrouhlené na vhodné jednotky na aktuální časové ose.
+        /// </summary>
+        public DateTime? GetRoundedTime(DateTime time, AxisTickType tickType)
+        {
+            if (this._TimeConvertor == null) return null;
+            return this._TimeConvertor.GetRoundedTime(time, tickType);
+        }
         #endregion
         #region Podpora pro aplikační vrstvu
         /// <summary>
-        /// Metoda najde a vrátí čas nejbližší danému středu ze všech skupin prvků.
+        /// Metoda najde a vrátí čas nejbližší danému časovému bodu ze všech svých skupin prvků.
+        /// Metoda prochází svoje grupy prvků, a každý prvek předá danému timeSelectoru.
+        /// Ten může danou grupu prověřit, a pokud nevyhovuje pak vrátí null. 
+        /// Pokud grupa vyhovuje, pak z ní vybere patřičné datum (typicky <see cref="GTimeGraphGroup.Time"/>.Begin nebo End) a vrátí jej.
+        /// Tato metoda následně prověří, zda vrácené datum spadá do časového okna timeWindow (pokud není zadáno, pak akceptuje všechna data).
+        /// Vyhovující datum si poznamená, včetně jeho vzdálenosti od časového bodu timePoint.
+        /// Nakonec z vyhovujících časů vrátí ten, který je nejblíže bodu timePoint.
+        /// Může vrátit null, pokud se nic nenajde (nejsou grupy, nebo timeSelector nikdy nic nevrátil, nebo výsledek timeSelectoru nespadá do timeWindow).
         /// </summary>
         /// <param name="timeSelector">Funkce, která z dodané grupy prvků vrátí její čas. Pokud vrátí null, prvek se dále neakceptuje.</param>
         /// <param name="timePoint">Časový okamžik, ke kterému měříme vzdálenost</param>
@@ -1428,28 +1443,109 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <returns></returns>
         public DateTime? SearchNearTime(Func<GTimeGraphGroup, DateTime?> timeSelector, DateTime timePoint, TimeRange timeWindow = null)
         {
-            List<Tuple<TimeSpan, DateTime>> timeList = new List<Tuple<TimeSpan, DateTime>>();
+            _SearchNearItem nearItem = this._SearchNearGroupTime(timeSelector, timePoint, timeWindow);
+            return (nearItem != null ? (DateTime?)nearItem.DateTime : (DateTime?)null);
+        }
+        /// <summary>
+        /// Metoda najde a vrátí čas nejbližší danému časovému bodu ze všech svých skupin prvků.
+        /// Metoda prochází svoje grupy prvků, a každý prvek předá danému timeSelectoru.
+        /// Ten může danou grupu prověřit, a pokud nevyhovuje pak vrátí null. 
+        /// Pokud grupa vyhovuje, pak z ní vybere patřičné datum (typicky <see cref="GTimeGraphGroup.Time"/>.Begin nebo End) a vrátí jej.
+        /// Tato metoda následně prověří, zda vrácené datum spadá do časového okna timeWindow (pokud není zadáno, pak akceptuje všechna data).
+        /// Vyhovující datum si poznamená, včetně jeho vzdálenosti od časového bodu timePoint.
+        /// Nakonec z vyhovujících časů vrátí ten, který je nejblíže bodu timePoint.
+        /// Může vrátit null, pokud se nic nenajde (nejsou grupy, nebo timeSelector nikdy nic nevrátil, nebo výsledek timeSelectoru nespadá do timeWindow).
+        /// </summary>
+        /// <param name="timeSelector">Funkce, která z dodané grupy prvků vrátí její čas. Pokud vrátí null, prvek se dále neakceptuje.</param>
+        /// <param name="timePoint">Časový okamžik, ke kterému měříme vzdálenost</param>
+        /// <param name="nearGroup">Výstupní proměnná pro uložení grupy, která má ten nejbližší čas</param>
+        /// <param name="timeWindow">Volitelně časové okno, v němž musí být obsažen čas prvku vrácený z metody timeSelector, aby byl akceptován. Hodnota null = akceptujeme vše.</param>
+        /// <returns></returns>
+        public DateTime? SearchNearTime(Func<GTimeGraphGroup, DateTime?> timeSelector, DateTime timePoint, out GTimeGraphGroup nearGroup, TimeRange timeWindow = null)
+        {
+            nearGroup = null;
+            _SearchNearItem nearItem = this._SearchNearGroupTime(timeSelector, timePoint, timeWindow);
+            if (nearItem == null) return null;
+            nearGroup = nearItem.Group;
+            return nearItem.DateTime;
+        }
+        /// <summary>
+        /// Metoda najde a vrátí nejbližší grupu a její čas pro dané zadáníze všech svých skupin prvků.
+        /// Metoda prochází svoje grupy prvků, a každý prvek předá danému timeSelectoru.
+        /// Ten může danou grupu prověřit, a pokud nevyhovuje pak vrátí null. 
+        /// Pokud grupa vyhovuje, pak z ní vybere patřičné datum (typicky <see cref="GTimeGraphGroup.Time"/>.Begin nebo End) a vrátí jej.
+        /// Tato metoda následně prověří, zda vrácené datum spadá do časového okna timeWindow (pokud není zadáno, pak akceptuje všechna data).
+        /// Vyhovující datum si poznamená, včetně jeho vzdálenosti od časového bodu timePoint.
+        /// Nakonec z vyhovujících časů vrátí ten, který je nejblíže bodu timePoint.
+        /// Může vrátit null, pokud se nic nenajde (nejsou grupy, nebo timeSelector nikdy nic nevrátil, nebo výsledek timeSelectoru nespadá do timeWindow).
+        /// </summary>
+        /// <param name="timeSelector">Funkce, která z dodané grupy prvků vrátí její čas. Pokud vrátí null, prvek se dále neakceptuje.</param>
+        /// <param name="timePoint">Časový okamžik, ke kterému měříme vzdálenost</param>
+        /// <param name="timeWindow">Volitelně časové okno, v němž musí být obsažen čas prvku vrácený z metody timeSelector, aby byl akceptován. Hodnota null = akceptujeme vše.</param>
+        /// <returns></returns>
+        private _SearchNearItem _SearchNearGroupTime(Func<GTimeGraphGroup, DateTime?> timeSelector, DateTime timePoint, TimeRange timeWindow)
+        {
+            List<_SearchNearItem> timeList = new List<_SearchNearItem>();
             bool hasWindow = (timeWindow != null);
             this.AllGroupScan(group =>
             {
-                DateTime? time = timeSelector(group);
-                if (time.HasValue)
+                DateTime? dateTime = timeSelector(group);
+                if (dateTime.HasValue)
                 {
-                    bool accept = (hasWindow ? timeWindow.Contains(time) : true);
+                    bool accept = (hasWindow ? timeWindow.Contains(dateTime) : true);
                     if (accept)
                     {
-                        TimeSpan span = (time.Value < timePoint ? (timePoint - time.Value) : (time.Value - timePoint));
-                        timeList.Add(new Tuple<TimeSpan, DateTime>(span, time.Value));
+                        TimeSpan timeSpan = (dateTime.Value < timePoint ? (timePoint - dateTime.Value) : (dateTime.Value - timePoint));
+                        timeList.Add(new _SearchNearItem(group, dateTime.Value, timeSpan));
                     }
                 }
             });
             int count = timeList.Count;
             if (count == 0) return null;
             if (count > 1)
-                timeList.Sort((a, b) => a.Item1.CompareTo(b.Item1));
-            return timeList[0].Item2;
+                timeList.Sort(_SearchNearItem.CompareByTimeSpan);
+            return timeList[0];
         }
-
+        /// <summary>
+        /// Třída pro uchování mezivýsledků v metodě <see cref="_SearchNearGroupTime(Func{GTimeGraphGroup, DateTime?}, DateTime, TimeRange)"/>
+        /// </summary>
+        private class _SearchNearItem
+        {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="group"></param>
+            /// <param name="dateTime"></param>
+            /// <param name="timeSpan"></param>
+            public _SearchNearItem(GTimeGraphGroup group, DateTime dateTime, TimeSpan timeSpan)
+            {
+                this.Group = group;
+                this.DateTime = dateTime;
+                this.TimeSpan = timeSpan;
+            }
+            /// <summary>
+            /// Grupa
+            /// </summary>
+            public GTimeGraphGroup Group { get; private set; }
+            /// <summary>
+            /// Její určený čas (typicky <see cref="GTimeGraphGroup.Time"/>.Begin nebo End)
+            /// </summary>
+            public DateTime DateTime { get; private set; }
+            /// <summary>
+            /// Vzdálenost času <see cref="DateTime"/> od cílového bodu
+            /// </summary>
+            public TimeSpan TimeSpan { get; private set; }
+            /// <summary>
+            /// Komparátor pro třídění TimeSpan ASC
+            /// </summary>
+            /// <param name="a"></param>
+            /// <param name="b"></param>
+            /// <returns></returns>
+            public static int CompareByTimeSpan(_SearchNearItem a, _SearchNearItem b)
+            {
+                return a.TimeSpan.CompareTo(b.TimeSpan);
+            }
+        }
         #endregion
         #region Obecná static podpora pro grafy
         /// <summary>
@@ -1457,13 +1553,13 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         /// <param name="mode"></param>
         /// <param name="state"></param>
-        /// <param name="isSelected"></param>
+        /// <param name="isActive"></param>
         /// <returns></returns>
-        internal static bool IsCaptionVisible(GraphItemBehaviorMode mode, GInteractiveState state, bool isSelected)
+        internal static bool IsCaptionVisible(GraphItemBehaviorMode mode, GInteractiveState state, bool isActive)
         {
             if (mode.HasFlag(GraphItemBehaviorMode.ShowCaptionNone)) return false;
             if (mode.HasFlag(GraphItemBehaviorMode.ShowCaptionAllways)) return true;
-            if (mode.HasFlag(GraphItemBehaviorMode.ShowCaptionInSelected) && isSelected) return true;
+            if (mode.HasFlag(GraphItemBehaviorMode.ShowCaptionInSelected) && isActive) return true;
             if (mode.HasFlag(GraphItemBehaviorMode.ShowCaptionInMouseOver))
                 return ((state & (GInteractiveState.FlagOver | GInteractiveState.FlagDown | GInteractiveState.FlagDrag | GInteractiveState.FlagFrame)) != 0);
             return false;
@@ -1745,7 +1841,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Barva pozadí prvku.
         /// Pokud bude null, pak prvek nebude mít vyplněný svůj prostor (obdélník). Může mít vykreslené okraje (barva <see cref="LineColor"/>).
         /// Anebo může mít kreslené Ratio (viz property <see cref="RatioBegin"/>, <see cref="RatioEnd"/>, 
-        /// <see cref="RatioBackColor"/>, <see cref="RatioLineColor"/>, <see cref="RatioLineWidth"/>).
+        /// <see cref="RatioBeginBackColor"/>, <see cref="RatioEndBackColor"/>, <see cref="RatioLineColor"/>, <see cref="RatioLineWidth"/>).
         /// </summary>
         Color? BackColor { get; }
         /// <summary>
@@ -1778,15 +1874,27 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Ale opačně to neplatí.
         /// </summary>
         float? RatioEnd { get; }
-        /// <summary>
-        /// Barva pozadí prvku, kreslená v části Ratio.
+        /// Barva pozadí prvku, kreslená v části Ratio, na straně času Begin.
         /// Použije se tehdy, když hodnota <see cref="RatioBegin"/> a/nebo <see cref="RatioEnd"/> má hodnotu větší než 0f.
         /// Touto barvou je vykreslena dolní část prvku, která symbolizuje míru "naplnění" daného úseku.
         /// Tato část má tvar lichoběžníku, dolní okraj je na hodnotě 0, levý okraj má výšku <see cref="RatioBegin"/>, pravý okraj má výšku <see cref="RatioEnd"/>.
         /// Může sloužit k zobrazení vyčerpané pracovní kapacity, nebo jako lineární částečka grafu sloupcového nebo liniového.
-        /// Z databáze se načítá ze sloupce: "ratio_back_color", je NEPOVINNÝ.
+        /// Tato barva se použije buď jako Solid color pro celý prvek v části Ratio, 
+        /// anebo jako počáteční barva na souřadnici X = čas Begin při výplni Linear, 
+        /// a to tehdy, pokud je zadána i barva <see cref="RatioEndBackColor"/> (ta reprezentuje barvu na souřadnici X = čas End).
+        /// Z databáze se načítá ze sloupce: "ratio_begin_back_color", je NEPOVINNÝ.
+        Color? RatioBeginBackColor { get; }
+        /// <summary>
+        /// Barva pozadí prvku, kreslená v části Ratio, na straně času End.
+        /// Použije se tehdy, když hodnota <see cref="RatioBegin"/> a/nebo <see cref="RatioEnd"/> má hodnotu větší než 0f.
+        /// Touto barvou je vykreslena dolní část prvku, která symbolizuje míru "naplnění" daného úseku.
+        /// Tato část má tvar lichoběžníku, dolní okraj je na hodnotě 0, levý okraj má výšku <see cref="RatioBegin"/>, pravý okraj má výšku <see cref="RatioEnd"/>.
+        /// Může sloužit k zobrazení vyčerpané pracovní kapacity, nebo jako lineární částečka grafu sloupcového nebo liniového.
+        /// Tato barva se použije jako koncová barva (na souřadnici X = čas End) v lineární výplni prostoru Ratio,
+        /// kde počáteční barva výplně (na souřadnici X = čas Begin) je dána v <see cref="RatioBeginBackColor"/>.
+        /// Z databáze se načítá ze sloupce: "ratio_end_back_color", je NEPOVINNÝ.
         /// </summary>
-        Color? RatioBackColor { get; }
+        Color? RatioEndBackColor { get; }
         /// <summary>
         /// Barva linky, kreslená v úrovni Ratio.
         /// Použije se tehdy, když hodnota <see cref="RatioBegin"/> a/nebo <see cref="RatioEnd"/> má zadanou hodnotu v rozsahu 0 (včetně) a více.
@@ -2178,6 +2286,27 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             int relativePositionX = this.DragArgs.BoundsInfo.GetRelPoint(new Point(absolutePositionX, 0)).X;
             return this.Graph.GetTimeForPosition(relativePositionX);
+        }
+        /// <summary>
+        /// Metoda vrátí absolutní souřadnici X, odpovídající danému času.
+        /// Vstupem je datum a čas, výstupem absolutní souřadnice X.
+        /// </summary>
+        /// <param name="time">Datum a čas, jehož pozici hledáme</param>
+        /// <returns>Absoutní souřadnice X</returns>
+        public int? GetPositionForTime(DateTime time)
+        {
+            int? relativePositionX = this.Graph.GetPositionForTime(time);
+            if (!relativePositionX.HasValue) return null;
+            return this.DragArgs.BoundsInfo.GetAbsPoint(new Point(relativePositionX.Value, 0)).X;
+        }
+        /// <summary>
+        /// Metoda vrátí dané datum zaokrouhlené na vhodné jednotky na aktuální časové ose.
+        /// </summary>
+        /// <param name="time">Daný přesný čas</param>
+        /// <param name="tickType">Druh zaokrouhlení, odpovídá typu značky na časové ose</param>
+        public DateTime? GetRoundedTime(DateTime time, AxisTickType tickType)
+        {
+            return this.Graph.GetRoundedTime(time, tickType);
         }
         #endregion
         #region Výstupní proměnné

@@ -252,7 +252,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="b">Interval B</param>
         /// <param name="begin">Out value for Begin for Union interval</param>
         /// <param name="end">Out value for End for Union interval</param>
-        public void PrepareUnion(BaseRange<TEdge, TSize> a, BaseRange<TEdge, TSize> b, out TEdge begin, out TEdge end)
+        protected void PrepareUnion(BaseRange<TEdge, TSize> a, BaseRange<TEdge, TSize> b, out TEdge begin, out TEdge end)
         {
             bool isPrepared = PrepareValuesFrom(a, b, out begin, out end);
             if (!isPrepared)
@@ -279,7 +279,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="b">Interval B</param>
         /// <param name="begin">Out value for Begin for Intersect interval</param>
         /// <param name="end">Out value for End for Intersect interval</param>
-        public void PrepareIntersect(BaseRange<TEdge, TSize> a, BaseRange<TEdge, TSize> b, out TEdge begin, out TEdge end)
+        protected void PrepareIntersect(BaseRange<TEdge, TSize> a, BaseRange<TEdge, TSize> b, out TEdge begin, out TEdge end)
         {
             bool isPrepared = PrepareValuesFrom(a, b, out begin, out end);
             if (!isPrepared)
@@ -490,9 +490,6 @@ namespace Asol.Tools.WorkScheduler.Data
                     begin = default(TEdge);
                     end = default(TEdge);
                 }
-
-                // TSize size = 
-
             }
         }
         /// <summary>
@@ -685,6 +682,13 @@ namespace Asol.Tools.WorkScheduler.Data
             return (this.IsReal ? MinEdge(MaxEdge(value, this.Begin), this.End) : default(TEdge));
         }
         /// <summary>
+        /// Porovná dvě hodnoty TEdge a vrátí výsledek
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public int CompareByEdge(TEdge a, TEdge b) { return this.CompareEdge(a, b); }
+        /// <summary>
         /// Prepare values begin and end for next evaluating.
         /// When one range (a or b) is null or empty, then prepare data (Begin and End) from other range and returns true (data are prepared).
         /// When booth ranges (a and b) are null or empty, then prepare data (Begin and End) as Empty (default) and returns true (data are prepared).
@@ -799,13 +803,13 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        public abstract bool IsEmptyEdge(TEdge value);
+        protected abstract bool IsEmptyEdge(TEdge value);
         /// <summary>
         /// Return true when Size value is empty (or null).
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        public abstract bool IsEmptySize(TSize value);
+        protected abstract bool IsEmptySize(TSize value);
         /// <summary>
         /// Return (EdgeA.CompareTo(EdgeB) = (A - B).
         /// When a or b is empty, then empty value is less than any non-null value. Two empty values are equal.
@@ -816,7 +820,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="a"></param>
         /// <param name="b"></param>
         /// <returns></returns>
-        public abstract int CompareEdge(TEdge a, TEdge b);
+        protected abstract int CompareEdge(TEdge a, TEdge b);
         /// <summary>
         /// Return (SizeA.CompareTo(SizeB) = (A - B). 
         /// When a or b is empty, then empty value is less than any non-null value. Two empty values are equal.
@@ -881,7 +885,7 @@ namespace Asol.Tools.WorkScheduler.Data
     #region class Vector
     /// <summary>
     /// Základní třída pro Vektor na ose.
-    /// Má základn dvě proměnné: Point (generický) a směr = Direction (enum s hodnotami Positive, None, Negative).
+    /// Má základní dvě proměnné: Point (generický) a směr = Direction (enum s hodnotami Positive, None, Negative).
     /// </summary>
     /// <typeparam name="TPoint">TPoint je typ bodu na hodnotové ose</typeparam>
     public abstract class BaseVector<TPoint>

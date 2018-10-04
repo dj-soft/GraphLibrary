@@ -164,6 +164,10 @@ namespace Asol.Tools.WorkScheduler.Application
                 this.PluginType = pluginType;
                 this.PluginList = new List<PluginInfo>();
             }
+            /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns></returns>
             public override string ToString()
             {
                 return "PluginType: " + this.PluginType.NsName() + "; Implementations found: " + this.PluginList.Count.ToString();
@@ -194,6 +198,13 @@ namespace Asol.Tools.WorkScheduler.Application
         /// </summary>
         protected class PluginInfo
         {
+            /// <summary>
+            /// Konstrktor
+            /// </summary>
+            /// <param name="pluginType"></param>
+            /// <param name="instanceType"></param>
+            /// <param name="activity"></param>
+            /// <param name="instance"></param>
             public PluginInfo(Type pluginType, Type instanceType, PluginActivity activity, object instance)
             {
                 this.PluginType = pluginType;
@@ -201,6 +212,10 @@ namespace Asol.Tools.WorkScheduler.Application
                 this.Activity = activity;
                 this.Instance = instance;
             }
+            /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns></returns>
             public override string ToString()
             {
                 return "PluginType: " + PluginType.NsName() + "; InstanceType: " + this.InstanceType.NsName() + "; Activity: " + this.Activity.ToString();

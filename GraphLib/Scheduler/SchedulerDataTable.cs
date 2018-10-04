@@ -700,6 +700,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             moveInfo.TargetTime = targetTime;
             moveInfo.TargetBounds = targetBounds;
             moveInfo.GetTimeForPosition = args.GetTimeForPosition;
+            moveInfo.GetPositionForTime = args.GetPositionForTime;
+            moveInfo.GetRoundedTime = args.GetRoundedTime;
 
             // Modifikace dat pomocí magnetů:
             this.IMainData.AdjustGraphItemDragMove(moveInfo);
@@ -1142,7 +1144,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         System.Drawing.Drawing2D.HatchStyle? ITimeGraphItem.BackStyle { get { return this._GuiGraphItem.BackStyle; } }
         float? ITimeGraphItem.RatioBegin { get { return this._GuiGraphItem.RatioBegin; } }
         float? ITimeGraphItem.RatioEnd { get { return this._GuiGraphItem.RatioEnd; } }
-        Color? ITimeGraphItem.RatioBackColor { get { return this._GuiGraphItem.RatioBackColor; } }
+        Color? ITimeGraphItem.RatioBeginBackColor { get { return this._GuiGraphItem.RatioBeginBackColor; } }
+        Color? ITimeGraphItem.RatioEndBackColor { get { return this._GuiGraphItem.RatioEndBackColor; } }
         Color? ITimeGraphItem.RatioLineColor { get { return this._GuiGraphItem.RatioLineColor; } }
         int? ITimeGraphItem.RatioLineWidth { get { return this._GuiGraphItem.RatioLineWidth; } }
         GraphItemBehaviorMode ITimeGraphItem.BehaviorMode { get { return this._GuiGraphItem.BehaviorMode; } }

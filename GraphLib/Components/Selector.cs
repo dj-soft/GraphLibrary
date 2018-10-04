@@ -29,9 +29,11 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             if (this._Selected == null) this._Selected = new Dictionary<uint, IInteractiveItem>();
             if (this._Framed == null) this._Framed = new Dictionary<uint, IInteractiveItem>();
+            if (this._Activated == null) this._Activated = new Dictionary<uint, IInteractiveItem>();
         }
         private Dictionary<uint, IInteractiveItem> _Selected;
         private Dictionary<uint, IInteractiveItem> _Framed;
+        private Dictionary<uint, IInteractiveItem> _Activated;
         #endregion
         #region Selectování
         /// <summary>
@@ -199,6 +201,88 @@ namespace Asol.Tools.WorkScheduler.Components
             }
             this._Framed.Clear();
         }
+        #endregion
+        #region Aktivování
+        /// <summary>
+        /// Metoda vrátí true, pokud daný prvek je aktuálně Activated.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        public bool IsActivated(IInteractiveItem item)
+        {
+            if (item == null) return false;
+            this._PrepareForUse();
+            return (this._Activated.ContainsKey(item.Id));
+        }
+        /// <summary>
+        /// Metoda provede deaktivaci všech aktuálně aktivních prvků
+        /// </summary>
+        public void ClearActivated()
+        {
+            this._PrepareForUse();
+            this._Activated.Values.ForEachItem(i => i.Repaint());
+            this._Activated.Clear();
+        }
+        /// <summary>
+        /// Metoda nastaví IsActivated pro daný prvek na danou hodnotu.
+        /// Tato metoda nemění stav <see cref="IInteractiveItem.IsActivated"/> pro ostatní aktuálně aktivní prvky.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="isActivated"></param>
+        public void SetActivated(IInteractiveItem item, bool isActivated)
+        {
+            if (item == null) return;
+            this._PrepareForUse();
+            uint id = item.Id;
+            bool oldActivated = this._Activated.ContainsKey(id);
+
+            if (isActivated && !oldActivated)
+                this._Activated.Add(id, item);
+            else if (!isActivated && oldActivated)
+                this._Activated.Remove(id);
+
+            if (isActivated != oldActivated)
+                item.Repaint();
+        }
+        /// <summary>
+        /// Metoda zajistí, že ve stavu Activated budou předané prvky.
+        /// Stávající prvky může ponechat aktivní, nebo je může deaktivovat (podle parametru leaveOthers).
+        /// </summary>
+        /// <param name="items">Prvky, které mají být aktivní</param>
+        /// <param name="leaveOthers">true = ponechat dosavadní aktivní prvky / false = deaktivovat ty z dosavadních prvků, které nejsou zadané v novém seznamu</param>
+        public void SetActivatedItems(IEnumerable<IInteractiveItem> items, bool leaveOthers)
+        {
+            if (items == null) return;
+            this._PrepareForUse();
+            var itemDict = items.GetDictionary(i => i.Id, true);
+
+            // a) odeberu prvky, které jsou ve this._Activated a nyní nejsou na vstupu:
+            if (!leaveOthers)
+            {   // Jen pokud se NEMAJÍ ponechat ostatní aktivní prvky:
+                this._Activated.RemoveWhere((id, item) =>
+                {   // Pokud vstupní pole (itemDict) NEOBSAHUJE klíč prvku z Dictionary this._Activated, pak bude (remove) = true:
+                    bool remove = !itemDict.ContainsKey(id);
+                    if (remove)
+                        // Prvky, které z Dictionary this._Activated budou odebrány, musíme překreslit:
+                        item.Repaint();
+                    return remove;
+                });
+            }
+
+            // b) přidám prvky, které jsou nyní na vstupu, ale ještě nejsou v Dictionary this._Activated:
+            foreach (IInteractiveItem item in items)
+            {
+                if (!this._Activated.ContainsKey(item.Id))
+                {
+                    this._Activated.Add(item.Id, item);
+                    item.Repaint();
+                }
+            }
+        }
+        /// <summary>
+        /// Obsahuje souhrn všech aktuálně aktivních prvků
+        /// </summary>
+        public IEnumerable<IInteractiveItem> ActivatedItems { get { this._PrepareForUse(); return this._Activated.Values; } }
         #endregion
     }
 }

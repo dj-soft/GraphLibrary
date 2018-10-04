@@ -862,6 +862,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public virtual bool IsFramed { get { var host = this.Host; return (host != null ? host.Selector.IsFramed(this) : false); } set { var host = this.Host; if (host != null) host.Selector.SetFramed(this, value); } }
         /// <summary>
+        /// Je prvek "Aktivován" (nějakou aplikační akcí)?
+        /// Aktivovaný prvek není ani Selectovaný, ani Framovaný. Změna <see cref="IsSelected"/> okolních prvků nijak nezmění <see cref="IsActivated"/>.
+        /// Aktivovaný prvek se v podstatě permanentně zobrazuje jako výraznější než okolní prvky, například proto, že je problematický nebo odpovídá nějakému jinému zadání.
+        /// </summary>
+        public virtual bool IsActivated { get { var host = this.Host; return (host != null ? host.Selector.IsActivated(this) : false); } set { var host = this.Host; if (host != null) host.Selector.SetActivated(this, value); } }
+        /// <summary>
         /// Metoda změní stav Selected na tomto prvku, stejně jako by na prvku kliknul uživatel levou myší.
         /// Tzn.: Pokud aktuálně je držena klávesa CTRL, pak se stav ostatních selectovaných prvků nezmění;
         /// pokud ale CTRL není držen, pak ostatní prvky budou odselectovány.
@@ -899,6 +905,7 @@ namespace Asol.Tools.WorkScheduler.Components
         InteractiveProperties IInteractiveItem.Is { get { return this.Is; } }
         Boolean IInteractiveItem.IsSelected { get { return this.IsSelected; } set { this.IsSelected = value; } }
         Boolean IInteractiveItem.IsFramed { get { return this.IsFramed; } set { this.IsFramed = value; } }
+        Boolean IInteractiveItem.IsActivated { get { return this.IsActivated; } set { this.IsActivated = value; } }
         ZOrder IInteractiveItem.ZOrder { get { return this.ZOrder; } }
         GInteractiveDrawLayer IInteractiveItem.StandardDrawToLayer { get { return this.StandardDrawToLayer; } }
         GInteractiveDrawLayer IInteractiveItem.RepaintToLayers { get { return this.RepaintToLayers; } set { this.RepaintToLayers = value; } }

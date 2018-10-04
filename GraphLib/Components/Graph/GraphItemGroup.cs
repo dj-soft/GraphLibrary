@@ -123,7 +123,30 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="timeConvert"></param>
         /// <param name="offsetX"></param>
         /// <param name="itemsCount"></param>
-        public void PrepareCoordinateX(Func<TimeRange, DoubleRange> timeConvert, Double offsetX, ref int itemsCount)
+        public void PrepareCoordinateX(Func<TimeRange, DoubleRange> timeConvert, int offsetX, ref int itemsCount)
+        {
+            Int32Range coordX;
+            DoubleRange groupX = timeConvert(this.Time);             // Vrací souřadnici X v koordinátech grafu
+            coordX = groupX.Int32RoundEnd;                           // Zaokrouhlím Begin i End
+            int groupB = coordX.Begin;                               // Offset z absolutní do relativní souřadnice pro jednotlivé prvky
+            if (offsetX != 0d) coordX = coordX.ShiftBy(offsetX);     // Posun celé grupy vlivem offsetu grafu vůči časové ose
+            this.GControl.CoordinateX = coordX;                      // Relativní souřadnice grupy v rámci grafu
+            foreach (ITimeGraphItem item in this.Items)
+            {
+                itemsCount++;
+                DoubleRange itemX = timeConvert(item.Time);          // Vrací souřadnici X v koordinátech grafu
+                coordX = itemX.Int32RoundEnd;                        // Zaokrouhlím Begin i End
+                item.GControl.CoordinateX = coordX.ShiftBy(-groupB); // Posunu prvek na relativní souřadnici vzhledem ke grupě
+            }
+            this.InvalidateBounds();
+        }
+        /// <summary>
+        /// Metoda připraví souřadnice this grupy na ose X, včetně jejích grafických items
+        /// </summary>
+        /// <param name="timeConvert"></param>
+        /// <param name="offsetX"></param>
+        /// <param name="itemsCount"></param>
+        public void ___Old___PrepareCoordinateX(Func<TimeRange, DoubleRange> timeConvert, Double offsetX, ref int itemsCount)
         {
             DoubleRange groupX = timeConvert(this.Time);                                 // Vrací souřadnici X v koordinátech grafu
             double groupB = groupX.Begin;
@@ -293,7 +316,9 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         public void DrawOverChilds(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
         {
             if (!this.DrawTextInCurrentState) return;
-            Rectangle boundsVisibleAbsolute = Rectangle.Intersect(e.AbsoluteVisibleClip, boundsAbsolute);
+            Rectangle boundsVisibleAbsolute = boundsAbsolute;
+            if (e.DrawLayer == GInteractiveDrawLayer.Standard)
+                boundsVisibleAbsolute = Rectangle.Intersect(e.AbsoluteVisibleClip, boundsAbsolute);
 
             FontInfo fontInfo = FontInfo.CaptionBold;
             string text = this.GetCaption(e, boundsAbsolute, boundsVisibleAbsolute, fontInfo);
@@ -332,27 +357,63 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// A dále, pokud se aktuálně kreslí do vrstvy <see cref="GInteractiveDrawLayer.Interactive"/>, pak je akceptována i hodnota <see cref="DragDropDrawInteractiveOpacity"/>.
         /// </summary>
         /// <param name="baseColor">Výchozí barva, typicky BackColor nebo ForeColor prvku grafu.</param>
-        /// <param name="e">Kreslící data, z nich se vyhodnocuje jen <see cref="GInteractiveDrawArgs.DrawLayer"/></param>
+        /// <param name="drawLayer">Vykreslovaná vrstva grafiky</param>
+        /// <param name="drawMode">Režim kreslení předaný systémem</param>
+        /// <param name="forGroup">true = pro barvu grupy / false = pro barvu prvku</param>
+        /// <param name="forBackColor">true = pro barvu pozadí / false = pro barvu okrajů, čar a textů</param>
         /// <returns></returns>
-        public Color GetColorWithOpacity(Color baseColor, GInteractiveDrawArgs e)
+        public Color GetColorWithOpacity(Color baseColor, GInteractiveDrawLayer drawLayer, DrawItemMode drawMode, bool forGroup, bool forBackColor)
         {
-            return this.GetColorWithOpacity(baseColor, e.DrawLayer);
+            if (!this.IsDragged)
+            {   // Běžný stav:
+                return this._GetColorWithOpacityStandard(baseColor, forGroup, forBackColor, null);
+            }
+            else
+            {   // Drag and Drop:
+                if (drawLayer == GInteractiveDrawLayer.Standard)
+                    return this._GetColorWithOpacityDragOriginal(baseColor, forGroup, forBackColor);
+                else
+                    return this._GetColorWithOpacityDragTarget(baseColor, forGroup, forBackColor);
+            }
         }
         /// <summary>
-        /// Vrátí danou barvu, s modifikovanou průhledností Opacity (<see cref="Color.A"/>).
-        /// Zadaná Opacity je respektována, ale pokud celý graf má deklarovaou svoji průhlednost v <see cref="GTimeGraph.GraphOpacity"/>, pak je akceptována rovněž.
-        /// A dále, pokud se aktuálně kreslí do vrstvy <see cref="GInteractiveDrawLayer.Interactive"/>, pak je akceptována i hodnota <see cref="DragDropDrawInteractiveOpacity"/>.
+        /// Vrátí danou barvu v režimu bez Drag and Drop
         /// </summary>
-        /// <param name="baseColor">Výchozí barva, typicky BackColor nebo ForeColor prvku grafu.</param>
-        /// <param name="drawLayer">Vykreslovaná vrstva grafiky</param>
+        /// <param name="baseColor"></param>
+        /// <param name="interactiveOpacity"></param>
+        /// <param name="forGroup"></param>
+        /// <param name="forBackColor"></param>
         /// <returns></returns>
-        public Color GetColorWithOpacity(Color baseColor, GInteractiveDrawLayer drawLayer)
+        public Color _GetColorWithOpacityStandard(Color baseColor, bool forGroup, bool forBackColor, int? interactiveOpacity)
         {
-            Color color = baseColor;
+            int? groupOpacity = ((forGroup && forBackColor) ? (int?)170 : (int?)null);
             int? graphOpacity = this.Graph.GraphOpacity;
-            int? interactiveOpacity = (drawLayer == GInteractiveDrawLayer.Interactive ? this.DragDropDrawInteractiveOpacity : null);
-            if (!graphOpacity.HasValue && !interactiveOpacity.HasValue) return color;              // Zkratka
-            return color.ApplyOpacity(graphOpacity, interactiveOpacity);
+            if (!groupOpacity.HasValue && !graphOpacity.HasValue && !interactiveOpacity.HasValue) return baseColor;    // Zkratka - bez úprav
+            return baseColor.ApplyOpacity(groupOpacity, graphOpacity, interactiveOpacity);
+        }
+        /// <summary>
+        /// Vrátí danou barvu v režimu Drag and Drop, pozice Original
+        /// </summary>
+        /// <param name="baseColor"></param>
+        /// <param name="forGroup"></param>
+        /// <param name="forBackColor"></param>
+        /// <returns></returns>
+        public Color _GetColorWithOpacityDragOriginal(Color baseColor, bool forGroup, bool forBackColor)
+        {
+            Color color = baseColor.GrayScale().Morph(Color.White, 0.40f);
+            return _GetColorWithOpacityStandard(color, forGroup, forBackColor, 64);
+        }
+        /// <summary>
+        /// Vrátí danou barvu v režimu Drag and Drop, pozice Target
+        /// </summary>
+        /// <param name="baseColor"></param>
+        /// <param name="forGroup"></param>
+        /// <param name="forBackColor"></param>
+        /// <returns></returns>
+        public Color _GetColorWithOpacityDragTarget(Color baseColor, bool forGroup, bool forBackColor)
+        {
+            Color color = baseColor.Morph(Color.White, 0.15f);
+            return _GetColorWithOpacityStandard(color, forGroup, forBackColor, 160);
         }
         /// <summary>
         /// Vrací true, pokud se v aktuálním stavu objektu má kreslit text.
@@ -360,7 +421,13 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         protected bool DrawTextInCurrentState
         {
-            get { return GTimeGraph.IsCaptionVisible(this._FirstItem.BehaviorMode, this.GControl.InteractiveState, (this.GControl.IsSelected || this._Items.Any(i => i.GControl.IsSelected))); }
+            get
+            {
+                GraphItemBehaviorMode mode = this.BehaviorMode;
+                GInteractiveState state = this.GControl.InteractiveState;
+                bool isActive = this.GControl.IsSelected || this.GControl.IsFramed || this.GControl.IsActivated || this.IsDragged;
+                return GTimeGraph.IsCaptionVisible(mode, state, isActive);
+            }
         }
         /// <summary>
         /// Vrátí text pro danou velikost textu, pokud si ji pro tuto velikost pamatujeme.
@@ -414,6 +481,10 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             get { return this.BehaviorMode.HasAnyFlag(GraphItemBehaviorMode.AnyMove); }
         }
+        /// <summary>
+        /// Obsahuje true, pokud this grupa je nyní přemisťována akcí DragMove.
+        /// </summary>
+        internal bool IsDragged { get { return this.GControl.InteractiveState.HasFlag(GInteractiveState.FlagDrag); } }
         #endregion
         #region explicit ITimeGraphItem members
         ITimeInteractiveGraph ITimeGraphItem.OwnerGraph { get { return this._OwnerGraph; } set { this._OwnerGraph = value; } }
@@ -431,7 +502,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         System.Drawing.Drawing2D.HatchStyle? ITimeGraphItem.BackStyle { get { return this.BackStyle; } }
         float? ITimeGraphItem.RatioBegin { get { return null; } }
         float? ITimeGraphItem.RatioEnd { get { return null; } }
-        Color? ITimeGraphItem.RatioBackColor { get { return null; } }
+        Color? ITimeGraphItem.RatioBeginBackColor { get { return null; } }
+        Color? ITimeGraphItem.RatioEndBackColor { get { return null; } }
         Color? ITimeGraphItem.RatioLineColor { get { return null; } }
         int? ITimeGraphItem.RatioLineWidth { get { return null; } }
         GraphItemBehaviorMode ITimeGraphItem.BehaviorMode { get { return this.BehaviorMode; } }

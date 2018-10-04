@@ -14,7 +14,15 @@ namespace Asol.Tools.WorkScheduler.Data
     public class DecimalNRange : BaseRange<Decimal?, Decimal?>
     {
         #region Constructors, Visualiser, Helper
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public DecimalNRange() : base() { }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="begin"></param>
+        /// <param name="end"></param>
         public DecimalNRange(Decimal? begin, Decimal? end) : base(begin, end) { }
         /// <summary>
         /// Allways returns a new instance of SizeRange, containing empty values
@@ -58,14 +66,27 @@ namespace Asol.Tools.WorkScheduler.Data
                 return "???";
             }
         }
+        /// <summary>
+        /// Override GetHashCode
+        /// </summary>
+        /// <returns></returns>
         public override int GetHashCode()
         {
             return this.HashCode;
         }
+        /// <summary>
+        /// Override Equals
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
         public override bool Equals(object obj)
         {
             return Helper.IsEqual(this, (obj as DecimalNRange));
         }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             return this.Text;
@@ -76,22 +97,46 @@ namespace Asol.Tools.WorkScheduler.Data
         protected static DecimalNRange Helper { get { if (((object)_Helper) == null) _Helper = new DecimalNRange(); return _Helper; } } private static DecimalNRange _Helper;
         #endregion
         #region Operators
+        /// <summary>
+        /// Průnik (Intersection) hodnot ze dvou objektů
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public static DecimalNRange operator *(DecimalNRange a, DecimalNRange b)
         {
             Decimal? begin, end;
             Helper.PrepareIntersect(a, b, out begin, out end);
             return new DecimalNRange(begin, end);
         }
+        /// <summary>
+        /// Sloučení (Union) hodnot ze dvou objektů
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public static DecimalNRange operator +(DecimalNRange a, DecimalNRange b)
         {
             Decimal? begin, end;
             Helper.PrepareUnion(a, b, out begin, out end);
             return new DecimalNRange(begin, end);
         }
+        /// <summary>
+        /// Porovnání (EqualValue) dvou objektů z hlediska hodnot
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public static bool operator ==(DecimalNRange a, DecimalNRange b)
         {
             return Helper.IsEqual(a, b);
         }
+        /// <summary>
+        /// Porovnání (NonEqualValue) dvou objektů z hlediska hodnot
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public static bool operator !=(DecimalNRange a, DecimalNRange b)
         {
             return !Helper.IsEqual(a, b);
@@ -126,7 +171,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Returns a new instance created from current instance, which Time is specified and center of zooming is on specified date.
         /// </summary>
         /// <param name="center"></param>
-        /// <param name="time"></param>
+        /// <param name="size"></param>
         /// <returns></returns>
         public DecimalNRange ZoomToSize(Decimal center, decimal size)
         {
@@ -138,7 +183,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Returns a new instance created from current instance, which Time is (ratio * this.Time) and center of zooming is on specified relative position.
         /// </summary>
         /// <param name="relativePivot"></param>
-        /// <param name="ratio"></param>
+        /// <param name="size"></param>
         /// <returns></returns>
         public DecimalNRange ZoomToSize(double relativePivot, Decimal? size)
         {
@@ -199,22 +244,44 @@ namespace Asol.Tools.WorkScheduler.Data
             return Helper.IsEqual(a, b);
         }
         #endregion
-        #region Abstract member override
-        public override bool IsEmptyEdge(decimal? value)
+        #region Implementace abstraktní třídy
+        /// <summary>
+        /// Je Edge prázdné?
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        protected override bool IsEmptyEdge(decimal? value)
         {
             return (!value.HasValue);
         }
-        public override bool IsEmptySize(decimal? value)
+        /// <summary>
+        /// Je Size prázdné?
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        protected override bool IsEmptySize(decimal? value)
         {
             return (!value.HasValue);
         }
-        public override int CompareEdge(decimal? a, decimal? b)
+        /// <summary>
+        /// Porovná Edge
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        protected override int CompareEdge(decimal? a, decimal? b)
         {
             if (a.HasValue && b.HasValue) return a.Value.CompareTo(b.Value);
             if (a.HasValue) return 1;
             if (b.HasValue) return -1;
             return 0;
         }
+        /// <summary>
+        /// Porovná Size
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public override int CompareSize(decimal? a, decimal? b)
         {
             if (a.HasValue && b.HasValue) return a.Value.CompareTo(b.Value);
@@ -222,30 +289,70 @@ namespace Asol.Tools.WorkScheduler.Data
             if (b.HasValue) return -1;
             return 0;
         }
+        /// <summary>
+        /// Sečtení Edge + Size
+        /// </summary>
+        /// <param name="begin"></param>
+        /// <param name="size"></param>
+        /// <returns></returns>
         public override decimal? Add(decimal? begin, decimal? size)
         {
             return ((begin.HasValue && size.HasValue) ? (decimal?)(begin.Value + size.Value) : (decimal?)null);
         }
+        /// <summary>
+        /// Odečtení Size = (Edge - Edge)
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public override decimal? SubEdge(decimal? a, decimal? b)
         {
             return ((a.HasValue && b.HasValue) ? (decimal?)(a.Value - b.Value) : (decimal?)null);
         }
+        /// <summary>
+        /// Odečtení Edge = (Edge - Size)
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public override decimal? SubSize(decimal? a, decimal? b)
         {
             return ((a.HasValue && b.HasValue) ? (decimal?)(a.Value - b.Value) : (decimal?)null);
         }
+        /// <summary>
+        /// Násobení velikosti Size = Size * ratio
+        /// </summary>
+        /// <param name="size"></param>
+        /// <param name="ratio"></param>
+        /// <returns></returns>
         public override decimal? Multiply(decimal? size, decimal ratio)
         {
             return ((size.HasValue) ? (decimal?)(size.Value * ratio) : (decimal?)null);
         }
+        /// <summary>
+        /// Dělení velikosti Ratio = Size / Size
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public override decimal Divide(decimal? a, decimal? b)
         {
             return ((a.HasValue && b.HasValue && b.Value != 0m) ? (a.Value / b.Value) : 0m);
         }
+        /// <summary>
+        /// Vizualizace Edge
+        /// </summary>
+        /// <param name="tick"></param>
+        /// <returns></returns>
         protected override string TTickToText(decimal? tick)
         {
             return (tick.HasValue ? tick.Value.ToString() : "");
         }
+        /// <summary>
+        /// Vizualizace Size
+        /// </summary>
+        /// <param name="size"></param>
+        /// <returns></returns>
         protected override string TSizeToText(decimal? size)
         {
             return (size.HasValue ? size.Value.ToString() : "");
@@ -260,7 +367,15 @@ namespace Asol.Tools.WorkScheduler.Data
     public class DecimalRange : BaseRange<Decimal, Decimal>
     {
         #region Constructors, Visualiser, Helper
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public DecimalRange() : base() { }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="begin"></param>
+        /// <param name="end"></param>
         public DecimalRange(Decimal begin, Decimal end) : base(begin, end) { }
         /// <summary>
         /// Allways returns a new instance of <see cref="DecimalRange"/>, containing empty values
@@ -298,14 +413,27 @@ namespace Asol.Tools.WorkScheduler.Data
                 return this.Begin.ToString() + " ÷ " + this.End.ToString();
             }
         }
+        /// <summary>
+        /// Override GetHashCode
+        /// </summary>
+        /// <returns></returns>
         public override int GetHashCode()
         {
             return this.HashCode;
         }
+        /// <summary>
+        /// Override Equals
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
         public override bool Equals(object obj)
         {
             return Helper.IsEqual(this, (obj as DecimalRange));
         }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             return this.Text;
@@ -317,22 +445,46 @@ namespace Asol.Tools.WorkScheduler.Data
         private static DecimalRange _Helper;
         #endregion
         #region Operators
+        /// <summary>
+        /// Průnik (Intersection) hodnot ze dvou objektů
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public static DecimalRange operator *(DecimalRange a, DecimalRange b)
         {
             Decimal begin, end;
             Helper.PrepareIntersect(a, b, out begin, out end);
             return new DecimalRange(begin, end);
         }
+        /// <summary>
+        /// Sloučení (Union) hodnot ze dvou objektů
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public static DecimalRange operator +(DecimalRange a, DecimalRange b)
         {
             Decimal begin, end;
             Helper.PrepareUnion(a, b, out begin, out end);
             return new DecimalRange(begin, end);
         }
+        /// <summary>
+        /// Porovnání (EqualValue) dvou objektů z hlediska hodnot
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public static bool operator ==(DecimalRange a, DecimalRange b)
         {
             return Helper.IsEqual(a, b);
         }
+        /// <summary>
+        /// Porovnání (NonEqualValue) dvou objektů z hlediska hodnot
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public static bool operator !=(DecimalRange a, DecimalRange b)
         {
             return !Helper.IsEqual(a, b);
@@ -367,7 +519,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Returns a new instance created from current instance, which Time is specified and center of zooming is on specified date.
         /// </summary>
         /// <param name="center"></param>
-        /// <param name="time"></param>
+        /// <param name="size"></param>
         /// <returns></returns>
         public DecimalRange ZoomToSize(Decimal center, decimal size)
         {
@@ -379,7 +531,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Returns a new instance created from current instance, which Time is (ratio * this.Time) and center of zooming is on specified relative position.
         /// </summary>
         /// <param name="relativePivot"></param>
-        /// <param name="ratio"></param>
+        /// <param name="size"></param>
         /// <returns></returns>
         public DecimalRange ZoomToSize(double relativePivot, Decimal size)
         {
@@ -441,46 +593,108 @@ namespace Asol.Tools.WorkScheduler.Data
         }
         #endregion
         #region Abstract member override
-        public override bool IsEmptyEdge(Decimal value)
+        /// <summary>
+        /// Je Edge prázdné?
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        protected override bool IsEmptyEdge(Decimal value)
         {
             return false;
         }
-        public override bool IsEmptySize(Decimal value)
+        /// <summary>
+        /// Je Size prázdné?
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        protected override bool IsEmptySize(Decimal value)
         {
             return false;
         }
-        public override int CompareEdge(Decimal a, Decimal b)
+        /// <summary>
+        /// Porovná Edge
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        protected override int CompareEdge(Decimal a, Decimal b)
         {
             return a.CompareTo(b);
         }
+        /// <summary>
+        /// Porovná Size
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public override int CompareSize(Decimal a, Decimal b)
         {
             return a.CompareTo(b);
         }
+        /// <summary>
+        /// Sečtení Edge + Size
+        /// </summary>
+        /// <param name="begin"></param>
+        /// <param name="size"></param>
+        /// <returns></returns>
         public override Decimal Add(Decimal begin, Decimal size)
         {
             return begin + size;
         }
+        /// <summary>
+        /// Odečtení Size = (Edge - Edge)
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public override Decimal SubEdge(Decimal a, Decimal b)
         {
             return a - b;
         }
+        /// <summary>
+        /// Odečtení Edge = (Edge - Size)
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public override Decimal SubSize(Decimal a, Decimal b)
         {
             return a - b;
         }
+        /// <summary>
+        /// Násobení velikosti Size = Size * ratio
+        /// </summary>
+        /// <param name="size"></param>
+        /// <param name="ratio"></param>
+        /// <returns></returns>
         public override Decimal Multiply(Decimal size, decimal ratio)
         {
             return size * ratio;
         }
+        /// <summary>
+        /// Dělení velikosti Ratio = Size / Size
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public override decimal Divide(Decimal a, Decimal b)
         {
             return ((b != 0m) ? (a / b) : 0m);
         }
+        /// <summary>
+        /// Vizualizace Edge
+        /// </summary>
+        /// <param name="tick"></param>
+        /// <returns></returns>
         protected override string TTickToText(Decimal tick)
         {
             return tick.ToString();
         }
+        /// <summary>
+        /// Vizualizace Size
+        /// </summary>
+        /// <param name="size"></param>
+        /// <returns></returns>
         protected override string TSizeToText(Decimal size)
         {
             return size.ToString();
@@ -495,7 +709,15 @@ namespace Asol.Tools.WorkScheduler.Data
     public class Int32NRange : BaseRange<Int32?, Int32?>
     {
         #region Konstruktory, vizualizace, Helper objekt
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public Int32NRange() : base() { }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="begin"></param>
+        /// <param name="end"></param>
         public Int32NRange(Int32? begin, Int32? end) : base(begin, end) { }
         /// <summary>
         /// Vrací new instanci obsahující prázdné hodnoty
@@ -539,14 +761,27 @@ namespace Asol.Tools.WorkScheduler.Data
                 return "???";
             }
         }
+        /// <summary>
+        /// Override GetHashCode
+        /// </summary>
+        /// <returns></returns>
         public override int GetHashCode()
         {
             return this.HashCode;
         }
+        /// <summary>
+        /// Override Equals
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
         public override bool Equals(object obj)
         {
             return Helper.IsEqual(this, (obj as Int32NRange));
         }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             return this.Text;
@@ -557,22 +792,46 @@ namespace Asol.Tools.WorkScheduler.Data
         protected static Int32NRange Helper { get { if (((object)_Helper) == null) _Helper = new Int32NRange(); return _Helper; } } private static Int32NRange _Helper;
         #endregion
         #region Operators
+        /// <summary>
+        /// Průnik (Intersection) hodnot ze dvou objektů
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public static Int32NRange operator *(Int32NRange a, Int32NRange b)
         {
             Int32? begin, end;
             Helper.PrepareIntersect(a, b, out begin, out end);
             return new Int32NRange(begin, end);
         }
+        /// <summary>
+        /// Sloučení (Union) hodnot ze dvou objektů
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public static Int32NRange operator +(Int32NRange a, Int32NRange b)
         {
             Int32? begin, end;
             Helper.PrepareUnion(a, b, out begin, out end);
             return new Int32NRange(begin, end);
         }
+        /// <summary>
+        /// Porovnání (EqualValue) dvou objektů z hlediska hodnot
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public static bool operator ==(Int32NRange a, Int32NRange b)
         {
             return Helper.IsEqual(a, b);
         }
+        /// <summary>
+        /// Porovnání (NonEqualValue) dvou objektů z hlediska hodnot
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public static bool operator !=(Int32NRange a, Int32NRange b)
         {
             return !Helper.IsEqual(a, b);
@@ -607,7 +866,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Returns a new instance created from current instance, which Time is specified and center of zooming is on specified date.
         /// </summary>
         /// <param name="center"></param>
-        /// <param name="time"></param>
+        /// <param name="size"></param>
         /// <returns></returns>
         public Int32NRange ZoomToSize(Int32 center, Int32 size)
         {
@@ -619,7 +878,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Returns a new instance created from current instance, which Time is (ratio * this.Time) and center of zooming is on specified relative position.
         /// </summary>
         /// <param name="relativePivot"></param>
-        /// <param name="ratio"></param>
+        /// <param name="size"></param>
         /// <returns></returns>
         public Int32NRange ZoomToSize(double relativePivot, Int32? size)
         {
@@ -741,21 +1000,43 @@ namespace Asol.Tools.WorkScheduler.Data
         }
         #endregion
         #region Abstract member override
-        public override bool IsEmptyEdge(Int32? value)
+        /// <summary>
+        /// Je Edge prázdné?
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        protected override bool IsEmptyEdge(Int32? value)
         {
             return (!value.HasValue);
         }
-        public override bool IsEmptySize(Int32? value)
+        /// <summary>
+        /// Je Size prázdné?
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        protected override bool IsEmptySize(Int32? value)
         {
             return (!value.HasValue);
         }
-        public override int CompareEdge(Int32? a, Int32? b)
+        /// <summary>
+        /// Porovná Edge
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        protected override int CompareEdge(Int32? a, Int32? b)
         {
             if (a.HasValue && b.HasValue) return a.Value.CompareTo(b.Value);
             if (a.HasValue) return 1;
             if (b.HasValue) return -1;
             return 0;
         }
+        /// <summary>
+        /// Porovná Size
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public override int CompareSize(Int32? a, Int32? b)
         {
             if (a.HasValue && b.HasValue) return a.Value.CompareTo(b.Value);
@@ -763,30 +1044,70 @@ namespace Asol.Tools.WorkScheduler.Data
             if (b.HasValue) return -1;
             return 0;
         }
+        /// <summary>
+        /// Sečtení Edge + Size
+        /// </summary>
+        /// <param name="begin"></param>
+        /// <param name="size"></param>
+        /// <returns></returns>
         public override Int32? Add(Int32? begin, Int32? size)
         {
             return ((begin.HasValue && size.HasValue) ? (Int32?)(begin.Value + size.Value) : (Int32?)null);
         }
+        /// <summary>
+        /// Odečtení Size = (Edge - Edge)
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public override Int32? SubEdge(Int32? a, Int32? b)
         {
             return ((a.HasValue && b.HasValue) ? (Int32?)(a.Value - b.Value) : (Int32?)null);
         }
+        /// <summary>
+        /// Odečtení Edge = (Edge - Size)
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public override Int32? SubSize(Int32? a, Int32? b)
         {
             return ((a.HasValue && b.HasValue) ? (Int32?)(a.Value - b.Value) : (Int32?)null);
         }
+        /// <summary>
+        /// Násobení velikosti Size = Size * ratio
+        /// </summary>
+        /// <param name="size"></param>
+        /// <param name="ratio"></param>
+        /// <returns></returns>
         public override Int32? Multiply(Int32? size, decimal ratio)
         {
             return ((size.HasValue) ? (Int32?)(Math.Round((decimal)size.Value * ratio, 0)) : (Int32?)null);
         }
+        /// <summary>
+        /// Dělení velikosti Ratio = Size / Size
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public override decimal Divide(Int32? a, Int32? b)
         {
             return ((a.HasValue && b.HasValue && b.Value != 0) ? ((decimal)a.Value / (decimal)b.Value) : 0m);
         }
+        /// <summary>
+        /// Vizualizace Edge
+        /// </summary>
+        /// <param name="tick"></param>
+        /// <returns></returns>
         protected override string TTickToText(Int32? tick)
         {
             return (tick.HasValue ? tick.Value.ToString() : "");
         }
+        /// <summary>
+        /// Vizualizace Size
+        /// </summary>
+        /// <param name="size"></param>
+        /// <returns></returns>
         protected override string TSizeToText(Int32? size)
         {
             return (size.HasValue ? size.Value.ToString() : "");
@@ -857,14 +1178,27 @@ namespace Asol.Tools.WorkScheduler.Data
                 return this.Begin.ToString() + " ÷ " + this.End.ToString();
             }
         }
+        /// <summary>
+        /// Override GetHashCode
+        /// </summary>
+        /// <returns></returns>
         public override int GetHashCode()
         {
             return this.HashCode;
         }
+        /// <summary>
+        /// Override Equals
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
         public override bool Equals(object obj)
         {
             return Helper.IsEqual(this, (obj as Int32Range));
         }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             return this.Text;
@@ -875,22 +1209,46 @@ namespace Asol.Tools.WorkScheduler.Data
         protected static Int32Range Helper { get { if (((object)_Helper) == null) _Helper = new Int32Range(); return _Helper; } } private static Int32Range _Helper;
         #endregion
         #region Operátory *   +   ==   !=
+        /// <summary>
+        /// Průnik (Intersection) hodnot ze dvou objektů
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public static Int32Range operator *(Int32Range a, Int32Range b)
         {
             Int32 begin, end;
             Helper.PrepareIntersect(a, b, out begin, out end);
             return new Int32Range(begin, end);
         }
+        /// <summary>
+        /// Sloučení (Union) hodnot ze dvou objektů
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public static Int32Range operator +(Int32Range a, Int32Range b)
         {
             Int32 begin, end;
             Helper.PrepareUnion(a, b, out begin, out end);
             return new Int32Range(begin, end);
         }
+        /// <summary>
+        /// Porovnání (EqualValue) dvou objektů z hlediska hodnot
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public static bool operator ==(Int32Range a, Int32Range b)
         {
             return Helper.IsEqual(a, b);
         }
+        /// <summary>
+        /// Porovnání (NonEqualValue) dvou objektů z hlediska hodnot
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public static bool operator !=(Int32Range a, Int32Range b)
         {
             return !Helper.IsEqual(a, b);
@@ -982,6 +1340,92 @@ namespace Asol.Tools.WorkScheduler.Data
             return true;
         }
         #endregion
+        #region Implementace abstraktní třídy
+        /// <summary>
+        /// Je Edge prázdné?
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        protected override bool IsEmptyEdge(int value) { return false; }
+        /// <summary>
+        /// Je Size prázdné?
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        protected override bool IsEmptySize(int value) { return false; }
+        /// <summary>
+        /// Porovná Edge
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        protected override int CompareEdge(int a, int b) { return a.CompareTo(b); }
+        /// <summary>
+        /// Porovná Size
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public override int CompareSize(int a, int b) { return a.CompareTo(b); }
+        /// <summary>
+        /// Sečtení Edge + Size
+        /// </summary>
+        /// <param name="begin"></param>
+        /// <param name="size"></param>
+        /// <returns></returns>
+        public override int Add(int begin, int size) { return begin + size; }
+        /// <summary>
+        /// Odečtení Size = (Edge - Edge)
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public override int SubEdge(int a, int b) { return a - b; }
+        /// <summary>
+        /// Odečtení Edge = (Edge - Size)
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public override int SubSize(int a, int b) { return a - b; }
+        /// <summary>
+        /// Násobení velikosti Size = Size * ratio
+        /// </summary>
+        /// <param name="size"></param>
+        /// <param name="ratio"></param>
+        /// <returns></returns>
+        public override int Multiply(int size, decimal ratio) { return (int)(Math.Round((decimal)size * ratio, 0)); }
+        /// <summary>
+        /// Dělení velikosti Ratio = Size / Size
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public override decimal Divide(int a, int b) { return a / b; }
+        /// <summary>
+        /// Vizualizace Edge
+        /// </summary>
+        /// <param name="tick"></param>
+        /// <returns></returns>
+        protected override string TTickToText(int tick) { return tick.ToString(); }
+        /// <summary>
+        /// Vizualizace Size
+        /// </summary>
+        /// <param name="size"></param>
+        /// <returns></returns>
+        protected override string TSizeToText(int size) { return size.ToString(); }
+        #endregion
+        #region Další služby
+        /// <summary>
+        /// Vrací this interval posunutý o shift, beze změny délky.
+        /// </summary>
+        /// <param name="shift"></param>
+        /// <returns></returns>
+        public Int32Range ShiftBy(Int32 shift)
+        {
+            return new Int32Range(this.Begin + shift, this.End + shift);
+        }
+        #endregion
         #region GetRectangle, FromRectangle
         /// <summary>
         /// Vrací rectangle pro rozmezí hodnot X a Y
@@ -1040,19 +1484,6 @@ namespace Asol.Tools.WorkScheduler.Data
             return Int32Range.Empty;
         }
         #endregion
-        #region Implementace abstraktní třídy
-        public override int Add(int begin, int size) { return begin + size; }
-        public override int CompareEdge(int a, int b) { return a.CompareTo(b); }
-        public override int CompareSize(int a, int b) { return a.CompareTo(b); }
-        public override decimal Divide(int a, int b) { return a / b; }
-        public override bool IsEmptyEdge(int value) { return false; }
-        public override bool IsEmptySize(int value) { return false; }
-        public override int Multiply(int size, decimal ratio) { return (int)(Math.Round((decimal)size * ratio, 0)); }
-        public override int SubEdge(int end, int size) { return end - size; }
-        public override int SubSize(int a, int b) { return a - b; }
-        protected override string TSizeToText(int size) { return size.ToString(); }
-        protected override string TTickToText(int tick) { return tick.ToString(); }
-        #endregion
     }
     #endregion
     #region DoubleRange = BaseRange<Double, Double>
@@ -1062,7 +1493,15 @@ namespace Asol.Tools.WorkScheduler.Data
     public class DoubleRange : BaseRange<Double, Double>
     {
         #region Constructors, Visualiser, Helper
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public DoubleRange() : base() { }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="begin"></param>
+        /// <param name="end"></param>
         public DoubleRange(Double begin, Double end) : base(begin, end) { }
         /// <summary>
         /// Allways returns a new instance of <see cref="DoubleRange"/>, containing empty values
@@ -1100,14 +1539,27 @@ namespace Asol.Tools.WorkScheduler.Data
                 return this.Begin.ToString() + " ÷ " + this.End.ToString();
             }
         }
+        /// <summary>
+        /// Override GetHashCode
+        /// </summary>
+        /// <returns></returns>
         public override int GetHashCode()
         {
             return this.HashCode;
         }
+        /// <summary>
+        /// Override Equals
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
         public override bool Equals(object obj)
         {
             return Helper.IsEqual(this, (obj as DoubleRange));
         }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             return this.Text;
@@ -1115,26 +1567,49 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// Help object: singleton empty instance, for access to base instantial methods
         /// </summary>
-        protected static DoubleRange Helper { get { if (((object)_Helper) == null) _Helper = new DoubleRange(); return _Helper; } }
-        private static DoubleRange _Helper;
+        protected static DoubleRange Helper { get { if (((object)_Helper) == null) _Helper = new DoubleRange(); return _Helper; } } private static DoubleRange _Helper;
         #endregion
         #region Operators
+        /// <summary>
+        /// Průnik (Intersection) hodnot ze dvou objektů
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public static DoubleRange operator *(DoubleRange a, DoubleRange b)
         {
             Double begin, end;
             Helper.PrepareIntersect(a, b, out begin, out end);
             return new DoubleRange(begin, end);
         }
+        /// <summary>
+        /// Sloučení (Union) hodnot ze dvou objektů
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public static DoubleRange operator +(DoubleRange a, DoubleRange b)
         {
             Double begin, end;
             Helper.PrepareUnion(a, b, out begin, out end);
             return new DoubleRange(begin, end);
         }
+        /// <summary>
+        /// Porovnání (EqualValue) dvou objektů z hlediska hodnot
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public static bool operator ==(DoubleRange a, DoubleRange b)
         {
             return Helper.IsEqual(a, b);
         }
+        /// <summary>
+        /// Porovnání (NonEqualValue) dvou objektů z hlediska hodnot
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public static bool operator !=(DoubleRange a, DoubleRange b)
         {
             return !Helper.IsEqual(a, b);
@@ -1169,22 +1644,13 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Returns a new instance created from current instance, which Time is specified and center of zooming is on specified date.
         /// </summary>
         /// <param name="center"></param>
-        /// <param name="time"></param>
+        /// <param name="size"></param>
         /// <returns></returns>
         public DoubleRange ZoomToSize(Double center, Double size)
         {
             Double begin, end;
             this.PrepareZoomToSizeOnCenterPoint(center, size, out begin, out end);
             return new DoubleRange(begin, end);
-        }
-        /// <summary>
-        /// Vrací this interval posunutý o shift, beze změny délky.
-        /// </summary>
-        /// <param name="shift"></param>
-        /// <returns></returns>
-        public DoubleRange ShiftBy(Double shift)
-        {
-            return new DoubleRange(this.Begin + shift, this.End + shift);
         }
         /// <summary>
         /// Returns a date on relative position (where 0 = Begin, 1 = End). Center of interval is on position 0.5d.
@@ -1195,23 +1661,6 @@ namespace Asol.Tools.WorkScheduler.Data
         public Double GetValueAt(double relativePosition)
         {
             return this.GetValueAtRelativePosition((decimal)relativePosition);
-        }
-        /// <summary>
-        /// Obsahuje <see cref="Int32Range"/>, vytvořený ze zaokrouhleného počátku a zaokrouhleného konce.
-        /// </summary>
-        public Int32Range Int32RoundEnd { get { return new Int32Range(Round(this.Begin), Round(this.End)); } }
-        /// <summary>
-        /// Obsahuje <see cref="Int32Range"/>, vytvořený ze zaokrouhleného počátku a zaokrouhlené velikosti.
-        /// </summary>
-        public Int32Range Int32RoundSize { get { return Int32Range.CreateFromBeginSize(Round(this.Begin), Round(this.Size)); } }
-        /// <summary>
-        /// Zaokrouhlí hodnotu na Int32
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        protected static Int32 Round(Double value)
-        {
-            return (Int32)(Math.Round(value, 0));
         }
         #endregion
         #region Static services - Round and Equal
@@ -1257,49 +1706,139 @@ namespace Asol.Tools.WorkScheduler.Data
         }
         #endregion
         #region Abstract member override
-        public override bool IsEmptyEdge(Double value)
+        /// <summary>
+        /// Je Edge prázdné?
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        protected override bool IsEmptyEdge(Double value)
         {
             return false;
         }
-        public override bool IsEmptySize(Double value)
+        /// <summary>
+        /// Je Size prázdné?
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        protected override bool IsEmptySize(Double value)
         {
             return false;
         }
-        public override int CompareEdge(Double a, Double b)
+        /// <summary>
+        /// Porovná Edge
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        protected override int CompareEdge(Double a, Double b)
         {
             return a.CompareTo(b);
         }
+        /// <summary>
+        /// Porovná Size
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public override int CompareSize(Double a, Double b)
         {
             return a.CompareTo(b);
         }
+        /// <summary>
+        /// Sečtení Edge + Size
+        /// </summary>
+        /// <param name="begin"></param>
+        /// <param name="size"></param>
+        /// <returns></returns>
         public override Double Add(Double begin, Double size)
         {
             return begin + size;
         }
+        /// <summary>
+        /// Odečtení Size = (Edge - Edge)
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public override Double SubEdge(Double a, Double b)
         {
             return a - b;
         }
+        /// <summary>
+        /// Odečtení Edge = (Edge - Size)
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public override Double SubSize(Double a, Double b)
         {
             return a - b;
         }
+        /// <summary>
+        /// Násobení velikosti Size = Size * ratio
+        /// </summary>
+        /// <param name="size"></param>
+        /// <param name="ratio"></param>
+        /// <returns></returns>
         public override Double Multiply(Double size, decimal ratio)
         {
             return size * (double)ratio;
         }
+        /// <summary>
+        /// Dělení velikosti Ratio = Size / Size
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public override decimal Divide(Double a, Double b)
         {
             return ((b != 0d) ? (decimal)(a / b) : 0m);
         }
+        /// <summary>
+        /// Vizualizace Edge
+        /// </summary>
+        /// <param name="tick"></param>
+        /// <returns></returns>
         protected override string TTickToText(Double tick)
         {
             return tick.ToString();
         }
+        /// <summary>
+        /// Vizualizace Size
+        /// </summary>
+        /// <param name="size"></param>
+        /// <returns></returns>
         protected override string TSizeToText(Double size)
         {
             return size.ToString();
+        }
+        #endregion
+        #region Další služby
+        /// <summary>
+        /// Vrací this interval posunutý o shift, beze změny délky.
+        /// </summary>
+        /// <param name="shift"></param>
+        /// <returns></returns>
+        public DoubleRange ShiftBy(Double shift)
+        {
+            return new DoubleRange(this.Begin + shift, this.End + shift);
+        }
+        /// <summary>
+        /// Obsahuje <see cref="Int32Range"/>, vytvořený ze zaokrouhleného počátku a zaokrouhleného konce.
+        /// </summary>
+        public Int32Range Int32RoundEnd { get { return new Int32Range(Round(this.Begin), Round(this.End)); } }
+        /// <summary>
+        /// Obsahuje <see cref="Int32Range"/>, vytvořený ze zaokrouhleného počátku a zaokrouhlené velikosti.
+        /// </summary>
+        public Int32Range Int32RoundSize { get { return Int32Range.CreateFromBeginSize(Round(this.Begin), Round(this.Size)); } }
+        /// <summary>
+        /// Zaokrouhlí hodnotu na Int32
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        protected static Int32 Round(Double value)
+        {
+            return (Int32)(Math.Round(value, 0));
         }
         #endregion
     }

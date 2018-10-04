@@ -852,7 +852,7 @@ namespace Asol.Tools.WorkScheduler.Components
 
             // Připravené Ticky převezmu z Dictionary do Listu a setřídím je podle jejich hodnoty:
             List<BaseTick<TTick>> newTickList = new List<BaseTick<TTick>>(tickDict.Values);
-            newTickList.Sort((a, b) => this._ValueHelper.CompareEdge(a.Value, b.Value));
+            newTickList.Sort((a, b) => this._ValueHelper.CompareByEdge(a.Value, b.Value));
 
             // Potlačíme zobrazení labelů na Ticku typu Initialial, pokud jeho text je identický 
             //  jako text na prvním / posledním Ticku typu BigLabel (byly by dva shodné texty poblíž u sebe):
@@ -1892,7 +1892,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     // one step with "tick": tick = Round(tick + this.Interval, Math)
                     TTick tickNext = this.Axis.RoundTickToInterval(value.Add(tick, this.Interval), this.Interval, RoundMode.Math);
                     tickNext = this.Axis.RoundTickToLine(tickNext, this.Owner, this.TickType, value, this.Interval);
-                    if (tickDict.Count >= 1000 || this.Axis._ValueHelper.CompareEdge(tick, tickNext) == 0) break;
+                    if (tickDict.Count >= 1000 || this.Axis._ValueHelper.CompareByEdge(tick, tickNext) == 0) break;
                     tick = tickNext;
                 }
             }

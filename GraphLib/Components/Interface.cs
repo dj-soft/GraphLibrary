@@ -112,8 +112,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="absoluteBounds">Absolutní souřadnice tohoto prvku, sem by se mělo fyzicky kreslit</param>
         /// <param name="absoluteVisibleBounds">Absolutní souřadnice tohoto prvku, oříznuté do viditelné oblasti.</param>
         void DrawOverChilds(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds);
-
-
         /// <summary>
         /// Do této property je vkládáno true po výběru prvku, a false po zrušení výběru.
         /// </summary>
@@ -124,7 +122,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Teprve na konci procesu SelectFrame se pro dotčené objekty (které mají <see cref="IsFramed"/> = true) nastaví i <see cref="IsSelected"/> = true.
         /// </summary>
         Boolean IsFramed { get; set; }
-        
+        /// <summary>
+        /// Je prvek "Aktivován" (nějakou aplikační akcí)?
+        /// Aktivovaný prvek není ani Selectovaný, ani Framovaný. Změna <see cref="IsSelected"/> okolních prvků nijak nezmění <see cref="IsActivated"/>.
+        /// Aktivovaný prvek se v podstatě permanentně zobrazuje jako výraznější než okolní prvky, například proto, že je problematický nebo odpovídá nějakému jinému zadání.
+        /// </summary>
+        Boolean IsActivated { get; set; }
     }
     /// <summary>
     /// Interface předepisující členy pro typ, který je parentem interaktivního prvků.

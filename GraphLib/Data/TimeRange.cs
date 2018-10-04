@@ -13,7 +13,15 @@ namespace Asol.Tools.WorkScheduler.Data
     public class TimeRange : BaseRange<DateTime?, TimeSpan?>
     {
         #region Constructors, Visualiser, Helper
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public TimeRange() : base() { }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="begin"></param>
+        /// <param name="end"></param>
         public TimeRange(DateTime? begin, DateTime? end) : base(begin, end) { }
         /// <summary>
         /// Allways returns a new instance of SizeRange, containing empty values
@@ -85,15 +93,27 @@ namespace Asol.Tools.WorkScheduler.Data
                 return value.Value.ToString("yyyyMMdd HHmmss.fff");
             return "NULL";
         }
-
+        /// <summary>
+        /// Override GetHashCode
+        /// </summary>
+        /// <returns></returns>
         public override int GetHashCode()
         {
             return this.HashCode;
         }
+        /// <summary>
+        /// Override Equals
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
         public override bool Equals(object obj)
         {
             return Helper.IsEqual(this, (obj as TimeRange));
         }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             return this.Text;
@@ -328,6 +348,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Return time format for time, dependent on existency of milliseconds and seconds.
         /// </summary>
         /// <param name="time"></param>
+        /// <param name="withSeconds"></param>
         /// <returns></returns>
         private static string _GetTimeFmt(DateTime time, bool withSeconds)
         {
@@ -421,7 +442,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// Return new DateTime as original + timespan, with rules as RoundDateTime()
         /// </summary>
-        /// <param name="time"></param>
+        /// <param name="origin"></param>
         /// <param name="timeSpan"></param>
         /// <returns></returns>
         public static DateTime RoundAddTime(DateTime origin, TimeSpan timeSpan)
@@ -548,21 +569,43 @@ namespace Asol.Tools.WorkScheduler.Data
         #endregion
         #endregion
         #region Abstract member override
-        public override bool IsEmptyEdge(DateTime? value)
+        /// <summary>
+        /// Je Edge prázdné?
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        protected override bool IsEmptyEdge(DateTime? value)
         {
             return (!value.HasValue);
         }
-        public override bool IsEmptySize(TimeSpan? value)
+        /// <summary>
+        /// Je Size prázdné?
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        protected override bool IsEmptySize(TimeSpan? value)
         {
             return (!value.HasValue);
         }
-        public override int CompareEdge(DateTime? a, DateTime? b)
+        /// <summary>
+        /// Porovná Edge
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        protected override int CompareEdge(DateTime? a, DateTime? b)
         {
             if (a.HasValue && b.HasValue) return a.Value.CompareTo(b.Value);
             if (a.HasValue) return 1;
             if (b.HasValue) return -1;
             return 0;
         }
+        /// <summary>
+        /// Porovná Size
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public override int CompareSize(TimeSpan? a, TimeSpan? b)
         {
             if (a.HasValue && b.HasValue) return a.Value.CompareTo(b.Value);
@@ -570,30 +613,70 @@ namespace Asol.Tools.WorkScheduler.Data
             if (b.HasValue) return -1;
             return 0;
         }
+        /// <summary>
+        /// Sečtení Edge + Size
+        /// </summary>
+        /// <param name="begin"></param>
+        /// <param name="size"></param>
+        /// <returns></returns>
         public override DateTime? Add(DateTime? begin, TimeSpan? size)
         {
             return ((begin.HasValue && size.HasValue) ? (DateTime?)(begin.Value + size.Value) : (DateTime?)null);
         }
+        /// <summary>
+        /// Odečtení Size = (Edge - Edge)
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public override DateTime? SubEdge(DateTime? a, TimeSpan? b)
         {
             return ((a.HasValue && b.HasValue) ? (DateTime?)(a.Value - b.Value) : (DateTime?)null);
         }
+        /// <summary>
+        /// Odečtení Edge = (Edge - Size)
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public override TimeSpan? SubSize(DateTime? a, DateTime? b)
         {
             return ((a.HasValue && b.HasValue) ? (TimeSpan?)(a.Value - b.Value) : (TimeSpan?)null);
         }
+        /// <summary>
+        /// Násobení velikosti Size = Size * ratio
+        /// </summary>
+        /// <param name="size"></param>
+        /// <param name="ratio"></param>
+        /// <returns></returns>
         public override TimeSpan? Multiply(TimeSpan? size, decimal ratio)
         {
             return ((size.HasValue) ? (TimeSpan?)(TimeSpan.FromSeconds(size.Value.TotalSeconds * (double)ratio)) : (TimeSpan?)null);
         }
+        /// <summary>
+        /// Dělení velikosti Ratio = Size / Size
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public override decimal Divide(TimeSpan? a, TimeSpan? b)
         {
             return ((a.HasValue && b.HasValue && b.Value.Ticks != 0L) ? (((decimal)a.Value.Ticks) / ((decimal)b.Value.Ticks)) : 0m);
         }
+        /// <summary>
+        /// Vizualizace Edge
+        /// </summary>
+        /// <param name="tick"></param>
+        /// <returns></returns>
         protected override string TTickToText(DateTime? tick)
         {
             return (tick.HasValue ? tick.Value.ToString("yyyy-MM-dd HH:mm:ss.fff") : "");
         }
+        /// <summary>
+        /// Vizualizace Size
+        /// </summary>
+        /// <param name="size"></param>
+        /// <returns></returns>
         protected override string TSizeToText(TimeSpan? size)
         {
             return (size.HasValue ? size.Value.ToString() : "");
@@ -630,7 +713,15 @@ namespace Asol.Tools.WorkScheduler.Data
     public class TimeVector : BaseVector<DateTime?>
     {
         #region Properties, constructor
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public TimeVector() : base() { }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="point"></param>
+        /// <param name="direction"></param>
         public TimeVector(DateTime? point, Direction direction) : base(point, direction) { }
         /// <summary>
         /// Allways returns a new instance of TimeVector, containing empty values
@@ -648,14 +739,27 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Contains a textual form of this interval
         /// </summary>
         public string Text { get { return this.Point.ToString() + "; " + this.Direction.ToString(); } }
+        /// <summary>
+        /// Override GetHashCode
+        /// </summary>
+        /// <returns></returns>
         public override int GetHashCode()
         {
             return this.HashCode;
         }
+        /// <summary>
+        /// Override Equals
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
         public override bool Equals(object obj)
         {
             return Helper.IsEqual(this, (obj as TimeVector));
         }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             return this.Text;
@@ -678,20 +782,43 @@ namespace Asol.Tools.WorkScheduler.Data
             Helper.PrepareIntersect(a, b, out begin, out end);
             return new TimeRange(begin, end);
         }
+        /// <summary>
+        /// Porovnání (EqualValue) dvou objektů z hlediska hodnot
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public static bool operator ==(TimeVector a, TimeVector b)
         {
             return Helper.IsEqual(a, b);
         }
+        /// <summary>
+        /// Porovnání (NonEqualValue) dvou objektů z hlediska hodnot
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         public static bool operator !=(TimeVector a, TimeVector b)
         {
             return !Helper.IsEqual(a, b);
         }
         #endregion
         #region Abstract member override
+        /// <summary>
+        /// Je Point prázdné?
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
         protected override bool IsEmptyPoint(DateTime? value)
         {
             return (!value.HasValue);
         }
+        /// <summary>
+        /// Porovná dvě hodnoty Point
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
         protected override int ComparePoint(DateTime? a, DateTime? b)
         {
             if (a.HasValue && b.HasValue) return a.Value.CompareTo(b.Value);

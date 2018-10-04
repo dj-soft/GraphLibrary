@@ -436,10 +436,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="splitterActiveOverlap"></param>
         /// <param name="locationLimit"></param>
         /// <param name="moveType"></param>
-        /// <param name="actions">Akce k provedení</param>
-        /// <param name="eventSource">Zdroj této události</param>
-        internal bool SetSplitter(Rectangle? bounds, Int32? location, Orientation? orientation, Int32? splitterVisibleWidth, Int32? splitterActiveOverlap, Int32NRange locationLimit, int? locationOriginal, 
-            DragResponseType moveType)
+        /// <param name="locationOriginal"></param>
+        internal bool SetSplitter(Rectangle? bounds, Int32? location, Orientation? orientation, Int32? splitterVisibleWidth, Int32? splitterActiveOverlap, Int32NRange locationLimit, int? locationOriginal, DragResponseType moveType)
         {
             ProcessAction action = ProcessAction.All;            // Contains actions CallChangedEvents and CallChangingEvents. We will now "reset" unappropriated bit:
             if (moveType == DragResponseType.InDragMove)
@@ -464,6 +462,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="moveType"></param>
         /// <param name="actions">Akce k provedení</param>
         /// <param name="eventSource">Zdroj této události</param>
+        /// <param name="locationOriginal"></param>
         internal bool SetSplitter(Rectangle? bounds, Int32? location, Orientation? orientation, Int32? splitterVisibleWidth, Int32? splitterActiveOverlap, Int32NRange locationLimit, int? locationOriginal, 
             DragResponseType moveType, ProcessAction actions, EventSourceType eventSource)
         {
@@ -665,7 +664,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Returns a new ActiveOverhead (Padding) for specified orientation and splitterActiveOverlap.
         /// ActiveOverlap is added in active dimension (for Horizontal orientation: to Y axis, for Vertical orientation: to X axis).
         /// </summary>
-        /// <param name="rectangle"></param>
         /// <param name="orientation"></param>
         /// <param name="splitterActiveOverlap"></param>
         /// <returns></returns>
@@ -997,8 +995,17 @@ namespace Asol.Tools.WorkScheduler.Components
     /// </summary>
     public enum SplitterResizeMode
     {
+        /// <summary>
+        /// Neprovádět resize
+        /// </summary>
         None,
+        /// <summary>
+        /// Provést resize na Union prvků = co nejdelší splitter
+        /// </summary>
         Union,
+        /// <summary>
+        /// Provést resize na Průsečík prvků = co nejkratší splitter
+        /// </summary>
         Intersection
     }
 }

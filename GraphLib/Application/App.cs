@@ -139,6 +139,10 @@ namespace Asol.Tools.WorkScheduler.Application
             Instance._RunMainForm(formType);
         }
         /// <summary>
+        /// Hlavní formulář aplikace
+        /// </summary>
+        public static System.Windows.Forms.Form MainForm { get { return Instance._AppMainForm; } }
+        /// <summary>
         /// Spustí main formulář aplikace
         /// </summary>
         /// <param name="formType"></param>
@@ -165,7 +169,8 @@ namespace Asol.Tools.WorkScheduler.Application
                 while (e.InnerException != null)
                     e = e.InnerException;
 
-                System.Windows.Forms.MessageBox.Show(e.Message + Environment.NewLine + e.StackTrace, "Exception", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Exclamation, System.Windows.Forms.MessageBoxDefaultButton.Button1);
+                string message = e.Message + Environment.NewLine + e.StackTrace;
+                ShowError(message);
 
                 if (System.Diagnostics.Debugger.IsAttached)
                     throw;
@@ -272,6 +277,56 @@ namespace Asol.Tools.WorkScheduler.Application
         public static string LocalizeCode(string code, string defaultText)
         {
             return defaultText;
+        }
+        #endregion
+        #region TryRun action
+        /// <summary>
+        /// Metoda vyvolá danou akci v try-catch bloku, chybu zapíše do trace a pokud je Debug režim, tak ji i ohlásí.
+        /// </summary>
+        /// <param name="action"></param>
+        public static void TryRun(Action action)
+        {
+            try
+            {
+                action();
+            }
+            catch (Exception exc)
+            {
+                Trace.Exception(exc);
+                if (IsDebugMode)
+                    ShowError(exc);
+            }
+        }
+        #endregion
+        #region Dialog window
+        /// <summary>
+        /// Zobrazí danou informaci
+        /// </summary>
+        /// <param name="message"></param>
+        public static void ShowInfo(string message) { _ShowMsg(message, System.Windows.Forms.MessageBoxIcon.Information); }
+        /// <summary>
+        /// Zobrazí dané varování
+        /// </summary>
+        /// <param name="message"></param>
+        public static void ShowWarning(string message) { _ShowMsg(message, System.Windows.Forms.MessageBoxIcon.Warning); }
+        /// <summary>
+        /// Zobrazí danou chybu
+        /// </summary>
+        /// <param name="message"></param>
+        public static void ShowError(string message) { _ShowMsg(message, System.Windows.Forms.MessageBoxIcon.Error); }
+        /// <summary>
+        /// Zobrazí danou chybu
+        /// </summary>
+        /// <param name="exc"></param>
+        public static void ShowError(Exception exc) { string message = exc.Message + Environment.NewLine + exc.StackTrace; _ShowMsg(message, System.Windows.Forms.MessageBoxIcon.Error); }
+        /// <summary>
+        /// Zobraz danou zprávu a ikkonku
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="icon"></param>
+        private static void _ShowMsg(string message, System.Windows.Forms.MessageBoxIcon icon)
+        {
+            System.Windows.Forms.MessageBox.Show(MainForm, message, App.AppProductTitle, System.Windows.Forms.MessageBoxButtons.OK, icon);
         }
         #endregion
         #region ProcessRequestOnbackground() : Worker (process requests in background thread in queue)
@@ -557,6 +612,17 @@ namespace Asol.Tools.WorkScheduler.Application
         private Dictionary<string, string> _Register;
         #endregion
         #region App constants, paths
+        /// <summary>
+        /// Titulek aplikace (v dialogovém okně).
+        /// Default = "Graphics library". 
+        /// Lze setovat jinou hodnotu.
+        /// </summary>
+        public static string AppProductTitle
+        {
+            get { string value = Instance._AppProductTitle; return (!String.IsNullOrEmpty(value) ? value : "Graphics library"); }
+            set { Instance._AppProductTitle = value; }
+        }
+        private string _AppProductTitle;
         /// <summary>
         /// Jméno autora. 
         /// Default = "Asseco Solutions". 

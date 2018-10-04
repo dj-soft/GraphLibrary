@@ -254,6 +254,23 @@ namespace Asol.Tools.WorkScheduler.Components
             return (root <= 128 ? root + contrast : root - contrast);
         }
         #endregion
+        #region Color: GrayScale
+        /// <summary>
+        /// Vrátí danou barvu odbarvenou do černo-šedo-bílé stupnice.
+        /// Hodnotu Alpha ponechává.
+        /// </summary>
+        /// <param name="root">Výchozí barva</param>
+        /// <returns></returns>
+        public static Color GrayScale(this Color root)
+        {
+            // Vypočítám souhrnný jas všech složek se zohledněním koeficientu jejich barevného jasu:
+            float rgb = 1.0f * (float)root.R +
+                        1.4f * (float)root.G +
+                        0.7f * (float)root.B;              // Součet složek je 0 až 790.5;
+            int g = (int)(Math.Round((255f * (rgb / 790.5f)), 0));
+            return Color.FromArgb(root.A, g, g, g);
+        }
+        #endregion
         #region Color: Opacity
         /// <summary>
         /// Do dané barvy (this) vloží danou hodnotu Alpha (parametr opacity), výsledek vrátí.

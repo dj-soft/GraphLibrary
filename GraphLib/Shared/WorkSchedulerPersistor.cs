@@ -54,6 +54,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <summary>
         /// Vytvoří objekt ze serializovaného stavu, který je dodán jako string do této metody.
         /// Změnu nastavení lze specifikovat zadáním druhého parametru, třídy <see cref="PersistArgs"/>.
+        /// Tato varianta může deserializovat data z čitelného stringu, ze zazipovaného stringu i ze souboru (metoda provádí autodetect zadaného stringu).
         /// </summary>
         /// <param name="source"></param>
         /// <returns></returns>

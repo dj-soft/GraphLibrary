@@ -16,6 +16,9 @@ namespace Asol.Tools.WorkScheduler.Components
     public class GControl : Control, IDisposable
     {
         #region Constructor
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public GControl()
         {
             this._GraphBufferInit();
@@ -73,7 +76,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Handler události OnResize: zajistí přípravu nového bufferu, vyvolání kreslení do bufferu, a zobrazení dat z bufferu
         /// </summary>
-        /// <param name="sender"></param>
         /// <param name="e"></param>
         private void _Resize(EventArgs e)
         {
@@ -96,7 +98,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Aplikační logiku k tomu nepotřebuje, obrázek pro vykreslení má připravený v bufferu. Jen jej přesune na obrazovku.
         /// Aplikační logika kreslí v případě Resize (viz event Dbl_Resize) a v případě, kdy ona sama chce (když si vyvolá metodu Draw()).
         /// </summary>
-        /// <param name="sender"></param>
         /// <param name="e"></param>
         private void _Paint(PaintEventArgs e)
         {
@@ -216,7 +217,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected bool ReallyCanDraw { get { return (this.CanDraw && !this.DrawInProgress && this.Width > 0 && this.Height > 0 && this.Parent != null); } }
         /// <summary>
-        /// <summary>
         /// Descendant can override this property, and disable (with false) any drawing.
         /// </summary>
         protected virtual bool CanDraw { get { return true; } }
@@ -240,6 +240,9 @@ namespace Asol.Tools.WorkScheduler.Components
     public class GControlLayered : Control, IDisposable
     {
         #region Constructor, private event handlers
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public GControlLayered()
         {
             this._LayerList = new List<GraphicLayer>();
@@ -282,7 +285,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this._RenderValidLayerTo(e.Graphics);
         }
         /// <summary>
-        /// Metoda zajistí překreslení obsahu controlu: zavolá <see cref="Draw"/> a poté <see cref="Control.Invalidate()"/>.
+        /// Metoda zajistí překreslení obsahu controlu: zavolá <see cref="Draw()"/> a poté <see cref="Control.Invalidate()"/>.
         /// </summary>
         public override void Refresh()
         {
@@ -545,9 +548,10 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             #region Constructor
             /// <summary>
-            /// Constructor(owner = Control, Size)
+            /// Constructor (owner = Control, Size)
             /// </summary>
             /// <param name="owner"></param>
+            /// <param name="size"></param>
             public GraphicLayer(Control owner, Size size)
             {
                 this._Owner = owner;
@@ -605,6 +609,9 @@ namespace Asol.Tools.WorkScheduler.Components
             }
             #endregion
             #region Privátní tvorba grafiky, IDisposable
+            /// <summary>
+            /// Vytvoří bufferovaný layer pro kreslení do this vrstvy
+            /// </summary>
             protected void CreateLayer()
             {
                 if (this._GraphicsContext == null)
@@ -649,6 +656,14 @@ namespace Asol.Tools.WorkScheduler.Components
     /// </summary>
     public class LayeredPaintEventArgs : EventArgs
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="layerCount"></param>
+        /// <param name="getGraphics"></param>
+        /// <param name="copyContentOfLayer"></param>
+        /// <param name="layersToPaint"></param>
+        /// <param name="userData"></param>
         public LayeredPaintEventArgs(int layerCount, Func<int, Graphics> getGraphics, Action<int, int> copyContentOfLayer, IEnumerable<int> layersToPaint, object userData)
         {
             this._LayerCount = layerCount;

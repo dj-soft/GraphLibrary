@@ -194,6 +194,15 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Výchozí hodnota: aktuální týden od pondělí do neděle, +- 8 hodin
         /// </summary>
         public GuiTimeRange InitialTimeRange { get; set; }
+        /// <summary>
+        /// Způsob umístění prvku grafu při jeho přetahování (Drag and Drop), na ose Y, v rámci původního grafu (odkud prvek pochází)
+        /// </summary>
+        public GraphItemMoveAlignY GraphItemMoveSameGraph { get; set; }
+        /// <summary>
+        /// Způsob umístění prvku grafu při jeho přetahování (Drag and Drop), na ose Y, v rámci jiného než původního grafu.
+        /// Zde se nemá používat hodnota <see cref="GraphItemMoveAlignY.OnOriginalItemPosition"/>.
+        /// </summary>
+        public GraphItemMoveAlignY GraphItemMoveOtherGraph { get; set; }
 
         /// <summary>
         /// Defaultní časový interval pro <see cref="TotalTimeRange"/>
@@ -840,7 +849,7 @@ namespace Noris.LCS.Base.WorkScheduler
                     "layer int, level int, order int, height float, " +
                     "text string, tooltip string, " +
                     "back_color string, line_color string, back_style string, " +
-                    "ratio_begin float, ratio_end float, ratio_back_color string, ratio_line_color string, ratio_line_width int";
+                    "ratio_begin float, ratio_end float, ratio_begin_back_color string, ratio_end_back_color string, ratio_line_color string, ratio_line_width int";
     }
     /// <summary>
     /// Bázová třída pro předávání dat o grafických položkách.
@@ -938,7 +947,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Barva pozadí prvku.
         /// Pokud bude null, pak prvek nebude mít vyplněný svůj prostor (obdélník). Může mít vykreslené okraje (barva <see cref="LineColor"/>).
         /// Anebo může mít kreslené Ratio (viz property <see cref="RatioBegin"/>, <see cref="RatioEnd"/>, 
-        /// <see cref="RatioBackColor"/>, <see cref="RatioLineColor"/>, <see cref="RatioLineWidth"/>).
+        /// <see cref="RatioBeginBackColor"/>, <see cref="RatioLineColor"/>, <see cref="RatioLineWidth"/>).
         /// Z databáze se načítá ze sloupce: "back_color", je NEPOVINNÝ.
         /// </summary>
         public Color? BackColor { get; set; }
@@ -973,14 +982,28 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public float? RatioEnd { get; set; }
         /// <summary>
-        /// Barva pozadí prvku, kreslená v části Ratio.
+        /// Barva pozadí prvku, kreslená v části Ratio, na straně času Begin.
         /// Použije se tehdy, když hodnota <see cref="RatioBegin"/> a/nebo <see cref="RatioEnd"/> má hodnotu větší než 0f.
         /// Touto barvou je vykreslena dolní část prvku, která symbolizuje míru "naplnění" daného úseku.
         /// Tato část má tvar lichoběžníku, dolní okraj je na hodnotě 0, levý okraj má výšku <see cref="RatioBegin"/>, pravý okraj má výšku <see cref="RatioEnd"/>.
         /// Může sloužit k zobrazení vyčerpané pracovní kapacity, nebo jako lineární částečka grafu sloupcového nebo liniového.
-        /// Z databáze se načítá ze sloupce: "ratio_back_color", je NEPOVINNÝ.
+        /// Tato barva se použije buď jako Solid color pro celý prvek v části Ratio, 
+        /// anebo jako počáteční barva na souřadnici X = čas Begin při výplni Linear, 
+        /// a to tehdy, pokud je zadána i barva <see cref="RatioEndBackColor"/> (ta reprezentuje barvu na souřadnici X = čas End).
+        /// Z databáze se načítá ze sloupce: "ratio_begin_back_color", je NEPOVINNÝ.
         /// </summary>
-        public Color? RatioBackColor { get; set; }
+        public Color? RatioBeginBackColor { get; set; }
+        /// <summary>
+        /// Barva pozadí prvku, kreslená v části Ratio, na straně času End.
+        /// Použije se tehdy, když hodnota <see cref="RatioBegin"/> a/nebo <see cref="RatioEnd"/> má hodnotu větší než 0f.
+        /// Touto barvou je vykreslena dolní část prvku, která symbolizuje míru "naplnění" daného úseku.
+        /// Tato část má tvar lichoběžníku, dolní okraj je na hodnotě 0, levý okraj má výšku <see cref="RatioBegin"/>, pravý okraj má výšku <see cref="RatioEnd"/>.
+        /// Může sloužit k zobrazení vyčerpané pracovní kapacity, nebo jako lineární částečka grafu sloupcového nebo liniového.
+        /// Tato barva se použije jako koncová barva (na souřadnici X = čas End) v lineární výplni prostoru Ratio,
+        /// kde počáteční barva výplně (na souřadnici X = čas Begin) je dána v <see cref="RatioBeginBackColor"/>.
+        /// Z databáze se načítá ze sloupce: "ratio_end_back_color", je NEPOVINNÝ.
+        /// </summary>
+        public Color? RatioEndBackColor { get; set; }
         /// <summary>
         /// Barva linky, kreslená v úrovni Ratio.
         /// Použije se tehdy, když hodnota <see cref="RatioBegin"/> a/nebo <see cref="RatioEnd"/> má zadanou hodnotu v rozsahu 0 (včetně) a více.
@@ -1022,7 +1045,7 @@ namespace Noris.LCS.Base.WorkScheduler
         public GuiToolbarPanel()
         {
             this.ToolbarVisible = true;
-            this.ToolbarShowSystemItems = ToolbarSystemItem.TimeAxisZoomDWM | ToolbarSystemItem.TimeAxisGoAll;
+            this.ToolbarShowSystemItems = ToolbarSystemItem.TimeAxisZoomDWWM | ToolbarSystemItem.TimeAxisGoAll;
             this.Items = new List<GuiToolbarItem>();
         }
         /// <summary>
@@ -2598,7 +2621,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <summary>
         /// Časová osa, Zoom: Den + Pracovní týden + Celý týden + Měsíc
         /// </summary>
-        TimeAxisZoomDWM = TimeAxisZoomOneDay | TimeAxisZoomWorkWeek | TimeAxisZoomWholeWeek | TimeAxisZoomMonth,
+        TimeAxisZoomDWWM = TimeAxisZoomOneDay | TimeAxisZoomWorkWeek | TimeAxisZoomWholeWeek | TimeAxisZoomMonth,
         /// <summary>
         /// Časová osa, Zoom: úplně všechno
         /// </summary>
@@ -2622,7 +2645,27 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <summary>
         /// Časová osa, souhrn všech akcí
         /// </summary>
-        TimeAxisAll = TimeAxisZoomAll | TimeAxisGoAll
+        TimeAxisAll = TimeAxisZoomAll | TimeAxisGoAll,
+        /// <summary>
+        /// Přesouvání prvku: přichytávat k nejbližším prvkům
+        /// </summary>
+        MoveItemAttachNearItems = 0x00010000,
+        /// <summary>
+        /// Přesouvání prvku: přichytávat k původnímu času
+        /// </summary>
+        MoveItemAttachOriginalTime = 0x00020000,
+        /// <summary>
+        /// Přesouvání prvku: přichytávat k zaokrouhlenému času
+        /// </summary>
+        MoveItemAttachToRoundTimeGrid = 0x00040000,
+        /// <summary>
+        /// Přesouvání prvku: všechny akce
+        /// </summary>
+        MoveItemAll = MoveItemAttachNearItems | MoveItemAttachOriginalTime | MoveItemAttachToRoundTimeGrid,
+        /// <summary>
+        /// Defaultní využití systémových položek: Zoom (Day + WorkWeek + WholeWeek + Month) + GoAll + MoveItemAll
+        /// </summary>
+        Default = TimeAxisZoomDWWM | TimeAxisGoAll | MoveItemAll
     }
     /// <summary>
     /// Režim, jak osa reaguje na změnu velikosti.
@@ -2843,6 +2886,30 @@ namespace Noris.LCS.Base.WorkScheduler
         /// or in the window that appears when the user presses ALT+TAB.
         /// </summary>
         SizableToolWindow = 6
+    }
+    /// <summary>
+    /// Způsob umístění prvku grafu při jeho přetahování (Drag and Drop), na ose Y = v jaké výšce v grafu se prvek bude přesouvat
+    /// </summary>
+    public enum GraphItemMoveAlignY
+    {
+        /// <summary>
+        /// Neurčeno, použije se <see cref="OnMousePosition"/>
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Prvek se pohybuje na ose Y přesně podle pozice myši (volně plave).
+        /// </summary>
+        OnMousePosition,
+        /// <summary>
+        /// Prvek se pohybuje na té souřadnici Y, ve které byl původně umístěn (jezdí ve své kolejnici).
+        /// Tato hodnota má význam pouze pro řízení pohybu po vlastním grafu (když se prvek nepřesouvá na jiný graf).
+        /// Pokud bude tato hodnota zadaná pro řízení pohybu po cizím grafu, použije se <see cref="OnGraphTopPosition"/>.
+        /// </summary>
+        OnOriginalItemPosition,
+        /// <summary>
+        /// Prvek se pohybuje těsně pod horním okrajem grafu (visí nahoře a spustí se dolů).
+        /// </summary>
+        OnGraphTopPosition
     }
     #endregion
     #region class WorkSchedulerSupport : Třída obsahující konstanty a další podporu WorkScheduleru - identický kód je v Helios Green i v GraphLibrary !!!
@@ -3783,6 +3850,27 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <summary>
         /// Metoda vrátí daný string DEKOMPRIMOVANÝ pomocí <see cref="System.IO.Compression.GZipStream"/>, převedený z Base64 stringu.
         /// Standardní serializovanou DataTable tato komprimace zmenší na cca 3-8% původní délky stringu.
+        /// Pokud při dekomprimaci dojde k chybě+, vrátí null.
+        /// </summary>
+        /// <param name="source"></param>
+        /// <returns></returns>
+        public static string TryDecompress(string source)
+        {
+            if (source == null || source.Length == 0) return source;
+            string target = null;
+            try
+            {
+                target = Decompress(source);
+            }
+            catch (Exception)
+            {
+                target = null;
+            }
+            return target;
+        }
+        /// <summary>
+        /// Metoda vrátí daný string DEKOMPRIMOVANÝ pomocí <see cref="System.IO.Compression.GZipStream"/>, převedený z Base64 stringu.
+        /// Standardní serializovanou DataTable tato komprimace zmenší na cca 3-8% původní délky stringu.
         /// </summary>
         /// <param name="source"></param>
         /// <returns></returns>
@@ -3804,7 +3892,6 @@ namespace Noris.LCS.Base.WorkScheduler
                 target = System.Text.Encoding.UTF8.GetString(outBuffer);
             }
             return target;
-
         }
         #endregion
         #region Odesílání a příjem datového balíku

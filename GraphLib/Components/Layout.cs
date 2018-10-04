@@ -39,7 +39,6 @@ namespace Asol.Tools.WorkScheduler.Components
             this._Args = args;
             this._ProcessIndex = args.ProcessStartIndex;
             this._ProcessedItemCount = 0;
-            this._ProcessedItemWidth = 0;
             this._ResultRowList = new List<LayoutEngineResultRow>();
         }
         private int _ProcessLayout()
@@ -163,8 +162,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Add next item to current WorkRow
         /// </summary>
         /// <param name="item"></param>
-        /// <param name="args"></param>
-        /// <param name="index"></param>
         private void _AddItem(ILayoutItem item)
         {
             this._WorkRow.AddItem(item, this._ProcessIndex);
@@ -198,7 +195,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Current processed item count
         /// </summary>
         private int _ProcessedItemCount;
-        private int _ProcessedItemWidth;
         /// <summary>
         /// Last added row.
         /// </summary>
@@ -311,6 +307,11 @@ namespace Asol.Tools.WorkScheduler.Components
     /// </summary>
     public class LayoutEngineResultRow
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="rowIndex"></param>
+        /// <param name="location"></param>
         public LayoutEngineResultRow(int rowIndex, Point location)
         {
             this.RowIndex = rowIndex;
@@ -359,7 +360,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Add next item to this row
         /// </summary>
         /// <param name="item"></param>
-        /// <param name="args"></param>
         /// <param name="index"></param>
         internal void AddItem(ILayoutItem item, int index)
         {
@@ -405,6 +405,10 @@ namespace Asol.Tools.WorkScheduler.Components
     public class LayoutTest : ITest
     {
         #region TestLayoutEngine()
+        /// <summary>
+        /// Test layoutu
+        /// </summary>
+        /// <param name="testArgs"></param>
         protected void TestLayoutEngine(TestArgs testArgs)
         {
             List<ILayoutItem> items = new List<ILayoutItem>();
@@ -463,7 +467,16 @@ namespace Asol.Tools.WorkScheduler.Components
             Compare(items, "A22", 22, 0, 1, 1, testArgs);
 
         }
-
+        /// <summary>
+        /// Porovná výsledky s očekáváním
+        /// </summary>
+        /// <param name="items"></param>
+        /// <param name="content"></param>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="w"></param>
+        /// <param name="h"></param>
+        /// <param name="testArgs"></param>
         protected void Compare(List<ILayoutItem> items, string content, int x, int y, int w, int h, TestArgs testArgs)
         {
             LayoutTestItem item = Find(items, content);
@@ -473,20 +486,48 @@ namespace Asol.Tools.WorkScheduler.Components
             else if (item.ItemBounds.Value != expected)
                 testArgs.AddResult(TestResultType.TestError, "ItemBounds for " + content + " is wrong, expected: " + expected.ToString() + "; real: " + item.ItemBounds.Value.ToString());
         }
+        /// <summary>
+        /// Najde prvek
+        /// </summary>
+        /// <param name="items"></param>
+        /// <param name="content"></param>
+        /// <returns></returns>
         protected static LayoutTestItem Find(IEnumerable<ILayoutItem> items, string content)
         {
             return items.FirstOrDefault(i => (i as LayoutTestItem).Content == content) as LayoutTestItem;
         }
+        /// <summary>
+        /// Testovací třída pro layout
+        /// </summary>
         protected class LayoutTestItem : ILayoutItem
         {
+            /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns></returns>
             public override string ToString()
             {
                 return this.Content + "; " + (this.ItemBounds == null ? "null" : this.ItemBounds.Value.ToString());
             }
+            /// <summary>
+            /// Velikost
+            /// </summary>
             public Size ItemSize { get; set; }
+            /// <summary>
+            /// Souřadnice
+            /// </summary>
             public Rectangle? ItemBounds { get; set; }
+            /// <summary>
+            /// Hint
+            /// </summary>
             public LayoutHint Hint { get; set; }
+            /// <summary>
+            /// Šířka
+            /// </summary>
             public int? ModuleWidth { get; set; }
+            /// <summary>
+            /// Textový obsah
+            /// </summary>
             public string Content { get; set; }
         }
         #endregion
@@ -496,6 +537,5 @@ namespace Asol.Tools.WorkScheduler.Components
         void ITest.RunTest(TestArgs testArgs) { this.TestLayoutEngine(testArgs); }
         #endregion
     }
-
     #endregion
 }

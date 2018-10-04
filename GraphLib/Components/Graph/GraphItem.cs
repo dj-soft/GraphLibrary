@@ -120,16 +120,20 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         protected Color? ItemLineColor { get { return this._Owner.LineColor; } }
         /// <summary>
-        /// Barva pozadí části Ratio, načtená z <see cref="ITimeGraphItem.RatioBackColor"/>. 
+        /// Barva pozadí části Ratio, čas Begin, načtená z <see cref="ITimeGraphItem.RatioBeginBackColor"/>. 
         /// Může být null.
         /// </summary>
-        protected Color? RatioBackColor { get { return this._Owner.RatioBackColor; } }
+        protected Color? RatioBeginBackColor { get { return this._Owner.RatioBeginBackColor; } }
+        /// <summary>
+        /// Barva pozadí části Ratio, čas End, načtená z <see cref="ITimeGraphItem.RatioEndBackColor"/>. 
+        /// Může být null.
+        /// </summary>
+        protected Color? RatioEndBackColor { get { return this._Owner.RatioEndBackColor; } }
         /// <summary>
         /// Barva linie části Ratio, načtená z <see cref="ITimeGraphItem.RatioLineColor"/>. 
         /// Může být null.
         /// </summary>
         protected Color? RatioLineColor { get { return this._Owner.RatioLineColor; } }
-
         #endregion
         #region Child prvky: přidávání, kolekce
         /// <summary>
@@ -455,7 +459,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             if (itemBackColor.HasValue)
             {
                 // Reálně použitá barva pozadí pro spojovací linii je částečně (33%) průhledná:
-                Color color = this._Group.GetColorWithOpacity(Color.FromArgb(170, itemBackColor.Value), e);
+                Color color = this._Group.GetColorWithOpacity(itemBackColor.Value, e.DrawLayer, drawMode, true, true);
 
                 Rectangle[] boundsParts = _CreateBounds(boundsAbsolute, this._Position, false, false, false);
                 float? effect3D = this._GetEffect3D(false);
@@ -473,12 +477,12 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             Color? itemBackColor = this.ItemBackColor;
             if (!itemBackColor.HasValue)
-                itemBackColor = this.RatioBackColor;
+                itemBackColor = this.RatioBeginBackColor;
             if (!itemBackColor.HasValue)
                 itemBackColor = Skin.Graph.BackColor;
             Color foreColor = itemBackColor.Value.Contrast();
             Rectangle boundsText = boundsAbsolute;
-            boundsText.Y = boundsText.Y - 1;               // Vlastnost Windows: nahoru se text o 1px posunout může.
+            boundsText.Y = boundsText.Y - 0;               // Vlastnost Windows: nahoru se text o 1px posunout může.
             GPainter.DrawString(e.Graphics, boundsText, text, foreColor, fontInfo, ContentAlignment.MiddleCenter);
         }
         #endregion
@@ -491,17 +495,16 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="drawMode"></param>
         protected void DrawItemItem(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
         {
-            // bool isSelectable = this.Is.Selectable;
-
-            // Stav IsSelected a IsFramed budeme vždy přebírat z Grupy, protože Select a Framed se řeší na úrovni Grupy:
+            // Stav IsSelected a IsFramed budeme vždy přebírat z GUI prvku Grupy, protože Select a Framed a Activated se řeší na úrovni Grupy:
             GTimeGraphItem groupItem = (this._Position == GGraphControlPosition.Group ? this :
                                         this._Position == GGraphControlPosition.Item ? this._Group.GControl : null);
 
             bool isSelected = (groupItem != null ? groupItem.IsSelected : false);
             bool isFramed = (groupItem != null ? groupItem.IsFramed : false);
-            bool isActive = (isSelected | isFramed);
+            bool isActivated = (groupItem != null ? groupItem.IsActivated : false);
+            bool hasBorder = (isSelected | isFramed);
 
-            Rectangle[] boundsParts = _CreateBounds(boundsAbsolute, this._Position, this.IsFirstItem, this.IsLastItem, isActive);
+            Rectangle[] boundsParts = _CreateBounds(boundsAbsolute, this._Position, this.IsFirstItem, this.IsLastItem, hasBorder);
 
             Color color;
             Color? itemBackColor = this.ItemBackColor;
@@ -511,7 +514,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             bool drawSelect = true;
             if (itemBackColor.HasValue)
             {
-                color = this._Group.GetColorWithOpacity(itemBackColor.Value, e);
+                color = this._Group.GetColorWithOpacity(itemBackColor.Value, e.DrawLayer, drawMode, false, true);
                 System.Drawing.Drawing2D.HatchStyle? backStyle = this._Owner.BackStyle;
                 if (backStyle.HasValue)
                 {   // Máme-li BackStyle : neřešíme interaktivitu myši, ani vykreslení 3D efektu:
@@ -528,12 +531,19 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                     borderColor = (isSelected ? Skin.Graph.ElementSelectedLineColor :
                                   (isFramed ? Skin.Graph.ElementFramedLineColor : color));
                     Color colorTop = Skin.Modifiers.GetColor3DBorderLight(borderColor.Value, 0.50f);
-                    e.Graphics.FillRectangle(Skin.Brush(colorTop), boundsParts[2]);
                     Color colorBottom = Skin.Modifiers.GetColor3DBorderDark(borderColor.Value, 0.50f);
+                    e.Graphics.FillRectangle(Skin.Brush(colorTop), boundsParts[2]);
                     e.Graphics.FillRectangle(Skin.Brush(colorBottom), boundsParts[4]);
+                    if (!hasBorder)
+                    {   // Běžné okraje prvku (3D efekt na krajních prvcích):
+                        if (this.IsFirstItem)
+                            e.Graphics.FillRectangle(Skin.Brush(colorTop), boundsParts[1]);
+                        if (this.IsLastItem)
+                            e.Graphics.FillRectangle(Skin.Brush(colorBottom), boundsParts[3]);
+                    }
 
-                    if (isSelected || isFramed)
-                    {
+                    if (hasBorder && borderColor.HasValue)
+                    {   // Zvýrazněné okraje prvku (Selected, Framed na krajních prvcích):
                         if (this.IsFirstItem)
                             e.Graphics.FillRectangle(Skin.Brush(borderColor.Value), boundsParts[1]);
                         if (this.IsLastItem)
@@ -545,15 +555,17 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             }
 
             // Vykreslit orámování prvku:
-            if (drawSelect && (isSelected || isFramed))
+            if (drawSelect && hasBorder)
             {
                 Color? itemLineColor = (isSelected ? (Color?)Skin.Graph.ElementSelectedLineColor : this.ItemLineColor);
                 if (itemLineColor.HasValue)
                 {
-                    color = this._Group.GetColorWithOpacity(itemLineColor.Value, e);
-                    int lineWidth = (isSelected ? 2 : 1);
-                    Rectangle boundsLineAbsolute = boundsAbsolute.Enlarge(1 - lineWidth, 1 - lineWidth, -lineWidth, -lineWidth);
-                    e.Graphics.DrawRectangle(Skin.Pen(color, (float)lineWidth), boundsLineAbsolute);
+                    color = this._Group.GetColorWithOpacity(itemLineColor.Value, e.DrawLayer, drawMode, false, false);
+                    var brush = Skin.Brush(color);
+                    e.Graphics.FillRectangle(brush, boundsParts[1]);
+                    e.Graphics.FillRectangle(brush, boundsParts[2]);
+                    e.Graphics.FillRectangle(brush, boundsParts[3]);
+                    e.Graphics.FillRectangle(brush, boundsParts[4]);
                 }
             }
 
@@ -568,15 +580,15 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="position">Pozice prvku (Group / Item)</param>
         /// <param name="isFirst">Prvek je prvním v grupě?</param>
         /// <param name="isLast">Prvek je posledním v grupě?</param>
-        /// <param name="isActive">Prvek je Selected nebo Framed?</param>
-        private static Rectangle[] _CreateBounds(Rectangle boundsAbsolute, GGraphControlPosition position, bool isFirst, bool isLast, bool isActive)
+        /// <param name="hasBorder">Prvek je Selected nebo Framed?</param>
+        private static Rectangle[] _CreateBounds(Rectangle boundsAbsolute, GGraphControlPosition position, bool isFirst, bool isLast, bool hasBorder)
         {
             int x = boundsAbsolute.X;
             int y = boundsAbsolute.Y;
             int w = boundsAbsolute.Width;
             int h = boundsAbsolute.Height;
-            int wb = (w <= 2 ? 0 : ((w < 5) ? 1 : (isActive ? 2 : 1)));
-            int hb = (h <= 2 ? 0 : ((h < 10 || position == GGraphControlPosition.Group) ? 1 : (isActive ? 3 : 2)));    // Výška proužku "horní a dolní okraj"
+            int wb = (w <= 2 ? 0 : ((w < 5) ? 1 : (hasBorder ? 2 : 1)));
+            int hb = (h <= 2 ? 0 : ((h < 10 || position == GGraphControlPosition.Group) ? 1 : (hasBorder ? 3 : 2)));    // Výška proužku "horní a dolní okraj"
             int hc = h - 2 * hb;
 
             Rectangle[] boundsParts = new Rectangle[5];

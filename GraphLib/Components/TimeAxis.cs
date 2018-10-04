@@ -141,6 +141,16 @@ namespace Asol.Tools.WorkScheduler.Components
             }
             return tick;
         }
+        /// <summary>
+        /// Metoda vrátí dané datum zaokrouhlené na dané jednotky na aktuální časové ose.
+        /// </summary>
+        /// <param name="time">Daný čas</param>
+        /// <param name="tickType">Druh zaokrouhlení, odpovídá typu značky na časové ose</param>
+        /// <returns></returns>
+        protected DateTime? RoundTimeToTickType(DateTime time, AxisTickType tickType)
+        {
+            return this.ArrangementCurrent.RoundValueToTick(time, tickType);
+        }
         #endregion
         #region Příprava měřítek pro časovou osu
         /// <summary>
@@ -278,6 +288,7 @@ namespace Asol.Tools.WorkScheduler.Components
         TimeRange ITimeAxisConvertor.Value { get { return this.Value; } set { this.Value = value; } }
         VisualTick[] ITimeAxisConvertor.Ticks { get { return this.TickList.ToArray(); } }
         int ITimeAxisConvertor.FirstPixel { get { return (int)this.PixelFirst; } }
+        DateTime? ITimeAxisConvertor.GetRoundedTime(DateTime time, AxisTickType tickType) { return this.RoundTimeToTickType(time, tickType); }
         Double ITimeAxisConvertor.GetProportionalPixel(DateTime? time, int targetSize) { return this.TimeAxisConvertor.GetProportionalPixel(time, targetSize); }
         DoubleRange ITimeAxisConvertor.GetProportionalPixelRange(TimeRange timeRange, int targetSize) { return this.TimeAxisConvertor.GetProportionalPixelRange(timeRange, targetSize); }
         DateTime? ITimeAxisConvertor.GetProportionalTime(int pixel, int targetSize) { return this.TimeAxisConvertor.GetProportionalTime(pixel, targetSize); }
@@ -429,6 +440,12 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             get { return (this._HasTimeAxis ? this._TimeAxis.FirstPixel : 0); }
         }
+        /// <summary>
+        /// Metoda vrátí dané datum zaokrouhlené na vhodné jednotky na aktuální časové ose.
+        /// </summary>
+        /// <param name="time">Daný přesný čas</param>
+        /// <param name="tickType">Druh zaokrouhlení, odpovídá typu značky na časové ose</param>
+        public DateTime? GetRoundedTime(DateTime time, AxisTickType tickType) { return this.RoundTimeToTickType(time, tickType); }
         /// <summary>
         /// Vrátí pozici daného času (v pixelech) na časové ose, proporcionálně přepočítanou pro danou cílovou velikost osy
         /// </summary>
@@ -616,6 +633,54 @@ namespace Asol.Tools.WorkScheduler.Components
         }
 
         #endregion
+        #region Zaokrouhlení času
+        /// <summary>
+        /// Metoda vrátí dané datum zaokrouhlené na vhodné jednotky na aktuální časové ose.
+        /// </summary>
+        /// <param name="time">Daný přesný čas</param>
+        /// <param name="tickType">Druh zaokrouhlení, odpovídá typu značky na časové ose</param>
+        protected DateTime? RoundTimeToTickType(DateTime time, AxisTickType tickType)
+        {
+            // Samotný TimeAxisConvertor nemá takové možnosti, jaké má vizuální TimeAxis - viz metoda GTimeAxis.RoundTimeToTickType().
+            // Takže musíme improvizovat. Jak? 
+            // Aktuální rozsah časové osy rozdělíme na zhruba daný počet dílků podle "tickType", a to následně použijeme pro výpočty zaokrouhlení.
+            if (!this.Value.Size.HasValue) return time;
+            TimeSpan totalSize = this.Value.Size.Value;
+            TimeSpan tickSize;
+            switch (tickType)
+            {   // Určíme, jaký časový úsek odpovídá danému typu Ticku = odhadneme, kolik Ticků daného typu by na časové ose mohlo být:
+                case AxisTickType.BigLabel:
+                    // Velké texty:
+                    tickSize = TimeSpan.FromMinutes(totalSize.TotalMinutes / 4d);
+                    break;
+                case AxisTickType.StdLabel:
+                    // Běžné texty:
+                    tickSize = TimeSpan.FromMinutes(totalSize.TotalMinutes / 10d);
+                    break;
+                case AxisTickType.BigTick:
+                    // Velké značky:
+                    tickSize = TimeSpan.FromMinutes(totalSize.TotalMinutes / 25d);
+                    break;
+                case AxisTickType.Pixel:
+                    // Pixely:
+                    tickSize = TimeSpan.FromMinutes(totalSize.TotalMinutes / 500d);
+                    break;
+                case AxisTickType.None:
+                    // Nic => bez úprav:
+                    return time;
+                case AxisTickType.StdTick:
+                default:
+                    // Malé značky a ostatní typy zde nedefinované:
+                    tickSize = TimeSpan.FromMinutes(totalSize.TotalMinutes / 100d);
+                    break;
+            }
+            // Nyní máme v tickSize čas, odpovídající jednomu požadovanému úseku. 
+            // Z tickSize určíme roundSize = nejbližší vyšší rozumný zarovnaný časový interval:
+            TimeSpan roundSize = tickSize.GetRoundTimeBase();
+            // A daný čas (time) zaokrouhlíme na časové úseky roundSize:
+            return time.RoundTime(roundSize);
+        }
+        #endregion
     }
     #endregion
     #region interface ITimeAxisConvertor : Interface, který umožní pracovat s časovou osou
@@ -642,6 +707,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Obsahuje první pixel, na kterém se nachází počátční hodnota osy.
         /// </summary>
         int FirstPixel { get; }
+        /// <summary>
+        /// Metoda vrátí dané datum zaokrouhlené na vhodné jednotky na aktuální časové ose.
+        /// </summary>
+        /// <param name="time">Daný čas</param>
+        /// <param name="tickType">Druh zaokrouhlení, odpovídá typu značky na časové ose</param>
+        DateTime? GetRoundedTime(DateTime time, AxisTickType tickType);
         /// <summary>
         /// Vrátí relativní pixel, na kterém se nachází daný čas.
         /// Vrací pixel pro jinou velikost prostoru, než jakou má aktuální TimeAxis, kdy cílová velikost je dána parametrem targetSize.
