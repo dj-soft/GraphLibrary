@@ -653,7 +653,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         System.Drawing.Drawing2D.HatchStyle? ITimeGraphItem.BackStyle { get { return null; } }
         float? ITimeGraphItem.RatioBegin { get { return null; } }
         float? ITimeGraphItem.RatioEnd { get { return null; } }
-        Color? ITimeGraphItem.RatioBackColor { get { return null; } }
+        Color? ITimeGraphItem.RatioBeginBackColor { get { return null; } }
+        Color? ITimeGraphItem.RatioEndBackColor { get { return null; } }
         Color? ITimeGraphItem.RatioLineColor { get { return null; } }
         int? ITimeGraphItem.RatioLineWidth { get { return null; } }
         GraphItemBehaviorMode ITimeGraphItem.BehaviorMode { get { return this.BehaviorMode; } }

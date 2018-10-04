@@ -46,7 +46,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             string dataPack = this.SearchForDataPack();
             if (dataPack == null) return;
-            dataPack = Noris.LCS.Base.WorkScheduler.WorkSchedulerSupport.Decompress(dataPack);
+            // dataPack = Noris.LCS.Base.WorkScheduler.WorkSchedulerSupport.TryDecompress(dataPack);
             Noris.LCS.Base.WorkScheduler.GuiData guiData = Noris.LCS.Base.WorkScheduler.Persist.Deserialize(dataPack) as Noris.LCS.Base.WorkScheduler.GuiData;
             if (guiData == null) return;
 
