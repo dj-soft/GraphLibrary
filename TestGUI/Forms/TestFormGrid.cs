@@ -288,7 +288,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 }
 
                 table.GraphParameters.TimeAxisMode = TimeGraphTimeAxisMode.LogarithmicScale;
-                table.GraphParameters.OneLineHeight = 18;
+                table.GraphParameters.OneLineHeight = 22;
+                table.GraphParameters.OneLinePartialHeight = 44;
                 table.GraphParameters.TotalHeightRange = new Int32NRange(35, 480);
                 table.GraphParameters.TimeAxisMode = TimeGraphTimeAxisMode.LogarithmicScale;
                 table.GraphParameters.LogarithmicRatio = 0.70f;
@@ -325,7 +326,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             GTimeGraph graph = new GTimeGraph();
 
             graph.GraphParameters = TimeGraphProperties.Default;
-            graph.GraphParameters.OneLineHeight = 18;
+            graph.GraphParameters.OneLineHeight = 22;
+            graph.GraphParameters.OneLinePartialHeight = 44;
             graph.GraphParameters.TotalHeightRange = new Int32NRange(35, 480);
 
             DateTime begin, end;
@@ -610,7 +612,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         public Int32 Order { get; set; }
         /// <summary>
         /// Relativní výška tohoto prvku. Standardní hodnota = 1.0F. Fyzická výška (v pixelech) jednoho prvku je dána součinem 
-        /// <see cref="Height"/> * <see cref="GTimeGraph.GraphParameters"/>: <see cref="TimeGraphProperties.OneLineHeight"/>
+        /// <see cref="Height"/> * <see cref="GTimeGraph.GraphParameters"/>: <see cref="TimeGraphProperties.OneLineHeight"/> nebo <see cref="TimeGraphProperties.OneLinePartialHeight"/>, 
+        /// podle toho zda graf obsahuje jen celočíselné výšky, nebo i zlomkové výšky.
         /// Prvky s výškou 0 a menší nebudou vykresleny.
         /// </summary>
         public float Height { get; set; }
