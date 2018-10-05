@@ -17,6 +17,9 @@ namespace Asol.Tools.WorkScheduler.Application
     public class Worker
     {
         #region Worker thread and Main Loop
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public Worker()
         {
             this._WorkThreadInit();
@@ -127,6 +130,10 @@ namespace Asol.Tools.WorkScheduler.Application
             this._Semaphore.Set();
         }
         private IWorkItem _RunningItem;
+        /// <summary>
+        /// Stále běží?
+        /// </summary>
+        public bool Running { get { return this._Running; } }
         #endregion
         #region AddRequests
         #region TRequest
@@ -158,11 +165,9 @@ namespace Asol.Tools.WorkScheduler.Application
         /// </summary>
         /// <typeparam name="TRequest">Type of request</typeparam>
         /// <param name="priorityId">ID for priority. See also App.CurrentPriorityId property.</param>
-        /// <param name="name">name of request. Can be null. Is defined only for debug and messages purposes.</param>
         /// <param name="workMethod">Working method. Must accept one parameter of type (TRequest). This method will be called in background thread.</param>
         /// <param name="workData">Data for Working method.</param>
         /// <param name="callbackMethod">Callback method, will be called after Working method will ends.</param>
-        /// <param name="exceptionMethod">Exception method, will be called on Exception in Working method. Can be null.</param>
         public void AddRequest<TRequest>(int priorityId, Action<TRequest> workMethod, TRequest workData, Action<TRequest> callbackMethod)
         {
             this._AddWorkItem(new WorkItemRequest<TRequest>(priorityId, "", workMethod, workData, callbackMethod, null));
@@ -214,11 +219,9 @@ namespace Asol.Tools.WorkScheduler.Application
         /// <typeparam name="TRequest">Type of request</typeparam>
         /// <typeparam name="TResponse">Type of response</typeparam>
         /// <param name="priorityId">ID for priority. See also App.CurrentPriorityId property.</param>
-        /// <param name="name">name of request. Can be null. Is defined only for debug and messages purposes.</param>
         /// <param name="workMethod">Working method. Must accept one parameter of type (TRequest). This method will be called in background thread. Must return response of type (TResponse)</param>
         /// <param name="workData">Data for Working method.</param>
         /// <param name="callbackMethod">Callback method, will be called after Working method will ends. Must accept one parameter of type (TResponse)</param>
-        /// <param name="exceptionMethod">Exception method, will be called on Exception in Working method. Can be null.</param>
         public void AddRequest<TRequest, TResponse>(int priorityId, Func<TRequest, TResponse> workMethod, TRequest workData, Action<TRequest, TResponse> callbackMethod)
         {
             this._AddWorkItem(new WorkItemRequestResponse<TRequest, TResponse>(priorityId, "", workMethod, workData, callbackMethod, null));
@@ -454,12 +457,30 @@ namespace Asol.Tools.WorkScheduler.Application
         /// </summary>
         void Stop();
     }
+    /// <summary>
+    /// Stav procesu
+    /// </summary>
     public enum WorkState
     {
+        /// <summary>
+        /// Není
+        /// </summary>
         None,
+        /// <summary>
+        /// Čeká
+        /// </summary>
         Waiting,
+        /// <summary>
+        /// Pracuje
+        /// </summary>
         Processing,
+        /// <summary>
+        /// Zpracováno
+        /// </summary>
         Processed,
+        /// <summary>
+        /// Chyba
+        /// </summary>
         Error
     }
     #endregion

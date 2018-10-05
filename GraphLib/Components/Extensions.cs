@@ -415,7 +415,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Zvětší danou velikost o daný rozměr na každé straně = velikost se zvětší o dvojnásobek.
         /// </summary>
         /// <param name="size">The SizeF structure to multiply.</param>
-        /// <param name="zoom">Coefficient.</param>
+        /// <param name="enlarge">Coefficient.</param>
         /// <returns>A SizeF structure that is the result of the multiply operation.</returns>
         public static SizeF Enlarge(this SizeF size, float enlarge)
         { return new SizeF(size.Width + 2f * enlarge, size.Height + 2f * enlarge); }
@@ -423,7 +423,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Zvětší danou velikost o daný rozměr na každé straně = velikost se zvětší o dvojnásobek.
         /// </summary>
         /// <param name="size">The SizeF structure to multiply.</param>
-        /// <param name="zoom">Coefficient.</param>
+        /// <param name="enlargeWidth">Coefficient X.</param>
+        /// <param name="enlargeHeight">Coefficient Y.</param>
         /// <returns>A SizeF structure that is the result of the multiply operation.</returns>
         public static SizeF Enlarge(this SizeF size, float enlargeWidth, float enlargeHeight)
         { return new SizeF(size.Width + 2f * enlargeWidth, size.Height + 2f * enlargeHeight); }
@@ -431,16 +432,15 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Zvětší danou velikost o daný rozměr na každé straně = velikost se zvětší o dvojnásobek.
         /// </summary>
         /// <param name="size">The SizeF structure to multiply.</param>
-        /// <param name="zoom">Coefficient.</param>
+        /// <param name="enlarge">Coefficient.</param>
         /// <returns>A SizeF structure that is the result of the multiply operation.</returns>
         public static SizeF Enlarge(this SizeF size, SizeF enlarge)
         { return new SizeF(size.Width + 2f * enlarge.Width, size.Height + 2f * enlarge.Height); }
-
         /// <summary>
         /// Zmenší danou velikost o daný rozměr na každé straně = velikost se zmenší o dvojnásobek.
         /// </summary>
         /// <param name="size">The SizeF structure to multiply.</param>
-        /// <param name="zoom">Coefficient.</param>
+        /// <param name="reduce">Coefficient.</param>
         /// <returns>A SizeF structure that is the result of the multiply operation.</returns>
         public static SizeF Reduce(this SizeF size, float reduce)
         { return new SizeF(size.Width - 2f * reduce, size.Height - 2f * reduce); }
@@ -448,7 +448,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Zmenší danou velikost o daný rozměr na každé straně = velikost se zmenší o dvojnásobek.
         /// </summary>
         /// <param name="size">The SizeF structure to multiply.</param>
-        /// <param name="zoom">Coefficient.</param>
+        /// <param name="reduceWidth">Coefficient X.</param>
+        /// <param name="reduceHeight">Coefficient Y.</param>
         /// <returns>A SizeF structure that is the result of the multiply operation.</returns>
         public static SizeF Reduce(this SizeF size, float reduceWidth, float reduceHeight)
         { return new SizeF(size.Width - 2f * reduceWidth, size.Height - 2f * reduceHeight); }
@@ -456,7 +457,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Zmenší danou velikost o daný rozměr na každé straně = velikost se zmenší o dvojnásobek.
         /// </summary>
         /// <param name="size">The SizeF structure to multiply.</param>
-        /// <param name="zoom">Coefficient.</param>
+        /// <param name="reduce">Coefficient.</param>
         /// <returns>A SizeF structure that is the result of the multiply operation.</returns>
         public static SizeF Reduce(this SizeF size, SizeF reduce)
         { return new SizeF(size.Width - 2f * reduce.Width, size.Height - 2f * reduce.Height); }
@@ -514,7 +515,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Zvětší danou velikost daným koeficientem.
         /// </summary>
         /// <param name="size">The SizeF structure to multiply.</param>
-        /// <param name="zoom">Coefficient.</param>
+        /// <param name="zoomX">Coefficient.</param>
+        /// <param name="zoomY">Coefficient.</param>
         /// <returns>A SizeF structure that is the result of the multiply operation.</returns>
         public static SizeF Multiply(this SizeF size, decimal zoomX, decimal zoomY)
         { return (new SizeF(size.Width * (float)zoomX, size.Height * (float)zoomX)); }
@@ -522,7 +524,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Zvětší danou velikost daným koeficientem.
         /// </summary>
         /// <param name="size">The SizeF structure to multiply.</param>
-        /// <param name="zoom">Coefficient.</param>
+        /// <param name="zoomX">Coefficient.</param>
+        /// <param name="zoomY">Coefficient.</param>
         /// <returns>A SizeF structure that is the result of the multiply operation.</returns>
         public static SizeF Multiply(this SizeF size, float zoomX, float zoomY)
         { return new SizeF(size.Width * zoomX, size.Height * zoomY); }
@@ -530,7 +533,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Zvětší danou velikost daným koeficientem.
         /// </summary>
         /// <param name="size">The SizeF structure to multiply.</param>
-        /// <param name="zoom">Coefficient.</param>
+        /// <param name="zoomX">Coefficient.</param>
+        /// <param name="zoomY">Coefficient.</param>
         /// <returns>A SizeF structure that is the result of the multiply operation.</returns>
         public static SizeF Multiply(this SizeF size, double zoomX, double zoomY)
         { return new SizeF(size.Width * (float)zoomX, size.Height * (float)zoomY); }
@@ -540,7 +544,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Pokud je velikost menší, pak ji nezvětšuje.
         /// </summary>
         /// <param name="size">The SizeF structure to divide.</param>
-        /// <param name="ratio">Ratio.</param>
+        /// <param name="shrinkTo">Cílová velikost</param>
         /// <returns>A SizeF structure that is the result of the divide operation.</returns>
         public static SizeF ShrinkTo(this SizeF size, SizeF shrinkTo)
         { return new SizeF(size.Width < shrinkTo.Width ? size.Width : shrinkTo.Width, size.Height < shrinkTo.Height ? size.Height : shrinkTo.Height); }
@@ -549,7 +553,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Pokud je velikost menší, pak ji nezvětšuje.
         /// </summary>
         /// <param name="size">The SizeF structure to divide.</param>
-        /// <param name="ratio">Ratio.</param>
+        /// <param name="shrinkTo">Cílová velikost</param>
+        /// <param name="preserveRatio">Zachovat poměr stran</param>
         /// <returns>A SizeF structure that is the result of the divide operation.</returns>
         public static SizeF ShrinkTo(this SizeF size, SizeF shrinkTo, bool preserveRatio)
         {
@@ -576,7 +581,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Pokud je velikost menší, pak ji nezvětšuje.
         /// </summary>
         /// <param name="size">The SizeF structure to divide.</param>
-        /// <param name="ratio">Ratio.</param>
+        /// <param name="shrinkTo">Cílová velikost</param>
         /// <returns>A SizeF structure that is the result of the divide operation.</returns>
         public static Size ShrinkTo(this Size size, Size shrinkTo)
         { return new Size(size.Width < shrinkTo.Width ? size.Width : shrinkTo.Width, size.Height < shrinkTo.Height ? size.Height : shrinkTo.Height); }
@@ -585,7 +590,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Pokud je velikost menší, pak ji nezvětšuje.
         /// </summary>
         /// <param name="size">The SizeF structure to divide.</param>
-        /// <param name="ratio">Ratio.</param>
+        /// <param name="shrinkTo">Cílová velikost</param>
+        /// <param name="preserveRatio">Zachovat poměr stran</param>
         /// <returns>A SizeF structure that is the result of the divide operation.</returns>
         public static Size ShrinkTo(this Size size, Size shrinkTo, bool preserveRatio)
         {
@@ -683,6 +689,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Vrátí Size, jejíž Width i Height jsou zarovnány do mezí Min - Max.
         /// </summary>
         /// <param name="one"></param>
+        /// <param name="min"></param>
         /// <param name="max"></param>
         /// <returns></returns>
         public static Size MinMax(this Size one, Size min, Size max)
@@ -717,6 +724,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Vrátí SizeF, jejíž Width i Height jsou zarovnány do mezí Min - Max.
         /// </summary>
         /// <param name="one"></param>
+        /// <param name="min"></param>
         /// <param name="max"></param>
         /// <returns></returns>
         public static SizeF MinMax(this SizeF one, SizeF min, SizeF max)
@@ -732,6 +740,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="sizeF"></param>
         /// <param name="bounds"></param>
         /// <param name="alignment"></param>
+        /// <param name="cropSize"></param>
         /// <returns></returns>
         public static Rectangle AlignTo(this SizeF sizeF, Rectangle bounds, ContentAlignment alignment, bool cropSize)
         {
@@ -747,6 +756,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="bounds"></param>
         /// <param name="alignment"></param>
         /// <param name="cropSize"></param>
+        /// <param name="preserveRatio"></param>
         /// <returns></returns>
         public static Rectangle AlignTo(this SizeF sizeF, Rectangle bounds, ContentAlignment alignment, bool cropSize, bool preserveRatio)
         {
@@ -761,6 +771,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="size"></param>
         /// <param name="bounds"></param>
         /// <param name="alignment"></param>
+        /// <param name="cropSize"></param>
         /// <returns></returns>
         public static Rectangle AlignTo(this Size size, Rectangle bounds, ContentAlignment alignment, bool cropSize)
         {
@@ -775,6 +786,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="size"></param>
         /// <param name="bounds"></param>
         /// <param name="alignment"></param>
+        /// <param name="cropSize"></param>
+        /// <param name="preserveRatio"></param>
         /// <returns></returns>
         public static Rectangle AlignTo(this Size size, Rectangle bounds, ContentAlignment alignment, bool cropSize, bool preserveRatio)
         {
@@ -843,21 +856,51 @@ namespace Asol.Tools.WorkScheduler.Components
             }
             return new Rectangle(new Point(x, y), size);
         }
+        /// <summary>
+        /// Zarovnat do prostoru
+        /// </summary>
+        /// <param name="sizeF"></param>
+        /// <param name="pivot"></param>
+        /// <param name="alignment"></param>
+        /// <param name="addSize"></param>
+        /// <returns></returns>
         public static Rectangle AlignTo(this SizeF sizeF, Point pivot, ContentAlignment alignment, Size addSize)
         {
             Rectangle bounds = AlignTo(sizeF, pivot, alignment);
             return new Rectangle(bounds.X, bounds.Y, bounds.Width + addSize.Width, bounds.Height + addSize.Height);
         }
+        /// <summary>
+        /// Zarovnat do prostoru
+        /// </summary>
+        /// <param name="size"></param>
+        /// <param name="pivot"></param>
+        /// <param name="alignment"></param>
+        /// <param name="addSize"></param>
+        /// <returns></returns>
         public static Rectangle AlignTo(this Size size, Point pivot, ContentAlignment alignment, Size addSize)
         {
             Rectangle bounds = AlignTo(size, pivot, alignment);
             return new Rectangle(bounds.X, bounds.Y, bounds.Width + addSize.Width, bounds.Height + addSize.Height);
         }
+        /// <summary>
+        /// Zarovnat do prostoru
+        /// </summary>
+        /// <param name="sizeF"></param>
+        /// <param name="pivot"></param>
+        /// <param name="alignment"></param>
+        /// <returns></returns>
         public static Rectangle AlignTo(this SizeF sizeF, Point pivot, ContentAlignment alignment)
         {
             Size size = Size.Ceiling(sizeF);
             return size.AlignTo(pivot, alignment);
         }
+        /// <summary>
+        /// Zarovnat do prostoru
+        /// </summary>
+        /// <param name="size"></param>
+        /// <param name="pivot"></param>
+        /// <param name="alignment"></param>
+        /// <returns></returns>
         public static Rectangle AlignTo(this Size size, Point pivot, ContentAlignment alignment)
         {
             int x = pivot.X;
@@ -899,10 +942,6 @@ namespace Asol.Tools.WorkScheduler.Components
             }
             return new Rectangle(new Point(x, y), size);
         }
-
-
-
-
         #endregion
         #region SizeF: AlignTo
         /// <summary>
@@ -911,6 +950,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="size"></param>
         /// <param name="bounds"></param>
         /// <param name="alignment"></param>
+        /// <param name="cropSize"></param>
         /// <returns></returns>
         public static RectangleF AlignTo(this SizeF size, RectangleF bounds, ContentAlignment alignment, bool cropSize)
         {
@@ -972,11 +1012,26 @@ namespace Asol.Tools.WorkScheduler.Components
             }
             return new RectangleF(new PointF(x, y), size);
         }
+        /// <summary>
+        /// Zarovnat do prostoru
+        /// </summary>
+        /// <param name="size"></param>
+        /// <param name="pivot"></param>
+        /// <param name="alignment"></param>
+        /// <param name="addSize"></param>
+        /// <returns></returns>
         public static RectangleF AlignTo(this SizeF size, PointF pivot, ContentAlignment alignment, SizeF addSize)
         {
             RectangleF bounds = AlignTo(size, pivot, alignment);
             return new RectangleF(bounds.X, bounds.Y, bounds.Width + addSize.Width, bounds.Height + addSize.Height);
         }
+        /// <summary>
+        /// Zarovnat do prostoru
+        /// </summary>
+        /// <param name="size"></param>
+        /// <param name="pivot"></param>
+        /// <param name="alignment"></param>
+        /// <returns></returns>
         public static RectangleF AlignTo(this SizeF size, PointF pivot, ContentAlignment alignment)
         {
             float x = pivot.X;
@@ -1145,7 +1200,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Pokud je zadána hodnota None nebo nějaký součet stran, pak vrací null.
         /// </summary>
         /// <param name="rectangle"></param>
-        /// <param name="side"></param>
+        /// <param name="edge"></param>
         /// <returns></returns>
         public static Int32? GetSide(this Rectangle rectangle, RectangleSide edge)
         {
@@ -1739,7 +1794,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Vrátí Rectangle, který vznikne posunutím this o souřadnice (X,Y) daného bodu
         /// </summary>
         /// <param name="r"></param>
-        /// <param name="point"></param>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
         /// <returns></returns>
         public static Rectangle ShiftBy(this Rectangle r, int x, int y)
         {
@@ -1759,7 +1815,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Vrátí RectangleF, který vznikne posunutím this o souřadnice (X,Y) daného bodu
         /// </summary>
         /// <param name="r"></param>
-        /// <param name="point"></param>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
         /// <returns></returns>
         public static RectangleF ShiftBy(this RectangleF r, float x, float y)
         {
@@ -1779,7 +1836,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Returns a Rectangle, which is this rectangle plus point (=new Rectangle(this.X + point.X, this.Y + point.Y, this.Width, this.Height))
         /// </summary>
         /// <param name="r"></param>
-        /// <param name="point"></param>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
         /// <returns></returns>
         public static Rectangle Add(this Rectangle r, int x, int y)
         {
@@ -1799,7 +1857,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Returns a Rectangle, which is this rectangle minus point (=new Rectangle(this.X - point.X, this.Y - point.Y, this.Width, this.Height))
         /// </summary>
         /// <param name="r"></param>
-        /// <param name="point"></param>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
         /// <returns></returns>
         public static Rectangle Sub(this Rectangle r, int x, int y)
         {
@@ -1819,7 +1878,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Returns a Rectangle?, which is this rectangle plus point (=new Rectangle?(this.X + point.X, this.Y + point.Y, this.Width, this.Height))
         /// </summary>
         /// <param name="r"></param>
-        /// <param name="point"></param>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
         /// <returns></returns>
         public static Rectangle? Add(this Rectangle? r, int x, int y)
         {
@@ -1839,7 +1899,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Returns a Rectangle?, which is this rectangle minus point (=new Rectangle?(this.X - point.X, this.Y - point.Y, this.Width, this.Height))
         /// </summary>
         /// <param name="r"></param>
-        /// <param name="point"></param>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
         /// <returns></returns>
         public static Rectangle? Sub(this Rectangle? r, int x, int y)
         {
@@ -1859,7 +1920,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Returns a Rectangle, which is this rectangle plus point (=new Rectangle(this.X + point.X, this.Y + point.Y, this.Width, this.Height))
         /// </summary>
         /// <param name="r"></param>
-        /// <param name="point"></param>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
         /// <returns></returns>
         public static RectangleF Add(this RectangleF r, float x, float y)
         {
@@ -1879,7 +1941,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Returns a Rectangle, which is this rectangle minus point (=new Rectangle(this.X - point.X, this.Y - point.Y, this.Width, this.Height))
         /// </summary>
         /// <param name="r"></param>
-        /// <param name="point"></param>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
         /// <returns></returns>
         public static RectangleF Sub(this RectangleF r, float x, float y)
         {
@@ -2029,8 +2092,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Returns true, when this Padding all values are Zero.
         /// </summary>
-        /// <param name="bounds"></param>
-        /// <param name="clientBorder"></param>
+        /// <param name="padding"></param>
         /// <returns></returns>
         public static bool IsZero(this Padding padding)
         {

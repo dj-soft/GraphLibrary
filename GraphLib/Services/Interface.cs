@@ -36,14 +36,14 @@ namespace Asol.Tools.WorkScheduler.Services
         /// Konstruktor
         /// </summary>
         /// <param name="progressData"></param>
-        public DataSourceRequest(Data.ProgressData progressData)
+        public DataSourceRequest(Components.ProgressData progressData)
         {
             this._ProgressData = progressData;
         }
         /// <summary>
         /// Data for progress
         /// </summary>
-        public Data.ProgressData ProgressData { get { return this._ProgressData; } } private Data.ProgressData _ProgressData;
+        public Components.ProgressData ProgressData { get { return this._ProgressData; } } private Components.ProgressData _ProgressData;
     }
     /// <summary>
     /// Obecná odpověď na obecný požadavek na datový zdroj

@@ -21,6 +21,12 @@ namespace Asol.Tools.WorkScheduler.Data
         {
             return type.Namespace + "." + type.Name;
         }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="currentType"></param>
+        /// <param name="expectedType"></param>
+        /// <returns></returns>
         public static bool IsConvertibleTo(this Type currentType, Type expectedType)
         {
             if (currentType == expectedType) return true;
@@ -668,6 +674,11 @@ namespace Asol.Tools.WorkScheduler.Data
         }
         #endregion
         #region Data.Direction
+        /// <summary>
+        /// Opačný směr
+        /// </summary>
+        /// <param name="direction"></param>
+        /// <returns></returns>
         public static Data.Direction Reverse(this Data.Direction direction)
         {
             switch (direction)
@@ -677,6 +688,11 @@ namespace Asol.Tools.WorkScheduler.Data
             }
             return Data.Direction.None;
         }
+        /// <summary>
+        /// Číselná hodnota směru Positive = +1; Negative = -1;
+        /// </summary>
+        /// <param name="direction"></param>
+        /// <returns></returns>
         public static int NumericValue(this Data.Direction direction)
         {
             switch (direction)
@@ -686,6 +702,12 @@ namespace Asol.Tools.WorkScheduler.Data
             }
             return 0;
         }
+        /// <summary>
+        /// Porovnání
+        /// </summary>
+        /// <param name="direction"></param>
+        /// <param name="other"></param>
+        /// <returns></returns>
         public static int CompareToDirection(this Data.Direction direction, Data.Direction other)
         {
             int a = direction.NumericValue();

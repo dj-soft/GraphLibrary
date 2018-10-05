@@ -127,7 +127,6 @@
     <Compile Include="Data\DataPersist.cs" />
     <Compile Include="Data\Extensions.cs" />
     <Compile Include="Data\IntervalArray.cs" />
-    <Compile Include="Data\ProgressData.cs" />
     <Compile Include="Data\Table.cs" />
     <Compile Include="Components\InteractiveObject.cs" />
     <Compile Include="Components\Interface.cs" />

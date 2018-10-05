@@ -954,6 +954,10 @@ namespace Asol.Tools.WorkScheduler.Data
             if (callEvents && this.HotRowChanged != null)
                 this.HotRowChanged(this, args);
         }
+        /// <summary>
+        /// Háček OnHotRowChanged
+        /// </summary>
+        /// <param name="args"></param>
         protected virtual void OnHotRowChanged(GPropertyChangeArgs<Row> args) { }
         /// <summary>
         /// Událost, která se vyvolá pokud uživatel posune myš (jen pohyb, bez drag/drop, bez click) na nový řádek
@@ -973,6 +977,10 @@ namespace Asol.Tools.WorkScheduler.Data
             if (callEvents && this.HotCellChanged != null)
                 this.HotCellChanged(this, args);
         }
+        /// <summary>
+        /// Háček OnHotCellChanged
+        /// </summary>
+        /// <param name="args"></param>
         protected virtual void OnHotCellChanged(GPropertyChangeArgs<Cell> args) { }
         /// <summary>
         /// Událost, která se vyvolá pokud uživatel posune myš (jen pohyb, bez drag/drop, bez click) na novou buňku (v témže řádku, v jiném řádku)
@@ -992,7 +1000,14 @@ namespace Asol.Tools.WorkScheduler.Data
             if (callEvents && this.ActiveRowChanged != null)
                 this.ActiveRowChanged(this, args);
         }
+        /// <summary>
+        /// Háček OnActiveRowChanged Změna aktivního řádku
+        /// </summary>
+        /// <param name="args"></param>
         protected virtual void OnActiveRowChanged(GPropertyChangeArgs<Row> args) { }
+        /// <summary>
+        /// Event Změna aktivního řádku
+        /// </summary>
         public event GPropertyChangedHandler<Row> ActiveRowChanged;
         /// <summary>
         /// Obsluha události Změna aktivní buňky
@@ -1008,13 +1023,20 @@ namespace Asol.Tools.WorkScheduler.Data
             if (callEvents && this.ActiveCellChanged != null)
                 this.ActiveCellChanged(this, args);
         }
+        /// <summary>
+        /// Háček Změna aktivní buňky
+        /// </summary>
+        /// <param name="args"></param>
         protected virtual void OnActiveCellChanged(GPropertyChangeArgs<Cell> args) { }
+        /// <summary>
+        /// Event Změna aktivní buňky
+        /// </summary>
         public event GPropertyChangedHandler<Cell> ActiveCellChanged;
         /// <summary>
         /// Obsluha události MouseEnter na buňce tabulky
         /// </summary>
         /// <param name="cell"></param>
-        /// <param name="eventSource"></param>
+        /// <param name="e"></param>
         /// <param name="callEvents"></param>
         void ITableEventTarget.CallCellMouseEnter(Cell cell, GInteractiveChangeStateArgs e, bool callEvents)
         {
@@ -1023,6 +1045,10 @@ namespace Asol.Tools.WorkScheduler.Data
             if (callEvents && this.CellMouseEnter != null)
                 this.CellMouseEnter(this, args);
         }
+        /// <summary>
+        /// Háček OnCellMouseEnter
+        /// </summary>
+        /// <param name="args"></param>
         protected virtual void OnCellMouseEnter(GPropertyEventArgs<Cell> args) { }
         /// <summary>
         /// Událost, která se vyvolá při vstupu myši nad danou buňku, bez Drag, bez Click
@@ -1032,7 +1058,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Obsluha události MouseLeave z buňky tabulky
         /// </summary>
         /// <param name="cell"></param>
-        /// <param name="eventSource"></param>
+        /// <param name="e"></param>
         /// <param name="callEvents"></param>
         void ITableEventTarget.CallCellMouseLeave(Cell cell, GInteractiveChangeStateArgs e, bool callEvents)
         {
@@ -1041,6 +1067,10 @@ namespace Asol.Tools.WorkScheduler.Data
             if (callEvents && this.CellMouseLeave != null)
                 this.CellMouseLeave(this, args);
         }
+        /// <summary>
+        /// Háček OnCellMouseLeave
+        /// </summary>
+        /// <param name="args"></param>
         protected virtual void OnCellMouseLeave(GPropertyEventArgs<Cell> args) { }
         /// <summary>
         /// Událost, která se vyvolá při opuštění myši z dané buňku, bez Drag, bez Click
@@ -1051,7 +1081,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Obsluha události Click na buňku tabulky
         /// </summary>
         /// <param name="cell"></param>
-        /// <param name="eventSource"></param>
+        /// <param name="e"></param>
         /// <param name="callEvents"></param>
         void ITableEventTarget.CallActiveCellClick(Cell cell, GInteractiveChangeStateArgs e, bool callEvents)
         {
@@ -1060,6 +1090,10 @@ namespace Asol.Tools.WorkScheduler.Data
             if (callEvents && this.ActiveCellClick != null)
                 this.ActiveCellClick(this, args);
         }
+        /// <summary>
+        /// Háček OnActiveCellClick
+        /// </summary>
+        /// <param name="args"></param>
         protected virtual void OnActiveCellClick(GPropertyEventArgs<Cell> args) { }
         /// <summary>
         /// Událost, která se vyvolá Click na dané buňce tabulky
@@ -1079,6 +1113,10 @@ namespace Asol.Tools.WorkScheduler.Data
                 this.ActiveCellDoubleClick(this, args);
             this.DataCellDoubleClick(cell, args, callEvents);
         }
+        /// <summary>
+        /// Háček OnActiveCellDoubleClick
+        /// </summary>
+        /// <param name="args"></param>
         protected virtual void OnActiveCellDoubleClick(GPropertyEventArgs<Cell> args) { }
         /// <summary>
         /// Událost, která se vyvolá DoubleClick na dané buňce tabulky
@@ -1097,6 +1135,10 @@ namespace Asol.Tools.WorkScheduler.Data
             if (callEvents && this.ActiveCellLongClick != null)
                 this.ActiveCellLongClick(this, args);
         }
+        /// <summary>
+        /// Háček OnActiveCellLongClick
+        /// </summary>
+        /// <param name="args"></param>
         protected virtual void OnActiveCellLongClick(GPropertyEventArgs<Cell> args) { }
         /// <summary>
         /// Událost, která se vyvolá LongClick na dané buňce tabulky
@@ -1115,6 +1157,10 @@ namespace Asol.Tools.WorkScheduler.Data
             if (callEvents && this.ActiveCellRightClick != null)
                 this.ActiveCellRightClick(this, args);
         }
+        /// <summary>
+        /// Háček OnActiveCellRightClick
+        /// </summary>
+        /// <param name="args"></param>
         protected virtual void OnActiveCellRightClick(GPropertyEventArgs<Cell> args) { }
         /// <summary>
         /// Událost, která se vyvolá RightClick na dané buňce tabulky
@@ -1124,7 +1170,7 @@ namespace Asol.Tools.WorkScheduler.Data
         #region Eventy volané z tabulky na základě logických dat
         /// <summary>
         /// Metoda je volána po doubleclicku na buňku.
-        /// Metoda má zajistit otevření záznamu nebo jinou akci (vyvolat odpovídající event <see cref="DataRowRecordOpen"/> nebo <see cref="DataRelatedRecordOpen"/>),
+        /// Metoda má zajistit otevření záznamu nebo jinou akci (vyvolat odpovídající event <see cref="CallOpenRecordForm"/>),
         /// a to na základě detekce obsahu buňky, obsahu sloupce atd.
         /// </summary>
         /// <param name="cell"></param>
@@ -1323,7 +1369,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Metoda vyhodí chybu, pokud GId je null, nebo tabulka nemá <see cref="HasPrimaryIndex"/>.
         /// </summary>
         /// <param name="gId"></param>
-        /// <param name="row"></param>
+        /// <param name="rows"></param>
         /// <returns></returns>
         public bool TryGetRowsOnPrimaryKey(GId gId, out Row[] rows)
         {
@@ -1473,6 +1519,17 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         /// <param name="name"></param>
         /// <param name="title"></param>
+        /// <param name="toolTip"></param>
+        /// <param name="formatString"></param>
+        /// <param name="width"></param>
+        /// <param name="columnContent"></param>
+        /// <param name="autoWidth"></param>
+        /// <param name="sortingEnabled"></param>
+        /// <param name="widthMininum"></param>
+        /// <param name="widthMaximum"></param>
+        /// <param name="isVisible"></param>
+        /// <param name="allowColumnResize"></param>
+        /// <param name="recordClassNumber"></param>
         public Column(string name, Localizable.TextLoc title = null, Localizable.TextLoc toolTip = null, string formatString = null, int? width = null,
             ColumnContentType columnContent = ColumnContentType.UserData, bool autoWidth = false, bool sortingEnabled = true, int? widthMininum = null, int? widthMaximum = null, 
             bool isVisible = true, bool allowColumnResize = true, int? recordClassNumber = null)
@@ -2451,7 +2508,6 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Vrátí true, pokud tento řádek v daném sloupci obsahuje hodnotu různou od null.
         /// Pokud daný sloupec je null nebo neexistuje, pak vrací false.
         /// </summary>
-        /// <param name="row"></param>
         /// <param name="column"></param>
         /// <returns></returns>
         public bool HasValue(Column column)
@@ -2646,6 +2702,9 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Určuje se dynamicky podle typu this.Value, tady pokud je zde určeno "Image", pak Value určitě není Null.
         /// </summary>
         public TableValueType ValueType { get { return Data.Table.GetValueType(this.Value); } }
+        /// <summary>
+        /// Invaliduje řádek
+        /// </summary>
         protected void InvalidateRowLayout()
         {
             // 1. Tímhle donutím můj Parent řádek, aby si přepočítal (až to bude potřeba) svoji výšku:
@@ -2658,6 +2717,9 @@ namespace Asol.Tools.WorkScheduler.Data
             if (tableValidity != null && tableValidity.RowLayoutIsValid)
                 tableValidity.RowLayoutIsValid = false;
         }
+        /// <summary>
+        /// Invaliduje data řádku
+        /// </summary>
         protected void InvalidateRowData()
         {
             // 1. Tímhle sdělím mému Parent řádku, že obsahuje nevalidní data:
@@ -2720,9 +2782,6 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Vrátí true, pokud tato buňka obsahuje hodnotu různou od null.
         /// Vrací false, pokud this buňka obsahuje <see cref="Value"/> == null.
         /// </summary>
-        /// <param name="row"></param>
-        /// <param name="column"></param>
-        /// <returns></returns>
         public bool HasValue
         {
             get { return (this.Value == null); }
@@ -2774,8 +2833,6 @@ namespace Asol.Tools.WorkScheduler.Data
         /// To funguje pouze tehdy, když buňka patří do sloupce, který je korektně označen a naplněn jako vztahový.
         /// Více v <see cref="ColumnProperties.RelatedRecordColumnName"/> a v metodě <see cref="Table.GetRelationKeyColumn(Column)"/>.
         /// </summary>
-        /// <param name="cell"></param>
-        /// <returns></returns>
         public GId RelatedRecordGId
         {
             get
@@ -2794,18 +2851,85 @@ namespace Asol.Tools.WorkScheduler.Data
     }
     #endregion
     #region Interfaces
+    /// <summary>
+    /// Předpis pro tabulku, aby mohla dostávat události napřímo
+    /// </summary>
     public interface ITableEventTarget
     {
+        /// <summary>
+        /// Změna hot řádku
+        /// </summary>
+        /// <param name="oldHotRow"></param>
+        /// <param name="newHotRow"></param>
+        /// <param name="eventSource"></param>
+        /// <param name="callEvents"></param>
         void CallHotRowChanged(Row oldHotRow, Row newHotRow, EventSourceType eventSource, bool callEvents);
+        /// <summary>
+        /// Změna hot buňky
+        /// </summary>
+        /// <param name="oldHotCell"></param>
+        /// <param name="newHotCell"></param>
+        /// <param name="eventSource"></param>
+        /// <param name="callEvents"></param>
         void CallHotCellChanged(Cell oldHotCell, Cell newHotCell, EventSourceType eventSource, bool callEvents);
+        /// <summary>
+        /// Změna aktivního řádku
+        /// </summary>
+        /// <param name="oldActiveRow"></param>
+        /// <param name="newActiveRow"></param>
+        /// <param name="eventSource"></param>
+        /// <param name="callEvents"></param>
         void CallActiveRowChanged(Row oldActiveRow, Row newActiveRow, EventSourceType eventSource, bool callEvents);
+        /// <summary>
+        /// Změna aktivní buňky
+        /// </summary>
+        /// <param name="oldActiveCell"></param>
+        /// <param name="newActiveCell"></param>
+        /// <param name="eventSource"></param>
+        /// <param name="callEvents"></param>
         void CallActiveCellChanged(Cell oldActiveCell, Cell newActiveCell, EventSourceType eventSource, bool callEvents);
 
+        /// <summary>
+        /// Událost MouseEnter
+        /// </summary>
+        /// <param name="cell"></param>
+        /// <param name="e"></param>
+        /// <param name="callEvents"></param>
         void CallCellMouseEnter(Cell cell, GInteractiveChangeStateArgs e, bool callEvents);
+        /// <summary>
+        /// Událost MouseLeave
+        /// </summary>
+        /// <param name="cell"></param>
+        /// <param name="e"></param>
+        /// <param name="callEvents"></param>
         void CallCellMouseLeave(Cell cell, GInteractiveChangeStateArgs e, bool callEvents);
+        /// <summary>
+        /// Událost CellClick
+        /// </summary>
+        /// <param name="cell"></param>
+        /// <param name="e"></param>
+        /// <param name="callEvents"></param>
         void CallActiveCellClick(Cell cell, GInteractiveChangeStateArgs e, bool callEvents);
+        /// <summary>
+        /// Událost CellDoubleClick
+        /// </summary>
+        /// <param name="cell"></param>
+        /// <param name="e"></param>
+        /// <param name="callEvents"></param>
         void CallActiveCellDoubleClick(Cell cell, GInteractiveChangeStateArgs e, bool callEvents);
+        /// <summary>
+        /// Událost CellLongClick
+        /// </summary>
+        /// <param name="cell"></param>
+        /// <param name="e"></param>
+        /// <param name="callEvents"></param>
         void CallActiveCellLongClick(Cell cell, GInteractiveChangeStateArgs e, bool callEvents);
+        /// <summary>
+        /// Událost CellRightClick
+        /// </summary>
+        /// <param name="cell"></param>
+        /// <param name="e"></param>
+        /// <param name="callEvents"></param>
         void CallActiveCellRightClick(Cell cell, GInteractiveChangeStateArgs e, bool callEvents);
     }
     /// <summary>
@@ -2933,6 +3057,12 @@ namespace Asol.Tools.WorkScheduler.Data
             this.SizeMinimum = sizeMinimum;
             this.SizeDefault = sizeDefault;
         }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="sizeMinimum"></param>
+        /// <param name="sizeDefault"></param>
+        /// <param name="sizeMaximum"></param>
         public SequenceLayout(int? sizeMinimum, int sizeDefault, int? sizeMaximum)
         {
             this.SizeMinimum = sizeMinimum;
@@ -3093,7 +3223,9 @@ namespace Asol.Tools.WorkScheduler.Data
         /// end obsahuje vždy konec 
         /// </summary>
         /// <param name="item"></param>
-        /// <param name="position"></param>
+        /// <param name="begin"></param>
+        /// <param name="end"></param>
+        /// <param name="spacing"></param>
         public static void SequenceLayoutCalculate(ISequenceLayout item, ref int begin, ref int end, int spacing)
         {
             item.Begin = begin;
@@ -3313,8 +3445,8 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Vrátí true, pokud daná položka je alespoň částečně viditelná v daném rozsahu
         /// </summary>
         /// <param name="item">Datová položka</param>
-        /// <param name="begin">První viditelný datový pixel</param>
-        /// <param name="end">První datový pixel za viditelnou oblastí</param>
+        /// <param name="dataBegin">První viditelný datový pixel</param>
+        /// <param name="dataEnd">První datový pixel za viditelnou oblastí</param>
         /// <returns></returns>
         private static bool _FilterVisibleItem(ISequenceLayout item, int dataBegin, int dataEnd)
         {
@@ -3394,14 +3526,38 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         Descending = 2
     }
+    /// <summary>
+    /// Typ hodnoty v tabulce (v buňce)
+    /// </summary>
     public enum TableValueType
     {
+        /// <summary>
+        /// Není
+        /// </summary>
         None,
+        /// <summary>
+        /// Null
+        /// </summary>
         Null,
+        /// <summary>
+        /// Prvek, který se sám vykresluje
+        /// </summary>
         IDrawItem,
+        /// <summary>
+        /// Interaktivní graf
+        /// </summary>
         ITimeInteractiveGraph,
+        /// <summary>
+        /// Časový graf neinteraktivní
+        /// </summary>
         ITimeGraph,
+        /// <summary>
+        /// Obrázek
+        /// </summary>
         Image,
+        /// <summary>
+        /// Text
+        /// </summary>
         Text
     }
     #endregion
