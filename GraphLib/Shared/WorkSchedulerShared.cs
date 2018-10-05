@@ -1969,6 +1969,33 @@ namespace Noris.LCS.Base.WorkScheduler
         protected override Single GetValue(string serial) { return (Single)Convertor.StringToSingle(serial); }
         #endregion
     }
+    /// <summary>
+    /// Podpora pro vyjádření strany (<see cref="Begin"/> a <see cref="End"/>) a pohybu (<see cref="Prev"/> a <see cref="Next"/>).
+    /// Strany a orientace
+    /// </summary>
+    public enum GuiSide : int
+    {
+        /// <summary>
+        /// Begin: začátek
+        /// </summary>
+        Begin = -2,
+        /// <summary>
+        /// Prev: směr k začátku
+        /// </summary>
+        Prev = -1,
+        /// <summary>
+        /// None: bez pohybu, střed
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Next: směr ke konci
+        /// </summary>
+        Next = 1,
+        /// <summary>
+        /// End: konec
+        /// </summary>
+        End = 2
+    }
     #endregion
     #endregion
     #region GuiRequest : data předávaná z WorkScheduler do Helios Green jako součást požadavku
@@ -2149,6 +2176,14 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Pokud prvek patří do skupiny (<see cref="MoveItems"/> obsahuje více než jeden prvek), pak je zde v <see cref="SourceTime"/> sumární čas celé skupiny.
         /// </summary>
         public GuiTimeRange SourceTime { get; set; }
+        /// <summary>
+        /// Umístění "Pevného bodu" na prvku Source.
+        /// Jako "Pevný bod" se bere buď začátek, nebo konec prvku. 
+        /// Tento (časový) okamžik z údaje <see cref="TargetTime"/> by se měl při aplikačním přeplánování zachovat na požadované hodnotě (pokud možno),
+        /// a opačný údaj se může upravit.
+        /// "Pevný bod" je například ten čas (Begin nebo End), který při interaktivním pohybu byl "Přichycen" k sousednímu prvku.
+        /// </summary>
+        public GuiSide MoveFixedPoint { get; set; }
         /// <summary>
         /// Cílový řádek (tam by to uživatel rád umístil)
         /// </summary>

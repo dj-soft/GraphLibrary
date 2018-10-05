@@ -1044,6 +1044,33 @@ namespace Asol.Tools.WorkScheduler.Data
         Negative
     }
     /// <summary>
+    /// Podpora pro vyjádření strany (<see cref="Begin"/> a <see cref="End"/>) a pohybu (<see cref="Prev"/> a <see cref="Next"/>).
+    /// Strany a orientace
+    /// </summary>
+    public enum RangeSide : int
+    {
+        /// <summary>
+        /// Begin: začátek
+        /// </summary>
+        Begin = -2,
+        /// <summary>
+        /// Prev: směr k začátku
+        /// </summary>
+        Prev = -1,
+        /// <summary>
+        /// None: bez pohybu, střed
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Next: směr ke konci
+        /// </summary>
+        Next = 1,
+        /// <summary>
+        /// End: konec
+        /// </summary>
+        End = 2
+    }
+    /// <summary>
     /// Time rounding mode
     /// </summary>
     public enum RoundMode

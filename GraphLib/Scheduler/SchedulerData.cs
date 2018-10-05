@@ -1255,13 +1255,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
             this.AdjustToNearItems = true;
             this.AdjustToOriginalTime = true;
-            this.AdjustToRoundTimeGrid = true;
+            this.AdjustToRoundTimeGrid = false;
             if (items.HasFlag(ToolbarSystemItem.MoveItemAttachNearItems))
-                this._ToolbarTimeGroup.Items.Add(_CreateToolbarItem(_Tlb_MoveItem_AttachNearTime, R.Images.Actions.AlignHorizontalRightOutPng, null, "Při přesouvání prvku jej přichytávat k sousedním existujícím prvkům v řádku", size: FunctionGlobalItemSize.Small, layoutHint: LayoutHint.NextItemSkipToNextRow, moduleWidth: 1, isSelectable: true, isSelected: true, userData: ToolbarSystemItem.MoveItemAttachNearItems));
+                this._ToolbarTimeGroup.Items.Add(_CreateToolbarItem(_Tlb_MoveItem_AttachNearTime, R.Images.Actions.AlignHorizontalRightOutPng, null, "Při přesouvání prvku jej přichytávat k sousedním existujícím prvkům v řádku", size: FunctionGlobalItemSize.Small, layoutHint: LayoutHint.NextItemSkipToNextRow, moduleWidth: 1, isSelectable: true, isSelected: this.AdjustToNearItems, userData: ToolbarSystemItem.MoveItemAttachNearItems));
             if (items.HasFlag(ToolbarSystemItem.MoveItemAttachOriginalTime))
-                this._ToolbarTimeGroup.Items.Add(_CreateToolbarItem(_Tlb_MoveItem_AttachOriginalTime, R.Images.Actions.AlignHorizontalLeftPng, null, "Při přesouvání prvku jej přichytávat k původnímu času", size: FunctionGlobalItemSize.Small, layoutHint: LayoutHint.NextItemSkipToNextRow, moduleWidth: 1, isSelectable: true, isSelected: true, userData: ToolbarSystemItem.MoveItemAttachOriginalTime));
+                this._ToolbarTimeGroup.Items.Add(_CreateToolbarItem(_Tlb_MoveItem_AttachOriginalTime, R.Images.Actions.AlignHorizontalLeftPng, null, "Při přesouvání prvku jej přichytávat k původnímu času", size: FunctionGlobalItemSize.Small, layoutHint: LayoutHint.NextItemSkipToNextRow, moduleWidth: 1, isSelectable: true, isSelected: this.AdjustToOriginalTime, userData: ToolbarSystemItem.MoveItemAttachOriginalTime));
             if (items.HasFlag(ToolbarSystemItem.MoveItemAttachToRoundTimeGrid))
-                this._ToolbarTimeGroup.Items.Add(_CreateToolbarItem(_Tlb_MoveItem_AttachToRoundTimeGrid, R.Images.Actions.CodeVariablePng, null, "Při přesouvání prvku jej přichytávat k zaokrouhleným časovým jednotkám", size: FunctionGlobalItemSize.Small, moduleWidth: 1, isSelectable: true, isSelected: true, userData: ToolbarSystemItem.MoveItemAttachToRoundTimeGrid));
+                this._ToolbarTimeGroup.Items.Add(_CreateToolbarItem(_Tlb_MoveItem_AttachToRoundTimeGrid, R.Images.Actions.CodeVariablePng, null, "Při přesouvání prvku jej přichytávat k zaokrouhleným časovým jednotkám", size: FunctionGlobalItemSize.Small, moduleWidth: 1, isSelectable: true, isSelected: this.AdjustToRoundTimeGrid, userData: ToolbarSystemItem.MoveItemAttachToRoundTimeGrid));
         }
         /// <summary>
         /// Po kliknutí na systémovou ikonu Toolbaru, řeší akce typu ItemMove
@@ -1297,7 +1297,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="moveInfo"></param>
         private void _AdjustGraphItemDragMove(GraphItemDragMoveInfo moveInfo)
         {
-            AdjustGraphItemSide nearSide = AdjustGraphItemSide.None;
+            RangeSide nearSide = RangeSide.None;
             DateTime? nearTime = null;
 
             // 1. Přichytávání přemísťovaného prvku k vhodné straně nejbližšího přiléhajícímu prvku v cílovém grafu:
@@ -1322,7 +1322,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="moveInfo">Informace o přesouvaném prvku</param>
         /// <param name="nearSide">ref hodnota, na které straně je prvek k němuž se přichytáváme</param>
         /// <returns></returns>
-        private DateTime? _AdjustSearchNearItemTime(GraphItemDragMoveInfo moveInfo, ref AdjustGraphItemSide nearSide)
+        private DateTime? _AdjustSearchNearItemTime(GraphItemDragMoveInfo moveInfo, ref RangeSide nearSide)
         {
             if (!this.AdjustToNearItems) return null;
 
@@ -1337,7 +1337,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (nearTime.HasValue) return nearTime;
 
             // Nenašli?
-            nearSide = AdjustGraphItemSide.None;
+            nearSide = RangeSide.None;
             return null;
         }
         /// <summary>
@@ -1346,13 +1346,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="moveInfo">Informace o přesouvaném prvku</param>
         /// <param name="nearSide">ref hodnota, na které straně je prvek k němuž se přichytáváme</param>
         /// <returns></returns>
-        private DateTime? _AdjustSearchNearItemTimeSide(GraphItemDragMoveInfo moveInfo, AdjustGraphItemSide nearSide)
+        private DateTime? _AdjustSearchNearItemTimeSide(GraphItemDragMoveInfo moveInfo, RangeSide nearSide)
         {
             GTimeGraph targetGraph = moveInfo.TargetGraph;
             int itemId = moveInfo.DragItemId;
             int groupId = moveInfo.DragGroupId;
-            DateTime timePoint = (nearSide == AdjustGraphItemSide.Begin ? moveInfo.TargetTime.Begin.Value : moveInfo.TargetTime.End.Value);
-            int xc = (nearSide == AdjustGraphItemSide.Begin ? moveInfo.TargetBounds.X : moveInfo.TargetBounds.Right - 1);
+            DateTime timePoint = (nearSide == RangeSide.Begin ? moveInfo.TargetTime.Begin.Value : moveInfo.TargetTime.End.Value);
+            int xc = (nearSide == RangeSide.Begin ? moveInfo.TargetBounds.X : moveInfo.TargetBounds.Right - 1);
             int w1 = AdjustSearchNearPixels;
             DateTime? begin = moveInfo.GetTimeForPosition(xc - w1);
             DateTime? end = moveInfo.GetTimeForPosition(xc + w1);
@@ -1368,7 +1368,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="moveInfo">Přesouvaný prvek a veškerá jeho data</param>
         /// <param name="nearSide">Strana našeho přesouvaného prvku</param>
         /// <returns></returns>
-        private DateTime? _AdjustSearchTimeSelector(GTimeGraphGroup group, GraphItemDragMoveInfo moveInfo, AdjustGraphItemSide nearSide)
+        private DateTime? _AdjustSearchTimeSelector(GTimeGraphGroup group, GraphItemDragMoveInfo moveInfo, RangeSide nearSide)
         {
             // Pokud daná grupa (group) má shodné číslo grupy (nebo prvku) jako ta, která se přesouvá (moveInfo), pak grupu nebereme = vracíme null:
             if (moveInfo.DragGroupId != 0 && group.GroupId == moveInfo.DragGroupId) return null;
@@ -1376,44 +1376,44 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
             // Pro stranu nearSide == Begin (jde o stranu našeho prvku moveInfo) vracíme End toho sousedního prvku (grupy) = protože hledáme NÁVAZNOST, nikoli SHODU:
             // (a stejně tak pro nearSide == End vracíme Begin grupy)
-            return (nearSide == AdjustGraphItemSide.Begin ? group.Time.End : group.Time.Begin);
+            return (nearSide == RangeSide.Begin ? group.Time.End : group.Time.Begin);
         }
         /// <summary>
         /// Vrátí stranu prvku, která je blíže k místu prvku, za který byl prvek uchopen myší.
         /// </summary>
         /// <param name="moveInfo"></param>
         /// <returns></returns>
-        private AdjustGraphItemSide _AdjustDetectNearSide(GraphItemDragMoveInfo moveInfo)
+        private RangeSide _AdjustDetectNearSide(GraphItemDragMoveInfo moveInfo)
         {
-            if (!moveInfo.SourceMousePoint.HasValue) return AdjustGraphItemSide.Begin;
+            if (!moveInfo.SourceMousePoint.HasValue) return RangeSide.Begin;
             Int32Range boundsX = Int32Range.CreateFromRectangle(moveInfo.SourceBounds, Orientation.Horizontal);
             int mouseX = moveInfo.SourceMousePoint.Value.X;
             decimal w = boundsX.Size;
             decimal z = AdjustSideMinSize;
-            if (w <= z) return AdjustGraphItemSide.Begin;
+            if (w <= z) return RangeSide.Begin;
             decimal t = z + (AdjustSideRatio * (w - z));
             decimal x = (mouseX - boundsX.Begin);
-            return ((x <= t) ? AdjustGraphItemSide.Begin : AdjustGraphItemSide.End);
+            return ((x <= t) ? RangeSide.Begin : RangeSide.End);
         }
         /// <summary>
-        /// Vrátí opačnou stranu <see cref="AdjustGraphItemSide"/> ke straně zadané
+        /// Vrátí opačnou stranu <see cref="RangeSide"/> ke straně zadané
         /// </summary>
         /// <param name="nearSide"></param>
         /// <returns></returns>
-        private AdjustGraphItemSide _AdjustGetOppositeSide(AdjustGraphItemSide nearSide)
+        private RangeSide _AdjustGetOppositeSide(RangeSide nearSide)
         {
-            return (nearSide == AdjustGraphItemSide.End ? AdjustGraphItemSide.Begin : AdjustGraphItemSide.End);
+            return (nearSide == RangeSide.End ? RangeSide.Begin : RangeSide.End);
         }
         /// <summary>
         /// Metoda zjistí, zda aktuální prvek je relativně blízko svému původnímu času, protože i k němu může být "přichycen".
         /// Při pohybu v původním grafu je tato přichytávací vzdálenost menší = je snadné přesunou prvek o malý časový kousek ve vlastním grafu.
         /// Při pohybu v jiném grafu je tato přichytávací vzdálenost větší = je snadné přemístit prvek na jiný řádek, a zachovat přitom původní čas.
-        /// Pokud bude určeno, že přichytávání se provede, pak se vrátí datum Begin původního času, a nastaví se ref parametr nearSide na hodnotu <see cref="AdjustGraphItemSide.Begin"/>.
+        /// Pokud bude určeno, že přichytávání se provede, pak se vrátí datum Begin původního času, a nastaví se ref parametr nearSide na hodnotu <see cref="RangeSide.Begin"/>.
         /// </summary>
         /// <param name="moveInfo"></param>
         /// <param name="nearSide"></param>
         /// <returns></returns>
-        private DateTime? _AdjustSearchOriginalTime(GraphItemDragMoveInfo moveInfo, ref AdjustGraphItemSide nearSide)
+        private DateTime? _AdjustSearchOriginalTime(GraphItemDragMoveInfo moveInfo, ref RangeSide nearSide)
         {
             if (!this.AdjustToOriginalTime) return null;
 
@@ -1423,9 +1423,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             int limit = (moveInfo.IsChangeRow ? AdjustToOriginalOtherGraph : AdjustToOriginalSameGraph);     // Limitní vzdálenost, podle přesunu na jiný / stejný graf
             if (diffX > limit) return null;      // Pokud posun na ose X je větší než limitní, pak NEBUDEME přichytávat.
 
-            // Přichytíme přesouvaný prvek k původnímu času Begin:
-            nearSide = AdjustGraphItemSide.Begin;
-            return moveInfo.SourceTime.Begin;
+            // Přichytíme přesouvaný prvek k původnímu času Begin nebo End podle toho, k čemu je bližší pozice myši:
+            nearSide = this._AdjustDetectNearSide(moveInfo);
+            DateTime? nearTime = (nearSide == RangeSide.Begin ? moveInfo.SourceTime.Begin.Value : moveInfo.SourceTime.End.Value);
+            return nearTime;
         }
         /// <summary>
         /// Metoda určí zaokrouhlený čas prvku
@@ -1433,13 +1434,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="moveInfo"></param>
         /// <param name="nearSide"></param>
         /// <returns></returns>
-        private DateTime? _AdjustSearchRoundTime(GraphItemDragMoveInfo moveInfo, ref AdjustGraphItemSide nearSide)
+        private DateTime? _AdjustSearchRoundTime(GraphItemDragMoveInfo moveInfo, ref RangeSide nearSide)
         {
             if (!this.AdjustToRoundTimeGrid) return null;
 
             // Podle pozice myši vzhledem k prvku určíme stranu prvku (Begin/End), která se má přichytávat:
             nearSide = this._AdjustDetectNearSide(moveInfo);
-            DateTime timePoint = (nearSide == AdjustGraphItemSide.Begin ? moveInfo.TargetTime.Begin.Value : moveInfo.TargetTime.End.Value);
+            DateTime timePoint = (nearSide == RangeSide.Begin ? moveInfo.TargetTime.Begin.Value : moveInfo.TargetTime.End.Value);
             DateTime? nearTime = moveInfo.GetRoundedTime(timePoint, AxisTickType.StdTick);
 
             return nearTime;
@@ -1452,18 +1453,20 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="moveInfo"></param>
         /// <param name="nearTime"></param>
         /// <param name="nearSide"></param>
-        private void _AdjustSetResults(GraphItemDragMoveInfo moveInfo, DateTime? nearTime, AdjustGraphItemSide nearSide)
+        private void _AdjustSetResults(GraphItemDragMoveInfo moveInfo, DateTime? nearTime, RangeSide nearSide)
         {
+            bool hasNearSide = (nearSide == RangeSide.Begin || nearSide == RangeSide.End);
+
             Rectangle sourceBounds = moveInfo.SourceBounds;
             Rectangle targetBounds = moveInfo.TargetBounds;
-           
+
             // Úprava X a Time:
-            if (nearTime.HasValue && (nearSide == AdjustGraphItemSide.Begin || nearSide == AdjustGraphItemSide.End))
+            if (nearTime.HasValue && hasNearSide)
             {
                 int? nearX = moveInfo.GetPositionForTime(nearTime.Value);
                 TimeSpan sourceSpan = moveInfo.SourceTime.Size.Value;
                 TimeRange targetTime = moveInfo.TargetTime;
-                if (nearSide == AdjustGraphItemSide.Begin)
+                if (nearSide == RangeSide.Begin)
                 {   // Čas a pozice vyjadřují Begin prvku:
                     targetBounds.X = nearX.Value;
                     targetTime = TimeRange.CreateFromBeginSize(nearTime.Value, sourceSpan);
@@ -1495,38 +1498,12 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                     break;
             }
 
+            // Vložení nearSide:
+            if (!hasNearSide)
+                nearSide = this._AdjustDetectNearSide(moveInfo);
+            moveInfo.AttachSide = nearSide;
+
             moveInfo.TargetBounds = targetBounds;
-
-
-            /*
-            // Umístění cíle, časová/místní příchylnost k původní hodnotě:
-            int distX = (targetBounds.X - sourceBounds.X);
-            int absDX = ((distX < 0) ? -distX : distX);
-            bool isChangeTime = true;
-            if (!moveInfo.IsChangeRow)
-            {   // Ve stejném řádku:
-                if (absDX < 5) isChangeTime = false;
-                targetBounds.Y = sourceBounds.Y;
-            }
-            else
-            {   // V jiném řádku:
-                if (absDX < 15) isChangeTime = false;
-
-            }
-
-            // Odvodit cílový čas nebo korigovat cílovou souřadnici:
-            if (isChangeTime)
-            {   // Pokud je reálně požadována změna času:
-                DateTime? begin = moveInfo.GetTimeForPosition(targetBounds.X);
-                moveInfo.TargetTime = TimeRange.CreateFromBeginSize(begin.Value, moveInfo.SourceTime.Size.Value);
-            }
-            else
-            {   // Není tu změna času:
-                moveInfo.TargetTime = moveInfo.SourceTime.Clone;
-                targetBounds.X = sourceBounds.X;
-            }
-            moveInfo.TargetBounds = targetBounds;
-            */
         }
         /// <summary>
         /// Metoda vrátí režim zarovnání na ose Y pro přesouvaný prvek a podle konfigurace
@@ -1556,7 +1533,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Strana aktuálního prvku pro jeho přichytávání
         /// </summary>
-        protected enum AdjustGraphItemSide
+        protected enum xxxAdjustGraphItemSide
         {
             /// <summary>
             /// Neurčeno
@@ -1854,6 +1831,18 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         public GId SourceRow { get; set; }
         /// <summary>
+        /// Absolutní souřadnice prvku před přemístěním
+        /// </summary>
+        public Rectangle SourceBounds { get; set; }
+        /// <summary>
+        /// Původní čas prvku před přemístěním
+        /// </summary>
+        public TimeRange SourceTime { get; set; }
+        /// <summary>
+        /// Přichycená strana prvku při jeho přemísťování, bude tvořit "Pevný bod" při přeplánování
+        /// </summary>
+        public RangeSide AttachSide { get; set; }
+        /// <summary>
         /// Graf, kam má být prvek přemístěn.
         /// </summary>
         public GTimeGraph TargetGraph { get; set; }
@@ -1862,21 +1851,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         public GId TargetRow { get; set; }
         /// <summary>
-        /// Původní čas prvku před přemístěním
+        /// Absolutní souřadnice prvku po přemístění
         /// </summary>
-        public TimeRange SourceTime { get; set; }
+        public Rectangle TargetBounds { get; set; }
         /// <summary>
         /// Cílový čas prvku po přemístění
         /// </summary>
         public TimeRange TargetTime { get; set; }
-        /// <summary>
-        /// Absolutní souřadnice prvku před přemístěním
-        /// </summary>
-        public Rectangle SourceBounds { get; set; }
-        /// <summary>
-        /// Absolutní souřadnice prvku po přemístění
-        /// </summary>
-        public Rectangle TargetBounds { get; set; }
         /// <summary>
         /// Obsahuje true, pokud dochází ke změně řádku
         /// </summary>

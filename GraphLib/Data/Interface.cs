@@ -138,5 +138,4 @@ namespace Asol.Tools.WorkScheduler.Data
         InteractiveChanged = 0x4000
     }
     #endregion
-
 }

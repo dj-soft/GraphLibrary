@@ -592,11 +592,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="args"></param>
         protected void ItemDragDropMove(ItemDragDropArgs args)
         {
-            GraphItemDragMoveInfo data = this.PrepareDragSchedulerData(args);
-            args.DragToAbsoluteBounds = data.TargetBounds;
+            GraphItemDragMoveInfo moveInfo = this.PrepareDragSchedulerMoveInfo(args);
+            args.DragToAbsoluteBounds = moveInfo.TargetBounds;
             args.ToolTipData.AnimationType = TooltipAnimationType.Instant;
-            args.ToolTipData.TitleText = (data.IsChangeRow ? "Přemístění na jiný řádek" : "Přemístění v rámci řádku");
-            args.ToolTipData.InfoText = "Čas: " + data.TargetTime.ToString();
+            args.ToolTipData.TitleText = (moveInfo.IsChangeRow ? "Přemístění na jiný řádek" : "Přemístění v rámci řádku");
+            args.ToolTipData.InfoText = "Čas: " + moveInfo.TargetTime.ToString();
         }
         /// <summary>
         /// Scheduler vyvolá aplikační logiku, která určí definitivní umístění prvku v procesu Drag and Drop,
@@ -606,30 +606,34 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         protected void ItemDragDropDrop(ItemDragDropArgs args)
         {
             // Tady by se měla volat metoda AppHost => aplikační funkce pro přepočet grafu:
-            GraphItemDragMoveInfo data = this.PrepareDragSchedulerData(args);
-            GuiGridItemId gridItemId = this.GetGridItemId(args);
-            GuiRequestGraphItemMove guiItemMoveData = this.PrepareRequestGraphItemMove(data);
+            GraphItemDragMoveInfo moveInfo = this.PrepareDragSchedulerMoveInfo(args);
+
+            // GUI data musím vytvořit ještě před tím, než vyvolám ItemDragDropDropGuiResponse(moveInfo), protože tam se data mohou změnit!!!
+            bool hasMainData = this.HasMainData;
+            GuiGridItemId gridItemId = (hasMainData ? this.GetGridItemId(args) : null);
+            GuiRequestGraphItemMove guiItemMoveData = (hasMainData ? this.PrepareRequestGraphItemMove(moveInfo) : null);
+            GuiRequestCurrentState guiCurrentState = (hasMainData ? this.IMainData.CreateGuiCurrentState() : null);
 
             // Nejprve provedu vizuální přemístění na "grafický" cíl, to proto že aplikační funkce může:  a) neexistovat  b) dlouho trvat:
-            this.ItemDragDropDropGuiResponse(data);
+            this.ItemDragDropDropGuiResponse(moveInfo);
 
             // Následně vyvolám (asynchronní) spuštění aplikační funkce, která zajistí komplexní přepočty a vrátí nová data, 
             //  její response se řeší v metodě ItemDragDropDropAppResponse():
-            if (this.HasMainData)
+            if (hasMainData)
             {
                 GuiRequest request = new GuiRequest();
                 request.Command = GuiRequest.COMMAND_GraphItemMove;
                 request.ActiveGraphItem = gridItemId;
                 request.GraphItemMove = guiItemMoveData;
-                request.CurrentState = this.IMainData.CreateGuiCurrentState();
+                request.CurrentState = guiCurrentState;
                 this.IMainData.CallAppHostFunction(request, this.ItemDragDropDropAppResponse);
             }
         }
         /// <summary>
-        /// Metoda provede přemístění prvků grafu na požadovanou cílovou pozici, na základě GUI dat.
+        /// Metoda provede vizuální přemístění prvků grafu na požadovanou cílovou pozici, na základě GUI dat.
         /// </summary>
-        /// <param name="data"></param>
-        protected void ItemDragDropDropGuiResponse(GraphItemDragMoveInfo data)
+        /// <param name="moveInfo"></param>
+        protected void ItemDragDropDropGuiResponse(GraphItemDragMoveInfo moveInfo)
         {
             // 1) Proběhne změna na všech prvcích grupy (data.DragGroupItems):
             //   a) Změna jejich času: o daný offset (rozdíl času cílového - původního)
@@ -638,25 +642,25 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             //   a) ze zdrojového grafu se prvky odeberou
             //   b) do cílového grafu se prvky přidají
             // 3) Zavolá se Refresh na oba grafy (pokud jsou dva)
-            bool isChangeRow = data.IsChangeRow;
-            bool isChangeTime = data.IsChangeTime;
-            TimeSpan? timeOffset = data.ShiftTime;
-            foreach (DataGraphItem item in data.DragGroupItems)
+            bool isChangeRow = moveInfo.IsChangeRow;
+            bool isChangeTime = moveInfo.IsChangeTime;
+            TimeSpan? timeOffset = moveInfo.ShiftTime;
+            foreach (DataGraphItem item in moveInfo.DragGroupItems)
             {
                 if (isChangeRow)
                 {
-                    data.SourceGraph.RemoveGraphItem(item);
-                    item.RowGId = data.TargetRow;
-                    data.TargetGraph.AddGraphItem(item);
+                    moveInfo.SourceGraph.RemoveGraphItem(item);
+                    item.RowGId = moveInfo.TargetRow;
+                    moveInfo.TargetGraph.AddGraphItem(item);
                 }
                 if (isChangeTime)
                 {
                     item.Time = item.Time.ShiftByTime(timeOffset.Value);
                 }
             }
-            data.SourceGraph.Refresh();
+            moveInfo.SourceGraph.Refresh();
             if (isChangeRow)
-                data.TargetGraph.Refresh();
+                moveInfo.TargetGraph.Refresh();
 
         }
         /// <summary>
@@ -675,7 +679,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="args"></param>
         /// <returns></returns>
-        protected GraphItemDragMoveInfo PrepareDragSchedulerData(ItemDragDropArgs args)
+        protected GraphItemDragMoveInfo PrepareDragSchedulerMoveInfo(ItemDragDropArgs args)
         {
             // Základní data bez modifikací:
             TimeRange sourceTime = args.Group.Time;
@@ -695,6 +699,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             moveInfo.SourceRow = this.GetGraphRowGid(args.ParentGraph);
             moveInfo.SourceTime = sourceTime;
             moveInfo.SourceBounds = sourceBounds;
+            moveInfo.AttachSide = RangeSide.Begin;
             moveInfo.TargetGraph = args.TargetGraph;
             moveInfo.TargetRow = this.GetGraphRowGid(args.TargetGraph);
             moveInfo.TargetTime = targetTime;
@@ -712,17 +717,35 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Metoda z dat v <see cref="GraphItemDragMoveInfo"/> (interní data Scheduleru) 
         /// vytvoří a vrátí new instanci třídy <see cref="GuiRequestGraphItemMove"/> (externí data, která se předávají do aplikační logiky).
         /// </summary>
-        /// <param name="data"></param>
+        /// <param name="moveInfo"></param>
         /// <returns></returns>
-        protected GuiRequestGraphItemMove PrepareRequestGraphItemMove(GraphItemDragMoveInfo data)
+        protected GuiRequestGraphItemMove PrepareRequestGraphItemMove(GraphItemDragMoveInfo moveInfo)
         {
             GuiRequestGraphItemMove guiData = new GuiRequestGraphItemMove();
-            guiData.MoveItems = data.DragGroupItems.Select(i => this.GetGridItemId(i)).ToArray();
-            guiData.SourceRow = data.SourceRow;
-            guiData.SourceTime = data.SourceTime;
-            guiData.TargetRow = data.TargetRow;
-            guiData.TargetTime = data.TargetTime;
+            guiData.MoveItems = moveInfo.DragGroupItems.Select(i => this.GetGridItemId(i)).ToArray();
+            guiData.SourceRow = moveInfo.SourceRow;
+            guiData.SourceTime = moveInfo.SourceTime;
+            guiData.MoveFixedPoint = GetGuiSide(moveInfo.AttachSide);
+            guiData.TargetRow = moveInfo.TargetRow;
+            guiData.TargetTime = moveInfo.TargetTime;
             return guiData;
+        }
+        /// <summary>
+        /// Metoda vrátí hodnotu <see cref="GuiSide"/> z obdobné hodnoty typu <see cref="RangeSide"/>.
+        /// </summary>
+        /// <param name="rangeSide"></param>
+        /// <returns></returns>
+        protected static GuiSide GetGuiSide(RangeSide rangeSide)
+        {
+            switch (rangeSide)
+            {
+                case RangeSide.Begin: return GuiSide.Begin;
+                case RangeSide.Prev: return GuiSide.Prev;
+                case RangeSide.None: return GuiSide.None;
+                case RangeSide.Next: return GuiSide.Next;
+                case RangeSide.End: return GuiSide.End;
+            }
+            return GuiSide.End;
         }
         #endregion
         #region Implementace ITimeGraphDataSource: Zdroj dat pro grafy: tvorba textu, tooltipu, kontextové menu, podpora Drag and Drop
