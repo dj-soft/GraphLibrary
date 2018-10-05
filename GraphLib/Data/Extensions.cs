@@ -375,6 +375,30 @@ namespace Asol.Tools.WorkScheduler.Data
 
             return TimeSpan.FromMilliseconds(1d);
         }
+        /// <summary>
+        /// Vrátí dané datum a čas zformátované pro uživatele.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="format"></param>
+        /// <returns></returns>
+        public static string ToUser(this DateTime value, DateTimeFormat format = DateTimeFormat.Default)
+        {
+            var dtfi = System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat;
+            string text = "";
+
+            if (format.HasFlag(DateTimeFormat.DateLong))
+                text = value.ToString(dtfi.LongDatePattern);
+            else if (format.HasFlag(DateTimeFormat.DateShort))
+                text = value.ToString(dtfi.ShortDatePattern.Replace("dd","d").Replace("MM","M"));
+
+            string space = (text.Length == 0 ? "" : " ");
+            if (format.HasFlag(DateTimeFormat.Seconds) || (format.HasFlag(DateTimeFormat.NonZero) && value.Second != 0))
+                text += space + value.ToString("H:mm:ss");
+            else if (format.HasFlag(DateTimeFormat.Time))
+                text += space + value.ToString("H:mm");
+
+            return text;
+        }
         #endregion
         #region Enum
         /// <summary>
@@ -1078,5 +1102,46 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         Year
     }
+    /// <summary>
+    /// Formátování data a času pro uživatele
+    /// </summary>
+    [Flags]
+    public enum DateTimeFormat
+    {
+        /// <summary>
+        /// Nic
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Datová část krátká (24.12.2018)
+        /// </summary>
+        DateShort = 0x10,
+        /// <summary>
+        /// Datová část dlouhá (24.prosince 2018).
+        /// Tento příznak lze přidat k jakékoli hodnotě, vždy zajistí dlouhé datum (i při souběhu s <see cref="DateShort"/>).
+        /// </summary>
+        DateLong = 0x20,
+        /// <summary>
+        /// Čas = Hodiny:minuty bez sekund (14:45)
+        /// </summary>
+        Time = 0x08,
+        /// <summary>
+        /// Čas včetně sekund, sekundy i když jsou 00 (14:45:00)
+        /// </summary>
+        Seconds = 0x02,
+        /// <summary>
+        /// Čas včetně sekund, sekundy jen když nejsou 00 (14:45:30)
+        /// </summary>
+        NonZero = 0x01,
+        /// <summary>
+        /// Krátké datum + čas včetně sekund (24.12.2018 14:45:00)
+        /// </summary>
+        FullDateShortTimeSeconds = DateShort | Time | Seconds,
+        /// <summary>
+        /// Krátké datum + čas, sekundy jen nenulové (24.12.2018 14:45:30)
+        /// </summary>
+        Default = DateShort | Time | NonZero
+
+    }
     #endregion
-}
+    }

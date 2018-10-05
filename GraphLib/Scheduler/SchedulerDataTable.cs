@@ -793,6 +793,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             args.ToolTipData.TitleText = (recordGId != null ? recordGId.ClassName : "INFORMACE O POLOŽCE");
 
             StringBuilder sb = new StringBuilder();
+            sb.Append(args.TimeText);
             foreach (Column column in infoRow.Table.Columns)
             {
                 if (!column.ColumnProperties.IsVisible) continue;

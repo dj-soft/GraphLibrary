@@ -1048,27 +1048,35 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             bool isImmediatelly = data.BehaviorMode.HasFlag(GraphItemBehaviorMode.ShowToolTipImmediatelly);
             if (!isFadeIn && !isImmediatelly) return;
 
+            string infoText;
+            string eol = Environment.NewLine;
+            TimeRange timeRange = group.Time;
+            string timeText = "Začátek:\t" + timeRange.Begin.Value.ToUser() + eol + "Konec:\t" + timeRange.End.Value.ToUser() + eol;
             if (!String.IsNullOrEmpty(data.ToolTip))
             {
+                infoText = data.ToolTip;
+                bool useTabs = (infoText.Contains("\t"));
+                infoText = (useTabs ? timeText : timeText.Replace("\t", " ")) + data.ToolTip;
                 e.ToolTipData.TitleText = (!String.IsNullOrEmpty(data.Text) ? data.Text : "Informace");
-                e.ToolTipData.InfoText = data.ToolTip;
+                e.ToolTipData.InfoText = infoText;
                 e.ToolTipData.InfoUseTabs = true;
             }
             else if (this.HasDataSource)
             {
-                CreateToolTipArgs args = new CreateToolTipArgs(e, this, group, data, position);
+                CreateToolTipArgs args = new CreateToolTipArgs(e, this, group, timeText, data, position);
                 this.DataSource.CreateToolTip(args);
             }
             else
             {
                 e.ToolTipData.TitleText = "Tooltip " + position.ToString();
-                string eol = Environment.NewLine;
-                e.ToolTipData.InfoText = "ItemId: " + data.ItemId + eol +
-                    "Layer: " + data.Layer.ToString();
+                e.ToolTipData.InfoText = timeText + 
+                    "ItemId:\t" + data.ItemId + eol +
+                    "Layer:\t" + data.Layer.ToString();
+                e.ToolTipData.InfoUseTabs = true;
             }
 
-            string text = (e.HasToolTipData ? e.ToolTipData.InfoText : null);
-            if (text != null)
+            infoText = (e.HasToolTipData ? e.ToolTipData.InfoText : null);
+            if (infoText != null)
             {
                 if (isImmediatelly)
                 {
@@ -1077,8 +1085,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 else if (isFadeIn)
                 {
                     e.ToolTipData.AnimationFadeInTime = TimeSpan.FromMilliseconds(100);
-                    e.ToolTipData.AnimationShowTime = TimeSpan.FromMilliseconds(100 * text.Length);     // 1 sekunda na přečtení 10 znaků
-                    e.ToolTipData.AnimationFadeOutTime = TimeSpan.FromMilliseconds(10 * text.Length);
+                    e.ToolTipData.AnimationShowTime = TimeSpan.FromMilliseconds(100 * infoText.Length);     // 1 sekunda na přečtení 10 znaků
+                    e.ToolTipData.AnimationFadeOutTime = TimeSpan.FromMilliseconds(10 * infoText.Length);
                 }
             }
         }
@@ -2117,12 +2125,19 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         /// <param name="e"></param>
         /// <param name="graph"></param>
+        /// <param name="timeText"></param>
         /// <param name="group"></param>
         /// <param name="data"></param>
         /// <param name="position"></param>
-        public CreateToolTipArgs(GInteractiveChangeStateArgs e, GTimeGraph graph, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position)
+        public CreateToolTipArgs(GInteractiveChangeStateArgs e, GTimeGraph graph, GTimeGraphGroup group, string timeText, ITimeGraphItem data, GGraphControlPosition position)
             : base(e, graph, group, data, position)
-        { }
+        {
+            this.TimeText = timeText;
+        }
+        /// <summary>
+        /// Text popisující čas prvku, měl by se vložit na začátek textu tooltipu
+        /// </summary>
+        public string TimeText { get; private set; }
         /// <summary>
         /// Data pro tooltip.
         /// Tuto property lze setovat, nebo ji lze rovnou naplnit (je autoinicializační).
