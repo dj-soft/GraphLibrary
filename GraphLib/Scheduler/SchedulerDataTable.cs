@@ -304,8 +304,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="graphPosition"></param>
         protected void LoadDataPrepareTableForGraphs(DataGraphPositionType graphPosition)
         {
-            TimeGraphProperties graphProperties = new TimeGraphProperties();
-            if (graphPosition == DataGraphPositionType.InLastColumn)
+            bool isGraphInColumn = (graphPosition == DataGraphPositionType.InLastColumn);
+            TimeGraphProperties graphProperties = this.DataGraphProperties.CreateTimeGraphProperties(isGraphInColumn, this.MainControl.SynchronizedTime.Value, this.MainData.GuiData.Properties.TotalTimeRange);
+            if (isGraphInColumn)
             {
                 Column graphColumn = new Column("__time__graph__");
 
@@ -315,14 +316,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 graphColumn.ColumnProperties.ColumnContent = ColumnContentType.TimeGraphSynchronized;
                 graphColumn.ColumnProperties.IsVisible = true;
                 graphColumn.ColumnProperties.WidthMininum = 250;
-
-                graphProperties.TimeAxisMode = TimeGraphTimeAxisMode.Standard;
-                graphProperties.TimeAxisVisibleTickLevel = AxisTickType.StdTick;
-                graphProperties.InitialResizeMode = this.DataGraphProperties.AxisResizeMode;       // AxisResizeContentMode.ChangeScale;
-                graphProperties.InitialValue = this.MainControl.SynchronizedTime.Value;
-                graphProperties.MaximalValue = this.MainData.GuiData.Properties.TotalTimeRange;
-                graphProperties.InteractiveChangeMode = this.DataGraphProperties.InteractiveChangeMode;
-                graphProperties.Opacity = this.DataGraphProperties.Opacity;
                 graphColumn.GraphParameters = graphProperties;
 
                 this.TableRow.Columns.Add(graphColumn);
@@ -330,9 +323,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             }
             else
             {
-                graphProperties.TimeAxisMode = this.TimeAxisMode;
-                graphProperties.TimeAxisVisibleTickLevel = AxisTickType.BigTick;
-                graphProperties.Opacity = this.DataGraphProperties.Opacity;
                 this.TableRow.GraphParameters = graphProperties;
             }
         }
@@ -1179,7 +1169,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     #endregion
     #region class DataGraphProperties : vlastnosti tabulky, popis chování atd - načteno z dodaných dat
     /// <summary>
-    /// DataGraphProperties : vlastnosti tabulky, popis chování atd - načteno z dodaných dat
+    /// DataGraphProperties : vlastnosti tabulky, popis chování atd - načteno z dodaných dat <see cref="Noris.LCS.Base.WorkScheduler.GuiGraphProperties"/>.
+    /// Jedná se pouze o adapter: do sebe uloží referenci na <see cref="Noris.LCS.Base.WorkScheduler.GuiGraphProperties"/>, 
+    /// a následně vygeneruje instanci <see cref="Asol.Tools.WorkScheduler.Components.Graph.TimeGraphProperties"/>, do které opíše data dodaná ze vstupního objektu.
     /// </summary>
     public class DataGraphProperties
     {
@@ -1232,9 +1224,30 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         public DataGraphPositionType GraphPosition { get { return this.GuiGraphProperties.GraphPosition; } }
         /// <summary>
-        /// Výška jednotky v grafu, v pixelech
+        /// Fyzická výška jedné logické linky grafu v pixelech.
+        /// Určuje, tedy kolik pixelů bude vysoký prvek, jehož logická výška = 1.0f.
+        /// Výchozí hodnota je 20.
+        /// Tato hodnota platí pro řádky, v nichž se vyskytují pouze prvky s celočíselnou logickou výškou.
+        /// Pro řádky, kde se vyskytne výška prvku desetinná, se použije údaj <see cref="GraphLinePartialHeight"/>.
         /// </summary>
         public int GraphLineHeight { get { return this.GuiGraphProperties.GraphLineHeight; } }
+        /// <summary>
+        /// Fyzická výška jedné logické linky grafu v pixelech, pro řádky obsahující prvky s logickou výškou desetinnou.
+        /// V takových řádcích je vhodné použít větší hodnotu výšky logické linky, aby byly lépe viditelné prvky s malou výškou (např. výška prvku 0.25).
+        /// Výchozí hodnota je 40.
+        /// </summary>
+        public int GraphLinePartialHeight { get { return this.GuiGraphProperties.GraphLinePartialHeight; } }
+        /// <summary>
+        /// Horní okraj = prostor nad nejvyšším prvkem grafu, který by měl být zobrazen jako prázdný, tak aby bylo vidět že nic dalšího už není.
+        /// V tomto prostoru (těsně pod souřadnicí Top) se provádí Drag and Drop prvků.
+        /// Hodnota je zadána v logických jednotkách, tedy v počtu standardních linek.
+        /// Výchozí hodnota = 1.0 linka, nelze zadat zápornou hodnotu.
+        /// </summary>
+        public float UpperSpaceLogical { get { return this.GuiGraphProperties.UpperSpaceLogical; } }
+        /// <summary>
+        /// Dolní okraj = mezera pod dolním okrajem nejnižšího prvku grafu k dolnímu okraji controlu, v pixelech.
+        /// </summary>
+        public int BottomMarginPixel { get { return this.GuiGraphProperties.BottomMarginPixel; } }
         /// <summary>
         /// Výška řádku v tabulce minimální, v pixelech
         /// </summary>
@@ -1263,6 +1276,36 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Výchozí hodnota = null.
         /// </summary>
         public int? Opacity { get { return this.GuiGraphProperties.Opacity; } }
+        #endregion
+        #region Převod konfiguračních dat z úrovně Scheduler do úrovně Graph
+        /// <summary>
+        /// Vytvoří a vrátí definici pro graf v úrovni Graph, třída <see cref="TimeGraphProperties"/>, 
+        /// z dat načtených z Scheduleru (this, <see cref="Noris.LCS.Base.WorkScheduler.GuiGraphProperties"/>).
+        /// Zde dochází k fyzickému přenosu hodnot.
+        /// </summary>
+        /// <param name="isGraphInColumn"></param>
+        /// <param name="initialValue"></param>
+        /// <param name="maximalValue"></param>
+        /// <returns></returns>
+        internal TimeGraphProperties CreateTimeGraphProperties(bool isGraphInColumn, TimeRange initialValue, TimeRange maximalValue)
+        {
+            TimeGraphProperties result = new TimeGraphProperties();
+            result.TimeAxisMode = (isGraphInColumn ? TimeGraphTimeAxisMode.Standard : this.TimeAxisMode);
+            result.InitialResizeMode = this.AxisResizeMode;
+            result.InitialValue = initialValue;
+            result.MaximalValue = maximalValue;
+            result.InteractiveChangeMode = this.InteractiveChangeMode;
+            result.TimeAxisVisibleTickLevel = (isGraphInColumn ? AxisTickType.StdTick : AxisTickType.BigLabel);
+            result.OneLineHeight = this.GraphLineHeight;
+            result.OneLinePartialHeight = this.GraphLinePartialHeight;
+            result.UpperSpaceLogical = this.UpperSpaceLogical;
+            result.BottomMarginPixel = this.BottomMarginPixel;
+            result.TotalHeightRange = new Int32NRange(this.TableRowHeightMin, this.TableRowHeightMax);
+            result.LogarithmicRatio = (this.LogarithmicRatio.HasValue ? LogarithmicRatio.Value : 0.60f);
+            result.LogarithmicGraphDrawOuterShadow = (this.LogarithmicGraphDrawOuterShadow.HasValue ? LogarithmicGraphDrawOuterShadow.Value : 0.20f);
+            result.Opacity = this.Opacity;
+            return result;
+        }
         #endregion
     }
     #endregion

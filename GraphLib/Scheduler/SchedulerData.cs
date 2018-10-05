@@ -1514,39 +1514,21 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             GraphItemMoveAlignY alignY = GraphItemMoveAlignY.OnMousePosition;
             GraphItemMoveAlignY configY;
-            if (moveInfo.IsChangeRow)
-            {
-                configY = this._GuiData.Properties.GraphItemMoveOtherGraph;
+            if (!moveInfo.IsChangeRow)
+            {   // Beze změny grafu = na tom, odkud prvek pochází:
+                configY = this._GuiData.Properties.GraphItemMoveSameGraph;
                 if (configY == GraphItemMoveAlignY.OnMousePosition || configY == GraphItemMoveAlignY.OnOriginalItemPosition || configY == GraphItemMoveAlignY.OnGraphTopPosition)
                     alignY = configY;
             }
             else
-            {
-                configY = this._GuiData.Properties.GraphItemMoveSameGraph;
+            {   // Přesun prvku na jiný graf:
+                configY = this._GuiData.Properties.GraphItemMoveOtherGraph;
                 if (configY == GraphItemMoveAlignY.OnOriginalItemPosition)
                     alignY = GraphItemMoveAlignY.OnGraphTopPosition;
                 else if (configY == GraphItemMoveAlignY.OnMousePosition || configY == GraphItemMoveAlignY.OnGraphTopPosition)
                     alignY = configY;
             }
             return alignY;
-        }
-        /// <summary>
-        /// Strana aktuálního prvku pro jeho přichytávání
-        /// </summary>
-        protected enum xxxAdjustGraphItemSide
-        {
-            /// <summary>
-            /// Neurčeno
-            /// </summary>
-            None,
-            /// <summary>
-            /// Počátek
-            /// </summary>
-            Begin,
-            /// <summary>
-            /// Konec
-            /// </summary>
-            End
         }
         /// <summary>
         /// Máme přichytávat k nejbližším prvkům?

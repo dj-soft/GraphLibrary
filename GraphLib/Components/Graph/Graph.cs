@@ -279,6 +279,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
 
                 this._AllGroupList = new List<List<GTimeGraphGroup>>();
                 Interval<float> totalLogicalY = new Interval<float>(0f, 0f, true);
+                float minimalFragmentHeight = 1f;
 
                 // Vytvoříme oddělené skupiny prvků, podle jejich příslušnosti do grafické vrstvy (ITimeGraphItem.Layer), vzestupně:
                 List<IGrouping<int, ITimeGraphItem>> layerGroups = this.GraphItems.GroupBy(i => i.Layer).ToList();
@@ -310,16 +311,16 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                     foreach (IGrouping<int, ITimeGraphItem> levelGroup in levelGroups)
                     {
                         layerUsing.Clear();
-                        this.RecalculateAllGroupListOneLevel(levelGroup, layerUsing, (levelGroup.Key < 0), layerGroupList, layerUsedLogicalY, ref groups);
+                        this.RecalculateAllGroupListOneLevel(levelGroup, layerUsing, (levelGroup.Key < 0), layerGroupList, layerUsedLogicalY, ref minimalFragmentHeight, ref groups);
                     }
                     totalLogicalY.MergeWith(layerUsedLogicalY);
 
                     this._AllGroupList.Add(layerGroupList);
                 }
+                this.SetMinimalFragmentHeight(minimalFragmentHeight);
                 this.Invalidate(InvalidateItems.CoordinateX | InvalidateItems.CoordinateYVirtual);
 
-                this.CalculatorY.Prepare(totalLogicalY);
-
+                this.CalculatorY.Prepare(totalLogicalY, this.CurrentLineLogicalHeight);
                 this.RecalculateCoordinateYVirtual();
 
                 scope.AddItem("Layers Count: " + layers.ToString());
@@ -338,8 +339,9 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="isDownward">Směr využití na ose Y: true = hledáme volé místo směrem dolů, false = nahoru</param>
         /// <param name="layerGroupList">Výstupní pole, do něhož se ukládají prvky typu <see cref="GTimeGraphGroup"/>, které v sobě zahrnují jeden nebo více prvků <see cref="ITimeGraphItem"/> se shodnou hodnotou <see cref="ITimeGraphItem.GroupId"/></param>
         /// <param name="layerUsedLogicalY">Sumární interval využití osy Y</param>
+        /// <param name="minimalFragmentHeight">Nejmenší logická výška zlomku prvku, počítáno z prvků jejichž výška je kladná, z desetinné části (například z výšky 2.25 se akceptuje 0.25).</param>
         /// <param name="groups">Počet skupin, průběžné počitadlo</param>
-        protected void RecalculateAllGroupListOneLevel(IEnumerable<ITimeGraphItem> items, PointArray<DateTime, IntervalArray<float>> layerUsing, bool isDownward, List<GTimeGraphGroup> layerGroupList, Interval<float> layerUsedLogicalY, ref int groups)
+        protected void RecalculateAllGroupListOneLevel(IEnumerable<ITimeGraphItem> items, PointArray<DateTime, IntervalArray<float>> layerUsing, bool isDownward, List<GTimeGraphGroup> layerGroupList, Interval<float> layerUsedLogicalY, ref float minimalFragmentHeight, ref int groups)
         {
             float searchFrom = (isDownward ? layerUsedLogicalY.Begin : layerUsedLogicalY.End);
             float nextSearch = searchFrom;
@@ -393,8 +395,15 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                     //  ale nás zajímá jejich souhrn => abych v souhrnu tom našel kontinuální prostor pro náš nový požadavek:
                     IntervalArray<float> summary = (intervalWorkItems.Count > 1 ? IntervalArray<float>.Summary(intervalWorkItems.Select(i => i.Value.Value)) : intervalWorkItems[0].Value.Value);
 
+                    // Výška prvku (je kladná, to zajišťuje úvodní podmínka (group.IsValidRealTime)):
+                    float groupHeight = group.Height;
+
+                    // Střádání hodnoty minimalFragmentHeight:
+                    float fragmentHeight = groupHeight % 1f;
+                    if (fragmentHeight > 0f && fragmentHeight < minimalFragmentHeight) minimalFragmentHeight = fragmentHeight;
+
                     // Negativní level bude hledat negativní velikost (dolů):
-                    float size = (isDownward ? -group.Height : group.Height);
+                    float size = (isDownward ? -groupHeight : groupHeight);
 
                     // Nyní v sumáři využitého místa (summary) vyhledáme nejbližší volný prostor s přinejmenším požadovanou velikostí:
                     Interval<float> useSpace = summary.SearchForSpace(searchFrom, size, (a, b) => (a + b));
@@ -437,6 +446,31 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             if ((ya % 1f) == 0f) return (isDownward ? -ya : ya);
             return (float)(isDownward ? -Math.Ceiling((double)ya) : Math.Ceiling((double)ya));
         }
+        /// <summary>
+        /// Metoda převezme hodnotu nejmenší nalezené výšky prvku v rámci grafu.
+        /// Uloží ji do <see cref="CurrentMinimalFragmentHeight"/>, 
+        /// a na jejím základě vybere jednotkovu logickou výšku do <see cref="CurrentLineLogicalHeight"/>.
+        /// Tuto hodnotu (<see cref="CurrentLineLogicalHeight"/>) je třeba následně předat do kalkulátoru Y, 
+        /// do jeho metody <see cref="PositionCalculatorInfo.Prepare(Interval{float}, int)"/> jako druhý parametr.
+        /// </summary>
+        /// <param name="minimalFragmentHeight">Nejmenší logická výška zlomku prvku, počítáno z prvků jejichž výška je kladná, z desetinné části (například z výšky 2.25 se akceptuje 0.25).</param>
+        protected void SetMinimalFragmentHeight(float minimalFragmentHeight)
+        {
+            this.CurrentMinimalFragmentHeight = ((minimalFragmentHeight > 0f && minimalFragmentHeight < 1f) ? minimalFragmentHeight : 1f);
+            bool hasPartial = (this.CurrentMinimalFragmentHeight < 1f);
+            this.CurrentLineLogicalHeight = (!hasPartial ? this.GraphParameters.OneLineHeight.Value : this.GraphParameters.OneLinePartialHeight.Value);
+        }
+        /// <summary>
+        /// Aktuálně nalezená nejmenší výška zlomku prvku, počítáno z prvků jejichž výška je kladná, 
+        /// z desetinné části (například z výšky 2.25 se akceptuje 0.25).
+        /// </summary>
+        protected float CurrentMinimalFragmentHeight { get; set; }
+        /// <summary>
+        /// Aktuálně platná výška (v pixelech) pro jednu logickou jednotku výšky prvku.
+        /// Odpovídá hodnotě z konfigurace <see cref="TimeGraphProperties.OneLineHeight"/> nebo <see cref="TimeGraphProperties.OneLinePartialHeight"/>,
+        /// vybírá se podle toho, zd v aktuálním grafu se vyskytují zlomkové prvky (které mají desetinnou složku výšky), např. mají výšku 0.500, nebo 1.500 nebo 3.33333 atd.
+        /// </summary>
+        protected int CurrentLineLogicalHeight { get; set; }
         /// <summary>
         /// Metoda projde všechny prvky <see cref="GTimeGraphGroup"/> v poli <see cref="AllGroupList"/>, a pro každý prvek provede danou akci.
         /// </summary>
@@ -493,19 +527,23 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             /// <summary>
             /// Připraví výpočty pro nově zadané rozmezí logických hodnot
             /// </summary>
-            /// <param name="totalLogicalRange"></param>
-            public void Prepare(Interval<float> totalLogicalRange)
+            /// <param name="totalLogicalRange">Rozsah logických hodnot na ose</param>
+            /// <param name="lineLogicalHeight">Stanovená výška jedné logické jednotky, v pixelech</param>
+            public void Prepare(Interval<float> totalLogicalRange, int lineLogicalHeight)
             {
                 this._IsPrepared = false;
                 this._TotalLogicalRange = totalLogicalRange;
+                this._LineLogicalHeight = lineLogicalHeight;
                 if (totalLogicalRange == null) return;
 
                 float logBegin = (totalLogicalRange.Begin < 0f ? totalLogicalRange.Begin : 0f);
-                float logEnd = (totalLogicalRange.End > 1f ? totalLogicalRange.End : 1f) + this._GraphProperties.UpperSpaceLogical;
+                float upperSpace = this._GraphProperties.UpperSpaceLogical;
+                upperSpace = (upperSpace < 0f ? 0f : (upperSpace > 2f ? 2f : upperSpace));
+                float logEnd = (totalLogicalRange.End > 1f ? totalLogicalRange.End : 1f) + upperSpace;
                 float logSize = logEnd - logBegin;
 
                 // Výška dat grafu v pixelech, zarovnaná do patřičných mezí:
-                int pixelSize = this._AlignTotalPixelSize((int)(Math.Ceiling(logSize * (float)this._GraphProperties.OneLineHeight.Value)));
+                int pixelSize = this._AlignTotalPixelSize((int)(Math.Ceiling(logSize * (float)lineLogicalHeight)));
                 this._TotalPixelSize = pixelSize;
 
                 // Výpočty kalkulátoru, invalidace VisibleList:
@@ -517,7 +555,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             }
             /// <summary>
             /// Metoda vrátí rozsah hodnot ve virtuálním formátu, pro zadané logické souřadnice.
-            /// Virtuální formát je v pixelech, ale hodnota 0 odpovídá dolnímu okraji grafu.
+            /// Virtuální formát je v pixelech, ale hodnota 0 odpovídá DOLNÍMU okraji grafu.
             /// Je to proto, aby se grafy nemusely přepočítávat při změně výšky grafu: 0 je stále dole.
             /// Výstup má Begin = horní souřadnice Y, End = dolní souřadnice Y na virtuální ose Y.
             /// Kdežto ve WinForm reprezentaci je nula nahoře...
@@ -634,6 +672,10 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             /// </summary>
             private Interval<float> _TotalLogicalRange;
             /// <summary>
+            /// Aktuálně platná výška jedné logické jednotky, v pixelech
+            /// </summary>
+            private int _LineLogicalHeight;
+            /// <summary>
             /// Úložiště hodnoty Aktuální výška dat celého grafu, v pixelech
             /// </summary>
             private int _TotalPixelSize;
@@ -660,7 +702,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Metoda do všech položek v poli <see cref="AllGroupList"/> vypočítá VirtualY souřadnici a vloží ji do <see cref="GTimeGraphGroup.CoordinateYVirtual"/>.
         /// Tato metoda musí proběhnout až po kompletním zmapování souřadnic LogicalY <see cref="GTimeGraphGroup.CoordinateYLogical"/>
-        /// a po provedení přípravy kalkulátoru Y (<see cref="PositionCalculatorInfo.Prepare(Interval{float})"/>, 
+        /// a po provedení přípravy kalkulátoru Y (<see cref="PositionCalculatorInfo.Prepare(Interval{float}, int)"/>, 
         /// protože teprve po této přípravě může být kalkulátor použit pro výpočty <see cref="PositionCalculatorInfo.GetVirtualRange(Interval{float})"/>.
         /// Není tedy možno vypočítat současně <see cref="GTimeGraphGroup.CoordinateYLogical"/> a hned poté <see cref="GTimeGraphGroup.CoordinateYVirtual"/>.
         /// </summary>
@@ -1340,7 +1382,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             /// <summary>
             /// Souřadnice na ose Y, ve virtuálních koordinátech.
             /// Invalidace virtuálních souřadnic má smysl tehdy, když se změní nějaké parametry, na jejichž základě pracuje kalkulátor Y,
-            /// což je například <see cref="TimeGraphProperties.OneLineHeight"/>, nebo <see cref="TimeGraphProperties.TotalHeightRange"/>, atd.
+            /// což je například <see cref="TimeGraphProperties.OneLineHeight"/>, nebo <see cref="TimeGraphProperties.OneLinePartialHeight"/>, nebo <see cref="TimeGraphProperties.TotalHeightRange"/>, atd.
             /// Tedy hodnoty, které mohou ovlivnit určení jednotkové výšky grafu, nebo celkové výšky grafu v pixelech, 
             /// a z toho důvodu tedy ovlivní změnu přepočtu logických jednotek na pixely.
             /// </summary>
@@ -1567,7 +1609,6 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         #endregion
         #region ITimeInteractiveGraph members
         ITimeAxisConvertor ITimeInteractiveGraph.TimeAxisConvertor { get { return this._TimeConvertor; } set { this._TimeConvertor = value; this.Invalidate(InvalidateItems.CoordinateX); } }
-        int ITimeInteractiveGraph.UnitHeight { get { return this.GraphParameters.OneLineHeight.Value; } }
         IVisualParent ITimeInteractiveGraph.VisualParent { get { return this.VisualParent; } set { this.VisualParent = value; } }
         #endregion
     }
@@ -1615,7 +1656,6 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Možnosti uživatele změnit zobrazený rozsah anebo měřítko
         /// </summary>
         public virtual AxisInteractiveChangeMode? InteractiveChangeMode { get { return this._InteractiveChangeMode; } set { this._InteractiveChangeMode = value; } } private AxisInteractiveChangeMode? _InteractiveChangeMode;
-
         /// <summary>
         /// Hladina ticků, které se budou v grafu zobrazovat.
         /// None = žádné.
@@ -1644,9 +1684,12 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         private AxisTickType _TimeAxisVisibleTickLevel;
         /// <summary>
         /// Fyzická výška jedné logické linky grafu v pixelech.
-        /// Jedna logická linka odpovídá výšce <see cref="ITimeGraphItem.Height"/> = 1.0f.
+        /// Určuje, tedy kolik pixelů bude vysoký prvek, jehož logická výška <see cref="ITimeGraphItem.Height"/> = 1.0f.
+        /// Výchozí hodnota je 20.
         /// Pokud graf obsahuje více položek pro jeden časový úsek (a položky jsou ze stejné vrstvy <see cref="ITimeGraphItem.Layer"/>, pak tyto prvky jsou kresleny nad sebe.
-        /// Výška grafu pak bude součtem výšky těchto prvků (=logická výška), násobená výškou <see cref="OneLineHeight"/> (pixely na jednotku výšky prvku).
+        /// Výška grafu pak bude součtem výšky těchto prvků (=logická výška), násobená výškou <see cref="OneLineHeight"/> nebo <see cref="OneLinePartialHeight"/> (pixely na jednotku výšky prvku).
+        /// Hodnota <see cref="OneLineHeight"/> platí pro řádky, v nichž se vyskytují pouze prvky s celočíselnou logickou výškou.
+        /// Pro řádky, kde se vyskytne výška prvku desetinná, se použije údaj <see cref="OneLinePartialHeight"/>.
         /// <para/>
         /// Lze vložit hodnotu null, pak se bude vracet defaultní výška (<see cref="Skin.Graph"/>.LineHeight)
         /// Čtení hodnoty nikdy nevrací null, vždy lze pracovat s GraphLineHeight.Value.
@@ -1656,29 +1699,42 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             get { return (this._OneLineHeight.HasValue ? this._OneLineHeight.Value : Skin.Graph.LineHeight); }
             set
             {
-                int oldValue = this.OneLineHeight.Value;
                 if (value != null)
                     this._OneLineHeight = (value < 5 ? 5 : (value > 500 ? 500 : value));
                 else
                     this._OneLineHeight = null;
-                int newValue = this.OneLineHeight.Value;
             }
         }
         private int? _OneLineHeight;
+        /// <summary>
+        /// Fyzická výška jedné logické linky grafu v pixelech, pro řádky obsahující prvky s logickou výškou <see cref="ITimeGraphItem.Height"/> desetinnou.
+        /// V takových řádcích je vhodné použít větší hodnotu výšky logické linky, aby byly lépe viditelné prvky s malou výškou (např. výška prvku 0.25).
+        /// Výchozí hodnota (=hodnota poté, kdy je zadáno null) je 2 * <see cref="OneLineHeight"/>.
+        /// </summary>
+        public int? OneLinePartialHeight
+        {
+            get { return (this._OneLinePartialHeight.HasValue ? this._OneLinePartialHeight.Value : 2 * this.OneLineHeight); }
+            set
+            {
+                if (value != null)
+                    this._OneLinePartialHeight = (value < 10 ? 10 : (value > 500 ? 500 : value));
+                else
+                    this._OneLinePartialHeight = null;
+            }
+        }
+        private int? _OneLinePartialHeight;
         /// <summary>
         /// Horní okraj = prostor nad nejvyšším prvkem grafu, který by měl být zobrazen jako prázdný, tak aby bylo vidět že nic dalšího už není.
         /// V tomto prostoru (těsně pod souřadnicí Top) se provádí Drag and Drop prvků.
         /// Hodnota je zadána v logických jednotkách, tedy v počtu standardních linek.
         /// Výchozí hodnota = 1.0 linka, nelze zadat zápornou hodnotu.
         /// </summary>
-        public float UpperSpaceLogical { get { return this._UpperSpaceLogical; } set { this._UpperSpaceLogical = (value < 0f ? 0f : value); } }
-        private float _UpperSpaceLogical = 1f;
+        public float UpperSpaceLogical { get { return this._UpperSpaceLogical; } set { this._UpperSpaceLogical = (value < 0f ? 0f : value); } } private float _UpperSpaceLogical = 1f;
         /// <summary>
         /// Dolní okraj = mezera pod dolním okrajem nejnižšího prvku grafu k dolnímu okraji controlu, v pixelech.
         /// Výchozí hodnota = 1 pixel, nelze zadat zápornou hodnotu.
         /// </summary>
         public int BottomMarginPixel { get { return this._BottomMarginPixel; } set { this._BottomMarginPixel = (value < 0 ? 0 : value); } } private int _BottomMarginPixel = 1;
-
         /// <summary>
         /// Rozmezí výšky celého grafu, v pixelech.
         /// Výchozí hodnota je null, pak se použije rozmezí <see cref="Skin.Graph"/>.DefaultTotalHeightMin až <see cref="Skin.Graph"/>.DefaultTotalHeightMax
@@ -1734,7 +1790,6 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             }
         }
         private int? _Opacity;
-
     }
     #endregion
     #region Interface ITimeInteractiveGraph, ITimeGraph, ITimeGraphItem; enum TimeGraphAxisXMode
@@ -1753,10 +1808,6 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Po přepočtu výšky grafu může graf chtít nastavit výšku (i šířku?) svého hostitele tak, aby bylo zobrazeno vše, co je třeba.
         /// </summary>
         IVisualParent VisualParent { get; set; }
-        /// <summary>
-        /// Height (in pixels) for one unit of GTimeItem.Height
-        /// </summary>
-        int UnitHeight { get; }
     }
     /// <summary>
     /// Deklarace grafu, který má časovou osu a není interaktivní
@@ -1821,7 +1872,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         Int32 Order { get; }
         /// <summary>
         /// Relativní výška tohoto prvku. Standardní hodnota = 1.0F. Fyzická výška (v pixelech) jednoho prvku je dána součinem 
-        /// <see cref="Height"/> * <see cref="GTimeGraph.GraphParameters"/>: <see cref="TimeGraphProperties.OneLineHeight"/>
+        /// <see cref="Height"/> * <see cref="GTimeGraph.GraphParameters"/>: <see cref="TimeGraphProperties.OneLineHeight"/> nebo <see cref="TimeGraphProperties.OneLinePartialHeight"/>, 
+        /// podle toho zda graf obsahuje jen celočíselné výšky, nebo i zlomkové výšky.
         /// Prvky s výškou 0 a menší nebudou vykresleny.
         /// </summary>
         float Height { get; }

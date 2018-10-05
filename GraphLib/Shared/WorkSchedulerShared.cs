@@ -203,7 +203,6 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Zde se nemá používat hodnota <see cref="GraphItemMoveAlignY.OnOriginalItemPosition"/>.
         /// </summary>
         public GraphItemMoveAlignY GraphItemMoveOtherGraph { get; set; }
-
         /// <summary>
         /// Defaultní časový interval pro <see cref="TotalTimeRange"/>
         /// </summary>
@@ -710,6 +709,7 @@ namespace Noris.LCS.Base.WorkScheduler
             this.AxisResizeMode = AxisResizeContentMode.ChangeValueEnd;
             this.InteractiveChangeMode = AxisInteractiveChangeMode.All;
             this.GraphLineHeight = 20;
+            this.GraphLinePartialHeight = 40;
             this.UpperSpaceLogical = 1f;
             this.BottomMarginPixel = 1;
             this.TableRowHeightMin = 22;
@@ -736,9 +736,17 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <summary>
         /// Fyzická výška jedné logické linky grafu v pixelech.
         /// Určuje, tedy kolik pixelů bude vysoký prvek <see cref="GuiGraphItem"/>, jehož <see cref="GuiGraphBaseItem.Height"/> = 1.0f.
-        /// Pokud je null, bude použit default definovaný v GUI.
+        /// Výchozí hodnota je 20.
+        /// Tato hodnota <see cref="GraphLineHeight"/> platí pro řádky, v nichž se vyskytují pouze prvky s celočíselnou výškou v <see cref="GuiGraphBaseItem.Height"/>.
+        /// Pro řádky, kde se vyskytne výška prvku <see cref="GuiGraphBaseItem.Height"/> desetinná, se použije údaj <see cref="GraphLinePartialHeight"/>.
         /// </summary>
         public int GraphLineHeight { get; set; }
+        /// <summary>
+        /// Fyzická výška jedné logické linky grafu v pixelech, pro řádky obsahující prvky s výškou <see cref="GuiGraphBaseItem.Height"/> desetinnou.
+        /// V takových řádcích je vhodné použít větší hodnotu výšky logické linky, aby byly lépe viditelné prvky s malou výškou (např. výška prvku 0.25).
+        /// Výchozí hodnota je 40.
+        /// </summary>
+        public int GraphLinePartialHeight { get; set; }
         /// <summary>
         /// Horní okraj = prostor nad nejvyšším prvkem grafu, který by měl být zobrazen jako prázdný, tak aby bylo vidět že nic dalšího už není.
         /// V tomto prostoru (těsně pod souřadnicí Top) se provádí Drag and Drop prvků.
