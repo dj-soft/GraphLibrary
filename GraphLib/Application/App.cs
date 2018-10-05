@@ -281,10 +281,31 @@ namespace Asol.Tools.WorkScheduler.Application
         #endregion
         #region TryRun action
         /// <summary>
-        /// Metoda vyvolá danou akci v try-catch bloku, chybu zapíše do trace a pokud je Debug režim, tak ji i ohlásí.
+        /// Metoda vyvolá danou akci v try-catch bloku, případnou chybu zapíše do trace a pokud je Debug režim, tak ji i ohlásí.
         /// </summary>
         /// <param name="action"></param>
         public static void TryRun(Action action)
+        {
+            _TryRun(action, true, true);
+        }
+        /// <summary>
+        /// Metoda vyvolá danou akci v try-catch bloku, v threadu na pozadí, případnou chybu zapíše do trace ale nehlásí ji.
+        /// </summary>
+        /// <param name="action"></param>
+        public static void TryRunBgr(Action action)
+        {
+            System.Threading.Thread bgThread = new System.Threading.Thread(() => _TryRun(action, true, false));
+            bgThread.IsBackground = true;
+            bgThread.Name = "TryRunBgr_" + DateTime.Now.ToString("HH:mm:ss");
+            bgThread.Start();
+        }
+        /// <summary>
+        /// Spustí danou akci v try - catch bloku, volitelně řeší trace chyby a její Show message
+        /// </summary>
+        /// <param name="action"></param>
+        /// <param name="traceError"></param>
+        /// <param name="showError"></param>
+        private static void _TryRun(Action action, bool traceError, bool showError)
         {
             try
             {
@@ -292,8 +313,9 @@ namespace Asol.Tools.WorkScheduler.Application
             }
             catch (Exception exc)
             {
-                Trace.Exception(exc);
-                if (IsDebugMode)
+                if (traceError)
+                    Trace.Exception(exc);
+                if (showError && IsDebugMode)
                     ShowError(exc);
             }
         }

@@ -681,6 +681,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             GraphItemDragMoveInfo moveInfo = new GraphItemDragMoveInfo();
             moveInfo.DragItemId = args.CurrentItem.ItemId;
             moveInfo.DragGroupId = args.Group.GroupId;
+            moveInfo.DragLevel = args.CurrentItem.Level;
+            moveInfo.DragLayer = args.CurrentItem.Layer;
             moveInfo.DragGroupGId = this.GetGId(moveInfo.DragGroupId);
             moveInfo.DragGroupItems = args.Group.Items.Where(i => i is DataGraphItem).Cast<DataGraphItem>().ToArray();
             moveInfo.DragAction = args.DragAction;

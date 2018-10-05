@@ -262,6 +262,18 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         public int GroupId { get { return this._FirstItem.GroupId; } }
         /// <summary>
+        /// Level: Vizuální hladina. Prvky v jedné hladině jsou kresleny do společného vodorovného pásu, 
+        /// další prvky ve vyšší hladině jsou všechny zase vykresleny ve svém odděleném pásu (nad tímto nižším pásem). 
+        /// Nespadnou do prvků nižšího pásu i když by v něm bylo volné místo.
+        /// </summary>
+        public int Level { get { return this._FirstItem.Level; } }
+        /// <summary>
+        /// Layer: Vizuální vrstva. Prvky z různých vrstev jsou kresleny "přes sebe" = mohou se překrývat.
+        /// Nižší hodnota je kreslena dříve.
+        /// Například: záporná hodnota Layer reprezentuje "podklad" který se needituje.
+        /// </summary>
+        public int Layer { get { return this._FirstItem.Layer; } }
+        /// <summary>
         /// Barva pozadí prvku.
         /// </summary>
         public Color? BackColor { get { return this._FirstItem.BackColor; } }

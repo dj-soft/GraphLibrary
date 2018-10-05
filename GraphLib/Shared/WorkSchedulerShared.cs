@@ -2692,19 +2692,19 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <summary>
         /// Přesouvání prvku: přichytávat k nejbližším prvkům
         /// </summary>
-        MoveItemAttachNearItems = 0x00010000,
+        MoveItemSnapToNearItems = 0x00010000,
         /// <summary>
         /// Přesouvání prvku: přichytávat k původnímu času
         /// </summary>
-        MoveItemAttachOriginalTime = 0x00020000,
+        MoveItemSnapToOriginalTime = 0x00020000,
         /// <summary>
         /// Přesouvání prvku: přichytávat k zaokrouhlenému času
         /// </summary>
-        MoveItemAttachToRoundTimeGrid = 0x00040000,
+        MoveItemSnapToRoundTimeGrid = 0x00040000,
         /// <summary>
         /// Přesouvání prvku: všechny akce
         /// </summary>
-        MoveItemAll = MoveItemAttachNearItems | MoveItemAttachOriginalTime | MoveItemAttachToRoundTimeGrid,
+        MoveItemAll = MoveItemSnapToNearItems | MoveItemSnapToOriginalTime | MoveItemSnapToRoundTimeGrid,
         /// <summary>
         /// Defaultní využití systémových položek: Zoom (Day + WorkWeek + WholeWeek + Month) + GoAll + MoveItemAll
         /// </summary>
