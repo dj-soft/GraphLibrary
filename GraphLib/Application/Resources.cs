@@ -273,6 +273,22 @@ namespace Asol.Tools.WorkScheduler.Application
         /// </summary>
         protected static Dictionary<char, char> _CSharpDisabled;
         /// <summary>
+        /// Vrátí text Namespace pro daný typ resource
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        protected static string _ToCSharpNamespace(ResourceType type)
+        {
+            switch (type)
+            {
+                case ResourceType.Image: return "Images";
+                case ResourceType.Icon: return "Icons";
+                case ResourceType.Video: return "Videos";
+                case ResourceType.Audio: return "Audios";
+            }
+            return "Others";
+        }
+        /// <summary>
         /// Metoda otevře daný soubor (typicky je to soubor "GraphLib/Application/ResourcesNames.cs"), 
         /// najde v něm řádek, obsahující: "// ResourceFile.LastWriteTime = ......", načte vytečkovanou oblast a vrátí hodnotu DateTime.
         /// </summary>
@@ -295,9 +311,10 @@ namespace Asol.Tools.WorkScheduler.Application
                     if (index1 >= 0 && index2 >= 0 && index2 > index1 && (index2 + searchFor2.Length) < (line.Length - 12))
                     {
                         string value = line.Substring(index2 + searchFor2.Length).Trim();
-                        if (value.Length >= 23)
+                        if (value.Length >= 16)                      // Vyžadujeme přinejmenším čas HH:mm
                         {
-                            value = value.Substring(0, 23);
+                            if (value.Length >= 19)
+                                value = value.Substring(0, 19);      // Akceptujeme čas HH:mm:ss, ale ne více
                             string sample = Noris.LCS.Base.WorkScheduler.Convertor.DateTimeToString(DateTime.Now);
 
                             DateTime dateTime = (DateTime)Noris.LCS.Base.WorkScheduler.Convertor.StringToDateTime(value);
@@ -506,7 +523,7 @@ namespace Asol.Tools.WorkScheduler.Application
             {
                 if (this._KeyIsParsed) return;
 
-                this._Namespace = this.Type.ToString();
+                this._Namespace = _ToCSharpNamespace(this.Type);
 
                 string file = this.Key.Replace("/", "\\");                          // status\tango-a16\anonymous_simple_weather_symbols_1.png
                 string path = System.IO.Path.GetDirectoryName(file);                // status\tango-a16
