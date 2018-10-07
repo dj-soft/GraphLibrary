@@ -16,6 +16,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         {
             Application.App.AppCompanyName = "Asseco Solutions";
             Application.App.AppProductName = "WorkScheduler";
+            Application.App.AppProductTitle = "GraphLibrary utilities";
 
             Application.App.TracePriority = Application.TracePriority.Priority2_Lowest;
 

@@ -4,7 +4,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Linq;
-using System.Text;
+using System.IO;
 using System.Windows.Forms;
 using Asol.Tools.WorkScheduler.Data;
 using Asol.Tools.WorkScheduler.Scheduler;
@@ -79,39 +79,42 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <returns></returns>
         protected string SearchForDataPack()
         {
-            string fileName = null;
+            string dataPack = null;
             using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority3_BellowNormal, "PluginForm", "SearchForDataPack", ""))
             {
-                string appPath = Application.App.AppCodePath;                                                // D:\Hobby\Csharp\GraphLibrary\bin
-                string datPath = System.IO.Path.GetDirectoryName(appPath);                                   // D:\Hobby\Csharp\GraphLibrary
-                string fixFile = System.IO.Path.Combine(datPath, "TestGUI", "Data_20180101_120000.dat");     // D:\Hobby\Csharp\GraphLibrary\TestGUI\Data_20180101_120000.dat
-                if (System.IO.File.Exists(fixFile))
-                {
-                    fileName = fixFile;
-                }
-                else
-                {
-                    string path = Application.App.GetAppLocalDataPath("Data");
-                    System.IO.DirectoryInfo pathInfo = new System.IO.DirectoryInfo(path);
-                    if (!pathInfo.Exists)
-                    {
-                        pathInfo.Create();
-                    }
-                    else
-                    {
-                        List<System.IO.FileInfo> fileList = pathInfo.GetFiles("Data_????????_??????.dat").ToList();
-                        int fileCount = fileList.Count;
-                        if (fileCount > 0)
-                        {
-                            if (fileCount > 1)
-                                fileList.Sort((a, b) => DateTime.Compare(b.LastAccessTime, a.LastAccessTime));
-                            fileName = fileList[0].FullName;
-                        }
-                    }
-                }
-                scope.AddItem("DataFile: " + (fileName != null ? fileName : "NULL"));
+                string appPath = Application.App.AppCodePath;                                      // D:\Hobby\Csharp\GraphLibrary\bin
+                if (TrySearchDataPackOne(appPath, "*.dat", out dataPack)) return dataPack;         // Soubory přímo vedle aplikace = přenosný předváděcí režim
+                string prgPath = Path.Combine(Path.GetDirectoryName(appPath), "TestGUI");          // D:\Hobby\Csharp\GraphLibrary\TestGUI
+                string name = "Data_20180101_120000.dat";
+                if (TrySearchDataPackOne(prgPath, name, out dataPack)) return dataPack;            // Soubor přenášený v rámci zdrojových kódů
+                string locPath = Application.App.GetAppLocalDataPath("Data");
+                string pattern = "Data_????????_??????.dat";
+                if (TrySearchDataPackOne(locPath, pattern, out dataPack)) return dataPack;         // Soubory uložené v Win adresáři této aplikace
             }
-            return (fileName != null ? System.IO.File.ReadAllText(fileName) : null);
+            return null;
+        }
+        /// <summary>
+        /// Metoda najde v daném adresáři soubory dle daného paternu, vybere z nich nejnovější, 
+        /// načte jeho obsah jako text a ten uloží do out parametru dataPack. Vrátí true.
+        /// Pokud nenajde, vrací false a dataPack bude null.
+        /// </summary>
+        /// <param name="path"></param>
+        /// <param name="pattern"></param>
+        /// <param name="dataPack"></param>
+        /// <returns></returns>
+        private static bool TrySearchDataPackOne(string path, string pattern, out string dataPack)
+        {
+            dataPack = null;
+            if (String.IsNullOrEmpty(path)) return false;
+            DirectoryInfo di = new DirectoryInfo(path);
+            if (!di.Exists) return false;
+            List<FileInfo> files = di.GetFiles(pattern).ToList();
+            if (files.Count == 0) return false;
+            if (files.Count > 1)
+                files.Sort((a, b) => b.LastWriteTime.CompareTo(a.LastWriteTime));
+            string fileName = files[0].FullName;
+            dataPack = File.ReadAllText(fileName);
+            return true;
         }
         #endregion
         #region Implementace Scheduler.IAppHost, offline řešení požadovaných commandů
