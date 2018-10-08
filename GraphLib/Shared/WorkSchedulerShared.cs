@@ -886,6 +886,14 @@ namespace Noris.LCS.Base.WorkScheduler
             set { }
         }
         /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return "RowId: " + this.RowId.ToString() + "; ItemId: " + this.ItemId.ToString() + "; Time: " + this.Time;
+        }
+        /// <summary>
         /// ID položky časového grafu (ID obdélníčku).
         /// Z databáze se načítá ze sloupců: "item_class_id", "item_record_id", je POVINNÝ.
         /// </summary>

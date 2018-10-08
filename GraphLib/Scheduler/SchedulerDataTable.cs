@@ -111,15 +111,17 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             DataGraphItem dataGraphItem = DataGraphItem.CreateFrom(this, addItem);
             if (dataGraphItem == null) return modifiedGraph;
 
-            if (!this.TimeGraphItemDict.ContainsKey(dataGraphItem.ItemGId))
-                this.TimeGraphItemDict.Add(dataGraphItem.ItemGId, dataGraphItem);
-
             GTimeGraph gTimeGraph;
             if (this.TimeGraphDict.TryGetValue(dataGraphItem.RowGId, out gTimeGraph))
             {
                 bool isAdded = gTimeGraph.AddGraphItem(dataGraphItem);
                 if (isAdded)
+                {
+                    if (!this.TimeGraphItemDict.ContainsKey(dataGraphItem.ItemGId))
+                        this.TimeGraphItemDict.Add(dataGraphItem.ItemGId, dataGraphItem);
+
                     modifiedGraph = gTimeGraph;
+                }
             }
             return modifiedGraph;
         }
