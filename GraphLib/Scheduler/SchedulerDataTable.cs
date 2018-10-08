@@ -1213,9 +1213,25 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         #endregion
         #region Public data
         /// <summary>
-        /// Režim zobrazování času na ose X
+        /// Režim zobrazování času na ose X.
+        /// Přihlíží se k hodnotě <see cref="GraphPosition"/>:
+        /// pokud je <see cref="DataGraphPositionType.OnBackgroundLogarithmic"/> nebo <see cref="DataGraphPositionType.OnBackgroundProportional"/>,
+        /// pak se vrací odpovídající <see cref="TimeGraphTimeAxisMode"/>.
+        /// Pro pozici <see cref="GraphPosition"/> == <see cref="DataGraphPositionType.InLastColumn"/> se vrací hodnota z <see cref="TimeAxisMode"/>.
         /// </summary>
-        public TimeGraphTimeAxisMode TimeAxisMode { get { return this.GuiGraphProperties.TimeAxisMode; } }
+        public TimeGraphTimeAxisMode TimeAxisMode
+        {
+            get
+            {
+                var position = this.GraphPosition;
+                switch (this.GraphPosition)
+                {
+                    case DataGraphPositionType.OnBackgroundLogarithmic: return TimeGraphTimeAxisMode.LogarithmicScale;
+                    case DataGraphPositionType.OnBackgroundProportional: return TimeGraphTimeAxisMode.ProportionalScale;
+                }
+                return this.GuiGraphProperties.TimeAxisMode;
+            }
+        }
         /// <summary>
         /// Režim chování při změně velikosti: zachovat měřítko a změnit hodnotu End, nebo zachovat hodnotu End a změnit měřítko?
         /// </summary>
