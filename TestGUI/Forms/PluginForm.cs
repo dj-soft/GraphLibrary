@@ -50,6 +50,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             Noris.LCS.Base.WorkScheduler.GuiData guiData = Noris.LCS.Base.WorkScheduler.Persist.Deserialize(dataPack) as Noris.LCS.Base.WorkScheduler.GuiData;
             if (guiData == null) return;
 
+            // Tady se jedná o samostatnou aplikaci, nechť se i tak chová:
+            guiData.Properties.PluginFormBorder = PluginFormBorderStyle.Sizable;
+
             try
             {
                 using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority3_BellowNormal, "PluginForm", "InitializeWorkScheduler", ""))
