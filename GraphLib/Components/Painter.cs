@@ -9,6 +9,9 @@ using System.Drawing.Drawing2D;
 
 namespace Asol.Tools.WorkScheduler.Components
 {
+    /// <summary>
+    /// Nástroj pro kreslení
+    /// </summary>
     public class GPainter
     {
         #region DrawRectangle
@@ -73,6 +76,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="bounds"></param>
         /// <param name="sides"></param>
         /// <param name="dashStyle"></param>
+        /// <param name="colorTop"></param>
+        /// <param name="colorRight"></param>
+        /// <param name="colorBottom"></param>
+        /// <param name="colorLeft"></param>
         internal static void DrawBorder(Graphics graphics, Rectangle bounds, RectangleSide sides, DashStyle? dashStyle, Color? colorTop, Color? colorRight, Color? colorBottom, Color? colorLeft)
         {
             int x0 = bounds.X;
@@ -106,60 +113,35 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         #endregion
-        #region DrawArea
+        #region DrawAreaBase
         /// <summary>
-        /// Draw button base (background and border, by state)
-        /// </summary>
-        /// <param name="graphics"></param>
-        /// <param name="absoluteBounds"></param>
-        /// <param name="color"></param>
-        /// <param name="opacity"></param>
-        internal static void DrawAreaBase(Graphics graphics, Rectangle absoluteBounds, Color color, Orientation orientation, Point? point, Int32? opacity)
-        {
-            DrawAreaBase(graphics, absoluteBounds, color, GInteractiveState.Enabled, orientation, point, opacity, 0);
-        }
-        /// <summary>
-        /// Draw button base (background and border, by state)
-        /// </summary>
-        /// <param name="graphics"></param>
-        /// <param name="absoluteBounds"></param>
-        /// <param name="color"></param>
-        /// <param name="opacity"></param>
-        internal static void DrawAreaBase(Graphics graphics, Rectangle absoluteBounds, Color color, Orientation orientation, Point? point, Int32? opacity, int roundCorner)
-        {
-            DrawAreaBase(graphics, absoluteBounds, color, GInteractiveState.Enabled, orientation, point, opacity, roundCorner);
-        }
-        /// <summary>
-        /// Draw button base (background and border, by state)
+        /// Vykreslí podkladovou vrstvu pod button nebo jiný 3D prvek, závislý na interaktivním stavu.
         /// </summary>
         /// <param name="graphics"></param>
         /// <param name="absoluteBounds"></param>
         /// <param name="color"></param>
         /// <param name="state"></param>
+        /// <param name="orientation"></param>
+        /// <param name="point"></param>
+        /// <param name="roundCorner"></param>
         /// <param name="opacity"></param>
-        internal static void DrawAreaBase(Graphics graphics, Rectangle absoluteBounds, Color color, GInteractiveState state, Orientation orientation, Point? point, Int32? opacity)
-        {
-            if (absoluteBounds.Width <= 0 || absoluteBounds.Height <= 0) return;
-            DrawAreaBase(graphics, absoluteBounds, color, state, orientation, point, opacity, 0);
-        }
-        /// <summary>
-        /// Draw button base (background and border, by state)
-        /// </summary>
-        /// <param name="graphics"></param>
-        /// <param name="absoluteBounds"></param>
-        /// <param name="color"></param>
-        /// <param name="state"></param>
-        /// <param name="opacity"></param>
-        internal static void DrawAreaBase(Graphics graphics, Rectangle absoluteBounds, Color color, GInteractiveState state, Orientation orientation, Point? point, Int32? opacity, int roundCorner)
+        internal static void DrawAreaBase(Graphics graphics, Rectangle absoluteBounds, Color color, Orientation orientation, GInteractiveState state = GInteractiveState.Enabled, Point? point = null, Int32? opacity = null, int? roundCorner = null)
         {
             if (absoluteBounds.Width <= 0 || absoluteBounds.Height <= 0) return;
 
-            int roundX = roundCorner;
-            int roundY = roundCorner;
-            using (GraphicsPath path = CreatePathRoundRectangle(absoluteBounds, roundX, roundY))
             using (Brush brush = Skin.CreateBrushForBackground(absoluteBounds, orientation, state, true, color, opacity, point))
             {
-                graphics.FillPath(brush, path);
+                if (roundCorner.HasValue && roundCorner.Value > 0)
+                {
+                    using (GraphicsPath path = CreatePathRoundRectangle(absoluteBounds, roundCorner.Value, roundCorner.Value))
+                    {
+                        graphics.FillPath(brush, path);
+                    }
+                }
+                else
+                {
+                    graphics.FillRectangle(brush, absoluteBounds);
+                }
             }
         }
         #endregion
@@ -1418,7 +1400,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 state = GInteractiveState.Disabled;
             else if (state == GInteractiveState.LeftDrag)
                 state = GInteractiveState.LeftDown;
-            GPainter.DrawAreaBase(graphics, bounds, color, state, orientation, null, null, 0);
+            GPainter.DrawAreaBase(graphics, bounds, color, orientation, state, null, null, 0);
         }
         /// <summary>
         /// Zajistí vykreslení jednoho daného ticku
@@ -1459,6 +1441,12 @@ namespace Asol.Tools.WorkScheduler.Components
             if (pen != null)
                 graphics.DrawLine(pen, x0, y0, x1, y1);
         }
+        #endregion
+        #region DrawGraphItem
+        internal static void DrawGraphGroup(Graphics graphics)
+        { }
+        internal static void DrawGraphItem(Graphics graphics)
+        { }
         #endregion
         #region DrawRelationGrid
         /// <summary>
@@ -1580,7 +1568,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="itemState"></param>
         private static void _DrawScrollBarActiveArea(Graphics graphics, Rectangle bounds, Orientation orientation, bool isEnabled, GInteractiveState itemState)
         {
-            GPainter.DrawAreaBase(graphics, bounds, Skin.ScrollBar.BackColorArea, itemState, orientation, null, 96);
+            GPainter.DrawAreaBase(graphics, bounds, Skin.ScrollBar.BackColorArea, orientation, itemState, null, 96);
         }
         /// <summary>
         /// Vykreslí button pro ScrollBar a do něj jeho grafiku
@@ -1596,7 +1584,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             if (isEnabled && (!drawOnlyMouseActive || itemState.IsMouseActive()))
             {   // Buttony kreslím jen pokud ScrollBar je Enabled, a (mám kreslit i za stavu bez myši = Thumb, anebo button je myšoaktivní = Min/Max):
-                GPainter.DrawAreaBase(graphics, bounds, Skin.ScrollBar.BackColorButton, itemState, orientation, null, null);
+                GPainter.DrawAreaBase(graphics, bounds, Skin.ScrollBar.BackColorButton, orientation, itemState, null, null);
                 // GPainter.DrawButtonBase(graphics, bounds, Skin.ScrollBar.BackColorButton, itemState, orientation, 0, null, null);
             }
 

@@ -726,7 +726,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 toolbarBounds.X = boundsDraw.Value.X;
                 toolbarBounds.Width = boundsDraw.Value.Width;
             }
-            GPainter.DrawAreaBase(graphics, toolbarBounds, Skin.ToolBar.BackColor, GInteractiveState.MouseOver, System.Windows.Forms.Orientation.Horizontal, null, null);
+            GPainter.DrawAreaBase(graphics, toolbarBounds, Skin.ToolBar.BackColor, System.Windows.Forms.Orientation.Horizontal, GInteractiveState.MouseOver, null, null);
         }
         /// <summary>
         /// Tuto metodu volá interaktivní prvek po změně <see cref="FunctionItem.IsChecked"/>, úkolem je vyvolat event <see cref="GToolBar.ItemCheckedChange"/>.
@@ -1024,7 +1024,7 @@ namespace Asol.Tools.WorkScheduler.Components
             Rectangle titleAbsoluteBounds = new Rectangle(absoluteBounds.X + 1, dy + tb.Y, absoluteBounds.Width - 3, tb.Height);
 
             if (this.IsMouseActive)
-                GPainter.DrawAreaBase(e.Graphics, titleAbsoluteBounds, Skin.ToolBar.TitleBackColor, GInteractiveState.Enabled, System.Windows.Forms.Orientation.Horizontal, null, null);
+                GPainter.DrawAreaBase(e.Graphics, titleAbsoluteBounds, Skin.ToolBar.TitleBackColor, System.Windows.Forms.Orientation.Horizontal, GInteractiveState.Enabled, null, null);
 
             if (!String.IsNullOrEmpty(this.DataTitle))
                 GPainter.DrawString(e.Graphics, titleAbsoluteBounds, this.DataTitle, Skin.ToolBar.TextColor, tBarSetting.TitleFont, ContentAlignment.MiddleCenter);

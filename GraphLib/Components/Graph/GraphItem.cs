@@ -482,7 +482,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 itemBackColor = Skin.Graph.BackColor;
             Color foreColor = itemBackColor.Value.Contrast();
             Rectangle boundsText = boundsAbsolute;
-            boundsText.Y = boundsText.Y - 0;               // Vlastnost Windows: nahoru se text o 1px posunout může.
+            boundsText.Y = boundsText.Y;
             GPainter.DrawString(e.Graphics, boundsText, text, foreColor, fontInfo, ContentAlignment.MiddleCenter);
         }
         #endregion

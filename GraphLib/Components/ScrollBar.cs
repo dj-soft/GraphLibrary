@@ -1188,7 +1188,7 @@ namespace Asol.Tools.WorkScheduler.Components
             if (this.ChildItemsCalculate(false))
                 GPainter.DrawScrollBar(e.Graphics, absoluteBounds, this as IScrollBarPaintData);
             else
-                GPainter.DrawAreaBase(e.Graphics, absoluteBounds, Skin.ScrollBar.BackColorArea, this.Orientation, null, null);
+                GPainter.DrawAreaBase(e.Graphics, absoluteBounds, Skin.ScrollBar.BackColorArea, this.Orientation);
         }
         /// <summary>
         /// Defaultní barva BackColor
