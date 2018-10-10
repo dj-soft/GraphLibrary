@@ -395,7 +395,7 @@ namespace Noris.LCS.Base.WorkScheduler
         protected override IEnumerable<IGuiItem> Childs { get { return this.Grids; } }
     }
     #endregion
-    #region GuiGrid : obsahuje veškeré data pro zobrazení jedné tabulky v WorkScheduler pluginu
+    #region GuiGrid : obsahuje veškeré data pro zobrazení jedné tabulky v WorkScheduler pluginu (Rows, Graph, Text).
     /// <summary>
     /// GuiGrid : obsahuje veškeré data pro zobrazení jedné tabulky v WorkScheduler pluginu.
     /// Obsahuje řádky <see cref="Rows"/>, obsahuje jednotlivé prvky časových grafů <see cref="GraphItems"/>, a obsahuje textové popisky k těmto grafům <see cref="GraphTexts"/>.
@@ -437,6 +437,12 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Tabulka s řádky, typicky načtená dle přehledové šablony
         /// </summary>
         public GuiTable Rows { get; set; }
+        /// <summary>
+        /// Tagy k řádkům v tabulce <see cref="Rows"/>.
+        /// Tagy řádku dovolují k jednomu řádku připojit { 0 - 1 - mnoho } textových popisků (visačky = Tagy), a následně podle nich zafiltrovat řádky.
+        /// </summary>
+        public GuiTagItems RowTags { get; set; }
+
         /// <summary>
         /// Tabulky s grafickými prvky.
         /// Jedna vizuální tabulka může v grafech zobrazovat prvky, pocházející z různých zdrojů.
@@ -692,6 +698,66 @@ namespace Noris.LCS.Base.WorkScheduler
             duplicites = duplicityDict.Values.ToArray();
         }
         #endregion
+    }
+    #endregion
+    #region GuiTagItems : pole prvků GuiTagItem, reprezentuje Tagy jednoho řádku
+    /// <summary>
+    /// GuiTagItems : pole prvků GuiTagItem, reprezentuje Tagy jednoho řádku
+    /// </summary>
+    public class GuiTagItems : GuiBase
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public GuiTagItems()
+        {
+            this.Name = TAG_ITEMS_NAME;
+            this.TagItemList = new List<GuiTagItem>();
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return this.Name + "; Count: " + this.TagItemList.Count.ToString();
+        }
+        /// <summary>
+        /// Název prvku <see cref="GuiTagItems"/>
+        /// </summary>
+        public const string TAG_ITEMS_NAME = "tagItems";
+        /// <summary>
+        /// Jednotlivé prvky typu <see cref="GuiTagItem"/>
+        /// </summary>
+        public List<GuiTagItem> TagItemList { get; set; }
+    }
+    /// <summary>
+    /// GuiTagItem : reprezentuje Tagy jednoho řádku (obsahuje klíč řádku + jeden Tag).
+    /// Tagy řádku dovolují k jednomu řádku připojit { 0 - 1 - mnoho } textových popisků (visačky = Tagy), a následně podle nich zafiltrovat řádky.
+    /// </summary>
+    public class GuiTagItem : GuiBase
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public GuiTagItem()
+        { }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return "RowId: " + (this.RowId != null ? this.RowId.ToString() : "Null") + "; TagItem: " + this.TagItem;
+        }
+        /// <summary>
+        /// Identifikátor řádku
+        /// </summary>
+        public GuiId RowId { get; set; }
+        /// <summary>
+        /// Text tagu
+        /// </summary>
+        public string TagItem { get; set; }
     }
     #endregion
     #region GuiGraphProperties : vlastnosti grafu

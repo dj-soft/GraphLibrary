@@ -486,6 +486,8 @@ namespace Asol.Tools.WorkScheduler.Data
                 itm.Table = this;
                 itm.Id = id;
             }
+
+            this._InvalidateTagItems();
         }
         /// <summary>
         /// Protected virtual metoda volaná v procesu přidání řádku, řádek je platný, event RowAddAfter ještě neproběhl. V DTable je tato metoda prázdná.
@@ -521,6 +523,7 @@ namespace Asol.Tools.WorkScheduler.Data
                 itm.Table = null;
                 itm.Id = -1;
             }
+            this._InvalidateTagItems();
         }
         /// <summary>
         /// Protected virtual metoda volaná v procesu odebrání řádku, řádek je platný, event RowRemoveAfter ještě neproběhl. V DTable je tato metoda prázdná.
@@ -531,6 +534,49 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Public event vyvolaný po odebrání řádku z tabulky. Řádek již v tabulce není umístěn, řádek je uveden v argumentu.
         /// </summary>
         public event EList<Row>.EListEventAfterHandler RowRemoveAfter;
+        #endregion
+        #region TagItems = štítky náležející k řádku
+        /// <summary>
+        /// Soupis štítků ze všech řádků.
+        /// Hodnota Key = text Tagu; hodnota Value = počet výskytů v řádcích. Počet může mít vliv na velikost štítku.
+        /// </summary>
+        internal KeyValuePair<string, int>[] TagItems { get { this._CheckTagItems(); return this._TagItems; } }
+        /// <summary>
+        /// Zajistí platnost dat v poli <see cref="_TagItems"/>
+        /// </summary>
+        private void _CheckTagItems()
+        {
+            if (this._TagItems != null) return;
+
+            Dictionary<string, int> tagDict = new Dictionary<string, int>();
+            foreach (Row row in this.Rows)
+                ((ITagItemOwner)row).PrepareSummaryDict(tagDict);
+
+            List<KeyValuePair<string, int>> tagList = tagDict.ToList();
+            if (tagList.Count > 1)
+                tagList.Sort((a,b) => String.Compare(a.Key, b.Key));
+
+            this._TagItems = tagList.ToArray();
+        }
+        /// <summary>
+        /// Invaliduje pole štítků
+        /// </summary>
+        void ITableEventTarget.InvalidateTagItems()
+        {
+            this._InvalidateTagItems();
+        }
+        /// <summary>
+        /// Invaliduje pole štítků
+        /// </summary>
+        private void _InvalidateTagItems()
+        {
+            this._TagItems = null;
+        }
+        /// <summary>
+        /// Soupis štítků ze všech řádků.
+        /// Key = text Tagu; Value = počet výskytů
+        /// </summary>
+        private KeyValuePair<string, int>[] _TagItems;
         #endregion
         #region Třídění a filtrování řádků
         /// <summary>
@@ -2192,7 +2238,7 @@ namespace Asol.Tools.WorkScheduler.Data
     /// <summary>
     /// Row : informace o jednom řádku tabulky
     /// </summary>
-    public class Row : ITableMember, IVisualMember, IVisualParent, ISequenceLayout, IContentValidity, IComparableItem
+    public class Row : ITableMember, ITagItemOwner, IVisualMember, IVisualParent, ISequenceLayout, IContentValidity, IComparableItem
     {
         #region Konstruktor, základní data
         /// <summary>
@@ -2377,6 +2423,67 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Soupis buněk
         /// </summary>
         private Dictionary<int, Cell> _CellDict;
+        #endregion
+        #region TagItems = štítky náležející k řádku
+        /// <summary>
+        /// TagItems = štítky náležející k řádku.
+        /// Štítky - pokud budou u některých řádků v tabulce zadány, budou sumarizovány ze všech řádků tabulky, a budou vypsány pod záhlavím tabulky.
+        /// Ty pak slouží jako rychlý filtr řádků.
+        /// </summary>
+        public IEnumerable<string> TagItems { get { return (this._TagItemDict != null ? this._TagItemDict.Keys : null); } set { this._SetTagItems(value); } }
+        /// <summary>
+        /// Prvek přidá svoje Tagy do společné Dictionary
+        /// </summary>
+        /// <param name="tagDict"></param>
+        void ITagItemOwner.PrepareSummaryDict(Dictionary<string, int> tagDict)
+        {
+            if (this._TagItemDict == null) return;
+            _AddTagItemsToDict(this._TagItemDict.Keys, tagDict);
+        }
+        /// <summary>
+        /// Prvek vrátí true, pokud jeho Tagy vyhovují zadaným (uživatelem zvoleným) Tagům.
+        /// </summary>
+        /// <param name="tagItems"></param>
+        bool ITagItemOwner.FilterByTagValues(IEnumerable<string> tagItems)
+        {
+            if (tagItems == null || this._TagItemDict == null) return false;
+            bool exists = tagItems.Where(tag => !String.IsNullOrEmpty(tag)).Any(tag => this._TagItemDict.ContainsKey(tag));
+            return exists;
+        }
+        /// <summary>
+        /// Z dodaných položek vygeneruje data do <see cref="_TagItemDict"/>
+        /// </summary>
+        /// <param name="tagItems"></param>
+        private void _SetTagItems(IEnumerable<string> tagItems)
+        {
+            Dictionary<string, int> tagDict = new Dictionary<string, int>();
+            _AddTagItemsToDict(tagItems, tagDict);
+            this._TagItemDict = tagDict;
+            if (this.HasTable)
+                ((ITableEventTarget)this.Table).InvalidateTagItems();
+        }
+        /// <summary>
+        /// Projde prvky z kolekce tagItems, a přidá je do Dictionary tagDict (přidá klíč a navýší hodnotu za každý jeden přidaný klíč).
+        /// </summary>
+        /// <param name="tagItems"></param>
+        /// <param name="tagDict"></param>
+        private static void _AddTagItemsToDict(IEnumerable<string> tagItems, Dictionary<string, int> tagDict)
+        {
+            if (tagItems == null || tagDict == null) return;
+            foreach (string tagItem in tagItems)
+            {
+                if (String.IsNullOrEmpty(tagItem)) continue;
+                int value;
+                if (!tagDict.TryGetValue(tagItem, out value))
+                    tagDict.Add(tagItem, 1);
+                else
+                    tagDict[tagItem] = value + 1;
+            }
+        }
+        /// <summary>
+        /// Úložiště Tagů tohoto řádku
+        /// </summary>
+        private Dictionary<string, int> _TagItemDict;
         #endregion
         #region BackgroundValue
         /// <summary>
@@ -2931,6 +3038,27 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="e"></param>
         /// <param name="callEvents"></param>
         void CallActiveCellRightClick(Cell cell, GInteractiveChangeStateArgs e, bool callEvents);
+
+        /// <summary>
+        /// Invaliduje pole štítků
+        /// </summary>
+        void InvalidateTagItems();
+    }
+    /// <summary>
+    /// Předpis pro prvek, který je zdrojem Tagů =´visaček do zjednodušeného řádkového filtru
+    /// </summary>
+    public interface ITagItemOwner
+    {
+        /// <summary>
+        /// Prvek přidá svoje Tagy do společné Dictionary
+        /// </summary>
+        /// <param name="tagDict"></param>
+        void PrepareSummaryDict(Dictionary<string, int> tagDict);
+        /// <summary>
+        /// Prvek vrátí true, pokud jeho Tagy vyhovují zadaným (uživatelem zvoleným) Tagům.
+        /// </summary>
+        /// <param name="tagItems"></param>
+        bool FilterByTagValues(IEnumerable<string> tagItems);
     }
     /// <summary>
     /// Objekt, kterému je možno nastavit stav platnosti dat, sloupce a řádku

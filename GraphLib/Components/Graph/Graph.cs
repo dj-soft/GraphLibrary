@@ -48,6 +48,12 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             this._ItemDict = new Dictionary<int, ITimeGraphItem>();
             this.Is.SelectParent = true;
+
+            // this.BackgroundColor = Color.FromArgb(240, 240, 250);
+            if ((this.Id % 3) == 0)
+                this.LeftColor = Color.DarkRed;
+            if ((this.Id % 4) == 0)
+                this.RightColor = Color.Green;
         }
         /// <summary>
         /// ID tohoto grafu. Hodnotu nastavuje aplikační kód dle své potřeby, hodnota je vkládána do identifikátorů odesílaných do handlerů událostí v grafu.
@@ -127,7 +133,21 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         private TimeGraphProperties _GraphParameters;
         private TimeGraphProperties _GraphParametersDefault;
         #endregion
-        #region Prvky grafu
+        #region Vlastnosti grafu - BackColor, LeftColor, RightColor
+        /// <summary>
+        /// Barva pozadí, může využívat transparentnost
+        /// </summary>
+        public Color? BackgroundColor { get; set; }
+        /// <summary>
+        /// Barva levé části pozadí pod logaritmickým grafem, může využívat transparentnost
+        /// </summary>
+        public Color? LeftColor { get; set; }
+        /// <summary>
+        /// Barva pravé části pozadí pod logaritmickým grafem, může využívat transparentnost
+        /// </summary>
+        public Color? RightColor { get; set; }
+        #endregion
+        #region Prvky grafu : GraphItems, AddGraphItem(), RemoveGraphItem()
         /// <summary>
         /// Vloží daný prvek do this grafu.
         /// Při duplicitě klíče ItemId hlásí chybu (pokud není zadáno ignoreDuplicity = true).
@@ -1244,6 +1264,10 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="absoluteBounds"></param>
         protected virtual void DrawBackground(GInteractiveDrawArgs e, Rectangle absoluteBounds)
         {
+            Color? backColor = this.BackgroundColor;
+            if (backColor.HasValue)
+                e.Graphics.FillRectangle(Skin.Brush(backColor.Value), absoluteBounds);
+
             switch (this.GraphParameters.TimeAxisMode)
             {
                 case TimeGraphTimeAxisMode.LogarithmicScale:
@@ -1261,21 +1285,24 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             float shadow = this.GraphParameters.LogarithmicGraphDrawOuterShadow;
             if (shadow <= 0f) return;
-            int alpha = (int)(255f * shadow);
-            Color color1 = Color.FromArgb(0, 0, 0, 0);
-            Color color2 = Color.FromArgb(alpha, 0, 0, 0);
+            Color colorCenter = Color.FromArgb(0, 0, 0, 0);          // Barva úplně průhledná, pro přechod "do ztracena" uprostřed grafu
+            int alpha = (int)(255f * shadow);                        // Úroveň stínování 0-1 => 0-255
+            int beta = 2 * (alpha < 127 ? alpha : 127);
+            Color colorEdge = Color.FromArgb(alpha, 0, 0, 0);        // Barva na okraji grafu výchozí
             int width = (int)(((1f - this.GraphParameters.LogarithmicRatio) / 2f) * (float)absoluteBounds.Width);
 
+            Color leftColor = (this.LeftColor.HasValue ? Color.FromArgb(beta, this.LeftColor.Value) : colorEdge);
             Rectangle leftBounds = new Rectangle(absoluteBounds.X, absoluteBounds.Y, width, absoluteBounds.Height);
             Rectangle leftBoundsG = leftBounds.Enlarge(1, 0, 0, 1);                      // To je úchylka WinFormů
-            using (System.Drawing.Drawing2D.LinearGradientBrush lgb = new System.Drawing.Drawing2D.LinearGradientBrush(leftBoundsG, color2, color1, 00f))
+            using (System.Drawing.Drawing2D.LinearGradientBrush lgb = new System.Drawing.Drawing2D.LinearGradientBrush(leftBoundsG, leftColor, colorCenter, 00f))
             {
                 e.Graphics.FillRectangle(lgb, leftBounds);
             }
 
+            Color rightColor = (this.RightColor.HasValue ? Color.FromArgb(beta, this.RightColor.Value) : colorEdge);
             Rectangle rightBounds = new Rectangle(absoluteBounds.Right - width, absoluteBounds.Y, width, absoluteBounds.Height);
             Rectangle rightBoundsG = rightBounds.Enlarge(1, 0, 0, 1);                    // To je úchylka WinFormů
-            using (System.Drawing.Drawing2D.LinearGradientBrush rgb = new System.Drawing.Drawing2D.LinearGradientBrush(rightBoundsG, color2, color1, 180f))
+            using (System.Drawing.Drawing2D.LinearGradientBrush rgb = new System.Drawing.Drawing2D.LinearGradientBrush(rightBoundsG, rightColor, colorCenter, 180f))
             {
                 e.Graphics.FillRectangle(rgb, rightBounds);
             }
