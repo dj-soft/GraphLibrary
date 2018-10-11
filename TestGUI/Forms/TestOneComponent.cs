@@ -31,10 +31,11 @@ namespace Asol.Tools.WorkScheduler.TestGUI.Forms
             // this.TagFilter.BackColor = Color.DarkBlue;
             this.TagFilter.SelectAllVisible = true;
             this.TagFilter.SelectionMode = GTagFilterSelectionMode.AnyItemsCount;
-            this.TagFilter.ItemHeight = 22;
-            this.TagFilter.RoundItemPercent = 40;
+            this.TagFilter.ItemHeight = 29;
+            this.TagFilter.RoundItemPercent = 0;
+            this.TagFilter.DrawItemBorder = false;
             this.TagFilter.ExpandHeightOnMouse = true;
-            this.TagFilter.CheckedImage = Application.App.Resources.GetImage(Noris.LCS.Base.WorkScheduler.Resources.Images.Actions24.DialogOk2Png);
+            this.TagFilter.CheckedImage = Application.App.Resources.GetImage(Noris.LCS.Base.WorkScheduler.Resources.Images.Actions24.Checkbox2Png);
             this.TagFilter.FilterChanged += TagFilter_FilterChanged;
             this.TagFilter.TagItems = this.CreateTagItems();
             this.TagFilterHeight = 2;
@@ -56,18 +57,18 @@ namespace Asol.Tools.WorkScheduler.TestGUI.Forms
         protected TagItem[] CreateTagItems()
         {
             List<TagItem> tagList = new List<TagItem>();
-            tagList.Add("Třetí");
-            tagList.Add("Desátý");
-            tagList.Add("Zelená");
-            tagList.Add("Borový");
-            tagList.Add("Skleněné");
-            tagList.Add("Kruhové");
-            tagList.Add("Hrušková");
-            tagList.Add("Nerezový");
-            tagList.Add("Základní");
+            tagList.Add("0.Třetí");
+            tagList.Add("1.Desátý");
+            tagList.Add("2.Zelená");
+            tagList.Add("3.Borový");
+            tagList.Add("4.Skleněné");
+            tagList.Add("5.Kruhové");
+            tagList.Add("6.Hrušková");
+            tagList.Add("7.Nerezový");
+            tagList.Add("8.Základní");
 
-            Color backColor = Color.FromArgb(255, 220, 192, 192);
-            Color checkColor = Color.FromArgb(255, 250, 220, 220);
+            Color? backColor = Color.FromArgb(255, 220, 192, 192);
+            Color? checkColor = null; // Color.FromArgb(255, 250, 220, 220);
             tagList[3].BackColor = backColor;
             tagList[3].CheckedBackColor = checkColor;
             tagList[4].BackColor = backColor;
@@ -76,6 +77,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI.Forms
             tagList[5].CheckedBackColor = checkColor;
             tagList[6].BackColor = backColor;
             tagList[6].CheckedBackColor = checkColor;
+            tagList[7].Visible = false;
 
             /*
             tagList[2].Checked = true;
