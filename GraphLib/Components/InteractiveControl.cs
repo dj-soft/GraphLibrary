@@ -47,6 +47,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this._KeyboardEventsInit();
             this._MouseEventsInit();
             this._DrawSupportInit();
+            this._AnimatorInit();
             this._BackThreadInit();
         }
         /// <summary>
@@ -1412,7 +1413,7 @@ namespace Asol.Tools.WorkScheduler.Components
         private void _ToolTipSet(Point? point, ToolTipData toolTipData)
         {
             this._ToolTip.ToolTipSet(point, toolTipData);
-            if (this._ToolTipNeedAnimation)
+            if (this._ToolTipNeedTick)
                 this._BackThreadResume();
         }
         /// <summary>
@@ -1436,7 +1437,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// true when tooltip needs animation
         /// </summary>
-        private bool _ToolTipNeedAnimation { get { return (this._ToolTip != null && this._ToolTip.NeedAnimation); } }
+        private bool _ToolTipNeedTick { get { return (this._ToolTip != null && this._ToolTip.NeedAnimation); } }
         #endregion
         #region Podpora pro Progress
         /// <summary>
@@ -2463,9 +2464,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected System.Diagnostics.Stopwatch Stopwatch { get; private set; }
         #endregion
-        #region Background Thread: animations, tooltip fader...
+        #region Background Thread: animace, tooltip fader...
         /// <summary>
-        /// Initiate background thread
+        /// Inicializace threadu Background.
+        /// Volá se v rámci inicializace celého controlu.
+        /// Threadu Background je živý stále, až do Dispose.
         /// </summary>
         /// <remarks>Run only in GUI thread</remarks>
         private void _BackThreadInit()
@@ -2480,7 +2483,8 @@ namespace Asol.Tools.WorkScheduler.Components
             this._BackThread.Start();
         }
         /// <summary>
-        /// Stop background thread
+        /// Zastaví thread Background.
+        /// Volá se pouze v Dispose.
         /// </summary>
         /// <remarks>Can run in boot thread (GUI and BackThread)</remarks>
         private void _BackThreadDone()
@@ -2489,17 +2493,31 @@ namespace Asol.Tools.WorkScheduler.Components
             this._BackSemaphore.Set();
         }
         /// <summary>
-        /// Ensure start of background thread animations.
-        /// When background thread is active, do nothing.
-        /// When is inactive, then activate this immediatelly.
+        /// Nastartuje thread Background do plného režimu, kdy se volá Tick po 40ms.
+        /// Pošle signál do threadu nas pozadí, aby se provedla první animační akce.
+        /// Pokud ale je thread Background v plném režimu, neprovede nic (aby se nezaneslo rušení do plynulé animace = tzb. Jitter).
+        /// Metodu lze volat z threadu na pozadí i z GUI threadu.
         /// </summary>
-        /// <remarks>Can run in boot thread (GUI and BackThread)</remarks>
         private void _BackThreadResume()
         {
             if (!this._BackThreadActive)
             {
                 this._BackThreadActive = true;
                 this._BackSemaphore.Set();
+            }
+        }
+        /// <summary>
+        /// Metoda uvede thread Background do ospalého režimu, kdy se volá Tick po 1000ms.
+        /// Metodu lze zavolat kdykoliv, sama si zjistí, zda neexistuje nějaký aktivní zdroj animace.
+        /// </summary>
+        private void _BackThreadTrySuspend()
+        {
+            if (this._BackThreadActive)
+            {
+                bool activeToolTip = this._ToolTipNeedTick;
+                bool activeAnimation = this._AnimationNeedTick;
+                if (!activeToolTip && !activeAnimation)
+                    this._BackThreadActive = false;
             }
         }
         /// <summary>
@@ -2521,42 +2539,85 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <remarks>Run only in BackThread thread</remarks>
         private void _BackThreadRun()
         {
-            bool needDraw = false;
+            if (this._BackThreadProcess) return;           // Pokud jsme ještě nestihli obsloužit poslední Tick, nezačneme řešit nový...
 
-            if (this._ToolTipNeedAnimation)
-            {   // ToolTip needs animation: call its AnimateStep() method, this method returns true when ToolTip need new Draw:
-                bool needDrawToolTip = this._ToolTip.AnimateTick();
-                needDraw |= needDrawToolTip;
+            try
+            {
+                this._BackThreadProcess = true;
+
+                bool needDraw = false;
+                bool drawItems = false;
+
+                // Zeptáme se ToolTipu, zda má potřebu nějaké animace:
+                if (this._ToolTipNeedTick)
+                {   // Pošleme to ToolTipu Tick, on nám vrátí, jestli potřebuje překreslit:
+                    bool needDrawToolTip = this._ToolTip.AnimateTick();
+                    needDraw |= needDrawToolTip;
+                }
+
+                // Jakákoli jiná animace:
+                if (this._AnimationNeedTick)
+                {
+                    bool needDrawAnimation = this._AnimatorTick();
+                    needDraw |= needDrawAnimation;
+                    drawItems = needDrawAnimation;
+                }
+
+                // Zkusíme přejít do Suspend režimu (pokud všichni animátoři mají hotovo):
+                this._BackThreadTrySuspend();
+
+                // Kreslení:
+                if (needDraw)
+                    this._BackThreadRunDraw(drawItems);
             }
-
-            // Another animations:
-
-
-
-            if (needDraw)
-                this._BackThreadRunDraw();
+            finally
+            {
+                this._BackThreadProcess = false;
+            }
         }
+        /// <summary>
+        /// true = právě probíhá výkon v metodě <see cref="_BackThreadRun()"/>, nebudeme spouštět její další instanci
+        /// </summary>
+        private bool _BackThreadProcess;
         /// <summary>
         /// Invoke GUI thread, call method for drawing ToolTip: _BackThreadRunDrawGui()
         /// </summary>
+        /// <param name="drawItems">true = vykreslit i běžné prvky (=naplnit request pro kreslení)</param>
         /// <remarks>Can run in boot thread (GUI and BackThread)</remarks>
-        private void _BackThreadRunDraw()
+        private void _BackThreadRunDraw(bool drawItems)
         {
             if (this.InvokeRequired)
-                this.BeginInvoke(new Action(this._BackThreadRunDrawGui));
+                this.BeginInvoke(new Action<bool>(this._BackThreadRunDrawGui), drawItems);
             else
-                this._BackThreadRunDrawGui();
+                this._BackThreadRunDrawGui(drawItems);
         }
         /// <summary>
         /// Call Draw() for this control, for only ToolTip object.
         /// </summary>
+        /// <param name="drawItems">true = vykreslit i běžné prvky (=naplnit request pro kreslení)</param>
         /// <remarks>Run only in GUI thread</remarks>
-        private void _BackThreadRunDrawGui()
+        private void _BackThreadRunDrawGui(bool drawItems)
         {
-            DrawRequest request = new DrawRequest(false, this._NeedDrawFrameBounds, this._ToolTip, null);
-            request.InteractiveMode = true;
-            this.Draw(request);
+            if (this._BackThreadRunDrawGuiProcess) return;
+            try
+            {
+                this._BackThreadRunDrawGuiProcess = true;
+                DrawRequest request = new DrawRequest(this.RepaintAllItems, this._NeedDrawFrameBounds, this._ToolTip, null);
+                if (drawItems)
+                    request.Fill(this.ClientSize, this, this.ItemsList, this.RepaintAllItems, false);
+                request.InteractiveMode = true;
+                this.Draw(request);
+            }
+            finally
+            {
+                this._BackThreadRunDrawGuiProcess = false;
+            }
         }
+        /// <summary>
+        /// true = právě probíhá výkon v metodě <see cref="_BackThreadRunDrawGui(bool)"/>, nebudeme spouštět její další instanci
+        /// </summary>
+        private bool _BackThreadRunDrawGuiProcess;
+
         /// <summary>
         /// Thread running in background for this control
         /// </summary>
@@ -2578,6 +2639,58 @@ namespace Asol.Tools.WorkScheduler.Components
         /// true = Back thread has been exited
         /// </summary>
         private bool _BackThreadStop;
+        #endregion
+        #region Animace
+        /// <summary>
+        /// Metoda přidá danou funkci do seznamu animátorů.
+        /// Daná funkce bude volána 1x za 40 milisekund (25x za sekundu).
+        /// Funkce má zařídit svoji animaci a vrátit informaci, co dál.
+        /// </summary>
+        /// <param name="animatorTick"></param>
+        public void AnimationStart(Func<AnimationResult> animatorTick)
+        {
+            if (animatorTick == null) return;
+            this._AnimatorTickList.Add(animatorTick);
+            this._BackThreadResume();
+        }
+        /// <summary>
+        /// Vrací true, pokud animátor má běhat; false pokud není důvod provádět animaci
+        /// </summary>
+        private bool _AnimationNeedTick { get { return (this._AnimatorTickList.Count > 0); } }
+        /// <summary>
+        /// Metoda provede všechny zaregistrované animační procedury. 
+        /// Vrátí true = je třeba provést překreslení.
+        /// </summary>
+        /// <returns></returns>
+        private bool _AnimatorTick()
+        {
+            bool needDraw = false;
+            for (int i = 0; i < this._AnimatorTickList.Count; i++)
+            {
+                Func<AnimationResult> animatorTick = this._AnimatorTickList[i];
+                AnimationResult result = (animatorTick != null ? animatorTick() : AnimationResult.Stop);
+                if (result.HasFlag(AnimationResult.Draw) && !needDraw)
+                    // Daná animační akce vyžaduje Draw => zajistíme to:
+                    needDraw = true;
+                if (result.HasFlag(AnimationResult.Stop))
+                {   // Daná animační akce již skončila => odeberu si ji ze svého seznamu:
+                    this._AnimatorTickList.RemoveAt(i);
+                    i--;
+                }
+            }
+            return needDraw;
+        }
+        /// <summary>
+        /// Inicializace systému Animátor
+        /// </summary>
+        private void _AnimatorInit()
+        {
+            this._AnimatorTickList = new List<Func<AnimationResult>>();
+        }
+        /// <summary>
+        /// Pole aktivních animátorů
+        /// </summary>
+        private List<Func<AnimationResult>> _AnimatorTickList;
         #endregion
         #region Public property and events
         /// <summary>

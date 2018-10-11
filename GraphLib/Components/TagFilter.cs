@@ -25,9 +25,11 @@ namespace Asol.Tools.WorkScheduler.Components
             this._SelectAllVisible = true;
         }
         /// <summary>
-        /// Sada štítků. V daném pořadí budou zobrazovány.
+        /// Sada štítků. 
+        /// V daném pořadí budou zobrazovány.
+        /// Po nasetování hodnoty bude vyvolán event <see cref="FilterChanged"/>.
         /// </summary>
-        public TagItem[] TagItems { get { return this._TagItems; } set { this._TagItems = value; this._TagItemsChanged(); } } private TagItem[] _TagItems;
+        public TagItem[] TagItems { get { return this._TagItems; } set { this._TagItems = value; this._TagItemsChanged(); this.CallFilterChanged(); } } private TagItem[] _TagItems;
         /// <summary>
         /// Režim výběru položek
         /// </summary>
@@ -278,17 +280,46 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Interaktivita prvků, výběr prvků podle režimu, eventy
         /// <summary>
+        /// Událost, kdy došlo ke změně ve filtru.
+        /// Aktuálně vybrané položky si eventhandler najde v property <see cref="FilteredItems"/>.
+        /// </summary>
+        public event EventHandler FilterChanged;
+        /// <summary>
+        /// Háček při změně ve filtru
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnFilterChanged(EventArgs args) { }
+        /// <summary>
+        /// Zavolá háček OnFilterChanged() a event FilterChanged
+        /// </summary>
+        protected void CallFilterChanged()
+        {
+            if (this._TagItems == null) return;
+
+            EventArgs args = new EventArgs();
+            this.OnFilterChanged(args);
+            if (this.FilterChanged != null)
+                this.FilterChanged(this, args);
+        }
+        /// <summary>
+        /// Souhrn položek filtru, které jsou aktuálně vybrané.
+        /// Pokud je zde počet položek = 0, mívá to význam "Zobrazit vše".
+        /// </summary>
+        public TagItem[] FilteredItems { get { return this._DataItemList.Where(g => g.CheckedSilent).Select(g => g.TagItem).ToArray(); } }
+        /// <summary>
         /// Uživatel kliknul na prvek
         /// </summary>
         /// <param name="clickedItem"></param>
-        internal void OnItemClick(GTagItem clickedItem)
+        private void _OnItemClick(GTagItem clickedItem)
         {
             var dataItems = this._DataItemList;
             List<GTagItem> checkedItems = dataItems.Where(g => g.CheckedSilent).ToList();
             int checkedCount = checkedItems.Count;
+            bool isChange = false;
 
             if (clickedItem.IsSelectAll)
             {   // Uživatel klikl na prvek "Vyber vše":
+                isChange = (!clickedItem.CheckedSilent);
                 clickedItem.CheckedSilent = true;
                 checkedItems.ForEach(g => g.CheckedSilent = false);
             }
@@ -300,6 +331,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 {
                     case GTagFilterSelectionMode.AnyItemsCount:
                         // Lze vybrat jakýkoli počet položek: nula, jedna i třeba všechny položky.
+                        isChange = true;
                         clickedItem.CheckedSilent = !clickedItem.CheckedSilent;
                         this._SelectAllItemCheckByData();
                         break;
@@ -309,11 +341,13 @@ namespace Asol.Tools.WorkScheduler.Components
                         if (clickedItem.CheckedSilent)
                         {   //  a) Pokud clickedItem byla dosud označená, 
                             //     tak ji odznačím; nemá to vliv na okolní datové položky:
+                            isChange = true;
                             clickedItem.CheckedSilent = false;
                         }
                         else
                         {   //  b) Pokud clickedItem byla dosud neoznačená, a máme nějaké jiné datové označené položky, 
                             //     tak nejprve všechny označené odznačím, a poté clickedItem označím:
+                            isChange = true;
                             checkedItems.ForEach(g => g.CheckedSilent = false);
                             clickedItem.CheckedSilent = true;
                         }
@@ -325,6 +359,7 @@ namespace Asol.Tools.WorkScheduler.Components
                         if (!clickedItem.CheckedSilent)
                         {   //  Pokud clickedItem byla dosud neoznačená, a máme nějaké jiné datové označené položky, 
                             //     tak nejprve všechny označené odznačím, a poté clickedItem označím:
+                            isChange = true;
                             checkedItems.ForEach(g => g.CheckedSilent = false);
                             clickedItem.CheckedSilent = true;
                         }   //  Pokud clickedItem byla dosud označená, tak ji tak necháme.
@@ -332,6 +367,9 @@ namespace Asol.Tools.WorkScheduler.Components
                         break;
                 }
             }
+            if (isChange)
+                this.CallFilterChanged();
+
             this.Repaint();
         }
         /// <summary>
@@ -409,12 +447,15 @@ namespace Asol.Tools.WorkScheduler.Components
             if (this._ExpandHeightOnMouse)
             {
                 Rectangle bounds = this.Bounds;
-                int heightMin = bounds.Height;
+                int heightOld = bounds.Height;
                 int heightNew = this.OptimalHeightAllRows;
-                if (heightNew > heightMin)
+                if (heightNew > heightOld)
                 {
-                    this._HeightOnMouseEnter = heightMin;
-                    this.Bounds = new Rectangle(bounds.X, bounds.Y, bounds.Width, heightNew);
+                    this._HeightOnMouseEnter = heightOld;
+                    if (this._HeightAnimation)
+                        this._HeightAnimationStart(heightOld, heightNew, 6);
+                    else
+                        this.Bounds = new Rectangle(bounds.X, bounds.Y, bounds.Width, heightNew);
                 }
             }
             else
@@ -432,23 +473,130 @@ namespace Asol.Tools.WorkScheduler.Components
             if (this._HeightOnMouseEnter.HasValue)
             {
                 Rectangle bounds = this.Bounds;
-                int heightMin = bounds.Height;
+                int heightOld = bounds.Height;
                 int heightNew = this._HeightOnMouseEnter.Value;
-                this.Bounds = new Rectangle(bounds.X, bounds.Y, bounds.Width, heightNew);
-                this.Parent.Repaint();
+                if (this._HeightAnimation)
+                    this._HeightAnimationStart(heightOld, heightNew, 6);
+                else
+                {
+                    this.Bounds = new Rectangle(bounds.X, bounds.Y, bounds.Width, heightNew);
+                    this.Parent.Repaint();
+                }
             }
             this._HeightOnMouseEnter = null;
         }
+        #endregion
+        #region Animace změny výšky
+        /// <summary>
+        /// Zahájí animaci změny výšky
+        /// </summary>
+        /// <param name="valueBegin"></param>
+        /// <param name="valueEnd"></param>
+        /// <param name="stepCount"></param>
+        private void _HeightAnimationStart(int valueBegin, int valueEnd, int stepCount)
+        {
+            if (this._HeightAnimationRunning)
+            {
+                this._HeightAnimationAbort(valueEnd);
+                return;
+            }
+
+            this._HeightAnimationSteps = new int[stepCount];
+            for (int i = 0; i < stepCount; i++)
+                this._HeightAnimationSteps[i] = this._HeightAnimationGetValue(valueBegin, valueEnd, i, stepCount);
+
+            this._HeightAnimationStepIndex = 0;
+            this._HeightAnimationRunning = true;
+            this.Host.AnimationStart(this._HeightAnimationTick);
+        }
+        /// <summary>
+        /// Vrátí hodnotu pro animaci daného kroku
+        /// </summary>
+        /// <param name="valueBegin"></param>
+        /// <param name="valueEnd"></param>
+        /// <param name="stepIndex"></param>
+        /// <param name="stepCount"></param>
+        /// <returns></returns>
+        private int _HeightAnimationGetValue(int valueBegin, int valueEnd, int stepIndex, int stepCount)
+        {
+            // Vzdálenost, kterou musíme animovat:
+            double size = (double)(valueEnd - valueBegin);
+            // Hodnota ratio = 0.00 => na začátku (ale to vylučujeme)  --až--  1.00 => na konci:
+            double ratio = ((double)(stepIndex + 1)) / ((double)(stepCount));
+            double dist = size * Math.Sin(ratio * Math.PI / 2d);            // lineárně: dist = (ratio * size);
+            double value = ((double)valueBegin) + dist;
+            return (int)Math.Round(value, 0);
+        }
+        /// <summary>
+        /// Nouzově zruší animaci a nastaví cílovou hodnotu.
+        /// Používá se při požadavku na novou animaci v době, kdy aktuální ještě běží.
+        /// </summary>
+        /// <param name="value"></param>
+        private void _HeightAnimationAbort(int value)
+        {
+            this._HeightAnimationSteps = null;
+            this._HeightAnimationStepIndex = -1;
+            this._HeightAnimationRunning = false;
+
+            Rectangle bounds = this.Bounds;
+            this.Bounds = new Rectangle(bounds.X, bounds.Y, bounds.Width, value);
+            this.Parent.Repaint();
+        }
+        /// <summary>
+        /// Provede jeden krok animace.
+        /// Metoda je volaná z Hostu, z jeho animačního timeru, v threadu na pozadí.
+        /// Metoda nemá provádět jakýkoli pokus o Refresh nebo Invalidaci, jen má vrátit informaci o svých požadavcích.
+        /// </summary>
+        /// <returns></returns>
+        private AnimationResult _HeightAnimationTick()
+        {
+            int[] steps = this._HeightAnimationSteps;
+            int index = this._HeightAnimationStepIndex;
+            if (steps == null || steps.Length == 0 || index < 0) return AnimationResult.Stop;
+
+            int count = steps.Length;
+            if (index < 0 || index >= count) return AnimationResult.Stop;
+            int value = steps[index];
+            Rectangle bounds = this.Bounds;
+            this.Bounds = new Rectangle(bounds.X, bounds.Y, bounds.Width, value);
+            this.Parent.Repaint();
+            AnimationResult result = AnimationResult.Draw;
+            index++;
+            this._HeightAnimationStepIndex = index;
+            if (index >= count)
+            {
+                result |= AnimationResult.Stop;
+                this._HeightAnimationRunning = false;
+            }
+            return result;
+        }
+        /// <summary>
+        /// Kroky animace
+        /// </summary>
+        private int[] _HeightAnimationSteps;
+        /// <summary>
+        /// Index do pole <see cref="_HeightAnimationSteps"/>, odkud bude čtena hodnota pro následující Tick <see cref="_HeightAnimationTick()"/>.
+        /// </summary>
+        private int _HeightAnimationStepIndex;
+        /// <summary>
+        /// Obsahuje true v době, kdy animace běží, a false když neběží.
+        /// </summary>
+        private bool _HeightAnimationRunning;
         /// <summary>
         /// Výška, kterou měl objekt v eventu MouseEnter, před tím než byl zvětšen.
         /// </summary>
         private int? _HeightOnMouseEnter;
+        /// <summary>
+        /// Obsahuje true = pokud změna výšky má probíhat formou animace / false = skokově
+        /// </summary>
+        private bool _HeightAnimation = true;
         #endregion
         #region ITagFilter explicitní implementace
         int ITagFilter.CurrentRoundPercent { get { return this._CurrentRoundPercent; } }
         int ITagFilter.CurrentItemHeight { get { return this._CurrentItemHeight; } }
         void ITagFilter.TagItemsChanged() { this._TagItemsChanged(); }
         void ITagFilter.TagItemsRepaint() { this._TagItemsRepaint(); }
+        void ITagFilter.OnItemClick(GTagItem clickedItem) { this._OnItemClick(clickedItem); }
         #endregion
     }
     #region interface ITagFilter : pro interní práci s GTagFilter
@@ -473,6 +621,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Požadavek na překreslení prvků
         /// </summary>
         void TagItemsRepaint();
+        /// <summary>
+        /// Po kliknutí na tlačítko
+        /// </summary>
+        /// <param name="clickedItem"></param>
+        void OnItemClick(GTagItem clickedItem);
     }
     #endregion
     #region enum GTagFilterSelectionMode
@@ -668,7 +821,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         protected override void AfterStateChangedLeftClick(GInteractiveChangeStateArgs e)
         {
-            this.Owner.OnItemClick(this);
+            ((ITagFilter)this.Owner).OnItemClick(this);
         }
         /// <summary>
         /// Obsahuje true pro prvek "Vyber vše", false pro běžné datové prvky

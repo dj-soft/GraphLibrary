@@ -1639,6 +1639,25 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         Always
     }
+    /// <summary>
+    /// Výsledek jednoho kroku animace
+    /// </summary>
+    [Flags]
+    public enum AnimationResult
+    {
+        /// <summary>
+        /// Nic není třeba (ani kreslit, ani ukončit animaci)
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Je třeba vykreslit prvek
+        /// </summary>
+        Draw = 1,
+        /// <summary>
+        /// Aktuální animační funkci je možno ukončit (vyřadit z animačního vlákna)
+        /// </summary>
+        Stop = 2
+    }
     #endregion
     #region Vizuální styly : interface IVisualMember, class VisualStyle, enum BorderLinesType
     /// <summary>
