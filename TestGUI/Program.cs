@@ -23,9 +23,11 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             // Tests.TestLinq(6);
 
             // Asol.Tools.WorkScheduler.TestGUI
-            Application.App.RunMainForm(typeof(Asol.Tools.WorkScheduler.TestGUI.PluginForm));
-            // Application.App.RunMainForm(typeof(Asol.Tools.WorkScheduler.TestGUI.TestFormGrid));
+            
+         // Application.App.RunMainForm(typeof(Asol.Tools.WorkScheduler.TestGUI.PluginForm));
 
+            Application.App.RunMainForm(typeof(Asol.Tools.WorkScheduler.TestGUI.Forms.TestOneComponent));
+            // Application.App.RunMainForm(typeof(Asol.Tools.WorkScheduler.TestGUI.TestFormGrid));
             // Application.App.RunMainForm(typeof(Asol.Tools.WorkScheduler.TestGUI.TestFinalForm));
             // Application.App.RunMainForm(typeof(Asol.Tools.WorkScheduler.TestGUI.TestFormNew));
             // Application.App.RunMainForm(typeof(Forms.MainForm));
