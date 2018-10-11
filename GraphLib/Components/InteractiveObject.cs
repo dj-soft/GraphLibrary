@@ -238,7 +238,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual void SetBoundsRecalcInnerData(Rectangle oldBounds, Rectangle newBounds, ref ProcessAction actions, EventSourceType eventSource)
         { }
         /// <summary>
-        /// Je voláno po změně souřadnic <see cref="Bounds"/>, z metody <see cref="SetBounds(Rectangle, ProcessAction, EventSourceType)"/>, pokud je specifikována akce <see cref="ProcessAction.PrepareInnerItems"/>.
+        /// Je voláno po změně souřadnic <see cref="InteractiveObject.Bounds"/>, z metody <see cref="InteractiveObject.SetBounds(Rectangle, ProcessAction, EventSourceType)"/>, pokud je specifikována akce <see cref="ProcessAction.PrepareInnerItems"/>.
         /// Účelem je přepočítat souřadnice vnořených závislých prvků.
         /// </summary>
         /// <param name="oldBounds">Původní umístění, před změnou</param>
@@ -606,7 +606,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual void DrawOverChilds(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds) { }
         /// <summary>
         /// Metoda pro standardní vykreslení prvku.
-        /// Bázová třída <see cref="InteractiveObject"/> v této metodě pouze vykreslí svůj prostor barvou pozadí <see cref="BackColor"/>.
+        /// Bázová třída <see cref="InteractiveObject"/> v této metodě pouze vykreslí svůj prostor barvou pozadí <see cref="InteractiveObject.BackColor"/>.
         /// Pokud je předán režim kreslení drawMode, obsahující příznak <see cref="DrawItemMode.Ghost"/>, pak je barva pozadí modifikována tak, že její Alpha je 75% původního Alpha.
         /// </summary>
         /// <param name="e">Data pro kreslení</param>

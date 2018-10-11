@@ -7,6 +7,7 @@ using System.Drawing;
 using System.ComponentModel;
 using System.Drawing.Drawing2D;
 using Asol.Tools.WorkScheduler.Data;
+using R = Noris.LCS.Base.WorkScheduler.Resources;
 
 namespace Asol.Tools.WorkScheduler.Components
 {
@@ -44,6 +45,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Color items for ToolBar
         /// </summary>
         public static SkinToolBarSet ToolBar { get { return Instance._ToolBar; } }
+        /// <summary>
+        /// Color items for TagFilter
+        /// </summary>
+        public static SkinTagFilterSet TagFilter { get { return Instance._TagFilter; } }
         /// <summary>
         /// Color items for button (BackColor, TextColor)
         /// </summary>
@@ -107,6 +112,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this._ToolTip = new SkinToolTipSet(this, "ToolTip");
             this._ToolBar = new SkinToolBarSet(this, "ToolBar");
             this._Button = new SkinButtonSet(this, "Button");
+            this._TagFilter = new SkinTagFilterSet(this, "TagFilter");
             this._TabHeader = new SkinTabHeaderSet(this, "TabHeader");
             this._ScrollBar = new SkinScrollBarSet(this, "ScrollBar");
             this._TrackBar = new SkinTrackBarSet(this, "TrackBar");
@@ -131,6 +137,7 @@ namespace Asol.Tools.WorkScheduler.Components
         private SkinControlSet _Control;
         private SkinToolTipSet _ToolTip;
         private SkinToolBarSet _ToolBar;
+        private SkinTagFilterSet _TagFilter;
         private SkinButtonSet _Button;
         private SkinTabHeaderSet _TabHeader;
         private SkinScrollBarSet _ScrollBar;
@@ -856,6 +863,43 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual Color DefaultTitleBackColor { get { return Color.FromArgb(128, 240, 224, 246); } }
         protected virtual Color DefaultSeparatorLightColor { get { return Color.LightGray; } }
         protected virtual Color DefaultSeparatorDarkColor { get { return Color.DimGray; } }
+        #endregion
+    }
+
+    /// <summary>
+    /// Skin set for TagFilter.
+    /// Has colors: BackColor; TextColor;
+    /// </summary>
+    public class SkinTagFilterSet : SkinSet
+    {
+        #region Internal and private
+        internal SkinTagFilterSet(Skin owner, string skinSetKey)
+            : base(owner, skinSetKey)
+        { }
+        #endregion
+        #region Public colors
+        public Color BackColor { get { return this._Owner.GetValue(this._SkinSetKey, "BackColor", DefaultBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "BackColor", value); } }
+        public Color ItemBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "ItemBackColor", DefaultItemBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "ItemBackColor", value); } }
+        public Color ItemCheckedBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "ItemCheckedBackColor", DefaultItemCheckedBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "ItemCheckedBackColor", value); } }
+        public Color SelectAllItemBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "SelectAllItemBackColor", DefaultSelectAllItemBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "SelectAllItemBackColor", value); } }
+        public Color SelectAllItemCheckedBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "SelectAllItemCheckedBackColor", DefaultSelectAllItemCheckedBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "SelectAllItemCheckedBackColor", value); } }
+        public Color ItemBorderColor { get { return this._Owner.GetValue(this._SkinSetKey, "ItemBorderColor", DefaultItemBorderColor); } set { this._Owner.SetValue(this._SkinSetKey, "ItemBorderColor", value); } }
+        public Color ItemTextColor { get { return this._Owner.GetValue(this._SkinSetKey, "ItemTextColor", DefaultItemTextColor); } set { this._Owner.SetValue(this._SkinSetKey, "ItemTextColor", value); } }
+        public int ItemSpacing { get { return this._Owner.GetValue(this._SkinSetKey, "ItemSpacing", DefaultItemSpacing); } set { this._Owner.SetValue(this._SkinSetKey, "ItemSpacing", value); } }
+        public int ItemHeight { get { return this._Owner.GetValue(this._SkinSetKey, "ItemHeight", DefaultItemHeight); } set { this._Owner.SetValue(this._SkinSetKey, "ItemHeight", value); } }
+        public Image ItemSelectedImage { get { return this._Owner.GetValue(this._SkinSetKey, "ItemSelectedImage", DefaultItemSelectedImage); } set { this._Owner.SetValue(this._SkinSetKey, "ItemSelectedImage", value); } }
+        #endregion
+        #region Default colors
+        protected virtual Color DefaultBackColor { get { return Color.FromArgb(255, 160, 160, 176); } }
+        protected virtual Color DefaultItemBackColor { get { return Color.FromArgb(255, 224, 224, 224); } }
+        protected virtual Color DefaultItemCheckedBackColor { get { return Color.FromArgb(255, 216, 255, 255); } }
+        protected virtual Color DefaultSelectAllItemBackColor { get { return Color.FromArgb(255, 160, 192, 160); } }
+        protected virtual Color DefaultSelectAllItemCheckedBackColor { get { return Color.FromArgb(255, 192, 255, 192); } }
+        protected virtual Color DefaultItemBorderColor { get { return Color.DimGray; } }
+        protected virtual Color DefaultItemTextColor { get { return Color.Black; } }
+        protected virtual int DefaultItemSpacing { get { return 2; } }
+        protected virtual int DefaultItemHeight { get { return 28; } }
+        protected virtual Image DefaultItemSelectedImage { get { return Application.App.Resources.GetImage(R.Images.Actions24.DialogOkApply5Png); } }
         #endregion
     }
     /// <summary>

@@ -97,6 +97,7 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Components\TabHeader.cs" />
+    <Compile Include="Components\TagFilter.cs" />
     <Compile Include="Components\ToolBar.cs" />
     <Compile Include="Components\ToolTip.cs" />
     <Compile Include="Components\WinMsgCode.cs" />

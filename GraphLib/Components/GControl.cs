@@ -15,7 +15,7 @@ namespace Asol.Tools.WorkScheduler.Components
     /// </summary>
     public class GControl : Control, IDisposable
     {
-        #region Constructor
+        #region Konstruktor
         /// <summary>
         /// Konstruktor
         /// </summary>
@@ -24,7 +24,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this._GraphBufferInit();
         }
         #endregion
-        #region GraphBuffers
+        #region BufferedGraphics - podpora pro kreslení do bufferu
         private void _GraphBufferInit()
         {
             this._PrepareBufferForSize(this.Size);
@@ -114,7 +114,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         private BufferedGraphics _BuffGraphics;
         #endregion
-        #region Properties and events
+        #region Public data a eventy
         /// <summary>
         /// Barva pozadí prvku.
         /// </summary>
@@ -239,7 +239,7 @@ namespace Asol.Tools.WorkScheduler.Components
     /// </summary>
     public class GControlLayered : Control, IDisposable
     {
-        #region Constructor, private event handlers
+        #region Konstruktor, private event handlers
         /// <summary>
         /// Konstruktor
         /// </summary>
@@ -294,6 +294,17 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         #endregion
         #region Public members
+        /// <summary>
+        /// Barva pozadí prvku.
+        /// </summary>
+        [Category("Appearance")]
+        [Description("Barva pozadí prvku.")]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
+        public override Color BackColor
+        {
+            get { return base.BackColor; }
+            set { base.BackColor = value; Draw(); }
+        }
         /// <summary>
         /// Počet vrstev, v rozmezí 1 - 10.
         /// Změna hodnoty vyvolá ReDraw().
