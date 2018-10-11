@@ -29,19 +29,30 @@ namespace Asol.Tools.WorkScheduler.TestGUI.Forms
             this.TagFilter = new GTagFilter();
             this.TagFilter.Bounds = new Rectangle(10, 5, 250, 120);
             // this.TagFilter.BackColor = Color.DarkBlue;
-            this.TagFilter.TagItems = this.CreateTagItems();
             this.TagFilter.SelectAllVisible = true;
             this.TagFilter.SelectionMode = GTagFilterSelectionMode.AnyItemsCount;
             this.TagFilter.ItemHeight = 22;
             this.TagFilter.RoundItemPercent = 40;
             this.TagFilter.ExpandHeightOnMouse = true;
             this.TagFilter.CheckedImage = Application.App.Resources.GetImage(Noris.LCS.Base.WorkScheduler.Resources.Images.Actions24.DialogOk2Png);
+            this.TagFilter.FilterChanged += TagFilter_FilterChanged;
+            this.TagFilter.TagItems = this.CreateTagItems();
             this.TagFilterHeight = 2;
             this._Control.AddItem(this.TagFilter);
             this.ResizeTagBounds();
             this._Control.SizeChanged += _Control_SizeChanged;
             this._Control.BackColor = Color.LightGoldenrodYellow;
         }
+
+        private void TagFilter_FilterChanged(object sender, EventArgs e)
+        {
+            string text = "";
+            var filters = this.TagFilter.FilteredItems;
+            foreach (var filter in filters)
+                text += (text.Length == 0 ? "" : "; ") + filter.Text;
+            this._FilterLabel.Text = text;
+        }
+
         protected TagItem[] CreateTagItems()
         {
             List<TagItem> tagList = new List<TagItem>();
