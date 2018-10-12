@@ -31,11 +31,11 @@ namespace Asol.Tools.WorkScheduler.TestGUI.Forms
             // this.TagFilter.BackColor = Color.DarkBlue;
             this.TagFilter.SelectAllVisible = true;
             this.TagFilter.SelectionMode = GTagFilterSelectionMode.AnyItemsCount;
-            this.TagFilter.ItemHeight = 29;
+            this.TagFilter.ItemHeight = 21;
             this.TagFilter.RoundItemPercent = 0;
             this.TagFilter.DrawItemBorder = false;
             this.TagFilter.ExpandHeightOnMouse = true;
-            this.TagFilter.CheckedImage = Application.App.Resources.GetImage(Noris.LCS.Base.WorkScheduler.Resources.Images.Actions24.Checkbox2Png);
+            // this.TagFilter.CheckedImage = Application.App.Resources.GetImage(Noris.LCS.Base.WorkScheduler.Resources.Images.Actions24.Checkbox2Png);
             this.TagFilter.FilterChanged += TagFilter_FilterChanged;
             this.TagFilter.TagItems = this.CreateTagItems();
             this.TagFilterHeight = 2;
