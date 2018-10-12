@@ -885,19 +885,19 @@ namespace Asol.Tools.WorkScheduler.Components
         public Color SelectAllItemCheckedBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "SelectAllItemCheckedBackColor", DefaultSelectAllItemCheckedBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "SelectAllItemCheckedBackColor", value); } }
         public Color ItemBorderColor { get { return this._Owner.GetValue(this._SkinSetKey, "ItemBorderColor", DefaultItemBorderColor); } set { this._Owner.SetValue(this._SkinSetKey, "ItemBorderColor", value); } }
         public Color ItemTextColor { get { return this._Owner.GetValue(this._SkinSetKey, "ItemTextColor", DefaultItemTextColor); } set { this._Owner.SetValue(this._SkinSetKey, "ItemTextColor", value); } }
-        public int ItemSpacing { get { return this._Owner.GetValue(this._SkinSetKey, "ItemSpacing", DefaultItemSpacing); } set { this._Owner.SetValue(this._SkinSetKey, "ItemSpacing", value); } }
+        public Size ItemSpacing { get { return this._Owner.GetValue(this._SkinSetKey, "ItemSpacing", DefaultItemSpacing); } set { this._Owner.SetValue(this._SkinSetKey, "ItemSpacing", value); } }
         public int ItemHeight { get { return this._Owner.GetValue(this._SkinSetKey, "ItemHeight", DefaultItemHeight); } set { this._Owner.SetValue(this._SkinSetKey, "ItemHeight", value); } }
         public Image ItemSelectedImage { get { return this._Owner.GetValue(this._SkinSetKey, "ItemSelectedImage", DefaultItemSelectedImage); } set { this._Owner.SetValue(this._SkinSetKey, "ItemSelectedImage", value); } }
         #endregion
         #region Default colors
         protected virtual Color DefaultBackColor { get { return Color.FromArgb(255, 160, 160, 176); } }
-        protected virtual Color DefaultItemBackColor { get { return Color.FromArgb(255, 224, 224, 224); } }
-        protected virtual Color DefaultItemCheckedBackColor { get { return Color.FromArgb(255, 216, 255, 255); } }
-        protected virtual Color DefaultSelectAllItemBackColor { get { return Color.FromArgb(255, 160, 192, 160); } }
-        protected virtual Color DefaultSelectAllItemCheckedBackColor { get { return Color.FromArgb(255, 192, 255, 192); } }
+        protected virtual Color DefaultItemBackColor { get { return Color.FromArgb(255, 240, 240, 240); } }
+        protected virtual Color DefaultItemCheckedBackColor { get { return Color.FromArgb(255, 192, 255, 255); } }
+        protected virtual Color DefaultSelectAllItemBackColor { get { return Color.FromArgb(255, 160, 232, 160); } }
+        protected virtual Color DefaultSelectAllItemCheckedBackColor { get { return Color.FromArgb(255, 180, 255, 180); } }
         protected virtual Color DefaultItemBorderColor { get { return Color.DimGray; } }
         protected virtual Color DefaultItemTextColor { get { return Color.Black; } }
-        protected virtual int DefaultItemSpacing { get { return 2; } }
+        protected virtual Size DefaultItemSpacing { get { return new Size(3, 2); } }
         protected virtual int DefaultItemHeight { get { return 28; } }
         protected virtual Image DefaultItemSelectedImage { get { return Application.App.Resources.GetImage(R.Images.Small16.DialogOkApply2Png); } }
         #endregion

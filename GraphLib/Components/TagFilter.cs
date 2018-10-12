@@ -23,6 +23,10 @@ namespace Asol.Tools.WorkScheduler.Components
             this._DrawItemBorder = true;
             this._SelectionMode = GTagFilterSelectionMode.AnyItemsCount;
             this._SelectAllVisible = true;
+            this._CurrentCheckedImage = null;
+            this._CurrentRoundPercent = 0;
+            this._CurrentItemHeight = Skin.TagFilter.ItemHeight;
+            this._CurrentItemSpacing = Skin.TagFilter.ItemSpacing;
         }
         /// <summary>
         /// Sada štítků. 
@@ -74,14 +78,16 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Výška jednoho prvku.
         /// </summary>
-        public int? ItemHeight { get { return this._ItemHeight; } set { this._ItemHeight = value; this._TagItemsRepaint(); } }
-        private int? _ItemHeight;
+        public int ItemHeight { get { return this._CurrentItemHeight; } set { this._CurrentItemHeight = value; this._TagItemsChanged(); } }
+        /// <summary>
+        /// Rozestupy mezi prvky
+        /// </summary>
+        public Size ItemSpacing { get { return this._CurrentItemSpacing; } set { this._CurrentItemSpacing = value; this._TagItemsChanged(); } }
         /// <summary>
         /// Procento kulatých krajů jednotlivých prvků.
         /// Null = 0 = hranaté prvky; 100 = 100% = čisté půlkruhy. Hodnoty mimo rozsah jsou zarovnané do rozsahu 0 až 100 (včetně).
         /// </summary>
-        public int? RoundItemPercent { get { return this._RoundItemPercent; } set { this._RoundItemPercent = value; this._TagItemsRepaint(); } }
-        private int? _RoundItemPercent;
+        public int RoundItemPercent { get { return this._CurrentRoundPercent; } set { this._CurrentRoundPercent = value; this._TagItemsChanged(); } }
         /// <summary>
         /// Kreslit okraje okolo prvků?
         /// </summary>
@@ -90,8 +96,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Image kreslený jako ikona pro stav "Prvek je vybrán"
         /// </summary>
-        public Image CheckedImage { get { return this._CheckedImage; } set { this._CheckedImage = value; this._TagItemsRepaint(); } }
-        private Image _CheckedImage;
+        public Image CheckedImage { get { return this._CurrentCheckedImage; } set { this._CurrentCheckedImage = value; this._TagItemsChanged(); } }
         /// <summary>
         /// Optimální výška tohoto prvku <see cref="InteractiveObject.Bounds"/>.Height pro zobrazení jednoho řádku položek
         /// </summary>
@@ -210,24 +215,21 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="clientSize"></param>
         private void _TagItemsPrepareLayout(Graphics graphics, List<GTagItem> gItemList, Size clientSize)
         {
-            int height = this._CurrentItemHeight;
-            int round = this._CurrentRoundPercent;
-            Size iconSize = this._CurrentIconSize;   !!!
-            int spacing = Skin.TagFilter.ItemSpacing;
-            Point point = new Point(spacing, spacing);
+            Size spacing = this._CurrentItemSpacing;
+            Point point = new Point(spacing.Width, spacing.Height);
             List<GTagItem> oneRowList = new List<GTagItem>();
             foreach (GTagItem gTagItem in gItemList)
-                gTagItem.PrepareBlockLayout(graphics, clientSize, oneRowList, height, round, iconSize, spacing, ref point);
+                gTagItem.PrepareBlockLayout(graphics, clientSize, oneRowList, ref point);
 
-            this._DetectOptimalHeight(gItemList, spacing);
+            this._DetectOptimalHeight(gItemList);
         }
         /// <summary>
         /// Vypočte optimální výšky <see cref="OptimalHeightOneRow"/> a <see cref="OptimalHeightAllRows"/>.
         /// </summary>
         /// <param name="gItemList"></param>
-        /// <param name="spacing"></param>
-        private void _DetectOptimalHeight(List<GTagItem> gItemList, int spacing)
+        private void _DetectOptimalHeight(List<GTagItem> gItemList)
         {
+            int spacingY = this._CurrentItemSpacing.Height;
             int heightOne = 0;
             int heightAll = 0;
             System.Windows.Forms.Padding? border = this.ClientBorder;
@@ -235,12 +237,12 @@ namespace Asol.Tools.WorkScheduler.Components
             int y1 = (border.HasValue ? border.Value.Bottom : 0);
             if (gItemList != null && gItemList.Count > 0)
             {
-                heightOne = y0 + gItemList[0].Bounds.Bottom + spacing + y1;
-                heightAll = y0 + gItemList[gItemList.Count - 1].Bounds.Bottom + spacing + y1;
+                heightOne = y0 + gItemList[0].Bounds.Bottom + spacingY + y1;
+                heightAll = y0 + gItemList[gItemList.Count - 1].Bounds.Bottom + spacingY + y1;
             }
             else
             {
-                heightOne = y0 + spacing + y1;
+                heightOne = y0 + spacingY + y1;
                 heightAll = heightOne;
             }
 
@@ -255,45 +257,70 @@ namespace Asol.Tools.WorkScheduler.Components
             this.Repaint();
         }
         /// <summary>
-        /// Platná hodnota ItemRound
+        /// Platná hodnota ItemRoundPercent (v rozsahu 0 až 100)
         /// </summary>
         private int _CurrentRoundPercent
         {
-            get
-            {
-                if (!this.RoundItemPercent.HasValue) return 0;
-                int round = this.RoundItemPercent.Value;
-                return (round < 0 ? 0 : (round > 100 ? 100 : round));
-            }
+            get { return this.__CurrentRoundPercent; }
+            set { this.__CurrentRoundPercent = (value < 0 ? 0 : (value > 100 ? 100 : value)); }
         }
+        private int __CurrentRoundPercent;
         /// <summary>
         /// Platná hodnota ItemHeight
         /// </summary>
         private int _CurrentItemHeight
         {
-            get
+            get { return this.__CurrentItemHeight; }
+            set { this.__CurrentItemHeight = (value < 16 ? 16 : (value > 50 ? 50 : value)); }
+        }
+        private int __CurrentItemHeight;
+        /// <summary>
+        /// Platná hodnota ItemSpacing
+        /// </summary>
+        private Size _CurrentItemSpacing
+        {
+            get { return this.__CurrentItemSpacing; }
+            set
             {
-                if (!this.ItemHeight.HasValue) return Skin.TagFilter.ItemHeight;
-                int height = this.ItemHeight.Value;
-                return (height < 18 ? 18 : (height > 40 ? 40 : height));
+                int w = value.Width;
+                w = (w < 0 ? 0 : (w > 20 ? 20 : w));
+                int h = value.Height;
+                h = (h < 0 ? 0 : (h > 20 ? 20 : h));
+                this.__CurrentItemSpacing = new Size(w, h);
             }
         }
+        private Size __CurrentItemSpacing;
+        /// <summary>
+        /// Aktuální ikona. Vložení hodnoty null reálně uloží defaultní ikonu.
+        /// Vložení hodnoty z ní přečte její velikost a uloží ji do <see cref="_CurrentCheckedImageSize"/>.
+        /// </summary>
+        private Image _CurrentCheckedImage
+        {
+            get { return this.__CurrentCheckedImage; }
+            set
+            {
+                Image icon = ((value != null) ? value : Skin.TagFilter.ItemSelectedImage);
+                this.__CurrentCheckedImage = icon;
+                this._CurrentCheckedImageSize = (icon != null ? icon.Size : Size.Empty);
+            }
+        }
+        private Image __CurrentCheckedImage;
         /// <summary>
         /// Velikost ikony
         /// </summary>
-        private Size _CurrentIconSize { get; set; }
-        /*   Následující kód byl pěkný, ale při probíhající animaci se prováděl v threadu Non-GUI, a dochází k chybě při práci s Image.Size !!!
+        private Size _CurrentCheckedImageSize
         {
-            get
+            get { return this.__CurrentCheckedImageSize; }
+            set
             {
-                Image image = (this.CheckedImage != null ? this.CheckedImage : Skin.TagFilter.ItemSelectedImage);
-                if (image == null) return Size.Empty;
-                Size size = image.Size;
-                if (size.Width <= 24 && size.Height <= 24) return size;
-                return new Size(24, 24);
+                int w = value.Width;
+                if (w > 24) w = 24;
+                int h = value.Height;
+                if (h > 24) h = 24;
+                this.__CurrentCheckedImageSize = new Size(w, h);
             }
         }
-        */
+        private Size __CurrentCheckedImageSize;
         #endregion
         #region Interaktivita prvků, výběr prvků podle režimu, eventy
         /// <summary>
@@ -611,6 +638,9 @@ namespace Asol.Tools.WorkScheduler.Components
         #region ITagFilter explicitní implementace
         int ITagFilter.CurrentRoundPercent { get { return this._CurrentRoundPercent; } }
         int ITagFilter.CurrentItemHeight { get { return this._CurrentItemHeight; } }
+        Size ITagFilter.CurrentItemSpacing { get { return this._CurrentItemSpacing; } }
+        Image ITagFilter.CurrentCheckedImage { get { return this._CurrentCheckedImage; } }
+        Size ITagFilter.CurrentCheckedImageSize { get { return this._CurrentCheckedImageSize; } }
         void ITagFilter.TagItemsChanged() { this._TagItemsChanged(); }
         void ITagFilter.TagItemsRepaint() { this._TagItemsRepaint(); }
         void ITagFilter.OnItemClick(GTagItem clickedItem) { this._OnItemClick(clickedItem); }
@@ -630,6 +660,18 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Platná hodnota ItemHeight
         /// </summary>
         int CurrentItemHeight { get; }
+        /// <summary>
+        /// Rozestupy mezi prvky
+        /// </summary>
+        Size CurrentItemSpacing { get; }
+        /// <summary>
+        /// Platná ikona pro Checked prvky
+        /// </summary>
+        Image CurrentCheckedImage { get; }
+        /// <summary>
+        /// Platná velikost ikony pro Checked prvky
+        /// </summary>
+        Size CurrentCheckedImageSize { get; }
         /// <summary>
         /// Požadavek na kompletní přepočet počtu a souřadnic prvků
         /// </summary>
@@ -741,24 +783,23 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="graphics"></param>
         /// <param name="clientSize"></param>
         /// <param name="oneRowList"></param>
-        /// <param name="height"></param>
-        /// <param name="round"></param>
-        /// <param name="iconSize"></param>
-        /// <param name="spacing"></param>
         /// <param name="point"></param>
-        internal void PrepareBlockLayout(Graphics graphics, Size clientSize, List<GTagItem> oneRowList, int height, int round, Size iconSize, int spacing, ref Point point)
+        internal void PrepareBlockLayout(Graphics graphics, Size clientSize, List<GTagItem> oneRowList, ref Point point)
         {
-            Size itemSize = this.GetItemSize(graphics, height, round, iconSize);
+            // int height, int round, Size iconSize, int spacing,
+            Size spacing = this.CurrentItemSpacing;
+
+            Size itemSize = this.GetItemSize(graphics);
             // Pokud se do současného řádku (oneRowList) náš prvek už nevejde (z hlediska šířky řádku + šířky prvku > šířka prostoru):
             if (oneRowList.Count > 0)
             {   // Pokud už v řádku máme nějaké prvky,
                 //  a this prvek se do současného řádku (oneRowList) už nevejde (z hlediska šířky řádku + šířky prvku > šířka prostoru):
-                int right = (oneRowList[oneRowList.Count - 1].Bounds.Right + spacing + itemSize.Width + spacing);
+                int right = (oneRowList[oneRowList.Count - 1].Bounds.Right + spacing.Width + itemSize.Width + spacing.Width);
                 if (right > clientSize.Width)
                 {   // Prvek se již do řádku nevejde -> dosavadní řádek zarovnáme do bloku, a začneme nový řádek:
-                    AlignLayoutToWidth(oneRowList, spacing, clientSize.Width);
+                    AlignLayoutToWidth(oneRowList, spacing.Width, clientSize.Width);
                     Rectangle firstBounds = oneRowList[0].Bounds;
-                    point = new Point(firstBounds.X, firstBounds.Bottom + spacing);
+                    point = new Point(firstBounds.X, firstBounds.Bottom + spacing.Height);
                     oneRowList.Clear();
                 }
             }
@@ -766,22 +807,19 @@ namespace Asol.Tools.WorkScheduler.Components
             Rectangle itemBounds = new Rectangle(point, itemSize);
             this.Bounds = itemBounds;
             oneRowList.Add(this);
-            point = new Point(itemBounds.Right + spacing, itemBounds.Y);
+            point = new Point(itemBounds.Right + spacing.Width, itemBounds.Y);
         }
         /// <summary>
         /// Vrátí minimální rozměr pro this prvek
         /// </summary>
         /// <param name="graphics"></param>
-        /// <param name="height"></param>
-        /// <param name="round"></param>
-        /// <param name="iconSize"></param>
         /// <returns></returns>
-        protected Size GetItemSize(Graphics graphics, int height, int round, Size iconSize)
+        protected Size GetItemSize(Graphics graphics)
         {
-            int h = height;
-            int r = h * round / 100;             // šířka kulatého rohu
-            int s = iconSize.Width + 2;          // šířka ikony + prostor za ní
-            int i = (h > s ? s : h);             // šířka prostoru pro ikonu
+            int h = this.CurrentItemHeight;                     // výška prvku
+            int r = h * this.CurrentRoundPercent / 100;         // šířka kulatého rohu = výška krát procento
+            int s = this.CurrentCheckedImageSize.Width + 2;     // šířka ikony + prostor za ní
+            int i = (h > s ? s : h);                            // šířka prostoru pro ikonu
             int w = r + i + GPainter.MeasureString(graphics, this.Text, FontInfo.Caption).Width + 8;
             return new System.Drawing.Size(w, h);
         }
@@ -789,15 +827,15 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Metoda prjde prvky daného řádku, a proporcionálně upraví jejich šířku tak, aby poslední prvek měl souřadnici Right zarovnanou doprava
         /// </summary>
         /// <param name="oneRowList"></param>
-        /// <param name="spacing"></param>
+        /// <param name="spacingX"></param>
         /// <param name="clientWidth"></param>
-        protected static void AlignLayoutToWidth(List<GTagItem> oneRowList, int spacing, int clientWidth)
+        protected static void AlignLayoutToWidth(List<GTagItem> oneRowList, int spacingX, int clientWidth)
         {
             int count = oneRowList.Count;
             int itemsWidth = oneRowList.Sum(i => i.Bounds.Width);              // Tolik pixelů je součet šířky prvků aktuálně
-            int targetWidth = clientWidth - ((count + 1) * spacing - 1);       // Tolik pixelů má být součet šířky prvků po zarovnání (odečítám spacing před i za blokem, a mezi prvky)
+            int targetWidth = clientWidth - ((count + 1) * spacingX - 1);       // Tolik pixelů má být součet šířky prvků po zarovnání (odečítám spacing před i za blokem, a mezi prvky)
             float ratio = ((float)targetWidth / (float)itemsWidth);            // Poměr, jakým budu upravovat šířku prvků
-            int iX = spacing;
+            int iX = spacingX;
             float fX = (float)iX;
             for (int i = 0; i < count; i++)
             {
@@ -809,15 +847,15 @@ namespace Asol.Tools.WorkScheduler.Components
                     float fRight = fX + fWidth;
                     int iWidth = (int)(Math.Round((fRight - fX), 0));
                     bounds = new Rectangle(iX, bounds.Y, iWidth, bounds.Height);
-                    fX = fRight + (float)spacing;
+                    fX = fRight + (float)spacingX;
                 }
                 else
                 {   // Poslední prvek bude jinak:
-                    int iRight = clientWidth - spacing;
+                    int iRight = clientWidth - spacingX;
                     bounds = new Rectangle(iX, bounds.Y, (iRight - iX), bounds.Height);
                 }
                 item.Bounds = bounds;
-                iX = bounds.Right + spacing;
+                iX = bounds.Right + spacingX;
             }
         }
         /// <summary>
@@ -833,6 +871,10 @@ namespace Asol.Tools.WorkScheduler.Components
                 return owner;
             }
         }
+        /// <summary>
+        /// Vlastník <see cref="GTagFilter"/> přetypovaný na interface <see cref="ITagFilter"/>, kvůli přístupu k vnitřním prvkům Ownera
+        /// </summary>
+        private ITagFilter IOwner { get { return this.Owner as ITagFilter; } }
         #endregion
         #region Interaktivita
         /// <summary>
@@ -841,7 +883,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         protected override void AfterStateChangedLeftClick(GInteractiveChangeStateArgs e)
         {
-            ((ITagFilter)this.Owner).OnItemClick(this);
+            this.IOwner.OnItemClick(this);
         }
         /// <summary>
         /// Obsahuje true pro prvek "Vyber vše", false pro běžné datové prvky
@@ -864,11 +906,9 @@ namespace Asol.Tools.WorkScheduler.Components
             //       base.Draw(e, absoluteBounds, absoluteVisibleBounds, drawMode);
 
             GTagFilter gOwner = this.Owner;
-            ITagFilter iOwner = gOwner as ITagFilter;
-            int round = (iOwner != null ? iOwner.CurrentRoundPercent : 0);
             bool drawBorder = (gOwner != null ? gOwner.DrawItemBorder : false);
             Rectangle iconBounds, textBounds;
-            using (var path = this.CreatePath(absoluteBounds, round, out iconBounds, out textBounds))
+            using (var path = this.CreatePath(absoluteBounds, out iconBounds, out textBounds))
             {
                 using (GPainter.GraphicsUseSmooth(e.Graphics))
                 {
@@ -900,12 +940,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Vytvoří tvar prvku a souřadnice ikony a textu
         /// </summary>
         /// <param name="absoluteBounds"></param>
-        /// <param name="round"></param>
         /// <param name="iconBounds"></param>
         /// <param name="textBounds"></param>
         /// <returns></returns>
-        protected System.Drawing.Drawing2D.GraphicsPath CreatePath(Rectangle absoluteBounds, int round, out Rectangle iconBounds, out Rectangle textBounds)
+        protected System.Drawing.Drawing2D.GraphicsPath CreatePath(Rectangle absoluteBounds, out Rectangle iconBounds, out Rectangle textBounds)
         {
+            int round = this.CurrentRoundPercent;
             bool isRound = (round > 0);
 
             bool hasIcon = (this.CheckedSilent);
@@ -1017,17 +1057,6 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         /// <summary>
-        /// Obsahuje aktuálně platnou  
-        /// </summary>
-        protected Image CurrentCheckedImage
-        {
-            get
-            {
-                Image image = this.Owner.CheckedImage;
-                return (image != null ? image : Skin.TagFilter.ItemSelectedImage);
-            }
-        }
-        /// <summary>
         /// Vrátí první barvu, která má hodnotu.
         /// </summary>
         /// <param name="values"></param>
@@ -1040,6 +1069,26 @@ namespace Asol.Tools.WorkScheduler.Components
             }
             return Color.Gray;
         }
+        /// <summary>
+        /// Obsahuje aktuálně platnou výšku prvku
+        /// </summary>
+        protected int CurrentItemHeight { get { ITagFilter iOwner = this.IOwner; return (iOwner != null ? iOwner.CurrentItemHeight : Skin.TagFilter.ItemHeight); } }
+        /// <summary>
+        /// Obsahuje aktuálně platné rozestupy mezi prvky
+        /// </summary>
+        protected Size CurrentItemSpacing { get { ITagFilter iOwner = this.IOwner; return (iOwner != null ? iOwner.CurrentItemSpacing : Skin.TagFilter.ItemSpacing); } }
+        /// <summary>
+        /// Obsahuje aktuálně platnou ikonu pro Checked prvky
+        /// </summary>
+        protected int CurrentRoundPercent { get { ITagFilter iOwner = this.IOwner; return (iOwner != null ? iOwner.CurrentRoundPercent : 0); } }
+        /// <summary>
+        /// Obsahuje aktuálně platnou ikonu pro Checked prvky
+        /// </summary>
+        protected Image CurrentCheckedImage { get { ITagFilter iOwner = this.IOwner; return (iOwner != null ? iOwner.CurrentCheckedImage : null); } }
+        /// <summary>
+        /// Obsahuje aktuálně platnou velikost ikony pro Checked prvky
+        /// </summary>
+        protected Size CurrentCheckedImageSize { get { ITagFilter iOwner = this.Owner as ITagFilter; return (iOwner != null ? iOwner.CurrentCheckedImageSize : new Size()); } }
         #endregion
     }
     #endregion
