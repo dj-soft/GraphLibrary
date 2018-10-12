@@ -899,7 +899,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual Color DefaultItemTextColor { get { return Color.Black; } }
         protected virtual int DefaultItemSpacing { get { return 2; } }
         protected virtual int DefaultItemHeight { get { return 28; } }
-        protected virtual Image DefaultItemSelectedImage { get { return Application.App.Resources.GetImage(R.Images.Actions24.DialogOkApply5Png); } }
+        protected virtual Image DefaultItemSelectedImage { get { return Application.App.Resources.GetImage(R.Images.Small16.DialogOkApply2Png); } }
         #endregion
     }
     /// <summary>

@@ -210,13 +210,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="clientSize"></param>
         private void _TagItemsPrepareLayout(Graphics graphics, List<GTagItem> gItemList, Size clientSize)
         {
-            int spacing = Skin.TagFilter.ItemSpacing;
-            int round = this._CurrentRoundPercent;
             int height = this._CurrentItemHeight;
+            int round = this._CurrentRoundPercent;
+            Size iconSize = this._CurrentIconSize;   !!!
+            int spacing = Skin.TagFilter.ItemSpacing;
             Point point = new Point(spacing, spacing);
             List<GTagItem> oneRowList = new List<GTagItem>();
             foreach (GTagItem gTagItem in gItemList)
-                gTagItem.PrepareBlockLayout(graphics, clientSize, oneRowList, height, round, spacing, ref point);
+                gTagItem.PrepareBlockLayout(graphics, clientSize, oneRowList, height, round, iconSize, spacing, ref point);
 
             this._DetectOptimalHeight(gItemList, spacing);
         }
@@ -277,6 +278,22 @@ namespace Asol.Tools.WorkScheduler.Components
                 return (height < 18 ? 18 : (height > 40 ? 40 : height));
             }
         }
+        /// <summary>
+        /// Velikost ikony
+        /// </summary>
+        private Size _CurrentIconSize { get; set; }
+        /*   Následující kód byl pěkný, ale při probíhající animaci se prováděl v threadu Non-GUI, a dochází k chybě při práci s Image.Size !!!
+        {
+            get
+            {
+                Image image = (this.CheckedImage != null ? this.CheckedImage : Skin.TagFilter.ItemSelectedImage);
+                if (image == null) return Size.Empty;
+                Size size = image.Size;
+                if (size.Width <= 24 && size.Height <= 24) return size;
+                return new Size(24, 24);
+            }
+        }
+        */
         #endregion
         #region Interaktivita prvků, výběr prvků podle režimu, eventy
         /// <summary>
@@ -726,11 +743,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="oneRowList"></param>
         /// <param name="height"></param>
         /// <param name="round"></param>
+        /// <param name="iconSize"></param>
         /// <param name="spacing"></param>
         /// <param name="point"></param>
-        internal void PrepareBlockLayout(Graphics graphics, Size clientSize, List<GTagItem> oneRowList, int height, int round, int spacing, ref Point point)
+        internal void PrepareBlockLayout(Graphics graphics, Size clientSize, List<GTagItem> oneRowList, int height, int round, Size iconSize, int spacing, ref Point point)
         {
-            Size itemSize = this.GetItemSize(graphics, height, round);
+            Size itemSize = this.GetItemSize(graphics, height, round, iconSize);
             // Pokud se do současného řádku (oneRowList) náš prvek už nevejde (z hlediska šířky řádku + šířky prvku > šířka prostoru):
             if (oneRowList.Count > 0)
             {   // Pokud už v řádku máme nějaké prvky,
@@ -756,12 +774,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="graphics"></param>
         /// <param name="height"></param>
         /// <param name="round"></param>
+        /// <param name="iconSize"></param>
         /// <returns></returns>
-        protected Size GetItemSize(Graphics graphics, int height, int round)
+        protected Size GetItemSize(Graphics graphics, int height, int round, Size iconSize)
         {
             int h = height;
             int r = h * round / 100;             // šířka kulatého rohu
-            int i = (h > 26 ? 26 : h);           // šířka prostoru pro ikonu
+            int s = iconSize.Width + 2;          // šířka ikony + prostor za ní
+            int i = (h > s ? s : h);             // šířka prostoru pro ikonu
             int w = r + i + GPainter.MeasureString(graphics, this.Text, FontInfo.Caption).Width + 8;
             return new System.Drawing.Size(w, h);
         }
@@ -891,15 +911,31 @@ namespace Asol.Tools.WorkScheduler.Components
             bool hasIcon = (this.CheckedSilent);
             int w = absoluteBounds.Width - 1;
             int h = absoluteBounds.Height - 1;
-            int ih = (h > 26 ? 24 : h - 2);
 
+            int iw = 0;
+            int ih = 0;
+            if (hasIcon)
+            {
+                Image icon = this.CurrentCheckedImage;
+                if (icon != null)
+                {
+                    Size iSize = icon.Size;
+                    iw = iSize.Width;
+                    ih = iSize.Height;
+                    if (iw > 24) iw = 24;
+                    if (ih > 24) ih = 24;
+                }
+
+
+                // int ih = (h > 26 ? 24 : h - 2);
+            }
             int ex = (int)(h * round / 100);     // Šířka elipsy = daná poměrem round, k výšce
             int rx = ex / 2;                     // Radius v ose X
             int x0 = absoluteBounds.X;           // Začátek prvku
             int x1 = x0 + (isRound ? rx : 0);    // Začátek rovné vodorovné čáry
-            int x2 = x1 + (isRound ? 1 : 3);     // Začátek ikony
-            int x3 = x2 + (hasIcon ? ih : 0);    // Konec ikony  (24 pixel)
-            int x4 = x3 + (hasIcon ? 0 : 0);     // Začátek textu
+            int x2 = x1 + (isRound ? 1 : 4);     // Začátek ikony
+            int x3 = x2 + (hasIcon ? iw : 0);    // Konec ikony  (24 pixel)
+            int x4 = x3 + (hasIcon ? 2 : 0);     // Začátek textu
             int x9 = x0 + w;                     // Konec prvku
             int x8 = x9 - (isRound ? rx : 0);    // Konec rovné vodorovné čáry
             int x7 = x8 - 2;                     // Konec textu
