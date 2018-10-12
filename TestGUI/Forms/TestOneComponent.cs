@@ -67,7 +67,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI.Forms
             tagList.Add("7.Nerezový");
             tagList.Add("8.Základní");
 
-            Color? backColor = Color.FromArgb(255, 220, 192, 192);
+            Color? backColor = null; Color.FromArgb(255, 220, 192, 192);
             Color? checkColor = null; // Color.FromArgb(255, 250, 220, 220);
             tagList[3].BackColor = backColor;
             tagList[3].CheckedBackColor = checkColor;

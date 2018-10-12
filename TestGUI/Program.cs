@@ -24,15 +24,17 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             // Asol.Tools.WorkScheduler.TestGUI
             
-         // Application.App.RunMainForm(typeof(Asol.Tools.WorkScheduler.TestGUI.PluginForm));
+            Application.App.RunMainForm(typeof(Asol.Tools.WorkScheduler.TestGUI.PluginForm));
 
-            Application.App.RunMainForm(typeof(Asol.Tools.WorkScheduler.TestGUI.Forms.TestOneComponent));
+            // Application.App.RunMainForm(typeof(Asol.Tools.WorkScheduler.TestGUI.Forms.TestOneComponent));
             // Application.App.RunMainForm(typeof(Asol.Tools.WorkScheduler.TestGUI.TestFormGrid));
             // Application.App.RunMainForm(typeof(Asol.Tools.WorkScheduler.TestGUI.TestFinalForm));
             // Application.App.RunMainForm(typeof(Asol.Tools.WorkScheduler.TestGUI.TestFormNew));
             // Application.App.RunMainForm(typeof(Forms.MainForm));
             // Application.App.RunMainForm(typeof(Asol.Tools.WorkScheduler.TestGUI.Forms.TestGraphSettingForm));
         }
+        #region Nepoužívané metody
+        /*
         internal static Form CreateNewestForm()
         {
             // Najde nejnovější soubor nějakého formuláře v adresáři zdrojů, vytvoří jej a vrátí.
@@ -67,7 +69,6 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             // Záchranná cesta:
             return new TestFormGrid();
         }
-
         private static Form TryCreateForm(string typeName)
         {
             try
@@ -116,5 +117,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             }
             return null;
         }
+        */
+        #endregion
     }
 }
