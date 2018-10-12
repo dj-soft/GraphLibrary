@@ -410,10 +410,16 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiGrid()
         {
+            this.GridProperties = new GuiGridProperties() { Name = GRID_PROPERTIES_NAME };
             this.GraphProperties = new GuiGraphProperties() { Name = GRAPH_PROPERTIES_NAME };
             this.GraphItems = new List<GuiGraphTable>();
             this.GraphTexts = new List<GuiTable>();
+            this.LinkItems = new List<GuiGraphItemLinks>();
         }
+        /// <summary>
+        /// Název prvku <see cref="GridProperties"/>
+        /// </summary>
+        public const string GRID_PROPERTIES_NAME = "gridProperties";
         /// <summary>
         /// Název prvku <see cref="GraphProperties"/>
         /// </summary>
@@ -430,6 +436,10 @@ namespace Noris.LCS.Base.WorkScheduler
             return text;
         }
         /// <summary>
+        /// Definuje vlastnosti této vizuální tabulky, vyjma vlastností grafů
+        /// </summary>
+        public GuiGridProperties GridProperties { get; set; }
+        /// <summary>
         /// Definuje vlastnosti grafu pro tuto tabulku
         /// </summary>
         public GuiGraphProperties GraphProperties { get; set; }
@@ -437,12 +447,6 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Tabulka s řádky, typicky načtená dle přehledové šablony
         /// </summary>
         public GuiTable Rows { get; set; }
-        /// <summary>
-        /// Tagy k řádkům v tabulce <see cref="Rows"/>.
-        /// Tagy řádku dovolují k jednomu řádku připojit { 0 - 1 - mnoho } textových popisků (visačky = Tagy), a následně podle nich zafiltrovat řádky.
-        /// </summary>
-        public GuiTagItems RowTags { get; set; }
-
         /// <summary>
         /// Tabulky s grafickými prvky.
         /// Jedna vizuální tabulka může v grafech zobrazovat prvky, pocházející z různých zdrojů.
@@ -456,10 +460,43 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public List<GuiTable> GraphTexts { get; set; }
         /// <summary>
+        /// Tabulky s propojovacími linkami mezi prvky grafů GuiGraphItem
+        /// </summary>
+        public List<GuiGraphItemLinks> LinkItems { get; set; }
+        /// <summary>
         /// Potomek zde vrací soupis svých Child prvků
         /// </summary>
         [PersistingEnabled(false)]
-        protected override IEnumerable<IGuiItem> Childs { get { return Union(this.Rows, this.GraphItems, this.GraphTexts); } }
+        protected override IEnumerable<IGuiItem> Childs { get { return Union(this.GridProperties, this.GraphProperties, this.Rows, this.GraphItems, this.GraphTexts, this.LinkItems); } }
+    }
+    #endregion
+    #region GuiGridProperties : definiční vlastnosti jedné vizuální tabulky, vyjma vlastností grafů
+    /// <summary>
+    /// GuiGridProperties : definiční vlastnosti jedné vizuální tabulky, vyjma vlastností grafů
+    /// </summary>
+    public sealed class GuiGridProperties : GuiBase
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public GuiGridProperties() : base()
+        { }
+        /// <summary>
+        /// Obsahuje true, pokud má být zobrazen TagFilter = filtr s jednotlivými štítky.
+        /// Data pro filtr se ukládají do <see cref="GuiTable.RowTags"/>, reprezentují jednoduché pole prvků, 
+        /// kde prvek obsahuje klíč svého řádku (řádek v dané tabulce) a dále obsahuje text štítku (zobrazuje se uživateli) plus volitelně barvy štítku.
+        /// </summary>
+        public bool TagFilterVisible { get; set; }
+        /// <summary>
+        /// Výška prvků v objektu TagFilter, v pixelech.
+        /// Objekt TagFilter zobrazuje běžně jen jeden řádek prvků, a až při najetí myší se rozbalí dolů na potřebnou výšku.
+        /// </summary>
+        public int TagFilterItemHeight { get; set; }
+        /// <summary>
+        /// Nejvyšší počet prvků zobrazených v TagFilter.
+        /// Pokud jich bude více, pak ty s nejmenším počtem výskytů v řádcích budou skryty.
+        /// </summary>
+        public int TagFilterItemMaxCount { get; set; }
     }
     #endregion
     #region GuiTable : Jedna fyzická tabulka (ekvivalent DataTable, s podporou serializace a implicitní konverze z/na DataTable)
@@ -606,6 +643,11 @@ namespace Noris.LCS.Base.WorkScheduler
             }
         }
         private DataColumnsExtendedInfo _ColumnsExtendedInfo;
+        /// <summary>
+        /// Tagy k řádkům v této tabulce.
+        /// Tagy řádku dovolují k jednomu řádku připojit { 0 - 1 - mnoho } textových popisků (visačky = Tagy), a následně podle nich zafiltrovat řádky.
+        /// </summary>
+        public GuiTagItems RowTags { get; set; }
         #endregion
         #region Implicitní konverze GuiTable <==> System.Data.DataTable
         /// <summary>
@@ -700,9 +742,9 @@ namespace Noris.LCS.Base.WorkScheduler
         #endregion
     }
     #endregion
-    #region GuiTagItems : pole prvků GuiTagItem, reprezentuje Tagy jednoho řádku
+    #region GuiTagItems + GuiTagItem : pole prvků GuiTagItem, reprezentuje Tagy jednoho řádku, z nichž lze sestavit filtr typu "štítky"
     /// <summary>
-    /// GuiTagItems : pole prvků GuiTagItem, reprezentuje Tagy jednoho řádku
+    /// GuiTagItems : pole prvků GuiTagItem, reprezentuje Tagy jednoho řádku, z nichž lze sestavit filtr typu "štítky"
     /// </summary>
     public class GuiTagItems : GuiBase
     {
@@ -748,7 +790,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <returns></returns>
         public override string ToString()
         {
-            return "RowId: " + (this.RowId != null ? this.RowId.ToString() : "Null") + "; TagItem: " + this.TagItem;
+            return "RowId: " + (this.RowId != null ? this.RowId.ToString() : "Null") + "; TagItem: " + this.TagText;
         }
         /// <summary>
         /// Identifikátor řádku
@@ -757,7 +799,15 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <summary>
         /// Text tagu
         /// </summary>
-        public string TagItem { get; set; }
+        public string TagText { get; set; }
+        /// <summary>
+        /// Barva pozadí v běžném (nevybraném) stavu
+        /// </summary>
+        public Color? BackColor { get; set; }
+        /// <summary>
+        /// Barva pozadí ve stavu, kdy je prvek označen (aktivní)
+        /// </summary>
+        public Color? BackColorChecked { get; set; }
     }
     #endregion
     #region GuiGraphProperties : vlastnosti grafu
@@ -1113,6 +1163,79 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Tato hodnota se nenačítá z SQL SELECTU, musí se naplnit ručně.
         /// </summary>
         public GraphItemBehaviorMode BehaviorMode { get; set; }
+    }
+    #endregion
+    #region GuiGraphItemLinks + GuiGraphItemLink : propojovací linky mezi prvky grafů GuiGraphItem
+    /// <summary>
+    /// GuiGraphItemLinks : sada propojovacích linek mezi prvky grafů GuiGraphItem
+    /// </summary>
+    public class GuiGraphItemLinks : GuiBase
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public GuiGraphItemLinks() : base()
+        {
+            this.LinkList = new List<GuiGraphItemLink>();
+        }
+        /// <summary>
+        /// Soupis jednotlivých linků
+        /// </summary>
+        public List<GuiGraphItemLink> LinkList { get; set; }
+    }
+    /// <summary>
+    /// GuiGraphItemLink : jedna propojovací linka mezi prvky grafů GuiGraphItem
+    /// </summary>
+    public class GuiGraphItemLink : GuiBase
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public GuiGraphItemLink() : base()
+        {
+        }
+        /// <summary>
+        /// ID prvku předchozího
+        /// </summary>
+        public GuiId ItemIdPrev { get; set; }
+        /// <summary>
+        /// ID prvku následujícího
+        /// </summary>
+        public GuiId ItemIdNext { get; set; }
+        /// <summary>
+        /// Typ linky, nezadáno = použije se <see cref="GuiGraphItemLinkType.PrevEndToNextBegin"/>
+        /// </summary>
+        public GuiGraphItemLinkType? LinkType { get; set; }
+        /// <summary>
+        /// Šířka linky, nezadáno = 1
+        /// </summary>
+        public int? LinkWidth { get; set; }
+        /// <summary>
+        /// Barva linky
+        /// </summary>
+        public Color? LinkColor { get; set; }
+    }
+    /// <summary>
+    /// Typ spojovací linky <see cref="GuiGraphItemLink"/> mezi dvěma prvky
+    /// </summary>
+    public enum GuiGraphItemLinkType
+    {
+        /// <summary>
+        /// Nezadáno. Použije se hodnota <see cref="PrevEndToNextBegin"/>.
+        /// </summary>
+        None,
+        /// <summary>
+        /// Neviditelná
+        /// </summary>
+        Invisible,
+        /// <summary>
+        /// Běžná návaznost = Konec prvku Prev se napojí na Počátek prvku Next
+        /// </summary>
+        PrevEndToNextBegin,
+        /// <summary>
+        /// Běžná synchronizace = propojí se středy prvků
+        /// </summary>
+        PrevCenterToNextCenter
     }
     #endregion
     #region GuiToolbarPanel : Celý Toolbar
@@ -3084,261 +3207,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Key v Response: Message
         /// </summary>
         public const string KEY_RESPONSE_RESULT_MESSAGE = "ResultMessage";
-
-
-        // následující konstanty se zruší:
-        /*
-        /// <summary>
-        /// Key v Request: "DataDeclaration"
-        /// </summary>
-        public const string KEY_REQUEST_DATA_DECLARATION = "DataDeclaration";
-        /// <summary>
-        /// Název tabulky "DataDeclaration"
-        /// </summary>
-        public const string DATA_DECLARATION_NAME = "DataDeclaration";
-        /// <summary>
-        /// Struktura tabulky "DataDeclaration"
-        /// </summary>
-        public const string DATA_DECLARATION_STRUCTURE = "data_id int; target string; content string; name string; title string; tooltip string; image string; data string";
-        /// <summary>
-        /// Key v Request: "Table.{{DataId}}.{{Name}}.Row.{{Part}}"
-        /// </summary>
-        public const string KEY_REQUEST_TABLE_ROW = "Table.{{DataId}}.{{Name}}.Row.{{Part}}";
-        /// <summary>
-        /// Key v Request: "Table.{{DataId}}.{{Name}}.Graph.{{Part}}"
-        /// </summary>
-        public const string KEY_REQUEST_TABLE_GRAPH = "Table.{{DataId}}.{{Name}}.Graph.{{Part}}";
-        /// <summary>
-        /// Key v Request: "Table.{{DataId}}.{{Name}}.Rel.{{Part}}"
-        /// </summary>
-        public const string KEY_REQUEST_TABLE_REL = "Table.{{DataId}}.{{Name}}.Rel.{{Part}}";
-        /// <summary>
-        /// Key v Request: "Table.{{DataId}}.{{Name}}.Item.{{Part}}"
-        /// </summary>
-        public const string KEY_REQUEST_TABLE_ITEM = "Table.{{DataId}}.{{Name}}.Item.{{Part}}";
-        /// <summary>
-        /// Pattern v KEY_REQUEST_TABLE_???, na jehož místo se vloží název tabulky
-        /// </summary>
-        public const string KEY_REQUEST_PATTERN_TABLENAME = "{{Name}}";
-        /// <summary>
-        /// Pattern v KEY_REQUEST_TABLE_???, na jehož místo se vloží číslo verze dat
-        /// </summary>
-        public const string KEY_REQUEST_PATTERN_DATAID = "{{DataId}}";
-        /// <summary>
-        /// Pattern v KEY_REQUEST_TABLE_???, na jehož místo se vloží pořadové číslo tabulky
-        /// </summary>
-        public const string KEY_REQUEST_PATTERN_PART = "{{Part}}";
-        /// <summary>
-        /// Struktura tabulky "Table.Graph"
-        /// </summary>
-        public const string DATA_TABLE_GRAPH_STRUCTURE = "row_rec_id int; row_class_id int; item_rec_id int; item_class_id int; group_rec_id int; group_class_id int; data_rec_id int; data_class_id int; layer int; level int; is_user_fixed int; time_begin datetime; time_end datetime; height decimal; ratio decimal; back_color string; join_back_color string; data string";
-
-        /// <summary>
-        /// Název GUI obsahu: nic
-        /// </summary>
-        public const string GUI_CONTENT_NONE = "";
-        /// <summary>
-        /// Název GUI obsahu: Panel
-        /// </summary>
-        public const string GUI_CONTENT_PANEL = "panel";
-        /// <summary>
-        /// Název GUI obsahu: Button
-        /// </summary>
-        public const string GUI_CONTENT_BUTTON = "button";
-        /// <summary>
-        /// Název GUI obsahu: Table
-        /// </summary>
-        public const string GUI_CONTENT_TABLE = "table";
-        /// <summary>
-        /// Název GUI obsahu: Function
-        /// </summary>
-        public const string GUI_CONTENT_FUNCTION = "function";
-
-        /// <summary>
-        /// Název GUI panelu: Main
-        /// </summary>
-        public const string GUI_TARGET_MAIN = "main";
-        /// <summary>
-        /// Název GUI panelu: Toolbar
-        /// </summary>
-        public const string GUI_TARGET_TOOLBAR = "toolbar";
-        /// <summary>
-        /// Název GUI panelu: Task
-        /// </summary>
-        public const string GUI_TARGET_TASK = "task";
-        /// <summary>
-        /// Název GUI panelu: Schedule
-        /// </summary>
-        public const string GUI_TARGET_SCHEDULE = "schedule";
-        /// <summary>
-        /// Název GUI panelu: Source
-        /// </summary>
-        public const string GUI_TARGET_SOURCE = "source";
-        /// <summary>
-        /// Název GUI panelu: Info
-        /// </summary>
-        public const string GUI_TARGET_INFO = "info";
-
-        /// <summary>
-        /// Název proměnné v deklaraci TABLE v prvku DATA: proměnná určující pozici časového grafu
-        /// </summary>
-        public const string DATA_TABLE_GRAPH_POSITION = "GraphPosition";
-        /// <summary>
-        /// Název hodnoty v deklaraci TABLE v prvku DATA: hodnota určující neexistující graf (pak není celá proměnná povinná)
-        /// </summary>
-        public const string DATA_TABLE_POSITION_NONE = "None";
-        /// <summary>
-        /// Název hodnoty v deklaraci TABLE v prvku DATA: hodnota určující graf umístěný v samostatném posledním sloupci tabulky
-        /// </summary>
-        public const string DATA_TABLE_POSITION_IN_LAST_COLUMN = "InLastColumn";
-        /// <summary>
-        /// Název hodnoty v deklaraci TABLE v prvku DATA: hodnota určující graf zobrazený jako neinteraktivní pozadí řádku, s časovou osou proporcionální, shodnou se základní osou
-        /// </summary>
-        public const string DATA_TABLE_POSITION_BACKGROUND_PROPORTIONAL = "OnBackgroundProportional";
-        /// <summary>
-        /// Název hodnoty v deklaraci TABLE v prvku DATA: hodnota určující graf zobrazený jako neinteraktivní pozadí řádku, s časovou osou logaritmickou, zobrazující prvky všech časů
-        /// </summary>
-        public const string DATA_TABLE_POSITION_BACKGROUND_LOGARITHMIC = "OnBackgroundLogarithmic";
-
-        /// <summary>
-        /// Název proměnné v deklaraci TABLE v prvku DATA: proměnná určující výšku jedné logické linky grafu v pixelech. Hodnota je Int32 v rozmezí  4 - 32 pixelů
-        /// </summary>
-        public const string DATA_TABLE_GRAPH_LINE_HEIGHT = "LineHeight";
-        /// <summary>
-        /// Název proměnné v deklaraci TABLE v prvku DATA: proměnná určující MINIMÁLNÍ výšku jednoho řádku s grafem, v pixelech. Hodnota je Int32 v rozmezí  15 - 320 pixelů
-        /// </summary>
-        public const string DATA_TABLE_GRAPH_MIN_HEIGHT = "MinHeight";
-        /// <summary>
-        /// Název proměnné v deklaraci TABLE v prvku DATA: proměnná určující MAXIMÁLNÍ výšku jednoho řádku s grafem, v pixelech. Hodnota je Int32 v rozmezí  15 - 320 pixelů
-        /// </summary>
-        public const string DATA_TABLE_GRAPH_MAX_HEIGHT = "MaxHeight";
-
-        /// <summary>
-        /// Název proměnné v deklaraci FUNCTION v prvku DATA: proměnná určující seznam tabulek (názvy oddělená čárkou), pro jejichž grafické prvky se má tato funkce nabízet. Typicky: workplace_table,source_table
-        /// </summary>
-        public const string DATA_FUNCTION_TABLE_NAMES = "TableNames";
-        /// <summary>
-        /// Název proměnné v deklaraci FUNCTION v prvku DATA: proměnná určující seznam tříd (čísla oddělená čárkou), pro jejichž grafické prvky se má tato funkce nabízet. Typicky: 1188,1190,1362
-        /// Pokud seznam bude obsahovat i číslo 0 (taková třída neexistuje), pak se tato funkce bude nabízet jako kontextové menu v celém řádku (tj. i v prostoru grafu, kde není žádný prvek).
-        /// Řádky, které obsahují graf "OnBackground" nikdy nenabízí kontextové funkce pro jednotlivé prvky dat, protože jde o "statické pozadí řádku", nikoli o pracovní prvek.
-        /// </summary>
-        public const string DATA_FUNCTION_CLASS_NUMBERS = "ClassNumbers";
-
-        /// <summary>
-        /// Název proměnné v deklaraci BUTTON v prvku DATA: proměnná určující výšku prvku v počtu jednotlivých modulů. Default = 2, povolené hodnoty: 1,2,3,4,6.
-        /// </summary>
-        public const string DATA_BUTTON_HEIGHT = "ButtonHeight";
-        /// <summary>
-        /// Název proměnné v deklaraci BUTTON v prvku DATA: proměnná určující šířku prvku v počtu jednotlivých modulů. Default = neurčeno, určí se podle velikosti textu a výšky HEIGHT.
-        /// Může sloužit ke zpřesnění layoutu.
-        /// </summary>
-        public const string DATA_BUTTON_WIDTH = "ButtonWidth";
-        /// <summary>
-        /// Název proměnné v deklaraci BUTTON v prvku DATA: proměnná určující chování generátoru layoutu, obsahuje jednotlivé texty DATA_BUTTON_LAYOUT_*, oddělené čárkou.
-        /// </summary>
-        public const string DATA_BUTTON_LAYOUT = "Layout";
-        /// <summary>
-        /// Název proměnné v deklaraci BUTTON v prvku DATA: proměnná obsahuje název grupy, v níž se button objeví.
-        /// Pokud nebude název zadán, pak se button objeví v implicitní grupě "FUNKCE".
-        /// </summary>
-        public const string DATA_BUTTON_GROUPNAME = "GroupName";
-
-        // Tyto hodnoty musí exaktně odpovídat hodnotám enumu Asol.Tools.WorkScheduler.Components.LayoutHint, neboť jejich parsování se provádí na úrovni enumu (pouze s IgnoreCase = true):
-
-        /// <summary>
-        /// Hodnota proměnné LAYOUT v deklaraci BUTTON v prvku DATA: tento prvek musí být povinně v tom řádku, jako předešlý prvek.
-        /// </summary>
-        public const string DATA_BUTTON_LAYOUT_ThisItemOnSameRow = "ThisItemOnSameRow";
-        /// <summary>
-        /// Hodnota proměnné LAYOUT v deklaraci BUTTON v prvku DATA: tento prvek musí být povinně prvním na novém řádku.
-        /// </summary>
-        public const string DATA_BUTTON_LAYOUT_ThisItemSkipToNextRow = "ThisItemSkipToNextRow";
-        /// <summary>
-        /// Hodnota proměnné LAYOUT v deklaraci BUTTON v prvku DATA: tento prvek musí být povinně v novém bloku = první prvek v prvním řádku, jakoby za separátorem.
-        /// </summary>
-        public const string DATA_BUTTON_LAYOUT_ThisItemSkipToNextTable = "ThisItemSkipToNextTable";
-        /// <summary>
-        /// Hodnota proměnné LAYOUT v deklaraci BUTTON v prvku DATA: příští prvek musí být povinně v tom řádku, jako předešlý prvek. 
-        /// </summary>
-        public const string DATA_BUTTON_LAYOUT_NextItemOnSameRow = "NextItemOnSameRow";
-        /// <summary>
-        /// Hodnota proměnné LAYOUT v deklaraci BUTTON v prvku DATA: příští prvek musí být povinně prvním na novém řádku. 
-        /// </summary>
-        public const string DATA_BUTTON_LAYOUT_NextItemSkipToNextRow = "NextItemSkipToNextRow";
-        /// <summary>
-        /// Hodnota proměnné LAYOUT v deklaraci BUTTON v prvku DATA: příští prvek musí být povinně v novém bloku = první prvek v prvním řádku, jakoby za separátorem. 
-        /// </summary>
-        public const string DATA_BUTTON_LAYOUT_NextItemSkipToNextTable = "NextItemSkipToNextTable";
-
-        /// <summary>
-        /// Název proměnné EditMode v tabulce Graph v prvku DATA: proměnná, určující vlastnosti jednotlivého prvku grafu, obsahuje jednotlivé texty DATA_GRAPHITEM_EDITMODE_*, oddělené čárkou.
-        /// </summary>
-        public const string DATA_GRAPHITEM_EDITMODE = "EditMode";
-        /// <summary>
-        /// Název proměnné BackStyle v tabulce Graph v prvku DATA: proměnná, určující styl vykreslení pozadí jednotlivého prvku grafu. Váže se na enum <see cref="System.Drawing.Drawing2D.HatchStyle"/>.
-        /// </summary>
-        public const string DATA_GRAPHITEM_BACKSTYLE = "BackStyle";
-        /// <summary>
-        /// Název proměnné BorderColor v tabulce Graph v prvku DATA: proměnná, určující barvu orámování jednotlivého prvku grafu.
-        /// </summary>
-        public const string DATA_GRAPHITEM_BORDERCOLOR = "BorderColor";
-        /// <summary>
-        /// Hodnota proměnné EditMode v tabulce Graph v prvku DATA: Lze změnit délku času (roztáhnout šířku pomocí přesunutí začátku nebo konce)
-        /// </summary>
-        public const string DATA_GRAPHITEM_EDITMODE_ResizeTime = "ResizeTime";
-        /// <summary>
-        /// Hodnota proměnné EditMode v tabulce Graph v prvku DATA: Lze změnit výšku = obsazený prostor v grafu (roztáhnout výšku)
-        /// </summary>
-        public const string DATA_GRAPHITEM_EDITMODE_ResizeHeight = "ResizeHeight";
-        /// <summary>
-        /// Hodnota proměnné EditMode v tabulce Graph v prvku DATA: Lze přesunout položku grafu na ose X = čas doleva / doprava
-        /// </summary>
-        public const string DATA_GRAPHITEM_EDITMODE_MoveToAnotherTime = "MoveToAnotherTime";
-        /// <summary>
-        /// Hodnota proměnné EditMode v tabulce Graph v prvku DATA: Lze přesunout položku grafu na ose Y = na jiný řádek tabulky
-        /// </summary>
-        public const string DATA_GRAPHITEM_EDITMODE_MoveToAnotherRow = "MoveToAnotherRow";
-        /// <summary>
-        /// Hodnota proměnné EditMode v tabulce Graph v prvku DATA: Lze přesunout položku grafu do jiné tabulky
-        /// </summary>
-        public const string DATA_GRAPHITEM_EDITMODE_MoveToAnotherTable = "MoveToAnotherTable";
-        /// <summary>
-        /// Hodnota proměnné EditMode v tabulce Graph v prvku DATA: Nezobrazovat text v prvku nikdy
-        /// </summary>
-        public const string DATA_GRAPHITEM_EDITMODE_ShowCaptionNone = "ShowCaptionNone";
-        /// <summary>
-        /// Hodnota proměnné EditMode v tabulce Graph v prvku DATA: Zobrazit text v prvku při stavu MouseOver
-        /// </summary>
-        public const string DATA_GRAPHITEM_EDITMODE_ShowCaptionInMouseOver = "ShowCaptionInMouseOver";
-        /// <summary>
-        /// Hodnota proměnné EditMode v tabulce Graph v prvku DATA: Zobrazit text v prvku při stavu Selected
-        /// </summary>
-        public const string DATA_GRAPHITEM_EDITMODE_ShowCaptionInSelected = "ShowCaptionInSelected";
-        /// <summary>
-        /// Hodnota proměnné EditMode v tabulce Graph v prvku DATA: Zobrazit text v prvku vždy
-        /// </summary>
-        public const string DATA_GRAPHITEM_EDITMODE_ShowCaptionAllways = "ShowCaptionAllways";
-        /// <summary>
-        /// Hodnota proměnné EditMode v tabulce Graph v prvku DATA: Nezobrazovat ToolTip nikdy.
-        /// </summary>
-        public const string DATA_GRAPHITEM_EDITMODE_ShowToolTipNone = "ShowToolTipNone";
-        /// <summary>
-        /// Hodnota proměnné EditMode v tabulce Graph v prvku DATA: Zobrazit ToolTip až nějaký čas po najetí myší, a po přiměřeném čase zhasnout.
-        /// </summary>
-        public const string DATA_GRAPHITEM_EDITMODE_ShowToolTipFadeIn = "ShowToolTipFadeIn";
-        /// <summary>
-        /// Hodnota proměnné EditMode v tabulce Graph v prvku DATA: Zobrazit ToolTip okamžitě po najetí myší na prvek (trochu brutus) a nechat svítit "skoro pořád"
-        /// </summary>
-        public const string DATA_GRAPHITEM_EDITMODE_ShowToolTipImmediatelly = "ShowToolTipImmediatelly";
-        /// <summary>
-        /// Hodnota proměnné EditMode v tabulce Graph v prvku DATA: Default pro pracovní čas = ResizeTime | MoveToAnotherTime | MoveToAnotherRow
-        /// </summary>
-        public const string DATA_GRAPHITEM_EDITMODE_DefaultWorkTime = "DefaultWorkTime";
-        /// <summary>
-        /// Hodnota proměnné EditMode v tabulce Graph v prvku DATA: Default pro text = ShowCaptionInMouseOver | ShowCaptionInSelected | ShowToolTipFadeIn
-        /// </summary>
-        public const string DATA_GRAPHITEM_EDITMODE_DefaultText = "DefaultText";
-        */
+        
         #endregion
         #region Podpora tvorby tabulek a sloupců
         /// <summary>
@@ -4009,300 +3878,6 @@ namespace Noris.LCS.Base.WorkScheduler
                 target = System.Text.Encoding.UTF8.GetString(outBuffer);
             }
             return target;
-        }
-        #endregion
-        #region Odesílání a příjem datového balíku
-        /// <summary>
-        /// Vytvoří a vrátí <see cref="DataBuffer"/> pro zápis dat.
-        /// Data se do něj vkládají metodami <see cref="DataBuffer.WriteText(string, string)"/>atd, zapsaný text se získá v property <see cref="DataBuffer.WrittenContent"/>.
-        /// </summary>
-        /// <returns></returns>
-        public static DataBuffer CreateDataBufferWriter()
-        {
-            return new DataBuffer();
-        }
-        /// <summary>
-        /// Vytvoří a vrátí <see cref="DataBuffer"/> pro čtení dat.
-        /// Vstupní text se předává do této metody.
-        /// Data se čtou metodami 
-        /// </summary>
-        /// <param name="content"></param>
-        /// <returns></returns>
-        public static DataBuffer CreateDataBufferReader(string content)
-        {
-            return new DataBuffer(content);
-        }
-        /// <summary>
-        /// Buffer pro zápis a čtení dat
-        /// </summary>
-        public class DataBuffer : IDisposable
-        {
-            #region Konstrukce, buffer, Dispose
-            internal DataBuffer()
-            {
-                this._StringBuilder = new StringBuilder();
-                this._Writer = new StringWriter(this._StringBuilder);
-            }
-            internal DataBuffer(string data)
-            {
-                this._Reader = new StringReader(data);
-            }
-            private System.Text.StringBuilder _StringBuilder;
-            private System.IO.StringWriter _Writer;
-            private System.IO.StringReader _Reader;
-            void IDisposable.Dispose()
-            {
-                try
-                {
-                    if (this._Writer != null)
-                    {
-                        this._Writer.Close();
-                        this._Writer.Dispose();
-                        this._Writer = null;
-                    }
-                    if (this._StringBuilder != null)
-                    {
-                        this._StringBuilder = null;
-                    }
-                    if (this._Reader != null)
-                    {
-                        this._Reader.Close();
-                        this._Reader.Dispose();
-                        this._Reader = null;
-                    }
-                }
-                catch { }
-            }
-            #endregion
-            #region Write: Zápis dat
-            /// <summary>
-            /// true pokud this Buffer je v režimu Write = umožní zapisovat, ale ne číst
-            /// </summary>
-            public bool IsWritter { get { return (this._Writer != null); } }
-            /// <summary>
-            /// Do bufferu zapíše data, která získá komprimací daného textu.
-            /// </summary>
-            /// <param name="key"></param>
-            /// <param name="text"></param>
-            public void WriteText(string key, string text)
-            {
-                this.WriteText(key, text, false);
-            }
-            /// <summary>
-            /// Do bufferu zapíše data, která získá komprimací daného textu.
-            /// </summary>
-            /// <param name="key"></param>
-            /// <param name="text"></param>
-            /// <param name="verify"></param>
-            public void WriteText(string key, string text, bool verify)
-            {
-                this._CheckWritter("WriteText method");
-                string data = WorkSchedulerSupport.Compress(text);
-                if (verify)
-                {
-                    string test = WorkSchedulerSupport.Decompress(data);
-                    if (test.Length != text.Length || test != text)
-                        throw new InvalidOperationException("WorkSchedulerSupport.Compress() and Decompress() error.");
-                }
-                this.WriteData(key, data);
-            }
-            /// <summary>
-            /// Do bufferu zapíše komprimovaná data
-            /// </summary>
-            /// <param name="key"></param>
-            /// <param name="data"></param>
-            public void WriteData(string key, string data)
-            {
-                this._CheckWritter("WriteData method");
-                key = key
-                    .Replace("\r", " ")
-                    .Replace("\n", " ")
-                    .Replace("<", "{")
-                    .Replace(">", "}");
-                this._Writer.WriteLine(KEY_BEGIN);
-                this._Writer.WriteLine(key);
-                this._Writer.WriteLine(KEY_END);
-                this._Writer.WriteLine(DATA_BEGIN);
-                this._Writer.WriteLine(data);
-                this._Writer.WriteLine(DATA_END);
-                this._Writer.WriteLine();
-            }
-            /// <summary>
-            /// Obsahuje aktuálně zapsaná data, ale pouze v režimu <see cref="IsWritter"/>.
-            /// </summary>
-            public string WrittenContent
-            {
-                get
-                {
-                    this._CheckWritter("WrittenContent property");
-                    this._Writer.Flush();
-                    return this._StringBuilder.ToString();
-                }
-            }
-            /// <summary>
-            /// Ověří, že this Buffer je v režimu <see cref="IsWritter"/>.
-            /// Pokud není, vyhodí chybu.
-            /// </summary>
-            /// <param name="usedMember"></param>
-            private void _CheckWritter(string usedMember)
-            {
-                if (!this.IsWritter)
-                    throw new InvalidOperationException("Instance of DataBuffer is not in Writer mode. Using the " + usedMember + " is not possible.");
-            }
-            #endregion
-            #region Read: čtení dat
-            /// <summary>
-            /// true pokud this Buffer je v režimu Read = umožní číst, ale ne zapisovat
-            /// </summary>
-            public bool IsReader { get { return (this._Reader != null); } }
-            /// <summary>
-            /// Metoda najde v textu nejbližší klíč a jeho obsah, načte je, data dekomrpimuje, a vepíše do out parametrů, pak vrací true.
-            /// Pokud nic nemá (došla data), vrací false.
-            /// </summary>
-            /// <param name="key"></param>
-            /// <param name="text"></param>
-            /// <returns></returns>
-            public bool ReadNextText(out string key, out string text)
-            {
-                this._CheckReader("ReadNextText method");
-                text = null;
-                string data;
-                if (!this._ReadNextBlock(out key, out data)) return false;
-
-                text = WorkSchedulerSupport.Decompress(data);
-                return true;
-            }
-            /// <summary>
-            /// Metoda najde v textu nejbližší klíč a jeho obsah, načte je, načtený obsah nezmění (neprovede dekomrpimaci), a vepíše do out parametrů, pak vrací true.
-            /// Pokud nic nemá (došla data), vrací false.
-            /// </summary>
-            /// <param name="key"></param>
-            /// <param name="data"></param>
-            /// <returns></returns>
-            public bool ReadNextData(out string key, out string data)
-            {
-                this._CheckReader("ReadNextText method");
-                data = null;
-                if (!this._ReadNextBlock(out key, out data)) return false;
-                return true;
-            }
-            /// <summary>
-            /// Metoda z bloku dat načte key a value, kde value je prostý načtený blok dat (bez dekomprimace).
-            /// </summary>
-            /// <param name="key"></param>
-            /// <param name="value"></param>
-            /// <returns></returns>
-            private bool _ReadNextBlock(out string key, out string value)
-            {
-                key = null;
-                value = null;
-                if (this._ReaderIsEnd) return false;
-
-                StringBuilder content = new StringBuilder();
-
-                _ReadState currState = _ReadState.Before;            // state obsahuje stav, který byl před chvilkou, před řádkem který načteme do line.
-                while (!(currState == _ReadState.DataEnd || currState == _ReadState.Incorrect))         // Pokud najdu stav Konec dat nebo Chyba, tak nebudu pokračovat.
-                {
-                    string line = this._Reader.ReadLine();
-                    if (line == null)
-                    {
-                        this._ReaderIsEnd = true;                    // Úplný konec dat (fyzický)
-                        break;
-                    }
-                    _ReadState lineState = _ReadDetectLine(line);    // Čemu odpovídá načtený řádek
-                    if (lineState == _ReadState.Empty) continue;     // Prázdné přeskočím
-
-                    switch (currState)                               // Stavový automat vychází ze stavu před řádkem line
-                    {
-                        case _ReadState.Before:
-                            if (lineState == _ReadState.KeyBegin) currState = _ReadState.KeyBegin;
-                            break;
-                        case _ReadState.KeyBegin:
-                            if (lineState == _ReadState.Other)
-                            {
-                                key = line;
-                                currState = _ReadState.Key;
-                            }
-                            break;
-                        case _ReadState.Key:
-                            if (lineState == _ReadState.KeyEnd) currState = _ReadState.KeyEnd;
-                            break;
-                        case _ReadState.KeyEnd:
-                            if (lineState == _ReadState.DataBegin) currState = _ReadState.DataBegin;
-                            break;
-                        case _ReadState.DataBegin:
-                        case _ReadState.Data:
-                            if (lineState == _ReadState.Other)
-                            {
-                                content.AppendLine(line);
-                                currState = _ReadState.Data;
-                            }
-                            else if (lineState == _ReadState.DataEnd) currState = _ReadState.DataEnd;
-                            else currState = _ReadState.Incorrect;             // Pokud uprostřed dat najdu nějaký jiný klíčový text, který nečekám, pak skončím s chybou
-                            break;
-                        case _ReadState.DataEnd:
-                            break;
-                    }
-                }
-
-                if (currState == _ReadState.DataEnd)
-                {
-                    value = content.ToString();
-                    return true;
-                }
-                return false;
-            }
-            private static _ReadState _ReadDetectLine(string line)
-            {
-                if (String.IsNullOrEmpty(line)) return _ReadState.Empty;
-                if (String.Equals(line, KEY_BEGIN, StringComparison.InvariantCultureIgnoreCase)) return _ReadState.KeyBegin;
-                if (String.Equals(line, KEY_END, StringComparison.InvariantCultureIgnoreCase)) return _ReadState.KeyEnd;
-                if (String.Equals(line, DATA_BEGIN, StringComparison.InvariantCultureIgnoreCase)) return _ReadState.DataBegin;
-                if (String.Equals(line, DATA_END, StringComparison.InvariantCultureIgnoreCase)) return _ReadState.DataEnd;
-                return _ReadState.Other;
-            }
-            private enum _ReadState { Before, Empty, KeyBegin, Key, KeyEnd, DataBegin, Data, DataEnd, Other, Incorrect }
-            /// <summary>
-            /// true, pokud Reader došel na konec vstupních dat, a už nic dalšího nepřečte.
-            /// </summary>
-            public bool ReaderIsEnd
-            {
-                get
-                {
-                    this._CheckReader("ReaderIsEnd property");
-                    return this._ReaderIsEnd;
-                }
-            }
-            private bool _ReaderIsEnd;
-            /// <summary>
-            /// Ověří, že this Buffer je v režimu <see cref="IsWritter"/>.
-            /// Pokud není, vyhodí chybu.
-            /// </summary>
-            /// <param name="usedMember"></param>
-            private void _CheckReader(string usedMember)
-            {
-                if (!this.IsReader)
-                    throw new InvalidOperationException("Instance of DataBuffer is not in Reader mode. Using the " + usedMember + " is not possible.");
-            }
-            #endregion
-            #region Konstanty
-            /// <summary>
-            /// Klíč, začátek
-            /// </summary>
-            protected const string KEY_BEGIN = "<Key>";
-            /// <summary>
-            /// Klíč, konec
-            /// </summary>
-            protected const string KEY_END = "</Key>";
-            /// <summary>
-            /// Data, začátek
-            /// </summary>
-            protected const string DATA_BEGIN = "<Data>";
-            /// <summary>
-            /// Data, konec
-            /// </summary>
-            protected const string DATA_END = "</Data>";
-            #endregion
         }
         #endregion
     }
