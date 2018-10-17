@@ -150,7 +150,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         }
         void _SplitterWZ_ValueChanged(object sender, GPropertyChangeArgs<int> e)
         {
-            this._SplitterWzRightDist = this.ClientSize.Width - this._SplitterWZ.Value;
+            this._SplitterWzRightDist = this.GControl.ClientSize.Width - this._SplitterWZ.Value;
             this.ControlsPosition();
         }
         private Table _PrepareTableW(string name, int rowCount)
