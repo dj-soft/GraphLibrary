@@ -32,6 +32,12 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 scope.Result = "OK";
             }
         }
+        private void TestFormGrid_SizeChanged(object sender, EventArgs e)
+        {
+            if (this._SplitterWZ != null)
+                this._SplitterWZ.ValueSilent = this.GControl.ClientSize.Width - this._SplitterWzRightDist;
+            this.ControlsPosition();
+        }
         void TestFormGrid_FormClosed(object sender, FormClosedEventArgs e)
         {
             Application.App.End();
@@ -68,6 +74,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                     this._SplitterWZ = new GSplitter() { SplitterVisibleWidth = 4, SplitterActiveOverlap = 2, Orientation = Orientation.Vertical, Value = 400, BoundsNonActive = new Int32NRange(0, 200) };
                     this._SplitterWZ.ValueChanged += new GPropertyChangedHandler<int>(_SplitterWZ_ValueChanged);
                     this._SplitterWZ.ValueChanging += new GPropertyChangedHandler<int>(_SplitterWZ_ValueChanging);
+                    this._SplitterWzRightDist = 250;
+                    this._SplitterWZ.ValueSilent = this.GControl.ClientSize.Width - this._SplitterWzRightDist;
                     this._GridZ = new GGrid();
                     this._GridZ.AddTable(this._TableZ);
                     this._GridZ.SynchronizedTime = this._TimeSynchronizer;
@@ -142,6 +150,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         }
         void _SplitterWZ_ValueChanged(object sender, GPropertyChangeArgs<int> e)
         {
+            this._SplitterWzRightDist = this.ClientSize.Width - this._SplitterWZ.Value;
             this.ControlsPosition();
         }
         private Table _PrepareTableW(string name, int rowCount)
@@ -240,6 +249,28 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 string[] arrayP = "Konstruktér;Technolog;Mistr;Svářeč;Elektro;Montér;Obráběč;Slévač;Formíř;Šponař;Jeřábník;Kuchař;Řidič;Skladník;Účetní;Analytik;Programátor;Recepční;Prodavač;Učitel;Klempíř;Pokrývač;Lékař;Úředník".Split(';');
 
                 #endregion
+                #region TagFilter
+                List<TagItem> tagItems = new List<TagItem>();
+                tagItems.Add("Elektronik");
+                tagItems.Add("Elektromontér");
+                tagItems.Add("Seřizovač");
+                tagItems.Add("Svačinář");
+                tagItems.Add("Svářeč E");
+                tagItems.Add("Svářeč A");
+                tagItems.Add("Řidič B");
+                tagItems.Add("Řidič C");
+                tagItems.Add("Řidič MKD");
+                tagItems.Add("NC soustruh");
+                tagItems.Add("Rýsovač");
+                tagItems.Add("Nástrojař");
+                tagItems.Add("Modelář");
+                tagItems.Add("Formíř");
+                tagItems.Add("Slévač");
+                tagItems.Add("Potápěč");
+                tagItems.Add("Učitel");
+                tagItems.Add("MzdÚčetní");
+                int tagCount = tagItems.Count;
+                #endregion
 
                 table.AllowRowResize = false;
 
@@ -281,6 +312,12 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                     Cell nameCell = row[2];
                     nameCell.ToolTip = nazev;
                     nameCell.ToolTipImage = image;
+
+                    int tagCnt = (Rand.Next(0, 100) < 85 ? 1 : 2);
+                    TagItem[] tagArr = new TagItem[tagCnt];
+                    for (int tagUka = 0; tagUka < tagCnt; tagUka++)
+                        tagArr[tagUka] = tagItems[Rand.Next(0, tagCount)];
+                    row.TagItems = tagArr;
 
                     row.BackgroundValue = this._PrepareGraphZ(now, false, 4);
 
@@ -525,10 +562,6 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         private GGrid _GridZ;
         private GSplitter _SplitterWZ;
         private ValueTimeRangeSynchronizer _TimeSynchronizer;
-        private void TestFormGrid_SizeChanged(object sender, EventArgs e)
-        {
-            this.ControlsPosition();
-        }
         protected void ControlsPosition()
         {
             using (Application.App.Trace.Scope("TestFormGrid", "ControlsPosition", "Start"))
@@ -543,7 +576,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
                 y += 3;
                 int h = size.Height - y - 0;
-                if (this._SplitterWZ != null)
+                if (this._SplitterWZ != null && this._SplitterWzRightDist > 0)
                 {
                     int split = this._SplitterWZ.Value;
                     if (this._GridW != null)
@@ -556,12 +589,13 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                         this._GridZ.Bounds = new Rectangle(split + 2, y, size.Width - 0 - split - 2, h);
                         this._GridZ.Refresh();
                     }
+
                     this._SplitterWZ.BoundsNonActive = new Int32NRange(y, y + h);
                     this._SplitterWZ.Refresh();
-                    // this.Refresh();
                 }
             }
         }
+        private int _SplitterWzRightDist;
         private void CloseButtonClick(object sender, EventArgs e)
         {
             this.Close();
