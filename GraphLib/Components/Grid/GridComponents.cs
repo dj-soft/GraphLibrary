@@ -1636,6 +1636,14 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         ColumnHeaders,
         /// <summary>
+        /// Záhlaví filtru TagFilter, vlevo ve sloupci záhlaví řádků
+        /// </summary>
+        TagFilterHeader,
+        /// <summary>
+        /// Filtr řádků na základě TagItems
+        /// </summary>
+        TagFilter,
+        /// <summary>
         /// Prostor pro řádky: (záhlaví + data)
         /// </summary>
         Row,

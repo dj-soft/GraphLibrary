@@ -1740,8 +1740,10 @@ namespace Asol.Tools.WorkScheduler.Components
         TableHeight = TableOrder << 1,
         /// <summary>Posun tabulek</summary>
         TableScroll = TableHeight << 1,
+        /// <summary>Obsah filtru TagFilter, po změně filtru v tabulce</summary>
+        TableTagFilter = TableScroll << 1,
         /// <summary>Počet sloupců</summary>
-        ColumnsCount = TableScroll << 1,
+        ColumnsCount = TableTagFilter << 1,
         /// <summary>Pořadí sloupců</summary>
         ColumnOrder = ColumnsCount << 1,
         /// <summary>Šířka sloupců</summary>

@@ -487,7 +487,8 @@ namespace Asol.Tools.WorkScheduler.Data
                 itm.Id = id;
             }
 
-            this._InvalidateTagItems();
+            if (row.TagItems != null)
+                this._InvalidateTagItems();
         }
         /// <summary>
         /// Protected virtual metoda volaná v procesu přidání řádku, řádek je platný, event RowAddAfter ještě neproběhl. V DTable je tato metoda prázdná.
@@ -537,10 +538,14 @@ namespace Asol.Tools.WorkScheduler.Data
         #endregion
         #region TagItems = štítky náležející k řádku
         /// <summary>
+        /// Obsahuje true, pokud this tabulka má alespoň jednu položku v <see cref="TagItems"/>.
+        /// </summary>
+        public bool HasTagItems { get { this._CheckTagItems(); return (this._TagItems.Length > 0); } }
+        /// <summary>
         /// Soupis štítků ze všech řádků.
         /// Hodnota Key = text Tagu; hodnota Value = počet výskytů v řádcích. Počet může mít vliv na velikost štítku.
         /// </summary>
-        internal KeyValuePair<string, int>[] TagItems { get { this._CheckTagItems(); return this._TagItems; } }
+        internal TagItem[] TagItems { get { this._CheckTagItems(); return this._TagItems; } }
         /// <summary>
         /// Zajistí platnost dat v poli <see cref="_TagItems"/>
         /// </summary>
@@ -548,15 +553,15 @@ namespace Asol.Tools.WorkScheduler.Data
         {
             if (this._TagItems != null) return;
 
-            Dictionary<string, int> tagDict = new Dictionary<string, int>();
+            Dictionary<string, TagItem> tagDict = new Dictionary<string, TagItem>();
             foreach (Row row in this.Rows)
                 ((ITagItemOwner)row).PrepareSummaryDict(tagDict);
 
-            List<KeyValuePair<string, int>> tagList = tagDict.ToList();
+            List<KeyValuePair<string, TagItem>> tagList = tagDict.ToList();
             if (tagList.Count > 1)
                 tagList.Sort((a,b) => String.Compare(a.Key, b.Key));
 
-            this._TagItems = tagList.ToArray();
+            this._TagItems = tagList.Select(i => i.Value).ToArray();
         }
         /// <summary>
         /// Invaliduje pole štítků
@@ -571,12 +576,30 @@ namespace Asol.Tools.WorkScheduler.Data
         private void _InvalidateTagItems()
         {
             this._TagItems = null;
+            this.CallTagItemsChanged();
         }
+        /// <summary>
+        /// Vyvolá akce po změně TagItems
+        /// </summary>
+        protected void CallTagItemsChanged()
+        {
+            this.OnTagItemsChanged();
+            if (this.TagItemsChanged != null)
+                this.TagItemsChanged(this, new EventArgs());
+        }
+        /// <summary>
+        /// Háček po změně TagItems
+        /// </summary>
+        protected virtual void OnTagItemsChanged() { }
+        /// <summary>
+        /// Event po změně TagItems
+        /// </summary>
+        public event EventHandler TagItemsChanged;
         /// <summary>
         /// Soupis štítků ze všech řádků.
         /// Key = text Tagu; Value = počet výskytů
         /// </summary>
-        private KeyValuePair<string, int>[] _TagItems;
+        private TagItem[] _TagItems;
         #endregion
         #region Třídění a filtrování řádků
         /// <summary>
@@ -2430,15 +2453,15 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Štítky - pokud budou u některých řádků v tabulce zadány, budou sumarizovány ze všech řádků tabulky, a budou vypsány pod záhlavím tabulky.
         /// Ty pak slouží jako rychlý filtr řádků.
         /// </summary>
-        public IEnumerable<string> TagItems { get { return (this._TagItemDict != null ? this._TagItemDict.Keys : null); } set { this._SetTagItems(value); } }
+        public IEnumerable<TagItem> TagItems { get { return (this._TagItemDict != null ? this._TagItemDict.Values : null); } set { this._SetTagItems(value); } }
         /// <summary>
         /// Prvek přidá svoje Tagy do společné Dictionary
         /// </summary>
         /// <param name="tagDict"></param>
-        void ITagItemOwner.PrepareSummaryDict(Dictionary<string, int> tagDict)
+        void ITagItemOwner.PrepareSummaryDict(Dictionary<string, TagItem> tagDict)
         {
             if (this._TagItemDict == null) return;
-            _AddTagItemsToDict(this._TagItemDict.Keys, tagDict);
+            _AddTagItemsToDict(this._TagItemDict.Values, tagDict);
         }
         /// <summary>
         /// Prvek vrátí true, pokud jeho Tagy vyhovují zadaným (uživatelem zvoleným) Tagům.
@@ -2454,9 +2477,9 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Z dodaných položek vygeneruje data do <see cref="_TagItemDict"/>
         /// </summary>
         /// <param name="tagItems"></param>
-        private void _SetTagItems(IEnumerable<string> tagItems)
+        private void _SetTagItems(IEnumerable<TagItem> tagItems)
         {
-            Dictionary<string, int> tagDict = new Dictionary<string, int>();
+            Dictionary<string, TagItem> tagDict = new Dictionary<string, TagItem>();
             _AddTagItemsToDict(tagItems, tagDict);
             this._TagItemDict = tagDict;
             if (this.HasTable)
@@ -2467,23 +2490,22 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         /// <param name="tagItems"></param>
         /// <param name="tagDict"></param>
-        private static void _AddTagItemsToDict(IEnumerable<string> tagItems, Dictionary<string, int> tagDict)
+        private static void _AddTagItemsToDict(IEnumerable<TagItem> tagItems, Dictionary<string, TagItem> tagDict)
         {
             if (tagItems == null || tagDict == null) return;
-            foreach (string tagItem in tagItems)
+            foreach (TagItem tagItem in tagItems)
             {
-                if (String.IsNullOrEmpty(tagItem)) continue;
-                int value;
-                if (!tagDict.TryGetValue(tagItem, out value))
-                    tagDict.Add(tagItem, 1);
-                else
-                    tagDict[tagItem] = value + 1;
+                string key = tagItem.Text;
+                if (String.IsNullOrEmpty(key)) continue;
+                TagItem value;
+                if (!tagDict.TryGetValue(key, out value))
+                    tagDict.Add(key, tagItem);
             }
         }
         /// <summary>
         /// Úložiště Tagů tohoto řádku
         /// </summary>
-        private Dictionary<string, int> _TagItemDict;
+        private Dictionary<string, TagItem> _TagItemDict;
         #endregion
         #region BackgroundValue
         /// <summary>
@@ -2957,6 +2979,126 @@ namespace Asol.Tools.WorkScheduler.Data
 
     }
     #endregion
+    #region TagItem : Data pro jeden vizuální tag
+    /// <summary>
+    /// TagItem : Data pro jeden vizuální tag.
+    /// Prvek má implicitní konverzi s datovým typem String; konvertuje se property <see cref="TagItem.Text"/>.
+    /// </summary>
+    public class TagItem : IOwnerProperty<GTagFilter>
+    {
+        #region Konstrukce, vztah na Ownera
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public TagItem()
+        { }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public TagItem(string text)
+        {
+            this._Text = text;
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return this.Text;
+        }
+        /// <summary>
+        /// Vlastník = <see cref="GTagFilter"/>
+        /// </summary>
+        GTagFilter IOwnerProperty<GTagFilter>.Owner { get { return this._Owner; } set { this._Owner = value; } }
+        private GTagFilter _Owner;
+        /// <summary>
+        /// Zavolá Ownera, jeho metodu <see cref="GTagFilter._TagItemsChanged()"/>, 
+        /// tím mu sdělí, že je třeba znovu přepočítat všechny prvky.
+        /// </summary>
+        private void _CallOwnerChange()
+        {
+            if (this._Owner != null)
+                ((ITagFilter)this._Owner).TagItemsChanged();
+        }
+        /// <summary>
+        /// Zavolá Ownera, jeho metodu <see cref="GTagFilter._TagItemsRepaint()"/>,
+        /// tím mu sdělí, že je třeba pouze překreslit control, beze změny přepočtů.
+        /// </summary>
+        private void _CallOwnerRepaint()
+        {
+            if (this._Owner != null)
+                ((ITagFilter)this._Owner).TagItemsRepaint();
+        }
+        #endregion
+        #region Public data
+        /// <summary>
+        /// Zobrazovaný text
+        /// </summary>
+        public string Text { get { return this._Text; } set { this._Text = value; this._CallOwnerChange(); } }
+        private string _Text;
+        /// <summary>
+        /// Explicitně definovaná barva pozadí
+        /// </summary>
+        public Color? BackColor { get { return this._BackColor; } set { this._BackColor = value; this._CallOwnerRepaint(); } }
+        private Color? _BackColor;
+        /// <summary>
+        /// Explicitně definovaná barva pozadí ve stavu <see cref="Checked"/> = true
+        /// </summary>
+        public Color? CheckedBackColor { get { return this._CheckedBackColor; } set { this._CheckedBackColor = value; this._CallOwnerRepaint(); } }
+        private Color? _CheckedBackColor;
+        /// <summary>
+        /// Explicitně definovaná barva rámečku
+        /// </summary>
+        public Color? BorderColor { get { return this._BorderColor; } set { this._BorderColor = value; this._CallOwnerRepaint(); } }
+        private Color? _BorderColor;
+        /// <summary>
+        /// Explicitně definovaná barva textu
+        /// </summary>
+        public Color? TextColor { get { return this._TextColor; } set { this._TextColor = value; this._CallOwnerRepaint(); } }
+        private Color? _TextColor;
+        /// <summary>
+        /// Relativní velikost proti ostatním prvkům
+        /// </summary>
+        public float? Size { get { return this._Size; } set { this._Size = value; this._CallOwnerChange(); } }
+        private float? _Size;
+        /// <summary>
+        /// Prvek je viditelný?
+        /// </summary>
+        public bool Visible { get { return this._Visible; } set { this._Visible = value; this._CallOwnerChange(); } }
+        private bool _Visible = true;
+        /// <summary>
+        /// Prvek je vybrán?
+        /// </summary>
+        public bool Checked { get { return this._Checked; } set { this._Checked = value; this._CallOwnerRepaint(); } }
+        /// <summary>
+        /// Prvek je vybrán?
+        /// Jde o Silent hodnotu: její setování nezpůsobí překreslení vizuálního controlu.
+        /// V podstatě tuto hodnotu má nastavovat pouze vizuální control sám - jako důsledek interakce uživatele.
+        /// </summary>
+        internal bool CheckedSilent { get { return this._Checked; } set { this._Checked = value; } }
+        private bool _Checked;
+        /// <summary>
+        /// Libovolná uživatelská data
+        /// </summary>
+        public object UserData { get; set; }
+        #endregion
+        #region Implicitní konverze z/na String
+        /// <summary>
+        /// Implicitní konverze z <see cref="String"/> na <see cref="TagItem"/>.
+        /// Pokud je na vstupu <see cref="String"/> = null, pak na výstupu je <see cref="TagItem"/> == null.
+        /// </summary>
+        /// <param name="text"></param>
+        public static implicit operator TagItem(String text) { return (text != null ? new TagItem(text) : null); }
+        /// <summary>
+        /// Implicitní konverze z <see cref="TagItem"/> na <see cref="String"/>.
+        /// Pokud je na vstupu <see cref="TagItem"/> = null, pak na výstupu je <see cref="String"/> == null.
+        /// </summary>
+        /// <param name="tagItem"></param>
+        public static implicit operator String(TagItem tagItem) { return (tagItem != null ? tagItem.Text : null); }
+        #endregion
+    }
+    #endregion
     #region Interfaces
     /// <summary>
     /// Předpis pro tabulku, aby mohla dostávat události napřímo
@@ -3053,7 +3195,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Prvek přidá svoje Tagy do společné Dictionary
         /// </summary>
         /// <param name="tagDict"></param>
-        void PrepareSummaryDict(Dictionary<string, int> tagDict);
+        void PrepareSummaryDict(Dictionary<string, TagItem> tagDict);
         /// <summary>
         /// Prvek vrátí true, pokud jeho Tagy vyhovují zadaným (uživatelem zvoleným) Tagům.
         /// </summary>

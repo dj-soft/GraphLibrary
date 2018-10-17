@@ -26,7 +26,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         internal GTable(GGrid grid, Table table)
         {
             this._Grid = grid;
-            this._Table = table;
+            this._DataTable = table;
             IGTableMember igtm = table as IGTableMember;
             if (igtm != null) igtm.GTable = this;
             this.Init();
@@ -36,6 +36,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             this.InitInteractive();
             this.InitRowsPositions();
             this.InitHeaderSplitter();
+            this.InitTagFilter();
             this.InitTableSplitter();
         }
         /// <summary>
@@ -47,13 +48,13 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         }
         void IDisposable.Dispose()
         {
-            IGTableMember igtm = this._Table as IGTableMember;
+            IGTableMember igtm = this._DataTable as IGTableMember;
             if (igtm != null) igtm.GTable = null;
 
             this._Grid = null;
             this._TableId = -1;
             this._SetTableOrder();
-            this._Table = null;
+            this._DataTable = null;
         }
         /// <summary>
         /// Vizualizace
@@ -84,7 +85,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         private void _SetTableOrder()
         {
-            Table table = this._Table;
+            Table table = this._DataTable;
             if (table != null)
             {
                 if (this._TableId < 0)
@@ -167,16 +168,19 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             int x2t = x3 - GScrollBar.DefaultSystemBarWidth;         // x2t: zde začíná RowsScrollBar (vpravo, hned za koncem prostoru pro řádky), tedy pokud by byl zobrazen
             int x2r = (this._RowsScrollBarVisible ? x2t : x3);       // x2r: zde reálně končí oblast prostoru pro řádky, se zohledněním aktuální viditelnosti RowsScrollBaru
             int y0 = 0;                                              // y0: úplně nahoře
-            int y1 = this.RowsPositions.VisualFirstPixel;            // y1: zde začíná prostor pro řádky, hned pod prostorem ColumnHeader (hodnota se fyzicky načte z this.DataTable.ColumnHeaderHeight)
+            int y1 = ;
+            int y2 = this.RowsPositions.VisualFirstPixel;            // y2: zde začíná prostor pro řádky, hned pod prostorem ColumnHeader (hodnota se fyzicky načte z this.DataTable.ColumnHeaderHeight)
             int y3 = clientSize.Height;                              // y3: úplně dole
 
             this._TableHeaderBounds = new Rectangle(x0, y0, x1 - x0, y1 - y0);
             this._ColumnHeadersBounds = new Rectangle(x1, y0, x3 - x1, y1 - y0);
-            this._RowBounds = new Rectangle(x0, y1, x2r - x0, y3 - y1);
-            this._RowHeadersBounds = new Rectangle(x0, y1, x1 - x0, y3 - y1);
-            this._RowDataBounds = new Rectangle(x1, y1, x2r - x1, y3 - y1);
-            this._RowsScrollBarBounds = new Rectangle(x2t, y1, x3 - x2t, y3 - y1);
-            this._HeaderSplitterBounds = new Rectangle(x0, y1, x3 - x0, 0);
+            this._TagFilterHeaderBounds = 
+            this._TagFilterBounds = 
+            this._RowBounds = new Rectangle(x0, y2, x2r - x0, y3 - y2);
+            this._RowHeadersBounds = new Rectangle(x0, y2, x1 - x0, y3 - y2);
+            this._RowDataBounds = new Rectangle(x1, y2, x2r - x1, y3 - y2);
+            this._RowsScrollBarBounds = new Rectangle(x2t, y2, x3 - x2t, y3 - y2);
+            this._HeaderSplitterBounds = new Rectangle(x0, y2, x3 - x0, 0);
 
             // Invalidace závislých prvků:
             this._VisibleColumns = null;
@@ -215,6 +219,14 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// Vizuální souřadnice prostoru záhlaví sloupců (datové ColumnHeaders)
         /// </summary>
         protected Rectangle ColumnHeadersBounds { get { this._InnerBoundsCheck(); return this._ColumnHeadersBounds; } } private Rectangle _ColumnHeadersBounds;
+        /// <summary>
+        /// Vizuální souřadnice prostoru záhlaví před filtrem TagFilter (vizuálně je vlevo, nad záhlavím řádků, i se podobně kreslí)
+        /// </summary>
+        protected Rectangle TagFilterHeaderBounds { get { this._InnerBoundsCheck(); return this._TagFilterHeaderBounds; } } private Rectangle _TagFilterHeaderBounds;
+        /// <summary>
+        /// Vizuální souřadnice prostoru filtru TagFilter
+        /// </summary>
+        protected Rectangle TagFilterBounds { get { this._InnerBoundsCheck(); return this._TagFilterBounds; } } private Rectangle _TagFilterBounds;
         /// <summary>
         /// Vizuální souřadnice prostoru řádků (RowHeader + RowData)
         /// </summary>
@@ -260,6 +272,8 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                 case TableAreaType.Table: return new Rectangle(new Point(0, 0), this.Bounds.Size);
                 case TableAreaType.TableHeader: return this.TableHeaderBounds;
                 case TableAreaType.ColumnHeaders: return this.ColumnHeadersBounds;
+                case TableAreaType.TagFilterHeader: return this.TagFilterHeaderBounds;
+                case TableAreaType.TagFilter: return this.TagFilterBounds;
                 case TableAreaType.Row: return this.RowBounds;
                 case TableAreaType.RowHeaders: return this.RowHeadersBounds;
                 case TableAreaType.RowData: return this.RowDataBounds;
@@ -320,8 +334,8 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <summary>
         /// Datová tabulka
         /// </summary>
-        public Table DataTable { get { return this._Table; } }
-        private Table _Table;
+        public Table DataTable { get { return this._DataTable; } }
+        private Table _DataTable;
         /// <summary>
         /// Jednoznačné ID této tabulky v rámci Gridu. Read only.
         /// Je přiděleno při přidání do gridu, pak má hodnotu 0 nebo kladnou.
@@ -556,7 +570,8 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <returns></returns>
         private int _GetVisualFirstPixel()
         {
-            return this.DataTable.ColumnHeaderHeight;
+            int tagFilterHeight = this.TagFilterHeight;
+            return this.DataTable.ColumnHeaderHeight + tagFilterHeight;
         }
         /// <summary>
         /// Zapíše danou hodnotu jako pozici prvního vizuálního pixelu, kde jsou zobrazována data.
@@ -566,7 +581,8 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="value"></param>
         private void _SetVisualFirstPixel(int value)
         {
-            this.DataTable.ColumnHeaderHeight = value;
+            int tagFilterHeight = this.TagFilterHeight;
+            this.DataTable.ColumnHeaderHeight = value - tagFilterHeight;
         }
         /// <summary>
         /// Eventhandler pro událost změny pozice svislého scrollbaru = posun pole tabulek nahoru/dolů
@@ -1040,8 +1056,15 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                 items |= InvalidateItem.Paint;
             }
 
+            if ((items & (InvalidateItem.TableTagFilter)) != 0)
+            {   // Po změně v TagFilteru v tabulce invalidujeme rozložení tabulky:
+                this._TableInnerLayoutValid = false;
+                this._ChildArrayValid = false;
+                items |= InvalidateItem.Paint;
+            }
+
             if ((items & (InvalidateItem.TableHeight)) != 0)
-            {   // Po změně výšky tabulky invelidujeme vnitřní prvky, ale ne viditelné řádky:
+            {   // Po změně výšky tabulky invalidujeme vnitřní prvky, ale ne viditelné řádky:
                 this._TableInnerLayoutValid = false;
                 this._VisibleColumns = null;
                 this._VisibleRows = null;
@@ -1173,6 +1196,45 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// HeaderSplitter
         /// </summary>
         private GSplitter _HeaderSplitter;
+        #endregion
+        #region TagFilter : filtr řádků na základě TagItems, je součástí GTable.Items
+        /// <summary>
+        /// Inicializace systému TagFilter
+        /// </summary>
+        private void InitTagFilter()
+        {
+            this._GTagFilter = new GTagFilter();
+            if (this._DataTable != null)
+                this._DataTable.TagItemsChanged += this._TagItemsChanged;
+        }
+        /// <summary>
+        /// Eventhandler události, kdy navázaná <see cref="DataTable"/> provede změnu <see cref="Table.TagItemsChanged"/>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _TagItemsChanged(object sender, EventArgs args)
+        {
+            this.Invalidate(InvalidateItem.TableTagFilter);
+            qqq
+        }
+        /// <summary>
+        /// Výška oblasti TagFilter.
+        /// Pokud aktuální tabulka nemá žádné TagItems, pak <see cref="TagFilterHeight"/> = 0.
+        /// Pokud nějaké TagItems má, pak <see cref="TagFilterHeight"/> odpovídá výšce <see cref="GTagFilter.OptimalHeightOneRow"/>.
+        /// </summary>
+        protected int TagFilterHeight
+        {
+            get
+            {
+                if (this.DataTable == null || !this.DataTable.HasTagItems) return 0;
+
+            }
+
+        }
+        /// <summary>
+        /// Instance prvku GTagFilter = filtr řádků na základě TagItems
+        /// </summary>
+        private GTagFilter _GTagFilter;
         #endregion
         #region TableSplitter :  splitter umístěný dole pod tabulkou, je součástí Parenta
         /// <summary>
