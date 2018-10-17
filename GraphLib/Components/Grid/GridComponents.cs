@@ -965,6 +965,90 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         #endregion
     }
     #endregion
+    #region Třída GTagLine : třída zobrazující podkladový řádek pod GTagFilter (nahoře, pod záhlavími sloupců)
+    /// <summary>
+    /// GTagLine : třída zobrazující podkladový řádek pod GTagFilter (nahoře, pod záhlavími sloupců)
+    /// </summary>
+    public class GTagLine : GComponent
+    {
+        #region Konstruktor, data
+        /// <summary>
+        /// Konstruktor pro záhlaví, s odkazem na tabulku
+        /// </summary>
+        /// <param name="table"></param>
+        /// <param name="areaType"></param>
+        public GTagLine(Table table, TableAreaType areaType)
+        {
+            this._OwnerTable = table;
+            this._AreaType = areaType;
+        }
+        private Table _OwnerTable;
+        private TableAreaType _AreaType;
+        /// <summary>
+        /// Umožní nastavit souřadnice pro Child objekty
+        /// </summary>
+        /// <param name="newBounds"></param>
+        protected override void SetChildBounds(Rectangle newBounds)
+        {
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return "TagLine in " + this._OwnerTable.ToString();
+        }
+        #endregion
+        #region Reference na objekty Owner
+        /// <summary>
+        /// Tabulka, do které patří toto záhlaví
+        /// </summary>
+        public override Table OwnerTable { get { return this._OwnerTable; } }
+        /// <summary>
+        /// Typ záhlaví.
+        /// </summary>
+        protected override TableAreaType ComponentType { get { return this._AreaType; } }
+        #endregion
+        #region Public rozhraní
+        /// <summary>
+        /// Souřadnice na ose X, v pixelech, v koordinátech GTable, kde je tento objekt právě zobrazen.
+        /// </summary>
+        public Int32Range VisualRangeX { get; set; }
+        /// <summary>
+        /// Souřadnice na ose Y, v pixelech, v koordinátech GTable, kde je tento objekt právě zobrazen.
+        /// </summary>
+        public Int32Range VisualRangeY { get; set; }
+        #endregion
+        #region Draw - kreslení linky
+        /// <summary>
+        /// Vykreslí podklad prostoru pro záhlaví.
+        /// Bázová třída GHeader vykreslí pouze pozadí, pomocí metody GPainter.DrawColumnHeader()
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="drawAsGhost"></param>
+        /// <param name="opacity"></param>
+        protected override void DrawContent(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
+        {
+            base.DrawContent(e, boundsAbsolute, drawAsGhost, opacity);
+            this.DrawGridHeader(e, boundsAbsolute, drawAsGhost, opacity);
+            this.DrawDebugBorder(e, boundsAbsolute, opacity);
+        }
+        /// <summary>
+        /// Vykreslí jen pozadí
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="drawAsGhost"></param>
+        /// <param name="opacity"></param>
+        protected void DrawGridHeader(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
+        {
+            GPainter.DrawGridHeader(e.Graphics, boundsAbsolute, RectangleSide.Top, Skin.Grid.HeaderBackColor, true, Skin.Grid.HeaderLineColor, GInteractiveState.Enabled, System.Windows.Forms.Orientation.Horizontal, null, opacity);
+        }
+        #endregion
+    }
+    #endregion
     #region Třída GRow : vizuální třída pro zobrazování podkladu řádku (základní barva nebo podkladový graf nebo jiná data)
     /// <summary>
     /// GRow : vizuální třída pro zobrazování podkladu řádku (základní barva nebo podkladový graf nebo jiná data)
@@ -1146,7 +1230,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <returns></returns>
         public override string ToString()
         {
-            return "RowHeader in " + this._OwnerRow.ToString();
+            return "RowHeader in " + (this._OwnerRow != null ? this._OwnerRow.ToString() : "{Null}");
         }
         #endregion
         #region Reference na objekty Owner
@@ -1636,13 +1720,17 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         ColumnHeaders,
         /// <summary>
-        /// Záhlaví filtru TagFilter, vlevo ve sloupci záhlaví řádků
+        /// Linka pod filtrem TagFilter, vlevo nahoře pod ColumnHeader
         /// </summary>
-        TagFilterHeader,
+        TagFilterHeaderLeft,
         /// <summary>
         /// Filtr řádků na základě TagItems
         /// </summary>
         TagFilter,
+        /// <summary>
+        /// Linka pod filtrem TagFilter, vpravo nahoře pod ColumnHeader
+        /// </summary>
+        TagFilterHeaderRight,
         /// <summary>
         /// Prostor pro řádky: (záhlaví + data)
         /// </summary>

@@ -100,7 +100,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Optimální výška tohoto prvku <see cref="InteractiveObject.Bounds"/>.Height pro zobrazení jednoho řádku položek
         /// </summary>
-        public int OptimalHeightOneRow { get; private set; }
+        public int OptimalHeightOneRow { get { return ((this.ClientBorder.HasValue ? this.ClientBorder.Value.Vertical : 0) + 2 * this.ItemSpacing.Height + this.ItemHeight); } }
         /// <summary>
         /// Optimální výška tohoto prvku <see cref="InteractiveObject.Bounds"/>.Height pro zobrazení všech aktuálně připravených řádků s položkami
         /// </summary>
@@ -137,7 +137,8 @@ namespace Asol.Tools.WorkScheduler.Components
         protected override void SetBoundsPrepareInnerItems(Rectangle oldBounds, Rectangle newBounds, ref ProcessAction actions, EventSourceType eventSource)
         {
             base.SetBoundsPrepareInnerItems(oldBounds, newBounds, ref actions, eventSource);
-            this._TagItemsPrepareLayout();
+            if (oldBounds.Width != newBounds.Width)
+                this._TagItemsPrepareLayout();
         }
         /// <summary>
         /// Volá se po změně obsahu nebo velikosti prvků v poli <see cref="_TagItems"/>.
@@ -246,8 +247,15 @@ namespace Asol.Tools.WorkScheduler.Components
                 heightAll = heightOne;
             }
 
-            this.OptimalHeightOneRow = heightOne;
             this.OptimalHeightAllRows = heightAll;
+
+            if (this.ExpandHeightOnMouse)
+            {
+                Rectangle bounds = this.Bounds;
+                bounds.Height = this.OptimalHeightOneRow;
+                this.Bounds = bounds;
+                this._CurrentHeightState = GTagFilterHeightState.OneRow;
+            }
         }
         /// <summary>
         /// Požadavek na překreslení prvků
@@ -497,7 +505,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 {
                     this._HeightOnMouseEnter = heightOld;
                     if (this._HeightAnimation)
-                        this._HeightAnimationStart(heightOld, heightNew, 6);
+                        this._HeightAnimationStart(heightOld, heightNew, 6, GTagFilterHeightState.Expanding, GTagFilterHeightState.FullHeight);
                     else
                         this.Bounds = new Rectangle(bounds.X, bounds.Y, bounds.Width, heightNew);
                 }
@@ -520,7 +528,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 int heightOld = bounds.Height;
                 int heightNew = this._HeightOnMouseEnter.Value;
                 if (this._HeightAnimation)
-                    this._HeightAnimationStart(heightOld, heightNew, 6);
+                    this._HeightAnimationStart(heightOld, heightNew, 6, GTagFilterHeightState.Collapsing, GTagFilterHeightState.OneRow);
                 else
                 {
                     this.Bounds = new Rectangle(bounds.X, bounds.Y, bounds.Width, heightNew);
@@ -532,18 +540,34 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Animace změny výšky
         /// <summary>
+        /// Aktuální stav výšky objektu
+        /// </summary>
+        public GTagFilterHeightState CurrentHeightState
+        {
+            get { return this._CurrentHeightState; }
+        }
+        private GTagFilterHeightState _CurrentHeightState;
+        /// <summary>
+        /// Cílový stav výšky objektu
+        /// </summary>
+        private GTagFilterHeightState _TargetHeightState;
+        /// <summary>
         /// Zahájí animaci změny výšky
         /// </summary>
         /// <param name="valueBegin"></param>
         /// <param name="valueEnd"></param>
         /// <param name="stepCount"></param>
-        private void _HeightAnimationStart(int valueBegin, int valueEnd, int stepCount)
+        /// <param name="animatedHeightState"></param>
+        /// <param name="targetHeightState"></param>
+        private void _HeightAnimationStart(int valueBegin, int valueEnd, int stepCount, GTagFilterHeightState animatedHeightState, GTagFilterHeightState targetHeightState)
         {
             if (this._HeightAnimationRunning)
             {
-                this._HeightAnimationAbort(valueEnd);
+                this._HeightAnimationAbort(valueEnd, targetHeightState);
                 return;
             }
+            this._CurrentHeightState = animatedHeightState;
+            this._TargetHeightState = targetHeightState;
 
             this._HeightAnimationSteps = new int[stepCount];
             for (int i = 0; i < stepCount; i++)
@@ -576,11 +600,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Používá se při požadavku na novou animaci v době, kdy aktuální ještě běží.
         /// </summary>
         /// <param name="value"></param>
-        private void _HeightAnimationAbort(int value)
+        /// <param name="heightState"></param>
+        private void _HeightAnimationAbort(int value, GTagFilterHeightState heightState)
         {
             this._HeightAnimationSteps = null;
             this._HeightAnimationStepIndex = -1;
             this._HeightAnimationRunning = false;
+            this._CurrentHeightState = heightState;
+            this._TargetHeightState = heightState;
 
             Rectangle bounds = this.Bounds;
             this.Bounds = new Rectangle(bounds.X, bounds.Y, bounds.Width, value);
@@ -593,6 +620,20 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <returns></returns>
         private AnimationResult _HeightAnimationTick()
+        {
+            AnimationResult result = this._HeightAnimationTickRun();
+            if (result.HasFlag(AnimationResult.Stop))
+            {
+                this._HeightAnimationRunning = false;
+                this._CurrentHeightState = this._TargetHeightState;
+            }
+            return result;
+        }
+        /// <summary>
+        /// Provede jeden krok animace.
+        /// </summary>
+        /// <returns></returns>
+        private AnimationResult _HeightAnimationTickRun()
         {
             int[] steps = this._HeightAnimationSteps;
             int index = this._HeightAnimationStepIndex;
@@ -608,10 +649,8 @@ namespace Asol.Tools.WorkScheduler.Components
             index++;
             this._HeightAnimationStepIndex = index;
             if (index >= count)
-            {
                 result |= AnimationResult.Stop;
-                this._HeightAnimationRunning = false;
-            }
+            
             return result;
         }
         /// <summary>
@@ -687,7 +726,7 @@ namespace Asol.Tools.WorkScheduler.Components
         void OnItemClick(GTagItem clickedItem);
     }
     #endregion
-    #region enum GTagFilterSelectionMode
+    #region enum GTagFilterSelectionMode, GTagFilterHeightState
     /// <summary>
     /// Režim výběru položek v <see cref="GTagFilter"/>
     /// </summary>
@@ -705,6 +744,32 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Lze vybrat právě jen jednu položku, nikoli žádnou (položku nelze odznačit): právě jedna položka.
         /// </summary>
         ExactOneItem
+    }
+    /// <summary>
+    /// Stav výšky objektu v procesu její animace
+    /// </summary>
+    public enum GTagFilterHeightState
+    {
+        /// <summary>
+        /// Neurčeno
+        /// </summary>
+        None,
+        /// <summary>
+        /// Zobrazuje se jeden řádek
+        /// </summary>
+        OneRow,
+        /// <summary>
+        /// Výška se animuje z <see cref="OneRow"/> na <see cref="FullHeight"/>
+        /// </summary>
+        Expanding,
+        /// <summary>
+        /// Zobrazuje se plná výška
+        /// </summary>
+        FullHeight,
+        /// <summary>
+        /// Výška se animuje z <see cref="FullHeight"/> na <see cref="OneRow"/>
+        /// </summary>
+        Collapsing
     }
     #endregion
     #region class GTagItem : Vizuální reprezentace jednoho prvku TagFilteru

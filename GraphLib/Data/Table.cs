@@ -545,7 +545,25 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Soupis štítků ze všech řádků.
         /// Hodnota Key = text Tagu; hodnota Value = počet výskytů v řádcích. Počet může mít vliv na velikost štítku.
         /// </summary>
-        internal TagItem[] TagItems { get { this._CheckTagItems(); return this._TagItems; } }
+        public TagItem[] TagItems { get { this._CheckTagItems(); return this._TagItems; } }
+        /// <summary>
+        /// Metoda projde svoje <see cref="TagItems"/>, a aplikuje jejich filtr na základě hodnoty <see cref="TagItem.Checked"/>.
+        /// </summary>
+        public void TagItemsApply()
+        {
+            TagItem[] tagFilter = this.TagItems.Where(t => t.Checked).ToArray();
+
+            foreach (Row row in this.Rows)
+                row.Visible = ((ITagItemOwner)row).FilterByTagValues(tagFilter);
+
+            if (this.HasGTable)
+                this.GTable.Invalidate(InvalidateItem.RowsCount);
+        }
+        /// <summary>
+        /// Výška jednoho řádku filtru s položkami <see cref="TagItems"/>.
+        /// Nezadáno = default (24 pixelů)
+        /// </summary>
+        public int? TagItemsRowHeight { get; set; }
         /// <summary>
         /// Zajistí platnost dat v poli <see cref="_TagItems"/>
         /// </summary>
@@ -2466,12 +2484,12 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// Prvek vrátí true, pokud jeho Tagy vyhovují zadaným (uživatelem zvoleným) Tagům.
         /// </summary>
-        /// <param name="tagItems"></param>
-        bool ITagItemOwner.FilterByTagValues(IEnumerable<string> tagItems)
+        /// <param name="tagFilter"></param>
+        bool ITagItemOwner.FilterByTagValues(TagItem[] tagFilter)
         {
-            if (tagItems == null || this._TagItemDict == null) return false;
-            bool exists = tagItems.Where(tag => !String.IsNullOrEmpty(tag)).Any(tag => this._TagItemDict.ContainsKey(tag));
-            return exists;
+            if (tagFilter == null || tagFilter.Length == 0) return true;
+            if (this._TagItemDict == null) return false;
+            return tagFilter.Any(tag => this._TagItemDict.ContainsKey(tag.Text));
         }
         /// <summary>
         /// Z dodaných položek vygeneruje data do <see cref="_TagItemDict"/>
@@ -3200,7 +3218,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Prvek vrátí true, pokud jeho Tagy vyhovují zadaným (uživatelem zvoleným) Tagům.
         /// </summary>
         /// <param name="tagItems"></param>
-        bool FilterByTagValues(IEnumerable<string> tagItems);
+        bool FilterByTagValues(TagItem[] tagFilter);
     }
     /// <summary>
     /// Objekt, kterému je možno nastavit stav platnosti dat, sloupce a řádku
