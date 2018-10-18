@@ -1664,6 +1664,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this._ProcessResponseToolbarItems(guiResponse.ToolbarItems);
             this._ProcessResponseTime(guiResponse.TimeAxisValue);
             this._ProcessResponseRemoveItems(guiResponse.RemoveItems, mainTableDict, refreshGraphDict);
+            this._ProcessResponseUpdateGraphs(guiResponse.UpdateGraphs, mainTableDict, refreshGraphDict);
             this._ProcessResponseAddItems(guiResponse.AddItems, mainTableDict, refreshGraphDict);
             this._ProcessResponseRefreshGraphs(refreshGraphDict.Values);
 
@@ -1704,15 +1705,32 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             }
         }
         /// <summary>
+        /// Zpracuje odpověď z aplikace, část: <see cref="GuiResponse.UpdateGraphs"/>
+        /// </summary>
+        /// <param name="updateGraphs"></param>
+        /// <param name="mainTableDict">Index tabulek podle jejich jména</param>
+        /// <param name="refreshGraphDict">Index grafů, kterých se týkají změny, a na nichž na závěr provedeme Refresh</param>
+        private void _ProcessResponseUpdateGraphs(GuiResponseGraph[] updateGraphs, Dictionary<string, MainDataTable> mainTableDict, Dictionary<uint, GTimeGraph> refreshGraphDict)
+        {
+            if (updateGraphs == null) return;
+            foreach (GuiResponseGraph updateGraph in updateGraphs)
+            {
+                if (updateGraph == null || updateGraph.TableName == null) continue;
+                MainDataTable mainDataTable;
+                if (mainTableDict.TryGetValue(updateGraph.TableName, out mainDataTable))
+                    mainDataTable.UpdateGraph(updateGraph, refreshGraphDict);
+            }
+        }
+        /// <summary>
         /// Zpracuje odpověď z aplikace, část: <see cref="GuiResponse.AddItems"/>
         /// </summary>
         /// <param name="addItems"></param>
         /// <param name="mainTableDict">Index tabulek podle jejich jména</param>
         /// <param name="refreshGraphDict">Index grafů, kterých se týkají změny, a na nichž na závěr provedeme Refresh</param>
-        private void _ProcessResponseAddItems(GuiGridGraphItem[] addItems, Dictionary<string, MainDataTable> mainTableDict, Dictionary<uint, GTimeGraph> refreshGraphDict)
+        private void _ProcessResponseAddItems(GuiResponseGraphItem[] addItems, Dictionary<string, MainDataTable> mainTableDict, Dictionary<uint, GTimeGraph> refreshGraphDict)
         {
             if (addItems == null) return;
-            foreach (GuiGridGraphItem addItem in addItems)
+            foreach (GuiResponseGraphItem addItem in addItems)
             {
                 if (addItem == null || addItem.TableName == null) continue;
                 MainDataTable mainDataTable;
@@ -1909,5 +1927,4 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         public Func<DateTime, AxisTickType, DateTime?> GetRoundedTime;
     }
     #endregion
-
 }

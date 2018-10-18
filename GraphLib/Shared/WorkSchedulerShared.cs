@@ -412,6 +412,7 @@ namespace Noris.LCS.Base.WorkScheduler
         {
             this.GridProperties = new GuiGridProperties() { Name = GRID_PROPERTIES_NAME };
             this.GraphProperties = new GuiGraphProperties() { Name = GRAPH_PROPERTIES_NAME };
+            this.Graphs = new List<GuiGraph>();
             this.GraphItems = new List<GuiGraphTable>();
             this.GraphTexts = new List<GuiTable>();
             this.LinkItems = new List<GuiGraphItemLinks>();
@@ -447,6 +448,12 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Tabulka s řádky, typicky načtená dle přehledové šablony
         /// </summary>
         public GuiTable Rows { get; set; }
+        /// <summary>
+        /// Grafy v této tabulce.
+        /// Pokud pro některý řádek tabulky nebude definován graf, vytvoří se nový implicitní.
+        /// Pokud by zde bylo více grafů pro jeden řádek, akceptuje se jen ten první.
+        /// </summary>
+        public List<GuiGraph> Graphs { get; set; }
         /// <summary>
         /// Tabulky s grafickými prvky.
         /// Jedna vizuální tabulka může v grafech zobrazovat prvky, pocházející z různých zdrojů.
@@ -810,6 +817,108 @@ namespace Noris.LCS.Base.WorkScheduler
         public Color? BackColorChecked { get; set; }
     }
     #endregion
+    #region GuiGraph : Definiční data jednoho grafu + jeho sada položek
+    /// <summary>
+    /// GuiGraph : Definiční data jednoho grafu + jeho sada položek
+    /// </summary>
+    public class GuiGraph : GuiBase
+    {
+        #region Konstrukce
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public GuiGraph()
+            : base()
+        {
+            this.GraphProperties = null;
+            this.GraphItems = new List<GuiGraphItem>();
+            this.GraphLinks = new List<GuiGraphItemLink>();
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return "Graph RowId: " + this.RowId.ToString() + "; Items.Count: " + (this.GraphItems != null ? this.GraphItems.Count.ToString() : "{Null}");
+        }
+        /// <summary>
+        /// Název prvku <see cref="GraphProperties"/>
+        /// </summary>
+        public const string GRAPH_PROPERTIES_NAME = "graphProperties";
+        #endregion
+        #region Data
+        /// <summary>
+        /// ID řádku, v němž bude tento graf umístěn
+        /// </summary>
+        public GuiId RowId { get; set; }
+        /// <summary>
+        /// Definuje vlastnosti tohoto konkrétního grafu.
+        /// Běžně bývá null (výchozí hodnota), pak se vlastnosti grafu přebírají z nadřízeného prvku (typicky z tabulky).
+        /// </summary>
+        public GuiGraphProperties GraphProperties { get; set; }
+        /// <summary>
+        /// Barva pozadí.
+        /// Pokud není zadána, pak je pozadí grafu průhledné = vykresluje se do svého Parent prvku.
+        /// </summary>
+        public Color? BackgroundColor { get; set; }
+        /// <summary>
+        /// Podbarvení počátku grafu.
+        /// Podbarvení je postupné (LinearGradientBrush) : na počátku grafu je barva <see cref="BeginShadowColor"/>,
+        /// podbarvení má šířku <see cref="BeginShadowArea"/> a plynule přechází do barvy pozadí grafu <see cref="BackgroundColor"/>.
+        /// </summary>
+        public Color? BeginShadowColor { get; set; }
+        /// <summary>
+        /// Poměrná část šířky grafu, která je podbarvena pro zvýrazněnéí počátku.
+        /// </summary>
+        public float? BeginShadowArea { get; set; }
+        /// <summary>
+        /// Ikona na počátku grafu.
+        /// Je zobrazena v levé části grafu, ve středu jeho výšky.
+        /// Typicky vyjadřuje problém na počátku.
+        /// </summary>
+        public GuiImage BeginImage { get; set; }
+        /// <summary>
+        /// Podbarvení počátku grafu.
+        /// Podbarvení je postupné (LinearGradientBrush) : na počátku grafu je barva <see cref="EndShadowColor"/>,
+        /// podbarvení má šířku <see cref="EndShadowArea"/> a plynule přechází do barvy pozadí grafu <see cref="BackgroundColor"/>.
+        /// </summary>
+        public Color? EndShadowColor { get; set; }
+        /// <summary>
+        /// Poměrná část šířky grafu, která je podbarvena pro zvýrazněnéí počátku.
+        /// </summary>
+        public float? EndShadowArea { get; set; }
+        /// <summary>
+        /// Ikona na počátku grafu.
+        /// Je zobrazena v levé části grafu, ve středu jeho výšky.
+        /// Typicky vyjadřuje problém na počátku.
+        /// </summary>
+        public GuiImage EndImage { get; set; }
+        /// <summary>
+        /// Prvky tohoto grafu.
+        /// Pokud jsou prvky umístěny zde, pak se vždy jedná o prvky tohoto jednoho grafu.
+        /// </summary>
+        public List<GuiGraphItem> GraphItems { get; set; }
+        /// <summary>
+        /// Propojovací linky prvků tohoto grafu.
+        /// </summary>
+        public List<GuiGraphItemLink> GraphLinks { get; set; }
+        #endregion
+        #region Klonování definičních dat, bez přenosu dat prvků
+        /// <summary>
+        /// Metoda vrátí new instanci vznikou jako kopie this, ale neobsahuje data v <see cref="GraphItems"/> a <see cref="GraphLinks"/>.
+        /// </summary>
+        /// <returns></returns>
+        public GuiGraph GetDefinitionData()
+        {
+            GuiGraph clone = (GuiGraph)this.MemberwiseClone();
+            clone.GraphItems = null;
+            clone.GraphLinks = null;
+            return clone;
+        }
+        #endregion
+    }
+    #endregion
     #region GuiGraphProperties : vlastnosti grafu
     /// <summary>
     /// GuiGraphProperties : vlastnosti grafu
@@ -980,8 +1089,8 @@ namespace Noris.LCS.Base.WorkScheduler
     /// Existují dva potomci: 
     /// 1. <see cref="GuiGraphItem"/> pro předávání základního balíku dat po jejich načtení, je umístěn v hierarchické struktuře, 
     /// obsahuje navíc <see cref="GuiGraphItem.StructureFull"/> a <see cref="GuiGraphItem.StructureLiable"/>;
-    /// 2. <see cref="GuiGridGraphItem"/> pro předávání změnových dat, 
-    /// obsahuje navíc <see cref="GuiGridGraphItem.TableName"/> pro určení tabulky, kam se má prvek přidat.
+    /// 2. <see cref="GuiResponseGraphItem"/> pro předávání změnových dat, 
+    /// obsahuje navíc <see cref="GuiResponseGraphItem.TableName"/> pro určení tabulky, kam se má prvek přidat.
     /// </summary>
     public abstract class GuiGraphBaseItem : GuiBase
     {
@@ -2598,6 +2707,10 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiTimeRange TimeAxisValue { get; set; }
         /// <summary>
+        /// Pole grafů, které se mají aktualizovat.
+        /// </summary>
+        public GuiResponseGraph[] UpdateGraphs { get; set; }
+        /// <summary>
         /// Pole prvků grafů, které se mají z GUI odebrat.
         /// Jednotlivé prvky obsahují název cílové tabulky v <see cref="GuiGridRowId.TableName"/>.
         /// V tomto seznamu tedy mohou být prvky pocházející z kterékoli tabulky GUI.
@@ -2605,10 +2718,10 @@ namespace Noris.LCS.Base.WorkScheduler
         public GuiGridItemId[] RemoveItems { get; set; }
         /// <summary>
         /// Pole prvků grafů, které se mají do GUI nově vložit.
-        /// Jednotlivé prvky obsahují název cílové tabulky v <see cref="GuiGridGraphItem.TableName"/>.
+        /// Jednotlivé prvky obsahují název cílové tabulky v <see cref="GuiResponseGraphItem.TableName"/>.
         /// V tomto seznamu tedy mohou být prvky do kterékoli tabulky GUI.
         /// </summary>
-        public GuiGridGraphItem[] AddItems { get; set; }
+        public GuiResponseGraphItem[] AddItems { get; set; }
         #endregion
         #region Statické konstruktory: Success, Warning, Error
         /// <summary>
@@ -2626,16 +2739,51 @@ namespace Noris.LCS.Base.WorkScheduler
         #endregion
     }
     /// <summary>
-    /// GuiGridGraphItem : třída pro přenos prvků grafu (data z <see cref="GuiGraphBaseItem"/> z aplikace do GUI v nestrukturovaném seznamu.
-    /// To znamená, že v jednom seznamu prvků jsou prvky patřídíc do různých tabulek.
+    /// GuiResponseGraph : třída sloužící pro přenos grafů (data z <see cref="GuiGraph"/> z aplikace do GUI v nestrukturovaném seznamu.
+    /// To znamená, že v jednom seznamu prvků jsou prvky patřící do různých tabulek.
     /// Používá se po editaci prvků, pro přenos souhrnu změn z aplikace do GUI.
+    /// <para/>
+    /// Pozor: tabulky prvků <see cref="GuiGraph.GraphItems"/> a <see cref="GuiGraph.GraphLinks"/> v této třídě obsahují nové a změněné prvky.
+    /// Původní prvky v grafu v GUI, pokud nejsou uvedeny v těchto tabulkách, zůstávají nezměněny, pokud není nastaveno true do 
+    /// <see cref="GuiResponseGraph.ResetGraphItems"/> a <see cref="GuiResponseGraph.ResetGraphLinks"/>.
     /// </summary>
-    public class GuiGridGraphItem : GuiGraphBaseItem
+    public class GuiResponseGraph : GuiGraph
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public GuiGridGraphItem() : base() { }
+        public GuiResponseGraph() : base()
+        { }
+        /// <summary>
+        /// FullName tabulky, do které se má tento graf aktualizovat.
+        /// </summary>
+        public string TableName { get; set; }
+        /// <summary>
+        /// ID prvků tohoto grafu, které se mají odstranit
+        /// </summary>
+        public GuiGridItemId[] RemoveItems { get; set; }
+        /// <summary>
+        /// Hodnota true : Smazat celý obsah položek grafu, a teprve poté aktualizovat položky ze seznamu <see cref="GuiGraph.GraphItems"/>
+        /// Výchozí hodnota = false = stávající obsah grafu neměnit.
+        /// </summary>
+        public bool ResetGraphItems { get; set; }
+        /// <summary>
+        /// Hodnota true : Smazat celý obsah vztahů grafu, a teprve poté aktualizovat položky ze seznamu <see cref="GuiGraph.GraphLinks"/>.
+        /// Výchozí hodnota = false = stávající obsah grafu neměnit.
+        /// </summary>
+        public bool ResetGraphLinks { get; set; }
+    }
+    /// <summary>
+    /// GuiResponseGraphItem : třída sloužící pro přenos prvků grafu (data z <see cref="GuiGraphBaseItem"/> z aplikace do GUI v nestrukturovaném seznamu.
+    /// To znamená, že v jednom seznamu prvků jsou prvky patřící do různých tabulek.
+    /// Používá se po editaci prvků, pro přenos souhrnu změn z aplikace do GUI.
+    /// </summary>
+    public class GuiResponseGraphItem : GuiGraphBaseItem
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public GuiResponseGraphItem() : base() { }
         /// <summary>
         /// FullName tabulky, do které se má tento prvek vložit.
         /// </summary>

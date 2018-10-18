@@ -45,15 +45,27 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Konstruktor
         /// </summary>
         public GTimeGraph()
+            : base()
         {
+            this._Init(null);
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public GTimeGraph(GuiGraph guiGraph)
+            : base()
+        {
+            this._Init(guiGraph);
+        }
+        /// <summary>
+        /// Inicializace
+        /// </summary>
+        /// <param name="guiGraph"></param>
+        private void _Init(GuiGraph guiGraph)
+        { 
             this._ItemDict = new Dictionary<int, ITimeGraphItem>();
+            this._GuiGraph = (guiGraph != null ? guiGraph.GetDefinitionData() : new GuiGraph());
             this.Is.SelectParent = true;
-
-            // this.BackgroundColor = Color.FromArgb(240, 240, 250);
-            if ((this.Id % 3) == 0)
-                this.LeftColor = Color.DarkRed;
-            if ((this.Id % 4) == 0)
-                this.RightColor = Color.Green;
         }
         /// <summary>
         /// ID tohoto grafu. Hodnotu nastavuje aplikační kód dle své potřeby, hodnota je vkládána do identifikátorů odesílaných do handlerů událostí v grafu.
@@ -65,18 +77,18 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         private ITimeGraphDataSource _DataSource;
         #endregion
-        #region GUI grafu : GraphParameters
+        #region Parametry tohoto grafu (GraphParameters): lokální nebo z parenta nebo defaultní
         /// <summary>
         /// Parametry pro tento graf.
         /// Buď jsou uloženy přímo zde jako explicitní, nebo jsou načteny z parenta, nebo jsou použity defaultní.
         /// Nikdy nevrací null.
         /// Lze setovat parametry, nebo null.
         /// </summary>
-        public TimeGraphProperties GraphParameters
+        public TimeGraphProperties CurrentGraphProperties
         {
             get
             {
-                TimeGraphProperties gp = this._GraphParameters;
+                TimeGraphProperties gp = this._GraphProperties;
                 if (gp == null)
                     gp = this._SearchParentGraphParameters();
                 if (gp == null)
@@ -85,7 +97,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             }
             set
             {
-                this._GraphParameters = value;
+                this._GraphProperties = value;
             }
         }
         /// <summary>
@@ -126,26 +138,78 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <returns></returns>
         private TimeGraphProperties _GetDefaultGraphParameters()
         {
-            if (this._GraphParametersDefault == null)
-                this._GraphParametersDefault = TimeGraphProperties.Default;
-            return this._GraphParametersDefault;
+            if (this._GraphPropertiesDefault == null)
+                this._GraphPropertiesDefault = TimeGraphProperties.Default;
+            return this._GraphPropertiesDefault;
         }
-        private TimeGraphProperties _GraphParameters;
-        private TimeGraphProperties _GraphParametersDefault;
+        private TimeGraphProperties _GraphProperties;
+        private TimeGraphProperties _GraphPropertiesDefault;
         #endregion
-        #region Vlastnosti grafu - BackColor, LeftColor, RightColor
+        #region Data samotného grafu, napojená na GuiGraph
         /// <summary>
-        /// Barva pozadí, může využívat transparentnost
+        /// Metoda do this grafu <see cref="GTimeGraph"/> vloží nová GUI definiční data grafu.
+        /// Tato metoda nenačítá prvky grafu z <see cref="GuiGraph.GraphItems"/> ani linky <see cref="GuiGraph.GraphLinks"/>!
         /// </summary>
-        public Color? BackgroundColor { get; set; }
+        /// <param name="guiGraph"></param>
+        public void UpdateGraphData(GuiGraph guiGraph)
+        {
+            this._GuiGraph = (guiGraph != null ? guiGraph.GetDefinitionData() : new GuiGraph());
+            this._ReloadGraphProperties();
+        }
         /// <summary>
-        /// Barva levé části pozadí pod logaritmickým grafem, může využívat transparentnost
+        /// Přenačte do sebe (do <see cref="_GraphProperties"/>) vlastnosti grafu z <see cref="GuiGraphProperties"/>.
         /// </summary>
-        public Color? LeftColor { get; set; }
+        private void _ReloadGraphProperties()
+        {
+            GuiGraphProperties guiGraphProperties = this.GuiGraphProperties;
+            this._GraphProperties = (guiGraphProperties != null ? new TimeGraphProperties(guiGraphProperties) : null);
+        }
         /// <summary>
-        /// Barva pravé části pozadí pod logaritmickým grafem, může využívat transparentnost
+        /// Definuje vlastnosti tohoto konkrétního grafu.
+        /// Běžně bývá null (výchozí hodnota), pak se vlastnosti grafu přebírají z nadřízeného prvku (typicky z tabulky).
         /// </summary>
-        public Color? RightColor { get; set; }
+        public GuiGraphProperties GuiGraphProperties { get { return this._GuiGraph.GraphProperties; } set { this._GuiGraph.GraphProperties = value; this._ReloadGraphProperties(); } }
+        /// <summary>
+        /// Barva pozadí.
+        /// Pokud není zadána, pak je pozadí grafu průhledné = vykresluje se do svého Parent prvku.
+        /// </summary>
+        public Color? BackgroundColor { get { return this._GuiGraph.BackgroundColor; } set { this._GuiGraph.BackgroundColor = value; } }
+        /// <summary>
+        /// Podbarvení počátku grafu.
+        /// Podbarvení je postupné (LinearGradientBrush) : na počátku grafu je barva <see cref="BeginShadowColor"/>,
+        /// podbarvení má šířku <see cref="BeginShadowArea"/> a plynule přechází do barvy pozadí grafu <see cref="BackgroundColor"/>.
+        /// </summary>
+        public Color? BeginShadowColor { get { return this._GuiGraph.BeginShadowColor; } set { this._GuiGraph.BeginShadowColor = value; } }
+        /// <summary>
+        /// Poměrná část šířky grafu, která je podbarvena pro zvýrazněnéí počátku.
+        /// </summary>
+        public float? BeginShadowArea { get { return this._GuiGraph.BeginShadowArea; } set { this._GuiGraph.BeginShadowArea = value; } }
+        /// <summary>
+        /// Ikona na počátku grafu.
+        /// Je zobrazena v levé části grafu, ve středu jeho výšky.
+        /// Typicky vyjadřuje problém na počátku.
+        /// </summary>
+        public GuiImage BeginImage { get { return this._GuiGraph.BeginImage; } set { this._GuiGraph.BeginImage = value; } }
+        /// <summary>
+        /// Podbarvení počátku grafu.
+        /// Podbarvení je postupné (LinearGradientBrush) : na počátku grafu je barva <see cref="EndShadowColor"/>,
+        /// podbarvení má šířku <see cref="EndShadowArea"/> a plynule přechází do barvy pozadí grafu <see cref="BackgroundColor"/>.
+        /// </summary>
+        public Color? EndShadowColor { get { return this._GuiGraph.EndShadowColor; } set { this._GuiGraph.EndShadowColor = value; } }
+        /// <summary>
+        /// Poměrná část šířky grafu, která je podbarvena pro zvýrazněnéí počátku.
+        /// </summary>
+        public float? EndShadowArea { get { return this._GuiGraph.EndShadowArea; } set { this._GuiGraph.EndShadowArea = value; } }
+        /// <summary>
+        /// Ikona na počátku grafu.
+        /// Je zobrazena v levé části grafu, ve středu jeho výšky.
+        /// Typicky vyjadřuje problém na počátku.
+        /// </summary>
+        public GuiImage EndImage { get { return this._GuiGraph.EndImage; } set { this._GuiGraph.EndImage = value; } }
+        /// <summary>
+        /// Podkladová data pro GUI
+        /// </summary>
+        private GuiGraph _GuiGraph;
         #endregion
         #region Prvky grafu : GraphItems, AddGraphItem(), RemoveGraphItem()
         /// <summary>
@@ -478,7 +542,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             this.CurrentMinimalFragmentHeight = ((minimalFragmentHeight > 0f && minimalFragmentHeight < 1f) ? minimalFragmentHeight : 1f);
             bool hasPartial = (this.CurrentMinimalFragmentHeight < 1f);
-            this.CurrentLineLogicalHeight = (!hasPartial ? this.GraphParameters.OneLineHeight.Value : this.GraphParameters.OneLinePartialHeight.Value);
+            this.CurrentLineLogicalHeight = (!hasPartial ? this.CurrentGraphProperties.OneLineHeight.Value : this.CurrentGraphProperties.OneLinePartialHeight.Value);
         }
         /// <summary>
         /// Aktuálně nalezená nejmenší výška zlomku prvku, počítáno z prvků jejichž výška je kladná, 
@@ -641,7 +705,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             }
             /// <summary>
             /// Metoda zajistí zarovnání výšky grafu (v pixelech) do patřičného rozmezí.
-            /// Využívá: rozmezí <see cref="GraphParameters"/>: <see cref="TimeGraphProperties.TotalHeightRange"/>, hodnoty Skin.Graph.TotalHeightMin a TotalHeightMax;
+            /// Využívá: rozmezí <see cref="CurrentGraphProperties"/>: <see cref="TimeGraphProperties.TotalHeightRange"/>, hodnoty Skin.Graph.TotalHeightMin a TotalHeightMax;
             /// a dále využívá objekt <see cref="VisualParent"/> a jeho <see cref="IVisualParent.ClientHeight"/>
             /// </summary>
             /// <param name="size"></param>
@@ -676,7 +740,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             /// <summary>
             /// Vlastnosti grafu
             /// </summary>
-            private TimeGraphProperties _GraphProperties { get { return this._Owner.GraphParameters; } }
+            private TimeGraphProperties _GraphProperties { get { return this._Owner.CurrentGraphProperties; } }
             /// <summary>
             /// Instance objektu, jehož výšku může graf změnit i číst pro korektní přepočty svých vnitřních souřadnic.
             /// Typicky se sem vkládá řádek grafu, instance třídy <see cref="Row"/>.
@@ -835,7 +899,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             this._VisibleGroupList = new List<GTimeGraphGroup>();
             if (this._TimeConvertor == null) return;
-            TimeGraphTimeAxisMode timeAxisMode = this.GraphParameters.TimeAxisMode;
+            TimeGraphTimeAxisMode timeAxisMode = this.CurrentGraphProperties.TimeAxisMode;
 
             using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "ItemsRecalculateVisibleList", ""))
             {
@@ -872,7 +936,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         }
         /// <summary>
         /// Vrací true, pokud data v seznamu <see cref="VisibleGroupList"/> jsou platná.
-        /// Zohledňuje i stav <see cref="VisibleGroupList"/>, <see cref="ValidatedWidth"/>, <see cref="GraphParameters"/>: <see cref="TimeGraphProperties.TimeAxisMode"/>.
+        /// Zohledňuje i stav <see cref="VisibleGroupList"/>, <see cref="ValidatedWidth"/>, <see cref="CurrentGraphProperties"/>: <see cref="TimeGraphProperties.TimeAxisMode"/>.
         /// Hodnotu lze nastavit, ale i když se vloží true, může se vracet false (pokud výše uvedené není platné).
         /// </summary>
         protected bool IsValidCoordinateX
@@ -881,7 +945,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             {
                 if (this._VisibleGroupList == null) return false;
                 if (!this._ValidatedWidth.HasValue || this.ClientSize.Width != this._ValidatedWidth.Value) return false;
-                if (!this._ValidatedAxisMode.HasValue || this.GraphParameters.TimeAxisMode != this._ValidatedAxisMode.Value) return false;
+                if (!this._ValidatedAxisMode.HasValue || this.CurrentGraphProperties.TimeAxisMode != this._ValidatedAxisMode.Value) return false;
                 return this._IsValidCoordinateX;
             }
         } private bool _IsValidCoordinateX;
@@ -937,7 +1001,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             if (!groupItem.IsValidRealTime) return;
             ITimeAxisConvertor timeConvertor = this._TimeConvertor;
             int size = this.Bounds.Width;
-            float proportionalRatio = this.GraphParameters.LogarithmicRatio;
+            float proportionalRatio = this.CurrentGraphProperties.LogarithmicRatio;
             groupItem.PrepareCoordinateX(t => timeConvertor.GetLogarithmicPixelRange(t, size, proportionalRatio), offsetX, ref counters[2]);
 
             // Pozor: režim Logarithmic zajistí, že zobrazeny budou VŠECHNY prvky, takže prvky nefiltrujeme s ohledem na jejich čas : VisibleTime.HasIntersect() !
@@ -956,8 +1020,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         protected int? ValidatedWidth { get { return this._ValidatedWidth; } } private int? _ValidatedWidth;
         /// <summary>
-        /// Hodnota <see cref="GraphParameters"/>: <see cref="TimeGraphProperties.TimeAxisMode"/>, pro kterou jsou platné hodnoty ve <see cref="VisibleGroupList"/>.
-        /// Po změně <see cref="GraphParameters"/>: <see cref="TimeGraphProperties.TimeAxisMode"/> dojde k přepočtu dat v tomto seznamu.
+        /// Hodnota <see cref="CurrentGraphProperties"/>: <see cref="TimeGraphProperties.TimeAxisMode"/>, pro kterou jsou platné hodnoty ve <see cref="VisibleGroupList"/>.
+        /// Po změně <see cref="CurrentGraphProperties"/>: <see cref="TimeGraphProperties.TimeAxisMode"/> dojde k přepočtu dat v tomto seznamu.
         /// </summary>
         protected TimeGraphTimeAxisMode? ValidatedAxisMode { get { return this._ValidatedAxisMode; } } private TimeGraphTimeAxisMode? _ValidatedAxisMode;
         #endregion
@@ -1268,51 +1332,170 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             if (backColor.HasValue)
                 e.Graphics.FillRectangle(Skin.Brush(backColor.Value), absoluteBounds);
 
-            switch (this.GraphParameters.TimeAxisMode)
-            {
-                case TimeGraphTimeAxisMode.LogarithmicScale:
-                    this.DrawBackgroundLogarithmic(e, absoluteBounds);
-                    break;
-            }
+            bool forceShadow = (this.CurrentGraphProperties.TimeAxisMode == TimeGraphTimeAxisMode.LogarithmicScale);
+            this.DrawBackground(e, absoluteBounds, forceShadow);
         }
         /// <summary>
-        /// Metoda umožní udělat něco s pozadím grafu, který má logaritmickou osu.
-        /// Vykreslí se šedý přechod na logaritmických okrajích.
+        /// Metoda umožní udělat něco s pozadím grafu.
+        /// Vykreslí se šedý nebo jinak barevný přechod na logaritmických okrajích, a ikonky.
         /// </summary>
         /// <param name="e"></param>
         /// <param name="absoluteBounds"></param>
-        protected virtual void DrawBackgroundLogarithmic(GInteractiveDrawArgs e, Rectangle absoluteBounds)
+        /// <param name="forceShadow">Pokud obsahuje true = Stíny na okrajích vykreslit povinně, jde o Logaritmický graf</param>
+        protected virtual void DrawBackground(GInteractiveDrawArgs e, Rectangle absoluteBounds, bool forceShadow)
         {
-            float shadow = this.GraphParameters.LogarithmicGraphDrawOuterShadow;
-            if (shadow <= 0f) return;
-            Color colorCenter = Color.FromArgb(0, 0, 0, 0);          // Barva úplně průhledná, pro přechod "do ztracena" uprostřed grafu
-            int alpha = (int)(255f * shadow);                        // Úroveň stínování 0-1 => 0-255
-            int beta = 2 * (alpha < 127 ? alpha : 127);
-            Color colorEdge = Color.FromArgb(alpha, 0, 0, 0);        // Barva na okraji grafu výchozí
-            int width = (int)(((1f - this.GraphParameters.LogarithmicRatio) / 2f) * (float)absoluteBounds.Width);
+            this.DrawBackgroundColor(e, absoluteBounds, forceShadow, this.BackgroundColor);
+            this.DrawBackgroundShadow(e, absoluteBounds, forceShadow, this.BeginShadowColor, this.BeginShadowArea, RectangleSide.Left);
+            this.DrawBackgroundShadow(e, absoluteBounds, forceShadow, this.EndShadowColor, this.EndShadowArea, RectangleSide.Right);
+            this.DrawBackgroundImage(e, absoluteBounds, forceShadow, this.BeginImage, RectangleSide.Left);
+            this.DrawBackgroundImage(e, absoluteBounds, forceShadow, this.EndImage, RectangleSide.Right);
 
-            Color leftColor = (this.LeftColor.HasValue ? Color.FromArgb(beta, this.LeftColor.Value) : colorEdge);
-            Rectangle leftBounds = new Rectangle(absoluteBounds.X, absoluteBounds.Y, width, absoluteBounds.Height);
-            Rectangle leftBoundsG = leftBounds.Enlarge(1, 0, 0, 1);                      // To je úchylka WinFormů
-            using (System.Drawing.Drawing2D.LinearGradientBrush lgb = new System.Drawing.Drawing2D.LinearGradientBrush(leftBoundsG, leftColor, colorCenter, 00f))
-            {
-                e.Graphics.FillRectangle(lgb, leftBounds);
-            }
 
-            Color rightColor = (this.RightColor.HasValue ? Color.FromArgb(beta, this.RightColor.Value) : colorEdge);
-            Rectangle rightBounds = new Rectangle(absoluteBounds.Right - width, absoluteBounds.Y, width, absoluteBounds.Height);
-            Rectangle rightBoundsG = rightBounds.Enlarge(1, 0, 0, 1);                    // To je úchylka WinFormů
-            using (System.Drawing.Drawing2D.LinearGradientBrush rgb = new System.Drawing.Drawing2D.LinearGradientBrush(rightBoundsG, rightColor, colorCenter, 180f))
+        }
+        /// <summary>
+        /// Vykreslí pozadí pod grafem danou barvou, pokud je daná
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="absoluteBounds"></param>
+        /// <param name="forceShadow"></param>
+        /// <param name="backgroundColor"></param>
+        protected void DrawBackgroundColor(GInteractiveDrawArgs e, Rectangle absoluteBounds, bool forceShadow, Color? backgroundColor)
+        {
+            if (!backgroundColor.HasValue) return;
+            e.Graphics.FillRectangle(Skin.Brush(backgroundColor.Value), absoluteBounds);
+        }
+        /// <summary>
+        /// Vykreslí stínování okraje grafu
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="absoluteBounds"></param>
+        /// <param name="forceShadow"></param>
+        /// <param name="shadowColor"></param>
+        /// <param name="shadowArea"></param>
+        /// <param name="side"></param>
+        protected void DrawBackgroundShadow(GInteractiveDrawArgs e, Rectangle absoluteBounds, bool forceShadow, Color? shadowColor, float? shadowArea, RectangleSide side)
+        {
+            if (!forceShadow && !shadowColor.HasValue) return;
+            Color? edgeColor = GetBackgroundShadowEdgeColor(shadowColor, this.CurrentGraphProperties.LogarithmicGraphDrawOuterShadow);
+            if (!edgeColor.HasValue) return;
+            int width = GetBackgroundShadowWidth(absoluteBounds, shadowArea, this.CurrentGraphProperties.LogarithmicRatio);
+            Rectangle shadowBounds = GetBackgroundShadowBounds(absoluteBounds, width, side);
+            if (shadowBounds.Width > 0)
             {
-                e.Graphics.FillRectangle(rgb, rightBounds);
+                using (Brush brush = GetBackgroundShadowBrush(shadowBounds, edgeColor.Value, side))
+                {
+                    if (brush != null)
+                        e.Graphics.FillRectangle(brush, shadowBounds);
+                }
             }
+        }
+        /// <summary>
+        /// Metoda vrátí úplně krajovou barvu, která se má použít pro vykreslení podkreslení stínu pod grafem
+        /// </summary>
+        /// <param name="shadowColor"></param>
+        /// <param name="shadowRatio"></param>
+        /// <returns></returns>
+        protected static Color? GetBackgroundShadowEdgeColor(Color? shadowColor, float shadowRatio)
+        {
+            if (shadowColor.HasValue) return shadowColor;
+            if (shadowRatio <= 0.0f) return null;
+            int alpha = (int)(255f * shadowRatio);                   // Úroveň stínování 0-1 => 0-255
+            return Color.FromArgb(alpha, 0, 0, 0);                   // Barva na okraji grafu = černá, s danou průhledností
+        }
+        /// <summary>
+        /// Metoda vrátí šířku prostoru pro kreslení stínování
+        /// </summary>
+        /// <param name="absoluteBounds"></param>
+        /// <param name="shadowArea"></param>
+        /// <param name="logarithmicRatio"></param>
+        /// <returns></returns>
+        protected static int GetBackgroundShadowWidth(Rectangle absoluteBounds, float? shadowArea, float logarithmicRatio)
+        {
+            int width = absoluteBounds.Width;
+            float widthRatio = ((shadowArea.HasValue) ? shadowArea.Value : ((1f - logarithmicRatio) / 2f));
+            if (widthRatio <= 0f) return 0;
+            if (widthRatio >= 1f) return width;
+            return (int)(Math.Round((widthRatio * (float)width), 0));
+        }
+        /// <summary>
+        /// Metoda vrátí souřadnice, kam se bude vykreslovat stín
+        /// </summary>
+        /// <param name="absoluteBounds"></param>
+        /// <param name="width"></param>
+        /// <param name="side"></param>
+        /// <returns></returns>
+        protected static Rectangle GetBackgroundShadowBounds(Rectangle absoluteBounds, int width, RectangleSide side)
+        {
+            int x = absoluteBounds.X;
+            int y = absoluteBounds.Y;
+            int r = absoluteBounds.Right;
+            int h = absoluteBounds.Height;
+            switch (side)
+            {
+                case RectangleSide.Left: return new Rectangle(x, y, width, h);
+                case RectangleSide.Right: return new Rectangle(r - width, y, width, h);
+            }
+            return Rectangle.Empty;
+        }
+        /// <summary>
+        /// Metoda vrátí Brush pro vykreslení stínovaného okraje
+        /// </summary>
+        /// <param name="shadowBounds"></param>
+        /// <param name="edgeColor"></param>
+        /// <param name="side"></param>
+        /// <returns></returns>
+        protected static Brush GetBackgroundShadowBrush(Rectangle shadowBounds, Color edgeColor, RectangleSide side)
+        {
+            Rectangle brushBounds = shadowBounds.Enlarge(1);         // To už je taková úchylka WinFormů, že LinearGradientBrush není úplně přesný.
+            Color transparentColor = Color.FromArgb(0, 0, 0, 0);
+            switch (side)
+            {
+                case RectangleSide.Left: return new System.Drawing.Drawing2D.LinearGradientBrush(brushBounds, edgeColor, transparentColor, 00f);
+                case RectangleSide.Right: return new System.Drawing.Drawing2D.LinearGradientBrush(brushBounds, edgeColor, transparentColor, 180f);
+            }
+            return null;
+        }
+        /// <summary>
+        /// Vykreslí danou ikonu
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="absoluteBounds"></param>
+        /// <param name="forceShadow"></param>
+        /// <param name="guiImage"></param>
+        /// <param name="side"></param>
+        protected void DrawBackgroundImage(GInteractiveDrawArgs e, Rectangle absoluteBounds, bool forceShadow, GuiImage guiImage, RectangleSide side)
+        {
+            Image image = Application.App.Resources.GetImage(guiImage);
+            if (image == null) return;
+            Rectangle imageBounds = GetBackgroundImageBounds(absoluteBounds, image, side);
+            if (imageBounds.Width > 0)
+                e.Graphics.DrawImage(image, imageBounds);
+        }
+        /// <summary>
+        /// Metoda vrátí souřadnice, kam se bude vykreslovat ikona
+        /// </summary>
+        /// <param name="absoluteBounds"></param>
+        /// <param name="image"></param>
+        /// <param name="side"></param>
+        /// <returns></returns>
+        protected static Rectangle GetBackgroundImageBounds(Rectangle absoluteBounds, Image image, RectangleSide side)
+        {
+            if (image == null) return Rectangle.Empty;
+            Size imageSize = image.Size;
+            Rectangle innerBounds = absoluteBounds.Enlarge(-2);
+            switch (side)
+            {
+                case RectangleSide.Left: return imageSize.AlignTo(innerBounds, ContentAlignment.MiddleLeft);
+                case RectangleSide.Right: return imageSize.AlignTo(innerBounds, ContentAlignment.MiddleRight);
+            }
+            return Rectangle.Empty;
         }
         /// <summary>
         /// Vykreslí všechny Ticky = časové značky, pokud se mají kreslit.
         /// </summary>
         protected void DrawTicks(GInteractiveDrawArgs e, Rectangle absoluteBounds)
         {
-            AxisTickType tickLevel = this.GraphParameters.TimeAxisVisibleTickLevel;
+            AxisTickType tickLevel = this.CurrentGraphProperties.TimeAxisVisibleTickLevel;
             if (tickLevel == AxisTickType.None) return;
             VisualTick[] timeAxisTicks = this.TimeAxisTicks;
             if (timeAxisTicks == null) return;
@@ -1345,7 +1528,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Výchozí hodnota = null.
         public int? GraphOpacity
         {
-            get { return this.GraphParameters.Opacity; }
+            get { return this.CurrentGraphProperties.Opacity; }
         }
         #endregion
         #region Invalidace je řešená jedním vstupním bodem
@@ -1458,12 +1641,12 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             if (this._TimeConvertor == null) return null;
             int pixel = relativePositionX - this._TimeConvertor.FirstPixel;
             int targetSize = this.Bounds.Width;
-            switch (this.GraphParameters.TimeAxisMode)
+            switch (this.CurrentGraphProperties.TimeAxisMode)
             {
                 case TimeGraphTimeAxisMode.ProportionalScale:
                     return this._TimeConvertor.GetProportionalTime(pixel, targetSize);
                 case TimeGraphTimeAxisMode.LogarithmicScale:
-                    return this._TimeConvertor.GetLogarithmicTime(pixel, targetSize, this.GraphParameters.LogarithmicRatio);
+                    return this._TimeConvertor.GetLogarithmicTime(pixel, targetSize, this.CurrentGraphProperties.LogarithmicRatio);
                 case TimeGraphTimeAxisMode.Standard:
                 default:
                     return this._TimeConvertor.GetProportionalTime(pixel, targetSize);
@@ -1479,13 +1662,13 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             if (this._TimeConvertor == null) return null;
             int targetSize = this.Bounds.Width;
             double axisPixel = 0d;
-            switch (this.GraphParameters.TimeAxisMode)
+            switch (this.CurrentGraphProperties.TimeAxisMode)
             {
                 case TimeGraphTimeAxisMode.ProportionalScale:
                     axisPixel = this._TimeConvertor.GetProportionalPixel(time, targetSize);
                     break;
                 case TimeGraphTimeAxisMode.LogarithmicScale:
-                    axisPixel = this._TimeConvertor.GetLogarithmicPixel(time, targetSize, this.GraphParameters.LogarithmicRatio);
+                    axisPixel = this._TimeConvertor.GetLogarithmicPixel(time, targetSize, this.CurrentGraphProperties.LogarithmicRatio);
                     break;
                 case TimeGraphTimeAxisMode.Standard:
                 default:
@@ -1663,11 +1846,41 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         public TimeGraphProperties()
         {
             this._TimeAxisMode = TimeGraphTimeAxisMode.Standard;
+            this._InitialResizeMode = AxisResizeContentMode.ChangeScale;
+            this._InteractiveChangeMode = AxisInteractiveChangeMode.All;
             this._TimeAxisVisibleTickLevel = AxisTickType.BigTick;
+            this._UpperSpaceLogical = 1f;
+            this._BottomMarginPixel = 1;
+            this._TotalHeightRange = new Int32NRange(10, 300);
             this._OneLineHeight = Skin.Graph.LineHeight;
             this._LogarithmicRatio = 0.60f;
             this._LogarithmicGraphDrawOuterShadow = 0.20f;
             this._Opacity = null;
+        }
+        /// <summary>
+        /// Konstruktor s daty dle dodaného GUI objektu
+        /// </summary>
+        public TimeGraphProperties(GuiGraphProperties guiGraphProperties)
+            : this()
+        {
+            if (guiGraphProperties != null)
+            {
+                this._TimeAxisMode = guiGraphProperties.TimeAxisMode;
+                this._InitialResizeMode = guiGraphProperties.AxisResizeMode;
+                this._InteractiveChangeMode = guiGraphProperties.InteractiveChangeMode;
+                this._TimeAxisVisibleTickLevel = (guiGraphProperties.GraphPosition == DataGraphPositionType.InLastColumn ? AxisTickType.BigLabel : AxisTickType.None);
+                this._OneLineHeight = guiGraphProperties.GraphLineHeight;
+                this._OneLinePartialHeight = guiGraphProperties.GraphLinePartialHeight;
+                this._UpperSpaceLogical = guiGraphProperties.UpperSpaceLogical;
+                this._BottomMarginPixel = guiGraphProperties.BottomMarginPixel;
+                this._TotalHeightRange = new Int32NRange(guiGraphProperties.TableRowHeightMin, guiGraphProperties.TableRowHeightMax);
+                
+                if (guiGraphProperties.LogarithmicRatio.HasValue)
+                    this._LogarithmicRatio = guiGraphProperties.LogarithmicRatio.Value;
+                if (guiGraphProperties.LogarithmicGraphDrawOuterShadow.HasValue)
+                    this._LogarithmicGraphDrawOuterShadow = guiGraphProperties.LogarithmicGraphDrawOuterShadow.Value;
+                this._Opacity = guiGraphProperties.Opacity;
+            }
         }
         /// <summary>
         /// Režim zobrazování času na ose X
@@ -1791,9 +2004,11 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         }
         private float _LogarithmicRatio;
         /// <summary>
-        /// Logaritmická časová osa: vykreslovat vystínování oblastí s logaritmickým měřítkem osy (tedy ty levé a pravé okraje, kde již neplatí lineární měřítko).
-        /// Zde se zadává hodnota 0 až 1, která reprezentuje úroven vystínování těchto okrajů.
-        /// Hodnota 0 = žádné stínování, hodnota 1 = krajní pixel je zcela černý. Default hodnota = 0.20f.
+        /// Logaritmická časová osa: vykreslovat vystínování oblastí s logaritmickým měřítkem osy 
+        /// (tedy ty levé a pravé okraje, kde již neplatí lineární měřítko).
+        /// Zde se zadává hodnota 0 až 1, která reprezentuje úroveň vystínování těchto okrajů.
+        /// Hodnota 0.0 = žádné stínování, hodnota 1.0 = krajní pixel je zcela černý. 
+        /// Default hodnota = 0.20f.
         /// </summary>
         public float LogarithmicGraphDrawOuterShadow
         {
@@ -1907,7 +2122,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         Int32 Order { get; }
         /// <summary>
         /// Relativní výška tohoto prvku. Standardní hodnota = 1.0F. Fyzická výška (v pixelech) jednoho prvku je dána součinem 
-        /// <see cref="Height"/> * <see cref="GTimeGraph.GraphParameters"/>: <see cref="TimeGraphProperties.OneLineHeight"/> nebo <see cref="TimeGraphProperties.OneLinePartialHeight"/>, 
+        /// <see cref="Height"/> * <see cref="GTimeGraph.CurrentGraphProperties"/>: <see cref="TimeGraphProperties.OneLineHeight"/> nebo <see cref="TimeGraphProperties.OneLinePartialHeight"/>, 
         /// podle toho zda graf obsahuje jen celočíselné výšky, nebo i zlomkové výšky.
         /// Prvky s výškou 0 a menší nebudou vykresleny.
         /// </summary>

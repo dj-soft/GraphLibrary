@@ -84,7 +84,45 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.LoadDataLoadTexts();
         }
         #endregion
-        #region Zpracování odpovědi z GuiResponse: přidání nových prků do grafů, odebrání prvků grafu
+        #region Zpracování odpovědi z GuiResponse: aktualizace vlastností grafů, přidání nových prvků do grafů, odebrání prvků grafu
+        /// <summary>
+        /// Aktualizuje obsah daného grafu (podle jeho řádky).
+        /// </summary>
+        /// <param name="updateGraph"></param>
+        /// <param name="refreshGraphDict"></param>
+        public void UpdateGraph(GuiResponseGraph updateGraph, Dictionary<uint, GTimeGraph> refreshGraphDict = null)
+        {
+            GTimeGraph modifiedGraph = this._UpdateGraph(updateGraph);
+            _RefreshModifiedGraph(modifiedGraph, refreshGraphDict);
+        }
+        /// <summary>
+        /// Metoda z dodaného prvku <see cref="GuiResponseGraph"/> aktualizuje data odpovídajícího grafu <see cref="DataGraphItem"/>.
+        /// Vrací referenci na zmíněný modifikovaný graf.
+        /// </summary>
+        /// <param name="updateGraph"></param>
+        /// <returns></returns>
+        private GTimeGraph _UpdateGraph(GuiResponseGraph updateGraph)
+        {
+            GTimeGraph modifiedGraph = null;
+
+            if (updateGraph == null) return modifiedGraph;
+
+            GId rowGId = updateGraph.RowId;
+            GTimeGraph gTimeGraph;
+            if (this.TimeGraphDict.TryGetValue(rowGId, out gTimeGraph))
+            {
+                gTimeGraph.UpdateGraphData(updateGraph);
+
+                if (updateGraph.ResetGraphItems)
+                    this._RemoveItemsFromGraph(gTimeGraph, updateGraph.RemoveItems);
+
+                this._AddGraphItems(gTimeGraph, updateGraph.GraphItems);
+
+                modifiedGraph = gTimeGraph;
+            }
+            return modifiedGraph;
+        }
+        #region Přidání grafických prvků
         /// <summary>
         /// Přidá daný prvek jako nový do odpovídajícího grafu (podle jeho řádky).
         /// </summary>
@@ -108,22 +146,74 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             GTimeGraph modifiedGraph = null;
 
             if (addItem == null) return modifiedGraph;
-            DataGraphItem dataGraphItem = DataGraphItem.CreateFrom(this, addItem);
-            if (dataGraphItem == null) return modifiedGraph;
 
+            GId rowGId = addItem.RowId;
             GTimeGraph gTimeGraph;
-            if (this.TimeGraphDict.TryGetValue(dataGraphItem.RowGId, out gTimeGraph))
+            if (this.TimeGraphDict.TryGetValue(rowGId, out gTimeGraph))
             {
-                bool isAdded = gTimeGraph.AddGraphItem(dataGraphItem);
-                if (isAdded)
-                {
-                    if (!this.TimeGraphItemDict.ContainsKey(dataGraphItem.ItemGId))
-                        this.TimeGraphItemDict.Add(dataGraphItem.ItemGId, dataGraphItem);
-
+                if (this._AddGraphItem(gTimeGraph, addItem))
                     modifiedGraph = gTimeGraph;
-                }
             }
             return modifiedGraph;
+        }
+        /// <summary>
+        /// Metoda zajistí vytvoření řady prvků grafu (třída <see cref="DataGraphItem"/>) z dat o prvku (třída <see cref="GuiGraphBaseItem"/>),
+        /// dále pak přidání vytvořených prvků <see cref="DataGraphItem"/> do dodaného grafu, i do zdejší Dictionary <see cref="TimeGraphItemDict"/>.
+        /// Vrací true = došlo k přidání / false = nebyla změna.
+        /// </summary>
+        /// <param name="gTimeGraph"></param>
+        /// <param name="addItems"></param>
+        /// <returns></returns>
+        private bool _AddGraphItems(GTimeGraph gTimeGraph, IEnumerable<GuiGraphBaseItem> addItems)
+        {
+            bool isChange = false;
+            if (gTimeGraph == null || addItems == null) return isChange;
+
+            foreach (GuiGraphBaseItem addItem in addItems)
+            {
+                bool oneChange = this._AddGraphItem(gTimeGraph, addItem);
+                if (!isChange && oneChange)
+                    isChange = true;
+            }
+
+            return isChange;
+        }
+        /// <summary>
+        /// Metoda zajistí vytvoření prvku grafu (třída <see cref="DataGraphItem"/>) z dat o prvku (třída <see cref="GuiGraphBaseItem"/>),
+        /// dále pak přidání prvku <see cref="DataGraphItem"/> do dodaného grafu, i do zdejší Dictionary <see cref="TimeGraphItemDict"/>.
+        /// Vrací true = došlo k přidání / false = nebyla změna.
+        /// </summary>
+        /// <param name="gTimeGraph"></param>
+        /// <param name="addItem"></param>
+        /// <returns></returns>
+        private bool _AddGraphItem(GTimeGraph gTimeGraph, GuiGraphBaseItem addItem)
+        {
+            bool isChange = false;
+            if (gTimeGraph == null || addItem == null) return isChange;
+
+            DataGraphItem dataGraphItem = DataGraphItem.CreateFrom(this, addItem);
+            if (dataGraphItem == null) return false;
+
+            isChange = gTimeGraph.AddGraphItem(dataGraphItem);
+            if (isChange)
+            {
+                if (!this.TimeGraphItemDict.ContainsKey(dataGraphItem.ItemGId))
+                    this.TimeGraphItemDict.Add(dataGraphItem.ItemGId, dataGraphItem);
+            }
+            
+            return isChange;
+        }
+        #endregion
+        #region Odebrání grafických prvků
+        /// <summary>
+        /// Odebere dané prvky z grafů v patřičné řádce v this tabulce.
+        /// </summary>
+        /// <param name="removeItems"></param>
+        /// <param name="refreshGraphDict"></param>
+        public void RemoveGraphItems(IEnumerable<GuiGridItemId> removeItems, Dictionary<uint, GTimeGraph> refreshGraphDict = null)
+        {
+            foreach (GuiGridItemId removeItem in removeItems)
+                this._RemoveGraphItem(removeItem, refreshGraphDict);
         }
         /// <summary>
         /// Odebere daný prvek z grafu v patřičné řádce v this tabulce.
@@ -131,6 +221,15 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="removeItem"></param>
         /// <param name="refreshGraphDict"></param>
         public void RemoveGraphItem(GuiGridItemId removeItem, Dictionary<uint, GTimeGraph> refreshGraphDict = null)
+        {
+            this._RemoveGraphItem(removeItem, refreshGraphDict);
+        }
+        /// <summary>
+        /// Odebere daný prvek z grafu v patřičné řádce v this tabulce.
+        /// </summary>
+        /// <param name="removeItem"></param>
+        /// <param name="refreshGraphDict"></param>
+        private void _RemoveGraphItem(GuiGridItemId removeItem, Dictionary<uint, GTimeGraph> refreshGraphDict)
         {
             GTimeGraph modifiedGraph = this._RemoveGraphItem(removeItem);
             _RefreshModifiedGraph(modifiedGraph, refreshGraphDict);
@@ -163,6 +262,65 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             }
             return modifiedGraph;
         }
+        /// <summary>
+        /// Metoda najde dané prvky v daném grafu a odebere je jak z grafu, tak z Dictionary <see cref="TimeGraphItemDict"/>.
+        /// Pokud prvek neexistuje v daném grafu, pak nedojde k chybě, ale prvek se neodebere (ani z grafu ani z Dictionary).
+        /// Vrací true = došlo ke změně / false = nikoli.
+        /// </summary>
+        /// <param name="gTimeGraph"></param>
+        /// <param name="removeItems"></param>
+        /// <returns></returns>
+        private bool _RemoveItemsFromGraph(GTimeGraph gTimeGraph, IEnumerable<GuiGridItemId> removeItems)
+        {
+            bool isChange = false;
+            if (gTimeGraph == null || removeItems == null) return isChange;
+
+            foreach (GuiGridItemId removeItem in removeItems)
+            {
+                bool oneChange = this._RemoveItemFromGraph(gTimeGraph, removeItem);
+                if (!isChange && oneChange)
+                    isChange = true;
+            }
+
+            return isChange;
+        }
+        /// <summary>
+        /// Metoda najde daný prvek v daném grafu a odebere jej jak z grafu, tak z Dictionary <see cref="TimeGraphItemDict"/>.
+        /// Pokud prvek neexistuje v daném grafu, pak nedojde k chybě, ale prvek se neodebere (ani z grafu ani z Dictionary).
+        /// Vrací true = došlo ke změně / false = nikoli.
+        /// </summary>
+        /// <param name="gTimeGraph"></param>
+        /// <param name="removeItem"></param>
+        /// <returns></returns>
+        private bool _RemoveItemFromGraph(GTimeGraph gTimeGraph, GuiGridItemId removeItem)
+        {
+            bool isChange = false;
+            if (gTimeGraph == null || removeItem == null || removeItem.ItemId == null) return isChange;
+
+            GId itemGId = removeItem.ItemId;
+            int itemId = this.GetId(itemGId);
+            isChange = gTimeGraph.RemoveGraphItem(itemId, true);
+
+            if (isChange && this.TimeGraphItemDict.ContainsKey(itemGId))
+                this.TimeGraphItemDict.Remove(itemGId);
+
+            return isChange;
+        }
+        #endregion
+        #region Přidání vztahů
+        /// <summary>
+        /// Přidá dodané vztahy do této tabulky
+        /// </summary>
+        /// <param name="gTimeGraph"></param>
+        /// <param name="addLinks"></param>
+        /// <returns></returns>
+        private bool _AddGraphLinks(GTimeGraph gTimeGraph, IEnumerable<GuiGraphItemLink> addLinks)
+        {
+            return false;
+        }
+        #endregion
+        #region Odebrání vztahů
+        #endregion
         /// <summary>
         /// Zajistí provedení Refresh() na modifikovaném grafu:
         /// Buď je zadána Dictionary s grafy pro hromadný Refresh, pak aktuální graf do ní přidá;
@@ -285,17 +443,20 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         protected void LoadDataCreateGraphs()
         {
             this.TimeGraphDict = new Dictionary<GId, GTimeGraph>();
+            this.TimeGraphItemDict = new Dictionary<GId, DataGraphItem>();
+
             if (this.TableRow == null) return;
             DataGraphPositionType graphPosition = this.GraphPosition;
             if (graphPosition == DataGraphPositionType.None) return;
             this.LoadDataPrepareTableForGraphs(graphPosition);
 
+            Dictionary<GId, GuiGraph> guiGraphDict = this.LoadDataLoadGuiGraphDict();
             foreach (Row row in this.TableRow.Rows)
             {
                 GId rowGid = row.RecordGId;
                 if (rowGid == null) continue;
 
-                GTimeGraph gTimeGraph = this.LoadDataCreateGTimeGraph(row, graphPosition);
+                GTimeGraph gTimeGraph = this.LoadDataCreateOneGTimeGraph(row, graphPosition, guiGraphDict);
                 if (!this.TimeGraphDict.ContainsKey(rowGid))
                     this.TimeGraphDict.Add(rowGid, gTimeGraph);
             }
@@ -329,13 +490,27 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             }
         }
         /// <summary>
+        /// Metoda vytvoří Dictionary, obsahující předpřipravená data grafů z GUI pro jednotlivé řádky.
+        /// GUI data mohou/nemusí obsahovat data jednotlivých grafů, v <see cref="GuiGrid.Graphs"/>.
+        /// </summary>
+        /// <returns></returns>
+        protected Dictionary<GId, GuiGraph> LoadDataLoadGuiGraphDict()
+        {
+            Dictionary<GId, GuiGraph> guiGraphDict = new Dictionary<GId, GuiGraph>();
+            List<GuiGraph> graphs = this.GuiGrid.Graphs;
+            if (graphs != null && graphs.Count > 0)
+                guiGraphDict = graphs.GetDictionary(g => { GId rowGId = g.RowId; return rowGId; }, true);
+            return guiGraphDict;
+        }
+        /// <summary>
         /// Metoda vytvoří nový <see cref="GTimeGraph"/> pro daný řádek a pozici, umístí jej do řádku, a graf vrátí.
         /// Graf zatím neobsahuje položky.
         /// </summary>
         /// <param name="row"></param>
         /// <param name="graphPosition"></param>
+        /// <param name="guiGraphDict">Data grafů načtená z GUI</param>
         /// <returns></returns>
-        protected GTimeGraph LoadDataCreateGTimeGraph(Row row, DataGraphPositionType graphPosition)
+        protected GTimeGraph LoadDataCreateOneGTimeGraph(Row row, DataGraphPositionType graphPosition, Dictionary<GId, GuiGraph> guiGraphDict)
         {
             GTimeGraph gTimeGraph = new GTimeGraph();
             gTimeGraph.DataSource = this;
@@ -355,6 +530,15 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 row.BackgroundValue = gTimeGraph;
             }
 
+            // Naplníme do grafu data dodaná z GUI vrstvy, pokud nějaká data dodaná byla:
+            GuiGraph guiGraph;
+            if (guiGraphDict != null && guiGraphDict.TryGetValue(row.RecordGId, out guiGraph))
+            {
+                gTimeGraph.UpdateGraphData(guiGraph);
+                this._AddGraphItems(gTimeGraph, guiGraph.GraphItems);
+                this._AddGraphLinks(gTimeGraph, guiGraph.GraphLinks);
+            }
+                
             return gTimeGraph;
         }
         /// <summary>
@@ -366,7 +550,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             GuiGrid guiGrid = this.GuiGrid;
 
-            this.TimeGraphItemDict = new Dictionary<GId, DataGraphItem>();
             if (guiGrid.GraphItems != null)
             {
                 foreach (GuiGraphTable guiGraphTable in guiGrid.GraphItems)
@@ -1316,7 +1499,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             result.InitialValue = initialValue;
             result.MaximalValue = maximalValue;
             result.InteractiveChangeMode = this.InteractiveChangeMode;
-            result.TimeAxisVisibleTickLevel = (isGraphInColumn ? AxisTickType.StdTick : AxisTickType.BigLabel);
+            result.TimeAxisVisibleTickLevel = (isGraphInColumn ? AxisTickType.BigLabel : AxisTickType.None);
             result.OneLineHeight = this.GraphLineHeight;
             result.OneLinePartialHeight = this.GraphLinePartialHeight;
             result.UpperSpaceLogical = this.UpperSpaceLogical;
