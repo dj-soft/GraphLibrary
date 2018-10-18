@@ -375,6 +375,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             int workLayer = -1;
             DateTime workBegin = now.Date.AddDays(-1d);
             DateTime workEnd = workBegin.AddDays(62d);
+            float height = Rand.Next(1, 4);
             while (workBegin < workEnd)
             {
                 begin = workBegin.AddHours(6d);
@@ -385,12 +386,13 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 item.Level = 0;
                 item.GroupId = item.ItemId;
                 item.Time = new TimeRange(begin, end);
-                item.Height = 5f;
+                item.Height = height;
                 item.ToolTip = "Ranní směna";
                 item.BackColor = Color.FromArgb(240, 240, 255);
                 item.LineColor = Color.Green;
                 graph.AddGraphItem(item);
 
+                /*
                 item = new TestGraphItem();
                 item.Layer = workLayer;
                 item.Level = -1;
@@ -401,7 +403,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 item.BackColor = Color.FromArgb(240, 240, 255);
                 item.LineColor = Color.Green;
                 graph.AddGraphItem(item);
-
+                */
 
 
                 begin = workBegin.AddHours(14d);
@@ -412,12 +414,13 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 item.Level = 0;
                 item.GroupId = item.ItemId;
                 item.Time = new TimeRange(begin, end);
-                item.Height = 5f;
+                item.Height = height;
                 item.ToolTip = "Odpolední směna";
                 item.BackColor = Color.FromArgb(240, 255, 240);
                 item.LineColor = Color.Blue;
                 graph.AddGraphItem(item);
 
+                /*
                 item = new TestGraphItem();
                 item.Layer = workLayer;
                 item.Level = -1;
@@ -428,6 +431,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 item.BackColor = Color.FromArgb(240, 255, 240);
                 item.LineColor = Color.Blue;
                 graph.AddGraphItem(item);
+                */
 
                 for (int t = 0; t < 7; t++)
                 {
@@ -444,7 +448,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             colors.Add(Color.FromArgb(192, 64, 64, 224 + Rand.Next(0, 32)));
 
             int groupId = 0;
-            int cnt = Rand.Next(12, 60);
+            int cnt = Rand.Next(2, 12);
             for (int i = 0; i < cnt; i++)
             {
                 groupId++;
@@ -452,11 +456,11 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 int level = Rand.Next(0, 2);
                 int order = Rand.Next(0, 2);
                 bool halfling = (Rand.Next(0, 100) < 5);
-                float height = (halfling ? 0.5f : 1f);
+                height = (halfling ? 0.5f : 1f);
                 int colIdx = 2 * level + order;
                 Color backColor = colors[colIdx];
                 DateTime start = now.AddMinutes(15 * Rand.Next(0, 28 * 24 * 4));
-                int count = Rand.Next(1, 8);
+                int count = Rand.Next(1, 5);
                 for (int c = 0; c < count; c++)
                 {
                     begin = start;
@@ -474,6 +478,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                     item.ToolTip = tooltip;
                     item.BackColor = backColor;
                     item.LineColor = Color.Black;
+                    item.BehaviorMode = GraphItemBehaviorMode.DefaultWorkTime | GraphItemBehaviorMode.DefaultText;
 
                     graph.AddGraphItem(item);
 
