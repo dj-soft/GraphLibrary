@@ -11,6 +11,7 @@ using Asol.Tools.WorkScheduler.Data;
 using Asol.Tools.WorkScheduler.Components;
 using Asol.Tools.WorkScheduler.Components.Graph;
 using Noris.LCS.Base.WorkScheduler;
+using RES = Noris.LCS.Base.WorkScheduler.Resources;
 
 namespace Asol.Tools.WorkScheduler.TestGUI
 {
@@ -362,10 +363,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         {
             GTimeGraph graph = new GTimeGraph();
 
-            graph.GraphParameters = TimeGraphProperties.Default;
-            graph.GraphParameters.OneLineHeight = 22;
-            graph.GraphParameters.OneLinePartialHeight = 44;
-            graph.GraphParameters.TotalHeightRange = new Int32NRange(35, 480);
+            graph.CurrentGraphProperties = TimeGraphProperties.Default;
+            graph.CurrentGraphProperties.OneLineHeight = 22;
+            graph.CurrentGraphProperties.OneLinePartialHeight = 44;
+            graph.CurrentGraphProperties.TotalHeightRange = new Int32NRange(35, 480);
 
             DateTime begin, end;
             TestGraphItem item;
@@ -485,6 +486,29 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         private GTimeGraph _PrepareGraphZ(DateTime now, bool withShift, int taskCount)
         {
             GTimeGraph graph = new GTimeGraph();
+
+            if (Rand.Next(0, 100) < 10)
+            {
+                graph.BackgroundColor = Color.LavenderBlush;
+            }
+            if (Rand.Next(0, 100) < 10)
+            {
+                graph.BeginImage = RES.Images.Actions24.MediaRecord3Png;
+            }
+            if (Rand.Next(0, 100) < 10)
+            {
+                graph.EndImage = RES.Images.Actions24.MediaRecord3Png;
+            }
+            if (Rand.Next(0, 100) < 10)
+            {
+                graph.BeginShadowColor = Color.FromArgb(64, Color.Green);
+            }
+            if (Rand.Next(0, 100) < 10)
+            {
+                graph.EndShadowColor = Color.FromArgb(64, Color.BlueViolet);
+            }
+
+
 
             /*
             graph.GraphParameters = TimeGraphParameters.Default;
@@ -646,7 +670,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         public Int32 Order { get; set; }
         /// <summary>
         /// Relativní výška tohoto prvku. Standardní hodnota = 1.0F. Fyzická výška (v pixelech) jednoho prvku je dána součinem 
-        /// <see cref="Height"/> * <see cref="GTimeGraph.GraphParameters"/>: <see cref="TimeGraphProperties.OneLineHeight"/> nebo <see cref="TimeGraphProperties.OneLinePartialHeight"/>, 
+        /// <see cref="Height"/> * <see cref="GTimeGraph.CurrentGraphProperties"/>: <see cref="TimeGraphProperties.OneLineHeight"/> nebo <see cref="TimeGraphProperties.OneLinePartialHeight"/>, 
         /// podle toho zda graf obsahuje jen celočíselné výšky, nebo i zlomkové výšky.
         /// Prvky s výškou 0 a menší nebudou vykresleny.
         /// </summary>
