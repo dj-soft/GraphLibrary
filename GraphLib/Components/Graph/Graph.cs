@@ -1088,7 +1088,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 this._Childs.Add(groupItem.GControl);
         }
         #endregion
-        #region Komunikace s datovým zdrojem: Caption, ToolTip, DoubleClick, LongClick, Drag and Drop
+        #region Komunikace s datovým zdrojem: Caption, ToolTip, Link, DoubleClick, LongClick, Drag and Drop
         /// <summary>
         /// Metoda získá text, který se bude vykreslovat do prvku
         /// </summary>
@@ -1174,6 +1174,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 }
             }
         }
+        Link;
         /// <summary>
         /// Metoda zajistí zpracování události RightClick na grafickém prvku (data) na dané pozici (position).
         /// </summary>

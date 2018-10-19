@@ -3172,11 +3172,34 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         ShowToolTipImmediatelly = 0x40000,
         /// <summary>
-        /// Default pro pracovní čas = <see cref="ResizeTime"/> | <see cref="MoveToAnotherTime"/> | <see cref="MoveToAnotherRow"/>
+        /// Nezobrazovat spojovací linie mezi prvky nikdy.
         /// </summary>
-        DefaultWorkTime = ResizeTime | MoveToAnotherTime | MoveToAnotherRow,
+        ShowLinkNone = 0x100000,
         /// <summary>
-        /// Default pro text = <see cref="ShowCaptionInMouseOver"/> | <see cref="ShowCaptionInSelected"/> | <see cref="ShowToolTipFadeIn"/>
+        /// Zobrazit spojovací linie mezi prvky při stavu MouseOver.
+        /// Tyto linky (MouseOver) jsou zobrazovány polovičně průhlednou barvou.
+        /// Pokud nebude specifikována hodnota <see cref="ShowLinkInMouseOver"/> ani <see cref="ShowLinkInSelected"/> ani <see cref="ShowLinkAllways"/>, nebudou se zobrazovat spojovací linie mezi prvky nikdy.
+        /// </summary>
+        ShowLinkInMouseOver = 0x200000,
+        /// <summary>
+        /// Zobrazit spojovací linie mezi prvky při stavu Selected.
+        /// Pokud nebude specifikována hodnota <see cref="ShowLinkInMouseOver"/> ani <see cref="ShowLinkInSelected"/> ani <see cref="ShowLinkAllways"/>, nebudou se zobrazovat spojovací linie mezi prvky nikdy.
+        /// </summary>
+        ShowLinkInSelected = 0x400000,
+        /// <summary>
+        /// Zobrazit spojovací linie mezi prvky při stavu vždy.
+        /// Pokud nebude specifikována hodnota <see cref="ShowLinkInMouseOver"/> ani <see cref="ShowLinkInSelected"/> ani <see cref="ShowLinkAllways"/>, nebudou se zobrazovat spojovací linie mezi prvky nikdy.
+        /// </summary>
+        ShowLinkAllways = 0x800000,
+        /// <summary>
+        /// Default pro pracovní čas = 
+        /// <see cref="ResizeTime"/> | <see cref="MoveToAnotherTime"/> | <see cref="MoveToAnotherRow"/> 
+        /// | <see cref="ShowLinkInMouseOver"/> | <see cref="ShowLinkInSelected"/>
+        /// </summary>
+        DefaultWorkTime = ResizeTime | MoveToAnotherTime | MoveToAnotherRow | ShowLinkInMouseOver | ShowLinkInSelected,
+        /// <summary>
+        /// Default pro text = 
+        /// <see cref="ShowCaptionInMouseOver"/> | <see cref="ShowCaptionInSelected"/> | <see cref="ShowToolTipFadeIn"/>
         /// </summary>
         DefaultText = ShowCaptionInMouseOver | ShowCaptionInSelected | ShowToolTipFadeIn,
         /// <summary>
