@@ -1174,7 +1174,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 }
             }
         }
-        Link;
+        // Link;
         /// <summary>
         /// Metoda zajistí zpracování události RightClick na grafickém prvku (data) na dané pozici (position).
         /// </summary>
