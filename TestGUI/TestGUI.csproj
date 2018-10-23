@@ -71,6 +71,12 @@
     <Compile Include="Forms\PluginForm.Designer.cs">
       <DependentUpon>PluginForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Forms\SchedulerForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\SchedulerForm.Designer.cs">
+      <DependentUpon>SchedulerForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="Forms\StdForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -115,12 +121,16 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SchedulerData.cs" />
     <Compile Include="Tests.cs" />
     <EmbeddedResource Include="Forms\MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Forms\PluginForm.resx">
       <DependentUpon>PluginForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\SchedulerForm.resx">
+      <DependentUpon>SchedulerForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Forms\StdForm.resx">
       <DependentUpon>StdForm.cs</DependentUpon>
