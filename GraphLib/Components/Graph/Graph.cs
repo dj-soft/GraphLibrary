@@ -1092,38 +1092,31 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Metoda získá text, který se bude vykreslovat do prvku
         /// </summary>
-        /// <param name="e"></param>
-        /// <param name="fontInfo"></param>
-        /// <param name="group"></param>
-        /// <param name="dataItem"></param>
-        /// <param name="position"></param>
-        /// <param name="boundsAbsolute"></param>
-        /// <param name="boundsVisibleAbsolute"></param>
+        /// <param name="args">Data pro získání textu</param>
         /// <returns></returns>
-        internal string GraphItemGetCaptionText(GInteractiveDrawArgs e, FontInfo fontInfo, GTimeGraphGroup group, ITimeGraphItem dataItem, GGraphControlPosition position, Rectangle boundsAbsolute, Rectangle boundsVisibleAbsolute)
+        internal string GraphItemGetCaptionText(CreateTextArgs args)
         {
             string text = null;
             if (this.HasDataSource)
             {
-                CreateTextArgs args = new CreateTextArgs(this, e, fontInfo, group, dataItem, position, boundsAbsolute, boundsVisibleAbsolute);
                 this.DataSource.CreateText(args);
                 text = args.Text;
             }
             else
             {
-                text = dataItem.Time.Text;
+                text = args.CurrentItem.Time.Text;
             }
             return text;
         }
         /// <summary>
         /// Metoda připraví tooltip pro daný prvek
         /// </summary>
-        /// <param name="e"></param>
-        /// <param name="group"></param>
-        /// <param name="data"></param>
-        /// <param name="position"></param>
-        internal void GraphItemPrepareToolTip(GInteractiveChangeStateArgs e, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position)
+        /// <param name="args">Kompletní data</param>
+        internal void GraphItemPrepareToolTip(CreateToolTipArgs args)
         {
+            // GInteractiveChangeStateArgs e, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position
+
+            ITimeGraphItem data = args.CurrentItem;
             if (data == null) return;
             bool isNone = data.BehaviorMode.HasFlag(GraphItemBehaviorMode.ShowToolTipNone);
             if (isNone) return;
@@ -1132,49 +1125,52 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             bool isImmediatelly = data.BehaviorMode.HasFlag(GraphItemBehaviorMode.ShowToolTipImmediatelly);
             if (!isFadeIn && !isImmediatelly) return;
 
+            ToolTipData toolTipData = args.InteractiveArgs.ToolTipData;         // Vytvoří se new instance
             string infoText;
             string eol = Environment.NewLine;
-            TimeRange timeRange = group.Time;
-            string timeText = "Začátek:\t" + timeRange.Begin.Value.ToUser() + eol + "Konec:\t" + timeRange.End.Value.ToUser() + eol;
+            string timeText = args.TimeText;
             if (!String.IsNullOrEmpty(data.ToolTip))
             {
                 infoText = data.ToolTip;
                 bool useTabs = (infoText.Contains("\t"));
-                infoText = (useTabs ? timeText : timeText.Replace("\t", " ")) + data.ToolTip;
-                e.ToolTipData.TitleText = (!String.IsNullOrEmpty(data.Text) ? data.Text : "Informace");
-                e.ToolTipData.InfoText = infoText;
-                e.ToolTipData.InfoUseTabs = true;
+                infoText = (useTabs ? timeText : timeText.Replace("\t", " ")) + infoText;
+
+                toolTipData.TitleText = (!String.IsNullOrEmpty(data.Text) ? data.Text : "Informace");
+                toolTipData.InfoText = infoText;
+                toolTipData.InfoUseTabs = true;
             }
             else if (this.HasDataSource)
             {
-                CreateToolTipArgs args = new CreateToolTipArgs(e, this, group, timeText, data, position);
                 this.DataSource.CreateToolTip(args);
+                // Tady mohla teoreticky vzniknout new instance toolTipData!
             }
             else
             {
-                e.ToolTipData.TitleText = "Tooltip " + position.ToString();
-                e.ToolTipData.InfoText = timeText + 
+                toolTipData.TitleText = "Tooltip " + args.Position.ToString();
+                toolTipData.InfoText = timeText + 
                     "ItemId:\t" + data.ItemId + eol +
                     "Layer:\t" + data.Layer.ToString();
-                e.ToolTipData.InfoUseTabs = true;
+                toolTipData.InfoUseTabs = true;
             }
 
-            infoText = (e.HasToolTipData ? e.ToolTipData.InfoText : null);
-            if (infoText != null)
+            if (args.InteractiveArgs.ToolTipIsValid)
             {
+                toolTipData = args.InteractiveArgs.ToolTipData;      // V "args.InteractiveArgs.ToolTipData" může být new instance!
                 if (isImmediatelly)
                 {
-                    e.ToolTipData.AnimationType = TooltipAnimationType.Instant;
+                    toolTipData.AnimationType = TooltipAnimationType.Instant;
                 }
                 else if (isFadeIn)
                 {
-                    e.ToolTipData.AnimationFadeInTime = TimeSpan.FromMilliseconds(100);
-                    e.ToolTipData.AnimationShowTime = TimeSpan.FromMilliseconds(100 * infoText.Length);     // 1 sekunda na přečtení 10 znaků
-                    e.ToolTipData.AnimationFadeOutTime = TimeSpan.FromMilliseconds(10 * infoText.Length);
+                    infoText = args.InteractiveArgs.ToolTipData.InfoText;
+                    toolTipData.AnimationFadeInTime = TimeSpan.FromMilliseconds(100);
+                    toolTipData.AnimationShowTime = TimeSpan.FromMilliseconds(100 * infoText.Length);     // 1 sekunda na přečtení 10 znaků
+                    toolTipData.AnimationFadeOutTime = TimeSpan.FromMilliseconds(10 * infoText.Length);
                 }
             }
         }
-        // Link;
+        internal void GraphItemGetLink;
+        
         /// <summary>
         /// Metoda zajistí zpracování události RightClick na grafickém prvku (data) na dané pozici (position).
         /// </summary>
@@ -2724,7 +2720,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Interaktivní argument
         /// </summary>
-        protected GInteractiveChangeStateArgs InteractiveArgs { get; private set; }
+        public GInteractiveChangeStateArgs InteractiveArgs { get; private set; }
         /// <summary>
         /// Typ interaktivní akce
         /// </summary>

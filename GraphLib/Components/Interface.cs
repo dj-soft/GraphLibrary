@@ -758,7 +758,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public ToolTipData ToolTipData { get { if (this._ToolTipData == null) this._ToolTipData = new ToolTipData(); return this._ToolTipData; } set { this._ToolTipData = value; } } private ToolTipData _ToolTipData;
         /// <summary>
-        /// Obsahuje true pokud je přítomen objekt <see cref="ToolTipData"/>. Ten je přítomen po jeho vložení nebo po jeho použití. Ve výchozím stavu je false.
+        /// Obsahuje true pokud je přítomen objekt <see cref="ToolTipData"/>. 
+        /// Ten je přítomen po jeho vložení nebo po jeho použití. Ve výchozím stavu je false.
+        /// Vedle toho existuje property <see cref="ToolTipIsValid"/>, která říká, že ToolTip existuje a obsahuje něco k vykreslení.
         /// </summary>
         internal bool HasToolTipData { get { return (this._ToolTipData != null); } }
         /// <summary>

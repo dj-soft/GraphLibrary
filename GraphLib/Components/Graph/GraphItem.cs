@@ -192,7 +192,12 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="e"></param>
         protected override void PrepareToolTip(GInteractiveChangeStateArgs e)
         {
-            this.Graph.GraphItemPrepareToolTip(e, this._Group, this._Owner, this._Position);
+            TimeRange timeRange = this._Group.Time;
+            string eol = Environment.NewLine;
+            string timeText = "Začátek:\t" + timeRange.Begin.Value.ToUser() + eol + "Konec:\t" + timeRange.End.Value.ToUser() + eol;
+            CreateToolTipArgs args = new CreateToolTipArgs(e, this.Graph, this._Group, timeText, this._Owner, this._Position);
+
+            this.Graph.GraphItemPrepareToolTip(args);
         }
         /// <summary>
         /// Metoda zajistí provedení Select pro moji Parent grupu (pokud já jsem Item)

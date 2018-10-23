@@ -315,14 +315,15 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         #endregion
         #region Childs, Interaktivita, Draw()
         /// <summary>
-        /// Vykreslí tuto grupu. Kreslí pouze pokud obsahuje více než 1 prvek, a pokud vrstva <see cref="ITimeGraphItem.Layer"/> je nula nebo kladná (pro záporné vrstvy se nekreslí).
+        /// Vykreslí tuto grupu. 
+        /// Grupa se kreslí pouze tehdy, pokud obsahuje více než 1 prvek, a pokud vrstva <see cref="ITimeGraphItem.Layer"/> je nula nebo kladná (pro záporné vrstvy se nekreslí).
         /// </summary>
         /// <param name="e">Standardní data pro kreslení</param>
         /// <param name="boundsAbsolute">Absolutní souřadnice tohoto prvku</param>
         /// <param name="drawMode">Režim kreslení (má význam pro akce Drag and Drop)</param>
         public void Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
         {
-            if (!this.IsValidRealTime || this._FirstItem.Layer < 0 || this.ItemCount <= 1) return;
+            if (!this.IsValidRealTime || this.Layer < 0 || this.ItemCount <= 1) return;
             this.GControl.DrawItem(e, boundsAbsolute, drawMode);
         }
         /// <summary>
@@ -364,7 +365,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             if (text != null) return text;
 
             // 3. Pro danou velikost ještě text není zapamatován => Získáme text Caption z datového zdroje grafu a zapamatujeme si ho:
-            text = this._ParentGraph.GraphItemGetCaptionText(e, fontInfo, this, this._FirstItem, GGraphControlPosition.Group, boundsAbsolute, boundsVisibleAbsolute);
+            CreateTextArgs args = new CreateTextArgs(this._ParentGraph, e, fontInfo, this, this._FirstItem, GGraphControlPosition.Group, boundsAbsolute, boundsVisibleAbsolute);
+            text = this._ParentGraph.GraphItemGetCaptionText(args);
             this.SetCaptionForSize(size, text);
 
             return text;
