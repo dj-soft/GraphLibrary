@@ -332,11 +332,18 @@ namespace Asol.Tools.WorkScheduler.Components
             return bounds.Contains(relativePoint);
         }
         /// <summary>
-        /// Repaint item to layers after current operation. Layers are not combinable. Layer None is for invisible, but active items.
+        /// Vrstvy, do nichž se běžně má vykreslovat tento objekt.
+        /// Tato hodnota se v metodě <see cref="Repaint()"/> vepíše do <see cref="RepaintToLayers"/>.
+        /// Vrstva <see cref="GInteractiveDrawLayer.Standard"/> je běžná pro normální kreslení;
+        /// vrstva <see cref="GInteractiveDrawLayer.Interactive"/> se používá při Drag and Drop;
+        /// vrstva <see cref="GInteractiveDrawLayer.Dynamic"/> se používá pro kreslení linek mezi prvky nad vrstvou při přetahování.
+        /// Vrstvy lze kombinovat.
+        /// Vrstva <see cref="GInteractiveDrawLayer.None"/> je přípustná:  prvek se nekreslí, ale je přítomný a interaktivní.
         /// </summary>
         protected virtual GInteractiveDrawLayer StandardDrawToLayer { get { return GInteractiveDrawLayer.Standard; } }
         /// <summary>
-        /// Repaint item to this layers after current operation. Layers are combinable. Layer None is permissible (no repaint).
+        /// Vrstvy, do nichž se aktuálně (tj. v nejbližším kreslení) bude vykreslovat tento objekt.
+        /// Po vykreslení se sem ukládá None, tím se šetří čas na kreslení (nekreslí se nezměněné prvky).
         /// </summary>
         protected virtual GInteractiveDrawLayer RepaintToLayers { get; set; }
         /// <summary>
@@ -453,12 +460,12 @@ namespace Asol.Tools.WorkScheduler.Components
                     this.AfterStateChangedMouseLeave(e);
                     break;
                 case GInteractiveChangeState.LeftClick:
-                    this.Repaint();
                     this.AfterStateChangedLeftClick(e);
+                    this.Repaint();
                     break;
                 case GInteractiveChangeState.LeftClickSelect:
-                    this.Repaint();
                     this.AfterStateChangedLeftClickSelected(e);
+                    this.Repaint();
                     break;
                 case GInteractiveChangeState.LeftDoubleClick:
                     this.Repaint();
@@ -510,7 +517,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual void AfterStateChangedFocusLeave(GInteractiveChangeStateArgs e) { }
         /// <summary>
         /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = MouseEnter
-        /// Přípravu tooltipu je vhodnější provést v metodě <see cref="PrepareToolTip(GInteractiveChangeStateArgs)"/>, ta je volaná hned poté.
+        /// Přípravu tooltipu je vhodnější provést v metodě <see cref="InteractiveObject.PrepareToolTip(GInteractiveChangeStateArgs)"/>, ta je volaná hned poté.
         /// </summary>
         /// <param name="e"></param>
         protected virtual void AfterStateChangedMouseEnter(GInteractiveChangeStateArgs e) { }

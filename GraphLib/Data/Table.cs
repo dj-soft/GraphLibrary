@@ -898,8 +898,8 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public Image SelectedRowImage { get { return this._SelectedRowImage; } set { this._SelectedRowImage = value; } } private Image _SelectedRowImage = IconStandard.RowSelected;
         /// <summary>
-        /// Defaultní parametry pro grafy v tomto sloupci.
-        /// Tato property nikdy není null.
+        /// Defaultní parametry pro grafy na pozadí této tabulky, anebo defaultní parametry pro grafy ve sloupci.
+        /// Tato property nikdy není null (ve výchozím stavu má hodnotu <see cref="Components.Graph.TimeGraphProperties.Default"/>).
         /// </summary>
         public Components.Graph.TimeGraphProperties GraphParameters
         {

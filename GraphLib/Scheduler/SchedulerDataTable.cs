@@ -81,10 +81,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.LoadDataLoadRow();
             this.LoadDataCreateGraphs();
             this.LoadDataLoadGraphItems();
+            this.LoadDataLoadLinks();
             this.LoadDataLoadTexts();
         }
         #endregion
-        #region Zpracování odpovědi z GuiResponse: aktualizace vlastností grafů, přidání nových prvků do grafů, odebrání prvků grafu
+        #region Zpracování odpovědi z GuiResponseGraph: aktualizace vlastností grafů, přidání nových prvků do grafů, odebrání prvků grafu
         /// <summary>
         /// Aktualizuje obsah daného grafu (podle jeho řádky).
         /// </summary>
@@ -158,7 +159,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         }
         /// <summary>
         /// Metoda zajistí vytvoření řady prvků grafu (třída <see cref="DataGraphItem"/>) z dat o prvku (třída <see cref="GuiGraphBaseItem"/>),
-        /// dále pak přidání vytvořených prvků <see cref="DataGraphItem"/> do dodaného grafu, i do zdejší Dictionary <see cref="TimeGraphItemDict"/>.
+        /// dále pak přidání vytvořených prvků <see cref="DataGraphItem"/> do dodaného grafu, i do zdejší Dictionary <see cref="TimeGraphItemDict"/> a do <see cref="TimeGraphGroupDict"/>.
         /// Vrací true = došlo k přidání / false = nebyla změna.
         /// </summary>
         /// <param name="gTimeGraph"></param>
@@ -180,7 +181,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         }
         /// <summary>
         /// Metoda zajistí vytvoření prvku grafu (třída <see cref="DataGraphItem"/>) z dat o prvku (třída <see cref="GuiGraphBaseItem"/>),
-        /// dále pak přidání prvku <see cref="DataGraphItem"/> do dodaného grafu, i do zdejší Dictionary <see cref="TimeGraphItemDict"/>.
+        /// dále pak přidání prvku <see cref="DataGraphItem"/> do dodaného grafu, i do zdejší Dictionary <see cref="TimeGraphItemDict"/> a <see cref="TimeGraphGroupDict"/>.
         /// Vrací true = došlo k přidání / false = nebyla změna.
         /// </summary>
         /// <param name="gTimeGraph"></param>
@@ -199,6 +200,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             {
                 if (!this.TimeGraphItemDict.ContainsKey(dataGraphItem.ItemGId))
                     this.TimeGraphItemDict.Add(dataGraphItem.ItemGId, dataGraphItem);
+                if (dataGraphItem.GroupGId != null)
+                    this.TimeGraphGroupDict.Add(dataGraphItem);
             }
             
             return isChange;
@@ -244,23 +247,21 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <returns></returns>
         private GTimeGraph _RemoveGraphItem(GuiGridItemId removeItem)
         {
-            GTimeGraph modifiedGraph = null;
-            if (removeItem == null || removeItem.ItemId == null) return modifiedGraph;
+            if (removeItem == null || removeItem.ItemId == null) return null;
 
+            // Najdu prvek:
             GId itemGId = removeItem.ItemId;
             DataGraphItem dataGraphItem;
-            if (this.TimeGraphItemDict.TryGetValue(itemGId, out dataGraphItem))
-                this.TimeGraphItemDict.Remove(itemGId);
+            this.TimeGraphItemDict.TryGetValue(itemGId, out dataGraphItem);
 
+            // Najdu graf:
             GId rowGId = (dataGraphItem != null ? dataGraphItem.RowGId : (GId)removeItem.RowId);
-            GTimeGraph gTimeGraph;
-            if (dataGraphItem != null && rowGId != null && this.TimeGraphDict.TryGetValue(rowGId, out gTimeGraph))
-            {
-                bool isRemoved = gTimeGraph.RemoveGraphItem(dataGraphItem);
-                if (isRemoved)
-                    modifiedGraph = gTimeGraph;
-            }
-            return modifiedGraph;
+            GTimeGraph graph;
+            this.TimeGraphDict.TryGetValue(rowGId, out graph);
+
+            // Odeberu a skončím:
+            bool isRemoved = this._RemoveItemFromGraph(graph, itemGId, true);
+            return (isRemoved ? graph : null);
         }
         /// <summary>
         /// Metoda najde dané prvky v daném grafu a odebere je jak z grafu, tak z Dictionary <see cref="TimeGraphItemDict"/>.
@@ -289,57 +290,59 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Pokud prvek neexistuje v daném grafu, pak nedojde k chybě, ale prvek se neodebere (ani z grafu ani z Dictionary).
         /// Vrací true = došlo ke změně / false = nikoli.
         /// </summary>
-        /// <param name="gTimeGraph"></param>
+        /// <param name="graph"></param>
         /// <param name="removeItem"></param>
         /// <returns></returns>
-        private bool _RemoveItemFromGraph(GTimeGraph gTimeGraph, GuiGridItemId removeItem)
+        private bool _RemoveItemFromGraph(GTimeGraph graph, GuiGridItemId removeItem)
         {
-            bool isChange = false;
-            if (gTimeGraph == null || removeItem == null || removeItem.ItemId == null) return isChange;
-
-            GId itemGId = removeItem.ItemId;
-            int itemId = this.GetId(itemGId);
-            isChange = gTimeGraph.RemoveGraphItem(itemId, true);
-
-            if (isChange && this.TimeGraphItemDict.ContainsKey(itemGId))
-                this.TimeGraphItemDict.Remove(itemGId);
-
-            return isChange;
+            if (graph == null || removeItem == null || removeItem.ItemId == null) return false;
+            return this._RemoveItemFromGraph(graph, removeItem.ItemId, false);
         }
-        #endregion
-        #region Přidání vztahů
         /// <summary>
-        /// Přidá dodané vztahy do této tabulky
+        /// Metoda odstraní daný prvek z grafu. Vrací true = obsah grafu je změněn.
         /// </summary>
-        /// <param name="gTimeGraph"></param>
-        /// <param name="addLinks"></param>
+        /// <param name="graph"></param>
+        /// <param name="itemGId"></param>
+        /// <param name="forceRemove">Požadavek true = odebrat prvek z místních Dictionary i tehdy, když prvek není obsažen v grafu (nebo když graf je null)</param>
         /// <returns></returns>
-        private bool _AddGraphLinks(GTimeGraph gTimeGraph, IEnumerable<GuiGraphItemLink> addLinks)
+        private bool _RemoveItemFromGraph(GTimeGraph graph, GId itemGId, bool forceRemove)
         {
-            return false;
+            if (itemGId == null) return false;
+            bool isRemoved = ((graph != null) ? graph.RemoveGraphItem(this.GetId(itemGId), true) : false);
+            if (isRemoved || forceRemove)
+            {
+                DataGraphItem item;
+                if (this.TimeGraphItemDict.TryGetValue(itemGId, out item))
+                {
+                    this.TimeGraphItemDict.Remove(itemGId);
+                    if (item.GroupGId != null)
+                        this.TimeGraphGroupDict.Remove(item);
+                }
+            }
+            return isRemoved;
         }
         #endregion
-        #region Odebrání vztahů
-        #endregion
         /// <summary>
-        /// Zajistí provedení Refresh() na modifikovaném grafu:
+        /// Zajistí provedení Refresh() na modifikovaném grafu (parametr):
         /// Buď je zadána Dictionary s grafy pro hromadný Refresh, pak aktuální graf do ní přidá;
         /// Anebo není Dictionary zadána, a pak provede Refresh na grafu ihned.
+        /// Pokud je na vstupu graf = null, pak nic neřeší (to je situace, kdy graf nebyl modifikován).
         /// </summary>
         /// <param name="modifiedGraph"></param>
         /// <param name="refreshGraphDict"></param>
         private static void _RefreshModifiedGraph(GTimeGraph modifiedGraph, Dictionary<uint, GTimeGraph> refreshGraphDict)
         {
-            if (modifiedGraph == null) return;
-
-            if (refreshGraphDict != null)
+            if (modifiedGraph != null)
             {
-                if (!refreshGraphDict.ContainsKey(modifiedGraph.Id))
-                    refreshGraphDict.Add(modifiedGraph.Id, modifiedGraph);
-            }
-            else
-            {
-                modifiedGraph.Refresh();
+                if (refreshGraphDict != null)
+                {
+                    if (!refreshGraphDict.ContainsKey(modifiedGraph.Id))
+                        refreshGraphDict.Add(modifiedGraph.Id, modifiedGraph);
+                }
+                else
+                {
+                    modifiedGraph.Refresh();
+                }
             }
         }
         #endregion
@@ -444,6 +447,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             this.TimeGraphDict = new Dictionary<GId, GTimeGraph>();
             this.TimeGraphItemDict = new Dictionary<GId, DataGraphItem>();
+            this.TimeGraphGroupDict = new DictionaryList<GId, DataGraphItem>(g => g.GroupGId);
 
             if (this.TableRow == null) return;
             DataGraphPositionType graphPosition = this.GraphPosition;
@@ -462,7 +466,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             }
         }
         /// <summary>
-        /// Metoda připraví tabulku <see cref="TableRow"/> na vkládání grafů daného typu
+        /// Metoda připraví tabulku <see cref="TableRow"/> na vkládání grafů daného typu (podle zadané pozice).
+        /// Tzn. v případě, kdy pozice je <see cref="DataGraphPositionType.InLastColumn"/>, tak bude vytvořen a patřičně nastaven nový sloupec pro graf 
+        /// (reference na sloupec je uložena do <see cref="TableRowGraphColumn"/>),
+        /// a do vhodného umístění je vložena instance vlastností grafu <see cref="TimeGraphProperties"/>.
         /// </summary>
         /// <param name="graphPosition"></param>
         protected void LoadDataPrepareTableForGraphs(DataGraphPositionType graphPosition)
@@ -536,7 +543,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             {
                 gTimeGraph.UpdateGraphData(guiGraph);
                 this._AddGraphItems(gTimeGraph, guiGraph.GraphItems);
-                this._AddGraphLinks(gTimeGraph, guiGraph.GraphLinks);
             }
                 
             return gTimeGraph;
@@ -645,9 +651,231 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         protected Dictionary<GId, DataGraphItem> TimeGraphItemDict { get; private set; }
         /// <summary>
+        /// DictionaryList pro uchování informací o grupách grafických prvků.
+        /// Klíčem je tedy Int32 GroupId (pokud prvek má zadanou grupu), a hodnotou je seznam všech prvků v dané grupě.
+        /// </summary>
+        protected DictionaryList<GId, DataGraphItem> TimeGraphGroupDict { get; private set; }
+        /// <summary>
         /// Sloupec hlavní tabulky, který zobrazuje graf při umístění <see cref="DataGraphPositionType.InLastColumn"/>
         /// </summary>
         protected Column TableRowGraphColumn { get; private set; }
+        #endregion
+        #region Linky mezi položkami grafů
+        /// <summary>
+        /// Metoda načte a předzpracuje informace o vztazích mezi prvky grafů (Linky)
+        /// </summary>
+        protected void LoadDataLoadLinks()
+        {
+            this.GraphLinkDict = new DictionaryList<int, GTimeGraphLink>();
+            if (this.GuiGrid.GraphLinks != null && this.GuiGrid.GraphLinks.Count > 0)
+                this.AddGraphLinks(this.GuiGrid.GraphLinks.LinkList);
+        }
+        /// <summary>
+        /// Do soupisu linků přidá / aktualizuje nové položky.
+        /// </summary>
+        /// <param name="guiLinks"></param>
+        public void UpdateGraphLinks(IEnumerable<GuiGraphLink> guiLinks)
+        {
+            if (guiLinks != null)
+            {
+                this.RemoveGraphLinks(guiLinks);
+                this.AddGraphLinks(guiLinks, false);
+            }
+        }
+        /// <summary>
+        /// Metoda načte a předzpracuje informace o vztazích mezi prvky grafů (Linky).
+        /// Akceptuje pouze ty vztahy, které mají naplněn typ <see cref="GuiGraphLink.LinkType"/>, a jejichž Prev a Next strany jsou naplněny, a nejsou identické.
+        /// Tato metoda defaultně neprovádí odebrání stávajících záznamů, to si musí volající zajistit předem!
+        /// Může o to požádat parametrem removeItems, ale ten zajistí odebrání jen těch prvků (z dopdaného seznamu), které se budou nvoě přidávat.
+        /// Nezajistí se tím odebrání prvků, které mají <see cref="GuiGraphLink.LinkType"/> null nebo None!
+        /// </summary>
+        /// <param name="guiLinks">guiLinks</param>
+        /// <param name="removeItems"></param>
+        protected void AddGraphLinks(IEnumerable<GuiGraphLink> guiLinks, bool removeItems = false)
+        {
+            if (guiLinks == null) return;
+
+            // Z instancí třídy GuiGraphLink vytvořím instance třídy GTimeGraphLink:
+            GTimeGraphLink[] links = guiLinks
+                .Where(g => (g.LinkType.HasValue && g.LinkType.Value != GuiGraphItemLinkType.None && g.ItemIdPrev != null && g.ItemIdNext != null && g.ItemIdPrev != g.ItemIdNext))
+                .Select(g => this.CreateGraphLink(g))
+                .ToArray();
+
+            // Odeberu stávající záznamy (z GraphLinkDict), které mají shodné klíče Prev a Next s těmiu, které se budou zanedlouho přidávat:
+            if (removeItems)
+                this.RemoveGraphLinks(links.Select(l => new Tuple<int, int>(l.ItemIdPrev, l.ItemIdNext)));       // Tady předávám refeenci na IEnumerable, které ještě reálně není enumerováno!!!  Úmyslně! 
+
+            // Objekt DictionaryList drží soupisy vztahů jak při pohledu zleva, tak zprava.
+            // Je zajištěno, že vstupující seznam (links) obsahuje pouze ty objekty, které mají oboustranný vztah (Prev i Next je naplněno) mezi různými prvky (Prev != Next).
+            // Následně můžeme najít vztahy pro libovolný prvek podle jeho Int32 klíče, ať už je to vztah "doleva" nebo "doprava", viz metoda SearchForGraphLink()
+            this.GraphLinkDict.AddRange(links, g => g.ItemIdPrev);
+            this.GraphLinkDict.AddRange(links, g => g.ItemIdNext);
+        }
+        /// <summary>
+        /// Metoda odebere všechny záznamy z <see cref="GraphLinkDict"/>, jejichž hodnoty <see cref="GTimeGraphLink.ItemIdPrev"/> a <see cref="GTimeGraphLink.ItemIdNext"/>
+        /// se shodují s hodnotami dodaných záznamů.
+        /// Pokud ale <see cref="GraphLinkDict"/> neobsahuje žádný prvek, pak se neprovádí nic (ani zahájení enumerace parametru).
+        /// </summary>
+        /// <param name="guiLinks"></param>
+        protected void RemoveGraphLinks(IEnumerable<GuiGraphLink> guiLinks)
+        {
+            if (guiLinks == null) return;
+            if (this.GraphLinkDict.CountKeys == 0) return;
+
+            // Vytvořím soupis dvojklíčů Int32 z pole linků, kde jsou klíče Prev a Next ve formě GuiId:
+            Tuple<int, int>[] twoKeys = guiLinks
+                .Where(g => (g.ItemIdPrev != null && g.ItemIdNext != null && g.ItemIdPrev != g.ItemIdNext))
+                .Select(g => new Tuple<int, int>(this.GetId(g.ItemIdPrev), this.GetId(g.ItemIdNext)))
+                .ToArray();
+
+            // Odeberu stávající záznamy (z GraphLinkDict), které mají shodné klíče Prev a Next:
+            this.RemoveGraphLinks(twoKeys);
+        }
+        /// <summary>
+        /// Metoda odebere všechny záznamy z <see cref="GraphLinkDict"/>, jejichž hodnoty <see cref="GTimeGraphLink.ItemIdPrev"/> a <see cref="GTimeGraphLink.ItemIdNext"/>
+        /// se shodují s hodnotami Item1 a Item2 z dodaných prvků.
+        /// Pokud ale <see cref="GraphLinkDict"/> neobsahuje žádný prvek, pak se neprovádí nic (ani zahájení enumerace parametru).
+        /// </summary>
+        /// <param name="twoKeys"></param>
+        protected void RemoveGraphLinks(IEnumerable<Tuple<int, int>> twoKeys)
+        {
+            if (this.GraphLinkDict.CountKeys == 0) return;
+            foreach (var twoKey in twoKeys)
+                this.GraphLinkDict.RemoveAll((k, v) => (v.ItemIdPrev == twoKey.Item1 && v.ItemIdNext == twoKey.Item2));
+        }
+        /// <summary>
+        /// Metoda najde a vrátí soupis platných vztahů mezi prvky pro jeden daný prvek grafu.
+        /// Pokud daný prvek nemá žádný vztah, vrací se null.
+        /// Pokud prvek má vztahy, pak tyto vztahy mají korektně vepsané reference na vztažené prvky grafů
+        /// </summary>
+        /// <param name="graphItem"></param>
+        /// <returns></returns>
+        protected GTimeGraphLink[] SearchForGraphLink(GTimeGraphItem graphItem)
+        {
+            GGraphControlPosition position;
+            GTimeGraphLink[] links = this._SearchForGraphLink(graphItem, out position);
+            this._FillGraphItemsToLinks(links, position);
+            return links;
+        }
+        /// <summary>
+        /// Metoda najde a vrátí vztahy daného prvku grafu, prioritně podle jeho GroupId, následně podle ItemId, hledá v <see cref="GraphLinkDict"/>.
+        /// Tato metoda současně určí pozici, dle které byly vztahy nalezeny (<see cref="GGraphControlPosition.Group"/> nebo <see cref="GGraphControlPosition.Item"/>).
+        /// metoda neplní objekty do záznamů vztahu, na to je tu metoda <see cref="_FillGraphItemsToLinks(GTimeGraphLink[], GGraphControlPosition)"/>.
+        /// </summary>
+        /// <param name="graphItem"></param>
+        /// <param name="position"></param>
+        /// <returns></returns>
+        private GTimeGraphLink[] _SearchForGraphLink(GTimeGraphItem graphItem, out GGraphControlPosition position)
+        {
+            position = GGraphControlPosition.None;
+            if (graphItem != null && this.GraphLinkDict.CountKeys > 0)
+            {
+                if (graphItem.Group.GroupId > 0)
+                {
+                    GTimeGraphLink[] links = this.GraphLinkDict[graphItem.Group.GroupId];
+                    if (links != null)
+                    {
+                        position = GGraphControlPosition.Group;
+                        return links;
+                    }
+                }
+                if (graphItem.Position == GGraphControlPosition.Item && graphItem.Item.ItemId > 0)
+                {
+                    GTimeGraphLink[] links = this.GraphLinkDict[graphItem.Item.ItemId];
+                    if (links != null)
+                    {
+                        position = GGraphControlPosition.Item;
+                        return links;
+                    }
+                }
+            }
+            return null;
+        }
+        /// <summary>
+        /// Metoda do všech položek daného pole linků doplní reference na objekty <see cref="GTimeGraphLink.ItemPrev"/> a <see cref="GTimeGraphLink.ItemNext"/>.
+        /// </summary>
+        /// <param name="links"></param>
+        /// <param name="position"></param>
+        private void _FillGraphItemsToLinks(GTimeGraphLink[] links, GGraphControlPosition position)
+        {
+            if (links == null) return;
+
+            foreach (GTimeGraphLink link in links)
+            {
+                link.ItemPrev = this._SearchGraphItemsForLink(link.ItemIdPrev, position);
+                link.ItemNext = this._SearchGraphItemsForLink(link.ItemIdNext, position);
+            }
+        }
+        /// <summary>
+        /// Metoda najde a vrátí grafický prvek grafu <see cref="GTimeGraphItem"/> pro dané ID prvku a danou prioritu pozice.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="position"></param>
+        /// <returns></returns>
+        private GTimeGraphItem _SearchGraphItemsForLink(int id, GGraphControlPosition position)
+        {
+            GId key = this.GetGId(id);
+            if (key == null) return null;
+
+            // a) Zkusíme pod daným klíčem hledat GRUPU:
+            DataGraphItem[] graphItems = this.TimeGraphGroupDict[key];
+            if (graphItems != null && graphItems.Length > 0)
+                // => tak vrátím vizuální control grupy (pokud tedy grupa má více než jeden prvek):
+                return _SearchGraphItemsForLink(graphItems[0], position);
+
+            // b) Zkusíme pod daným klíčem hledat PRVEK:
+            DataGraphItem graphItem;
+            if (this.TimeGraphItemDict.TryGetValue(key, out graphItem))
+                return _SearchGraphItemsForLink(graphItem, position);
+
+            return null;
+        }
+        /// <summary>
+        /// Metoda vrátí grafický prvek grafu z daného datového prvku grafu.
+        /// Pokud datovým prvkem (iGraphItem) je jednotlivý prvek (tedy nikoli Grupa), a jako parametr "position" je dáno <see cref="GGraphControlPosition.Item"/>, 
+        /// pak výstupem bude <see cref="GTimeGraphItem"/> danho prvku. Jinak výstupem bude prvek pro grupu.
+        /// </summary>
+        /// <param name="iGraphItem"></param>
+        /// <param name="position"></param>
+        /// <returns></returns>
+        private GTimeGraphItem _SearchGraphItemsForLink(ITimeGraphItem iGraphItem, GGraphControlPosition position)
+        {
+            if (iGraphItem == null) return null;
+            switch (iGraphItem.GControl.Position)
+            {
+                case GGraphControlPosition.Group:
+                    return iGraphItem.GControl;
+                case GGraphControlPosition.Item:
+                    return (position == GGraphControlPosition.Item ? iGraphItem.GControl : iGraphItem.GControl.Group.GControl);
+            }
+            return null;
+        }
+        /// <summary>
+        /// Vytvoří a vrátí new instanci <see cref="GTimeGraphLink"/> na základě dat <see cref="GuiGraphLink"/>.
+        /// </summary>
+        /// <param name="guiGraphLink"></param>
+        /// <returns></returns>
+        protected GTimeGraphLink CreateGraphLink(GuiGraphLink guiGraphLink)
+        {
+            GTimeGraphLink graphLink = new GTimeGraphLink()
+            {
+                ItemIdPrev = this.GetId(guiGraphLink.ItemIdPrev),
+                ItemIdNext = this.GetId(guiGraphLink.ItemIdNext),
+                LinkType = guiGraphLink.LinkType,
+                LinkWidth = guiGraphLink.LinkWidth,
+                LinkColor = guiGraphLink.LinkColor,
+                GuiGraphLink = guiGraphLink
+            };
+            return graphLink;
+        }
+        /// <summary>
+        /// Soupis linků mezi prvky grafů v této tabulce.
+        /// Hodnota klíče (Int32) odpovídá údaji <see cref="GuiGraphLink.ItemIdPrev"/> a <see cref="GuiGraphLink.ItemIdNext"/>, tedy tomu co aplikace zadala jako klíč vztahu.
+        /// Je doporučeno, aby to byl klíč ideálně <see cref="GuiGraphBaseItem.GroupId"/>, nebo <see cref="GuiGraphBaseItem.ItemId"/>.
+        /// Aplikační kód následně pro konkrétní zdrojový prvek <see cref="GTimeGraphItem"/> v metodě <see cref="SearchForGraphLink(GTimeGraphItem)"/> 
+        /// hledá vztahy nejprve pro grupu, a poté pro item daného prvku.
+        /// </summary>
+        protected DictionaryList<int, GTimeGraphLink> GraphLinkDict;
         #endregion
         #region Textové údaje (popisky grafů)
         /// <summary>
@@ -991,6 +1219,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             args.ToolTipData.InfoUseTabs = true;
         }
         /// <summary>
+        /// Najde vztahy pro daný prvek
+        /// </summary>
+        /// <param name="args"></param>
+        protected void GraphItemCreateLinks(CreateLinksArgs args)
+        {
+            args.Links = this.SearchForGraphLink(args.CurrentItem.GControl);
+        }
+        /// <summary>
         /// Uživatel chce vidět kontextové menu na daném grafu
         /// </summary>
         /// <param name="args"></param>
@@ -1118,6 +1354,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         }
         void ITimeGraphDataSource.CreateText(CreateTextArgs args) { this.GraphItemPrepareText(args); }
         void ITimeGraphDataSource.CreateToolTip(CreateToolTipArgs args) { this.GraphItemPrepareToolTip(args); }
+        void ITimeGraphDataSource.CreateLinks(CreateLinksArgs args) { this.GraphItemCreateLinks(args); }
         void ITimeGraphDataSource.GraphRightClick(ItemActionArgs args) { args.ContextMenu = this.GetContextMenuForGraph(args); }
         void ITimeGraphDataSource.ItemRightClick(ItemActionArgs args) { args.ContextMenu = this.GetContextMenuForItem(args); }
         void ITimeGraphDataSource.ItemDoubleClick(ItemActionArgs args) { this.GraphItemDoubleClick(args); }

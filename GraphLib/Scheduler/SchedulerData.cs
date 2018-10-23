@@ -1666,6 +1666,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this._ProcessResponseRemoveItems(guiResponse.RemoveItems, mainTableDict, refreshGraphDict);
             this._ProcessResponseUpdateGraphs(guiResponse.UpdateGraphs, mainTableDict, refreshGraphDict);
             this._ProcessResponseAddItems(guiResponse.AddItems, mainTableDict, refreshGraphDict);
+            this._ProcessResponseUpdateLinks(guiResponse.ChangeLinks, mainTableDict, refreshGraphDict);
             this._ProcessResponseRefreshGraphs(refreshGraphDict.Values);
 
         }
@@ -1724,7 +1725,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Zpracuje odpověď z aplikace, část: <see cref="GuiResponse.AddItems"/>
         /// </summary>
-        /// <param name="addItems"></param>
+        /// <param name="addItems">Přidávané položky do grafů</param>
         /// <param name="mainTableDict">Index tabulek podle jejich jména</param>
         /// <param name="refreshGraphDict">Index grafů, kterých se týkají změny, a na nichž na závěr provedeme Refresh</param>
         private void _ProcessResponseAddItems(GuiResponseGraphItem[] addItems, Dictionary<string, MainDataTable> mainTableDict, Dictionary<uint, GTimeGraph> refreshGraphDict)
@@ -1736,6 +1737,23 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 MainDataTable mainDataTable;
                 if (mainTableDict.TryGetValue(addItem.TableName, out mainDataTable))
                     mainDataTable.AddGraphItem(addItem, refreshGraphDict);
+            }
+        }
+        /// <summary>
+        /// Zpracuje odpověď z aplikace, část: <see cref="GuiResponse.ChangeLinks"/>
+        /// </summary>
+        /// <param name="changeLinks">Změněné vztahy</param>
+        /// <param name="mainTableDict">Index tabulek podle jejich jména</param>
+        /// <param name="refreshGraphDict">Index grafů, kterých se týkají změny, a na nichž na závěr provedeme Refresh</param>
+        private void _ProcessResponseUpdateLinks(GuiResponseGraphLink[] changeLinks, Dictionary<string, MainDataTable> mainTableDict, Dictionary<uint, GTimeGraph> refreshGraphDict)
+        {
+            if (changeLinks == null) return;
+            var changeGroups = changeLinks.Where(l => l.TableName != null).GroupBy(l => l.TableName);
+            foreach (var changeGroup in changeGroups)
+            {
+                MainDataTable mainDataTable;
+                if (mainTableDict.TryGetValue(changeGroup.Key, out mainDataTable))
+                    mainDataTable.UpdateGraphLinks(changeGroup);
             }
         }
         /// <summary>

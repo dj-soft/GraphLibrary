@@ -7,6 +7,8 @@ using System.Security;
 using System.Runtime.Serialization;
 using System.Collections.ObjectModel;
 
+using Asol.Tools.WorkScheduler.Application;
+
 namespace Asol.Tools.WorkScheduler.Data
 {
     #region CollectIdx<T> kolekce dat s dvojitým indexem podle item.Id a item.Key
@@ -2787,6 +2789,284 @@ namespace Asol.Tools.WorkScheduler.Data
         ChangeOrder,
         /// <summary>Konkrétní akce</summary>
         Clear
+    }
+    #endregion
+    #region DictionaryList : Dictionary, jehož Value je List hodnot TValue (=pro jeden klíč Key může uchovat více hodnot Value)
+    /// <summary>
+    /// DictionaryList : Dictionary, jehož Value je List hodnot TValue (=pro jeden klíč Key může uchovat více hodnot Value)
+    /// </summary>
+    /// <typeparam name="TKey"></typeparam>
+    /// <typeparam name="TValue"></typeparam>
+    public class DictionaryList<TKey, TValue>
+    {
+        #region Konstrukce
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DictionaryList()
+        {
+            this._Dictionary = new Dictionary<TKey, List<TValue>>();
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="capacity"></param>
+        public DictionaryList(int capacity)
+        {
+            this._Dictionary = new Dictionary<TKey, List<TValue>>(capacity);
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="comparer"></param>
+        public DictionaryList(IEqualityComparer<TKey> comparer)
+        {
+            this._Dictionary = new Dictionary<TKey, List<TValue>>(comparer);
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="keySelector"></param>
+        public DictionaryList(Func<TValue, TKey> keySelector)
+        {
+            this._Dictionary = new Dictionary<TKey, List<TValue>>();
+            this._KeySelector = keySelector;
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="values"></param>
+        /// <param name="keySelector"></param>
+        public DictionaryList(IEnumerable<TValue> values, Func<TValue, TKey> keySelector)
+        {
+            this._Dictionary = new Dictionary<TKey, List<TValue>>();
+            this._KeySelector = keySelector;
+            this.AddRange(values);
+        }
+        /// <summary>
+        /// Ověří, že je k dispozici metoda <see cref="_KeySelector"/>.
+        /// </summary>
+        private void _KeySelectorCheck()
+        {
+            if (this.HasKeySelector) return;
+            throw new GraphLibCodeException("Nelze použít DictionaryList bez zadané funkce keySelector.");
+        }
+        private Dictionary<TKey, List<TValue>> _Dictionary;
+        private Func<TValue, TKey> _KeySelector;
+        #endregion
+        #region Vkládání, smazání, získání dat
+        /// <summary>
+        /// true pokud má k dispozici KeySelector
+        /// </summary>
+        public bool HasKeySelector { get { return (this._KeySelector != null); } }
+        /// <summary>
+        /// Počet klíčů.
+        /// Tato hodnota je zjištěna ihned = jde o počet záznamů v interní Dictionary.
+        /// Na rozdíl od toho hodnota <see cref="Count"/> je pomalejší.
+        /// </summary>
+        public int CountKeys { get { return this._Dictionary.Count; } }
+        /// <summary>
+        /// Počet hodnot.
+        /// Tato hodnota je zjištěna postupným procházením všech klíčů a sčítáním počtu jejich položek.
+        /// Na rozdíl od toho hodnota <see cref="CountKeys"/> je vrácena zcela ihned.
+        /// </summary>
+        public int Count { get { return this._Dictionary.Sum(kvp => kvp.Value.Count); } }
+        /// <summary>
+        /// Smaže vše
+        /// </summary>
+        public void Clear() { this._Dictionary.Clear(); }
+        /// <summary>
+        /// Přidá jednu položku. její klíč si odvodí sám.
+        /// Instance <see cref="DictionaryList{TKey, TValue}"/> musí být vytvořena tak, že obsahuje keySelector (vhodným konstruktorem).
+        /// </summary>
+        /// <param name="value"></param>
+        public void Add(TValue value)
+        {
+            this._KeySelectorCheck();
+            this._Add(this._KeySelector(value), value);
+        }
+        /// <summary>
+        /// Přidá jednu položku s daným klíčem.
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        public void Add(TKey key, TValue value)
+        {
+            this._Add(key, value);
+        }
+        /// <summary>
+        /// Přidá sadu položek.
+        /// Instance <see cref="DictionaryList{TKey, TValue}"/> musí být vytvořena tak, že obsahuje keySelector (vhodným konstruktorem).
+        /// </summary>
+        /// <param name="values">položky</param>
+        public void AddRange(IEnumerable<TValue> values)
+        {
+            this._KeySelectorCheck();
+            if (values == null) return;
+            foreach (TValue value in values)
+                this._Add(this._KeySelector(value), value);
+        }
+        /// <summary>
+        /// Přidá sadu položek.
+        /// Pro získání klíče použije dodaný keySelector (i kdyby instance <see cref="DictionaryList{TKey, TValue}"/> byla vytvořena včetně svého keySelectoru).
+        /// </summary>
+        /// <param name="values">položky</param>
+        /// <param name="keySelector"></param>
+        public void AddRange(IEnumerable<TValue> values, Func<TValue, TKey> keySelector)
+        {
+            if (values == null) return;
+            foreach (TValue value in values)
+                this._Add(keySelector(value), value);
+        }
+        /// <summary>
+        /// Přidá jednu položku s daným klíčem.
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        private void _Add(TKey key, TValue value)
+        {
+            if (key == null)
+                throw new GraphLibCodeException("Klíč pro DictionaryList je null.");
+            List<TValue> list;
+            if (!this._Dictionary.TryGetValue(key, out list))
+            {
+                list = new List<TValue>();
+                this._Dictionary.Add(key, list);
+            }
+            list.Add(value);
+        }
+        /// <summary>
+        /// Odebere data pro daný klíč = všechny uložené záznamy
+        /// </summary>
+        /// <param name="key"></param>
+        public void RemoveKey(TKey key)
+        {
+            if (this._Dictionary.ContainsKey(key))
+                this._Dictionary.Remove(key);
+        }
+        /// <summary>
+        /// Odebere danou hodnotu.
+        /// Instance <see cref="DictionaryList{TKey, TValue}"/> musí být vytvořena tak, že obsahuje keySelector (vhodným konstruktorem).
+        /// </summary>
+        /// <param name="value"></param>
+        public void Remove(TValue value)
+        {
+            this._KeySelectorCheck();
+            this._Remove(this._KeySelector(value), value, null);
+        }
+        /// <summary>
+        /// Odebere danou hodnotu.
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        public void Remove(TKey key, TValue value)
+        {
+            this._Remove(key, value, null);
+        }
+        /// <summary>
+        /// Odebere danou hodnotu z daného klíče.
+        /// Pokud pro daný klíč nezbyde žádná hodnota, odebere i klíč.
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        /// <param name="equalitySelector"></param>
+        private void _Remove(TKey key, TValue value, Func<TValue, TValue, bool> equalitySelector)
+        {
+            List<TValue> list;
+            if (this._Dictionary.TryGetValue(key, out list))
+            {
+                for (int i = 0; i < list.Count; i++)
+                {
+                    TValue item = list[i];
+                    bool isEqual = (equalitySelector != null ? equalitySelector(item, value) : Object.ReferenceEquals(item, value));
+                    if (isEqual)
+                    {
+                        list.RemoveAt(i);
+                        i--;
+                    }
+                }
+                if (list.Count == 0)
+                    this._Dictionary.Remove(key);
+            }
+        }
+        /// <summary>
+        /// Metoda odebere všechny prvky vyhovující dané podmínce.
+        /// </summary>
+        /// <param name="predicate"></param>
+        public void RemoveAll(Func<TKey, TValue, bool> predicate)
+        {
+            var keys = this._Dictionary.Keys.ToArray();    // Vytvořím new array klíčů, protože nelze Dictionary současně enumerovat (foreach) a současně z ní odebírat (Remove(key))!
+            foreach (var key in keys)
+            {
+                var list = this._Dictionary[key];
+                for (int i = 0; i < list.Count; i++)
+                {
+                    var value = list[i];
+                    if (predicate(key, value))
+                    {
+                        list.RemoveAt(i);
+                        i--;
+                    }
+                }
+                if (list.Count == 0)
+                    this._Dictionary.Remove(key);
+            }
+        }
+        /// <summary>
+        /// Počet záznamů pro daný klíč
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        public int CountValues(TKey key)
+        {
+            List<TValue> list;
+            if (this._Dictionary.TryGetValue(key, out list)) return list.Count;
+            return 0;
+        }
+        /// <summary>
+        /// Vrátí hodnoty pro daný klíč.
+        /// Pokud pro daný klíč neobsahuje žádné hodnoty, vrací se null.
+        /// Nelze setovat (pro přidání existují metody Add a AddRange).
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        public TValue[] this[TKey key]
+        {
+            get
+            {
+                List<TValue> list;
+                if (this._Dictionary.TryGetValue(key, out list)) return list.ToArray();
+                return null;
+            }
+        }
+        /// <summary>
+        /// Pole všech hodnot v této instanci (bez ohledu na klíče)
+        /// </summary>
+        public TValue[] Values
+        {
+            get
+            {
+                List<TValue> list = new List<TValue>();
+                foreach (var items in this._Dictionary.Values)
+                    list.AddRange(items);
+                return list.ToArray();
+            }
+        }
+        /// <summary>
+        /// Pole všech hodnot v této instanci, včetně klíčů.
+        /// Výstupní instance Tuple obsahuje: Item1 = Key, Item2 = Value.
+        /// </summary>
+        public Tuple<TKey, TValue>[] KeyValues
+        {
+            get
+            {
+                List<Tuple<TKey, TValue>> list = new List<Tuple<TKey, TValue>>();
+                foreach (var kvp in this._Dictionary)
+                    list.AddRange(kvp.Value.Select(i => new Tuple<TKey, TValue>(kvp.Key, i)));
+                return list.ToArray();
+            }
+        }
+        #endregion
     }
     #endregion
     #region Collection : Předek pro typové kolekce, read-only

@@ -415,7 +415,7 @@ namespace Noris.LCS.Base.WorkScheduler
             this.Graphs = new List<GuiGraph>();
             this.GraphItems = new List<GuiGraphTable>();
             this.GraphTexts = new List<GuiTable>();
-            this.LinkItems = new List<GuiGraphItemLinks>();
+            this.GraphLinks = new GuiGraphLinks() { Name = GRAPH_LINKS_NAME };
         }
         /// <summary>
         /// Název prvku <see cref="GridProperties"/>
@@ -425,6 +425,10 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Název prvku <see cref="GraphProperties"/>
         /// </summary>
         public const string GRAPH_PROPERTIES_NAME = "graphProperties";
+        /// <summary>
+        /// Název prvku <see cref="GraphLinks"/>
+        /// </summary>
+        public const string GRAPH_LINKS_NAME = "graphLinks";
         /// <summary>
         /// Vizualizace
         /// </summary>
@@ -467,14 +471,14 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public List<GuiTable> GraphTexts { get; set; }
         /// <summary>
-        /// Tabulky s propojovacími linkami mezi prvky grafů GuiGraphItem
+        /// Tabulky s propojovacími linkami mezi prvky grafů GuiGraphItem.
         /// </summary>
-        public List<GuiGraphItemLinks> LinkItems { get; set; }
+        public GuiGraphLinks GraphLinks { get; set; }
         /// <summary>
         /// Potomek zde vrací soupis svých Child prvků
         /// </summary>
         [PersistingEnabled(false)]
-        protected override IEnumerable<IGuiItem> Childs { get { return Union(this.GridProperties, this.GraphProperties, this.Rows, this.GraphItems, this.GraphTexts, this.LinkItems); } }
+        protected override IEnumerable<IGuiItem> Childs { get { return Union(this.GridProperties, this.GraphProperties, this.Rows, this.GraphItems, this.GraphTexts, this.GraphLinks); } }
     }
     #endregion
     #region GuiGridProperties : definiční vlastnosti jedné vizuální tabulky, vyjma vlastností grafů
@@ -832,7 +836,6 @@ namespace Noris.LCS.Base.WorkScheduler
         {
             this.GraphProperties = null;
             this.GraphItems = new List<GuiGraphItem>();
-            this.GraphLinks = new List<GuiGraphItemLink>();
         }
         /// <summary>
         /// Vizualizace
@@ -899,21 +902,16 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Pokud jsou prvky umístěny zde, pak se vždy jedná o prvky tohoto jednoho grafu.
         /// </summary>
         public List<GuiGraphItem> GraphItems { get; set; }
-        /// <summary>
-        /// Propojovací linky prvků tohoto grafu.
-        /// </summary>
-        public List<GuiGraphItemLink> GraphLinks { get; set; }
         #endregion
         #region Klonování definičních dat, bez přenosu dat prvků
         /// <summary>
-        /// Metoda vrátí new instanci vznikou jako kopie this, ale neobsahuje data v <see cref="GraphItems"/> a <see cref="GraphLinks"/>.
+        /// Metoda vrátí new instanci vznikou jako kopie this, ale neobsahuje data v <see cref="GraphItems"/>.
         /// </summary>
         /// <returns></returns>
         public GuiGraph GetDefinitionData()
         {
             GuiGraph clone = (GuiGraph)this.MemberwiseClone();
             clone.GraphItems = null;
-            clone.GraphLinks = null;
             return clone;
         }
         #endregion
@@ -1274,45 +1272,62 @@ namespace Noris.LCS.Base.WorkScheduler
         public GraphItemBehaviorMode BehaviorMode { get; set; }
     }
     #endregion
-    #region GuiGraphItemLinks + GuiGraphItemLink : propojovací linky mezi prvky grafů GuiGraphItem
+    #region GuiGraphLinks + GuiGraphLink : propojovací linky mezi prvky grafů GuiGraphItem
     /// <summary>
-    /// GuiGraphItemLinks : sada propojovacích linek mezi prvky grafů GuiGraphItem
+    /// GuiGraphLinks : sada propojovacích linek mezi prvky grafů GuiGraphItem.
+    /// Propojovací linky obecně mohou vést mezi prvky různých grafů (=tj. v grafech, které se nachází na různých řádcích tabulky),
+    /// proto linky nejsou součástí Grafu ale Gridu.
     /// </summary>
-    public class GuiGraphItemLinks : GuiBase
+    public class GuiGraphLinks : GuiBase
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public GuiGraphItemLinks() : base()
+        public GuiGraphLinks() : base()
         {
-            this.LinkList = new List<GuiGraphItemLink>();
+            this.LinkList = new List<GuiGraphLink>();
         }
+        /// <summary>
+        /// Počet prvků
+        /// </summary>
+        public int Count { get { return (this.LinkList != null ? this.LinkList.Count : 0); } }
         /// <summary>
         /// Soupis jednotlivých linků
         /// </summary>
-        public List<GuiGraphItemLink> LinkList { get; set; }
+        public List<GuiGraphLink> LinkList { get; set; }
     }
     /// <summary>
-    /// GuiGraphItemLink : jedna propojovací linka mezi prvky grafů GuiGraphItem
+    /// GuiGraphLink : jedna propojovací linka mezi dvěma prvky grafů <see cref="GuiGraphItem"/>.
+    /// Prvek grafu je identifikován pomocí jeho <see cref="GuiId"/>.
     /// </summary>
-    public class GuiGraphItemLink : GuiBase
+    public class GuiGraphLink : GuiBase
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public GuiGraphItemLink() : base()
+        public GuiGraphLink() : base()
         {
         }
         /// <summary>
-        /// ID prvku předchozího
+        /// ID prvku předchozího v tomto vztahu.
+        /// ID může pocházet buď <see cref="GuiGraphBaseItem.ItemId"/>, nebo <see cref="GuiGraphBaseItem.GroupId"/>.
+        /// Podle toho se Link chová a vykresluje.
+        /// Z vizuálního hlediska je vhodnější používat <see cref="GuiGraphBaseItem.GroupId"/>, neboť grupa se vykresluje jako kompaktní obdélník, 
+        /// a pokud by se Linky vykreslovaly z jednotlivého Itemu (=někde z prostředka grupy), vypadalo by to divoce.
         /// </summary>
         public GuiId ItemIdPrev { get; set; }
         /// <summary>
-        /// ID prvku následujícího
+        /// ID prvku následujícího v tomto vztahu.
+        /// ID může pocházet buď <see cref="GuiGraphBaseItem.ItemId"/>, nebo <see cref="GuiGraphBaseItem.GroupId"/>.
+        /// Podle toho se Link chová a vykresluje.
+        /// Z vizuálního hlediska je vhodnější používat <see cref="GuiGraphBaseItem.GroupId"/>, neboť grupa se vykresluje jako kompaktní obdélník, 
+        /// a pokud by se Linky vykreslovaly z jednotlivého Itemu (=někde z prostředka grupy), vypadalo by to divoce.
         /// </summary>
         public GuiId ItemIdNext { get; set; }
         /// <summary>
-        /// Typ linky, nezadáno = použije se <see cref="GuiGraphItemLinkType.PrevEndToNextBegin"/>
+        /// Typ vztahu.
+        /// Nezadáno = tento vztah se nemá vizualizovat.
+        /// Pokud je link předáván jako součást response (v <see cref="GuiResponse.ChangeLinks"/>), pak null hodnota značí "Stávající Link odebrat".
         /// </summary>
         public GuiGraphItemLinkType? LinkType { get; set; }
         /// <summary>
@@ -1325,7 +1340,7 @@ namespace Noris.LCS.Base.WorkScheduler
         public Color? LinkColor { get; set; }
     }
     /// <summary>
-    /// Typ spojovací linky <see cref="GuiGraphItemLink"/> mezi dvěma prvky
+    /// Typ spojovací linky <see cref="GuiGraphLink"/> mezi dvěma prvky
     /// </summary>
     public enum GuiGraphItemLinkType
     {
@@ -2722,6 +2737,13 @@ namespace Noris.LCS.Base.WorkScheduler
         /// V tomto seznamu tedy mohou být prvky do kterékoli tabulky GUI.
         /// </summary>
         public GuiResponseGraphItem[] AddItems { get; set; }
+        /// <summary>
+        /// Pole změn linků.
+        /// Link, který má být vyřazen, bude mít nastaveno <see cref="GuiGraphLink.LinkType"/> = null, a musí mít řádně naplněny obě strany vztahu (Prev i Next).
+        /// Obecně: všechny linky (které mají řádně naplněny obě strany vztahu (Prev i Next)) budou z grafu nejprve odebrány, 
+        /// a následně do grafu budou přidány ty linky, které mají nastaven <see cref="GuiGraphLink.LinkType"/>.
+        /// </summary>
+        public GuiResponseGraphLink[] ChangeLinks { get; set; }
         #endregion
         #region Statické konstruktory: Success, Warning, Error
         /// <summary>
@@ -2743,9 +2765,9 @@ namespace Noris.LCS.Base.WorkScheduler
     /// To znamená, že v jednom seznamu prvků jsou prvky patřící do různých tabulek.
     /// Používá se po editaci prvků, pro přenos souhrnu změn z aplikace do GUI.
     /// <para/>
-    /// Pozor: tabulky prvků <see cref="GuiGraph.GraphItems"/> a <see cref="GuiGraph.GraphLinks"/> v této třídě obsahují nové a změněné prvky.
-    /// Původní prvky v grafu v GUI, pokud nejsou uvedeny v těchto tabulkách, zůstávají nezměněny, pokud není nastaveno true do 
-    /// <see cref="GuiResponseGraph.ResetGraphItems"/> a <see cref="GuiResponseGraph.ResetGraphLinks"/>.
+    /// Pozor: tabulka prvků <see cref="GuiGraph.GraphItems"/> v této třídě obsahuje nové i změněné prvky.
+    /// Původní prvky v grafu v GUI, pokud nejsou uvedeny v těchto tabulkách, zůstávají nezměněny, 
+    /// pokud není nastaveno true do <see cref="GuiResponseGraph.ResetGraphItems"/>.
     /// </summary>
     public class GuiResponseGraph : GuiGraph
     {
@@ -2767,14 +2789,9 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Výchozí hodnota = false = stávající obsah grafu neměnit.
         /// </summary>
         public bool ResetGraphItems { get; set; }
-        /// <summary>
-        /// Hodnota true : Smazat celý obsah vztahů grafu, a teprve poté aktualizovat položky ze seznamu <see cref="GuiGraph.GraphLinks"/>.
-        /// Výchozí hodnota = false = stávající obsah grafu neměnit.
-        /// </summary>
-        public bool ResetGraphLinks { get; set; }
     }
     /// <summary>
-    /// GuiResponseGraphItem : třída sloužící pro přenos prvků grafu (data z <see cref="GuiGraphBaseItem"/> z aplikace do GUI v nestrukturovaném seznamu.
+    /// GuiResponseGraphItem : třída sloužící pro přenos prvků grafu (data z <see cref="GuiGraphBaseItem"/>) z aplikace do GUI v nestrukturovaném seznamu.
     /// To znamená, že v jednom seznamu prvků jsou prvky patřící do různých tabulek.
     /// Používá se po editaci prvků, pro přenos souhrnu změn z aplikace do GUI.
     /// </summary>
@@ -2784,6 +2801,22 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Konstruktor
         /// </summary>
         public GuiResponseGraphItem() : base() { }
+        /// <summary>
+        /// FullName tabulky, do které se má tento prvek vložit.
+        /// </summary>
+        public string TableName { get; set; }
+    }
+    /// <summary>
+    /// GuiResponseGraphLink : třída sloužící pro přenos vztahů grafu (data z <see cref="GuiGraphLink"/>) z aplikace do GUI v nestrukturovaném seznamu.
+    /// To znamená, že v jednom seznamu prvků jsou prvky patřící do různých tabulek.
+    /// Používá se po editaci prvků, pro přenos souhrnu změn z aplikace do GUI.
+    /// </summary>
+    public class GuiResponseGraphLink : GuiGraphLink
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public GuiResponseGraphLink() : base() { }
         /// <summary>
         /// FullName tabulky, do které se má tento prvek vložit.
         /// </summary>

@@ -148,7 +148,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         #region Data samotného grafu, napojená na GuiGraph
         /// <summary>
         /// Metoda do this grafu <see cref="GTimeGraph"/> vloží nová GUI definiční data grafu.
-        /// Tato metoda nenačítá prvky grafu z <see cref="GuiGraph.GraphItems"/> ani linky <see cref="GuiGraph.GraphLinks"/>!
+        /// Tato metoda nenačítá prvky grafu z <see cref="GuiGraph.GraphItems"/>!
         /// </summary>
         /// <param name="guiGraph"></param>
         public void UpdateGraphData(GuiGraph guiGraph)
@@ -1114,8 +1114,6 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="args">Kompletní data</param>
         internal void GraphItemPrepareToolTip(CreateToolTipArgs args)
         {
-            // GInteractiveChangeStateArgs e, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position
-
             ITimeGraphItem data = args.CurrentItem;
             if (data == null) return;
             bool isNone = data.BehaviorMode.HasFlag(GraphItemBehaviorMode.ShowToolTipNone);
@@ -1169,36 +1167,39 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 }
             }
         }
-        internal void GraphItemGetLink;
-        
         /// <summary>
         /// Metoda zajistí zpracování události RightClick na grafickém prvku (data) na dané pozici (position).
         /// </summary>
-        /// <param name="e"></param>
-        /// <param name="group"></param>
-        /// <param name="data"></param>
-        /// <param name="position"></param>
-        internal void GraphItemRightClick(GInteractiveChangeStateArgs e, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position)
+        /// <param name="args">Kompletní data</param>
+        internal void GraphItemRightClick(ItemActionArgs args)
         {
             if (!this.HasDataSource) return;
 
-            ItemActionArgs args = new ItemActionArgs(e, this, group, data, position);
             this.DataSource.ItemRightClick(args);
             if (args.ContextMenu != null && args.ContextMenu.Items.Count > 0)
-                this.GraphItemShowContextMenu(e, args.ContextMenu);
+                this.GraphItemShowContextMenu(args);
         }
         /// <summary>
         /// Rozsvítí dané kontextové menu v přiměřené pozici
         /// </summary>
-        /// <param name="e"></param>
-        /// <param name="contextMenu"></param>
-        protected void GraphItemShowContextMenu(GInteractiveChangeStateArgs e, System.Windows.Forms.ToolStripDropDownMenu contextMenu)
+        /// <param name="args">Kompletní data</param>
+        protected void GraphItemShowContextMenu(ItemActionArgs args)
+        {
+            this.GraphItemShowContextMenu(args.InteractiveArgs, args.ContextMenu);
+        }
+        /// <summary>
+        /// Rozsvítí dané kontextové menu v přiměřené pozici
+        /// </summary>
+        /// <param name="args">Interaktivní argument</param>
+        /// <param name="contextMenu">Kontextové menu</param>
+        protected void GraphItemShowContextMenu(GInteractiveChangeStateArgs args, System.Windows.Forms.ToolStripDropDownMenu contextMenu)
         {
             var host = this.Host;
-            if (host == null) return;
-
-            Point point = this.GetPointForMenu(e);
-            contextMenu.Show(host, point, System.Windows.Forms.ToolStripDropDownDirection.BelowRight);
+            if (host != null)
+            {
+                Point point = this.GetPointForMenu(args);
+                contextMenu.Show(host, point, System.Windows.Forms.ToolStripDropDownDirection.BelowRight);
+            }
         }
         /// <summary>
         /// Vrátí referenční bod, u kterého by se mělo rozsvítit kontextové menu
@@ -1218,27 +1219,19 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Metoda zajistí zpracování události LeftDoubleCLick na grafickém prvku (data) na dané pozici (position).
         /// </summary>
-        /// <param name="e"></param>
-        /// <param name="group"></param>
-        /// <param name="data"></param>
-        /// <param name="position"></param>
-        internal void GraphItemLeftDoubleClick(GInteractiveChangeStateArgs e, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position)
+        /// <param name="args">Kompletní data</param>
+        internal void GraphItemLeftDoubleClick(ItemActionArgs args)
         {
             if (!this.HasDataSource) return;
-            ItemActionArgs args = new ItemActionArgs(e, this, group, data, position);
             this.DataSource.ItemDoubleClick(args);
         }
         /// <summary>
         /// Metoda zajistí zpracování události LeftLongCLick na grafickém prvku (data) na dané pozici (position).
         /// </summary>
-        /// <param name="e"></param>
-        /// <param name="group"></param>
-        /// <param name="data"></param>
-        /// <param name="position"></param>
-        internal void GraphItemLeftLongClick(GInteractiveChangeStateArgs e, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position)
+        /// <param name="args">Kompletní data</param>
+        internal void GraphItemLeftLongClick(ItemActionArgs args)
         {
             if (!this.HasDataSource) return;
-            ItemActionArgs args = new ItemActionArgs(e, this, group, data, position);
             this.DataSource.ItemLongClick(args);
         }
         /// <summary>
@@ -2264,6 +2257,11 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="args"></param>
         void CreateToolTip(CreateToolTipArgs args);
         /// <summary>
+        /// Najde vztahy pro daný prvek
+        /// </summary>
+        /// <param name="args"></param>
+        void CreateLinks(CreateLinksArgs args);
+        /// <summary>
         /// Vyřeší RightClick na grafu
         /// </summary>
         /// <param name="args"></param>
@@ -2294,9 +2292,9 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="args"></param>
         void ItemDragDropAction(ItemDragDropArgs args);
     }
-    #region class CreateTextArgs : 
+    #region class CreateTextArgs : Argumenty pro tvobu textu (Caption)
     /// <summary>
-    /// Argumenty pro tvobu textu (Caption)
+    /// CreateTextArgs : Argumenty pro tvobu textu (Caption)
     /// </summary>
     public class CreateTextArgs : ItemArgs
     {
@@ -2382,6 +2380,28 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Tuto property lze setovat, nebo ji lze rovnou naplnit (je autoinicializační).
         /// </summary>
         public ToolTipData ToolTipData { get { return this.InteractiveArgs.ToolTipData; } set { this.InteractiveArgs.ToolTipData = value; } }
+    }
+    #endregion
+    #region class CreateLinksArgs : Argument obsahující data pro vyhledání vztahů pro určitý prvek
+    /// <summary>
+    /// CreateLinksArgs : Argument obsahující data pro vyhledání vztahů pro určitý prvek
+    /// </summary>
+    public class CreateLinksArgs : ItemArgs
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="graph"></param>
+        /// <param name="group"></param>
+        /// <param name="data"></param>
+        /// <param name="position"></param>
+        public CreateLinksArgs(GTimeGraph graph, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position)
+            : base(graph, group, data, position)
+        { }
+        /// <summary>
+        /// Seznam vztahů pro daný prvek
+        /// </summary>
+        public GTimeGraphLink[] Links { get; set; }
     }
     #endregion
     #region class ItemDragDropArgs : Argument obsahující data pro Drag and Drop
@@ -2735,9 +2755,9 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         public System.Windows.Forms.Keys ModifierKeys { get { return this.InteractiveArgs.ModifierKeys; } }
     }
     #endregion
-    #region class ItemArgs : Bázová třída pro všechny argumenty, které jsou postaveny nad grupou prvků grafu a nad jedním prvek z této grupy
+    #region class ItemArgs : Bázová třída pro všechny argumenty, které jsou postaveny nad grupou prvků grafu a nad jedním prvkem z této grupy
     /// <summary>
-    /// ItemArgs : Bázová třída pro všechny argumenty, které jsou postaveny nad grupou prvků grafu a nad jedním prvek z této grupy
+    /// ItemArgs : Bázová třída pro všechny argumenty, které jsou postaveny nad grupou prvků grafu a nad jedním prvkem z této grupy
     /// </summary>
     public abstract class ItemArgs
     {

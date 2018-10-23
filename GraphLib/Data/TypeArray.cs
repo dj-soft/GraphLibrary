@@ -6,7 +6,9 @@ using System.Text;
 namespace Asol.Tools.WorkScheduler.Data
 {
     /// <summary>
-    /// Array with two index and one value on intersect of this indexes.
+    /// Pole, které má dva indexy a v jejich průsečíku jednu hodnotu.
+    /// Ve výchozím stavu pole neobsahuje žádnou hodnotu.
+    /// Čtení hodnoty z buňky, která dosud nebyla naplněna, vrací default(<typeparamref name="TValue"/>).
     /// </summary>
     /// <typeparam name="TKey1"></typeparam>
     /// <typeparam name="TKey2"></typeparam>
@@ -89,6 +91,33 @@ namespace Asol.Tools.WorkScheduler.Data
             if (!this._Dictionary.TryGetValue(key1, out dict2)) return false;
             if (dict2.TryGetValue(key2, out value)) return false;
             return true;
+        }
+        /// <summary>
+        /// Pole všech dosud uložených hodnot, bez klíčů = jen uložené hodnoty
+        /// </summary>
+        public TValue[] Values
+        {
+            get
+            {
+                List<TValue> result = new List<TValue>();
+                foreach (var items in this._Dictionary.Values)
+                    result.AddRange(items.Values);
+                return result.ToArray();
+            }
+        }
+        /// <summary>
+        /// Pole všech dosud uložených hodnot, včetně klíčů.
+        /// Ve výstupní instanci Tuple je uloženo: Item1 = Key1, Item2 = Key2, Item3 = Value.
+        /// </summary>
+        public Tuple<TKey1, TKey2, TValue>[] KeyValues
+        {
+            get
+            {
+                List<Tuple<TKey1, TKey2, TValue>> result = new List<Tuple<TKey1, TKey2, TValue>>();
+                foreach (var items in this._Dictionary)
+                    result.AddRange(items.Value.Select(i => new Tuple<TKey1, TKey2, TValue>(items.Key, i.Key, i.Value)));
+                return result.ToArray();
+            }
         }
     }
 }

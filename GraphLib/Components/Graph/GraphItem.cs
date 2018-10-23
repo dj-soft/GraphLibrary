@@ -72,6 +72,10 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         internal GTimeGraphGroup Group { get { return this._Group; } }
         /// <summary>
+        /// Vlastní datový prvek grafu
+        /// </summary>
+        internal ITimeGraphItem Item { get { return this._Owner; } }
+        /// <summary>
         /// Souřadnice na ose X. Jednotkou jsou pixely.
         /// Tato osa je společná jak pro virtuální, tak pro reálné souřadnice.
         /// Hodnota 0 odpovídá prvnímu viditelnému pixelu vlevo.
@@ -164,6 +168,75 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             this.GroupInteractiveState = e.TargetState;
         }
         /// <summary>
+        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = MouseEnter
+        /// Přípravu tooltipu je vhodnější provést v metodě <see cref="InteractiveObject.PrepareToolTip(GInteractiveChangeStateArgs)"/>, ta je volaná hned poté.
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void AfterStateChangedMouseEnter(GInteractiveChangeStateArgs e)
+        {
+            this.PrepareLinks();
+            base.AfterStateChangedMouseEnter(e);
+        }
+        /// <summary>
+        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = MouseLeave
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void AfterStateChangedMouseLeave(GInteractiveChangeStateArgs e)
+        {
+            this.ResetLinks();
+            base.AfterStateChangedMouseLeave(e);
+        }
+        /// <summary>
+        /// Metoda zajistí provedení Select pro moji Parent grupu (pokud já jsem Item)
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void AfterStateChangedLeftClick(GInteractiveChangeStateArgs e)
+        {
+            if (this._Position == GGraphControlPosition.Item)
+                this._Group.GControl.ChangeSelect();
+            base.AfterStateChangedLeftClick(e);
+        }
+        /// <summary>
+        /// Metoda zajistí zpracování události RightCLick na grafickém prvku (data) na dané pozici (position).
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void AfterStateChangedRightClick(GInteractiveChangeStateArgs e)
+        {
+            ItemActionArgs args = new ItemActionArgs(e, this.Graph, this._Group, this._Owner, this._Position);
+            this.Graph.GraphItemRightClick(args);
+        }
+        /// <summary>
+        /// Metoda zajistí zpracování události LeftDoubleCLick na grafickém prvku (data) na dané pozici (position).
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void AfterStateChangedLeftDoubleClick(GInteractiveChangeStateArgs e)
+        {
+            ItemActionArgs args = new ItemActionArgs(e, this.Graph, this._Group, this._Owner, this._Position);
+            this.Graph.GraphItemLeftDoubleClick(args);
+        }
+        /// <summary>
+        /// Metoda zajistí zpracování události LeftLongCLick na grafickém prvku (data) na dané pozici (position).
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void AfterStateChangedLeftLongClick(GInteractiveChangeStateArgs e)
+        {
+            ItemActionArgs args = new ItemActionArgs(e, this.Graph, this._Group, this._Owner, this._Position);
+            this.Graph.GraphItemLeftLongClick(args);
+        }
+        /// <summary>
+        /// Metoda zajistí přípravu ToolTipu pro zdejší prvek (data) na dané pozici (position).
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void PrepareToolTip(GInteractiveChangeStateArgs e)
+        {
+            TimeRange timeRange = this._Group.Time;
+            string eol = Environment.NewLine;
+            string timeText = "Začátek:\t" + timeRange.Begin.Value.ToUser() + eol + "Konec:\t" + timeRange.End.Value.ToUser() + eol;
+            CreateToolTipArgs args = new CreateToolTipArgs(e, this.Graph, this._Group, timeText, this._Owner, this._Position);
+
+            this.Graph.GraphItemPrepareToolTip(args);
+        }
+        /// <summary>
         /// Interaktivní stav grupy
         /// </summary>
         protected GInteractiveState GroupInteractiveState
@@ -186,53 +259,6 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Využívá se při vykreslování prvků.
         /// </summary>
         protected GInteractiveState? _GroupState;
-        /// <summary>
-        /// Metoda zajistí přípravu ToolTipu pro zdejší prvek (data) na dané pozici (position).
-        /// </summary>
-        /// <param name="e"></param>
-        protected override void PrepareToolTip(GInteractiveChangeStateArgs e)
-        {
-            TimeRange timeRange = this._Group.Time;
-            string eol = Environment.NewLine;
-            string timeText = "Začátek:\t" + timeRange.Begin.Value.ToUser() + eol + "Konec:\t" + timeRange.End.Value.ToUser() + eol;
-            CreateToolTipArgs args = new CreateToolTipArgs(e, this.Graph, this._Group, timeText, this._Owner, this._Position);
-
-            this.Graph.GraphItemPrepareToolTip(args);
-        }
-        /// <summary>
-        /// Metoda zajistí provedení Select pro moji Parent grupu (pokud já jsem Item)
-        /// </summary>
-        /// <param name="e"></param>
-        protected override void AfterStateChangedLeftClick(GInteractiveChangeStateArgs e)
-        {
-            if (this._Position == GGraphControlPosition.Item)
-                this._Group.GControl.ChangeSelect();
-            base.AfterStateChangedLeftClick(e);
-        }
-        /// <summary>
-        /// Metoda zajistí zpracování události RightCLick na grafickém prvku (data) na dané pozici (position).
-        /// </summary>
-        /// <param name="e"></param>
-        protected override void AfterStateChangedRightClick(GInteractiveChangeStateArgs e)
-        {
-            this.Graph.GraphItemRightClick(e, this._Group, this._Owner, this._Position);
-        }
-        /// <summary>
-        /// Metoda zajistí zpracování události LeftDoubleCLick na grafickém prvku (data) na dané pozici (position).
-        /// </summary>
-        /// <param name="e"></param>
-        protected override void AfterStateChangedLeftDoubleClick(GInteractiveChangeStateArgs e)
-        {
-            this.Graph.GraphItemLeftDoubleClick(e, this._Group, this._Owner, this._Position);
-        }
-        /// <summary>
-        /// Metoda zajistí zpracování události LeftLongCLick na grafickém prvku (data) na dané pozici (position).
-        /// </summary>
-        /// <param name="e"></param>
-        protected override void AfterStateChangedLeftLongClick(GInteractiveChangeStateArgs e)
-        {
-            this.Graph.GraphItemLeftLongClick(e, this._Group, this._Owner, this._Position);
-        }
         /// <summary>
         /// Hodnota Selectable :
         /// a) Selectovat lze jen Group prvky, nikoli Item;
@@ -404,7 +430,10 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="drawMode">Režim kreslení (pomáhá řešit Drag and Drop procesy)</param>
         protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
         {
-            this._Owner.Draw(e, absoluteBounds, drawMode);
+            if (e.DrawLayer == GInteractiveDrawLayer.Dynamic)
+                this.DrawLinks(e, absoluteBounds, absoluteVisibleBounds, drawMode);
+            else
+                this._Owner.Draw(e, absoluteBounds, drawMode);
         }
         /// <summary>
         /// Vykreslování "Přes Child prvky": pokud this prvek vykresluje Grupu, pak ano!
@@ -652,7 +681,94 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             }
         }
         #endregion
+        #region Vztahy = Linky
+        /// <summary>
+        /// Zkusí najít vztahy ke kreslení.
+        /// Pokud nějaké najde, budou uloženy v <see cref="Links"/>.
+        /// Jakmile v <see cref="Links"/> bude něco jiného než null, pak <see cref="StandardDrawToLayer"/> bude vracet i vrstvu <see cref="GInteractiveDrawLayer.Dynamic"/>,
+        /// a tím se začne volat metoda <see cref="DrawLinks(GInteractiveDrawArgs, Rectangle, Rectangle, DrawItemMode)"/> = vykreslení linek.
+        /// </summary>
+        protected void PrepareLinks()
+        {
+            // Pokud this je na pozici Item, a naše grupa (this.Group) už má nalezené linky, pak je nebudeme opakovaně hledat pro prvek:
+            if (this.Position == GGraphControlPosition.Item && this.Group.GControl.Links != null) return;
+
+            CreateLinksArgs args = new CreateLinksArgs(this.Graph, this.Group, this.Item, this.Position);
+            this.Graph.DataSource.CreateLinks(args);
+            this.Links = args.Links;
+        }
+        /// <summary>
+        /// Resetuje kreslené vztahy. Odteď se nebudou kreslit.
+        /// </summary>
+        protected void ResetLinks()
+        {
+            this.Links = null;
+        }
+        /// <summary>
+        /// Vykreslí vztahy
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="absoluteBounds"></param>
+        /// <param name="absoluteVisibleBounds"></param>
+        /// <param name="drawMode"></param>
+        protected void DrawLinks(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
+        {
+        }
+        /// <summary>
+        /// Pole vztahů, které kreslíme
+        /// </summary>
+        protected GTimeGraphLink[] Links;
+        /// <summary>
+        /// Vrstvy pro běžné kreslení: Obsahuje vrstvu Standard, plus vrstvu Dynamic = pokud pole <see cref="Links"/> není null.
+        /// </summary>
+        protected override GInteractiveDrawLayer StandardDrawToLayer { get { return GInteractiveDrawLayer.Standard | (this.Links != null ? GInteractiveDrawLayer.Dynamic : GInteractiveDrawLayer.None); } }
+        #endregion
     }
+    #region class GTimeGraphLink
+    /// <summary>
+    /// Třída reprezentující spojení dvou prvků grafu.
+    /// </summary>
+    public class GTimeGraphLink
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public GTimeGraphLink()
+        { }
+        /// <summary>
+        /// ID prvku předchozího
+        /// </summary>
+        public int ItemIdPrev { get; set; }
+        /// <summary>
+        /// Vizuální data prvku předchozího
+        /// </summary>
+        public GTimeGraphItem ItemPrev { get; set; }
+        /// <summary>
+        /// ID prvku následujícího
+        /// </summary>
+        public int ItemIdNext { get; set; }
+        /// <summary>
+        /// Vizuální data prvku následujícího
+        /// </summary>
+        public GTimeGraphItem ItemNext { get; set; }
+        /// <summary>
+        /// Typ linky, nezadáno = použije se <see cref="GuiGraphItemLinkType.PrevEndToNextBegin"/>
+        /// </summary>
+        public GuiGraphItemLinkType? LinkType { get; set; }
+        /// <summary>
+        /// Šířka linky, nezadáno = 1
+        /// </summary>
+        public int? LinkWidth { get; set; }
+        /// <summary>
+        /// Barva linky
+        /// </summary>
+        public Color? LinkColor { get; set; }
+        /// <summary>
+        /// Data z GUI, nepovinná (zdejší hodnoty jsou separátní)
+        /// </summary>
+        public GuiGraphLink GuiGraphLink { get; set; }
+    }
+    #endregion
     #region enum GGraphControlPosition
     /// <summary>
     /// Pozice GUI controlu pro prvek grafu
