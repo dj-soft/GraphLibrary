@@ -190,7 +190,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private bool _AddGraphItem(GTimeGraph gTimeGraph, GuiGraphBaseItem addItem)
         {
             bool isChange = false;
-            if (gTimeGraph == null || addItem == null) return isChange;
+            if (gTimeGraph == null || addItem == null || addItem.ItemId == null) return isChange;
 
             DataGraphItem dataGraphItem = DataGraphItem.CreateFrom(this, addItem);
             if (dataGraphItem == null) return false;
@@ -506,7 +506,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             Dictionary<GId, GuiGraph> guiGraphDict = new Dictionary<GId, GuiGraph>();
             List<GuiGraph> graphs = this.GuiGrid.Graphs;
             if (graphs != null && graphs.Count > 0)
-                guiGraphDict = graphs.GetDictionary(g => { GId rowGId = g.RowId; return rowGId; }, true);
+                guiGraphDict = graphs
+                    .Where(g => g.RowId != null)
+                    .GetDictionary(g => { GId rowGId = g.RowId; return rowGId; }, true);
             return guiGraphDict;
         }
         /// <summary>
