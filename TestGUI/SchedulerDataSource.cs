@@ -695,9 +695,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 ItemId = this.RecordGid,
                 GroupId = this.ProductOrder?.RecordGid,
                 BackColor = this.BackColor,
-                BehaviorMode = GraphItemBehaviorMode.ShowToolTipFadeIn | GraphItemBehaviorMode.ShowCaptionAllways,
+                BehaviorMode = GraphItemBehaviorMode.ShowToolTipFadeIn | GraphItemBehaviorMode.ShowCaptionNone,
                 DataId = this.RecordGid,
-                Text = this.ReferName,
+                Text = "",           // Grafický prvek za operaci se zobrazuje v grafu OnBackground, a tam nechceme mít texty!!!
                 Time = this.Time
             };
             return guiGraphItem;
@@ -853,7 +853,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             {
                 bool hr = !String.IsNullOrEmpty(this.Refer);
                 bool hn = !String.IsNullOrEmpty(this.Name);
-                if (hr && hn) return this.Refer + ":" + this.Name;
+                if (hr && hn) return this.Refer + ": " + this.Name;
                 if (hr) return this.Refer;
                 if (hn) return this.Name;
                 return "{Empty}";
