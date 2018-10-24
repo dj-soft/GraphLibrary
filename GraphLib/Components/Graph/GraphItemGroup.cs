@@ -146,36 +146,21 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             this.InvalidateBounds();
         }
         /// <summary>
-        /// Metoda připraví souřadnice this grupy na ose X, včetně jejích grafických items
-        /// </summary>
-        /// <param name="timeConvert"></param>
-        /// <param name="offsetX"></param>
-        /// <param name="itemsCount"></param>
-        public void ___Old___PrepareCoordinateX(Func<TimeRange, DoubleRange> timeConvert, Double offsetX, ref int itemsCount)
-        {
-            DoubleRange groupX = timeConvert(this.Time);                                 // Vrací souřadnici X v koordinátech grafu
-            double groupB = groupX.Begin;
-            if (offsetX != 0d)
-                groupX = groupX.ShiftBy(offsetX);
-            this.GControl.CoordinateX = groupX.Int32RoundEnd;
-            foreach (ITimeGraphItem item in this.Items)
-            {
-                itemsCount++;
-                DoubleRange absX = timeConvert(item.Time);                               // Vrací souřadnici X v koordinátech grafu
-                DoubleRange relX = absX.ShiftBy(-groupB);                                // Získáme souřadnici X relativní k prvku Group, který je Parentem daného item
-                item.GControl.CoordinateX = relX.Int32RoundEnd;
-            }
-            this.InvalidateBounds();
-        }
-        /// <summary>
         /// Metoda připraví reálné souřadnice Bounds do this grupy a jejích grafických items.
         /// Metoda může být volána opakovaně, sama si určí kdy je třeba něco měnit.
         /// </summary>
         public void PrepareBounds()
         {
-            if (this.IsValidBounds) return;
-
-            Int32Range groupY = this.CoordinateYVisual; // CoordinateYReal;
+            if (!this.IsValidBounds)
+                this.CalculateBounds();
+        }
+        /// <summary>
+        /// Metoda vypočte reálné souřadnice Bounds do this grupy a jejích grafických items.
+        /// Metoda při opakovaném volání skutečně přepočítá hodnoty.
+        /// </summary>
+        public void CalculateBounds()
+        {
+            Int32Range groupY = this.CoordinateYVisual;
             this.GControl.Bounds = Int32Range.GetRectangle(this.GControl.CoordinateX, groupY);
 
             // Child prvky mají svoje souřadnice (Bounds) relativní k this prvku (který je jejich parentem), proto mají Y souřadnici { 0 až this.Y.Size }:
@@ -207,6 +192,10 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         protected void InvalidateBounds()
         {
             this._IsValidBounds = false;
+
+            this.GControl.InvalidateBounds();
+            foreach (ITimeGraphItem item in this.Items)
+                item.GControl.InvalidateBounds();
         }
         /// <summary>
         /// true pokud Bounds tohoto prvku i vnořených prvků jsou platné.

@@ -60,6 +60,39 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         private GGraphControlPosition _Position;
         #endregion
+        #region Souřadnice
+        /// <summary>
+        /// Souřadnice tohoto prvku v rámci jeho Parenta.
+        /// Přepočet na absolutní souřadnice provádí (extension) metoda IInteractiveItem.GetAbsoluteVisibleBounds().
+        /// Vložení hodnoty do této property způsobí veškeré zpracování akcí (<see cref="ProcessAction.All"/>).
+        /// Vložení souřadnice nastaví i její platnost: <see cref="BoundsIsValid"/> = true.
+        /// </summary>
+        public override Rectangle Bounds
+        {
+            get { this.CheckBoundsValid(); return base.Bounds; }
+            set { this.BoundsIsValid = true; base.Bounds = value; }
+        }
+        /// <summary>
+        /// Metoda zajistí platnost souřadnic v <see cref="Bounds"/>
+        /// </summary>
+        protected void CheckBoundsValid()
+        {
+            if (this.BoundsIsValid) return;
+            this.Group.CalculateBounds();
+            this.BoundsIsValid = true;
+        }
+        /// <summary>
+        /// Metoda invaliduje souřadnice <see cref="Bounds"/>
+        /// </summary>
+        internal void InvalidateBounds()
+        {
+            this.BoundsIsValid = false;
+        }
+        /// <summary>
+        /// true = souřadnice prvku <see cref="Bounds"/> jsou platné
+        /// </summary>
+        internal bool BoundsIsValid { get; private set; }
+        #endregion
         #region Veřejná data
         /// <summary>
         /// Graf, do něhož tento vizuální interaktivní prvek patří.
@@ -681,7 +714,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             }
         }
         #endregion
-        #region Vztahy = Linky
+        #region Vztahy (= Linky) - získání a kreslení
         /// <summary>
         /// Zkusí najít vztahy ke kreslení.
         /// Pokud nějaké najde, budou uloženy v <see cref="Links"/>.
