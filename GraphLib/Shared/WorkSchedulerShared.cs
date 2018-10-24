@@ -1310,6 +1310,28 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public int Count { get { return (this.LinkList != null ? this.LinkList.Count : 0); } }
         /// <summary>
+        /// Do <see cref="LinkList"/> přidá další záznam.
+        /// </summary>
+        /// <param name="link"></param>
+        public void Add(GuiGraphLink link)
+        {
+            if (link == null) return;
+            if (this.LinkList == null)
+                this.LinkList = new List<GuiGraphLink>();
+            this.LinkList.Add(link);
+        }
+        /// <summary>
+        /// Do <see cref="LinkList"/> přidá další sadu záznamů.
+        /// </summary>
+        /// <param name="links"></param>
+        public void AddRange(IEnumerable<GuiGraphLink> links)
+        {
+            if (links == null) return;
+            if (this.LinkList == null)
+                this.LinkList = new List<GuiGraphLink>();
+            this.LinkList.AddRange(links.Where(l => (l != null)));
+        }
+        /// <summary>
         /// Soupis jednotlivých linků
         /// </summary>
         public List<GuiGraphLink> LinkList { get; set; }
@@ -1325,6 +1347,14 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiGraphLink() : base()
         {
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return "Link; Prev: " + this.ItemIdPrev + "; Type: " + this.LinkType + "; Next: " + this.ItemIdNext;
         }
         /// <summary>
         /// ID prvku předchozího v tomto vztahu.
@@ -1363,7 +1393,7 @@ namespace Noris.LCS.Base.WorkScheduler
     public enum GuiGraphItemLinkType
     {
         /// <summary>
-        /// Nezadáno. Použije se hodnota <see cref="PrevEndToNextBegin"/>.
+        /// Nezadáno. Použije se hodnota <see cref="PrevEndToNextBeginLine"/>.
         /// </summary>
         None,
         /// <summary>
@@ -1371,9 +1401,13 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         Invisible,
         /// <summary>
-        /// Běžná návaznost = Konec prvku Prev se napojí na Počátek prvku Next
+        /// Běžná přímá návaznost = Konec prvku Prev se napojí na Počátek prvku Next, rovnou čárou
         /// </summary>
-        PrevEndToNextBegin,
+        PrevEndToNextBeginLine,
+        /// <summary>
+        /// Běžná hladká návaznost = Konec prvku Prev se napojí na Počátek prvku Next, S-křivkou čárou
+        /// </summary>
+        PrevEndToNextBeginSCurve,
         /// <summary>
         /// Běžná synchronizace = propojí se středy prvků
         /// </summary>

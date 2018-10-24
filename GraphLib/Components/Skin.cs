@@ -208,6 +208,18 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             return Instance._GetBrush(color, opacity);
         }
+        private SolidBrush _GetBrush(Color color, Int32? opacity)
+        {
+            if (opacity.HasValue)
+                color = color.SetOpacity(opacity);
+
+            if (this.__Brush == null)
+                this.__Brush = new SolidBrush(color);
+            else
+                this.__Brush.Color = color;
+            return this.__Brush;
+        }
+        /*
         /// <summary>
         /// Returns re-usable Pen.
         /// Do not dispose it !!!
@@ -226,7 +238,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         public static Pen Pen(Color color, int? opacity)
         {
-            return Instance._GetPen(color, opacity, null, null);
+            return Instance._GetPen(color, null, opacity, null);
         }
         /// <summary>
         /// Returns re-usable Pen.
@@ -236,7 +248,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         public static Pen Pen(Color color, float width)
         {
-            return Instance._GetPen(color, null, width, null);
+            return Instance._GetPen(color, width, null, null);
         }
         /// <summary>
         /// Returns re-usable Pen.
@@ -256,30 +268,25 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         public static Pen Pen(Color color, float width, DashStyle dashStyle)
         {
-            return Instance._GetPen(color, null, width, dashStyle);
+            return Instance._GetPen(color, width, null, dashStyle);
         }
+        */
         /// <summary>
-        /// Returns re-usable Pen.
-        /// Do not dispose it !!!
+        /// Vrací znovupoužitelné pero.
+        /// Nepoužívejte ho v using { } patternu!!!
         /// </summary>
         /// <param name="color"></param>
+        /// <param name="width"></param>
+        /// <param name="opacity"></param>
+        /// <param name="dashStyle"></param>
+        /// <param name="startCap"></param>
+        /// <param name="endCap"></param>
         /// <returns></returns>
-        public static Pen Pen(Color color, int? opacity, float width, DashStyle dashStyle)
+        public static Pen Pen(Color color, float width = 1f, int? opacity = null, DashStyle? dashStyle = null, LineCap? startCap = null, LineCap? endCap = null)
         {
-            return Instance._GetPen(color, opacity, width, dashStyle);
+            return Instance._GetPen(color, width, opacity, dashStyle, startCap, endCap);
         }
-        private SolidBrush _GetBrush(Color color, Int32? opacity)
-        {
-            if (opacity.HasValue)
-                color = color.SetOpacity(opacity);
-
-            if (this.__Brush == null)
-                this.__Brush = new SolidBrush(color);
-            else
-                this.__Brush.Color = color;
-            return this.__Brush;
-        }
-        private Pen _GetPen(Color color, Int32? opacity, float? width, DashStyle? dashStyle)
+        private Pen _GetPen(Color color, float? width, Int32? opacity, DashStyle? dashStyle, LineCap? startCap = null, LineCap? endCap = null)
         {
             if (opacity.HasValue)
                 color = color.SetOpacity(opacity);
@@ -291,6 +298,8 @@ namespace Asol.Tools.WorkScheduler.Components
 
             this.__Pen.Width = ((width.HasValue) ? width.Value : 1f);
             this.__Pen.DashStyle = (dashStyle.HasValue ? dashStyle.Value : DashStyle.Solid);
+            this.__Pen.StartCap = (startCap.HasValue ? startCap.Value : LineCap.Flat);
+            this.__Pen.EndCap = (endCap.HasValue ? endCap.Value : LineCap.Flat);
 
             return this.__Pen;
         }
@@ -1135,6 +1144,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public Color BackColor { get { return this._Owner.GetValue(this._SkinSetKey, "BackColor", DefaultBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "BackColor", value); } }
         public Color TimeAxisTickMain { get { return this._Owner.GetValue(this._SkinSetKey, "TimeAxisTickMain", DefaultTimeAxisTickMain); } set { this._Owner.SetValue(this._SkinSetKey, "TimeAxisTickMain", value); } }
         public Color TimeAxisTickSmall { get { return this._Owner.GetValue(this._SkinSetKey, "TimeAxisTickSmall", DefaultTimeAxisTickSmall); } set { this._Owner.SetValue(this._SkinSetKey, "TimeAxisTickSmall", value); } }
+        public Color LinkColor { get { return this._Owner.GetValue(this._SkinSetKey, "LinkColor", DefaultLinkColor); } set { this._Owner.SetValue(this._SkinSetKey, "LinkColor", value); } }
         #endregion
         #region Default colors
         protected virtual Int32 DefaultLineHeight { get { return 18; } }
@@ -1148,6 +1158,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual Color DefaultBackColor { get { return Color.DimGray; } }
         protected virtual Color DefaultTimeAxisTickMain { get { return Color.Gray; } }
         protected virtual Color DefaultTimeAxisTickSmall { get { return Color.Gray; } }
+        protected virtual Color DefaultLinkColor { get { return Color.Red; } }
         #endregion
     }
     /// <summary>

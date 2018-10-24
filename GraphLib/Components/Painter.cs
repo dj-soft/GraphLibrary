@@ -154,7 +154,7 @@ namespace Asol.Tools.WorkScheduler.Components
         internal static void DrawFrameSelect(Graphics graphics, Rectangle bounds)
         {
             graphics.FillRectangle(Skin.Brush(Skin.Control.FrameSelectBackColor), bounds);
-            graphics.DrawRectangle(Skin.Pen(Skin.Control.FrameSelectLineColor, DashStyle.Dot), bounds);
+            graphics.DrawRectangle(Skin.Pen(Skin.Control.FrameSelectLineColor, dashStyle: DashStyle.Dot), bounds);
         }
         #endregion
         #region DrawEffect3D
@@ -1423,16 +1423,16 @@ namespace Asol.Tools.WorkScheduler.Components
                 case AxisTickType.OuterLabel:
                     break;
                 case AxisTickType.BigLabel:
-                    pen = (std ? Skin.Pen(lineColorMain, 2f, DashStyle.Solid) : Skin.Pen(lineColorMain, 1f, DashStyle.Solid));
+                    pen = (std ? Skin.Pen(lineColorMain, 2f, dashStyle: DashStyle.Solid) : Skin.Pen(lineColorMain, 1f, dashStyle: DashStyle.Solid));
                     break;
                 case AxisTickType.StdLabel:
-                    pen = (std ? Skin.Pen(lineColorMain, 1f, DashStyle.Solid) : Skin.Pen(lineColorSmall, 1f, DashStyle.Solid));
+                    pen = (std ? Skin.Pen(lineColorMain, 1f, dashStyle: DashStyle.Solid) : Skin.Pen(lineColorSmall, 1f, dashStyle: DashStyle.Solid));
                     break;
                 case AxisTickType.BigTick:
-                    pen = (std ? Skin.Pen(lineColorSmall, 1f, DashStyle.Solid) : Skin.Pen(lineColorSmall, 1f, DashStyle.Dot));
+                    pen = (std ? Skin.Pen(lineColorSmall, 1f, dashStyle: DashStyle.Solid) : Skin.Pen(lineColorSmall, 1f, dashStyle: DashStyle.Dot));
                     break;
                 case AxisTickType.StdTick:
-                    pen = (std ? Skin.Pen(lineColorSmall, 1f, DashStyle.Dot) : Skin.Pen(lineColorSmall, 1f, DashStyle.Dot));
+                    pen = (std ? Skin.Pen(lineColorSmall, 1f, dashStyle: DashStyle.Dot) : Skin.Pen(lineColorSmall, 1f, dashStyle: DashStyle.Dot));
                     break;
                 case AxisTickType.Pixel:
                     break;

@@ -713,6 +713,87 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="drawMode"></param>
         protected void DrawLinks(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
         {
+            GTimeGraphLink[] links = this.Links;
+            if (links == null) return;
+
+            Rectangle clipBounds = this.GetLinksAbsoluteClip();
+            e.GraphicsClipWith(clipBounds);
+            using (GPainter.GraphicsUseSmooth(e.Graphics))
+            {
+                foreach (GTimeGraphLink link in links)
+                {
+                    if (link != null && link.ItemPrev != null && link.ItemNext != null && link.LinkType.HasValue)
+                    {
+                        switch (link.LinkType.Value)
+                        {
+                            case GuiGraphItemLinkType.PrevEndToNextBeginLine:
+                                this.DrawLinksPNLine(e, link);
+                                break;
+                            case GuiGraphItemLinkType.PrevEndToNextBeginSCurve:
+                                this.DrawLinksPNSCurve(e, link);
+                                break;
+
+                        }
+                    }
+                }
+            }
+        }
+        /// <summary>
+        /// Vykreslí přímou linku 
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="link"></param>
+        protected void DrawLinksPNLine(GInteractiveDrawArgs e, GTimeGraphLink link)
+        {
+            Rectangle prevBounds = link.ItemPrev.BoundsAbsolute;
+            Rectangle nextBounds = link.ItemNext.BoundsAbsolute;
+            Point prevPoint = new Point(prevBounds.Right - 1, prevBounds.Y + prevBounds.Height / 2);
+            Point nextPoint = new Point(nextBounds.X, nextBounds.Y + nextBounds.Height / 2);
+            e.Graphics.DrawLine(Skin.Pen(Color.Red), prevPoint, nextPoint);
+        }
+        /// <summary>
+        /// Vykreslí S-křivkovou linku 
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="link"></param>
+        protected void DrawLinksPNSCurve(GInteractiveDrawArgs e, GTimeGraphLink link)
+        {
+            Rectangle prevBounds = link.ItemPrev.BoundsAbsolute;
+            Rectangle nextBounds = link.ItemNext.BoundsAbsolute;
+            Point prevPoint = new Point(prevBounds.Right - 1, prevBounds.Y + prevBounds.Height / 2);
+            Point nextPoint = new Point(nextBounds.X, nextBounds.Y + nextBounds.Height / 2);
+
+            int diffY = (nextPoint.Y - prevPoint.Y);
+            if (diffY < 0) diffY = -diffY;
+            int addX = (nextPoint.X - prevPoint.X) / 4;
+            int addY = diffY / 3;
+            if (addX < 16) addX = 16;
+            else if (addX < addY) addX = addY;
+            Point prevTarget = new Point(prevPoint.X + addX, prevPoint.Y);
+            Point nextTarget = new Point(nextPoint.X - addX, nextPoint.Y);
+
+            Color color1 = (link.LinkColor.HasValue ? link.LinkColor.Value : Skin.Graph.LinkColor);
+            Color color3 = color1.Morph(Color.Black, 0.667f);
+            Pen pen = Skin.Pen(color3, 3f, startCap: System.Drawing.Drawing2D.LineCap.Round, endCap: System.Drawing.Drawing2D.LineCap.Round);
+            e.Graphics.DrawBezier(pen, prevPoint, prevTarget, nextTarget, nextPoint);
+
+            pen = Skin.Pen(color1);
+            e.Graphics.DrawBezier(Skin.Pen(color1), prevPoint, prevTarget, nextTarget, nextPoint);
+        }
+        /// <summary>
+        /// Vrátí Rectangle reprezentující rozumný clip pro kreslení linků
+        /// </summary>
+        /// <returns></returns>
+        protected Rectangle GetLinksAbsoluteClip()
+        {
+            Grid.GTable gTable = this.Graph.SearchForParent(typeof(Grid.GTable)) as Grid.GTable;
+            if (gTable != null)
+            {
+                Rectangle rowDataBounds = gTable.GetAbsoluteBoundsForArea(Grid.TableAreaType.RowData);
+                return rowDataBounds;
+            }
+            BoundsInfo boundsInfo = BoundsInfo.CreateForContainer(this.Graph);
+            return boundsInfo.CurrentAbsVisibleBounds;
         }
         /// <summary>
         /// Pole vztahů, které kreslíme
@@ -752,7 +833,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         public GTimeGraphItem ItemNext { get; set; }
         /// <summary>
-        /// Typ linky, nezadáno = použije se <see cref="GuiGraphItemLinkType.PrevEndToNextBegin"/>
+        /// Typ linky, nezadáno = použije se <see cref="GuiGraphItemLinkType.PrevEndToNextBeginLine"/>
         /// </summary>
         public GuiGraphItemLinkType? LinkType { get; set; }
         /// <summary>
