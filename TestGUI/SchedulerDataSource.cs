@@ -13,16 +13,25 @@ using Noris.LCS.Base.WorkScheduler;
 
 namespace Asol.Tools.WorkScheduler.TestGUI
 {
+    /// <summary>
+    /// Třída která vytváří datový zdroj pro testování
+    /// </summary>
     public class SchedulerDataSource : IAppHost
     {
         #region Konstrukce
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public SchedulerDataSource()
         {
             this.Rand = new Random();
         }
-        protected Random Rand;
         #endregion
         #region Tvorba výchozích dat
+        /// <summary>
+        /// Vytvoří a vrátí kompletní balík s GUI daty, podkladová data zůstávají přítomná v instanci
+        /// </summary>
+        /// <returns></returns>
         public GuiData CreateGuiData()
         {
             this.MainData = new Noris.LCS.Base.WorkScheduler.GuiData();
@@ -54,7 +63,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         }
         #region Vlastní vytvoření dat k zobrazení
         /// <summary>
-        /// Vygeneruje data a provede jejich rozmístění
+        /// Vygeneruje data { Výrobní příkazy, operace, jejich časy } a { Pracoviště, kalendáře }, 
+        /// a provede jejich rozplánování (operace do pracovišť).
         /// </summary>
         protected void CreateData()
         {
@@ -384,39 +394,6 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             return (dow == DayOfWeek.Monday || dow == DayOfWeek.Tuesday || dow == DayOfWeek.Wednesday || dow == DayOfWeek.Thursday || dow == DayOfWeek.Friday);
         }
         /// <summary>
-        /// Metoda vygeneruje a vrátí časový úsek.
-        /// Jeho počátek = begin;
-        /// Jeho end = počátek + (time * timeQty, pokud timeQty má hodnotu která je 0 nebo kladná).
-        /// </summary>
-        /// <param name="begin"></param>
-        /// <param name="time"></param>
-        /// <param name="timeQty"></param>
-        /// <returns></returns>
-        internal GuiTimeRange GetTimeRange(ref DateTime begin, TimeSpan time, double? timeQty = null)
-        {
-            return this.GetTimeRange(ref begin, 0d, 0, time, timeQty);
-        }
-        /// <summary>
-        /// Metoda vygeneruje a vrátí časový úsek.
-        /// Jeho počátek = begin [ + pauza vložená s pravděpodobností pauseRatio v délce 0 až pauseMaxHour];
-        /// Jeho end = počátek + (time * timeQty, pokud timeQty má hodnotu která je 0 nebo kladná).
-        /// </summary>
-        /// <param name="begin"></param>
-        /// <param name="pauseRatio"></param>
-        /// <param name="pauseMaxHour"></param>
-        /// <param name="time"></param>
-        /// <param name="timeQty"></param>
-        /// <returns></returns>
-        internal GuiTimeRange GetTimeRange(ref DateTime begin, double pauseRatio, int pauseMaxHour, TimeSpan time, double? timeQty = null)
-        {
-            if (pauseRatio > 0d && this.Rand.NextDouble() > pauseRatio)
-                begin = begin + TimeSpan.FromHours(this.Rand.Next(pauseMaxHour + 1));
-            DateTime end = begin + ((timeQty.HasValue && timeQty.Value >= 0d) ? TimeSpan.FromHours(timeQty.Value * time.TotalHours) : time);
-            GuiTimeRange timeRange = new GuiTimeRange(begin, end);
-            begin = end;
-            return timeRange;
-        }
-        /// <summary>
         /// Typ výroby
         /// </summary>
         protected enum ProductTpv { None, Standard, Luxus, Cooperation }
@@ -458,6 +435,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         protected const string WP_KONT = "Kontrola";
         #endregion
         #region Rozplánování operací do pracovišť
+        /// <summary>
+        /// Umístí pracovní časy operací výrobních příkazů na vhodná pracoviště
+        /// </summary>
         protected void PlanOperationsToWorkplaces()
         {
             int recordId = 0;
@@ -465,6 +445,11 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 foreach (ProductOperation productOperation in productOrder.OperationList)
                     this.PlanOperationToWorkplaces(ref recordId, productOperation);
         }
+        /// <summary>
+        /// Umístí pracovní časy operací dané operace na vhodné pracoviště
+        /// </summary>
+        /// <param name="recordId"></param>
+        /// <param name="productOperation"></param>
         protected void PlanOperationToWorkplaces(ref int recordId, ProductOperation productOperation)
         {
             string workPlace = productOperation.WorkPlace;
@@ -472,11 +457,14 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             PlanUnitC[] units = this.PlanUnitCDict.Values.Where(p => p.WorkPlace == workPlace).ToArray();
             int count = units.Length;
             if (count == 0) return;
-            PlanUnitC planUnitC = units[this.Rand.Next(count)];
+            PlanUnitC planUnitC = this.GetRandom(units);
             productOperation.PlanOperationToWorkplace(ref recordId, planUnitC);
         }
         #endregion
         #region Tvorba GUI
+        /// <summary>
+        /// Vygeneruje základní nastavení GUI prostředí
+        /// </summary>
         protected void CreateProperties()
         {
             this.MainData.Properties.InitialTimeRange = this.TimeRangeCurrent;
@@ -487,15 +475,24 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this.MainData.Properties.GraphItemMoveSameGraph = GraphItemMoveAlignY.OnOriginalItemPosition;
             this.MainData.Properties.GraphItemMoveOtherGraph = GraphItemMoveAlignY.OnMousePosition;
         }
+        /// <summary>
+        /// Vygeneruje nastavení toolbaru GUI
+        /// </summary>
         protected void CreateToolBar()
         {
             this.MainData.ToolbarItems.ToolbarShowSystemItems = ToolbarSystemItem.Default;
         }
+        /// <summary>
+        /// Vygeneruje hlavní (a jedinou) stránku pro data, zatím bez dat
+        /// </summary>
         protected void CreateMainPage()
         {
             this.MainPage = new GuiPage() { Name = "MainPage", Title = "Plánování dílny POLOTOVARY", ToolTip = "Toto je pouze ukázková knihovna" };
             this.MainData.Pages.Add(this.MainPage);
         }
+        /// <summary>
+        /// Vygeneruje kompletní data do levého panelu = Výrobní příkazy
+        /// </summary>
         protected void CreateLeftPanel()
         {
             GuiGrid gridLeft = new GuiGrid() { Name = "GridLeft", Title = "Výrobní příkazy" };
@@ -548,6 +545,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             guiGrid.Rows.RowTags.TagItemList.AddRange(productOrder.TagItems);
             guiGrid.Graphs.Add(productOrder.CreateGuiGraph());
         }
+        /// <summary>
+        /// Vygeneruje kompletní data do středního panelu = Pracoviště
+        /// </summary>
         protected void CreateCenterPanel()
         {
             GuiGrid gridCenter = new GuiGrid() { Name = "GridCenter", Title = "Pracoviště" };
@@ -622,8 +622,56 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         protected GuiTimeRange TimeRangeCurrent;
         #endregion
         #endregion
-        #region Generátory náhodných textů
-
+        #region Náhodná data
+        /// <summary>
+        /// Metoda vygeneruje a vrátí časový úsek.
+        /// Jeho počátek = begin;
+        /// Jeho end = počátek + (time * timeQty, pokud timeQty má hodnotu která je 0 nebo kladná).
+        /// </summary>
+        /// <param name="begin"></param>
+        /// <param name="time"></param>
+        /// <param name="timeQty"></param>
+        /// <returns></returns>
+        internal GuiTimeRange GetTimeRange(ref DateTime begin, TimeSpan time, double? timeQty = null)
+        {
+            return this.GetTimeRange(ref begin, 0d, 0, time, timeQty);
+        }
+        /// <summary>
+        /// Metoda vygeneruje a vrátí časový úsek.
+        /// Jeho počátek = begin [ + pauza vložená s pravděpodobností pauseRatio v délce 0 až pauseMaxHour];
+        /// Jeho end = počátek + (time * timeQty, pokud timeQty má hodnotu která je 0 nebo kladná).
+        /// </summary>
+        /// <param name="begin"></param>
+        /// <param name="pauseRatio"></param>
+        /// <param name="pauseMaxHour"></param>
+        /// <param name="time"></param>
+        /// <param name="timeQty"></param>
+        /// <returns></returns>
+        internal GuiTimeRange GetTimeRange(ref DateTime begin, double pauseRatio, int pauseMaxHour, TimeSpan time, double? timeQty = null)
+        {
+            if (pauseRatio > 0d && this.Rand.NextDouble() > pauseRatio)
+                begin = begin + TimeSpan.FromHours(this.Rand.Next(pauseMaxHour + 1));
+            DateTime end = begin + ((timeQty.HasValue && timeQty.Value >= 0d) ? TimeSpan.FromHours(timeQty.Value * time.TotalHours) : time);
+            GuiTimeRange timeRange = new GuiTimeRange(begin, end);
+            begin = end;
+            return timeRange;
+        }
+        /// <summary>
+        /// Vrátí jeden z prvků daného pole
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="items"></param>
+        /// <returns></returns>
+        internal T GetRandom<T>(T[] items)
+        {
+            int count = (items != null ? items.Length : 0);
+            if (count == 0) return default(T);
+            return items[this.Rand.Next(count)];
+        }
+        /// <summary>
+        /// Generátor náhodných hodnot
+        /// </summary>
+        protected Random Rand;
         #endregion
         #region IAppHost
         void IAppHost.CallAppHostFunction(AppHostRequestArgs args)
@@ -633,6 +681,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         #endregion
     }
     #region Třídy pro data
+    /// <summary>
+    /// Data: Výrobní příkaz
+    /// </summary>
     public class ProductOrder : SubjectClass
     {
         public ProductOrder()
@@ -645,6 +696,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         public GuiTimeRange Time { get; set; }
         public decimal Qty { get; set; }
         public Color BackColor { get; set; }
+        /// <summary>
+        /// Vytvoří a vrátí graf za tento Výrobní příkaz (obsahuje prvky = operace)
+        /// </summary>
+        /// <returns></returns>
         public GuiGraph CreateGuiGraph()
         {
             GuiGraph guiGraph = new GuiGraph();
@@ -655,6 +710,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             return guiGraph;
         }
+        /// <summary>
+        /// Vytvoří a vrátí sadu vztahů mezi operacemi tohoto Výrobního příkazu
+        /// </summary>
+        /// <returns></returns>
         public GuiGraphLink[] CreateGuiLinks()
         {
             if (this.OperationList == null || this.OperationList.Count <= 1) return null;
@@ -664,6 +723,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             return linkList.ToArray();
         }
     }
+    /// <summary>
+    /// Data: Operace výrobního příkazu
+    /// </summary>
     public class ProductOperation : SubjectClass
     {
         public ProductOperation()
@@ -687,7 +749,22 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         public GuiTimeRange TimeTAc { get; set; }
         public GuiTimeRange TimeTEc { get; set; }
         public Color BackColor { get; set; }
-
+        /// <summary>
+        /// Vypočte a uloží časy jednotlivých fází operace
+        /// </summary>
+        /// <param name="dataSource"></param>
+        /// <param name="time"></param>
+        public void FillTimes(SchedulerDataSource dataSource, ref DateTime time)
+        {
+            this.TimeTBc = dataSource.GetTimeRange(ref time, 0.25d, 8, this.TBc);
+            this.TimeTAc = dataSource.GetTimeRange(ref time, 0.25d, 0, this.TAc, (double?)this.Qty);
+            this.TimeTEc = dataSource.GetTimeRange(ref time, 0.10d, 2, this.TEc);
+            this.Time = new GuiTimeRange(this.TimeTBc.Begin, this.TimeTEc.End);
+        }
+        /// <summary>
+        /// Vytvoří a vrátí prvek grafu za tuto operaci.
+        /// </summary>
+        /// <returns></returns>
         public GuiGraphItem CreateGuiGraphItem()
         {
             GuiGraphItem guiGraphItem = new GuiGraphItem()
@@ -702,21 +779,40 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             };
             return guiGraphItem;
         }
-
+        /// <summary>
+        /// Zaplánuje tuto operaci (její jednotlivé časy) do pracoviště
+        /// </summary>
+        /// <param name="recordId"></param>
+        /// <param name="planUnitC"></param>
         public void PlanOperationToWorkplace(ref int recordId, PlanUnitC planUnitC)
         {
             if (planUnitC == null) return;
-            this.PlanUnitToWorkplace(ref recordId, planUnitC, this.TimeTBc, this.BackColor.Morph(Color.Green, 0.25f));
-            this.PlanUnitToWorkplace(ref recordId, planUnitC, this.TimeTAc, this.BackColor);
-            this.PlanUnitToWorkplace(ref recordId, planUnitC, this.TimeTEc, this.BackColor.Morph(Color.Black, 0.25f));
+            this.PlanUnitTimeToWorkplace(ref recordId, planUnitC, this.TimeTBc, this.BackColor.Morph(Color.Green, 0.25f));
+            this.PlanUnitTimeToWorkplace(ref recordId, planUnitC, this.TimeTAc, this.BackColor);
+            this.PlanUnitTimeToWorkplace(ref recordId, planUnitC, this.TimeTEc, this.BackColor.Morph(Color.Black, 0.25f));
         }
-        protected void PlanUnitToWorkplace(ref int recordId, PlanUnitC planUnitC, GuiTimeRange time, Color backColor)
+        /// <summary>
+        /// Uloží jednotku práce pro daný čas do pracoviště
+        /// </summary>
+        /// <param name="recordId"></param>
+        /// <param name="planUnitC"></param>
+        /// <param name="time"></param>
+        /// <param name="backColor"></param>
+        protected void PlanUnitTimeToWorkplace(ref int recordId, PlanUnitC planUnitC, GuiTimeRange time, Color backColor)
         {
             if (planUnitC == null || time == null || time.End <= time.Begin) return;
             if (planUnitC.UnitTimes == null)
                 planUnitC.UnitTimes = new List<UnitTime>();
             planUnitC.UnitTimes.Add(this.CreateUnitTime(ref recordId, planUnitC, time, backColor));
         }
+        /// <summary>
+        /// Vytvoří a vrátí jednotku práce
+        /// </summary>
+        /// <param name="recordId"></param>
+        /// <param name="planUnitC"></param>
+        /// <param name="time"></param>
+        /// <param name="backColor"></param>
+        /// <returns></returns>
         protected UnitTime CreateUnitTime(ref int recordId, PlanUnitC planUnitC, GuiTimeRange time, Color backColor)
         {
             UnitTime unitTime = new UnitTime()
@@ -733,14 +829,12 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             };
             return unitTime;
         }
-        public void FillTimes(SchedulerDataSource dataSource, ref DateTime time)
-        {
-            this.TimeTBc = dataSource.GetTimeRange(ref time, 0.20d, 8, this.TBc);
-            this.TimeTAc = dataSource.GetTimeRange(ref time, 0.00d, 0, this.TAc, (double?)this.Qty);
-            this.TimeTEc = dataSource.GetTimeRange(ref time, 0.10d, 2, this.TEc);
-            this.Time = new GuiTimeRange(this.TimeTBc.Begin, this.TimeTEc.End);
-        }
-
+        /// <summary>
+        /// Vygeneruje a vrátí vztah mezi dvěma operacemi (Link)
+        /// </summary>
+        /// <param name="prev"></param>
+        /// <param name="next"></param>
+        /// <returns></returns>
         public static GuiGraphLink CreateGuiLink(ProductOperation prev, ProductOperation next)
         {
             GuiGraphLink link = new GuiGraphLink()
@@ -754,6 +848,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             return link;
         }
     }
+    /// <summary>
+    /// Data: Pracoviště
+    /// </summary>
     public class PlanUnitC : SubjectClass
     {
         public const int ClassNumber = 1364;
@@ -764,6 +861,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         public int MachinesCount { get; set; }
         public List<WorkTime> WorkTimes { get; set; }
         public List<UnitTime> UnitTimes { get; set; }
+        /// <summary>
+        /// Vytvoří a vrátí graf za toto Pracoviště (obsahuje prvky = pracovní směny a prvky práce)
+        /// </summary>
+        /// <returns></returns>
         public GuiGraph CreateGuiGraph()
         {
             GuiGraph guiGraph = new GuiGraph();
@@ -778,6 +879,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             return guiGraph;
         }
     }
+    /// <summary>
+    /// Data: Pracovní jednotka = kus práce na pracovišti
+    /// </summary>
     public class UnitTime : RecordClass
     {
         public const int ClassNumber = 1817;
@@ -791,7 +895,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         public bool IsEditable { get; set; }
         public string Text { get; set; }
         public string ToolTip { get; set; }
-
+        /// <summary>
+        /// Vytvoří a vrátí prvek grafu za tuto jednotku práce.
+        /// </summary>
+        /// <returns></returns>
         public GuiGraphItem CreateGuiGraphItem()
         {
             GuiGraphItem guiGraphItem = new GuiGraphItem()
@@ -811,6 +918,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         }
 
     }
+    /// <summary>
+    /// Data: Pracovní směna
+    /// </summary>
     public class WorkTime : RecordClass
     {
         public const int ClassNumber = 1365;
@@ -821,7 +931,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         public bool IsEditable { get; set; }
         public string Text { get; set; }
         public string ToolTip { get; set; }
-
+        /// <summary>
+        /// Vytvoří a vrátí prvek grafu za tuto pracovní směnu.
+        /// </summary>
+        /// <returns></returns>
         public GuiGraphItem CreateGuiGraphItem()
         {
             GuiGraphItem guiGraphItem = new GuiGraphItem()
@@ -839,14 +952,30 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             return guiGraphItem;
         }
     }
+    /// <summary>
+    /// Data: Subjektový záznam
+    /// </summary>
     public abstract class SubjectClass : RecordClass
     {
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             return base.ToString() + "; \"" + this.ReferName + "\"";
         }
+        /// <summary>
+        /// Reference
+        /// </summary>
         public virtual string Refer { get; set; }
+        /// <summary>
+        /// Název
+        /// </summary>
         public virtual string Name { get; set; }
+        /// <summary>
+        /// Reference: Název
+        /// </summary>
         public string ReferName
         {
             get
@@ -860,14 +989,30 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             }
         }
     }
+    /// <summary>
+    /// Data: Obecný záznam
+    /// </summary>
     public abstract class RecordClass
     {
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             return "Record: " + this.RecordGid;
         }
+        /// <summary>
+        /// GuiId záznamu (třída + záznam)
+        /// </summary>
         public GuiId RecordGid { get { return new GuiId(this.ClassId, this.RecordId); } }
+        /// <summary>
+        /// Číslo třídy
+        /// </summary>
         public abstract int ClassId { get; }
+        /// <summary>
+        /// Číslo záznamu
+        /// </summary>
         public int RecordId { get; set; }
     }
     #endregion
