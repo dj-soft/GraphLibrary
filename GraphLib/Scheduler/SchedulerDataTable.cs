@@ -422,13 +422,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         protected Index<GId> GIdIntIndex { get; set; }
         #endregion
-        #region TableRow
+        #region TableRow + TagItems
         /// <summary>
-        /// Načte tabulku s řádky
+        /// Načte tabulku s řádky <see cref="TableRow"/>: sloupce, řádky, filtr
         /// </summary>
         protected void LoadDataLoadRow()
         {
-            this.TableRow = Table.CreateFrom(this.GuiGrid.Rows.DataTable);
+            var tagItems = this.CreateTagArray();
+            this.TableRow = Table.CreateFrom(this.GuiGrid.Rows.DataTable, tagItems);
             this.TableRow.OpenRecordForm += _TableRow_OpenRecordForm;
             this.TableRow.UserData = this;
             if (this.TableRow.AllowPrimaryKey) this.TableRow.HasPrimaryIndex = true;
@@ -438,6 +439,47 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Tato tabulka je zobrazována.
         /// </summary>
         public Table TableRow { get; private set; }
+        /// <summary>
+        /// Metoda vrátí pole štítků <see cref="TagItem"/>, načtených z <see cref="GuiGrid"/>.
+        /// </summary>
+        /// <returns></returns>
+        protected KeyValuePair<GId, TagItem>[] CreateTagArray()
+        {
+            return CreateTagArray(this.GuiGrid.Rows.RowTags.TagItemList);
+        }
+        /// <summary>
+        /// Metoda vrátí pole štítků <see cref="TagItem"/>, načtených z <see cref="GuiGrid"/>.
+        /// </summary>
+        /// <returns></returns>
+        protected static KeyValuePair<GId, TagItem>[] CreateTagArray(IEnumerable<GuiTagItem> guiTagItems)
+        {
+            if (guiTagItems == null) return null;
+            return guiTagItems
+                .Select(gti => CreateTagItem(gti))
+                .ToArray();
+        }
+        /// <summary>
+        /// Metoda vrátí párový údaj KeyValuePair, který obsahuje v Key = ID řádku, a ve Value = data štítku <see cref="TagItem"/>.
+        /// </summary>
+        /// <param name="guiTagItem"></param>
+        /// <returns></returns>
+        protected static KeyValuePair<GId, TagItem> CreateTagItem(GuiTagItem guiTagItem)
+        {
+            TagItem tagItem = new TagItem()
+            {
+                Text = guiTagItem.TagText,
+                BackColor = guiTagItem.BackColor,
+                CheckedBackColor = guiTagItem.BackColorChecked,
+                BorderColor = null,
+                TextColor = null,
+                Size = null,
+                Visible = true,
+                Checked = false,
+                UserData = guiTagItem.UserData
+            };
+            GId rowGId = guiTagItem.RowId;
+            return new KeyValuePair<GId, TagItem>(rowGId, tagItem);
+        }
         #endregion
         #region Grafy a položky grafů
         /// <summary>

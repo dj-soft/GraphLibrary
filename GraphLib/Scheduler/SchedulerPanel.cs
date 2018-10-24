@@ -8,6 +8,7 @@ using System.Windows.Forms;
 using Asol.Tools.WorkScheduler.Components;
 using Asol.Tools.WorkScheduler.Data;
 using Noris.LCS.Base.WorkScheduler;
+using Asol.Tools.WorkScheduler.Components.Grid;
 
 namespace Asol.Tools.WorkScheduler.Scheduler
 {
@@ -271,7 +272,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
                 this._DataTableList.Add(graphTable);
 
-                gGrid.AddTable(graphTable.TableRow);
+                var gTable = gGrid.AddTable(graphTable.TableRow);
+                _LoadGridProperties(gTable, guiGrid.GridProperties);
             }
             return true;
         }
@@ -296,10 +298,24 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
                 this._DataTableList.Add(graphTable);
 
-                gGrid.AddTable(graphTable.TableRow);
+                var gTable = gGrid.AddTable(graphTable.TableRow);
+                _LoadGridProperties(gTable, guiGrid.GridProperties);
                 tabs.AddTabItem(gGrid, guiGrid.Title, guiGrid.ToolTip);
             }
             return true;
+        }
+        /// <summary>
+        /// Metoda přenese nastavení vlastností z <see cref="GuiGridProperties"/> do <see cref="GTable"/>.
+        /// </summary>
+        /// <param name="gTable"></param>
+        /// <param name="gridProperties"></param>
+        private static void _LoadGridProperties(GTable gTable, GuiGridProperties gridProperties)
+        {
+            gTable.TagFilterBackColor = gridProperties.TagFilterBackColor;
+            gTable.TagFilterEnabled = gridProperties.TagFilterEnabled;
+            gTable.TagFilterItemHeight = gridProperties.TagFilterItemHeight;
+            gTable.TagFilterItemMaxCount = gridProperties.TagFilterItemMaxCount;
+            gTable.TagFilterRoundItemPercent = gridProperties.TagFilterRoundItemPercent;
         }
         #endregion
         #region Child items

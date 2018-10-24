@@ -2844,6 +2844,28 @@ namespace Asol.Tools.WorkScheduler.Data
             this.AddRange(values);
         }
         /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="values"></param>
+        /// <param name="keySelector"></param>
+        public DictionaryList(IEnumerable<Tuple<TKey, TValue>> values, Func<TValue, TKey> keySelector = null)
+        {
+            this._Dictionary = new Dictionary<TKey, List<TValue>>();
+            this._KeySelector = keySelector;
+            this.AddRange(values);
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="values"></param>
+        /// <param name="keySelector"></param>
+        public DictionaryList(IEnumerable<KeyValuePair<TKey, TValue>> values, Func<TValue, TKey> keySelector = null)
+        {
+            this._Dictionary = new Dictionary<TKey, List<TValue>>();
+            this._KeySelector = keySelector;
+            this.AddRange(values);
+        }
+        /// <summary>
         /// Ověří, že je k dispozici metoda <see cref="_KeySelector"/>.
         /// </summary>
         private void _KeySelectorCheck()
@@ -2905,6 +2927,29 @@ namespace Asol.Tools.WorkScheduler.Data
             if (values == null) return;
             foreach (TValue value in values)
                 this._Add(this._KeySelector(value), value);
+        }
+        /// <summary>
+        /// Přidá sadu položek.
+        /// Položky obsahují klíče i hodnoty.
+        /// </summary>
+        /// <param name="values">položky</param>
+        public void AddRange(IEnumerable<KeyValuePair<TKey, TValue>> values)
+        {
+            if (values == null) return;
+            foreach (KeyValuePair<TKey, TValue> value in values)
+                this._Add(value.Key, value.Value);
+            
+        }
+        /// <summary>
+        /// Přidá sadu položek.
+        /// Položky obsahují klíče (v <see cref="Tuple{T1, T2}.Item1"/>) i hodnoty (v <see cref="Tuple{T1, T2}.Item2"/>).
+        /// </summary>
+        /// <param name="values">položky</param>
+        public void AddRange(IEnumerable<Tuple<TKey, TValue>> values)
+        {
+            if (values == null) return;
+            foreach (Tuple<TKey, TValue> value in values)
+                this._Add(value.Item1, value.Item2);
         }
         /// <summary>
         /// Přidá sadu položek.
@@ -3065,6 +3110,29 @@ namespace Asol.Tools.WorkScheduler.Data
                     list.AddRange(kvp.Value.Select(i => new Tuple<TKey, TValue>(kvp.Key, i)));
                 return list.ToArray();
             }
+        }
+        /// <summary>
+        /// Vrací true, když this instance obsahuje data pro daný klíč.
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        public bool ContainsKey(TKey key)
+        {
+            return this._Dictionary.ContainsKey(key);
+        }
+        /// <summary>
+        /// Zkusí najít data pro daný klíč.
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="values"></param>
+        /// <returns></returns>
+        public bool TryGetValue(TKey key, out TValue[] values)
+        {
+            values = null;
+            List<TValue> list;
+            if (!this._Dictionary.TryGetValue(key, out list)) return false;
+            values = list.ToArray();
+            return true;
         }
         #endregion
     }

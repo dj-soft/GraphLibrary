@@ -615,7 +615,6 @@ namespace Asol.Tools.WorkScheduler.Data
         public event EventHandler TagItemsChanged;
         /// <summary>
         /// Soupis štítků ze všech řádků.
-        /// Key = text Tagu; Value = počet výskytů
         /// </summary>
         private TagItem[] _TagItems;
         #endregion
@@ -1510,14 +1509,15 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// Metoda vytvoří novou tabulku <see cref="Table"/> na základě dat z tabulky <see cref="System.Data.DataTable"/>.
         /// </summary>
-        /// <param name="dataTable"></param>
+        /// <param name="dataTable">Data tabulky (sloupce, jejich properties, řádky)</param>
+        /// <param name="tagItems">Data štítků <see cref="TagItem"/> ke všem řádkům</param>
         /// <returns></returns>
-        public static Table CreateFrom(System.Data.DataTable dataTable)
+        public static Table CreateFrom(System.Data.DataTable dataTable, IEnumerable<KeyValuePair<GId, TagItem>> tagItems = null)
         {
             if (dataTable == null) return null;
             Table table = new Table(dataTable.TableName);
-            table.Columns.AddRange(Column.CreateFrom(dataTable.Columns));    // Přidávat prvky musím včetně logiky AddItemAfter, kvůli navazujícím algoritmům (indexy, owner)
-            table.Rows.AddRange(Row.CreateFrom(dataTable.Rows));
+            table.Columns.AddRange(Column.CreateFrom(dataTable.Columns));      // Přidávat prvky musím včetně logiky AddItemAfter, kvůli navazujícím algoritmům (indexy, owner)
+            table.Rows.AddRange(Row.CreateFrom(dataTable.Rows, tagItems, table.RowsClassId));     // Vytvoří řádky, a současně do nich vloží TagItems
             return table;
         }
         #endregion
@@ -2688,16 +2688,24 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Metoda vytvoří soupis sloupců <see cref="Row"/> na základě dat o sloupcích z tabulky <see cref="System.Data.DataRowCollection"/>.
         /// </summary>
         /// <param name="dataRows">Kolekce řádků, vstup</param>
+        /// <param name="tagItems">Data štítků <see cref="TagItem"/> ke všem řádkům</param>
+        /// <param name="rowClassId">Číslo třídy tabulky (pochází z <see cref="Data.Table.RowsClassId"/>)</param>
         /// <returns></returns>
-        public static IEnumerable<Row> CreateFrom(System.Data.DataRowCollection dataRows)
+        public static IEnumerable<Row> CreateFrom(System.Data.DataRowCollection dataRows, IEnumerable<KeyValuePair<GId, TagItem>> tagItems = null, int? rowClassId = null)
         {
             if (dataRows == null) return null;
+            bool addTags = (tagItems != null);
+            DictionaryList<GId, TagItem> tagDict = (addTags ? new DictionaryList<GId, TagItem>(tagItems) : null);
             List<Row> rowList = new List<Row>();
             foreach (System.Data.DataRow dataRow in dataRows)
             {
                 Row row = Row.CreateFrom(dataRow);
                 if (row != null)
+                {
+                    if (addTags)
+                        row.TagItems = GetTagItemsForRow(row, rowClassId, tagDict);
                     rowList.Add(row);
+                }
             }
             return rowList;
         }
@@ -2711,6 +2719,22 @@ namespace Asol.Tools.WorkScheduler.Data
             if (dataRow == null) return null;
             Row row = new Row(dataRow.ItemArray);
             return row;
+        }
+        /// <summary>
+        /// Metoda najde a vrátí tagy pro daný řádek a třídu, z dodaného indexu
+        /// </summary>
+        /// <param name="row"></param>
+        /// <param name="rowClassId"></param>
+        /// <param name="tagDict"></param>
+        /// <returns></returns>
+        protected static TagItem[] GetTagItemsForRow(Row row, int? rowClassId, DictionaryList<GId, TagItem> tagDict)
+        {
+            int recordId;
+            if (!row[0].TryGetValue<int>(out recordId)) return null;
+            GId recordGId = new GId(rowClassId.HasValue ? rowClassId.Value : 0, recordId);
+            TagItem[] tagItems;
+            tagDict.TryGetValue(recordGId, out tagItems);
+            return tagItems;
         }
         #endregion
         #region IContentValidity
@@ -2957,7 +2981,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Přečte hodnotu z této buňky typovanou na daný typ (T).
         /// Pokud buňka obsahuje null (<see cref="HasValue"/> == false), nebo její obsah není převoditelný na (T), přečte default(T).
         /// Metoda vrací true, pokud obsah buňky je null (to bereme jako OK) anebo pokud obsah buňky je převoditelný na (T) (to je OK).
-        /// Metoda vrací false, pokud buňka není null ale její typ není převoditelný na (T), to je chyba.
+        /// Metoda vrací false, pokud buňka není null, ale její typ není převoditelný na (T) == to je chyba!
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="value"></param>

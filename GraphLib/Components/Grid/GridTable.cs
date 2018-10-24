@@ -175,8 +175,8 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             this._TableHeaderBounds = new Rectangle(x0, y0, x1 - x0, y1 - y0);
             this._ColumnHeadersBounds = new Rectangle(x1, y0, x3 - x1, y1 - y0);
             this._TagHeaderLBounds = new Rectangle(x0, y1, x1 - x0, y2 - y1);
-            this._TagFilterBounds = new Rectangle(x1, y1, x2t - x1, y2 - y1);
-            this._TagHeaderRBounds = new Rectangle(x2t, y1, x3 - x2t, y2 - y1);
+            this._TagFilterBounds = new Rectangle(x1, y1, x2r - x1, y2 - y1);
+            this._TagHeaderRBounds = new Rectangle(x2r, y1, x3 - x2r, y2 - y1);
             this._RowBounds = new Rectangle(x0, y2, x2r - x0, y3 - y2);
             this._RowHeadersBounds = new Rectangle(x0, y2, x1 - x0, y3 - y2);
             this._RowDataBounds = new Rectangle(x1, y2, x2r - x1, y3 - y2);
@@ -1080,7 +1080,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
 
             if ((items & (InvalidateItem.TableTagFilter)) != 0)
             {   // Po změně v TagFilteru v tabulce invalidujeme i rozložení tabulky:
-                this._TagFilterVisible = null;
+                this._TagFilterExists = null;
                 this._TagFilterHeight = null;
                 this._TableInnerLayoutValid = false;
                 this._ChildArrayValid = false;
@@ -1229,8 +1229,9 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         private void InitTagFilter()
         {
             this._TagHeaderL = new GTagLine(this._DataTable, TableAreaType.TagFilterHeaderLeft);
-            this._TagFilter = new GTagFilter() { ExpandHeightOnMouse = true };
+            this._TagFilter = new GTagFilter() { ExpandHeightOnMouse = true, RoundItemPercent = 0 };
             this._TagHeaderR = new GTagLine(this._DataTable, TableAreaType.TagFilterHeaderRight);
+            this._TagFilterEnabled = true;
             this._TagFilter.FilterChanged += _TagFilter_FilterChanged;
             if (this._DataTable != null)
                 this._DataTable.TagItemsChanged += this._TagItemsChanged;
@@ -1289,15 +1290,54 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         private int? _TagFilterHeight;
         /// <summary>
-        /// Příznak viditelnosti objektu TagFilter.
+        /// Příznak existence dat pro filtr TagFilter.
+        /// Obsahuje true, pokud napojená datová tabulka obsahuje položky pro filtr TagFilter.
+        /// Tuto hodnotu nelze nastavit dle přání, k tomu se používá property <see cref="TagFilterEnabled"/>.
         /// </summary>
-        protected bool TagFilterVisible { get { this._TagFilterVisibleCheck(); return this._TagFilterVisible.Value; } }
+        public bool TagFilterExists { get { this._TagFilterExistsCheck(); return this._TagFilterExists.Value; } }
         /// <summary>
-        /// Prověří/nastaví platnost hodnoty <see cref="_TagFilterVisible"/>.
+        /// Uživatelská hodnota, reprezentující přání aplikace, aby byl zobrazen filtr TagFilter.
+        /// Aplikace může filtr skrýt nastavením <see cref="TagFilterEnabled"/> = false (pak filtr nebude zobrazen).
+        /// Pokud aplikace nastaví <see cref="TagFilterEnabled"/> = true, pak bude filtr zobrazen jen tehdy, pokud filtr reálně existuje (<see cref="TagFilterExists"/>).
+        /// Reálná viditelnost filtru je pak tedy součinem: <see cref="TagFilterVisible"/> = (<see cref="TagFilterEnabled"/> and <see cref="TagFilterExists"/>);
+        /// Výchozí hodnota <see cref="TagFilterEnabled"/> je true.
         /// </summary>
-        private void _TagFilterVisibleCheck()
+        public bool TagFilterEnabled { get { return this._TagFilterEnabled; } set { this._TagFilterEnabled = value; this.Invalidate(InvalidateItem.TableTagFilter); } }
+        private bool _TagFilterEnabled;
+        /// <summary>
+        /// Barva pozadí filtru TagFilter
+        /// </summary>
+        public Color? TagFilterBackColor { get { return this._TagFilter.BackColorUser; } set { this._TagFilter.BackColorUser = value; this.Invalidate(InvalidateItem.Paint); } }
+        /// <summary>
+        /// Filtr řádků TagFilter:
+        /// Výška jednoho prvku.
+        /// </summary>
+        public int TagFilterItemHeight { get { return this._TagFilter.ItemHeight; } set { this._TagFilter.ItemHeight = value; this.Invalidate(InvalidateItem.TableTagFilter); } }
+        /// <summary>
+        /// Filtr řádků TagFilter:
+        /// Nejvyšší počet zobrazitelných prvků.
+        /// Zatím bez efektu.
+        /// </summary>
+        public int TagFilterItemMaxCount { get { return 0; } set { } }
+
+
+        /// <summary>
+        /// Obsahuje true, pokud je reálně zobrazen filtr TagFilter.
+        /// <see cref="TagFilterVisible"/> = (<see cref="TagFilterEnabled"/> and <see cref="TagFilterExists"/>);
+        /// </summary>
+        public bool TagFilterVisible { get { return (this.TagFilterEnabled && this.TagFilterExists); } }
+        /// <summary>
+        /// Vlastnost <see cref="GTagFilter.RoundItemPercent"/> pro filtr TagFilter:
+        /// Procento kulatých krajů jednotlivých prvků.
+        /// 0 = hranaté prvky; 100 = 100% = čisté půlkruhy. Hodnoty mimo rozsah jsou zarovnané do rozsahu 0 až 100 (včetně).
+        /// </summary>
+        public int TagFilterRoundItemPercent { get { return this._TagFilter.RoundItemPercent; } set { this._TagFilter.RoundItemPercent = value; } }
+        /// <summary>
+        /// Prověří/nastaví platnost hodnoty <see cref="_TagFilterExists"/>.
+        /// </summary>
+        private void _TagFilterExistsCheck()
         {
-            if (this._TagFilterVisible.HasValue) return;
+            if (this._TagFilterExists.HasValue) return;
             bool tagFilterVisible = false;
             if (this._DataTable != null)
             {
@@ -1305,14 +1345,14 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                 if (tagFilterVisible)
                     this._TagFilter.TagItems = this._DataTable.TagItems;
             }
-            this._TagFilterVisible = tagFilterVisible;
+            this._TagFilterExists = tagFilterVisible;
         }
         /// <summary>
         /// Privátní příznak viditelnosti objektu TagFilter.
         /// Na null je nastaven při invalidaci <see cref="InvalidateItem.TableTagFilter"/>.
-        /// Na platnou hodnotu je nastaven v <see cref="_TagFilterVisibleCheck()"/>.
+        /// Na platnou hodnotu je nastaven v <see cref="_TagFilterExistsCheck()"/>.
         /// </summary>
-        private bool? _TagFilterVisible;
+        private bool? _TagFilterExists;
         /// <summary>
         /// Instance prvku <see cref="GRowHeader"/>. Vždy má správné souřadnice.
         /// </summary>

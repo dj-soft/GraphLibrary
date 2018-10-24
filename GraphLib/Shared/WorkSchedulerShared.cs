@@ -491,23 +491,41 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Konstruktor
         /// </summary>
         public GuiGridProperties() : base()
-        { }
+        {
+            this.TagFilterEnabled = true;
+            this.TagFilterItemHeight = 26;
+            this.TagFilterItemMaxCount = 100;
+
+        }
         /// <summary>
         /// Obsahuje true, pokud má být zobrazen TagFilter = filtr s jednotlivými štítky.
         /// Data pro filtr se ukládají do <see cref="GuiTable.RowTags"/>, reprezentují jednoduché pole prvků, 
         /// kde prvek obsahuje klíč svého řádku (řádek v dané tabulce) a dále obsahuje text štítku (zobrazuje se uživateli) plus volitelně barvy štítku.
         /// </summary>
-        public bool TagFilterVisible { get; set; }
+        public bool TagFilterEnabled { get; set; }
         /// <summary>
         /// Výška prvků v objektu TagFilter, v pixelech.
+        /// Výchozí hodnota = 26.
         /// Objekt TagFilter zobrazuje běžně jen jeden řádek prvků, a až při najetí myší se rozbalí dolů na potřebnou výšku.
         /// </summary>
         public int TagFilterItemHeight { get; set; }
         /// <summary>
         /// Nejvyšší počet prvků zobrazených v TagFilter.
         /// Pokud jich bude více, pak ty s nejmenším počtem výskytů v řádcích budou skryty.
+        /// Výchozí hodnota = 100;
         /// </summary>
         public int TagFilterItemMaxCount { get; set; }
+        /// <summary>
+        /// Procento kulatých krajů jednotlivých prvků v TagFilter.
+        /// 0 = hranaté prvky; 100 = 100% = čisté půlkruhy. Hodnoty mimo rozsah jsou zarovnané do rozsahu 0 až 100 (včetně).
+        /// Výchozí hodnota = 35;
+        /// </summary>
+        public int TagFilterRoundItemPercent { get; set; }
+        /// <summary>
+        /// Barva pozadí filtru TagFilter
+        /// </summary>
+        public Color? TagFilterBackColor { get; set; }
+
     }
     #endregion
     #region GuiTable : Jedna fyzická tabulka (ekvivalent DataTable, s podporou serializace a implicitní konverze z/na DataTable)
