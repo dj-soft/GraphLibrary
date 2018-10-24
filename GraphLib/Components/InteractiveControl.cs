@@ -1669,40 +1669,38 @@ namespace Asol.Tools.WorkScheduler.Components
                 {
                     if (request.DrawAllItems)
                         base.OnPaintLayers(e);
-                    Graphics graphics = e.GraphicsForLayer(0);
+                    Graphics graphics = e.GetGraphicsForLayer(0, true);
                     this.CallDrawStandardLayer(graphics);
-                    this._PaintItems(e.GraphicsForLayer(0), request.StandardItems, GInteractiveDrawLayer.Standard);
+                    this._PaintItems(graphics, request.StandardItems, GInteractiveDrawLayer.Standard);
                     scope.AddItem("Layer Standard, Items: " + request.StandardItems.Count.ToString());
                 }
                 if (request.NeedIntDraw)
                 {
-                    e.CopyContentOfLayer(e.ValidLayer, 1);
-                    this._PaintItems(e.GraphicsForLayer(1), request.InteractiveItems, GInteractiveDrawLayer.Interactive);
+                    Graphics graphics = e.GetGraphicsForLayer(1, true);
+                    this._PaintItems(graphics, request.InteractiveItems, GInteractiveDrawLayer.Interactive);
                     scope.AddItem("Layer Interactive, Items: " + request.InteractiveItems.Count.ToString());
                 }
                 if (request.NeedDynDraw)
                 {
-                    e.CopyContentOfLayer(e.ValidLayer, 2);
-                    Graphics graphics2 = e.GraphicsForLayer(2);
+                    Graphics graphics = e.GetGraphicsForLayer(2, true);
                     if (request.DynamicItems.Count > 0)
                     {
-                        this._PaintItems(graphics2, request.DynamicItems, GInteractiveDrawLayer.Dynamic);
+                        this._PaintItems(graphics, request.DynamicItems, GInteractiveDrawLayer.Dynamic);
                         scope.AddItem("Layer Dynamic, Items: " + request.DynamicItems.Count.ToString());
                     }
                     if (request.DrawFrameSelect)
                     {
-                        this._PaintFrameBounds(graphics2, GInteractiveDrawLayer.Dynamic);
+                        this._PaintFrameBounds(graphics, GInteractiveDrawLayer.Dynamic);
                     }
                 }
 
                 if (this._ProgressItem.Is.Visible || this._ToolTip.NeedDraw)
                 {
-                    e.CopyContentOfLayer(e.ValidLayer, 3);
-                    Graphics graphics3 = e.GraphicsForLayer(3);
+                    Graphics graphics = e.GetGraphicsForLayer(3, true);
                     if (this._ProgressItem.Is.Visible)
-                        this._ProgressItem.Draw(graphics3);
+                        this._ProgressItem.Draw(graphics);
                     if (this._ToolTip.NeedDraw)
-                        this._ToolTip.Draw(graphics3);
+                        this._ToolTip.Draw(graphics);
                     scope.AddItem("Layer ToolTip");
                 }
 
@@ -2426,13 +2424,11 @@ namespace Asol.Tools.WorkScheduler.Components
             decimal avt = this.StopwatchAverageTime;
             if (avt <= 0m) return;
 
-            e.CopyContentOfLayer(e.ValidLayer, 3);
-
             decimal fps = Math.Round(1m / avt, 1);
             string info = "     " + fps.ToString("### ##0.0").Trim() + " fps";
             Size size = new System.Drawing.Size(90, 20);
             Rectangle bounds = size.AlignTo(this.ClientRectangle, ContentAlignment.BottomRight).Enlarge(0, 0, -1, -1);
-            Graphics graphics = e.GraphicsForLayer(e.ValidLayer);
+            Graphics graphics = e.GetGraphicsCurrent();
             Color backColor = Color.FromArgb(48, Color.LightSkyBlue);
             Color foreColor = Color.FromArgb(96, Color.Black);
             GraphicsPath gp = GPainter.CreatePathRoundRectangle(bounds, 2, 2);

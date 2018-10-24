@@ -289,6 +289,15 @@ namespace Asol.Tools.WorkScheduler.Application
             _TryRun(action, true, true);
         }
         /// <summary>
+        /// Metoda vyvolá danou akci v try-catch bloku, případnou chybu zapíše do trace a pokud je Debug režim, tak ji i ohlásí.
+        /// </summary>
+        /// <param name="action"></param>
+        /// <param name="showErrorInDebugMode">Pokud jsme v Debug modu, tak zobrazit chybu</param>
+        public static void TryRun(Action action, bool showErrorInDebugMode)
+        {
+            _TryRun(action, showErrorInDebugMode, showErrorInDebugMode);
+        }
+        /// <summary>
         /// Metoda vyvolá danou akci v try-catch bloku, v threadu na pozadí, případnou chybu zapíše do trace ale nehlásí ji.
         /// </summary>
         /// <param name="action"></param>
@@ -304,8 +313,8 @@ namespace Asol.Tools.WorkScheduler.Application
         /// </summary>
         /// <param name="action"></param>
         /// <param name="traceError"></param>
-        /// <param name="showError"></param>
-        private static void _TryRun(Action action, bool traceError, bool showError)
+        /// <param name="showErrorInDebugMode">Pokud jsme v Debug modu, tak zobrazit chybu</param>
+        private static void _TryRun(Action action, bool traceError, bool showErrorInDebugMode)
         {
             try
             {
@@ -315,7 +324,7 @@ namespace Asol.Tools.WorkScheduler.Application
             {
                 if (traceError)
                     Trace.Exception(exc);
-                if (showError && IsDebugMode)
+                if (showErrorInDebugMode && IsDebugMode)
                     ShowError(exc);
             }
         }

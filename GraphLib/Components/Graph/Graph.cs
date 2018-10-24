@@ -627,12 +627,15 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 float logSize = logEnd - logBegin;
 
                 // Výška dat grafu v pixelech, zarovnaná do patřičných mezí:
-                int pixelSize = this._AlignTotalPixelSize((int)(Math.Ceiling(logSize * (float)lineLogicalHeight)));
+                int pixelData = (int)(Math.Ceiling(logSize * (float)lineLogicalHeight)); // Tolik pixelů bychom potřebovali pro data
+                int pixelSize = this._AlignTotalPixelSize(pixelData);                    // Tolik pixelů máme k dipozici po zarovnání do rozmezí do TimeGraphProperties.TotalHeightRange
                 this._TotalPixelSize = pixelSize;
 
+                if (pixelData > pixelSize)       // Pokud potřebujeme pro graf více prostoru (pixelData), než nám graf poskytuje (pixelSize),
+                    pixelData = pixelSize;       //  tak musíme kalkulátor nastavit na tu menší hodnotu = pixelSize.
                 // Výpočty kalkulátoru, invalidace VisibleList:
                 this._Calculator_Offset = logBegin;
-                this._Calculator_Scale = (float)pixelSize / logSize;
+                this._Calculator_Scale = (float)pixelData / logSize;
 
                 this._Owner.Invalidate(InvalidateItems.CoordinateYReal);
                 this._IsPrepared = true;

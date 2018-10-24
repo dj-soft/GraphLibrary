@@ -7,6 +7,8 @@ using System.Drawing;
 using System.ComponentModel;
 using System.Drawing.Drawing2D;
 
+using Asol.Tools.WorkScheduler.Data;
+
 namespace Asol.Tools.WorkScheduler.Components
 {
     #region GControl : Control with buffered graphic
@@ -245,7 +247,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public GControlLayered()
         {
-            this._LayerList = new List<GraphicLayer>();
             this.LayerCount = 1;
             this.SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.SupportsTransparentBackColor | ControlStyles.OptimizedDoubleBuffer, true);
             this.ResizeRedraw = true;
@@ -391,8 +392,8 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual void OnPaintLayers(LayeredPaintEventArgs e)
         {
             // Clear layer 0:
-            if (e.HasPaintLayer(0))
-                e.GraphicsForLayer(0).Clear(this.BackColor);
+            if (e.NeedPaintToLayer(0))
+                e.GetGraphicsForLayer(0, true).Clear(this.BackColor);
         }
         /// <summary>
         /// Occured in Resize process, after prepared graphics, before Draw() process.
@@ -437,10 +438,9 @@ namespace Asol.Tools.WorkScheduler.Components
             try
             {
                 this.DrawInProgress = true;
-            
-                LayeredPaintEventArgs e = new LayeredPaintEventArgs(this._LayerCount, this._GetGraphicsForLayer, this._CopyContentOfLayer, drawLayers, userData);
+
+                LayeredPaintEventArgs e = new LayeredPaintEventArgs(this._GraphicLayers, drawLayers, userData);
                 this._OnPaintLayers(e);
-                this._ValidLayer = e.ValidLayer;
                 this.PendingFullDraw = false;
                 this._RenderValidLayerTo(this.CreateGraphics());
             }
@@ -450,46 +450,13 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         /// <summary>
-        /// Číslo Layeru, který obsahuje validní informaci, která se bude renderovat do controlu.
-        /// Určuje ji argument LayeredPaintEventArgs spolu s metodami OnPaintLayers().
-        /// </summary>
-        private int _ValidLayer;
-        /// <summary>
-        /// Vrátí objekt Graphics pro danou vrstvu layer.
-        /// </summary>
-        /// <param name="layer"></param>
-        /// <returns></returns>
-        private Graphics _GetGraphicsForLayer(int layer)
-        {
-            Graphics graphics = null;
-            if (this._LayerList != null && layer >= 0 && layer < this._LayerList.Count)
-            {
-                graphics = this._LayerList[layer].LayerGraphics;
-                graphics.ResetClip();
-            }
-            return graphics;
-        }
-        /// <summary>
-        /// Kopíruje obsah vrstvy (layerFrom) to vrstvy (layerTo)
-        /// </summary>
-        /// <param name="layerFrom"></param>
-        /// <param name="layerTo"></param>
-        private void _CopyContentOfLayer(int layerFrom, int layerTo)
-        {
-            if (layerFrom > layerTo) return;
-            GraphicLayer layerSource = this._LayerList[layerFrom];
-            Graphics graphicsTarget = this._LayerList[layerTo].LayerGraphics;
-            layerSource.RenderTo(graphicsTarget);
-        }
-        /// <summary>
         /// Fyzicky překreslí obsah bufferů do předané grafiky.
         /// </summary>
-        /// <param name="graphics"></param>
-        private void _RenderValidLayerTo(Graphics graphics)
+        /// <param name="targetGraphics">Cílová grafika pro kreslení</param>
+        private void _RenderValidLayerTo(Graphics targetGraphics)
         {
-            int validLayer = this._ValidLayer;
-            if (validLayer >= 0 && validLayer < this._LayerCount)
-                this._LayerList[validLayer].RenderTo(graphics);
+            GraphicLayer sourceLaeyr = GraphicLayer.GetCurrentLayer(this._GraphicLayers);
+            sourceLaeyr.RenderTo(targetGraphics);
         }
         /// <summary>
         /// Příznak, že skutečně může proběhnout kreslení
@@ -509,36 +476,48 @@ namespace Asol.Tools.WorkScheduler.Components
         protected bool PendingFullDraw { get; set; }
         #endregion
         #region Řízení vrstev: Create, Resize, Dispose. Nikoliv kreslení.
-        private void _CreateLayers()
-        {
-            Size size = this.Size;
-            this._LayerList = new List<GraphicLayer>();
-            for (int l = 0; l < this._LayerCount; l++)
-                this._LayerList.Add(new GraphicLayer(this, this.Size));
-        }
         private void _ResizeLayers(bool callDraw)
         {
             this._CreateLayers();
             if (callDraw)
                 this.Draw();
         }
-        private void _DisposeLayers()
+        private void _CreateLayers()
         {
-            if (this._LayerList != null)
+            this._DisposeLayers(false);
+
+            Size size = this.Size;
+            int count = this._LayerCount;
+            count = (count < 1 ? 1 : (count > 10 ? 10 : count));
+            GraphicLayer[] allLayers = new GraphicLayer[count];
+            if (size.Width > 0 && size.Height > 0)
             {
-                foreach (GraphicLayer layer in this._LayerList)
-                    ((IDisposable)layer).Dispose();
+                for (int index = 0; index < count; index++)
+                    allLayers[index] = new GraphicLayer(this, size, allLayers, index);
             }
-            this._LayerList = null;
-            this._LayerCount = 0;
+            this._GraphicLayers = allLayers;
+        }
+        private void _DisposeLayers(bool resetCount)
+        {
+            if (this._GraphicLayers != null)
+            {
+                foreach (GraphicLayer layer in this._GraphicLayers)
+                {
+                    if (layer != null && layer.Size.Width > 0 && layer.Size.Height > 0)
+                        ((IDisposable)layer).Dispose();
+                }
+            }
+            this._GraphicLayers = null;
+            if (resetCount)
+                this._LayerCount = 0;
         }
         private int _LayerCount;
-        private List<GraphicLayer> _LayerList;
+        private GraphicLayer[] _GraphicLayers;
         #endregion
         #region Dispose
         void IDisposable.Dispose()
         {
-            this._DisposeLayers();
+            this._DisposeLayers(true);
             this._CallDisposed();
         }
         private void _CallDisposed()
@@ -557,110 +536,149 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public event EventHandler AfterDisposed;
         #endregion
-        #region class GraphicLayer : třída představující jednu grafickou vrstvu
+    }
+    #region class GraphicLayer : třída představující jednu grafickou vrstvu
+    /// <summary>
+    /// GraphicLayer : třída představující jednu grafickou vrstvu
+    /// </summary>
+    internal class GraphicLayer : IDisposable
+    {
+        #region Konstruktor a privátní proměnné
         /// <summary>
-        /// GraphicLayer : třída představující jednu grafickou vrstvu
+        /// Konstruktor jedné vrstvy
         /// </summary>
-        protected class GraphicLayer : IDisposable
+        /// <param name="owner"></param>
+        /// <param name="size"></param>
+        /// <param name="allLayers">Reference na pole všech vrstev</param>
+        /// <param name="index">Index této jedné vrstvy</param>
+        public GraphicLayer(Control owner, Size size, GraphicLayer[] allLayers, int index)
         {
-            #region Constructor
-            /// <summary>
-            /// Constructor (owner = Control, Size)
-            /// </summary>
-            /// <param name="owner"></param>
-            /// <param name="size"></param>
-            public GraphicLayer(Control owner, Size size)
-            {
-                this._Owner = owner;
-                this.Size = size;
-            }
-            private Control _Owner;
-            /// <summary>
-            /// Controll mechanism for buffered graphics
-            /// </summary>
-            private BufferedGraphicsContext _GraphicsContext;
-            /// <summary>
-            /// Content of graphic buffer
-            /// </summary>
-            private BufferedGraphics _GraphicsData;
-            /// <summary>
-            /// Size of buffered sheet
-            /// </summary>
-            private Size _Size;
-            #endregion
-            #region Public property a metody
-            /// <summary>
-            /// true pokud je objekt platný
-            /// </summary>
-            public bool IsValid
-            {
-                get { return (this._Size.Width > 0 && this._Size.Height > 0 && this._GraphicsContext != null && this._GraphicsData != null); }
-            }
-            /// <summary>
-            /// Rozměr vrstvy.
-            /// Lze nastavit, vrstva se upraví. Poté je třeba překreslit (vrstva sama si nevolá).
-            /// </summary>
-            public Size Size
-            {
-                get { return this._Size; }
-                set
-                {
-                    if (this.IsValid && value == this._Size) return;         // Není důvod ke změně
-                    this._Size = value;
-                    this.CreateLayer();
-                }
-            }
-            /// <summary>
-            /// Objekt Graphics, který dovoluje kreslit motivy do této vrstvy
-            /// </summary>
-            public Graphics LayerGraphics { get { return this._GraphicsData.Graphics; } }
-            /// <summary>
-            /// Vykreslí svůj obsah do dané cílové Graphics, typicky při kreslení Controlu (skládají se jednotlivé vrstvy).
-            /// </summary>
-            /// <param name="targetGraphic"></param>
-            public void RenderTo(Graphics targetGraphic)
-            {
-                targetGraphic.CompositingMode = CompositingMode.SourceOver;
-                this._GraphicsData.Graphics.CompositingMode = CompositingMode.SourceOver;
-                this._GraphicsData.Render(targetGraphic);
-            }
-            #endregion
-            #region Privátní tvorba grafiky, IDisposable
-            /// <summary>
-            /// Vytvoří bufferovaný layer pro kreslení do this vrstvy
-            /// </summary>
-            protected void CreateLayer()
-            {
-                if (this._GraphicsContext == null)
-                    this._GraphicsContext = BufferedGraphicsManager.Current;
+            this._Owner = owner;
+            this._Size = size;
+            this._AllLayers = allLayers;
+            this._Index = index;
+            this._ContainData = false;
+            this._CreateLayer();
+        }
+        private Control _Owner;
+        private Size _Size;
+        private GraphicLayer[] _AllLayers;
+        private int _Index;
+        private bool _ContainData;
+        /// <summary>
+        /// Controll mechanism for buffered graphics
+        /// </summary>
+        private BufferedGraphicsContext _GraphicsContext;
+        /// <summary>
+        /// Content of graphic buffer
+        /// </summary>
+        private BufferedGraphics _GraphicsData;
+        #endregion
+        #region Privátní tvorba grafiky, IDisposable
+        /// <summary>
+        /// Vytvoří bufferovaný layer pro kreslení do this vrstvy
+        /// </summary>
+        private void _CreateLayer()
+        {
+            if (this._GraphicsContext == null)
+                this._GraphicsContext = BufferedGraphicsManager.Current;
 
-                Size s = this._Size;
-                if (s.Width <= 0) s.Width = 1;
-                if (s.Height <= 0) s.Height = 1;
+            Size s = this._Size;
+            if (s.Width <= 0) s.Width = 1;
+            if (s.Height <= 0) s.Height = 1;
 
-                this._GraphicsContext.MaximumBuffer = new Size(s.Width + 1, s.Height + 1);
+            this._GraphicsContext.MaximumBuffer = new Size(s.Width + 1, s.Height + 1);
 
-                if (this._GraphicsData != null)
-                    this._GraphicsData.Dispose();
+            if (this._GraphicsData != null)
+                Application.App.TryRun(() => this._GraphicsData.Dispose(), false);
 
-                this._GraphicsData = this._GraphicsContext.Allocate(this._Owner.CreateGraphics(), new Rectangle(new Point(0, 0), s));
-            }
-            void IDisposable.Dispose()
+            this._GraphicsData = this._GraphicsContext.Allocate(this._Owner.CreateGraphics(), new Rectangle(new Point(0, 0), s));
+            this._ContainData = false;
+        }
+        void IDisposable.Dispose()
+        {
+            if (this._GraphicsContext != null)
+                Application.App.TryRun(() => this._GraphicsContext.Dispose(), false);
+            this._GraphicsContext = null;
+
+            if (this._GraphicsData != null)
+                Application.App.TryRun(() => this._GraphicsData.Dispose(), false);
+            this._GraphicsData = null;
+
+            this._Owner = null;
+        }
+        #endregion
+        #region Public property a metody
+        /// <summary>
+        /// true pokud je objekt platný
+        /// </summary>
+        public bool IsValid { get { return (this._Size.Width > 0 && this._Size.Height > 0 && this._GraphicsContext != null && this._GraphicsData != null); } }
+        /// <summary>
+        /// Index této vrstvy
+        /// </summary>
+        public int Index { get { return this._Index; } }
+        /// <summary>
+        /// Aplikační příznak: tato vrstva obsahuje platná data?
+        /// Výchozí je false.
+        /// Aplikace nastavuje na true v situaci, kdy si aplikační kód vyzvedl zdejší grafiku (bude do ní kreslit).
+        /// Aplikace nastavuje na false v situaci, kdy tato vrstva je na vyšším indexu, než je vrstva aktuálně vykreslovaná.
+        /// </summary>
+        public bool ContainData { get { return this._ContainData; } set { this._ContainData = value; } }
+        /// <summary>
+        /// Rozměr vrstvy.
+        /// Lze nastavit, vrstva se upraví. Poté je třeba překreslit (vrstva sama si nevolá).
+        /// </summary>
+        public Size Size { get { return this._Size; } }
+        /// <summary>
+        /// Objekt Graphics, který dovoluje kreslit motivy do této vrstvy
+        /// </summary>
+        public Graphics LayerGraphics { get { return this._GraphicsData.Graphics; } }
+
+        /// <summary>
+        /// Kopíruje obsah vrstvy (sourceLayer) to vrstvy (targetLayer).
+        /// Pokud některá vrstva (sourceLayer nebo targetLayer) je null, nekopíruje se nic.
+        /// Pokud zdrojová vrstva má index rovný nebo vyšší jako cílová vrstva, nekopíruje se nic.
+        /// </summary>
+        /// <param name="sourceLayer">Vrstva obsahující zdrojový obraz</param>
+        /// <param name="targetLayer">Vrstva obsahující cílový obraz</param>
+        public static void CopyContentOfLayer(GraphicLayer sourceLayer, GraphicLayer targetLayer)
+        {
+            if (sourceLayer != null && targetLayer != null && sourceLayer._Index < targetLayer._Index)
+                sourceLayer.RenderTo(targetLayer.LayerGraphics);
+        }
+        /// <summary>
+        /// Vykreslí svůj obsah do dané cílové Graphics, typicky při kopírování obsahu mezi vrstvami, 
+        /// a při kreslení Controlu (skládají se jednotlivé vrstvy).
+        /// </summary>
+        /// <param name="targetGraphics"></param>
+        public void RenderTo(Graphics targetGraphics)
+        {
+            targetGraphics.CompositingMode = CompositingMode.SourceOver;
+            this._GraphicsData.Graphics.CompositingMode = CompositingMode.SourceOver;
+            this._GraphicsData.Render(targetGraphics);
+        }
+        /// <summary>
+        /// Metoda najde a vrátí položku <see cref="GraphicLayer"/> z dodaného pole, která má (<see cref="GraphicLayer.ContainData"/> == true)
+        /// a je na nejvyšším indexu.
+        /// Pokud dodané pole je null nebo neiobsahuje žádnou položku, vrací se null.
+        /// Pokud žádná položka v poli nemá (<see cref="GraphicLayer.ContainData"/> == true), vrací se položka na indexu [0].
+        /// </summary>
+        /// <param name="graphicLayers"></param>
+        /// <returns></returns>
+        public static GraphicLayer GetCurrentLayer(GraphicLayer[] graphicLayers)
+        {
+            if (graphicLayers == null) return null;
+            int count = graphicLayers.Length;
+            if (count == 0) return null;
+            for (int index = count - 1; index >= 0; index--)
             {
-                if (this._GraphicsContext != null)
-                    this._GraphicsContext.Dispose();
-                this._GraphicsContext = null;
-
-                if (this._GraphicsData != null)
-                    this._GraphicsData.Dispose();
-                this._GraphicsData = null;
-
-                this._Owner = null;
+                if (index == 0 || graphicLayers[index].ContainData) return graphicLayers[index];
             }
-            #endregion
+            return graphicLayers[0];   // Jen pro compiler. Reálně sem kód nikdy nedojde (poslední smyčka "for ..." se provádí pro (index == 0).
         }
         #endregion
     }
+    #endregion
     #region Delegate LayeredPaintEventHandler, EventArgs LayeredPaintEventArgs
     /// <summary>
     /// Delegate for handler of event LayeredPaint
@@ -673,6 +691,134 @@ namespace Asol.Tools.WorkScheduler.Components
     /// </summary>
     public class LayeredPaintEventArgs : EventArgs
     {
+        #region Konstrukce a privátní proměnné
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="graphicLayers"></param>
+        /// <param name="layersToPaint"></param>
+        /// <param name="userData"></param>
+        internal LayeredPaintEventArgs(GraphicLayer[] graphicLayers, IEnumerable<int> layersToPaint, object userData)
+        {
+            this._GraphicLayers = graphicLayers;
+            this._LayersToPaint = ((layersToPaint != null) ? layersToPaint.GetDictionary(i => i, true) : null);
+            this._LayerCount = graphicLayers.Length;
+            this._UserData = userData;
+        }
+        /// <summary>
+        /// Pole grafických vrstev
+        /// </summary>
+        private GraphicLayer[] _GraphicLayers;
+        /// <summary>
+        /// Vrstvy, které mají být kresleny
+        /// </summary>
+        private Dictionary<int, int> _LayersToPaint;
+        /// <summary>
+        /// Počet grafických vrstev; používá se při kontrole zadaného indexu vrstvy
+        /// </summary>
+        private int _LayerCount;
+        /// <summary>
+        /// UserData
+        /// </summary>
+        private object _UserData;
+        #endregion
+        #region Podpora pro kreslení
+        /// <summary>
+        /// Vrátí instanci <see cref="Graphics"/> pro danou vrstvu.
+        /// Může vrátit null pro nesprávné číslo vrstvy.
+        /// To lze předem otestovat pomocí metody <see cref="IsValidLayer(int)"/>.
+        /// Tato metoda vrací grafiku i pro vrstvu, do které se nemá kreslit (tj. pro kterou metoda <see cref="NeedPaintToLayer(int)"/> vrací false).
+        /// </summary>
+        /// <param name="layer">Index vrstvy. Pokud nebude platný, vrátí se null.</param>
+        /// <param name="clear">Požadavek true, aby byla daná vrstva naplněna daty z podkladové vrstvy bez ohledu na její stav <see cref="GraphicLayer.ContainData"/>.</param>
+        /// <returns></returns>
+        public Graphics GetGraphicsForLayer(int layer, bool clear)
+        {
+            if (!IsValidLayer(layer)) return null;
+            Graphics graphics = this._GetGraphicsForLayer(layer, clear).LayerGraphics;
+            graphics.ResetClip();
+            return graphics;
+        }
+        /// <summary>
+        /// Metoda vrátí <see cref="Graphics"/> pro tu nejvyšší vrstvu, která obsahuje platná data po aktuálním vykreslování.
+        /// </summary>
+        /// <returns></returns>
+        public Graphics GetGraphicsCurrent()
+        {
+            Graphics graphics = GraphicLayer.GetCurrentLayer(this._GraphicLayers).LayerGraphics;
+            graphics.ResetClip();
+            return graphics;
+        }
+        /// <summary>
+        /// Vrátí true, pokud dané číslo vrstvy je správné a je možno s touto vrstvou pracovat.
+        /// </summary>
+        /// <param name="layer"></param>
+        /// <returns></returns>
+        public bool IsValidLayer(int layer)
+        {
+            return (layer >= 0 && layer < this._LayerCount);
+        }
+        /// <summary>
+        /// Vrací true, pokud daná vrstva je platná, a má se do ní kreslit.
+        /// </summary>
+        /// <param name="layer"></param>
+        /// <returns></returns>
+        public bool NeedPaintToLayer(int layer)
+        {
+            if (!this.IsValidLayer(layer)) return false;
+            if (this._LayersToPaint == null) return true;
+            return this._LayersToPaint.ContainsKey(layer);
+        }
+        /// <summary>
+        /// Libovolná data, předaná do metody Draw.
+        /// </summary>
+        public object UserData { get { return this._UserData; } }
+        #endregion
+        #region Vlastní správa vrstev grafiky
+        /// <summary>
+        /// Metoda najde grafiku pro danou vrstvu, zajistí že bude mít platný obsah a vrátí ji.
+        /// Tzn. pokud vrstva neobsahuje data (<see cref="GraphicLayer.ContainData"/> == false), pak do ní nakopíruje data z nejbližší nižší platné vrstvy.
+        /// Poté nastaví do dané vrstvy, že obsahuje platná data, a do všech vrstev vyšších nastaví, že data neobsahují.
+        /// </summary>
+        /// <param name="layer">Index vrstvy. Pokud nebude platný, vrátí se vrstva [0].</param>
+        /// <param name="clear">Požadavek true, aby byla daná vrstva naplněna daty z podkladové vrstvy bez ohledu na její stav <see cref="GraphicLayer.ContainData"/>.</param>
+        /// <returns></returns>
+        private GraphicLayer _GetGraphicsForLayer(int layer, bool clear)
+        {
+            GraphicLayer sourceLayer = null;
+            GraphicLayer targetLayer = null;
+            GraphicLayer[] graphicLayers = this._GraphicLayers;
+            int count = this._LayerCount;
+            for (int index = 0; index < count; index++)
+            {
+                GraphicLayer currentLayer = graphicLayers[index];
+                if (index == 0 || (index > 0 && index < layer && currentLayer.ContainData))
+                    sourceLayer = currentLayer;
+                if (index == layer)
+                    targetLayer = currentLayer;
+                if (index > layer)
+                    currentLayer.ContainData = false;
+            }
+            if (targetLayer == null) targetLayer = graphicLayers[0];
+
+            // Pokud targetLayer neobsahuje platná data, pak do této cílové vrstvy překopírujeme data ze zdrojové vrstvy:
+            if (!targetLayer.ContainData || clear)
+                GraphicLayer.CopyContentOfLayer(sourceLayer, targetLayer);
+
+            // Od teď obsahuje cílová vrstva platná data:
+            targetLayer.ContainData = true;
+            return targetLayer;
+        }
+        #endregion
+    }
+
+
+
+    /// <summary>
+    /// Argument for OnLayeredPaint() method / LayeredPaint event
+    /// </summary>
+    public class oldLayeredPaintEventArgs : EventArgs
+    {
         /// <summary>
         /// Konstruktor
         /// </summary>
@@ -681,7 +827,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="copyContentOfLayer"></param>
         /// <param name="layersToPaint"></param>
         /// <param name="userData"></param>
-        public LayeredPaintEventArgs(int layerCount, Func<int, Graphics> getGraphics, Action<int, int> copyContentOfLayer, IEnumerable<int> layersToPaint, object userData)
+        public oldLayeredPaintEventArgs(int layerCount, Func<int, Graphics> getGraphics, Action<int, int> copyContentOfLayer, IEnumerable<int> layersToPaint, object userData)
         {
             this._LayerCount = layerCount;
             this._GetGraphics = getGraphics;
