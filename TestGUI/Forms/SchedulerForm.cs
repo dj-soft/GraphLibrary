@@ -29,12 +29,12 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 App.AppProductName = "WorkScheduler";
                 App.AppProductTitle = "Dílenské plánování";
 
-                this.SourceData = new SchedulerData();
-                this.GuiData = this.SourceData.CreateGuiData();
+                this.DataSource = new SchedulerDataSource();
+                this.GuiData = this.DataSource.CreateGuiData();
 
                 using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority3_BellowNormal, "PluginForm", "InitializeWorkScheduler", ""))
                 {
-                    this.MainData = new WS.MainData(this.SourceData as IAppHost);
+                    this.MainData = new WS.MainData(this.DataSource as IAppHost);
                     this.MainData.LoadData(this.GuiData);
                     this.MainData.CreateControlToForm(this);
                 }
@@ -44,7 +44,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 MessageBox.Show("Při spouštění WorkScheduleru došlo k chybě:" + Environment.NewLine + exc.Message, "Chyba", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
             }
         }
-        protected SchedulerData SourceData;
+        protected SchedulerDataSource DataSource;
         protected GUI.GuiData GuiData;
         protected WS.MainData MainData;
     }
