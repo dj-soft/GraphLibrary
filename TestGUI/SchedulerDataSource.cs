@@ -62,8 +62,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             this.ProductOrderDict = new Dictionary<GuiId, ProductOrder>();
             recordId = 10000;
-            this.CreateProductOrder(++recordId, "Židle lakovaná červená", Color.DarkGreen, 12, "židle", ProductTpv.Standard);
-            this.CreateProductOrder(++recordId, "Stůl konferenční", Color.DarkGreen, 3, "stoly", ProductTpv.Standard);
+            this.CreateProductOrder(++recordId, "Židle lakovaná červená", Color.DarkGreen, 12, "židle", ProductTpv.Luxus);
+            this.CreateProductOrder(++recordId, "Stůl konferenční", Color.DarkGreen, 3, "stoly", ProductTpv.Luxus);
             this.CreateProductOrder(++recordId, "Stolička třínohá", Color.DarkGreen, 8, "židle", ProductTpv.Standard);
             this.CreateProductOrder(++recordId, "Sedátko chodbové", Color.DarkGreen, 4, "židle", ProductTpv.Standard);
             this.CreateProductOrder(++recordId, "Židle lakovaná přírodní", Color.DarkGreen, 6, "židle", ProductTpv.Standard);
@@ -72,8 +72,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this.CreateProductOrder(++recordId, "Skříňka na klíče", Color.DarkGreen, 24, "skříně", ProductTpv.Standard);
             this.CreateProductOrder(++recordId, "Podstavec pod televizi", Color.DarkGreen, 12, "jiné", ProductTpv.Luxus);
             this.CreateProductOrder(++recordId, "Botník krátký", Color.DarkGreen, 6, "skříně", ProductTpv.Standard);
-            this.CreateProductOrder(++recordId, "Skříň šatní široká", Color.DarkGreen, 3, "skříně", ProductTpv.Standard);
-            this.CreateProductOrder(++recordId, "Stolek HiFi věže", Color.DarkGreen, 4, "jiné", ProductTpv.Standard);
+            this.CreateProductOrder(++recordId, "Skříň šatní široká", Color.DarkGreen, 3, "skříně", ProductTpv.Luxus);
+            this.CreateProductOrder(++recordId, "Stolek HiFi věže", Color.DarkGreen, 4, "jiné", ProductTpv.Luxus);
             this.CreateProductOrder(++recordId, "Polička na CD", Color.DarkBlue, 16, "jiné", ProductTpv.Luxus);
             this.CreateProductOrder(++recordId, "Skříňka na šicí stroj", Color.DarkGreen, 2, "skříně", ProductTpv.Standard);
             this.CreateProductOrder(++recordId, "Parapet okenní 25cm", Color.DarkGreen, 18, "jiné", ProductTpv.Standard);
@@ -152,33 +152,33 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             switch (tpv)
             {
                 case ProductTpv.Standard:
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.GreenYellow, "Řez tvaru", "Přeříznout", WP_PILA, qty, 10, 5, 15));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.Blue, "Broušení hran", "Zabrousit", WP_DILN, qty, 0, 10, 5));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.BlueViolet, "Vrtat čepy", "Zavrtat pro čepy", WP_DILN, qty, 2, 1, 5));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.DarkOrange, "Nasadit čepy", "Nasadit a vlepit čepy", WP_DILN, qty, 0, 1, 0));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.DarkRed, "Klížit", "Sklížit díly", WP_DILN, qty, 5, 5, 360));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.ForestGreen, "Lakovat", "Lakování základní", WP_LAKO, qty, 5, 30, 240));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.DimGray, "Kontrola", "Kontrola finální", WP_KONT, qty, 5, 5, 0));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.GreenYellow, "Řez tvaru", "Přeříznout", WP_PILA, qty, 30, 10, 45));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.Blue, "Broušení hran", "Zabrousit", WP_DILN, qty, 0, 10, 30));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.BlueViolet, "Vrtat čepy", "Zavrtat pro čepy", WP_DILN, qty, 15, 5, 30));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.DarkOrange, "Nasadit čepy", "Nasadit a vlepit čepy", WP_DILN, qty, 0, 10, 0));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.DarkRed, "Klížit", "Sklížit díly", WP_DILN, qty, 30, 5, 360));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.ForestGreen, "Lakovat", "Lakování základní", WP_LAKO, qty, 30, 30, 240));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.DimGray, "Kontrola", "Kontrola finální", WP_KONT, qty, 30, 10, 0));
                     break;
 
                 case ProductTpv.Luxus:
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.GreenYellow, "Řez délky", "Přeříznout", WP_PILA, qty, 10, 5, 15));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.Blue, "Brousit hrany", "Zabrousit", WP_DILN, qty, 0, 20, 5));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.Blue, "Brousit povrch", "Zabrousit", WP_DILN, qty, 0, 20, 5));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.BlueViolet, "Vrtat čepy", "Zavrtat pro čepy", WP_DILN, qty, 2, 1, 5));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.DarkOrange, "Vsadit čepy", "Nasadit a vlepit čepy", WP_DILN, qty, 0, 1, 0));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.DimGray, "Kontrola čepů", "Kontrolovat čepy", WP_KONT, qty, 0, 5, 0));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.DarkRed, "Klížit celek", "Sklížit díly", WP_DILN, qty, 5, 5, 360));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.DimGray, "Kontrola klížení", "Kontrolovat klížení", WP_KONT, qty, 0, 5, 0));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.ForestGreen, "Lakovat základ", "Lakování základní", WP_LAKO, qty, 5, 45, 240));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.GreenYellow, "Řez délky", "Přeříznout", WP_PILA, qty, 30, 15, 45));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.Blue, "Brousit hrany", "Zabrousit", WP_DILN, qty, 0, 20, 45));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.Blue, "Brousit povrch", "Zabrousit", WP_DILN, qty, 0, 20, 30));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.BlueViolet, "Vrtat čepy", "Zavrtat pro čepy", WP_DILN, qty, 30, 5, 45));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.DarkOrange, "Vsadit čepy", "Nasadit a vlepit čepy", WP_DILN, qty, 0, 5, 0));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.DimGray, "Kontrola čepů", "Kontrolovat čepy", WP_KONT, qty, 0, 15, 0));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.DarkRed, "Klížit celek", "Sklížit díly", WP_DILN, qty, 45, 30, 360));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.DimGray, "Kontrola klížení", "Kontrolovat klížení", WP_KONT, qty, 0, 15, 0));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.ForestGreen, "Lakovat základ", "Lakování základní", WP_LAKO, qty, 30, 45, 240));
                     operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.Blue, "Brousit lak", "Zabrousit", WP_DILN, qty, 0, 20, 5));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.DarkGreen, "Lakovat lesk", "Lakování lesklé", WP_LAKO, qty, 5, 45, 240));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.DimGray, "Kontrola celku", "Kontrolovat lakování", WP_KONT, qty, 0, 5, 0));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.DarkGreen, "Lakovat lesk", "Lakování lesklé", WP_LAKO, qty, 60, 45, 240));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.DimGray, "Kontrola celku", "Kontrolovat lakování", WP_KONT, qty, 0, 10, 0));
                     break;
 
                 case ProductTpv.Cooperation:
                     operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.Gray, "Kooperace", "Udělá to někdo jiný", WP_KOOP, qty, 360, 0, 1440));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.DimGray, "Kontrola", "Kontrolovat kooperaci", WP_KONT, qty, 15, 5, 0));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.DimGray, "Kontrola", "Kontrolovat kooperaci", WP_KONT, qty, 30, 5, 0));
                     break;
 
             }
@@ -208,7 +208,6 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 Line = line,
                 Refer = (10 * line).ToString(),
                 Name = name,
-                ToolTip = toolTip,
                 BackColor = backColor,
                 Qty = qty,
                 WorkPlace = workPlace,
@@ -216,6 +215,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 TAc = TimeSpan.FromMinutes(tacMin),
                 TEc = TimeSpan.FromMinutes(tecMin)
             };
+            operation.ToolTip = operation.ReferName + Environment.NewLine + toolTip;
             operation.FillTimes(this, ref time);
 
             return operation;
@@ -476,7 +476,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             productOperation.PlanOperationToWorkplace(ref recordId, planUnitC);
         }
         #endregion
-        #region GUI
+        #region Tvorba GUI
         protected void CreateProperties()
         {
             this.MainData.Properties.InitialTimeRange = this.TimeRangeCurrent;
@@ -585,6 +585,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             foreach (PlanUnitC planUnitC in this.PlanUnitCDict.Values)
                 this.AddPlanUnitCToGrid(gridCenter, planUnitC);
 
+            // Vztahy prvků (Link):
+            foreach (ProductOrder productOrder in this.ProductOrderDict.Values)
+                this.AddGraphLinkToGrid(gridCenter, productOrder);
+
             this.GridCenter = gridCenter;
             this.MainPage.MainPanel.Grids.Add(gridCenter);
         }
@@ -599,6 +603,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             guiGrid.Rows.DataTable.Rows.Add(planUnitC.RecordId, planUnitC.Refer, planUnitC.Name, planUnitC.MachinesCount);
             guiGrid.Rows.RowTags.TagItemList.AddRange(planUnitC.TagItems);
             guiGrid.Graphs.Add(planUnitC.CreateGuiGraph());
+        }
+        protected void AddGraphLinkToGrid(GuiGrid guiGrid, ProductOrder productOrder)
+        {
+            guiGrid.GraphLinks.AddRange(productOrder.CreateGuiLinks());
         }
         protected void CreateRightPanel()
         { }
@@ -647,6 +655,14 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             return guiGraph;
         }
+        public GuiGraphLink[] CreateGuiLinks()
+        {
+            if (this.OperationList == null || this.OperationList.Count <= 1) return null;
+            List<GuiGraphLink> linkList = new List<GuiGraphLink>();
+            for (int i = 1; i < this.OperationList.Count; i++)
+                linkList.Add(ProductOperation.CreateGuiLink(this.OperationList[i - 1], this.OperationList[i]));
+            return linkList.ToArray();
+        }
     }
     public class ProductOperation : SubjectClass
     {
@@ -679,7 +695,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 ItemId = this.RecordGid,
                 GroupId = this.ProductOrder?.RecordGid,
                 BackColor = this.BackColor,
-                BehaviorMode = GraphItemBehaviorMode.DefaultText,
+                BehaviorMode = GraphItemBehaviorMode.ShowToolTipFadeIn | GraphItemBehaviorMode.ShowCaptionAllways,
                 DataId = this.RecordGid,
                 Text = this.ReferName,
                 Time = this.Time
@@ -713,7 +729,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 BackColor = backColor,
                 IsEditable = true,
                 Text = this.ReferName,
-                ToolTip = ""
+                ToolTip = this.ToolTip
             };
             return unitTime;
         }
@@ -723,6 +739,19 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this.TimeTAc = dataSource.GetTimeRange(ref time, 0.00d, 0, this.TAc, (double?)this.Qty);
             this.TimeTEc = dataSource.GetTimeRange(ref time, 0.10d, 2, this.TEc);
             this.Time = new GuiTimeRange(this.TimeTBc.Begin, this.TimeTEc.End);
+        }
+
+        public static GuiGraphLink CreateGuiLink(ProductOperation prev, ProductOperation next)
+        {
+            GuiGraphLink link = new GuiGraphLink()
+            {
+                ItemIdPrev = prev?.RecordGid,
+                ItemIdNext = next?.RecordGid,
+                LinkType = GuiGraphItemLinkType.PrevEndToNextBeginSCurve,
+                LinkWidth = 1,
+                LinkColor = Color.Red
+            };
+            return link;
         }
     }
     public class PlanUnitC : SubjectClass
@@ -772,7 +801,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 DataId = this.Operation?.RecordGid,
                 Layer = 1,
                 BackColor = this.BackColor,
-                BehaviorMode = GraphItemBehaviorMode.DefaultText | GraphItemBehaviorMode.MoveToAnotherRow | GraphItemBehaviorMode.MoveToAnotherTime,
+                BehaviorMode = GraphItemBehaviorMode.ShowCaptionAllways | GraphItemBehaviorMode.ShowToolTipFadeIn | GraphItemBehaviorMode.MoveToAnotherRow | GraphItemBehaviorMode.MoveToAnotherTime,
                 Height = this.Height,
                 Text = this.Text,
                 ToolTip = this.ToolTip,
