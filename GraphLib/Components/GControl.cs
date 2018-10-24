@@ -348,8 +348,11 @@ namespace Asol.Tools.WorkScheduler.Components
         public void Draw(object userData)
         {
             if (!this.IsPainted)
+                // Pokud jsem dosud nebyl kreslen, pak ignorujeme explicitní požadavek (ten říká: kresli ken něco), a budeme kreslit vše:
                 this._Draw(null, null);
-            this._Draw(null, userData);
+            else
+                // Kresli podle požadavku:
+                this._Draw(null, userData);
         }
         /// <summary>
         /// Tato metoda se volá tehdy, když aplikace chce překreslit celý objekt.
@@ -357,8 +360,11 @@ namespace Asol.Tools.WorkScheduler.Components
         public void Draw(IEnumerable<int> drawLayers, object userData)
         {
             if (!this.IsPainted)
+                // Pokud jsem dosud nebyl kreslen, pak ignorujeme explicitní požadavek (ten říká: kresli ken něco), a budeme kreslit vše:
                 this._Draw(null, null);
-            this._Draw(drawLayers, userData);
+            else
+                // Kresli podle požadavku:
+                this._Draw(drawLayers, userData);
         }
         /// <summary>
         /// Událost, kdy se má překreslit obsah vrstev controlu.
@@ -698,26 +704,33 @@ namespace Asol.Tools.WorkScheduler.Components
 
             this.UserData = userData;
         }
-        /// <summary>Number of layers, used for check of layer number</summary>
+        /// <summary>
+        /// Počet grafických vrstev; používá se při kontrole zadaného indexu vrstvy
+        /// </summary>
         private int _LayerCount;
-        /// <summary>Pointer to method, which returns an Graphics object for specified layer</summary>
+        /// <summary>
+        /// Odkaz na metodu, která vrací instanci <see cref="Graphics "/> pro danou vrstvu
+        /// </summary>
         private Func<int, Graphics> _GetGraphics;
-        /// <summary>Pointer to method, which clone content of layer (1) to layer (2)</summary>
+        /// <summary>
+        /// Odkaz na metodu, která překopíruje obsah vrstvy (1) do vrstvy (2)
+        /// </summary>
         private Action<int, int> _CopyContentOfLayer;
-        /// <summary>Sum of layers, which will be painted</summary>
+        /// <summary>
+        /// Vrstvy, které mají být kresleny
+        /// </summary>
         private Dictionary<int, object> _LayersToPaint;
         /// <summary>
-        /// Return a true, if specified layer number exists (and can be create Graphics object for this layer)
+        /// Vrátí true, pokud dané číslo vrstvy je správné a je možno s touto vrstvou pracovat
         /// </summary>
         /// <param name="layer"></param>
         /// <returns></returns>
         public bool LayerExists(int layer)
         {
-            if (layer < 0 || layer >= this._LayerCount) return false;
-            return true;
+            return (layer > 0 && layer < this._LayerCount);
         }
         /// <summary>
-        /// Return a true, if need paint to specific layer
+        /// Vrací true, pokud se do dané vrstvy má kreslit
         /// </summary>
         /// <param name="layer"></param>
         /// <returns></returns>
@@ -728,13 +741,13 @@ namespace Asol.Tools.WorkScheduler.Components
             return this._LayersToPaint.ContainsKey(layer);
         }
         /// <summary>
-        /// Sum of layers, which will be painted
+        /// Souhrn vrstev, do kterých se má kreslit
         /// </summary>
         public IEnumerable<int> LayersToPaint { get { return this._LayersToPaint.Keys; } }
         /// <summary>
-        /// Returns an Graphics object for specified layer.
-        /// Returns no-null object even for layers, for which is paint unnecessary.
-        /// Returns null object for non existing layers.
+        /// Vrátí instanci <see cref="Graphics"/> pro danou vrstvu.
+        /// Může vrátit null pro nesprávné číslo vrstvy.
+        /// Nastavuje danou vrstvu do <see cref="ValidLayer"/>.
         /// </summary>
         /// <param name="layer"></param>
         /// <returns></returns>
@@ -746,6 +759,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Zkopíruje obsah vrstvy (layerFrom) do vrstvy (layerTo).
         /// Používá se při kreslení jen části motivu, kdy se jako podklad přebírá již dříve připravený obsah.
+        /// Nastavuje danou cílovou vrstvu (layerTo) do <see cref="ValidLayer"/>.
         /// </summary>
         /// <param name="layerFrom"></param>
         /// <param name="layerTo"></param>
@@ -756,7 +770,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this.ValidLayer = layerTo;
         }
         /// <summary>
-        /// Libovolná data, předaná do metody ReDraw.
+        /// Libovolná data, předaná do metody Draw.
         /// </summary>
         public object UserData { get; private set; }
         /// <summary>
@@ -764,7 +778,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Automaticky se zde udržuje index vrstvy, která byla posledním cílem operace CopyContentOfLayer(), anebo která byla naposledy vyzvednuta ke kreslení metodou GraphicsForLayer().
         /// Nicméně aplikace může na konci metody override OnPaintLayers() vložit do argumentu do property ValidLayer libovolnou vrstvu, která se bude používat jako zdroj obrazu pro vykreslení controlu.
         /// </summary>
-        public int ValidLayer { get; set; }
+        public int ValidLayer { get; private set; }
     }
     #endregion
     #endregion
