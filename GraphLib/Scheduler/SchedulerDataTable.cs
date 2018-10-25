@@ -445,7 +445,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <returns></returns>
         protected KeyValuePair<GId, TagItem>[] CreateTagArray()
         {
-            return CreateTagArray(this.GuiGrid.Rows.RowTags.TagItemList);
+            List<GuiTagItem> tagItemList = this.GuiGrid?.Rows?.RowTags?.TagItemList;
+            return CreateTagArray(tagItemList);
         }
         /// <summary>
         /// Metoda vrátí pole štítků <see cref="TagItem"/>, načtených z <see cref="GuiGrid"/>.
