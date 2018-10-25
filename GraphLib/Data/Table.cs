@@ -3241,7 +3241,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// Prvek vrátí true, pokud jeho Tagy vyhovují zadaným (uživatelem zvoleným) Tagům.
         /// </summary>
-        /// <param name="tagItems"></param>
+        /// <param name="tagFilter"></param>
         bool FilterByTagValues(TagItem[] tagFilter);
     }
     /// <summary>

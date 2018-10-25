@@ -1051,46 +1051,6 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         protected bool IsValidBounds { get { return this._IsValidBounds; } } private bool _IsValidBounds;
         #endregion
-        #region Child items a kompletní validace
-        /// <summary>
-        /// Child prvky grafu = položky grafu, výhradně typu <see cref="GTimeGraphGroup"/>.
-        /// Před vrácením soupisu proběhne jeho validace.
-        /// </summary>
-        protected override IEnumerable<IInteractiveItem> Childs { get { this.CheckValid(); return this._Childs; } } private List<IInteractiveItem> _Childs;
-        /// <summary>
-        /// Metoda zajistí provedení kontroly platnosti všech vnitřních dat, podle toho která kontrola a přepočet je zapotřebí.
-        /// </summary>
-        protected void CheckValid()
-        {
-            using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "CheckValid", ""))
-            {
-                this.CheckValidAllGroupList();
-                this.CheckValidTimeAxis();
-                this.CheckValidCoordinateYVirtual();
-                this.CheckValidCoordinateYReal();
-                this.CheckValidCoordinateX();
-                this.CheckValidBounds();
-                this.CheckValidChildList();
-            }
-        }
-        /// <summary>
-        /// Metoda prověří platnost položek v poli <see cref="_Childs"/>.
-        /// </summary>
-        protected void CheckValidChildList()
-        {
-            if (this._Childs == null)
-                this.RecalculateChildList();
-        }
-        /// <summary>
-        /// Provede korektní naplnění pole <see cref="_Childs"/> všemi prvky, které mají být viditelné a interaktivní v rámci this grafu.
-        /// </summary>
-        protected void RecalculateChildList()
-        {
-            this._Childs = new List<IInteractiveItem>();
-            foreach (GTimeGraphGroup groupItem in this.VisibleGroupList)
-                this._Childs.Add(groupItem.GControl);
-        }
-        #endregion
         #region Komunikace s datovým zdrojem: Caption, ToolTip, Link, DoubleClick, LongClick, Drag and Drop
         /// <summary>
         /// Metoda získá text, který se bude vykreslovat do prvku
@@ -1292,6 +1252,94 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             if (table == null) return;
             Rectangle tableRowArea = table.GetAbsoluteBoundsForArea(Grid.TableAreaType.RowData);
             dragFrameWorkArea = new Rectangle(dragFrameWorkArea.X, tableRowArea.Y, dragFrameWorkArea.Width, tableRowArea.Height);
+        }
+        #endregion
+        #region Linky grafu : koordinační objekt GTimeGraphLinkArray
+        /// <summary>
+        /// Reference na koordinační objekt pro kreslení linek grafu, třída: <see cref="GTimeGraphLinkItem"/>.
+        /// Jednotlivé prvky grafu si mohou získávat svoje linky ke kreslení (podle svého stavu MouseOver, IsSelected atd).
+        /// Vykreslování linek grafu ale není řízeno z jednotlivého prvku grafu <see cref="GTimeGraphItem"/>, 
+        /// ale centrálně - právě z této instance <see cref="GraphLinkArray"/>.
+        /// Tento koordinační objekt je jeden buď pro jeden graf (=všechny prvky grafu), anebo je jeden pro více grafů v jedné tabulce.
+        /// Vytváření instance <see cref="GTimeGraphLinkArray"/> (a tedy i dohledání režimu) je řízeno právě v této property <see cref="GraphLinkArray"/>.
+        /// <para/>
+        /// Jednotlivé prvky grafu tedy mohou kdykoliv do této property vkládat nebo odebírat linky, ale nemají si své linky vykreslovat.
+        /// Instance třídy <see cref="GTimeGraphLinkArray"/> do této property je nalezena / vytvořena OnDemand.
+        /// </summary>
+        public GTimeGraphLinkArray GraphLinkArray
+        {
+            get
+            {
+                if (this._GraphLinkArray == null)
+                {   // Dosud nemáme referenci na GTimeGraphLinkArray:
+                    // Podíváme se, zda máme tabulku Grid.GTable, a převezmeme její objekt:
+                    Grid.GTable gTable = this.SearchForParent(typeof(Grid.GTable)) as Grid.GTable;
+                    if (gTable != null)
+                    {   // Použijeme sdílenou instanci. Objekt GTable si ji sám vytvoří a zařadí do svých Childs:
+                        this._GraphLinkArray = gTable.GraphLinkArray;
+                    }
+                    else
+                    {   // Nemáme k dispozici GTable: musíme si instanci GTimeGraphLinkArray vytvořit sami pro sebe:
+                        this._GraphLinkArray = new GTimeGraphLinkArray(this);
+                        this.GraphLinkArrayIsOnGraph = true;
+                        this.Invalidate(InvalidateItems.Childs);
+                    }
+                }
+                return this._GraphLinkArray;
+            }
+        }
+        /// <summary>
+        /// true pokud máme vytvořenou svoji zdejší instanci <see cref="GraphLinkArray"/> = výhradně pro tento graf.
+        /// Pak bychom ji měli vkládat do našich Childs.
+        /// false = instance neexistuje, anebo to není naše instance, nebudeme ji dávat do Childs.
+        /// </summary>
+        protected bool GraphLinkArrayIsOnGraph { get; private set; }
+        /// <summary>
+        /// Instance prvku <see cref="Graph.GTimeGraphLinkArray"/>, ať už je naše nebo cizí
+        /// </summary>
+        private GTimeGraphLinkArray _GraphLinkArray;
+        #endregion
+        #region Child items a kompletní validace
+        /// <summary>
+        /// Child prvky grafu = položky grafu, výhradně typu <see cref="GTimeGraphGroup"/>.
+        /// Před vrácením soupisu proběhne jeho validace.
+        /// </summary>
+        protected override IEnumerable<IInteractiveItem> Childs { get { this.CheckValid(); return this._Childs; } }
+        private List<IInteractiveItem> _Childs;
+        /// <summary>
+        /// Metoda zajistí provedení kontroly platnosti všech vnitřních dat, podle toho která kontrola a přepočet je zapotřebí.
+        /// </summary>
+        protected void CheckValid()
+        {
+            using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "CheckValid", ""))
+            {
+                this.CheckValidAllGroupList();
+                this.CheckValidTimeAxis();
+                this.CheckValidCoordinateYVirtual();
+                this.CheckValidCoordinateYReal();
+                this.CheckValidCoordinateX();
+                this.CheckValidBounds();
+                this.CheckValidChildList();
+            }
+        }
+        /// <summary>
+        /// Metoda prověří platnost položek v poli <see cref="_Childs"/>.
+        /// </summary>
+        protected void CheckValidChildList()
+        {
+            if (this._Childs == null)
+                this.RecalculateChildList();
+        }
+        /// <summary>
+        /// Provede korektní naplnění pole <see cref="_Childs"/> všemi prvky, které mají být viditelné a interaktivní v rámci this grafu.
+        /// </summary>
+        protected void RecalculateChildList()
+        {
+            this._Childs = new List<IInteractiveItem>();
+            foreach (GTimeGraphGroup groupItem in this.VisibleGroupList)
+                this._Childs.Add(groupItem.GControl);
+            if (this.GraphLinkArrayIsOnGraph)
+                this._Childs.Add(this._GraphLinkArray);
         }
         #endregion
         #region Draw : vykreslení grafu
@@ -2400,11 +2448,40 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="position"></param>
         public CreateLinksArgs(GTimeGraph graph, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position)
             : base(graph, group, data, position)
-        { }
+        {
+            this.SearchSidePrev = true;
+            this.SearchSideNext = true;
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="graph"></param>
+        /// <param name="group"></param>
+        /// <param name="data"></param>
+        /// <param name="position"></param>
+        /// <param name="searchSidePrev">Hledej linky na straně Prev;</param>
+        /// <param name="searchSideNext">Hledej linky na straně Next;</param>
+        public CreateLinksArgs(GTimeGraph graph, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position,
+            bool searchSidePrev, bool searchSideNext)
+            : base(graph, group, data, position)
+        {
+            this.SearchSidePrev = searchSidePrev;
+            this.SearchSideNext = searchSideNext;
+        }
+        /// <summary>
+        /// Hledej linky na straně Prev;
+        /// Výchozí hodnota = true
+        /// </summary>
+        public bool SearchSidePrev { get; set; }
+        /// <summary>
+        /// Hledej linky na straně Next;
+        /// Výchozí hodnota = true
+        /// </summary>
+        public bool SearchSideNext { get; set; }
         /// <summary>
         /// Seznam vztahů pro daný prvek
         /// </summary>
-        public GTimeGraphLink[] Links { get; set; }
+        public GTimeGraphLinkItem[] Links { get; set; }
     }
     #endregion
     #region class ItemDragDropArgs : Argument obsahující data pro Drag and Drop

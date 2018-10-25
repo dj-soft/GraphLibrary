@@ -1668,7 +1668,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this._ProcessResponseAddItems(guiResponse.AddItems, mainTableDict, refreshGraphDict);
             this._ProcessResponseUpdateLinks(guiResponse.ChangeLinks, mainTableDict, refreshGraphDict);
             this._ProcessResponseRefreshGraphs(refreshGraphDict.Values);
-
         }
         /// <summary>
         /// Zpracuje odpověď z aplikace, část: <see cref="GuiResponse.ToolbarItems"/>
@@ -1750,7 +1749,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (changeLinks == null) return;
             var changeGroups = changeLinks.Where(l => l.TableName != null).GroupBy(l => l.TableName);
             foreach (var changeGroup in changeGroups)
-            {
+            {   // Jdeme po skupinách, kde jedna skupina (changeGroup.Key) = jeden název tabulky GuiResponseGraphLink.TableName:
                 MainDataTable mainDataTable;
                 if (mainTableDict.TryGetValue(changeGroup.Key, out mainDataTable))
                     mainDataTable.UpdateGraphLinks(changeGroup);

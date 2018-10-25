@@ -463,9 +463,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="drawMode">Režim kreslení (pomáhá řešit Drag and Drop procesy)</param>
         protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
         {
-            if (e.DrawLayer == GInteractiveDrawLayer.Dynamic)
-                this.DrawLinks(e, absoluteBounds, absoluteVisibleBounds, drawMode);
-            else
+            if (e.DrawLayer != GInteractiveDrawLayer.Dynamic)
                 this._Owner.Draw(e, absoluteBounds, drawMode);
         }
         /// <summary>
@@ -718,8 +716,6 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Zkusí najít vztahy ke kreslení.
         /// Pokud nějaké najde, budou uloženy v <see cref="Links"/>.
-        /// Jakmile v <see cref="Links"/> bude něco jiného než null, pak <see cref="StandardDrawToLayer"/> bude vracet i vrstvu <see cref="GInteractiveDrawLayer.Dynamic"/>,
-        /// a tím se začne volat metoda <see cref="DrawLinks(GInteractiveDrawArgs, Rectangle, Rectangle, DrawItemMode)"/> = vykreslení linek.
         /// </summary>
         protected void PrepareLinks()
         {
@@ -729,131 +725,221 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             CreateLinksArgs args = new CreateLinksArgs(this.Graph, this.Group, this.Item, this.Position);
             this.Graph.DataSource.CreateLinks(args);
             this.Links = args.Links;
+            this.Graph.GraphLinkArray.AddLinks(this.Links);
         }
         /// <summary>
         /// Resetuje kreslené vztahy. Odteď se nebudou kreslit.
         /// </summary>
         protected void ResetLinks()
         {
+            this.Graph.GraphLinkArray.RemoveLinks(this.Links);
             this.Links = null;
-        }
-        /// <summary>
-        /// Vykreslí vztahy
-        /// </summary>
-        /// <param name="e"></param>
-        /// <param name="absoluteBounds"></param>
-        /// <param name="absoluteVisibleBounds"></param>
-        /// <param name="drawMode"></param>
-        protected void DrawLinks(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds, DrawItemMode drawMode)
-        {
-            GTimeGraphLink[] links = this.Links;
-            if (links == null) return;
-
-            Rectangle clipBounds = this.GetLinksAbsoluteClip();
-            e.GraphicsClipWith(clipBounds, false, true);
-            using (GPainter.GraphicsUseSmooth(e.Graphics))
-            {
-                foreach (GTimeGraphLink link in links)
-                {
-                    if (link != null && link.ItemPrev != null && link.ItemNext != null && link.LinkType.HasValue)
-                    {
-                        switch (link.LinkType.Value)
-                        {
-                            case GuiGraphItemLinkType.PrevEndToNextBeginLine:
-                                this.DrawLinksPNLine(e, link);
-                                break;
-                            case GuiGraphItemLinkType.PrevEndToNextBeginSCurve:
-                                this.DrawLinksPNSCurve(e, link);
-                                break;
-
-                        }
-                    }
-                }
-            }
-        }
-        /// <summary>
-        /// Vykreslí přímou linku 
-        /// </summary>
-        /// <param name="e"></param>
-        /// <param name="link"></param>
-        protected void DrawLinksPNLine(GInteractiveDrawArgs e, GTimeGraphLink link)
-        {
-            Rectangle prevBounds = link.ItemPrev.BoundsAbsolute;
-            Rectangle nextBounds = link.ItemNext.BoundsAbsolute;
-            Point prevPoint = new Point(prevBounds.Right - 1, prevBounds.Y + prevBounds.Height / 2);
-            Point nextPoint = new Point(nextBounds.X, nextBounds.Y + nextBounds.Height / 2);
-            e.Graphics.DrawLine(Skin.Pen(Color.Red), prevPoint, nextPoint);
-        }
-        /// <summary>
-        /// Vykreslí S-křivkovou linku 
-        /// </summary>
-        /// <param name="e"></param>
-        /// <param name="link"></param>
-        protected void DrawLinksPNSCurve(GInteractiveDrawArgs e, GTimeGraphLink link)
-        {
-            Rectangle prevBounds = link.ItemPrev.BoundsAbsolute;
-            Rectangle nextBounds = link.ItemNext.BoundsAbsolute;
-            Point prevPoint = new Point(prevBounds.Right - 1, prevBounds.Y + prevBounds.Height / 2);
-            Point nextPoint = new Point(nextBounds.X, nextBounds.Y + nextBounds.Height / 2);
-
-            int diffY = (nextPoint.Y - prevPoint.Y);
-            if (diffY < 0) diffY = -diffY;
-            int addX = (nextPoint.X - prevPoint.X) / 4;
-            int addY = diffY / 3;
-            if (addX < 16) addX = 16;
-            else if (addX < addY) addX = addY;
-            Point prevTarget = new Point(prevPoint.X + addX, prevPoint.Y);
-            Point nextTarget = new Point(nextPoint.X - addX, nextPoint.Y);
-
-            Color color1 = (link.LinkColor.HasValue ? link.LinkColor.Value : Skin.Graph.LinkColor);
-            Color color3 = color1.Morph(Color.Black, 0.667f);
-            Pen pen = Skin.Pen(color3, 3f, startCap: System.Drawing.Drawing2D.LineCap.Round, endCap: System.Drawing.Drawing2D.LineCap.Round);
-            e.Graphics.DrawBezier(pen, prevPoint, prevTarget, nextTarget, nextPoint);
-
-            pen = Skin.Pen(color1);
-            e.Graphics.DrawBezier(Skin.Pen(color1), prevPoint, prevTarget, nextTarget, nextPoint);
-        }
-        /// <summary>
-        /// Vrátí Rectangle reprezentující rozumný clip pro kreslení linků
-        /// </summary>
-        /// <returns></returns>
-        protected Rectangle GetLinksAbsoluteClip()
-        {
-            // 1. Souřadnice grafu, absolutní:
-            BoundsInfo boundsInfo = BoundsInfo.CreateForChild(this.Graph);
-            Rectangle linkAbsoluteBounds = boundsInfo.CurrentAbsVisibleBounds;
-
-            // 2. Pokud je graf v tabulce, pak najdu prostor dat v tabulce (RowData):
-            Grid.GTable gTable = this.Graph.SearchForParent(typeof(Grid.GTable)) as Grid.GTable;
-            if (gTable != null)
-            {
-                Rectangle rowDataBounds = gTable.GetAbsoluteBoundsForArea(Grid.TableAreaType.RowData);
-                // a prostor pro Linky zvětším v ose Y na celou oblast dat tabulky:
-                linkAbsoluteBounds.Y = rowDataBounds.Y;
-                linkAbsoluteBounds.Height = rowDataBounds.Height;
-            }
-            return linkAbsoluteBounds;
         }
         /// <summary>
         /// Pole vztahů, které kreslíme
         /// </summary>
-        protected GTimeGraphLink[] Links;
-        /// <summary>
-        /// Vrstvy pro běžné kreslení: Obsahuje vrstvu Standard, plus vrstvu Dynamic = pokud pole <see cref="Links"/> není null.
-        /// </summary>
-        protected override GInteractiveDrawLayer StandardDrawToLayer { get { return GInteractiveDrawLayer.Standard | (this.Links != null ? GInteractiveDrawLayer.Dynamic : GInteractiveDrawLayer.None); } }
+        protected GTimeGraphLinkItem[] Links;
         #endregion
     }
-    #region class GTimeGraphLink
+    #region GTimeGraphLinkArray : Vizuální pole, obsahující prvky GTimeGraphLinkItem
     /// <summary>
-    /// Třída reprezentující spojení dvou prvků grafu.
+    /// GTimeGraphLinkArray : Vizuální pole, obsahující prvky <see cref="GTimeGraphLinkItem"/>. Jde o <see cref="InteractiveObject"/>, 
+    /// který nemá implementovanou interaktivitu, ale je součástí tabulky <see cref="Grid.GTable"/> 
+    /// (anebo je členem vizuálních prvků hlavního controlu Host), 
+    /// a je vykreslován do vrstvy Dynamic.
+    /// Graf samotný obsahuje referenci na tento objekt, referenci dohledává on-demand a případně ji vytváří a umisťuje tak, 
+    /// aby objekt byl dostupný i dalším grafům.
+    /// Toto jedno pole je společné všem grafům jedné tabulky (nebo jednoho hostitele).
     /// </summary>
-    public class GTimeGraphLink
+    public class GTimeGraphLinkArray : InteractiveObject
     {
+        #region Konstrukce, úložiště, konverze klíčů
+        /// <summary>
+        /// Konstruktor pro graf
+        /// </summary>
+        /// <param name="ownerGraph"></param>
+        public GTimeGraphLinkArray(GTimeGraph ownerGraph)
+            : this()
+        {
+            this._OwnerGraph = ownerGraph;
+        }
+        /// <summary>
+        /// Konstruktor pro tabulku
+        /// </summary>
+        /// <param name="ownerGTable"></param>
+        public GTimeGraphLinkArray(Grid.GTable ownerGTable)
+            : this()
+        {
+            this._OwnerGTable = ownerGTable;
+        }
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public GTimeGraphLink()
+        public GTimeGraphLinkArray()
+        {
+            this._LinkDict = new Dictionary<UInt64, GTimeGraphLinkItem>();
+        }
+        /// <summary>
+        /// Úložiště linků
+        /// </summary>
+        private Dictionary<UInt64, GTimeGraphLinkItem> _LinkDict;
+        /// <summary>
+        /// true pokud this objekt je platný jen pro jeden Graf
+        /// </summary>
+        public bool IsForOneGraph { get { return (this._OwnerGraph != null && this._OwnerGTable == null); } }
+        /// <summary>
+        /// Graf, jehož jsme koordinátorem (může být null?)
+        /// </summary>
+        private GTimeGraph _OwnerGraph;
+        /// <summary>
+        /// true pokud this objekt je platný pro celou GTable
+        /// </summary>
+        public bool IsForGTable { get { return (this._OwnerGTable != null); } }
+        /// <summary>
+        /// Tabulka, jíž jsme koordinátorem (může být null?)
+        /// </summary>
+        private Grid.GTable _OwnerGTable;
+        #endregion
+        #region Prvky: přidávání, odebírání, enumerace
+        /// <summary>
+        /// Přidá dané linky do paměti
+        /// </summary>
+        /// <param name="links"></param>
+        public void AddLinks(IEnumerable<GTimeGraphLinkItem> links)
+        {
+            if (links == null) return;
+            Dictionary<UInt64, GTimeGraphLinkItem> dict = this._LinkDict;
+            foreach (GTimeGraphLinkItem link in links)
+            {
+                if (link == null) continue;
+                UInt64 key = link.Key;
+                if (dict.ContainsKey(key))
+                    dict[key] = link;
+                else
+                    dict.Add(key, link);
+            }
+            this.Repaint();
+        }
+        /// <summary>
+        /// Odebere dané linky z paměti
+        /// </summary>
+        /// <param name="links"></param>
+        public void RemoveLinks(IEnumerable<GTimeGraphLinkItem> links)
+        {
+            if (links == null) return;
+            Dictionary<UInt64, GTimeGraphLinkItem> dict = this._LinkDict;
+            foreach (GTimeGraphLinkItem link in links)
+            {
+                if (link == null) continue;
+                UInt64 key = link.Key;
+                if (dict.ContainsKey(key))
+                    dict.Remove(key);
+            }
+            this.Repaint();
+        }
+        /// <summary>
+        /// Smaže všechny linky z paměti
+        /// </summary>
+        public void Clear()
+        {
+            this._LinkDict.Clear();
+            this.Repaint();
+        }
+        /// <summary>
+        /// Obsahuje true, pokud this prvek v sobě obsahuje nějaké linky k vykreslení
+        /// </summary>
+        public bool ContainLinks { get { return (this._LinkDict.Count > 0); } }
+        /// <summary>
+        /// Souhrn všech aktuálních linků
+        /// </summary>
+        public IEnumerable<GTimeGraphLinkItem> Links { get { return this._LinkDict.Values; } }
+        #endregion
+        #region Podpora pro kreslení (InteractiveObject)
+        /// <summary>
+        /// Vrstvy, do nichž se běžně má vykreslovat tento objekt.
+        /// Tato hodnota se v metodě <see cref="InteractiveObject.Repaint()"/> vepíše do <see cref="InteractiveObject.RepaintToLayers"/>.
+        /// Vrstva <see cref="GInteractiveDrawLayer.Standard"/> je běžná pro normální kreslení;
+        /// vrstva <see cref="GInteractiveDrawLayer.Interactive"/> se používá při Drag and Drop;
+        /// vrstva <see cref="GInteractiveDrawLayer.Dynamic"/> se používá pro kreslení linek mezi prvky nad vrstvou při přetahování.
+        /// Vrstvy lze kombinovat.
+        /// Vrstva <see cref="GInteractiveDrawLayer.None"/> je přípustná:  prvek se nekreslí, ale je přítomný a interaktivní.
+        /// </summary>
+        protected override GInteractiveDrawLayer StandardDrawToLayer { get { return (this.ContainLinks ? GInteractiveDrawLayer.Dynamic : GInteractiveDrawLayer.None); } }
+        /// <summary>
+        /// Vrstvy, do nichž se aktuálně (tj. v nejbližším kreslení) bude vykreslovat tento objekt.
+        /// Po vykreslení se sem ukládá None, tím se šetří čas na kreslení (nekreslí se nezměněné prvky).
+        /// </summary>
+        protected override GInteractiveDrawLayer RepaintToLayers { get { return this.StandardDrawToLayer; } set { base.RepaintToLayers = value; } }
+        /// <summary>
+        /// Výchozí metoda pro kreslení prvku, volaná z jádra systému.
+        /// </summary>
+        /// <param name="e">Kreslící argument</param>
+        /// <param name="absoluteBounds">Absolutní souřadnice tohoto prvku, sem by se mělo fyzicky kreslit</param>
+        /// <param name="absoluteVisibleBounds">Absolutní souřadnice tohoto prvku, oříznuté do viditelné oblasti.</param>
+        protected override void Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds)
+        {
+            if (e.DrawLayer != GInteractiveDrawLayer.Dynamic) return;
+
+            // Najdeme oblast pro kreslení (Clip na oblast grafu, nebo na oblast grafu + dat v tabulce):
+            Rectangle clip = this.GetClip(e.GraphicsBounds);
+
+            // Na grafiku nasadíme clip a hladkou kresbu:
+            using (GPainter.GraphicsUse(e.Graphics, clip, GraphicSetting.Smooth))
+            {
+                // Vykreslíme prvky:
+                foreach (GTimeGraphLinkItem link in this._LinkDict.Values)
+                    link.Draw(e);
+            }
+        }
+        /// <summary>
+        /// Metoda najde prostor v absolutních souřadnicích, kam se mají vykreslovat linky:
+        /// </summary>
+        /// <param name="graphicsBounds"></param>
+        /// <returns></returns>
+        protected Rectangle GetClip(Rectangle graphicsBounds)
+        {
+            Rectangle clip = graphicsBounds;
+
+            if (this._OwnerGTable != null)
+            {   // Prostor pro data v rámci tabulky:
+                Rectangle dataBounds = this._OwnerGTable.GetAbsoluteBoundsForArea(Grid.TableAreaType.RowData);
+                clip = Rectangle.Intersect(clip, dataBounds);
+
+                // Pokud v tabulce najdu alespoň jeden sloupec typu Graf (používá časovou osu)...
+                var graphColumns = this._OwnerGTable.Columns.Where(c => c.ColumnProperties.UseTimeAxis).ToArray();
+                if (graphColumns != null && graphColumns.Length > 0)
+                {   // ...pak zmenším prostor clipu ve směru X pouze na prostor daný všemi grafy v tabulce (on nemusí být pouze jeden):
+                    Rectangle c0 = graphColumns[0].ColumnHeader.BoundsAbsolute;  // Souřadnice (X) prvního sloupce s grafem
+                    Rectangle c1 = (graphColumns.Length == 1 ? c0 : graphColumns[graphColumns.Length - 1].ColumnHeader.BoundsAbsolute); // Souřadnice (X) posledního sloupce s grafem
+                    int x = (c0.X > clip.X ? c0.X : clip.X);                     // Left omezit podle prvního sloupce
+                    int r = (c1.Right < clip.Right ? c1.Right : clip.Right);     // Right omezit podle posledního sloupce
+                    clip.X = x;
+                    clip.Width = (r - x);
+                }
+            }
+            else if (this._OwnerGraph != null)
+            {   // Prostor pro data v rámci grafu:
+                Rectangle graphBounds = this._OwnerGraph.BoundsAbsolute;
+                clip = Rectangle.Intersect(clip, graphBounds);
+            }
+
+            return clip;
+        }
+        #endregion
+    }
+    #endregion
+    #region class GTimeGraphLink : Datová třída, reprezentující spojení dvou prvků grafu.
+    /// <summary>
+    /// GTimeGraphLink : Datová třída, reprezentující spojení dvou prvků grafu.
+    /// Nejde v pravém smyslu o interaktivní objekt.
+    /// </summary>
+    public class GTimeGraphLinkItem
+    {
+        #region Konstrukce a základní data
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public GTimeGraphLinkItem()
         { }
         /// <summary>
         /// ID prvku předchozího
@@ -887,6 +973,95 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Data z GUI, nepovinná (zdejší hodnoty jsou separátní)
         /// </summary>
         public GuiGraphLink GuiGraphLink { get; set; }
+        #endregion
+        #region Klíč linku
+        /// <summary>
+        /// UInt64 klíč tohoto prvku, obsahuje klíče <see cref="GTimeGraphLinkItem.ItemIdPrev"/> a <see cref="GTimeGraphLinkItem.ItemIdNext"/>
+        /// </summary>
+        public UInt64 Key { get { return GetLinkKey(this); } }
+        /// <summary>
+        /// Vrací složené číslo UInt64 obsahující klíče:
+        /// v horních čtyřech bytech = <see cref="GTimeGraphLinkItem.ItemIdPrev"/>;
+        /// v dolních čtyřech bytech = <see cref="GTimeGraphLinkItem.ItemIdNext"/>;
+        /// </summary>
+        /// <param name="link"></param>
+        /// <returns></returns>
+        protected static UInt64 GetLinkKey(GTimeGraphLinkItem link)
+        {
+            return (link != null ? GetKey(link.ItemIdPrev, link.ItemIdNext) : 0);
+        }
+        /// <summary>
+        /// Vrací složené číslo UInt64 obsahující dvě dodaná čísla Int32:
+        /// v horních čtyřech  bytech je uloženo číslo a, v dolních čtyřech bytech pak číslo b.
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        protected static UInt64 GetKey(int a, int b)
+        {
+            ulong ua = ((ulong)(a)) & 0xffffffffL;
+            ulong ub = ((ulong)(b)) & 0xffffffffL;
+            return (ulong)((ua << 32) | ub);
+        }
+        #endregion
+        #region Kreslení jednoho linku
+        /// <summary>
+        /// Obsahuje true, pokud se má linka kreslit (je viditelná a má oba objekty Prev i Next)
+        /// </summary>
+        internal bool NeedDraw { get { return (this.IsLinkTypeVisible && this.ItemPrev != null && this.ItemNext != null); } }
+        /// <summary>
+        /// Obsahuje true, pokud linka podle jejího typu je viditelná
+        /// </summary>
+        internal bool IsLinkTypeVisible { get { return (this.LinkType.HasValue && (this.LinkType.Value == GuiGraphItemLinkType.PrevCenterToNextCenter || this.LinkType.Value == GuiGraphItemLinkType.PrevEndToNextBeginLine || this.LinkType.Value == GuiGraphItemLinkType.PrevEndToNextBeginSCurve)); } }
+        /// <summary>
+        /// Vykreslí tuto jednu linku
+        /// </summary>
+        /// <param name="e"></param>
+        internal void Draw(GInteractiveDrawArgs e)
+        {
+            this.DrawSCurve(e);
+        }
+        /// <summary>
+        /// Vykreslí přímou linku 
+        /// </summary>
+        /// <param name="e"></param>
+        protected void DrawLine(GInteractiveDrawArgs e)
+        {
+            Rectangle prevBounds = this.ItemPrev.BoundsAbsolute;
+            Rectangle nextBounds = this.ItemNext.BoundsAbsolute;
+            Point prevPoint = new Point(prevBounds.Right - 1, prevBounds.Y + prevBounds.Height / 2);
+            Point nextPoint = new Point(nextBounds.X, nextBounds.Y + nextBounds.Height / 2);
+            e.Graphics.DrawLine(Skin.Pen(Color.Red), prevPoint, nextPoint);
+        }
+        /// <summary>
+        /// Vykreslí S křivku
+        /// </summary>
+        /// <param name="e"></param>
+        protected void DrawSCurve(GInteractiveDrawArgs e)
+        {
+            Rectangle prevBounds = this.ItemPrev.BoundsAbsolute;
+            Rectangle nextBounds = this.ItemNext.BoundsAbsolute;
+            Point prevPoint = new Point(prevBounds.Right - 1, prevBounds.Y + prevBounds.Height / 2);
+            Point nextPoint = new Point(nextBounds.X, nextBounds.Y + nextBounds.Height / 2);
+
+            int diffY = (nextPoint.Y - prevPoint.Y);
+            if (diffY < 0) diffY = -diffY;
+            int addX = (nextPoint.X - prevPoint.X) / 4;
+            int addY = diffY / 3;
+            if (addX < 16) addX = 16;
+            else if (addX < addY) addX = addY;
+            Point prevTarget = new Point(prevPoint.X + addX, prevPoint.Y);
+            Point nextTarget = new Point(nextPoint.X - addX, nextPoint.Y);
+
+            Color color1 = (this.LinkColor.HasValue ? this.LinkColor.Value : Skin.Graph.LinkColor);
+            Color color3 = color1.Morph(Color.Black, 0.667f);
+            Pen pen = Skin.Pen(color3, 3f, startCap: System.Drawing.Drawing2D.LineCap.Round, endCap: System.Drawing.Drawing2D.LineCap.Round);
+            e.Graphics.DrawBezier(pen, prevPoint, prevTarget, nextTarget, nextPoint);
+
+            pen = Skin.Pen(color1);
+            e.Graphics.DrawBezier(Skin.Pen(color1), prevPoint, prevTarget, nextTarget, nextPoint);
+        }
+        #endregion
     }
     #endregion
     #region enum GGraphControlPosition

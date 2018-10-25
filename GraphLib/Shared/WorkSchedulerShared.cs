@@ -244,9 +244,22 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiPages()
         {
+            this.Name = PAGES_NAME;
             this.ShowPageTitleAllways = true;
             this.Pages = new List<GuiPage>();
         }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return this.Name + "; Count: " + (this.Pages != null ? this.Pages.Count.ToString() : "{Null}");
+        }
+        /// <summary>
+        /// Název prvku <see cref="GuiTagItems"/>
+        /// </summary>
+        public const string PAGES_NAME = "pages";
         /// <summary>
         /// Zobrazovat titulkový řádek nad jednotlivými <see cref="GuiPage"/> vždy = i když je jen jedna?
         /// </summary>
@@ -259,12 +272,24 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Přidá další prvek do this seznamu
         /// </summary>
         /// <param name="item"></param>
-        public void Add(GuiPage item) { this.Pages.Add(item); }
+        public void Add(GuiPage item)
+        {
+            if (item == null) return;
+            if (this.Pages == null)
+                this.Pages = new List<GuiPage>();
+            this.Pages.Add(item);
+        }
         /// <summary>
         /// Přidá další prvky do this seznamu
         /// </summary>
         /// <param name="items"></param>
-        public void AddRange(IEnumerable<GuiPage> items) { this.Pages.AddRange(items); }
+        public void AddRange(IEnumerable<GuiPage> items)
+        {
+            if (items == null) return;
+            if (this.Pages == null)
+                this.Pages = new List<GuiPage>();
+            this.Pages.AddRange(items);
+        }
         /// <summary>
         /// Počet prvků v kolekci
         /// </summary>
@@ -388,6 +413,38 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Zobrazovat tlačítko "Minimalizovat" na liště tabulek.
         /// </summary>
         public bool ShowMinimizeButton { get; set; }
+        /// <summary>
+        /// Přidá další prvek do this seznamu
+        /// </summary>
+        /// <param name="item"></param>
+        public void Add(GuiGrid item)
+        {
+            if (item == null) return;
+            if (this.Grids == null)
+                this.Grids = new List<GuiGrid>();
+            this.Grids.Add(item);
+        }
+        /// <summary>
+        /// Přidá další prvky do this seznamu
+        /// </summary>
+        /// <param name="items"></param>
+        public void AddRange(IEnumerable<GuiGrid> items)
+        {
+            if (items == null) return;
+            if (this.Grids == null)
+                this.Grids = new List<GuiGrid>();
+            this.Grids.AddRange(items);
+        }
+        /// <summary>
+        /// Počet prvků v kolekci
+        /// </summary>
+        public int Count { get { return this.Grids.Count; } }
+        /// <summary>
+        /// Obsahuje prvek na daném indexu
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        public GuiGrid this[int index] { get { return this.Grids[index]; } }
         /// <summary>
         /// Potomek zde vrací soupis svých Child prvků
         /// </summary>
@@ -791,7 +848,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <returns></returns>
         public override string ToString()
         {
-            return this.Name + "; Count: " + this.TagItemList.Count.ToString();
+            return this.Name + "; Count: " + (this.TagItemList != null ? this.TagItemList.Count.ToString() : "{Null}");
         }
         /// <summary>
         /// Název prvku <see cref="GuiTagItems"/>
@@ -801,6 +858,43 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Jednotlivé prvky typu <see cref="GuiTagItem"/>
         /// </summary>
         public List<GuiTagItem> TagItemList { get; set; }
+        /// <summary>
+        /// Přidá další prvek do this seznamu
+        /// </summary>
+        /// <param name="item"></param>
+        public void Add(GuiTagItem item)
+        {
+            if (item == null) return;
+            if (this.TagItemList == null)
+                this.TagItemList = new List<GuiTagItem>();
+            this.TagItemList.Add(item);
+        }
+        /// <summary>
+        /// Přidá další prvky do this seznamu
+        /// </summary>
+        /// <param name="items"></param>
+        public void AddRange(IEnumerable<GuiTagItem> items)
+        {
+            if (items == null) return;
+            if (this.TagItemList == null)
+                this.TagItemList = new List<GuiTagItem>();
+            this.TagItemList.AddRange(items);
+        }
+        /// <summary>
+        /// Počet prvků v kolekci
+        /// </summary>
+        public int Count { get { return this.TagItemList.Count; } }
+        /// <summary>
+        /// Obsahuje prvek na daném indexu
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        public GuiTagItem this[int index] { get { return this.TagItemList[index]; } }
+        /// <summary>
+        /// Potomek zde vrací soupis svých Child prvků
+        /// </summary>
+        [PersistingEnabled(false)]
+        protected override IEnumerable<IGuiItem> Childs { get { return this.TagItemList; } }
     }
     /// <summary>
     /// GuiTagItem : reprezentuje Tagy jednoho řádku (obsahuje klíč řádku + jeden Tag).
@@ -920,6 +1014,32 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Pokud jsou prvky umístěny zde, pak se vždy jedná o prvky tohoto jednoho grafu.
         /// </summary>
         public List<GuiGraphItem> GraphItems { get; set; }
+        /// <summary>
+        /// Přidá další prvek do this seznamu
+        /// </summary>
+        /// <param name="item"></param>
+        public void Add(GuiGraphItem item)
+        {
+            if (item == null) return;
+            if (this.GraphItems == null)
+                this.GraphItems = new List<GuiGraphItem>();
+            this.GraphItems.Add(item);
+        }
+        /// <summary>
+        /// Přidá další prvky do this seznamu
+        /// </summary>
+        /// <param name="items"></param>
+        public void AddRange(IEnumerable<GuiGraphItem> items)
+        {
+            if (items == null) return;
+            if (this.GraphItems == null)
+                this.GraphItems = new List<GuiGraphItem>();
+            this.GraphItems.AddRange(items);
+        }
+        /// <summary>
+        /// Počet prvků v kolekci
+        /// </summary>
+        public int Count { get { return this.GraphItems.Count; } }
         #endregion
         #region Klonování definičních dat, bez přenosu dat prvků
         /// <summary>
@@ -1040,8 +1160,21 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiGraphTable()
         {
+            this.Name = GRAPH_TABLE_NAME;
             this.GraphItems = new List<GuiGraphItem>();
         }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return this.Name + "; Count: " + (this.GraphItems != null ? this.GraphItems.Count.ToString() : "{Null}");
+        }
+        /// <summary>
+        /// Název prvku <see cref="GuiGraphTable"/>
+        /// </summary>
+        public const string GRAPH_TABLE_NAME = "graphTable";
         /// <summary>
         /// Soupis položek grafů. Typicky jeden soupis obsahuje položky pro všechny řádky tabulky. GUI vrstva si položky rozebere.
         /// </summary>
@@ -1050,12 +1183,24 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Přidá další prvek do this seznamu
         /// </summary>
         /// <param name="item"></param>
-        public void Add(GuiGraphItem item) { this.GraphItems.Add(item); }
+        public void Add(GuiGraphItem item)
+        {
+            if (item == null) return;
+            if (this.GraphItems == null)
+                this.GraphItems = new List<GuiGraphItem>();
+            this.GraphItems.Add(item);
+        }
         /// <summary>
         /// Přidá další prvky do this seznamu
         /// </summary>
         /// <param name="items"></param>
-        public void AddRange(IEnumerable<GuiGraphItem> items) { this.GraphItems.AddRange(items); }
+        public void AddRange(IEnumerable<GuiGraphItem> items)
+        {
+            if (items == null) return;
+            if (this.GraphItems == null)
+                this.GraphItems = new List<GuiGraphItem>();
+            this.GraphItems.AddRange(items);
+        }
         /// <summary>
         /// Počet prvků v kolekci
         /// </summary>
@@ -1303,12 +1448,25 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiGraphLinks() : base()
         {
+            this.Name = GRAPH_LINKS_NAME;
             this.LinkList = new List<GuiGraphLink>();
         }
         /// <summary>
-        /// Počet prvků
+        /// Vizualizace
         /// </summary>
-        public int Count { get { return (this.LinkList != null ? this.LinkList.Count : 0); } }
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return this.Name + "; Count: " + (this.LinkList != null ? this.LinkList.Count.ToString() : "{Null}");
+        }
+        /// <summary>
+        /// Název prvku <see cref="GuiTagItems"/>
+        /// </summary>
+        public const string GRAPH_LINKS_NAME = "graphLinks";
+        /// <summary>
+        /// Soupis jednotlivých linků
+        /// </summary>
+        public List<GuiGraphLink> LinkList { get; set; }
         /// <summary>
         /// Do <see cref="LinkList"/> přidá další záznam.
         /// </summary>
@@ -1332,9 +1490,15 @@ namespace Noris.LCS.Base.WorkScheduler
             this.LinkList.AddRange(links.Where(l => (l != null)));
         }
         /// <summary>
-        /// Soupis jednotlivých linků
+        /// Počet prvků
         /// </summary>
-        public List<GuiGraphLink> LinkList { get; set; }
+        public int Count { get { return (this.LinkList != null ? this.LinkList.Count : 0); } }
+        /// <summary>
+        /// Obsahuje prvek na daném indexu
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        public GuiGraphLink this[int index] { get { return this.LinkList[index]; } }
     }
     /// <summary>
     /// GuiGraphLink : jedna propojovací linka mezi dvěma prvky grafů <see cref="GuiGraphItem"/>.
@@ -1373,7 +1537,13 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiId ItemIdNext { get; set; }
         /// <summary>
-        /// Typ vztahu.
+        /// Typ vztahu logický.
+        /// Nezadáno = tento vztah se nemá vizualizovat.
+        /// Pokud je link předáván jako součást response (v <see cref="GuiResponse.ChangeLinks"/>), pak null hodnota značí "Stávající Link odebrat".
+        /// </summary>
+        public GuiGraphItemLinkRelation? RelationType { get; set; }
+        /// <summary>
+        /// Typ vztahu grafický.
         /// Nezadáno = tento vztah se nemá vizualizovat.
         /// Pokud je link předáván jako součást response (v <see cref="GuiResponse.ChangeLinks"/>), pak null hodnota značí "Stávající Link odebrat".
         /// </summary>
@@ -1388,12 +1558,32 @@ namespace Noris.LCS.Base.WorkScheduler
         public Color? LinkColor { get; set; }
     }
     /// <summary>
-    /// Typ spojovací linky <see cref="GuiGraphLink"/> mezi dvěma prvky
+    /// Typ spojovací vztahu, který popisuje link <see cref="GuiGraphLink"/> mezi dvěma prvky.
+    /// Má spíše datový charakter. Pomáhá vrstvě GUI určit, které vztahy kdy zobrazovat.
+    /// </summary>
+    public enum GuiGraphItemLinkRelation
+    {
+        /// <summary>
+        /// Nezadáno.
+        /// </summary>
+        None,
+        /// <summary>
+        /// Prvky jsou na stejné úrovni, typicky dvě operace v jednom postupu.
+        /// </summary>
+        OneLevel,
+        /// <summary>
+        /// Prvky jsou na různých úrovních, typicky vztah mezi poslední operací nižšího postup a navazující operací vyššího postupu.
+        /// </summary>
+        DifferentLevel
+    }
+    /// <summary>
+    /// Typ spojovací linky <see cref="GuiGraphLink"/> mezi dvěma prvky.
+    /// Má víceméně vizuální dopad.
     /// </summary>
     public enum GuiGraphItemLinkType
     {
         /// <summary>
-        /// Nezadáno. Použije se hodnota <see cref="PrevEndToNextBeginLine"/>.
+        /// Nezadáno.
         /// </summary>
         None,
         /// <summary>
@@ -1405,7 +1595,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         PrevEndToNextBeginLine,
         /// <summary>
-        /// Běžná hladká návaznost = Konec prvku Prev se napojí na Počátek prvku Next, S-křivkou čárou
+        /// Běžná hladká návaznost = Konec prvku Prev se napojí na Počátek prvku Next, S-křivkou
         /// </summary>
         PrevEndToNextBeginSCurve,
         /// <summary>

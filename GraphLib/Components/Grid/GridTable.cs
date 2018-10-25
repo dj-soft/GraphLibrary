@@ -1162,6 +1162,11 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                 this._ChildArrayValid = false;
                 items |= InvalidateItem.Paint;
             }
+            if ((items & (InvalidateItem.TableItems)) != 0)
+            {   // Po změně obsahu tabulky: zrušíme platnost pro pole ChildArray, vygeneruje se znovu:
+                this._ChildArrayValid = false;
+                items |= InvalidateItem.Paint;
+            }
             if ((items & (InvalidateItem.Paint)) != 0)
             {   // Požadavek na kreslení tabulky:
                 this.Repaint();
@@ -1378,6 +1383,35 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         private GTagLine _TagHeaderR;
         #endregion
+        #region Linky grafu : koordinační objekt GTimeGraphLinkArray
+        /// <summary>
+        /// Reference na koordinační objekt pro kreslení linek všech grafů v této tabulce, třída: <see cref="Graph.GTimeGraphLinkItem"/>.
+        /// Tento prvek slouží jednotlivým grafům.
+        /// </summary>
+        public Graph.GTimeGraphLinkArray GraphLinkArray
+        {
+            get
+            {
+                if (this._GraphLinkArray == null)
+                {   // Dosud nemáme referenci na GTimeGraphLinkArray, vytvoříme ji a zajistíme, že bude součástí našich Childs prvků:
+                    this._GraphLinkArray = new Graph.GTimeGraphLinkArray(this);
+                    this.GraphLinkArrayIsOnTable = true;
+                    this.Invalidate(InvalidateItem.TableItems);
+                }
+                return this._GraphLinkArray;
+            }
+        }
+        /// <summary>
+        /// true pokud máme vytvořenou svoji zdejší instanci <see cref="GraphLinkArray"/> = pro tuto tabulku.
+        /// Pak bychom ji měli vkládat do našich Childs.
+        /// false = instance neexistuje, anebo to není naše instance, nebudeme ji dávat do Childs.
+        /// </summary>
+        protected bool GraphLinkArrayIsOnTable { get; private set; }
+        /// <summary>
+        /// Instance prvku <see cref="Graph.GTimeGraphLinkArray"/>, ať už je naše nebo cizí
+        /// </summary>
+        private Graph.GTimeGraphLinkArray _GraphLinkArray;
+        #endregion
         #region TableSplitter :  splitter umístěný dole pod tabulkou, je součástí Parenta
         /// <summary>
         /// Inicializuje objekt _TableSplitter.
@@ -1462,6 +1496,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             this._ChildItemsAddHeaderSplitter();                     // Oddělovač pod hlavičkami sloupců (řídí výšku záhlaví)
             this._ChildItemsAddRowsSplitters();                      // Řádky: oddělovače řádků, pokud je povoleno
             this._ChildItemsAddRowsScrollBar();                      // Scrollbar řádků, pokud je viditelný
+            this._ChildItemsAddGraphLinkArray();                     // Koordinátor linků grafů, pokud je viditelný
             this._ChildArrayValid = true;
         }
         /// <summary>
@@ -1573,6 +1608,16 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             {
                 this.RowsScrollBar.Bounds = this.RowsScrollBarBounds;
                 this._ChildList.Add(this.RowsScrollBar);
+            }
+        }
+        /// <summary>
+        /// Do pole this.ChildList přidá _GraphLinkArray, pokud je viditelný (HasGraphLinkArray)
+        /// </summary>
+        protected void _ChildItemsAddGraphLinkArray()
+        {
+            if (this.GraphLinkArrayIsOnTable)
+            {
+                this._ChildList.Add(this._GraphLinkArray);
             }
         }
         #endregion

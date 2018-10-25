@@ -333,7 +333,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         /// <summary>
         /// Vrstvy, do nichž se běžně má vykreslovat tento objekt.
-        /// Tato hodnota se v metodě <see cref="Repaint()"/> vepíše do <see cref="RepaintToLayers"/>.
+        /// Tato hodnota se v metodě <see cref="InteractiveObject.Repaint()"/> vepíše do <see cref="InteractiveObject.RepaintToLayers"/>.
         /// Vrstva <see cref="GInteractiveDrawLayer.Standard"/> je běžná pro normální kreslení;
         /// vrstva <see cref="GInteractiveDrawLayer.Interactive"/> se používá při Drag and Drop;
         /// vrstva <see cref="GInteractiveDrawLayer.Dynamic"/> se používá pro kreslení linek mezi prvky nad vrstvou při přetahování.
