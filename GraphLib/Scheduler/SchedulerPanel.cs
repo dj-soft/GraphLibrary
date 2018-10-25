@@ -9,6 +9,7 @@ using Asol.Tools.WorkScheduler.Components;
 using Asol.Tools.WorkScheduler.Data;
 using Noris.LCS.Base.WorkScheduler;
 using Asol.Tools.WorkScheduler.Components.Grid;
+using Asol.Tools.WorkScheduler.Application;
 
 namespace Asol.Tools.WorkScheduler.Scheduler
 {
@@ -37,36 +38,39 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         private void _InitComponents()
         {
-            this.Bounds = new Rectangle(0, 0, 800, 600);
-            Size size = this.ClientSize;
-            int x1 = 300;
-            int x2 = size.Width - 300;
-            int y2 = size.Height - 200;
+            using (App.Trace.Scope(TracePriority.Priority2_Lowest, "SchedulerPanel", "InitComponents", ""))
+            {
+                this.Bounds = new Rectangle(0, 0, 800, 600);
+                Size size = this.ClientSize;
+                int x1 = 300;
+                int x2 = size.Width - 300;
+                int y2 = size.Height - 200;
 
-            this._LeftPanelTabs = new GTabContainer(this) { TabHeaderPosition = RectangleSide.Left, TabHeaderMode = ShowTabHeaderMode.CollapseItem };
-            this._LeftPanelSplitter = new GSplitter() { SplitterVisibleWidth = SplitterSize, SplitterActiveOverlap = 2, Orientation = Orientation.Vertical, Value = x1, BoundsNonActive = new Int32NRange(0, 200) };
-            this._MainPanelGrid = new GGrid(this);
-            this._RightPanelSplitter = new GSplitter() { SplitterVisibleWidth = SplitterSize, SplitterActiveOverlap = 2, Orientation = Orientation.Vertical, Value = x2, BoundsNonActive = new Int32NRange(0, 200) };
-            this._RightPanelTabs = new GTabContainer(this) { TabHeaderPosition = RectangleSide.Right, TabHeaderMode = ShowTabHeaderMode.CollapseItem };
-            this._BottomPanelSplitter = new GSplitter() { SplitterVisibleWidth = SplitterSize, SplitterActiveOverlap = 2, Orientation = Orientation.Horizontal, Value = y2, BoundsNonActive = new Int32NRange(0, 600) };
-            this._BottomPanelTabs = new GTabContainer(this) { TabHeaderPosition = RectangleSide.Bottom, TabHeaderMode = ShowTabHeaderMode.CollapseItem };
+                this._LeftPanelTabs = new GTabContainer(this) { TabHeaderPosition = RectangleSide.Left, TabHeaderMode = ShowTabHeaderMode.CollapseItem };
+                this._LeftPanelSplitter = new GSplitter() { SplitterVisibleWidth = SplitterSize, SplitterActiveOverlap = 2, Orientation = Orientation.Vertical, Value = x1, BoundsNonActive = new Int32NRange(0, 200) };
+                this._MainPanelGrid = new GGrid(this);
+                this._RightPanelSplitter = new GSplitter() { SplitterVisibleWidth = SplitterSize, SplitterActiveOverlap = 2, Orientation = Orientation.Vertical, Value = x2, BoundsNonActive = new Int32NRange(0, 200) };
+                this._RightPanelTabs = new GTabContainer(this) { TabHeaderPosition = RectangleSide.Right, TabHeaderMode = ShowTabHeaderMode.CollapseItem };
+                this._BottomPanelSplitter = new GSplitter() { SplitterVisibleWidth = SplitterSize, SplitterActiveOverlap = 2, Orientation = Orientation.Horizontal, Value = y2, BoundsNonActive = new Int32NRange(0, 600) };
+                this._BottomPanelTabs = new GTabContainer(this) { TabHeaderPosition = RectangleSide.Bottom, TabHeaderMode = ShowTabHeaderMode.CollapseItem };
 
-            this.AddItem(this._LeftPanelTabs);
-            this.AddItem(this._LeftPanelSplitter);
-            this.AddItem(this._MainPanelGrid);
-            this.AddItem(this._RightPanelSplitter);
-            this.AddItem(this._RightPanelTabs);
-            this.AddItem(this._BottomPanelSplitter);
-            this.AddItem(this._BottomPanelTabs);
+                this.AddItem(this._LeftPanelTabs);
+                this.AddItem(this._LeftPanelSplitter);
+                this.AddItem(this._MainPanelGrid);
+                this.AddItem(this._RightPanelSplitter);
+                this.AddItem(this._RightPanelTabs);
+                this.AddItem(this._BottomPanelSplitter);
+                this.AddItem(this._BottomPanelTabs);
 
-            this.CalculateLayout();
+                this.CalculateLayout();
 
-            this._LeftPanelSplitter.ValueChanging += LayoutChanging;
-            this._LeftPanelSplitter.ValueChanged += LayoutChanging;
-            this._RightPanelSplitter.ValueChanging += LayoutChanging;
-            this._RightPanelSplitter.ValueChanged += LayoutChanging;
-            this._BottomPanelSplitter.ValueChanging += LayoutChanging;
-            this._BottomPanelSplitter.ValueChanged += LayoutChanging;
+                this._LeftPanelSplitter.ValueChanging += LayoutChanging;
+                this._LeftPanelSplitter.ValueChanged += LayoutChanging;
+                this._RightPanelSplitter.ValueChanging += LayoutChanging;
+                this._RightPanelSplitter.ValueChanged += LayoutChanging;
+                this._BottomPanelSplitter.ValueChanging += LayoutChanging;
+                this._BottomPanelSplitter.ValueChanged += LayoutChanging;
+            }
         }
         /// <summary>
         /// Po změně velikosti controlu
@@ -235,13 +239,16 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         protected void LoadData()
         {
-            this._DataTableList = new List<MainDataTable>();
-            GuiPage guiPage = this._GuiPage;
+            using (App.Trace.Scope(TracePriority.Priority2_Lowest, "SchedulerPanel", "LoadData", ""))
+            {
+                this._DataTableList = new List<MainDataTable>();
+                GuiPage guiPage = this._GuiPage;
 
-            this._LeftPanelIsEnabled = this._LoadDataToTabs(guiPage.LeftPanel, this._LeftPanelTabs);
-            this._LoadDataToGrid(guiPage.MainPanel, this._MainPanelGrid);
-            this._RightPanelIsEnabled = this._LoadDataToTabs(guiPage.RightPanel, this._RightPanelTabs);
-            this._BottomPanelIsEnabled = this._LoadDataToTabs(guiPage.BottomPanel, this._BottomPanelTabs);
+                this._LeftPanelIsEnabled = this._LoadDataToTabs(guiPage.LeftPanel, this._LeftPanelTabs);
+                this._LoadDataToGrid(guiPage.MainPanel, this._MainPanelGrid);
+                this._RightPanelIsEnabled = this._LoadDataToTabs(guiPage.RightPanel, this._RightPanelTabs);
+                this._BottomPanelIsEnabled = this._LoadDataToTabs(guiPage.BottomPanel, this._BottomPanelTabs);
+            }
         }
         /// <summary>
         /// Souhrn všech tabulek této stránky, bez ohledu na to ve kterém panelu se nacházejí
@@ -267,13 +274,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
             foreach (GuiGrid guiGrid in guiPanel.Grids)
             {
-                MainDataTable graphTable = new MainDataTable(this, gGrid, guiGrid);
-                if (graphTable.TableRow == null) continue;
-
-                this._DataTableList.Add(graphTable);
-
-                var gTable = gGrid.AddTable(graphTable.TableRow);
-                _LoadGridProperties(gTable, guiGrid.GridProperties);
+                MainDataTable mainDataTable = this._LoadDataToMainTable(gGrid, guiGrid);
+                if (mainDataTable == null) continue;
             }
             return true;
         }
@@ -293,16 +295,42 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 GGrid gGrid = new GGrid();
                 gGrid.SynchronizedTime = this.SynchronizedTime;
 
-                MainDataTable graphTable = new MainDataTable(this, gGrid, guiGrid);
-                if (graphTable.TableRow == null) continue;
+                MainDataTable mainDataTable = this._LoadDataToMainTable(gGrid, guiGrid);
+                if (mainDataTable == null) continue;
 
-                this._DataTableList.Add(graphTable);
-
-                var gTable = gGrid.AddTable(graphTable.TableRow);
-                _LoadGridProperties(gTable, guiGrid.GridProperties);
                 tabs.AddTabItem(gGrid, guiGrid.Title, guiGrid.ToolTip);
             }
             return true;
+        }
+        /// <summary>
+        /// Metoda vytvoří novou tabulku <see cref="MainDataTable"/> s daty dodanými v <see cref="GuiGrid"/>.
+        /// Pokud data neobsahují tabulku s řádky, vrací null.
+        /// Vytvořenou tabulku <see cref="MainDataTable"/> uloží do <see cref="_DataTableList"/>,
+        /// do vizuálního gridu <see cref="GGrid"/> přidá tabulku s řádky <see cref="MainDataTable.TableRow"/>,
+        /// synchronizuje vlastnosti tabulky (pomocí metody <see cref="_LoadGridProperties(GTable, GuiGridProperties)"/>.
+        /// Vytvořenou tabulku <see cref="MainDataTable"/> vrací.
+        /// </summary>
+        /// <param name="gGrid"></param>
+        /// <param name="guiGrid"></param>
+        /// <returns></returns>
+        private MainDataTable _LoadDataToMainTable(GGrid gGrid, GuiGrid guiGrid)
+        {
+            MainDataTable mainDataTable = null;
+            using (App.Trace.Scope(TracePriority.Priority2_Lowest, "SchedulerPanel", "LoadDataToMainTable", "", guiGrid.FullName))
+                mainDataTable = new MainDataTable(this, gGrid, guiGrid);
+
+            if (mainDataTable.TableRow == null) return null;
+
+            this._DataTableList.Add(mainDataTable);
+
+            GTable gTable = null;
+            using (App.Trace.Scope(TracePriority.Priority2_Lowest, "SchedulerPanel", "AddTableToGrid", "", guiGrid.FullName))
+                gTable = gGrid.AddTable(mainDataTable.TableRow);
+
+            using (App.Trace.Scope(TracePriority.Priority2_Lowest, "SchedulerPanel", "LoadGridProperties", "", guiGrid.FullName))
+                _LoadGridProperties(gTable, guiGrid.GridProperties);
+
+            return mainDataTable;
         }
         /// <summary>
         /// Metoda přenese nastavení vlastností z <see cref="GuiGridProperties"/> do <see cref="GTable"/>.

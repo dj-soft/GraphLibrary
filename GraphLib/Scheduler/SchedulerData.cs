@@ -38,7 +38,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             this._AppHost = host;
             this._SessionId = sessionId;
-            this._Config = new SchedulerConfig(null);
+            using (App.Trace.Scope(TracePriority.Priority2_Lowest,  "SchedulerConfig", ".ctor(null)", ""))
+                this._Config = new SchedulerConfig(null);
         }
         /// <summary>
         /// Obsahuje, true pokud máme vztah na datového hostitele
@@ -55,6 +56,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Konfigurace uživatelská
         /// </summary>
         private SchedulerConfig _Config;
+        /// <summary>
+        /// Protože implementuji IFunctionProvider, stává se ze mě IPlugin.
+        /// A jádro systému si vytváří slovník všech pluginů - takže si vygeneruje 
+        /// pro každý typ pluginu jednu instanci, aby z ní mohl číst její pluginové vlastnosti.
+        /// Instance generuje pomocí <see cref="System.Activator"/> a vyžaduje k tomu bezparametrický konstruktor.
+        /// Zde jej implementujeme, ale nic v něm neděláme.
+        /// </summary>
+        public MainData() { }
         #endregion
         #region Public metody a properties
         /// <summary>
@@ -76,8 +85,12 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <returns></returns>
         public System.Windows.Forms.Control CreateControlToForm(Form mainForm)
         {
-            this._ApplyPropertiesToForm(mainForm);         // Nastavíme vlastnosti formu podle GuiProperties
-            this._MainControl = new MainControl(this);     // Vytvoříme new control MainControl
+            using (App.Trace.Scope(TracePriority.Priority2_Lowest, "MainData", "ApplyPropertiesToForm", ""))
+                this._ApplyPropertiesToForm(mainForm);     // Nastavíme vlastnosti formu podle GuiProperties
+
+            using (App.Trace.Scope(TracePriority.Priority2_Lowest, "MainControl", ".ctor", ""))
+                this._MainControl = new MainControl(this); // Vytvoříme new control MainControl
+
             this._FillMainControlFromGui();                // Do controlu MainControl vygenerujeme všechny jeho controly
             mainForm.Controls.Add(this._MainControl);      // Control MainControl vložíme do formu
             this._MainControl.Dock = DockStyle.Fill;       // Control MainControl roztáhneme na maximum
@@ -89,7 +102,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <returns></returns>
         public System.Windows.Forms.Control CreateControl()
         {
-            this._MainControl = new MainControl(this);
+            using (App.Trace.Scope(TracePriority.Priority2_Lowest, "MainControl", ".ctor", ""))
+                this._MainControl = new MainControl(this);
+
             this._FillMainControlFromGui();
             return this._MainControl;
         }
@@ -245,13 +260,16 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         private void _FillMainControlToolbar()
         {
-            this._ToolBarGuiItems = new List<ToolBarItem>();
-            this._MainControl.ClearToolBar();
-            this._MainControl.ToolBarVisible = this._GuiToolbarPanel.ToolbarVisible;
-            this._FillMainControlToolbarFromSystem();
-            this._FillMainControlToolbarFromGui();
-            this._MainControl.ToolBarItemClicked += _ToolBarItemClicked;
-            this._MainControl.ToolBarItemSelectedChange += _ToolBarItemSelectedChange;
+            using (App.Trace.Scope(TracePriority.Priority2_Lowest, "MainData", "FillMainControlToolbar", ""))
+            {
+                this._ToolBarGuiItems = new List<ToolBarItem>();
+                this._MainControl.ClearToolBar();
+                this._MainControl.ToolBarVisible = this._GuiToolbarPanel.ToolbarVisible;
+                this._FillMainControlToolbarFromSystem();
+                this._FillMainControlToolbarFromGui();
+                this._MainControl.ToolBarItemClicked += _ToolBarItemClicked;
+                this._MainControl.ToolBarItemSelectedChange += _ToolBarItemSelectedChange;
+            }
         }
         /// <summary>
         /// Do toolbaru vloží systémové funkce
@@ -676,12 +694,15 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         private void _FillMainControlPagesFromGui()
         {
-            this._MainControl.ClearPages();
-            this._MainControl.SynchronizedTime.Value = this.GuiData.Properties.InitialTimeRange;
-            this._MainControl.SynchronizedTime.ValueLimit = this.GuiData.Properties.TotalTimeRange;
-            foreach (GuiPage guiPage in this._GuiPages.Pages)
-                App.TryRun(() => this._MainControl.AddPage(guiPage));
-            this._FillDataTables();
+            using (App.Trace.Scope(TracePriority.Priority2_Lowest, "MainData", "FillMainControlPagesFromGui", ""))
+            {
+                this._MainControl.ClearPages();
+                this._MainControl.SynchronizedTime.Value = this.GuiData.Properties.InitialTimeRange;
+                this._MainControl.SynchronizedTime.ValueLimit = this.GuiData.Properties.TotalTimeRange;
+                foreach (GuiPage guiPage in this._GuiPages.Pages)
+                    App.TryRun(() => this._MainControl.AddPage(guiPage));
+                this._FillDataTables();
+            }
         }
         /// <summary>
         /// Souhrn všech datových tabulek ze všech panelů.
@@ -693,10 +714,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         private void _FillDataTables()
         {
-            List<MainDataTable> tableList = new List<MainDataTable>();
-            foreach (SchedulerPanelInfo panel in this._MainControl.SchedulerPanels)
-                tableList.AddRange(panel.SchedulerPanel.DataTables);
-            this._DataTables = tableList.ToArray();
+            using (App.Trace.Scope(TracePriority.Priority2_Lowest, "MainData", "FillDataTables", ""))
+            {
+                List<MainDataTable> tableList = new List<MainDataTable>();
+                foreach (SchedulerPanelInfo panel in this._MainControl.SchedulerPanels)
+                    tableList.AddRange(panel.SchedulerPanel.DataTables);
+                this._DataTables = tableList.ToArray();
+            }
         }
         /// <summary>
         /// Souhrn všech datových tabulek ze všech panelů.

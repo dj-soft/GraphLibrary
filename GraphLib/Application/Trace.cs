@@ -151,6 +151,10 @@ namespace Asol.Tools.WorkScheduler.Application
         {
             this._TraceEnd();
         }
+        /// <summary>
+        /// Plný název trace souboru
+        /// </summary>
+        public string File { get { return this._TraceFile; } }
         #endregion
         #region Exception
         /// <summary>
@@ -524,7 +528,7 @@ namespace Asol.Tools.WorkScheduler.Application
             return item
                     .Replace("\t", " ")
                     .Replace("\r", " ")
-                    .Replace("\r", " ");
+                    .Replace("\n", " ");
         }
         private void _TraceFlush()
         {

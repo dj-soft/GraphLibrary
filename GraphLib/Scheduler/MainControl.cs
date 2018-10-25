@@ -9,6 +9,7 @@ using System.Windows.Forms;
 using Asol.Tools.WorkScheduler.Services;
 using Asol.Tools.WorkScheduler.Data;
 using Noris.LCS.Base.WorkScheduler;
+using Asol.Tools.WorkScheduler.Application;
 
 namespace Asol.Tools.WorkScheduler.Scheduler
 {
@@ -32,9 +33,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         public MainControl()
         {
-            this._ToolBarInit();
-            this._SchedulerPanelInit();
-            this.CalculateLayout();
+            using (App.Trace.Scope(TracePriority.Priority2_Lowest, "MainControl", "ToolBarInit", ""))
+                this._ToolBarInit();
+
+            using (App.Trace.Scope(TracePriority.Priority2_Lowest, "MainControl", "SchedulerPanelInit", ""))
+                this._SchedulerPanelInit();
+
+            using (App.Trace.Scope(TracePriority.Priority2_Lowest, "MainControl", "CalculateLayout", ""))
+                this.CalculateLayout();
         }
         /// <summary>
         /// Reference na hlavní datový objekt
@@ -204,12 +210,15 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="guiPage"></param>
         private SchedulerPanelInfo _SchedulerPanelAdd(GuiPage guiPage)
         {
-            int tabPageIndex = this._TabContainer.TabCount;
-            SchedulerPanel schedulerPanel = new SchedulerPanel(this, guiPage);
-            GTabPage tabPage = this._TabContainer.AddTabItem(schedulerPanel, guiPage.Title, toolTip: guiPage.ToolTip, image: null);
-            SchedulerPanelInfo tspInfo = new SchedulerPanelInfo(guiPage, tabPageIndex, tabPage, schedulerPanel);
-            this._SchedulerPanelList.Add(tspInfo);
-            return tspInfo;
+            using (App.Trace.Scope(TracePriority.Priority2_Lowest, "MainControl", "SchedulerPanelAdd", ""))
+            {
+                int tabPageIndex = this._TabContainer.TabCount;
+                SchedulerPanel schedulerPanel = new SchedulerPanel(this, guiPage);
+                GTabPage tabPage = this._TabContainer.AddTabItem(schedulerPanel, guiPage.Title, toolTip: guiPage.ToolTip, image: null);
+                SchedulerPanelInfo tspInfo = new SchedulerPanelInfo(guiPage, tabPageIndex, tabPage, schedulerPanel);
+                this._SchedulerPanelList.Add(tspInfo);
+                return tspInfo;
+            }
         }
         /// <summary>
         /// Soupis všech stránek s daty, zobrazenými v GUI. Typický bývá jedna.
