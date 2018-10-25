@@ -916,18 +916,26 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Konstruktor
         /// </summary>
         /// <param name="graphics">Instance třídy Graphics pro kreslení</param>
+        /// <param name="size">Velikost prostoru pro kreslení</param>
         /// <param name="drawLayer">Vrstva, která se bude kreslit do této vrstvy</param>
-        public GInteractiveDrawArgs(Graphics graphics, GInteractiveDrawLayer drawLayer)
+        public GInteractiveDrawArgs(Graphics graphics, Size size, GInteractiveDrawLayer drawLayer)
         {
             this.Graphics = graphics;
+            this.GraphicsBounds = new Rectangle(0, 0, size.Width, size.Height);
             this.DrawLayer = drawLayer;
             this.IsStandardLayer = (drawLayer == GInteractiveDrawLayer.Standard);
+            this.CurrentVisibleClip = null;
             this._ResetLayerFlag = ((int)drawLayer ^ 0xFFFF);
         }
         /// <summary>
         /// Instance třídy Graphics pro kreslení
         /// </summary>
         public Graphics Graphics { get; private set; }
+        /// <summary>
+        /// Výchozí souřadnice grafiky, pro kreslení do neomezeného prostoru (tyto souřadnice reprezentují viditelnou oblast WinForm controlu).
+        /// Tato hodnota se nezmění žádným Clipem.
+        /// </summary>
+        public Rectangle GraphicsBounds { get; private set; }
         /// <summary>
         /// Vrstva, která se bude kreslit do této vrstvy
         /// </summary>
@@ -943,12 +951,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Jde o prostor, který je průnikem prostorů všech Parentů daného prvku = tady do tohoto prostoru se prvek smí vykreslit, aniž by "utekl ze svého parenta" někam mimo.
         /// Tento prostor tedy typicky neobsahuje Clip na souřadnice kresleného prvku (Item.Bounds).
         /// </summary>
-        public Rectangle AbsoluteVisibleClip { get; set; }
-        /// <summary>
-        /// Obsahuje true, pokud aktuální AbsoluteVisibleClip obsahuje prázdný prostor (jeho Width nebo Height == 0).
-        /// Pokud tedy IsVisibleClipEmpty je true, pak nemá smysl provádět jakékoli kreslení pomocí grafiky, protože nebude nic vidět.
-        /// </summary>
-        public bool IsVisibleClipEmpty { get { Rectangle c = this.AbsoluteVisibleClip; return (c.Width == 0 || c.Height == 0); } }
+        public Rectangle? CurrentVisibleClip { get; private set; }
         /// <summary>
         /// Pro daný prvek v jeho RepaintToLayers zruší požadavek na kreslení do vrstvy, která se právě zde kreslí.
         /// Volá se typicky po dokončení Draw().
@@ -964,27 +967,20 @@ namespace Asol.Tools.WorkScheduler.Components
         /// s daným prostorem (absoluteBounds).
         /// Tato metoda vrací průsečík i pro jiné než Standard layers.
         /// </summary>
-        /// <param name="absoluteBounds"></param>
+        /// <param name="absoluteClipBounds"></param>
         /// <returns></returns>
-        public Rectangle GetClip(Rectangle absoluteBounds)
+        public Rectangle GetClip(Rectangle absoluteClipBounds)
         {
-            Rectangle clip = this.AbsoluteVisibleClip;
-            clip.Intersect(absoluteBounds);
+            Rectangle clip = Rectangle.Intersect(this.GraphicsBounds, absoluteClipBounds);
+            Rectangle? currentClip = this.CurrentVisibleClip;
+            if (currentClip.HasValue)
+                clip = Rectangle.Intersect(clip, currentClip.Value);
             return clip;
         }
         /// <summary>
         /// Ořízne plochu, do které bude kreslit aktuální Graphics, jen na průsečík aktuálního this.ClipBounds s danými souřadnicemi.
-        /// Bez zadání parametru permanent bude toto oříznuté platné jen do dalšího zavolání této metody, pak se oříznutí může změnit.
-        /// Tato metoda provádí Clip pouze tehdy, když se kreslí do Standard layer (když this.IsStandardLayer je true).
-        /// </summary>
-        /// <param name="absoluteBounds">Absolutní souřadnice výřezu.</param>
-        public void GraphicsClipWith(Rectangle absoluteBounds)
-        {
-            this._GraphicsClipWith(absoluteBounds, false);
-        }
-        /// <summary>
-        /// Ořízne plochu, do které bude kreslit aktuální Graphics, jen na průsečík aktuálního this.ClipBounds s danými souřadnicemi.
-        /// Tato metoda provádí Clip pouze tehdy, když se kreslí do Standard layer (když this.IsStandardLayer je true).
+        /// Tato metoda provádí Clip pouze tehdy, když se kreslí do Standard layer (když this.IsStandardLayer je true), 
+        /// pokud není specifikován parametr allLayers = true.
         /// Parametr permanent říká, zda toto oříznutí má být bráno jako trvalé pro aktuální kreslený prvek, tím se ovlivní chování po nějakém následujícím volání téže metody.
         /// Příklad (pro jednoduchost v 1D hodnotách):
         /// Mějme souřadnice hosta { 0 - 100 }, pro aktuální control je systémem nastaven ClipBounds { 50 - 80 }, což je pozice jeho Parenta.
@@ -993,28 +989,41 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Jiná situace je, pokud první volání GraphicsClipWith() pro oblast { 60 - 70 } provedeme s parametrem permanent = true. Následné kreslení proběhne do oblasti { 60 - 70 }, to je logické.
         /// Pokud ale po tomto prvním Clipu s permanent = true voláme druhý Clip pro oblast { 50 - 65 }, provede se druhý clip proti výsledku prvního clipu (neboť ten je permanentní), a výsledek bude { 60 - 65 }.
         /// </summary>
-        /// <param name="absoluteBounds">Absolutní souřadnice clipu</param>
+        /// <param name="absoluteClipBounds">Absolutní souřadnice clipu</param>
         /// <param name="permanent">Toto oříznutí je trvalé pro aktuální prvek</param>
-        public void GraphicsClipWith(Rectangle absoluteBounds, bool permanent)
+        /// <param name="allLayers">Provést Clip i pro jiné vrstvy než Standard</param>
+        public void GraphicsClipWith(Rectangle absoluteClipBounds, bool permanent = false, bool allLayers = false)
         {
-            this._GraphicsClipWith(absoluteBounds, permanent);
+            if (!this.IsStandardLayer && !allLayers) return;
+
+            Rectangle currentClip = this.GetClip(absoluteClipBounds);
+            if (permanent)
+                this.CurrentVisibleClip = currentClip;
+            this.Graphics.SetClip(currentClip);
         }
         /// <summary>
-        /// Ořízne plochu, do které bude kreslit aktuální Graphics, jen na průsečík aktuálního this.ClipBounds s danými souřadnicemi.
-        /// Tato metoda provádí Clip pouze tehdy, když se kreslí do Standard layer (když this.IsStandardLayer je true).
-        /// Parametr permanent říká, zda toto oříznutí má být bráno jako trvalé pro aktuální kreslený prvek (=uloží výsledek do AbsoluteVisibleClip),
-        /// tím se ovlivní chování při jakémkoli následujícím volání téže metody.
+        /// Obsahuje true, pokud this má definovaný nějaký Clip = <see cref="CurrentVisibleClip"/> má hodnotu.
         /// </summary>
-        /// <param name="absoluteBounds">Absolutní souřadnice clipu</param>
-        /// <param name="permanent">Toto oříznutí je trvalé pro aktuální prvek</param>
-        private void _GraphicsClipWith(Rectangle absoluteBounds, bool permanent)
+        public bool HasClip { get { return this.CurrentVisibleClip.HasValue; } }
+        /// <summary>
+        /// Obsahuje true, pokud this nemá žádný Clip (tj. <see cref="HasClip"/> je false), anebo má nějaký Clip, a ten má nenulovou velikost.
+        /// </summary>
+        public bool HasVisibleGraphics
         {
-            if (!this.IsStandardLayer) return;
-
-            Rectangle clip = this.GetClip(absoluteBounds);
-            if (permanent)
-                this.AbsoluteVisibleClip = clip;
-            this.Graphics.SetClip(clip);
+            get
+            {
+                if (!this.HasClip) return true;                      // Nemáme Clip = je viditelné vše
+                Rectangle clip = this.CurrentVisibleClip.Value;      // AbsoluteVisibleClip obsahuje Interesct požadovaných CLipů a rozměrů grafiky!
+                return (clip.Width > 0 && clip.Height > 0);          // Máme Clip: a ten má viditelnou oblast?
+            }
+        }
+        /// <summary>
+        /// Zruší Clip v this objektu i v grafice
+        /// </summary>
+        public void ResetClip()
+        {
+            this.CurrentVisibleClip = null;
+            this.Graphics.ResetClip();
         }
     }
     /// <summary>

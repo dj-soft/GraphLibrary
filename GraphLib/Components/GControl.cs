@@ -701,6 +701,7 @@ namespace Asol.Tools.WorkScheduler.Components
         internal LayeredPaintEventArgs(GraphicLayer[] graphicLayers, IEnumerable<int> layersToPaint, object userData)
         {
             this._GraphicLayers = graphicLayers;
+            this._GraphicsSize = graphicLayers[0].Size;    // Všechny vrstvy mají stejnou velikost; vrstva [0] existuje vždy.
             this._LayersToPaint = ((layersToPaint != null) ? layersToPaint.GetDictionary(i => i, true) : null);
             this._LayerCount = graphicLayers.Length;
             this._UserData = userData;
@@ -709,6 +710,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Pole grafických vrstev
         /// </summary>
         private GraphicLayer[] _GraphicLayers;
+        /// <summary>
+        /// Velikost, kterou má grafika pro kreslení
+        /// </summary>
+        private Size _GraphicsSize;
         /// <summary>
         /// Vrstvy, které mají být kresleny
         /// </summary>
@@ -769,6 +774,10 @@ namespace Asol.Tools.WorkScheduler.Components
             if (this._LayersToPaint == null) return true;
             return this._LayersToPaint.ContainsKey(layer);
         }
+        /// <summary>
+        /// Velikost, kterou má grafika pro kreslení
+        /// </summary>
+        public Size GraphicsSize { get { return this._GraphicsSize; } }
         /// <summary>
         /// Libovolná data, předaná do metody Draw.
         /// </summary>

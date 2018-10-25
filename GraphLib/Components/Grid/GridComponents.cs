@@ -123,11 +123,10 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
 
             // Prostor po oříznutí s aktuálním Clipem v grafice:
             //  Aktuální Clip v grafice obsahuje prostor, daný pro tento prvek v rámci jeho parentů:
-            Rectangle clipBounds = Rectangle.Intersect(controlBounds, e.AbsoluteVisibleClip);
-            e.GraphicsClipWith(clipBounds, true);
+            e.GraphicsClipWith(controlBounds, true);
 
             // Pokud aktuální Clip je viditelný, pak jeho hodnota určuje souřadnice, kde je prvek interaktivní:
-            bool isVisible = !e.IsVisibleClipEmpty;
+            bool isVisible = e.HasVisibleGraphics;
 
             return isVisible;
         }

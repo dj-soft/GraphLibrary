@@ -464,8 +464,8 @@ namespace Asol.Tools.WorkScheduler.Components
                 y = absBounds.Y;
                 if (l < absBounds.Left) l = absBounds.Left;
                 if (t < absBounds.Top) t = absBounds.Top;
-                if (r < absBounds.Right) r = absBounds.Right;
-                if (b < absBounds.Bottom) b = absBounds.Bottom;
+                if (r > absBounds.Right) r = absBounds.Right;
+                if (b > absBounds.Bottom) b = absBounds.Bottom;
             }
 
             // Výsledek bude mít nastaveny koordináty (Origin a Visible), a bude mít vložený CurrentItem (pokud je metoda volaná pro Item):

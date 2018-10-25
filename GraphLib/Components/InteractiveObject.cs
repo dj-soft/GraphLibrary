@@ -432,22 +432,22 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 case GInteractiveChangeState.KeyboardFocusEnter:
                     this._HasFocus = true;
-                    this.Repaint();
                     this.AfterStateChangedFocusEnter(e);
+                    this.Repaint();
                     break;
                 case GInteractiveChangeState.KeyboardKeyPress:
                     this.AfterStateChangedKeyPress(e);
                     break;
                 case GInteractiveChangeState.KeyboardFocusLeave:
                     this._HasFocus = false;
-                    this.Repaint();
                     this.AfterStateChangedFocusLeave(e);
+                    this.Repaint();
                     break;
 
                 case GInteractiveChangeState.MouseEnter:
-                    this.Repaint();
                     this.AfterStateChangedMouseEnter(e);
                     this.PrepareToolTip(e);
+                    this.Repaint();
                     break;
                 case GInteractiveChangeState.LeftDown:
                     this.Repaint();
@@ -456,8 +456,8 @@ namespace Asol.Tools.WorkScheduler.Components
                     this.Repaint();
                     break;
                 case GInteractiveChangeState.MouseLeave:
-                    this.Repaint();
                     this.AfterStateChangedMouseLeave(e);
+                    this.Repaint();
                     break;
                 case GInteractiveChangeState.LeftClick:
                     this.AfterStateChangedLeftClick(e);
@@ -468,16 +468,16 @@ namespace Asol.Tools.WorkScheduler.Components
                     this.Repaint();
                     break;
                 case GInteractiveChangeState.LeftDoubleClick:
-                    this.Repaint();
                     this.AfterStateChangedLeftDoubleClick(e);
+                    this.Repaint();
                     break;
                 case GInteractiveChangeState.LeftLongClick:
-                    this.Repaint();
                     this.AfterStateChangedLeftLongClick(e);
+                    this.Repaint();
                     break;
                 case GInteractiveChangeState.RightClick:
-                    this.Repaint();
                     this.AfterStateChangedRightClick(e);
+                    this.Repaint();
                     break;
                 case GInteractiveChangeState.WheelUp:
                 case GInteractiveChangeState.WheelDown:

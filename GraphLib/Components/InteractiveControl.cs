@@ -1655,6 +1655,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         protected override void OnPaintLayers(LayeredPaintEventArgs e)
         {
+            Size graphicsSize = e.GraphicsSize;
             using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "OnPaintLayers", "", "Bounds: " + this.Bounds))
             {
                 DrawRequest request = e.UserData as DrawRequest;
@@ -1671,13 +1672,13 @@ namespace Asol.Tools.WorkScheduler.Components
                         base.OnPaintLayers(e);
                     Graphics graphics = e.GetGraphicsForLayer(0, true);
                     this.CallDrawStandardLayer(graphics);
-                    this._PaintItems(graphics, request.StandardItems, GInteractiveDrawLayer.Standard);
+                    this._PaintItems(graphics, graphicsSize, request.StandardItems, GInteractiveDrawLayer.Standard);
                     scope.AddItem("Layer Standard, Items: " + request.StandardItems.Count.ToString());
                 }
                 if (request.NeedIntDraw)
                 {
                     Graphics graphics = e.GetGraphicsForLayer(1, true);
-                    this._PaintItems(graphics, request.InteractiveItems, GInteractiveDrawLayer.Interactive);
+                    this._PaintItems(graphics, graphicsSize, request.InteractiveItems, GInteractiveDrawLayer.Interactive);
                     scope.AddItem("Layer Interactive, Items: " + request.InteractiveItems.Count.ToString());
                 }
                 if (request.NeedDynDraw)
@@ -1685,7 +1686,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     Graphics graphics = e.GetGraphicsForLayer(2, true);
                     if (request.DynamicItems.Count > 0)
                     {
-                        this._PaintItems(graphics, request.DynamicItems, GInteractiveDrawLayer.Dynamic);
+                        this._PaintItems(graphics, graphicsSize, request.DynamicItems, GInteractiveDrawLayer.Dynamic);
                         scope.AddItem("Layer Dynamic, Items: " + request.DynamicItems.Count.ToString());
                     }
                     if (request.DrawFrameSelect)
@@ -1714,22 +1715,34 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Vykreslí prvky (items) do dané grafiky (graphics), která reprezentuje danou vrstvu (drawLayer).
         /// Paint all items to specified Graphics.
         /// </summary>
-        /// <param name="graphics"></param>
+        /// <param name="graphics">Grafika, do níž se kreslí</param>
+        /// <param name="size">Velikost prostoru pro kreslení</param>
         /// <param name="items"></param>
         /// <param name="drawLayer"></param>
-        private void _PaintItems(Graphics graphics, IEnumerable<DrawRequestItem> items, GInteractiveDrawLayer drawLayer)
+        private void _PaintItems(Graphics graphics, Size size, IEnumerable<DrawRequestItem> items, GInteractiveDrawLayer drawLayer)
         {
             if (items != null)
             {
                 graphics.ResetTransform();
                 graphics.ResetClip();
-                GInteractiveDrawArgs e = new GInteractiveDrawArgs(graphics, drawLayer);
-                foreach (DrawRequestItem item in items)
-                {
-                    e.AbsoluteVisibleClip = item.AbsoluteVisibleClip;
-                    if (e.IsStandardLayer) graphics.SetClip(item.AbsoluteVisibleClip);
-                    item.Draw(e);
-                    if (e.IsStandardLayer) graphics.ResetClip();
+                GInteractiveDrawArgs e = new GInteractiveDrawArgs(graphics, size, drawLayer);
+                if (e.IsStandardLayer)
+                {   // Standardní vrstva: před kreslením se provede Clip:
+                    foreach (DrawRequestItem item in items)
+                    {
+                        e.GraphicsClipWith(item.AbsoluteVisibleClip);
+                        item.Draw(e);
+                        e.ResetClip();
+                    }
+                }
+                else
+                {   // Ostatní vrstvy: clip se implicitně neprovádí:
+                    foreach (DrawRequestItem item in items)
+                    {
+                        item.Draw(e);
+                        if (e.HasClip)
+                            e.ResetClip();
+                    }
                 }
             }
         }

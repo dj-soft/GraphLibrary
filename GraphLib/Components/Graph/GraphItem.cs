@@ -750,7 +750,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             if (links == null) return;
 
             Rectangle clipBounds = this.GetLinksAbsoluteClip();
-            e.GraphicsClipWith(clipBounds);
+            e.GraphicsClipWith(clipBounds, false, true);
             using (GPainter.GraphicsUseSmooth(e.Graphics))
             {
                 foreach (GTimeGraphLink link in links)
@@ -819,14 +819,20 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <returns></returns>
         protected Rectangle GetLinksAbsoluteClip()
         {
+            // 1. Souřadnice grafu, absolutní:
+            BoundsInfo boundsInfo = BoundsInfo.CreateForChild(this.Graph);
+            Rectangle linkAbsoluteBounds = boundsInfo.CurrentAbsVisibleBounds;
+
+            // 2. Pokud je graf v tabulce, pak najdu prostor dat v tabulce (RowData):
             Grid.GTable gTable = this.Graph.SearchForParent(typeof(Grid.GTable)) as Grid.GTable;
             if (gTable != null)
             {
                 Rectangle rowDataBounds = gTable.GetAbsoluteBoundsForArea(Grid.TableAreaType.RowData);
-                return rowDataBounds;
+                // a prostor pro Linky zvětším v ose Y na celou oblast dat tabulky:
+                linkAbsoluteBounds.Y = rowDataBounds.Y;
+                linkAbsoluteBounds.Height = rowDataBounds.Height;
             }
-            BoundsInfo boundsInfo = BoundsInfo.CreateForContainer(this.Graph);
-            return boundsInfo.CurrentAbsVisibleBounds;
+            return linkAbsoluteBounds;
         }
         /// <summary>
         /// Pole vztahů, které kreslíme

@@ -326,7 +326,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             if (!this.DrawTextInCurrentState) return;
             Rectangle boundsVisibleAbsolute = boundsAbsolute;
             if (e.DrawLayer == GInteractiveDrawLayer.Standard)
-                boundsVisibleAbsolute = Rectangle.Intersect(e.AbsoluteVisibleClip, boundsAbsolute);
+                boundsVisibleAbsolute = e.GetClip(boundsAbsolute);
 
             FontInfo fontInfo = FontInfo.CaptionBold;
             string text = this.GetCaption(e, boundsAbsolute, boundsVisibleAbsolute, fontInfo);
