@@ -680,7 +680,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         }
         #endregion
     }
-    #region Třídy pro data
+    #region Třídy pro datové prvky
     /// <summary>
     /// Data: Výrobní příkaz
     /// </summary>
@@ -906,6 +906,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 ItemId = this.RecordGid,
                 GroupId = this.Operation?.RecordGid,
                 DataId = this.Operation?.RecordGid,
+                RowId = this.PlanUnitC?.RecordGid,
                 Layer = 1,
                 BackColor = this.BackColor,
                 BehaviorMode = GraphItemBehaviorMode.ShowCaptionAllways | GraphItemBehaviorMode.ShowToolTipFadeIn | GraphItemBehaviorMode.MoveToAnotherRow | GraphItemBehaviorMode.MoveToAnotherTime,
