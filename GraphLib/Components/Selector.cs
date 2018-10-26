@@ -14,7 +14,7 @@ namespace Asol.Tools.WorkScheduler.Components
     /// Každý prvek se k instanci <see cref="Selector"/> dostane přes <see cref="IInteractiveParent.Host"/>.Selector
     /// Nejde o samostatnou grafickou komponentu.
     /// </summary>
-    public class Selector
+    public class Selector : ISelectorInternal
     {
         #region Konstruktor, proměnné
         /// <summary>
@@ -53,9 +53,8 @@ namespace Asol.Tools.WorkScheduler.Components
         public void ClearSelected()
         {
             this._PrepareForUse();
-            // Pokud nemáme nechat ostatní prvky selectované, a nějaké existují, pak je musíme odselectovat:
-            this._Selected.Values.ForEachItem(i => i.Repaint());     // Zajistím, že se aktuálně selectované prvky překreslí
-            this._Selected.Clear();                                  // A všechny zruším = budou mít IInteractiveItem.IsSelected = false.
+            this._Selected.Values.ForEachItem(i => i.IsSelected = false);   // Položka sama ve své property IsSelected by měla zavolat: ((ISelectorInternal)host.Selector).SetSelectedValue(this, value);
+            this._Selected.Clear();              // jen pro jistotu
         }
         /// <summary>
         /// Metoda zajistí, že daný prvek změní svůj stav Selected (výhradně stabilní Select): pokud nyní je vybraný, pak nebude; a naopak.
@@ -73,14 +72,11 @@ namespace Asol.Tools.WorkScheduler.Components
             uint id = item.Id;
             bool isSelected = this._Selected.ContainsKey(id);
             if (!leaveOther && this._Selected.Count > 0)
+                // Pokud nemáme nechat ostatní prvky selectované, a nějaké existují, pak je musíme odselectovat:
                 this.ClearSelected();
 
-            isSelected = !isSelected;                           // Máme provést změnu!
-            bool isExists = this._Selected.ContainsKey(id);
-            if (isSelected && !isExists)
-                this._Selected.Add(id, item);
-            else if (!isSelected && isExists)
-                this._Selected.Remove(id);
+            item.IsSelected = !isSelected;       // Položka sama ve své property IsSelected by měla zavolat: ((ISelectorInternal)host.Selector).SetSelectedValue(this, value);
+
             item.Repaint();
         }
         /// <summary>
@@ -95,14 +91,23 @@ namespace Asol.Tools.WorkScheduler.Components
             this._PrepareForUse();
             uint id = item.Id;
             bool oldSelected = this._Selected.ContainsKey(id);
+            if (isSelected != oldSelected)
+            {
+                item.IsSelected = isSelected;    // Položka sama ve své property IsSelected by měla zavolat: ((ISelectorInternal)host.Selector).SetSelectedValue(this, value);
+                item.Repaint();
+            }
+        }
+        void ISelectorInternal.SetSelectedValue(IInteractiveItem item, bool isSelected)
+        {
+            if (item == null) return;
+            this._PrepareForUse();
+            uint id = item.Id;
+            bool oldSelected = this._Selected.ContainsKey(id);
 
             if (isSelected && !oldSelected)
                 this._Selected.Add(id, item);
             else if (!isSelected && oldSelected)
                 this._Selected.Remove(id);
-
-            if (isSelected != oldSelected)
-                item.Repaint();
         }
         /// <summary>
         /// Obsahuje souhrn všech aktuálně selectovaných prvků
@@ -152,6 +157,8 @@ namespace Asol.Tools.WorkScheduler.Components
             if (isFramed != oldFramed)
                 item.Repaint();
         }
+        void ISelectorInternal.SetFramedValue(IInteractiveItem item, bool isFramed)
+        { }
         /// <summary>
         /// Metoda zajistí, že ve stavu Framed budou jen předané prvky.
         /// To znamená, že prvky, které nejsou předané v parametru, budou z pole Framed odebrány.
@@ -190,16 +197,37 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public void MoveFramedToSelected()
         {
-            this._PrepareForUse();
             foreach (IInteractiveItem item in this._Framed.Values)
             {
                 if (!this._Selected.ContainsKey(item.Id))
                 {
-                    this._Selected.Add(item.Id, item);
+                    item.IsSelected = true;
+                    // this._Selected.Add(item.Id, item);
                 }
                 item.Repaint();
             }
             this._Framed.Clear();
+        }
+        /// <summary>
+        /// Obsahuje souhrn všech aktuálně framovaných prvků
+        /// </summary>
+        public IEnumerable<IInteractiveItem> FramedItems { get { this._PrepareForUse(); return this._Framed.Values; } }
+        /// <summary>
+        /// Obsahuje souhrn všech aktuálně framovaných prvků, které dosud NEJSOU SELECTOVANÉ.
+        /// </summary>
+        public IEnumerable<IInteractiveItem> FramedOnlyItems { get { return this._GetFramedOnlyItems(); } }
+        /// <summary>
+        /// Vrací souhrn všech aktuálně framovaných prvků, které dosud NEJSOU SELECTOVANÉ.
+        /// </summary>
+        /// <returns></returns>
+        private IInteractiveItem[] _GetFramedOnlyItems()
+        {
+            this._PrepareForUse();
+            if (this._Framed.Count == 0) return new IInteractiveItem[0];
+            if (this._Selected.Count == 0) return this._Framed.Values.ToArray();
+            return this._Framed.Values
+                .Where(i => !this._Selected.ContainsKey(i.Id))
+                .ToArray();
         }
         #endregion
         #region Aktivování
@@ -279,10 +307,18 @@ namespace Asol.Tools.WorkScheduler.Components
                 }
             }
         }
+        void ISelectorInternal.SetActivatedValue(IInteractiveItem item, bool isActivated)
+        { }
         /// <summary>
         /// Obsahuje souhrn všech aktuálně aktivních prvků
         /// </summary>
         public IEnumerable<IInteractiveItem> ActivatedItems { get { this._PrepareForUse(); return this._Activated.Values; } }
         #endregion
+    }
+    public interface ISelectorInternal
+    {
+        void SetSelectedValue(IInteractiveItem item, bool isSelected);
+        void SetFramedValue(IInteractiveItem item, bool isFramed);
+        void SetActivatedValue(IInteractiveItem item, bool isActivated);
     }
 }

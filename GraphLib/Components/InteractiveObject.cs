@@ -861,7 +861,22 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Hodnota je evidována centrálně v instanci <see cref="GInteractiveControl.Selector"/>.
         /// Tato hodnota neobsahuje stav Framování (v procesu Drag and Frame), ten je k dispozici v <see cref="IsFramed"/>.
         /// </summary>
-        public virtual bool IsSelected { get { var host = this.Host; return (host != null ? host.Selector.IsSelected(this) : false); } set { var host = this.Host; if (host != null) host.Selector.SetSelected(this, value); } }
+        public virtual bool IsSelected
+        {
+            get { var host = this.Host; return (host != null ? host.Selector.IsSelected(this) : false); }
+            set
+            {
+                var host = this.Host;
+                if (host == null) return;
+                bool oldValue = host.Selector.IsSelected(this);
+                bool newValue = value;
+                if (oldValue == newValue) return;
+                ((ISelectorInternal)host.Selector).SetSelectedValue(this, value);
+                this.OnIsSelectedChanged(new Data.GPropertyChangeArgs<bool>(oldValue, newValue, EventSourceType.ApplicationCode));
+            }
+        }
+        protected virtual void OnIsSelectedChanged(Data.GPropertyChangeArgs<bool> args)
+        { }
         /// <summary>
         /// Je aktuálně zarámován (pro budoucí selectování)?
         /// Zarámovaný prvek (v procesu hromadného označování myší SelectFrame) má <see cref="IsFramed"/> = true, ale hodnotu <see cref="IsSelected"/> má beze změn.

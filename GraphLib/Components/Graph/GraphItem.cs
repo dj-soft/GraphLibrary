@@ -219,6 +219,16 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             this.ResetLinks();
             base.AfterStateChangedMouseLeave(e);
         }
+        protected override void AfterStateChangedLeftClickSelected(GInteractiveChangeStateArgs e)
+        {
+            base.AfterStateChangedLeftClickSelected(e);
+            // qqq
+        }
+        protected override void AfterStateChangedDragFrameSelect(GInteractiveChangeStateArgs e)
+        {
+            base.AfterStateChangedDragFrameSelect(e);
+            // qqq;
+        }
         /// <summary>
         /// Metoda zajistí provedení Select pro moji Parent grupu (pokud já jsem Item)
         /// </summary>
@@ -722,17 +732,34 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             // Pokud this je na pozici Item, a naše grupa (this.Group) už má nalezené linky, pak je nebudeme opakovaně hledat pro prvek:
             if (this.Position == GGraphControlPosition.Item && this.Group.GControl.Links != null) return;
 
-            CreateLinksArgs args = new CreateLinksArgs(this.Graph, this.Group, this.Item, this.Position);
-            this.Graph.DataSource.CreateLinks(args);
-            this.Links = args.Links;
-            this.Graph.GraphLinkArray.AddLinks(this.Links);
+            List<GTimeGraphLinkItem> links = new List<GTimeGraphLinkItem>();
+
+            GTimeGraphItem item = this;
+            GTimeGraphLinkArray linkArray = this.Graph.GraphLinkArray;
+
+            CreateLinksArgs args = new CreateLinksArgs(item.Graph, item.Group, item.Item, item.Position);
+            item.Graph.DataSource.CreateLinks(args);
+            GTimeGraphLinkItem[] linksOne = args.Links;
+            if (linksOne == null || linksOne.Length == 0) return;
+
+            linkArray.AddLinks(linksOne, GTimeGraphLinkMode.Mouse, 0.4f);
+            links.AddRange(linksOne);
+
+            foreach (GTimeGraphLinkItem linkOne in linksOne)
+            {
+
+            }
+
+
+
+            this.Links = links.ToArray();
         }
         /// <summary>
         /// Resetuje kreslené vztahy. Odteď se nebudou kreslit.
         /// </summary>
         protected void ResetLinks()
         {
-            this.Graph.GraphLinkArray.RemoveLinks(this.Links);
+            this.Graph.GraphLinkArray.RemoveLinks(this.Links, GTimeGraphLinkMode.Mouse);
             this.Links = null;
         }
         /// <summary>
@@ -753,7 +780,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
     /// </summary>
     public class GTimeGraphLinkArray : InteractiveObject
     {
-        #region Konstrukce, úložiště, konverze klíčů
+        #region Konstrukce, úložiště linků, reference na ownera (tabulka / graf)
         /// <summary>
         /// Konstruktor pro graf
         /// </summary>
@@ -777,12 +804,12 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         public GTimeGraphLinkArray()
         {
-            this._LinkDict = new Dictionary<UInt64, GTimeGraphLinkItem>();
+            this._LinkDict = new Dictionary<UInt64, LinkInfo>();
         }
         /// <summary>
-        /// Úložiště linků
+        /// Úložiště linků + přidaných dat
         /// </summary>
-        private Dictionary<UInt64, GTimeGraphLinkItem> _LinkDict;
+        private Dictionary<UInt64, LinkInfo> _LinkDict;
         /// <summary>
         /// true pokud this objekt je platný jen pro jeden Graf
         /// </summary>
@@ -804,38 +831,76 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Přidá dané linky do paměti
         /// </summary>
-        /// <param name="links"></param>
-        public void AddLinks(IEnumerable<GTimeGraphLinkItem> links)
+        /// <param name="links">Souhrn linků k přidání</param>
+        /// <param name="mode">Důvod zobrazení</param>
+        /// <param name="ratio">Průhlednost v rozsahu 0 (neviditelná) - 1 (plná barva)</param>
+        public void AddLinks(IEnumerable<GTimeGraphLinkItem> links, GTimeGraphLinkMode mode, float ratio)
         {
             if (links == null) return;
-            Dictionary<UInt64, GTimeGraphLinkItem> dict = this._LinkDict;
+            if (mode == GTimeGraphLinkMode.None || ratio <= 0f) return;
+            Dictionary<UInt64, LinkInfo> linkDict = this._LinkDict;
             foreach (GTimeGraphLinkItem link in links)
             {
                 if (link == null) continue;
                 UInt64 key = link.Key;
-                if (dict.ContainsKey(key))
-                    dict[key] = link;
+                LinkInfo linkInfo;
+                bool exists = linkDict.TryGetValue(key, out linkInfo);
+                if (!exists)
+                {   // Pro daný klíč (Prev-Next) dosud nemám link => založím si nový, a přidám do něj dodaná data:
+                    linkInfo = new LinkInfo(link) { Mode = mode, Ratio = ratio };
+                    linkDict.Add(key, linkInfo);
+                }
                 else
-                    dict.Add(key, link);
+                {   // Link máme => můžeme v něm navýšit hodnoty:
+                    if (linkInfo.Ratio < ratio) linkInfo.Ratio = ratio;
+                    linkInfo.Mode |= mode;
+                }
             }
+            // Zajistíme překreslení všech vztahů:
             this.Repaint();
         }
         /// <summary>
-        /// Odebere dané linky z paměti
+        /// Odebere dané linky z paměti, pokud v ní jsou a pokud již neexistuje důvod pro jejich zobrazování.
+        /// Důvod zobrazení: každý link v sobě eviduje souhrn důvodů, pro které byl zobrazen (metoda <see cref="AddLinks(IEnumerable{GTimeGraphLinkItem}, GTimeGraphLinkMode, float)"/>),
+        /// důvody z opakovaných volání této metody se průběžně sčítají, a při odebírání se odečítají.
+        /// A až tam nezbyde žádný, bude link ze seznamu odebrán.
         /// </summary>
-        /// <param name="links"></param>
-        public void RemoveLinks(IEnumerable<GTimeGraphLinkItem> links)
+        /// <param name="links">Souhrn linků k odebrání</param>
+        /// <param name="mode">Důvod, pro který byl link zobrazen</param>
+        public void RemoveLinks(IEnumerable<GTimeGraphLinkItem> links, GTimeGraphLinkMode mode)
         {
             if (links == null) return;
-            Dictionary<UInt64, GTimeGraphLinkItem> dict = this._LinkDict;
+            if (mode == GTimeGraphLinkMode.None) return;
+            bool repaint = false;
+            GTimeGraphLinkMode reMode = GTimeGraphLinkMode.All ^ mode;         // reMode nyní obsahuje XOR požadovanou hodnotu, použije se pro AND nulování
+            Dictionary<UInt64, LinkInfo> linkDict = this._LinkDict;
             foreach (GTimeGraphLinkItem link in links)
             {
                 if (link == null) continue;
                 UInt64 key = link.Key;
-                if (dict.ContainsKey(key))
-                    dict.Remove(key);
+                LinkInfo linkInfo;
+                bool exists = linkDict.TryGetValue(key, out linkInfo);
+                if (!exists) continue;
+
+                // Zdejší algoritmus Remove nedokáže provést snížení hodnoty Ratio. Dokáže jen odebrat bit z hodnoty Mode.
+                // Ke snížení Ratio: k tomu by došlo jen tehdy, když by link bylů nejprve zobrazen z důvodu Mouse, kde je Ratio menší než 1.0 (např. 0.80),
+                //  pak by se přidal důvod Select a s tím i zvýšení Ratio na hodnotu 1,
+                //  a poté by se odebral důvod Select - a nyní bychom očekávali snížení Ratio z 1.0 zpátky na 0.80.
+                // Prakticky ale se to projeví jen v tomto postupu:
+                //  a) Najdu myší na prvek = rozsvítí se Linky v režimu Mouse
+                //  b) Kliknu na prvek = prvek se označí - Linky se rozsvítí i v režimu Select (takže Mode == Mouse | Select)
+                //  c) Kliknu na prvek = z prvku se odebere důvod Select, zůstane tam Mouse, ale zůstane původní Ratio
+                // Ale poté myš odjede z prvku, a Linky se odeberou i z důvodu Mouse, a Linky tak kompletně zhasnou.
+
+                linkInfo.Mode &= reMode;                                       // Vstupní hodnota (mode) bude z hodnoty linkInfo.Mode vynulována
+                if (linkInfo.Mode == GTimeGraphLinkMode.None)                  // A pokud v Mode nezbyla žádná hodnota, link odebereme.
+                {
+                    linkDict.Remove(key);
+                    repaint = true;
+                }
             }
-            this.Repaint();
+            if (repaint)
+                this.Repaint();
         }
         /// <summary>
         /// Smaže všechny linky z paměti
@@ -850,9 +915,52 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         public bool ContainLinks { get { return (this._LinkDict.Count > 0); } }
         /// <summary>
-        /// Souhrn všech aktuálních linků
+        /// Souhrn všech aktuálních linků, bez dalších informací
         /// </summary>
-        public IEnumerable<GTimeGraphLinkItem> Links { get { return this._LinkDict.Values; } }
+        public IEnumerable<GTimeGraphLinkItem> Links { get { return this._LinkDict.Values.Select(l => l.Link); } }
+        #endregion
+        #region Subclass LinkInfo: třída pro reálně ukládané prvky - obsahuje navíc i důvod zobrazení a transparentnost
+        /// <summary>
+        /// LinkInfo: třída pro reálně ukládané prvky - obsahuje navíc i důvod zobrazení a transparentnost
+        /// </summary>
+        private class LinkInfo
+        {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="link"></param>
+            public LinkInfo(GTimeGraphLinkItem link)
+            {
+                this._Link = link;
+                this._Mode = GTimeGraphLinkMode.None;
+                this._Ratio = 0f;
+            }
+            private GTimeGraphLinkItem _Link;
+            private GTimeGraphLinkMode _Mode;
+            private float _Ratio;
+            /// <summary>
+            /// Objekt vztahu
+            /// </summary>
+            public GTimeGraphLinkItem Link { get { return this._Link; } }
+            /// <summary>
+            /// Důvod zobrazení: zadává ten, kdo si přeje zobrazit
+            /// </summary>
+            public GTimeGraphLinkMode Mode { get { return this._Mode; } set { this._Mode = value; } }
+            /// <summary>
+            /// Průhlednost Linku:
+            /// hodnota v rozsahu 0.0 (neviditelná) - 1.0 (plná barva)
+            /// </summary>
+            public float Ratio { get { return this._Ratio; } set { this._Ratio = (value < 0f ? 0f : (value > 1f ? 1f : value)); } }
+            /// <summary>
+            /// Vykreslí tuto jednu linku
+            /// </summary>
+            /// <param name="e"></param>
+            internal void Draw(GInteractiveDrawArgs e)
+            {
+                if (this.Link.NeedDraw)
+                    this.Link.Draw(e, this.Mode, this.Ratio);
+            }
+        }
         #endregion
         #region Podpora pro kreslení (InteractiveObject)
         /// <summary>
@@ -887,8 +995,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             using (GPainter.GraphicsUse(e.Graphics, clip, GraphicSetting.Smooth))
             {
                 // Vykreslíme prvky:
-                foreach (GTimeGraphLinkItem link in this._LinkDict.Values)
-                    link.Draw(e);
+                foreach (LinkInfo linkInfo in this._LinkDict.Values)
+                    linkInfo.Draw(e);
             }
         }
         /// <summary>
@@ -926,6 +1034,29 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             return clip;
         }
         #endregion
+    }
+    /// <summary>
+    /// Důvod zobrazení Linku
+    /// </summary>
+    [Flags]
+    public enum GTimeGraphLinkMode
+    {
+        /// <summary>
+        /// Není důvod
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// MouseEnter / MouseLeave
+        /// </summary>
+        Mouse = 1,
+        /// <summary>
+        /// IsSelected / deselect
+        /// </summary>
+        Select = 2,
+        /// <summary>
+        /// Souhrn všech platných hodnot
+        /// </summary>
+        All = Mouse | Select
     }
     #endregion
     #region class GTimeGraphLink : Datová třída, reprezentující spojení dvou prvků grafu.
@@ -1016,16 +1147,20 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Vykreslí tuto jednu linku
         /// </summary>
-        /// <param name="e"></param>
-        internal void Draw(GInteractiveDrawArgs e)
+        /// <param name="e">Data pro kreslení</param>
+        /// <param name="mode">Důvody zobrazení</param>
+        /// <param name="ratio">Poměr průhlednosti: hodnota v rozsahu 0.0 (neviditelná) - 1.0 (plná barva)</param>
+        internal void Draw(GInteractiveDrawArgs e, GTimeGraphLinkMode mode, float ratio)
         {
-            this.DrawSCurve(e);
+            this.DrawSCurve(e, mode, ratio);
         }
         /// <summary>
         /// Vykreslí přímou linku 
         /// </summary>
-        /// <param name="e"></param>
-        protected void DrawLine(GInteractiveDrawArgs e)
+        /// <param name="e">Data pro kreslení</param>
+        /// <param name="mode">Důvody zobrazení</param>
+        /// <param name="ratio">Poměr průhlednosti: hodnota v rozsahu 0.0 (neviditelná) - 1.0 (plná barva)</param>
+        protected void DrawLine(GInteractiveDrawArgs e, GTimeGraphLinkMode mode, float ratio)
         {
             Rectangle prevBounds = this.ItemPrev.BoundsAbsolute;
             Rectangle nextBounds = this.ItemNext.BoundsAbsolute;
@@ -1036,8 +1171,10 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Vykreslí S křivku
         /// </summary>
-        /// <param name="e"></param>
-        protected void DrawSCurve(GInteractiveDrawArgs e)
+        /// <param name="e">Data pro kreslení</param>
+        /// <param name="mode">Důvody zobrazení</param>
+        /// <param name="ratio">Poměr průhlednosti: hodnota v rozsahu 0.0 (neviditelná) - 1.0 (plná barva)</param>
+        protected void DrawSCurve(GInteractiveDrawArgs e, GTimeGraphLinkMode mode, float ratio)
         {
             Rectangle prevBounds = this.ItemPrev.BoundsAbsolute;
             Rectangle nextBounds = this.ItemNext.BoundsAbsolute;
@@ -1054,11 +1191,11 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             Point nextTarget = new Point(nextPoint.X - addX, nextPoint.Y);
 
             Color color1 = (this.LinkColor.HasValue ? this.LinkColor.Value : Skin.Graph.LinkColor);
-            Color color3 = color1.Morph(Color.Black, 0.667f);
-            Pen pen = Skin.Pen(color3, 3f, startCap: System.Drawing.Drawing2D.LineCap.Round, endCap: System.Drawing.Drawing2D.LineCap.Round);
+            Color color3 = color1.Morph(Color.Black, 0.80f);
+            Pen pen = Skin.Pen(color3, 3f, opacityRatio: ratio, startCap: System.Drawing.Drawing2D.LineCap.Round, endCap: System.Drawing.Drawing2D.LineCap.Round);
             e.Graphics.DrawBezier(pen, prevPoint, prevTarget, nextTarget, nextPoint);
 
-            pen = Skin.Pen(color1);
+            pen = Skin.Pen(color1, 3f, opacityRatio: ratio);
             e.Graphics.DrawBezier(Skin.Pen(color1), prevPoint, prevTarget, nextTarget, nextPoint);
         }
         #endregion

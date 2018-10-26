@@ -276,12 +276,25 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Do dané barvy (this) vloží danou hodnotu Alpha (parametr opacity), výsledek vrátí.
         /// </summary>
         /// <param name="root"></param>
-        /// <param name="opacity"></param>
+        /// <param name="opacity">Průhlednost v hodnotě 0-255 (nebo null = neměnit)</param>
         /// <returns></returns>
         public static Color SetOpacity(this Color root, Int32? opacity)
         {
-            if (opacity.HasValue) return Color.FromArgb(opacity.Value, root);
-            return root;
+            if (!opacity.HasValue) return root;
+            int alpha = (opacity.Value < 0 ? 0 : (opacity.Value > 255 ? 255 : opacity.Value));
+            return Color.FromArgb(alpha, root);
+        }
+        /// <summary>
+        /// Do dané barvy (this) vloží danou hodnotu Alpha (parametr opacityRatio), výsledek vrátí.
+        /// Hodnota opacityRatio : Průhlednost v hodnotě ratio 0.0 ÷1.0 (nebo null = neměnit)
+        /// </summary>
+        /// <param name="root"></param>
+        /// <param name="opacityRatio">Průhlednost v hodnotě ratio 0.0 ÷1.0 (nebo null = neměnit)</param>
+        /// <returns></returns>
+        public static Color SetOpacity(this Color root, float? opacityRatio)
+        {
+            if (!opacityRatio.HasValue) return root;
+            return SetOpacity(root, (int)(255f * opacityRatio.Value));
         }
         /// <summary>
         /// Na danou barvu aplikuje všechny dodané hodnoty průhlednosti, při akceptování i původní průhlednosti.

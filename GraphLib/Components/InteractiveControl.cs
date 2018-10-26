@@ -1589,6 +1589,10 @@ namespace Asol.Tools.WorkScheduler.Components
             this._Selector.ClearFramed();
             this._MouseDragFrameActive = false;
         }
+        /// <summary>
+        /// Metoda je zavolána po skončení procesu Drag and Frame, jejím úkolem je označit vybrané prvky pomocí Selectoru, a odeslat jim zprávu.
+        /// </summary>
+        /// <param name="e"></param>
         private void _MouseDragFrameDone(MouseEventArgs e)
         {
             if (this._MouseDragFrameActive)

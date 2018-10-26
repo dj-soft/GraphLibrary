@@ -277,19 +277,22 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="color"></param>
         /// <param name="width"></param>
-        /// <param name="opacity"></param>
+        /// <param name="opacity">Průhlednost v hodnotě 0-255 (nebo null = neměnit)</param>
+        /// <param name="opacityRatio">Průhlednost v hodnotě ratio 0.0 ÷1.0 (nebo null = neměnit)</param>
         /// <param name="dashStyle"></param>
         /// <param name="startCap"></param>
         /// <param name="endCap"></param>
         /// <returns></returns>
-        public static Pen Pen(Color color, float width = 1f, int? opacity = null, DashStyle? dashStyle = null, LineCap? startCap = null, LineCap? endCap = null)
+        public static Pen Pen(Color color, float width = 1f, int? opacity = null, float? opacityRatio = null, DashStyle? dashStyle = null, LineCap? startCap = null, LineCap? endCap = null)
         {
-            return Instance._GetPen(color, width, opacity, dashStyle, startCap, endCap);
+            return Instance._GetPen(color, width, opacity, opacityRatio, dashStyle, startCap, endCap);
         }
-        private Pen _GetPen(Color color, float? width, Int32? opacity, DashStyle? dashStyle, LineCap? startCap = null, LineCap? endCap = null)
+        private Pen _GetPen(Color color, float? width, Int32? opacity, float? opacityRatio, DashStyle? dashStyle, LineCap? startCap = null, LineCap? endCap = null)
         {
             if (opacity.HasValue)
                 color = color.SetOpacity(opacity);
+            else if (opacityRatio.HasValue)
+                color = color.SetOpacity(opacityRatio);
 
             if (this.__Pen == null)
                 this.__Pen = new Pen(color);
