@@ -21,7 +21,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Konstruktor
         /// </summary>
         public Selector()
-        { }
+        {
+            this._PrepareForUse();
+        }
         /// <summary>
         /// Příprava k používání: pokud některá Dictionary je null, vytvoří se new.
         /// </summary>
@@ -44,7 +46,6 @@ namespace Asol.Tools.WorkScheduler.Components
         public bool IsSelected(IInteractiveItem item)
         {
             if (item == null) return false;
-            this._PrepareForUse();
             return (this._Selected.ContainsKey(item.Id));
         }
         /// <summary>
@@ -52,8 +53,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public void ClearSelected()
         {
-            this._PrepareForUse();
-            this._Selected.Values.ForEachItem(i => i.IsSelected = false);   // Položka sama ve své property IsSelected by měla zavolat: ((ISelectorInternal)host.Selector).SetSelectedValue(this, value);
+            this._Selected.Values.ToArray().ForEachItem(i => i.IsSelected = false); // Položka sama ve své property IsSelected by měla zavolat: ((ISelectorInternal)host.Selector).SetSelectedValue(this, value);
             this._Selected.Clear();              // jen pro jistotu
         }
         /// <summary>
@@ -68,16 +68,14 @@ namespace Asol.Tools.WorkScheduler.Components
         public void ChangeSelection(IInteractiveItem item, bool leaveOther)
         {
             if (item == null) return;
-            this._PrepareForUse();
             uint id = item.Id;
-            bool isSelected = this._Selected.ContainsKey(id);
+            bool isSelected = this._Selected.ContainsKey(id);        // Aktuální hodnota daného prvku; na konci metody do něj vložíme hodnotu opačnou (Changed)
+            
+            // Pokud nemáme nechat ostatní prvky selectované, a nějaké existují, pak musíme všechny prvky odselectovat:
             if (!leaveOther && this._Selected.Count > 0)
-                // Pokud nemáme nechat ostatní prvky selectované, a nějaké existují, pak je musíme odselectovat:
                 this.ClearSelected();
 
             item.IsSelected = !isSelected;       // Položka sama ve své property IsSelected by měla zavolat: ((ISelectorInternal)host.Selector).SetSelectedValue(this, value);
-
-            item.Repaint();
         }
         /// <summary>
         /// Metoda nastaví IsSelected pro daný prvek na danou hodnotu.
@@ -88,31 +86,33 @@ namespace Asol.Tools.WorkScheduler.Components
         public void SetSelected(IInteractiveItem item, bool isSelected)
         {
             if (item == null) return;
-            this._PrepareForUse();
+            uint id = item.Id;
+            bool oldSelected = this._Selected.ContainsKey(id);
+            if (isSelected != oldSelected)
+                item.IsSelected = isSelected;    // Položka sama ve své property IsSelected by měla zavolat: ((ISelectorInternal)host.Selector).SetSelectedValue(this, value);
+        }
+        /// <summary>
+        /// Vlastní výkonná metoda, volá se výhradně z <see cref="IInteractiveItem.IsSelected"/>.set{}
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="isSelected"></param>
+        void ISelectorInternal.SetSelectedValue(IInteractiveItem item, bool isSelected)
+        {
+            if (item == null) return;
             uint id = item.Id;
             bool oldSelected = this._Selected.ContainsKey(id);
             if (isSelected != oldSelected)
             {
-                item.IsSelected = isSelected;    // Položka sama ve své property IsSelected by měla zavolat: ((ISelectorInternal)host.Selector).SetSelectedValue(this, value);
-                item.Repaint();
+                if (isSelected && !oldSelected)
+                    this._Selected.Add(id, item);
+                else if (!isSelected && oldSelected)
+                    this._Selected.Remove(id);
             }
-        }
-        void ISelectorInternal.SetSelectedValue(IInteractiveItem item, bool isSelected)
-        {
-            if (item == null) return;
-            this._PrepareForUse();
-            uint id = item.Id;
-            bool oldSelected = this._Selected.ContainsKey(id);
-
-            if (isSelected && !oldSelected)
-                this._Selected.Add(id, item);
-            else if (!isSelected && oldSelected)
-                this._Selected.Remove(id);
         }
         /// <summary>
         /// Obsahuje souhrn všech aktuálně selectovaných prvků
         /// </summary>
-        public IEnumerable<IInteractiveItem> SelectedItems { get { this._PrepareForUse(); return this._Selected.Values; } }
+        public IInteractiveItem[] SelectedItems { get { return this._Selected.Values.ToArray(); } }
         #endregion
         #region Framování
         /// <summary>
@@ -123,7 +123,6 @@ namespace Asol.Tools.WorkScheduler.Components
         public bool IsFramed(IInteractiveItem item)
         {
             if (item == null) return false;
-            this._PrepareForUse();
             return (this._Framed.ContainsKey(item.Id));
         }
         /// <summary>
@@ -131,10 +130,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public void ClearFramed()
         {
-            this._PrepareForUse();
-            // Pokud nemáme nechat ostatní prvky selectované, a nějaké existují, pak je musíme odselectovat:
-            this._Framed.Values.ForEachItem(i => i.Repaint());       // Zajistím, že se aktuálně selectované prvky překreslí
-            this._Framed.Clear();                                    // A všechny zruším = budou mít IInteractiveItem.IsSelected = false.
+            this._Framed.Values.ToArray().ForEachItem(i => i.IsFramed = false);     // Položka sama ve své property IsSelected by měla zavolat: ((ISelectorInternal)host.Selector).SetFramedValue(this, value);
+            this._Framed.Clear();                // jen pro jistotu
         }
         /// <summary>
         /// Metoda nastaví IsFramed pro daný prvek na danou hodnotu.
@@ -145,20 +142,29 @@ namespace Asol.Tools.WorkScheduler.Components
         public void SetFramed(IInteractiveItem item, bool isFramed)
         {
             if (item == null) return;
-            this._PrepareForUse();
             uint id = item.Id;
             bool oldFramed = this._Framed.ContainsKey(id);
-
-            if (isFramed && !oldFramed)
-                this._Framed.Add(id, item);
-            else if (!isFramed && oldFramed)
-                this._Framed.Remove(id);
-
             if (isFramed != oldFramed)
-                item.Repaint();
+                item.IsFramed = isFramed;    // Položka sama ve své property IsFramed by měla zavolat: ((ISelectorInternal)host.Selector).SetFramedValue(this, value);
         }
+        /// <summary>
+        /// Vlastní výkonná metoda, volá se výhradně z <see cref="IInteractiveItem.IsFramed"/>.set{}
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="isFramed"></param>
         void ISelectorInternal.SetFramedValue(IInteractiveItem item, bool isFramed)
-        { }
+        {
+            if (item == null) return;
+            uint id = item.Id;
+            bool oldFramed = this._Framed.ContainsKey(id);
+            if (isFramed != oldFramed)
+            {
+                if (isFramed && !oldFramed)
+                    this._Framed.Add(id, item);
+                else if (!isFramed && oldFramed)
+                    this._Framed.Remove(id);
+            }
+        }
         /// <summary>
         /// Metoda zajistí, že ve stavu Framed budou jen předané prvky.
         /// To znamená, že prvky, které nejsou předané v parametru, budou z pole Framed odebrány.
@@ -168,27 +174,23 @@ namespace Asol.Tools.WorkScheduler.Components
         public void SetFramedItems(IEnumerable<IInteractiveItem> items)
         {
             if (items == null) return;
-            this._PrepareForUse();
+
             var itemDict = items.GetDictionary(i => i.Id, true);
 
-            // a) odeberu prvky, které jsou ve this._Framed a nyní nejsou na vstupu:
-            this._Framed.RemoveWhere((id, item) =>
-            {   // Pokud vstupní pole (itemDict) NEOBSAHUJE klíč prvku z Dictionary this._Framed, pak bude (remove) = true:
-                bool remove = !itemDict.ContainsKey(id);
-                if (remove)
-                    // Prvky, které z Dictionary this._Framed budou odebrány, musíme překreslit:
-                    item.Repaint();
-                return remove;
-            });
+            // a) Vyberu si prvky, které nyní jsou ve this._Framed a aktuálně nejsou na vstupu => ty budeme odebírat:
+            IInteractiveItem[] remove = this._Framed.Values.Where(i => !itemDict.ContainsKey(i.Id)).ToArray();
 
-            // b) přidám prvky, které jsou nyní na vstupu, ale ještě nejsou v Dictionary this._Framed:
+            // b) Na vybraných prvcích nastavím IsFramed = false, tím se ty prvky samy odeberou z this._Framed:
+            remove.ForEachItem(i => i.IsFramed = false);
+
+            // c) A pro jistotu z this._Framed odeberu dané prvky (to kdyby to prvek IInteractiveItem v property IsFramed neudělal sám):
+            this._Framed.RemoveWhere((id, item) => !itemDict.ContainsKey(id));
+
+            // d) A poté přidám ty prvky, které jsou nyní na vstupu, ale ještě nejsou v Dictionary this._Framed:
             foreach (IInteractiveItem item in items)
             {
                 if (!this._Framed.ContainsKey(item.Id))
-                {
-                    this._Framed.Add(item.Id, item);
-                    item.Repaint();
-                }
+                    item.IsFramed = true;                  // Prvek sám si zařídí přidání do dictionary IsFramed, a zařídí si i Repaint().
             }
         }
         /// <summary>
@@ -197,21 +199,19 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public void MoveFramedToSelected()
         {
-            foreach (IInteractiveItem item in this._Framed.Values)
+            IInteractiveItem[] items = this.FramedItems;   // Musíme zhmotnit pole this._Framed.Values, protože z něj budeme průběžně odebírat prvky...
+            foreach (IInteractiveItem item in items)
             {
+                item.IsFramed = false;                     // Prvek sám se odebere z dictionary this._Framed, proto jsme to pole museli zhmotnit
                 if (!this._Selected.ContainsKey(item.Id))
-                {
-                    item.IsSelected = true;
-                    // this._Selected.Add(item.Id, item);
-                }
-                item.Repaint();
+                    item.IsSelected = true;                // Prvek sám se přidá do dictionary this._Selected
             }
-            this._Framed.Clear();
+            this._Framed.Clear();      // jen pro jistotu
         }
         /// <summary>
         /// Obsahuje souhrn všech aktuálně framovaných prvků
         /// </summary>
-        public IEnumerable<IInteractiveItem> FramedItems { get { this._PrepareForUse(); return this._Framed.Values; } }
+        public IInteractiveItem[] FramedItems { get { return this._Framed.Values.ToArray(); } }
         /// <summary>
         /// Obsahuje souhrn všech aktuálně framovaných prvků, které dosud NEJSOU SELECTOVANÉ.
         /// </summary>
@@ -222,7 +222,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         private IInteractiveItem[] _GetFramedOnlyItems()
         {
-            this._PrepareForUse();
             if (this._Framed.Count == 0) return new IInteractiveItem[0];
             if (this._Selected.Count == 0) return this._Framed.Values.ToArray();
             return this._Framed.Values
@@ -239,7 +238,6 @@ namespace Asol.Tools.WorkScheduler.Components
         public bool IsActivated(IInteractiveItem item)
         {
             if (item == null) return false;
-            this._PrepareForUse();
             return (this._Activated.ContainsKey(item.Id));
         }
         /// <summary>
@@ -247,9 +245,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public void ClearActivated()
         {
-            this._PrepareForUse();
-            this._Activated.Values.ForEachItem(i => i.Repaint());
-            this._Activated.Clear();
+            this._Activated.Values.ToArray().ForEachItem(i => i.IsActivated = false);     // Položka sama ve své property IsActivated by měla zavolat: ((ISelectorInternal)host.Selector).SetActivatedValue(this, value);
+            this._Activated.Clear();             // jen pro jistotu
         }
         /// <summary>
         /// Metoda nastaví IsActivated pro daný prvek na danou hodnotu.
@@ -260,17 +257,28 @@ namespace Asol.Tools.WorkScheduler.Components
         public void SetActivated(IInteractiveItem item, bool isActivated)
         {
             if (item == null) return;
-            this._PrepareForUse();
             uint id = item.Id;
             bool oldActivated = this._Activated.ContainsKey(id);
-
-            if (isActivated && !oldActivated)
-                this._Activated.Add(id, item);
-            else if (!isActivated && oldActivated)
-                this._Activated.Remove(id);
-
             if (isActivated != oldActivated)
-                item.Repaint();
+                item.IsActivated = isActivated;    // Položka sama ve své property IsActivated by měla zavolat: ((ISelectorInternal)host.Selector).SetActivatedValue(this, value);
+        }
+        /// <summary>
+        /// Vlastní výkonná metoda, volá se výhradně z <see cref="IInteractiveItem.IsActivated"/>.set{}
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="isActivated"></param>
+        void ISelectorInternal.SetActivatedValue(IInteractiveItem item, bool isActivated)
+        {
+            if (item == null) return;
+            uint id = item.Id;
+            bool oldActivated = this._Activated.ContainsKey(id);
+            if (isActivated != oldActivated)
+            {
+                if (isActivated && !oldActivated)
+                    this._Activated.Add(id, item);
+                else if (!isActivated && oldActivated)
+                    this._Activated.Remove(id);
+            }
         }
         /// <summary>
         /// Metoda zajistí, že ve stavu Activated budou předané prvky.
@@ -278,47 +286,61 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="items">Prvky, které mají být aktivní</param>
         /// <param name="leaveOthers">true = ponechat dosavadní aktivní prvky / false = deaktivovat ty z dosavadních prvků, které nejsou zadané v novém seznamu</param>
-        public void SetActivatedItems(IEnumerable<IInteractiveItem> items, bool leaveOthers)
+        public void SetActivatedItems(IEnumerable<IInteractiveItem> items, bool leaveOthers = false)
         {
             if (items == null) return;
-            this._PrepareForUse();
+
             var itemDict = items.GetDictionary(i => i.Id, true);
 
-            // a) odeberu prvky, které jsou ve this._Activated a nyní nejsou na vstupu:
             if (!leaveOthers)
-            {   // Jen pokud se NEMAJÍ ponechat ostatní aktivní prvky:
-                this._Activated.RemoveWhere((id, item) =>
-                {   // Pokud vstupní pole (itemDict) NEOBSAHUJE klíč prvku z Dictionary this._Activated, pak bude (remove) = true:
-                    bool remove = !itemDict.ContainsKey(id);
-                    if (remove)
-                        // Prvky, které z Dictionary this._Activated budou odebrány, musíme překreslit:
-                        item.Repaint();
-                    return remove;
-                });
-            }
+            {
+                // a) Vyberu si prvky, které nyní jsou ve this._Activated a aktuálně nejsou na vstupu => ty budeme odebírat:
+                IInteractiveItem[] remove = this._Activated.Values.Where(i => !itemDict.ContainsKey(i.Id)).ToArray();
 
-            // b) přidám prvky, které jsou nyní na vstupu, ale ještě nejsou v Dictionary this._Activated:
+                // b) Na vybraných prvcích nastavím IsActivated = false, tím se ty prvky samy odeberou z this._Activated:
+                remove.ForEachItem(i => i.IsActivated = false);
+
+                // c) A pro jistotu z this._Activated odeberu dané prvky (to kdyby to prvek IInteractiveItem v property IsActivated neudělal sám):
+                this._Activated.RemoveWhere((id, item) => !itemDict.ContainsKey(id));
+            }
+            
+            // d) A poté přidám ty prvky, které jsou nyní na vstupu, ale ještě nejsou v Dictionary this._Activated:
             foreach (IInteractiveItem item in items)
             {
                 if (!this._Activated.ContainsKey(item.Id))
-                {
-                    this._Activated.Add(item.Id, item);
-                    item.Repaint();
-                }
+                    item.IsActivated = true;                  // Prvek sám si zařídí přidání do dictionary _Activated, a zařídí si i Repaint().
             }
         }
-        void ISelectorInternal.SetActivatedValue(IInteractiveItem item, bool isActivated)
-        { }
         /// <summary>
         /// Obsahuje souhrn všech aktuálně aktivních prvků
         /// </summary>
-        public IEnumerable<IInteractiveItem> ActivatedItems { get { this._PrepareForUse(); return this._Activated.Values; } }
+        public IInteractiveItem[] ActivatedItems { get { return this._Activated.Values.ToArray(); } }
         #endregion
     }
+    #region interface ISelectorInternal : pro přístup k výkonným metodám třídy Selector, které reálně změní hodnoty
+    /// <summary>
+    /// ISelectorInternal : Interface pro přístup k výkonným metodám třídy <see cref="Selector"/>, které reálně změní hodnoty
+    /// </summary>
     public interface ISelectorInternal
     {
+        /// <summary>
+        /// Nastaví požadovanou hodnotu IsSelected
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="isSelected"></param>
         void SetSelectedValue(IInteractiveItem item, bool isSelected);
+        /// <summary>
+        /// Nastaví požadovanou hodnotu IsFramed
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="isFramed"></param>
         void SetFramedValue(IInteractiveItem item, bool isFramed);
+        /// <summary>
+        /// Nastaví požadovanou hodnotu IsActivated
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="isActivated"></param>
         void SetActivatedValue(IInteractiveItem item, bool isActivated);
     }
+    #endregion
 }

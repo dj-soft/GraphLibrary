@@ -464,6 +464,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     this.Repaint();
                     break;
                 case GInteractiveChangeState.LeftClickSelect:
+                    this.IsSelectedTryToggle(e.ModifierKeys.HasFlag(Keys.Control));
                     this.AfterStateChangedLeftClickSelected(e);
                     this.Repaint();
                     break;
@@ -859,6 +860,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Tato hodnota vyjadřuje výběr prvků ze strany hostitele, k další editaci / Copy and Paste / atd.
         /// Hostitel tuto hodnotu nastavuje tehdy, když <see cref="InteractiveProperties.Selectable"/> je true, jinak ne.
         /// Hodnota je evidována centrálně v instanci <see cref="GInteractiveControl.Selector"/>.
+        /// Nastavením této hodnoty se nemění hodnota <see cref="IsSelected"/> jiných prvků, ty se ponechávají beze změny.
+        /// Pokud volající chce, může ostatní prvky odselectovat použitím objektu Host.Selector a jeho metody <see cref="Selector.ClearSelected()"/>.
+        /// <para/>
         /// Tato hodnota neobsahuje stav Framování (v procesu Drag and Frame), ten je k dispozici v <see cref="IsFramed"/>.
         /// </summary>
         public virtual bool IsSelected
@@ -872,45 +876,135 @@ namespace Asol.Tools.WorkScheduler.Components
                 bool newValue = value;
                 if (oldValue == newValue) return;
                 ((ISelectorInternal)host.Selector).SetSelectedValue(this, value);
-                this.OnIsSelectedChanged(new Data.GPropertyChangeArgs<bool>(oldValue, newValue, EventSourceType.ApplicationCode));
+                this.CallIsSelectedChanged(new Data.GPropertyChangeArgs<bool>(oldValue, newValue, EventSourceType.ApplicationCode));
+                this.Repaint();
             }
         }
+        /// <summary>
+        /// Metoda zjistí, zda prvek umožňuje změnit stav <see cref="IsSelected"/>, a pokud ano pak jej změní (vyvolá metodu <see cref="IsSelectedToggle(bool?)"/>.
+        /// Metoda změní stav <see cref="IsSelected"/> tehdy, když (this.Is.Selectable and this.Is.Enabled) je true.
+        /// </summary>
+        /// <param name="leaveOtherSelected"></param>
+        public void IsSelectedTryToggle(bool? leaveOtherSelected = null)
+        {
+            if (this.Is.Selectable && this.Is.Enabled)
+                this.IsSelectedToggle(leaveOtherSelected);
+        }
+        /// <summary>
+        /// Metoda změní stav Selected na tomto prvku, stejně jako by na prvku kliknul uživatel levou myší.
+        /// To, zda se mají ponechat ostatní dosud selectované prvky v jejcih stavu, nebo nikoliv, definuje parametr leaveOtherSelected:
+        /// a) pokud je null, pak se volba odvodí od stavu klávesy CTRL (jak je běžné): stisknutá klávesa = ostatní selectované se ponechají;
+        /// b) pokud leaveOtherSelected má hodnotu true, pak se ostatní selectované prvky ponechají;
+        /// b) pokud leaveOtherSelected má hodnotu false, pak se ostatní selectované prvky nejprve odselectují.
+        /// </summary>
+        public void IsSelectedToggle(bool? leaveOtherSelected = null)
+        {
+            if (this.Host != null)
+            {
+                bool leaveOther = (leaveOtherSelected.HasValue ? leaveOtherSelected.Value : Control.ModifierKeys.HasFlag(Keys.Control));
+                this.Host.Selector.ChangeSelection(this, leaveOther);
+            }
+        }
+        /// <summary>
+        /// Vyvolá háček OnIsSelectedChanged a event IsSelectedChanged
+        /// </summary>
+        /// <param name="args"></param>
+        protected void CallIsSelectedChanged(Data.GPropertyChangeArgs<bool> args)
+        {
+            this.OnIsSelectedChanged(args);
+            if (this.IsSelectedChanged != null)
+                this.IsSelectedChanged(this, args);
+        }
+        /// <summary>
+        /// Háček při změně hodnoty <see cref="InteractiveObject.IsSelected"/>
+        /// </summary>
+        /// <param name="args"></param>
         protected virtual void OnIsSelectedChanged(Data.GPropertyChangeArgs<bool> args)
         { }
+        /// <summary>
+        /// Událost při změně hodnoty <see cref="IsSelected"/>
+        /// </summary>
+        public event GPropertyChangedHandler<bool> IsSelectedChanged;
         /// <summary>
         /// Je aktuálně zarámován (pro budoucí selectování)?
         /// Zarámovaný prvek (v procesu hromadného označování myší SelectFrame) má <see cref="IsFramed"/> = true, ale hodnotu <see cref="IsSelected"/> má beze změn.
         /// Teprve na konci procesu SelectFrame se pro dotčené objekty (které mají <see cref="IsFramed"/> = true) nastaví i <see cref="IsSelected"/> = true.
         /// </summary>
-        public virtual bool IsFramed { get { var host = this.Host; return (host != null ? host.Selector.IsFramed(this) : false); } set { var host = this.Host; if (host != null) host.Selector.SetFramed(this, value); } }
+        public virtual bool IsFramed
+        {
+            get { var host = this.Host; return (host != null ? host.Selector.IsFramed(this) : false); }
+            set
+            {
+                var host = this.Host;
+                if (host == null) return;
+                bool oldValue = host.Selector.IsFramed(this);
+                bool newValue = value;
+                if (oldValue == newValue) return;
+                ((ISelectorInternal)host.Selector).SetFramedValue(this, value);
+                this.CallIsFramedChanged(new Data.GPropertyChangeArgs<bool>(oldValue, newValue, EventSourceType.ApplicationCode));
+                this.Repaint();
+            }
+        }
+        /// <summary>
+        /// Vyvolá háček OnIsFramedChanged a event IsFramedChanged
+        /// </summary>
+        /// <param name="args"></param>
+        protected void CallIsFramedChanged(Data.GPropertyChangeArgs<bool> args)
+        {
+            this.OnIsFramedChanged(args);
+            if (this.IsFramedChanged != null)
+                this.IsFramedChanged(this, args);
+        }
+        /// <summary>
+        /// Háček při změně hodnoty <see cref="IsFramed"/>
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnIsFramedChanged(Data.GPropertyChangeArgs<bool> args)
+        { }
+        /// <summary>
+        /// Událost při změně hodnoty <see cref="IsFramed"/>
+        /// </summary>
+        public event GPropertyChangedHandler<bool> IsFramedChanged;
         /// <summary>
         /// Je prvek "Aktivován" (nějakou aplikační akcí)?
         /// Aktivovaný prvek není ani Selectovaný, ani Framovaný. Změna <see cref="IsSelected"/> okolních prvků nijak nezmění <see cref="IsActivated"/>.
         /// Aktivovaný prvek se v podstatě permanentně zobrazuje jako výraznější než okolní prvky, například proto, že je problematický nebo odpovídá nějakému jinému zadání.
         /// </summary>
-        public virtual bool IsActivated { get { var host = this.Host; return (host != null ? host.Selector.IsActivated(this) : false); } set { var host = this.Host; if (host != null) host.Selector.SetActivated(this, value); } }
-        /// <summary>
-        /// Metoda změní stav Selected na tomto prvku, stejně jako by na prvku kliknul uživatel levou myší.
-        /// Tzn.: Pokud aktuálně je držena klávesa CTRL, pak se stav ostatních selectovaných prvků nezmění;
-        /// pokud ale CTRL není držen, pak ostatní prvky budou odselectovány.
-        /// </summary>
-        public void ChangeSelect()
+        public virtual bool IsActivated
         {
-            Keys modifierKeys = Control.ModifierKeys;
-            bool leaveOther = modifierKeys.HasFlag(Keys.Control);
-            this.ChangeSelect(leaveOther);
+            get { var host = this.Host; return (host != null ? host.Selector.IsActivated(this) : false); }
+            set
+            {
+                var host = this.Host;
+                if (host == null) return;
+                bool oldValue = host.Selector.IsActivated(this);
+                bool newValue = value;
+                if (oldValue == newValue) return;
+                ((ISelectorInternal)host.Selector).SetActivatedValue(this, value);
+                this.CallIsActivatedChanged(new Data.GPropertyChangeArgs<bool>(oldValue, newValue, EventSourceType.ApplicationCode));
+                this.Repaint();
+            }
         }
         /// <summary>
-        /// Metoda změní stav Selected na tomto prvku.
-        /// Stav Selected pro ostatní prvky je dán parametrem leaveOther:
-        /// Pokud leaveOther je true, pak se stav ostatních selectovaných prvků nezmění (jako by byl stisknut CTRL);
-        /// pokud leaveOther je false, pak ostatní prvky budou odselectovány (jako by CTRL nebyl držen).
+        /// Vyvolá háček OnIsActivatedChanged a event IsActivatedChanged
         /// </summary>
-        public void ChangeSelect(bool leaveOther)
+        /// <param name="args"></param>
+        protected void CallIsActivatedChanged(Data.GPropertyChangeArgs<bool> args)
         {
-            if (this.Host != null)
-                this.Host.Selector.ChangeSelection(this, leaveOther);
+            this.OnIsActivatedChanged(args);
+            if (this.IsActivatedChanged != null)
+                this.IsActivatedChanged(this, args);
         }
+        /// <summary>
+        /// Háček při změně hodnoty <see cref="IsActivated"/>
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnIsActivatedChanged(Data.GPropertyChangeArgs<bool> args)
+        { }
+        /// <summary>
+        /// Událost při změně hodnoty <see cref="IsActivated"/>
+        /// </summary>
+        public event GPropertyChangedHandler<bool> IsActivatedChanged;
         #endregion
         #region Boolean repository
         /// <summary>

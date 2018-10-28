@@ -40,7 +40,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <returns></returns>
         public override string ToString()
         {
-            return this._Position.ToString() + "; " + base.ToString();
+            return "Position: " + this._Position.ToString() + "; " + base.ToString();
         }
         /// <summary>
         /// Vlastník tohoto grafického prvku = datový prvek grafu
@@ -105,7 +105,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         internal GTimeGraphGroup Group { get { return this._Group; } }
         /// <summary>
-        /// Vlastní datový prvek grafu
+        /// Vlastní datový prvek grafu, pro který je vytvořen this grafický prvek
         /// </summary>
         internal ITimeGraphItem Item { get { return this._Owner; } }
         /// <summary>
@@ -207,7 +207,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="e"></param>
         protected override void AfterStateChangedMouseEnter(GInteractiveChangeStateArgs e)
         {
-            this.PrepareLinks();
+            this.PrepareLinksMouse();
             base.AfterStateChangedMouseEnter(e);
         }
         /// <summary>
@@ -216,28 +216,32 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="e"></param>
         protected override void AfterStateChangedMouseLeave(GInteractiveChangeStateArgs e)
         {
-            this.ResetLinks();
+            if (InteractiveLeaveThisGroup(e))
+                this.ResetLinksMouse();
             base.AfterStateChangedMouseLeave(e);
         }
-        protected override void AfterStateChangedLeftClickSelected(GInteractiveChangeStateArgs e)
-        {
-            base.AfterStateChangedLeftClickSelected(e);
-            // qqq
-        }
-        protected override void AfterStateChangedDragFrameSelect(GInteractiveChangeStateArgs e)
-        {
-            base.AfterStateChangedDragFrameSelect(e);
-            // qqq;
-        }
         /// <summary>
-        /// Metoda zajistí provedení Select pro moji Parent grupu (pokud já jsem Item)
+        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = LeftClick
         /// </summary>
         /// <param name="e"></param>
         protected override void AfterStateChangedLeftClick(GInteractiveChangeStateArgs e)
         {
-            if (this._Position == GGraphControlPosition.Item)
-                this._Group.GControl.ChangeSelect();
+            // Zdejší třída GTimeGraphItem slouží jak pro práci s Group, tak pro Item (rozlišuje se to dle this.Position).
+            // Prvek na pozici Group lze Selectovat, ten si to zařizuje sám (má Is.Selectable = true, takže pro něj se IsSelected řeší systémově).
+            // Ale prvek na pozici Item nelze Selectovat, namísto toho budeme selectovat jeho Group prvek:
+            if (this.Position == GGraphControlPosition.Item)
+                this.Group.GControl.IsSelectedTryToggle();
+            
             base.AfterStateChangedLeftClick(e);
+        }
+        /// <summary>
+        /// Háček při změně hodnoty <see cref="InteractiveObject.IsSelected"/>
+        /// </summary>
+        /// <param name="args"></param>
+        protected override void OnIsSelectedChanged(GPropertyChangeArgs<bool> args)
+        {
+            this.PrepareLinksSelect(args.NewValue);
+            base.OnIsSelectedChanged(args);
         }
         /// <summary>
         /// Metoda zajistí zpracování události RightCLick na grafickém prvku (data) na dané pozici (position).
@@ -304,14 +308,44 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         protected GInteractiveState? _GroupState;
         /// <summary>
         /// Hodnota Selectable :
-        /// a) Selectovat lze jen Group prvky, nikoli Item;
-        /// b) Selectovat lze jen ty Item prvky, které je možno nějak editovat (posunout...)
+        /// Selectovat lze jen Group prvky, nikoli Item;
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
         private bool _GetSelectable(bool value)
         {
             return (this._Position == GGraphControlPosition.Group && this._Group.IsDragEnabled);
+        }
+        /// <summary>
+        /// Metoda vrátí true, pokud událost MouseLeave opouští skutečně datovou skupinu grafu.
+        /// Tzn.: pokud this je na pozici Item, a událost popisuje opouštění tohoto prvku Item, 
+        /// ale přitom vstupujeme do prvku Group, který je naší grupou, pak reálně nejde o Leave této skupiny.
+        /// Obdobně při Leave objektu na pozici Group a vstupu do objektu Item v téže skupině nejde o reálný Leave.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
+        protected bool InteractiveLeaveThisGroup(GInteractiveChangeStateArgs e)
+        {
+            if (e.ChangeState != GInteractiveChangeState.MouseLeave) return false;       // Pokud událost NENÍ MouseLeave, pak nejde o opuštění čehokoli
+            bool isLeave = true;
+            if (e.EnterItem != null && e.EnterItem is GTimeGraphItem)
+            {
+                GTimeGraphItem targetItem = e.EnterItem as GTimeGraphItem;     // Do tohoto objektu vstupujeme. Je to objekt patřící k nějakému grafu.
+                switch (this.Position)
+                {
+                    case GGraphControlPosition.Group:
+                        // Provádíme Leave z takového prvku, který reprezentuje Grupu:
+                        //  pak zjistíme, zda cílový prvek (targetItem) není grafickým prvkem některého z mých Items:
+                        isLeave = !this.Group.Items.Any(i => Object.ReferenceEquals(i.GControl, targetItem));
+                        break;
+                    case GGraphControlPosition.Item:
+                        // Provádíme Leave z prvku, který je na pozici Item:
+                        //  pak zjistíme, zda cílový prvek (targetItem) není grafickým prvkem patřící me vlastní grupě:
+                        isLeave = !Object.ReferenceEquals(this.Group.GControl, targetItem);
+                        break;
+                }
+            }
+            return isLeave;
         }
         #endregion
         #region Přetahování (Drag and Drop) : týká se výhradně prvků typu Group!
@@ -727,7 +761,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Zkusí najít vztahy ke kreslení.
         /// Pokud nějaké najde, budou uloženy v <see cref="Links"/>.
         /// </summary>
-        protected void PrepareLinks()
+        protected void PrepareLinksMouse()
         {
             // Pokud this je na pozici Item, a naše grupa (this.Group) už má nalezené linky, pak je nebudeme opakovaně hledat pro prvek:
             if (this.Position == GGraphControlPosition.Item && this.Group.GControl.Links != null) return;
@@ -757,10 +791,19 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Resetuje kreslené vztahy. Odteď se nebudou kreslit.
         /// </summary>
-        protected void ResetLinks()
+        protected void ResetLinksMouse()
         {
-            this.Graph.GraphLinkArray.RemoveLinks(this.Links, GTimeGraphLinkMode.Mouse);
+            if (this.Links != null)
+                this.Graph.GraphLinkArray.RemoveLinks(this.Links, GTimeGraphLinkMode.Mouse);
             this.Links = null;
+        }
+        /// <summary>
+        /// Připrava linků po změně <see cref="InteractiveObject.IsSelected"/>
+        /// </summary>
+        /// <param name="isSelected"></param>
+        protected void PrepareLinksSelect(bool isSelected)
+        {
+
         }
         /// <summary>
         /// Pole vztahů, které kreslíme
@@ -1181,22 +1224,55 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             Point prevPoint = new Point(prevBounds.Right - 1, prevBounds.Y + prevBounds.Height / 2);
             Point nextPoint = new Point(nextBounds.X, nextBounds.Y + nextBounds.Height / 2);
 
-            int diffY = (nextPoint.Y - prevPoint.Y);
-            if (diffY < 0) diffY = -diffY;
-            int addX = (nextPoint.X - prevPoint.X) / 4;
-            int addY = diffY / 3;
-            if (addX < 16) addX = 16;
-            else if (addX < addY) addX = addY;
-            Point prevTarget = new Point(prevPoint.X + addX, prevPoint.Y);
-            Point nextTarget = new Point(nextPoint.X - addX, nextPoint.Y);
+            int diffX = 0, addX = 0, diffY = 0, addY = 0;
+            bool isSCurve = false;
+            diffX = (nextPoint.X - prevPoint.X);
+            diffY = (nextPoint.Y - prevPoint.Y);
+            addY = 0;
+            if (diffY != 0)
+            {   // S-křivka nahoru/dolů:
+                if (diffY < 0) diffY = -diffY;
+                addY = diffY / 4;
+                if (addY > 60) addY = 60;
 
-            Color color1 = (this.LinkColor.HasValue ? this.LinkColor.Value : Skin.Graph.LinkColor);
-            Color color3 = color1.Morph(Color.Black, 0.80f);
-            Pen pen = Skin.Pen(color3, 3f, opacityRatio: ratio, startCap: System.Drawing.Drawing2D.LineCap.Round, endCap: System.Drawing.Drawing2D.LineCap.Round);
-            e.Graphics.DrawBezier(pen, prevPoint, prevTarget, nextTarget, nextPoint);
+                addX = diffX / 4;
+                if (addX < 0) addX = 3 * (-addX);
+                if (addX < 16) addX = 16;
+                if (addX < addY) addX = addY;
 
-            pen = Skin.Pen(color1, 3f, opacityRatio: ratio);
-            e.Graphics.DrawBezier(Skin.Pen(color1), prevPoint, prevTarget, nextTarget, nextPoint);
+                isSCurve = true;
+            }
+            else if (diffX >= 0)
+            {   // Přímka z Prev do Next:
+                prevPoint.X = prevPoint.X - 1;
+                nextPoint.X = nextPoint.X + 1;
+            }
+            else
+            {   // Přímka - ale reverzní (Next je vlevo od Prev):
+            }
+            if (isSCurve)
+            {
+                Point prevTarget = new Point(prevPoint.X + addX, prevPoint.Y);
+                Point nextTarget = new Point(nextPoint.X - addX, nextPoint.Y);
+
+                Color color1 = (this.LinkColor.HasValue ? this.LinkColor.Value : Skin.Graph.LinkColor);
+                Color color3 = color1.Morph(Color.Black, 0.80f);
+                Pen pen = Skin.Pen(color3, 3f, opacityRatio: ratio, startCap: System.Drawing.Drawing2D.LineCap.Round, endCap: System.Drawing.Drawing2D.LineCap.ArrowAnchor);
+                e.Graphics.DrawBezier(pen, prevPoint, prevTarget, nextTarget, nextPoint);
+
+                pen = Skin.Pen(color1, 3f, opacityRatio: ratio, endCap: System.Drawing.Drawing2D.LineCap.ArrowAnchor);
+                e.Graphics.DrawBezier(Skin.Pen(color1), prevPoint, prevTarget, nextTarget, nextPoint);
+            }
+            else
+            {
+                Color color1 = (this.LinkColor.HasValue ? this.LinkColor.Value : Skin.Graph.LinkColor);
+                Color color3 = color1.Morph(Color.Black, 0.80f);
+                Pen pen = Skin.Pen(color3, 3f, opacityRatio: ratio, startCap: System.Drawing.Drawing2D.LineCap.Round, endCap: System.Drawing.Drawing2D.LineCap.ArrowAnchor);
+                e.Graphics.DrawLine(pen, prevPoint, nextPoint);
+
+                pen = Skin.Pen(color1, 3f, opacityRatio: ratio, endCap: System.Drawing.Drawing2D.LineCap.ArrowAnchor);
+                e.Graphics.DrawLine(Skin.Pen(color1), prevPoint, nextPoint);
+            }
         }
         #endregion
     }

@@ -559,7 +559,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="previewArgs">Keyboard Preview Data</param>
         /// <param name="keyArgs">Keyboard Events Data</param>
         /// <param name="keyPressArgs">Keyboard KeyPress data</param>
-        public GInteractiveChangeStateArgs(BoundsInfo boundsInfo, GInteractiveChangeState changeState, GInteractiveState targetState, Func<Point, bool, IInteractiveItem> searchItemMethod, PreviewKeyDownEventArgs previewArgs, KeyEventArgs keyArgs, KeyPressEventArgs keyPressArgs)
+        public GInteractiveChangeStateArgs(BoundsInfo boundsInfo, GInteractiveChangeState changeState, GInteractiveState targetState, 
+            Func<Point, bool, IInteractiveItem> searchItemMethod, PreviewKeyDownEventArgs previewArgs, KeyEventArgs keyArgs, KeyPressEventArgs keyPressArgs)
             : this()
         {
             this.BoundsInfo = boundsInfo;
@@ -577,13 +578,19 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="changeState">Typ události = změna stavu</param>
         /// <param name="targetState">Nový stav prvku po této změně.</param>
         /// <param name="searchItemMethod">Metoda, která pro danou absolutní souřadnici vyhledá konkrétní prvek. Parametr 1 = absolutní souřadnice; Parametr 2 = požadavek na hledání i Disabled prvků (true hledá i Disabled); Výstup = prvek na dané souřadnici, na nejvyšší pozici v hierarchii i v ose Z.</param>
-        public GInteractiveChangeStateArgs(BoundsInfo boundsInfo, GInteractiveChangeState changeState, GInteractiveState targetState, Func<Point, bool, IInteractiveItem> searchItemMethod)
+        /// <param name="leaveItem">Prvek, který opouštíme</param>
+        /// <param name="enterItem">Prvek, do kterého vstupujeme</param>
+        public GInteractiveChangeStateArgs(BoundsInfo boundsInfo, GInteractiveChangeState changeState, GInteractiveState targetState, 
+            Func<Point, bool, IInteractiveItem> searchItemMethod,
+            IInteractiveItem leaveItem, IInteractiveItem enterItem)
                : this()
         {
             this.BoundsInfo = boundsInfo;
             this.ChangeState = changeState;
             this.TargetState = targetState;
             this.SearchItemMethod = searchItemMethod;
+            this.LeaveItem = leaveItem;
+            this.EnterItem = enterItem;
         }
         /// <summary>
         /// Konstruktor pouze pro inicializaci proměnných
@@ -605,7 +612,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this.ActionIsSolved = false;
         }
         #endregion
-        #region Input properties (read-only)
+        #region Data o události (read-only)
         /// <summary>
         /// Souřadný systém položky <see cref="CurrentItem"/>, včetně souřadnic absolutních a reference na konkrétní prvek
         /// </summary>
@@ -677,6 +684,16 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Keyboard KeyPress data
         /// </summary>
         public KeyPressEventArgs KeyboardPressEventArgs { get; protected set; }
+        /// <summary>
+        /// Prvek, který opouštíme. 
+        /// Má význam pouze v událostech MouseLeave a MouseEnter, a KeyboardLeave a KeyboardEnter.
+        /// </summary>
+        public IInteractiveItem LeaveItem { get; protected set; }
+        /// <summary>
+        /// Prvek, do kterého vstupujeme.
+        /// Má význam pouze v událostech MouseLeave a MouseEnter, a KeyboardLeave a KeyboardEnter.
+        /// </summary>
+        public IInteractiveItem EnterItem { get; protected set; }
         #endregion
         #region Find Item at location (explicit, current)
         /// <summary>

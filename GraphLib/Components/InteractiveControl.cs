@@ -576,7 +576,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         protected override void OnMouseUp(MouseEventArgs e)
         {
-            this.InteractiveAction(GInteractiveChangeState.LeftUp, () => this._OnMouseUp(e), () => base.OnMouseUp(e));
+            this.InteractiveAction(GInteractiveChangeState.LeftUp, () => this._OnMouseUp(e), () => base.OnMouseUp(e), this._MouseDownReset);
         }
         private void _OnMouseUp(MouseEventArgs e)
         {
@@ -585,14 +585,10 @@ namespace Asol.Tools.WorkScheduler.Components
                 try
                 {
                     this._InteractiveDrawInit(e);
-                    if (this._CurrentMouseDragCanceled)
-                        this._MouseDownReset();
-                    else if (this._MouseDragState == MouseMoveDragState.DragMove)
-                        this._MouseDragMoveDone(e);
-                    else if (this._MouseDragState == MouseMoveDragState.DragFrame)
-                        this._MouseDragFrameDone(e);
-                    else
-                        this._MouseRaise(e);
+                    if (this._CurrentMouseDragCanceled) { }
+                    else if (this._MouseDragState == MouseMoveDragState.DragMove) this._MouseDragMoveDone(e);
+                    else if (this._MouseDragState == MouseMoveDragState.DragFrame) this._MouseDragFrameDone(e);
+                    else this._MouseRaise(e);
                 }
                 finally
                 {
@@ -723,7 +719,6 @@ namespace Asol.Tools.WorkScheduler.Components
                 }
                 this._MouseClickedItem = oldActiveItem;
             }
-            this._MouseDownReset();
         }
         /// <summary>
         /// Kolečko myši
@@ -801,7 +796,6 @@ namespace Asol.Tools.WorkScheduler.Components
             }
             this._MouseDragMoveItem = null;
             this._MouseDragState = MouseMoveDragState.None;
-            this._MouseDownReset();
         }
         /// <summary>
         /// Stav procesu MouseDrag
@@ -1016,12 +1010,14 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             List<GActivePosition.GActiveItem> leaveList, enterList;
             GActivePosition.MapExchange(oldActiveItem, newActiveItem, out leaveList, out enterList);
+            IInteractiveItem leaveItem = oldActiveItem?.ActiveItem;
+            IInteractiveItem enterItem = newActiveItem?.ActiveItem;
 
             foreach (GActivePosition.GActiveItem activeItem in leaveList)
-                this._CallItemStateChangedEventEnterLeave(activeItem, GInteractiveChangeState.MouseLeave);
+                this._CallItemStateChangedEventEnterLeave(activeItem, GInteractiveChangeState.MouseLeave, leaveItem, enterItem);
 
             foreach (GActivePosition.GActiveItem activeItem in enterList)
-                this._CallItemStateChangedEventEnterLeave(activeItem, GInteractiveChangeState.MouseEnter);
+                this._CallItemStateChangedEventEnterLeave(activeItem, GInteractiveChangeState.MouseEnter, leaveItem, enterItem);
 
             if (newActiveItem != null && newActiveItem.CanOver)
                 this._ItemMouseCallStateChangedEvent(newActiveItem, GInteractiveChangeState.MouseOver, mouseRelativePoint);
@@ -1035,12 +1031,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="activeItem"></param>
         /// <param name="change"></param>
-        private void _CallItemStateChangedEventEnterLeave(GActivePosition.GActiveItem activeItem, GInteractiveChangeState change)
+        /// <param name="leaveItem">Prvek, který opouštíme</param>
+        /// <param name="enterItem">Prvek, do kterého vstupujeme</param>
+        private void _CallItemStateChangedEventEnterLeave(GActivePosition.GActiveItem activeItem, GInteractiveChangeState change, IInteractiveItem leaveItem, IInteractiveItem enterItem)
         {
             bool isEnabled = activeItem.Item.Is.Enabled;
             GInteractiveChangeState realChange = this._GetStateForCurrentMouseButton(change, isEnabled);
             var targetState = _GetStateAfterChange(realChange, isEnabled);
-            GInteractiveChangeStateArgs stateArgs = new GInteractiveChangeStateArgs(activeItem.BoundsInfo, realChange, targetState, this.FindNewItemAtPoint);
+            GInteractiveChangeStateArgs stateArgs = new GInteractiveChangeStateArgs(activeItem.BoundsInfo, realChange, targetState, this.FindNewItemAtPoint, leaveItem, enterItem);
             stateArgs.UserDragPoint = null;
 
             activeItem.Item.AfterStateChanged(stateArgs);
@@ -1497,7 +1495,7 @@ namespace Asol.Tools.WorkScheduler.Components
         private void _ItemMouseLeftClickSelect(GActivePosition newActiveItem, Keys modifierKeys)
         {
             bool leaveOther = modifierKeys.HasFlag(Keys.Control);
-            this.Selector.ChangeSelection(newActiveItem.ActiveItem, leaveOther);
+         //   this.Selector.ChangeSelection(newActiveItem.ActiveItem, leaveOther);
             this._ItemMouseCallStateChangedEvent(newActiveItem, GInteractiveChangeState.LeftClickSelect, newActiveItem.CurrentMouseRelativePoint);
         }
         /// <summary>
@@ -1602,7 +1600,6 @@ namespace Asol.Tools.WorkScheduler.Components
 
             this._MouseDragFrameCurrentBounds = null;
             this._MouseDragState = MouseMoveDragState.None;
-            this._MouseDownReset();
         }
         /// <summary>
         /// Obsahuje true, pokud se má kreslit FrameBounds = oblast selectování (<see cref="_MouseDragFrameCurrentBounds"/>).
@@ -2790,7 +2787,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="changeState"></param>
         /// <param name="action1"></param>
         /// <param name="action2"></param>
-        protected void InteractiveAction(GInteractiveChangeState changeState, Action action1, Action action2)
+        /// <param name="final"></param>
+        protected void InteractiveAction(GInteractiveChangeState changeState, Action action1, Action action2, Action final = null)
         {
             try
             {
@@ -2807,6 +2805,11 @@ namespace Asol.Tools.WorkScheduler.Components
             catch (Exception exc)
             {
                 App.Trace.Exception(exc, "InteractiveAction error; changeState = " + changeState.ToString());
+            }
+            finally
+            {
+                if (final != null)
+                    final();
             }
         }
         /// <summary>
@@ -3210,8 +3213,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Volající aplikace pak má postupně zavolat metody Leave na prvcích z pole "leaveList", a metody Enter na prvcích z pole "enterList".
         /// Tato metoda projde hierarchii prvků <see cref="IInteractiveItem"/> v objektu "prev" i "next" a určí, 
         /// do kterého bodu jsou hierarchie společné (ty do výstupních polí nedává), a do výstupních polí vloží prvky, které jsou rozdílné.
+        /// <para/>
         /// Výstupní pole "leaveList" obsahuje prvky od posledního (v seznamu prev.Items) směrem k prvnímu, který je odlišný od prvků v poli next.Items.
         /// Výstupní pole "enterList" obsahuje prvky od prvního odlišného (v seznamu next.Items) směrem k poslednímu.
+        /// <para/>
+        /// Pokud jsou oba vstupní objekt (prev a next) rovny null, pak oba výstupní seznamy (leaveList i enterList) obsahují 0 prvků, ale nikdy nejsou null.
         /// </summary>
         /// <param name="prev"></param>
         /// <param name="next"></param>

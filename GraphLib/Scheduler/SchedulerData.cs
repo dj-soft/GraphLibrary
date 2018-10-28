@@ -1391,6 +1391,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private DateTime? _AdjustSearchNearItemTimeSide(GraphItemDragMoveInfo moveInfo, RangeSide nearSide)
         {
             GTimeGraph targetGraph = moveInfo.TargetGraph;
+            if (targetGraph == null) return null;
+
             DateTime timePoint = (nearSide == RangeSide.Begin ? moveInfo.TargetTime.Begin.Value : moveInfo.TargetTime.End.Value);
             int xc = (nearSide == RangeSide.Begin ? moveInfo.TargetBounds.X : moveInfo.TargetBounds.Right - 1);
             int w1 = this.Config.MoveItemSnapDistanceToNearItems;
@@ -1576,8 +1578,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                     break;
                 case GraphItemMoveAlignY.OnGraphTopPosition:
                     // Na souřadnici Y + 1 cílového grafu:
-                    int graphY = moveInfo.TargetGraph.BoundsAbsolute.Y;
-                    targetBounds.Y = graphY + 1;
+                    if (moveInfo.TargetGraph != null)
+                    {   // jen pokud známe Cílový graf (on totiž může být null !!)
+                        int graphY = moveInfo.TargetGraph.BoundsAbsolute.Y;
+                        targetBounds.Y = graphY + 1;
+                    }
                     break;
                 case GraphItemMoveAlignY.OnMousePosition:
                 default:
@@ -1589,10 +1594,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (!hasNearSide)
                 nearSide = this._AdjustDetectNearSide(moveInfo);
             moveInfo.AttachSide = nearSide;
-
-            if (targetBounds.X != moveInfo.TargetBounds.X)
-            { }
-
+            
             moveInfo.TargetBounds = targetBounds;
         }
         /// <summary>
@@ -1925,10 +1927,12 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         public RangeSide AttachSide { get; set; }
         /// <summary>
         /// Graf, kam má být prvek přemístěn.
+        /// Pozor, může být null - když přesun prvku se provádí na místo, kde žádný graf není!
         /// </summary>
         public GTimeGraph TargetGraph { get; set; }
         /// <summary>
         /// Cílový řádek, kam má být prvek přemístěn.
+        /// Pozor, může být null - když přesun prvku se provádí na místo, kde žádný graf není!
         /// </summary>
         public GId TargetRow { get; set; }
         /// <summary>
