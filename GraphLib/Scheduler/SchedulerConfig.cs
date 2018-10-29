@@ -103,7 +103,15 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             set { this._SetValue(value, ref this._MoveItemSnapToOriginalTime); }
         }
         private bool _MoveItemSnapToOriginalTime = true;
-
+        /// <summary>
+        /// Při najetí myší zobrazovat vztahy v rámci celého postupu, nejen nejbližší sousední položky
+        /// </summary>
+        public bool GuiEditShowLinkWholeTask
+        {
+            get { return this._GuiEditShowLinkWholeTask; }
+            set { this._SetValue(value, ref this._GuiEditShowLinkWholeTask); }
+        }
+        private bool _GuiEditShowLinkWholeTask = true;
         /// <summary>
         /// Počet pixelů vzdálenosti od původního času, kdy se k tomuto původnímu času bude prvek přichytávat při pohybu na TOM SAMÉM grafu
         /// </summary>

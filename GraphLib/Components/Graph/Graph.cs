@@ -1084,6 +1084,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
 
             bool isFadeIn = data.BehaviorMode.HasFlag(GraphItemBehaviorMode.ShowToolTipFadeIn);
             bool isImmediatelly = data.BehaviorMode.HasFlag(GraphItemBehaviorMode.ShowToolTipImmediatelly);
+            bool hasMouseLinks = data.BehaviorMode.HasFlag(GraphItemBehaviorMode.ShowLinkInMouseOver);
             if (!isFadeIn && !isImmediatelly) return;
 
             ToolTipData toolTipData = args.InteractiveArgs.ToolTipData;         // Vytvoří se new instance
@@ -1124,7 +1125,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 else if (isFadeIn)
                 {
                     infoText = args.InteractiveArgs.ToolTipData.InfoText;
-                    toolTipData.AnimationFadeInTime = TimeSpan.FromMilliseconds(100);
+                    toolTipData.AnimationWaitBeforeTime = TimeSpan.FromMilliseconds(hasMouseLinks ? 650 : 50);
+                    toolTipData.AnimationFadeInTime = TimeSpan.FromMilliseconds(hasMouseLinks ? 300 : 150);
                     toolTipData.AnimationShowTime = TimeSpan.FromMilliseconds(100 * infoText.Length);     // 1 sekunda na přečtení 10 znaků
                     toolTipData.AnimationFadeOutTime = TimeSpan.FromMilliseconds(10 * infoText.Length);
                 }
@@ -2446,11 +2448,13 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="group"></param>
         /// <param name="data"></param>
         /// <param name="position"></param>
-        public CreateLinksArgs(GTimeGraph graph, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position)
+        /// <param name="itemEvent">Druh události, pro který se Linky hledají</param>
+        public CreateLinksArgs(GTimeGraph graph, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position, CreateLinksItemEventType itemEvent)
             : base(graph, group, data, position)
         {
             this.SearchSidePrev = true;
             this.SearchSideNext = true;
+            this.ItemEvent = itemEvent;
         }
         /// <summary>
         /// Konstruktor
@@ -2459,29 +2463,44 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="group"></param>
         /// <param name="data"></param>
         /// <param name="position"></param>
+        /// <param name="itemEvent">Druh události, pro který se Linky hledají</param>
         /// <param name="searchSidePrev">Hledej linky na straně Prev;</param>
         /// <param name="searchSideNext">Hledej linky na straně Next;</param>
-        public CreateLinksArgs(GTimeGraph graph, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position,
+        public CreateLinksArgs(GTimeGraph graph, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position, CreateLinksItemEventType itemEvent,
             bool searchSidePrev, bool searchSideNext)
             : base(graph, group, data, position)
         {
             this.SearchSidePrev = searchSidePrev;
             this.SearchSideNext = searchSideNext;
+            this.ItemEvent = itemEvent;
         }
         /// <summary>
         /// Hledej linky na straně Prev;
         /// Výchozí hodnota = true
         /// </summary>
-        public bool SearchSidePrev { get; set; }
+        public bool SearchSidePrev { get; private set; }
         /// <summary>
         /// Hledej linky na straně Next;
         /// Výchozí hodnota = true
         /// </summary>
-        public bool SearchSideNext { get; set; }
+        public bool SearchSideNext { get; private set; }
+        /// <summary>
+        /// Druh události, pro který se Linky hledají
+        /// </summary>
+        public CreateLinksItemEventType ItemEvent { get; private set; }
         /// <summary>
         /// Seznam vztahů pro daný prvek
         /// </summary>
         public GTimeGraphLinkItem[] Links { get; set; }
+    }
+    /// <summary>
+    /// 
+    /// </summary>
+    public enum CreateLinksItemEventType
+    {
+        None,
+        MouseOver,
+        ItemSelected
     }
     #endregion
     #region class ItemDragDropArgs : Argument obsahující data pro Drag and Drop

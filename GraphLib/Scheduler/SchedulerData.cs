@@ -283,6 +283,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
             this._TimeAxisToolBarInit();
             this._MoveItemToolBarInit();
+            this._GuiEditToolBarInit();
 
             if (this._ToolbarSystemGroup.Items.Count > 0)
                 this._MainControl.AddToolBarGroup(this._ToolbarSystemGroup);
@@ -444,6 +445,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             this._TimeAxisToolBarClick(item);
             this._MoveItemToolBarClick(item);
+            this._GuiEditToolBarClick(item);
         }
         /// <summary>
         /// Metoda vrátí instanci <see cref="GuiToolbarItem"/> pro položku toolbaru z dodaného argumentu.
@@ -1279,7 +1281,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private void _MoveItemToolBarInit()
         {
             ToolbarSystemItem items = (ToolbarSystemItem)(this._GuiToolbarPanel.ToolbarShowSystemItems & ToolbarSystemItem.MoveItemAll);
-            items = ToolbarSystemItem.MoveItemAll;
+            if (App.IsDebugMode)
+                items = ToolbarSystemItem.MoveItemAll;
 
             if (items == ToolbarSystemItem.None) return;
 
@@ -1622,6 +1625,57 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             }
             return alignY;
         }
+        #endregion
+        #region Další detaily chování GUI
+        /// <summary>
+        /// Inicializace položek ToolBaru (grupa <see cref="_ToolbarSystemGroup"/>) pro řízení pohybu prvků
+        /// </summary>
+        private void _GuiEditToolBarInit()
+        {
+            ToolbarSystemItem items = (ToolbarSystemItem)(this._GuiToolbarPanel.ToolbarShowSystemItems & ToolbarSystemItem.GuiEditAll);
+            if (App.IsDebugMode)
+                items = ToolbarSystemItem.GuiEditAll;
+
+            if (items == ToolbarSystemItem.None) return;
+
+            // Oddělovač, pokud v grupě už jsou položky:
+            if (this._ToolbarSystemGroup.Items.Count > 0)
+                this._ToolbarSystemGroup.Items.Add(_CreateToolbarSeparator());
+
+            if (items.HasFlag(ToolbarSystemItem.GuiEditShowLinkWholeTask))
+                this._ToolbarSystemGroup.Items.Add(_CreateToolbarItem(_Tlb_GuiEdit_ShowLinkWholeTask, R.Images.Actions.DrawBezierCurvesPng, null, "Při najetí myší zobrazovat vztahy v rámci celého postupu, nejen nejbližší sousední položky", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemSkipToNextRow, moduleWidth: 1, isSelectable: true, isSelected: this.Config.GuiEditShowLinkWholeTask, userData: ToolbarSystemItem.GuiEditShowLinkWholeTask));
+        }
+        /// <summary>
+        /// Metoda se volá po akci Click na systémové položce ToolBaru. 
+        /// Metoda zjistí, zda akce se týká přesunu prvků, a pokud ano pak ji vyřeší.
+        /// Pokud se akce nijak netýká přesunu prvků, pak nic neprovádí (není tedy problém ji zavolat).
+        /// </summary>
+        /// <param name="item"></param>
+        private void _GuiEditToolBarClick(FunctionItem item)
+        {
+            if (!(item.UserData is ToolbarSystemItem)) return;               // V UserData je uložena hodnota ToolbarSystemItem, odpovídající konkrétní funkcionalitě.
+            this._GuiEditToolBarAction(item, (ToolbarSystemItem)item.UserData);
+        }
+        /// <summary>
+        /// Po kliknutí na systémovou ikonu Toolbaru, řeší akce typu ItemMove
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="action"></param>
+        private void _GuiEditToolBarAction(FunctionItem item, ToolbarSystemItem action)
+        {
+            action = (ToolbarSystemItem)(action & ToolbarSystemItem.GuiEditAll);
+            if (action == ToolbarSystemItem.None) return;
+
+            switch (action)
+            {
+                case ToolbarSystemItem.GuiEditShowLinkWholeTask:
+                    this.Config.GuiEditShowLinkWholeTask = item.IsChecked;
+                    break;
+            }
+        }
+        private const string _Tlb_GuiEdit_ShowLinkWholeTask = "GuiEditShowLinkWholeTask";
+
+        // ShowLinkWholeTask
         #endregion
         #region Otevření formulářů záznamů
         /// <summary>

@@ -763,30 +763,20 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         protected void PrepareLinksMouse()
         {
+            // Pokud this prvek nemá zobrazovat linky v MouseOver, pak skončíme:
+            if (!this.Item.BehaviorMode.HasFlag(GraphItemBehaviorMode.ShowLinkInMouseOver)) return;
+
             // Pokud this je na pozici Item, a naše grupa (this.Group) už má nalezené linky, pak je nebudeme opakovaně hledat pro prvek:
             if (this.Position == GGraphControlPosition.Item && this.Group.GControl.Links != null) return;
 
-            List<GTimeGraphLinkItem> links = new List<GTimeGraphLinkItem>();
-
             GTimeGraphItem item = this;
-            GTimeGraphLinkArray linkArray = this.Graph.GraphLinkArray;
-
-            CreateLinksArgs args = new CreateLinksArgs(item.Graph, item.Group, item.Item, item.Position);
+            CreateLinksArgs args = new CreateLinksArgs(item.Graph, item.Group, item.Item, item.Position, CreateLinksItemEventType.MouseOver);
             item.Graph.DataSource.CreateLinks(args);
             GTimeGraphLinkItem[] linksOne = args.Links;
             if (linksOne == null || linksOne.Length == 0) return;
 
-            linkArray.AddLinks(linksOne, GTimeGraphLinkMode.Mouse, 0.4f);
-            links.AddRange(linksOne);
-
-            foreach (GTimeGraphLinkItem linkOne in linksOne)
-            {
-
-            }
-
-
-
-            this.Links = links.ToArray();
+            this.Graph.GraphLinkArray.AddLinks(linksOne, GTimeGraphLinkMode.Mouse, 0.6f);
+            this.Links = linksOne;
         }
         /// <summary>
         /// Resetuje kreslené vztahy. Odteď se nebudou kreslit.
@@ -1115,6 +1105,14 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         public GTimeGraphLinkItem()
         { }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return "GraphLink; IdPrev: " + this.ItemIdPrev + "; IdNext: " + this.ItemIdNext + "; LinkType: " + (this.LinkType.HasValue ? this.LinkType.Value.ToString() : "{Null}");
+        }
         /// <summary>
         /// ID prvku předchozího
         /// </summary>

@@ -57,6 +57,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         internal bool HasMainData { get { return this.MainData != null; } }
         /// <summary>
+        /// Konfigurace uživatelská
+        /// </summary>
+        public SchedulerConfig Config { get { return (this.HasMainData ? this.MainData.Config : null); ; } }
+        /// <summary>
         /// Instance <see cref="GuiGrid"/>, která tvoří datový základ této tabulky
         /// </summary>
         internal GuiGrid GuiGrid { get; private set; }
@@ -794,15 +798,20 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Pokud prvek má vztahy, pak tyto vztahy mají korektně vepsané reference na vztažené prvky grafů
         /// </summary>
         /// <param name="graphItem">Základní prvek</param>
-        /// <param name="searchSidePrev">Hledej linky na straně Prev;</param>
-        /// <param name="searchSideNext">Hledej linky na straně Next;</param>
+        /// <param name="searchSidePrev">Hledej linky na straně Prev</param>
+        /// <param name="searchSideNext">Hledej linky na straně Next</param>
+        /// <param name="wholeTask">Hledej linky pro celý Task</param>
         /// <returns></returns>
-        protected GTimeGraphLinkItem[] SearchForGraphLink(GTimeGraphItem graphItem, bool searchSidePrev, bool searchSideNext)
+        protected GTimeGraphLinkItem[] SearchForGraphLink(GTimeGraphItem graphItem, bool searchSidePrev, bool searchSideNext, bool wholeTask)
         {
-            GGraphControlPosition position;
-            GTimeGraphLinkItem[] links = this._SearchForGraphLink(graphItem, searchSidePrev, searchSideNext, out position);
-            this._FillGraphItemsToLinks(links, position);
-            return links;
+            Dictionary<uint, GTimeGraphItem> itemDict = new Dictionary<uint, GTimeGraphItem>();
+            Dictionary<ulong, GTimeGraphLinkItem> linkDict = new Dictionary<ulong, GTimeGraphLinkItem>();
+            if (graphItem != null && this.GraphLinkDict.CountKeys > 0)
+            {
+                if (searchSidePrev) this._SearchForGraphLink(graphItem, itemDict, linkDict, true, false, wholeTask);
+                if (searchSideNext) this._SearchForGraphLink(graphItem, itemDict, linkDict, false, true, wholeTask);
+            }
+            return linkDict.Values.ToArray();
         }
         /// <summary>
         /// Metoda najde a vrátí vztahy daného prvku grafu, prioritně podle jeho GroupId, následně podle ItemId, hledá v <see cref="GraphLinkDict"/>.
@@ -810,15 +819,30 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// metoda neplní objekty do záznamů vztahu, na to je tu metoda <see cref="_FillGraphItemsToLinks(GTimeGraphLinkItem[], GGraphControlPosition)"/>.
         /// </summary>
         /// <param name="graphItem">Základní prvek</param>
-        /// <param name="searchSidePrev">Hledej linky na straně Prev;</param>
-        /// <param name="searchSideNext">Hledej linky na straně Next;</param>
-        /// <param name="position"></param>
+        /// <param name="itemDict">Sem se ukládají scanované prvky, vyjma prvního (ten se scanuje dvakrát, jednou Prev a podruhé Next)</param>
+        /// <param name="linkDict">Sem se ukládají nalezené vztahy, klíčem je jejich <see cref="GTimeGraphLinkItem.Key"/></param>
+        /// <param name="searchSidePrev">Hledej linky na straně Prev</param>
+        /// <param name="searchSideNext">Hledej linky na straně Next</param>
+        /// <param name="wholeTask">Hledej linky pro celý Task</param>
         /// <returns></returns>
-        private GTimeGraphLinkItem[] _SearchForGraphLink(GTimeGraphItem graphItem, bool searchSidePrev, bool searchSideNext, out GGraphControlPosition position)
+        private void _SearchForGraphLink(GTimeGraphItem graphItem, Dictionary<uint, GTimeGraphItem> itemDict, Dictionary<ulong, GTimeGraphLinkItem> linkDict, bool searchSidePrev, bool searchSideNext, bool wholeTask)
         {
-            position = GGraphControlPosition.None;
-            if (graphItem != null && this.GraphLinkDict.CountKeys > 0)
+            GGraphControlPosition position = GGraphControlPosition.None;
+            Queue<GTimeGraphItem> searchQueue = new Queue<GTimeGraphItem>();
+            searchQueue.Enqueue(graphItem);
+            bool testDuplicity = false;
+            while (searchQueue.Count > 0)
             {
+                GTimeGraphItem baseItem = searchQueue.Dequeue();
+                if (testDuplicity && itemDict.ContainsKey(baseItem.Id)) continue;
+
+                List<GTimeGraphItem> nextItems = _SearchForGraphLinkOne(baseItem, linkDict, searchSidePrev, searchSideNext);
+
+
+
+
+                testDuplicity = true;
+            }
                 if (graphItem.Group.GroupId > 0)
                 {
                     GTimeGraphLinkItem[] links = this.GraphLinkDict[graphItem.Group.GroupId];
@@ -839,9 +863,17 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                         return links;
                     }
                 }
-            }
-            return null;
+            
         }
+
+        private List<GTimeGraphItem> _SearchForGraphLinkOne(GTimeGraphItem baseItem, Dictionary<ulong, GTimeGraphLinkItem> linkDict, bool searchSidePrev, bool searchSideNext)
+        {
+            int id;
+
+            id = baseItem.Group.GroupId;
+
+        }
+
         /// <summary>
         /// Metoda dostává sadu nalezených linků pro aktuální prvek, jehož ID je dáno (currId).
         /// Metoda aplikuje omezení (na které straně prvku se mají hledat vztahy: searchSidePrev, searchSideNext).
@@ -964,7 +996,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Soupis linků mezi prvky grafů v této tabulce.
         /// Hodnota klíče (Int32) odpovídá údaji <see cref="GuiGraphLink.ItemIdPrev"/> a <see cref="GuiGraphLink.ItemIdNext"/>, tedy tomu co aplikace zadala jako klíč vztahu.
         /// Je doporučeno, aby to byl klíč ideálně <see cref="GuiGraphBaseItem.GroupId"/>, nebo <see cref="GuiGraphBaseItem.ItemId"/>.
-        /// Aplikační kód následně pro konkrétní zdrojový prvek <see cref="GTimeGraphItem"/> v metodě <see cref="SearchForGraphLink(GTimeGraphItem, bool, bool)"/> 
+        /// Aplikační kód následně pro konkrétní zdrojový prvek <see cref="GTimeGraphItem"/> v metodě <see cref="SearchForGraphLink(GTimeGraphItem, bool, bool, bool)"/> 
         /// hledá vztahy nejprve pro grupu, a poté pro item daného prvku.
         /// </summary>
         protected DictionaryList<int, GTimeGraphLinkItem> GraphLinkDict;
@@ -1316,7 +1348,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="args"></param>
         protected void GraphItemCreateLinks(CreateLinksArgs args)
         {
-            args.Links = this.SearchForGraphLink(args.CurrentItem.GControl, args.SearchSidePrev, args.SearchSideNext);
+            bool wholeTask = false;
+            if (args.ItemEvent == CreateLinksItemEventType.MouseOver && this.Config != null && this.Config.GuiEditShowLinkWholeTask)
+                wholeTask = true;
+
+            args.Links = this.SearchForGraphLink(args.CurrentItem.GControl, args.SearchSidePrev, args.SearchSideNext, wholeTask);
         }
         /// <summary>
         /// Uživatel chce vidět kontextové menu na daném grafu

@@ -3322,13 +3322,21 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         MoveItemSnapToRoundTimeGrid = 0x00040000,
         /// <summary>
+        /// Zobrazovat Linky mezi prvky grafu pro celou úroveň = prohledávat sousední prvky mých sousedů, dokud jsou propojené typem Linku <see cref="GuiGraphItemLinkRelation.OneLevel"/>.
+        /// </summary>
+        GuiEditShowLinkWholeTask = 0x00100000,
+        /// <summary>
         /// Přesouvání prvku: všechny akce
         /// </summary>
         MoveItemAll = MoveItemSnapToNearItems | MoveItemSnapToOriginalTime | MoveItemSnapToRoundTimeGrid,
         /// <summary>
+        /// Editace v GUI: všechny akce
+        /// </summary>
+        GuiEditAll = GuiEditShowLinkWholeTask,
+        /// <summary>
         /// Defaultní využití systémových položek: Zoom (Day + WorkWeek + WholeWeek + Month) + GoAll + MoveItemAll
         /// </summary>
-        Default = TimeAxisZoomDWWM | TimeAxisGoAll | MoveItemAll
+        Default = TimeAxisZoomDWWM | TimeAxisGoAll | MoveItemAll | GuiEditAll
     }
     /// <summary>
     /// Režim, jak osa reaguje na změnu velikosti.
