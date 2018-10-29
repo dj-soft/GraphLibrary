@@ -681,8 +681,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         #endregion
     }
     #region Třídy pro datové prvky
+    #region class ProductOrder : Výrobní příkaz
     /// <summary>
-    /// Data: Výrobní příkaz
+    /// ProductOrder : Výrobní příkaz
     /// </summary>
     public class ProductOrder : SubjectClass
     {
@@ -723,8 +724,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             return linkList.ToArray();
         }
     }
+    #endregion
+    #region class ProductOperation : Operace výrobního příkazu
     /// <summary>
-    /// Data: Operace výrobního příkazu
+    /// ProductOperation : Operace výrobního příkazu
     /// </summary>
     public class ProductOperation : SubjectClass
     {
@@ -848,8 +851,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             return link;
         }
     }
+    #endregion
+    #region class PlanUnitC : Pracoviště
     /// <summary>
-    /// Data: Pracoviště
+    /// PlanUnitC : Pracoviště
     /// </summary>
     public class PlanUnitC : SubjectClass
     {
@@ -879,8 +884,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             return guiGraph;
         }
     }
+    #endregion
+    #region class UnitTime : Pracovní jednotka = kus práce na pracovišti
     /// <summary>
-    /// Data: Pracovní jednotka = kus práce na pracovišti
+    /// UnitTime : Pracovní jednotka = kus práce na pracovišti
     /// </summary>
     public class UnitTime : RecordClass
     {
@@ -909,7 +916,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 RowId = this.PlanUnitC?.RecordGid,
                 Layer = 1,
                 BackColor = this.BackColor,
-                BehaviorMode = GraphItemBehaviorMode.ShowCaptionAllways | GraphItemBehaviorMode.ShowToolTipFadeIn | GraphItemBehaviorMode.MoveToAnotherRow | GraphItemBehaviorMode.MoveToAnotherTime,
+                BehaviorMode = GraphItemBehaviorMode.ShowCaptionAllways | GraphItemBehaviorMode.ShowToolTipFadeIn | 
+                        GraphItemBehaviorMode.ShowLinkInMouseOver | GraphItemBehaviorMode.ShowLinkInSelected |
+                        GraphItemBehaviorMode.MoveToAnotherRow | GraphItemBehaviorMode.MoveToAnotherTime,
                 Height = this.Height,
                 Text = this.Text,
                 ToolTip = this.ToolTip,
@@ -919,8 +928,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         }
 
     }
+    #endregion
+    #region class WorkTime : Pracovní směna
     /// <summary>
-    /// Data: Pracovní směna
+    /// WorkTime : Pracovní směna
     /// </summary>
     public class WorkTime : RecordClass
     {
@@ -953,8 +964,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             return guiGraphItem;
         }
     }
+    #endregion
+    #region class SubjectClass : Subjektový záznam
     /// <summary>
-    /// Data: Subjektový záznam
+    /// SubjectClass : Subjektový záznam
     /// </summary>
     public abstract class SubjectClass : RecordClass
     {
@@ -990,8 +1003,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             }
         }
     }
+    #endregion
+    #region class RecordClass : Obecný záznam
     /// <summary>
-    /// Data: Obecný záznam
+    /// RecordClass : Obecný záznam
     /// </summary>
     public abstract class RecordClass
     {
@@ -1016,5 +1031,6 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// </summary>
         public int RecordId { get; set; }
     }
+    #endregion
     #endregion
 }
