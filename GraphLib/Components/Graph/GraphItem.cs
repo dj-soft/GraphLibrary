@@ -40,7 +40,9 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <returns></returns>
         public override string ToString()
         {
-            return "Position: " + this._Position.ToString() + "; " + base.ToString();
+            return "Position: " + this._Position.ToString() + "; GroupId: " + this.Group.GroupId + 
+                ((this.Position == GGraphControlPosition.Item) ? ("; ItemId: " + this.Item.ItemId.ToString()) : "") +
+                "; " + base.ToString();
         }
         /// <summary>
         /// Vlastník tohoto grafického prvku = datový prvek grafu
@@ -1145,6 +1147,54 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Data z GUI, nepovinná (zdejší hodnoty jsou separátní)
         /// </summary>
         public GuiGraphLink GuiGraphLink { get; set; }
+        #endregion
+        #region Obousměrný přístup k prvkům a jejich ID
+        /// <summary>
+        /// Vrátí ID prvku na dané straně
+        /// </summary>
+        /// <param name="side">Strana: Negative = Prev; Positive = Next</param>
+        /// <returns></returns>
+        internal int GetId(Direction side)
+        {
+            switch (side)
+            {
+                case Direction.Negative: return this.ItemIdPrev;
+                case Direction.Positive: return this.ItemIdNext;
+            }
+            return 0;
+        }
+        /// <summary>
+        /// Vrátí prvek na dané straně
+        /// </summary>
+        /// <param name="side">Strana: Negative = Prev; Positive = Next</param>
+        /// <returns></returns>
+        internal GTimeGraphItem GetItem(Direction side)
+        {
+            switch (side)
+            {
+                case Direction.Negative: return this.ItemPrev;
+                case Direction.Positive: return this.ItemNext;
+            }
+            return null;
+        }
+        /// <summary>
+        /// Uloží daný prvek na danou stranu
+        /// </summary>
+        /// <param name="side">Strana: Negative = Prev; Positive = Next</param>
+        /// <param name="item">Prvek</param>
+        /// <returns></returns>
+        internal void SetItem(Direction side, GTimeGraphItem item)
+        {
+            switch (side)
+            {
+                case Direction.Negative:
+                    this.ItemPrev = item;
+                    break;
+                case Direction.Positive:
+                    this.ItemNext = item;
+                    break;
+            }
+        }
         #endregion
         #region Klíč linku
         /// <summary>

@@ -715,7 +715,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         protected void LoadDataLoadLinks()
         {
-            this.GraphLinkDict = new DictionaryList<int, GTimeGraphLinkItem>();
+            this.GraphLinkPrevDict = new DictionaryList<int, GTimeGraphLinkItem>();
+            this.GraphLinkNextDict = new DictionaryList<int, GTimeGraphLinkItem>();
             if (this.GuiGrid.GraphLinks != null && this.GuiGrid.GraphLinks.Count > 0)
                 this.AddGraphLinks(this.GuiGrid.GraphLinks.LinkList);
         }
@@ -757,19 +758,19 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             // Objekt DictionaryList drží soupisy vztahů jak při pohledu zleva, tak zprava.
             // Je zajištěno, že vstupující seznam (links) obsahuje pouze ty objekty, které mají oboustranný vztah (Prev i Next je naplněno) mezi různými prvky (Prev != Next).
             // Následně můžeme najít vztahy pro libovolný prvek podle jeho Int32 klíče, ať už je to vztah "doleva" nebo "doprava", viz metoda SearchForGraphLink()
-            this.GraphLinkDict.AddRange(links, g => g.ItemIdPrev);
-            this.GraphLinkDict.AddRange(links, g => g.ItemIdNext);
+            this.GraphLinkPrevDict.AddRange(links, g => g.ItemIdPrev);
+            this.GraphLinkNextDict.AddRange(links, g => g.ItemIdNext);
         }
         /// <summary>
-        /// Metoda odebere všechny záznamy z <see cref="GraphLinkDict"/>, jejichž hodnoty <see cref="GTimeGraphLinkItem.ItemIdPrev"/> a <see cref="GTimeGraphLinkItem.ItemIdNext"/>
+        /// Metoda odebere všechny záznamy z <see cref="GraphLinkPrevDict"/> a <see cref="GraphLinkNextDict"/>, jejichž hodnoty <see cref="GTimeGraphLinkItem.ItemIdPrev"/> a <see cref="GTimeGraphLinkItem.ItemIdNext"/>
         /// se shodují s hodnotami dodaných záznamů.
-        /// Pokud ale <see cref="GraphLinkDict"/> neobsahuje žádný prvek, pak se neprovádí nic (ani zahájení enumerace parametru).
+        /// Pokud ale <see cref="GraphLinkPrevDict"/> a <see cref="GraphLinkNextDict"/> neobsahuje žádný prvek, pak se neprovádí nic (ani zahájení enumerace parametru).
         /// </summary>
         /// <param name="guiLinks"></param>
         protected void RemoveGraphLinks(IEnumerable<GuiGraphLink> guiLinks)
         {
             if (guiLinks == null) return;
-            if (this.GraphLinkDict.CountKeys == 0) return;
+            if (this.GraphLinkPrevDict.CountKeys == 0 && this.GraphLinkNextDict.CountKeys == 0) return;
 
             // Vytvořím soupis dvojklíčů <Int32> z pole linků, kde jsou klíče Prev a Next ve formě <GuiId>:
             Tuple<int, int>[] twoKeys = guiLinks
@@ -781,16 +782,19 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.RemoveGraphLinks(twoKeys);
         }
         /// <summary>
-        /// Metoda odebere všechny záznamy z <see cref="GraphLinkDict"/>, jejichž hodnoty <see cref="GTimeGraphLinkItem.ItemIdPrev"/> a <see cref="GTimeGraphLinkItem.ItemIdNext"/>
+        /// Metoda odebere všechny záznamy z <see cref="GraphLinkPrevDict"/> a <see cref="GraphLinkNextDict"/>, jejichž hodnoty <see cref="GTimeGraphLinkItem.ItemIdPrev"/> a <see cref="GTimeGraphLinkItem.ItemIdNext"/>
         /// se shodují s hodnotami Item1 a Item2 z dodaných prvků.
-        /// Pokud ale <see cref="GraphLinkDict"/> neobsahuje žádný prvek, pak se neprovádí nic (ani zahájení enumerace parametru).
+        /// Pokud ale <see cref="GraphLinkPrevDict"/> a <see cref="GraphLinkNextDict"/> neobsahuje žádný prvek, pak se neprovádí nic (ani zahájení enumerace parametru).
         /// </summary>
         /// <param name="twoKeys"></param>
         protected void RemoveGraphLinks(IEnumerable<Tuple<int, int>> twoKeys)
         {
-            if (this.GraphLinkDict.CountKeys == 0) return;
+            if (this.GraphLinkPrevDict.CountKeys == 0 && this.GraphLinkNextDict.CountKeys == 0) return;
             foreach (var twoKey in twoKeys)
-                this.GraphLinkDict.RemoveAll((k, v) => (v.ItemIdPrev == twoKey.Item1 && v.ItemIdNext == twoKey.Item2));
+            {
+                this.GraphLinkPrevDict.RemoveAll((k, v) => (v.ItemIdPrev == twoKey.Item1 && v.ItemIdNext == twoKey.Item2));
+                this.GraphLinkNextDict.RemoveAll((k, v) => (v.ItemIdPrev == twoKey.Item1 && v.ItemIdNext == twoKey.Item2));
+            }
         }
         /// <summary>
         /// Metoda najde a vrátí soupis platných vztahů mezi prvky pro jeden daný prvek grafu.
@@ -806,129 +810,96 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             Dictionary<uint, GTimeGraphItem> itemDict = new Dictionary<uint, GTimeGraphItem>();
             Dictionary<ulong, GTimeGraphLinkItem> linkDict = new Dictionary<ulong, GTimeGraphLinkItem>();
-            if (graphItem != null && this.GraphLinkDict.CountKeys > 0)
+            if (graphItem != null)
             {
-                if (searchSidePrev) this._SearchForGraphLink(graphItem, itemDict, linkDict, true, false, wholeTask);
-                if (searchSideNext) this._SearchForGraphLink(graphItem, itemDict, linkDict, false, true, wholeTask);
+                if (searchSidePrev && this.GraphLinkPrevDict.CountKeys > 0) this._SearchForGraphLink(graphItem, this.GraphLinkPrevDict, Direction.Positive, itemDict, linkDict, wholeTask);
+                if (searchSideNext && this.GraphLinkNextDict.CountKeys > 0) this._SearchForGraphLink(graphItem, this.GraphLinkNextDict, Direction.Negative, itemDict, linkDict, wholeTask);
             }
             return linkDict.Values.ToArray();
         }
         /// <summary>
-        /// Metoda najde a vrátí vztahy daného prvku grafu, prioritně podle jeho GroupId, následně podle ItemId, hledá v <see cref="GraphLinkDict"/>.
-        /// Tato metoda současně určí pozici, dle které byly vztahy nalezeny (<see cref="GGraphControlPosition.Group"/> nebo <see cref="GGraphControlPosition.Item"/>).
-        /// metoda neplní objekty do záznamů vztahu, na to je tu metoda <see cref="_FillGraphItemsToLinks(GTimeGraphLinkItem[], GGraphControlPosition)"/>.
+        /// Metoda vyhledá vztahy daného výchozího prvku (graphItem) v dané instanci DictionaryList (graphLinkDict) na dané straně vztahů (targetSide).
+        /// Pokud pro prvek najde nějaké vztahy, pak pro každý vztah:
+        /// dohledá cílový prvek na dané straně vztahu a cílový prvek vepíše do vztahu, vepíše i zdrojový prvek do vztahu; 
+        /// a vztah uloží do výsledné dictionary (resultLinkDict).
+        /// Následně vyhodnotí, zda nalezený cílový prvek se bude "rekurzivně" scanovat, a pokud ano, pak jej zařadí do zpracování v interní smyčce.
         /// </summary>
         /// <param name="graphItem">Základní prvek</param>
-        /// <param name="itemDict">Sem se ukládají scanované prvky, vyjma prvního (ten se scanuje dvakrát, jednou Prev a podruhé Next)</param>
-        /// <param name="linkDict">Sem se ukládají nalezené vztahy, klíčem je jejich <see cref="GTimeGraphLinkItem.Key"/></param>
-        /// <param name="searchSidePrev">Hledej linky na straně Prev</param>
-        /// <param name="searchSideNext">Hledej linky na straně Next</param>
+        /// <param name="graphLinkDict">Dictionary obsahující vztahy v potřebném směru</param>
+        /// <param name="targetSide">Směr vztahu</param>
+        /// <param name="scanItemDict">Sem se průběžně ukládají scanované prvky, aby nedošlo k zacyklení - vyjma prvního (ten se scanuje dvakrát, jednou Prev a podruhé Next)</param>
+        /// <param name="resultLinkDict">Sem se ukládají nalezené vztahy, klíčem je jejich <see cref="GTimeGraphLinkItem.Key"/>; jde o průběžný výstup</param>
         /// <param name="wholeTask">Hledej linky pro celý Task</param>
         /// <returns></returns>
-        private void _SearchForGraphLink(GTimeGraphItem graphItem, Dictionary<uint, GTimeGraphItem> itemDict, Dictionary<ulong, GTimeGraphLinkItem> linkDict, bool searchSidePrev, bool searchSideNext, bool wholeTask)
+        private void _SearchForGraphLink(GTimeGraphItem graphItem, DictionaryList<int, GTimeGraphLinkItem> graphLinkDict, Direction targetSide,
+            Dictionary<uint, GTimeGraphItem> scanItemDict, Dictionary<ulong, GTimeGraphLinkItem> resultLinkDict, bool wholeTask)
         {
-            GGraphControlPosition position = GGraphControlPosition.None;
+            Direction sourceSide = targetSide.Reverse();
             Queue<GTimeGraphItem> searchQueue = new Queue<GTimeGraphItem>();
             searchQueue.Enqueue(graphItem);
             bool testDuplicity = false;
             while (searchQueue.Count > 0)
             {
-                GTimeGraphItem baseItem = searchQueue.Dequeue();
-                if (testDuplicity && itemDict.ContainsKey(baseItem.Id)) continue;
+                GTimeGraphItem sourceItem = searchQueue.Dequeue();
+                if (testDuplicity && scanItemDict.ContainsKey(sourceItem.Id)) continue;
 
-                List<GTimeGraphItem> nextItems = _SearchForGraphLinkOne(baseItem, linkDict, searchSidePrev, searchSideNext);
+                // Najdu vztahy z daného prvku (z jeho Group nebo z Item), v dodané Dictionary (která je pro směr Prev nebo Next):
+                GGraphControlPosition position = GGraphControlPosition.None;
+                GTimeGraphLinkItem[] linkList = _SearchForGraphLinkOne(sourceItem, graphLinkDict, out position);
+                if (linkList == null || linkList.Length == 0) continue;
 
+                // Nějaké vztahy jsme našli, tak pokud ještě nejsou ve výsledné Dictionary (linkDict):
+                //  tak do nich doplníme výchozí prvek (baseItem) a cílový prvek (do strany side), přidáme do linkDict, a možná cílový prvek zařadíme do fronty:
+                foreach (GTimeGraphLinkItem link in linkList)
+                {
+                    if (resultLinkDict.ContainsKey(link.Key)) continue;    // Tenhle vztah už ve výstupní dictionary máme; ten přeskočíme.
 
+                    // Najdeme cílový prvek vztahu:
+                    int targetId = link.GetId(targetSide);
+                    GTimeGraphItem targetItem = this._SearchGraphItemsForLink(targetId, position);
+                    if (targetItem == null) continue;                // Vztah nemá nalezen prvek na cílové straně vztahu; vztah přeskočíme.
+                    link.SetItem(sourceSide, sourceItem);            // Prvek na zdrojové straně vztahu
+                    link.SetItem(targetSide, targetItem);            // Prvek na cílové straně vztahu
+                    resultLinkDict.Add(link.Key, link);
 
+                    // Podle podmínek zajistíme provedení rekurze = hledání dalších vztahů z cílového prvku tohoto vztahu:
+                    if (wholeTask && link.GuiGraphLink != null && link.GuiGraphLink.RelationType.HasValue && link.GuiGraphLink.RelationType.Value == GuiGraphItemLinkRelation.OneLevel && !scanItemDict.ContainsKey(targetItem.Id))
+                    {   // Daný cílový prvek si zařadíme do fronty práce, a v některém z dalších cyklů v této metodě jej zpracujeme:
+                        searchQueue.Enqueue(targetItem);
+                        scanItemDict.Add(targetItem.Id, targetItem);
+                    }
+                }
 
+                // Další prvek ve frontě už budeme testovat na non-duplicitu:
                 testDuplicity = true;
             }
-                if (graphItem.Group.GroupId > 0)
-                {
-                    GTimeGraphLinkItem[] links = this.GraphLinkDict[graphItem.Group.GroupId];
-                    if (links != null)
-                    {
-                        position = GGraphControlPosition.Group;
-                        links = this._FilterForGraphLinks(links, graphItem.Group.GroupId, searchSidePrev, searchSideNext, ref position);
-                        return links;
-                    }
-                }
-                if (graphItem.Position == GGraphControlPosition.Item && graphItem.Item.ItemId > 0)
-                {
-                    GTimeGraphLinkItem[] links = this.GraphLinkDict[graphItem.Item.ItemId];
-                    if (links != null)
-                    {
-                        position = GGraphControlPosition.Item;
-                        links = this._FilterForGraphLinks(links, graphItem.Item.ItemId, searchSidePrev, searchSideNext, ref position);
-                        return links;
-                    }
-                }
-            
         }
-
-        private List<GTimeGraphItem> _SearchForGraphLinkOne(GTimeGraphItem baseItem, Dictionary<ulong, GTimeGraphLinkItem> linkDict, bool searchSidePrev, bool searchSideNext)
-        {
-            int id;
-
-            id = baseItem.Group.GroupId;
-
-        }
-
         /// <summary>
-        /// Metoda dostává sadu nalezených linků pro aktuální prvek, jehož ID je dáno (currId).
-        /// Metoda aplikuje omezení (na které straně prvku se mají hledat vztahy: searchSidePrev, searchSideNext).
-        /// Výstupem je seznam linků s aplikovanými omezeními. 
-        /// Pokud by výstup měl 0 prvků, vrací se null, a nastavuje se (position = None).
+        /// Metoda najde a vrátí linky z daného prvku (nejprve hledá pro grupu, pak pro jednotlivý prvek), z dané instance DictionaryList.
         /// </summary>
-        /// <param name="links">Sada linků</param>
-        /// <param name="currId">ID aktuálního prvku</param>
-        /// <param name="searchSidePrev">Hledej linky na straně Prev;</param>
-        /// <param name="searchSideNext">Hledej linky na straně Next;</param>
+        /// <param name="baseItem"></param>
+        /// <param name="graphLinkDict"></param>
         /// <param name="position"></param>
         /// <returns></returns>
-        private GTimeGraphLinkItem[] _FilterForGraphLinks(GTimeGraphLinkItem[] links, int currId, bool searchSidePrev, bool searchSideNext, ref GGraphControlPosition position)
+        private GTimeGraphLinkItem[] _SearchForGraphLinkOne(GTimeGraphItem baseItem, DictionaryList<int, GTimeGraphLinkItem> graphLinkDict, out GGraphControlPosition position)
         {
-            if (links != null && links.Length > 0 && (!searchSidePrev || !searchSideNext))
-            {   // Pokud je nějaký důvod aplikovat omezení:
-                links = links.Where(link => _FilterForGraphLink(link, currId, searchSidePrev, searchSideNext)).ToArray();
-                if (links.Length == 0)
-                {
-                    links = null;
-                    position = GGraphControlPosition.None;
-                }
-            }
-            return links;
-        }
-        /// <summary>
-        /// Metoda zjistí, zda daný jeden link vyhovuje podmínce pro hledání 
-        /// </summary>
-        /// <param name="link">Daný link</param>
-        /// <param name="currId">ID aktuálního prvku</param>
-        /// <param name="searchSidePrev">Hledej linky na straně Prev;</param>
-        /// <param name="searchSideNext">Hledej linky na straně Next;</param>
-        /// <returns></returns>
-        private static bool _FilterForGraphLink(GTimeGraphLinkItem link, int currId, bool searchSidePrev, bool searchSideNext)
-        {
-            // Pokud NEMÁME hledat vztahy do strany Prev, a náš prvek (currId) je na straně vztahu ItemIdNext, pak je to vztah Prev a ten nechceme:
-            if (!searchSidePrev && link.ItemIdNext == currId) return false;
-            // Pokud NEMÁME hledat vztahy do strany Next, a náš prvek (currId) je na straně vztahu ItemIdPrev, pak je to vztah Next a ten nechceme:
-            if (!searchSideNext && link.ItemIdPrev == currId) return false;
-            return true;
-        }
-        /// <summary>
-        /// Metoda do všech položek daného pole linků doplní reference na objekty <see cref="GTimeGraphLinkItem.ItemPrev"/> a <see cref="GTimeGraphLinkItem.ItemNext"/>.
-        /// </summary>
-        /// <param name="links"></param>
-        /// <param name="position"></param>
-        private void _FillGraphItemsToLinks(GTimeGraphLinkItem[] links, GGraphControlPosition position)
-        {
-            if (links == null) return;
-
-            foreach (GTimeGraphLinkItem link in links)
+            if (baseItem != null && graphLinkDict != null && graphLinkDict.CountKeys > 0)
             {
-                link.ItemPrev = this._SearchGraphItemsForLink(link.ItemIdPrev, position);
-                link.ItemNext = this._SearchGraphItemsForLink(link.ItemIdNext, position);
+                int id;
+                GTimeGraphLinkItem[] links;
+
+                position = GGraphControlPosition.Group;
+                id = baseItem.Group.GroupId;
+                links = graphLinkDict[id];
+                if (links != null) return links;
+
+                position = GGraphControlPosition.Item;
+                id = baseItem.Item.ItemId;
+                links = graphLinkDict[id];
+                if (links != null) return links;
             }
+            position = GGraphControlPosition.None;
+            return null;
         }
         /// <summary>
         /// Metoda najde a vrátí grafický prvek grafu <see cref="GTimeGraphItem"/> pro dané ID prvku a danou prioritu pozice.
@@ -993,13 +964,17 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             return graphLink;
         }
         /// <summary>
-        /// Soupis linků mezi prvky grafů v této tabulce.
-        /// Hodnota klíče (Int32) odpovídá údaji <see cref="GuiGraphLink.ItemIdPrev"/> a <see cref="GuiGraphLink.ItemIdNext"/>, tedy tomu co aplikace zadala jako klíč vztahu.
-        /// Je doporučeno, aby to byl klíč ideálně <see cref="GuiGraphBaseItem.GroupId"/>, nebo <see cref="GuiGraphBaseItem.ItemId"/>.
-        /// Aplikační kód následně pro konkrétní zdrojový prvek <see cref="GTimeGraphItem"/> v metodě <see cref="SearchForGraphLink(GTimeGraphItem, bool, bool, bool)"/> 
-        /// hledá vztahy nejprve pro grupu, a poté pro item daného prvku.
+        /// Soupis linků mezi prvky grafů v této tabulce, ze strany Prev.
+        /// Klíč (Int32) odpovídá údaji <see cref="GuiGraphLink.ItemIdPrev"/> ze vztahu.
+        /// Hodnota pak reprezentuje všechny vztahy, které vedou z prvku [klíč] na prvky na straně Next.
         /// </summary>
-        protected DictionaryList<int, GTimeGraphLinkItem> GraphLinkDict;
+        protected DictionaryList<int, GTimeGraphLinkItem> GraphLinkPrevDict;
+        /// <summary>
+        /// Soupis linků mezi prvky grafů v této tabulce, ze strany Next.
+        /// Klíč (Int32) odpovídá údaji <see cref="GuiGraphLink.ItemIdPrev"/> ze vztahu.
+        /// Hodnota pak reprezentuje všechny vztahy, které vedou z prvku [klíč] na prvky na straně Next.
+        /// </summary>
+        protected DictionaryList<int, GTimeGraphLinkItem> GraphLinkNextDict;
         #endregion
         #region Textové údaje (popisky grafů)
         /// <summary>

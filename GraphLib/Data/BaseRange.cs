@@ -1025,8 +1025,8 @@ namespace Asol.Tools.WorkScheduler.Data
     #endregion
     #region enums Direction, RoundMode
     /// <summary>
-    /// Direction on any axis (Positive, Negative, None).
-    /// Has extensions method: Reverse(), NumericValue(), CompareToDirection().
+    /// Směr, například na ose, ve vztahu atd (Positive, Negative, None).
+    /// Existuje reverzní metoda <see cref="DataExtensions.Reverse(Direction)"/>, která vrací směr opačný.
     /// </summary>
     public enum Direction
     {
@@ -1035,11 +1035,11 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         None,
         /// <summary>
-        /// To higher values (positive numbers, future times)
+        /// Směr k vyšším hodnotám na ose; ve vztahu k prvku Next; obecně doprava.
         /// </summary>
         Positive,
         /// <summary>
-        /// No lower values (negative numbers, history times)
+        /// Směr k nižším hodnotám na ose; ve vztahu k prvku Prev; obecně doleva.
         /// </summary>
         Negative
     }
