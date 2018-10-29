@@ -845,6 +845,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 ItemIdPrev = prev?.RecordGid,
                 ItemIdNext = next?.RecordGid,
                 LinkType = GuiGraphItemLinkType.PrevEndToNextBeginSCurve,
+                RelationType = GuiGraphItemLinkRelation.OneLevel,
                 LinkWidth = 1,
                 LinkColor = Color.Red
             };
