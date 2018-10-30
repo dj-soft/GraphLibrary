@@ -24,9 +24,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             // Asol.Tools.WorkScheduler.TestGUI
 
-            Application.App.RunMainForm(typeof(SchedulerForm));
+            // Application.App.RunMainForm(typeof(SchedulerForm));            // interní testovací data
+            Application.App.RunMainForm(typeof(PluginForm));               // data z Greenu
 
-            // Application.App.RunMainForm(typeof(PluginForm));
+
 
             // Application.App.RunMainForm(typeof(TestOneComponent));
             // Application.App.RunMainForm(typeof(TestFormGrid));
