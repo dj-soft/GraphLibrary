@@ -866,9 +866,12 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                     if (wholeTask && link.GuiGraphLink != null && link.GuiGraphLink.RelationType.HasValue && link.GuiGraphLink.RelationType.Value == GuiGraphItemLinkRelation.OneLevel && !scanItemDict.ContainsKey(targetItem.Id))
                     {   // Daný cílový prvek si zařadíme do fronty práce, a v některém z dalších cyklů v této metodě jej zpracujeme:
                         searchQueue.Enqueue(targetItem);
-                        scanItemDict.Add(targetItem.Id, targetItem);
                     }
                 }
+
+                // Uložím si prvek, který byl právě vyřešen, do dictionary:
+                if (!scanItemDict.ContainsKey(sourceItem.Id))
+                    scanItemDict.Add(sourceItem.Id, sourceItem);
 
                 // Další prvek ve frontě už budeme testovat na non-duplicitu:
                 testDuplicity = true;

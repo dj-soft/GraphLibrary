@@ -2871,6 +2871,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             this.Graph = graph;
             this.Group = group;
+            qqq
+            // Odlišit: CurrentItem nesmí být "první"
             this.CurrentItem = (position == GGraphControlPosition.Item ? data : group.Items[0]);
             this.Position = position;
         }
