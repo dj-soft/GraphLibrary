@@ -252,9 +252,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         private GuiToolbarPanel _GuiToolbarPanel;
         /// <summary>
-        /// Grupa v ToolBaru obsahující systémové položky
+        /// Grupa v ToolBaru, obsahující systémové položky pro časovou osu
         /// </summary>
-        private FunctionGlobalGroup _ToolbarSystemGroup;
+        private FunctionGlobalGroup _ToolbarSystemTimeAxisGroup;
+        /// <summary>
+        /// Grupa v ToolBaru, obsahující systémové položky pro časovou osu
+        /// </summary>
+        private FunctionGlobalGroup _ToolbarSystemGuiEditGroup;
         /// <summary>
         /// Z dat v <see cref="_GuiToolbarPanel"/> naplní toolbar
         /// </summary>
@@ -279,14 +283,17 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (!this._GuiToolbarPanel.ToolbarVisible) return;
             // Systémové položky Toolbaru jsou položky třídy FunctionGlobalItem, nemají v sobě instanci GuiToolbarItem.
 
-            this._ToolbarSystemGroup = new FunctionGlobalGroup() { Title = "ČASOVÁ OSA", ToolTipTitle = "Posuny časové osy, změna měřítka", Order = "A1" };
+            this._ToolbarSystemTimeAxisGroup = new FunctionGlobalGroup() { Title = "ČASOVÁ OSA", ToolTipTitle = "Posuny časové osy, změna měřítka", Order = "A1" };
+            this._ToolbarSystemGuiEditGroup = new FunctionGlobalGroup() { Title = "EDITACE", ToolTipTitle = "Editace prvků grafu", Order = "A2" };
 
             this._TimeAxisToolBarInit();
             this._MoveItemToolBarInit();
             this._GuiEditToolBarInit();
 
-            if (this._ToolbarSystemGroup.Items.Count > 0)
-                this._MainControl.AddToolBarGroup(this._ToolbarSystemGroup);
+            if (this._ToolbarSystemTimeAxisGroup.Items.Count > 0)
+                this._MainControl.AddToolBarGroup(this._ToolbarSystemTimeAxisGroup);
+            if (this._ToolbarSystemGuiEditGroup.Items.Count > 0)
+                this._MainControl.AddToolBarGroup(this._ToolbarSystemGuiEditGroup);
         }
         /// <summary>
         /// Metoda vytvoří a vrátí prvek FunctionGlobalItem pro dané zadání
@@ -1075,7 +1082,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         #endregion
         #region Časová osa - tvorba menu v ToolBaru, a obsluha akcí tohoto menu
         /// <summary>
-        /// Inicializace položek ToolBaru (grupa <see cref="_ToolbarSystemGroup"/>) pro časovou osu
+        /// Inicializace položek ToolBaru (grupa <see cref="_ToolbarSystemTimeAxisGroup"/>) pro časovou osu
         /// </summary>
         private void _TimeAxisToolBarInit()
         {
@@ -1083,27 +1090,27 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (items == ToolbarSystemItem.None) return;
 
             // Oddělovač, pokud v grupě už jsou položky:
-            if (this._ToolbarSystemGroup.Items.Count > 0)
-                this._ToolbarSystemGroup.Items.Add(_CreateToolbarSeparator());
+            if (this._ToolbarSystemTimeAxisGroup.Items.Count > 0)
+                this._ToolbarSystemTimeAxisGroup.Items.Add(_CreateToolbarSeparator());
 
             // Zoom:
             ToolbarSystemItem timeAxisZoom = this.Config.TimeAxisZoom;
             if (items.HasFlag(ToolbarSystemItem.TimeAxisZoomOneDay))
-                this._ToolbarSystemGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_Day, R.Images.Asol.ViewCalendarDay2Png, null, "Jeden den", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemOnSameRow, isSelectable: true, isSelected: (timeAxisZoom == ToolbarSystemItem.TimeAxisZoomOneDay), selectionGroupName: "TimeZoom", userData: ToolbarSystemItem.TimeAxisZoomOneDay));
+                this._ToolbarSystemTimeAxisGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_Day, R.Images.Asol.ViewCalendarDay2Png, null, "Jeden den", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemOnSameRow, isSelectable: true, isSelected: (timeAxisZoom == ToolbarSystemItem.TimeAxisZoomOneDay), selectionGroupName: "TimeZoom", userData: ToolbarSystemItem.TimeAxisZoomOneDay));
             if (items.HasFlag(ToolbarSystemItem.TimeAxisZoomWorkWeek))
-                this._ToolbarSystemGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_WorkWeek, R.Images.Asol.ViewCalendarWorkweek2Png, null, "Pracovní týden Po-Pá", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemOnSameRow, isSelectable: true, isSelected: (timeAxisZoom == ToolbarSystemItem.TimeAxisZoomWorkWeek), selectionGroupName: "TimeZoom", userData: ToolbarSystemItem.TimeAxisZoomWorkWeek));
+                this._ToolbarSystemTimeAxisGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_WorkWeek, R.Images.Asol.ViewCalendarWorkweek2Png, null, "Pracovní týden Po-Pá", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemOnSameRow, isSelectable: true, isSelected: (timeAxisZoom == ToolbarSystemItem.TimeAxisZoomWorkWeek), selectionGroupName: "TimeZoom", userData: ToolbarSystemItem.TimeAxisZoomWorkWeek));
             if (items.HasFlag(ToolbarSystemItem.TimeAxisZoomWorkWeek))
-                this._ToolbarSystemGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_WholeWeek, R.Images.Asol.ViewCalendarWeek2Png, null, "Celý týden Po-Ne", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemOnSameRow, isSelectable: true, isSelected: (timeAxisZoom == ToolbarSystemItem.TimeAxisZoomWholeWeek), selectionGroupName: "TimeZoom", userData: ToolbarSystemItem.TimeAxisZoomWholeWeek));
+                this._ToolbarSystemTimeAxisGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_WholeWeek, R.Images.Asol.ViewCalendarWeek2Png, null, "Celý týden Po-Ne", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemOnSameRow, isSelectable: true, isSelected: (timeAxisZoom == ToolbarSystemItem.TimeAxisZoomWholeWeek), selectionGroupName: "TimeZoom", userData: ToolbarSystemItem.TimeAxisZoomWholeWeek));
             if (items.HasFlag(ToolbarSystemItem.TimeAxisZoomMonth))
-                this._ToolbarSystemGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_Month, R.Images.Asol.ViewCalendarMonth2Png, null, "Měsíc 30 dní", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemSkipToNextRow, isSelectable: true, isSelected: (timeAxisZoom == ToolbarSystemItem.TimeAxisZoomMonth), selectionGroupName: "TimeZoom", userData: ToolbarSystemItem.TimeAxisZoomMonth));
+                this._ToolbarSystemTimeAxisGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_Month, R.Images.Asol.ViewCalendarMonth2Png, null, "Měsíc 30 dní", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemSkipToNextRow, isSelectable: true, isSelected: (timeAxisZoom == ToolbarSystemItem.TimeAxisZoomMonth), selectionGroupName: "TimeZoom", userData: ToolbarSystemItem.TimeAxisZoomMonth));
 
             // Go:
             if (items.HasFlag(ToolbarSystemItem.TimeAxisGoPrev))
-                this._ToolbarSystemGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_GoPrev, R.Images.Asol.GoPreviousViewPng, null, "Zpět = doleva = do minulosti", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.ThisItemSkipToNextRow | LayoutHint.NextItemOnSameRow, moduleWidth: 1, userData: ToolbarSystemItem.TimeAxisGoPrev));
+                this._ToolbarSystemTimeAxisGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_GoPrev, R.Images.Asol.GoPreviousViewPng, null, "Zpět = doleva = do minulosti", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.ThisItemSkipToNextRow | LayoutHint.NextItemOnSameRow, moduleWidth: 1, userData: ToolbarSystemItem.TimeAxisGoPrev));
             if (items.HasFlag(ToolbarSystemItem.TimeAxisGoHome))
-                this._ToolbarSystemGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_GoHome, R.Images.Asol.GoHome4Png, null, "Aktuální čas", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemOnSameRow, moduleWidth: 2, userData: ToolbarSystemItem.TimeAxisGoHome));
+                this._ToolbarSystemTimeAxisGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_GoHome, R.Images.Asol.GoHome4Png, null, "Aktuální čas", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemOnSameRow, moduleWidth: 2, userData: ToolbarSystemItem.TimeAxisGoHome));
             if (items.HasFlag(ToolbarSystemItem.TimeAxisGoNext))
-                this._ToolbarSystemGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_GoNext, R.Images.Asol.GoNextViewPng, null, "Vpřed = doprava = do budoucnosti", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemSkipToNextTable, moduleWidth: 1, userData: ToolbarSystemItem.TimeAxisGoNext));
+                this._ToolbarSystemTimeAxisGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_GoNext, R.Images.Asol.GoNextViewPng, null, "Vpřed = doprava = do budoucnosti", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemSkipToNextTable, moduleWidth: 1, userData: ToolbarSystemItem.TimeAxisGoNext));
         }
         /// <summary>
         /// Metoda se volá po akci SelectedChange na systémové položce ToolBaru. 
@@ -1276,7 +1283,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         #endregion
         #region Přichytávání prvku grafu při jeho posouvání procesem Drag and Drop
         /// <summary>
-        /// Inicializace položek ToolBaru (grupa <see cref="_ToolbarSystemGroup"/>) pro řízení pohybu prvků
+        /// Inicializace položek ToolBaru (grupa <see cref="_ToolbarSystemGuiEditGroup"/>) pro řízení pohybu prvků
         /// </summary>
         private void _MoveItemToolBarInit()
         {
@@ -1287,15 +1294,15 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (items == ToolbarSystemItem.None) return;
 
             // Oddělovač, pokud v grupě už jsou položky:
-            if (this._ToolbarSystemGroup.Items.Count > 0)
-                this._ToolbarSystemGroup.Items.Add(_CreateToolbarSeparator());
+            if (this._ToolbarSystemGuiEditGroup.Items.Count > 0)
+                this._ToolbarSystemGuiEditGroup.Items.Add(_CreateToolbarSeparator());
 
             if (items.HasFlag(ToolbarSystemItem.MoveItemSnapToNearItems))
-                this._ToolbarSystemGroup.Items.Add(_CreateToolbarItem(_Tlb_MoveItem_SnapNearTime, R.Images.Actions24.AlignHorizontalRightOutPng, null, "Při přesouvání prvku jej přichytávat k sousedním existujícím prvkům v řádku", size: FunctionGlobalItemSize.Small, layoutHint: LayoutHint.NextItemSkipToNextRow, moduleWidth: 1, isSelectable: true, isSelected: this.Config.MoveItemSnapToNearItems, userData: ToolbarSystemItem.MoveItemSnapToNearItems));
+                this._ToolbarSystemGuiEditGroup.Items.Add(_CreateToolbarItem(_Tlb_MoveItem_SnapNearTime, R.Images.Actions24.AlignHorizontalRightOutPng, null, "Při přesouvání prvku jej přichytávat k sousedním existujícím prvkům v řádku", size: FunctionGlobalItemSize.Small, layoutHint: LayoutHint.NextItemSkipToNextRow, moduleWidth: 1, isSelectable: true, isSelected: this.Config.MoveItemSnapToNearItems, userData: ToolbarSystemItem.MoveItemSnapToNearItems));
             if (items.HasFlag(ToolbarSystemItem.MoveItemSnapToOriginalTime))
-                this._ToolbarSystemGroup.Items.Add(_CreateToolbarItem(_Tlb_MoveItem_SnapOriginalTime, R.Images.Actions24.AlignHorizontalLeftPng, null, "Při přesouvání prvku jej přichytávat k původnímu času", size: FunctionGlobalItemSize.Small, layoutHint: LayoutHint.NextItemSkipToNextRow, moduleWidth: 1, isSelectable: true, isSelected: this.Config.MoveItemSnapToOriginalTime, userData: ToolbarSystemItem.MoveItemSnapToOriginalTime));
+                this._ToolbarSystemGuiEditGroup.Items.Add(_CreateToolbarItem(_Tlb_MoveItem_SnapOriginalTime, R.Images.Actions24.AlignHorizontalLeftPng, null, "Při přesouvání prvku jej přichytávat k původnímu času", size: FunctionGlobalItemSize.Small, layoutHint: LayoutHint.NextItemSkipToNextRow, moduleWidth: 1, isSelectable: true, isSelected: this.Config.MoveItemSnapToOriginalTime, userData: ToolbarSystemItem.MoveItemSnapToOriginalTime));
             if (items.HasFlag(ToolbarSystemItem.MoveItemSnapToRoundTimeGrid))
-                this._ToolbarSystemGroup.Items.Add(_CreateToolbarItem(_Tlb_MoveItem_SnapToRoundTimeGrid, R.Images.Actions24.CodeVariablePng, null, "Při přesouvání prvku jej přichytávat k zaokrouhleným časovým jednotkám", size: FunctionGlobalItemSize.Small, moduleWidth: 1, isSelectable: true, isSelected: this.Config.MoveItemSnapToNearRoundTime, userData: ToolbarSystemItem.MoveItemSnapToRoundTimeGrid));
+                this._ToolbarSystemGuiEditGroup.Items.Add(_CreateToolbarItem(_Tlb_MoveItem_SnapToRoundTimeGrid, R.Images.Actions24.CodeVariablePng, null, "Při přesouvání prvku jej přichytávat k zaokrouhleným časovým jednotkám", size: FunctionGlobalItemSize.Small, moduleWidth: 1, isSelectable: true, isSelected: this.Config.MoveItemSnapToNearRoundTime, userData: ToolbarSystemItem.MoveItemSnapToRoundTimeGrid));
         }
         /// <summary>
         /// Metoda se volá po akci Click na systémové položce ToolBaru. 
@@ -1628,7 +1635,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         #endregion
         #region Další detaily chování GUI
         /// <summary>
-        /// Inicializace položek ToolBaru (grupa <see cref="_ToolbarSystemGroup"/>) pro řízení pohybu prvků
+        /// Inicializace položek ToolBaru (grupa <see cref="_ToolbarSystemGuiEditGroup"/>) pro řízení pohybu prvků
         /// </summary>
         private void _GuiEditToolBarInit()
         {
@@ -1639,11 +1646,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (items == ToolbarSystemItem.None) return;
 
             // Oddělovač, pokud v grupě už jsou položky:
-            if (this._ToolbarSystemGroup.Items.Count > 0)
-                this._ToolbarSystemGroup.Items.Add(_CreateToolbarSeparator());
+            if (this._ToolbarSystemGuiEditGroup.Items.Count > 0)
+                this._ToolbarSystemGuiEditGroup.Items.Add(_CreateToolbarSeparator());
 
             if (items.HasFlag(ToolbarSystemItem.GuiEditShowLinkWholeTask))
-                this._ToolbarSystemGroup.Items.Add(_CreateToolbarItem(_Tlb_GuiEdit_ShowLinkWholeTask, R.Images.Actions.DrawBezierCurvesPng, null, "Při najetí myší zobrazovat vztahy v rámci celého postupu, nejen nejbližší sousední položky", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemSkipToNextRow, moduleWidth: 1, isSelectable: true, isSelected: this.Config.GuiEditShowLinkWholeTask, userData: ToolbarSystemItem.GuiEditShowLinkWholeTask));
+                this._ToolbarSystemGuiEditGroup.Items.Add(_CreateToolbarItem(_Tlb_GuiEdit_ShowLinkWholeTask, R.Images.Actions.OfficeChartLinePng, null, "Při najetí myší zobrazovat vztahy v rámci celého postupu, nejen nejbližší sousední položky", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemSkipToNextRow, moduleWidth: 1, isSelectable: true, isSelected: this.Config.GuiEditShowLinkWholeTask, userData: ToolbarSystemItem.GuiEditShowLinkWholeTask));
+            if (items.HasFlag(ToolbarSystemItem.GuiEditShowLinkAsSCurve))
+                this._ToolbarSystemGuiEditGroup.Items.Add(_CreateToolbarItem(_Tlb_GuiEdit_ShowLinkWholeTask, R.Images.Actions.DrawBezierCurvesPng, null, "Vztahy zobrazovat jako křivky (výchozí: zobrazovat jako rovné čáry)", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemSkipToNextRow, moduleWidth: 1, isSelectable: true, isSelected: this.Config.GuiEditShowLinkAsSCurve, userData: ToolbarSystemItem.GuiEditShowLinkAsSCurve));
         }
         /// <summary>
         /// Metoda se volá po akci Click na systémové položce ToolBaru. 
@@ -1671,9 +1680,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 case ToolbarSystemItem.GuiEditShowLinkWholeTask:
                     this.Config.GuiEditShowLinkWholeTask = item.IsChecked;
                     break;
+                case ToolbarSystemItem.GuiEditShowLinkAsSCurve:
+                    this.Config.GuiEditShowLinkAsSCurve = item.IsChecked;
+                    break;
             }
         }
         private const string _Tlb_GuiEdit_ShowLinkWholeTask = "GuiEditShowLinkWholeTask";
+        private const string _Tlb_GuiEdit_ShowLinkAsSCurve = "GuiEditShowLinkAsSCurve";
 
         // ShowLinkWholeTask
         #endregion

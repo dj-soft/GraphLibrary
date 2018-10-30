@@ -3326,13 +3326,18 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         GuiEditShowLinkWholeTask = 0x00100000,
         /// <summary>
+        /// Zobrazovat Linky mezi prvky grafu jako křivky (true = křivky / false = rovné čáry).
+        /// Toto nastavení de facto stírá rozdíl mezi 
+        /// </summary>
+        GuiEditShowLinkAsSCurve = 0x00200000,
+        /// <summary>
         /// Přesouvání prvku: všechny akce
         /// </summary>
         MoveItemAll = MoveItemSnapToNearItems | MoveItemSnapToOriginalTime | MoveItemSnapToRoundTimeGrid,
         /// <summary>
         /// Editace v GUI: všechny akce
         /// </summary>
-        GuiEditAll = GuiEditShowLinkWholeTask,
+        GuiEditAll = GuiEditShowLinkWholeTask | GuiEditShowLinkAsSCurve,
         /// <summary>
         /// Defaultní využití systémových položek: Zoom (Day + WorkWeek + WholeWeek + Month) + GoAll + MoveItemAll
         /// </summary>

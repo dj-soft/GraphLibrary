@@ -801,19 +801,20 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Pokud daný prvek nemá žádný vztah, vrací se null.
         /// Pokud prvek má vztahy, pak tyto vztahy mají korektně vepsané reference na vztažené prvky grafů
         /// </summary>
-        /// <param name="graphItem">Základní prvek</param>
+        /// <param name="currentItem">Výchozí prvek pro hledání vztahů; může to být prvek grupy i prvek jednotlivý</param>
         /// <param name="searchSidePrev">Hledej linky na straně Prev</param>
         /// <param name="searchSideNext">Hledej linky na straně Next</param>
         /// <param name="wholeTask">Hledej linky pro celý Task</param>
+        /// <param name="asSCurve">Nastav linky "Jako S křivky"</param>
         /// <returns></returns>
-        protected GTimeGraphLinkItem[] SearchForGraphLink(GTimeGraphItem graphItem, bool searchSidePrev, bool searchSideNext, bool wholeTask)
+        protected GTimeGraphLinkItem[] SearchForGraphLink(GTimeGraphItem currentItem, bool searchSidePrev, bool searchSideNext, bool wholeTask, bool? asSCurve)
         {
             Dictionary<uint, GTimeGraphItem> itemDict = new Dictionary<uint, GTimeGraphItem>();
             Dictionary<ulong, GTimeGraphLinkItem> linkDict = new Dictionary<ulong, GTimeGraphLinkItem>();
-            if (graphItem != null)
+            if (currentItem != null)
             {
-                if (searchSidePrev && this.GraphLinkPrevDict.CountKeys > 0) this._SearchForGraphLink(graphItem, this.GraphLinkPrevDict, Direction.Positive, itemDict, linkDict, wholeTask);
-                if (searchSideNext && this.GraphLinkNextDict.CountKeys > 0) this._SearchForGraphLink(graphItem, this.GraphLinkNextDict, Direction.Negative, itemDict, linkDict, wholeTask);
+                if (searchSidePrev && this.GraphLinkPrevDict.CountKeys > 0) this._SearchForGraphLink(currentItem, this.GraphLinkPrevDict, Direction.Positive, itemDict, linkDict, wholeTask, asSCurve);
+                if (searchSideNext && this.GraphLinkNextDict.CountKeys > 0) this._SearchForGraphLink(currentItem, this.GraphLinkNextDict, Direction.Negative, itemDict, linkDict, wholeTask, asSCurve);
             }
             return linkDict.Values.ToArray();
         }
@@ -824,28 +825,29 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// a vztah uloží do výsledné dictionary (resultLinkDict).
         /// Následně vyhodnotí, zda nalezený cílový prvek se bude "rekurzivně" scanovat, a pokud ano, pak jej zařadí do zpracování v interní smyčce.
         /// </summary>
-        /// <param name="graphItem">Základní prvek</param>
+        /// <param name="currentItem">Výchozí prvek pro hledání vztahů; může to být prvek grupy i prvek jednotlivý</param>
         /// <param name="graphLinkDict">Dictionary obsahující vztahy v potřebném směru</param>
         /// <param name="targetSide">Směr vztahu</param>
         /// <param name="scanItemDict">Sem se průběžně ukládají scanované prvky, aby nedošlo k zacyklení - vyjma prvního (ten se scanuje dvakrát, jednou Prev a podruhé Next)</param>
         /// <param name="resultLinkDict">Sem se ukládají nalezené vztahy, klíčem je jejich <see cref="GTimeGraphLinkItem.Key"/>; jde o průběžný výstup</param>
         /// <param name="wholeTask">Hledej linky pro celý Task</param>
+        /// <param name="asSCurve">Nastav linky "Jako S křivky"</param>
         /// <returns></returns>
-        private void _SearchForGraphLink(GTimeGraphItem graphItem, DictionaryList<int, GTimeGraphLinkItem> graphLinkDict, Direction targetSide,
-            Dictionary<uint, GTimeGraphItem> scanItemDict, Dictionary<ulong, GTimeGraphLinkItem> resultLinkDict, bool wholeTask)
+        private void _SearchForGraphLink(GTimeGraphItem currentItem, DictionaryList<int, GTimeGraphLinkItem> graphLinkDict, Direction targetSide,
+            Dictionary<uint, GTimeGraphItem> scanItemDict, Dictionary<ulong, GTimeGraphLinkItem> resultLinkDict, bool wholeTask, bool? asSCurve)
         {
             Direction sourceSide = targetSide.Reverse();
             Queue<GTimeGraphItem> searchQueue = new Queue<GTimeGraphItem>();
-            searchQueue.Enqueue(graphItem);
+            searchQueue.Enqueue(currentItem);
             bool testDuplicity = false;
             while (searchQueue.Count > 0)
             {
-                GTimeGraphItem sourceItem = searchQueue.Dequeue();
-                if (testDuplicity && scanItemDict.ContainsKey(sourceItem.Id)) continue;
+                GTimeGraphItem searchItem = searchQueue.Dequeue();
+                if (testDuplicity && scanItemDict.ContainsKey(searchItem.Id)) continue;
 
                 // Najdu vztahy z daného prvku (z jeho Group nebo z Item), v dodané Dictionary (která je pro směr Prev nebo Next):
                 GGraphControlPosition position = GGraphControlPosition.None;
-                GTimeGraphLinkItem[] linkList = _SearchForGraphLinkOne(sourceItem, graphLinkDict, out position);
+                GTimeGraphLinkItem[] linkList = _SearchForGraphLinkOne(searchItem, graphLinkDict, out position);
                 if (linkList == null || linkList.Length == 0) continue;
 
                 // Nějaké vztahy jsme našli, tak pokud ještě nejsou ve výsledné Dictionary (linkDict):
@@ -854,12 +856,15 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 {
                     if (resultLinkDict.ContainsKey(link.Key)) continue;    // Tenhle vztah už ve výstupní dictionary máme; ten přeskočíme.
 
-                    // Najdeme cílový prvek vztahu:
+                    // Najdeme zdrojový i cílový prvek vztahu:
                     int targetId = link.GetId(targetSide);
                     GTimeGraphItem targetItem = this._SearchGraphItemsForLink(targetId, position);
                     if (targetItem == null) continue;                // Vztah nemá nalezen prvek na cílové straně vztahu; vztah přeskočíme.
-                    link.SetItem(sourceSide, sourceItem);            // Prvek na zdrojové straně vztahu
+                    int sourceId = link.GetId(sourceSide);           // Na source straně vztahu nemusí být nutně prvek, který jsme hledali - může tam být jeho grupa! (anebo naopak)
+                    GTimeGraphItem sourceItem = this._SearchGraphItemsForLink(sourceId, position);
+                    link.SetItem(sourceSide, sourceItem);            // Prvek na zdrojové straně vztahu (buď ten, kde hledání začalo, anebo odpovídající prvek = jeho Grupa, pro kterou máme vztahy!
                     link.SetItem(targetSide, targetItem);            // Prvek na cílové straně vztahu
+                    _AdjustLinkType(link, asSCurve);                 // Zajistí prohození typu linku podle konfigurace (proměnná asSCurve)
                     resultLinkDict.Add(link.Key, link);
 
                     // Podle podmínek zajistíme provedení rekurze = hledání dalších vztahů z cílového prvku tohoto vztahu:
@@ -870,11 +875,26 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 }
 
                 // Uložím si prvek, který byl právě vyřešen, do dictionary:
-                if (!scanItemDict.ContainsKey(sourceItem.Id))
-                    scanItemDict.Add(sourceItem.Id, sourceItem);
+                if (!scanItemDict.ContainsKey(searchItem.Id))
+                    scanItemDict.Add(searchItem.Id, searchItem);
 
                 // Další prvek ve frontě už budeme testovat na non-duplicitu:
                 testDuplicity = true;
+            }
+        }
+        /// <summary>
+        /// Upraví typ linku podle proměnné
+        /// </summary>
+        /// <param name="link"></param>
+        /// <param name="asSCurve"></param>
+        private void _AdjustLinkType(GTimeGraphLinkItem link, bool? asSCurve)
+        {
+            if (link != null && link.LinkType.HasValue && asSCurve.HasValue)
+            {
+                if (link.LinkType.Value == GuiGraphItemLinkType.PrevEndToNextBeginLine && asSCurve.Value)
+                    link.LinkType = GuiGraphItemLinkType.PrevEndToNextBeginSCurve;
+                else if (link.LinkType.Value == GuiGraphItemLinkType.PrevEndToNextBeginSCurve && !asSCurve.Value)
+                    link.LinkType = GuiGraphItemLinkType.PrevEndToNextBeginLine;
             }
         }
         /// <summary>
@@ -1187,6 +1207,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         protected GraphItemDragMoveInfo PrepareDragSchedulerMoveInfo(ItemDragDropArgs args)
         {
             // Základní data bez modifikací:
+            ITimeGraphItem item = ((args.Item != null) ? args.Item : args.GroupedItems[0]);
             TimeRange sourceTime = args.Group.Time;
             Rectangle sourceBounds = args.OriginalAbsoluteBounds;
             Rectangle targetBounds = args.DragToAbsoluteBounds.Value;
@@ -1194,10 +1215,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             TimeRange targetTime = TimeRange.CreateFromBeginSize(targetTimeBegin.Value, sourceTime.Size.Value);
 
             GraphItemDragMoveInfo moveInfo = new GraphItemDragMoveInfo();
-            moveInfo.DragItemId = args.CurrentItem.ItemId;
-            moveInfo.DragGroupId = args.Group.GroupId;
-            moveInfo.DragLevel = args.CurrentItem.Level;
-            moveInfo.DragLayer = args.CurrentItem.Layer;
+            moveInfo.DragItemId = item.ItemId;
+            moveInfo.DragGroupId = item.GroupId;
+            moveInfo.DragLevel = item.Level;
+            moveInfo.DragLayer = item.Layer;
             moveInfo.DragGroupGId = this.GetGId(moveInfo.DragGroupId);
             moveInfo.DragGroupItems = args.Group.Items.Where(i => i is DataGraphItem).Cast<DataGraphItem>().ToArray();
             moveInfo.DragAction = args.DragAction;
@@ -1262,7 +1283,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="args"></param>
         protected void GraphItemPrepareText(CreateTextArgs args)
         {
-            DataGraphItem graphItem = this.GetActiveGraphItem(args);
+            DataGraphItem graphItem = this.GetActiveGraphItem(args); // Najde datový prvek grafu odpovídající buď konkrétnímu prvku, nebo najde první prvek grupy
             if (graphItem == null) return;
 
             Row infoRow = this.GetTableInfoRow(graphItem);
@@ -1298,7 +1319,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="args"></param>
         protected void GraphItemPrepareToolTip(CreateToolTipArgs args)
         {
-            DataGraphItem graphItem = this.GetActiveGraphItem(args);
+            DataGraphItem graphItem = this.GetActiveGraphItem(args); // Najde datový prvek grafu odpovídající buď konkrétnímu prvku, nebo najde první prvek grupy
             if (graphItem == null) return;
 
             Row infoRow = this.GetTableInfoRow(graphItem);
@@ -1326,11 +1347,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="args"></param>
         protected void GraphItemCreateLinks(CreateLinksArgs args)
         {
-            bool wholeTask = false;
-            if (args.ItemEvent == CreateLinksItemEventType.MouseOver && this.Config != null && this.Config.GuiEditShowLinkWholeTask)
-                wholeTask = true;
+            bool wholeTask = (args.ItemEvent == CreateLinksItemEventType.MouseOver && this.Config != null && this.Config.GuiEditShowLinkWholeTask);
+            bool asSCurve = (this.Config != null && this.Config.GuiEditShowLinkAsSCurve);
 
-            args.Links = this.SearchForGraphLink(args.CurrentItem.GControl, args.SearchSidePrev, args.SearchSideNext, wholeTask);
+            GTimeGraphItem currentItem = args.ItemControl ?? args.GroupControl;     // Na tomto prvku začne hledání. Může to být prvek konkrétní, anebo prvek grupy.
+            args.Links = this.SearchForGraphLink(currentItem, args.SearchSidePrev, args.SearchSideNext, wholeTask, asSCurve);
         }
         /// <summary>
         /// Uživatel chce vidět kontextové menu na daném grafu
@@ -1360,7 +1381,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             if (args.ModifierKeys == Keys.Control)
             {   // Akce typu Ctrl+DoubleClick na grafickém prvku si žádá otevření formuláře:
-                DataGraphItem graphItem = this.GetActiveGraphItem(args);
+                DataGraphItem graphItem = this.GetActiveGraphItem(args); // Najde datový prvek grafu odpovídající buď konkrétnímu prvku, nebo najde první prvek grupy
                 if (graphItem != null)
                     this.RunOpenRecordForm(graphItem.RecordGId);
             }
@@ -1393,7 +1414,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             GuiGridItemId gridItemId = new GuiGridItemId();
             gridItemId.TableName = this.TableName;                   // Konstantní jméno FullName this tabulky (třída GuiGrid)
             gridItemId.RowId = this.GetGraphRowGid(args.Graph);      // Z grafu najdu jeho řádek a jeho GId řádku, ten se (implicitně) převede na GuiId
-            DataGraphItem graphItem = this.GetActiveGraphItem(args); // Najde prvek odpovídající args.CurrentItem, nebo args.GroupedItems[0]
+            DataGraphItem graphItem = this.GetActiveGraphItem(args); // Najde datový prvek grafu odpovídající buď konkrétnímu prvku, nebo najde první prvek grupy
             if (graphItem != null)
             {   // Pokud mám prvek, pak do resultu vložím jeho GId (převedené na GuiId):
                 gridItemId.ItemId = graphItem.ItemGId;
@@ -1412,7 +1433,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             GuiGridItemId gridItemId = new GuiGridItemId();
             gridItemId.TableName = this.TableName;                   // Konstantní jméno FullName this tabulky (třída GuiGrid)
             gridItemId.RowId = this.GetGraphRowGid(args.Graph);      // Z grafu najdu jeho řádek a jeho GId řádku, ten se (implicitně) převede na GuiId
-            DataGraphItem graphItem = this.GetActiveGraphItem(args); // Najde prvek odpovídající args.CurrentItem, nebo args.GroupedItems[0]
+            DataGraphItem graphItem = this.GetActiveGraphItem(args); // Najde datový prvek grafu odpovídající buď konkrétnímu prvku, nebo najde první prvek grupy
             if (graphItem != null)
             {   // Pokud mám prvek, pak do resultu vložím jeho GId (převedené na GuiId):
                 gridItemId.ItemId = graphItem.ItemGId;
@@ -1424,12 +1445,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Metoda najde a vrátí grafický prvek zdejší třídy <see cref="DataGraphItem"/> pro daný interaktivní prvek, 
         /// uvedený v interaktivním argumentu <see cref="ItemArgs"/>.
+        /// Najde tedy datový prvek grafu, odpovídající buď konkrétnímu prvku, nebo najde první prvek grupy.
         /// </summary>
         /// <param name="args"></param>
         /// <returns></returns>
         protected DataGraphItem GetActiveGraphItem(ItemArgs args)
         {
-            int itemId = (args.CurrentItem != null ? args.CurrentItem.ItemId : (args.GroupedItems.Length > 0 ? args.GroupedItems[0].ItemId : 0));
+            int itemId = (args.Item ?? args.GroupedItems[0]).ItemId;
             if (itemId <= 0) return null;
             return this.GetGraphItem(itemId);
         }

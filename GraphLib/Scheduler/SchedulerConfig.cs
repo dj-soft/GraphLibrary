@@ -113,6 +113,15 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         }
         private bool _GuiEditShowLinkWholeTask = true;
         /// <summary>
+        /// Vztahy zobrazovat jako křivky (výchozí: zobrazovat jako rovné čáry)
+        /// </summary>
+        public bool GuiEditShowLinkAsSCurve
+        {
+            get { return this._GuiEditShowLinkAsSCurve; }
+            set { this._SetValue(value, ref this._GuiEditShowLinkAsSCurve); }
+        }
+        private bool _GuiEditShowLinkAsSCurve = true;
+        /// <summary>
         /// Počet pixelů vzdálenosti od původního času, kdy se k tomuto původnímu času bude prvek přichytávat při pohybu na TOM SAMÉM grafu
         /// </summary>
         public int MoveItemSnapDistanceToOriginalTimeOnSameGraph

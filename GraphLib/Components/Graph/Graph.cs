@@ -1067,7 +1067,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             }
             else
             {
-                text = args.CurrentItem.Time.Text;
+                ITimeGraphItem item = ((args.Item != null) ? args.Item : args.GroupedItems[0]);
+                text = item.Time.Text;
             }
             return text;
         }
@@ -1077,27 +1078,27 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="args">Kompletní data</param>
         internal void GraphItemPrepareToolTip(CreateToolTipArgs args)
         {
-            ITimeGraphItem data = args.CurrentItem;
-            if (data == null) return;
-            bool isNone = data.BehaviorMode.HasFlag(GraphItemBehaviorMode.ShowToolTipNone);
+            ITimeGraphItem item = ((args.Item != null) ? args.Item : args.GroupedItems[0]);
+            if (item == null) return;
+            bool isNone = item.BehaviorMode.HasFlag(GraphItemBehaviorMode.ShowToolTipNone);
             if (isNone) return;
 
-            bool isFadeIn = data.BehaviorMode.HasFlag(GraphItemBehaviorMode.ShowToolTipFadeIn);
-            bool isImmediatelly = data.BehaviorMode.HasFlag(GraphItemBehaviorMode.ShowToolTipImmediatelly);
-            bool hasMouseLinks = data.BehaviorMode.HasFlag(GraphItemBehaviorMode.ShowLinkInMouseOver);
+            bool isFadeIn = item.BehaviorMode.HasFlag(GraphItemBehaviorMode.ShowToolTipFadeIn);
+            bool isImmediatelly = item.BehaviorMode.HasFlag(GraphItemBehaviorMode.ShowToolTipImmediatelly);
+            bool hasMouseLinks = item.BehaviorMode.HasFlag(GraphItemBehaviorMode.ShowLinkInMouseOver);
             if (!isFadeIn && !isImmediatelly) return;
 
             ToolTipData toolTipData = args.InteractiveArgs.ToolTipData;         // Vytvoří se new instance
             string infoText;
             string eol = Environment.NewLine;
             string timeText = args.TimeText;
-            if (!String.IsNullOrEmpty(data.ToolTip))
+            if (!String.IsNullOrEmpty(item.ToolTip))
             {
-                infoText = data.ToolTip;
+                infoText = item.ToolTip;
                 bool useTabs = (infoText.Contains("\t"));
                 infoText = (useTabs ? timeText : timeText.Replace("\t", " ")) + infoText;
 
-                toolTipData.TitleText = (!String.IsNullOrEmpty(data.Text) ? data.Text : "Informace");
+                toolTipData.TitleText = (!String.IsNullOrEmpty(item.Text) ? item.Text : "Informace");
                 toolTipData.InfoText = infoText;
                 toolTipData.InfoUseTabs = true;
             }
@@ -1110,8 +1111,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             {
                 toolTipData.TitleText = "Tooltip " + args.Position.ToString();
                 toolTipData.InfoText = timeText + 
-                    "ItemId:\t" + data.ItemId + eol +
-                    "Layer:\t" + data.Layer.ToString();
+                    "ItemId:\t" + item.ItemId + eol +
+                    "Layer:\t" + item.Layer.ToString();
                 toolTipData.InfoUseTabs = true;
             }
 
@@ -2871,9 +2872,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             this.Graph = graph;
             this.Group = group;
-            qqq
-            // Odlišit: CurrentItem nesmí být "první"
-            this.CurrentItem = (position == GGraphControlPosition.Item ? data : group.Items[0]);
+            this.Item = (position == GGraphControlPosition.Item ? data : group.Items[0]);
             this.Position = position;
         }
         /// <summary>
@@ -2881,15 +2880,25 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         public GTimeGraph Graph { get; protected set; }
         /// <summary>
-        /// Grupa položek
+        /// Grupa položek.
+        /// Nikdy není null, každá událost se týká grupy nebo prvku (a každý prvek patří do grupy).
         /// </summary>
         public GTimeGraphGroup Group { get; protected set; }
         /// <summary>
-        /// Přímo ten prvek, jehož se týká akce (na který bylo kliknuto).
-        /// Může být null, pokud se akce týká skupiny prvků = bylo kliknuto na "spojovací linii mezi prvky".
-        /// Pak je třeba vyhodnotit prvky v <see cref="GroupedItems"/>.
+        /// Vizuální control grupy, reprezentuje spojovací linii mezi fyzickými prvky grafu.
+        /// Nikdy není null.
         /// </summary>
-        public ITimeGraphItem CurrentItem { get; protected set; }
+        public GTimeGraphItem GroupControl { get { return this.Group?.GControl; } }
+        /// <summary>
+        /// Přímo ten prvek, jehož se týká akce (na který bylo kliknuto).
+        /// Může být null, pokud se akce týká výhradně spojovacího prvku mezi fyzickými prvky grafu = když bylo kliknuto na "spojovací linii mezi prvky".
+        /// Pak je třeba vyhodnotit prvky v <see cref="GroupedItems"/> = všechny prvky grupy.
+        /// </summary>
+        public ITimeGraphItem Item { get; protected set; }
+        /// <summary>
+        /// Vizuální control prvku <see cref="Item"/>, může být null.
+        /// </summary>
+        public GTimeGraphItem ItemControl { get { return this.Item?.GControl; } }
         /// <summary>
         /// Skupina prvků, jejíhož člena se akce týká, nebo jejíž spojovací linie se akce týká.
         /// Nikdy není null, vždy obsahuje alespoň jeden prvek.

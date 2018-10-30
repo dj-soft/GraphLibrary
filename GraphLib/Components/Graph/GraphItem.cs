@@ -1243,10 +1243,44 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="ratio">Poměr průhlednosti: hodnota v rozsahu 0.0 (neviditelná) - 1.0 (plná barva)</param>
         internal void Draw(GInteractiveDrawArgs e, GTimeGraphLinkMode mode, float ratio)
         {
-            this.DrawSCurve(e, mode, ratio);
+            GuiGraphItemLinkType linkType = (this.LinkType ?? GuiGraphItemLinkType.None);
+            switch (linkType)
+            {
+                case GuiGraphItemLinkType.PrevCenterToNextCenter:
+                    this.DrawCenter(e, mode, ratio);
+                    break;
+                case GuiGraphItemLinkType.PrevEndToNextBeginLine:
+                    this.DrawLine(e, mode, ratio);
+                    break;
+                case GuiGraphItemLinkType.PrevEndToNextBeginSCurve:
+                    this.DrawSCurve(e, mode, ratio);
+                    break;
+            }
         }
         /// <summary>
-        /// Vykreslí přímou linku 
+        /// Vykreslí přímou linku Prev.Center to Next.Center
+        /// </summary>
+        /// <param name="e">Data pro kreslení</param>
+        /// <param name="mode">Důvody zobrazení</param>
+        /// <param name="ratio">Poměr průhlednosti: hodnota v rozsahu 0.0 (neviditelná) - 1.0 (plná barva)</param>
+        protected void DrawCenter(GInteractiveDrawArgs e, GTimeGraphLinkMode mode, float ratio)
+        {
+            Rectangle prevBounds = this.ItemPrev.BoundsAbsolute;
+            Rectangle nextBounds = this.ItemNext.BoundsAbsolute;
+            Point prevPoint = new Point(prevBounds.Right - 1, prevBounds.Y + prevBounds.Height / 2);
+            Point nextPoint = new Point(nextBounds.X, nextBounds.Y + nextBounds.Height / 2);
+
+            Color color1 = (this.LinkColor.HasValue ? this.LinkColor.Value : Skin.Graph.LinkColor);
+            Color color3 = color1.Morph(Color.Black, 0.80f);
+            Pen pen = Skin.Pen(color3, 3f, opacityRatio: ratio, startCap: System.Drawing.Drawing2D.LineCap.Round, endCap: System.Drawing.Drawing2D.LineCap.ArrowAnchor);
+            e.Graphics.DrawLine(pen, prevPoint, nextPoint);
+
+            pen = Skin.Pen(color1, 3f, opacityRatio: ratio, endCap: System.Drawing.Drawing2D.LineCap.ArrowAnchor);
+            e.Graphics.DrawLine(Skin.Pen(color1), prevPoint, nextPoint);
+
+        }
+        /// <summary>
+        /// Vykreslí přímou linku Prev.End to Next.Begin
         /// </summary>
         /// <param name="e">Data pro kreslení</param>
         /// <param name="mode">Důvody zobrazení</param>
@@ -1257,10 +1291,17 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             Rectangle nextBounds = this.ItemNext.BoundsAbsolute;
             Point prevPoint = new Point(prevBounds.Right - 1, prevBounds.Y + prevBounds.Height / 2);
             Point nextPoint = new Point(nextBounds.X, nextBounds.Y + nextBounds.Height / 2);
-            e.Graphics.DrawLine(Skin.Pen(Color.Red), prevPoint, nextPoint);
+
+            Color color1 = (this.LinkColor.HasValue ? this.LinkColor.Value : Skin.Graph.LinkColor);
+            Color color3 = color1.Morph(Color.Black, 0.80f);
+            Pen pen = Skin.Pen(color3, 3f, opacityRatio: ratio, startCap: System.Drawing.Drawing2D.LineCap.Round, endCap: System.Drawing.Drawing2D.LineCap.ArrowAnchor);
+            e.Graphics.DrawLine(pen, prevPoint, nextPoint);
+
+            pen = Skin.Pen(color1, 3f, opacityRatio: ratio, endCap: System.Drawing.Drawing2D.LineCap.ArrowAnchor);
+            e.Graphics.DrawLine(Skin.Pen(color1), prevPoint, nextPoint);
         }
         /// <summary>
-        /// Vykreslí S křivku
+        /// Vykreslí S křivku Prev.End to Next.Begin
         /// </summary>
         /// <param name="e">Data pro kreslení</param>
         /// <param name="mode">Důvody zobrazení</param>
