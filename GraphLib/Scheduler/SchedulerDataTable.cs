@@ -981,7 +981,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 ItemIdNext = this.GetId(guiGraphLink.ItemIdNext),
                 LinkType = guiGraphLink.LinkType,
                 LinkWidth = guiGraphLink.LinkWidth,
-                LinkColor = guiGraphLink.LinkColor,
+                LinkColorStandard = guiGraphLink.LinkColorStandard,
+                LinkColorWarning = guiGraphLink.LinkColorWarning,
+                LinkColorError = guiGraphLink.LinkColorError,
                 GuiGraphLink = guiGraphLink
             };
             return graphLink;

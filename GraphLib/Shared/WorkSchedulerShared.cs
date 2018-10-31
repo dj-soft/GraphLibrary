@@ -1553,9 +1553,26 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public int? LinkWidth { get; set; }
         /// <summary>
-        /// Barva linky
+        /// Barva linky základní.
+        /// Pro typ linky ve směru Prev - Next platí:
+        /// v situaci, kdy Next.Begin je větší nebo rovno Prev.End, pak se použije <see cref="LinkColorStandard"/>.
+        /// Další barvy viz <see cref="LinkColorWarning"/> a <see cref="LinkColorError"/>
         /// </summary>
-        public Color? LinkColor { get; set; }
+        public Color? LinkColorStandard { get; set; }
+        /// <summary>
+        /// Barva linky varovná.
+        /// Pro typ linky ve směru Prev - Next platí:
+        /// v situaci, kdy Next.Begin je menší než Prev.End, ale Next.Begin je větší nebo rovno Prev.Begin, pak se použije <see cref="LinkColorWarning"/>.
+        /// Další barvy viz <see cref="LinkColorStandard"/> a <see cref="LinkColorError"/>
+        /// </summary>
+        public Color? LinkColorWarning { get; set; }
+        /// <summary>
+        /// Barva linky chybová.
+        /// Pro typ linky ve směru Prev - Next platí:
+        /// v situaci, kdy Next.Begin je menší než Prev.Begin, pak se použije <see cref="LinkColorError"/>.
+        /// Další barvy viz <see cref="LinkColorStandard"/> a <see cref="LinkColorWarning"/>
+        /// </summary>
+        public Color? LinkColorError { get; set; }
     }
     /// <summary>
     /// Typ spojovací vztahu, který popisuje link <see cref="GuiGraphLink"/> mezi dvěma prvky.

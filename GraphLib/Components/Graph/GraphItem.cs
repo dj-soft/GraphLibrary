@@ -1140,9 +1140,26 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         public int? LinkWidth { get; set; }
         /// <summary>
-        /// Barva linky
+        /// Barva linky základní.
+        /// Pro typ linky ve směru Prev - Next platí:
+        /// v situaci, kdy Next.Begin je větší nebo rovno Prev.End, pak se použije <see cref="LinkColorStandard"/>.
+        /// Další barvy viz <see cref="LinkColorWarning"/> a <see cref="LinkColorError"/>
         /// </summary>
-        public Color? LinkColor { get; set; }
+        public Color? LinkColorStandard { get; set; }
+        /// <summary>
+        /// Barva linky varovná.
+        /// Pro typ linky ve směru Prev - Next platí:
+        /// v situaci, kdy Next.Begin je menší než Prev.End, ale Next.Begin je větší nebo rovno Prev.Begin, pak se použije <see cref="LinkColorWarning"/>.
+        /// Další barvy viz <see cref="LinkColorStandard"/> a <see cref="LinkColorError"/>
+        /// </summary>
+        public Color? LinkColorWarning { get; set; }
+        /// <summary>
+        /// Barva linky chybová.
+        /// Pro typ linky ve směru Prev - Next platí:
+        /// v situaci, kdy Next.Begin je menší než Prev.Begin, pak se použije <see cref="LinkColorError"/>.
+        /// Další barvy viz <see cref="LinkColorStandard"/> a <see cref="LinkColorWarning"/>
+        /// </summary>
+        public Color? LinkColorError { get; set; }
         /// <summary>
         /// Data z GUI, nepovinná (zdejší hodnoty jsou separátní)
         /// </summary>
@@ -1265,13 +1282,15 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="ratio">Poměr průhlednosti: hodnota v rozsahu 0.0 (neviditelná) - 1.0 (plná barva)</param>
         protected void DrawCenter(GInteractiveDrawArgs e, GTimeGraphLinkMode mode, float ratio)
         {
+            RelationState relationState = GetRelationState(this.ItemPrev, this.ItemNext);
+            Color color1 = this.GetColorForState(relationState);
+            Color color3 = color1.Morph(Color.Black, 0.80f);
+
             Rectangle prevBounds = this.ItemPrev.BoundsAbsolute;
             Rectangle nextBounds = this.ItemNext.BoundsAbsolute;
             Point prevPoint = new Point(prevBounds.Right - 1, prevBounds.Y + prevBounds.Height / 2);
             Point nextPoint = new Point(nextBounds.X, nextBounds.Y + nextBounds.Height / 2);
 
-            Color color1 = (this.LinkColor.HasValue ? this.LinkColor.Value : Skin.Graph.LinkColor);
-            Color color3 = color1.Morph(Color.Black, 0.80f);
             Pen pen = Skin.Pen(color3, 3f, opacityRatio: ratio, startCap: System.Drawing.Drawing2D.LineCap.Round, endCap: System.Drawing.Drawing2D.LineCap.ArrowAnchor);
             e.Graphics.DrawLine(pen, prevPoint, nextPoint);
 
@@ -1287,13 +1306,15 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="ratio">Poměr průhlednosti: hodnota v rozsahu 0.0 (neviditelná) - 1.0 (plná barva)</param>
         protected void DrawLine(GInteractiveDrawArgs e, GTimeGraphLinkMode mode, float ratio)
         {
+            RelationState relationState = GetRelationState(this.ItemPrev, this.ItemNext);
+            Color color1 = this.GetColorForState(relationState);
+            Color color3 = color1.Morph(Color.Black, 0.80f);
+
             Rectangle prevBounds = this.ItemPrev.BoundsAbsolute;
             Rectangle nextBounds = this.ItemNext.BoundsAbsolute;
             Point prevPoint = new Point(prevBounds.Right - 1, prevBounds.Y + prevBounds.Height / 2);
             Point nextPoint = new Point(nextBounds.X, nextBounds.Y + nextBounds.Height / 2);
 
-            Color color1 = (this.LinkColor.HasValue ? this.LinkColor.Value : Skin.Graph.LinkColor);
-            Color color3 = color1.Morph(Color.Black, 0.80f);
             Pen pen = Skin.Pen(color3, 3f, opacityRatio: ratio, startCap: System.Drawing.Drawing2D.LineCap.Round, endCap: System.Drawing.Drawing2D.LineCap.ArrowAnchor);
             e.Graphics.DrawLine(pen, prevPoint, nextPoint);
 
@@ -1308,6 +1329,10 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="ratio">Poměr průhlednosti: hodnota v rozsahu 0.0 (neviditelná) - 1.0 (plná barva)</param>
         protected void DrawSCurve(GInteractiveDrawArgs e, GTimeGraphLinkMode mode, float ratio)
         {
+            RelationState relationState = GetRelationState(this.ItemPrev, this.ItemNext);
+            Color color1 = this.GetColorForState(relationState);
+            Color color3 = color1.Morph(Color.Black, 0.80f);
+
             Rectangle prevBounds = this.ItemPrev.BoundsAbsolute;
             Rectangle nextBounds = this.ItemNext.BoundsAbsolute;
             Point prevPoint = new Point(prevBounds.Right - 1, prevBounds.Y + prevBounds.Height / 2);
@@ -1344,8 +1369,6 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 Point prevTarget = new Point(prevPoint.X + addX, prevPoint.Y);
                 Point nextTarget = new Point(nextPoint.X - addX, nextPoint.Y);
 
-                Color color1 = (this.LinkColor.HasValue ? this.LinkColor.Value : Skin.Graph.LinkColor);
-                Color color3 = color1.Morph(Color.Black, 0.80f);
                 Pen pen = Skin.Pen(color3, 3f, opacityRatio: ratio, startCap: System.Drawing.Drawing2D.LineCap.Round, endCap: System.Drawing.Drawing2D.LineCap.ArrowAnchor);
                 e.Graphics.DrawBezier(pen, prevPoint, prevTarget, nextTarget, nextPoint);
 
@@ -1354,14 +1377,58 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             }
             else
             {
-                Color color1 = (this.LinkColor.HasValue ? this.LinkColor.Value : Skin.Graph.LinkColor);
-                Color color3 = color1.Morph(Color.Black, 0.80f);
                 Pen pen = Skin.Pen(color3, 3f, opacityRatio: ratio, startCap: System.Drawing.Drawing2D.LineCap.Round, endCap: System.Drawing.Drawing2D.LineCap.ArrowAnchor);
                 e.Graphics.DrawLine(pen, prevPoint, nextPoint);
 
                 pen = Skin.Pen(color1, 3f, opacityRatio: ratio, endCap: System.Drawing.Drawing2D.LineCap.ArrowAnchor);
                 e.Graphics.DrawLine(Skin.Pen(color1), prevPoint, nextPoint);
             }
+        }
+        /// <summary>
+        /// Vrací stav popisující vztah času Prev a Next
+        /// </summary>
+        /// <param name="itemPrev"></param>
+        /// <param name="itemNext"></param>
+        /// <returns></returns>
+        protected static RelationState GetRelationState(GTimeGraphItem itemPrev, GTimeGraphItem itemNext)
+        {
+            if (itemPrev == null || itemNext == null) return RelationState.Standard;
+            TimeRange timePrev = itemPrev.Item.Time;
+            TimeRange timeNext = itemNext.Item.Time;
+            if (timeNext.Begin.Value >= timePrev.End.Value) return RelationState.Standard;
+            if (timeNext.Begin.Value >= timePrev.Begin.Value) return RelationState.Warning;
+            return RelationState.Error;
+        }
+        /// <summary>
+        /// Vrací barvu pro daný čas
+        /// </summary>
+        /// <param name="state"></param>
+        /// <returns></returns>
+        protected Color GetColorForState(RelationState state)
+        {
+            switch (state)
+            {
+                case RelationState.Warning:
+                    return (this.LinkColorWarning.HasValue ? this.LinkColorWarning.Value :
+                           (this.LinkColorStandard.HasValue ? this.LinkColorStandard.Value : Skin.Graph.LinkColorWarning));
+                case RelationState.Error:
+                    return (this.LinkColorError.HasValue ? this.LinkColorError.Value :
+                           (this.LinkColorWarning.HasValue ? this.LinkColorWarning.Value :
+                           (this.LinkColorStandard.HasValue ? this.LinkColorStandard.Value : Skin.Graph.LinkColorError)));
+                case RelationState.Standard:
+                default:
+                    return (this.LinkColorStandard.HasValue ? this.LinkColorStandard.Value : Skin.Graph.LinkColorStandard);
+            }
+        }
+        /// <summary>
+        /// Vztah prvků Prev - Next z hlediska času a určení barvy
+        /// </summary>
+        protected enum RelationState
+        {
+            None,
+            Standard,
+            Warning,
+            Error
         }
         #endregion
     }

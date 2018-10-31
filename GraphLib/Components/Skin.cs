@@ -1147,7 +1147,29 @@ namespace Asol.Tools.WorkScheduler.Components
         public Color BackColor { get { return this._Owner.GetValue(this._SkinSetKey, "BackColor", DefaultBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "BackColor", value); } }
         public Color TimeAxisTickMain { get { return this._Owner.GetValue(this._SkinSetKey, "TimeAxisTickMain", DefaultTimeAxisTickMain); } set { this._Owner.SetValue(this._SkinSetKey, "TimeAxisTickMain", value); } }
         public Color TimeAxisTickSmall { get { return this._Owner.GetValue(this._SkinSetKey, "TimeAxisTickSmall", DefaultTimeAxisTickSmall); } set { this._Owner.SetValue(this._SkinSetKey, "TimeAxisTickSmall", value); } }
-        public Color LinkColor { get { return this._Owner.GetValue(this._SkinSetKey, "LinkColor", DefaultLinkColor); } set { this._Owner.SetValue(this._SkinSetKey, "LinkColor", value); } }
+        /// <summary>
+        /// Barva linky základní.
+        /// Pro typ linky ve směru Prev - Next platí:
+        /// v situaci, kdy Next.Begin je větší nebo rovno Prev.End, pak se použije <see cref="LinkColorStandard"/>.
+        /// Další barvy viz <see cref="LinkColorWarning"/> a <see cref="LinkColorError"/>
+        /// </summary>
+        public Color LinkColorStandard { get { return this._Owner.GetValue(this._SkinSetKey, "LinkColorStandard", DefaultLinkColorStandard); } set { this._Owner.SetValue(this._SkinSetKey, "LinkColorStandard", value); } }
+        /// <summary>
+        /// Barva linky varovná.
+        /// Pro typ linky ve směru Prev - Next platí:
+        /// v situaci, kdy Next.Begin je menší než Prev.End, ale Next.Begin je větší nebo rovno Prev.Begin, pak se použije <see cref="LinkColorWarning"/>.
+        /// Další barvy viz <see cref="LinkColorStandard"/> a <see cref="LinkColorError"/>
+        /// </summary>
+        public Color LinkColorWarning { get { return this._Owner.GetValue(this._SkinSetKey, "LinkColorWarning", DefaultLinkColorWarning); } set { this._Owner.SetValue(this._SkinSetKey, "LinkColorWarning", value); } }
+        /// <summary>
+        /// Barva linky chybová.
+        /// Pro typ linky ve směru Prev - Next platí:
+        /// v situaci, kdy Next.Begin je menší než Prev.Begin, pak se použije <see cref="LinkColorError"/>.
+        /// Další barvy viz <see cref="LinkColorStandard"/> a <see cref="LinkColorWarning"/>
+        /// </summary>
+        public Color LinkColorError { get { return this._Owner.GetValue(this._SkinSetKey, "LinkColorError", DefaultLinkColorError); } set { this._Owner.SetValue(this._SkinSetKey, "LinkColorError", value); } }
+
+
         #endregion
         #region Default colors
         protected virtual Int32 DefaultLineHeight { get { return 18; } }
@@ -1161,7 +1183,9 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual Color DefaultBackColor { get { return Color.DimGray; } }
         protected virtual Color DefaultTimeAxisTickMain { get { return Color.Gray; } }
         protected virtual Color DefaultTimeAxisTickSmall { get { return Color.Gray; } }
-        protected virtual Color DefaultLinkColor { get { return Color.Red; } }
+        protected virtual Color DefaultLinkColorStandard { get { return Color.Green; } }
+        protected virtual Color DefaultLinkColorWarning { get { return Color.Orange; } }
+        protected virtual Color DefaultLinkColorError { get { return Color.Red; } }
         #endregion
     }
     /// <summary>
