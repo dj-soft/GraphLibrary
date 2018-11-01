@@ -2414,18 +2414,42 @@ namespace Asol.Tools.WorkScheduler.Components
     {
         /// <summary>Neurčeno</summary>
         None = 0,
-        /// <summary>Horní</summary>
-        Top = 1,
-        /// <summary>Vpravo</summary>
-        Right = 2,
-        /// <summary>Dolní</summary>
-        Bottom = 4,
-        /// <summary>Vlevo</summary>
-        Left = 8,
+        /// <summary>Vlevo svislá na ose X</summary>
+        Left = 0x01,
+        /// <summary>Střed na ose X</summary>
+        CenterX = 0x02,
+        /// <summary>Vpravo svislá na ose X</summary>
+        Right = 0x04,
+        /// <summary>Horní vodorovná na ose Y</summary>
+        Top = 0x10,
+        /// <summary>Střed na ose Y</summary>
+        CenterY = 0x20,
+        /// <summary>Dolní vodorovná na ose Y</summary>
+        Bottom = 0x40,
         /// <summary>Vodorovné = Top + Bottom</summary>
         Horizontal = Top | Bottom,
         /// <summary>Svislé = Left + Right</summary>
         Vertical = Left | Right,
+        /// <summary>
+        /// Prostřední bod
+        /// </summary>
+        Center = CenterX | CenterY,
+        /// <summary>
+        /// Levý horní roh
+        /// </summary>
+        TopLeft = Top | Left,
+        /// <summary>
+        /// Pravý horní roh
+        /// </summary>
+        TopRight = Top | Right,
+        /// <summary>
+        /// Dolní levý roh
+        /// </summary>
+        BottomLeft = Bottom | Left,
+        /// <summary>
+        /// Dolní pravý roh
+        /// </summary>
+        BottomRight = Bottom | Right,
         /// <summary>Všechny</summary>
         All = Left | Top | Right | Bottom
     }

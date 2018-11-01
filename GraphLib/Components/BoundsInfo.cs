@@ -32,23 +32,26 @@ namespace Asol.Tools.WorkScheduler.Components
         #region Metody pro směr Parent to Child
         #region Konstruktory
         /// <summary>
-        /// Vrátí instanci třídy <see cref="BoundsInfo"/> pro danou velikost klientského prostoru
+        /// Vrátí instanci třídy <see cref="BoundsInfo"/> pro danou velikost klientského prostoru.
+        /// Používá se pro prvotní tvorbu z fyzického Controlu.
         /// </summary>
         /// <param name="clientSize"></param>
         /// <returns></returns>
         public static BoundsInfo CreateForParent(Size clientSize)
         {
-            return new BoundsInfo(0, 0, 0, 0, clientSize);
+            return new BoundsInfo(0, 0, 0, 0, clientSize, true, true);
         }
         /// <summary>
         /// Vrátí instanci třídy <see cref="BoundsInfo"/> pro daný control
         /// </summary>
         /// <param name="absOriginPoint"></param>
         /// <param name="absVisibleBounds"></param>
+        /// <param name="isVisible"></param>
+        /// <param name="isEnabled"></param>
         /// <returns></returns>
-        private static BoundsInfo CreateForParent(Point absOriginPoint, Rectangle absVisibleBounds)
+        private static BoundsInfo CreateForParent(Point absOriginPoint, Rectangle absVisibleBounds, bool isVisible, bool isEnabled)
         {
-            return new BoundsInfo(absOriginPoint.X, absOriginPoint.Y, absVisibleBounds.X, absVisibleBounds.Y, absVisibleBounds.Right, absVisibleBounds.Bottom);
+            return new BoundsInfo(absOriginPoint.X, absOriginPoint.Y, absVisibleBounds.X, absVisibleBounds.Y, absVisibleBounds.Right, absVisibleBounds.Bottom, isVisible, isEnabled);
         }
         /// <summary>
         /// Konstruktor, dostává absolutní souřadnice počátku a absolutní souřadnice viditelného prostoru ve formě Rectangle.
@@ -57,7 +60,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="originY"></param>
         /// <param name="visibleBounds"></param>
         private BoundsInfo(int originX, int originY, Rectangle visibleBounds)
-            : this(originX, originY, visibleBounds.Left, visibleBounds.Top, visibleBounds.Right, visibleBounds.Bottom)
+            : this(originX, originY, visibleBounds.Left, visibleBounds.Top, visibleBounds.Right, visibleBounds.Bottom, true, true)
         { }
         /// <summary>
         /// Konstruktor, dostává absolutní souřadnice počátku a absolutní souřadnice viditelného prostoru ve formě L-T-Size.
@@ -67,8 +70,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="visibleL"></param>
         /// <param name="visibleT"></param>
         /// <param name="visibleSize"></param>
-        private BoundsInfo(int originX, int originY, int visibleL, int visibleT, Size visibleSize)
-            : this(originX, originY, visibleL, visibleT, visibleL + visibleSize.Width, visibleT + visibleSize.Height)
+        /// <param name="isVisible"></param>
+        /// <param name="isEnabled"></param>
+        private BoundsInfo(int originX, int originY, int visibleL, int visibleT, Size visibleSize, bool isVisible, bool isEnabled)
+            : this(originX, originY, visibleL, visibleT, visibleL + visibleSize.Width, visibleT + visibleSize.Height, isVisible, isEnabled)
         { }
         /// <summary>
         /// Základní konstruktor, dostává absolutní souřadnice počátku a absolutní souřadnice viditelného prostoru ve formě L-T-R-B.
@@ -79,7 +84,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="visibleT"></param>
         /// <param name="visibleR"></param>
         /// <param name="visibleB"></param>
-        private BoundsInfo(int originX, int originY, int visibleL, int visibleT, int visibleR, int visibleB)
+        /// <param name="isVisible"></param>
+        /// <param name="isEnabled"></param>
+        private BoundsInfo(int originX, int originY, int visibleL, int visibleT, int visibleR, int visibleB, bool isVisible, bool isEnabled)
         {
             this._UseCache = false;
             this._OriginX = originX;
@@ -88,6 +95,8 @@ namespace Asol.Tools.WorkScheduler.Components
             this._VisibleT = visibleT;
             this._VisibleR = visibleR;
             this._VisibleB = visibleB;
+            this._IsVisible = isVisible;
+            this._IsEnabled = isEnabled;
         }
         private bool _UseCache;
         private int _OriginX;
@@ -96,6 +105,8 @@ namespace Asol.Tools.WorkScheduler.Components
         private int _VisibleT;
         private int _VisibleR;
         private int _VisibleB;
+        private bool _IsVisible;
+        private bool _IsEnabled;
         /// <summary>
         /// Vizualizace
         /// </summary>
@@ -115,6 +126,16 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Absolutní souřadnice prostoru, který je nyní viditelný, a v němž je možno hledat interaktivní prvky.
         /// </summary>
         public Rectangle AbsVisibleBounds { get { return Rectangle.FromLTRB(this._VisibleL, this._VisibleT, this._VisibleR, this._VisibleB); } }
+        /// <summary>
+        /// Je viditelný základní prostor (tj. on a jeho Parenti mají Is.Visible = true)?
+        /// Tato property nemluví o konkrétním prvku <see cref="CurrentItem"/>, ale o jeho Parent prostoru.
+        /// </summary>
+        public bool IsVisible { get { return this._IsVisible; } }
+        /// <summary>
+        /// Je Enabled základní prostor (tj. on a jeho Parenti mají Is.Enabled = true)?
+        /// Tato property nemluví o konkrétním prvku <see cref="CurrentItem"/>, ale o jeho Parent prostoru.
+        /// </summary>
+        public bool IsEnabled { get { return this._IsEnabled; } }
         #endregion
         #region Objekt CurrentItem a jeho pozice
         /// <summary>
@@ -162,11 +183,18 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public Point CurrentAbsChildsOrigin { get { if (!this._UseCache || !this._CurrentAbsChildsOrigin.HasValue) this._CurrentAbsChildsOrigin = this.GetAbsChildsOrigin(this.CurrentItem); return this._CurrentAbsChildsOrigin.Value; } }
         /// <summary>
+        /// Aktuální prvek je viditelný? To je tehdy, když všichni parenti i daný prvek mají Is.Visible = true
+        /// </summary>
+        public bool CurrentIsVisible { get { if (!this._UseCache || !this._CurrentIsVisible.HasValue) this._CurrentIsVisible = this.GetItemIsVisible(this.CurrentItem); return this._CurrentIsVisible.Value; } }
+        /// <summary>
+        /// Aktuální prvek je dostupný? To je tehdy, když všichni parenti i daný prvek mají Is.Enabled = true
+        /// </summary>
+        public bool CurrentIsEnabled { get { if (!this._UseCache || !this._CurrentIsEnabled.HasValue) this._CurrentIsEnabled = this.GetItemIsEnabled(this.CurrentItem); return this._CurrentIsEnabled.Value; } }
+        /// <summary>
         /// Obsahuje nový objekt <see cref="BoundsInfo"/>, který bude určovat souřadnice pro Childs prvky uvnitř aktuálního prvku <see cref="CurrentItem"/>.
         /// Aktuální (=this) objekt <see cref="BoundsInfo"/> určuje souřadnice pro <see cref="CurrentItem"/>, ale ne pro jeho Childs.
         /// </summary>
-        public BoundsInfo CurrentChildsSpider { get { if (!this._UseCache || this._CurrentChildsSpider == null) this._CurrentChildsSpider = _GetChildsSpider(this.CurrentAbsChildsOrigin, this.CurrentAbsVisibleBounds); return this._CurrentChildsSpider; } }
-
+        public BoundsInfo CurrentChildsSpider { get { if (!this._UseCache || this._CurrentChildsSpider == null) this._CurrentChildsSpider = _GetChildsSpider(this.CurrentAbsChildsOrigin, this.CurrentAbsVisibleBounds, this.CurrentIsVisible, this.CurrentIsEnabled); return this._CurrentChildsSpider; } }
         /// <summary>
         /// Resetuje cache výsledných hodnot pro prvek <see cref="_CurrentItem"/>
         /// </summary>
@@ -180,6 +208,8 @@ namespace Asol.Tools.WorkScheduler.Components
             this._CurrentChildsBounds = null;
             this._CurrentAbsChildsOrigin = null;
             this._CurrentChildsSpider = null;
+            this._CurrentIsVisible = null;
+            this._CurrentIsEnabled = null;
         }
         private IInteractiveItem _CurrentItem;
         private Rectangle? _CurrentAbsBounds;
@@ -190,6 +220,8 @@ namespace Asol.Tools.WorkScheduler.Components
         private Rectangle? _CurrentChildsBounds;
         private Point? _CurrentAbsChildsOrigin;
         private BoundsInfo _CurrentChildsSpider;
+        private bool? _CurrentIsVisible;
+        private bool? _CurrentIsEnabled;
         #endregion
         #region Metody pro získání souřadnic pro libovolný prvek (v aktuálním containeru)
         /// <summary>
@@ -294,6 +326,28 @@ namespace Asol.Tools.WorkScheduler.Components
             return bounds.Location;
         }
         /// <summary>
+        /// Metoda vrátí true, pokud daný prvek v aktuálním parentovi je dostupný.
+        /// To je tehdy, když všichni parenti i daný prvek mají Is.Visible = true.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        public bool GetItemIsVisible(IInteractiveItem item)
+        {
+            CheckItem(item, "ItemIsVisible");
+            return this.IsVisible && item.Is.Visible;
+        }
+        /// <summary>
+        /// Metoda vrátí true, pokud daný prvek v aktuálním parentovi je viditelný.
+        /// To je tehdy, když všichni parenti i daný prvek mají Is.Enabled = true
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        public bool GetItemIsEnabled(IInteractiveItem item)
+        {
+            CheckItem(item, "ItemIsEnabled");
+            return this.IsEnabled && item.Is.Enabled;
+        }
+        /// <summary>
         /// Metoda vrátí nový objekt <see cref="BoundsInfo"/>, který bude určovat souřadnice pro Childs prvky uvnitř daného prvku.
         /// Aktuální (=this) objekt <see cref="BoundsInfo"/> určuje souřadnice pro daný prvku, ale ne pro jeho Childs.
         /// </summary>
@@ -303,7 +357,9 @@ namespace Asol.Tools.WorkScheduler.Components
 
             Point originPoint = this.GetAbsChildsOrigin(item);
             Rectangle clientVisibleBounds = this.GetAbsChildsVisibleBounds(item);
-            return _GetChildsSpider(originPoint, clientVisibleBounds);
+            bool isVisible = this.GetItemIsVisible(item);
+            bool isEnabled = this.GetItemIsEnabled(item);
+            return _GetChildsSpider(originPoint, clientVisibleBounds, isVisible, isEnabled);
         }
         /// <summary>
         /// Metoda vrátí nový objekt <see cref="BoundsInfo"/>, který bude určovat souřadnice pro Childs prvky uvnitř daného prvku.
@@ -311,9 +367,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="originPoint"></param>
         /// <param name="clientVisibleBounds"></param>
-        private static BoundsInfo _GetChildsSpider(Point originPoint, Rectangle clientVisibleBounds)
+        /// <param name="isVisible"></param>
+        /// <param name="isEnabled"></param>
+        private static BoundsInfo _GetChildsSpider(Point originPoint, Rectangle clientVisibleBounds, bool isVisible, bool isEnabled)
         {
-            return BoundsInfo.CreateForParent(originPoint, clientVisibleBounds);
+            return BoundsInfo.CreateForParent(originPoint, clientVisibleBounds, isVisible, isEnabled);
         }
         /// <summary>
         /// Vrátí danou relativní souřadnici posunutou do absolutních koordinátů (k souřadnici se přičte <see cref="_OriginX"/>, <see cref="_OriginY"/>)
@@ -438,12 +496,20 @@ namespace Asol.Tools.WorkScheduler.Components
             // Nejprve projdu postupně všechny parenty daného prvku, zpětně, až najdu poslední (=nejzákladnější) z nich, a nastřádám si pole jejich souřadnic:
             List<Rectangle> boundsList = new List<Rectangle>();
             IInteractiveParent item = (asContainer ? forItem : forItem.Parent);
+            bool isVisible = true;
+            bool isEnabled = true;
             Dictionary<uint, object> scanned = new Dictionary<uint, object>();
             while (item != null)
             {
                 if (scanned.ContainsKey(item.Id)) break;   // Zacyklení.
                 scanned.Add(item.Id, null);
                 boundsList.Add(GetParentClientBounds(item, currentLayer));
+                IInteractiveItem iItem = item as IInteractiveItem;
+                if (iItem != null)
+                {
+                    isVisible &= iItem.Is.Visible;
+                    isEnabled &= iItem.Is.Enabled;
+                }
                 item = item.Parent;                        // Krok na dalšího parenta
             }
 
@@ -469,7 +535,7 @@ namespace Asol.Tools.WorkScheduler.Components
             }
 
             // Výsledek bude mít nastaveny koordináty (Origin a Visible), a bude mít vložený CurrentItem (pokud je metoda volaná pro Item):
-            BoundsInfo boundsInfo = new BoundsInfo(x, y, l, t, r, b);
+            BoundsInfo boundsInfo = new BoundsInfo(x, y, l, t, r, b, isVisible, isEnabled);
             if (!asContainer && forItem is IInteractiveItem)
                 boundsInfo.CurrentItem = forItem as IInteractiveItem;
             return boundsInfo;

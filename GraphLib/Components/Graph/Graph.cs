@@ -1574,6 +1574,27 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             get { return this.CurrentGraphProperties.Opacity; }
         }
+        /// <summary>
+        /// Barva linky základní.
+        /// Pro typ linky ve směru Prev - Next platí:
+        /// v situaci, kdy Next.Begin je větší nebo rovno Prev.End, pak se použije <see cref="LinkColorStandard"/>.
+        /// Další barvy viz <see cref="LinkColorWarning"/> a <see cref="LinkColorError"/>
+        /// </summary>
+        public Color? LinkColorStandard { get { return this.CurrentGraphProperties.LinkColorStandard; } }
+        /// <summary>
+        /// Barva linky varovná.
+        /// Pro typ linky ve směru Prev - Next platí:
+        /// v situaci, kdy Next.Begin je menší než Prev.End, ale Next.Begin je větší nebo rovno Prev.Begin, pak se použije <see cref="LinkColorWarning"/>.
+        /// Další barvy viz <see cref="LinkColorStandard"/> a <see cref="LinkColorError"/>
+        /// </summary>
+        public Color? LinkColorWarning { get { return this.CurrentGraphProperties.LinkColorWarning; } }
+        /// <summary>
+        /// Barva linky chybová.
+        /// Pro typ linky ve směru Prev - Next platí:
+        /// v situaci, kdy Next.Begin je menší než Prev.Begin, pak se použije <see cref="LinkColorError"/>.
+        /// Další barvy viz <see cref="LinkColorStandard"/> a <see cref="LinkColorWarning"/>
+        /// </summary>
+        public Color? LinkColorError { get { return this.CurrentGraphProperties.LinkColorError; } }
         #endregion
         #region Invalidace je řešená jedním vstupním bodem
         /// <summary>
@@ -1924,6 +1945,10 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 if (guiGraphProperties.LogarithmicGraphDrawOuterShadow.HasValue)
                     this._LogarithmicGraphDrawOuterShadow = guiGraphProperties.LogarithmicGraphDrawOuterShadow.Value;
                 this._Opacity = guiGraphProperties.Opacity;
+
+                this._LinkColorStandard = guiGraphProperties.LinkColorStandard;
+                this._LinkColorWarning = guiGraphProperties.LinkColorWarning;
+                this._LinkColorError= guiGraphProperties.LinkColorError;
             }
         }
         /// <summary>
@@ -2084,6 +2109,30 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             }
         }
         private int? _Opacity;
+        /// <summary>
+        /// Barva linky základní.
+        /// Pro typ linky ve směru Prev - Next platí:
+        /// v situaci, kdy Next.Begin je větší nebo rovno Prev.End, pak se použije <see cref="LinkColorStandard"/>.
+        /// Další barvy viz <see cref="LinkColorWarning"/> a <see cref="LinkColorError"/>
+        /// </summary>
+        public Color? LinkColorStandard { get { return this._LinkColorStandard; } set { this._LinkColorStandard = value; } }
+        private Color? _LinkColorStandard;
+        /// <summary>
+        /// Barva linky varovná.
+        /// Pro typ linky ve směru Prev - Next platí:
+        /// v situaci, kdy Next.Begin je menší než Prev.End, ale Next.Begin je větší nebo rovno Prev.Begin, pak se použije <see cref="LinkColorWarning"/>.
+        /// Další barvy viz <see cref="LinkColorStandard"/> a <see cref="LinkColorError"/>
+        /// </summary>
+        public Color? LinkColorWarning { get { return this._LinkColorWarning; } set { this._LinkColorWarning = value; } }
+        private Color? _LinkColorWarning;
+        /// <summary>
+        /// Barva linky chybová.
+        /// Pro typ linky ve směru Prev - Next platí:
+        /// v situaci, kdy Next.Begin je menší než Prev.Begin, pak se použije <see cref="LinkColorError"/>.
+        /// Další barvy viz <see cref="LinkColorStandard"/> a <see cref="LinkColorWarning"/>
+        /// </summary>
+        public Color? LinkColorError { get { return this._LinkColorError; } set { this._LinkColorError = value; } }
+        private Color? _LinkColorError;
     }
     #endregion
     #region Interface ITimeInteractiveGraph, ITimeGraph, ITimeGraphItem; enum TimeGraphAxisXMode

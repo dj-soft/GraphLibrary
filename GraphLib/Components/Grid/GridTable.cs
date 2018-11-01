@@ -1324,8 +1324,6 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// Zatím bez efektu.
         /// </summary>
         public int TagFilterItemMaxCount { get { return 0; } set { } }
-
-
         /// <summary>
         /// Obsahuje true, pokud je reálně zobrazen filtr TagFilter.
         /// <see cref="TagFilterVisible"/> = (<see cref="TagFilterEnabled"/> and <see cref="TagFilterExists"/>);

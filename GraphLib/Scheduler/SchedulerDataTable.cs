@@ -813,8 +813,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             Dictionary<ulong, GTimeGraphLinkItem> linkDict = new Dictionary<ulong, GTimeGraphLinkItem>();
             if (currentItem != null)
             {
-                if (searchSidePrev && this.GraphLinkPrevDict.CountKeys > 0) this._SearchForGraphLink(currentItem, this.GraphLinkPrevDict, Direction.Positive, itemDict, linkDict, wholeTask, asSCurve);
-                if (searchSideNext && this.GraphLinkNextDict.CountKeys > 0) this._SearchForGraphLink(currentItem, this.GraphLinkNextDict, Direction.Negative, itemDict, linkDict, wholeTask, asSCurve);
+                if (searchSidePrev && this.GraphLinkNextDict.CountKeys > 0) this._SearchForGraphLink(currentItem, this.GraphLinkNextDict, Direction.Negative, itemDict, linkDict, wholeTask, asSCurve);
+                if (searchSideNext && this.GraphLinkPrevDict.CountKeys > 0) this._SearchForGraphLink(currentItem, this.GraphLinkPrevDict, Direction.Positive, itemDict, linkDict, wholeTask, asSCurve);
             }
             return linkDict.Values.ToArray();
         }
@@ -1847,6 +1847,27 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Výchozí hodnota = null.
         /// </summary>
         public int? Opacity { get { return this.GuiGraphProperties.Opacity; } }
+        /// <summary>
+        /// Barva linky základní.
+        /// Pro typ linky ve směru Prev - Next platí:
+        /// v situaci, kdy Next.Begin je větší nebo rovno Prev.End, pak se použije <see cref="LinkColorStandard"/>.
+        /// Další barvy viz <see cref="LinkColorWarning"/> a <see cref="LinkColorError"/>
+        /// </summary>
+        public Color? LinkColorStandard { get { return this.GuiGraphProperties.LinkColorStandard; } }
+        /// <summary>
+        /// Barva linky varovná.
+        /// Pro typ linky ve směru Prev - Next platí:
+        /// v situaci, kdy Next.Begin je menší než Prev.End, ale Next.Begin je větší nebo rovno Prev.Begin, pak se použije <see cref="LinkColorWarning"/>.
+        /// Další barvy viz <see cref="LinkColorStandard"/> a <see cref="LinkColorError"/>
+        /// </summary>
+        public Color? LinkColorWarning { get { return this.GuiGraphProperties.LinkColorWarning; } }
+        /// <summary>
+        /// Barva linky chybová.
+        /// Pro typ linky ve směru Prev - Next platí:
+        /// v situaci, kdy Next.Begin je menší než Prev.Begin, pak se použije <see cref="LinkColorError"/>.
+        /// Další barvy viz <see cref="LinkColorStandard"/> a <see cref="LinkColorWarning"/>
+        /// </summary>
+        public Color? LinkColorError { get { return this.GuiGraphProperties.LinkColorError; } }
         #endregion
         #region Převod konfiguračních dat z úrovně Scheduler do úrovně Graph
         /// <summary>
@@ -1875,6 +1896,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             result.LogarithmicRatio = (this.LogarithmicRatio.HasValue ? LogarithmicRatio.Value : 0.60f);
             result.LogarithmicGraphDrawOuterShadow = (this.LogarithmicGraphDrawOuterShadow.HasValue ? LogarithmicGraphDrawOuterShadow.Value : 0.20f);
             result.Opacity = this.Opacity;
+            result.LinkColorStandard = this.LinkColorStandard;
+            result.LinkColorWarning = this.LinkColorWarning;
+            result.LinkColorError = this.LinkColorError;
             return result;
         }
         #endregion

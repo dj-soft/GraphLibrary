@@ -1062,8 +1062,22 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         public GRow(Row row)
         {
             this._OwnerRow = row;
+            // Přesměruji údaj Is.GetVisible tohoto grafického objektu na odpovídající hodnotu datového řádku:
+            this.Is.GetVisible = this._GetVisible;
+            this.Is.SetVisible = this._SetVisible;
         }
         private Row _OwnerRow;
+        /// <summary>
+        /// Metoda vrací viditelnost řádku, hodnotu načítá z datového objektu z <see cref="Row.Visible"/>
+        /// </summary>
+        /// <param name="isVisible"></param>
+        /// <returns></returns>
+        private bool _GetVisible(bool isVisible) { return this.OwnerRow.Visible; }
+        /// <summary>
+        /// Metoda nastavuje viditelnost řádku, hodnotu vepisuje do datového objektu do <see cref="Row.Visible"/>
+        /// </summary>
+        /// <param name="isVisible"></param>
+        private void _SetVisible(bool isVisible) { this.OwnerRow.Visible = isVisible; }
         /// <summary>
         /// Umožní nastavit souřadnice pro Child objekty
         /// </summary>
