@@ -575,7 +575,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             gridCenter.GraphProperties.TimeAxisMode = TimeGraphTimeAxisMode.Standard;
             gridCenter.GraphProperties.UpperSpaceLogical = 1f;
             gridCenter.GraphProperties.LinkColorStandard = Color.LightGreen;
-            gridCenter.GraphProperties.LinkColorWarning = Color.MediumVioletRed;
+            gridCenter.GraphProperties.LinkColorWarning = Color.Yellow;
             gridCenter.GraphProperties.LinkColorError = Color.DarkRed;
 
             DataTable rowTable = WorkSchedulerSupport.CreateTable("RowsCenter", "cislo_subjektu int, reference_subjektu string, nazev_subjektu string, machines_count decimal");
