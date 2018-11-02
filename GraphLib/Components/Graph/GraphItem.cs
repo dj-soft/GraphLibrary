@@ -1267,15 +1267,15 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                     this.DrawCenter(e, mode, ratio);
                     break;
                 case GuiGraphItemLinkType.PrevEndToNextBeginLine:
-                    this.DrawLine(e, mode, ratio);
+                    this.DrawPrevNext(e, mode, ratio, false);
                     break;
                 case GuiGraphItemLinkType.PrevEndToNextBeginSCurve:
-                    this.DrawSCurve(e, mode, ratio);
+                    this.DrawPrevNext(e, mode, ratio, true);
                     break;
             }
         }
         /// <summary>
-        /// Vykreslí přímou linku Prev.Center to Next.Center
+        /// Vykreslí přímou linku nebo křivku Prev.Center to Next.Center
         /// </summary>
         /// <param name="e">Data pro kreslení</param>
         /// <param name="mode">Důvody zobrazení</param>
@@ -1285,121 +1285,178 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             GTimeGraph graph = (this.ItemNext != null ? this.ItemNext.Graph : (this.ItemPrev != null ? this.ItemPrev.Graph : null));
             RelationState relationState = GetRelationState(this.ItemPrev, this.ItemNext);
             Color color1 = this.GetColorForState(relationState, graph);
-            Color color3 = color1.Morph(Color.Black, 0.80f);
 
             Point? prevPoint = GetPoint(this.ItemPrev, RectangleSide.CenterX | RectangleSide.CenterY, true);
             Point? nextPoint = GetPoint(this.ItemNext, RectangleSide.CenterX | RectangleSide.CenterY, true);
             if (!(prevPoint.HasValue && nextPoint.HasValue)) return;
 
-            Pen pen = Skin.Pen(color3, 3f, opacityRatio: ratio, startCap: System.Drawing.Drawing2D.LineCap.Round, endCap: System.Drawing.Drawing2D.LineCap.ArrowAnchor);
-            e.Graphics.DrawLine(pen, prevPoint.Value, nextPoint.Value);
-
-            pen = Skin.Pen(color1, 3f, opacityRatio: ratio, endCap: System.Drawing.Drawing2D.LineCap.ArrowAnchor);
-            e.Graphics.DrawLine(Skin.Pen(color1), prevPoint.Value, nextPoint.Value);
-
+            DrawLinkLine(e.Graphics, color1, ratio, System.Drawing.Drawing2D.LineCap.Round, System.Drawing.Drawing2D.LineCap.ArrowAnchor, prevPoint.Value, nextPoint.Value);
         }
         /// <summary>
-        /// Vykreslí přímou linku Prev.End to Next.Begin
+        /// Vykreslí přímou linku nebo S křivku { Prev.End to Next.Begin }
         /// </summary>
         /// <param name="e">Data pro kreslení</param>
         /// <param name="mode">Důvody zobrazení</param>
         /// <param name="ratio">Poměr průhlednosti: hodnota v rozsahu 0.0 (neviditelná) - 1.0 (plná barva)</param>
-        protected void DrawLine(GInteractiveDrawArgs e, GTimeGraphLinkMode mode, float ratio)
+        /// <param name="asSCurve"></param>
+        protected void DrawPrevNext(GInteractiveDrawArgs e, GTimeGraphLinkMode mode, float ratio, bool asSCurve)
         {
             GTimeGraph graph = (this.ItemNext != null ? this.ItemNext.Graph : (this.ItemPrev != null ? this.ItemPrev.Graph : null));
             RelationState relationState = GetRelationState(this.ItemPrev, this.ItemNext);
             Color color1 = this.GetColorForState(relationState, graph);
-            Color color3 = color1.Morph(Color.Black, 0.80f);
 
-            Point? prevPoint = GetPoint(this.ItemPrev, RectangleSide.Right | RectangleSide.CenterY, true);
-            Point? nextPoint = GetPoint(this.ItemNext, RectangleSide.Left | RectangleSide.CenterY, true);
-            if (!(prevPoint.HasValue && nextPoint.HasValue)) return;
+            Point? prevPoint = GetPoint(this.ItemPrev, RectangleSide.MiddleRight, true);
+            Point? nextPoint = GetPoint(this.ItemNext, RectangleSide.MiddleLeft, true);
 
-            Pen pen = Skin.Pen(color3, 3f, opacityRatio: ratio, startCap: System.Drawing.Drawing2D.LineCap.Round, endCap: System.Drawing.Drawing2D.LineCap.ArrowAnchor);
-            e.Graphics.DrawLine(pen, prevPoint.Value, nextPoint.Value);
-
-            pen = Skin.Pen(color1, 3f, opacityRatio: ratio, endCap: System.Drawing.Drawing2D.LineCap.ArrowAnchor);
-            e.Graphics.DrawLine(Skin.Pen(color1), prevPoint.Value, nextPoint.Value);
+            System.Drawing.Drawing2D.GraphicsPath graphicsPath = DrawLinkGetPath(prevPoint, nextPoint, asSCurve);
+            DrawLinkPath(e.Graphics, color1, ratio, System.Drawing.Drawing2D.LineCap.Round, System.Drawing.Drawing2D.LineCap.ArrowAnchor, graphicsPath);
         }
         /// <summary>
-        /// Vykreslí S křivku Prev.End to Next.Begin
+        /// Metoda vypočítá a vrátí GraphicsPath, spojující dva zadané body jako přímku nebo jako křivku.
+        /// Pokud některý bod není zadán, zajistí vykreslení krátké linky, znázorňující anonymní směr (k neviditelnému prvku).
+        /// Pokud jsou oba body null, vrací null.
         /// </summary>
-        /// <param name="e">Data pro kreslení</param>
-        /// <param name="mode">Důvody zobrazení</param>
-        /// <param name="ratio">Poměr průhlednosti: hodnota v rozsahu 0.0 (neviditelná) - 1.0 (plná barva)</param>
-        protected void DrawSCurve(GInteractiveDrawArgs e, GTimeGraphLinkMode mode, float ratio)
+        /// <param name="prevPoint"></param>
+        /// <param name="nextPoint"></param>
+        /// <param name="asSCurve"></param>
+        /// <returns></returns>
+        protected static System.Drawing.Drawing2D.GraphicsPath DrawLinkGetPath(Point? prevPoint, Point? nextPoint, bool asSCurve)
         {
-            GTimeGraph graph = (this.ItemNext != null ? this.ItemNext.Graph : (this.ItemPrev != null ? this.ItemPrev.Graph : null));
-            RelationState relationState = GetRelationState(this.ItemPrev, this.ItemNext);
-            Color color1 = this.GetColorForState(relationState, graph);
-            Color color3 = color1.Morph(Color.Black, 0.80f);
+            if (!prevPoint.HasValue && !nextPoint.HasValue) return null;
 
-            Point? prevPoint = GetPoint(this.ItemPrev, RectangleSide.Right | RectangleSide.CenterY, true);
-            Point? nextPoint = GetPoint(this.ItemNext, RectangleSide.Left | RectangleSide.CenterY, true);
-            if (!(prevPoint.HasValue && nextPoint.HasValue)) return;
+            System.Drawing.Drawing2D.GraphicsPath path = new System.Drawing.Drawing2D.GraphicsPath();
+            int px, py, nx, ny, dx, dy, bx, by;
 
-            int px = prevPoint.Value.X;
-            int py = prevPoint.Value.Y;
-            int nx = nextPoint.Value.X;
-            int ny = nextPoint.Value.Y;
-
-
-            int diffX = 0, addX = 0, diffY = 0, addY = 0;
-            bool isSCurve = false;
-            diffX = (nx - px);
-            diffY = (ny - py);
-            addY = 0;
-            if (diffY != 0)
-            {   // S-křivka nahoru/dolů:
-                if (diffY < 0) diffY = -diffY;
-                addY = diffY / 4;
-                if (addY > 60) addY = 60;
-
-                addX = diffX / 4;
-                if (addX < 0) addX = 3 * (-addX);
-                if (addX < 16) addX = 16;
-                if (addX < addY) addX = addY;
-
-                isSCurve = true;
-            }
-            else if (diffX >= 0)
-            {   // Přímka z Prev do Next:
-                px = px - 1;
-                nx = nx + 1;
-            }
-            else
-            {   // Přímka - ale reverzní (Next je vlevo od Prev):
-            }
-
-            Point pp = new Point(px, py);
-            Point np = new Point(nx, ny);
-
-            if (isSCurve)
+            // Mám jen prvek Prev: vykreslím linku "z Prev doprava":
+            if (!nextPoint.HasValue)
             {
-                Point prevTarget = new Point(px + addX, py);
-                Point nextTarget = new Point(nx - addX, ny);
-
-                Pen pen = Skin.Pen(color3, 3f, opacityRatio: ratio, startCap: System.Drawing.Drawing2D.LineCap.Round, endCap: System.Drawing.Drawing2D.LineCap.ArrowAnchor);
-                e.Graphics.DrawBezier(pen, pp, prevTarget, nextTarget, np);
-
-                pen = Skin.Pen(color1, 3f, opacityRatio: ratio, endCap: System.Drawing.Drawing2D.LineCap.ArrowAnchor);
-                e.Graphics.DrawBezier(Skin.Pen(color1), pp, prevTarget, nextTarget, np);
+                px = prevPoint.Value.X;
+                py = prevPoint.Value.Y;
+                nx = px + 12;
+                ny = py;
+                path.AddLine(px, py, nx, ny);
+                return path;
             }
-            else
+
+            // Mám jen prvek Next: vykreslím linku "zleva do Next":
+            if (!prevPoint.HasValue)
             {
-                Pen pen = Skin.Pen(color3, 3f, opacityRatio: ratio, startCap: System.Drawing.Drawing2D.LineCap.Round, endCap: System.Drawing.Drawing2D.LineCap.ArrowAnchor);
-                e.Graphics.DrawLine(pen, pp, np);
-
-                pen = Skin.Pen(color1, 3f, opacityRatio: ratio, endCap: System.Drawing.Drawing2D.LineCap.ArrowAnchor);
-                e.Graphics.DrawLine(Skin.Pen(color1), pp, np);
+                nx = nextPoint.Value.X;
+                ny = nextPoint.Value.Y;
+                px = nx - 12;
+                py = ny;
+                path.AddLine(px, py, nx, ny);
+                return path;
             }
+
+            // Máme tedy oba body. Co mezi nimi budeme kreslit?
+            px = prevPoint.Value.X;
+            py = prevPoint.Value.Y;
+            nx = nextPoint.Value.X;
+            ny = nextPoint.Value.Y;
+            dx = nx - px;              // Vzdálenost (Next - Prev).X: kladná = jdeme doprava, záporná = jdeme doleva
+            dy = ny - py;              // Vzdálenost (Next - Prev).Y: kladná = jdeme dolů,    záporná = jdeme nahoru
+            if (dy == 0)
+            {   // Prvky jsou na stejné souřadnici Y, takže bez ohledu na požavek "asSCurve" to nebude klasická S-křivka:
+                if (dx >= 0)
+                {   // Next je (v nebo) za Prev, takže to bude přímka, jen ji trochu prodloužím:
+                    px = px - 2;
+                    nx = nx + 2;
+                    path.AddLine(px, py, nx, ny);
+                    return path;
+                }
+                // Next je PŘED Prev, tedy opačné pořadí než je přirozené. 
+                // Tady vykreslíme křivku, která vychází z Prev (tj. napravo), jde doprava dolů, stáčí se doleva zpátky,
+                //  projde jako ležatá osmička doleva a nahoru nad prvek Next, a pak se stočí doleva dolů do úrovně souřadnice Y a vstoupí zleva do prvku Next (která je vpravo od Prev):
+
+                // 1. část křivky vycházející z Prev, jde kousek doprava, dolů, zpátky doleva a končí na souřadnici Prev.X a Prev.Y + 12
+                int p1y = py + 12;
+                int tx = 25;
+                path.AddBezier(px, py, px + tx, py, px + tx, p1y, px, p1y);
+
+                // 2. část křivky, tvar S, spojující bod (Prev + Y) s bodem (Next - Y):
+                int n1y = ny - 12;
+                bx = (-dx) / 4;
+                if (bx < 12) bx = 12;  // Vzdálenost řídícího bodu na ose X pro tuto část křivky
+                path.AddBezier(px, p1y, px - bx, p1y, nx + bx, n1y, nx, n1y);
+
+                // 3. část křivky vycházející z (Next - Y), jde kousek doleva, dolů, zpátky doprava a končí na souřadnici Next.X a Next.Y (zakončení, podobné části 1):
+                path.AddBezier(nx, n1y, nx - tx, n1y, nx - tx, ny, nx, ny);
+
+                return path;
+            }
+
+            // Prvky jsou na odlišné souřadnici Y, nyní se uplatní volba "asSCurve"
+            if (!asSCurve)
+            {   // Docela obyčejná přímka:
+                path.AddLine(px, py, nx, ny);
+                return path;
+            }
+
+            // Bezierova křivka z Prev do Next - určíme hodnotu bx (vzdálenost řídícího bodu na ose X):
+            bx = dx / 4;                         // Výchozí hodnota je 1/4 vzdálenosti Prev a Next (kladné číslo)
+            if (bx < 0) bx = 3 * (-bx);          // Pokud je ale posun záporný (Next je vlevo od Prev), pak musíme bx výrazně zvětšit, aby se zobrazila křivka jdoucí nejprve doprava, a pak zpátky
+            if (bx < 16) bx = 16;                // Konstanta pro případ, kdy dx je malé, aby se S-křivka projevila
+
+            by = (dy < 0 ? -dy : dy) / 4;        // Vliv vzdálenosti ve směru Y
+            if (by > 40) by = 40;
+            if (bx < by) bx = by;                // Pokud jsou prvky Prev a Next od sebe ve směru Y daleko, zvětšíme křivku.
+
+            path.AddBezier(px, py, px + bx, py, nx - bx, ny, nx, ny);
+            return path;
         }
         /// <summary>
-        /// Vrátí požadovaný bod na absolutní souřadnici prvku.
+        /// Vykreslí linku vztahu jako rovnou čáru z bodu pointStart do pointEnd.
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="color"></param>
+        /// <param name="ratio"></param>
+        /// <param name="startCap"></param>
+        /// <param name="endCap"></param>
+        /// <param name="pointStart"></param>
+        /// <param name="pointEnd"></param>
+        protected static void DrawLinkLine(Graphics graphics, Color color, float ratio, 
+            System.Drawing.Drawing2D.LineCap startCap, System.Drawing.Drawing2D.LineCap endCap,
+            Point pointStart, Point pointEnd)
+        {
+            Color colorB = color.Morph(Color.Black, 0.80f);
+
+            Pen pen = Skin.Pen(colorB, 3f, opacityRatio: ratio, startCap: startCap, endCap: endCap);
+            graphics.DrawLine(pen, pointStart, pointEnd);
+
+            pen = Skin.Pen(color, 1f, opacityRatio: ratio, endCap: endCap);
+            graphics.DrawLine(pen, pointStart, pointEnd);
+        }
+        /// <summary>
+        /// Vykreslí linku vztahu jako rovnou čáru z bodu pointStart do pointEnd.
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="color"></param>
+        /// <param name="ratio"></param>
+        /// <param name="startCap"></param>
+        /// <param name="endCap"></param>
+        /// <param name="graphicsPath"></param>
+        protected static void DrawLinkPath(Graphics graphics, Color color, float ratio,
+            System.Drawing.Drawing2D.LineCap startCap, System.Drawing.Drawing2D.LineCap endCap,
+            System.Drawing.Drawing2D.GraphicsPath graphicsPath)
+        {
+            if (graphicsPath == null) return;
+
+            Color colorB = color.Morph(Color.Black, 0.80f);
+
+            Pen pen = Skin.Pen(colorB, 3f, opacityRatio: ratio, startCap: startCap, endCap: endCap);
+            graphics.DrawPath(pen, graphicsPath);
+
+            pen = Skin.Pen(color, 1f, opacityRatio: ratio, endCap: endCap);
+            graphics.DrawPath(pen, graphicsPath);
+        }
+        /// <summary>
+        /// Vrátí požadovaný bod, nacházející se na daném místě absolutní souřadnice daného prvku.
+        /// Pokud je prvek neviditelný (on, nebo kterýkoli z jeho Parentů), může vrátit null pokud je požadavek "onlyVisible" = true.
         /// </summary>
         /// <param name="item"></param>
         /// <param name="side"></param>
-        /// <param name="onlyVisible"></param>
+        /// <param name="onlyVisible">true = vracet bod pouze pro objekt, který může být viditelný (z hlediska Is.Visible jeho a všech jeho Parentů)</param>
         /// <returns></returns>
         protected static Point? GetPoint(InteractiveObject item, RectangleSide side, bool onlyVisible)
         {
@@ -1407,15 +1464,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             BoundsInfo boundsInfo = item.BoundsInfo;
             if (onlyVisible && !boundsInfo.CurrentIsVisible) return null;
             Rectangle absBounds = boundsInfo.CurrentAbsBounds;
-
-            int? x = (side.HasFlag(RectangleSide.Left) ? absBounds.X :
-                     (side.HasFlag(RectangleSide.Right) ? absBounds.Right :
-                     (side.HasFlag(RectangleSide.CenterX) ? (absBounds.X + absBounds.Width / 2) : (int?)null)));
-            int? y = (side.HasFlag(RectangleSide.Top) ? absBounds.Y :
-                     (side.HasFlag(RectangleSide.Bottom) ? absBounds.Bottom :
-                     (side.HasFlag(RectangleSide.CenterY) ? (absBounds.Y + absBounds.Height / 2) : (int?)null)));
-            if (!(x.HasValue && y.HasValue)) return null;
-            return new Point(x.Value, y.Value);
+            return absBounds.GetPoint(side);
         }
         /// <summary>
         /// Vrací stav popisující vztah času Prev a Next

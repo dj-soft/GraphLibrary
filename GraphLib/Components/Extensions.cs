@@ -1087,7 +1087,7 @@ namespace Asol.Tools.WorkScheduler.Components
             return new RectangleF(new PointF(x, y), size);
         }
         #endregion
-        #region Rectangle: FromPoints, FromDim, FromCenter, End
+        #region Rectangle: FromPoints, FromDim, FromCenter, End, GetVisualRange, GetSide, GetPoint
         /// <summary>
         /// Vrátí Rectangle, který je natažený mezi dvěma body, přičemž vzájemná pozice oněch dvou bodů může být libovolná.
         /// </summary>
@@ -1229,6 +1229,49 @@ namespace Asol.Tools.WorkScheduler.Components
                     return rectangle.Left;
             }
             return null;
+        }
+        /// <summary>
+        /// Metoda vrátí určitý bod v daném Rectangle.
+        /// Při nesprávném zadání strany může vrátit null.
+        /// </summary>
+        /// <param name="rectangle"></param>
+        /// <param name="alignment"></param>
+        /// <returns></returns>
+        public static Point? GetPoint(this Rectangle rectangle, ContentAlignment alignment)
+        {
+            switch (alignment)
+            {
+                case ContentAlignment.TopLeft: return GetPoint(rectangle, RectangleSide.TopLeft);
+                case ContentAlignment.TopCenter: return GetPoint(rectangle, RectangleSide.TopCenter);
+                case ContentAlignment.TopRight: return GetPoint(rectangle, RectangleSide.TopRight);
+
+                case ContentAlignment.MiddleLeft: return GetPoint(rectangle, RectangleSide.MiddleLeft);
+                case ContentAlignment.MiddleCenter: return GetPoint(rectangle, RectangleSide.MiddleCenter);
+                case ContentAlignment.MiddleRight: return GetPoint(rectangle, RectangleSide.MiddleRight);
+
+                case ContentAlignment.BottomLeft: return GetPoint(rectangle, RectangleSide.BottomLeft);
+                case ContentAlignment.BottomCenter: return GetPoint(rectangle, RectangleSide.BottomCenter);
+                case ContentAlignment.BottomRight: return GetPoint(rectangle, RectangleSide.BottomRight);
+            }
+            return null;
+        }
+        /// <summary>
+        /// Metoda vrátí určitý bod v daném Rectangle.
+        /// Při nesprávném zadání strany může vrátit null.
+        /// </summary>
+        /// <param name="rectangle"></param>
+        /// <param name="position"></param>
+        /// <returns></returns>
+        public static Point? GetPoint(this Rectangle rectangle, RectangleSide position)
+        {
+            int? x = (position.HasFlag(RectangleSide.Left) ? rectangle.X :
+                     (position.HasFlag(RectangleSide.Right) ? rectangle.Right :
+                     (position.HasFlag(RectangleSide.CenterX) ? (rectangle.X + rectangle.Width / 2) : (int?)null)));
+            int? y = (position.HasFlag(RectangleSide.Top) ? rectangle.Y :
+                     (position.HasFlag(RectangleSide.Bottom) ? rectangle.Bottom :
+                     (position.HasFlag(RectangleSide.CenterY) ? (rectangle.Y + rectangle.Height / 2) : (int?)null)));
+            if (!(x.HasValue && y.HasValue)) return null;
+            return new Point(x.Value, y.Value);
         }
         /// <summary>
         /// Vrátí rozsah { Begin, End } z this rectangle na požadované ose (orientaci).
@@ -2435,17 +2478,37 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         Center = CenterX | CenterY,
         /// <summary>
-        /// Levý horní roh
+        /// Horní levý bod
         /// </summary>
         TopLeft = Top | Left,
         /// <summary>
-        /// Pravý horní roh
+        /// Horní prostřední bod
+        /// </summary>
+        TopCenter = Top | CenterX,
+        /// <summary>
+        /// Horní pravý bod
         /// </summary>
         TopRight = Top | Right,
         /// <summary>
-        /// Dolní levý roh
+        /// Střední levý bod
+        /// </summary>
+        MiddleLeft = CenterY | Left,
+        /// <summary>
+        /// Úplně střední bod (X i Y)
+        /// </summary>
+        MiddleCenter = CenterY | CenterX,
+        /// <summary>
+        /// Střední pravý bod
+        /// </summary>
+        MiddleRight = CenterY | Right,
+        /// <summary>
+        /// Dolní levý bod
         /// </summary>
         BottomLeft = Bottom | Left,
+        /// <summary>
+        /// Dolní prostřední bod
+        /// </summary>
+        BottomCenter = Bottom | CenterX,
         /// <summary>
         /// Dolní pravý roh
         /// </summary>
