@@ -1577,7 +1577,8 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Barva linky základní.
         /// Pro typ linky ve směru Prev - Next platí:
         /// v situaci, kdy Next.Begin je větší nebo rovno Prev.End, pak se použije <see cref="LinkColorStandard"/>.
-        /// Další barvy viz <see cref="LinkColorWarning"/> a <see cref="LinkColorError"/>
+        /// Další barvy viz <see cref="LinkColorWarning"/> a <see cref="LinkColorError"/>.
+        /// Pokud bude null, převezme se barva z definice vlastností grafu <see cref="GuiGraphProperties.LinkColorStandard"/>.
         /// </summary>
         public Color? LinkColorStandard { get; set; }
         /// <summary>
@@ -1585,6 +1586,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Pro typ linky ve směru Prev - Next platí:
         /// v situaci, kdy Next.Begin je menší než Prev.End, ale Next.Begin je větší nebo rovno Prev.Begin, pak se použije <see cref="LinkColorWarning"/>.
         /// Další barvy viz <see cref="LinkColorStandard"/> a <see cref="LinkColorError"/>
+        /// Pokud bude null, převezme se barva z definice vlastností grafu <see cref="GuiGraphProperties.LinkColorWarning"/>.
         /// </summary>
         public Color? LinkColorWarning { get; set; }
         /// <summary>
@@ -1592,6 +1594,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Pro typ linky ve směru Prev - Next platí:
         /// v situaci, kdy Next.Begin je menší než Prev.Begin, pak se použije <see cref="LinkColorError"/>.
         /// Další barvy viz <see cref="LinkColorStandard"/> a <see cref="LinkColorWarning"/>
+        /// Pokud bude null, převezme se barva z definice vlastností grafu <see cref="GuiGraphProperties.LinkColorError"/>.
         /// </summary>
         public Color? LinkColorError { get; set; }
     }
