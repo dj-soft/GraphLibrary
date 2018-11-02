@@ -129,7 +129,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         protected void CreateProductOrder(int recordId, string name, Color backColor, decimal qty, string tagText, ProductTpv tpv)
         {
             string refer = "VP" + recordId.ToString();
-            DateTime begin = this.DateTimeNow.AddHours(this.Rand.Next(0, 240) - 72);
+            DateTime start = this.DateTimeNow;
+            if (start < this.DateTimeFirst.AddDays(4d))
+                start = this.DateTimeFirst.AddDays(4d);
+            DateTime begin = start.AddHours(this.Rand.Next(0, 240) - 72);
             DateTime time = begin;
 
             ProductOrder productOrder = new ProductOrder()
