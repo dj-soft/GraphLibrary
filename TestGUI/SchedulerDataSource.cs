@@ -404,25 +404,6 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// Typ kalendáře
         /// </summary>
         protected enum CalendarType { None, Work5d1x8h, Work5d2x8h, Work7d3x8h }
-        protected void xxxCreateLeftPanelOperation(GuiGraph guiGraph, ref DateTime begin, int groupNumber, int itemNumber, Color backColor, string text, string toolTip, decimal qty, decimal tbc, decimal tac, decimal tec)
-        {
-            GuiGraphItem item = new GuiGraphItem();
-            item.ItemId = new GuiId(1189, 10 * groupNumber + itemNumber);
-            item.GroupId = new GuiId(1188, groupNumber);
-            item.BackColor = backColor;
-            item.BehaviorMode = GraphItemBehaviorMode.DefaultText;
-            item.DataId = item.ItemId;
-            item.Text = text;
-
-            TimeSpan time = TimeSpan.FromMinutes((double)(tbc + qty * tac + tec));
-            DateTime end = begin + time;
-            item.Time = new GuiTimeRange(begin, end);
-
-            guiGraph.GraphItems.Add(item);
-
-            TimeSpan pause = ((this.Rand.Next(0, 100) < 25) ? TimeSpan.Zero : TimeSpan.FromHours(this.Rand.Next(1, 12)));
-            begin = end + pause;
-        }
         /// <summary>
         /// Dictionary s Výrobními příkazy
         /// </summary>
@@ -562,6 +543,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             gridCenter.GridProperties.TagFilterBackColor = Color.FromArgb(64, 128, 64);
 
             gridCenter.GraphProperties.AxisResizeMode = AxisResizeContentMode.ChangeScale;
+            gridCenter.GraphProperties.TimeAxisBackColor = Color.FromArgb(192, 224, 255);
             gridCenter.GraphProperties.BottomMarginPixel = 2;
             gridCenter.GraphProperties.GraphLineHeight = 20;
             gridCenter.GraphProperties.GraphLinePartialHeight = 40;
@@ -577,6 +559,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             gridCenter.GraphProperties.LinkColorStandard = Color.LightGreen;
             gridCenter.GraphProperties.LinkColorWarning = Color.Yellow;
             gridCenter.GraphProperties.LinkColorError = Color.DarkRed;
+            gridCenter.GraphProperties.TimeAxisSegmentList = CreateWeekends(this.TimeRangeTotal, Color.FromArgb(212, 255, 255));
 
             DataTable rowTable = WorkSchedulerSupport.CreateTable("RowsCenter", "cislo_subjektu int, reference_subjektu string, nazev_subjektu string, machines_count decimal");
             gridCenter.Rows = new GuiTable() { Name = "GridCenter", DataTable = rowTable };
@@ -597,6 +580,34 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             this.GridCenter = gridCenter;
             this.MainPage.MainPanel.Grids.Add(gridCenter);
+        }
+        protected static List<GuiTimeAxisSegment> CreateWeekends(GuiTimeRange totalTimeRange, Color backColor)
+        {
+            List<GuiTimeAxisSegment> result = new List<GuiTimeAxisSegment>();
+
+            DateTime monday = totalTimeRange.Begin;
+            if (monday.TimeOfDay.Ticks > 0L)
+                monday = monday.AddDays(1d).Date;
+            DayOfWeek dow = monday.DayOfWeek;              // Neděle=0; Pondělí=1; Úterý=2; ... Sobota=6
+            int add = (dow == DayOfWeek.Sunday ? 1 : (dow == DayOfWeek.Monday ? 0 : 8 - (int)dow));
+            if (add > 0) monday = monday.AddDays((double)add);
+
+            while (true)
+            {
+                DateTime saturday = monday.AddDays(-2d);
+                GuiTimeRange weekend = new GuiTimeRange(saturday, monday);
+                if (weekend.Begin > totalTimeRange.End) break;
+                if (weekend.End > totalTimeRange.Begin)
+                {
+                    GuiDoubleRange sizeRange = new GuiDoubleRange(0.0f, 0.7f);
+                    string toolTip = "Víkend " + weekend.Begin.ToShortDateString() + " - " + weekend.End.ToShortDateString();
+                    GuiTimeAxisSegment segment = new GuiTimeAxisSegment() { TimeRange = weekend, BackColor = backColor, SizeRange = sizeRange, ToolTip = toolTip };
+                    result.Add(segment);
+                }
+                monday = monday.AddDays(7d).Date;
+            }
+
+            return result;
         }
         /// <summary>
         /// Do dodaného GuiGridu přidá řádek za danou Plánovací jednotkupříkaz, přidá jeho TagItems a graf z jeho operací.
