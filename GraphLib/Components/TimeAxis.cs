@@ -280,6 +280,9 @@ namespace Asol.Tools.WorkScheduler.Components
             if (!value.HasValue) return "";
             string text = value.Value.ToString("dddd") + Environment.NewLine +
                           value.Value.ToString();
+            string segmentText = this.GetSegmentsToolTip(value.Value);
+            if (segmentText != null)
+                text += segmentText;
             return text;
         }
         #endregion

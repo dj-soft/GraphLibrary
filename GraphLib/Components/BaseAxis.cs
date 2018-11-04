@@ -86,6 +86,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         protected virtual string PrepareToolTipText(TTick value)
         {
+            string text = value.ToString();
+
+            string segmentText = this.GetSegmentsToolTip(value);
+            if (segmentText != null)
+                text += segmentText;
+
             return value.ToString();
         }
         #endregion
@@ -952,6 +958,7 @@ namespace Asol.Tools.WorkScheduler.Components
             if (this.IsEqual(oldValue, newValue)) return;            // No change = no reactions.
 
             this._Value = newValue;
+            this._ISegmentsCurrent = null;
 
             if (IsAction(actions, ProcessAction.RecalcScale))
             {
@@ -976,6 +983,8 @@ namespace Asol.Tools.WorkScheduler.Components
 
             if (IsAction(actions, ProcessAction.CallSynchronizeSlave))
                 this.CallSlaveSynchronize(oldValue, newValue, eventSource);
+
+            this._ISegmentsCurrent = null;
 
             if (IsAction(actions, ProcessAction.CallDraw))
                 this.CallDrawRequest(eventSource);
@@ -1034,6 +1043,7 @@ namespace Asol.Tools.WorkScheduler.Components
             decimal oldScale = this._Scale;
             decimal newScale = this.AlignScale(scale);
             if (oldScale == newScale) return;                        // No change = no reactions.
+            this._ISegmentsCurrent = null;
 
             if (IsAction(actions, ProcessAction.RecalcValue))
             {   // All changes will be processed as change of Value (from this will be changed Scale and called all events):
@@ -2312,7 +2322,19 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="absoluteBounds"></param>
         protected void DrawBackground(Graphics graphics, Rectangle absoluteBounds)
         {
-            GPainter.DrawAxisBackground(graphics, absoluteBounds, this.OrientationDraw, this.Is.Enabled, this.InteractiveState, this.BackColor, this.BackColor3DEffect);
+            this.DrawBackground(graphics, absoluteBounds, this.BackColor);
+            this.DrawSegments(graphics, absoluteBounds);
+        }
+        /// <summary>
+        /// Vykreslí pozadí pod osou.
+        /// Slouží i pro vykreslení segmentů.
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="absoluteBounds"></param>
+        /// <param name="backColor"></param>
+        protected void DrawBackground(Graphics graphics, Rectangle absoluteBounds, Color backColor)
+        {
+            GPainter.DrawAxisBackground(graphics, absoluteBounds, this.OrientationDraw, this.Is.Enabled, this.InteractiveState, backColor, this.BackColor3DEffect);
         }
         /// <summary>
         /// Draw Mouse point (a glare ellipse), when point location is stored in MouseOverRelativePoint or MouseDownRelativePoint (when HasValue)
@@ -2560,6 +2582,223 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public event GPropertyChangedHandler<AxisOrientation> OrientationChanged;
 
+        #endregion
+        #region Segmenty osy
+        /// <summary>
+        /// Pole segmentů na této ose
+        /// </summary>
+        public Segment[] Segments
+        {
+            get { return this._Segments; }
+            set
+            {
+                this._Segments = value;
+                this._ISegmentsCurrent = null;
+                this._ISegments = null;
+                if (value != null)
+                    this._ISegments = value.Select(s => s as ISegment).ToArray();
+                this.Repaint();
+            }
+        }
+        /// <summary>
+        /// Hodnota vložená do property <see cref="Segments"/>
+        /// </summary>
+        private Segment[] _Segments;
+        /// <summary>
+        /// Privátní pole hodnot, vložených sice do property <see cref="Segments"/>, ale plně izolované a převedení na ISegment
+        /// </summary>
+        private ISegment[] _ISegments;
+        /// <summary>
+        /// Vrátí přídavné texty do ToolTipu pro danou hodnotu, získané z definic segmentů
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        protected string GetSegmentsToolTip(TTick value)
+        {
+            ISegment[] iSegments = this.SegmentsCurrent;
+            if (iSegments.Length == 0) return null;
+            string toolTip = "";
+            foreach (ISegment iSegment in iSegments)
+            {
+                string text = iSegment.ToolTip;
+                if (String.IsNullOrEmpty(text)) continue;
+                if (iSegment.ValueRange.Contains(value))
+                    toolTip = toolTip + Environment.NewLine + text;
+            }
+            return toolTip;
+        }
+        /// <summary>
+        /// Vykreslí pozadí segmentů
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="absoluteBounds"></param>
+        protected void DrawSegments(Graphics graphics, Rectangle absoluteBounds)
+        {
+            ISegment[] iSegments = this.SegmentsCurrent;
+            if (iSegments.Length == 0) return;
+            foreach (ISegment iSegment in iSegments)
+            {
+                if (!iSegment.BackColor.HasValue) continue;
+                Rectangle? segmentBounds = CreateSegmentBounds(absoluteBounds, this.Orientation, iSegment.PixelRange, iSegment.SizeRange);
+                if (segmentBounds.HasValue)
+                    this.DrawBackground(graphics, segmentBounds.Value, iSegment.BackColor.Value);
+            }
+        }
+        /// <summary>
+        /// Vrátí souřadnice daného segmentu
+        /// </summary>
+        /// <param name="absoluteBounds"></param>
+        /// <param name="axisOrientation"></param>
+        /// <param name="segmentRange"></param>
+        /// <param name="sizeRange"></param>
+        /// <returns></returns>
+        protected Rectangle? CreateSegmentBounds(Rectangle absoluteBounds, AxisOrientation axisOrientation, Int32Range segmentRange, DoubleRange sizeRange)
+        {
+            int x = absoluteBounds.X;
+            int w = absoluteBounds.Width;
+            int y = absoluteBounds.Y;
+            int h = absoluteBounds.Height;
+            int b = y + h;
+            int sb = 0;
+            int ss = 0;
+            switch (axisOrientation)
+            {
+                case AxisOrientation.Top:
+                case AxisOrientation.Bottom:
+                    CreateSegmentSize(sizeRange, y, h, true, out sb, out ss);
+                    return new Rectangle(x + segmentRange.Begin, sb, segmentRange.Size, ss);
+                case AxisOrientation.LeftUp:
+                case AxisOrientation.RightUp:
+                    return new Rectangle(x, b  - segmentRange.End, w, segmentRange.Size);
+                case AxisOrientation.LeftDown:
+                case AxisOrientation.RightDown:
+                    return new Rectangle(x, y + segmentRange.Begin, w, segmentRange.Size);
+            }
+            return null;
+        }
+
+        protected void CreateSegmentSize(DoubleRange sizeRange, int totalBegin, int totalSize, bool alignEnd, out int segmentBegin, out int segmentSize)
+        {
+            segmentBegin = totalBegin;
+            segmentSize = totalSize;
+            if (sizeRange != null)
+            {
+                int b = (int)Math.Round((sizeRange.Begin * (double)totalSize), 0);
+                b = (b < 0 ? 0 : (b > totalSize ? totalSize : b));
+                int e = (int)Math.Round((sizeRange.End * (double)totalSize), 0);
+                e = (e < b ? b : (e > totalSize ? totalSize : e));
+
+                segmentBegin = (alignEnd ? (totalBegin + totalSize - e) : (totalBegin + b));
+                segmentSize = (e - b);
+            }
+        }
+        /// <summary>
+        /// Aktuálně viditelné segmenty
+        /// </summary>
+        protected ISegment[] SegmentsCurrent { get { this.CheckSegmentsCurrent(); return this._ISegmentsCurrent; } }
+        private ISegment[] _ISegmentsCurrent;
+        /// <summary>
+        /// Zajistí platnost dat v poli <see cref="_ISegmentsCurrent"/> na základě dat v poli <see cref="_Segments"/> a aktuálního zobrazeného intervalu
+        /// </summary>
+        protected void CheckSegmentsCurrent()
+        {
+            bool isValid = (this._ISegmentsCurrent != null);
+            if (isValid)
+            {
+                TValue oldValue = this._SegmentCurrentValue;
+                TValue newValue = this._Value;
+                isValid = (this.IsEqual(oldValue, newValue));
+            }
+            if (isValid)
+            {
+             //   return;
+            }
+
+            List<ISegment> iSegmentList = new List<ISegment>();
+            if (this._ISegments != null)
+            {
+                foreach (ISegment iSegment in this._ISegments)
+                {
+                    if (iSegment != null && iSegment.PrepareForAxis(this))
+                        iSegmentList.Add(iSegment);
+                }
+            }
+            this._ISegmentsCurrent = iSegmentList.ToArray();
+            this._SegmentCurrentValue = this.GetValue(this.Value);
+        }
+        private TValue _SegmentCurrentValue;
+        /// <summary>
+        /// Definice segmentů na ose, segmenty mohou mít odlišnou barvu a/nebo tooltip
+        /// </summary>
+        public class Segment : ISegment
+        {
+            /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns></returns>
+            public override string ToString()
+            {
+                return "Segment: " + this.ValueRange + "; PixelRange: " + (this._PixelRange != null ? this._PixelRange.ToString() : "{Null}");
+            }
+            /// <summary>
+            /// Rozmezí hodnot, kde se nachází segment
+            /// </summary>
+            public TValue ValueRange { get; set; }
+            /// <summary>
+            /// Barva pozadí v tomto segmentu
+            /// </summary>
+            public Color? BackColor { get; set; }
+            /// <summary>
+            /// Rozmezí výšky na ose Y, které bude obarveno barvou <see cref="BackColor"/>.
+            /// Povolené rozmezí = 0 až 1, což je i defaultní hodnota v případě null, značí celou výšku osy.
+            /// Vyjadřuje prostor na vizuální ose ve směru Y, ve kterém bude zobrazeno obarvení tohoto segmentu.
+            /// </summary>
+            public DoubleRange SizeRange { get; set; }
+            /// <summary>
+            /// Text pro Tooltip v daném rozmezí, přidává se pod standardní text ToolTipu
+            /// </summary>
+            public string ToolTip { get; set; }
+            Int32Range ISegment.PixelRange { get { return this._PixelRange; } }
+            bool ISegment.PrepareForAxis(GBaseAxis<TTick, TSize, TValue> axis)
+            {
+                bool result = false;
+                this._PixelRange = null;
+                if (this.ValueRange != null && axis.Value.HasIntersect(this.ValueRange))
+                {   // Pokud daná hodnota segmentu (ValueRange) se nachází ve viditelné části osy:
+                    decimal? pixelBegin = axis.GetPixelForValue(this.ValueRange.Begin);
+                    decimal? pixelEnd = axis.GetPixelForValue(this.ValueRange.End);
+                    if (pixelBegin.HasValue && pixelEnd.HasValue)
+                    {   // Pokud reálné pixely byly vypočteny:
+                        decimal pixelSize = axis.PixelSize;
+                        if (pixelEnd.Value > 0m && pixelBegin.Value < pixelSize)
+                        {   // Pokud reálné pixely jsou ve viditelné části osy:
+                            this._PixelRange = new Int32Range((int)Math.Round(pixelBegin.Value, 0), (int)Math.Round(pixelEnd.Value, 0));
+                            result = true;
+                        }
+                    }
+                }
+                return result;
+            }
+            private Int32Range _PixelRange;
+        }
+        /// <summary>
+        /// Interface pro interní přístup k funkčním členům třídy Segment
+        /// </summary>
+        protected interface ISegment
+        {
+            TValue ValueRange { get; }
+            Color? BackColor { get; }
+            DoubleRange SizeRange { get; }
+            string ToolTip { get; }
+            Int32Range PixelRange { get; }
+            bool PrepareForAxis(GBaseAxis<TTick, TSize, TValue> axis);
+        }
+        public decimal? GetPixelForValue(TTick tTick)
+        {
+            TSize distance = this._ValueHelper.SubSize(tTick, this.Value.Begin);    // Vzdálenost TSize od hodnoty na počátku osy (Value.Begin) k danému bodu
+            decimal? units = this.GetAxisUnits(distance);                           // Vzdálenost převedená na Units
+            return this.GetPixelsFromUnits(units);                                  // Tatáž vzdálenost vyjádřená v pixelech = od počátku osy
+        }
         #endregion
         #region Abstract layer: members, which descendant must override for actual data types
         /// <summary>

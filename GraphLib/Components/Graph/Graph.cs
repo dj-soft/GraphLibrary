@@ -1962,6 +1962,12 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         public AxisResizeContentMode? InitialResizeMode { get { return this._InitialResizeMode; } set { this._InitialResizeMode = value; } }
         private AxisResizeContentMode? _InitialResizeMode;
         /// <summary>
+        /// Barva pozadí časové osy, defaultní.
+        /// Časová osa může mít definované časové segmenty, viz property <see cref="TimeAxisSegments"/>, ty mohou mít jinou barvu.
+        /// </summary>
+        public Color? TimeAxisBackColor { get { return this._TimeAxisBackColor; } set { this._TimeAxisBackColor = value; } }
+        private Color? _TimeAxisBackColor;
+        /// <summary>
         /// Výchozí zobrazovaná hodnota
         /// </summary>
         public TimeRange InitialValue { get { return this._InitialValue; } set { this._InitialValue = value; } } private TimeRange _InitialValue;
@@ -2133,6 +2139,11 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         public Color? LinkColorError { get { return this._LinkColorError; } set { this._LinkColorError = value; } }
         private Color? _LinkColorError;
+        /// <summary>
+        /// Segmenty časové osy, které mají jinou barvu pozadí než je základní barva, a mohou obsahovat přídavný ToolTip
+        /// </summary>
+        public GTimeAxis.Segment[] TimeAxisSegments { get { return this._TimeAxisSegments; } set { this._TimeAxisSegments = value; } }
+        private GTimeAxis.Segment[] _TimeAxisSegments;
     }
     #endregion
     #region Interface ITimeInteractiveGraph, ITimeGraph, ITimeGraphItem; enum TimeGraphAxisXMode

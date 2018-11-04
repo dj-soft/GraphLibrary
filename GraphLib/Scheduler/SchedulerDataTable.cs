@@ -1739,8 +1739,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <returns></returns>
         public static DataGraphProperties CreateFrom(MainDataTable dataGraphTable, GuiGraphProperties guiGraphProperties)
         {
-            DataGraphProperties dataGraphProperties = new DataGraphProperties(dataGraphTable, guiGraphProperties);
-            return dataGraphProperties;
+            return new DataGraphProperties(dataGraphTable, guiGraphProperties);
         }
         /// <summary>
         /// Privátní konstruktor
@@ -1773,7 +1772,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             get
             {
-                var position = this.GraphPosition;
                 switch (this.GraphPosition)
                 {
                     case DataGraphPositionType.OnBackgroundLogarithmic: return TimeGraphTimeAxisMode.LogarithmicScale;
@@ -1783,93 +1781,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             }
         }
         /// <summary>
-        /// Režim chování při změně velikosti: zachovat měřítko a změnit hodnotu End, nebo zachovat hodnotu End a změnit měřítko?
-        /// </summary>
-        public AxisResizeContentMode AxisResizeMode { get { return this.GuiGraphProperties.AxisResizeMode; } }
-        /// <summary>
-        /// Možnosti uživatele změnit zobrazený rozsah anebo měřítko
-        /// </summary>
-        public AxisInteractiveChangeMode InteractiveChangeMode { get { return this.GuiGraphProperties.InteractiveChangeMode; } }
-        /// <summary>
         /// Pozice grafu v tabulce
         /// </summary>
         public DataGraphPositionType GraphPosition { get { return this.GuiGraphProperties.GraphPosition; } }
-        /// <summary>
-        /// Fyzická výška jedné logické linky grafu v pixelech.
-        /// Určuje, tedy kolik pixelů bude vysoký prvek, jehož logická výška = 1.0f.
-        /// Výchozí hodnota je 20.
-        /// Tato hodnota platí pro řádky, v nichž se vyskytují pouze prvky s celočíselnou logickou výškou.
-        /// Pro řádky, kde se vyskytne výška prvku desetinná, se použije údaj <see cref="GraphLinePartialHeight"/>.
-        /// </summary>
-        public int GraphLineHeight { get { return this.GuiGraphProperties.GraphLineHeight; } }
-        /// <summary>
-        /// Fyzická výška jedné logické linky grafu v pixelech, pro řádky obsahující prvky s logickou výškou desetinnou.
-        /// V takových řádcích je vhodné použít větší hodnotu výšky logické linky, aby byly lépe viditelné prvky s malou výškou (např. výška prvku 0.25).
-        /// Výchozí hodnota je 40.
-        /// </summary>
-        public int GraphLinePartialHeight { get { return this.GuiGraphProperties.GraphLinePartialHeight; } }
-        /// <summary>
-        /// Horní okraj = prostor nad nejvyšším prvkem grafu, který by měl být zobrazen jako prázdný, tak aby bylo vidět že nic dalšího už není.
-        /// V tomto prostoru (těsně pod souřadnicí Top) se provádí Drag and Drop prvků.
-        /// Hodnota je zadána v logických jednotkách, tedy v počtu standardních linek.
-        /// Výchozí hodnota = 1.0 linka, nelze zadat zápornou hodnotu.
-        /// </summary>
-        public float UpperSpaceLogical { get { return this.GuiGraphProperties.UpperSpaceLogical; } }
-        /// <summary>
-        /// Dolní okraj = mezera pod dolním okrajem nejnižšího prvku grafu k dolnímu okraji controlu, v pixelech.
-        /// </summary>
-        public int BottomMarginPixel { get { return this.GuiGraphProperties.BottomMarginPixel; } }
-        /// <summary>
-        /// Výška řádku v tabulce minimální, v pixelech
-        /// </summary>
-        public int TableRowHeightMin { get { return this.GuiGraphProperties.TableRowHeightMin; } }
-        /// <summary>
-        /// Výška řádku v tabulce maximální, v pixelech
-        /// </summary>
-        public int TableRowHeightMax { get { return this.GuiGraphProperties.TableRowHeightMax; } }
-        /// <summary>
-        /// Logaritmická časová osa: Rozsah lineární části grafu uprostřed logaritmické časové osy.
-        /// Implicitní hodnota (pokud není zadáno jinak) = 0.60f, povolené rozmezí od 0.40f po 0.90f.
-        /// </summary>
-        public float? LogarithmicRatio { get { return this.GuiGraphProperties.LogarithmicRatio; } }
-        /// <summary>
-        /// Logaritmická časová osa: vykreslovat vystínování oblastí s logaritmickým měřítkem osy (tedy ty levé a pravé okraje, kde již neplatí lineární měřítko).
-        /// Zde se zadává hodnota 0 až 1, která reprezentuje úroven vystínování těchto okrajů.
-        /// Hodnota 0 = žádné stínování, hodnota 1 = krajní pixel je zcela černý. 
-        /// Implicitní hodnota (pokud není zadáno jinak) = 0.20f.
-        /// </summary>
-        public float? LogarithmicGraphDrawOuterShadow { get { return this.GuiGraphProperties.LogarithmicGraphDrawOuterShadow; } }
-        /// <summary>
-        /// Průhlednost prvků grafu při běžném vykreslování.
-        /// Má hodnotu null (průhlednost se neaplikuje), nebo 0 ÷ 255. 
-        /// Hodnota 255 má stejný význam jako null = plně viditelný graf. 
-        /// Hodnota 0 = zcela neviditelné prvky (ale fyzicky jsou přítomné).
-        /// Výchozí hodnota = null.
-        /// </summary>
-        public int? Opacity { get { return this.GuiGraphProperties.Opacity; } }
-        /// <summary>
-        /// Barva linky základní.
-        /// Pro typ linky ve směru Prev - Next platí:
-        /// v situaci, kdy Next.Begin je větší nebo rovno Prev.End, pak se použije <see cref="LinkColorStandard"/>.
-        /// Další barvy viz <see cref="LinkColorWarning"/> a <see cref="LinkColorError"/>
-        /// </summary>
-        public Color? LinkColorStandard { get { return this.GuiGraphProperties.LinkColorStandard; } }
-        /// <summary>
-        /// Barva linky varovná.
-        /// Pro typ linky ve směru Prev - Next platí:
-        /// v situaci, kdy Next.Begin je menší než Prev.End, ale Next.Begin je větší nebo rovno Prev.Begin, pak se použije <see cref="LinkColorWarning"/>.
-        /// Další barvy viz <see cref="LinkColorStandard"/> a <see cref="LinkColorError"/>
-        /// </summary>
-        public Color? LinkColorWarning { get { return this.GuiGraphProperties.LinkColorWarning; } }
-        /// <summary>
-        /// Barva linky chybová.
-        /// Pro typ linky ve směru Prev - Next platí:
-        /// v situaci, kdy Next.Begin je menší než Prev.Begin, pak se použije <see cref="LinkColorError"/>.
-        /// Další barvy viz <see cref="LinkColorStandard"/> a <see cref="LinkColorWarning"/>
-        /// </summary>
-        public Color? LinkColorError { get { return this.GuiGraphProperties.LinkColorError; } }
         #endregion
-        #region Převod konfiguračních dat z úrovně Scheduler do úrovně Graph
+        #region Převod konfiguračních dat z úrovně GuiGraphProperties (GUI) do úrovně TimeGraphProperties (Components.Graph)
         /// <summary>
         /// Vytvoří a vrátí definici pro graf v úrovni Graph, třída <see cref="TimeGraphProperties"/>, 
         /// z dat načtených z Scheduleru (this, <see cref="Noris.LCS.Base.WorkScheduler.GuiGraphProperties"/>).
@@ -1881,25 +1797,44 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <returns></returns>
         internal TimeGraphProperties CreateTimeGraphProperties(bool isGraphInColumn, TimeRange initialValue, TimeRange maximalValue)
         {
-            TimeGraphProperties result = new TimeGraphProperties();
-            result.TimeAxisMode = (isGraphInColumn ? TimeGraphTimeAxisMode.Standard : this.TimeAxisMode);
-            result.InitialResizeMode = this.AxisResizeMode;
-            result.InitialValue = initialValue;
-            result.MaximalValue = maximalValue;
-            result.InteractiveChangeMode = this.InteractiveChangeMode;
-            result.TimeAxisVisibleTickLevel = (isGraphInColumn ? AxisTickType.BigLabel : AxisTickType.None);
-            result.OneLineHeight = this.GraphLineHeight;
-            result.OneLinePartialHeight = this.GraphLinePartialHeight;
-            result.UpperSpaceLogical = this.UpperSpaceLogical;
-            result.BottomMarginPixel = this.BottomMarginPixel;
-            result.TotalHeightRange = new Int32NRange(this.TableRowHeightMin, this.TableRowHeightMax);
-            result.LogarithmicRatio = (this.LogarithmicRatio.HasValue ? LogarithmicRatio.Value : 0.60f);
-            result.LogarithmicGraphDrawOuterShadow = (this.LogarithmicGraphDrawOuterShadow.HasValue ? LogarithmicGraphDrawOuterShadow.Value : 0.20f);
-            result.Opacity = this.Opacity;
-            result.LinkColorStandard = this.LinkColorStandard;
-            result.LinkColorWarning = this.LinkColorWarning;
-            result.LinkColorError = this.LinkColorError;
-            return result;
+            GuiGraphProperties guiProperties = this.GuiGraphProperties;
+            TimeGraphProperties timeProperties = new TimeGraphProperties();
+            timeProperties.TimeAxisMode = (isGraphInColumn ? TimeGraphTimeAxisMode.Standard : this.TimeAxisMode);
+            timeProperties.InitialResizeMode = guiProperties.AxisResizeMode;
+            timeProperties.TimeAxisBackColor = guiProperties.TimeAxisBackColor;
+            timeProperties.InitialValue = initialValue;
+            timeProperties.MaximalValue = maximalValue;
+            timeProperties.InteractiveChangeMode = guiProperties.InteractiveChangeMode;
+            timeProperties.TimeAxisVisibleTickLevel = (isGraphInColumn ? AxisTickType.BigLabel : AxisTickType.None);
+            timeProperties.OneLineHeight = guiProperties.GraphLineHeight;
+            timeProperties.OneLinePartialHeight = guiProperties.GraphLinePartialHeight;
+            timeProperties.UpperSpaceLogical = guiProperties.UpperSpaceLogical;
+            timeProperties.BottomMarginPixel = guiProperties.BottomMarginPixel;
+            timeProperties.TotalHeightRange = new Int32NRange(guiProperties.TableRowHeightMin, guiProperties.TableRowHeightMax);
+            timeProperties.LogarithmicRatio = (guiProperties.LogarithmicRatio.HasValue ? guiProperties.LogarithmicRatio.Value : 0.60f);
+            timeProperties.LogarithmicGraphDrawOuterShadow = (guiProperties.LogarithmicGraphDrawOuterShadow.HasValue ? guiProperties.LogarithmicGraphDrawOuterShadow.Value : 0.20f);
+            timeProperties.Opacity = guiProperties.Opacity;
+            timeProperties.LinkColorStandard = guiProperties.LinkColorStandard;
+            timeProperties.LinkColorWarning = guiProperties.LinkColorWarning;
+            timeProperties.LinkColorError = guiProperties.LinkColorError;
+            timeProperties.TimeAxisSegments = ConvertSegments(guiProperties.TimeAxisSegmentList);
+            return timeProperties;
+        }
+        /// <summary>
+        /// Převede pole <see cref="GuiTimeAxisSegment"/> na pole <see cref="GBaseAxis{TTick, TSize, TValue}.Segment"/>
+        /// </summary>
+        /// <param name="guiAxisSegments"></param>
+        /// <returns></returns>
+        private GTimeAxis.Segment[] ConvertSegments(IEnumerable<GuiTimeAxisSegment> guiAxisSegments)
+        {
+            if (guiAxisSegments == null) return null;
+            List<GTimeAxis.Segment> segments = new List<GBaseAxis<DateTime?, TimeSpan?, TimeRange>.Segment>();
+            foreach (GuiTimeAxisSegment guiAxisSegment in guiAxisSegments)
+            {
+                if (guiAxisSegment != null)
+                    segments.Add(new GTimeAxis.Segment() { ValueRange = guiAxisSegment.TimeRange, BackColor = guiAxisSegment.BackColor, SizeRange = guiAxisSegment.SizeRange, ToolTip = guiAxisSegment.ToolTip });
+            }
+            return segments.ToArray();
         }
         #endregion
     }

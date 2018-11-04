@@ -108,8 +108,10 @@ namespace Asol.Tools.WorkScheduler.Data
         #endregion
         #region Public support
         /// <summary>
-        /// Returns true, when specified value is in this range (include Begin, include End).
-        /// Return false, when is outside, or when this is not filled.
+        /// Vrací true, když dodaná hodnota (bod) leží uvnitř this intervalu.
+        /// Vrací true, když hodnota leží i přímo na hodnotě Begin nebo End.
+        /// Vrací false, když this interval není reálný (jeho Begin je větší než End).
+        /// Vrací false, když this není naplněn (když <see cref="IsFilled"/> je false = když Begin a/nebo End nemají hodnotu).
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>

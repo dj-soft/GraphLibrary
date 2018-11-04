@@ -1166,4 +1166,4 @@ namespace Asol.Tools.WorkScheduler.Data
 
     }
     #endregion
-    }
+}

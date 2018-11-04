@@ -1055,7 +1055,7 @@ namespace Noris.LCS.Base.WorkScheduler
         #endregion
     }
     #endregion
-    #region GuiGraphProperties : vlastnosti grafu
+    #region GuiGraphProperties + GuiTimeAxisSegment : vlastnosti grafu
     /// <summary>
     /// GuiGraphProperties : vlastnosti grafu
     /// </summary>
@@ -1082,6 +1082,11 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Režim zobrazování času na ose X
         /// </summary>
         public TimeGraphTimeAxisMode TimeAxisMode { get; set; }
+        /// <summary>
+        /// Barva pozadí časové osy, defaultní.
+        /// Časová osa může mít definované časové segmenty, viz property <see cref="TimeAxisSegmentList"/>, ty mohou mít jinou barvu.
+        /// </summary>
+        public Color? TimeAxisBackColor { get; set; }
         /// <summary>
         /// Režim chování při změně velikosti: zachovat měřítko a změnit hodnotu End, nebo zachovat hodnotu End a změnit měřítko?
         /// </summary>
@@ -1168,6 +1173,47 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Další barvy viz <see cref="LinkColorStandard"/> a <see cref="LinkColorWarning"/>
         /// </summary>
         public Color? LinkColorError { get; set; }
+        /// <summary>
+        /// Segmenty časové osy, které mají jinou barvu pozadí než je základní barva, a mohou obsahovat přídavný ToolTip
+        /// </summary>
+        public List<GuiTimeAxisSegment> TimeAxisSegmentList { get; set; }
+    }
+    /// <summary>
+    /// GuiTimeAxisSegment : Definice jednoho segmentu časové osy
+    /// </summary>
+    public sealed class GuiTimeAxisSegment : GuiBase
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public GuiTimeAxisSegment()
+        { }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return "TimeAxisSegment TimeRange: " + this.TimeRange + "; ToolTip: " + this.ToolTip;
+        }
+        /// <summary>
+        /// Časový rozsah
+        /// </summary>
+        public GuiTimeRange TimeRange { get; set; }
+        /// <summary>
+        /// Barva pozadí v tomto segmentu
+        /// </summary>
+        public Color? BackColor { get; set; }
+        /// <summary>
+        /// Rozmezí výšky na ose Y, které bude obarveno barvou <see cref="BackColor"/>.
+        /// Povolené rozmezí = 0 až 1, což je i defaultní hodnota v případě null, značí celou výšku osy.
+        /// Vyjadřuje prostor na vizuální ose ve směru Y, ve kterém bude zobrazeno obarvení tohoto segmentu.
+        /// </summary>
+        public GuiDoubleRange SizeRange { get; set; }
+        /// <summary>
+        /// Text pro Tooltip v daném rozmezí, přidává se pod standardní text ToolTipu
+        /// </summary>
+        public string ToolTip { get; set; }
     }
     #endregion
     #region GuiGraphTable : Objekt reprezentující sadu grafických prvků GuiGraphItem, umožní pracovat s položkami grafu typově
@@ -2547,6 +2593,38 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <param name="serial"></param>
         /// <returns></returns>
         protected override DateTime GetValue(string serial) { return (DateTime)Convertor.StringToDateTime(serial); }
+        #endregion
+    }
+    /// <summary>
+    /// GuiDoubleRange : rozsah { Begin ÷ End } dvou hodnot typu <see cref="Double"/>
+    /// </summary>
+    public class GuiDoubleRange : GuiRange<Double>, IXmlSerializer
+    {
+        #region Konstruktory
+        /// <summary>
+        /// Bezparametrický konstruktor, pro XML serializaci (Persistor)
+        /// </summary>
+        protected GuiDoubleRange() : base() { }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="begin"></param>
+        /// <param name="end"></param>
+        public GuiDoubleRange(Double begin, Double end) : base(begin, end) { }
+        #endregion
+        #region Abstract overrides
+        /// <summary>
+        /// Vrátí serializovanou formu dané typové hodnoty
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        protected override string GetSerial(Double value) { return Convertor.DoubleToString(value); }
+        /// <summary>
+        /// Vrátí deserializovanou typovou hodnotu ze serializované formy
+        /// </summary>
+        /// <param name="serial"></param>
+        /// <returns></returns>
+        protected override Double GetValue(string serial) { return (Double)Convertor.StringToDouble(serial); }
         #endregion
     }
     /// <summary>

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using Asol.Tools.WorkScheduler.Data;
 using System.Drawing;
+using Noris.LCS.Base.WorkScheduler;
 
 namespace Asol.Tools.WorkScheduler.Data
 {
@@ -1812,6 +1813,32 @@ namespace Asol.Tools.WorkScheduler.Data
         {
             return size.ToString();
         }
+        #endregion
+        #region Implicitní konverze z/na GuiTimeRange
+        /// <summary>
+        /// Implicitní konverze z <see cref="GuiDoubleRange"/> na <see cref="DoubleRange"/>.
+        /// Pokud je na vstupu <see cref="GuiDoubleRange"/> = null, pak na výstupu je <see cref="DoubleRange"/> == null.
+        /// </summary>
+        /// <param name="guiSingleRange"></param>
+        public static implicit operator DoubleRange(GuiDoubleRange guiSingleRange) { return (guiSingleRange != null ? new DoubleRange(guiSingleRange.Begin, guiSingleRange.End) : null); }
+        /// <summary>
+        /// Implicitní konverze z <see cref="DoubleRange"/> na <see cref="GuiDoubleRange"/>.
+        /// Pokud je na vstupu <see cref="DoubleRange"/> = null, pak na výstupu je <see cref="GuiDoubleRange"/> == null.
+        /// </summary>
+        /// <param name="doubleRange"></param>
+        public static implicit operator GuiDoubleRange(DoubleRange doubleRange) { return (doubleRange != null && doubleRange.IsFilled ? new GuiDoubleRange(doubleRange.Begin, doubleRange.End) : null); }
+        /// <summary>
+        /// Implicitní konverze z <see cref="GuiSingleRange"/> na <see cref="DoubleRange"/>.
+        /// Pokud je na vstupu <see cref="GuiSingleRange"/> = null, pak na výstupu je <see cref="DoubleRange"/> == null.
+        /// </summary>
+        /// <param name="guiSingleRange"></param>
+        public static implicit operator DoubleRange(GuiSingleRange guiSingleRange) { return (guiSingleRange != null ? new DoubleRange(guiSingleRange.Begin, guiSingleRange.End) : null); }
+        /// <summary>
+        /// Implicitní konverze z <see cref="DoubleRange"/> na <see cref="GuiSingleRange"/>.
+        /// Pokud je na vstupu <see cref="DoubleRange"/> = null, pak na výstupu je <see cref="GuiSingleRange"/> == null.
+        /// </summary>
+        /// <param name="doubleRange"></param>
+        public static implicit operator GuiSingleRange(DoubleRange doubleRange) { return (doubleRange != null && doubleRange.IsFilled ? new GuiSingleRange((float)(doubleRange.Begin), (float)(doubleRange.End)) : null); }
         #endregion
         #region Další služby
         /// <summary>

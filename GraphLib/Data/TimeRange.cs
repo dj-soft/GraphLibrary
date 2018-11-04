@@ -169,7 +169,7 @@ namespace Asol.Tools.WorkScheduler.Data
             return !Helper.IsEqual(a, b);
         }
         #endregion
-        #region Implicitní konverze z/na GuiId
+        #region Implicitní konverze z/na GuiTimeRange
         /// <summary>
         /// Implicitní konverze z <see cref="GuiTimeRange"/> na <see cref="TimeRange"/>.
         /// Pokud je na vstupu <see cref="GuiTimeRange"/> = null, pak na výstupu je <see cref="GId"/> == null.

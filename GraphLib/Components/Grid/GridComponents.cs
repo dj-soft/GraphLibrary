@@ -528,6 +528,8 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                 {
                     this._TimeAxis.ResizeContentMode = (graphParameters.InitialResizeMode.HasValue ? graphParameters.InitialResizeMode.Value : AxisResizeContentMode.ChangeValueEnd);
                     this._TimeAxis.InteractiveChangeMode = (graphParameters.InteractiveChangeMode.HasValue ? graphParameters.InteractiveChangeMode.Value : AxisInteractiveChangeMode.All);
+                    this._TimeAxis.BackColorUser = graphParameters.TimeAxisBackColor;
+                    this._TimeAxis.Segments = graphParameters.TimeAxisSegments;
                     if (graphParameters.InitialValue != null) value = graphParameters.InitialValue;
                 }
 
