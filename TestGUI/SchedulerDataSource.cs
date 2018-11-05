@@ -560,8 +560,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             gridCenter.GraphProperties.LinkColorWarning = Color.Yellow;
             gridCenter.GraphProperties.LinkColorError = Color.DarkRed;
             gridCenter.GraphProperties.TimeAxisSegmentList = new List<GuiTimeAxisSegment>();
-            gridCenter.GraphProperties.TimeAxisSegmentList.AddRange(CreateHistory(this.TimeRangeTotal, Color.FromArgb(255, 192, 192)));
-            gridCenter.GraphProperties.TimeAxisSegmentList.AddRange(CreateWeekends(this.TimeRangeTotal, Color.FromArgb(255, 32, 32)));
+            gridCenter.GraphProperties.TimeAxisSegmentList.AddRange(CreateHistory(this.TimeRangeTotal, Color.FromArgb(255, 192, 224)));
+            gridCenter.GraphProperties.TimeAxisSegmentList.AddRange(CreateWeekends(this.TimeRangeTotal, Color.FromArgb(255, 96, 32)));
 
 
             DataTable rowTable = WorkSchedulerSupport.CreateTable("RowsCenter", "cislo_subjektu int, reference_subjektu string, nazev_subjektu string, machines_count decimal");
@@ -584,6 +584,27 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this.GridCenter = gridCenter;
             this.MainPage.MainPanel.Grids.Add(gridCenter);
         }
+        /// <summary>
+        /// Vrátí pole, obsahující jeden prvek <see cref="GuiTimeAxisSegment"/>, představující minulý čas.
+        /// </summary>
+        /// <param name="totalTimeRange"></param>
+        /// <param name="backColor"></param>
+        /// <returns></returns>
+        protected static List<GuiTimeAxisSegment> CreateHistory(GuiTimeRange totalTimeRange, Color backColor)
+        {
+            List<GuiTimeAxisSegment> result = new List<GuiTimeAxisSegment>();
+            GuiTimeRange history = new GuiTimeRange(totalTimeRange.Begin, DateTime.Now);
+            string toolTip = "MINULOST";
+            GuiTimeAxisSegment segment = new GuiTimeAxisSegment() { TimeRange = history, BackColor = backColor, ToolTip = toolTip };
+            result.Add(segment);
+            return result;
+        }
+        /// <summary>
+        /// Vrátí pole, obsahující <see cref="GuiTimeAxisSegment"/> pro víkendy v daném časovém intervalu.
+        /// </summary>
+        /// <param name="totalTimeRange"></param>
+        /// <param name="backColor"></param>
+        /// <returns></returns>
         protected static List<GuiTimeAxisSegment> CreateWeekends(GuiTimeRange totalTimeRange, Color backColor)
         {
             List<GuiTimeAxisSegment> result = new List<GuiTimeAxisSegment>();
@@ -603,22 +624,20 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 if (weekend.End > totalTimeRange.Begin)
                 {
                     GuiDoubleRange sizeRange = new GuiDoubleRange(0.0f, 0.125f);
-                    GuiInt32Range heightRange = new GuiInt32Range(1, 5);
-                    string toolTip = "Víkend " + weekend.Begin.ToShortDateString() + " - " + weekend.End.ToShortDateString();
+                    GuiInt32Range heightRange = new GuiInt32Range(1, 4);
+                    DateTime begin = weekend.Begin.Date;
+                    DateTime end = weekend.End.AddDays(-1d).Date;
+                    string beginFmt = "d.";
+                    if (begin.Month != end.Month) beginFmt += "MMMM ";
+                    if (begin.Year != end.Year) beginFmt += "yyyy";
+                    string endFmt = "d.MMMM yyyy";
+                    string toolTip = "Víkend: " + begin.ToString(beginFmt) + " až " + end.ToString(endFmt);
                     GuiTimeAxisSegment segment = new GuiTimeAxisSegment() { TimeRange = weekend, BackColor = backColor, SizeRange = sizeRange, HeightRange = heightRange, ToolTip = toolTip };
                     result.Add(segment);
                 }
                 monday = monday.AddDays(7d).Date;
             }
 
-            return result;
-        }
-        protected static List<GuiTimeAxisSegment> CreateHistory(GuiTimeRange totalTimeRange, Color backColor)
-        {
-            List<GuiTimeAxisSegment> result = new List<GuiTimeAxisSegment>();
-            GuiTimeRange history = new GuiTimeRange(totalTimeRange.Begin, DateTime.Now);
-            GuiTimeAxisSegment segment = new GuiTimeAxisSegment() { TimeRange = history, BackColor = backColor };
-            result.Add(segment);
             return result;
         }
         /// <summary>
