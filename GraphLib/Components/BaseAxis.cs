@@ -2639,7 +2639,7 @@ namespace Asol.Tools.WorkScheduler.Components
             foreach (ISegment iSegment in iSegments)
             {
                 if (!iSegment.BackColor.HasValue) continue;
-                Rectangle? segmentBounds = CreateSegmentBounds(absoluteBounds, this.Orientation, iSegment.PixelRange, iSegment.SizeRange);
+                Rectangle? segmentBounds = CreateSegmentBounds(absoluteBounds, this.Orientation, iSegment.PixelRange, iSegment.HeightRange, iSegment.SizeRange);
                 if (segmentBounds.HasValue)
                     this.DrawBackground(graphics, segmentBounds.Value, iSegment.BackColor.Value);
             }
@@ -2650,9 +2650,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="absoluteBounds"></param>
         /// <param name="axisOrientation"></param>
         /// <param name="segmentRange"></param>
+        /// <param name="heightRange"></param>
         /// <param name="sizeRange"></param>
         /// <returns></returns>
-        protected Rectangle? CreateSegmentBounds(Rectangle absoluteBounds, AxisOrientation axisOrientation, Int32Range segmentRange, DoubleRange sizeRange)
+        protected Rectangle? CreateSegmentBounds(Rectangle absoluteBounds, AxisOrientation axisOrientation, Int32Range segmentRange, Int32Range heightRange, DoubleRange sizeRange)
         {
             int x = absoluteBounds.X;
             int w = absoluteBounds.Width;
@@ -2665,7 +2666,7 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 case AxisOrientation.Top:
                 case AxisOrientation.Bottom:
-                    CreateSegmentSize(sizeRange, y, h, true, out sb, out ss);
+                    CreateSegmentSize(heightRange, sizeRange, y, h, true, out sb, out ss);
                     return new Rectangle(x + segmentRange.Begin, sb, segmentRange.Size, ss);
                 case AxisOrientation.LeftUp:
                 case AxisOrientation.RightUp:
@@ -2677,15 +2678,25 @@ namespace Asol.Tools.WorkScheduler.Components
             return null;
         }
 
-        protected void CreateSegmentSize(DoubleRange sizeRange, int totalBegin, int totalSize, bool alignEnd, out int segmentBegin, out int segmentSize)
+        protected void CreateSegmentSize(Int32Range heightRange, DoubleRange sizeRange, int totalBegin, int totalSize, bool alignEnd, out int segmentBegin, out int segmentSize)
         {
             segmentBegin = totalBegin;
             segmentSize = totalSize;
             if (sizeRange != null)
             {
-                int b = (int)Math.Round((sizeRange.Begin * (double)totalSize), 0);
+                int b = 0;
+                int e = totalSize;
+                if (heightRange != null)
+                {
+                    b = heightRange.Begin;
+                    e = heightRange.End;
+                }
+                else if (sizeRange != null)
+                {
+                    b = (int)Math.Round((sizeRange.Begin * (double)totalSize), 0);
+                    e = (int)Math.Round((sizeRange.End * (double)totalSize), 0);
+                }
                 b = (b < 0 ? 0 : (b > totalSize ? totalSize : b));
-                int e = (int)Math.Round((sizeRange.End * (double)totalSize), 0);
                 e = (e < b ? b : (e > totalSize ? totalSize : e));
 
                 segmentBegin = (alignEnd ? (totalBegin + totalSize - e) : (totalBegin + b));
@@ -2749,8 +2760,18 @@ namespace Asol.Tools.WorkScheduler.Components
             /// </summary>
             public Color? BackColor { get; set; }
             /// <summary>
+            /// Rozmezí výšky na ose Y, které bude obarveno barvou <see cref="BackColor"/>, zadané absolutně v pixelech.
+            /// Pokud je null, značí celou výšku osy.
+            /// Souběh zadání <see cref="SizeRange"/> a <see cref="HeightRange"/>:
+            /// Pokud je zadáno <see cref="HeightRange"/>, pak má přednost před zadáním <see cref="SizeRange"/>.
+            /// Vyjadřuje prostor na vizuální ose ve směru Y, ve kterém bude zobrazeno obarvení tohoto segmentu.
+            /// </summary>
+            public Int32Range HeightRange { get; set; }
+            /// <summary>
             /// Rozmezí výšky na ose Y, které bude obarveno barvou <see cref="BackColor"/>.
             /// Povolené rozmezí = 0 až 1, což je i defaultní hodnota v případě null, značí celou výšku osy.
+            /// Souběh zadání <see cref="SizeRange"/> a <see cref="HeightRange"/>:
+            /// Pokud je zadáno <see cref="HeightRange"/>, pak má přednost před zadáním <see cref="SizeRange"/>.
             /// Vyjadřuje prostor na vizuální ose ve směru Y, ve kterém bude zobrazeno obarvení tohoto segmentu.
             /// </summary>
             public DoubleRange SizeRange { get; set; }
@@ -2788,6 +2809,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             TValue ValueRange { get; }
             Color? BackColor { get; }
+            Int32Range HeightRange { get; }
             DoubleRange SizeRange { get; }
             string ToolTip { get; }
             Int32Range PixelRange { get; }

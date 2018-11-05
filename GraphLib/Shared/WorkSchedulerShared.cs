@@ -1205,8 +1205,18 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public Color? BackColor { get; set; }
         /// <summary>
-        /// Rozmezí výšky na ose Y, které bude obarveno barvou <see cref="BackColor"/>.
+        /// Rozmezí výšky na ose Y, které bude obarveno barvou <see cref="BackColor"/>, zadané absolutně v pixelech.
+        /// Pokud je null, značí celou výšku osy.
+        /// Souběh zadání <see cref="SizeRange"/> a <see cref="HeightRange"/>:
+        /// Pokud je zadáno <see cref="HeightRange"/>, pak má přednost před zadáním <see cref="SizeRange"/>.
+        /// Vyjadřuje prostor na vizuální ose ve směru Y, ve kterém bude zobrazeno obarvení tohoto segmentu.
+        /// </summary>
+        public GuiInt32Range HeightRange { get; set; }
+        /// <summary>
+        /// Rozmezí výšky na ose Y, které bude obarveno barvou <see cref="BackColor"/>, zadané relativně k výšce osy.
         /// Povolené rozmezí = 0 až 1, což je i defaultní hodnota v případě null, značí celou výšku osy.
+        /// Souběh zadání <see cref="SizeRange"/> a <see cref="HeightRange"/>:
+        /// Pokud je zadáno <see cref="HeightRange"/>, pak má přednost před zadáním <see cref="SizeRange"/>.
         /// Vyjadřuje prostor na vizuální ose ve směru Y, ve kterém bude zobrazeno obarvení tohoto segmentu.
         /// </summary>
         public GuiDoubleRange SizeRange { get; set; }
@@ -2657,6 +2667,38 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <param name="serial"></param>
         /// <returns></returns>
         protected override Single GetValue(string serial) { return (Single)Convertor.StringToSingle(serial); }
+        #endregion
+    }
+    /// <summary>
+    /// GuiInt32Range : rozsah { Begin ÷ End } dvou hodnot typu <see cref="Int32"/>
+    /// </summary>
+    public class GuiInt32Range : GuiRange<Int32>, IXmlSerializer
+    {
+        #region Konstruktory
+        /// <summary>
+        /// Bezparametrický konstruktor, pro XML serializaci (Persistor)
+        /// </summary>
+        protected GuiInt32Range() : base() { }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="begin"></param>
+        /// <param name="end"></param>
+        public GuiInt32Range(Int32 begin, Int32 end) : base(begin, end) { }
+        #endregion
+        #region Abstract overrides
+        /// <summary>
+        /// Vrátí serializovanou formu dané typové hodnoty
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        protected override string GetSerial(Int32 value) { return Convertor.Int32ToString(value); }
+        /// <summary>
+        /// Vrátí deserializovanou typovou hodnotu ze serializované formy
+        /// </summary>
+        /// <param name="serial"></param>
+        /// <returns></returns>
+        protected override Int32 GetValue(string serial) { return (Int32)Convertor.StringToInt32(serial); }
         #endregion
     }
     /// <summary>

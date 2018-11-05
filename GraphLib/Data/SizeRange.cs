@@ -1416,6 +1416,20 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <returns></returns>
         protected override string TSizeToText(int size) { return size.ToString(); }
         #endregion
+        #region Implicitní konverze z/na GuiTimeRange
+        /// <summary>
+        /// Implicitní konverze z <see cref="GuiInt32Range"/> na <see cref="Int32Range"/>.
+        /// Pokud je na vstupu <see cref="GuiInt32Range"/> = null, pak na výstupu je <see cref="Int32Range"/> == null.
+        /// </summary>
+        /// <param name="guiInt32Range"></param>
+        public static implicit operator Int32Range(GuiInt32Range guiInt32Range) { return (guiInt32Range != null ? new Int32Range(guiInt32Range.Begin, guiInt32Range.End) : null); }
+        /// <summary>
+        /// Implicitní konverze z <see cref="Int32Range"/> na <see cref="GuiInt32Range"/>.
+        /// Pokud je na vstupu <see cref="Int32Range"/> = null, pak na výstupu je <see cref="GuiInt32Range"/> == null.
+        /// </summary>
+        /// <param name="int32Range"></param>
+        public static implicit operator GuiInt32Range(Int32Range int32Range) { return (int32Range != null && int32Range.IsFilled ? new GuiInt32Range(int32Range.Begin, int32Range.End) : null); }
+        #endregion
         #region Další služby
         /// <summary>
         /// Vrací this interval posunutý o shift, beze změny délky.

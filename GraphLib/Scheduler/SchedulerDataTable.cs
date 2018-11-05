@@ -1832,7 +1832,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             foreach (GuiTimeAxisSegment guiAxisSegment in guiAxisSegments)
             {
                 if (guiAxisSegment != null)
-                    segments.Add(new GTimeAxis.Segment() { ValueRange = guiAxisSegment.TimeRange, BackColor = guiAxisSegment.BackColor, SizeRange = guiAxisSegment.SizeRange, ToolTip = guiAxisSegment.ToolTip });
+                    segments.Add(new GTimeAxis.Segment()
+                    {
+                        ValueRange = guiAxisSegment.TimeRange,
+                        BackColor = guiAxisSegment.BackColor,
+                        HeightRange = guiAxisSegment.HeightRange,
+                        SizeRange = guiAxisSegment.SizeRange,
+                        ToolTip = guiAxisSegment.ToolTip
+                    });
             }
             return segments.ToArray();
         }
