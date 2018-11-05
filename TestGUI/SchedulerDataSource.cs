@@ -559,7 +559,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             gridCenter.GraphProperties.LinkColorStandard = Color.LightGreen;
             gridCenter.GraphProperties.LinkColorWarning = Color.Yellow;
             gridCenter.GraphProperties.LinkColorError = Color.DarkRed;
-            gridCenter.GraphProperties.TimeAxisSegmentList = CreateWeekends(this.TimeRangeTotal, Color.FromArgb(212, 255, 255));
+            gridCenter.GraphProperties.TimeAxisSegmentList = new List<GuiTimeAxisSegment>();
+            gridCenter.GraphProperties.TimeAxisSegmentList.AddRange(CreateHistory(this.TimeRangeTotal, Color.FromArgb(255, 192, 192)));
+            gridCenter.GraphProperties.TimeAxisSegmentList.AddRange(CreateWeekends(this.TimeRangeTotal, Color.FromArgb(255, 32, 32)));
+
 
             DataTable rowTable = WorkSchedulerSupport.CreateTable("RowsCenter", "cislo_subjektu int, reference_subjektu string, nazev_subjektu string, machines_count decimal");
             gridCenter.Rows = new GuiTable() { Name = "GridCenter", DataTable = rowTable };
@@ -599,14 +602,23 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 if (weekend.Begin > totalTimeRange.End) break;
                 if (weekend.End > totalTimeRange.Begin)
                 {
-                    GuiDoubleRange sizeRange = new GuiDoubleRange(0.0f, 0.7f);
+                    GuiDoubleRange sizeRange = new GuiDoubleRange(0.0f, 0.125f);
+                    GuiInt32Range heightRange = new GuiInt32Range(1, 5);
                     string toolTip = "Víkend " + weekend.Begin.ToShortDateString() + " - " + weekend.End.ToShortDateString();
-                    GuiTimeAxisSegment segment = new GuiTimeAxisSegment() { TimeRange = weekend, BackColor = backColor, SizeRange = sizeRange, ToolTip = toolTip };
+                    GuiTimeAxisSegment segment = new GuiTimeAxisSegment() { TimeRange = weekend, BackColor = backColor, SizeRange = sizeRange, HeightRange = heightRange, ToolTip = toolTip };
                     result.Add(segment);
                 }
                 monday = monday.AddDays(7d).Date;
             }
 
+            return result;
+        }
+        protected static List<GuiTimeAxisSegment> CreateHistory(GuiTimeRange totalTimeRange, Color backColor)
+        {
+            List<GuiTimeAxisSegment> result = new List<GuiTimeAxisSegment>();
+            GuiTimeRange history = new GuiTimeRange(totalTimeRange.Begin, DateTime.Now);
+            GuiTimeAxisSegment segment = new GuiTimeAxisSegment() { TimeRange = history, BackColor = backColor };
+            result.Add(segment);
             return result;
         }
         /// <summary>
