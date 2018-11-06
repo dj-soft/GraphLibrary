@@ -562,6 +562,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             gridCenter.GraphProperties.TimeAxisSegmentList = new List<GuiTimeAxisSegment>();
             gridCenter.GraphProperties.TimeAxisSegmentList.AddRange(CreateHistory(this.TimeRangeTotal, Color.FromArgb(255, 192, 224)));
             gridCenter.GraphProperties.TimeAxisSegmentList.AddRange(CreateWeekends(this.TimeRangeTotal, Color.FromArgb(255, 96, 32)));
+            gridCenter.GraphProperties.TimeAxisSegmentList.AddRange(CreateHolidays(this.TimeRangeTotal, Color.FromArgb(255, 32, 255)));
 
 
             DataTable rowTable = WorkSchedulerSupport.CreateTable("RowsCenter", "cislo_subjektu int, reference_subjektu string, nazev_subjektu string, machines_count decimal");
@@ -639,6 +640,106 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             }
 
             return result;
+        }
+        /// <summary>
+        /// Vrátí pole, obsahující <see cref="GuiTimeAxisSegment"/> pro víkendy v daném časovém intervalu.
+        /// </summary>
+        /// <param name="totalTimeRange"></param>
+        /// <param name="backColor"></param>
+        /// <returns></returns>
+        protected static List<GuiTimeAxisSegment> CreateHolidays(GuiTimeRange totalTimeRange, Color backColor)
+        {
+            List<GuiTimeAxisSegment> result = new List<GuiTimeAxisSegment>();
+
+            DateTime day = totalTimeRange.Begin.Date;
+            while (true)
+            {
+                string name;
+                if (IsHoliday(day, out name))
+                {
+                    GuiDoubleRange sizeRange = new GuiDoubleRange(0.0f, 0.125f);
+                    GuiInt32Range heightRange = new GuiInt32Range(4, 7);
+                    DateTime begin = day;
+                    DateTime end = day.AddDays(1d).Date;
+                    GuiTimeRange holiday = new GuiTimeRange(begin, end);
+                    string fmt = "d.MMMM yyyy";
+                    string toolTip = day.ToString(fmt) + " : " + name;
+                    GuiTimeAxisSegment segment = new GuiTimeAxisSegment() { TimeRange = holiday, BackColor = backColor, SizeRange = sizeRange, HeightRange = heightRange, ToolTip = toolTip };
+                    result.Add(segment);
+                }
+                day = day.AddDays(1d).Date;
+                if (day >= totalTimeRange.End) break;
+            }
+
+            return result;
+        }
+        /// <summary>
+        /// Je daný den svátkem? A kterým?
+        /// </summary>
+        /// <param name="day"></param>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        protected static bool IsHoliday(DateTime day, out string name)
+        {
+            name = null;
+            string code = day.ToString("ddMM");
+            switch (code)
+            {
+                case "0101":
+                    name = "Nový rok, do důchodu krok!";
+                    break;
+                case "0105":
+                    name = "Svátek práce";
+                    break;
+                case "0805":
+                    name = "Konec II.WW";
+                    break;
+                case "0507":
+                    name = "Cyril a Metudek";
+                    break;
+                case "0607":
+                    name = "Jan z Husi";
+                    break;
+                case "2809":
+                    name = "Svatý Vácslave, oroduj za nás";
+                    break;
+                case "2810":
+                    name = "Byli jsme před Rakouskem - a jsme i po něm";
+                    break;
+                case "1711":
+                    name = "Plyšák";
+                    break;
+                case "2412":
+                    name = "Jéžišek";
+                    break;
+                case "2512":
+                    name = "Vánoční svátek";
+                    break;
+                case "2612":
+                    name = "Vánoční svátek deja-vu";
+                    break;
+            }
+            if (name != null) return true;
+
+            string codefull = day.ToString("ddMMyyyy");
+            switch (codefull)
+            {
+                case "14042017":
+                case "30032018":
+                case "19042019":
+                case "10042020":
+                    name = "Velikonoční Pátek";
+                    break;
+                case "17042017":
+                case "02042018":
+                case "22042019":
+                case "13042020":
+                    name = "Velikonoční Pondělí";
+                    break;
+            }
+            if (name != null) return true;
+
+            return false;
         }
         /// <summary>
         /// Do dodaného GuiGridu přidá řádek za danou Plánovací jednotkupříkaz, přidá jeho TagItems a graf z jeho operací.
