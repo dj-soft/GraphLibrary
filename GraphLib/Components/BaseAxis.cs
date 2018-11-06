@@ -2666,18 +2666,33 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 case AxisOrientation.Top:
                 case AxisOrientation.Bottom:
-                    CreateSegmentSize(heightRange, sizeRange, y, h, true, out sb, out ss);
+                    CreateSegmentSize(heightRange, sizeRange, y, h, (axisOrientation == AxisOrientation.Top), out sb, out ss);
                     return new Rectangle(x + segmentRange.Begin, sb, segmentRange.Size, ss);
                 case AxisOrientation.LeftUp:
                 case AxisOrientation.RightUp:
-                    return new Rectangle(x, b  - segmentRange.End, w, segmentRange.Size);
+                    CreateSegmentSize(heightRange, sizeRange, x, w, (axisOrientation == AxisOrientation.LeftUp), out sb, out ss);
+                    return new Rectangle(sb, b  - segmentRange.End, ss, segmentRange.Size);
                 case AxisOrientation.LeftDown:
                 case AxisOrientation.RightDown:
-                    return new Rectangle(x, y + segmentRange.Begin, w, segmentRange.Size);
+                    CreateSegmentSize(heightRange, sizeRange, x, w, (axisOrientation == AxisOrientation.LeftDown), out sb, out ss);
+                    return new Rectangle(sb, y + segmentRange.Begin, ss, segmentRange.Size);
             }
             return null;
         }
-
+        /// <summary>
+        /// Určí souřadnice segmentu v dimenzi, která nezobrazuje hodnotu; tedy např. na běžné vodorovné časové ose určuje souřadnice v ose Y.
+        /// Akceptuje požadavky segmentu <see cref="ISegment.HeightRange"/> a <see cref="ISegment.SizeRange"/>, akceptuje pozici celkové osy v daném směru 
+        /// v parametrech (totalBegin) = na vodorovné ose pozice Y celé osy, a (totalSize) = výška osy, 
+        /// akceptuje parametr (alignEnd), který říká, že "pozice 0 osy je na dolním/pravém okraji",
+        /// a určí out souřadnice segmentu v dané souřadnici (segmentBegin) a (segmentSize).
+        /// </summary>
+        /// <param name="heightRange"></param>
+        /// <param name="sizeRange"></param>
+        /// <param name="totalBegin"></param>
+        /// <param name="totalSize"></param>
+        /// <param name="alignEnd"></param>
+        /// <param name="segmentBegin"></param>
+        /// <param name="segmentSize"></param>
         protected void CreateSegmentSize(Int32Range heightRange, DoubleRange sizeRange, int totalBegin, int totalSize, bool alignEnd, out int segmentBegin, out int segmentSize)
         {
             segmentBegin = totalBegin;
@@ -2714,15 +2729,14 @@ namespace Asol.Tools.WorkScheduler.Components
         protected void CheckSegmentsCurrent()
         {
             bool isValid = (this._ISegmentsCurrent != null);
+            if (isValid && !this.IsEqual(this._SegmentCurrentValue, this._Value))
+                isValid = false;
+            if (isValid && this._SegmentCurrentSize != this.PixelSize)
+                isValid = false;
+
             if (isValid)
             {
-                TValue oldValue = this._SegmentCurrentValue;
-                TValue newValue = this._Value;
-                isValid = (this.IsEqual(oldValue, newValue));
-            }
-            if (isValid)
-            {
-             //   return;
+                return;
             }
 
             List<ISegment> iSegmentList = new List<ISegment>();
@@ -2734,13 +2748,19 @@ namespace Asol.Tools.WorkScheduler.Components
                         iSegmentList.Add(iSegment);
                 }
             }
-            this._ISegmentsCurrent = iSegmentList.ToArray();
             this._SegmentCurrentValue = this.GetValue(this.Value);
+            this._SegmentCurrentSize = this.PixelSize;
+            this._ISegmentsCurrent = iSegmentList.ToArray();
         }
         private TValue _SegmentCurrentValue;
+        private decimal _SegmentCurrentSize;
+        #region class Segment + interface ISegment
         /// <summary>
-        /// Definice segmentů na ose, segmenty mohou mít odlišnou barvu a/nebo tooltip
+        /// Definice segmentů na ose, segmenty mohou mít odlišnou barvu a/nebo tooltip než základní osa, a tak mohou sdělovat "něco navíc".
         /// </summary>
+        /// <remarks>
+        /// Třída Segment je vnořená do GBaseAxis kvůli generikám.
+        /// </remarks>
         public class Segment : ISegment
         {
             /// <summary>
@@ -2779,7 +2799,15 @@ namespace Asol.Tools.WorkScheduler.Components
             /// Text pro Tooltip v daném rozmezí, přidává se pod standardní text ToolTipu
             /// </summary>
             public string ToolTip { get; set; }
+            /// <summary>
+            /// Aktuální rozmezí v pixelech na aktivní souřadnici osy (vodorovná osa = souřadnice X)
+            /// </summary>
             Int32Range ISegment.PixelRange { get { return this._PixelRange; } }
+            /// <summary>
+            /// Metoda připraví souřadnice do <see cref="ISegment.PixelRange"/> a vrátí true, pokud daný segment má být na aktuální ose zobrazen.
+            /// </summary>
+            /// <param name="axis"></param>
+            /// <returns></returns>
             bool ISegment.PrepareForAxis(GBaseAxis<TTick, TSize, TValue> axis)
             {
                 bool result = false;
@@ -2805,16 +2833,57 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Interface pro interní přístup k funkčním členům třídy Segment
         /// </summary>
+        /// <remarks>
+        /// Interface ISegment je vnořená do GBaseAxis kvůli generikám.
+        /// </remarks>
         protected interface ISegment
         {
+            /// <summary>
+            /// Rozmezí hodnot, kde se nachází segment
+            /// </summary>
             TValue ValueRange { get; }
+            /// <summary>
+            /// Barva pozadí v tomto segmentu
+            /// </summary>
             Color? BackColor { get; }
+            /// <summary>
+            /// Rozmezí výšky na ose Y, které bude obarveno barvou <see cref="BackColor"/>, zadané absolutně v pixelech.
+            /// Pokud je null, značí celou výšku osy.
+            /// Souběh zadání <see cref="SizeRange"/> a <see cref="HeightRange"/>:
+            /// Pokud je zadáno <see cref="HeightRange"/>, pak má přednost před zadáním <see cref="SizeRange"/>.
+            /// Vyjadřuje prostor na vizuální ose ve směru Y, ve kterém bude zobrazeno obarvení tohoto segmentu.
+            /// </summary>
             Int32Range HeightRange { get; }
+            /// <summary>
+            /// Rozmezí výšky na ose Y, které bude obarveno barvou <see cref="BackColor"/>.
+            /// Povolené rozmezí = 0 až 1, což je i defaultní hodnota v případě null, značí celou výšku osy.
+            /// Souběh zadání <see cref="SizeRange"/> a <see cref="HeightRange"/>:
+            /// Pokud je zadáno <see cref="HeightRange"/>, pak má přednost před zadáním <see cref="SizeRange"/>.
+            /// Vyjadřuje prostor na vizuální ose ve směru Y, ve kterém bude zobrazeno obarvení tohoto segmentu.
+            /// </summary>
             DoubleRange SizeRange { get; }
+            /// <summary>
+            /// Text pro Tooltip v daném rozmezí, přidává se pod standardní text ToolTipu
+            /// </summary>
             string ToolTip { get; }
+            /// <summary>
+            /// Aktuální rozmezí v pixelech na aktivní souřadnici osy (vodorovná osa = souřadnice X)
+            /// </summary>
             Int32Range PixelRange { get; }
+            /// <summary>
+            /// Metoda připraví souřadnice do <see cref="ISegment.PixelRange"/> a vrátí true, pokud daný segment má být na aktuální ose zobrazen.
+            /// </summary>
+            /// <param name="axis"></param>
+            /// <returns></returns>
             bool PrepareForAxis(GBaseAxis<TTick, TSize, TValue> axis);
         }
+        #endregion
+        /// <summary>
+        /// Vrací relativní pixelovou vzdálenost dané hodnoty od počátku osy.
+        /// Pro hodnotu rovnou <see cref="Value"/>.Begin vrací tedy 0.
+        /// </summary>
+        /// <param name="tTick"></param>
+        /// <returns></returns>
         public decimal? GetPixelForValue(TTick tTick)
         {
             TSize distance = this._ValueHelper.SubSize(tTick, this.Value.Begin);    // Vzdálenost TSize od hodnoty na počátku osy (Value.Begin) k danému bodu
