@@ -20,7 +20,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
     /// GTable : vizuální třída pro zobrazení obsahu jedné datové tabulky v jednom Gridu.
     /// Grid může zobrazovat data z více tabulek pomocí více instancí GTable, ale jedna GTable může zobrazit data jen z jedné datové tabulky.
     /// </summary>
-    public class GTable : InteractiveContainer, IInteractiveItem, IGridMember, ISequenceLayout, IDisposable
+    public class GTable : InteractiveContainer, IInteractiveItem, IGTable, IGridMember, ISequenceLayout, IDisposable
     {
         #region Inicializace, reference na GGrid, IGridMember
         internal GTable(GGrid grid, Table table)
@@ -1726,7 +1726,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         {
             base.AfterStateChangedMouseLeave(e);
             if (this._HotCell != null)
-                this.CellMouseLeave(e, null);
+                ((IGTable)this).CellMouseLeave(e, null);
             if (this._HotRow != null)
                 this.SetHotRow(null, EventSourceType.InteractiveChanged);
         }
@@ -1744,7 +1744,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// Provede se poté, kdy uživatel klikne na záhlaví tabulky.
         /// </summary>
         /// <param name="e"></param>
-        public void TableHeaderClick(GInteractiveChangeStateArgs e)
+        void IGTable.TableHeaderClick(GInteractiveChangeStateArgs e)
         {
             // Tady by se asi mohl resetovat filtr, nebo nabídnout reset Rows[].IsSelected, atd...
         }
@@ -1753,7 +1753,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         /// <param name="e"></param>
         /// <param name="column"></param>
-        public void ColumnHeaderClick(GInteractiveChangeStateArgs e, Column column)
+        void IGTable.ColumnHeaderClick(GInteractiveChangeStateArgs e, Column column)
         {   // Třídění podle sloupce, pokud ten to dovoluje:
             if (column != null)
             {
@@ -1770,14 +1770,14 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         /// <param name="e"></param>
         /// <param name="row">řádek</param>
-        public void RowHeaderClick(GInteractiveChangeStateArgs e, Row row)
+        void IGTable.RowHeaderClick(GInteractiveChangeStateArgs e, Row row)
         {
             if (row != null && row.Table.AllowRowSelectByClick)
             {
                 row.Table.RowHeaderClick(row);
                 if (row.Table.AllowRowSelectByClick)
                 {
-                    row.SelectedChange();
+                    row.CheckedChange();
                     this.Repaint();
                 }
             }
@@ -1787,7 +1787,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         /// <param name="e"></param>
         /// <param name="cell">řádek</param>
-        public void CellMouseEnter(GInteractiveChangeStateArgs e, Cell cell)
+        void IGTable.CellMouseEnter(GInteractiveChangeStateArgs e, Cell cell)
         {
             this.SetHotCell(cell, EventSourceType.InteractiveChanged);
             this.CallCellMouseEnter(cell, e);
@@ -1797,7 +1797,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         /// <param name="e"></param>
         /// <param name="cell">řádek</param>
-        public void CellMouseLeave(GInteractiveChangeStateArgs e, Cell cell)
+        void IGTable.CellMouseLeave(GInteractiveChangeStateArgs e, Cell cell)
         {
             this.SetHotCell(null, EventSourceType.InteractiveChanged);
             this.CallCellMouseLeave(cell, e);
@@ -1810,7 +1810,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         /// <param name="e"></param>
         /// <param name="cell">řádek</param>
-        public void CellClick(GInteractiveChangeStateArgs e, Cell cell)
+        void IGTable.CellClick(GInteractiveChangeStateArgs e, Cell cell)
         {
             this.SetActiveCell(cell, EventSourceType.InteractiveChanged, true);
             this.CallActiveCellClick(cell, e);
@@ -1823,7 +1823,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         /// <param name="e"></param>
         /// <param name="cell">řádek</param>
-        public void CellDoubleClick(GInteractiveChangeStateArgs e, Cell cell)
+        void IGTable.CellDoubleClick(GInteractiveChangeStateArgs e, Cell cell)
         {
             this.SetActiveCell(cell, EventSourceType.InteractiveChanged, true);
             this.CallActiveCellDoubleClick(cell, e);
@@ -1836,7 +1836,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         /// <param name="e"></param>
         /// <param name="cell">řádek</param>
-        public void CellLongClick(GInteractiveChangeStateArgs e, Cell cell)
+        void IGTable.CellLongClick(GInteractiveChangeStateArgs e, Cell cell)
         {
             this.SetActiveCell(cell, EventSourceType.InteractiveChanged, true);
             this.CallActiveCellLongClick(cell, e);
@@ -1849,7 +1849,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         /// <param name="e"></param>
         /// <param name="cell">řádek</param>
-        public void CellRightClick(GInteractiveChangeStateArgs e, Cell cell)
+        void IGTable.CellRightClick(GInteractiveChangeStateArgs e, Cell cell)
         {
             this.SetActiveCell(cell, EventSourceType.InteractiveChanged, true);
             this.CallActiveCellRightClick(cell, e);
@@ -2211,8 +2211,8 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
 
             // Základní barva pozadí prvku vychází z barvy standardní, nebo Selected, podle stavu row.IsSelected; primárně z dodaného vizuálního stylu, sekundárně z palety:
             Color baseColor = ((style == null) ?
-                (row.IsSelected ? Skin.Grid.SelectedRowBackColor : Skin.Grid.RowBackColor) :
-                (row.IsSelected ? (style.SelectedBackColor ?? Skin.Grid.SelectedRowBackColor) : (style.BackColor ?? Skin.Grid.RowBackColor)));
+                (row.IsChecked ? Skin.Grid.SelectedRowBackColor : Skin.Grid.RowBackColor) :
+                (row.IsChecked ? (style.SelectedBackColor ?? Skin.Grid.SelectedRowBackColor) : (style.BackColor ?? Skin.Grid.RowBackColor)));
 
             // Základní barva je poté morfována do barvy Active v poměru, který vyjadřuje aktivitu řádku, buňky, a focus tabulky, a stav HotMouse:
             float ratio = this.GetMorphRatio(row, cell, ref effect3D);
@@ -2244,8 +2244,8 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
 
             // Základní barva prvku je podle jeho stavu isSelected, primárně ze stylu prvku, při nezadání barvy pak z odpovídající položky Skinu pro Grid:
             Color baseColor = ((style == null) ?
-                (row.IsSelected ? Skin.Grid.SelectedRowTextColor : Skin.Grid.RowTextColor) :
-                (row.IsSelected ? (style.SelectedTextColor ?? Skin.Grid.SelectedRowTextColor) : (style.TextColor ?? Skin.Grid.RowTextColor)));
+                (row.IsChecked ? Skin.Grid.SelectedRowTextColor : Skin.Grid.RowTextColor) :
+                (row.IsChecked ? (style.SelectedTextColor ?? Skin.Grid.SelectedRowTextColor) : (style.TextColor ?? Skin.Grid.RowTextColor)));
 
             // Základní barva je poté morfována do barvy Active v poměru, který vyjadřuje aktivitu řádku, buňky, a focus tabulky, a stav HotMouse:
             float ratio = this.GetMorphRatio(row, cell);
@@ -2474,5 +2474,76 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                 target.CallActiveCellRightClick(cell, e, !this.IsSuppressedEvent);
         }
         #endregion
+    }
+    /// <summary>
+    /// Interface pro <see cref="GTable"/>, aby interní metody nebyly veřejně viditelné
+    /// </summary>
+    public interface IGTable
+    {
+        /// <summary>
+        /// Provede se poté, kdy uživatel klikne na záhlaví tabulky.
+        /// </summary>
+        /// <param name="e"></param>
+        void TableHeaderClick(GInteractiveChangeStateArgs e);
+        /// <summary>
+        /// Provede se poté, kdy uživatel klikne na záhlaví sloupce.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="column"></param>
+        void ColumnHeaderClick(GInteractiveChangeStateArgs e, Column column);
+        /// <summary>
+        /// Provede se poté, kdy uživatel klikne na záhlaví řádku.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="row">řádek</param>
+        void RowHeaderClick(GInteractiveChangeStateArgs e, Row row);
+        /// <summary>
+        /// Provede se poté, kdy uživatel vstoupí s myší nad určitou buňkou.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="cell">řádek</param>
+        void CellMouseEnter(GInteractiveChangeStateArgs e, Cell cell);
+        /// <summary>
+        /// Provede se poté, kdy uživatel vystoupí myší z určité buňky jinam.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="cell">řádek</param>
+        void CellMouseLeave(GInteractiveChangeStateArgs e, Cell cell);
+        /// <summary>
+        /// Provede se poté, kdy uživatel klikne na datovou buňku.
+        /// Pokud řádek buňky není aktivní, měl by být aktivován.
+        /// Pokud buňka není aktivní, a tabulka podporuje výběr buněk, měla by být aktivována.
+        /// Po změně aktivní buňky se vyžádá překreslení tabulky.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="cell">řádek</param>
+        void CellClick(GInteractiveChangeStateArgs e, Cell cell);
+        /// <summary>
+        /// Provede se poté, kdy uživatel povede DoubleClick na datovou buňku.
+        /// Pokud řádek buňky není aktivní, měl by být aktivován.
+        /// Pokud buňka není aktivní, a tabulka podporuje výběr buněk, měla by být aktivována.
+        /// Po změně aktivní buňky se vyžádá překreslení tabulky.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="cell">řádek</param>
+        void CellDoubleClick(GInteractiveChangeStateArgs e, Cell cell);
+        /// <summary>
+        /// Provede se poté, kdy uživatel povede LongClick na datovou buňku.
+        /// Pokud řádek buňky není aktivní, měl by být aktivován.
+        /// Pokud buňka není aktivní, a tabulka podporuje výběr buněk, měla by být aktivována.
+        /// Po změně aktivní buňky se vyžádá překreslení tabulky.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="cell">řádek</param>
+        void CellLongClick(GInteractiveChangeStateArgs e, Cell cell);
+        /// <summary>
+        /// Provede se poté, kdy uživatel povede RightClick na datovou buňku.
+        /// Pokud řádek buňky není aktivní, měl by být aktivován.
+        /// Pokud buňka není aktivní, a tabulka podporuje výběr buněk, měla by být aktivována.
+        /// Po změně aktivní buňky se vyžádá překreslení tabulky.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="cell">řádek</param>
+        void CellRightClick(GInteractiveChangeStateArgs e, Cell cell);
     }
 }

@@ -306,8 +306,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Metoda vytvoří novou tabulku <see cref="MainDataTable"/> s daty dodanými v <see cref="GuiGrid"/>.
         /// Pokud data neobsahují tabulku s řádky, vrací null.
         /// Vytvořenou tabulku <see cref="MainDataTable"/> uloží do <see cref="_DataTableList"/>,
-        /// do vizuálního gridu <see cref="GGrid"/> přidá tabulku s řádky <see cref="MainDataTable.TableRow"/>,
-        /// synchronizuje vlastnosti tabulky (pomocí metody <see cref="_LoadGridProperties(GTable, GuiGridProperties)"/>.
+        /// do vizuálního gridu <see cref="GGrid"/> přidá tabulku s řádky z dodaného <see cref="GuiGrid"/>.
         /// Vytvořenou tabulku <see cref="MainDataTable"/> vrací.
         /// </summary>
         /// <param name="gGrid"></param>
@@ -322,28 +321,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (mainDataTable.TableRow == null) return null;
 
             this._DataTableList.Add(mainDataTable);
-
-            GTable gTable = null;
-            using (App.Trace.Scope(TracePriority.Priority2_Lowest, "SchedulerPanel", "AddTableToGrid", "", guiGrid.FullName))
-                gTable = gGrid.AddTable(mainDataTable.TableRow);
-
-            using (App.Trace.Scope(TracePriority.Priority2_Lowest, "SchedulerPanel", "LoadGridProperties", "", guiGrid.FullName))
-                _LoadGridProperties(gTable, guiGrid.GridProperties);
+            mainDataTable.AddTableToGrid(gGrid);
 
             return mainDataTable;
-        }
-        /// <summary>
-        /// Metoda přenese nastavení vlastností z <see cref="GuiGridProperties"/> do <see cref="GTable"/>.
-        /// </summary>
-        /// <param name="gTable"></param>
-        /// <param name="gridProperties"></param>
-        private static void _LoadGridProperties(GTable gTable, GuiGridProperties gridProperties)
-        {
-            gTable.TagFilterBackColor = gridProperties.TagFilterBackColor;
-            gTable.TagFilterEnabled = gridProperties.TagFilterEnabled;
-            gTable.TagFilterItemHeight = gridProperties.TagFilterItemHeight;
-            gTable.TagFilterItemMaxCount = gridProperties.TagFilterItemMaxCount;
-            gTable.TagFilterRoundItemPercent = gridProperties.TagFilterRoundItemPercent;
         }
         #endregion
         #region Child items

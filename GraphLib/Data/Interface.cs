@@ -138,4 +138,79 @@ namespace Asol.Tools.WorkScheduler.Data
         InteractiveChanged = 0x4000
     }
     #endregion
+    #region delegate GPropertyChangedHandler, class GPropertyChangeArgs, enum EventSourceType
+    /// <summary>
+    /// Delegát pro handlery události, kdy došlo ke změně hodnoty na GInteractiveControl
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
+    public delegate void GObjectPropertyChangedHandler<TObject, TValue>(object sender, GObjectPropertyChangeArgs<TObject, TValue> e);
+    /// <summary>
+    /// Data pro eventhandler navázaný na změnu nějaké hodnoty v určitém objektu
+    /// </summary>
+    public class GObjectPropertyChangeArgs<TObject, TValue> : EventArgs
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="currentObject"></param>
+        /// <param name="oldvalue"></param>
+        /// <param name="newValue"></param>
+        /// <param name="eventSource"></param>
+        public GObjectPropertyChangeArgs(TObject currentObject, TValue oldvalue, TValue newValue, EventSourceType eventSource)
+        {
+            this.CurrentObject = currentObject;
+            this.OldValue = oldvalue;
+            this.NewValue = newValue;
+            this.EventSource = eventSource;
+            this.CorrectValue = newValue;
+            this.Cancel = false;
+        }
+        /// <summary>
+        /// Objekt, v němž došlo ke změně
+        /// </summary>
+        public TObject CurrentObject { get; private set; }
+        /// <summary>
+        /// Hodnota platná před změnou
+        /// </summary>
+        public TValue OldValue { get; private set; }
+        /// <summary>
+        /// Hodnota platná po změně
+        /// </summary>
+        public TValue NewValue { get; private set; }
+        /// <summary>
+        /// Zdroj události
+        /// </summary>
+        public EventSourceType EventSource { get; private set; }
+        /// <summary>
+        /// Hodnota odpovídající aplikační logice, hodnotu nastavuje eventhandler.
+        /// Výchozí hodnota je NewValue.
+        /// Komponenta by na tuto korigovanou hodnotu měla reagovat.
+        /// </summary>
+        public TValue CorrectValue { get; set; }
+        /// <summary>
+        /// Požadavek aplikačního kódu na zrušení této změny = ponechat OldValue.
+        /// Výchozí hodnota je false.
+        /// </summary>
+        public bool Cancel { get; set; }
+        /// <summary>
+        /// true pokud hodnota CorrectValue je odlišná od OldValue, false pokud jsou shodné.
+        /// Pokud typ hodnoty není IComparable, pak se vrací true vždy.
+        /// </summary>
+        public bool IsChangeValue
+        {
+            get
+            {
+                IComparable a = this.OldValue as IComparable;
+                IComparable b = this.CorrectValue as IComparable;
+                if (a == null || b == null) return true;
+                return (a.CompareTo(b) != 0);
+            }
+        }
+        /// <summary>
+        /// Výsledná hodnota (pokud je Cancel == true, pak OldValue, jinak CorrectValue).
+        /// </summary>
+        public TValue ResultValue { get { return (this.Cancel ? this.OldValue : this.CorrectValue); } }
+    }
+    #endregion
 }

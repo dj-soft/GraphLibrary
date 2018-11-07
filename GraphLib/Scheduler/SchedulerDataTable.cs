@@ -18,7 +18,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 {
     #region class MainDataTable : obsah dat jedné logické tabulky: shrnuje v sobě fyzické řádky, položky grafů, vztahy položek grafů a popisky položek grafů
     /// <summary>
-    /// MainDataTable : obsah dat jedné logické tabulky: shrnuje v sobě fyzické řádky, položky grafů, vztahy položek grafů a popisky položek grafů
+    /// MainDataTable : obsah dat jedné logické tabulky: shrnuje v sobě fyzické řádky, grafy, položky grafů, vztahy mezi položkami grafů a popisky položek grafů.
+    /// Tvoří základ pro jeden vizuální objekt <see cref="GTable"/>.
     /// </summary>
     public class MainDataTable : IMainDataTableInternal, ITimeGraphDataSource
     {
@@ -444,6 +445,77 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         public Table TableRow { get; private set; }
         /// <summary>
+        /// Metoda vloží svoji datovou tabulku <see cref="TableRow"/> do předaného grafické komponenty <see cref="GGrid"/>.
+        /// Tím vytvoří grafickou komponentu <see cref="GTable"/> (kterou nakonec vrací).
+        /// Do této grafické komponenty zaregistruje patřičné eventhandlery.
+        /// </summary>
+        /// <param name="gGrid"></param>
+        /// <returns></returns>
+        internal GTable AddTableToGrid(GGrid gGrid)
+        {
+            using (App.Trace.Scope(TracePriority.Priority2_Lowest, "MainDataTable", "AddTableToGrid", "", this.GuiGrid.FullName))
+            {
+                this.GTableRow = gGrid.AddTable(this.TableRow);
+                this.FillGTableProperties();
+                this.FillGTableEventHandlers();
+                return this.GTableRow;
+            }
+        }
+        /// <summary>
+        /// Metoda zajistí převedení konfigurace z <see cref="GuiGrid"/> do <see cref="GTableRow"/>
+        /// </summary>
+        protected void FillGTableProperties()
+        {
+            using (App.Trace.Scope(TracePriority.Priority2_Lowest, "MainDataTable", "FillGTableProperties", "", this.GuiGrid.FullName))
+            {
+                GTable gTableRow = this.GTableRow;
+                GuiGridProperties gridProperties = this.GuiGrid.GridProperties;
+                gTableRow.TagFilterBackColor = gridProperties.TagFilterBackColor;
+                gTableRow.TagFilterEnabled = gridProperties.TagFilterEnabled;
+                gTableRow.TagFilterItemHeight = gridProperties.TagFilterItemHeight;
+                gTableRow.TagFilterItemMaxCount = gridProperties.TagFilterItemMaxCount;
+                gTableRow.TagFilterRoundItemPercent = gridProperties.TagFilterRoundItemPercent;
+            }
+        }
+        /// <summary>
+        /// Metoda zajistí navázání eventhandlerů v this třídě do grafické komponenty <see cref="GTable"/> <see cref="GTableRow"/>.
+        /// </summary>
+        protected void FillGTableEventHandlers()
+        {
+            Table table = this.TableRow;
+            table.ActiveRowChanged += _TableRowActiveRowChanged;
+            table.CheckedRowChanged += _TableRowCheckedRowChanged;
+            // table.LostFocus +=
+
+        }
+        /// <summary>
+        /// Eventhandler události "Byl aktivován řádek"
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _TableRowActiveRowChanged(object sender, GPropertyChangeArgs<Row> e)
+        {
+            // Aktivace řádku: pokud v tabulce existují označené řádky (CheckedRows), pak prostý pohyb aktivního řádku nic neznamená:
+            Row[] checkedRows = this.TableRow.CheckedRows;
+            if (checkedRows.Length > 0) return;
+
+            this.InteractionThisSourceActiveRows(new Row[] { e.NewValue });
+        }
+        /// <summary>
+        /// Eventhandler události "Byl označen řádek"
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _TableRowCheckedRowChanged(object sender, GObjectPropertyChangeArgs<Row, bool> e)
+        {
+            Row[] checkedRows = this.TableRow.CheckedRows;
+            this.InteractionThisSourceActiveRows(checkedRows);
+        }
+        /// <summary>
+        /// Grafická komponenta reprezentující data z <see cref="TableRow"/>.
+        /// </summary>
+        protected GTable GTableRow { get; private set; }
+        /// <summary>
         /// Metoda vrátí pole štítků <see cref="TagItem"/>, načtených z <see cref="GuiGrid"/>.
         /// </summary>
         /// <returns></returns>
@@ -484,6 +556,52 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             };
             GId rowGId = guiTagItem.RowId;
             return new KeyValuePair<GId, TagItem>(rowGId, tagItem);
+        }
+        #endregion
+        #region Podpora pro mezitabulkové interakce (kdy akce v jedné tabulce vyvolá jinou akci v jiné tabulce)
+        /// <summary>
+        /// Interakce mezi tabulkami, kde this tabulka je zdrojem interakce = zde došlo k akci Aktivace řádků:
+        /// podle definic v this tabulce máme provést nějaké akce v cílových tabulkách.
+        /// </summary>
+        /// <param name="activeRows"></param>
+        protected void InteractionThisSourceActiveRows(Row[] activeRows)
+        {
+            // Z aktivních řádků (parametr) si z jejcih grafů na pozadí načteme všechny jednotlivé prvky grafů do společné Dictionary:
+            Dictionary<GId, DataGraphItem> graphItemDict = new Dictionary<GId, DataGraphItem>();
+            foreach (Row row in activeRows)
+            {
+                if (row.BackgroundValueType != TableValueType.ITimeInteractiveGraph) continue;
+                GTimeGraph gTimeGraph = row.BackgroundValue as GTimeGraph;
+                if (gTimeGraph == null) continue;
+                foreach (ITimeGraphItem iItem in gTimeGraph.GraphItems)
+                {
+                    DataGraphItem item = iItem as DataGraphItem;
+                    if (item == null) continue;
+                    if (!graphItemDict.ContainsKey(item.ItemGId))
+                        graphItemDict.Add(item.ItemGId, item);
+                }
+            }
+
+            // Najdeme cílovou tabulku, a v ní provedeme Selectování grafických prvků odpovídající Grupám, které mají shodné ID (GroupId) jako naše ItemId:
+            MainDataTable targetTable = this.IMainData.SearchTable(@"Data\pages\MainPage\mainPanel\GridCenter");
+            if (targetTable != null)
+                targetTable.InteractionThisTargetSelectGraphItemsGroups(graphItemDict.Keys, false);
+        }
+        /// <summary>
+        /// Interakce mezi tabulkami, this tabulka je cílem interakce = zde máme provést Selectování položek grafů:
+        /// </summary>
+        /// <param name="groupIds"></param>
+        /// <param name="leaveSelect"></param>
+        protected void InteractionThisTargetSelectGraphItemsGroups(IEnumerable<GId> groupIds, bool leaveSelect)
+        {
+            if (!leaveSelect) this.MainControl.Selector.ClearSelected();
+
+            foreach (GId groupId in groupIds)
+            {
+                DataGraphItem[] group;
+                if (!this.TimeGraphGroupDict.TryGetValue(groupId, out group)) continue;
+                (group[0] as ITimeGraphItem).GControl.Group.GControl.IsSelected = true;
+            }
         }
         #endregion
         #region Grafy a položky grafů

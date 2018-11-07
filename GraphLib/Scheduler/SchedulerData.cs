@@ -72,6 +72,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="guiData"></param>
         public void LoadData(GuiData guiData)
         {
+            if (guiData == null)
+                throw new GraphLibCodeException("Pro tvorbu Scheduler.MainData byl dodán objekt GuiData = null.");
+            guiData.FillParents();
             this._GuiData = guiData;
             this._LoadGuiToolbar(guiData.ToolbarItems);
             this._LoadGuiPanels(guiData.Pages);
@@ -685,7 +688,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             #endregion
         }
         #endregion
-        #region Datové panely
+        #region Datové panely, jednotlivé datové tabulky
         /// <summary>
         /// Načte položky do panelů z dodaných dat Gui
         /// </summary>
@@ -717,7 +720,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Souhrn všech datových tabulek ze všech panelů.
         /// Každá tabulka má své unikátní jméno (alespoň měla by mít), uložené v <see cref="MainDataTable.TableName"/>.
         /// </summary>
-        public MainDataTable[] DataTables { get { return this._DataTables; } }
+        protected MainDataTable[] DataTables { get { return this._DataTables; } }
         /// <summary>
         /// Metoda načte souhrn všech tabulek <see cref="MainDataTable"/> ze všech vytvořených panelů do <see cref="_DataTables"/>.
         /// </summary>
@@ -730,6 +733,17 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                     tableList.AddRange(panel.SchedulerPanel.DataTables);
                 this._DataTables = tableList.ToArray();
             }
+        }
+        /// <summary>
+        /// Metoda má najít a vrátit komplexní tabulku MainDataTable podle jejího plného jména.
+        /// Může vrátit null.
+        /// Pokud by existovalo více tabulek shodného jména, vrací první z nich.
+        /// </summary>
+        /// <param name="fullName"></param>
+        /// <returns></returns>
+        private MainDataTable _SearchTable(string fullName)
+        {
+            return this._DataTables.FirstOrDefault(t => String.Equals(t.TableName, fullName));
         }
         /// <summary>
         /// Souhrn všech datových tabulek ze všech panelů.
@@ -1883,6 +1897,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="moveInfo"></param>
         void IMainDataInternal.AdjustGraphItemDragMove(GraphItemDragMoveInfo moveInfo) { this._AdjustGraphItemDragMove(moveInfo); }
         /// <summary>
+        /// Metoda má najít a vrátit komplexní tabulku MainDataTable podle jejího plného jména.
+        /// Může vrátit null.
+        /// </summary>
+        /// <param name="fullName"></param>
+        /// <returns></returns>
+        MainDataTable IMainDataInternal.SearchTable(string fullName) { return this._SearchTable(fullName); }
+        /// <summary>
         /// Metoda zpracuje odpovědi z aplikace.
         /// </summary>
         /// <param name="guiResponse"></param>
@@ -1918,6 +1939,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="moveInfo"></param>
         void AdjustGraphItemDragMove(GraphItemDragMoveInfo moveInfo);
+        /// <summary>
+        /// Metoda má najít a vrátit komplexní tabulku MainDataTable podle jejího plného jména.
+        /// Může vrátit null.
+        /// </summary>
+        /// <param name="fullName"></param>
+        /// <returns></returns>
+        MainDataTable SearchTable(string fullName);
         /// <summary>
         /// Metoda zpracuje odpovědi z aplikace.
         /// </summary>

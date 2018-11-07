@@ -54,6 +54,10 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         public GTable OwnerGTable { get { return ((this.OwnerTable != null && this.OwnerTable.HasGTable) ? this.OwnerTable.GTable : null); } }
         /// <summary>
+        /// Interní přístup do tabulky
+        /// </summary>
+        protected IGTable OwnerITable { get { return this.OwnerGTable as IGTable; } }
+        /// <summary>
         /// Datová tabulka, do které this záhlaví patří.
         /// Je k dispozici pro všechny tři typy záhlaví (Table, Column, Row).
         /// </summary>
@@ -336,7 +340,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="e"></param>
         protected override void AfterStateChangedLeftClick(GInteractiveChangeStateArgs e)
         {
-            this.OwnerGTable.TableHeaderClick(e);
+            this.OwnerITable.TableHeaderClick(e);
         }
         #endregion
         #region Draw - kreslení záhlaví tabulky
@@ -657,7 +661,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="e"></param>
         protected override void AfterStateChangedLeftClick(GInteractiveChangeStateArgs e)
         {
-            this.OwnerGTable.ColumnHeaderClick(e, this.OwnerColumn);
+            this.OwnerITable.ColumnHeaderClick(e, this.OwnerColumn);
         }
         #endregion
         #region Drag - Proces přesouvání sloupce
@@ -1342,7 +1346,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="e"></param>
         protected override void AfterStateChangedLeftClick(GInteractiveChangeStateArgs e)
         {
-            this.OwnerGTable.RowHeaderClick(e, this.OwnerRow);
+            this.OwnerITable.RowHeaderClick(e, this.OwnerRow);
         }
         /// <summary>
         /// Je povoleno provést Drag and Drop
@@ -1415,7 +1419,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             get
             {
                 Row row = this.OwnerRow;
-                if (row.IsSelected) return Skin.Grid.RowSelectedImage;
+                if (row.IsChecked) return Skin.Grid.RowSelectedImage;
                 // Případné další ikonky mohou být zde...
                 return null;
             }
@@ -1561,7 +1565,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         {
             base.AfterStateChangedMouseEnter(e);
             this.Repaint();
-            this.OwnerGTable.CellMouseEnter(e, this.OwnerCell);
+            this.OwnerITable.CellMouseEnter(e, this.OwnerCell);
         }
         /// <summary>
         /// Myš odešla z této buňky
@@ -1570,7 +1574,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         protected override void AfterStateChangedMouseLeave(GInteractiveChangeStateArgs e)
         {
             base.AfterStateChangedMouseLeave(e);
-            this.OwnerGTable.CellMouseLeave(e, this.OwnerCell);
+            this.OwnerITable.CellMouseLeave(e, this.OwnerCell);
         }
         /// <summary>
         /// Uživatel klikl do této buňky
@@ -1579,7 +1583,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         protected override void AfterStateChangedLeftClick(GInteractiveChangeStateArgs e)
         {
             base.AfterStateChangedLeftClick(e);
-            this.OwnerGTable.CellClick(e, this.OwnerCell);
+            this.OwnerITable.CellClick(e, this.OwnerCell);
         }
         /// <summary>
         /// Uživatel dal DoubleClick
@@ -1588,7 +1592,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         protected override void AfterStateChangedLeftDoubleClick(GInteractiveChangeStateArgs e)
         {
             base.AfterStateChangedLeftDoubleClick(e);
-            this.OwnerGTable.CellDoubleClick(e, this.OwnerCell);
+            this.OwnerITable.CellDoubleClick(e, this.OwnerCell);
         }
         /// <summary>
         /// Uživatel dal LongClick
@@ -1597,7 +1601,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         protected override void AfterStateChangedLeftLongClick(GInteractiveChangeStateArgs e)
         {
             base.AfterStateChangedLeftLongClick(e);
-            this.OwnerGTable.CellLongClick(e, this.OwnerCell);
+            this.OwnerITable.CellLongClick(e, this.OwnerCell);
         }
         /// <summary>
         /// Uživatel dal RightClick
@@ -1606,7 +1610,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         protected override void AfterStateChangedRightClick(GInteractiveChangeStateArgs e)
         {
             base.AfterStateChangedRightClick(e);
-            this.OwnerGTable.CellRightClick(e, this.OwnerCell);
+            this.OwnerITable.CellRightClick(e, this.OwnerCell);
         }
         /// <summary>
         /// Metoda je volána v události MouseEnter, a jejím úkolem je přpravit data pro ToolTip.

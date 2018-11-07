@@ -1049,6 +1049,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Událost, která se vyvolá pokud uživatel posune myš (jen pohyb, bez drag/drop, bez click) na nový řádek
         /// </summary>
         public event GPropertyChangedHandler<Row> HotRowChanged;
+
         /// <summary>
         /// Obsluha události Změna Hot buňky (pod myší)
         /// </summary>
@@ -1072,6 +1073,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Událost, která se vyvolá pokud uživatel posune myš (jen pohyb, bez drag/drop, bez click) na novou buňku (v témže řádku, v jiném řádku)
         /// </summary>
         public event GPropertyChangedHandler<Cell> HotCellChanged;
+
         /// <summary>
         /// Obsluha události Změna aktivního řádku
         /// </summary>
@@ -1081,6 +1083,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="callEvents"></param>
         void ITableEventTarget.CallActiveRowChanged(Row oldActiveRow, Row newActiveRow, EventSourceType eventSource, bool callEvents)
         {
+            this.ActiveRow = newActiveRow;
             GPropertyChangeArgs<Row> args = new GPropertyChangeArgs<Row>(oldActiveRow, newActiveRow, eventSource);
             this.OnActiveRowChanged(args);
             if (callEvents && this.ActiveRowChanged != null)
@@ -1095,6 +1098,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Event Změna aktivního řádku
         /// </summary>
         public event GPropertyChangedHandler<Row> ActiveRowChanged;
+
         /// <summary>
         /// Obsluha události Změna aktivní buňky
         /// </summary>
@@ -1104,6 +1108,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="callEvents"></param>
         void ITableEventTarget.CallActiveCellChanged(Cell oldActiveCell, Cell newActiveCell, EventSourceType eventSource, bool callEvents)
         {
+            this.ActiveCell = newActiveCell;
             GPropertyChangeArgs<Cell> args = new GPropertyChangeArgs<Cell>(oldActiveCell, newActiveCell, eventSource);
             this.OnActiveCellChanged(args);
             if (callEvents && this.ActiveCellChanged != null)
@@ -1118,6 +1123,32 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Event Změna aktivní buňky
         /// </summary>
         public event GPropertyChangedHandler<Cell> ActiveCellChanged;
+
+        /// <summary>
+        /// Změna hodnoty <see cref="Row.IsChecked"/>
+        /// </summary>
+        /// <param name="row"></param>
+        /// <param name="oldValue"></param>
+        /// <param name="newValue"></param>
+        /// <param name="eventSource"></param>
+        /// <param name="callEvents"></param>
+        void ITableEventTarget.CallCheckedRowChanged(Row row, bool oldValue, bool newValue, EventSourceType eventSource, bool callEvents)
+        {
+            GObjectPropertyChangeArgs<Row, bool> args = new GObjectPropertyChangeArgs<Row, bool>(row, oldValue, newValue, eventSource);
+            this.OnCheckedRowChanged(args);
+            if (callEvents && this.CheckedRowChanged != null)
+                this.CheckedRowChanged(this, args);
+        }
+        /// <summary>
+        /// Háček Změna aktivní buňky
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnCheckedRowChanged(GObjectPropertyChangeArgs<Row, bool> args) { }
+        /// <summary>
+        /// Event Změna aktivní buňky
+        /// </summary>
+        public event GObjectPropertyChangedHandler<Row, bool> CheckedRowChanged;
+
         /// <summary>
         /// Obsluha události MouseEnter na buňce tabulky
         /// </summary>
@@ -1140,6 +1171,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Událost, která se vyvolá při vstupu myši nad danou buňku, bez Drag, bez Click
         /// </summary>
         public event GPropertyEventHandler<Cell> CellMouseEnter;
+
         /// <summary>
         /// Obsluha události MouseLeave z buňky tabulky
         /// </summary>
@@ -1185,6 +1217,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Událost, která se vyvolá Click na dané buňce tabulky
         /// </summary>
         public event GPropertyEventHandler<Cell> ActiveCellClick;
+
         /// <summary>
         /// Obsluha události DoubleClick na buňku tabulky
         /// </summary>
@@ -1208,6 +1241,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Událost, která se vyvolá DoubleClick na dané buňce tabulky
         /// </summary>
         public event GPropertyEventHandler<Cell> ActiveCellDoubleClick;
+
         /// <summary>
         /// Obsluha události LongClick na buňku tabulky
         /// </summary>
@@ -1230,6 +1264,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Událost, která se vyvolá LongClick na dané buňce tabulky
         /// </summary>
         public event GPropertyEventHandler<Cell> ActiveCellLongClick;
+
         /// <summary>
         /// Obsluha události RightClick na buňku tabulky
         /// </summary>
@@ -1280,7 +1315,7 @@ namespace Asol.Tools.WorkScheduler.Data
         }
         /// <summary>
         /// Metoda zajistí vyvolání akcí, které povedou k otevření formuláře záznamu specifikovaného v parametru.
-        /// Vyvlá háček <see cref="OnOpenRecordForm(GPropertyEventArgs{GId})"/> a event <see cref="OpenRecordForm"/>.
+        /// Vyvolá háček <see cref="OnOpenRecordForm(GPropertyEventArgs{GId})"/> a event <see cref="OpenRecordForm"/>.
         /// </summary>
         /// <param name="recordId"></param>
         protected void CallOpenRecordForm(GId recordId)
@@ -1299,10 +1334,8 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Event volaný při otevírání záznamu z <see cref="Table"/>.
         /// </summary>
         public event EventHandler<GPropertyEventArgs<GId>> OpenRecordForm;
-
-
         #endregion
-        #region Datové služby tabulky
+        #region Datové služby tabulky, aktivní řádek, aktivní buňka, označené řádky
         /// <summary>
         /// Vrátí true, pokud daný řádek v daném sloupci obsahuje hodnotu různou od null.
         /// Pokud daný řádek nebo sloupec je null nebo neexistuje, pak vrací false.
@@ -1374,6 +1407,21 @@ namespace Asol.Tools.WorkScheduler.Data
             if (columnProperties.ColumnContent == ColumnContentType.RelationRecordId && columnProperties.RecordClassNumber.HasValue) return relationColumn;    // Vztahový sloupec obsahuje číslo záznamu
             return null;
         }
+        /// <summary>
+        /// Aktivní buňka tabulky - v režimu, kdy se tabulka aktivuje po buňkách, viz: <see cref="AllowSelectSingleCell"/>.
+        /// Zatím nelze setovat.
+        /// </summary>
+        public Cell ActiveCell { get; private set; }
+        /// <summary>
+        /// Aktivní řádek tabulky.
+        /// Zatím nelze setovat.
+        /// </summary>
+        public Row ActiveRow { get; private set; }
+        /// <summary>
+        /// Souhrn označených řádků tabulky.
+        /// Zatím nelze setovat.
+        /// </summary>
+        public Row[] CheckedRows { get { return this.Rows.Where(r => r.IsChecked).ToArray(); } }
         #endregion
         #region Primární index
         /// <summary>
@@ -2337,6 +2385,10 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public Table Table { get { return this._Table; } } private Table _Table;
         /// <summary>
+        /// Reference na tabulku, kam řádek patří, typovaná na interní interface <see cref="ITableEventTarget"/>.
+        /// </summary>
+        protected ITableEventTarget ITable { get { return this._Table as ITableEventTarget; } }
+        /// <summary>
         /// Kolekce sloupců z tabulky, může být null pokud řádek není napojen do tabulky
         /// </summary>
         public EList<Column> Columns { get { return (this.HasTable ? this.Table.Columns : null); } }
@@ -2545,9 +2597,22 @@ namespace Asol.Tools.WorkScheduler.Data
         #endregion
         #region GUI vlastnosti
         /// <summary>
-        /// true pokud this řádek je vybrán k další práci. Default = false
+        /// true pokud this řádek je označen k další práci. Default = false.
+        /// Setování nové hodnoty vyvolá událost v tabulce.
         /// </summary>
-        public bool IsSelected { get { return this._IsSelected; } set { this._IsSelected = value; } } private bool _IsSelected = false;
+        public bool IsChecked
+        {
+            get { return this._IsChecked; }
+            set
+            {
+                bool oldValue = this._IsChecked;
+                bool newValue = value;
+                if (oldValue == newValue) return;
+                this._IsChecked = value;
+                this.ITable.CallCheckedRowChanged(this, oldValue, newValue, EventSourceType.ApplicationCode, true);
+            }
+        }
+        private bool _IsChecked = false;
         /// <summary>
         /// true pokud this řádek je aktivní (=vybraný kurzorem)
         /// </summary>
@@ -2559,9 +2624,9 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// Změní hodnotu IsSelected v tomto řádku
         /// </summary>
-        public void SelectedChange()
+        public void CheckedChange()
         {
-            this.IsSelected = !this.IsSelected;
+            this.IsChecked = !this.IsChecked;
         }
         /// <summary>
         /// Image použitý pro zobrazení Selected řádku v prostoru RowHeader. Default = null, v tom případě se použije image this.Table.SelectedRowImage.
@@ -3179,7 +3244,15 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="eventSource"></param>
         /// <param name="callEvents"></param>
         void CallActiveCellChanged(Cell oldActiveCell, Cell newActiveCell, EventSourceType eventSource, bool callEvents);
-
+        /// <summary>
+        /// Změna hodnoty <see cref="Row.IsChecked"/>
+        /// </summary>
+        /// <param name="row"></param>
+        /// <param name="oldValue"></param>
+        /// <param name="newValue"></param>
+        /// <param name="eventSource"></param>
+        /// <param name="callEvents"></param>
+        void CallCheckedRowChanged(Row row, bool oldValue, bool newValue, EventSourceType eventSource, bool callEvents);
         /// <summary>
         /// Událost MouseEnter
         /// </summary>
