@@ -487,6 +487,14 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             gridLeft.GridProperties.TagFilterEnabled = true;
             gridLeft.GridProperties.TagFilterBackColor = Color.FromArgb(64, 128, 64);
 
+            gridLeft.GridProperties.AddInteraction(new GuiGridInteraction()
+            {
+                SourceAction = (SourceActionType.TableRowActivatedOnly | SourceActionType.TableRowChecked),
+                TargetGridFullName = @"Data\pages\MainPage\mainPanel\GridCenter",
+                TargetAction = (TargetActionType.SearchSourceItemId | TargetActionType.SearchTargetGroupId | TargetActionType.SelectTarget)
+            });
+
+
             gridLeft.GraphProperties.AxisResizeMode = AxisResizeContentMode.ChangeScale;
             gridLeft.GraphProperties.BottomMarginPixel = 2;
             gridLeft.GraphProperties.GraphLineHeight = 6;
