@@ -582,7 +582,149 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Barva pozadí filtru TagFilter
         /// </summary>
         public Color? TagFilterBackColor { get; set; }
+        /// <summary>
+        /// Přidá jednu další definici interakce <see cref="GuiGridInteraction"/>
+        /// </summary>
+        /// <param name="interaction"></param>
+        public void AddInteraction(GuiGridInteraction interaction)
+        {
+            if (this.InteractionList == null)
+                this.InteractionList = new List<GuiGridInteraction>();
+            if (interaction != null)
+                this.InteractionList.Add(interaction);
+        }
+        /// <summary>
+        /// Přidá další sadu definic interakcí <see cref="GuiGridInteraction"/>
+        /// </summary>
+        /// <param name="interactions"></param>
+        public void AddInteractions(IEnumerable<GuiGridInteraction> interactions)
+        {
+            if (this.InteractionList == null)
+                this.InteractionList = new List<GuiGridInteraction>();
+            if (interactions != null)
+                this.InteractionList.AddRange(interactions);
+        }
+        /// <summary>
+        /// Soupis definic interakcí
+        /// </summary>
+        public List<GuiGridInteraction> InteractionList { get; set; }
+    }
+    #endregion
+    #region GuiGridInteraction : definice interakcí v rámci GUI (akce v jednom místě způsobí jinou akci jinde)
+    /// <summary>
+    /// GuiGridInteraction : definice interakcí v rámci GUI (akce v jednom místě způsobí jinou akci jinde)
+    /// </summary>
+    public sealed class GuiGridInteraction : GuiBase
+    {
+        /// <summary>
+        /// Zdrojová akce, na kterou je tato interakce navázaná
+        /// </summary>
+        public SourceActionType SourceAction { get; set; }
+        /// <summary>
+        /// Cílová tabulka <see cref="GuiGrid"/>, kam bude akce odeslána
+        /// </summary>
+        public string TargetGridFullName { get; set; }
+        /// <summary>
+        /// Akce, kterou má provést cílová tabulka
+        /// </summary>
+        public TargetActionType TargetAction { get; set; }
+    }
+    /// <summary>
+    /// Typ akce ve zdrojové tabulce, kterou je daná interakce spuštěna
+    /// </summary>
+    [Flags]
+    public enum SourceActionType
+    {
+        /// <summary>
+        /// Žádná zdrojová akce
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Najetí myši nad řádek
+        /// </summary>
+        TableRowMouseOver = 0x0001,
+        /// <summary>
+        /// Aktivace řádku v situaci, kdy NENÍ žádný řádek označen ikonkou v záhlaví řádku (IsChecked)
+        /// </summary>
+        TableRowActivatedOnly = 0x0002,
+        /// <summary>
+        /// Aktivace řádku v situaci, kdy existují i řádky označené ikonkou v záhlaví řádku (IsChecked)
+        /// </summary>
+        TableRowActivatedWithRowsChecked = 0x0004,
+        /// <summary>
+        /// Změna v označení řádků ikonkou v záhlaví řádku (IsChecked)
+        /// </summary>
+        TableRowChecked = 0x0008,
+        /// <summary>
+        /// DoubleClick na řádek
+        /// </summary>
+        TableRowDoubleClicked = 0x0010
+    }
+    /// <summary>
+    /// Typ akce v cílové tabulce, která je provedena
+    /// </summary>
+    [Flags]
+    public enum TargetActionType
+    {
+        /// <summary>
+        /// Žádná akce v cíli
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Hledej ze zdrojového prvku, podle jeho RowId
+        /// </summary>
+        SearchSourceRowId = 0x0001,
+        /// <summary>
+        /// Hledej ze zdrojového prvku, podle jeho GroupId
+        /// </summary>
+        SearchSourceGroupId = 0x0002,
+        /// <summary>
+        /// Hledej ze zdrojového prvku, podle jeho ItemId
+        /// </summary>
+        SearchSourceItemId = 0x0004,
+        /// <summary>
+        /// Hledej ze zdrojového prvku, podle jeho DataId
+        /// </summary>
+        SearchSourceDataId = 0x0008,
 
+        /// <summary>
+        /// Hledej v cílovém prvku, najdi identické RowId
+        /// </summary>
+        SearchTargetRowId = 0x0010,
+        /// <summary>
+        /// Hledej v cílovém prvku, najdi identické GroupId
+        /// </summary>
+        SearchTargetGroupId = 0x0020,
+        /// <summary>
+        /// Hledej v cílovém prvku, najdi identické ItemId
+        /// </summary>
+        SearchTargetItemId = 0x0040,
+        /// <summary>
+        /// Hledej v cílovém prvku, najdi identické DataId
+        /// </summary>
+        SearchTargetDataId = 0x0080,
+
+        /// <summary>
+        /// Nastav na nalezené prvky IsSelected (platí jen na prvky grafu),
+        /// tím se zobrazí jejich vztahy
+        /// </summary>
+        SelectTarget = 0x0100,
+        /// <summary>
+        /// Nastav na nalezené prvky IsActivated (platí jen na prvky grafu),
+        /// tím se více graficky zvýrazní, toto zvýraznění lze odebrat jen jinou programovou aktivitou
+        /// </summary>
+        ActivateTarget = 0x0200,
+        /// <summary>
+        /// Nastav filtr na řádky v cílové tabulce
+        /// </summary>
+        FilterTargetRows = 0x0400,
+        /// <summary>
+        /// Pokud je specifikována tato hodnota v součinnosti s hodnotami <see cref="SelectTarget"/>, <see cref="ActivateTarget"/>, <see cref="FilterTargetRows"/>;
+        /// tak před výběrem cílových prvků NEBUDE provedeno zrušení stávajících hodnot.
+        /// Jinými slovy: pokud bude specifikováno jen <see cref="SelectTarget"/>, ale ne <see cref="LeaveCurrentTarget"/>, tak dosavadní stav Selected prvků bude ZRUŠEN.
+        /// Pokud ale bude specifikováno jak <see cref="SelectTarget"/>, tak současně i <see cref="LeaveCurrentTarget"/>, tak dosavadní stav Selected prvků bude PONECHÁN.
+        /// </summary>
+        LeaveCurrentTarget = 0x0800
     }
     #endregion
     #region GuiTable : Jedna fyzická tabulka (ekvivalent DataTable, s podporou serializace a implicitní konverze z/na DataTable)

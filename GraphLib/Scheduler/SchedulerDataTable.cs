@@ -495,11 +495,12 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="e"></param>
         private void _TableRowActiveRowChanged(object sender, GPropertyChangeArgs<Row> e)
         {
-            // Aktivace řádku: pokud v tabulce existují označené řádky (CheckedRows), pak prostý pohyb aktivního řádku nic neznamená:
+            Row activeRow = e.NewValue;
             Row[] checkedRows = this.TableRow.CheckedRows;
-            if (checkedRows.Length > 0) return;
-
-            this.InteractionThisSourceActiveRows(new Row[] { e.NewValue });
+            bool isOnlyActivadedRow = (checkedRows.Length == 0);
+            GuiGridInteraction[] interactions = this.GetInteractions(isOnlyActivadedRow ? SourceActionType.TableRowActivatedOnly : SourceActionType.TableRowActivatedWithRowsChecked);
+            if (interactions == null) return;
+            this.InteractionThisSource(interactions, activeRow, checkedRows, null, null);
         }
         /// <summary>
         /// Eventhandler události "Byl označen řádek"
@@ -508,8 +509,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="e"></param>
         private void _TableRowCheckedRowChanged(object sender, GObjectPropertyChangeArgs<Row, bool> e)
         {
+            GuiGridInteraction[] interactions = this.GetInteractions(SourceActionType.TableRowChecked);
+            if (interactions == null) return;
+            Row checkedRow = e.CurrentObject;
             Row[] checkedRows = this.TableRow.CheckedRows;
-            this.InteractionThisSourceActiveRows(checkedRows);
+            this.InteractionThisSource(interactions, checkedRow, checkedRows, null, null);
         }
         /// <summary>
         /// Grafická komponenta reprezentující data z <see cref="TableRow"/>.
@@ -559,19 +563,96 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         }
         #endregion
         #region Podpora pro mezitabulkové interakce (kdy akce v jedné tabulce vyvolá jinou akci v jiné tabulce)
+        #region Interakce, algoritmy na straně Source
+        /// <summary>
+        /// Souhrn všech definic interakcí z <see cref="GuiGrid.GridProperties"/>
+        /// </summary>
+        protected List<GuiGridInteraction> AllInteractions { get { return this.GuiGrid?.GridProperties?.InteractionList; } }
+        /// <summary>
+        /// Metoda najde a vrátí pole, obsahující definice interakcí pro danou vstupní akci.
+        /// Vrácené pole může být null (když neexistuje žádná definice, nebo když žádná existující definice se nehodí pro danou akci).
+        /// Pokud vrácené pole není null, pak obsahuje přinejmenším jednu položku.
+        /// </summary>
+        /// <param name="sourceAction"></param>
+        /// <returns></returns>
+        protected GuiGridInteraction[] GetInteractions(SourceActionType sourceAction)
+        {
+            List<GuiGridInteraction> interactions = this.AllInteractions;
+            if (interactions == null || interactions.Count == 0) return null;
+            GuiGridInteraction[] result = interactions.Where(i => ((int)(i.SourceAction & sourceAction) != 0)).ToArray();
+            return (result.Length > 0 ? result : null);
+        }
         /// <summary>
         /// Interakce mezi tabulkami, kde this tabulka je zdrojem interakce = zde došlo k akci Aktivace řádků:
         /// podle definic v this tabulce máme provést nějaké akce v cílových tabulkách.
         /// </summary>
-        /// <param name="activeRows"></param>
-        protected void InteractionThisSourceActiveRows(Row[] activeRows)
+        /// <param name="interactions">Definice interakcí, které se mají provést s danými řádky</param>
+        /// <param name="activeRow">Aktivní řádek, kde došlo k akci</param>
+        /// <param name="checkedRows">Aktuálně označené řádky v tabulce (Checked)</param>
+        /// <param name="activeGraph">Aktivní graf</param>
+        /// <param name="graphItems">Aktivní prvky grafů v této tabulce</param>
+        protected void InteractionThisSource(GuiGridInteraction[] interactions, Row activeRow, Row[] checkedRows, GTimeGraph activeGraph, DataGraphItem[] graphItems)
         {
-            // Z aktivních řádků (parametr) si z jejcih grafů na pozadí načteme všechny jednotlivé prvky grafů do společné Dictionary:
-            Dictionary<GId, DataGraphItem> graphItemDict = new Dictionary<GId, DataGraphItem>();
-            foreach (Row row in activeRows)
+            this.InteractionSelectorClear(interactions);
+
+            TargetActionType targetFromSourceGraph = (TargetActionType.SearchSourceItemId | TargetActionType.SearchSourceGroupId | TargetActionType.SearchSourceDataId);
+            // Na vstupu máme řadu definic interakcí, projdeme je a provedeme potřebné kroky:
+            foreach (GuiGridInteraction interaction in interactions)
             {
-                if (row.BackgroundValueType != TableValueType.ITimeInteractiveGraph) continue;
-                GTimeGraph gTimeGraph = row.BackgroundValue as GTimeGraph;
+                // Pokud interakce nemá definovaný cíl (tabulku) nebo cílovou akci (TargetAction je None), pak tuto interakci přeskočím:
+                if (String.IsNullOrEmpty(interaction.TargetGridFullName) || interaction.TargetAction == TargetActionType.None) continue;
+
+                // Najdeme cílovou tabulku, ale pokud neexistuje, pak tuto interakci přeskočím:
+                MainDataTable targetTable = this.IMainData.SearchTable(interaction.TargetGridFullName);
+                if (targetTable == null) continue;
+                
+                // Pokud interakce má v cílové akci definovanou nějakou práci se zdrojovými prvky grafů, tak je musíme mít k dispozici:
+                if (((interaction.TargetAction & targetFromSourceGraph) != 0) && graphItems == null)
+                    graphItems = this.InteractionThisSourceGetGraphItems(activeRow, checkedRows);
+
+                // Odešleme do cílové tabulky požadavek na interakci:
+                InteractionArgs args = new InteractionArgs(interaction, activeRow, checkedRows, activeGraph, graphItems);
+                targetTable.InteractionThisTarget(args);
+            }
+        }
+        /// <summary>
+        /// Tato metoda má za úkol provést odebrání příznaku Selected nebo Activated ze všech současně vybraných objektů, 
+        /// pokud je to potřeba z hlediska dodaných definic interakcí.
+        /// Potřeba je to tehdy, když:
+        ///  - existuje definice interakce, která ma cíl označování prvků 
+        ///     (její <see cref="GuiGridInteraction.TargetAction"/> obsahuje například <see cref="TargetActionType.SelectTarget"/>),
+        ///  - a přitom tatáž definice nemá požadavek <see cref="TargetActionType.LeaveCurrentTarget"/> = předpokládá se označování po předešlém odznačení.
+        /// </summary>
+        /// <param name="interactions"></param>
+        protected void InteractionSelectorClear(GuiGridInteraction[] interactions)
+        {
+            if (interactions == null || interactions.Length == 0) return;
+
+            bool clearSelected = interactions.Any(i => (i.TargetAction.HasFlag(TargetActionType.SelectTarget) && !i.TargetAction.HasFlag(TargetActionType.LeaveCurrentTarget)));
+            if (clearSelected)
+                this.MainControl.Selector.ClearSelected();
+
+            bool clearActivated = interactions.Any(i => (i.TargetAction.HasFlag(TargetActionType.ActivateTarget) && !i.TargetAction.HasFlag(TargetActionType.LeaveCurrentTarget)));
+            if (clearActivated)
+                this.MainControl.Selector.ClearActivated();
+        }
+        /// <summary>
+        /// Metoda vrátí souhrn všech prvků grafů z dodaných řádků
+        /// </summary>
+        /// <param name="activeRow"></param>
+        /// <param name="checkedRows"></param>
+        /// <returns></returns>
+        protected DataGraphItem[] InteractionThisSourceGetGraphItems(Row activeRow, Row[] checkedRows)
+        {
+            Dictionary<GId, DataGraphItem> graphItemDict = new Dictionary<GId, DataGraphItem>();
+
+            List<Row> rows = new List<Row>();
+            if (activeRow != null) rows.Add(activeRow);
+            if (checkedRows != null) rows.AddRange(checkedRows);
+            
+            foreach (Row row in rows)
+            {
+                GTimeGraph gTimeGraph = this.InteractionGetGraphFromRow(row);
                 if (gTimeGraph == null) continue;
                 foreach (ITimeGraphItem iItem in gTimeGraph.GraphItems)
                 {
@@ -582,27 +663,203 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 }
             }
 
-            // Najdeme cílovou tabulku, a v ní provedeme Selectování grafických prvků odpovídající Grupám, které mají shodné ID (GroupId) jako naše ItemId:
-            MainDataTable targetTable = this.IMainData.SearchTable(@"Data\pages\MainPage\mainPanel\GridCenter");
-            if (targetTable != null)
-                targetTable.InteractionThisTargetSelectGraphItemsGroups(graphItemDict.Keys, false);
+            return graphItemDict.Values.ToArray();
         }
         /// <summary>
-        /// Interakce mezi tabulkami, this tabulka je cílem interakce = zde máme provést Selectování položek grafů:
+        /// Metoda najde a vrátí graf z daného řádku.
+        /// Graf může být buď v buňce, která patří do sloupce s grafem, anebo může být na pozadí.
         /// </summary>
-        /// <param name="groupIds"></param>
-        /// <param name="leaveSelect"></param>
-        protected void InteractionThisTargetSelectGraphItemsGroups(IEnumerable<GId> groupIds, bool leaveSelect)
+        /// <param name="row"></param>
+        /// <returns></returns>
+        protected GTimeGraph InteractionGetGraphFromRow(Row row)
         {
-            if (!leaveSelect) this.MainControl.Selector.ClearSelected();
+            if (row == null) return null;
+            if (row.BackgroundValueType == TableValueType.ITimeInteractiveGraph) return row.BackgroundValue as GTimeGraph;
+            Cell cell = row.Cells.FirstOrDefault(c => c.ValueType == TableValueType.ITimeInteractiveGraph);
+            if (cell == null) return null;
+            return cell.Value as GTimeGraph;
+        }
+        #endregion
+        #region Interakce, algoritmy na straně Target
+        /// <summary>
+        /// Vstupní metoda pro řešení interakce na straně tabulky Target.
+        /// Nějaká zdrojová tabulka (typicky jiná než this) zaregistrovala akci uživatele, k této akci našla definici pro interakci, 
+        /// a podle této definice má být zdejší tabulka (this) cílem této interakce.
+        /// Zdrojová tabulka tedy připravila sadu dat, zabalila je do argumentu a zavolala tuto naší metodu.
+        /// Zdejší tabulka má tedy rozklíčovat, co má provést jako reakci na danou akci uživatele.
+        /// </summary>
+        /// <param name="args"></param>
+        protected void InteractionThisTarget(InteractionArgs args)
+        {
+            if (args == null | args.Interaction.TargetAction == TargetActionType.None) return;
 
-            foreach (GId groupId in groupIds)
-            {
-                DataGraphItem[] group;
-                if (!this.TimeGraphGroupDict.TryGetValue(groupId, out group)) continue;
-                (group[0] as ITimeGraphItem).GControl.Group.GControl.IsSelected = true;
+            // Informace: pokud daná interakce provádí Select nebo Activate, pak předpokládá, že objekt this.MainControl.Selector je řádně připraven.
+            //            To má na starosti metoda this.InteractionSelectorClear(), to nelze řešit až nyní, v rámci jedné z (mnoha) interakcí.
+
+            // Jednotlivé zdroje dat a vyhledání jejich cílů, a provedení přiměřené reakce na zdrojovou akci:
+            TargetActionType action = args.Interaction.TargetAction;
+            if ((action & TargetActionType.SearchSourceItemId) != 0)
+                this.InteractionThisTargetFrom(args, i => i.ItemGId);
+            if ((action & TargetActionType.SearchSourceGroupId) != 0)
+                this.InteractionThisTargetFrom(args, i => i.GroupGId);
+            if ((action & TargetActionType.SearchSourceDataId) != 0)
+                this.InteractionThisTargetFrom(args, i => i.DataGId);
+            if ((action & TargetActionType.SearchSourceRowId) != 0)
+                this.InteractionThisTargetFrom(args, i => i.RowGId);
+
+        }
+        /// <summary>
+        /// Metoda najde ve vstupních grafických prvcích <see cref="InteractionArgs.SourceGraphItems"/> patřičné klíče zadaných grafických prvků (pomocí keySelectoru),
+        /// poté pro tyto klíče najde grafické prvky ve zdejším grafu - podle volby <see cref="GuiGridInteraction.TargetAction"/>,
+        /// a pro tyto nalezené zdejší prvky provede akci definovanou tamtéž.
+        /// </summary>
+        /// <param name="args"></param>
+        /// <param name="keySelector"></param>
+        protected void InteractionThisTargetFrom(InteractionArgs args, Func<DataGraphItem, GId> keySelector)
+        {
+            Dictionary<GId, DataGraphItem> sourceGIds = args.SourceGraphItems.GetDictionary(keySelector, true);   // Klíče (GId) ze zdrojových prvků, podle selectoru, distinct
+            GTimeGraphGroup[] targetGroups = this.InteractionThisSearchGroupBy(args, sourceGIds);        // Najde grupy grafických prvků podle dodaných klíčů
+            this.InteractionThisProcessAction(args, targetGroups);
+        }
+        /// <summary>
+        /// Metoda vrátí pole skupin grafických prvků <see cref="GTimeGraphGroup"/>, které odpovídají vstupním datům.
+        /// </summary>
+        /// <param name="args"></param>
+        /// <param name="sourceGIds"></param>
+        /// <returns></returns>
+        protected GTimeGraphGroup[] InteractionThisSearchGroupBy(InteractionArgs args, Dictionary<GId, DataGraphItem> sourceGIds)
+        {
+            Dictionary<GId, GTimeGraphGroup> groupDict = new Dictionary<GId, GTimeGraphGroup>();
+
+            TargetActionType action = args.Interaction.TargetAction;
+            if ((action & TargetActionType.SearchTargetItemId) != 0)
+                this.InteractionThisSearchGroupInItems(sourceGIds, groupDict);
+            if ((action & TargetActionType.SearchTargetGroupId) != 0)
+                this.InteractionThisSearchGroupInGroups(sourceGIds, groupDict);
+            if ((action & TargetActionType.SearchTargetDataId) != 0)
+                this.InteractionThisSearchGroupInData(sourceGIds, groupDict);
+
+            return groupDict.Values.ToArray();
+        }
+        /// <summary>
+        /// Metoda se pokusí najít ve své evidenci grupy pro prvky s ItemId odpovídající daným identifikátorům GId, a přidat je do předané Dictionary.
+        /// </summary>
+        /// <param name="sourceGIds"></param>
+        /// <param name="groupDict"></param>
+        protected void InteractionThisSearchGroupInItems(Dictionary<GId, DataGraphItem> sourceGIds, Dictionary<GId, GTimeGraphGroup> groupDict)
+        {
+            foreach (GId gId in sourceGIds.Keys)
+            {   // Na vstupu mám klíče ze zdrojového grafu, zde hledám grafické prvky shodného klíče,
+                //  do výstupu dávám zdejší grupy:
+                DataGraphItem item;
+                if (!this.TimeGraphItemDict.TryGetValue(gId, out item)) continue;
+                if (groupDict.ContainsKey(item.GroupGId)) continue;
+                GTimeGraphGroup value = (item as ITimeGraphItem).GControl.Group;
+                if (value != null)
+                    groupDict.Add(item.GroupGId, value);
             }
         }
+        /// <summary>
+        /// Metoda se pokusí najít ve své evidenci grupy s GroupId odpovídající daným identifikátorům GId, a přidat je do předané Dictionary.
+        /// </summary>
+        /// <param name="sourceGIds"></param>
+        /// <param name="groupDict"></param>
+        protected void InteractionThisSearchGroupInGroups(Dictionary<GId, DataGraphItem> sourceGIds, Dictionary<GId, GTimeGraphGroup> groupDict)
+        {
+            foreach (GId gId in sourceGIds.Keys)
+            {   // Na vstupu mám klíče ze zdrojového grafu, zde hledám grupy (grafických prvků) shodného klíče,
+                //  do výstupu dávám zdejší grupy:
+                if (groupDict.ContainsKey(gId)) continue;            // V cílové dictionary už máme grupu pro daný GID, už ji znovu hledat nemusíme
+                DataGraphItem[] group;
+                if (!this.TimeGraphGroupDict.TryGetValue(gId, out group)) continue;
+                GTimeGraphGroup value = (group[0] as ITimeGraphItem).GControl.Group;
+                if (value != null)
+                    groupDict.Add(gId, value);
+            }
+        }
+        /// <summary>
+        /// Metoda se pokusí najít ve své evidenci grupy pro prvky s ItemId odpovídající daným identifikátorům GId, a přidat je do předané Dictionary.
+        /// </summary>
+        /// <param name="sourceGIds"></param>
+        /// <param name="groupDict"></param>
+        protected void InteractionThisSearchGroupInData(Dictionary<GId, DataGraphItem> sourceGIds, Dictionary<GId, GTimeGraphGroup> groupDict)
+        {
+            foreach (DataGraphItem item in this.TimeGraphItemDict.Values)
+            {   // Pro hledání podle DataId zde nemám vhodnou Dictionary. 
+                //  Jednak nečekám, že by se takhle hledalo často, a druhak těch dat zas není tolik.
+                //  Proscanovat řádově tisíc záznamů v nějaké kolekci zabere řádově milisekundu.
+                // Proto scanuji opačně než v předešlých případech = scanuji všechna svoje data (this.TimeGraphItemDict),
+                //  a pokud jejich DataId je zadané a je obsaženo ve zdrojových datech (sourceGIds), pak grupu daného prvku dávám do výstupu:
+                if (item.DataGId != null && sourceGIds.ContainsKey(item.DataGId) && item.GroupGId != null && !groupDict.ContainsKey(item.GroupGId))
+                {
+                    GTimeGraphGroup value = (item as ITimeGraphItem).GControl.Group;
+                    if (value != null)
+                        groupDict.Add(item.GroupGId, value);
+                }
+            }
+        }
+        /// <summary>
+        /// Metoda provede akci, požadovanou v <see cref="GuiGridInteraction.TargetAction"/> pro všechny grupy dodané v parametru targetGroups.
+        /// </summary>
+        /// <param name="args"></param>
+        /// <param name="targetGroups"></param>
+        protected void InteractionThisProcessAction(InteractionArgs args, IEnumerable<GTimeGraphGroup> targetGroups)
+        {
+            TargetActionType action = args.Interaction.TargetAction;
+            bool isSelect = ((action & TargetActionType.SelectTarget) != 0);
+            bool isActivate = ((action & TargetActionType.ActivateTarget) != 0);
+
+            foreach (GTimeGraphGroup targetGroup in targetGroups)
+            {
+                if (isSelect) targetGroup.GControl.IsSelected = true;
+                if (isActivate) targetGroup.GControl.IsActivated = true;
+            }
+        }
+        #endregion
+        #region class InteractionArgs : Data, předávaná při interakci mezi tabulkami z tabulky Source do tabulky Target
+        /// <summary>
+        /// InteractionArgs : Data, předávaná při interakci mezi tabulkami z tabulky Source do tabulky Target
+        /// </summary>
+        protected class InteractionArgs
+        {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="interaction">Definice této jedné interakce</param>
+            /// <param name="sourceActiveRow">Aktuální řádek ve zdrojové tabulce</param>
+            /// <param name="sourceCheckedRows">Označené řádky ve zdrojové tabulce</param>
+            /// <param name="activeGraph">Aktivní graf</param>
+            /// <param name="sourceGraphItems">Aktivní prky grafů ve zdrojové tabulce (podle typu interakce jde o všechny prvky aktivních řádků, nebo o aktivní prvky v určitém grafu)</param>
+            public InteractionArgs(GuiGridInteraction interaction, Row sourceActiveRow, Row[] sourceCheckedRows, GTimeGraph activeGraph, DataGraphItem[] sourceGraphItems)
+            {
+                this.Interaction = interaction;
+                this.SourceActiveRow = sourceActiveRow;
+                this.SourceCheckedRows = sourceCheckedRows;
+                this.ActiveGraph = activeGraph;
+                this.SourceGraphItems = sourceGraphItems;
+            }
+            /// <summary>
+            /// Definice této jedné interakce
+            /// </summary>
+            public GuiGridInteraction Interaction { get; private set; }
+            /// <summary>
+            /// Aktuální řádek ve zdrojové tabulce
+            /// </summary>
+            public Row SourceActiveRow { get; private set; }
+            /// <summary>
+            /// Označené řádky ve zdrojové tabulce
+            /// </summary>
+            public Row[] SourceCheckedRows { get; private set; }
+            /// <summary>
+            /// Aktivní graf
+            /// </summary>
+            public GTimeGraph ActiveGraph { get; private set; }
+            /// <summary>
+            /// Aktivní prky grafů ve zdrojové tabulce (podle typu interakce jde o všechny prvky aktivních řádků, nebo o aktivní prvky v určitém grafu)
+            /// </summary>
+            public DataGraphItem[] SourceGraphItems { get; private set; }
+        }
+        #endregion
         #endregion
         #region Grafy a položky grafů
         /// <summary>
