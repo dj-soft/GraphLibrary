@@ -761,7 +761,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         #region Vztahy (= Linky) - získání a kreslení
         /// <summary>
         /// Zkusí najít vztahy ke kreslení.
-        /// Pokud nějaké najde, budou uloženy v <see cref="Links"/>.
+        /// Pokud nějaké najde, budou uloženy v <see cref="LinksMouse"/>.
         /// </summary>
         protected void PrepareLinksMouse()
         {
@@ -769,7 +769,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             if (!this.Item.BehaviorMode.HasFlag(GraphItemBehaviorMode.ShowLinkInMouseOver)) return;
 
             // Pokud this je na pozici Item, a naše grupa (this.Group) už má nalezené linky, pak je nebudeme opakovaně hledat pro prvek:
-            if (this.Position == GGraphControlPosition.Item && this.Group.GControl.Links != null) return;
+            if (this.Position == GGraphControlPosition.Item && this.Group.GControl.LinksMouse != null) return;
 
             GTimeGraphItem item = this;
             CreateLinksArgs args = new CreateLinksArgs(item.Graph, item.Group, item.Item, item.Position, CreateLinksItemEventType.MouseOver);
@@ -777,18 +777,22 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             GTimeGraphLinkItem[] linksOne = args.Links;
             if (linksOne == null || linksOne.Length == 0) return;
 
-            this.Graph.GraphLinkArray.AddLinks(linksOne, GTimeGraphLinkMode.Mouse, 0.6f);
-            this.Links = linksOne;
+            this.Graph.GraphLinkArray.AddLinks(linksOne, GTimeGraphLinkMode.Mouse, 0.45f);
+            this.LinksMouse = linksOne;
         }
         /// <summary>
         /// Resetuje kreslené vztahy. Odteď se nebudou kreslit.
         /// </summary>
         protected void ResetLinksMouse()
         {
-            if (this.Links != null)
-                this.Graph.GraphLinkArray.RemoveLinks(this.Links, GTimeGraphLinkMode.Mouse);
-            this.Links = null;
+            if (this.LinksMouse != null)
+                this.Graph.GraphLinkArray.RemoveLinks(this.LinksMouse, GTimeGraphLinkMode.Mouse);
+            this.LinksMouse = null;
         }
+        /// <summary>
+        /// Pole vztahů, které jsou získány při MouseEnter a odebrány při MouseLeave
+        /// </summary>
+        protected GTimeGraphLinkItem[] LinksMouse;
         /// <summary>
         /// Připrava linků po změně <see cref="InteractiveObject.IsSelected"/>
         /// </summary>
@@ -799,26 +803,32 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             if (!this.Item.BehaviorMode.HasFlag(GraphItemBehaviorMode.ShowLinkInSelected)) return;
 
             // Pokud this je na pozici Item, a naše grupa (this.Group) už má nalezené linky, pak je nebudeme opakovaně hledat pro prvek:
-            if (this.Position == GGraphControlPosition.Item && this.Group.GControl.Links != null) return;
+            if (this.Position == GGraphControlPosition.Item && this.Group.GControl.LinksMouse != null) return;
+
+            if (this.LinksSelect != null)
+            {   // Deselectovat:
+                this.Graph.GraphLinkArray.RemoveLinks(this.LinksSelect, GTimeGraphLinkMode.Select);
+                this.LinksSelect = null;
+            }
 
             if (isSelected)
-            {
+            {   // Selectovat:
                 GTimeGraphItem item = this;
-                CreateLinksArgs args = new CreateLinksArgs(item.Graph, item.Group, item.Item, item.Position, CreateLinksItemEventType.MouseOver);
+                CreateLinksArgs args = new CreateLinksArgs(item.Graph, item.Group, item.Item, item.Position, CreateLinksItemEventType.ItemSelected);
                 item.Graph.DataSource.CreateLinks(args);
-                GTimeGraphLinkItem[] linksOne = args.Links;
-                if (linksOne == null || linksOne.Length == 0) return;
+                GTimeGraphLinkItem[] links = args.Links;
+                if (links != null && links.Length > 0)
+                {
+                    this.Graph.GraphLinkArray.AddLinks(links, GTimeGraphLinkMode.Select, 0.8f);
+                    this.LinksSelect = links;
+                }
             }
-            else
-            {
-
-            }
-
         }
         /// <summary>
-        /// Pole vztahů, které kreslíme
+        /// Pole vztahů, které jsou získány při Select = true a odebrány při Select = false
         /// </summary>
-        protected GTimeGraphLinkItem[] Links;
+        protected GTimeGraphLinkItem[] LinksSelect;
+
         #endregion
     }
     #region GTimeGraphLinkArray : Vizuální pole, obsahující prvky GTimeGraphLinkItem
@@ -1308,7 +1318,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             Point? nextPoint = GetPoint(this.ItemNext, RectangleSide.CenterX | RectangleSide.CenterY, true);
             if (!(prevPoint.HasValue && nextPoint.HasValue)) return;
 
-            DrawLinkLine(e.Graphics, color1, ratio, System.Drawing.Drawing2D.LineCap.Round, System.Drawing.Drawing2D.LineCap.ArrowAnchor, prevPoint.Value, nextPoint.Value);
+            DrawLinkLine(e.Graphics, color1, this.LinkWidth, ratio, System.Drawing.Drawing2D.LineCap.Round, System.Drawing.Drawing2D.LineCap.ArrowAnchor, prevPoint.Value, nextPoint.Value);
         }
         /// <summary>
         /// Vykreslí přímou linku nebo S křivku { Prev.End to Next.Begin }
@@ -1327,7 +1337,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             Point? nextPoint = GetPoint(this.ItemNext, RectangleSide.MiddleLeft, true);
 
             System.Drawing.Drawing2D.GraphicsPath graphicsPath = DrawLinkGetPath(prevPoint, nextPoint, asSCurve);
-            DrawLinkPath(e.Graphics, color1, ratio, System.Drawing.Drawing2D.LineCap.Round, System.Drawing.Drawing2D.LineCap.ArrowAnchor, graphicsPath);
+            DrawLinkPath(e.Graphics, color1, this.LinkWidth, ratio, System.Drawing.Drawing2D.LineCap.Round, System.Drawing.Drawing2D.LineCap.ArrowAnchor, graphicsPath);
         }
         /// <summary>
         /// Metoda vypočítá a vrátí GraphicsPath, spojující dva zadané body jako přímku nebo jako křivku.
@@ -1428,21 +1438,24 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         /// <param name="graphics"></param>
         /// <param name="color"></param>
+        /// <param name="width"></param>
         /// <param name="ratio"></param>
         /// <param name="startCap"></param>
         /// <param name="endCap"></param>
         /// <param name="pointStart"></param>
         /// <param name="pointEnd"></param>
-        protected static void DrawLinkLine(Graphics graphics, Color color, float ratio, 
+        protected static void DrawLinkLine(Graphics graphics, Color color, int? width, float ratio, 
             System.Drawing.Drawing2D.LineCap startCap, System.Drawing.Drawing2D.LineCap endCap,
             Point pointStart, Point pointEnd)
         {
             Color colorB = color.Morph(Color.Black, 0.80f);
 
-            Pen pen = Skin.Pen(colorB, 3f, opacityRatio: ratio, startCap: startCap, endCap: endCap);
+            float width1 = (width.HasValue ? (width.Value < 1 ? 1f : (width.Value > 6 ? 6f : (float)width.Value)) : 1f);
+
+            Pen pen = Skin.Pen(colorB, width1 + 2f, opacityRatio: ratio, startCap: startCap, endCap: endCap);
             graphics.DrawLine(pen, pointStart, pointEnd);
 
-            pen = Skin.Pen(color, 1f, opacityRatio: ratio, endCap: endCap);
+            pen = Skin.Pen(color, width1, opacityRatio: ratio, endCap: endCap);
             graphics.DrawLine(pen, pointStart, pointEnd);
         }
         /// <summary>
@@ -1450,11 +1463,12 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         /// <param name="graphics"></param>
         /// <param name="color"></param>
+        /// <param name="width"></param>
         /// <param name="ratio"></param>
         /// <param name="startCap"></param>
         /// <param name="endCap"></param>
         /// <param name="graphicsPath"></param>
-        protected static void DrawLinkPath(Graphics graphics, Color color, float ratio,
+        protected static void DrawLinkPath(Graphics graphics, Color color, int? width, float ratio,
             System.Drawing.Drawing2D.LineCap startCap, System.Drawing.Drawing2D.LineCap endCap,
             System.Drawing.Drawing2D.GraphicsPath graphicsPath)
         {
@@ -1462,10 +1476,12 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
 
             Color colorB = color.Morph(Color.Black, 0.80f);
 
-            Pen pen = Skin.Pen(colorB, 3f, opacityRatio: ratio, startCap: startCap, endCap: endCap);
+            float width1 = (width.HasValue ? (width.Value < 1 ? 1f : (width.Value > 6 ? 6f : (float)width.Value)) : 1f);
+
+            Pen pen = Skin.Pen(colorB, width1 + 2f, opacityRatio: ratio, startCap: startCap, endCap: endCap);
             graphics.DrawPath(pen, graphicsPath);
 
-            pen = Skin.Pen(color, 1f, opacityRatio: ratio, endCap: endCap);
+            pen = Skin.Pen(color, width1, opacityRatio: ratio, endCap: endCap);
             graphics.DrawPath(pen, graphicsPath);
         }
         /// <summary>
