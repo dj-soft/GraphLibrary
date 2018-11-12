@@ -792,9 +792,27 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Připrava linků po změně <see cref="InteractiveObject.IsSelected"/>
         /// </summary>
-        /// <param name="isSelected"></param>
+        /// <param name="isSelected">Aktuálně platný stav IsSelected prvku</param>
         protected void PrepareLinksSelect(bool isSelected)
         {
+            // Pokud this prvek nemá zobrazovat linky v IsSelected stavu, pak skončíme:
+            if (!this.Item.BehaviorMode.HasFlag(GraphItemBehaviorMode.ShowLinkInSelected)) return;
+
+            // Pokud this je na pozici Item, a naše grupa (this.Group) už má nalezené linky, pak je nebudeme opakovaně hledat pro prvek:
+            if (this.Position == GGraphControlPosition.Item && this.Group.GControl.Links != null) return;
+
+            if (isSelected)
+            {
+                GTimeGraphItem item = this;
+                CreateLinksArgs args = new CreateLinksArgs(item.Graph, item.Group, item.Item, item.Position, CreateLinksItemEventType.MouseOver);
+                item.Graph.DataSource.CreateLinks(args);
+                GTimeGraphLinkItem[] linksOne = args.Links;
+                if (linksOne == null || linksOne.Length == 0) return;
+            }
+            else
+            {
+
+            }
 
         }
         /// <summary>

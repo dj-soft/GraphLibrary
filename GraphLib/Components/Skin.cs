@@ -678,8 +678,7 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
     }
     /// <summary>
-    /// Skin set for Modifiers: by Mouse state (Hot, Down) and for Disable state.
-    /// Has colors: BackColor; TextColor; TextColorDisable;
+    /// Sada předvoleb pro Modifikátory (podle stavu myši, podle Enabled/Disabled).
     /// </summary>
     public class SkinModifierSet : SkinSet
     {
@@ -689,7 +688,13 @@ namespace Asol.Tools.WorkScheduler.Components
         { }
         #endregion
         #region Public colors
+        /// <summary>
+        /// Barva použitá pro zvýraznění prostoru, kde se pohybuje myš (použito např. na časové ose)
+        /// </summary>
         public Color MouseMoveTracking { get { return this._Owner.GetValue(this._SkinSetKey, "MouseMoveTracking", DefaultMouseMoveTracking); } set { this._Owner.SetValue(this._SkinSetKey, "MouseMoveTracking", value); } }
+        /// <summary>
+        /// Barva použitá pro zvýraznění prostoru, kde se něco přetahuje myší
+        /// </summary>
         public Color MouseDragTracking { get { return this._Owner.GetValue(this._SkinSetKey, "MouseDragTracking", DefaultMouseDragTracking); } set { this._Owner.SetValue(this._SkinSetKey, "MouseDragTracking", value); } }
         public Color MouseHotColor { get { return this._Owner.GetValue(this._SkinSetKey, "MouseHotColor", DefaultMouseHotColor); } set { this._Owner.SetValue(this._SkinSetKey, "MouseHotColor", value); } }
         public Color BackColorBegin { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorBegin", DefaultBackColorBegin); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorBegin", value); } }
@@ -752,7 +757,6 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             return borderColor.Morph(this.Effect3DDark, ratio);
         }
-
         public Color GetColor3DBackgroundLight(Color borderColor)
         {
             return borderColor.Morph(this.Effect3DLight, this.Effect3DBackgroundRatio);

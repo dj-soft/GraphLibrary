@@ -472,25 +472,14 @@ namespace Asol.Tools.WorkScheduler.Data
             return result;
         }
         /// <summary>
-        /// Vrátí nejbližší následující prvek z kolekce
+        /// Vrátí nejbližší sousední prvek z kolekce.
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="collection"></param>
         /// <param name="currentItem"></param>
+        /// <param name="nearestSide">Směr pro hledání</param>
         /// <returns></returns>
-        public static T GetNearestItem<T>(this IEnumerable<T> collection, T currentItem)
-        {
-            return GetNearestItem(collection, currentItem, Direction.Positive);
-        }
-        /// <summary>
-        /// Vrátí nejbližší sousední prvek z kolekce
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="collection"></param>
-        /// <param name="currentItem"></param>
-        /// <param name="nearestSide"></param>
-        /// <returns></returns>
-        public static T GetNearestItem<T>(this IEnumerable<T> collection, T currentItem, Data.Direction nearestSide)
+        public static T GetNearestItem<T>(this IEnumerable<T> collection, T currentItem, Data.Direction nearestSide = Direction.Positive)
         {
             if (collection == null) return default(T);
 
