@@ -96,6 +96,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this.CreateProductOrder(++recordId, "Stolek servírovací malý", Color.DarkGreen, 1, "stoly", ProductTpv.Standard);
             this.CreateProductOrder(++recordId, "Stůl pracovní (\"ponk\"), dub", Color.DarkGray, 2, "stoly", ProductTpv.Cooperation);
             this.CreateProductOrder(++recordId, "Skříňka zásuvková 85cm", Color.DarkGreen, 6, "skříně", ProductTpv.Standard);
+            this.CreateProductOrder(++recordId, "Krabička dřevěná 35cm", Color.DarkCyan, 30, "jiné", ProductTpv.Standard);
+            this.CreateProductOrder(++recordId, "Krabička dřevěná 45cm", Color.DarkCyan, 36, "jiné", ProductTpv.Standard);
+            this.CreateProductOrder(++recordId, "Krabička dřevěná 60cm", Color.DarkCyan, 48, "jiné", ProductTpv.Standard);
 
             this.PlanUnitCDict = new Dictionary<GuiId, PlanUnitC>();
             recordId = 10000;
@@ -997,13 +1000,16 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <returns></returns>
         public static GuiGraphLink CreateGuiLink(ProductOperation prev, ProductOperation next)
         {
+            int width = 1 + (int)(prev.ProductOrder.Qty / 6m);
+            if (width < 1) width = 1;
+            if (width > 4) width = 4;
             GuiGraphLink link = new GuiGraphLink()
             {
                 ItemIdPrev = prev?.RecordGid,
                 ItemIdNext = next?.RecordGid,
                 LinkType = GuiGraphItemLinkType.PrevEndToNextBeginSCurve,
                 RelationType = GuiGraphItemLinkRelation.OneLevel,
-                LinkWidth = 1
+                LinkWidth = width
             };
             return link;
         }
