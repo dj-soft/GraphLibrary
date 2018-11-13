@@ -14,33 +14,36 @@ namespace Djs.Tools.Screenshots
 {
     public partial class TestForm : Form
     {
+        #region Konstruktor a inicializace
         public TestForm()
         {
             InitializeComponent();
-            this.BackColor = Color.FromArgb(0, 0, 64);
+            this.InitForm();
+        }
+        private void InitForm()
+        {
             this.SetStyle(ControlStyles.SupportsTransparentBackColor, true);
-
             this.AllowTransparency = true;
             this.TransparencyKey = Color.Magenta;
+
+            this.BackColor = Color.FromArgb(0, 0, 64);
             this._ScreenPanel.BackColor = Color.Magenta;
             this._HelpBox.BackColor = this.BackColor;
 
-            this.StartPosition = FormStartPosition.Manual;
-
             this._Fms = new FormMoveSupport(this, this._ImagePanel, this._SnapOneBtn, this._SnapRecBtn, this._SnapStopBtn, this._FrequencyLabel);
-            this._Config = Config.LoadConfig();
 
             this.SetTopLevel(true);
             this.TopMost = true;
 
-            bool visibleHelp = !this._Config.HideHelp;
-            this._SetButtons(true, true, false, visibleHelp);
+            this._LoadConfig();
+            this._ShowConfig();
 
             this._ThreadInit();
-            this._LoadConfig();
         }
-        private Config _Config;
-        private string _SubPath;
+        FormMoveSupport _Fms;
+        #endregion
+        #region Overrides formu
+
         protected override void OnShown(EventArgs e)
         {
             base.OnShown(e);
@@ -62,34 +65,23 @@ namespace Djs.Tools.Screenshots
             this._SaveConfig();
             base.OnClosed(e);
         }
-        private void _LoadConfig()
+        /// <summary>
+        /// Řízení viditelnosti ovládacích jednotlivých prvků GUI
+        /// </summary>
+        /// <param name="snap"></param>
+        /// <param name="run"></param>
+        /// <param name="stop"></param>
+        /// <param name="help"></param>
+        private void _SetButtons(bool snap, bool run, bool stop, bool help)
         {
-            this.Bounds = this._Config.FormBounds;
-            this._ReadSnapBounds();
-
-            int min = 0;
-            int max = 18;
-            int val = this._Config.FrequencyIndex;
-            val = (val < min ? min : (val > max ? max : val));
-            this._FrequencyTrack.Minimum = min;
-            this._FrequencyTrack.Maximum = max;
-            this._FrequencyTrack.Value = val;
-            this._ShowFrequencyTick();
-
-            this._HelpHideChk.Checked = this._Config.HideHelp;
-
-            this._StatusText.Text = this._Config.TargetPath;
-
-            this._SubPath = null;
+            this._SnapOneBtn.Visible = snap;
+            this._HelpShowBtn.Visible = snap;
+            this._SnapRecBtn.Visible = run;
+            this._SnapStopBtn.Visible = stop;
+            this._HelpBox.Visible = help;
         }
-        private void _SaveConfig()
-        {
-            this._Config.FormBounds = this.Bounds;
-            this._Config.FrequencyIndex = this._FrequencyTrack.Value;
-            this._Config.HideHelp = this._HelpHideChk.Checked;
-            this._Config.Save();
-        }
-        FormMoveSupport _Fms;
+        #endregion
+        #region TickFrequency
         private void _FrequencyTrack_Scroll(object sender, EventArgs e)
         {
             this._ShowFrequencyTick();
@@ -102,7 +94,8 @@ namespace Djs.Tools.Screenshots
             _FrequencyToValues(frequencyIndex, out time, out text);
             this._FrequencyLabel.Text = text;
             this._ThreadTime = time;
-            this._Semaphore.Set();
+            if (this._ThreadRunning && this._Semaphore != null)
+                this._Semaphore.Set();
         }
         private static void _FrequencyToValues(int frequencyIndex, out TimeSpan time, out string text)
         {
@@ -125,6 +118,80 @@ namespace Djs.Tools.Screenshots
                 text = "1 s / " + n.ToString() + " sec";
             }
         }
+        #endregion
+        #region Práce s konfigurací - načtení, zobrazení, uložení
+        private void _LoadConfig()
+        {
+            this._Config = Config.LoadConfig();
+        }
+        private void _ShowConfig()
+        {
+            bool visibleHelp = !this._Config.HideHelp;
+            this._SetButtons(true, true, false, visibleHelp);
+            this._HelpHideChk.Checked = !visibleHelp;
+
+            this.StartPosition = FormStartPosition.Manual;
+            this.Bounds = this._Config.FormBounds;
+
+            int min = 0;
+            int max = 18;
+            int val = this._Config.FrequencyIndex;
+            val = (val < min ? min : (val > max ? max : val));
+            this._FrequencyTrack.Minimum = min;
+            this._FrequencyTrack.Maximum = max;
+            this._FrequencyTrack.Value = val;
+            this._ShowFrequencyTick();
+
+            this._ShowStatusText();
+
+            this._SubPath = null;
+        }
+        /// <summary>
+        /// Cílový adresář
+        /// </summary>
+        private string _TargetPath
+        {
+            get { return this._Config.TargetPath; }
+            set { this._Config.TargetPath = value; this._SaveConfig(); }
+        }
+        private void _SaveConfig()
+        {
+            this._Config.FormBounds = this.Bounds;
+            this._Config.FrequencyIndex = this._FrequencyTrack.Value;
+            this._Config.HideHelp = this._HelpHideChk.Checked;
+            this._Config.Save();
+        }
+        private Config _Config;
+        #endregion
+        #region Sejmutí obrázku - akce a obsluha buttonu
+        /// <summary>
+        /// Kompletní získání screenshotu, metoda volaná z threadu na pozadí (převolává GUI thread)
+        /// </summary>
+        private void _CreateSnapShot()
+        {
+            if (this.InvokeRequired)
+                this.BeginInvoke(new Action(_CreateSnapShotGui));
+            else
+                this._CreateSnapShotGui();
+        }
+        /// <summary>
+        /// Řízení celé aktivity sejmutí jednoho obrázku v GUI threadu: získání bitmapy <see cref="_SnapBitmap"/>, 
+        /// uložení do souboru a prosvícení v <see cref="_ImagePanel"/>.
+        /// </summary>
+        private void _CreateSnapShotGui()
+        {
+            Bitmap bitmap = _SnapBitmap();
+            SaveBitmap(bitmap);
+            this._ImagePanel.Image = bitmap;
+
+            if (_LastBitMap != null)
+                this._LastBitMap.Dispose();
+            this._LastBitMap = bitmap;
+        }
+        /// <summary>
+        /// Fyzické získání screenshotu z obrazovky
+        /// </summary>
+        /// <returns></returns>
         private Bitmap _SnapBitmap()
         {
             Bitmap bitmap = null;
@@ -140,6 +207,9 @@ namespace Djs.Tools.Screenshots
             }
             return bitmap;
         }
+        /// <summary>
+        /// Určení souřadnic Screenshotu
+        /// </summary>
         private void _ReadSnapBounds()
         {
             if (this.WindowState == FormWindowState.Normal && !this._SnapRunning)
@@ -150,13 +220,15 @@ namespace Djs.Tools.Screenshots
                 this._SnapBoundsValid = true;
             }
         }
-        private Rectangle _SnapBounds;
-        private bool _SnapBoundsValid;
+        /// <summary>
+        /// Uloží screenshot do souboru
+        /// </summary>
+        /// <param name="bitmap"></param>
         private void SaveBitmap(Bitmap bitmap)
         {
             if (bitmap == null) return;
             DateTime now = DateTime.UtcNow;
-            string path = this._Config.TargetPath;
+            string path = this._TargetPath;
             string targetPath;
 
             string subPath = this._SubPath;
@@ -172,40 +244,39 @@ namespace Djs.Tools.Screenshots
             string targetFile = Path.Combine(targetPath, "Sc_" + now.ToString("yyyyMMdd_HHmmssfff") + ".jpg");
             bitmap.Save(targetFile, System.Drawing.Imaging.ImageFormat.Jpeg);
         }
-        private void _SetButtons(bool snap, bool run, bool stop, bool help)
-        {
-            this._SnapOneBtn.Visible = snap;
-            this._HelpShowBtn.Visible = snap;
-            this._SnapRecBtn.Visible = run;
-            this._SnapStopBtn.Visible = stop;
-            this._HelpBox.Visible = help;
-        }
+
+        /// <summary>
+        /// Eventhandler pro tlačítko Sejmi jeden obrázek
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void _SnapOneBtn_Click(object sender, EventArgs e)
         {
             this._SetButtons(false, false, false, false);
             this._CreateSnapShotGui();
             this._SetButtons(true, true, false, false);
         }
-        private void _CreateSnapShot()
-        {
-            if (this.InvokeRequired)
-                this.BeginInvoke(new Action(_CreateSnapShotGui));
-            else
-                this._CreateSnapShotGui();
-        }
-        private void _CreateSnapShotGui()
-        {
-            Bitmap bitmap = _SnapBitmap();
-            SaveBitmap(bitmap);
-            this._ImagePanel.Image = bitmap;
-
-            if (_LastBitMap != null)
-                this._LastBitMap.Dispose();
-            this._LastBitMap = bitmap;
-        }
+        /// <summary>
+        /// Podadresář pro ukládání aktuální serie screenshotů
+        /// </summary>
+        private string _SubPath;
+        /// <summary>
+        /// Souřadnice Screenshotu
+        /// </summary>
+        private Rectangle _SnapBounds;
+        /// <summary>
+        /// true pokud Souřadnice Screenshotu jsou platné
+        /// </summary>
+        private bool _SnapBoundsValid;
+        /// <summary>
+        /// Posledně získaná bitmapa, svítí v okně vpravo nahoře v <see cref="_ImagePanel"/>
+        /// </summary>
         private Bitmap _LastBitMap;
-
+        #endregion
         #region Back thread
+        /// <summary>
+        /// Inicializace threadu na pozadí
+        /// </summary>
         private void _ThreadInit()
         {
             this._Semaphore = new System.Threading.AutoResetEvent(false);
@@ -214,6 +285,9 @@ namespace Djs.Tools.Screenshots
             this._Thread.IsBackground = true;
             this._Thread.Start();
         }
+        /// <summary>
+        /// Main smyčka threadu na pozadí
+        /// </summary>
         private void _ThreadRun()
         {
             this._ThreadRunning = true;
@@ -226,6 +300,9 @@ namespace Djs.Tools.Screenshots
                 this._Semaphore.WaitOne(this._ThreadTime);
             }
         }
+        /// <summary>
+        /// Kontinuální snímání: sejmi jeden screenshot
+        /// </summary>
         private void _ThreadSnapOne()
         {
             try
@@ -234,16 +311,33 @@ namespace Djs.Tools.Screenshots
             }
             catch { }
         }
-        
+        /// <summary>
+        /// Definitivně zastaví běh threadu na pozadí, při zavírání okna
+        /// </summary>
         private void _ThreadStop()
         {
             this._ThreadRunning = false;
             this._Semaphore.Set();
         }
+        /// <summary>
+        /// Thread na pozadí
+        /// </summary>
         private System.Threading.Thread _Thread;
+        /// <summary>
+        /// Budíček pro thread na pozadí, když je potřeba přerušit jeho čekání
+        /// </summary>
         private System.Threading.AutoResetEvent _Semaphore;
+        /// <summary>
+        /// Interval mezi snímky na pozadí
+        /// </summary>
         private TimeSpan _ThreadTime;
+        /// <summary>
+        /// true když se provádí kontinuální snímání screenshotů v threadu na pozadí (Run), false když ne (Stop)
+        /// </summary>
         private bool _SnapRunning;
+        /// <summary>
+        /// true po dobu života vlákna na pozadí, false pro jeho skončení
+        /// </summary>
         private bool _ThreadRunning;
 
         private void _SnapRecBtn_Click(object sender, EventArgs e)
@@ -260,7 +354,7 @@ namespace Djs.Tools.Screenshots
             this._SetButtons(true, true, false, false);
         }
         #endregion
-
+        #region Help okno
         private void _HelpOkBtn_Click(object sender, EventArgs e)
         {
             this._SetButtons(true, true, false, false);
@@ -270,5 +364,44 @@ namespace Djs.Tools.Screenshots
         {
             this._SetButtons(true, true, false, true);
         }
+
+        #endregion
+        #region Status bar
+        private void _ShowStatusText()
+        {
+            this._StatusText.Text = this._TargetPath;
+        }
+        /// <summary>
+        /// Eventhandler tlačítka Vyber výstupní složku
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _StatusSettingBtn_Click(object sender, EventArgs e)
+        {
+            string path = this._TargetPath;
+            using (System.Windows.Forms.FolderBrowserDialog fbd = new FolderBrowserDialog())
+            {
+                fbd.Description = "Složka pro ukládání screenshotů";
+                // fbd.RootFolder = Environment.SpecialFolder.MyComputer;
+                fbd.SelectedPath = path;
+                fbd.ShowNewFolderButton = true;
+                if (fbd.ShowDialog(this) == DialogResult.OK)
+                {
+                    this._TargetPath = fbd.SelectedPath;
+                    this._ShowConfig();
+                }
+            }
+        }
+        /// <summary>
+        /// Eventhandler tlačítka Otevři výstupní složku
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _StatusOpenBtn_Click(object sender, EventArgs e)
+        {
+            string path = this._TargetPath;
+            System.Diagnostics.Process.Start(path);
+        }
+        #endregion
     }
 }

@@ -31,8 +31,6 @@
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(TestForm));
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
-            this.toolStripDropDownButton1 = new System.Windows.Forms.ToolStripDropDownButton();
-            this._StatusSavePathBtn = new System.Windows.Forms.ToolStripMenuItem();
             this._StatusText = new System.Windows.Forms.ToolStripStatusLabel();
             this._ScreenPanel = new System.Windows.Forms.Panel();
             this._HelpBox = new System.Windows.Forms.GroupBox();
@@ -41,13 +39,16 @@
             this.label1 = new System.Windows.Forms.Label();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this._FrequencyTrack = new System.Windows.Forms.TrackBar();
+            this._FrequencyLabel = new System.Windows.Forms.Label();
+            this._ImagePanel = new Djs.Tools.Screenshots.Components.ImagePanel();
             this._HelpShowBtn = new System.Windows.Forms.Button();
             this._SnapStopBtn = new System.Windows.Forms.Button();
             this._SnapRecBtn = new System.Windows.Forms.Button();
             this._SnapOneBtn = new System.Windows.Forms.Button();
-            this._FrequencyLabel = new System.Windows.Forms.Label();
-            this._ImagePanel = new Djs.Tools.Screenshots.Components.ImagePanel();
-            this.toolStripSplitButton1 = new System.Windows.Forms.ToolStripSplitButton();
+            this._StatusBtn = new System.Windows.Forms.ToolStripSplitButton();
+            this._StatusPathBtn = new System.Windows.Forms.ToolStripMenuItem();
+            this._StatusOpenBtn = new System.Windows.Forms.ToolStripDropDownButton();
+            this._StatusSettingBtn = new System.Windows.Forms.ToolStripDropDownButton();
             this.statusStrip1.SuspendLayout();
             this._ScreenPanel.SuspendLayout();
             this._HelpBox.SuspendLayout();
@@ -57,39 +58,25 @@
             // statusStrip1
             // 
             this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.toolStripSplitButton1,
-            this.toolStripDropDownButton1,
-            this._StatusText});
+            this._StatusBtn,
+            this._StatusText,
+            this._StatusSettingBtn,
+            this._StatusOpenBtn});
             this.statusStrip1.Location = new System.Drawing.Point(0, 404);
             this.statusStrip1.Name = "statusStrip1";
             this.statusStrip1.Size = new System.Drawing.Size(742, 22);
             this.statusStrip1.TabIndex = 3;
             this.statusStrip1.Text = "statusStrip1";
             // 
-            // toolStripDropDownButton1
-            // 
-            this.toolStripDropDownButton1.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this._StatusSavePathBtn});
-            this.toolStripDropDownButton1.Image = ((System.Drawing.Image)(resources.GetObject("toolStripDropDownButton1.Image")));
-            this.toolStripDropDownButton1.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.toolStripDropDownButton1.Name = "toolStripDropDownButton1";
-            this.toolStripDropDownButton1.Size = new System.Drawing.Size(96, 20);
-            this.toolStripDropDownButton1.Text = "Ukládat do:";
-            // 
-            // _StatusSavePathBtn
-            // 
-            this._StatusSavePathBtn.Name = "_StatusSavePathBtn";
-            this._StatusSavePathBtn.Size = new System.Drawing.Size(152, 22);
-            this._StatusSavePathBtn.Text = "Ukládat do:";
-            // 
             // _StatusText
             // 
             this._StatusText.BackColor = System.Drawing.SystemColors.ButtonFace;
             this._StatusText.Name = "_StatusText";
-            this._StatusText.Size = new System.Drawing.Size(568, 17);
+            this._StatusText.Size = new System.Drawing.Size(565, 17);
             this._StatusText.Spring = true;
-            this._StatusText.Text = "toolStripStatusLabel1";
+            this._StatusText.Text = "Informace";
             this._StatusText.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this._StatusText.ToolTipText = "Do této složky jsou aktuálně ukládány screenshoty";
             // 
             // _ScreenPanel
             // 
@@ -173,6 +160,27 @@
         "kulatého červeného tlačítka RECORD)");
             this._FrequencyTrack.Scroll += new System.EventHandler(this._FrequencyTrack_Scroll);
             // 
+            // _FrequencyLabel
+            // 
+            this._FrequencyLabel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this._FrequencyLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
+            this._FrequencyLabel.ForeColor = System.Drawing.Color.Gold;
+            this._FrequencyLabel.Location = new System.Drawing.Point(629, 270);
+            this._FrequencyLabel.Name = "_FrequencyLabel";
+            this._FrequencyLabel.Size = new System.Drawing.Size(100, 23);
+            this._FrequencyLabel.TabIndex = 11;
+            this._FrequencyLabel.Text = "label1";
+            this._FrequencyLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // _ImagePanel
+            // 
+            this._ImagePanel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this._ImagePanel.Image = null;
+            this._ImagePanel.Location = new System.Drawing.Point(629, 12);
+            this._ImagePanel.Name = "_ImagePanel";
+            this._ImagePanel.Size = new System.Drawing.Size(100, 78);
+            this._ImagePanel.TabIndex = 5;
+            // 
             // _HelpShowBtn
             // 
             this._HelpShowBtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
@@ -229,35 +237,45 @@
             this._SnapOneBtn.UseVisualStyleBackColor = true;
             this._SnapOneBtn.Click += new System.EventHandler(this._SnapOneBtn_Click);
             // 
-            // _FrequencyLabel
+            // _StatusBtn
             // 
-            this._FrequencyLabel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this._FrequencyLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-            this._FrequencyLabel.ForeColor = System.Drawing.Color.Gold;
-            this._FrequencyLabel.Location = new System.Drawing.Point(629, 270);
-            this._FrequencyLabel.Name = "_FrequencyLabel";
-            this._FrequencyLabel.Size = new System.Drawing.Size(100, 23);
-            this._FrequencyLabel.TabIndex = 11;
-            this._FrequencyLabel.Text = "label1";
-            this._FrequencyLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this._StatusBtn.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this._StatusPathBtn});
+            this._StatusBtn.Image = ((System.Drawing.Image)(resources.GetObject("_StatusBtn.Image")));
+            this._StatusBtn.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this._StatusBtn.Name = "_StatusBtn";
+            this._StatusBtn.Size = new System.Drawing.Size(91, 20);
+            this._StatusBtn.Text = "Nastavení";
             // 
-            // _ImagePanel
+            // _StatusPathBtn
             // 
-            this._ImagePanel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this._ImagePanel.Image = null;
-            this._ImagePanel.Location = new System.Drawing.Point(629, 12);
-            this._ImagePanel.Name = "_ImagePanel";
-            this._ImagePanel.Size = new System.Drawing.Size(100, 78);
-            this._ImagePanel.TabIndex = 5;
+            this._StatusPathBtn.Name = "_StatusPathBtn";
+            this._StatusPathBtn.Size = new System.Drawing.Size(161, 22);
+            this._StatusPathBtn.Text = "Výstupní adresář";
             // 
-            // toolStripSplitButton1
+            // _StatusOpenBtn
             // 
-            this.toolStripSplitButton1.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.toolStripSplitButton1.Image = ((System.Drawing.Image)(resources.GetObject("toolStripSplitButton1.Image")));
-            this.toolStripSplitButton1.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.toolStripSplitButton1.Name = "toolStripSplitButton1";
-            this.toolStripSplitButton1.Size = new System.Drawing.Size(32, 20);
-            this.toolStripSplitButton1.Text = "toolStripSplitButton1";
+            this._StatusOpenBtn.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this._StatusOpenBtn.Image = global::Djs.Tools.Screenshots.Properties.Resources.computer_laptop;
+            this._StatusOpenBtn.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this._StatusOpenBtn.Name = "_StatusOpenBtn";
+            this._StatusOpenBtn.ShowDropDownArrow = false;
+            this._StatusOpenBtn.Size = new System.Drawing.Size(20, 20);
+            this._StatusOpenBtn.Text = "toolStripDropDownButton1";
+            this._StatusOpenBtn.ToolTipText = "Otevře aktuálně vybranou složku pro ukládání";
+            this._StatusOpenBtn.Click += new System.EventHandler(this._StatusOpenBtn_Click);
+            // 
+            // _StatusSettingBtn
+            // 
+            this._StatusSettingBtn.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this._StatusSettingBtn.Image = global::Djs.Tools.Screenshots.Properties.Resources.computer_laptop;
+            this._StatusSettingBtn.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this._StatusSettingBtn.Name = "_StatusSettingBtn";
+            this._StatusSettingBtn.ShowDropDownArrow = false;
+            this._StatusSettingBtn.Size = new System.Drawing.Size(20, 20);
+            this._StatusSettingBtn.Text = "...";
+            this._StatusSettingBtn.ToolTipText = "Vyberte jinou složku pro ukládání";
+            this._StatusSettingBtn.Click += new System.EventHandler(this._StatusSettingBtn_Click);
             // 
             // TestForm
             // 
@@ -304,10 +322,11 @@
         private System.Windows.Forms.Button _HelpOkBtn;
         private System.Windows.Forms.CheckBox _HelpHideChk;
         private System.Windows.Forms.Button _HelpShowBtn;
-        private System.Windows.Forms.ToolStripDropDownButton toolStripDropDownButton1;
         private System.Windows.Forms.ToolStripStatusLabel _StatusText;
-        private System.Windows.Forms.ToolStripMenuItem _StatusSavePathBtn;
-        private System.Windows.Forms.ToolStripSplitButton toolStripSplitButton1;
+        private System.Windows.Forms.ToolStripSplitButton _StatusBtn;
+        private System.Windows.Forms.ToolStripMenuItem _StatusPathBtn;
+        private System.Windows.Forms.ToolStripDropDownButton _StatusOpenBtn;
+        private System.Windows.Forms.ToolStripDropDownButton _StatusSettingBtn;
     }
 }
 

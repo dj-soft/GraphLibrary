@@ -139,13 +139,31 @@
   <data name="media-skip-forward-8" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Images\media-skip-forward-8.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="help-contents" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\help-contents.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
   <data name="media-seek-backward-8" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Images\media-seek-backward-8.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="media-playback-start-8" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Images\media-playback-start-8.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="help-contents" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Images\help-contents.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="camera-photo-5" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\camera-photo-5.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="camera-photo-6" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\camera-photo-6.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="camera-photo-7" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\camera-photo-7.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="camera-photo-8" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\camera-photo-8.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="camera-photo-9" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\camera-photo-9.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="computer-laptop" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\computer-laptop.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
 </root>

@@ -116,6 +116,24 @@
   <ItemGroup>
     <None Include="Images\help-contents.png" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\camera-photo-5.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\camera-photo-6.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\camera-photo-7.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\camera-photo-8.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\camera-photo-9.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\computer-laptop.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
