@@ -292,6 +292,7 @@
             this.Controls.Add(this._ImagePanel);
             this.Controls.Add(this._ScreenPanel);
             this.Controls.Add(this.statusStrip1);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
             this.Name = "TestForm";
             this.Text = "Screenshots";
