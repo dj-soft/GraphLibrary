@@ -36,11 +36,10 @@
             this._HelpBox = new System.Windows.Forms.GroupBox();
             this._HelpHideChk = new System.Windows.Forms.CheckBox();
             this._HelpOkBtn = new System.Windows.Forms.Button();
-            this.label1 = new System.Windows.Forms.Label();
+            this._HelpLabel = new System.Windows.Forms.Label();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this._FrequencyTrack = new System.Windows.Forms.TrackBar();
             this._FrequencyLabel = new System.Windows.Forms.Label();
-            this._ImagePanel = new Djs.Tools.Screenshots.Components.ImagePanel();
             this._HelpShowBtn = new System.Windows.Forms.Button();
             this._SnapStopBtn = new System.Windows.Forms.Button();
             this._SnapRecBtn = new System.Windows.Forms.Button();
@@ -49,6 +48,7 @@
             this._StatusPathBtn = new System.Windows.Forms.ToolStripMenuItem();
             this._StatusOpenBtn = new System.Windows.Forms.ToolStripDropDownButton();
             this._StatusSettingBtn = new System.Windows.Forms.ToolStripDropDownButton();
+            this._ImagePanel = new Djs.Tools.Screenshots.Components.ImagePanel();
             this.statusStrip1.SuspendLayout();
             this._ScreenPanel.SuspendLayout();
             this._HelpBox.SuspendLayout();
@@ -72,7 +72,7 @@
             // 
             this._StatusText.BackColor = System.Drawing.SystemColors.ButtonFace;
             this._StatusText.Name = "_StatusText";
-            this._StatusText.Size = new System.Drawing.Size(565, 17);
+            this._StatusText.Size = new System.Drawing.Size(596, 17);
             this._StatusText.Spring = true;
             this._StatusText.Text = "Informace";
             this._StatusText.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -96,7 +96,7 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this._HelpBox.Controls.Add(this._HelpHideChk);
             this._HelpBox.Controls.Add(this._HelpOkBtn);
-            this._HelpBox.Controls.Add(this.label1);
+            this._HelpBox.Controls.Add(this._HelpLabel);
             this._HelpBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
             this._HelpBox.ForeColor = System.Drawing.Color.Gold;
             this._HelpBox.Location = new System.Drawing.Point(27, 72);
@@ -132,17 +132,17 @@
             this._HelpOkBtn.UseVisualStyleBackColor = true;
             this._HelpOkBtn.Click += new System.EventHandler(this._HelpOkBtn_Click);
             // 
-            // label1
+            // _HelpLabel
             // 
-            this.label1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            this._HelpLabel.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-            this.label1.Location = new System.Drawing.Point(16, 29);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(501, 146);
-            this.label1.TabIndex = 0;
-            this.label1.Text = resources.GetString("label1.Text");
+            this._HelpLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
+            this._HelpLabel.Location = new System.Drawing.Point(16, 29);
+            this._HelpLabel.Name = "_HelpLabel";
+            this._HelpLabel.Size = new System.Drawing.Size(501, 146);
+            this._HelpLabel.TabIndex = 0;
+            this._HelpLabel.Text = resources.GetString("_HelpLabel.Text");
             // 
             // _FrequencyTrack
             // 
@@ -172,15 +172,6 @@
             this._FrequencyLabel.Text = "label1";
             this._FrequencyLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
-            // _ImagePanel
-            // 
-            this._ImagePanel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this._ImagePanel.Image = null;
-            this._ImagePanel.Location = new System.Drawing.Point(629, 12);
-            this._ImagePanel.Name = "_ImagePanel";
-            this._ImagePanel.Size = new System.Drawing.Size(100, 78);
-            this._ImagePanel.TabIndex = 5;
-            // 
             // _HelpShowBtn
             // 
             this._HelpShowBtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
@@ -191,7 +182,7 @@
             this._HelpShowBtn.Name = "_HelpShowBtn";
             this._HelpShowBtn.Size = new System.Drawing.Size(28, 26);
             this._HelpShowBtn.TabIndex = 12;
-            this.toolTip1.SetToolTip(this._HelpShowBtn, "Zobrazí okno s nápovědou k používání této aplikace");
+            this.toolTip1.SetToolTip(this._HelpShowBtn, "NÁPOVĚDA:\r\nZobrazí okno s nápovědou k používání této aplikace");
             this._HelpShowBtn.UseVisualStyleBackColor = true;
             this._HelpShowBtn.Click += new System.EventHandler(this._HelpShowBtn_Click);
             // 
@@ -228,7 +219,7 @@
             this._SnapOneBtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this._SnapOneBtn.FlatAppearance.BorderSize = 0;
             this._SnapOneBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this._SnapOneBtn.Image = global::Djs.Tools.Screenshots.Properties.Resources.view_nofullscreen_2;
+            this._SnapOneBtn.Image = global::Djs.Tools.Screenshots.Properties.Resources.camera_photo_9;
             this._SnapOneBtn.Location = new System.Drawing.Point(629, 96);
             this._SnapOneBtn.Name = "_SnapOneBtn";
             this._SnapOneBtn.Size = new System.Drawing.Size(28, 26);
@@ -262,7 +253,7 @@
             this._StatusOpenBtn.ShowDropDownArrow = false;
             this._StatusOpenBtn.Size = new System.Drawing.Size(20, 20);
             this._StatusOpenBtn.Text = "toolStripDropDownButton1";
-            this._StatusOpenBtn.ToolTipText = "Otevře aktuálně vybranou složku pro ukládání";
+            this._StatusOpenBtn.ToolTipText = "OTEVŘÍT:\r\nOtevře aktuálně vybranou složku pro ukládání";
             this._StatusOpenBtn.Click += new System.EventHandler(this._StatusOpenBtn_Click);
             // 
             // _StatusSettingBtn
@@ -274,8 +265,17 @@
             this._StatusSettingBtn.ShowDropDownArrow = false;
             this._StatusSettingBtn.Size = new System.Drawing.Size(20, 20);
             this._StatusSettingBtn.Text = "...";
-            this._StatusSettingBtn.ToolTipText = "Vyberte jinou složku pro ukládání";
+            this._StatusSettingBtn.ToolTipText = "ZMĚNA:\r\nVyberte jinou složku pro ukládání";
             this._StatusSettingBtn.Click += new System.EventHandler(this._StatusSettingBtn_Click);
+            // 
+            // _ImagePanel
+            // 
+            this._ImagePanel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this._ImagePanel.Image = null;
+            this._ImagePanel.Location = new System.Drawing.Point(629, 12);
+            this._ImagePanel.Name = "_ImagePanel";
+            this._ImagePanel.Size = new System.Drawing.Size(100, 78);
+            this._ImagePanel.TabIndex = 5;
             // 
             // TestForm
             // 
@@ -318,7 +318,7 @@
         private System.Windows.Forms.TrackBar _FrequencyTrack;
         private System.Windows.Forms.Label _FrequencyLabel;
         private System.Windows.Forms.GroupBox _HelpBox;
-        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Label _HelpLabel;
         private System.Windows.Forms.Button _HelpOkBtn;
         private System.Windows.Forms.CheckBox _HelpHideChk;
         private System.Windows.Forms.Button _HelpShowBtn;

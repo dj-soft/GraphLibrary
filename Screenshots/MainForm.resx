@@ -139,17 +139,14 @@
   <metadata name="toolTip1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>133, 17</value>
   </metadata>
-  <data name="label1.Text" xml:space="preserve">
+  <data name="_HelpLabel.Text" xml:space="preserve">
     <value>Přečti si tenhle návod:
 1. Nastav pozici a velikost okna tak, aby průzorem byl vidět cíl;
-2. Můžeš ukládat jednotlivé snímky (červená šipka dolů);
+2. Můžeš ukládat jednotlivé snímky (tlačítko s fotoaparátem);
 3. Anebo ukládej kontinuální sadu snímků (kulaté tlačítko REC);
 4. Můžeš nastavit rychlost ukládání snímků
 5. Až to dočteš, stiskni dole OK a tento Help zmizí
 
 </value>
   </data>
-  <metadata name="toolTip1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>133, 17</value>
-  </metadata>
 </root>

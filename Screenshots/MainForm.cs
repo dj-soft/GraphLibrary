@@ -30,8 +30,12 @@ namespace Djs.Tools.Screenshots
             this._ScreenPanel.BackColor = Color.Magenta;
             this._HelpBox.BackColor = this.BackColor;
 
-            this._Fms = new FormMoveSupport(this, this._ImagePanel, this._SnapOneBtn, this._SnapRecBtn, this._SnapStopBtn, this._FrequencyLabel);
-
+            this._Fms = new FormMoveSupport(this, 
+                this._ImagePanel, 
+                this._HelpBox, this._HelpLabel, this._HelpHideChk, this._HelpOkBtn,
+                this._SnapOneBtn, this._SnapRecBtn, this._SnapStopBtn,
+                this._HelpShowBtn, this._FrequencyLabel);
+           
             this.SetTopLevel(true);
             this.TopMost = true;
 
