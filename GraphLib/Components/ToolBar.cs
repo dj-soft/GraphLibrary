@@ -726,7 +726,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 toolbarBounds.X = boundsDraw.Value.X;
                 toolbarBounds.Width = boundsDraw.Value.Width;
             }
-            GPainter.DrawAreaBase(graphics, toolbarBounds, Skin.ToolBar.BackColor, System.Windows.Forms.Orientation.Horizontal, GInteractiveState.MouseOver, null, null);
+            GPainter.DrawAreaBase(graphics, toolbarBounds, Skin.ToolBar.BackColor, System.Windows.Forms.Orientation.Horizontal, this.InteractiveState /* GInteractiveState.Enabled : MouseOver */, null, null);
         }
         /// <summary>
         /// Tuto metodu volá interaktivní prvek po změně <see cref="FunctionItem.IsChecked"/>, úkolem je vyvolat event <see cref="GToolBar.ItemCheckedChange"/>.

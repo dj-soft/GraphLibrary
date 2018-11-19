@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 //   Pokud fyzické zdroje ("ASOL.GraphLib.res") jsou novější, pak znovu vygeneruje kompletní obsah souboru "WorkSchedulerResources.cs".
 // Generátor tohoto souboru je v aplikaci GraphLib, v kódu "GraphLib\Application\Resources.cs".
 // Místo, kde je uloženo datum "LastWriteTime" souboru "ASOL.GraphLib.res" je na následujícím řádku:
-//     ResourceFile.LastWriteTime = 2018-10-07 20:00
+//     ResourceFile.LastWriteTime = 2018-11-16 10:00
 #pragma warning disable 1591
 namespace Noris.LCS.Base.WorkScheduler.Resources.Images
 {
@@ -1231,6 +1231,27 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
     /// </summary>
     public class Asol
     {
+        public const string Calendarday16x16Png = "asol/calendarday-16x16.png";
+        public const string Calendarday24x24Png = "asol/calendarday-24x24.png";
+        public const string Calendarday32x32Png = "asol/calendarday-32x32.png";
+        public const string Calendarmonth16x16Png = "asol/calendarmonth-16x16.png";
+        public const string Calendarmonth24x24Png = "asol/calendarmonth-24x24.png";
+        public const string Calendarmonth32x32Png = "asol/calendarmonth-32x32.png";
+        public const string Calendarnext16x16Png = "asol/calendarnext-16x16.png";
+        public const string Calendarnext24x24Png = "asol/calendarnext-24x24.png";
+        public const string Calendarnext32x32Png = "asol/calendarnext-32x32.png";
+        public const string Calendarprevious16x16Png = "asol/calendarprevious-16x16.png";
+        public const string Calendarprevious24x24Png = "asol/calendarprevious-24x24.png";
+        public const string Calendarprevious32x32Png = "asol/calendarprevious-32x32.png";
+        public const string Calendartoday16x16Png = "asol/calendartoday-16x16.png";
+        public const string Calendartoday24x24Png = "asol/calendartoday-24x24.png";
+        public const string Calendartoday32x32Png = "asol/calendartoday-32x32.png";
+        public const string Calendarweek16x16Png = "asol/calendarweek-16x16.png";
+        public const string Calendarweek24x24Png = "asol/calendarweek-24x24.png";
+        public const string Calendarweek32x32Png = "asol/calendarweek-32x32.png";
+        public const string Calendarworkingweek16x16Png = "asol/calendarworkingweek-16x16.png";
+        public const string Calendarworkingweek24x24Png = "asol/calendarworkingweek-24x24.png";
+        public const string Calendarworkingweek32x32Png = "asol/calendarworkingweek-32x32.png";
         public const string GoHome4Png = "asol/go-home-4.png";
         public const string GoNextViewPng = "asol/go-next-view.png";
         public const string GoPreviousViewPng = "asol/go-previous-view.png";

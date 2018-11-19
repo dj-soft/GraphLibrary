@@ -565,6 +565,80 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="asGradient">true when result is LinearGradient, false for SolidBrush (then color1 == color2)</param>
         private static void _ModifyBackColorByState(Color color, GInteractiveState state, bool modifyStateNone, Int32? opacity, out Color color1, out Color color2, out bool asGradient)
         {
+            _ModifyBackColorByStateShift(color, state, modifyStateNone, opacity, out color1, out color2, out asGradient);
+            // _ModifyBackColorByStateMorph(color, state, modifyStateNone, opacity, out color1, out color2, out asGradient);
+        }
+        /// <summary>
+        /// Modify background colors by current interactive state.
+        /// </summary>
+        /// <param name="color">Base color</param>
+        /// <param name="state">Interactive state</param>
+        /// <param name="modifyStateNone">true for modify when Interactive state == None</param>
+        /// <param name="opacity">Change opacity to this value</param>
+        /// <param name="color1">Result Begin color for LinearGradient</param>
+        /// <param name="color2">Result End color for LinearGradient</param>
+        /// <param name="asGradient">true when result is LinearGradient, false for SolidBrush (then color1 == color2)</param>
+        private static void _ModifyBackColorByStateShift(Color color, GInteractiveState state, bool modifyStateNone, Int32? opacity, out Color color1, out Color color2, out bool asGradient)
+        {
+            color1 = color;
+            color2 = color;
+            asGradient = false;
+
+            SkinModifierSet modifiers = Skin.Modifiers;
+            switch (state)
+            {
+                case GInteractiveState.None:
+                case GInteractiveState.Enabled:
+                case GInteractiveState.LeftFrame:
+                case GInteractiveState.RightFrame:
+                    color1 = color;
+                    color2 = color;
+                    if (modifyStateNone)
+                    {
+                        color1 = color.Shift(modifiers.ShiftBackColorBegin);
+                        color2 = color.Shift(modifiers.ShiftBackColorEnd);
+                        asGradient = true;
+                    }
+                    break;
+                case GInteractiveState.Disabled:
+                    color1 = color.Morph(modifiers.BackColorDisable);
+                    color2 = color1;
+                    asGradient = false;
+                    break;
+                case GInteractiveState.MouseOver:
+                    color1 = color.Shift(modifiers.ShiftBackColorHotBegin);
+                    color2 = color.Shift(modifiers.ShiftBackColorHotEnd);
+                    asGradient = true;
+                    break;
+                case GInteractiveState.LeftDown:
+                case GInteractiveState.RightDown:
+                    color1 = color.Shift(modifiers.ShiftBackColorDownBegin);
+                    color2 = color.Shift(modifiers.ShiftBackColorDownEnd);
+                    asGradient = true;
+                    break;
+                case GInteractiveState.LeftDrag:
+                case GInteractiveState.RightDrag:
+                    color1 = color.Shift(modifiers.ShiftBackColorDragBegin);
+                    color2 = color.Shift(modifiers.ShiftBackColorDragEnd);
+                    asGradient = true;
+                    break;
+            }
+
+            if (opacity.HasValue)
+                _ModifyColorsByOpacity(opacity, ref color1, ref color2);
+        }
+        /// <summary>
+        /// Modify background colors by current interactive state.
+        /// </summary>
+        /// <param name="color">Base color</param>
+        /// <param name="state">Interactive state</param>
+        /// <param name="modifyStateNone">true for modify when Interactive state == None</param>
+        /// <param name="opacity">Change opacity to this value</param>
+        /// <param name="color1">Result Begin color for LinearGradient</param>
+        /// <param name="color2">Result End color for LinearGradient</param>
+        /// <param name="asGradient">true when result is LinearGradient, false for SolidBrush (then color1 == color2)</param>
+        private static void _ModifyBackColorByStateMorph(Color color, GInteractiveState state, bool modifyStateNone, Int32? opacity, out Color color1, out Color color2, out bool asGradient)
+        {
             color1 = color;
             color2 = color;
             asGradient = false;
@@ -715,14 +789,23 @@ namespace Asol.Tools.WorkScheduler.Components
         public Color Effect3DLight { get { return this._Owner.GetValue(this._SkinSetKey, "Effect3DLight", DefaultEffect3DLight); } set { this._Owner.SetValue(this._SkinSetKey, "Effect3DLight", value); } }
         public float Effect3DBackgroundRatio { get { return this._Owner.GetValue(this._SkinSetKey, "Effect3DBackgroundRatio", DefaultEffect3DBackgroundRatio); } set { this._Owner.SetValue(this._SkinSetKey, "Effect3DBackgroundRatio", value); } }
         public float Effect3DBorderRatio { get { return this._Owner.GetValue(this._SkinSetKey, "Effect3DRatio", DefaultEffect3DRatio); } set { this._Owner.SetValue(this._SkinSetKey, "Effect3DRatio", value); } }
+        public Color ShiftBackColorBegin { get { return this._Owner.GetValue(this._SkinSetKey, "ShiftBackColorBegin", DefaultShiftBackColorBegin); } set { this._Owner.SetValue(this._SkinSetKey, "ShiftBackColorBegin", value); } }
+        public Color ShiftBackColorEnd { get { return this._Owner.GetValue(this._SkinSetKey, "ShiftBackColorEnd", DefaultShiftBackColorEnd); } set { this._Owner.SetValue(this._SkinSetKey, "ShiftBackColorEnd", value); } }
+        public Color ShiftBackColorHotBegin { get { return this._Owner.GetValue(this._SkinSetKey, "ShiftBackColorHotBegin", DefaultShiftBackColorHotBegin); } set { this._Owner.SetValue(this._SkinSetKey, "ShiftBackColorHotBegin", value); } }
+        public Color ShiftBackColorHotEnd { get { return this._Owner.GetValue(this._SkinSetKey, "ShiftBackColorHotEnd", DefaultShiftBackColorHotEnd); } set { this._Owner.SetValue(this._SkinSetKey, "ShiftBackColorHotEnd", value); } }
+        public Color ShiftBackColorDownBegin { get { return this._Owner.GetValue(this._SkinSetKey, "ShiftBackColorDownBegin", DefaultShiftBackColorDownBegin); } set { this._Owner.SetValue(this._SkinSetKey, "ShiftBackColorDownBegin", value); } }
+        public Color ShiftBackColorDownEnd { get { return this._Owner.GetValue(this._SkinSetKey, "ShiftBackColorDownEnd", DefaultShiftBackColorDownEnd); } set { this._Owner.SetValue(this._SkinSetKey, "ShiftBackColorDownEnd", value); } }
+        public Color ShiftBackColorDragBegin { get { return this._Owner.GetValue(this._SkinSetKey, "ShiftBackColorDragBegin", DefaultShiftBackColorDragBegin); } set { this._Owner.SetValue(this._SkinSetKey, "ShiftBackColorDragBegin", value); } }
+        public Color ShiftBackColorDragEnd { get { return this._Owner.GetValue(this._SkinSetKey, "ShiftBackColorDragEnd", DefaultShiftBackColorDragEnd); } set { this._Owner.SetValue(this._SkinSetKey, "ShiftBackColorDragEnd", value); } }
+
         #endregion
         #region Default colors
         // Modifier colors: Alpha value (0-255) represents Morphing value (0-1) !!!
         protected virtual Color DefaultMouseMoveTracking { get { return Color.FromArgb(96, Color.LightYellow); } }
         protected virtual Color DefaultMouseDragTracking { get { return Color.FromArgb(64, Color.LightYellow); } }
         protected virtual Color DefaultMouseHotColor { get { return Color.FromArgb(192, Color.LightYellow); } }
-        protected virtual Color DefaultBackColorBegin { get { return Color.FromArgb(38, Color.White); } }
-        protected virtual Color DefaultBackColorEnd { get { return Color.FromArgb(38, Color.Black); } }
+        protected virtual Color DefaultBackColorBegin { get { return Color.FromArgb(16, Color.White); } }
+        protected virtual Color DefaultBackColorEnd { get { return Color.FromArgb(16, Color.Black); } }
         protected virtual Color DefaultBackColorHotBegin { get { return Color.FromArgb(64, Color.White); } }
         protected virtual Color DefaultBackColorHotEnd { get { return Color.FromArgb(64, Color.Black); } }
         protected virtual Color DefaultBackColorDownBegin { get { return Color.FromArgb(64, Color.Black); } }
@@ -735,10 +818,21 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual Color DefaultTextColorDown { get { return Color.FromArgb(96, Color.DarkViolet); } }
         protected virtual Color DefaultTextColorDrag { get { return Color.FromArgb(96, Color.DarkViolet); } }
         protected virtual Color DefaultTextColorDisable { get { return Color.FromArgb(160, Color.Gray); } }
-        protected virtual Color DefaultEffect3DDark { get { return Color.Black; } }
+        protected virtual Color DefaultEffect3DDark { get { return Color.FromArgb(64, 64, 64); } }
         protected virtual Color DefaultEffect3DLight { get { return Color.White; } }
-        protected virtual float DefaultEffect3DBackgroundRatio { get { return 0.20f; } }
-        protected virtual float DefaultEffect3DRatio { get { return 0.40f; } }
+        protected virtual float DefaultEffect3DBackgroundRatio { get { return 0.10f; } }
+        protected virtual float DefaultEffect3DRatio { get { return 0.25f; } }
+
+        // Barvy pro provádění Shift = mají ve složká hodnotu posunu základní barvy, kde hodnota 128 = střed = 0:
+        protected virtual Color DefaultShiftBackColorBegin { get { return Color.FromArgb(0, 136, 136, 136); } }        //  +8
+        protected virtual Color DefaultShiftBackColorEnd { get { return Color.FromArgb(0, 120, 120, 120); } }          //  -8
+        protected virtual Color DefaultShiftBackColorHotBegin { get { return Color.FromArgb(0, 160, 160, 160); } }     // +32
+        protected virtual Color DefaultShiftBackColorHotEnd { get { return Color.FromArgb(0, 96, 96, 96); } }          // -32
+        protected virtual Color DefaultShiftBackColorDownBegin { get { return Color.FromArgb(0, 96, 96, 96); } }       // -32
+        protected virtual Color DefaultShiftBackColorDownEnd { get { return Color.FromArgb(0, 160, 160, 160); } }      // +32
+        protected virtual Color DefaultShiftBackColorDragBegin { get { return Color.FromArgb(0, 112, 112, 112); } }    // -16
+        protected virtual Color DefaultShiftBackColorDragEnd { get { return Color.FromArgb(0, 144, 144, 144); } }      // +16
+
         #endregion
         #region Servis
         public Color GetColor3DBorderLight(Color borderColor)
@@ -870,7 +964,7 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Default colors
         protected virtual Color DefaultBorderColor { get { return Color.DimGray; } }
-        protected virtual Color DefaultBackColor { get { return Color.FromArgb(255, 240, 240, 240); } }
+        protected virtual Color DefaultBackColor { get { return Color.FromArgb(255, 250, 250, 250); } }
         protected virtual Color DefaultTextColor { get { return Color.Black; } }
         protected virtual Color DefaultItemBackColor { get { return Color.FromArgb(255, 224, 224, 240); } }
         protected virtual Color DefaultItemSelectedBackColor { get { return Color.FromArgb(255, 240, 240, 160); } }
@@ -881,7 +975,6 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual Color DefaultSeparatorDarkColor { get { return Color.DimGray; } }
         #endregion
     }
-
     /// <summary>
     /// Skin set for TagFilter.
     /// Has colors: BackColor; TextColor;

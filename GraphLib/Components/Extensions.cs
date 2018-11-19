@@ -60,6 +60,19 @@ namespace Asol.Tools.WorkScheduler.Components
             return GetColor(a, r, g, b);
         }
         /// <summary>
+        /// Vrací danou barvu s daným posunutím
+        /// </summary>
+        /// <param name="root">Výchozí barva</param>
+        /// <param name="shift">Posunutí barvy ve struktuře Color: jednotlivé složky nesou offset, kde hodnota 128 odpovídá posunu 0</param>
+        /// <returns></returns>
+        public static Color Shift(this Color root, Color shift)
+        {
+            float r = (float)(root.R + shift.R - 128);
+            float g = (float)(root.G + shift.G - 128);
+            float b = (float)(root.B + shift.B - 128);
+            return GetColor(root.A, r, g, b);
+        }
+        /// <summary>
         /// Vrací barvu dle daných složek, přičemž složky (a,r,g,b) omezuje do rozsahu 0 - 255.
         /// </summary>
         /// <param name="a"></param>
