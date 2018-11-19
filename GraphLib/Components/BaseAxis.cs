@@ -2622,7 +2622,7 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 string text = iSegment.ToolTip;
                 if (String.IsNullOrEmpty(text)) continue;
-                if (iSegment.ValueRange.Contains(value))
+                if (iSegment.ValueRange.Contains(value, false))
                     toolTip = toolTip + Environment.NewLine + text;
             }
             return toolTip;
