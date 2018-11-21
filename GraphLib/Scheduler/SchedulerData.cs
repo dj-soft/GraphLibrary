@@ -187,15 +187,38 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             GuiRequest request = new GuiRequest();
             request.Command = GuiRequest.COMMAND_QueryCloseWindow;
-            this._CallAppHostFunction(request, this._MainFormClosingApplicationResponse);
+            AppHostResponseArgs appResponse = this._CallAppHostFunction(request, null, TimeSpan.FromSeconds(30d));
+            GuiDialogResponse dialogResult = GuiDialogResponse.Maybe;
+            if (appResponse != null)
+                dialogResult = this._ProcessResponse(appResponse.GuiResponse);
+            this._MainFormClosingDialogAction(e, dialogResult);
         }
         /// <summary>
-        /// Zpracování odpovědi z aplikační funkce, na událost QueryCloseWindow
+        /// Reakce Scheduleru na událost: zavírá se okno WorkScheduler, a aplikační kód (AppHost) předepsal dialog;
+        /// uživatel na dialog reagoval danou odpovědí a my ji v této metodě máme zpracovat.
+        /// Dialog je v této situaci (zavírání okna) použit tehdy, když WorkScheduler obsahuje neuložená data.
+        /// Dotaz zní: "Data jsou změněna, přejete si je uložit?"
+        /// Odpovědi mají tento význam: Yes = uložit data a zavřít okno; No = neukládat data a zavřít okno; Cancel = neukládat a nezavírat okno
         /// </summary>
-        /// <param name="response"></param>
-        private void _MainFormClosingApplicationResponse(AppHostResponseArgs response)
+        /// <param name="e"></param>
+        /// <param name="dialogResult"></param>
+        private void _MainFormClosingDialogAction(FormClosingEventArgs e, GuiDialogResponse dialogResult)
         {
-            GuiDialogResponse dialogResult = this._ProcessResponse(response.GuiResponse);
+            switch (dialogResult)
+            {
+                case GuiDialogResponse.Yes:
+                    // Uložit data teď:
+                    break;
+                case GuiDialogResponse.No:
+                    // Neuložit data a skončit:
+                    break;
+                case GuiDialogResponse.Maybe:
+                    // Repsonse z AppHost nedorazila:
+                    break;
+                case GuiDialogResponse.Cancel:
+                    e.Cancel = true;
+                    break;
+            }
         }
         /// <summary>
         /// Event při zavření okna: pošleme informaci hostiteli.
@@ -218,17 +241,34 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="callBackAction">Odkaz na metodu, která dostane řízení po asynchronním doběhnutí akce v hostiteli</param>
         /// <param name="blockThreadToResponseTimeout">Volba, zda blokovat aktuální thread do doby, než doběhne response - po stanovenou dobu. Hodnota null = nečekat.</param>
         /// <param name="userData">Libovolná další data, která chce dostat metoda (callBackAction). Tato data se nijak nezpracovávají v hostiteli.</param>
-        private void _CallAppHostFunction(GuiRequest request, Action<AppHostResponseArgs> callBackAction, TimeSpan? blockThreadToResponseTimeout = null, object userData = null)
+        private AppHostResponseArgs _CallAppHostFunction(GuiRequest request, Action<AppHostResponseArgs> callBackAction, TimeSpan? blockThreadToResponseTimeout = null, object userData = null)
         {
+            AppHostResponseArgs responseArgs = null;
             AppHostRequestArgs requestArgs = new AppHostRequestArgs(this._SessionId, request, userData, callBackAction);
             if (this._VerifyAppHost(request))
             {   // Máme-li hostitele, předáme mu požadavek. Hostitel musí zavolat callBackAction i po chybách:
-                this._AppHost.CallAppHostFunction(requestArgs);
+                if (!blockThreadToResponseTimeout.HasValue)
+                {   // Asynchronní volání = vyvolá se funkce, ale nečeká se na výsledek. Řízení se vrací ihned, výsledkem této metody je GuiResponse = null:
+                    this._AppHost.CallAppHostFunction(requestArgs);
+                }
+                else
+                {   // Synchronní volání = vyvolá se funkce, čeká se na výsledek. Výsledek je předán do náhradní metody _CallAppHostFunctionResponse.
+                    lock (this._AppHostSyncLock)
+                    {
+                        requestArgs.CallBackAction = this._CallAppHostFunctionResponse;
+                        this._AppHost.CallAppHostFunction(requestArgs);
+                        responseArgs = this._CallAppHostWait(blockThreadToResponseTimeout.Value);
+                    }
+                    // Odeslání dat do původní callback metody, pokud je zadaná:
+                    if (responseArgs != null && callBackAction != null)
+                        callBackAction(responseArgs);
+                }
             }
             else if (callBackAction != null)
             {   // Nemáme hostitele. Pokud volající očekává vyvolání callBackAction, musíme mu ho dát:
                 this._CallBackActionErrorNoHost(requestArgs);
             }
+            return responseArgs;
         }
         /// <summary>
         /// Prověří správnost zadání requestu a existenci AppHost.
@@ -256,6 +296,47 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             responseArgs.FullMessage = "[IAppHost does not exists] " + responseArgs.UserMessage;
             requestArgs.CallBackAction(responseArgs);
         }
+        /// <summary>
+        /// Aktuální thread v této metodě počká na doběhnutí aplikační funkce a na vrácení response.
+        /// Po doběhnutí funkce se volá metoda _CallAppHostFunctionResponse, kam se předává <see cref="AppHostResponseArgs"/>.
+        /// Ta metoda je volaná v libovolném threadu, provede jen uložení response do this instance do <see cref="_AppHostSyncResponse"/>, 
+        /// a poté pošle signál, který odblokuje čekání threadu v této metodě.
+        /// Tato metoda následně načte (ve zdejším threadu) tuto response a vrátí ji.
+        /// </summary>
+        /// <param name="waitTimeout"></param>
+        private AppHostResponseArgs _CallAppHostWait(TimeSpan waitTimeout)
+        {
+            if (this._CallAppHostSemaphore == null)
+                this._CallAppHostSemaphore = new System.Threading.AutoResetEvent(false);
+            this._AppHostSyncResponse = null;
+            this._CallAppHostSemaphore.Reset();
+            bool hasSignal = this._CallAppHostSemaphore.WaitOne(waitTimeout);
+            AppHostResponseArgs response = (hasSignal ? this._AppHostSyncResponse : null);
+            this._AppHostSyncResponse = null;
+            return response;
+        }
+        /// <summary>
+        /// Metoda, která je volána z AppHost po doběhnutí požadavku v synchronním režimu.
+        /// Uloží response a pošle signál čekajícímu threadu.
+        /// </summary>
+        /// <param name="appResponse"></param>
+        private void _CallAppHostFunctionResponse(AppHostResponseArgs appResponse)
+        {
+            this._AppHostSyncResponse = appResponse;
+            this._CallAppHostSemaphore.Set();
+        }
+        /// <summary>
+        /// Zámek používaný při běhu aplikační funkce v synchronním režimu
+        /// </summary>
+        private object _AppHostSyncLock = new object();
+        /// <summary>
+        /// Data vrácená z běhu aplikační funkce v synchronním režimu
+        /// </summary>
+        private AppHostResponseArgs _AppHostSyncResponse;
+        /// <summary>
+        /// Semafor, který dovoluje řídit čekání na odpověď od hostitele _AppHost
+        /// </summary>
+        private System.Threading.AutoResetEvent _CallAppHostSemaphore;
         #endregion
         #region Toolbar
         /// <summary>
@@ -1824,7 +1905,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <returns></returns>
         private GuiDialogResponse _ProcessResponseDialog(GuiResponse guiResponse)
         {
-            return GuiDialogResponse.None;
+            GuiDialogResponse response = GuiDialogResponse.None;
+            if (guiResponse.Dialog != GuiDialogResponse.None)
+                response = this._MainControl.ShowDialog(guiResponse.Message, guiResponse.Dialog);
+            return response;
         }
         #endregion
         #region Zpracování dat

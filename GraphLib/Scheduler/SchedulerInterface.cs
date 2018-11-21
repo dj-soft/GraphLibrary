@@ -56,6 +56,7 @@ namespace Asol.Tools.WorkScheduler
             this.Request = request;
             this.UserData = userData;
             this.CallBackAction = callBackAction;
+            this.OriginalCallBackAction = callBackAction;
         }
         /// <summary>
         /// SessionId dat
@@ -84,7 +85,11 @@ namespace Asol.Tools.WorkScheduler
         /// Pokud je <see cref="CallBackAction"/> zadán, pak <see cref="IAppHost"/> vyhodnotí výsledky běhu, zabalí je do <see cref="AppHostResponseArgs"/> 
         /// a vše předá do metody <see cref="CallBackAction"/>.
         /// </summary>
-        public Action<AppHostResponseArgs> CallBackAction { get; protected set; }
+        public Action<AppHostResponseArgs> CallBackAction { get; set; }
+        /// <summary>
+        /// OriginalCallBackAction : originální <see cref="CallBackAction"/> metoda, kterou předal uživatelský kód.
+        /// </summary>
+        public Action<AppHostResponseArgs> OriginalCallBackAction { get; protected set; }
     }
     /// <summary>
     /// Třída zachycující výsledky, s jakými byl dokončen konkrétní požadavek.

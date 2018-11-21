@@ -268,6 +268,28 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         protected SchedulerPanel SchedulerPanelCurrent { get { SchedulerPanelInfo tsp = this.SchedulerTabPanelCurrent;  return (tsp != null ? tsp.SchedulerPanel : null); } }
         #endregion
+        #region Dialogy
+        /// <summary>
+        /// Zobrazí daný dialog a vrátí odpověď.
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="dialogItems"></param>
+        /// <returns></returns>
+        public GuiDialogResponse ShowDialog(string message, GuiDialogResponse dialogItems)
+        {
+            if (this.InvokeRequired)
+                return (GuiDialogResponse)this.Invoke(new Func<string, GuiDialogResponse, GuiDialogResponse>(_ShowDialogGUI), message, dialogItems);
+            else
+                return this._ShowDialogGUI(message, dialogItems);
+        }
+        private GuiDialogResponse _ShowDialogGUI(string message, GuiDialogResponse dialogItems)
+        {
+            MessageBoxButtons buttons = MessageBoxButtons.OK;
+            MessageBoxIcon icon = MessageBoxIcon.Question;
+            DialogResult result = System.Windows.Forms.MessageBox.Show(this.FindForm(), message, "Dotaz", buttons, icon);
+            return GuiDialogResponse.Ok;
+        }
+        #endregion
     }
     #region class SchedulerPanelInfo - třída obsaující data o jednom panelu.
     /// <summary>
