@@ -222,7 +222,7 @@ namespace Asol.Tools.WorkScheduler.Application
         {
             this._Trace = new Trace();
             this._IsDebugMode = System.Diagnostics.Debugger.IsAttached;
-            this._TracePriority = Application.TracePriority.Priority1_ElementaryTimeDebug; // .Lowest_2;
+            this._TracePriority = (this._IsDebugMode ? Application.TracePriority.Priority3_BellowNormal : Application.TracePriority.Priority5_Normal);
         }
         /// <summary>
         /// Instance property, can be set a value, its int value will be stored to this.__TracePriorityInt.

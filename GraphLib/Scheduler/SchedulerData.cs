@@ -178,9 +178,24 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         protected MainControl _MainControl;
         #endregion
         #region Zavírání hlavního okna
+        /// <summary>
+        /// Event před zavřením okna: pošleme informaci hostiteli a počkáme si na odpověď, jinak se okno zavře.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void _MainFormClosing(object sender, FormClosingEventArgs e)
         {
-            
+            GuiRequest request = new GuiRequest();
+            request.Command = GuiRequest.COMMAND_QueryCloseWindow;
+            this._CallAppHostFunction(request, this._MainFormClosingApplicationResponse);
+        }
+        /// <summary>
+        /// Zpracování odpovědi z aplikační funkce, na událost QueryCloseWindow
+        /// </summary>
+        /// <param name="response"></param>
+        private void _MainFormClosingApplicationResponse(AppHostResponseArgs response)
+        {
+            GuiDialogResponse dialogResult = this._ProcessResponse(response.GuiResponse);
         }
         /// <summary>
         /// Event při zavření okna: pošleme informaci hostiteli.
@@ -201,8 +216,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="request">Požadavek</param>
         /// <param name="callBackAction">Odkaz na metodu, která dostane řízení po asynchronním doběhnutí akce v hostiteli</param>
+        /// <param name="blockThreadToResponseTimeout">Volba, zda blokovat aktuální thread do doby, než doběhne response - po stanovenou dobu. Hodnota null = nečekat.</param>
         /// <param name="userData">Libovolná další data, která chce dostat metoda (callBackAction). Tato data se nijak nezpracovávají v hostiteli.</param>
-        private void _CallAppHostFunction(GuiRequest request, Action<AppHostResponseArgs> callBackAction, object userData = null)
+        private void _CallAppHostFunction(GuiRequest request, Action<AppHostResponseArgs> callBackAction, TimeSpan? blockThreadToResponseTimeout = null, object userData = null)
         {
             AppHostRequestArgs requestArgs = new AppHostRequestArgs(this._SessionId, request, userData, callBackAction);
             if (this._VerifyAppHost(request))
@@ -1792,10 +1808,32 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Metoda zpracuje odpovědi z aplikace.
         /// </summary>
         /// <param name="guiResponse"></param>
-        private void _ProcessResponse(GuiResponse guiResponse)
+        private GuiDialogResponse _ProcessResponse(GuiResponse guiResponse)
         {
-            if (guiResponse == null) return;
+            if (guiResponse == null) return GuiDialogResponse.None;
 
+            this._ProcessResponseData(guiResponse);
+            GuiDialogResponse dialogResult = this._ProcessResponseDialog(guiResponse);
+            return dialogResult;
+        }
+        #region Zpracování dialogu
+        /// <summary>
+        /// Metoda zpracuje dialog, zadaný v Response
+        /// </summary>
+        /// <param name="guiResponse"></param>
+        /// <returns></returns>
+        private GuiDialogResponse _ProcessResponseDialog(GuiResponse guiResponse)
+        {
+            return GuiDialogResponse.None;
+        }
+        #endregion
+        #region Zpracování dat
+        /// <summary>
+        /// Metoda zpracuje odpovědi z aplikace, část týkající se dat
+        /// </summary>
+        /// <param name="guiResponse"></param>
+        private void _ProcessResponseData(GuiResponse guiResponse)
+        {
             Dictionary<string, MainDataTable> mainTableDict = this.DataTables.Where(t => t.TableName != null).GetDictionary(t => t.TableName, true);
             Dictionary<uint, GTimeGraph> refreshGraphDict = new Dictionary<uint, GTimeGraph>();
             this._ProcessResponseToolbarItems(guiResponse.ToolbarItems);
@@ -1900,6 +1938,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             refreshGraphs.ForEachItem(g => g.Refresh());
         }
+        #endregion
         #endregion
         #region Implementace IMainDataInternal
         /// <summary>
