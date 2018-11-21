@@ -837,9 +837,21 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         protected Random Rand;
         #endregion
         #region IAppHost
-        void IAppHost.CallAppHostFunction(AppHostRequestArgs args)
+        void IAppHost.CallAppHostFunction(AppHostRequestArgs requestArgs)
         {
-            
+            AppHostResponseArgs responseArgs = new AppHostResponseArgs(requestArgs);
+            switch (requestArgs.Request.Command)
+            {
+                case GuiRequest.COMMAND_QueryCloseWindow:
+                    responseArgs.GuiResponse = new GuiResponse()
+                    {
+                         Dialog = GuiDialogResponse.YesNo | GuiDialogResponse.Cancel,
+                         Message ="Co s daty - uložit je?"
+                    };
+                    break;
+            }
+            if (requestArgs.CallBackAction != null)
+                requestArgs.CallBackAction(responseArgs);
         }
         #endregion
     }
