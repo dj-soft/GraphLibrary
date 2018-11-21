@@ -25,7 +25,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         public SchedulerDataSource()
         {
             this.Rand = new Random();
+            Eol = Environment.NewLine;
         }
+        public static string Eol;
         #endregion
         #region Tvorba výchozích dat
         /// <summary>
@@ -231,7 +233,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 TAc = TimeSpan.FromMinutes(tacMin),
                 TEc = TimeSpan.FromMinutes(tecMin)
             };
-            operation.ToolTip = operation.ReferName + Environment.NewLine + toolTip;
+            
+            operation.ToolTip = operation.ReferName + Eol + productOrder.ReferName + Eol + toolTip;
             operation.FillTimes(this, ref time);
 
             return operation;
