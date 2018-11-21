@@ -1314,6 +1314,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         internal void CheckValid()
         {
+            if (this.IsValidAll) return;
             using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "CheckValid", ""))
             {
                 this.CheckValidAllGroupList();
@@ -1323,6 +1324,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 this.CheckValidCoordinateX();
                 this.CheckValidBounds();
                 this.CheckValidChildList();
+                this.IsValidAll = true;
             }
         }
         /// <summary>
@@ -1638,6 +1640,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             if ((items & InvalidateItems.Childs) != 0)
             {
                 this._Childs = null;
+                this.IsValidAll = false;
                 // O invalidaci Repaint si musí volající explicitně požádat:
                 // items |= InvalidateItems.Repaint;
             }
@@ -1646,6 +1649,25 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 this.Repaint();
             }
         }
+        /// <summary>
+        /// true = po komplexním průchodu metodou <see cref="CheckValid()"/>, false po jakékoli invalidaci
+        /// </summary>
+        protected bool IsValidAll { get { return (this._IsValidAll && this._IsValidInternal); } set { this._IsValidAll = value; } }
+        private bool _IsValidInternal
+        {
+            get
+            {
+                if (this._AllGroupList == null) return false;
+                if (!String.Equals(this.TimeAxisIdentity, this.ValidatedAxisIdentity)) return false;
+                if (!this.IsValidCoordinateYVirtual) return false;
+                if (this.ValidatedHeight <= 0 || this.ValidatedHeight != this.Bounds.Height) return false;
+                if (!this.IsValidCoordinateX) return false;
+                if (!this.IsValidBounds) return false;
+                if (this._Childs == null) return false;
+                return true;
+            }
+        }
+        private bool _IsValidAll;
         /// <summary>
         /// Prvky grafu, které budou invalidovány
         /// </summary>
