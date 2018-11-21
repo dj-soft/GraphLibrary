@@ -1357,7 +1357,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             this.DrawBackground(e, absoluteBounds);
             using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "Draw", ""))
             {
-                e.GraphicsClipWith(absoluteBounds);
+                // e.GraphicsClipWith(absoluteBounds);
                 this.DrawTicks(e, absoluteBounds);
                 // Vykreslení jednotlivých položek grafu neřídí graf, ale systém. 
                 // Bude postupně volat kreslení všech mých Child items, což jsou GTimeGraphGroup.GControl, bude volat jejich metodu Draw(GInteractiveDrawArgs).

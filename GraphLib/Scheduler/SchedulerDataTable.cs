@@ -435,6 +435,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             var tagItems = this.CreateTagArray();
             this.TableRow = Table.CreateFrom(this.GuiGrid.Rows.DataTable, tagItems);
+            this.TableRow.CalculateBoundsForAllRows = true;
             this.TableRow.OpenRecordForm += _TableRow_OpenRecordForm;
             this.TableRow.UserData = this;
             if (this.TableRow.AllowPrimaryKey) this.TableRow.HasPrimaryIndex = true;

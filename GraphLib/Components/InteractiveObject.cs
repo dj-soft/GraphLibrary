@@ -262,13 +262,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Komplexní informace o souřadném systému a dalších náležitostech this objektu:
         /// <see cref="BoundsInfo.IsVisible"/>; <see cref="BoundsInfo.IsEnabled"/>; <see cref="BoundsInfo.CurrentIsVisible"/>; <see cref="BoundsInfo.CurrentIsEnabled"/>; 
         /// </summary>
-        public virtual BoundsInfo BoundsInfo
-        {
-            get
-            {
-                return BoundsInfo.CreateForChild(this);
-            }
-        }
+        public virtual BoundsInfo BoundsInfo { get { return BoundsInfo.CreateForChild(this); } }
         /// <summary>
         /// Velikost prostoru pro klienty = <see cref="IInteractiveItem.Bounds"/>.Sub(<see cref="IInteractiveItem.ClientBorder"/>).Size
         /// </summary>

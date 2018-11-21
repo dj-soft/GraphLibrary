@@ -915,6 +915,23 @@ namespace Asol.Tools.WorkScheduler.Data
         }
         private Components.Graph.TimeGraphProperties _GraphParameters;
         /// <summary>
+        /// Přepočítávat vždy souřadnice VŠECH řádků, i když nejsou ve viditelné oblasti?
+        /// Nastavení na true je nutné tehdy, kdyý tabulka obsahuje grafy, a grafy mohou zobrazovat Linky. 
+        /// Linky totiž mohou vést i na prvky, které jsou mimo viditelnou oblast, a pak potřebujeme znát jejich správné souřadnice.
+        /// </summary>
+        public bool CalculateBoundsForAllRows
+        {
+            get { return this._CalculateBoundsForAllRows; }
+            set
+            {
+                bool oldValue = this._CalculateBoundsForAllRows;
+                this._CalculateBoundsForAllRows = value;
+                if ((this._CalculateBoundsForAllRows != oldValue) && this.HasGTable)
+                    this.GTable.Invalidate(InvalidateItem.TableItems);
+            }
+        }
+        private bool _CalculateBoundsForAllRows = false;
+        /// <summary>
         /// Provede se poté, kdy uživatel klikne na záhlaví tabulky = buňka v křížení ColumnHeader * RowHeader.
         /// </summary>
         public void TableHeaderClick()

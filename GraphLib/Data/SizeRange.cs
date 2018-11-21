@@ -1235,6 +1235,26 @@ namespace Asol.Tools.WorkScheduler.Data
             return new Int32Range(begin, end);
         }
         /// <summary>
+        /// Posunutí hodnoty jednoho objektu o offset
+        /// </summary>
+        /// <param name="range"></param>
+        /// <param name="offset"></param>
+        /// <returns></returns>
+        public static Int32Range operator +(Int32Range range, int offset)
+        {
+            return new Int32Range((range.Begin + offset), (range.End + offset));
+        }
+        /// <summary>
+        /// Posunutí hodnoty jednoho objektu o offset
+        /// </summary>
+        /// <param name="range"></param>
+        /// <param name="offset"></param>
+        /// <returns></returns>
+        public static Int32Range operator -(Int32Range range, int offset)
+        {
+            return new Int32Range((range.Begin - offset), (range.End - offset));
+        }
+        /// <summary>
         /// Porovnání (EqualValue) dvou objektů z hlediska hodnot
         /// </summary>
         /// <param name="a"></param>

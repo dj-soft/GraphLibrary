@@ -1054,6 +1054,120 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         #endregion
     }
     #endregion
+    #region Třída GRowArea : třída zobrazující podklad prostoru řádků, zajišťuje Clip grafiky pro řádky
+    /// <summary>
+    /// GRowArea : třída zobrazující podklad prostoru řádků, zajišťuje Clip grafiky pro řádky
+    /// </summary>
+    public class GRowArea : GComponent
+    {
+        #region Konstruktor, data
+        /// <summary>
+        /// Konstruktor pro záhlaví, s odkazem na tabulku
+        /// </summary>
+        /// <param name="table"></param>
+        /// <param name="areaType"></param>
+        public GRowArea(Table table, TableAreaType areaType)
+        {
+            this._OwnerTable = table;
+            this._AreaType = areaType;
+            this._ChildList = new List<IInteractiveItem>();
+        }
+        private Table _OwnerTable;
+        private TableAreaType _AreaType;
+        /// <summary>
+        /// Umožní nastavit souřadnice pro Child objekty
+        /// </summary>
+        /// <param name="newBounds"></param>
+        protected override void SetChildBounds(Rectangle newBounds)
+        {
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return "RowArea in " + this._OwnerTable.ToString();
+        }
+        #endregion
+        #region Reference na objekty Owner
+        /// <summary>
+        /// Tabulka, do které patří toto záhlaví
+        /// </summary>
+        public override Table OwnerTable { get { return this._OwnerTable; } }
+        /// <summary>
+        /// Typ záhlaví.
+        /// </summary>
+        protected override TableAreaType ComponentType { get { return this._AreaType; } }
+        #endregion
+        #region Public rozhraní
+        /// <summary>
+        /// Souřadnice na ose X, v pixelech, v koordinátech GTable, kde je tento objekt právě zobrazen.
+        /// </summary>
+        public Int32Range VisualRangeX { get; set; }
+        /// <summary>
+        /// Souřadnice na ose Y, v pixelech, v koordinátech GTable, kde je tento objekt právě zobrazen.
+        /// </summary>
+        public Int32Range VisualRangeY { get; set; }
+        #endregion
+        #region Child items
+        /// <summary>
+        /// Vymaže obsah pole řádků; volá se při tvorbě Childs v GTable
+        /// </summary>
+        public void ChildsClear()
+        {
+            this._ChildList.Clear();
+        }
+        /// <summary>
+        /// Přidá řádek do kolekce Childs
+        /// </summary>
+        /// <param name="row"></param>
+        public void ChildAdd(IInteractiveItem row)
+        {
+            this._ChildList.Add(row);
+        }
+        /// <summary>
+        /// Počet řádků
+        /// </summary>
+        public int ChildCount { get { return this._ChildList.Count; } }
+        /// <summary>
+        /// Aktuálně vložené řádky
+        /// </summary>
+        public List<IInteractiveItem> ChildList { get { return this._ChildList; } }
+        private List<IInteractiveItem> _ChildList;
+        /// <summary>
+        /// Childs prvky tohoto prostoru
+        /// </summary>
+        protected override IEnumerable<IInteractiveItem> Childs { get { return this._ChildList; } }
+        #endregion
+        #region Draw - kreslení podkladu řádků
+        /// <summary>
+        /// Vykreslí podklad prostoru pro záhlaví.
+        /// Bázová třída GHeader vykreslí pouze pozadí, pomocí metody GPainter.DrawColumnHeader()
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="drawAsGhost"></param>
+        /// <param name="opacity"></param>
+        protected override void DrawContent(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
+        {
+            this.DrawRowAreaBackground(e, boundsAbsolute, drawAsGhost, opacity);
+            this.DrawDebugBorder(e, boundsAbsolute, opacity);
+        }
+        /// <summary>
+        /// Vykreslí jen pozadí
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="drawAsGhost"></param>
+        /// <param name="opacity"></param>
+        protected void DrawRowAreaBackground(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
+        {
+            // GPainter.DrawGridHeader(e.Graphics, boundsAbsolute, RectangleSide.Top, Skin.Grid.HeaderBackColor, true, Skin.Grid.HeaderLineColor, GInteractiveState.Enabled, System.Windows.Forms.Orientation.Horizontal, null, opacity);
+        }
+        #endregion
+    }
+    #endregion
     #region Třída GRow : vizuální třída pro zobrazování podkladu řádku (základní barva nebo podkladový graf nebo jiná data)
     /// <summary>
     /// GRow : vizuální třída pro zobrazování podkladu řádku (základní barva nebo podkladový graf nebo jiná data)
@@ -1148,10 +1262,11 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// Metoda připraví patřičné prvky tohoto řádku do svého seznam Childs prvků.
         /// Tyto prvky pak budou v řádku zobrazovány a budou interaktivní.
         /// </summary>
+        /// <param name="offsetX"></param>
         /// <param name="rowDataBounds">Souřadnice prostoru pro data buněk ve všech řádcích</param>
         /// <param name="visibleColumns">Viditelné sloupce</param>
         /// <param name="rowBounds"></param>
-        public void PrepareChilds(Rectangle rowDataBounds, Column[] visibleColumns, out Rectangle rowBounds)
+        public void PrepareChilds(int offsetX, Rectangle rowDataBounds, Column[] visibleColumns, out Rectangle rowBounds)
         {
             Row row = this.OwnerRow;
 
@@ -1165,7 +1280,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                 childList.Add(this.OwnerRow.BackgroundValue as IInteractiveItem);
 
             // Viditelné buňky:
-            int cellXBegin = rowDataXRange.Begin;
+            int cellXBegin = offsetX;
             Point lastPoint = new Point(rowDataXRange.Begin, 0);
             foreach (Column column in visibleColumns)
             {   // Musíme provést korekci souřadnic na ose X:
@@ -1178,9 +1293,9 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             }
 
             // Souřadnice this GRow v rámci tabulky:
-            int cellXEnd = cellXBegin + lastPoint.X;
+            int cellXEnd = lastPoint.X;
             if (cellXEnd > rowDataXRange.End) cellXEnd = rowDataXRange.End;
-            Int32Range rowXRange = new Int32Range(cellXBegin, cellXEnd);
+            Int32Range rowXRange = new Int32Range(rowDataXRange.Begin, cellXEnd);
             rowBounds = Int32Range.GetRectangle(rowXRange, this.VisualRange);
 
             // Soupis Child prvků:
@@ -1282,10 +1397,12 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             if (this.Parent == null)
                 this.Parent = gTable;
 
-            GRow gRow = this.OwnerRow.Control;               // Vizuální control pro data našeho řádku
-            Rectangle rowHeadersBounds = gTable.GetRelativeBoundsForArea(TableAreaType.RowHeaders);          // Celý prostor všech RowHeaders, relativně k GTable, nás bude zajímat jeho pozice X
-            Rectangle rowHeaderBounds = Int32Range.GetRectangle(rowHeadersBounds, gRow.VisualRange);         // Souřadnice RowHeader relativně k GTable (pozice na ose Y je převzata z řádku: VisualRange)
-            this.RowSplitter.LoadFrom(rowHeaderBounds, RectangleSide.Bottom, true);                          // Splitter umístíme na dolní hranu prostoru RowHeader, relativně k GTable
+            GRow gRow = this.OwnerRow.Control;                                                     // Vizuální control pro data našeho řádku
+            Rectangle rowAreaBounds = gTable.GetRelativeBoundsForArea(TableAreaType.RowData);      // Celý prostor oblasti dat řádků, relativně k GTable, zajímá nás pozice Y
+            Int32Range rowYRange = gRow.VisualRange + rowAreaBounds.Y;                             // Souřadnice řádky v ose Y, relativně k GTable (totiž její vlastní VisualRange je relativně k RowData)
+            Rectangle rowHeadersBounds = gTable.GetRelativeBoundsForArea(TableAreaType.RowHeaders);// Celý prostor všech RowHeaders, relativně k GTable, nás bude zajímat jeho pozice X
+            Rectangle rowHeaderBounds = Int32Range.GetRectangle(rowHeadersBounds, rowYRange);      // Souřadnice RowHeader relativně k GTable (pozice na ose Y je převzata z řádku: VisualRange)
+            this.RowSplitter.LoadFrom(rowHeaderBounds, RectangleSide.Bottom, true);                // Splitter umístíme na dolní hranu prostoru RowHeader, relativně k GTable
         }
         /// <summary>
         /// true pokud má být zobrazen splitter za tímto řádkem, závisí na (OwnerTable.AllowRowResize)
@@ -1310,10 +1427,14 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="e"></param>
         private void _RowSplitter_LocationChange(object sender, GPropertyChangeArgs<int> e)
         {
-            int top = this.OwnerRow.Control.VisualRange.Begin;       // Souřadnice Y, kde začíná Row, relativně k GTable
+            GTable gTable = this.OwnerGTable;
+            GRow gRow = this.OwnerRow.Control;                                                     // Vizuální control pro data našeho řádku
+            Rectangle rowAreaBounds = gTable.GetRelativeBoundsForArea(TableAreaType.RowData);      // Celý prostor oblasti dat řádků, relativně k GTable, zajímá nás pozice Y
+            Int32Range rowYRange = gRow.VisualRange + rowAreaBounds.Y;         // Souřadnice řádky v ose Y, relativně k GTable (totiž její vlastní VisualRange je relativně k RowData)
+            int top = rowYRange.Begin;                                         // Souřadnice Y, kde začíná Row, relativně k GTable
             int value = this.RowSplitter.Value;                      // Aktuálně platná souřadnice Splitteru = nový Bottom souřadnic řádku
-            int height = value - top;
-            this.OwnerGTable.RowResizeTo(this.OwnerRow, ref height);
+            int height = value - top;                                // Výška řádku po posunu splitteru
+            this.OwnerGTable.RowResizeTo(this.OwnerRow, ref height); // Změna výšky řádku, aplikace pravidel
             e.CorrectValue = top + height;
         }
         /// <summary>

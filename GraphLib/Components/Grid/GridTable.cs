@@ -243,7 +243,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <summary>
         /// Vizuální souřadnice prostoru řádků (RowArea) = vlastní obsah dat, nikoli záhlaví
         /// </summary>
-        protected Rectangle RowDataBounds { get { this._InnerBoundsCheck(); return this._RowDataBounds; } } private Rectangle _RowDataBounds;
+        protected Rectangle RowAreaBounds { get { this._InnerBoundsCheck(); return this._RowDataBounds; } } private Rectangle _RowDataBounds;
         /// <summary>
         /// Viditelnost scrollbaru řádků
         /// </summary>
@@ -282,8 +282,8 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                 case TableAreaType.TagFilterHeaderRight: return this.TagHeaderRBounds;
                 case TableAreaType.Row: return this.RowBounds;
                 case TableAreaType.RowHeaders: return this.RowHeadersBounds;
-                case TableAreaType.RowData: return this.RowDataBounds;
-                case TableAreaType.Cell: return this.RowDataBounds;
+                case TableAreaType.RowData: return this.RowAreaBounds;
+                case TableAreaType.Cell: return this.RowAreaBounds;
                 case TableAreaType.VerticalScrollBar: return this.RowsScrollBarBounds;
             }
             return Rectangle.Empty;
@@ -502,16 +502,22 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         {
             if (this._VisibleRows != null) return;
 
+            bool calcBoundsAll = this.DataTable.CalculateBoundsForAllRows;
             List<Row> visibleRows = new List<Row>();
             GridPosition rowsPositions = this.RowsPositions;
             Int32Range dataVisibleRange = rowsPositions.DataVisibleRange;                          // Rozmezí datových pixelů, které jsou viditelné
             foreach (Row row in this.Rows)
             {
+                row.Control.VisualRange = null;
                 ISequenceLayout isl = row as ISequenceLayout;
                 bool isRowVisible = SequenceLayout.IsItemVisible(isl, dataVisibleRange);           // Tento řádek je vidět?
-                row.Control.VisualRange = (isRowVisible ? rowsPositions.GetVisualPosition(isl) : null);
-                if (isRowVisible)
-                    visibleRows.Add(row);
+                if (isRowVisible || calcBoundsAll)
+                {
+                    row.Control.VisualRange = rowsPositions.GetVisualPosition(isl);
+                    qqq;
+                    if (isRowVisible)
+                        visibleRows.Add(row);
+                }
             }
             this._VisibleRows = visibleRows;
         }
@@ -556,23 +562,29 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         private void InitRowsPositions()
         {
-            this._RowsPositions = new GridPosition(DefaultColumnHeaderHeight, 50, this._RowsPositionGetVisualSize, this._RowsPositionGetDataSize, this._GetVisualFirstPixel, this._SetVisualFirstPixel);
+            this._RowArea = new GRowArea(this._DataTable, TableAreaType.RowData);
+
+            this._RowsPositions = new GridPosition(DefaultColumnHeaderHeight, 50, this._RowsPositionGetVisualSize, this._RowsPositionGetDataSize, this._GetVisualFirstPixelRowArea, this._SetVisualFirstPixel);
 
             this._RowsScrollBar = new GScrollBar() { Orientation = System.Windows.Forms.Orientation.Vertical };
             this._RowsScrollBar.ValueChanging += new GPropertyChangedHandler<DecimalNRange>(RowsScrollBar_ValueChange);
             this._RowsScrollBar.ValueChanged += new GPropertyChangedHandler<DecimalNRange>(RowsScrollBar_ValueChange);
         }
         /// <summary>
+        /// Vizuální prvek, reprezentující prostor pro data řádků
+        /// </summary>
+        protected GRowArea RowArea { get { return this._RowArea; } }
+        /// <summary>
         /// Řídící prvek pro Pozice řádků
         /// </summary>
         protected GridPosition RowsPositions { get { return this._RowsPositions; } }
         /// <summary>
-        /// Vrací výšku prostoru pro řádky (=this.ClientSize.Height - RowsPositions.VisualFirstPixel (=výška <see cref="ColumnHeaderHeight"/> + <see cref="TagFilterHeight"/>))
+        /// Vrací výšku prostoru pro řádky (=this.RowAreaBounds.Height)
         /// </summary>
         /// <returns></returns>
         private int _RowsPositionGetVisualSize()
         {
-            return this.ClientSize.Height - this.RowsPositions.VisualFirstPixel;
+            return this.RowAreaBounds.Height;
         }
         /// <summary>
         /// Vrací výšku všech zobrazitelných datových řádků (samosebou, vyjma řádek ColumnHeader - to není datový řádek).
@@ -585,15 +597,25 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             return (count > 0 ? ((ISequenceLayout)rows[count - 1]).End : 0);
         }
         /// <summary>
-        /// Vrací hodnotu prvního vizuálního pixelu, kde jsou zobrazována data.
+        /// Vrací hodnotu prvního vizuálního pixelu, kde jsou zobrazována data v rímci RowArea.
+        /// Jde o hodnotu 0.
+        /// </summary>
+        /// <returns></returns>
+        private int _GetVisualFirstPixelRowArea()
+        {
+            return 0;
+        }
+        /// <summary>
+        /// Vrací hodnotu prvního vizuálního pixelu, kde se začíná zobrazovat RowArea.
         /// Jde o hodnotu <see cref="ColumnHeaderHeight"/> + <see cref="TagFilterHeight"/>.
         /// </summary>
         /// <returns></returns>
-        private int _GetVisualFirstPixel()
+        private int _GetVisualFirstPixelRowHeader()
         {
-            int columnHeaderHeight = this.ColumnHeaderHeight;
-            int tagFilterHeight = this.TagFilterHeight;
-            return columnHeaderHeight + tagFilterHeight;
+            return this.RowAreaBounds.Top;
+            //  int columnHeaderHeight = this.ColumnHeaderHeight;
+            //  int tagFilterHeight = this.TagFilterHeight;
+            //  return columnHeaderHeight + tagFilterHeight;
         }
         /// <summary>
         /// Zapíše danou hodnotu jako pozici prvního vizuálního pixelu, kde jsou zobrazována data.
@@ -637,6 +659,10 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
 
             this._RowsScrollBarDataValid = true;
         }
+        /// <summary>
+        /// Vizuální prostor pro zobrazení řádků, jejich vizuální Parent a container
+        /// </summary>
+        private GRowArea _RowArea;
         /// <summary>
         /// Datový pozicioner pro řádky
         /// </summary>
@@ -1549,6 +1575,9 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         protected void _ChildItemsAddRowsContent()
         {
+            this.RowArea.ChildsClear();
+            GComponent.PrepareChildOne(this.RowArea, this, this.RowAreaBounds, this._ChildList);          // Do Tabulky vložíme kontejner pro všechny řádky
+
             foreach (Row row in this.VisibleRows)
                 this._ChildItemsAddRowContent(row);
         }
@@ -1562,14 +1591,24 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         protected void _ChildItemsAddRowContent(Row row)
         {
             // Data řádku (to, co obsahuje data = hned za RowHeader, tedy prostor pro viditelné buňky):
-            Rectangle rowDataBounds = this.RowDataBounds;            // Celý prostor pro data (vpravo od RowHeader, dolů pod ColumnHeader)
-            Rectangle rowOneBounds;                                  // Prostor aktuálního řádku
-            row.Control.PrepareChilds(rowDataBounds, this.VisibleColumns, out rowOneBounds);       // Řádek si vyřeší svoje buňky, a nakonec i určí svoje souřadnice
-            GComponent.PrepareChildOne(row.Control, this, rowOneBounds, this._ChildList);          // Do Tabulky vložíme kontejner pro data řádku
+            //    Rectangle rowDataBounds = this.RowAreaBounds;            // Celý prostor pro data (vpravo od RowHeader, dolů pod ColumnHeader)
+            //    Rectangle rowOneBounds;                                  // Prostor aktuálního řádku
+            //    row.Control.PrepareChilds(rowDataBounds, this.VisibleColumns, out rowOneBounds);       // Řádek si vyřeší svoje buňky, a nakonec i určí svoje souřadnice
+            //    GComponent.PrepareChildOne(row.Control, this, rowOneBounds, this._ChildList);          // Do Tabulky vložíme kontejner pro data řádku
+
+            yyy;
+
+            // tady bude změna: řádek nebude vkládán jako Child do this._ChildList, ale do this.RowArea.ChildList:
+            Rectangle rowAreaBounds = this.RowAreaBounds;
+            Rectangle rowDataBounds = new Rectangle(new Point(0,0), rowAreaBounds.Size);                 // Celý prostor pro data (vpravo od RowHeader, dolů pod ColumnHeader)
+            Rectangle rowOneBounds;                                                                      // out: Prostor aktuálního řádku
+            row.Control.PrepareChilds(rowAreaBounds.X, rowDataBounds, this.VisibleColumns, out rowOneBounds);             // Řádek si vyřeší svoje buňky, a nakonec i určí svoje souřadnice
+            GComponent.PrepareChildOne(row.Control, this.RowArea, rowOneBounds, this.RowArea.ChildList); // Do řádku GRow vložíme referenci Parent = this.RowArea, a do this.RowArea.ChildList vložíme GRow (kontejner pro data řádku)
 
             // Záhlaví aktuálního řádku přidám až po buňkách, bude "navrchu" z hlediska kreslení i interaktivity:
             Int32Range rowHeaderXRange = this.RowHeadersBounds.GetVisualRange(System.Windows.Forms.Orientation.Horizontal);  // Pozice RowHeader na ose X  (záhlaví řádků)
-            GComponent.PrepareChildOne(row.RowHeader, this, rowHeaderXRange, row.Control.VisualRange, this._ChildList);
+            Int32Range rowHeaderYRange = row.Control.VisualRange + this._GetVisualFirstPixelRowHeader();
+            GComponent.PrepareChildOne(row.RowHeader, this, rowHeaderXRange, rowHeaderYRange, this._ChildList);
             row.RowHeader.PrepareSplitterBounds();
         }
         /// <summary>
