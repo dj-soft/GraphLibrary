@@ -79,9 +79,12 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         protected void CheckBoundsValid()
         {
-            if (this.BoundsIsValid) return;
-            this.Group.CalculateBounds();
-            this.BoundsIsValid = true;
+            this.Graph.CheckValid();
+            if (!this.BoundsIsValid)
+            {
+                this.Group.CalculateBounds();
+                this.BoundsIsValid = true;
+            }
         }
         /// <summary>
         /// Metoda invaliduje souřadnice <see cref="Bounds"/>

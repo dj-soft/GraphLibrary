@@ -492,7 +492,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// ale ve vrstvě <see cref="GInteractiveDrawLayer.Interactive"/> je na souřadnicích Drag.</param>
         /// <returns></returns>
         private static BoundsInfo _CreateForItem(IInteractiveParent forItem, bool asContainer, GInteractiveDrawLayer currentLayer)
-        { 
+        {
+            Rectangle nd = (forItem as IInteractiveItem).Bounds;
+
             // Nejprve projdu postupně všechny parenty daného prvku, zpětně, až najdu poslední (=nejzákladnější) z nich, a nastřádám si pole jejich souřadnic:
             List<Rectangle> boundsList = new List<Rectangle>();
             IInteractiveParent item = (asContainer ? forItem : forItem.Parent);

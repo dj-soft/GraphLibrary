@@ -1312,7 +1312,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Metoda zajistí provedení kontroly platnosti všech vnitřních dat, podle toho která kontrola a přepočet je zapotřebí.
         /// </summary>
-        protected void CheckValid()
+        internal void CheckValid()
         {
             using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "CheckValid", ""))
             {
@@ -1393,8 +1393,6 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             this.DrawBackgroundShadow(e, absoluteBounds, forceShadow, this.EndShadowColor, this.EndShadowArea, RectangleSide.Right);
             this.DrawBackgroundImage(e, absoluteBounds, forceShadow, this.BeginImage, RectangleSide.Left);
             this.DrawBackgroundImage(e, absoluteBounds, forceShadow, this.EndImage, RectangleSide.Right);
-
-
         }
         /// <summary>
         /// Vykreslí pozadí pod grafem danou barvou, pokud je daná

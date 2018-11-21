@@ -224,7 +224,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             if (item == null || !item.Is.Visible) return;
             if (item.Parent == null) item.Parent = parent;
             if (item.Bounds != itemBounds) item.Bounds = itemBounds;
-            childList.Add(item);
+            if (childList != null) childList.Add(item);
             if (lastPoint.X < itemBounds.Right) lastPoint.X = itemBounds.Right;
             if (lastPoint.Y < itemBounds.Bottom) lastPoint.Y = itemBounds.Bottom;
         }

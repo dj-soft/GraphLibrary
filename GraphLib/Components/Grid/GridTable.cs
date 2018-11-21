@@ -502,7 +502,11 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         {
             if (this._VisibleRows != null) return;
 
+            // Připravím data, které budeme potřebovat pro každý řádek:
+            Rectangle rowAreaBounds = this.RowAreaBounds;
+            Rectangle rowDataBounds = new Rectangle(new Point(0, 0), rowAreaBounds.Size);          // Celý prostor pro data (vpravo od RowHeader, dolů pod ColumnHeader)
             bool calcBoundsAll = this.DataTable.CalculateBoundsForAllRows;
+
             List<Row> visibleRows = new List<Row>();
             GridPosition rowsPositions = this.RowsPositions;
             Int32Range dataVisibleRange = rowsPositions.DataVisibleRange;                          // Rozmezí datových pixelů, které jsou viditelné
@@ -514,7 +518,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                 if (isRowVisible || calcBoundsAll)
                 {
                     row.Control.VisualRange = rowsPositions.GetVisualPosition(isl);
-                    qqq;
+                    this.PrepareRowDataBounds(row, false, rowAreaBounds, rowDataBounds);           // Připravit Bounds pro Row i jeho Cell, ale nedávat do ChilList
                     if (isRowVisible)
                         visibleRows.Add(row);
                 }
@@ -1069,6 +1073,9 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             foreach (Row row in this.VisibleRows)
             {
                 Cell cell = row[columnId];
+                // Požádáme o překreslení buňky. Překreslení buňky zajistí i překreslení grafu. 
+                // Graf poté při překreslování sám rozezná rozdíl mezi stavem časové osy aktuálním, 
+                //  a tím stavem časové osy, pro který jsou vypočteny souřadnice prvků, a provede si přepočet:
                 ((IInteractiveParent)cell.Control).Repaint();
             }
         }
@@ -1576,39 +1583,61 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         protected void _ChildItemsAddRowsContent()
         {
             this.RowArea.ChildsClear();
-            GComponent.PrepareChildOne(this.RowArea, this, this.RowAreaBounds, this._ChildList);          // Do Tabulky vložíme kontejner pro všechny řádky
+            GComponent.PrepareChildOne(this.RowArea, this, this.RowAreaBounds, this._ChildList);   // Do Tabulky vložíme kontejner pro všechny řádky
+
+            // Připravím data, které budeme potřebovat pro každý řádek:
+            Rectangle rowAreaBounds = this.RowAreaBounds;
+            Rectangle rowDataBounds = new Rectangle(new Point(0, 0), rowAreaBounds.Size);          // Celý prostor pro data (vpravo od RowHeader, dolů pod ColumnHeader)
+            Int32Range rowHeaderXRange = this.RowHeadersBounds.GetVisualRange(System.Windows.Forms.Orientation.Horizontal);  // Pozice RowHeader na ose X  (záhlaví řádků)
 
             foreach (Row row in this.VisibleRows)
-                this._ChildItemsAddRowContent(row);
+                this._ChildItemsAddRowContent(row, rowHeaderXRange, rowAreaBounds, rowDataBounds);
         }
         /// <summary>
-        /// Do pole this.ChildList přidá prvky odpovídající jednomu daného řádku, obsahem je: GRowHeader a GRow.
-        /// Jednotlivé prvky řádku (GCells) jsou Childs až GRow, GCells nejsou Childs v GTable.
-        /// Nicméně tato metoda <see cref="_ChildItemsAddRowContent(Row)"/> vyvolá i přípravu těchto Childs v GRow, společně s informací o viditelných sloupcích a jejich souřadnicích.
+        /// Do pole this.ChildList přidá prvky odpovídající jednomu daného řádku, obsahem jsou jednotlivé GRowHeaders.
+        /// Splittery řádků se přidávají až nakonec, ale tady se počítají jejich souřadnice.
+        /// Jednotlivé prvky řádku (GCells) jsou jako Childs umístěny v GRow.
+        /// Jednotlivé řádky (GRow) jsou jako Childs umístěny v this.RowArea, nikoli v GTable.
+        /// Nicméně tato metoda <see cref="_ChildItemsAddRowContent(Row, Int32Range, Rectangle, Rectangle)"/> vyvolá i přípravu těchto Childs v GRow, společně s informací o viditelných sloupcích a jejich souřadnicích.
         /// + za každý viditelný sloupec (VisibleColumns) pak obsah vizuální buňky (row[column.ColumnId].Control).
         /// </summary>
         /// <param name="row"></param>
-        protected void _ChildItemsAddRowContent(Row row)
+        /// <param name="rowHeaderXRange"></param>
+        /// <param name="rowAreaBounds"></param>
+        /// <param name="rowDataBounds"></param>
+        protected void _ChildItemsAddRowContent(Row row, Int32Range rowHeaderXRange, Rectangle rowAreaBounds, Rectangle rowDataBounds)
         {
             // Data řádku (to, co obsahuje data = hned za RowHeader, tedy prostor pro viditelné buňky):
-            //    Rectangle rowDataBounds = this.RowAreaBounds;            // Celý prostor pro data (vpravo od RowHeader, dolů pod ColumnHeader)
-            //    Rectangle rowOneBounds;                                  // Prostor aktuálního řádku
-            //    row.Control.PrepareChilds(rowDataBounds, this.VisibleColumns, out rowOneBounds);       // Řádek si vyřeší svoje buňky, a nakonec i určí svoje souřadnice
-            //    GComponent.PrepareChildOne(row.Control, this, rowOneBounds, this._ChildList);          // Do Tabulky vložíme kontejner pro data řádku
-
-            yyy;
-
-            // tady bude změna: řádek nebude vkládán jako Child do this._ChildList, ale do this.RowArea.ChildList:
-            Rectangle rowAreaBounds = this.RowAreaBounds;
-            Rectangle rowDataBounds = new Rectangle(new Point(0,0), rowAreaBounds.Size);                 // Celý prostor pro data (vpravo od RowHeader, dolů pod ColumnHeader)
-            Rectangle rowOneBounds;                                                                      // out: Prostor aktuálního řádku
-            row.Control.PrepareChilds(rowAreaBounds.X, rowDataBounds, this.VisibleColumns, out rowOneBounds);             // Řádek si vyřeší svoje buňky, a nakonec i určí svoje souřadnice
-            GComponent.PrepareChildOne(row.Control, this.RowArea, rowOneBounds, this.RowArea.ChildList); // Do řádku GRow vložíme referenci Parent = this.RowArea, a do this.RowArea.ChildList vložíme GRow (kontejner pro data řádku)
+            this.PrepareRowDataBounds(row, true, rowAreaBounds, rowDataBounds);
 
             // Záhlaví aktuálního řádku přidám až po buňkách, bude "navrchu" z hlediska kreslení i interaktivity:
-            Int32Range rowHeaderXRange = this.RowHeadersBounds.GetVisualRange(System.Windows.Forms.Orientation.Horizontal);  // Pozice RowHeader na ose X  (záhlaví řádků)
+            this.PrepareRowHeaderBounds(row, true, rowHeaderXRange);
+        }
+        /// <summary>
+        /// Připraví korektní souřadnice pro obsah daného řádku i pro jeho vnitřní buňky Cells.
+        /// Volitelně jej přidá do kolekce this.RowArea.ChildList.
+        /// </summary>
+        /// <param name="row"></param>
+        /// <param name="addAsChild"></param>
+        /// <param name="rowAreaBounds"></param>
+        /// <param name="rowDataBounds"></param>
+        protected void PrepareRowDataBounds(Row row, bool addAsChild, Rectangle rowAreaBounds, Rectangle rowDataBounds)
+        {
+            Rectangle rowOneBounds;                                                                               // out: Prostor aktuálního řádku
+            row.Control.PrepareChilds(rowAreaBounds.X, rowDataBounds, this.VisibleColumns, out rowOneBounds);     // Řádek si vyřeší svoje buňky, a nakonec i určí svoje souřadnice
+            GComponent.PrepareChildOne(row.Control, this.RowArea, rowOneBounds, (addAsChild ? this.RowArea.ChildList : null)); // Do řádku GRow vložíme referenci Parent = this.RowArea, a do this.RowArea.ChildList vložíme GRow (kontejner pro data řádku)
+        }
+        /// <summary>
+        /// Připraví korektní souřadnice pro Header a Splitter daného řádku.
+        /// Volitelně jej přidá do kolekce this._ChildList.
+        /// </summary>
+        /// <param name="row"></param>
+        /// <param name="addAsChild"></param>
+        /// <param name="rowHeaderXRange"></param>
+        protected void PrepareRowHeaderBounds(Row row, bool addAsChild, Int32Range rowHeaderXRange)
+        {
             Int32Range rowHeaderYRange = row.Control.VisualRange + this._GetVisualFirstPixelRowHeader();
-            GComponent.PrepareChildOne(row.RowHeader, this, rowHeaderXRange, rowHeaderYRange, this._ChildList);
+            GComponent.PrepareChildOne(row.RowHeader, this, rowHeaderXRange, rowHeaderYRange, (addAsChild ? this._ChildList : null));
             row.RowHeader.PrepareSplitterBounds();
         }
         /// <summary>

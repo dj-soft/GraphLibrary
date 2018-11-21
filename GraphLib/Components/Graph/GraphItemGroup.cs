@@ -103,7 +103,11 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <returns></returns>
         public override string ToString()
         {
+            string text = this._CaptionForSizeText;
+            string toolTip = this._FirstItem.ToolTip;
             return "Time: " + this.Time.ToString() +
+                (!String.IsNullOrEmpty(text) ? "; Text: " + text : "") +
+                (!String.IsNullOrEmpty(toolTip) ? "; ToolTip: " + toolTip : "") +
                 "; Height: " + this.Height.ToString() +
                 "; UseSpace: " + (this.CoordinateYLogical == null ? "none" : this.CoordinateYLogical.ToString());
         }
