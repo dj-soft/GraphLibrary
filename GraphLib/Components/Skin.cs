@@ -1278,8 +1278,8 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual Color DefaultElementSelectedLineColor { get { return Color.OrangeRed; } }
         protected virtual Color DefaultElementFramedLineColor { get { return Color.IndianRed; } }
         protected virtual Color DefaultBackColor { get { return Color.DimGray; } }
-        protected virtual Color DefaultTimeAxisTickMain { get { return Color.Gray; } }
-        protected virtual Color DefaultTimeAxisTickSmall { get { return Color.Gray; } }
+        protected virtual Color DefaultTimeAxisTickMain { get { return Color.FromArgb(216, 216, 216); } }
+        protected virtual Color DefaultTimeAxisTickSmall { get { return Color.FromArgb(216, 216, 216); } }
         protected virtual Color DefaultLinkColorStandard { get { return Color.Green; } }
         protected virtual Color DefaultLinkColorWarning { get { return Color.Orange; } }
         protected virtual Color DefaultLinkColorError { get { return Color.Red; } }

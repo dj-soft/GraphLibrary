@@ -1183,7 +1183,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <returns></returns>
         private static TimeRange _TimeAxisGetNewTime(TimeRange currentTime, DateTime? currentDate, ToolbarSystemItem action, ToolbarSystemItem zoom)
         {
-            DateTime date = (currentDate.HasValue ? currentDate.Value : (currentTime != null ? currentTime.Center.Value : DateTime.Now));
+            DateTime date = _TimeAxisGetCurrentPoint(currentDate, currentTime, true);
             switch (action)
             {
                 case ToolbarSystemItem.TimeAxisZoomOneDay: return _TimeAxisGetNewTimeZoomOneDay(date);
@@ -1197,13 +1197,43 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             return null;
         }
         /// <summary>
+        /// Vrátí optimální Begin pro novou časovou osu
+        /// </summary>
+        /// <param name="currentDate"></param>
+        /// <param name="currentTime"></param>
+        /// <param name="shrinkByRatio"></param>
+        /// <returns></returns>
+        private static DateTime _TimeAxisGetCurrentPoint(DateTime? currentDate, TimeRange currentTime, bool shrinkByRatio)
+        {
+            DateTime value = DateTime.Now;
+            if (currentDate.HasValue)
+            {
+                value = currentDate.Value;
+            }
+            else if (currentTime != null && currentTime.HasBegin)
+            {
+                if (shrinkByRatio && _TimeAxisEnlargeRatio > 0m)
+                {
+                    TimeRange shrinkTime = currentTime.ZoomToRatio(currentTime.Center.Value, (1m / _TimeAxisEnlargeRatio));
+                    value = shrinkTime.Begin.Value;
+                }
+                else
+                {
+                    value = currentTime.Begin.Value;
+                }
+                if (value.TimeOfDay.Ticks > 0)
+                    value = value.Date.AddDays(1d);
+            }
+            return value;
+        }
+        /// <summary>
         /// Vrátí nový časový interval pro časovou osu pro současný interval a požadavek <see cref="ToolbarSystemItem.TimeAxisZoomOneDay"/>
         /// </summary>
-        /// <param name="center"></param>
+        /// <param name="value"></param>
         /// <returns></returns>
-        private static TimeRange _TimeAxisGetNewTimeZoomOneDay(DateTime center)
+        private static TimeRange _TimeAxisGetNewTimeZoomOneDay(DateTime value)
         {
-            DateTime begin = center.Date;
+            DateTime begin = value.Date;
             DateTime end = begin.AddDays(1d);
             TimeRange time = new TimeRange(begin, end);
             return time.ZoomToRatio(time.Center.Value, _TimeAxisEnlargeRatio);
@@ -1211,11 +1241,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Vrátí nový časový interval pro časovou osu pro současný interval a požadavek <see cref="ToolbarSystemItem.TimeAxisZoomWorkWeek"/>
         /// </summary>
-        /// <param name="center"></param>
+        /// <param name="value"></param>
         /// <returns></returns>
-        private static TimeRange _TimeAxisGetNewTimeZoomWorkWeek(DateTime center)
+        private static TimeRange _TimeAxisGetNewTimeZoomWorkWeek(DateTime value)
         {
-            DateTime begin = center.Date.FirstDayOf(DateTimePart.Week);
+            DateTime begin = value.Date.FirstDayOf(DateTimePart.Week);
             DateTime end = begin.AddDays(5d);
             TimeRange time = new TimeRange(begin, end);
             return time.ZoomToRatio(time.Center.Value, _TimeAxisEnlargeRatio);
@@ -1223,11 +1253,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Vrátí nový časový interval pro časovou osu pro současný interval a požadavek <see cref="ToolbarSystemItem.TimeAxisZoomWholeWeek"/>
         /// </summary>
-        /// <param name="center"></param>
+        /// <param name="value"></param>
         /// <returns></returns>
-        private static TimeRange _TimeAxisGetNewTimeZoomWholeWeek(DateTime center)
+        private static TimeRange _TimeAxisGetNewTimeZoomWholeWeek(DateTime value)
         {
-            DateTime begin = center.Date.FirstDayOf(DateTimePart.Week);
+            DateTime begin = value.Date.FirstDayOf(DateTimePart.Week);
             DateTime end = begin.AddDays(7d);
             TimeRange time = new TimeRange(begin, end);
             return time.ZoomToRatio(time.Center.Value, _TimeAxisEnlargeRatio);
@@ -1235,11 +1265,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Vrátí nový časový interval pro časovou osu pro současný interval a požadavek <see cref="ToolbarSystemItem.TimeAxisZoomMonth"/>
         /// </summary>
-        /// <param name="center"></param>
+        /// <param name="value"></param>
         /// <returns></returns>
-        private static TimeRange _TimeAxisGetNewTimeZoomMonth(DateTime center)
+        private static TimeRange _TimeAxisGetNewTimeZoomMonth(DateTime value)
         {
-            DateTime begin = center.Date.FirstDayOf(DateTimePart.Month);
+            DateTime begin = value.Date.FirstDayOf(DateTimePart.Month);
             DateTime end = begin.AddMonths(1);
             TimeRange time = new TimeRange(begin, end);
             return time.ZoomToRatio(time.Center.Value, _TimeAxisEnlargeRatio);
