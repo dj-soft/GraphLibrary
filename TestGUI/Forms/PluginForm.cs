@@ -121,7 +121,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         }
         #endregion
         #region Implementace Scheduler.IAppHost, offline řešení požadovaných commandů
-        void IAppHost.CallAppHostFunction(AppHostRequestArgs appRequest)
+        AppHostResponseArgs IAppHost.CallAppHostFunction(AppHostRequestArgs appRequest)
         {
             AppHostResponseArgs appResponse = CreateResponse(appRequest);
 
@@ -131,8 +131,11 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 appResponse = new AppHostResponseArgs(appRequest);
                 appResponse.Result = AppHostActionResult.Failure;
             }
+
             if (appRequest.CallBackAction != null)
                 this._SendResponse(appRequest, appResponse);
+
+            return appResponse;
         }
         /// <summary>
         /// Vrátí response na daný request

@@ -837,7 +837,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         protected Random Rand;
         #endregion
         #region IAppHost
-        void IAppHost.CallAppHostFunction(AppHostRequestArgs requestArgs)
+        AppHostResponseArgs IAppHost.CallAppHostFunction(AppHostRequestArgs requestArgs)
         {
             AppHostResponseArgs responseArgs = new AppHostResponseArgs(requestArgs);
             switch (requestArgs.Request.Command)
@@ -850,6 +850,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                     };
                     break;
             }
+
+            return responseArgs;
+
             if (requestArgs.CallBackAction != null)
                 requestArgs.CallBackAction(responseArgs);
         }
