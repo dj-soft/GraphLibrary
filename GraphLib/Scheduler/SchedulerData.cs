@@ -177,75 +177,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         protected MainControl _MainControl;
         #endregion
-        #region Zavírání hlavního okna
-        /// <summary>
-        /// Event před zavřením okna: pošleme informaci hostiteli a počkáme si na odpověď, jinak se okno zavře.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _MainFormClosing(object sender, FormClosingEventArgs e)
-        {
-            GuiRequest request = new GuiRequest();
-            request.Command = GuiRequest.COMMAND_QueryCloseWindow;
-            // Použijeme Synchronní volání AppHost (tím, že mu předáme TimeSpan od něj požadujeme, aby nám vrátil Response v tomto threadu)
-            AppHostResponseArgs appResponse = this._CallAppHostFunction(request, null, TimeSpan.FromSeconds(30d));
-            GuiDialogResponse dialogResult = GuiDialogResponse.Maybe;
-            if (appResponse != null)
-                dialogResult = this._ProcessResponse(appResponse.GuiResponse);
-            this._MainFormClosingDialogAction(e, appResponse.GuiResponse, dialogResult);
-        }
-        /// <summary>
-        /// Reakce Scheduleru na událost: zavírá se okno WorkScheduler, a aplikační kód (AppHost) předepsal dialog;
-        /// uživatel na dialog reagoval danou odpovědí a my ji v této metodě máme zpracovat.
-        /// Dialog je v této situaci (zavírání okna) použit tehdy, když WorkScheduler obsahuje neuložená data.
-        /// Dotaz zní: "Data jsou změněna, přejete si je uložit?"
-        /// Odpovědi mají tento význam: Yes = uložit data a zavřít okno; No = neukládat data a zavřít okno; Cancel = neukládat a nezavírat okno
-        /// </summary>
-        /// <param name="e">Data o zavírání okna</param>
-        /// <param name="guiResponse">Kompletní response</param>
-        /// <param name="dialogResult">Výsledek dialogu</param>
-        private void _MainFormClosingDialogAction(FormClosingEventArgs e, GuiResponse guiResponse, GuiDialogResponse dialogResult)
-        {
-            switch (dialogResult)
-            {
-                case GuiDialogResponse.Yes:
-                case GuiDialogResponse.Ok:
-                    // Uložit data teď:
-                    this._MainFormClosingSaveData();
-                    break;
-                case GuiDialogResponse.No:
-                    // Neuložit data a skončit:
-                    break;
-                case GuiDialogResponse.Maybe:
-                    // Repsonse z AppHost nedorazila, nebo neobsahovala dialog:
-                    break;
-                case GuiDialogResponse.Cancel:
-                    e.Cancel = true;
-                    break;
-            }
-        }
-        /// <summary>
-        /// Uložení dat při ukončení scheduleru: vyvolá se command <see cref="GuiRequest.COMMAND_SaveBeforeCloseWindow"/>
-        /// </summary>
-        private void _MainFormClosingSaveData()
-        {
-            GuiRequest request = new GuiRequest();
-            request.Command = GuiRequest.COMMAND_SaveBeforeCloseWindow;
-            // Použijeme Synchronní volání AppHost (tím, že mu předáme TimeSpan od něj požadujeme, aby nám vrátil Response v tomto threadu)
-            AppHostResponseArgs appResponse = this._CallAppHostFunction(request, null, TimeSpan.FromSeconds(90d));
-        }
-        /// <summary>
-        /// Event při zavření okna: pošleme informaci hostiteli.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _MainFormClosed(object sender, FormClosedEventArgs e)
-        {
-            GuiRequest request = new GuiRequest();
-            request.Command = GuiRequest.COMMAND_CloseWindow;
-            this._CallAppHostFunction(request, null);
-        }
-        #endregion
         #region Vyvolání akcí z pluginu do hostitele IAppHost
         /// <summary>
         /// Metoda zavolá hostitele <see cref="_AppHost"/>, jeho metodu <see cref="IAppHost.CallAppHostFunction(AppHostRequestArgs)"/>,
@@ -2088,6 +2019,82 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             refreshGraphs.ForEachItem(g => g.Refresh());
         }
         #endregion
+        #endregion
+        #region Zavírání hlavního okna
+        /// <summary>
+        /// Event před zavřením okna: pošleme informaci hostiteli a počkáme si na odpověď, jinak se okno zavře.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _MainFormClosing(object sender, FormClosingEventArgs e)
+        {
+            GuiRequest request = new GuiRequest();
+            request.Command = GuiRequest.COMMAND_QueryCloseWindow;
+            // Použijeme Synchronní volání AppHost (tím, že mu předáme TimeSpan od něj požadujeme, aby nám vrátil Response v tomto threadu)
+            AppHostResponseArgs appResponse = this._CallAppHostFunction(request, null, TimeSpan.FromSeconds(30d));
+            GuiDialogResponse dialogResult = GuiDialogResponse.Maybe;
+            if (appResponse != null)
+                dialogResult = this._ProcessResponse(appResponse.GuiResponse);
+            this._MainFormClosingDialogAction(e, appResponse.GuiResponse, dialogResult);
+        }
+        /// <summary>
+        /// Reakce Scheduleru na událost: zavírá se okno WorkScheduler, a aplikační kód (AppHost) předepsal dialog;
+        /// uživatel na dialog reagoval danou odpovědí a my ji v této metodě máme zpracovat.
+        /// Dialog je v této situaci (zavírání okna) použit tehdy, když WorkScheduler obsahuje neuložená data.
+        /// Dotaz zní: "Data jsou změněna, přejete si je uložit?"
+        /// Odpovědi mají tento význam: Yes = uložit data a zavřít okno; No = neukládat data a zavřít okno; Cancel = neukládat a nezavírat okno
+        /// </summary>
+        /// <param name="e">Data o zavírání okna</param>
+        /// <param name="guiResponse">Kompletní response</param>
+        /// <param name="dialogResult">Výsledek dialogu</param>
+        private void _MainFormClosingDialogAction(FormClosingEventArgs e, GuiResponse guiResponse, GuiDialogResponse dialogResult)
+        {
+            switch (dialogResult)
+            {
+                case GuiDialogResponse.Yes:
+                case GuiDialogResponse.Ok:
+                    // Uložit data teď:
+                    this._MainFormClosingSaveData(e);
+                    break;
+                case GuiDialogResponse.No:
+                    // Neuložit data a skončit:
+                    break;
+                case GuiDialogResponse.Maybe:
+                    // Repsonse z AppHost nedorazila, nebo neobsahovala dialog:
+                    break;
+                case GuiDialogResponse.Cancel:
+                    e.Cancel = true;
+                    break;
+            }
+        }
+        /// <summary>
+        /// Uložení dat při ukončení scheduleru: vyvolá se command <see cref="GuiRequest.COMMAND_SaveBeforeCloseWindow"/>
+        /// </summary>
+        private void _MainFormClosingSaveData(FormClosingEventArgs e)
+        {
+            GuiRequest request = new GuiRequest();
+            request.Command = GuiRequest.COMMAND_SaveBeforeCloseWindow;
+            // Použijeme Synchronní volání AppHost (tím, že mu předáme TimeSpan od něj požadujeme, aby nám vrátil Response v tomto threadu)
+            AppHostResponseArgs appResponse = this._CallAppHostFunction(request, null, TimeSpan.FromSeconds(90d));
+            // Pokud se nám vrátila chyba, pak zavírání okna zrušíme:
+            if (appResponse != null && appResponse.Result == AppHostActionResult.Failure)
+            {
+                GuiDialogResponse response = this._ProcessResponse(appResponse.GuiResponse);
+                if (!(response == GuiDialogResponse.None || response == GuiDialogResponse.Yes || response == GuiDialogResponse.Ignore))
+                    e.Cancel = true;
+            }
+        }
+        /// <summary>
+        /// Event při zavření okna: pošleme informaci hostiteli.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _MainFormClosed(object sender, FormClosedEventArgs e)
+        {
+            GuiRequest request = new GuiRequest();
+            request.Command = GuiRequest.COMMAND_CloseWindow;
+            this._CallAppHostFunction(request, null);
+        }
         #endregion
         #region Implementace IMainDataInternal
         /// <summary>

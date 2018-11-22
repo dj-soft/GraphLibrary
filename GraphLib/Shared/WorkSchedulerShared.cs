@@ -3005,7 +3005,12 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <summary>
         /// Uložení dat před zavřením okna.
         /// Nepředávají se žádná upřesňující data.
-        /// Tento command je volán před zavřením okna, po dialogu který deklaroval výsledek commandu <see cref="COMMAND_QueryCloseWindow"/>, po odsouhlasení uložení dat uživatelem
+        /// Tento command je volán před zavřením okna, po dialogu který deklaroval výsledek commandu <see cref="COMMAND_QueryCloseWindow"/>, po odsouhlasení uložení dat uživatelem.
+        /// Tato funkce ukládá data do databáze. Je Synchronní, její TimeOut je 90 sekund.
+        /// Pokud v této akci dojde k chybě, vrací se result = Failure.
+        /// V této situaci Plugin reaguje na response, umožní provést dialog s uživatelem, například: "Při ukládání dat došlo k chybě, přejete si přesto zavřít aplikaci?";
+        /// Pokud uživatel odpoví ANO nebo IGNORE (nebo pokud dialog nebude žádný), pak se okno zavře i po chybě.
+        /// Jiné odpovědi nechají po chybě okno aplikace otevřené.
         /// </summary>
         public const string COMMAND_SaveBeforeCloseWindow = "SaveBeforeCloseWindow";
         /// <summary>
