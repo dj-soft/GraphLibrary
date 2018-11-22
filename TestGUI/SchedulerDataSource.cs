@@ -845,7 +845,6 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 case GuiRequest.COMMAND_QueryCloseWindow:
                     // Chci si otestovat malou prodlevu před zobrazením dialogu:
                     System.Threading.Thread.Sleep(2500);
-
                     responseArgs.GuiResponse = new GuiResponse()
                     {
                          Dialog = GuiDialogResponse.YesNo | GuiDialogResponse.Cancel,
@@ -855,10 +854,14 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 case GuiRequest.COMMAND_SaveBeforeCloseWindow:
                     // Chci si otestovat malou prodlevu před skončením:
                     System.Threading.Thread.Sleep(2500);
+                    responseArgs.Result = AppHostActionResult.Failure;
+                    responseArgs.GuiResponse = new GuiResponse()
+                    {
+                        Dialog = GuiDialogResponse.YesNo,
+                        Message = "Došlo k chybě. Přejete si skončit i bez uložení dat?"
+                    };
                     break;
-
             }
-
             return responseArgs;
         }
         #endregion
