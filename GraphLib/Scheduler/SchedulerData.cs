@@ -212,13 +212,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                         // Pokud už sám AppHost je Synchronní, pak nám vrátí response a my čekat nemusíme:
                         lock (this._AppHostSyncLock)
                         {
+                            this._CallAppHostPrepareToAsyncResponse();
                             // Do AppHost předáme jako callBack metodu naši zdejší obsluhu _CallAppHostSyncFunctionResponse:
-                            requestArgs.CallBackAction = this._CallAppHostSyncFunctionResponse;
-                            // AppHost může být Synchronní metoda, pak nám vrátí response přímo:
+                            requestArgs.CallBackAction = this._CallAppHostAsyncFunctionResponse;
+                            // AppHost může být i Synchronní, pak nám vrátí response přímo:
                             responseArgs = this._AppHost.CallAppHostFunction(requestArgs);
-                            // Pokud je AppHost Asynchronní, nevrátil nám nic, pak si na výsledek počkáme (AppHost by měl zavolat callBack metodu):
+                            // Pokud je AppHost Asynchronní, tak nám nevrátil nic, a my si pak výsledek počkáme (AppHost by měl zavolat callBack metodu):
                             if (responseArgs == null)
-                                responseArgs = this._CallAppHostWait(blockThreadToResponseTimeout.Value);
+                                responseArgs = this._CallAppHostWaitToAsyncResponse(blockThreadToResponseTimeout.Value);
                         }
                         // Pokud máme nějakou odezvu, pak ji předáme do původní callback metody:
                         if (responseArgs != null && callBackAction != null)
@@ -269,6 +270,16 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             requestArgs.CallBackAction(responseArgs);
         }
         /// <summary>
+        /// Připraví semafor na čekání na doběhnutí asynchronního požadavku na APpHost.
+        /// </summary>
+        private void _CallAppHostPrepareToAsyncResponse()
+        {
+            if (this._CallAppHostSemaphore == null)
+                this._CallAppHostSemaphore = new System.Threading.AutoResetEvent(false);
+            this._AppHostSyncResponse = null;
+            this._CallAppHostSemaphore.Reset();
+        }
+        /// <summary>
         /// Aktuální thread v této metodě počká na doběhnutí aplikační funkce a na vrácení response.
         /// Po doběhnutí funkce se volá metoda _CallAppHostFunctionResponse, kam se předává <see cref="AppHostResponseArgs"/>.
         /// Ta metoda je volaná v libovolném threadu, provede jen uložení response do this instance do <see cref="_AppHostSyncResponse"/>, 
@@ -276,23 +287,29 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Tato metoda následně načte (ve zdejším threadu) tuto response a vrátí ji.
         /// </summary>
         /// <param name="waitTimeout"></param>
-        private AppHostResponseArgs _CallAppHostWait(TimeSpan waitTimeout)
+        private AppHostResponseArgs _CallAppHostWaitToAsyncResponse(TimeSpan waitTimeout)
         {
-            if (this._CallAppHostSemaphore == null)
-                this._CallAppHostSemaphore = new System.Threading.AutoResetEvent(false);
-            this._AppHostSyncResponse = null;
-            this._CallAppHostSemaphore.Reset();
-            bool hasSignal = this._CallAppHostSemaphore.WaitOne(waitTimeout);
-            AppHostResponseArgs response = (hasSignal ? this._AppHostSyncResponse : null);
+            AppHostResponseArgs response = null;
+
+            // bool hasSignal = this._CallAppHostSemaphore.WaitOne(waitTimeout);
+            // AppHostResponseArgs response = (hasSignal ? this._AppHostSyncResponse : null);
+
+            DateTime end = DateTime.Now + waitTimeout;
+            while (DateTime.Now < end)
+            {
+                System.Threading.Thread.Sleep(50);
+                response = this._AppHostSyncResponse;
+                if (response != null) break;
+            }
             this._AppHostSyncResponse = null;
             return response;
         }
         /// <summary>
-        /// Metoda, která je volána z AppHost po doběhnutí požadavku v synchronním režimu.
-        /// Uloží response a pošle signál čekajícímu threadu.
+        /// Metoda, která je volána z AppHost po asynchronním doběhnutí požadavku, v synchronním režimu.
+        /// Uloží dodanou response do instance, a pošle signál čekajícímu threadu pomocí semaforu <see cref="_CallAppHostSemaphore"/>.
         /// </summary>
         /// <param name="appResponse"></param>
-        private void _CallAppHostSyncFunctionResponse(AppHostResponseArgs appResponse)
+        private void _CallAppHostAsyncFunctionResponse(AppHostResponseArgs appResponse)
         {
             this._AppHostSyncResponse = appResponse;
             this._CallAppHostSemaphore.Set();
@@ -2035,7 +2052,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             GuiDialogResponse dialogResult = GuiDialogResponse.Maybe;
             if (appResponse != null)
                 dialogResult = this._ProcessResponse(appResponse.GuiResponse);
-            this._MainFormClosingDialogAction(e, appResponse.GuiResponse, dialogResult);
+            this._MainFormClosingDialogAction(e, dialogResult);
         }
         /// <summary>
         /// Reakce Scheduleru na událost: zavírá se okno WorkScheduler, a aplikační kód (AppHost) předepsal dialog;
@@ -2045,9 +2062,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Odpovědi mají tento význam: Yes = uložit data a zavřít okno; No = neukládat data a zavřít okno; Cancel = neukládat a nezavírat okno
         /// </summary>
         /// <param name="e">Data o zavírání okna</param>
-        /// <param name="guiResponse">Kompletní response</param>
         /// <param name="dialogResult">Výsledek dialogu</param>
-        private void _MainFormClosingDialogAction(FormClosingEventArgs e, GuiResponse guiResponse, GuiDialogResponse dialogResult)
+        private void _MainFormClosingDialogAction(FormClosingEventArgs e, GuiDialogResponse dialogResult)
         {
             switch (dialogResult)
             {
@@ -2060,7 +2076,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                     // Neuložit data a skončit:
                     break;
                 case GuiDialogResponse.Maybe:
-                    // Repsonse z AppHost nedorazila, nebo neobsahovala dialog:
+                    // Repsonse z AppHost nedorazila, nebo neobsahovala dialog => data se ukládat nebudou:
                     break;
                 case GuiDialogResponse.Cancel:
                     e.Cancel = true;
