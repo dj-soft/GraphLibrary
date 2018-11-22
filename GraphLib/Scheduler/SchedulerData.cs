@@ -187,11 +187,12 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             GuiRequest request = new GuiRequest();
             request.Command = GuiRequest.COMMAND_QueryCloseWindow;
+            // Použijeme Synchronní volání AppHost (tím, že mu předáme TimeSpan od něj požadujeme, aby nám vrátil Response v tomto threadu)
             AppHostResponseArgs appResponse = this._CallAppHostFunction(request, null, TimeSpan.FromSeconds(30d));
             GuiDialogResponse dialogResult = GuiDialogResponse.Maybe;
             if (appResponse != null)
                 dialogResult = this._ProcessResponse(appResponse.GuiResponse);
-            this._MainFormClosingDialogAction(e, dialogResult);
+            this._MainFormClosingDialogAction(e, appResponse.GuiResponse, dialogResult);
         }
         /// <summary>
         /// Reakce Scheduleru na událost: zavírá se okno WorkScheduler, a aplikační kód (AppHost) předepsal dialog;
@@ -200,25 +201,38 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Dotaz zní: "Data jsou změněna, přejete si je uložit?"
         /// Odpovědi mají tento význam: Yes = uložit data a zavřít okno; No = neukládat data a zavřít okno; Cancel = neukládat a nezavírat okno
         /// </summary>
-        /// <param name="e"></param>
-        /// <param name="dialogResult"></param>
-        private void _MainFormClosingDialogAction(FormClosingEventArgs e, GuiDialogResponse dialogResult)
+        /// <param name="e">Data o zavírání okna</param>
+        /// <param name="guiResponse">Kompletní response</param>
+        /// <param name="dialogResult">Výsledek dialogu</param>
+        private void _MainFormClosingDialogAction(FormClosingEventArgs e, GuiResponse guiResponse, GuiDialogResponse dialogResult)
         {
             switch (dialogResult)
             {
                 case GuiDialogResponse.Yes:
+                case GuiDialogResponse.Ok:
                     // Uložit data teď:
+                    this._MainFormClosingSaveData();
                     break;
                 case GuiDialogResponse.No:
                     // Neuložit data a skončit:
                     break;
                 case GuiDialogResponse.Maybe:
-                    // Repsonse z AppHost nedorazila:
+                    // Repsonse z AppHost nedorazila, nebo neobsahovala dialog:
                     break;
                 case GuiDialogResponse.Cancel:
                     e.Cancel = true;
                     break;
             }
+        }
+        /// <summary>
+        /// Uložení dat při ukončení scheduleru: vyvolá se command <see cref="GuiRequest.COMMAND_SaveBeforeCloseWindow"/>
+        /// </summary>
+        private void _MainFormClosingSaveData()
+        {
+            GuiRequest request = new GuiRequest();
+            request.Command = GuiRequest.COMMAND_SaveBeforeCloseWindow;
+            // Použijeme Synchronní volání AppHost (tím, že mu předáme TimeSpan od něj požadujeme, aby nám vrátil Response v tomto threadu)
+            AppHostResponseArgs appResponse = this._CallAppHostFunction(request, null, TimeSpan.FromSeconds(90d));
         }
         /// <summary>
         /// Event při zavření okna: pošleme informaci hostiteli.
@@ -248,28 +262,40 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             try
             {
                 if (this._VerifyAppHost(request))
-                {   // Máme-li hostitele, předáme mu požadavek. Hostitel musí zavolat callBackAction i po chybách:
+                {   // Máme-li hostitele, předáme mu požadavek:
                     if (!blockThreadToResponseTimeout.HasValue)
-                    {   // Asynchronní volání = vyvolá se funkce, ale nečeká se na výsledek. Řízení se vrací ihned, výsledkem této metody je GuiResponse = null:
-                        // Ale AppHost může sám být synchronní, pak nám vrátil response a my ji vyřídíme rovnou:
+                    {   // Požadavek je na Asynchronní volání = vyvolá se AppHost, ale nečeká se na výsledek. 
+                        // Pokud i AppHost je Asynchronní, pak se řízení vrací ihned a výsledkem volání CallAppHostFunction i této metody je GuiResponse = null:
+                        // Ale AppHost může sám být Synchronní, pak nám vrátil response (ne null), a my ji musíme poslat do callBack metody rovnou odsud:
                         responseArgs = this._AppHost.CallAppHostFunction(requestArgs);
                         if (responseArgs != null && callBackAction != null)
+                        {
                             callBackAction(responseArgs);
+                            // Protože jsme response odeslali do zadané callback metody, nemůžeme response navíc vracet => vrátíme null:
+                            responseArgs = null;
+                        }
                     }
                     else
-                    {   // Synchronní volání = vyvolá se funkce, čeká se na výsledek. Výsledek je předán do náhradní metody _CallAppHostFunctionResponse.
+                    {   // Požadavek je na Synchronní volání = vyvolá se AppHost, a čeká se na výsledek.
+                        // Pokud AppHost je Asynchronní, vrátí nám null, a my si počkáme na callback.
+                        // Pokud už sám AppHost je Synchronní, pak nám vrátí response a my čekat nemusíme:
                         lock (this._AppHostSyncLock)
                         {
-                            requestArgs.CallBackAction = this._CallAppHostFunctionResponse;
-                            // AppHost může být synchronní metoda, která vrátí response přímo:
+                            // Do AppHost předáme jako callBack metodu naši zdejší obsluhu _CallAppHostSyncFunctionResponse:
+                            requestArgs.CallBackAction = this._CallAppHostSyncFunctionResponse;
+                            // AppHost může být Synchronní metoda, pak nám vrátí response přímo:
                             responseArgs = this._AppHost.CallAppHostFunction(requestArgs);
-                            // Pokud je AppHost asynchronní, pak si na výsledek počkáme (AppHost by měl zavolat callBack metodu):
+                            // Pokud je AppHost Asynchronní, nevrátil nám nic, pak si na výsledek počkáme (AppHost by měl zavolat callBack metodu):
                             if (responseArgs == null)
                                 responseArgs = this._CallAppHostWait(blockThreadToResponseTimeout.Value);
                         }
-                        // Odeslání dat do původní callback metody, pokud je zadaná:
+                        // Pokud máme nějakou odezvu, pak ji předáme do původní callback metody:
                         if (responseArgs != null && callBackAction != null)
+                        {
                             callBackAction(responseArgs);
+                            // Protože jsme response odeslali do zadané callback metody, nemůžeme response navíc vracet => vrátíme null:
+                            responseArgs = null;
+                        }
                     }
                 }
                 else if (callBackAction != null)
@@ -278,7 +304,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 }
             }
             catch (Exception exc)
-            { }
+            {
+                App.Trace.Exception(exc, request.ToString());
+                string message = "Při zpracování požadavku " + request.Command + " došlo k chybě: " + exc.Message;
+                this.ShowDialog(message, GuiDialogResponse.Ok);
+            }
             return responseArgs;
         }
         /// <summary>
@@ -331,7 +361,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Uloží response a pošle signál čekajícímu threadu.
         /// </summary>
         /// <param name="appResponse"></param>
-        private void _CallAppHostFunctionResponse(AppHostResponseArgs appResponse)
+        private void _CallAppHostSyncFunctionResponse(AppHostResponseArgs appResponse)
         {
             this._AppHostSyncResponse = appResponse;
             this._CallAppHostSemaphore.Set();
@@ -537,7 +567,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             request.Command = GuiRequest.COMMAND_ToolbarClick;
             request.ToolbarItem = guiToolbarItem;
             request.CurrentState = this._CreateGuiCurrentState();
-            this._CallAppHostFunction(request, this._ToolBarItemClickApplicationResponse);
+            this._CallAppHostFunction(request, this._ToolBarItemClickApplicationResponse, guiToolbarItem.BlockGuiTime);
         }
         /// <summary>
         /// Zpracování odpovědi z aplikační funkce, na událost ItemClick na Aplikační položce ToolBaru
@@ -677,6 +707,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                     currData.ModuleWidth = refrData.ModuleWidth;
                 if (_Changed(currData.LayoutHint, refrData.LayoutHint, GToolBarRefreshMode.RefreshLayout, ref refreshMode))
                     currData.LayoutHint = refrData.LayoutHint;
+                if (_Changed(currData.BlockGuiTime, refrData.BlockGuiTime, GToolBarRefreshMode.None, ref refreshMode))
+                    currData.BlockGuiTime = refrData.BlockGuiTime;
 
                 return refreshMode;
             }
@@ -701,6 +733,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 if (!newValue.HasValue) return false;                // Pokud newValue není zadáno, pak nejde o změnu (jen nebyl nový údaj vepsán).
                 if (oldValue.HasValue && oldValue.Value == newValue.Value) return false;         // Pokud oldValue má hodnotu, a hodnota je beze změny, pak nejde o změnu.
                 if (oldValue == newValue) return false;
+                // Jde o změnu (buď z null na not null, anebo změnu hodnoty):
+                refreshMode = (GToolBarRefreshMode)((int)refreshMode | (int)result);
+                return true;
+            }
+            private static bool _Changed(TimeSpan? oldValue, TimeSpan? newValue, GToolBarRefreshMode result, ref GToolBarRefreshMode refreshMode)
+            {
+                if (!newValue.HasValue) return false;                // Pokud newValue není zadáno, pak nejde o změnu (jen nebyl nový údaj vepsán).
+                if (oldValue.HasValue && oldValue.Value == newValue.Value) return false;         // Pokud oldValue má hodnotu, a hodnota je beze změny, pak nejde o změnu.
                 // Jde o změnu (buď z null na not null, anebo změnu hodnoty):
                 refreshMode = (GToolBarRefreshMode)((int)refreshMode | (int)result);
                 return true;
@@ -1917,8 +1957,22 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private GuiDialogResponse _ProcessResponseDialog(GuiResponse guiResponse)
         {
             GuiDialogResponse response = GuiDialogResponse.None;
-            if (guiResponse.Dialog != GuiDialogResponse.None)
-                response = this._MainControl.ShowDialog(guiResponse.Message, guiResponse.Dialog);
+            if (guiResponse != null && guiResponse.Dialog != GuiDialogResponse.None)
+                response = this.ShowDialog(guiResponse.Message, guiResponse.Dialog);
+            return response;
+        }
+        /// <summary>
+        /// Metoda zpracuje požadovaný dialog, vrací výsledek
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="dialogItems"></param>
+        /// <param name="icon"></param>
+        /// <returns></returns>
+        protected GuiDialogResponse ShowDialog(string message, GuiDialogResponse dialogItems, GuiImage icon = null)
+        {
+            GuiDialogResponse response = GuiDialogResponse.None;
+            if (dialogItems != GuiDialogResponse.None)
+                response = this._MainControl.ShowDialog(message, dialogItems, icon);
             return response;
         }
         #endregion

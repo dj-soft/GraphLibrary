@@ -1941,6 +1941,12 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Výchozí hodnota = null, bude interpretována jako true.
         /// </summary>
         public bool? Enable { get; set; }
+        /// <summary>
+        /// Režim zpracování této funkce:
+        /// Pokud je zde null, pak se funkce může zpracovat asynchronně = zahájí se její zpracování, ale GUI není blokováno do okamžiku dokončení.
+        /// Pokud je zde nějaký (kladný) čas, pak po tuto dobu se čeká na response od aplikačního serveru, a tuto dobu je GUI blokováno.
+        /// </summary>
+        public TimeSpan? BlockGuiTime { get; set; }
     }
     #endregion
     #region GuiContextMenuSet : Všechny položky všech Kontextových menu
@@ -2983,16 +2989,25 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public const string COMMAND_GraphItemResize = "GraphItemResize";
 
-
         /// <summary>
         /// Test před zavřením okna.
         /// Nepředávají se žádná upřesňující data.
         /// Jako odpověď se očekává <see cref="GuiResponse.Message"/>: pokud bude neprázdné, jde o dotaz před ukončením. 
         /// V tom případě se zobrazí dialog podle <see cref="GuiResponse.Dialog"/>.
-        /// Pokud bude <see cref="GuiResponse.Message"/> prázdné, dialog nebude, okno se zavře.
+        /// Message by měl být zhruba: "Data nejsou uložena, chcete je uložit?";
+        /// Volby dialogu by měly obsahovat Yes nebo OK = to vede k uložení dat (jeho odsouhlasení pak zavolá COMMAND <see cref="COMMAND_SaveBeforeCloseWindow"/>).
+        /// Pokud bude dialog obsahovat No, pak tato volba data neuloží a okno se zavře.
+        /// Pokud bude dialog obsahovat Cancel, pak tato volba data neuloží ale NEZAVŘE okno.
+        /// Pokud bude <see cref="GuiResponse.Message"/> prázdné, dialog nebude, okno se zavře bez ukládání dat.
         /// Při zavření okna se odešle command <see cref="COMMAND_CloseWindow"/>.
         /// </summary>
         public const string COMMAND_QueryCloseWindow = "QueryCloseWindow";
+        /// <summary>
+        /// Uložení dat před zavřením okna.
+        /// Nepředávají se žádná upřesňující data.
+        /// Tento command je volán před zavřením okna, po dialogu který deklaroval výsledek commandu <see cref="COMMAND_QueryCloseWindow"/>, po odsouhlasení uložení dat uživatelem
+        /// </summary>
+        public const string COMMAND_SaveBeforeCloseWindow = "SaveBeforeCloseWindow";
         /// <summary>
         /// Zavírá se okno už doopravdy.
         /// Nepředávají se žádná upřesňující data.
@@ -3416,9 +3431,17 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         Cancel = 0x0008,
         /// <summary>
+        /// Tlačítko ZRUŠIT VŠE
+        /// </summary>
+        Abort = 0x0010,
+        /// <summary>
         /// Tlačítko ZNOVU
         /// </summary>
-        Retry = 0x0010,
+        Retry = 0x0020,
+        /// <summary>
+        /// Tlačítko IGNORUJ
+        /// </summary>
+        Ignore = 0x0040,
         /// <summary>
         /// Tlačítko MOŽNÁ
         /// </summary>
@@ -3430,7 +3453,15 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <summary>
         /// Tlačítka ANO a NE
         /// </summary>
-        YesNo = Yes | No
+        YesNo = Yes | No,
+        /// <summary>
+        /// Tlačítka ANO a NE a STORNO
+        /// </summary>
+        YesNoCancel = Yes | No | Cancel,
+        /// <summary>
+        /// Tlačítka ZNOVU a STORNO
+        /// </summary>
+        RetryCancel = Retry| Cancel
     }
     #endregion
     #region Enumy, které se sdílí mezi WorkScheduler a GraphLibrary
