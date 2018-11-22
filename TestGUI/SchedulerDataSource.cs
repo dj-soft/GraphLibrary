@@ -843,18 +843,23 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             switch (requestArgs.Request.Command)
             {
                 case GuiRequest.COMMAND_QueryCloseWindow:
+                    // Chci si otestovat malou prodlevu před zobrazením dialogu:
+                    System.Threading.Thread.Sleep(2500);
+
                     responseArgs.GuiResponse = new GuiResponse()
                     {
                          Dialog = GuiDialogResponse.YesNo | GuiDialogResponse.Cancel,
                          Message ="Co s daty - uložit je?"
                     };
                     break;
+                case GuiRequest.COMMAND_SaveBeforeCloseWindow:
+                    // Chci si otestovat malou prodlevu před skončením:
+                    System.Threading.Thread.Sleep(2500);
+                    break;
+
             }
 
             return responseArgs;
-
-            if (requestArgs.CallBackAction != null)
-                requestArgs.CallBackAction(responseArgs);
         }
         #endregion
     }
