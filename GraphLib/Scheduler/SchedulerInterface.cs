@@ -26,9 +26,10 @@ namespace Asol.Tools.WorkScheduler
         /// Touto cestou se řeší všechny akce: Otevření formuláře, Vyvolání funkce z toolbaru, Vyvolání kontextové funkce, Změna grafického prvku, ..., Zavření okna.
         /// Požadavek se může provádět asynchronně.
         /// Po jeho doběhnutí se volá metoda <see cref="AppHostRequestArgs.CallBackAction"/>.
+        /// Pokud Host je Synchronní, pak nebude volat callback, ale přímo vrátí AppHostResponseArgs. Volající si zavolá callback sám.
         /// </summary>
         /// <param name="args">Data pro funkci</param>
-        void CallAppHostFunction(AppHostRequestArgs args);
+        AppHostResponseArgs CallAppHostFunction(AppHostRequestArgs args);
     }
     #endregion
     #region Argumenty metod IAppHost

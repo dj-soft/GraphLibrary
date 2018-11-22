@@ -245,29 +245,40 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             AppHostResponseArgs responseArgs = null;
             AppHostRequestArgs requestArgs = new AppHostRequestArgs(this._SessionId, request, userData, callBackAction);
-            if (this._VerifyAppHost(request))
-            {   // Máme-li hostitele, předáme mu požadavek. Hostitel musí zavolat callBackAction i po chybách:
-                if (!blockThreadToResponseTimeout.HasValue)
-                {   // Asynchronní volání = vyvolá se funkce, ale nečeká se na výsledek. Řízení se vrací ihned, výsledkem této metody je GuiResponse = null:
-                    this._AppHost.CallAppHostFunction(requestArgs);
-                }
-                else
-                {   // Synchronní volání = vyvolá se funkce, čeká se na výsledek. Výsledek je předán do náhradní metody _CallAppHostFunctionResponse.
-                    lock (this._AppHostSyncLock)
-                    {
-                        requestArgs.CallBackAction = this._CallAppHostFunctionResponse;
-                        this._AppHost.CallAppHostFunction(requestArgs);
-                        responseArgs = this._CallAppHostWait(blockThreadToResponseTimeout.Value);
+            try
+            {
+                if (this._VerifyAppHost(request))
+                {   // Máme-li hostitele, předáme mu požadavek. Hostitel musí zavolat callBackAction i po chybách:
+                    if (!blockThreadToResponseTimeout.HasValue)
+                    {   // Asynchronní volání = vyvolá se funkce, ale nečeká se na výsledek. Řízení se vrací ihned, výsledkem této metody je GuiResponse = null:
+                        // Ale AppHost může sám být synchronní, pak nám vrátil response a my ji vyřídíme rovnou:
+                        responseArgs = this._AppHost.CallAppHostFunction(requestArgs);
+                        if (responseArgs != null && callBackAction != null)
+                            callBackAction(responseArgs);
                     }
-                    // Odeslání dat do původní callback metody, pokud je zadaná:
-                    if (responseArgs != null && callBackAction != null)
-                        callBackAction(responseArgs);
+                    else
+                    {   // Synchronní volání = vyvolá se funkce, čeká se na výsledek. Výsledek je předán do náhradní metody _CallAppHostFunctionResponse.
+                        lock (this._AppHostSyncLock)
+                        {
+                            requestArgs.CallBackAction = this._CallAppHostFunctionResponse;
+                            // AppHost může být synchronní metoda, která vrátí response přímo:
+                            responseArgs = this._AppHost.CallAppHostFunction(requestArgs);
+                            // Pokud je AppHost asynchronní, pak si na výsledek počkáme (AppHost by měl zavolat callBack metodu):
+                            if (responseArgs == null)
+                                responseArgs = this._CallAppHostWait(blockThreadToResponseTimeout.Value);
+                        }
+                        // Odeslání dat do původní callback metody, pokud je zadaná:
+                        if (responseArgs != null && callBackAction != null)
+                            callBackAction(responseArgs);
+                    }
+                }
+                else if (callBackAction != null)
+                {   // Nemáme hostitele. Pokud volající očekává vyvolání callBackAction, musíme mu ho dát:
+                    this._CallBackActionErrorNoHost(requestArgs);
                 }
             }
-            else if (callBackAction != null)
-            {   // Nemáme hostitele. Pokud volající očekává vyvolání callBackAction, musíme mu ho dát:
-                this._CallBackActionErrorNoHost(requestArgs);
-            }
+            catch (Exception exc)
+            { }
             return responseArgs;
         }
         /// <summary>
