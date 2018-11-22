@@ -290,17 +290,22 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private AppHostResponseArgs _CallAppHostWaitToAsyncResponse(TimeSpan waitTimeout)
         {
             AppHostResponseArgs response = null;
-
+            qqq
             // bool hasSignal = this._CallAppHostSemaphore.WaitOne(waitTimeout);
             // AppHostResponseArgs response = (hasSignal ? this._AppHostSyncResponse : null);
 
+            System.Threading.Thread thread = System.Threading.Thread.CurrentThread;
+            var state = thread.GetApartmentState();
+            thread.TrySetApartmentState(System.Threading.ApartmentState.MTA);
             DateTime end = DateTime.Now + waitTimeout;
             while (DateTime.Now < end)
             {
+                
                 System.Threading.Thread.Sleep(50);
                 response = this._AppHostSyncResponse;
                 if (response != null) break;
             }
+            thread.TrySetApartmentState(state);
             this._AppHostSyncResponse = null;
             return response;
         }
