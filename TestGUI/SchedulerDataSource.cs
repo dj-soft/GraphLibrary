@@ -910,6 +910,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             {
                 switch (requestArgs.Request.Command)
                 {
+                    case GuiRequest.COMMAND_GraphItemMove:
+                        System.Threading.Thread.Sleep(150);
+                        break;
                     case GuiRequest.COMMAND_QueryCloseWindow:
                         // Chci si otestovat malou prodlevu před zobrazením dialogu:
                         System.Threading.Thread.Sleep(800);
