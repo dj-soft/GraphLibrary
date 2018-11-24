@@ -69,7 +69,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         {
             using (App.Trace.Scope("SchedulerForm", "OnClosed", ""))
                 base.OnClosed(e);
-
+            ((IDisposable)this.DataSource).Dispose();
             Clipboard.SetText(App.Trace.File);
         }
         protected SchedulerDataSource DataSource;

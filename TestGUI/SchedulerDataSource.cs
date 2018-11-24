@@ -16,7 +16,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
     /// <summary>
     /// Třída která vytváří datový zdroj pro testování
     /// </summary>
-    public class SchedulerDataSource : IAppHost
+    public class SchedulerDataSource : IAppHost, IDisposable
     {
         #region Konstrukce
         /// <summary>
@@ -26,8 +26,13 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         {
             this.Rand = new Random();
             Eol = Environment.NewLine;
+            this.IAppHostInit();
         }
         public static string Eol;
+        void IDisposable.Dispose()
+        {
+            this.AppHostStop();
+        }
         #endregion
         #region Tvorba výchozích dat
         /// <summary>
@@ -839,31 +844,108 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         #region IAppHost
         AppHostResponseArgs IAppHost.CallAppHostFunction(AppHostRequestArgs requestArgs)
         {
-            AppHostResponseArgs responseArgs = new AppHostResponseArgs(requestArgs);
-            switch (requestArgs.Request.Command)
-            {
-                case GuiRequest.COMMAND_QueryCloseWindow:
-                    // Chci si otestovat malou prodlevu před zobrazením dialogu:
-                    System.Threading.Thread.Sleep(2500);
-                    responseArgs.GuiResponse = new GuiResponse()
-                    {
-                         Dialog = GuiDialogResponse.YesNo | GuiDialogResponse.Cancel,
-                         Message ="Co s daty - uložit je?"
-                    };
-                    break;
-                case GuiRequest.COMMAND_SaveBeforeCloseWindow:
-                    // Chci si otestovat malou prodlevu před skončením:
-                    System.Threading.Thread.Sleep(2500);
-                    responseArgs.Result = AppHostActionResult.Failure;
-                    responseArgs.GuiResponse = new GuiResponse()
-                    {
-                        Dialog = GuiDialogResponse.YesNo,
-                        Message = "Došlo k chybě. Přejete si skončit i bez uložení dat?"
-                    };
-                    break;
-            }
-            return responseArgs;
+            this.AppHostAddRequest(requestArgs);
+            return null;              // Jsme asynchronní AppHost, vracíme null.
         }
+        protected void IAppHostInit()
+        {
+            this.AppHostThread = new System.Threading.Thread(this.AppHostMainLoop);
+            this.AppHostThread.Name = "AppHost_BackThread";
+            this.AppHostThread.IsBackground = true;
+
+            this.AppHostSemaphore = new System.Threading.AutoResetEvent(false);
+
+            this.AppHostQueue = new Queue<AppHostRequestArgs>();
+            this.AppHostRunning = true;
+            this.AppHostThread.Start();
+        }
+        /// <summary>
+        /// Main smyčka threadu AppHost, v této metodě běží celý thread na pozadí.
+        /// Metoda je ukočena nastavením <see cref="AppHostRunning"/> na false (a budíčkem pomocí semaforu <see cref="AppHostSemaphore"/>.
+        /// </summary>
+        protected void AppHostMainLoop()
+        {
+            while (this.AppHostRunning)
+            {
+                AppHostRequestArgs requestArgs = null;
+                lock (this.AppHostQueue)
+                {
+                    if (this.AppHostQueue.Count > 0)
+                        requestArgs = this.AppHostQueue.Dequeue();
+                }
+
+                if (requestArgs != null)
+                {   // Máme-li požadavek, pak jej zpracujeme:
+                    this.AppHostWorkOn(requestArgs);
+                    // A ani nechodíme spát, rovnou zjistíme, zda nemáme alší požadavek...
+                }
+                else
+                {   // Nemáme žádný požadavek na práci => jdeme si na moment zdřímnout, a pak se zase podíváme.
+                    this.AppHostSemaphore.WaitOne(500);
+                    // Když by mezitím přišla nová práce, tak nás její přícho probudí (viz konec metody AppHostAddRequest())
+                }
+            }
+        }
+        /// <summary>
+        /// Metoda přidá dodaný požadavek do fronty ke zpracování v threadu na pozadí
+        /// </summary>
+        /// <param name="requestArgs"></param>
+        protected void AppHostAddRequest(AppHostRequestArgs requestArgs)
+        {
+            if (requestArgs == null) return;
+            lock (this.AppHostQueue)
+            {
+                this.AppHostQueue.Enqueue(requestArgs);
+            }
+            this.AppHostSemaphore.Set();
+        }
+        /// <summary>
+        /// Metoda je volána v threadu na pozadí, má za úkol zpracovat daný požadavek (parametr).
+        /// </summary>
+        /// <param name="requestArgs"></param>
+        protected void AppHostWorkOn(AppHostRequestArgs requestArgs)
+        {
+            AppHostResponseArgs responseArgs = new AppHostResponseArgs(requestArgs);
+            if (requestArgs != null)
+            {
+                switch (requestArgs.Request.Command)
+                {
+                    case GuiRequest.COMMAND_QueryCloseWindow:
+                        // Chci si otestovat malou prodlevu před zobrazením dialogu:
+                        System.Threading.Thread.Sleep(800);
+                        responseArgs.GuiResponse = new GuiResponse()
+                        {
+                            Dialog = GuiDialogResponse.YesNo | GuiDialogResponse.Cancel,
+                            Message = "Co s daty - uložit je?"
+                        };
+                        break;
+                    case GuiRequest.COMMAND_SaveBeforeCloseWindow:
+                        // Chci si otestovat malou prodlevu před skončením:
+                        System.Threading.Thread.Sleep(8000);
+                        responseArgs.Result = AppHostActionResult.Failure;
+                        responseArgs.GuiResponse = new GuiResponse()
+                        {
+                            Dialog = GuiDialogResponse.YesNo,
+                            Message = "Došlo k chybě. Přejete si skončit i bez uložení dat?"
+                        };
+                        break;
+                }
+            }
+            if (requestArgs.CallBackAction != null)
+                requestArgs.CallBackAction(responseArgs);
+        }
+        /// <summary>
+        /// Metoda zastaví běh threadu na pozadí
+        /// </summary>
+        protected void AppHostStop()
+        {
+            this.AppHostRunning = false;
+            this.AppHostSemaphore.Set();
+        }
+        protected System.Threading.Thread AppHostThread;
+        protected System.Threading.AutoResetEvent AppHostSemaphore;
+        protected bool AppHostRunning;
+        protected Queue<AppHostRequestArgs> AppHostQueue;
         #endregion
     }
     #region Třídy pro datové prvky
