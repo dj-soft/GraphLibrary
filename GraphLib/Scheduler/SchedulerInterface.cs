@@ -45,16 +45,18 @@ namespace Asol.Tools.WorkScheduler
         /// <param name="request">Data pro požadavek. Předává se do aplikační funkce. 
         /// Jde o instanci třídy <see cref="GuiRequest"/>.
         /// Konkrétní požadavek je specifikován v <see cref="GuiRequest.Command"/>, jeho hodnota pochází z konstant {<see cref="GuiRequest.COMMAND_OpenRecords"/> atd}.</param>
+        /// <param name="blockGui">Tento požadavek blokuje GUI</param>
         /// <param name="userData">Libovolná uživatelská data, která si připraví GUI v místě, kde vzniká požadavek; a která následně vyhodnotí v místě, kde se zpracovává odpověď. 
         /// Nepředává se do aplikační funkce.</param>
         /// <param name="callBackAction">Metoda, která bude zavolána po doběhnutí požadavku.
         /// Požadavek se zpracovává asynchronně, odpověď (response) přijde v jiném threadu, a do threadu GUI je invokována.
         /// Tato metoda dostává data ve formě <see cref="AppHostResponseArgs"/>, součástí dat je i původní požadavek (zdejší argument request) a v něm tedy i přidaná data (zdejší argument userData).
         /// </param>
-        public AppHostRequestArgs(int? sessionId, GuiRequest request, object userData = null, Action<AppHostResponseArgs> callBackAction = null)
+        public AppHostRequestArgs(int? sessionId, GuiRequest request, bool blockGui = false, object userData = null, Action<AppHostResponseArgs> callBackAction = null)
         {
             this.SessionId = sessionId;
             this.Request = request;
+            this.BlockGui = blockGui;
             this.UserData = userData;
             this.CallBackAction = callBackAction;
             this.OriginalCallBackAction = callBackAction;
@@ -68,6 +70,10 @@ namespace Asol.Tools.WorkScheduler
         /// Zde je uložena standardní instance.
         /// </summary>
         public GuiRequest Request { get; protected set; }
+        /// <summary>
+        /// Tento požadavek blokuje GUI
+        /// </summary>
+        public bool BlockGui { get; protected set; }
         /// <summary>
         /// Data pro požadavek. 
         /// Zde je uložena serializovaná forma instance GuiRequest.

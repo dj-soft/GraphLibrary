@@ -73,23 +73,13 @@ namespace Asol.Tools.WorkScheduler.Data
         #region String
         /// <summary>
         /// Returns an array of string as rows from this text.
-        /// Items are without trimming, include empty rows from text.
-        /// </summary>
-        /// <param name="text"></param>
-        /// <returns></returns>
-        public static string[] ToLines(this string text)
-        {
-            return ToLines(text, false, false);
-        }
-        /// <summary>
-        /// Returns an array of string as rows from this text.
         /// Items can be trimmed, empty rows can be removed from text, by parameters.
         /// </summary>
         /// <param name="text"></param>
         /// <param name="removeEmptyLines"></param>
         /// <param name="trimRows"></param>
         /// <returns></returns>
-        public static string[] ToLines(this string text, bool removeEmptyLines, bool trimRows)
+        public static string[] ToLines(this string text, bool removeEmptyLines = false, bool trimRows = false)
         {
             string[] rows = new string[0];
             if (text != null)

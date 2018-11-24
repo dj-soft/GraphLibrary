@@ -38,6 +38,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             this._AppHost = host;
             this._SessionId = sessionId;
+            this.Init();
             using (App.Trace.Scope(TracePriority.Priority2_Lowest,  "SchedulerConfig", ".ctor(null)", ""))
                 this._Config = new SchedulerConfig(null);
         }
@@ -64,6 +65,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Zde jej implementujeme, ale nic v něm neděláme.
         /// </summary>
         public MainData() { }
+        /// <summary>
+        /// Inicializace
+        /// </summary>
+        protected void Init()
+        {
+            this.ClosingState = MainFormClosingState.None;
+        }
         #endregion
         #region Public metody a properties
         /// <summary>
@@ -184,53 +192,37 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="request">Požadavek</param>
         /// <param name="callBackAction">Odkaz na metodu, která dostane řízení po asynchronním doběhnutí akce v hostiteli</param>
-        /// <param name="blockThreadToResponseTimeout">Volba, zda blokovat aktuální thread do doby, než doběhne response - po stanovenou dobu. Hodnota null = nečekat.</param>
+        /// <param name="blockGuiTime">Volba, zda blokovat aktuální thread do doby, než doběhne response - po stanovenou dobu. Hodnota null = nečekat.</param>
+        /// <param name="blockGuiMessage">Zpráva zobrazená uživateli po dobu blokování GUI.</param>
         /// <param name="userData">Libovolná další data, která chce dostat metoda (callBackAction). Tato data se nijak nezpracovávají v hostiteli.</param>
-        private AppHostResponseArgs _CallAppHostFunction(GuiRequest request, Action<AppHostResponseArgs> callBackAction, TimeSpan? blockThreadToResponseTimeout = null, object userData = null)
+        private void _CallAppHostFunction(GuiRequest request, Action<AppHostResponseArgs> callBackAction, TimeSpan? blockGuiTime = null, string blockGuiMessage = null, object userData = null)
         {
+            bool hasCallBack = (callBackAction != null);
+            bool hasBlockGui = blockGuiTime.HasValue;
             AppHostResponseArgs responseArgs = null;
-            AppHostRequestArgs requestArgs = new AppHostRequestArgs(this._SessionId, request, userData, callBackAction);
+            AppHostRequestArgs requestArgs = new AppHostRequestArgs(this._SessionId, request, hasBlockGui, userData, callBackAction);
             try
             {
                 if (this._VerifyAppHost(request))
                 {   // Máme-li hostitele, předáme mu požadavek:
-                    if (!blockThreadToResponseTimeout.HasValue)
-                    {   // Požadavek je na Asynchronní volání = vyvolá se AppHost, ale nečeká se na výsledek. 
-                        // Pokud i AppHost je Asynchronní, pak se řízení vrací ihned a výsledkem volání CallAppHostFunction i této metody je GuiResponse = null:
-                        // Ale AppHost může sám být Synchronní, pak nám vrátil response (ne null), a my ji musíme poslat do callBack metody rovnou odsud:
-                        responseArgs = this._AppHost.CallAppHostFunction(requestArgs);
-                        if (responseArgs != null && callBackAction != null)
-                        {
-                            callBackAction(responseArgs);
-                            // Protože jsme response odeslali do zadané callback metody, nemůžeme response navíc vracet => vrátíme null:
-                            responseArgs = null;
-                        }
+                    if (hasBlockGui)
+                    {   // Pokud přišel požadavek na blokování aktuálního threadu po danou dobu, pak požádám control o nastavení bloku na GUI:
+                        this._MainControl.BlockGUI(blockGuiTime.Value, blockGuiMessage);
+                        // A zajistím, že CallBack akce přijde k vyřízení do zdejší metody, namísto do metody aplikační:
+                        requestArgs.CallBackAction = this._CallAppHostAsyncFunctionResponse;
                     }
-                    else
-                    {   // Požadavek je na Synchronní volání = vyvolá se AppHost, a čeká se na výsledek.
-                        // Pokud AppHost je Asynchronní, vrátí nám null, a my si počkáme na callback.
-                        // Pokud už sám AppHost je Synchronní, pak nám vrátí response a my čekat nemusíme:
-                        lock (this._AppHostSyncLock)
-                        {
-                            this._CallAppHostPrepareToAsyncResponse();
-                            // Do AppHost předáme jako callBack metodu naši zdejší obsluhu _CallAppHostSyncFunctionResponse:
-                            requestArgs.CallBackAction = this._CallAppHostAsyncFunctionResponse;
-                            // AppHost může být i Synchronní, pak nám vrátí response přímo:
-                            responseArgs = this._AppHost.CallAppHostFunction(requestArgs);
-                            // Pokud je AppHost Asynchronní, tak nám nevrátil nic, a my si pak výsledek počkáme (AppHost by měl zavolat callBack metodu):
-                            if (responseArgs == null)
-                                responseArgs = this._CallAppHostWaitToAsyncResponse(blockThreadToResponseTimeout.Value);
-                        }
-                        // Pokud máme nějakou odezvu, pak ji předáme do původní callback metody:
-                        if (responseArgs != null && callBackAction != null)
-                        {
+                    // Zavoláme AppHost; předem nevíme, zda AppHost je Synchronní nebo Asynchronní:
+                    responseArgs = this._AppHost.CallAppHostFunction(requestArgs);
+                    // Pokud AppHost je Synchronní, tak nám rovnou vrátil Response, a vyřídíme to ihned:
+                    if (responseArgs != null)
+                    {
+                        if (hasCallBack)
                             callBackAction(responseArgs);
-                            // Protože jsme response odeslali do zadané callback metody, nemůžeme response navíc vracet => vrátíme null:
-                            responseArgs = null;
-                        }
+                        if (hasBlockGui)
+                            this._MainControl.ReleaseGUI();
                     }
                 }
-                else if (callBackAction != null)
+                else if (hasCallBack)
                 {   // Nemáme hostitele. Pokud volající očekává vyvolání callBackAction, musíme mu ho dát:
                     this._CallBackActionErrorNoHost(requestArgs);
                 }
@@ -241,7 +233,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 string message = "Při zpracování požadavku " + request.Command + " došlo k chybě: " + exc.Message;
                 this.ShowDialog(message, GuiDialogResponse.Ok);
             }
-            return responseArgs;
         }
         /// <summary>
         /// Prověří správnost zadání requestu a existenci AppHost.
@@ -270,67 +261,19 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             requestArgs.CallBackAction(responseArgs);
         }
         /// <summary>
-        /// Připraví semafor na čekání na doběhnutí asynchronního požadavku na APpHost.
+        /// Metoda, která je volána z AppHost po asynchronním doběhnutí požadavku, v situaci kdy je blokováno GUI.
+        /// Tato metoda vyvolá aplikační CallBack, a poté uvolní GUI.
         /// </summary>
-        private void _CallAppHostPrepareToAsyncResponse()
+        /// <param name="responseArgs"></param>
+        private void _CallAppHostAsyncFunctionResponse(AppHostResponseArgs responseArgs)
         {
-            if (this._CallAppHostSemaphore == null)
-                this._CallAppHostSemaphore = new System.Threading.AutoResetEvent(false);
-            this._AppHostSyncResponse = null;
-            this._CallAppHostSemaphore.Reset();
+            // Nejprve odblokuji GUI:
+            if (responseArgs.Request.BlockGui)
+                this._MainControl.ReleaseGUI();
+            // Pak zavolám zpracování odpovědi, v něm může dojít k novému zablokování GUI (proto GUI odblokovávám před tím a ne až potom):
+            if (responseArgs.Request.OriginalCallBackAction != null)
+                responseArgs.Request.OriginalCallBackAction(responseArgs);
         }
-        /// <summary>
-        /// Aktuální thread v této metodě počká na doběhnutí aplikační funkce a na vrácení response.
-        /// Po doběhnutí funkce se volá metoda _CallAppHostFunctionResponse, kam se předává <see cref="AppHostResponseArgs"/>.
-        /// Ta metoda je volaná v libovolném threadu, provede jen uložení response do this instance do <see cref="_AppHostSyncResponse"/>, 
-        /// a poté pošle signál, který odblokuje čekání threadu v této metodě.
-        /// Tato metoda následně načte (ve zdejším threadu) tuto response a vrátí ji.
-        /// </summary>
-        /// <param name="waitTimeout"></param>
-        private AppHostResponseArgs _CallAppHostWaitToAsyncResponse(TimeSpan waitTimeout)
-        {
-            AppHostResponseArgs response = null;
-            qqq
-            // bool hasSignal = this._CallAppHostSemaphore.WaitOne(waitTimeout);
-            // AppHostResponseArgs response = (hasSignal ? this._AppHostSyncResponse : null);
-
-            System.Threading.Thread thread = System.Threading.Thread.CurrentThread;
-            var state = thread.GetApartmentState();
-            thread.TrySetApartmentState(System.Threading.ApartmentState.MTA);
-            DateTime end = DateTime.Now + waitTimeout;
-            while (DateTime.Now < end)
-            {
-                
-                System.Threading.Thread.Sleep(50);
-                response = this._AppHostSyncResponse;
-                if (response != null) break;
-            }
-            thread.TrySetApartmentState(state);
-            this._AppHostSyncResponse = null;
-            return response;
-        }
-        /// <summary>
-        /// Metoda, která je volána z AppHost po asynchronním doběhnutí požadavku, v synchronním režimu.
-        /// Uloží dodanou response do instance, a pošle signál čekajícímu threadu pomocí semaforu <see cref="_CallAppHostSemaphore"/>.
-        /// </summary>
-        /// <param name="appResponse"></param>
-        private void _CallAppHostAsyncFunctionResponse(AppHostResponseArgs appResponse)
-        {
-            this._AppHostSyncResponse = appResponse;
-            this._CallAppHostSemaphore.Set();
-        }
-        /// <summary>
-        /// Zámek používaný při běhu aplikační funkce v synchronním režimu
-        /// </summary>
-        private object _AppHostSyncLock = new object();
-        /// <summary>
-        /// Data vrácená z běhu aplikační funkce v synchronním režimu
-        /// </summary>
-        private AppHostResponseArgs _AppHostSyncResponse;
-        /// <summary>
-        /// Semafor, který dovoluje řídit čekání na odpověď od hostitele _AppHost
-        /// </summary>
-        private System.Threading.AutoResetEvent _CallAppHostSemaphore;
         #endregion
         #region Toolbar
         /// <summary>
@@ -520,7 +463,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             request.Command = GuiRequest.COMMAND_ToolbarClick;
             request.ToolbarItem = guiToolbarItem;
             request.CurrentState = this._CreateGuiCurrentState();
-            this._CallAppHostFunction(request, this._ToolBarItemClickApplicationResponse, guiToolbarItem.BlockGuiTime);
+            this._CallAppHostFunction(request, this._ToolBarItemClickApplicationResponse, guiToolbarItem.BlockGuiTime, guiToolbarItem.BlockGuiMessage);
         }
         /// <summary>
         /// Zpracování odpovědi z aplikační funkce, na událost ItemClick na Aplikační položce ToolBaru
@@ -662,6 +605,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                     currData.LayoutHint = refrData.LayoutHint;
                 if (_Changed(currData.BlockGuiTime, refrData.BlockGuiTime, GToolBarRefreshMode.None, ref refreshMode))
                     currData.BlockGuiTime = refrData.BlockGuiTime;
+                if (_Changed(currData.BlockGuiMessage, refrData.BlockGuiMessage, GToolBarRefreshMode.None, ref refreshMode))
+                    currData.BlockGuiMessage = refrData.BlockGuiMessage;
 
                 return refreshMode;
             }
@@ -2050,59 +1995,136 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="e"></param>
         private void _MainFormClosing(object sender, FormClosingEventArgs e)
         {
-            GuiRequest request = new GuiRequest();
-            request.Command = GuiRequest.COMMAND_QueryCloseWindow;
-            // Použijeme Synchronní volání AppHost (tím, že mu předáme TimeSpan od něj požadujeme, aby nám vrátil Response v tomto threadu)
-            AppHostResponseArgs appResponse = this._CallAppHostFunction(request, null, TimeSpan.FromSeconds(30d));
-            GuiDialogResponse dialogResult = GuiDialogResponse.Maybe;
-            if (appResponse != null)
-                dialogResult = this._ProcessResponse(appResponse.GuiResponse);
-            this._MainFormClosingDialogAction(e, dialogResult);
+            if (this._MainFormClosingTest(e))
+                this._ClosingProcessStart();
         }
         /// <summary>
-        /// Reakce Scheduleru na událost: zavírá se okno WorkScheduler, a aplikační kód (AppHost) předepsal dialog;
-        /// uživatel na dialog reagoval danou odpovědí a my ji v této metodě máme zpracovat.
-        /// Dialog je v této situaci (zavírání okna) použit tehdy, když WorkScheduler obsahuje neuložená data.
-        /// Dotaz zní: "Data jsou změněna, přejete si je uložit?"
-        /// Odpovědi mají tento význam: Yes = uložit data a zavřít okno; No = neukládat data a zavřít okno; Cancel = neukládat a nezavírat okno
+        /// Metoda zjistí, zda se hlavní okno má zavřít nebo ne, a zda se mají provést uzavírací algoritmy.
+        /// Pokud se uzavírací algoritmy MAJÍ provádět, vrací se TRUE, pokud se provádět NEMAJÍ, vrací se FALSE.
         /// </summary>
-        /// <param name="e">Data o zavírání okna</param>
-        /// <param name="dialogResult">Výsledek dialogu</param>
-        private void _MainFormClosingDialogAction(FormClosingEventArgs e, GuiDialogResponse dialogResult)
+        /// <param name="e"></param>
+        /// <returns></returns>
+        private bool _MainFormClosingTest(FormClosingEventArgs e)
         {
+            // Některé důvody zavření okna jsou nadřazené, tam zavření okna nebudeme bránit a ani nebudeme provádět uzavírací algoritmus:
+            switch (e.CloseReason)
+            {
+                case CloseReason.TaskManagerClosing:
+                case CloseReason.WindowsShutDown:
+                    // Nebráníme zavření okna, a vracíme false = neprovádí se uzavírací algoritmus:
+                    return false;
+            }
+
+            // Podle stavu procesu zavírání zjistíme, zda se má okno zavřít nebo nezavírat, a zda se má spustit uzavírací algoritmus nebo ne:
+            switch (this.ClosingState)
+            {
+                case MainFormClosingState.WaitCommandQueryCloseWindow:
+                case MainFormClosingState.WaitCommandSaveBeforeCloseWindow:
+                    // Aktuálně běží nějaké commandy související se zavíráním okna => v tuto dobu nelze okno zavřít, ani znovu rozběhnout další uzavírací proces:
+                    e.Cancel = true;
+                    return false;
+                case MainFormClosingState.ClosingForm:
+                    // Commandy související se zavíráním okna doběhly a stanovily, že okno se skutečně zavře => povolíme zavření okna bez dalších cavyků:
+                    return false;
+            }
+
+            // Zabráníme zavření okna a spustíme uzavírací algoritmus:
+            e.Cancel = true;
+            return true;
+        }
+        /// <summary>
+        /// Zahájí proces zavírání okna
+        /// </summary>
+        private void _ClosingProcessStart()
+        {
+            //  Není možné volat AppHost synchronně, proto musíme synchronní požadavek řešit jinak:
+            // a) Zavoláme asynchronně AppHost s Commandem COMMAND_QueryCloseWindow, a zablokujeme UI na 5 sekund (timeout na získání jednoduché response z aplikačního serveru)
+            // b) Na formuláři si poznačíme aktuální stav zavrání okna "čekáme odpověď COMMAND_QueryCloseWindow";
+            // c) cancelujeme zavírání okna, ale máme blokované GUI; uživatel toho moc dalšího neudělá
+            // d) přijde odpověď na COMMAND_QueryCloseWindow do metody _ClosingProcessResponseQuery; pokračování komentáře tam.
+            this.ClosingState = MainFormClosingState.WaitCommandQueryCloseWindow;
+
+            GuiRequest request = new GuiRequest();
+            request.Command = GuiRequest.COMMAND_QueryCloseWindow;
+            this._CallAppHostFunction(request, this._ClosingProcessResponseQuery, TimeSpan.FromSeconds(5d));
+        }
+        /// <summary>
+        /// Zpracování odpovědi z AppHost na request COMMAND_QueryCloseWindow
+        /// </summary>
+        /// <param name="responseArgs"></param>
+        private void _ClosingProcessResponseQuery(AppHostResponseArgs responseArgs)
+        {
+            if (responseArgs == null)
+            {
+                this._ClosingProcessCloseNow();
+                return;
+            }
+
+            // Zpracujeme odpověď z aplikace, mj. může být proveden uživatelský dialog a vrácena odpověď na něj:
+            GuiDialogResponse dialogResult = this._ProcessResponse(responseArgs.GuiResponse);
+
+            // Zpracujeme odpověď uživatele na dotaz, pokud byl:
             switch (dialogResult)
             {
-                case GuiDialogResponse.Yes:
-                case GuiDialogResponse.Ok:
-                    // Uložit data teď:
-                    this._MainFormClosingSaveData(e);
+                case GuiDialogResponse.Yes:           // Ano, uložit data
+                case GuiDialogResponse.Ok:            // OK, uložit data
+                    this._ClosingProcessSaveData();
                     break;
-                case GuiDialogResponse.No:
-                    // Neuložit data a skončit:
+                case GuiDialogResponse.Maybe:         // Response z AppHost nedorazila, nebo neobsahovala dialog => data se ukládat nebudou, ale skončíme
+                case GuiDialogResponse.None:          // Response dorazila, ale nebyl v ní žádný dialog
+                case GuiDialogResponse.No:            // Dialog byl, odpověď uživatele zní: Neuložit data a skončit:
+                    this._ClosingProcessCloseNow();
                     break;
-                case GuiDialogResponse.Maybe:
-                    // Repsonse z AppHost nedorazila, nebo neobsahovala dialog => data se ukládat nebudou:
-                    break;
-                case GuiDialogResponse.Cancel:
-                    e.Cancel = true;
+                case GuiDialogResponse.Cancel:        // Zrušit zavírání, ale data neukládat:
+                    this.ClosingState = MainFormClosingState.None;
                     break;
             }
         }
         /// <summary>
+        /// Zajistí reálné a okamžité zavření okna
+        /// </summary>
+        private void _ClosingProcessCloseNow()
+        {
+            this.ClosingState = MainFormClosingState.ClosingForm;    // Tato hodnota zajistí, že příští pokus o zavření okna proběhne hladce a bez dalších dotazů.
+            this._MainControl.CloseForm();
+        }
+        /// <summary>
         /// Uložení dat při ukončení scheduleru: vyvolá se command <see cref="GuiRequest.COMMAND_SaveBeforeCloseWindow"/>
         /// </summary>
-        private void _MainFormClosingSaveData(FormClosingEventArgs e)
+        private void _ClosingProcessSaveData()
         {
+            //  Máme uložit data, a poté máme zavřít okno, a to vše asynchronně:
+            this.ClosingState = MainFormClosingState.WaitCommandSaveBeforeCloseWindow;
+
             GuiRequest request = new GuiRequest();
             request.Command = GuiRequest.COMMAND_SaveBeforeCloseWindow;
-            // Použijeme Synchronní volání AppHost (tím, že mu předáme TimeSpan od něj požadujeme, aby nám vrátil Response v tomto threadu)
-            AppHostResponseArgs appResponse = this._CallAppHostFunction(request, null, TimeSpan.FromSeconds(90d));
-            // Pokud se nám vrátila chyba, pak zavírání okna zrušíme:
-            if (appResponse != null && appResponse.Result == AppHostActionResult.Failure)
+            this._CallAppHostFunction(request, this._ClosingProcessResponseSave, TimeSpan.FromSeconds(90d), "Probíhá ukládání dat...");
+        }
+        /// <summary>
+        /// Zpracování odpovědi z AppHost na request COMMAND_SaveBeforeCloseWindow
+        /// </summary>
+        /// <param name="responseArgs"></param>
+        private void _ClosingProcessResponseSave(AppHostResponseArgs responseArgs)
+        {
+            if (responseArgs == null)
             {
-                GuiDialogResponse response = this._ProcessResponse(appResponse.GuiResponse);
-                if (!(response == GuiDialogResponse.None || response == GuiDialogResponse.Yes || response == GuiDialogResponse.Ignore))
-                    e.Cancel = true;
+                this._ClosingProcessCloseNow();
+                return;
+            }
+
+            // Data jsou uložena, zpracujeme response:
+            // Pokud se nám vrátila chyba, pak zavírání okna zrušíme:
+            if (responseArgs != null && responseArgs.Result == AppHostActionResult.Failure)
+            {   // Po chybě dáme dialog:
+                GuiDialogResponse response = this._ProcessResponse(responseArgs.GuiResponse);
+                if (response == GuiDialogResponse.None || response == GuiDialogResponse.Yes || response == GuiDialogResponse.Ignore)
+                    this._ClosingProcessCloseNow();
+                else
+                    this.ClosingState = MainFormClosingState.None;
+            }
+            else
+            {   // Bez chyby => zavřeme okno:
+                this._ClosingProcessCloseNow();
             }
         }
         /// <summary>
@@ -2115,6 +2137,32 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             GuiRequest request = new GuiRequest();
             request.Command = GuiRequest.COMMAND_CloseWindow;
             this._CallAppHostFunction(request, null);
+        }
+        /// <summary>
+        /// Aktuální stav procesu zavírání okna
+        /// </summary>
+        protected MainFormClosingState ClosingState { get; private set; }
+        /// <summary>
+        /// Stavy procesu zavírání okna
+        /// </summary>
+        protected enum MainFormClosingState
+        {
+            /// <summary>
+            /// Okno se nezavírá. Pokud přijde event MainFormClosing, pak se řeší, a to od začátku.
+            /// </summary>
+            None = 0,
+            /// <summary>
+            /// Byl proveden pokus o zavření okna, zpracovává se, očekáváme response na command QueryCloseWindow, GUI je blokováno
+            /// </summary>
+            WaitCommandQueryCloseWindow,
+            /// <summary>
+            /// Byl proveden pokus o zavření okna, zpracovává se, ukládají se data příkazem SaveBeforeCloseWindow, čekáme na jeho doběhnutí, GUI je blokováno
+            /// </summary>
+            WaitCommandSaveBeforeCloseWindow,
+            /// <summary>
+            /// Nyní reálně zavíráme okno
+            /// </summary>
+            ClosingForm
         }
         #endregion
         #region Implementace IMainDataInternal

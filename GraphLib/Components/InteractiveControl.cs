@@ -1696,14 +1696,22 @@ namespace Asol.Tools.WorkScheduler.Components
                     }
                 }
 
-                if (this._ProgressItem.Is.Visible || this._ToolTip.NeedDraw)
+                if (this.HasBlockedGuiMessage || this._ProgressItem.Is.Visible || this._ToolTip.NeedDraw)
                 {
                     Graphics graphics = e.GetGraphicsForLayer(3, true);
-                    if (this._ProgressItem.Is.Visible)
-                        this._ProgressItem.Draw(graphics);
-                    if (this._ToolTip.NeedDraw)
-                        this._ToolTip.Draw(graphics);
-                    scope.AddItem("Layer ToolTip");
+                    if (this.IsGUIBlocked)
+                    {
+                        if (this.HasBlockedGuiMessage)
+                            this.BlockedGuiDraw(graphics, e.GraphicsSize);
+                    }
+                    else
+                    {
+                        if (this._ProgressItem.Is.Visible)
+                            this._ProgressItem.Draw(graphics);
+                        if (this._ToolTip.NeedDraw)
+                            this._ToolTip.Draw(graphics);
+                    }
+                    scope.AddItem("Layer BlockGui + Progress + ToolTip");
                 }
 
                 this._PaintStopwatch(e);
@@ -2777,6 +2785,209 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public event GInteractiveChangeStateHandler InteractiveStateChanged;
         #endregion
+        #region Blokování GUI, zavírání okna
+        /// <summary>
+        /// Metoda provede zablokování GUI, s daným Timeoutem (tzn. za tento čas bude GUI automaticky uvolněno).
+        /// Pokud je specifikována zpráva (message), pak GUI viditelně zešedne a uprostřed je zobrazena tato hláška.
+        /// </summary>
+        /// <param name="blockTime"></param>
+        /// <param name="message">Zpráva zobrazená uživateli po dobu blokování GUI.
+        /// Zpráva může obsahovat více řádků, oddělené CrLf.
+        /// První řádek bude zobrazen výrazně (jako titulek), další řádky standardně.
+        /// </param>
+        internal void BlockGUI(TimeSpan blockTime, string message = null)
+        {
+            if (this.IsGUIBlocked) return;
+
+            if (this.InvokeRequired)
+            {
+                this.BeginInvoke(new Action<TimeSpan, string>(this.BlockGUI), blockTime, message);
+            }
+            else
+            {
+                this.BlockedGuiCursor = this.Cursor;
+                this.BlockedTimeEnd = DateTime.Now + blockTime;
+                this.BlockedGuiMessage = message;
+                this.Cursor = Cursors.WaitCursor;
+                this.IsGUIBlocked = true;
+                if (this.HasBlockedGuiMessage)
+                    this.Refresh();
+            }
+        }
+        /// <summary>
+        /// Metoda ukončí blokování GUI
+        /// </summary>
+        internal void ReleaseGUI()
+        {
+            if (!this.IsGUIBlocked) return;
+
+            if (this.InvokeRequired)
+            {
+                this.BeginInvoke(new Action(this.ReleaseGUI));
+            }
+            else
+            {
+                bool hasBlockedGuiMessage = this.HasBlockedGuiMessage;
+                this.IsGUIBlocked = false;
+                this.Cursor = (this.BlockedGuiCursor != null ? this.BlockedGuiCursor : Cursors.Default);
+                this.BlockedTimeEnd = null;
+                this.BlockedGuiMessage = null;
+                this.BlockedGuiCursor = null;
+                this.BlockedGuiMsgTextInfos = null;
+                this.BlockedGuiMsgBackgroundBounds = null;
+                if (hasBlockedGuiMessage)
+                    this.Refresh();
+            }
+        }
+        /// <summary>
+        /// Zajistí zavření okna
+        /// </summary>
+        internal void CloseForm()
+        {
+            if (this.InvokeRequired)
+            {
+                this.BeginInvoke(new Action(this.CloseForm));
+            }
+            else
+            {
+                Form form = this.FindForm();
+                if (form != null)
+                    form.Close();
+            }
+        }
+        /// <summary>
+        /// Metoda zajistí vykreslení blokovaného GUI
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="size"></param>
+        protected void BlockedGuiDraw(Graphics graphics, Size size)
+        {
+            Rectangle area = new Rectangle(new Point(0, 0), this.ClientRectangle.Size);
+            graphics.FillRectangle(Skin.Brush(Skin.BlockedGui.AreaColor), area);
+            if (this.HasBlockedGuiMessage)
+            {
+                this.BlockedGuiCheckTexts(graphics, area);
+                // Vykreslit pozadí a texty přes něj:
+                graphics.FillRectangle(Skin.Brush(Skin.BlockedGui.TextBackColor), this.BlockedGuiMsgBackgroundBounds.Value);
+                foreach (BlockedGuiTextInfo text in this.BlockedGuiMsgTextInfos)
+                    GPainter.DrawString(graphics, text.TextBounds, text.Text, Skin.BlockedGui.TextInfoForeColor, text.Font, ContentAlignment.MiddleCenter);
+            }
+        }
+        /// <summary>
+        /// Obsahuje true, pokud GUI tohoto controlu je aktuálně blokováno.
+        /// </summary>
+        internal bool IsGUIBlocked { get; private set; }
+        /// <summary>
+        /// Text hlášky zobrazené po dobu blokace GUI
+        /// </summary>
+        protected string BlockedGuiMessage { get; private set; }
+        /// <summary>
+        /// true pokud je aktuálně blokované GUI <see cref="IsGUIBlocked"/> a je zadána hláška k zobrazení <see cref="BlockedGuiMessage"/>.
+        /// </summary>
+        protected bool HasBlockedGuiMessage { get { return this.IsGUIBlocked && !String.IsNullOrEmpty(this.BlockedGuiMessage); } }
+        /// <summary>
+        /// Kurzor platný před zahájením blokace GUI
+        /// </summary>
+        protected Cursor BlockedGuiCursor { get; private set; }
+        /// <summary>
+        /// Datum a čas, kdy končí blokování GUI vlivem timeoutu
+        /// </summary>
+        protected DateTime? BlockedTimeEnd { get; private set; }
+        /// <summary>
+        /// Zajistí platnost dat v <see cref="BlockedGuiMsgTextInfos"/> a <see cref="BlockedGuiMsgBackgroundBounds"/>
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="area"></param>
+        protected void BlockedGuiCheckTexts(Graphics graphics, Rectangle area)
+        {
+            if (this.BlockedGuiMsgTextInfos != null && this.BlockedGuiMsgBackgroundBounds != null) return;
+            if (String.IsNullOrEmpty(this.BlockedGuiMessage)) return;
+
+            List<BlockedGuiTextInfo> lines = new List<BlockedGuiTextInfo>();
+            string[] texts = this.BlockedGuiMessage.ToLines(true, true);
+            int maxW = 0;
+            int sumH = 0;
+            for (int i = 0; i < texts.Length; i++)
+            {
+                string text = texts[i];
+                FontInfo font = (i == 0 ? FontInfo.CaptionBoldBig : FontInfo.DefaultBoldBig);
+                BlockedGuiTextInfo textInfo = new BlockedGuiTextInfo(text, font);
+                textInfo.TextSize = GPainter.MeasureString(graphics, text, font);
+                lines.Add(textInfo);
+                if (textInfo.TextSize.Width > maxW) maxW = textInfo.TextSize.Width;
+                sumH += textInfo.TextSize.Height;
+            }
+
+            int bw = maxW + 40;
+            int minBw = 30 * area.Width / 100;
+            if (bw < minBw) bw = minBw;
+            int maxBw = 80 * area.Width / 100;
+            if (bw > maxBw) bw = maxBw;
+
+            int bh = sumH + 20;
+            int minBh = 5 * area.Height / 100;
+            if (bh < minBh) bh = minBh;
+            int maxBh = 65 * area.Height / 100;
+            if (bh > maxBh) bh = maxBh;
+            Size totalSize = new Size(bw, bh);
+            Rectangle totalBounds = totalSize.AlignTo(area, ContentAlignment.MiddleCenter);
+
+            Size contentSize = new Size(maxW, sumH);
+            Rectangle contentBounds = contentSize.AlignTo(totalBounds, ContentAlignment.MiddleCenter);
+            int x = contentBounds.X;
+            int y = contentBounds.Y;
+            int w = maxW;
+            foreach (BlockedGuiTextInfo textInfo in lines)
+            {
+                int h = textInfo.TextSize.Height;
+                textInfo.TextBounds = new Rectangle(x, y, w, h);
+                y += h;
+            }
+
+            this.BlockedGuiMsgTextInfos = lines.ToArray();
+            this.BlockedGuiMsgBackgroundBounds = totalBounds;
+        }
+        /// <summary>
+        /// Jednotlivé řádky textu pro BlockedGUI message
+        /// </summary>
+        protected BlockedGuiTextInfo[] BlockedGuiMsgTextInfos { get; private set; }
+        /// <summary>
+        /// Souřadnice textu BlockedGUI message
+        /// </summary>
+        protected Rectangle? BlockedGuiMsgBackgroundBounds { get; private set; }
+        /// <summary>
+        /// Informace o textu, fontu, velikosti a umístění
+        /// </summary>
+        protected class BlockedGuiTextInfo
+        {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="text"></param>
+            /// <param name="font"></param>
+            public BlockedGuiTextInfo(string text, FontInfo font)
+            {
+                this.Text = text;
+                this.Font = font;
+            }
+            /// <summary>
+            /// Text
+            /// </summary>
+            public string Text { get; private set; }
+            /// <summary>
+            /// Font
+            /// </summary>
+            public FontInfo Font { get; private set; }
+            /// <summary>
+            /// Velikost textu v daném fontu
+            /// </summary>
+            public Size TextSize { get; set; }
+            /// <summary>
+            /// Souřadnice textu
+            /// </summary>
+            public Rectangle TextBounds { get; set; }
+        }
+        #endregion
         #region Provádění interaktivního procesu, příznaky aktuálního zpracování interaktivního procesu
         /// <summary>
         /// Metoda zajistí provedení daných akcí pro danou změnu stavu.
@@ -2785,18 +2996,19 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Akce action2 se provede vždy.
         /// </summary>
         /// <param name="changeState"></param>
-        /// <param name="action1"></param>
-        /// <param name="action2"></param>
-        /// <param name="final"></param>
+        /// <param name="action1">Akce 1, provádí se pouze pokud aktuálně neběží jiná interaktivní akce a pokud není blokováno GUI. Typicky je to volání zdejší výkonné metody.</param>
+        /// <param name="action2">Akce 2, provádí se vždy. Typicky je to volání base metody.</param>
+        /// <param name="final">Akce finální, volá se i po chybě v akcích 1 a 2.</param>
         protected void InteractiveAction(GInteractiveChangeState changeState, Action action1, Action action2, Action final = null)
         {
             try
             {
                 bool isProcessing = this.InteractiveProcessing;
+                bool isBlocked = this.IsGUIBlocked;
                 using (new InteractiveProcessingScope(this, changeState))
                 {
-                    if (!isProcessing)
-                    {
+                    if (!isBlocked && !isProcessing)
+                    {   // Akce 1 se provádí jen na neblokovaném GUI, které aktuálně nezpracovává jinou akci:
                         if (action1 != null) action1();
                     }
                     if (action2 != null) action2();

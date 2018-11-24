@@ -38,6 +38,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public static SkinControlSet Control { get { return Instance._Control; } }
         /// <summary>
+        /// Barvy pro zobrazení Blokovaného GUI
+        /// </summary>
+        public static SkinBlockedGuiSet BlockedGui { get { return Instance._BlockedGui; } }
+        /// <summary>
         /// Color items for ToolTip (BorderColor, BackColor, TitleColor, InfoColor)
         /// </summary>
         public static SkinToolTipSet ToolTip { get { return Instance._ToolTip; } }
@@ -109,6 +113,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this._Modifiers = new SkinModifierSet(this, "Modifiers");
             this._Shadow = new SkinShadowSet(this, "Shadow");
             this._Control = new SkinControlSet(this, "Control");
+            this._BlockedGui = new SkinBlockedGuiSet(this, "BlockedGui");
             this._ToolTip = new SkinToolTipSet(this, "ToolTip");
             this._ToolBar = new SkinToolBarSet(this, "ToolBar");
             this._Button = new SkinButtonSet(this, "Button");
@@ -135,6 +140,7 @@ namespace Asol.Tools.WorkScheduler.Components
         private SkinModifierSet _Modifiers;
         private SkinShadowSet _Shadow;
         private SkinControlSet _Control;
+        private SkinBlockedGuiSet _BlockedGui;
         private SkinToolTipSet _ToolTip;
         private SkinToolBarSet _ToolBar;
         private SkinTagFilterSet _TagFilter;
@@ -912,6 +918,29 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual Color DefaultTextColor { get { return Color.Black; } }
         protected virtual Color DefaultFrameSelectBackColor { get { return Color.FromArgb(48, Color.LightYellow); } }
         protected virtual Color DefaultFrameSelectLineColor { get { return Color.DarkViolet; } }
+        #endregion
+    }
+    /// <summary>
+    /// Skin set for BlockedGui.
+    /// </summary>
+    public class SkinBlockedGuiSet : SkinSet
+    {
+        #region Internal and private
+        internal SkinBlockedGuiSet(Skin owner, string skinSetKey)
+            : base(owner, skinSetKey)
+        { }
+        #endregion
+        #region Public colors
+        public Color AreaColor { get { return this._Owner.GetValue(this._SkinSetKey, "AreaColor", DefaultAreaColor); } set { this._Owner.SetValue(this._SkinSetKey, "AreaColor", value); } }
+        public Color TextBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "TextBackColor", DefaultTextBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "TextBackColor", value); } }
+        public Color TextTitleForeColor { get { return this._Owner.GetValue(this._SkinSetKey, "TextTitleForeColor", DefaultTextTitleForeColor); } set { this._Owner.SetValue(this._SkinSetKey, "TextTitleForeColor", value); } }
+        public Color TextInfoForeColor { get { return this._Owner.GetValue(this._SkinSetKey, "TextInfoForeColor", DefaultTextInfoForeColor); } set { this._Owner.SetValue(this._SkinSetKey, "TextInfoForeColor", value); } }
+        #endregion
+        #region Default colors
+        protected virtual Color DefaultAreaColor { get { return Color.FromArgb(128, 160, 160, 160); } }
+        protected virtual Color DefaultTextBackColor { get { return Color.FromArgb(240, 196, 255, 255); } }
+        protected virtual Color DefaultTextTitleForeColor { get { return Color.Black; } }
+        protected virtual Color DefaultTextInfoForeColor { get { return Color.Black; } }
         #endregion
     }
     /// <summary>

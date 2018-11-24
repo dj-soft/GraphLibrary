@@ -1942,11 +1942,19 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public bool? Enable { get; set; }
         /// <summary>
-        /// Režim zpracování této funkce:
-        /// Pokud je zde null, pak se funkce může zpracovat asynchronně = zahájí se její zpracování, ale GUI není blokováno do okamžiku dokončení.
-        /// Pokud je zde nějaký (kladný) čas, pak po tuto dobu se čeká na response od aplikačního serveru, a tuto dobu je GUI blokováno.
+        /// Čas, po který maximálně bude blokován GUI, po dobu běhu této funkce.
+        /// Pokud je zde null, pak běh funkce neblokuje GUI.
+        /// Pokud je zde nějaký (kladný) čas, pak po tuto dobu bude GUI okna blokováno, do doby doběhnutí funkce nebo do doběhnutí tohoto Timeoutu.
+        /// Po dobu blokování může být zobrazena hláška <see cref="BlockGuiMessage"/>.
         /// </summary>
         public TimeSpan? BlockGuiTime { get; set; }
+        /// <summary>
+        /// Zpráva zobrazená uživateli po dobu blokování GUI.
+        /// Zpráva může obsahovat více řádků, oddělené CrLf.
+        /// První řádek bude zobrazen výrazně (jako titulek), další řádky standardně.
+        /// Zpráva bude zobrazena pouze tehdy, když <see cref="BlockGuiTime"/> bude obsahovat čas timeoutu, bez něj je message nepoužitá.
+        /// </summary>
+        public string BlockGuiMessage { get; set; }
     }
     #endregion
     #region GuiContextMenuSet : Všechny položky všech Kontextových menu
