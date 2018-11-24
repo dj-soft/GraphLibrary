@@ -1483,7 +1483,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 GuiRequest request = new GuiRequest();
                 request.Command = GuiRequest.COMMAND_OpenRecords;
                 request.RecordsToOpen = new GuiId[] { recordGId };
-                this.IMainData.CallAppHostFunction(request, null);
+                this.IMainData.CallAppHostFunction(request, null, null);
             }
         }
         #endregion
@@ -1529,7 +1529,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 request.ActiveGraphItem = gridItemId;
                 request.GraphItemMove = guiItemMoveData;
                 request.CurrentState = guiCurrentState;
-                this.IMainData.CallAppHostFunction(request, this.ItemDragDropDropAppResponse);
+                this.IMainData.CallAppHostFunction(request, this.ItemDragDropDropAppResponse, TimeSpan.FromMilliseconds(1500));
             }
         }
         /// <summary>

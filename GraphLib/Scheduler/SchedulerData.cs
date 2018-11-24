@@ -2171,7 +2171,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="request"></param>
         /// <param name="callBackAction"></param>
-        void IMainDataInternal.CallAppHostFunction(GuiRequest request, Action<AppHostResponseArgs> callBackAction) { this._CallAppHostFunction(request, callBackAction); }
+        /// <param name="blockGuiTime"></param>
+        void IMainDataInternal.CallAppHostFunction(GuiRequest request, Action<AppHostResponseArgs> callBackAction, TimeSpan? blockGuiTime) { this._CallAppHostFunction(request, callBackAction, blockGuiTime); }
         /// <summary>
         /// Metoda pro daný prvek připraví a vrátí kontextové menu.
         /// </summary>
@@ -2214,7 +2215,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="request"></param>
         /// <param name="callBackAction"></param>
-        void CallAppHostFunction(GuiRequest request, Action<AppHostResponseArgs> callBackAction);
+        /// <param name="blockGuiTime"></param>
+        void CallAppHostFunction(GuiRequest request, Action<AppHostResponseArgs> callBackAction, TimeSpan? blockGuiTime);
         /// <summary>
         /// Metoda pro daný prvek připraví a vrátí kontextové menu.
         /// </summary>
