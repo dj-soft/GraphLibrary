@@ -977,7 +977,11 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                         // Chci si otestovat malou prodlevu před skončením:
                         time = this.Rand.Next(1000, 30000);
                         System.Threading.Thread.Sleep(time);
-                        responseArgs.Result = AppHostActionResult.Failure;
+                        if (this.Rand.Next(0,100) >= 80)
+                            responseArgs.Result = AppHostActionResult.Failure;
+                        else
+                            responseArgs.Result = AppHostActionResult.Success;
+
                         responseArgs.GuiResponse = new GuiResponse()
                         {
                             Dialog = GuiDialogResponse.YesNo,
