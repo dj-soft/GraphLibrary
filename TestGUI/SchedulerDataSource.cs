@@ -10,6 +10,7 @@ using System.Windows.Forms;
 
 using Asol.Tools.WorkScheduler.Components;
 using Noris.LCS.Base.WorkScheduler;
+using RES = Noris.LCS.Base.WorkScheduler.Resources;
 
 namespace Asol.Tools.WorkScheduler.TestGUI
 {
@@ -34,7 +35,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this.AppHostStop();
         }
         #endregion
-        #region Tvorba výchozích dat
+        #region Tvorba výchozích dat, plánování operací do pracovišť
         /// <summary>
         /// Vytvoří a vrátí kompletní balík s GUI daty, podkladová data zůstávají přítomná v instanci
         /// </summary>
@@ -456,6 +457,58 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             productOperation.PlanOperationToWorkplace(ref recordId, planUnitC);
         }
         #endregion
+        #endregion
+        #region Generátor náhodných dat
+        /// <summary>
+        /// Metoda vygeneruje a vrátí časový úsek.
+        /// Jeho počátek = begin;
+        /// Jeho end = počátek + (time * timeQty, pokud timeQty má hodnotu která je 0 nebo kladná).
+        /// </summary>
+        /// <param name="begin"></param>
+        /// <param name="time"></param>
+        /// <param name="timeQty"></param>
+        /// <returns></returns>
+        internal GuiTimeRange GetTimeRange(ref DateTime begin, TimeSpan time, double? timeQty = null)
+        {
+            return this.GetTimeRange(ref begin, 0d, 0, time, timeQty);
+        }
+        /// <summary>
+        /// Metoda vygeneruje a vrátí časový úsek.
+        /// Jeho počátek = begin [ + pauza vložená s pravděpodobností pauseRatio v délce 0 až pauseMaxHour];
+        /// Jeho end = počátek + (time * timeQty, pokud timeQty má hodnotu která je 0 nebo kladná).
+        /// </summary>
+        /// <param name="begin"></param>
+        /// <param name="pauseRatio"></param>
+        /// <param name="pauseMaxHour"></param>
+        /// <param name="time"></param>
+        /// <param name="timeQty"></param>
+        /// <returns></returns>
+        internal GuiTimeRange GetTimeRange(ref DateTime begin, double pauseRatio, int pauseMaxHour, TimeSpan time, double? timeQty = null)
+        {
+            if (pauseRatio > 0d && this.Rand.NextDouble() > pauseRatio)
+                begin = begin + TimeSpan.FromHours(this.Rand.Next(pauseMaxHour + 1));
+            DateTime end = begin + ((timeQty.HasValue && timeQty.Value >= 0d) ? TimeSpan.FromHours(timeQty.Value * time.TotalHours) : time);
+            GuiTimeRange timeRange = new GuiTimeRange(begin, end);
+            begin = end;
+            return timeRange;
+        }
+        /// <summary>
+        /// Vrátí jeden z prvků daného pole
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="items"></param>
+        /// <returns></returns>
+        internal T GetRandom<T>(T[] items)
+        {
+            int count = (items != null ? items.Length : 0);
+            if (count == 0) return default(T);
+            return items[this.Rand.Next(count)];
+        }
+        /// <summary>
+        /// Generátor náhodných hodnot
+        /// </summary>
+        protected Random Rand;
+        #endregion
         #region Tvorba GUI
         /// <summary>
         /// Vygeneruje základní nastavení GUI prostředí
@@ -476,6 +529,33 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         protected void CreateToolBar()
         {
             this.MainData.ToolbarItems.ToolbarShowSystemItems = ToolbarSystemItem.Default;
+
+            this.MainData.ToolbarItems.Add(new GuiToolbarItem()
+            {
+                Name = "RePlan",
+                Size = FunctionGlobalItemSize.Whole,
+                GroupName = "FUNKCE",
+                Title = "PLÁN",
+                ToolTip = "Přepočítá plán pro vybrané položky",
+                Image = RES.Images.Actions.GoNext4Png,
+                ImageHot = RES.Images.Actions.GoNext5Png,
+                BlockGuiTime = TimeSpan.FromSeconds(15d),
+                BlockGuiMessage = "Přepočítávám plán\r\nPočkejte prosím..."
+            });
+
+            this.MainData.ToolbarItems.Add(new GuiToolbarItem()
+            {
+                Name = "SaveData",
+                Size = FunctionGlobalItemSize.Whole,
+                GroupName = "FUNKCE",
+                Title = "ULOŽ",
+                ToolTip = "Uloží aktuální stav dat do databáze",
+                Image = RES.Images.Actions.DocumentSave7Png,
+                ImageHot = RES.Images.Actions.DocumentSaveAs6Png,
+                BlockGuiTime = TimeSpan.FromSeconds(15d),
+                BlockGuiMessage = "Probíhá uložení dat\r\nPočkejte prosím..."
+            });
+
         }
         /// <summary>
         /// Vygeneruje hlavní (a jedinou) stránku pro data, zatím bez dat
@@ -519,7 +599,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             gridLeft.GraphProperties.TableRowHeightMin = 22;
             gridLeft.GraphProperties.TimeAxisMode = TimeGraphTimeAxisMode.LogarithmicScale;
             gridLeft.GraphProperties.UpperSpaceLogical = 1f;
-            
+
             DataTable rowTable = WorkSchedulerSupport.CreateTable("RowsLeft", "cislo_subjektu int, reference_subjektu string, nazev_subjektu string, qty decimal");
             gridLeft.Rows = new GuiTable() { Name = "GridLeft", DataTable = rowTable };
             gridLeft.Rows.ColumnsExtendedInfo[0].ClassNumber = ProductOrder.ClassNumber;
@@ -789,59 +869,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         protected GuiTimeRange TimeRangeTotal;
         protected GuiTimeRange TimeRangeCurrent;
         #endregion
-        #endregion
-        #region Náhodná data
-        /// <summary>
-        /// Metoda vygeneruje a vrátí časový úsek.
-        /// Jeho počátek = begin;
-        /// Jeho end = počátek + (time * timeQty, pokud timeQty má hodnotu která je 0 nebo kladná).
-        /// </summary>
-        /// <param name="begin"></param>
-        /// <param name="time"></param>
-        /// <param name="timeQty"></param>
-        /// <returns></returns>
-        internal GuiTimeRange GetTimeRange(ref DateTime begin, TimeSpan time, double? timeQty = null)
-        {
-            return this.GetTimeRange(ref begin, 0d, 0, time, timeQty);
-        }
-        /// <summary>
-        /// Metoda vygeneruje a vrátí časový úsek.
-        /// Jeho počátek = begin [ + pauza vložená s pravděpodobností pauseRatio v délce 0 až pauseMaxHour];
-        /// Jeho end = počátek + (time * timeQty, pokud timeQty má hodnotu která je 0 nebo kladná).
-        /// </summary>
-        /// <param name="begin"></param>
-        /// <param name="pauseRatio"></param>
-        /// <param name="pauseMaxHour"></param>
-        /// <param name="time"></param>
-        /// <param name="timeQty"></param>
-        /// <returns></returns>
-        internal GuiTimeRange GetTimeRange(ref DateTime begin, double pauseRatio, int pauseMaxHour, TimeSpan time, double? timeQty = null)
-        {
-            if (pauseRatio > 0d && this.Rand.NextDouble() > pauseRatio)
-                begin = begin + TimeSpan.FromHours(this.Rand.Next(pauseMaxHour + 1));
-            DateTime end = begin + ((timeQty.HasValue && timeQty.Value >= 0d) ? TimeSpan.FromHours(timeQty.Value * time.TotalHours) : time);
-            GuiTimeRange timeRange = new GuiTimeRange(begin, end);
-            begin = end;
-            return timeRange;
-        }
-        /// <summary>
-        /// Vrátí jeden z prvků daného pole
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="items"></param>
-        /// <returns></returns>
-        internal T GetRandom<T>(T[] items)
-        {
-            int count = (items != null ? items.Length : 0);
-            if (count == 0) return default(T);
-            return items[this.Rand.Next(count)];
-        }
-        /// <summary>
-        /// Generátor náhodných hodnot
-        /// </summary>
-        protected Random Rand;
-        #endregion
-        #region IAppHost
+        #region IAppHost : vyvolání funkce z Pluginu do AppHost
         AppHostResponseArgs IAppHost.CallAppHostFunction(AppHostRequestArgs requestArgs)
         {
             this.AppHostAddRequest(requestArgs);
@@ -906,25 +934,49 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         protected void AppHostWorkOn(AppHostRequestArgs requestArgs)
         {
             AppHostResponseArgs responseArgs = new AppHostResponseArgs(requestArgs);
+            int time;
             if (requestArgs != null)
             {
                 switch (requestArgs.Request.Command)
                 {
                     case GuiRequest.COMMAND_GraphItemMove:
-                        System.Threading.Thread.Sleep(150);
+                        time = this.Rand.Next(100, 350);
+                        System.Threading.Thread.Sleep(time);
                         break;
+
+                    case GuiRequest.COMMAND_ToolbarClick:
+                        time = this.Rand.Next(500, 5000);
+                        System.Threading.Thread.Sleep(time);
+                        responseArgs.GuiResponse = new GuiResponse();
+                        switch (requestArgs.Request.ToolbarItem.Name)
+                        {
+                            case "RePlan":
+                                responseArgs.GuiResponse.Message = "Přeplánování je dokončeno.";
+                                responseArgs.GuiResponse.Dialog = GuiDialogResponse.Ok;
+                                break;
+                            case "SaveData":
+                                responseArgs.GuiResponse.Message = "Data jsou uložena.";
+                                responseArgs.GuiResponse.Dialog = GuiDialogResponse.Ok;
+                                break;
+                        }
+                        break;
+
                     case GuiRequest.COMMAND_QueryCloseWindow:
                         // Chci si otestovat malou prodlevu před zobrazením dialogu:
-                        System.Threading.Thread.Sleep(800);
+                        time = this.Rand.Next(100, 750);
+                        System.Threading.Thread.Sleep(time);
                         responseArgs.GuiResponse = new GuiResponse()
                         {
                             Dialog = GuiDialogResponse.YesNo | GuiDialogResponse.Cancel,
-                            Message = "Co s daty - uložit je?"
+                            Message = "Co s daty - uložit je?",
+                            CloseSaveData = new GuiSaveData() { AutoSave = true, BlockGuiTime = TimeSpan.FromSeconds(20d), BlockGuiMessage = "Probíhá ukládání dat...\r\nData se právě ukládají do databáze, jakmile budou uložena, dostanete spěšnou sovu." }
                         };
                         break;
+
                     case GuiRequest.COMMAND_SaveBeforeCloseWindow:
                         // Chci si otestovat malou prodlevu před skončením:
-                        System.Threading.Thread.Sleep(8000);
+                        time = this.Rand.Next(1000, 30000);
+                        System.Threading.Thread.Sleep(time);
                         responseArgs.Result = AppHostActionResult.Failure;
                         responseArgs.GuiResponse = new GuiResponse()
                         {
@@ -932,6 +984,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                             Message = "Došlo k chybě. Přejete si skončit i bez uložení dat?"
                         };
                         break;
+
                 }
             }
             if (requestArgs.CallBackAction != null)
