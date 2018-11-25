@@ -1874,7 +1874,12 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Přidá další prvek do this seznamu
         /// </summary>
         /// <param name="item"></param>
-        public void Add(GuiToolbarItem item) { this.Items.Add(item); }
+        public void Add(GuiToolbarItem item)
+        {
+            if (this.Items == null)
+                this.Items = new List<GuiToolbarItem>();
+            this.Items.Add(item);
+        }
         /// <summary>
         /// Přidá další prvky do this seznamu
         /// </summary>
@@ -3272,6 +3277,11 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Používá se například při testu na zavření okna WorkScheduleru, pro <see cref="Message"/> obsahuje hodnoty <see cref="GuiDialogResponse.YesNo"/>.
         /// </summary>
         public GuiDialogResponse Dialog { get; set; }
+        /// <summary>
+        /// Data potřebná pro ukládání dat při zavírání okna.
+        /// Měla by být naplněna v odpovědi na command <see cref="GuiRequest.COMMAND_QueryCloseWindow"/> (tj. dotaz před zavřením okna). Jindy nemají význam.
+        /// </summary>
+        public GuiSaveData CloseSaveData { get; set; }
         #endregion
         #region Data, která se promítají do GUI: ToolbarItems, TimeAxisValue, RemoveItems, AddItems
         /// <summary>
@@ -3332,6 +3342,37 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public static GuiResponse Error(string message) { return new GuiResponse() { ResponseState = GuiResponseState.Error, Message = message }; }
         #endregion
+    }
+    /// <summary>
+    /// GuiSaveData : třída, která předává informace o ukládání dat před zavřením okna.
+    /// Její obsah se očekává v <see cref="GuiResponse"/> tehdy, kdy jde o odpověď na command <see cref="GuiRequest.COMMAND_QueryCloseWindow"/> (tj. dotaz před zavřením okna).
+    /// </summary>
+    public class GuiSaveData
+    {
+        /// <summary>
+        /// Pokud zde bude true, pak nemusí být deklarován žádný dialog (v <see cref="GuiResponse.Message"/> ani v <see cref="GuiResponse.Dialog"/>),
+        /// a ukládání dat bude spuštěno bez dalších podmínek.
+        /// Pokud zde bude false (výchozí stav), pak záleží na definovaném dialogu. 
+        /// Ukládání dat bude provedeno tehdy, když bude proveden dialog 
+        /// a odpověď na něj bude Yes nebo Ok.
+        /// <para/>
+        /// Ukládání dat se provede commandem <see cref="GuiRequest.COMMAND_SaveBeforeCloseWindow"/>.
+        /// </summary>
+        public bool AutoSave { get; set; }
+        /// <summary>
+        /// Pokud bude prováděno ukládání dat, lze v této property definovat Timeout této funkce.
+        /// Pokud nebude deklarován TimeOut, pak po dobu ukládání dat nebude blokováno GUI.
+        /// Pokud je zde nějaký (kladný) čas, pak po tuto dobu bude GUI okna blokováno, do doby doběhnutí funkce nebo do doběhnutí tohoto Timeoutu.
+        /// Po dobu blokování může být zobrazena hláška <see cref="BlockGuiMessage"/>.
+        /// </summary>
+        public TimeSpan? BlockGuiTime { get; set; }
+        /// <summary>
+        /// Zpráva zobrazená uživateli po dobu blokování GUI.
+        /// Zpráva může obsahovat více řádků, oddělené CrLf.
+        /// První řádek bude zobrazen výrazně (jako titulek), další řádky standardně.
+        /// Zpráva bude zobrazena pouze tehdy, když <see cref="BlockGuiTime"/> bude obsahovat čas timeoutu, bez něj je message nepoužitá.
+        /// </summary>
+        public string BlockGuiMessage { get; set; }
     }
     /// <summary>
     /// GuiResponseGraph : třída sloužící pro přenos grafů (data z <see cref="GuiGraph"/> z aplikace do GUI v nestrukturovaném seznamu.

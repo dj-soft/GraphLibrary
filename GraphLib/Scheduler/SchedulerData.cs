@@ -2068,7 +2068,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             {
                 case GuiDialogResponse.Yes:           // Ano, uložit data
                 case GuiDialogResponse.Ok:            // OK, uložit data
-                    this._ClosingProcessSaveData();
+                    this._ClosingProcessSaveData(responseArgs.GuiResponse);
                     break;
                 case GuiDialogResponse.Maybe:         // Response z AppHost nedorazila, nebo neobsahovala dialog => data se ukládat nebudou, ale skončíme
                 case GuiDialogResponse.None:          // Response dorazila, ale nebyl v ní žádný dialog
@@ -2091,14 +2091,19 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Uložení dat při ukončení scheduleru: vyvolá se command <see cref="GuiRequest.COMMAND_SaveBeforeCloseWindow"/>
         /// </summary>
-        private void _ClosingProcessSaveData()
+        /// <param name="guiResponse"></param>
+        private void _ClosingProcessSaveData(GuiResponse guiResponse)
         {
             //  Máme uložit data, a poté máme zavřít okno, a to vše asynchronně:
             this.ClosingState = MainFormClosingState.WaitCommandSaveBeforeCloseWindow;
 
+            GuiSaveData saveData = guiResponse.CloseSaveData;
+            TimeSpan? blockGuiTime = saveData?.BlockGuiTime;
+            string blockGuiMessage = saveData?.BlockGuiMessage;
+
             GuiRequest request = new GuiRequest();
             request.Command = GuiRequest.COMMAND_SaveBeforeCloseWindow;
-            this._CallAppHostFunction(request, this._ClosingProcessResponseSave, TimeSpan.FromSeconds(90d), "Probíhá ukládání dat...");
+            this._CallAppHostFunction(request, this._ClosingProcessResponseSave, blockGuiTime, blockGuiMessage);
         }
         /// <summary>
         /// Zpracování odpovědi z AppHost na request COMMAND_SaveBeforeCloseWindow

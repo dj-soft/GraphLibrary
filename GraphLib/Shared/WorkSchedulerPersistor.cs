@@ -802,7 +802,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <returns></returns>
         public static string TimeSpanToString(object value)
         {
-            return ((TimeSpan)value).ToString("N", _Dtfi);
+            return ((TimeSpan)value).ToString("G", _Dtfi);
         }
         /// <summary>
         /// Konkrétní konvertor

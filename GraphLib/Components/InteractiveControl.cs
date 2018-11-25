@@ -386,6 +386,19 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             this.InteractiveAction(GInteractiveChangeState.MouseEnter, () => this._OnMouseEnter(e), () => base.OnMouseEnter(e));
         }
+        /// <summary>
+        /// Zajistí provedení téže akce, jako by myš vstoupila na control: Enter + Move, podle aktuálního stavu myši
+        /// </summary>
+        private void _OnMouseEnterMove()
+        {
+            this._OnMouseEnter(new EventArgs());
+
+            MouseButtons mouseButtons = Control.MouseButtons;        // Stisknutá tlačítka myši
+            Point mousePoint = Control.MousePosition;                // Souřadnice myši v koordinátech Screenu
+            mousePoint = this.PointToClient(mousePoint);             //  -""- v koordinátech Controlu
+            MouseEventArgs mouseEventArgs = new MouseEventArgs(mouseButtons, 0, mousePoint.X, mousePoint.Y, 0);
+            this._OnMouseMove(mouseEventArgs);
+        }
         private void _OnMouseEnter(EventArgs e)
         {
             using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "MouseEnter", ""))
@@ -626,6 +639,13 @@ namespace Asol.Tools.WorkScheduler.Components
         protected override void OnMouseLeave(EventArgs e)
         {
             this.InteractiveAction(GInteractiveChangeState.MouseLeave, () => this._OnMouseLeave(e), () => base.OnMouseLeave(e));
+        }
+        /// <summary>
+        /// Zajistí provedení téže akce, jako by myš opustila control
+        /// </summary>
+        private void _OnMouseLeave()
+        {
+            this._OnMouseLeave(new EventArgs());
         }
         private void _OnMouseLeave(EventArgs e)
         {
@@ -1495,7 +1515,7 @@ namespace Asol.Tools.WorkScheduler.Components
         private void _ItemMouseLeftClickSelect(GActivePosition newActiveItem, Keys modifierKeys)
         {
             bool leaveOther = modifierKeys.HasFlag(Keys.Control);
-         //   this.Selector.ChangeSelection(newActiveItem.ActiveItem, leaveOther);
+            //   this.Selector.ChangeSelection(newActiveItem.ActiveItem, leaveOther);
             this._ItemMouseCallStateChangedEvent(newActiveItem, GInteractiveChangeState.LeftClickSelect, newActiveItem.CurrentMouseRelativePoint);
         }
         /// <summary>
@@ -2785,7 +2805,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public event GInteractiveChangeStateHandler InteractiveStateChanged;
         #endregion
-        #region Blokování GUI, zavírání okna
+        #region Blokování GUI, vykreslení blokovaného GUI; podpora pro zavírání okna
         /// <summary>
         /// Metoda provede zablokování GUI, s daným Timeoutem (tzn. za tento čas bude GUI automaticky uvolněno).
         /// Pokud je specifikována zpráva (message), pak GUI viditelně zešedne a uprostřed je zobrazena tato hláška.
@@ -2805,17 +2825,24 @@ namespace Asol.Tools.WorkScheduler.Components
             }
             else
             {
+                this._OnMouseLeave();
                 this.BlockedGuiCursor = this.Cursor;
                 this.BlockedTimeEnd = DateTime.Now + blockTime;
                 this.BlockedGuiMessage = message;
                 this.Cursor = Cursors.WaitCursor;
                 this.IsGUIBlocked = true;
                 if (this.HasBlockedGuiMessage)
-                    this.Refresh();
+                {   // Pokud je blokování GUI definováno včetně textu "message", pak zahájíme animaci BlockGui:
+                    this.BlockGuiAnimatorInit(blockTime);
+                    this.BlockGuiAnimatorRunning = true;
+                    this.AnimationStart(this.BlockGuiAnimatorTick);
+                    // this.Refresh();
+                }
             }
         }
         /// <summary>
-        /// Metoda ukončí blokování GUI
+        /// Metoda ukončí blokování GUI.
+        /// Blokování GUI končí buď přijetím response z aplikace, anebo uplynutím timeoutu.
         /// </summary>
         internal void ReleaseGUI()
         {
@@ -2827,34 +2854,139 @@ namespace Asol.Tools.WorkScheduler.Components
             }
             else
             {
-                bool hasBlockedGuiMessage = this.HasBlockedGuiMessage;
-                this.IsGUIBlocked = false;
-                this.Cursor = (this.BlockedGuiCursor != null ? this.BlockedGuiCursor : Cursors.Default);
-                this.BlockedTimeEnd = null;
-                this.BlockedGuiMessage = null;
-                this.BlockedGuiCursor = null;
-                this.BlockedGuiMsgTextInfos = null;
-                this.BlockedGuiMsgBackgroundBounds = null;
-                if (hasBlockedGuiMessage)
-                    this.Refresh();
+                if (this.IsGUIBlocked)
+                {
+                    if (this.BlockGuiAnimatorRunning && this.BlockGuiOpacityRatio.HasValue && this.BlockGuiOpacityRatio.Value > 0f)
+                    {   // Pokud nám svítí blokovací záclona, tak ji dáme urychleně zhasnout:
+                        this.BlockGuiAnimatorFinish();
+                    }
+                    else
+                    {   // Záclonka nesvítí => rovnou skončíme blokaci:
+                        bool hasBlockedGuiMessage = this.HasBlockedGuiMessage;
+                        this.IsGUIBlocked = false;
+                        this.Cursor = (this.BlockedGuiCursor != null ? this.BlockedGuiCursor : Cursors.Default);
+                        this.BlockedTimeEnd = null;
+                        this.BlockedGuiMessage = null;
+                        this.BlockedGuiCursor = null;
+                        this.BlockedGuiMsgTextInfos = null;
+                        this.BlockedGuiMsgBackgroundBounds = null;
+                        this._OnMouseEnterMove();
+                        if (hasBlockedGuiMessage)
+                            this.Refresh();
+                        this.BlockGuiAnimatorRunning = false;
+                    }
+                }
             }
         }
         /// <summary>
-        /// Zajistí zavření okna
+        /// Metoda provede inicializaci animátoru BlockGui pro daný čas timeoutu
         /// </summary>
-        internal void CloseForm()
+        /// <param name="totalTime"></param>
+        protected void BlockGuiAnimatorInit(TimeSpan totalTime)
         {
-            if (this.InvokeRequired)
-            {
-                this.BeginInvoke(new Action(this.CloseForm));
-            }
-            else
-            {
-                Form form = this.FindForm();
-                if (form != null)
-                    form.Close();
-            }
+            this.BlockGuiOpacityRatio = 0f;
+
+            if (this.BlockGuiAnimator == null)
+                this.BlockGuiAnimator = new AnimationControl<float>();
+            this.BlockGuiAnimator.Clear();
+
+            // Animace BlockGui má následující průběh:
+            // 1. První čas 0 až 1,0 sekundy se neděje nic, BlockGui nesvítí.
+            //    Význam je psychologický: krátkoběžící funkce stihnou skončit dříve, a není nutno uživateli blikat před nosem.
+            TimeSpan time1 = TimeSpan.FromMilliseconds(1000d);
+            this.BlockGuiAnimator.AddPause(time1);
+
+            // 2. Následuje čas dlouhý 0.720 sekundy (= 18 cyklů po 40ms), během něhož se pomocí animace rozsvítí GUI z 0 na 100%:
+            TimeSpan time2 = TimeSpan.FromMilliseconds(720d);
+            int count = (int)(time2.TotalMilliseconds / 40d);
+            for (float c = 1; c <= count; c++)
+                this.BlockGuiAnimator.AddStep((c == count) ? 1f : ((float)c / (float)count));
+
+            TimeSpan time4 = TimeSpan.FromMilliseconds(3000d);
+
+            // 3. Následuje čas, kdy je GUI viditelně blokováno po dobu (téměř) celého timeoutu, s odečtením fází 1, 2 a 4:
+            TimeSpan time3 = totalTime - time1 - time2 - time4;
+            if (time3.Ticks > 0L)
+                this.BlockGuiAnimator.AddPause(time3);
+
+            // 4. Poslední fáze je postupné zhasnutí BlockGui, která trvá 3 sekundy, a po jejímž konci vyprší Timeout a odblokuje se GUI:
+            count = (int)(time2.TotalMilliseconds / 40d);
+            for (float c = 1; c <= count; c++)
+                this.BlockGuiAnimator.AddStep((c == count) ? 0f : 1f - ((float)c / (float)count));
+
+            // Animátor nastavíme na začátek cyklu:
+            this.BlockGuiAnimator.Rewind();
         }
+        /// <summary>
+        /// Metoda přeprogramuje animátor BlockGui tak, aby ze současného stavu opacity poměrně rychle, ale plynule zhasl
+        /// </summary>
+        protected void BlockGuiAnimatorFinish()
+        {
+            // Kroky uzpůsobíme tak, aby z plného stavu (opacity = 1.0f) se dostal do 0 za 0.72 sec, z nižšího stavu přiměřeně rychleji:
+            float opacity = (this.BlockGuiOpacityRatio.HasValue ? this.BlockGuiOpacityRatio.Value : 0.5f);
+            List<float> steps = new List<float>();
+
+            while (true)
+            {
+                if (opacity <= 0f)
+                {
+                    steps.Add(0f);
+                    break;
+                }
+                steps.Add(opacity);
+                opacity -= 0.07f;
+            }
+            this.BlockGuiAnimator.StoreSteps(steps);
+        }
+        /// <summary>
+        /// Metoda animace jednoho kroku v animátoru BlockGui
+        /// </summary>
+        /// <returns></returns>
+        protected AnimationResult BlockGuiAnimatorTick()
+        {
+            AnimationResult result = this._BlockGuiAnimatorTick();
+            this.BlockGuiAnimatorRunning = (result != AnimationResult.Stop);
+            return result;
+        }
+        private AnimationResult _BlockGuiAnimatorTick()
+        {
+            if (this.BlockGuiAnimator == null) return AnimationResult.Stop;    // Chybový stav
+
+            // Pokud došlo k ukončení blokace GUI (vnějším zásahem = typicky doběhnutím funkce před stanoveným Timeoutem),
+            //  pak nejbližší animační krok (tj. tento) tuto animaci zastaví:
+            if (!this.IsGUIBlocked) return AnimationResult.Stop;
+
+            float ratio;
+            if (this.BlockGuiAnimator.Tick(out ratio))
+            {   // Pokud animátor obsahuje data, která vedou k animaci (=float ratio):
+                this.BlockGuiOpacityRatio = ratio;
+                return AnimationResult.Draw;
+            }
+
+            // Animátor nemá data: animace nebude, a možná bude konec animace = uplynul stanovený timeout:
+            if (this.BlockGuiAnimator.IsEnd)
+            {
+                this.BlockGuiOpacityRatio = 0f;
+                this.ReleaseGUI();
+                return AnimationResult.Stop;
+            }
+
+            // Není ani animační krok, ani konec animace => je prostě jen čekání:
+            return AnimationResult.None;
+        }
+        /// <summary>
+        /// BlockGui animátor běží?
+        /// </summary>
+        protected bool BlockGuiAnimatorRunning { get; private set; }
+        /// <summary>
+        /// Ratio pro řízení Opacity v rozhraní BlockedGui:
+        /// 0f = není vidět ... až ... 1f = má plné cílové hodnoty Alpha kanálu
+        /// </summary>
+        protected float? BlockGuiOpacityRatio { get; private set; }
+        /// <summary>
+        /// Instance animátoru pro rozsvícení a zhasnutí "okna", které blokuje GUI.
+        /// </summary>
+        protected AnimationControl<float> BlockGuiAnimator { get; private set; }
         /// <summary>
         /// Metoda zajistí vykreslení blokovaného GUI
         /// </summary>
@@ -2862,15 +2994,28 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="size"></param>
         protected void BlockedGuiDraw(Graphics graphics, Size size)
         {
+            float? opacityRatio = this.BlockGuiOpacityRatio;
+            if (!opacityRatio.HasValue || opacityRatio.Value <= 0f) return;
+
+            // Celý prostor překreslit šedou záclonou:
             Rectangle area = new Rectangle(new Point(0, 0), this.ClientRectangle.Size);
-            graphics.FillRectangle(Skin.Brush(Skin.BlockedGui.AreaColor), area);
+            Color areaColor = Skin.BlockedGui.AreaColor.ApplyOpacity(opacityRatio);
+            graphics.FillRectangle(Skin.Brush(areaColor), area);
+
+            // Okno s textem?
             if (this.HasBlockedGuiMessage)
             {
                 this.BlockedGuiCheckTexts(graphics, area);
-                // Vykreslit pozadí a texty přes něj:
-                graphics.FillRectangle(Skin.Brush(Skin.BlockedGui.TextBackColor), this.BlockedGuiMsgBackgroundBounds.Value);
+
+                // Vykreslit pozadí:
+                Rectangle bounds = this.BlockedGuiMsgBackgroundBounds.Value;
+                Color backColor = Skin.BlockedGui.TextBackColor.ApplyOpacity(opacityRatio);
+                GPainter.DrawAreaBase(graphics, bounds, backColor, Orientation.Horizontal, GInteractiveState.Enabled);
+
+                // Vykreslit texty jednotlivých řádků:
+                Color textColor = Skin.BlockedGui.TextInfoForeColor.ApplyOpacity(opacityRatio);
                 foreach (BlockedGuiTextInfo text in this.BlockedGuiMsgTextInfos)
-                    GPainter.DrawString(graphics, text.TextBounds, text.Text, Skin.BlockedGui.TextInfoForeColor, text.Font, ContentAlignment.MiddleCenter);
+                    GPainter.DrawString(graphics, text.TextBounds, text.Text, textColor, text.Font, ContentAlignment.MiddleCenter);
             }
         }
         /// <summary>
@@ -2894,7 +3039,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected DateTime? BlockedTimeEnd { get; private set; }
         /// <summary>
-        /// Zajistí platnost dat v <see cref="BlockedGuiMsgTextInfos"/> a <see cref="BlockedGuiMsgBackgroundBounds"/>
+        /// Zajistí platnost dat v <see cref="BlockedGuiMsgTextInfos"/> a <see cref="BlockedGuiMsgBackgroundBounds"/>:
+        /// vypočítá souřadnice jednotlivých řádků textů dle textu v <see cref="BlockedGuiMessage"/> i celého prostoru hlášky.
         /// </summary>
         /// <param name="graphics"></param>
         /// <param name="area"></param>
@@ -2911,6 +3057,7 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 string text = texts[i];
                 FontInfo font = (i == 0 ? FontInfo.CaptionBoldBig : FontInfo.DefaultBoldBig);
+                font.RelativeSize = (i == 0 ? 175 : 145);
                 BlockedGuiTextInfo textInfo = new BlockedGuiTextInfo(text, font);
                 textInfo.TextSize = GPainter.MeasureString(graphics, text, font);
                 lines.Add(textInfo);
@@ -2986,6 +3133,22 @@ namespace Asol.Tools.WorkScheduler.Components
             /// Souřadnice textu
             /// </summary>
             public Rectangle TextBounds { get; set; }
+        }
+        /// <summary>
+        /// Zajistí zavření okna
+        /// </summary>
+        internal void CloseForm()
+        {
+            if (this.InvokeRequired)
+            {
+                this.BeginInvoke(new Action(this.CloseForm));
+            }
+            else
+            {
+                Form form = this.FindForm();
+                if (form != null)
+                    form.Close();
+            }
         }
         #endregion
         #region Provádění interaktivního procesu, příznaky aktuálního zpracování interaktivního procesu

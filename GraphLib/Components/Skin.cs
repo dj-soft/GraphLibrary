@@ -937,7 +937,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public Color TextInfoForeColor { get { return this._Owner.GetValue(this._SkinSetKey, "TextInfoForeColor", DefaultTextInfoForeColor); } set { this._Owner.SetValue(this._SkinSetKey, "TextInfoForeColor", value); } }
         #endregion
         #region Default colors
-        protected virtual Color DefaultAreaColor { get { return Color.FromArgb(128, 160, 160, 160); } }
+        protected virtual Color DefaultAreaColor { get { return Color.FromArgb(144, 144, 144, 144); } }
         protected virtual Color DefaultTextBackColor { get { return Color.FromArgb(240, 196, 255, 255); } }
         protected virtual Color DefaultTextTitleForeColor { get { return Color.Black; } }
         protected virtual Color DefaultTextInfoForeColor { get { return Color.Black; } }

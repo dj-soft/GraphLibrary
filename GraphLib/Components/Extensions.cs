@@ -338,6 +338,32 @@ namespace Asol.Tools.WorkScheduler.Components
             return (float)value / 255f;
         }
         /// <summary>
+        /// Na danou barvu aplikuje všechny dodané hodnoty průhlednosti, při akceptování i původní průhlednosti.
+        /// Aplikování se provádní vzájemným násobením hodnoty (ratio), což je poměr (ratio) průhlednosti.
+        /// </summary>
+        /// <param name="root"></param>
+        /// <param name="ratios"></param>
+        /// <returns></returns>
+        public static Color ApplyOpacity(this Color root, params float?[] ratios)
+        {
+            float alpha = _GetColorRatio(root.A);
+            foreach (float? ratio in ratios)
+            {
+                if (ratio.HasValue)
+                    alpha = alpha * _GetColorRatio(ratio.Value);
+            }
+            return SetOpacity(root, (int)(Math.Round(255f * alpha, 0)));
+        }
+        /// <summary>
+        /// Zarovná dané ratio do rozmezí { 0.00 až 1.00 }.
+        /// </summary>
+        /// <param name="ratio"></param>
+        /// <returns></returns>
+        private static float _GetColorRatio(float ratio)
+        {
+            return (ratio < 0f ? 0f : (ratio > 1f ? 1f : ratio));
+        }
+        /// <summary>
         /// Metoda vrátí novou instanci barvy this, kde její Alpha je nastavena na daný poměr (transparent) původní hodnoty.
         /// Tedy zadáním například: <see cref="Color.BlueViolet"/>.<see cref="CreateTransparent(Color, float)"/>(0.75f) 
         /// dojde k vytvoření a vrácení barvy s hodnotou Alpha = 75% = 192, od barvy BlueViolet (která je #FF8A2BE2), tedy výsledek bude #C08A2BE2.

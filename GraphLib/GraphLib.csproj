@@ -79,6 +79,7 @@
     <Compile Include="Application\Trace.cs" />
     <Compile Include="Application\Worker.cs" />
     <Compile Include="Application\Zoom.cs" />
+    <Compile Include="Components\AnimationControl.cs" />
     <Compile Include="Components\BaseAxis.cs" />
     <Compile Include="Components\BitStorage.cs" />
     <Compile Include="Components\BoundsInfo.cs" />
