@@ -3331,6 +3331,16 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public static GuiResponse Success() { return new GuiResponse() { ResponseState = GuiResponseState.Success }; }
         /// <summary>
+        /// Statický konstruktor, který vrací new instanci <see cref="GuiResponse"/>, kde <see cref="GuiResponse.ResponseState"/> = <see cref="GuiResponseState.Success"/>.
+        /// </summary>
+        public static GuiResponse Success(string dialogMessage)
+        {
+            GuiResponse guiResponse = Success();
+            guiResponse.Dialog = GuiDialog.Info(dialogMessage);
+            return guiResponse;
+        }
+
+        /// <summary>
         /// Statický konstruktor, který vrací new instanci <see cref="GuiResponse"/>, kde <see cref="GuiResponse.ResponseState"/> = <see cref="GuiResponseState.Warning"/>, a nastaví danou zprávu do <see cref="Dialog"/>.
         /// </summary>
         public static GuiResponse Warning(string message) { return new GuiResponse() { ResponseState = GuiResponseState.Warning, Dialog = new GuiDialog() { Message = message } }; }
@@ -3345,6 +3355,69 @@ namespace Noris.LCS.Base.WorkScheduler
     /// </summary>
     public class GuiDialog
     {
+        #region Statické konstruktory
+        /// <summary>
+        /// Vrací objekt <see cref="GuiDialog"/>, nastavený na oznámení s daným textem, tlačítko OK a ikona INFO
+        /// </summary>
+        /// <param name="message"></param>
+        /// <returns></returns>
+        public static GuiDialog Info(string message)
+        {
+            GuiDialog guiDialog = new GuiDialog()
+            {
+                Message = message,
+                Buttons = GuiDialogButtons.Ok,
+                Icon = DialogIconInfo
+            };
+            return guiDialog;
+        }
+        /// <summary>
+        /// Vrací objekt <see cref="GuiDialog"/>, nastavený na oznámení s daným textem, tlačítko OK a ikona WARNING
+        /// </summary>
+        /// <param name="message"></param>
+        /// <returns></returns>
+        public static GuiDialog Warning(string message)
+        {
+            GuiDialog guiDialog = new GuiDialog()
+            {
+                Message = message,
+                Buttons = GuiDialogButtons.Ok,
+                Icon = DialogIconWarning
+            };
+            return guiDialog;
+        }
+        /// <summary>
+        /// Vrací objekt <see cref="GuiDialog"/>, nastavený na oznámení s daným textem, tlačítko OK a ikona ERROR
+        /// </summary>
+        /// <param name="message"></param>
+        /// <returns></returns>
+        public static GuiDialog Error(string message)
+        {
+            GuiDialog guiDialog = new GuiDialog()
+            {
+                Message = message,
+                Buttons = GuiDialogButtons.Ok,
+                Icon = DialogIconError
+            };
+            return guiDialog;
+        }
+        /// <summary>
+        /// Název ikony zobrazované jako Dialog.Info
+        /// </summary>
+        public const string DialogIconInfo = Resources.Images.Status.DialogInformation3Png;
+        /// <summary>
+        /// Název ikony zobrazované jako Dialog.Info
+        /// </summary>
+        public const string DialogIconWarning = Resources.Images.Status.DialogWarning3Png;
+        /// <summary>
+        /// Název ikony zobrazované jako Dialog.Info
+        /// </summary>
+        public const string DialogIconError = Resources.Images.Status.DialogError4Png;
+        /// <summary>
+        /// Název ikony zobrazované jako Dialog.Question
+        /// </summary>
+        public const string DialogIconQuestion = Resources.Images.Status.DialogQuestion2Png;
+        #endregion
         #region Data dialogu
         /// <summary>
         /// Titulek okna, defaultní je název okna <see cref="GuiProperties.PluginFormTitle"/>

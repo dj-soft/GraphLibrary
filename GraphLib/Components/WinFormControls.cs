@@ -230,11 +230,11 @@ namespace Asol.Tools.WorkScheduler.Components
         protected static GUI.GuiImage GetDefaultIconForButtons(GUI.GuiDialogButtons buttons)
         {
             int count = GetButtonsCount(buttons);
-            if (count == 0) return RES.Images.Actions.HelpHintPng;   // Pokud je 0 buttonů, vrátím žárovku
-            if (count > 1) return RES.Images.Actions.Help3Png;       // Pokud je více než 1 button, vracíme otazník (uživatel má volbu)
+            if (count == 0) return GUI.GuiDialog.DialogIconWarning;
+            if (count > 1) return GUI.GuiDialog.DialogIconQuestion;
             if ((buttons & (GUI.GuiDialogButtons.Ok | GUI.GuiDialogButtons.Ignore | GUI.GuiDialogButtons.Maybe | GUI.GuiDialogButtons.Save | GUI.GuiDialogButtons.Yes)) != 0)
-                return RES.Images.Actions.HelpAbout3Png;             // Je pouze jeden button, a pokud je to Ok, Ignore, Maybe, Save nebo Yes, tak vracím ikonu (i)
-            return RES.Images.Actions.MailDeletePng;
+                return GUI.GuiDialog.DialogIconInfo;       // Je pouze jeden button, a pokud je to Ok, Ignore, Maybe, Save nebo Yes, tak vracím ikonu (i)
+            return GUI.GuiDialog.DialogIconError;
         }
         /// <summary>
         /// Metoda vrací defaultní titulek pro formulář, podle zadaných tlačítek.
