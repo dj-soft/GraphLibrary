@@ -272,22 +272,35 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Zobrazí daný dialog a vrátí odpověď.
         /// </summary>
+        /// <param name="dialog">Data pro dialog</param>
+        /// <returns></returns>
+        public GuiDialogResponse ShowDialog(GuiDialog dialog)
+        {
+            if (dialog == null || dialog.IsEmpty) return GuiDialogResponse.None;
+            return this.ShowDialog(dialog.Message, dialog.Title, dialog.Buttons, dialog.Icon);
+        }
+        /// <summary>
+        /// Zobrazí daný dialog a vrátí odpověď.
+        /// </summary>
         /// <param name="message"></param>
-        /// <param name="dialogItems"></param>
+        /// <param name="title"></param>
+        /// <param name="guiButtons"></param>
         /// <param name="icon"></param>
         /// <returns></returns>
-        public GuiDialogResponse ShowDialog(string message, GuiDialogResponse dialogItems, GuiImage icon = null)
+        public GuiDialogResponse ShowDialog(string message, string title = null, GuiDialogResponse guiButtons = GuiDialogResponse.None, GuiImage icon = null)
         {
+            if (String.IsNullOrEmpty(message)) return GuiDialogResponse.None;
             if (this.InvokeRequired)
-                return (GuiDialogResponse)this.Invoke(new Func<string, GuiDialogResponse, GuiImage, GuiDialogResponse>(_ShowDialogGUI), message, dialogItems, icon);
+                return (GuiDialogResponse)this.Invoke(new Func<string, string, GuiDialogResponse, GuiImage, GuiDialogResponse>(_ShowDialogGUI), message, title, guiButtons, icon);
             else
-                return this._ShowDialogGUI(message, dialogItems, icon);
+                return this._ShowDialogGUI(message, title, guiButtons, icon);
         }
-        private GuiDialogResponse _ShowDialogGUI(string message, GuiDialogResponse dialogItems, GuiImage icon)
+        private GuiDialogResponse _ShowDialogGUI(string message, string title, GuiDialogResponse guiButtons, GuiImage guiIcon)
         {
-            MessageBoxButtons buttons = ConvertButtons(dialogItems);
+            if (String.IsNullOrEmpty(title)) title = this._MainData.GuiData.Properties.PluginFormTitle;
+            MessageBoxButtons winButtons = ConvertButtons(guiButtons);
             MessageBoxIcon winIcon = MessageBoxIcon.Question;
-            DialogResult result = System.Windows.Forms.MessageBox.Show(this.FindForm(), message, "Dotaz", buttons, winIcon);
+            DialogResult result = System.Windows.Forms.MessageBox.Show(this.FindForm(), message, title, winButtons, winIcon);
             return ConvertResult(result);
         }
         private static MessageBoxButtons ConvertButtons(GuiDialogResponse dialogItems)

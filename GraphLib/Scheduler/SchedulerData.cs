@@ -231,7 +231,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             {
                 App.Trace.Exception(exc, request.ToString());
                 string message = "Při zpracování požadavku " + request.Command + " došlo k chybě: " + exc.Message;
-                this.ShowDialog(message, GuiDialogResponse.Ok);
+                this.ShowDialog(message, null, GuiDialogResponse.Ok);
             }
         }
         /// <summary>
@@ -1855,23 +1855,30 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private GuiDialogResponse _ProcessResponseDialog(GuiResponse guiResponse)
         {
             GuiDialogResponse response = GuiDialogResponse.None;
-            if (guiResponse != null && guiResponse.Dialog != GuiDialogResponse.None)
-                response = this.ShowDialog(guiResponse.Message, guiResponse.Dialog);
+            if (guiResponse != null && guiResponse.Dialog != null && !guiResponse.Dialog.IsEmpty)
+                response = this.ShowDialog(guiResponse.Dialog);
             return response;
         }
         /// <summary>
         /// Metoda zpracuje požadovaný dialog, vrací výsledek
         /// </summary>
+        /// <param name="dialog">Data pro dialog</param>
+        /// <returns></returns>
+        protected GuiDialogResponse ShowDialog(GuiDialog dialog)
+        {
+            return this._MainControl.ShowDialog(dialog);
+        }
+        /// <summary>
+        /// Zobrazí daný dialog a vrátí odpověď.
+        /// </summary>
         /// <param name="message"></param>
-        /// <param name="dialogItems"></param>
+        /// <param name="title"></param>
+        /// <param name="guiButtons"></param>
         /// <param name="icon"></param>
         /// <returns></returns>
-        protected GuiDialogResponse ShowDialog(string message, GuiDialogResponse dialogItems, GuiImage icon = null)
+        public GuiDialogResponse ShowDialog(string message, string title = null, GuiDialogResponse guiButtons = GuiDialogResponse.None, GuiImage icon = null)
         {
-            GuiDialogResponse response = GuiDialogResponse.None;
-            if (dialogItems != GuiDialogResponse.None)
-                response = this._MainControl.ShowDialog(message, dialogItems, icon);
-            return response;
+            return this._MainControl.ShowDialog(message, title, guiButtons, icon);
         }
         #endregion
         #region Zpracování dat

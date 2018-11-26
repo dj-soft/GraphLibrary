@@ -3005,13 +3005,13 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <summary>
         /// Test před zavřením okna.
         /// Nepředávají se žádná upřesňující data.
-        /// Jako odpověď se očekává <see cref="GuiResponse.Message"/>: pokud bude neprázdné, jde o dotaz před ukončením. 
+        /// Jako odpověď se očekává <see cref="GuiResponse.Dialog"/>: pokud bude neprázdné, jde o dotaz před ukončením. 
         /// V tom případě se zobrazí dialog podle <see cref="GuiResponse.Dialog"/>.
         /// Message by měl být zhruba: "Data nejsou uložena, chcete je uložit?";
         /// Volby dialogu by měly obsahovat Yes nebo OK = to vede k uložení dat (jeho odsouhlasení pak zavolá COMMAND <see cref="COMMAND_SaveBeforeCloseWindow"/>).
         /// Pokud bude dialog obsahovat No, pak tato volba data neuloží a okno se zavře.
         /// Pokud bude dialog obsahovat Cancel, pak tato volba data neuloží ale NEZAVŘE okno.
-        /// Pokud bude <see cref="GuiResponse.Message"/> prázdné, dialog nebude, okno se zavře bez ukládání dat.
+        /// Pokud bude <see cref="GuiResponse.Dialog"/> prázdné, dialog nebude, okno se zavře bez ukládání dat.
         /// Při zavření okna se odešle command <see cref="COMMAND_CloseWindow"/>.
         /// </summary>
         public const string COMMAND_QueryCloseWindow = "QueryCloseWindow";
@@ -3266,17 +3266,9 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiResponseState ResponseState { get; set; }
         /// <summary>
-        /// Textová zpráva uživateli.
-        /// Používá se například při testu na zavření okna WorkScheduleru, 
-        /// obsahuje typicky: "Data jsou změněna. Přijdete o ně. Zavřít?"
-        /// Anebo se plní při stavu Warning nebo Error.
+        /// Definice dialogu s uživatelem po doběhnutí požadavku, null = bez dialogu
         /// </summary>
-        public string Message { get; set; }
-        /// <summary>
-        /// Možnosti dialogu s uživatelem.
-        /// Používá se například při testu na zavření okna WorkScheduleru, pro <see cref="Message"/> obsahuje hodnoty <see cref="GuiDialogResponse.YesNo"/>.
-        /// </summary>
-        public GuiDialogResponse Dialog { get; set; }
+        public GuiDialog Dialog { get; set; }
         /// <summary>
         /// Data potřebná pro ukládání dat při zavírání okna.
         /// Měla by být naplněna v odpovědi na command <see cref="GuiRequest.COMMAND_QueryCloseWindow"/> (tj. dotaz před zavřením okna). Jindy nemají význam.
@@ -3334,13 +3326,48 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public static GuiResponse Success() { return new GuiResponse() { ResponseState = GuiResponseState.Success }; }
         /// <summary>
-        /// Statický konstruktor, který vrací new instanci <see cref="GuiResponse"/>, kde <see cref="GuiResponse.ResponseState"/> = <see cref="GuiResponseState.Warning"/>, a nastaví danou zprávu do <see cref="Message"/>.
+        /// Statický konstruktor, který vrací new instanci <see cref="GuiResponse"/>, kde <see cref="GuiResponse.ResponseState"/> = <see cref="GuiResponseState.Warning"/>, a nastaví danou zprávu do <see cref="Dialog"/>.
         /// </summary>
-        public static GuiResponse Warning(string message) { return new GuiResponse() { ResponseState = GuiResponseState.Warning, Message = message }; }
+        public static GuiResponse Warning(string message) { return new GuiResponse() { ResponseState = GuiResponseState.Warning, Dialog = new GuiDialog() { Message = message } }; }
         /// <summary>
-        /// Statický konstruktor, který vrací new instanci <see cref="GuiResponse"/>, kde <see cref="GuiResponse.ResponseState"/> = <see cref="GuiResponseState.Error"/>, a nastaví danou zprávu do <see cref="Message"/>.
+        /// Statický konstruktor, který vrací new instanci <see cref="GuiResponse"/>, kde <see cref="GuiResponse.ResponseState"/> = <see cref="GuiResponseState.Error"/>, a nastaví danou zprávu do <see cref="Dialog"/>.
         /// </summary>
-        public static GuiResponse Error(string message) { return new GuiResponse() { ResponseState = GuiResponseState.Error, Message = message }; }
+        public static GuiResponse Error(string message) { return new GuiResponse() { ResponseState = GuiResponseState.Error, Dialog = new GuiDialog() { Message = message } }; }
+        #endregion
+    }
+    /// <summary>
+    /// GuiDialog : třída, která nese informace o dialogu
+    /// </summary>
+    public class GuiDialog
+    {
+        #region Data dialogu
+        /// <summary>
+        /// Titulek okna, defaultní je název okna <see cref="GuiProperties.PluginFormTitle"/>
+        /// </summary>
+        public string Title { get; set; }
+        /// <summary>
+        /// Ikona u informace, nezadáno = žádná
+        /// </summary>
+        public GuiImage Icon { get; set; }
+        /// <summary>
+        /// Textová zpráva uživateli.
+        /// Používá se například při testu na zavření okna WorkScheduleru, 
+        /// obsahuje typicky: "Data jsou změněna. Přijdete o ně. Zavřít?"
+        /// Anebo se plní při stavu Warning nebo Error.
+        /// <para/>
+        /// Pokud je prázdné, pak nebude žádný dialog, i když by jiné hodnoty byly naplněny.
+        /// </summary>
+        public string Message { get; set; }
+        /// <summary>
+        /// Možnosti dialogu s uživatelem - nabízená tlačítka.
+        /// Používá se například při testu na zavření okna WorkScheduleru, pro <see cref="Message"/> obsahuje hodnoty <see cref="GuiDialogResponse.YesNo"/>.
+        /// Pokud bude zadána zpráva <see cref="Message"/>, ale tlačítka <see cref="Buttons"/> budou <see cref="GuiDialogResponse.None"/>, pak se zobrazí tlačítko OK.
+        /// </summary>
+        public GuiDialogResponse Buttons { get; set; }
+        /// <summary>
+        /// Obsahuje true, pokud this instance NEobsahuje data pro dialog
+        /// </summary>
+        public bool IsEmpty { get { return String.IsNullOrEmpty(this.Message); } }
         #endregion
     }
     /// <summary>
@@ -3350,7 +3377,7 @@ namespace Noris.LCS.Base.WorkScheduler
     public class GuiSaveData
     {
         /// <summary>
-        /// Pokud zde bude true, pak nemusí být deklarován žádný dialog (v <see cref="GuiResponse.Message"/> ani v <see cref="GuiResponse.Dialog"/>),
+        /// Pokud zde bude true, pak nemusí být deklarován žádný dialog v <see cref="GuiResponse.Dialog"/>,
         /// a ukládání dat bude spuštěno bez dalších podmínek.
         /// Pokud zde bude false (výchozí stav), pak záleží na definovaném dialogu. 
         /// Ukládání dat bude provedeno tehdy, když bude proveden dialog 
