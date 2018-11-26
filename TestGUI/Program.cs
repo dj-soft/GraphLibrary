@@ -20,11 +20,48 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             Application.App.TracePriority = Application.TracePriority.Priority5_Normal;
 
+            Application.App.RunMainForm(typeof(SchedulerForm));            // interní testovací data
+
+
+            /*
+            string test = "Zajímavý <ale málo> text, obsahující &nbsp; entity, \r\n které se v XML nemají vyskytnout.";
+
+
+            string htmlEncode = System.Web.HttpUtility.HtmlEncode(test);          // "Zaj&#237;mav&#253; &lt;ale m&#225;lo&gt; text, obsahuj&#237;c&#237; &amp;nbsp; entity, \r\n kter&#233; se v XML nemaj&#237; vyskytnout."
+            string htmlDecode = System.Web.HttpUtility.HtmlDecode(htmlEncode);    // "Zajímavý <ale málo> text, obsahující &nbsp; entity, \r\n které se v XML nemají vyskytnout."
+
+            string netEncode = System.Net.WebUtility.HtmlEncode(test);            // "Zaj&#237;mav&#253; &lt;ale m&#225;lo&gt; text, obsahuj&#237;c&#237; &amp;nbsp; entity, \r\n kter&#233; se v XML nemaj&#237; vyskytnout."
+            string netDecode = System.Net.WebUtility.HtmlDecode(netEncode);       // "Zajímavý <ale málo> text, obsahující &nbsp; entity, \r\n které se v XML nemají vyskytnout."
+            */
+
+
+            /*
+            string secuEncode = System.Security.SecurityElement.Escape(test);                      // "Zajímavý &lt;ale málo&gt; text, obsahující &amp;nbsp; entity, \r\n které se v XML nemají vyskytnout."
+            string secuDecode = System.Security.SecurityElement.FromString(secuEncode).Text;       //  error
+            */
+
+            /*
+
+            string xmlConvE = System.Xml.XmlConvert.EncodeName(test);     // "Zajímavý_x0020__x003C_ale_x0020_málo_x003E__x0020_text_x002C__x0020_obsahující_x0020__x0026_nbsp_x003B__x0020_entity_x002C__x0020__x000D__x000A__x0020_které_x0020_se_x0020_v_x0020_XML_x0020_nemají_x0020_vyskytnout."
+            string xmlConvD = System.Xml.XmlConvert.DecodeName(xmlConvE); // "Zajímavý <ale málo> text, obsahující &nbsp; entity, \r\n které se v XML nemají vyskytnout."
+
+
+            System.Xml.Linq.XElement xe = new System.Xml.Linq.XElement("name");
+            xe.Value = test;
+            string str = xe.ToString();
+
+            System.Xml.Linq.XAttribute xa = new System.Xml.Linq.XAttribute("name", test);
+            xa.Value = test;
+            string xas = xa.ToString();
+
+
+            */
+
+
             // Tests.TestLinq(6);
 
             // Asol.Tools.WorkScheduler.TestGUI
 
-            Application.App.RunMainForm(typeof(SchedulerForm));            // interní testovací data
             // Application.App.RunMainForm(typeof(PluginForm));               // data z Greenu
 
 
