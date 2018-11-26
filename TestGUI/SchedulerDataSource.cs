@@ -951,12 +951,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                         switch (requestArgs.Request.ToolbarItem.Name)
                         {
                             case "RePlan":
-                                responseArgs.GuiResponse.Message = "Přeplánování je dokončeno.";
-                                responseArgs.GuiResponse.Dialog = GuiDialogResponse.Ok;
+                                responseArgs.GuiResponse.Dialog = GetDialog("Data jsou zaplánovaná.", GuiDialogButtons.Ok);
                                 break;
                             case "SaveData":
-                                responseArgs.GuiResponse.Message = "Data jsou uložena.";
-                                responseArgs.GuiResponse.Dialog = GuiDialogResponse.Ok;
+                                responseArgs.GuiResponse.Dialog = GetDialog("Data jsou uložena.", GuiDialogButtons.Ok);
                                 break;
                         }
                         break;
@@ -967,24 +965,23 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                         System.Threading.Thread.Sleep(time);
                         responseArgs.GuiResponse = new GuiResponse()
                         {
-                            Dialog = GuiDialogResponse.YesNo | GuiDialogResponse.Cancel,
-                            Message = "Co s daty - uložit je?",
-                            CloseSaveData = new GuiSaveData() { AutoSave = true, BlockGuiTime = TimeSpan.FromSeconds(20d), BlockGuiMessage = "Probíhá ukládání dat...\r\nData se právě ukládají do databáze, jakmile budou uložena, dostanete spěšnou sovu." }
+                            Dialog = GetDialog(GetMessageSaveData(), GuiDialogButtons.YesNoCancel, RES.Images.Actions.Help3Png),
+                            CloseSaveData = new GuiSaveData() { AutoSave = true, BlockGuiTime = TimeSpan.FromSeconds(20d), BlockGuiMessage = "Probíhá ukládání dat...\r\nData se právě ukládají do databáze.\r\nJakmile budou uložena, dostanete od nás spěšnou sovu." }
                         };
                         break;
 
                     case GuiRequest.COMMAND_SaveBeforeCloseWindow:
                         // Chci si otestovat malou prodlevu před skončením:
-                        time = this.Rand.Next(1000, 30000);
+                        time = this.Rand.Next(1500, 12000);
                         System.Threading.Thread.Sleep(time);
-                        if (this.Rand.Next(0,100) >= 80)
-                            responseArgs.Result = AppHostActionResult.Failure;
-                        else
+                        if (this.Rand.Next(0,100) <= 65)
                             responseArgs.Result = AppHostActionResult.Success;
+                        else
+                            responseArgs.Result = AppHostActionResult.Failure;
 
                         responseArgs.GuiResponse = new GuiResponse()
                         {
-                            Dialog = GetDialog("Došlo k chybě. Přejete si skončit i bez uložení dat?", GuiDialogResponse.YesNo)
+                            Dialog = GetDialog("Došlo k chybě. Přejete si skončit i bez uložení dat?", GuiDialogButtons.YesNo)
                         };
                         break;
 
@@ -993,6 +990,19 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             if (requestArgs.CallBackAction != null)
                 requestArgs.CallBackAction(responseArgs);
         }
+        protected static string GetMessageSaveData()
+        {
+            string rtf = @"{\rtf1\ansi\ansicpg1250\deff0\nouicompat\deflang1029{\fonttbl{\f0\fnil\fcharset238 Calibri;}{\f1\fnil\fcharset0 Calibri;}}
+{\colortbl ;\red128\green0\blue64;}
+{\*\generator Riched20 10.0.17763}\viewkind4\uc1 
+\pard\sa200\sl276\slmult1\b\f0\fs32 Ukon\'e8en\f1\lang1033\'ed\f0\lang1029  aplikace\par
+\b0\fs24 Ukon\'e8ujete aplikaci, ale \b neulo\'9eili jste svoje zm\'ecny v datech\b0 .\par
+\fs22 M\f1\lang1033\'e1\f0\lang1029  b\f1\lang1033\'fd\f0\lang1029 t p\'f8ed ukon\'e8en\f1\lang1033\'ed\f0\lang1029 m \cf1\b provedeno ulo\'9een\f1\lang1033\'ed\f0\lang1029  dat\cf0\b0 ?\line\i (Ano = ulo\'9eit a skon\'e8it, Ne = neukl\f1\lang1033\'e1\f0\lang1029 dat a skon\'e8it, Storno = neukl\f1\lang1033\'e1\f0\lang1029 dat a neskoon\'e8it)\i0\par
+}
+ ";
+
+            return rtf;
+        }
         /// <summary>
         /// Vrátí GuiDialog
         /// </summary>
@@ -1000,7 +1010,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <param name="guiButtons"></param>
         /// <param name="icon"></param>
         /// <returns></returns>
-        protected static GuiDialog GetDialog(string message, GuiDialogResponse guiButtons, GuiImage icon = null)
+        protected static GuiDialog GetDialog(string message, GuiDialogButtons guiButtons, GuiImage icon = null)
         {
             return new GuiDialog()
             {
