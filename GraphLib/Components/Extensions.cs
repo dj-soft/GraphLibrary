@@ -994,6 +994,55 @@ namespace Asol.Tools.WorkScheduler.Components
             }
             return new Rectangle(new Point(x, y), size);
         }
+        /// <summary>
+        /// Vrátí new Size, která bude mít shodný poměr jako výchozí, a bude mít danou Width
+        /// </summary>
+        /// <param name="size"></param>
+        /// <param name="width"></param>
+        /// <returns></returns>
+        public static Size ZoomToWidth(this Size size, int width)
+        {
+            if (size.Width <= 0) return size;
+            double ratio = (double)width / (double)size.Width;
+            return ZoomByRatio(size, ratio);
+        }
+        /// <summary>
+        /// Vrátí new Size, která bude mít shodný poměr jako výchozí, a bude mít danou Height
+        /// </summary>
+        /// <param name="size"></param>
+        /// <param name="height"></param>
+        /// <returns></returns>
+        public static Size ZoomToHeight(this Size size, int height)
+        {
+            if (size.Height <= 0) return size;
+            double ratio = (double)height / (double)size.Height;
+            return ZoomByRatio(size, ratio);
+        }
+        /// <summary>
+        /// Vrátí new Size, která bude mít shodný poměr jako výchozí, a bude mít danou Height
+        /// </summary>
+        /// <param name="size"></param>
+        /// <param name="ratio"></param>
+        /// <returns></returns>
+        public static Size ZoomByRatio(this Size size, double ratio)
+        {
+            int width = (int)(Math.Round(ratio * (double)size.Width, 0));
+            int height = (int)(Math.Round(ratio * (double)size.Height, 0));
+            return new Size(width, height);
+        }
+        /// <summary>
+        /// Vrátí new Size, která bude mít shodný poměr jako výchozí, a bude mít danou Height
+        /// </summary>
+        /// <param name="size"></param>
+        /// <param name="ratioWidth"></param>
+        /// <param name="ratioHeight"></param>
+        /// <returns></returns>
+        public static Size ZoomByRatio(this Size size, double ratioWidth, double ratioHeight)
+        {
+            int width = (int)(Math.Round(ratioWidth * (double)size.Width, 0));
+            int height = (int)(Math.Round(ratioHeight * (double)size.Height, 0));
+            return new Size(width, height);
+        }
         #endregion
         #region SizeF: AlignTo
         /// <summary>

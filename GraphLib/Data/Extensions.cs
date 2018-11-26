@@ -70,6 +70,28 @@ namespace Asol.Tools.WorkScheduler.Data
             return false;
         }
         #endregion
+        #region Int
+        /// <summary>
+        /// Metoda vrátí počet bitů v tomto čísle, které mají hodnotu 1 (nebo podle parametru bit)
+        /// </summary>
+        /// <param name="value">Číslo</param>
+        /// <param name="bit">Zajímá mě počet bitů v hodnotě 0 (zadejme 0) nebo 1 (zadejme 1).</param>
+        /// <returns></returns>
+        public static int GetBitsOneCount(this Int32 value, int bit = 1)
+        {
+            int count0 = 0;
+            int count1 = 0;
+            for (int b = 0; b < 32; b++)
+            {
+                if ((value & 0x01) == 0)
+                    count0++;
+                else
+                    count1++;
+                value = value >> 1;
+            }
+            return (bit == 0 ? count0 : (bit == 1 ? count1 : -1));
+        }
+        #endregion
         #region String
         /// <summary>
         /// Returns an array of string as rows from this text.

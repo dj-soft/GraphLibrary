@@ -274,9 +274,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="dialog">Data pro dialog</param>
         /// <returns></returns>
-        public GuiDialogResponse ShowDialog(GuiDialog dialog)
+        public GuiDialogButtons ShowDialog(GuiDialog dialog)
         {
-            if (dialog == null || dialog.IsEmpty) return GuiDialogResponse.None;
+            if (dialog == null || dialog.IsEmpty) return GuiDialogButtons.None;
             return this.ShowDialog(dialog.Message, dialog.Title, dialog.Buttons, dialog.Icon);
         }
         /// <summary>
@@ -287,15 +287,27 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="guiButtons"></param>
         /// <param name="icon"></param>
         /// <returns></returns>
-        public GuiDialogResponse ShowDialog(string message, string title = null, GuiDialogResponse guiButtons = GuiDialogResponse.None, GuiImage icon = null)
+        public GuiDialogButtons ShowDialog(string message, string title = null, GuiDialogButtons guiButtons = GuiDialogButtons.None, GuiImage icon = null)
         {
-            if (String.IsNullOrEmpty(message)) return GuiDialogResponse.None;
+            if (String.IsNullOrEmpty(message)) return GuiDialogButtons.None;
             if (this.InvokeRequired)
-                return (GuiDialogResponse)this.Invoke(new Func<string, string, GuiDialogResponse, GuiImage, GuiDialogResponse>(_ShowDialogGUI), message, title, guiButtons, icon);
+                return (GuiDialogButtons)this.Invoke(new Func<string, string, GuiDialogButtons, GuiImage, GuiDialogButtons>(_ShowDialogGUI), message, title, guiButtons, icon);
             else
                 return this._ShowDialogGUI(message, title, guiButtons, icon);
         }
-        private GuiDialogResponse _ShowDialogGUI(string message, string title, GuiDialogResponse guiButtons, GuiImage guiIcon)
+        /// <summary>
+        /// Zobrazí dialog, vrátí volbu uživatele
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="title"></param>
+        /// <param name="guiButtons"></param>
+        /// <param name="guiIcon"></param>
+        /// <returns></returns>
+        private GuiDialogButtons _ShowDialogGUI(string message, string title, GuiDialogButtons guiButtons, GuiImage guiIcon)
+        {
+            return WinFormDialog.ShowDialog(this.FindForm(), message, title, guiButtons, guiIcon);
+        }
+        private GuiDialogButtons _ShowDialogGUIWin(string message, string title, GuiDialogButtons guiButtons, GuiImage guiIcon)
         {
             if (String.IsNullOrEmpty(title)) title = this._MainData.GuiData.Properties.PluginFormTitle;
             MessageBoxButtons winButtons = ConvertButtons(guiButtons);
@@ -303,52 +315,52 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             DialogResult result = System.Windows.Forms.MessageBox.Show(this.FindForm(), message, title, winButtons, winIcon);
             return ConvertResult(result);
         }
-        private static MessageBoxButtons ConvertButtons(GuiDialogResponse dialogItems)
+        private static MessageBoxButtons ConvertButtons(GuiDialogButtons dialogItems)
         {
             switch (dialogItems)
             {
-                case GuiDialogResponse.Ok: return MessageBoxButtons.OK;
-                case GuiDialogResponse.Yes:
-                case GuiDialogResponse.No:
-                case GuiDialogResponse.YesNo: return MessageBoxButtons.YesNo;
-                case GuiDialogResponse.OkCancel:
-                case GuiDialogResponse.Cancel: return MessageBoxButtons.OKCancel;
-                case GuiDialogResponse.YesNoCancel: return MessageBoxButtons.YesNoCancel;
-                case GuiDialogResponse.Retry:
-                case GuiDialogResponse.RetryCancel: return MessageBoxButtons.RetryCancel;
+                case GuiDialogButtons.Ok: return MessageBoxButtons.OK;
+                case GuiDialogButtons.Yes:
+                case GuiDialogButtons.No:
+                case GuiDialogButtons.YesNo: return MessageBoxButtons.YesNo;
+                case GuiDialogButtons.OkCancel:
+                case GuiDialogButtons.Cancel: return MessageBoxButtons.OKCancel;
+                case GuiDialogButtons.YesNoCancel: return MessageBoxButtons.YesNoCancel;
+                case GuiDialogButtons.Retry:
+                case GuiDialogButtons.RetryCancel: return MessageBoxButtons.RetryCancel;
             }
             return MessageBoxButtons.OK;
         }
-        private static MessageBoxIcon ConvertIcon(GuiDialogResponse dialogItems)
+        private static MessageBoxIcon ConvertIcon(GuiDialogButtons dialogItems)
         {
             switch (dialogItems)
             {
-                case GuiDialogResponse.Ok: return MessageBoxIcon.Information;
-                case GuiDialogResponse.Yes:
-                case GuiDialogResponse.No:
-                case GuiDialogResponse.YesNo: return MessageBoxIcon.Question;
-                case GuiDialogResponse.OkCancel:
-                case GuiDialogResponse.Cancel: return MessageBoxIcon.Warning;
-                case GuiDialogResponse.YesNoCancel: return MessageBoxIcon.Warning;
-                case GuiDialogResponse.Retry:
-                case GuiDialogResponse.RetryCancel: return MessageBoxIcon.Hand;
+                case GuiDialogButtons.Ok: return MessageBoxIcon.Information;
+                case GuiDialogButtons.Yes:
+                case GuiDialogButtons.No:
+                case GuiDialogButtons.YesNo: return MessageBoxIcon.Question;
+                case GuiDialogButtons.OkCancel:
+                case GuiDialogButtons.Cancel: return MessageBoxIcon.Warning;
+                case GuiDialogButtons.YesNoCancel: return MessageBoxIcon.Warning;
+                case GuiDialogButtons.Retry:
+                case GuiDialogButtons.RetryCancel: return MessageBoxIcon.Hand;
             }
             return MessageBoxIcon.Information;
         }
-        private static GuiDialogResponse ConvertResult(DialogResult result)
+        private static GuiDialogButtons ConvertResult(DialogResult result)
         {
             switch (result)
             {
-                case DialogResult.None: return GuiDialogResponse.None;
-                case DialogResult.OK: return GuiDialogResponse.Ok;
-                case DialogResult.Cancel: return GuiDialogResponse.Cancel;
-                case DialogResult.Abort: return GuiDialogResponse.Abort;
-                case DialogResult.Retry: return GuiDialogResponse.Retry;
-                case DialogResult.Ignore: return GuiDialogResponse.Ignore;
-                case DialogResult.Yes: return GuiDialogResponse.Yes;
-                case DialogResult.No: return GuiDialogResponse.No;
+                case DialogResult.None: return GuiDialogButtons.None;
+                case DialogResult.OK: return GuiDialogButtons.Ok;
+                case DialogResult.Cancel: return GuiDialogButtons.Cancel;
+                case DialogResult.Abort: return GuiDialogButtons.Abort;
+                case DialogResult.Retry: return GuiDialogButtons.Retry;
+                case DialogResult.Ignore: return GuiDialogButtons.Ignore;
+                case DialogResult.Yes: return GuiDialogButtons.Yes;
+                case DialogResult.No: return GuiDialogButtons.No;
             }
-            return GuiDialogResponse.None;
+            return GuiDialogButtons.None;
         }
         #endregion
     }

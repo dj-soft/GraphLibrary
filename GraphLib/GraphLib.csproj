@@ -101,6 +101,9 @@
     <Compile Include="Components\TagFilter.cs" />
     <Compile Include="Components\ToolBar.cs" />
     <Compile Include="Components\ToolTip.cs" />
+    <Compile Include="Components\WinFormControls.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Components\WinMsgCode.cs" />
     <Compile Include="Data\GId.cs" />
     <Compile Include="Data\Index.cs" />

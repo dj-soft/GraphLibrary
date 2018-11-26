@@ -2316,6 +2316,11 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         [PersistingEnabled(false)]
         public Image Image { get; set; }
+        /// <summary>
+        /// Obsahuje true, pokud this instance nemá žádná data o obrázku
+        /// </summary>
+        [PersistingEnabled(false)]
+        public bool IsEmpty { get { return (String.IsNullOrEmpty(this.ImageFile) && this.ImageContent == null && this.Image == null); } }
         #endregion
         #region Serializace
         /// <summary>
@@ -3360,10 +3365,10 @@ namespace Noris.LCS.Base.WorkScheduler
         public string Message { get; set; }
         /// <summary>
         /// Možnosti dialogu s uživatelem - nabízená tlačítka.
-        /// Používá se například při testu na zavření okna WorkScheduleru, pro <see cref="Message"/> obsahuje hodnoty <see cref="GuiDialogResponse.YesNo"/>.
-        /// Pokud bude zadána zpráva <see cref="Message"/>, ale tlačítka <see cref="Buttons"/> budou <see cref="GuiDialogResponse.None"/>, pak se zobrazí tlačítko OK.
+        /// Používá se například při testu na zavření okna WorkScheduleru, pro <see cref="Message"/> obsahuje hodnoty <see cref="GuiDialogButtons.YesNo"/>.
+        /// Pokud bude zadána zpráva <see cref="Message"/>, ale tlačítka <see cref="Buttons"/> budou <see cref="GuiDialogButtons.None"/>, pak se zobrazí tlačítko OK.
         /// </summary>
-        public GuiDialogResponse Buttons { get; set; }
+        public GuiDialogButtons Buttons { get; set; }
         /// <summary>
         /// Obsahuje true, pokud this instance NEobsahuje data pro dialog
         /// </summary>
@@ -3489,7 +3494,7 @@ namespace Noris.LCS.Base.WorkScheduler
     /// Dialog, možnosti a odpovědi
     /// </summary>
     [Flags]
-    public enum GuiDialogResponse
+    public enum GuiDialogButtons
     {
         /// <summary>
         /// Žádný dialog
@@ -3524,6 +3529,10 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         Ignore = 0x0040,
         /// <summary>
+        /// Tlačítko ULOŽIT
+        /// </summary>
+        Save = 0x0100,
+        /// <summary>
         /// Tlačítko MOŽNÁ
         /// </summary>
         Maybe = 0x1000,
@@ -3542,7 +3551,15 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <summary>
         /// Tlačítka ZNOVU a STORNO
         /// </summary>
-        RetryCancel = Retry| Cancel
+        RetryCancel = Retry| Cancel,
+        /// <summary>
+        /// Tlačítka ULOŽIT a STORNO
+        /// </summary>
+        SaveCancel = Save | Cancel,
+        /// <summary>
+        /// Všechna tlačítka
+        /// </summary>
+        All = Ok | Yes | No | Cancel| Abort | Retry | Ignore | Save | Maybe
     }
     #endregion
     #region Enumy, které se sdílí mezi WorkScheduler a GraphLibrary

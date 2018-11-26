@@ -2975,70 +2975,6 @@ namespace Asol.Tools.WorkScheduler.Components
             return AnimationResult.None;
         }
         /// <summary>
-        /// BlockGui animátor běží?
-        /// </summary>
-        protected bool BlockGuiAnimatorRunning { get; private set; }
-        /// <summary>
-        /// Ratio pro řízení Opacity v rozhraní BlockedGui:
-        /// 0f = není vidět ... až ... 1f = má plné cílové hodnoty Alpha kanálu
-        /// </summary>
-        protected float? BlockGuiOpacityRatio { get; private set; }
-        /// <summary>
-        /// Instance animátoru pro rozsvícení a zhasnutí "okna", které blokuje GUI.
-        /// </summary>
-        protected AnimationControl<float> BlockGuiAnimator { get; private set; }
-        /// <summary>
-        /// Metoda zajistí vykreslení blokovaného GUI
-        /// </summary>
-        /// <param name="graphics"></param>
-        /// <param name="size"></param>
-        protected void BlockedGuiDraw(Graphics graphics, Size size)
-        {
-            float? opacityRatio = this.BlockGuiOpacityRatio;
-            if (!opacityRatio.HasValue || opacityRatio.Value <= 0f) return;
-
-            // Celý prostor překreslit šedou záclonou:
-            Rectangle area = new Rectangle(new Point(0, 0), this.ClientRectangle.Size);
-            Color areaColor = Skin.BlockedGui.AreaColor.ApplyOpacity(opacityRatio);
-            graphics.FillRectangle(Skin.Brush(areaColor), area);
-
-            // Okno s textem?
-            if (this.HasBlockedGuiMessage)
-            {
-                this.BlockedGuiCheckTexts(graphics, area);
-
-                // Vykreslit pozadí:
-                Rectangle bounds = this.BlockedGuiMsgBackgroundBounds.Value;
-                Color backColor = Skin.BlockedGui.TextBackColor.ApplyOpacity(opacityRatio);
-                GPainter.DrawAreaBase(graphics, bounds, backColor, Orientation.Horizontal, GInteractiveState.Enabled);
-
-                // Vykreslit texty jednotlivých řádků:
-                Color textColor = Skin.BlockedGui.TextInfoForeColor.ApplyOpacity(opacityRatio);
-                foreach (BlockedGuiTextInfo text in this.BlockedGuiMsgTextInfos)
-                    GPainter.DrawString(graphics, text.TextBounds, text.Text, textColor, text.Font, ContentAlignment.MiddleCenter);
-            }
-        }
-        /// <summary>
-        /// Obsahuje true, pokud GUI tohoto controlu je aktuálně blokováno.
-        /// </summary>
-        internal bool IsGUIBlocked { get; private set; }
-        /// <summary>
-        /// Text hlášky zobrazené po dobu blokace GUI
-        /// </summary>
-        protected string BlockedGuiMessage { get; private set; }
-        /// <summary>
-        /// true pokud je aktuálně blokované GUI <see cref="IsGUIBlocked"/> a je zadána hláška k zobrazení <see cref="BlockedGuiMessage"/>.
-        /// </summary>
-        protected bool HasBlockedGuiMessage { get { return this.IsGUIBlocked && !String.IsNullOrEmpty(this.BlockedGuiMessage); } }
-        /// <summary>
-        /// Kurzor platný před zahájením blokace GUI
-        /// </summary>
-        protected Cursor BlockedGuiCursor { get; private set; }
-        /// <summary>
-        /// Datum a čas, kdy končí blokování GUI vlivem timeoutu
-        /// </summary>
-        protected DateTime? BlockedTimeEnd { get; private set; }
-        /// <summary>
         /// Zajistí platnost dat v <see cref="BlockedGuiMsgTextInfos"/> a <see cref="BlockedGuiMsgBackgroundBounds"/>:
         /// vypočítá souřadnice jednotlivých řádků textů dle textu v <see cref="BlockedGuiMessage"/> i celého prostoru hlášky.
         /// </summary>
@@ -3076,11 +3012,17 @@ namespace Asol.Tools.WorkScheduler.Components
             if (bh < minBh) bh = minBh;
             int maxBh = 65 * area.Height / 100;
             if (bh > maxBh) bh = maxBh;
+
+            // Pokud výška prostoru pro Textové pole je menší než 15% výšky controlu, pak jeho šířka bude rovna celé šířce controlu (=> malý pruh, široký přes celé okno):
+            int linBh = 15 * area.Height / 100;
+            if (bh <= linBh)
+                bw = area.Width;
+
             Size totalSize = new Size(bw, bh);
-            Rectangle totalBounds = totalSize.AlignTo(area, ContentAlignment.MiddleCenter);
+            Rectangle backBounds = totalSize.AlignTo(area, ContentAlignment.MiddleCenter);
 
             Size contentSize = new Size(maxW, sumH);
-            Rectangle contentBounds = contentSize.AlignTo(totalBounds, ContentAlignment.MiddleCenter);
+            Rectangle contentBounds = contentSize.AlignTo(backBounds, ContentAlignment.MiddleCenter);
             int x = contentBounds.X;
             int y = contentBounds.Y;
             int w = maxW;
@@ -3092,8 +3034,72 @@ namespace Asol.Tools.WorkScheduler.Components
             }
 
             this.BlockedGuiMsgTextInfos = lines.ToArray();
-            this.BlockedGuiMsgBackgroundBounds = totalBounds;
+            this.BlockedGuiMsgBackgroundBounds = backBounds;
         }
+        /// <summary>
+        /// Metoda zajistí vykreslení blokovaného GUI
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="size"></param>
+        protected void BlockedGuiDraw(Graphics graphics, Size size)
+        {
+            float? opacityRatio = this.BlockGuiOpacityRatio;
+            if (!opacityRatio.HasValue || opacityRatio.Value <= 0f) return;
+
+            // Celý prostor překreslit šedou záclonou:
+            Rectangle area = new Rectangle(new Point(0, 0), this.ClientRectangle.Size);
+            Color areaColor = Skin.BlockedGui.AreaColor.ApplyOpacity(opacityRatio);
+            graphics.FillRectangle(Skin.Brush(areaColor), area);
+
+            // Okno s textem?
+            if (this.HasBlockedGuiMessage)
+            {
+                this.BlockedGuiCheckTexts(graphics, area);
+
+                // Vykreslit pozadí:
+                Rectangle bounds = this.BlockedGuiMsgBackgroundBounds.Value;
+                Color backColor = Skin.BlockedGui.TextBackColor.ApplyOpacity(opacityRatio);
+                GPainter.DrawAreaBase(graphics, bounds, backColor, Orientation.Horizontal, GInteractiveState.MouseOver);
+
+                // Vykreslit texty jednotlivých řádků:
+                Color textColor = Skin.BlockedGui.TextInfoForeColor.ApplyOpacity(opacityRatio);
+                foreach (BlockedGuiTextInfo text in this.BlockedGuiMsgTextInfos)
+                    GPainter.DrawString(graphics, text.TextBounds, text.Text, textColor, text.Font, ContentAlignment.MiddleCenter);
+            }
+        }
+        /// <summary>
+        /// BlockGui animátor běží?
+        /// </summary>
+        protected bool BlockGuiAnimatorRunning { get; private set; }
+        /// <summary>
+        /// Ratio pro řízení Opacity v rozhraní BlockedGui:
+        /// 0f = není vidět ... až ... 1f = má plné cílové hodnoty Alpha kanálu
+        /// </summary>
+        protected float? BlockGuiOpacityRatio { get; private set; }
+        /// <summary>
+        /// Instance animátoru pro rozsvícení a zhasnutí "okna", které blokuje GUI.
+        /// </summary>
+        protected AnimationControl<float> BlockGuiAnimator { get; private set; }
+        /// <summary>
+        /// Obsahuje true, pokud GUI tohoto controlu je aktuálně blokováno.
+        /// </summary>
+        internal bool IsGUIBlocked { get; private set; }
+        /// <summary>
+        /// Text hlášky zobrazené po dobu blokace GUI
+        /// </summary>
+        protected string BlockedGuiMessage { get; private set; }
+        /// <summary>
+        /// true pokud je aktuálně blokované GUI <see cref="IsGUIBlocked"/> a je zadána hláška k zobrazení <see cref="BlockedGuiMessage"/>.
+        /// </summary>
+        protected bool HasBlockedGuiMessage { get { return this.IsGUIBlocked && !String.IsNullOrEmpty(this.BlockedGuiMessage); } }
+        /// <summary>
+        /// Kurzor platný před zahájením blokace GUI
+        /// </summary>
+        protected Cursor BlockedGuiCursor { get; private set; }
+        /// <summary>
+        /// Datum a čas, kdy končí blokování GUI vlivem timeoutu
+        /// </summary>
+        protected DateTime? BlockedTimeEnd { get; private set; }
         /// <summary>
         /// Jednotlivé řádky textu pro BlockedGUI message
         /// </summary>

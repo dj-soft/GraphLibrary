@@ -231,7 +231,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             {
                 App.Trace.Exception(exc, request.ToString());
                 string message = "Při zpracování požadavku " + request.Command + " došlo k chybě: " + exc.Message;
-                this.ShowDialog(message, null, GuiDialogResponse.Ok);
+                this.ShowDialog(message, null, GuiDialogButtons.Ok);
             }
         }
         /// <summary>
@@ -1838,12 +1838,12 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Metoda zpracuje odpovědi z aplikace.
         /// </summary>
         /// <param name="guiResponse"></param>
-        private GuiDialogResponse _ProcessResponse(GuiResponse guiResponse)
+        private GuiDialogButtons _ProcessResponse(GuiResponse guiResponse)
         {
-            if (guiResponse == null) return GuiDialogResponse.None;
+            if (guiResponse == null) return GuiDialogButtons.None;
 
             this._ProcessResponseData(guiResponse);
-            GuiDialogResponse dialogResult = this._ProcessResponseDialog(guiResponse);
+            GuiDialogButtons dialogResult = this._ProcessResponseDialog(guiResponse);
             return dialogResult;
         }
         #region Zpracování dialogu
@@ -1852,9 +1852,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="guiResponse"></param>
         /// <returns></returns>
-        private GuiDialogResponse _ProcessResponseDialog(GuiResponse guiResponse)
+        private GuiDialogButtons _ProcessResponseDialog(GuiResponse guiResponse)
         {
-            GuiDialogResponse response = GuiDialogResponse.None;
+            GuiDialogButtons response = GuiDialogButtons.None;
             if (guiResponse != null && guiResponse.Dialog != null && !guiResponse.Dialog.IsEmpty)
                 response = this.ShowDialog(guiResponse.Dialog);
             return response;
@@ -1864,7 +1864,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="dialog">Data pro dialog</param>
         /// <returns></returns>
-        protected GuiDialogResponse ShowDialog(GuiDialog dialog)
+        protected GuiDialogButtons ShowDialog(GuiDialog dialog)
         {
             return this._MainControl.ShowDialog(dialog);
         }
@@ -1876,7 +1876,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="guiButtons"></param>
         /// <param name="icon"></param>
         /// <returns></returns>
-        public GuiDialogResponse ShowDialog(string message, string title = null, GuiDialogResponse guiButtons = GuiDialogResponse.None, GuiImage icon = null)
+        public GuiDialogButtons ShowDialog(string message, string title = null, GuiDialogButtons guiButtons = GuiDialogButtons.None, GuiImage icon = null)
         {
             return this._MainControl.ShowDialog(message, title, guiButtons, icon);
         }
@@ -2028,7 +2028,12 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 case MainFormClosingState.WaitCommandQueryCloseWindow:
                 case MainFormClosingState.WaitCommandSaveBeforeCloseWindow:
                     // Aktuálně běží nějaké commandy související se zavíráním okna => v tuto dobu nelze okno zavřít, ani znovu rozběhnout další uzavírací proces:
-                    e.Cancel = true;
+                    if (!this.ClosingStart.HasValue || ((DateTime.Now - this.ClosingStart.Value) >= TimeSpan.FromSeconds(7d)))
+                        // Pokud již čekáme déle než 7 sekund, dáme uživateli dialog; a okno zavřeme jen když uživatel souhlasí:
+                        e.Cancel = (this.ShowDialog("Čekáme na doběhnutí funkce; přejete si i přesto zavřít okno?", null, GuiDialogButtons.YesNo) == GuiDialogButtons.No);
+                    else
+                        // Pokud již čekáme jenom malou chvíli, dialog uživateli nedáme:
+                        e.Cancel = true;
                     return false;
                 case MainFormClosingState.ClosingForm:
                     // Commandy související se zavíráním okna doběhly a stanovily, že okno se skutečně zavře => povolíme zavření okna bez dalších cavyků:
@@ -2051,6 +2056,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             // d) přijde odpověď na COMMAND_QueryCloseWindow do metody _ClosingProcessResponseQuery; pokračování komentáře tam.
             this.ClosingState = MainFormClosingState.WaitCommandQueryCloseWindow;
 
+            this.ClosingStart = DateTime.Now;
+
             GuiRequest request = new GuiRequest();
             request.Command = GuiRequest.COMMAND_QueryCloseWindow;
             this._CallAppHostFunction(request, this._ClosingProcessResponseQuery, TimeSpan.FromSeconds(5d));
@@ -2068,21 +2075,22 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             }
 
             // Zpracujeme odpověď z aplikace, mj. může být proveden uživatelský dialog a vrácena odpověď na něj:
-            GuiDialogResponse dialogResult = this._ProcessResponse(responseArgs.GuiResponse);
+            GuiDialogButtons dialogResult = this._ProcessResponse(responseArgs.GuiResponse);
 
             // Zpracujeme odpověď uživatele na dotaz, pokud byl:
             switch (dialogResult)
             {
-                case GuiDialogResponse.Yes:           // Ano, uložit data
-                case GuiDialogResponse.Ok:            // OK, uložit data
+                case GuiDialogButtons.Yes:           // Ano, uložit data
+                case GuiDialogButtons.Ok:            // OK, uložit data
                     this._ClosingProcessSaveData(responseArgs.GuiResponse);
                     break;
-                case GuiDialogResponse.Maybe:         // Response z AppHost nedorazila, nebo neobsahovala dialog => data se ukládat nebudou, ale skončíme
-                case GuiDialogResponse.None:          // Response dorazila, ale nebyl v ní žádný dialog
-                case GuiDialogResponse.No:            // Dialog byl, odpověď uživatele zní: Neuložit data a skončit:
+                case GuiDialogButtons.Maybe:         // Response z AppHost nedorazila, nebo neobsahovala dialog => data se ukládat nebudou, ale skončíme
+                case GuiDialogButtons.None:          // Response dorazila, ale nebyl v ní žádný dialog
+                case GuiDialogButtons.No:            // Dialog byl, odpověď uživatele zní: Neuložit data a skončit:
                     this._ClosingProcessCloseNow();
                     break;
-                case GuiDialogResponse.Cancel:        // Zrušit zavírání, ale data neukládat:
+                case GuiDialogButtons.Cancel:        // Zrušit zavírání, ale data neukládat:
+                    this.ClosingStart = null;
                     this.ClosingState = MainFormClosingState.None;
                     break;
             }
@@ -2118,6 +2126,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="responseArgs"></param>
         private void _ClosingProcessResponseSave(AppHostResponseArgs responseArgs)
         {
+            this.ClosingStart = null;
+
             if (responseArgs == null)
             {
                 this._ClosingProcessCloseNow();
@@ -2128,8 +2138,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             // Pokud se nám vrátila chyba, pak zavírání okna zrušíme:
             if (responseArgs != null && responseArgs.Result == AppHostActionResult.Failure)
             {   // Po chybě dáme dialog:
-                GuiDialogResponse response = this._ProcessResponse(responseArgs.GuiResponse);
-                if (response == GuiDialogResponse.None || response == GuiDialogResponse.Yes || response == GuiDialogResponse.Ignore)
+                GuiDialogButtons response = this._ProcessResponse(responseArgs.GuiResponse);
+                if (response == GuiDialogButtons.None || response == GuiDialogButtons.Yes || response == GuiDialogButtons.Ignore)
                     this._ClosingProcessCloseNow();
                 else
                     this.ClosingState = MainFormClosingState.None;
@@ -2154,6 +2164,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Aktuální stav procesu zavírání okna
         /// </summary>
         protected MainFormClosingState ClosingState { get; private set; }
+        /// <summary>
+        /// Datum a čas, kdy se zahájil proces zavírání okna
+        /// </summary>
+        protected DateTime? ClosingStart { get; private set; }
         /// <summary>
         /// Stavy procesu zavírání okna
         /// </summary>
