@@ -170,7 +170,7 @@ namespace Noris.LCS.Base.WorkScheduler
                 args.WriterSettings.CheckCharacters = false;
                 args.WriterSettings.Indent = false;
                 args.WriterSettings.IndentChars = "";
-                args.WriterSettings.NewLineHandling = NewLineHandling.None;
+                args.WriterSettings.NewLineHandling = NewLineHandling.Entitize;
                 args.WriterSettings.NewLineChars = Environment.NewLine;
                 args.WriterSettings.NewLineOnAttributes = false;
                 args.WriterSettings.OmitXmlDeclaration = false;
@@ -190,7 +190,7 @@ namespace Noris.LCS.Base.WorkScheduler
                 args.WriterSettings.CheckCharacters = false;
                 args.WriterSettings.Indent = false;
                 args.WriterSettings.IndentChars = "";
-                args.WriterSettings.NewLineHandling = NewLineHandling.None;
+                args.WriterSettings.NewLineHandling = NewLineHandling.Entitize;
                 args.WriterSettings.NewLineChars = Environment.NewLine;
                 args.WriterSettings.NewLineOnAttributes = false;
                 args.WriterSettings.OmitXmlDeclaration = false;
@@ -783,8 +783,7 @@ namespace Noris.LCS.Base.WorkScheduler
         public static string StringToString(object value)
         {
             if (value == null) return null;
-            // Tady proběhne konverze ze stringu plnohodnotného (UTF-16) na jeho serializovanou formu:
-            return System.Net.WebUtility.HtmlEncode((string)value);
+            return value as string;
         }
         /// <summary>
         /// Konkrétní konvertor
@@ -794,9 +793,7 @@ namespace Noris.LCS.Base.WorkScheduler
         public static object StringToString(string text)
         {
             if (text == null) return null;
-            // Tady proběhne konverze ze stringu serializovaného (text) na plnohodnotnou formu (UTF-16):
-            try { return System.Net.WebUtility.HtmlDecode(text); }
-            catch { return null; }
+            return text;
         }
         /// <summary>
         /// Konkrétní konvertor
