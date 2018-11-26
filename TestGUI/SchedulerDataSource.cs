@@ -965,7 +965,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                         System.Threading.Thread.Sleep(time);
                         responseArgs.GuiResponse = new GuiResponse()
                         {
-                            Dialog = GetDialog(GetMessageSaveData(), GuiDialogButtons.YesNoCancel, RES.Images.Actions.Help3Png),
+                            Dialog = GetDialog(GetMessageSaveData(), GuiDialogButtons.YesNoCancel, GuiDialog.DialogIconQuestion),
                             CloseSaveData = new GuiSaveData() { AutoSave = true, BlockGuiTime = TimeSpan.FromSeconds(20d), BlockGuiMessage = "Probíhá ukládání dat...\r\nData se právě ukládají do databáze.\r\nJakmile budou uložena, dostanete od nás spěšnou sovu." }
                         };
                         break;
