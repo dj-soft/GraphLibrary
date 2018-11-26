@@ -783,7 +783,8 @@ namespace Noris.LCS.Base.WorkScheduler
         public static string StringToString(object value)
         {
             if (value == null) return null;
-            return (string)value;
+            // Tady proběhne konverze ze stringu plnohodnotného (UTF-16) na jeho serializovanou formu:
+            return System.Net.WebUtility.HtmlEncode((string)value);
         }
         /// <summary>
         /// Konkrétní konvertor
@@ -793,7 +794,9 @@ namespace Noris.LCS.Base.WorkScheduler
         public static object StringToString(string text)
         {
             if (text == null) return null;
-            return text;
+            // Tady proběhne konverze ze stringu serializovaného (text) na plnohodnotnou formu (UTF-16):
+            try { return System.Net.WebUtility.HtmlDecode(text); }
+            catch { return null; }
         }
         /// <summary>
         /// Konkrétní konvertor
