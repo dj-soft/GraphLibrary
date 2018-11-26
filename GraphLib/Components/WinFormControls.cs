@@ -268,7 +268,7 @@ namespace Asol.Tools.WorkScheduler.Components
             base.Initialize();
             this.DataPanel = new Panel() { BorderStyle = BorderStyle.None, Dock = DockStyle.Fill };
             this.Controls.Add(this.DataPanel);
-            this.ButtonsPanel = new Panel() { Height = 38, BorderStyle = BorderStyle.None, Dock = DockStyle.Bottom };
+            this.ButtonsPanel = new Panel() { Height = ButtonPanelHeight, BorderStyle = BorderStyle.None, Dock = DockStyle.Bottom };
             this.Controls.Add(this.ButtonsPanel);
             this._PrepareButtons();
         }
@@ -438,26 +438,60 @@ namespace Asol.Tools.WorkScheduler.Components
                 buttons = GUI.GuiDialogButtons.Ok;
                 count = 1;
             }
-            int bw = 110;                                  // Optimální šířka jednoho buttonu, když bude dost místa
-            int tw = 3 + (count * (bw + 3));               // Tolik místa bychom potřebovali pro všechny buttony při optimální šířce jednoho buttonu
-            int cw = this.ButtonsPanel.Width;              // Tolik místa na buttony reálně máme v controlu
-            if (cw < tw)
+            bool isCancelIndented = (count >= 3 && buttons.HasFlag(GUI.GuiDialogButtons.Cancel));       // true pokud má být zobrazen button Cancel s odsazením
+            int buttonWidth = 126;                         // Optimální šířka jednoho buttonu, když bude dost místa
+            int borderWidth = 12;                          // Šířka okrajů
+            int spaceWidth = 9;                            // Šířka mezery
+            int spaceCancel = (isCancelIndented ? 24 : 0); // Extra odsazení buttonu Cancel
+            int totalWidth = (2 * borderWidth) + ((count * buttonWidth) + spaceCancel + ((count - 1) * spaceWidth));  // Tolik místa bychom potřebovali pro všechny buttony při optimální šířce jednoho buttonu
+            int realWidth = this.ButtonsPanel.Width;       // Tolik místa na buttony reálně máme v controlu
+            if (realWidth < totalWidth)
             {
-                bw = ((cw - 3) / count) - 3;
-                if (bw < 50) bw = 50;
+                buttonWidth = ((realWidth - (2 * borderWidth)) - spaceCancel - (spaceWidth * (count - 1))) / count;
+                if (buttonWidth < 50) buttonWidth = 50;
+                totalWidth = (2 * borderWidth) + ((count * buttonWidth) + spaceCancel + ((count - 1) * spaceWidth));  // Tolik místa zaberou buttony při upravené šířce buttonWidth
             }
 
-            int x = 3;
-            this._ShowButton(this.ButtonOk, buttons, ref x, bw);
-            this._ShowButton(this.ButtonYes, buttons, ref x, bw);
-            this._ShowButton(this.ButtonNo, buttons, ref x, bw);
-            this._ShowButton(this.ButtonAbort, buttons, ref x, bw);
-            this._ShowButton(this.ButtonRetry, buttons, ref x, bw);
-            this._ShowButton(this.ButtonIgnore, buttons, ref x, bw);
-            this._ShowButton(this.ButtonSave, buttons, ref x, bw);
-            this._ShowButton(this.ButtonMaybe, buttons, ref x, bw);
-            this._ShowButton(this.ButtonCancel, buttons, ref x, bw);
+            int x = borderWidth;
+            this._ShowButton(this.ButtonOk, buttons, ref x, buttonWidth, 0, spaceWidth);
+            this._ShowButton(this.ButtonYes, buttons, ref x, buttonWidth, 0, spaceWidth);
+            this._ShowButton(this.ButtonNo, buttons, ref x, buttonWidth, 0, spaceWidth);
+            this._ShowButton(this.ButtonAbort, buttons, ref x, buttonWidth, 0, spaceWidth);
+            this._ShowButton(this.ButtonRetry, buttons, ref x, buttonWidth, 0, spaceWidth);
+            this._ShowButton(this.ButtonIgnore, buttons, ref x, buttonWidth, 0, spaceWidth);
+            this._ShowButton(this.ButtonSave, buttons, ref x, buttonWidth, 0, spaceWidth);
+            this._ShowButton(this.ButtonMaybe, buttons, ref x, buttonWidth, 0, spaceWidth);
+            this._ShowButton(this.ButtonCancel, buttons, ref x, buttonWidth, spaceCancel, spaceWidth);
         }
+        /// <summary>
+        /// Zajistí zobrazení jednoho buttonu
+        /// </summary>
+        /// <param name="button"></param>
+        /// <param name="buttons"></param>
+        /// <param name="x"></param>
+        /// <param name="spaceBefore"></param>
+        /// <param name="buttonWidth"></param>
+        /// <param name="spaceWidth"></param>
+        private void _ShowButton(WinButtonBase button, GUI.GuiDialogButtons buttons, ref int x, int buttonWidth, int spaceBefore, int spaceWidth)
+        {
+            GUI.GuiDialogButtons buttonValue = (button.Tag is GUI.GuiDialogButtons ? (GUI.GuiDialogButtons)button.Tag : GUI.GuiDialogButtons.None);
+            bool isVisible = ((buttons & buttonValue) != 0);
+            button.Visible = isVisible;
+            if (isVisible)
+            {
+                x += spaceBefore;
+                button.Bounds = new Rectangle(x, 3, buttonWidth, ButtonItemHeight);
+                x = button.Bounds.Right + spaceWidth;
+            }
+        }
+        /// <summary>
+        /// Výška celého panelu pro Buttony
+        /// </summary>
+        protected static int ButtonPanelHeight { get { return 46; } }
+        /// <summary>
+        /// Výška jednotlivého Buttonu
+        /// </summary>
+        protected static int ButtonItemHeight { get { return 32; } }
         /// <summary>
         /// Metoda vrátí počet buttonů, které daná proměnná deklaruje
         /// </summary>
@@ -466,24 +500,6 @@ namespace Asol.Tools.WorkScheduler.Components
         protected static int GetButtonsCount(GUI.GuiDialogButtons buttons)
         {
             return ((int)(buttons & Noris.LCS.Base.WorkScheduler.GuiDialogButtons.All)).GetBitsOneCount();
-        }
-        /// <summary>
-        /// Zajistí zobrazení jednoho buttonu
-        /// </summary>
-        /// <param name="button"></param>
-        /// <param name="buttons"></param>
-        /// <param name="x"></param>
-        /// <param name="width"></param>
-        private void _ShowButton(WinButtonBase button, GUI.GuiDialogButtons buttons, ref int x, int width)
-        {
-            GUI.GuiDialogButtons buttonValue = (button.Tag is GUI.GuiDialogButtons ? (GUI.GuiDialogButtons)button.Tag : GUI.GuiDialogButtons.None);
-            bool isVisible = ((buttons & buttonValue) != 0);
-            button.Visible = isVisible;
-            if (isVisible)
-            {
-                button.Bounds = new Rectangle(x, 3, width, this.ButtonsPanel.Height - 6);
-                x = button.Bounds.Right + 3;
-            }
         }
         /// <summary>
         /// Tlačítko OK
@@ -615,9 +631,9 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
     }
     #endregion
-    #region WinButtonBase : bázová třída pro buttony
+    #region WinButtonImage : třída pro buttony s více obrázky pro různé stavy
     /// <summary>
-    /// WinButtonImage : bázová třída pro buttony
+    /// WinButtonImage : třída pro buttony s více obrázky pro různé stavy
     /// </summary>
     public class WinButtonImage : Button
     {
