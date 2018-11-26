@@ -984,8 +984,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
                         responseArgs.GuiResponse = new GuiResponse()
                         {
-                            Dialog = GuiDialogResponse.YesNo,
-                            Message = "Došlo k chybě. Přejete si skončit i bez uložení dat?"
+                            Dialog = GetDialog("Došlo k chybě. Přejete si skončit i bez uložení dat?", GuiDialogResponse.YesNo)
                         };
                         break;
 
@@ -993,6 +992,22 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             }
             if (requestArgs.CallBackAction != null)
                 requestArgs.CallBackAction(responseArgs);
+        }
+        /// <summary>
+        /// Vrátí GuiDialog
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="guiButtons"></param>
+        /// <param name="icon"></param>
+        /// <returns></returns>
+        protected static GuiDialog GetDialog(string message, GuiDialogResponse guiButtons, GuiImage icon = null)
+        {
+            return new GuiDialog()
+            {
+                Message = message,
+                Buttons = guiButtons,
+                Icon = icon
+            };
         }
         /// <summary>
         /// Metoda zastaví běh threadu na pozadí
