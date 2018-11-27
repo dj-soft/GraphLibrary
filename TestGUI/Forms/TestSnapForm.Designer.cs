@@ -28,60 +28,68 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.configSnapPanel1 = new Asol.Tools.WorkScheduler.Scheduler.ConfigSnapPanel();
-            this.configSnapPanel2 = new Asol.Tools.WorkScheduler.Scheduler.ConfigSnapPanel();
+            this.ConfigTree = new System.Windows.Forms.TreeView();
+            this.splitContainer1 = new System.Windows.Forms.SplitContainer();
+            this.configSnapSetPanel1 = new Asol.Tools.WorkScheduler.Scheduler.ConfigSnapSetPanel();
+            ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
+            this.splitContainer1.Panel1.SuspendLayout();
+            this.splitContainer1.Panel2.SuspendLayout();
+            this.splitContainer1.SuspendLayout();
             this.SuspendLayout();
             // 
-            // configSnapPanel1
+            // ConfigTree
             // 
-            this.configSnapPanel1.Caption = "Title";
-            this.configSnapPanel1.ImageType = Asol.Tools.WorkScheduler.Scheduler.ConfigSnapImageType.Sequence;
-            this.configSnapPanel1.LineColorBottom = System.Drawing.Color.DarkBlue;
-            this.configSnapPanel1.LineColorTop = System.Drawing.Color.Blue;
-            this.configSnapPanel1.Location = new System.Drawing.Point(24, 12);
-            this.configSnapPanel1.MaximumSize = new System.Drawing.Size(400, 128);
-            this.configSnapPanel1.MinimumSize = new System.Drawing.Size(400, 128);
-            this.configSnapPanel1.Name = "configSnapPanel1";
-            this.configSnapPanel1.OnlyOneLine = false;
-            this.configSnapPanel1.Size = new System.Drawing.Size(400, 128);
-            this.configSnapPanel1.SnapActive = true;
-            this.configSnapPanel1.SnapDistance = 16;
-            this.configSnapPanel1.TabIndex = 1;
-            this.configSnapPanel1.TextColor = System.Drawing.Color.Black;
+            this.ConfigTree.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.ConfigTree.Location = new System.Drawing.Point(0, 0);
+            this.ConfigTree.Name = "ConfigTree";
+            this.ConfigTree.Size = new System.Drawing.Size(243, 703);
+            this.ConfigTree.TabIndex = 7;
             // 
-            // configSnapPanel2
+            // splitContainer1
             // 
-            this.configSnapPanel2.Caption = "Title";
-            this.configSnapPanel2.ImageType = Asol.Tools.WorkScheduler.Scheduler.ConfigSnapImageType.InnerItem;
-            this.configSnapPanel2.LineColorBottom = System.Drawing.Color.DarkBlue;
-            this.configSnapPanel2.LineColorTop = System.Drawing.Color.Blue;
-            this.configSnapPanel2.Location = new System.Drawing.Point(24, 146);
-            this.configSnapPanel2.MaximumSize = new System.Drawing.Size(2048, 2048);
-            this.configSnapPanel2.MinimumSize = new System.Drawing.Size(10, 26);
-            this.configSnapPanel2.Name = "configSnapPanel2";
-            this.configSnapPanel2.OnlyOneLine = false;
-            this.configSnapPanel2.Size = new System.Drawing.Size(400, 128);
-            this.configSnapPanel2.SnapActive = true;
-            this.configSnapPanel2.SnapDistance = 16;
-            this.configSnapPanel2.TabIndex = 3;
-            this.configSnapPanel2.TextColor = System.Drawing.Color.Black;
+            this.splitContainer1.FixedPanel = System.Windows.Forms.FixedPanel.Panel1;
+            this.splitContainer1.Location = new System.Drawing.Point(12, 12);
+            this.splitContainer1.Name = "splitContainer1";
+            // 
+            // splitContainer1.Panel1
+            // 
+            this.splitContainer1.Panel1.Controls.Add(this.ConfigTree);
+            // 
+            // splitContainer1.Panel2
+            // 
+            this.splitContainer1.Panel2.Controls.Add(this.configSnapSetPanel1);
+            this.splitContainer1.Size = new System.Drawing.Size(854, 703);
+            this.splitContainer1.SplitterDistance = 243;
+            this.splitContainer1.TabIndex = 8;
+            // 
+            // configSnapSetPanel1
+            // 
+            this.configSnapSetPanel1.AutoScroll = true;
+            this.configSnapSetPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.configSnapSetPanel1.Location = new System.Drawing.Point(0, 0);
+            this.configSnapSetPanel1.Name = "configSnapSetPanel1";
+            this.configSnapSetPanel1.Size = new System.Drawing.Size(607, 703);
+            this.configSnapSetPanel1.TabIndex = 0;
             // 
             // TestSnapForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(865, 755);
-            this.Controls.Add(this.configSnapPanel2);
-            this.Controls.Add(this.configSnapPanel1);
+            this.Controls.Add(this.splitContainer1);
             this.Name = "TestSnapForm";
             this.Text = "TestSnapForm";
+            this.splitContainer1.Panel1.ResumeLayout(false);
+            this.splitContainer1.Panel2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).EndInit();
+            this.splitContainer1.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
 
         #endregion
-
-        private Scheduler.ConfigSnapPanel configSnapPanel1;
-        private Scheduler.ConfigSnapPanel configSnapPanel2;
+        private System.Windows.Forms.TreeView ConfigTree;
+        private System.Windows.Forms.SplitContainer splitContainer1;
+        private Scheduler.ConfigSnapSetPanel configSnapSetPanel1;
     }
 }
