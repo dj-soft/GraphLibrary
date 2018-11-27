@@ -120,6 +120,12 @@
     <Compile Include="Forms\TestOneComponent.Designer.cs">
       <DependentUpon>TestOneComponent.cs</DependentUpon>
     </Compile>
+    <Compile Include="Forms\TestSnapForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\TestSnapForm.Designer.cs">
+      <DependentUpon>TestSnapForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SchedulerDataSource.cs" />
@@ -154,6 +160,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Forms\TestOneComponent.resx">
       <DependentUpon>TestOneComponent.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\TestSnapForm.resx">
+      <DependentUpon>TestSnapForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
