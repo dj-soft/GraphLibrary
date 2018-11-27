@@ -11,15 +11,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     /// Třída pro uchování různých nastavení primárně na úrovni lokálního počítače.
     /// Jde víceméně o vlastnosti uživatelské, ne datové, jako je Zoom celého GUI, Zoom časové osy, nastavení přichytávání prvků při jejich pohybu, atd...
     /// </summary>
-    public class SchedulerConfig
+    public class SchedulerConfig : IXmlPersistNotify
     {
         #region Konstrukce, načtení, uložení
         /// <summary>
         /// Konstruktor, privátní, určený pro <see cref="Persist.Deserialize(string)"/>
         /// </summary>
-        private SchedulerConfig()
-        {   // Tímto konstruktorem projde i deserializace objektu v rámci Persistor
-        }
+        private SchedulerConfig() {   /* Tímto konstruktorem projde i deserializace objektu v rámci Persistor ! */   }
         /// <summary>
         /// Konstruktor pro standardní použití, provede i načtení dat.
         /// Lze zadat soubor = null, pak se použije defaultní. Ale musí se volat tento konstruktor.
@@ -45,12 +43,15 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 Persist.LoadTo(configFile, this);
 
             this._ConfigFile = configFile;
+            this._AfterDeserialize();
         }
         /// <summary>
         /// Uloží aktuální stav objektu do svého souboru
         /// </summary>
         private void _Save()
         {
+            if (this._SuppressSave) return;
+
             string configFile = this._ConfigFile;
             if (String.IsNullOrEmpty(configFile)) return;
             string data = Persist.Serialize(this);
@@ -60,6 +61,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Fullname konfiguračního souboru
         /// </summary>
         private string _ConfigFile;
+        /// <summary>
+        /// true = ukládání do souboru je potlačeno
+        /// </summary>
+        private bool _SuppressSave;
         /// <summary>
         /// Default holé jméno konfiguračního souboru.
         /// Ukládá se do adresáře <see cref="Application.App.AppLocalDataPath"/>.
@@ -171,6 +176,174 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             set { this._SetValue(value, 0f, 1f, ref this._MoveItemDetectSideRatio); }
         }
         private float _MoveItemDetectSideRatio = 0.60f;
+
+        /// <summary>
+        /// Přichytávání k objektům bez stisknutých kláves
+        /// </summary>
+        public MoveSnapInfo MoveSnapMouse { get; set; }
+        /// <summary>
+        /// Přichytávání k objektům při stisknuté klávese Ctrl
+        /// </summary>
+        public MoveSnapInfo MoveSnapCtrl { get; set; }
+        /// <summary>
+        /// Přichytávání k objektům při stisknuté klávese Shift
+        /// </summary>
+        public MoveSnapInfo MoveSnapShift { get; set; }
+        /// <summary>
+        /// Přichytávání k objektům při stisknuté kombinaci Ctrl + Shift
+        /// </summary>
+        public MoveSnapInfo MoveSnapCtrlShift { get; set; }
+
+        #endregion
+        #region IXmlPersistNotify : Podpora pro serializaci
+        /// <summary>
+        /// Aktuální stav procesu XML persistence.
+        /// Umožňuje persistovanému objektu reagovat na ukládání nebo na načítání dat.
+        /// Do této property vkládá XmlPersistor hodnotu odpovídající aktuální situaci.
+        /// Datová instance může v set accessoru zareagovat a například připravit data pro Save, 
+        /// anebo dokončit proces Load (navázat si další data nebo provést přepočty a další reakce).
+        /// V procesu serializace (ukládání dat z objektu to XML) bude do property <see cref="IXmlPersistNotify.XmlPersistState"/> vložena hodnota <see cref="XmlPersistState.SaveBegin"/> a po dokončení ukládán ípak hodnota <see cref="XmlPersistState.SaveDone"/> a <see cref="XmlPersistState.None"/>.
+        /// Obdobně při načítání dat z XML do objektu bude do property <see cref="IXmlPersistNotify.XmlPersistState"/> vložena hodnota <see cref="XmlPersistState.LoadBegin"/> a po dokončení načítání pak hodnota <see cref="XmlPersistState.LoadDone"/> a <see cref="XmlPersistState.None"/>.
+        /// </summary>
+        [PersistingEnabled(false)]
+        XmlPersistState IXmlPersistNotify.XmlPersistState
+        {
+            get { return this._XmlPersistState; }
+            set
+            {
+                this._XmlPersistState = value;
+                switch (value)
+                {
+                    case XmlPersistState.LoadDone:
+                        this._AfterDeserialize();
+                        break;
+                }
+            }
+        }
+        private XmlPersistState _XmlPersistState;
+        private void _AfterDeserialize()
+        {
+            if (this.MoveSnapMouse == null) this.MoveSnapMouse = new MoveSnapInfo();
+            this.MoveSnapMouse.Owner = this;
+            if (this.MoveSnapCtrl == null) this.MoveSnapCtrl = new MoveSnapInfo();
+            if (this.MoveSnapShift == null) this.MoveSnapShift = new MoveSnapInfo();
+            if (this.MoveSnapCtrlShift == null) this.MoveSnapCtrlShift = new MoveSnapInfo();
+
+
+        }
+
+        #endregion
+        #region SubClasses
+        /// <summary>
+        /// Definice vlastností pro přichytávání objektů
+        /// </summary>
+        public class MoveSnapInfo
+        {
+            /// <summary>
+            /// Je aktivní algoritmus: Přichytit k navazujícímu objektu (End = Begin)?
+            /// </summary>
+            public bool SequenceActive { get; set; }
+            /// <summary>
+            /// Vzdálenost pro algoritmus: Přichytit k navazujícímu objektu (End = Begin)
+            /// </summary>
+            public int SequenceDistance { get; set; }
+            /// <summary>
+            /// Je aktivní algoritmus: Přichytit k podkladovému objektu (Begin = Begin)?
+            /// </summary>
+            public bool InnerItemActive { get; set; }
+            /// <summary>
+            /// Vzdálenost pro algoritmus: Přichytit k podkladovému objektu (Begin = Begin)
+            /// </summary>
+            public int InnerItemDistance { get; set; }
+            /// <summary>
+            /// Je aktivní algoritmus: Přichytit k originálnímu času ve výchozím grafu?
+            /// </summary>
+            public bool OriginalTimeNearActive { get; set; }
+            /// <summary>
+            /// Vzdálenost pro algoritmus: Přichytit k originálnímu času ve výchozím grafu
+            /// </summary>
+            public int OriginalTimeNearDistance { get; set; }
+            /// <summary>
+            /// Je aktivní algoritmus: Přichytit k originálnímu času v jiném než výchozím grafu?
+            /// </summary>
+            public bool OriginalTimeLongActive { get; set; }
+            /// <summary>
+            /// Vzdálenost pro algoritmus: Přichytit k originálnímu času v jiném než výchozím grafu
+            /// </summary>
+            public int OriginalTimeLongDistance { get; set; }
+            /// <summary>
+            /// Je aktivní algoritmus: Přichytit k rastru osy?
+            /// </summary>
+            public bool GridTickActive { get; set; }
+            /// <summary>
+            /// Vzdálenost pro algoritmus: Přichytit k rastru osy
+            /// </summary>
+            public int GridTickDistance { get; set; }
+
+            /// <summary>
+            /// Majitel objektu
+            /// </summary>
+            [PersistingEnabled(false)]
+            internal SchedulerConfig Owner { get; set; }
+        }
+        #endregion
+        #region Podpora pro editaci
+        /// <summary>
+        /// Metoda vrací pole prvků, které slouží k editaci konfigurace.
+        /// </summary>
+        /// <returns></returns>
+        public SchedulerEditorItem[] CreateEditorItems()
+        {
+            List<SchedulerEditorItem> itemList = new List<SchedulerEditorItem>();
+
+            // Vkládám jednotlivé prvky: jejich titulek = text v Tree, jejich ToolTip, a jejich instanci editoru:
+            itemList.Add(new SchedulerEditorItem(EditTitle_Snap + EditTitle_Separator + EditTitle_SnapMouse, "", new ConfigSnapSetPanel() { Data = this.MoveSnapMouse, Caption = "Přichycení při přetahování prvku, bez klávesnice" }));
+            itemList.Add(new SchedulerEditorItem(EditTitle_Snap + EditTitle_Separator + EditTitle_SnapCtrl, "", new ConfigSnapSetPanel() { Data = this.MoveSnapCtrl, Caption = "Přichycení při přetahování prvku, s klávesou CTRL" }));
+            itemList.Add(new SchedulerEditorItem(EditTitle_Snap + EditTitle_Separator + EditTitle_SnapShift, "", new ConfigSnapSetPanel() { Data = this.MoveSnapShift, Caption = "Přichycení při přetahování prvku, s klávesou SHIFT" }));
+            itemList.Add(new SchedulerEditorItem(EditTitle_Snap + EditTitle_Separator + EditTitle_SnapCtrlShift, "", new ConfigSnapSetPanel() { Data = this.MoveSnapCtrlShift, Caption = "Přichycení při přetahování prvku, s klávesou CTRL + SHIFT" }));
+
+            return itemList.ToArray();
+        }
+        protected static string EditTitle_Snap { get { return "Přichycení při přetahování"; } }
+        protected static string EditTitle_SnapMouse { get { return "Přetahování myší"; } }
+        protected static string EditTitle_SnapCtrl { get { return "Se stisknutým CTRL"; } }
+        protected static string EditTitle_SnapShift { get { return "Se stisknutým SHIFT"; } }
+        protected static string EditTitle_SnapCtrlShift { get { return "Se stisknutým CTRL+SHIFT"; } }
+        public static string EditTitle_Separator { get { return "\\"; } }
+        #endregion
+        #region EditingScope : Editační scope
+        /// <summary>
+        /// Metoda vrátí new editační scope.
+        /// Po dobu jeho života nebude Config ukládán, uloží se při Dispose tohoto scope.
+        /// </summary>
+        /// <returns></returns>
+        public IDisposable CreateEditingScope()
+        {
+            return new EditingScope(this);
+        }
+        /// <summary>
+        /// EditingScope : Editační scope
+        /// </summary>
+        protected class EditingScope : IDisposable
+        {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="config"></param>
+            public EditingScope(SchedulerConfig config)
+            {
+                this._Config = config;
+                this._SuppressSave = config._SuppressSave;
+                this._Config._SuppressSave = true;
+            }
+            SchedulerConfig _Config;
+            bool _SuppressSave;
+            void IDisposable.Dispose()
+            {
+                this._Config._SuppressSave = this._SuppressSave;
+                this._Config._Save();
+            }
+        }
         #endregion
         #region Ukládání hodnoty, detekce změny, automatické uložení konfigurace
         private void _SetValue(bool value, ref bool storage)
@@ -215,4 +388,58 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         }
         #endregion
     }
+    #region class SchedulerEditorItem : jedna položka v editoru konfigurace
+    /// <summary>
+    /// SchedulerEditorItem : jedna položka v editoru konfigurace
+    /// </summary>
+    public class SchedulerEditorItem
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="nodeText"></param>
+        /// <param name="nodeToolTip"></param>
+        /// <param name="visualControl"></param>
+        public SchedulerEditorItem(string nodeText, string nodeToolTip, ISchedulerEditorControlItem visualControl)
+        {
+            this.NodeText = nodeText;
+            this.NodeToolTip = nodeToolTip;
+            this.VisualControl = visualControl;
+        }
+        /// <summary>
+        /// Text položky konfigurace.
+        /// Pokud bude obsahovat zpětné lomítko, jde o oddělovač v stromové hierarchii.
+        /// </summary>
+        public string NodeText { get; set; }
+        /// <summary>
+        /// ToolTip k položce stromu konfigurace
+        /// </summary>
+        public string NodeToolTip { get; set; }
+        /// <summary>
+        /// Vizuální control, který zobrazuje a edituje konfigurační data
+        /// </summary>
+        public ISchedulerEditorControlItem VisualControl { get; set; }
+    }
+    /// <summary>
+    /// Předpis pro objekty, které mohou hrát roli editoru jedné položky konfigurace.
+    /// Objekt musí umět načíst hodnoty z configu do vizuálních prvků <see cref="Read()"/>;
+    /// uložit hodnoty z vizuálních prvků do configu <see cref="Save()"/>;
+    /// a poskytnout vizuální objekt pro zobrazování <see cref="Panel"/>.
+    /// </summary>
+    public interface ISchedulerEditorControlItem
+    {
+        /// <summary>
+        /// Objekt načte hodnoty z configu do vizuálních prvků
+        /// </summary>
+        void Read();
+        /// <summary>
+        /// Objekt uloží hodnoty z vizuálních prvků do configu
+        /// </summary>
+        void Save();
+        /// <summary>
+        /// Vizuální control zobrazovaný pro tuto položku konfigurace
+        /// </summary>
+        System.Windows.Forms.Panel Panel { get; }
+    }
+    #endregion
 }

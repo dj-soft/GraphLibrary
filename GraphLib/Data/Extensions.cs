@@ -248,6 +248,27 @@ namespace Asol.Tools.WorkScheduler.Data
             }
             return ContainsAnyFromChars(test, "0123456789");
         }
+        /// <summary>
+        /// Vrátí část daného textu před separátorem.
+        /// Volitelně se může hledat poslední separátor (když parametr searchFromEnd je true).
+        /// Volitelně se může vracet text za nalezeným separátorem (když parametr getEnding je true).
+        /// Pokud daný separátor nebude nalezen, bude vrácen string délky 0.
+        /// </summary>
+        /// <param name="text">Vstupní text</param>
+        /// <param name="separator">Oddělovač. Pokud je null nebo má délku 0, vždy se vrací celý vstupní text.</param>
+        /// <param name="searchFromEnd">Hledat separátor: false = od začátku; true = od konce</param>
+        /// <param name="getEnding">Vrátit část: false = před nalezeným separátorem; true = za ním</param>
+        /// <returns></returns>
+        public static string SplitOn(this string text, string separator, bool searchFromEnd = false, bool getEnding = false)
+        {
+            if (text == null) return null;
+            if (separator == null || separator.Length == 0) return text;
+            int index = (searchFromEnd ? text.LastIndexOf(separator) : text.IndexOf(separator));
+            if (index < 0) return "";
+            int lenght = text.Length;
+            int sepLen = separator.Length;
+            return (getEnding ? text.Substring(index + sepLen) : text.Substring(0, index));
+        }
         #endregion
         #region DateTime, TimeSpan
         /// <summary>

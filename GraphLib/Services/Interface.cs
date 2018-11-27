@@ -204,6 +204,23 @@ namespace Asol.Tools.WorkScheduler.Services
         /// Any UserData for this function
         /// </summary>
         public object UserData { get; set; }
+        /// <summary>
+        /// Metoda přidá separátor jako další prvek grupy, pokud je to vhodné.
+        /// Pokud je this grupa prázdná, anebo pokud poslední prvek grupy už je separátor, pak není vhodné přidávat další.
+        /// </summary>
+        /// <param name="provider"></param>
+        /// <param name="force">true = Přidat separátor i když to není vhodné</param>
+        public void AddSeparator(IFunctionProvider provider = null, bool force = false)
+        {
+            if (force || (this.Items.Count > 0 && this.Items[this.Items.Count - 1].ItemType != FunctionGlobalItemType.Separator))
+            {
+                FunctionGlobalItem functionItem = new FunctionGlobalItem(provider);
+                functionItem.Name = "__separator__";
+                functionItem.Text = "";
+                functionItem.ItemType = FunctionGlobalItemType.Separator;
+                this.Items.Add(functionItem);
+            }
+        }
         #endregion
         #region Events
         /// <summary>

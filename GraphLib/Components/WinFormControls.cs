@@ -44,6 +44,8 @@ namespace Asol.Tools.WorkScheduler.Components
             this.DataPanel.Controls.Add(this.MessageTextBox);
             this.DataPanel.Controls.Add(this.MessageRtfBox);
 
+            this.ButtonsAlignment = ContentAlignment.MiddleRight;
+
             //this.DataPanel.BackColor = Color.LightGreen;
             //this.IconBox.BackColor = Color.LightCyan;
             //this.MessageTextLabel.BackColor = Color.LightYellow;
@@ -262,19 +264,25 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Inicializace formu, virtuální metoda volaná z konstruktoru.
         /// Když se o tom předem ví, tak se to nechá uřídit :-)
         /// <para/>
-        /// Třída <see cref="WinFormButtons"/> inicializuje prvky <see cref="ButtonsPanel"/> a <see cref="DataPanel"/>, a pole buttonů.
+        /// Třída <see cref="WinFormButtons"/> inicializuje prvky <see cref="WinFormButtons.ButtonsPanel"/> a <see cref="WinFormButtons.DataPanel"/>, a pole buttonů.
         /// </summary>
         protected override void Initialize()
         {
             base.Initialize();
+
             this.DataPanel = new Panel() { BorderStyle = BorderStyle.None, Dock = DockStyle.Fill };
             this.Controls.Add(this.DataPanel);
             this.ButtonsPanel = new Panel() { Height = ButtonPanelHeight, BorderStyle = BorderStyle.None, Dock = DockStyle.Bottom };
             this.Controls.Add(this.ButtonsPanel);
             this._PrepareButtons();
+            this._CloseOnClick = true;
+            this._ButtonsAlignment = ContentAlignment.MiddleLeft;
         }
         /// <summary>
-        /// Rozmístí obsah formu
+        /// Úprava layoutu po změně velikosti.
+        /// Metoda je volána jedenkrát po dokončení inicializace, pak těsně před prvním zobrazením formuláře, a pak po změně rozměrů okna.
+        /// Metoda není volaná před dokončením inicializace, když je <see cref="WinFormBase.IsInitialized"/> = false.
+        /// Metoda může testovat, zda <see cref="WinFormBase.IsShown"/> je true.
         /// </summary>
         protected override void PrepareLayout()
         {
@@ -334,8 +342,8 @@ namespace Asol.Tools.WorkScheduler.Components
                 Visible = false,
                 Tag = value
             };
-            button.Click += Button_Click;
-            button.GotFocus += Button_GotFocus;
+            button.Click += _Button_Click;
+            button.GotFocus += _Button_GotFocus;
             this.ButtonsPanel.Controls.Add(button);
             this._WinButtonList.Add(button);
             return button;
@@ -345,7 +353,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void Button_GotFocus(object sender, EventArgs e)
+        private void _Button_GotFocus(object sender, EventArgs e)
         {
             this.WinButtonWithFocus = sender as WinButtonBase;
         }
@@ -366,14 +374,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected void SelectAutoButtons()
         {
-            this.AcceptButton = this.SearchAcceptButton();
-            this.CancelButton = this.SearchCancelButton();
+            this.AcceptButton = this._SearchAcceptButton();
+            this.CancelButton = this._SearchCancelButton();
         }
         /// <summary>
         /// Vrací defaultní button pro funkci <see cref="Form.AcceptButton"/>
         /// </summary>
         /// <returns></returns>
-        private WinButtonBase SearchAcceptButton()
+        private WinButtonBase _SearchAcceptButton()
         {
             GUI.GuiDialogButtons buttons = this._Buttons;
             if (buttons.HasFlag(GUI.GuiDialogButtons.Ok)) return this.ButtonOk;
@@ -386,7 +394,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Vrací defaultní button pro funkci <see cref="Form.CancelButton"/>
         /// </summary>
         /// <returns></returns>
-        private WinButtonBase SearchCancelButton()
+        private WinButtonBase _SearchCancelButton()
         {
             GUI.GuiDialogButtons buttons = this._Buttons;
             if (buttons.HasFlag(GUI.GuiDialogButtons.Cancel)) return this.ButtonCancel;
@@ -397,15 +405,15 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Metoda uloží do <see cref="_GuiResult"/> defaultní odpověď, která bude vrácena z dialogu pokud jej uživatel zavře křížkem.
         /// </summary>
-        private void DetectCloseResponse()
+        private void _DetectCloseResponse()
         {
-            this._GuiResult = this.SearchCloseResponse();
+            this._GuiResult = this._SearchCloseResponse();
         }
         /// <summary>
         /// Vrací výchozí hodnotu pro výsledek dialogu, který bude vrácen po zavření okna bez výběru konkrétního buttonu.
         /// </summary>
         /// <returns></returns>
-        private GUI.GuiDialogButtons SearchCloseResponse()
+        private GUI.GuiDialogButtons _SearchCloseResponse()
         {
             GUI.GuiDialogButtons buttons = this._Buttons;
             if (buttons.HasFlag(GUI.GuiDialogButtons.Cancel)) return GUI.GuiDialogButtons.Cancel;
@@ -420,14 +428,41 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void Button_Click(object sender, EventArgs e)
+        private void _Button_Click(object sender, EventArgs e)
         {
             WinButtonBase button = sender as WinButtonBase;
             if (button == null) return;
             if (!(button.Tag is GUI.GuiDialogButtons)) return;
-            this._GuiResult = (GUI.GuiDialogButtons)button.Tag;
-            this.Close();
+
+            GUI.GuiDialogButtons result = (GUI.GuiDialogButtons)button.Tag;
+            this._CallButtonClick(result);
+
+            if (this.CloseOnClick)
+            {
+                this._GuiResult = result;
+                this.Close();
+            }
         }
+        /// <summary>
+        /// Zajistí vyvolání háčku a eventu 
+        /// </summary>
+        /// <param name="result"></param>
+        private void _CallButtonClick(GUI.GuiDialogButtons result)
+        {
+            GPropertyEventArgs<GUI.GuiDialogButtons> args = new GPropertyEventArgs<GUI.GuiDialogButtons>(result);
+            this.OnButtonClick(args);
+            if (this.ButtonClick != null)
+                this.ButtonClick(this, args);
+        }
+        /// <summary>
+        /// Háček volaný při událost ButtonClick
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnButtonClick(GPropertyEventArgs<GUI.GuiDialogButtons> args) { }
+        /// <summary>
+        /// Událost volaná přio kliknutí na button
+        /// </summary>
+        public event GPropertyEventHandler<GUI.GuiDialogButtons> ButtonClick;
         /// <summary>
         /// Metoda zajistí zobrazení buttonů 
         /// </summary>
@@ -440,29 +475,52 @@ namespace Asol.Tools.WorkScheduler.Components
                 count = 1;
             }
             bool isCancelIndented = (count >= 3 && buttons.HasFlag(GUI.GuiDialogButtons.Cancel));       // true pokud má být zobrazen button Cancel s odsazením
-            int buttonWidth = 126;                         // Optimální šířka jednoho buttonu, když bude dost místa
-            int borderWidth = 12;                          // Šířka okrajů
-            int spaceWidth = 9;                            // Šířka mezery
-            int spaceCancel = (isCancelIndented ? 24 : 0); // Extra odsazení buttonu Cancel
-            int totalWidth = (2 * borderWidth) + ((count * buttonWidth) + spaceCancel + ((count - 1) * spaceWidth));  // Tolik místa bychom potřebovali pro všechny buttony při optimální šířce jednoho buttonu
-            int realWidth = this.ButtonsPanel.Width;       // Tolik místa na buttony reálně máme v controlu
-            if (realWidth < totalWidth)
+            float buttonWidth = 126;                         // Optimální šířka jednoho buttonu, když bude dost místa
+            float borderWidth = 12;                          // Šířka okrajů
+            float spaceWidth = 9;                            // Šířka mezery
+            float spaceCancel = (isCancelIndented ? 24 : 0); // Extra odsazení buttonu Cancel
+            float contentWidth = ((count * buttonWidth) + spaceCancel + ((count - 1) * spaceWidth));  // Tolik místa bychom potřebovali pro všechny buttony při optimální šířce jednoho buttonu
+            float parentWidth = this.ButtonsPanel.Width;     // Tolik místa na buttony reálně máme v controlu
+            float parentHeight = this.ButtonsPanel.Height;   // Výška prostoru
+            float disponibleWidth = parentWidth - (2f * borderWidth);
+            if (contentWidth > disponibleWidth)
             {
-                buttonWidth = ((realWidth - (2 * borderWidth)) - spaceCancel - (spaceWidth * (count - 1))) / count;
-                if (buttonWidth < 50) buttonWidth = 50;
-                totalWidth = (2 * borderWidth) + ((count * buttonWidth) + spaceCancel + ((count - 1) * spaceWidth));  // Tolik místa zaberou buttony při upravené šířce buttonWidth
+                buttonWidth = (disponibleWidth - spaceCancel - (spaceWidth * (count - 1))) / count;
+                if (buttonWidth < 50f) buttonWidth = 50f;
+                contentWidth = ((count * buttonWidth) + spaceCancel + ((count - 1) * spaceWidth));  // Tolik místa zaberou buttony při upravené šířce buttonWidth
             }
 
-            int x = borderWidth;
-            this._ShowButton(this.ButtonOk, buttons, ref x, buttonWidth, 0, spaceWidth);
-            this._ShowButton(this.ButtonYes, buttons, ref x, buttonWidth, 0, spaceWidth);
-            this._ShowButton(this.ButtonNo, buttons, ref x, buttonWidth, 0, spaceWidth);
-            this._ShowButton(this.ButtonAbort, buttons, ref x, buttonWidth, 0, spaceWidth);
-            this._ShowButton(this.ButtonRetry, buttons, ref x, buttonWidth, 0, spaceWidth);
-            this._ShowButton(this.ButtonIgnore, buttons, ref x, buttonWidth, 0, spaceWidth);
-            this._ShowButton(this.ButtonSave, buttons, ref x, buttonWidth, 0, spaceWidth);
-            this._ShowButton(this.ButtonMaybe, buttons, ref x, buttonWidth, 0, spaceWidth);
-            this._ShowButton(this.ButtonCancel, buttons, ref x, buttonWidth, spaceCancel, spaceWidth);
+            float x, y;
+            _AlignContent(parentWidth, parentHeight, contentWidth, borderWidth, this.ButtonsAlignment, out x, out y);
+
+            this._ShowButton(this.ButtonOk, buttons, ref x, y, buttonWidth, 0, spaceWidth);
+            this._ShowButton(this.ButtonYes, buttons, ref x, y, buttonWidth, 0, spaceWidth);
+            this._ShowButton(this.ButtonNo, buttons, ref x, y, buttonWidth, 0, spaceWidth);
+            this._ShowButton(this.ButtonAbort, buttons, ref x, y, buttonWidth, 0, spaceWidth);
+            this._ShowButton(this.ButtonRetry, buttons, ref x, y, buttonWidth, 0, spaceWidth);
+            this._ShowButton(this.ButtonIgnore, buttons, ref x, y, buttonWidth, 0, spaceWidth);
+            this._ShowButton(this.ButtonSave, buttons, ref x, y, buttonWidth, 0, spaceWidth);
+            this._ShowButton(this.ButtonMaybe, buttons, ref x, y, buttonWidth, 0, spaceWidth);
+            this._ShowButton(this.ButtonCancel, buttons, ref x, y, buttonWidth, spaceCancel, spaceWidth);
+        }
+        /// <summary>
+        /// Určí souřadnice prostoru pro buttony
+        /// </summary>
+        /// <param name="parentWidth"></param>
+        /// <param name="parentHeight"></param>
+        /// <param name="contentWidth"></param>
+        /// <param name="borderWidth"></param>
+        /// <param name="buttonsAlignment"></param>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        protected void _AlignContent(float parentWidth, float parentHeight, float contentWidth, float borderWidth, ContentAlignment buttonsAlignment, out float x, out float y)
+        {
+            int borderHeight = 6;
+            SizeF contentSize = new SizeF(contentWidth, ButtonItemHeight);
+            RectangleF totalBounds = new RectangleF(borderWidth, borderHeight, parentWidth - 2 * borderWidth, parentHeight - 2 * borderHeight);
+            RectangleF contentBounds = contentSize.AlignTo(totalBounds, buttonsAlignment);
+            x = contentBounds.X;
+            y = contentBounds.Y;
         }
         /// <summary>
         /// Zajistí zobrazení jednoho buttonu
@@ -470,10 +528,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="button"></param>
         /// <param name="buttons"></param>
         /// <param name="x"></param>
+        /// <param name="y"></param>
         /// <param name="spaceBefore"></param>
         /// <param name="buttonWidth"></param>
         /// <param name="spaceWidth"></param>
-        private void _ShowButton(WinButtonBase button, GUI.GuiDialogButtons buttons, ref int x, int buttonWidth, int spaceBefore, int spaceWidth)
+        private void _ShowButton(WinButtonBase button, GUI.GuiDialogButtons buttons, ref float x, float y, float buttonWidth, float spaceBefore, float spaceWidth)
         {
             GUI.GuiDialogButtons buttonValue = (button.Tag is GUI.GuiDialogButtons ? (GUI.GuiDialogButtons)button.Tag : GUI.GuiDialogButtons.None);
             bool isVisible = ((buttons & buttonValue) != 0);
@@ -481,8 +540,11 @@ namespace Asol.Tools.WorkScheduler.Components
             if (isVisible)
             {
                 x += spaceBefore;
-                button.Bounds = new Rectangle(x, 3, buttonWidth, ButtonItemHeight);
-                x = button.Bounds.Right + spaceWidth;
+                int ix = (int)Math.Round(x, 0);
+                int iy = (int)Math.Round(y, 0);
+                int iw = (int)Math.Round(buttonWidth, 0);
+                button.Bounds = new Rectangle(ix, iy, iw, ButtonItemHeight);
+                x = x + buttonWidth + spaceWidth;
             }
         }
         /// <summary>
@@ -543,13 +605,27 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Zobrazené knoflíky
         /// </summary>
-        public GUI.GuiDialogButtons Buttons { get { return this._Buttons; } set { this._Buttons = value; this._ShowButtons(value); this.SelectAutoButtons(); this.DetectCloseResponse(); } }
+        public GUI.GuiDialogButtons Buttons { get { return this._Buttons; } set { this._Buttons = value; this._ShowButtons(value); this.SelectAutoButtons(); this._DetectCloseResponse(); } }
         private GUI.GuiDialogButtons _Buttons;
         /// <summary>
         /// Výsledek okna = tlačítko, které bylo stisknuto a zavřelo formulář
         /// </summary>
         public GUI.GuiDialogButtons GuiResult { get { return this._GuiResult; } }
         private GUI.GuiDialogButtons _GuiResult;
+        /// <summary>
+        /// Zarovnání buttonů v jejich prostoru
+        /// </summary>
+        public ContentAlignment ButtonsAlignment { get { return this._ButtonsAlignment; } set { this._ButtonsAlignment = value; this._ShowButtons(this._Buttons); } }
+        private ContentAlignment _ButtonsAlignment;
+        /// <summary>
+        /// Obsahuje true pokud se má okno zavřít po kliknutí na nějaký button.
+        /// Pak bude typ buttonu zachycem v <see cref="WinFormButtons.GuiResult"/>.
+        /// Pokud aplikace nastaví <see cref="WinFormButtons.CloseOnClick"/> na false, pak se okno samo nezavře, a tlačítko zachyceno nebude. 
+        /// Aplikace pak musí obsloužit událost <see cref="WinFormButtons.ButtonClick"/>.
+        /// Anebo potomek této třídy může využít háček <see cref="WinFormButtons.OnButtonClick(GPropertyEventArgs{GUI.GuiDialogButtons})"/>.
+        /// </summary>
+        public bool CloseOnClick { get { return this._CloseOnClick; } set { this._CloseOnClick = value; } }
+        private bool _CloseOnClick;
         #endregion
     }
     #endregion
@@ -566,7 +642,11 @@ namespace Asol.Tools.WorkScheduler.Components
         public WinFormBase()
         {
             this.IsShown = false;
+            this.IsInitialized = false;
+            this.ShowInTaskbar = false;
             this.Initialize();
+            this.IsInitialized = true;
+            this.PrepareLayout();
         }
         /// <summary>
         /// Inicializace formu, virtuální metoda volaná z konstruktoru.
@@ -574,21 +654,26 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected virtual void Initialize()
         {
-            this.AutoSize = false;
-            this.ShowInTaskbar = false;
         }
+        /// <summary>
+        /// Obsahuje true poté, kdy proběhl konstruktor a v něm kompletní inicializace.
+        /// </summary>
+        protected bool IsInitialized { get; private set; }
         /// <summary>
         /// Při změně velikosti okna
         /// </summary>
         /// <param name="e"></param>
         protected override void OnSizeChanged(EventArgs e)
         {
+            if (this.IsInitialized)
+                this.PrepareLayout();
             base.OnSizeChanged(e);
-            this.PrepareLayout();
         }
         /// <summary>
-        /// Metoda je volána těsně před prvním zobrazením formuláře, a pak po změně rozměrů okna.
-        /// Metoda by měla testovat, zda <see cref="IsShown"/> je true. POkud není, pak nemá smysl aby něco dělala (Form je ve fázi inicializací).
+        /// Úprava layoutu po změně velikosti.
+        /// Metoda je volána jedenkrát po dokončení inicializace, pak těsně před prvním zobrazením formuláře, a pak po změně rozměrů okna.
+        /// Metoda není volaná před dokončením inicializace, když je <see cref="WinFormBase.IsInitialized"/> = false.
+        /// Metoda může testovat, zda <see cref="WinFormBase.IsShown"/> je true.
         /// </summary>
         protected virtual void PrepareLayout() { }
         #endregion
@@ -802,7 +887,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this._TextColor = Color.Black;
             this._LineColorTop = Color.Blue;
             this._LineColorBottom = Color.DarkBlue;
-            this.DetectOptimalHeight();
+            this.DetectLineHeight();
         }
         /// <summary>
         /// Změna velikosti: zachováme si svou výšku
@@ -813,8 +898,8 @@ namespace Asol.Tools.WorkScheduler.Components
             // zrušit? Řešíme pomocí MinimumSize a MaximumSize!
             int width = this.Size.Width;
             int height = this.Size.Height;
-            if (height != this.OptimalHeight && this._OnlyOneLine)
-                this.Size = new Size(width, this.OptimalHeight);
+            if (height != this.OneLineHeight && this._OnlyOneLine)
+                this.Size = new Size(width, this.OneLineHeight);
             base.OnSizeChanged(e);
         }
         /// <summary>
@@ -823,35 +908,38 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         protected override void OnPaint(PaintEventArgs e)
         {
-            // base.OnPaint(e);
-
             Rectangle bounds;
-            int w = this.Width;
-            int h = this.Height;
-
-            bounds = new Rectangle(0, this.FontLineHeight - 2, w, 1);
+            int clientWidth = this.ClientSize.Width;
+            int titleWidth = clientWidth;
+            int distanceRight = this.LineDistanceRight;
+            if (distanceRight > 0)
+            {
+                titleWidth = titleWidth - distanceRight;
+                if (titleWidth < 20) titleWidth = 20;
+            }
+            bounds = new Rectangle(0, this.TextLineHeight - 2, titleWidth, 1);
             using (LinearGradientBrush lgb = new LinearGradientBrush(bounds, this._LineColorTop, Color.Transparent, 0f))
                 e.Graphics.FillRectangle(lgb, bounds);
 
-            bounds = new Rectangle(0, this.FontLineHeight - 1, w, 1);
+            bounds = new Rectangle(0, this.TextLineHeight - 1, titleWidth, 1);
             using (LinearGradientBrush lgb = new LinearGradientBrush(bounds, this._LineColorBottom, Color.Transparent, 0f))
                 e.Graphics.FillRectangle(lgb, bounds);
 
-            bounds = new Rectangle(2, 1, w - 4, this.FontLineHeight - 2);
+            bounds = new Rectangle(2, 1, titleWidth - 4, this.TextLineHeight - 2);
             GPainter.DrawString(e.Graphics, bounds, this._Caption, Skin.Brush(this._TextColor), this._FontInfo, ContentAlignment.MiddleLeft);
         }
         /// <summary>
         /// Určí optimální výšku prvku pro zobrazení v režimu <see cref="OnlyOneLine"/> 
         /// a výšku titulkového textu pro určení pozice vodorovné linky
         /// </summary>
-        protected void DetectOptimalHeight()
+        protected void DetectLineHeight()
         {
             FontInfo fi = this.FontInfo;
             Size size = GPainter.MeasureString("ŽÁČKŮM vydejte", fi);     // Měřím hlavně výšku textu, proto jsou tam písmena "Ž" a "y". O šířku zde nejde.
             int h = size.Height + 4;
-            this.FontLineHeight = h;
-            h = h + 2;
-            this.OptimalHeight = h;
+            this.TextLineHeight = h;
+            h = h + 3;
+            this.OneLineHeight = h;
             int minH = h;
             this.MinimumSize = new Size(10, minH);
             int maxH = (this._OnlyOneLine ? minH : 2048);
@@ -862,11 +950,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Výška textu
         /// </summary>
-        protected int FontLineHeight { get; private set; }
+        protected int TextLineHeight { get; private set; }
         /// <summary>
         /// Výška prvku v režimu <see cref="OnlyOneLine"/> 
         /// </summary>
-        protected int OptimalHeight { get; private set; }
+        protected int OneLineHeight { get; private set; }
         #endregion
         #region Public properties
         /// <summary>
@@ -892,11 +980,29 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 if (value == null) return;
                 this._FontInfo = value;
-                this.DetectOptimalHeight();
+                this.DetectLineHeight();
                 this.Refresh();
             }
         }
         private FontInfo _FontInfo;
+        /// <summary>
+        /// Prostor vpravo, do něhož není kreslena linka.
+        /// Má význam tehdy, když vpravo chceme vykreslit něco jiného.
+        /// </summary>
+        [Category(WinConstants.DesignCategory)]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        [Description("Prostor vpravo, do něhož není kreslena linka. Má význam tehdy, když vpravo chceme vykreslit něco jiného.")]
+        [AmbientValue(0)]
+        public int LineDistanceRight
+        {
+            get { return this._LineDistanceRight; }
+            set
+            {
+                this._LineDistanceRight = (value < 0 ? 0 : value);
+                this.Refresh();
+            }
+        }
+        private int _LineDistanceRight;
         /// <summary>
         /// Barva textu v titulkovém řádku
         /// </summary>
@@ -945,7 +1051,7 @@ namespace Asol.Tools.WorkScheduler.Components
             set
             {
                 this._OnlyOneLine = value;
-                this.DetectOptimalHeight();
+                this.DetectLineHeight();
                 this.Refresh();
             }
         }
@@ -966,6 +1072,8 @@ namespace Asol.Tools.WorkScheduler.Components
         public WinPanel()
         {
             this.Initialize();
+            this.IsInitialized = true;
+            this.PrepareLayout();
         }
         /// <summary>
         /// Inicializace.
@@ -975,13 +1083,42 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Když se o tom předem ví, tak se to nechá uřídit :-)
         /// </summary>
         protected virtual void Initialize()
-        { }
+        {
+            this.IsInitialized = false;
+            this.SetStyle(ControlStyles.ResizeRedraw | ControlStyles.OptimizedDoubleBuffer, true);
+        }
+        /// <summary>
+        /// Obsahuje true poté, kdy proběhl konstruktor a v něm kompletní inicializace.
+        /// </summary>
+        protected bool IsInitialized { get; private set; }
+        /// <summary>
+        /// Po změně velikosti
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnSizeChanged(EventArgs e)
+        {
+            base.OnSizeChanged(e);
+            if (this.IsInitialized)
+                this.PrepareLayout();
+        }
+        /// <summary>
+        /// Úprava layoutu po změně velikosti.
+        /// Metoda není volaná před dokončením inicializace, když je <see cref="WinFormBase.IsInitialized"/> = false.
+        /// Metoda je volána jedenkrát vyvolaná po dokončení inicializace, a pak při změně velikosti.
+        /// </summary>
+        protected virtual void PrepareLayout() { }
         #endregion
     }
     #endregion
     #region Constants
+    /// <summary>
+    /// Konstanty pro WinForm objekty
+    /// </summary>
     public class WinConstants
     {
+        /// <summary>
+        /// Název kategorie "Asseco" v PropertyEditoru
+        /// </summary>
         public const string DesignCategory = "Asseco";
     }
     #endregion

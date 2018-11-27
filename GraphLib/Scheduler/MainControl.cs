@@ -307,61 +307,22 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             return WinFormDialog.ShowDialog(this.FindForm(), message, title, guiButtons, guiIcon);
         }
-        private GuiDialogButtons _ShowDialogGUIWin(string message, string title, GuiDialogButtons guiButtons, GuiImage guiIcon)
+        /// <summary>
+        /// Metoda zajistí, že daná akce bude vyvolaná v GUI threadu, asynchronně, nevrací result.
+        /// </summary>
+        /// <param name="action"></param>
+        public void RunInGUI(Action action)
         {
-            if (String.IsNullOrEmpty(title)) title = this._MainData.GuiData.Properties.PluginFormTitle;
-            MessageBoxButtons winButtons = ConvertButtons(guiButtons);
-            MessageBoxIcon winIcon = MessageBoxIcon.Question;
-            DialogResult result = System.Windows.Forms.MessageBox.Show(this.FindForm(), message, title, winButtons, winIcon);
-            return ConvertResult(result);
+            if (action == null) return;
+            if (this.InvokeRequired)
+                this.BeginInvoke(action);
+            else
+                action();
         }
-        private static MessageBoxButtons ConvertButtons(GuiDialogButtons dialogItems)
-        {
-            switch (dialogItems)
-            {
-                case GuiDialogButtons.Ok: return MessageBoxButtons.OK;
-                case GuiDialogButtons.Yes:
-                case GuiDialogButtons.No:
-                case GuiDialogButtons.YesNo: return MessageBoxButtons.YesNo;
-                case GuiDialogButtons.OkCancel:
-                case GuiDialogButtons.Cancel: return MessageBoxButtons.OKCancel;
-                case GuiDialogButtons.YesNoCancel: return MessageBoxButtons.YesNoCancel;
-                case GuiDialogButtons.Retry:
-                case GuiDialogButtons.RetryCancel: return MessageBoxButtons.RetryCancel;
-            }
-            return MessageBoxButtons.OK;
-        }
-        private static MessageBoxIcon ConvertIcon(GuiDialogButtons dialogItems)
-        {
-            switch (dialogItems)
-            {
-                case GuiDialogButtons.Ok: return MessageBoxIcon.Information;
-                case GuiDialogButtons.Yes:
-                case GuiDialogButtons.No:
-                case GuiDialogButtons.YesNo: return MessageBoxIcon.Question;
-                case GuiDialogButtons.OkCancel:
-                case GuiDialogButtons.Cancel: return MessageBoxIcon.Warning;
-                case GuiDialogButtons.YesNoCancel: return MessageBoxIcon.Warning;
-                case GuiDialogButtons.Retry:
-                case GuiDialogButtons.RetryCancel: return MessageBoxIcon.Hand;
-            }
-            return MessageBoxIcon.Information;
-        }
-        private static GuiDialogButtons ConvertResult(DialogResult result)
-        {
-            switch (result)
-            {
-                case DialogResult.None: return GuiDialogButtons.None;
-                case DialogResult.OK: return GuiDialogButtons.Ok;
-                case DialogResult.Cancel: return GuiDialogButtons.Cancel;
-                case DialogResult.Abort: return GuiDialogButtons.Abort;
-                case DialogResult.Retry: return GuiDialogButtons.Retry;
-                case DialogResult.Ignore: return GuiDialogButtons.Ignore;
-                case DialogResult.Yes: return GuiDialogButtons.Yes;
-                case DialogResult.No: return GuiDialogButtons.No;
-            }
-            return GuiDialogButtons.None;
-        }
+        /// <summary>
+        /// Reference na MainForm
+        /// </summary>
+        public Form MainForm { get { return this.FindForm(); } }
         #endregion
     }
     #region class SchedulerPanelInfo - třída obsaující data o jednom panelu.
