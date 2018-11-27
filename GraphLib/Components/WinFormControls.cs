@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
+using System.ComponentModel;
 
 using GUI = Noris.LCS.Base.WorkScheduler;
 using RES = Noris.LCS.Base.WorkScheduler.Resources;
@@ -775,6 +776,213 @@ namespace Asol.Tools.WorkScheduler.Components
             this.UseVisualStyleBackColor = true;
         }
         #endregion
+    }
+    #endregion
+    #region WinHorizontalLine : oddělovací vodorovná linka s textem
+    /// <summary>
+    ///  WinHorizontalLine : oddělovací vodorovná linka s textem
+    /// </summary>
+    public class WinHorizontalLine : WinPanel
+    {
+        #region Privátní život: inicializace, kreslení, určení rozměrů, optimální rozměry
+        /// <summary>
+        /// Inicializace.
+        /// Pozor, jde o virtuální metodu volanou z konstruktoru.
+        /// Tyto controly obecně nemají používat konstruktor, ale tuto inicializaci (kde lze řídit místo výkonu base metody)
+        /// </summary>
+        protected override void Initialize()
+        {
+            this.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
+
+            base.Initialize();
+
+            this._Caption = "Title";
+            this._FontInfo = FontInfo.CaptionBold;
+            this._FontInfo.ApplyZoom(1.2f);
+            this._TextColor = Color.Black;
+            this._LineColorTop = Color.Blue;
+            this._LineColorBottom = Color.DarkBlue;
+            this.DetectOptimalHeight();
+        }
+        /// <summary>
+        /// Změna velikosti: zachováme si svou výšku
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnSizeChanged(EventArgs e)
+        {
+            // zrušit? Řešíme pomocí MinimumSize a MaximumSize!
+            int width = this.Size.Width;
+            int height = this.Size.Height;
+            if (height != this.OptimalHeight && this._OnlyOneLine)
+                this.Size = new Size(width, this.OptimalHeight);
+            base.OnSizeChanged(e);
+        }
+        /// <summary>
+        /// Vykreslení
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            // base.OnPaint(e);
+
+            Rectangle bounds;
+            int w = this.Width;
+            int h = this.Height;
+
+            bounds = new Rectangle(0, this.FontLineHeight - 2, w, 1);
+            using (LinearGradientBrush lgb = new LinearGradientBrush(bounds, this._LineColorTop, Color.Transparent, 0f))
+                e.Graphics.FillRectangle(lgb, bounds);
+
+            bounds = new Rectangle(0, this.FontLineHeight - 1, w, 1);
+            using (LinearGradientBrush lgb = new LinearGradientBrush(bounds, this._LineColorBottom, Color.Transparent, 0f))
+                e.Graphics.FillRectangle(lgb, bounds);
+
+            bounds = new Rectangle(2, 1, w - 4, this.FontLineHeight - 2);
+            GPainter.DrawString(e.Graphics, bounds, this._Caption, Skin.Brush(this._TextColor), this._FontInfo, ContentAlignment.MiddleLeft);
+        }
+        /// <summary>
+        /// Určí optimální výšku prvku pro zobrazení v režimu <see cref="OnlyOneLine"/> 
+        /// a výšku titulkového textu pro určení pozice vodorovné linky
+        /// </summary>
+        protected void DetectOptimalHeight()
+        {
+            FontInfo fi = this.FontInfo;
+            Size size = GPainter.MeasureString("ŽÁČKŮM vydejte", fi);     // Měřím hlavně výšku textu, proto jsou tam písmena "Ž" a "y". O šířku zde nejde.
+            int h = size.Height + 4;
+            this.FontLineHeight = h;
+            h = h + 2;
+            this.OptimalHeight = h;
+            int minH = h;
+            this.MinimumSize = new Size(10, minH);
+            int maxH = (this._OnlyOneLine ? minH : 2048);
+            this.MaximumSize = new Size(2048, maxH);
+            int w = this.Width;
+            this.Size = new Size(w, h);
+        }
+        /// <summary>
+        /// Výška textu
+        /// </summary>
+        protected int FontLineHeight { get; private set; }
+        /// <summary>
+        /// Výška prvku v režimu <see cref="OnlyOneLine"/> 
+        /// </summary>
+        protected int OptimalHeight { get; private set; }
+        #endregion
+        #region Public properties
+        /// <summary>
+        /// Text v titulkovém řádku
+        /// </summary>
+        [Description("Text v titulkovém řádku")]
+        [Category(WinConstants.DesignCategory)]
+        public string Caption
+        {
+            get { return this._Caption; }
+            set { this._Caption = value; this.Refresh(); }
+        }
+        private string _Caption;
+        /// <summary>
+        /// Definice fontu
+        /// </summary>
+        [Category(WinConstants.DesignCategory)]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        public FontInfo FontInfo
+        {
+            get { return this._FontInfo; }
+            set
+            {
+                if (value == null) return;
+                this._FontInfo = value;
+                this.DetectOptimalHeight();
+                this.Refresh();
+            }
+        }
+        private FontInfo _FontInfo;
+        /// <summary>
+        /// Barva textu v titulkovém řádku
+        /// </summary>
+        [Description("Barva textu v titulkovém řádku")]
+        [Category(WinConstants.DesignCategory)]
+        [AmbientValue(typeof(Color), "Black")]
+        public Color TextColor
+        {
+            get { return this._TextColor; }
+            set { this._TextColor = value; this.Refresh(); }
+        }
+        private Color _TextColor;
+        /// <summary>
+        /// Barva linky v horní části (světlejší)
+        /// </summary>
+        [Description("Barva linky v horní části (světlejší)")]
+        [Category(WinConstants.DesignCategory)]
+        [AmbientValue(typeof(Color), "Blue")]
+        public Color LineColorTop
+        {
+            get { return this._LineColorTop; }
+            set { this._LineColorTop = value; this.Refresh(); }
+        }
+        private Color _LineColorTop;
+        /// <summary>
+        /// Barva linky v dolní části (tmavší)
+        /// </summary>
+        [Description("Barva linky v dolní části (tmavší)")]
+        [Category(WinConstants.DesignCategory)]
+        [AmbientValue(typeof(Color), "DarkBlue")]
+        public Color LineColorBottom
+        {
+            get { return this._LineColorBottom; }
+            set { this._LineColorBottom = value; this.Refresh(); }
+        }
+        private Color _LineColorBottom;
+        /// <summary>
+        /// Jednořádkový režim
+        /// </summary>
+        [Description("Jednořádkový režim")]
+        [Category(WinConstants.DesignCategory)]
+        [AmbientValue(false)]
+        public bool OnlyOneLine
+        {
+            get { return this._OnlyOneLine; }
+            set
+            {
+                this._OnlyOneLine = value;
+                this.DetectOptimalHeight();
+                this.Refresh();
+            }
+        }
+        private bool _OnlyOneLine;
+        #endregion
+    }
+    #endregion
+    #region WinPanel : bázová třída pro Panely
+    /// <summary>
+    /// WinPanel : bázová třída pro Panely
+    /// </summary>
+    public class WinPanel : Panel
+    {
+        #region Inicializace
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public WinPanel()
+        {
+            this.Initialize();
+        }
+        /// <summary>
+        /// Inicializace.
+        /// Pozor, jde o virtuální metodu volanou z konstruktoru.
+        /// Tyto controly obecně nemají používat konstruktor, ale tuto inicializaci (kde lze řídit místo výkonu base metody)
+        /// <para/>
+        /// Když se o tom předem ví, tak se to nechá uřídit :-)
+        /// </summary>
+        protected virtual void Initialize()
+        { }
+        #endregion
+    }
+    #endregion
+    #region Constants
+    public class WinConstants
+    {
+        public const string DesignCategory = "Asseco";
     }
     #endregion
 }
