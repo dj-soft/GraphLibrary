@@ -190,19 +190,31 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
             this._EditorItems = config.CreateEditorItems();
             foreach (SchedulerEditorItem editorItem in this._EditorItems)
-            {
-                TreeNode node = _SearchTreeNode(editorItem.NodeText);
-                node.Tag = editorItem;
-
-                editorItem.VisualControl.Read();
-                Panel panel = editorItem.VisualControl.Panel;
-                panel.Visible = false;
-                panel.Dock = DockStyle.Fill;
-                this.ConfigContainer.Panel2.Controls.Add(panel);
-            }
+                this._CreateNodeData(editorItem);
 
             this.ConfigTree.ItemHeight = 140 * this.NodeFontMain.Height / 100;
         }
+        /// <summary>
+        /// Pro daný objekt editoru vytvoří node a zajistí další akce
+        /// </summary>
+        /// <param name="editorItem"></param>
+        private void _CreateNodeData(SchedulerEditorItem editorItem)
+        {
+            TreeNode node = _SearchTreeNode(editorItem.NodeText);
+            node.Tag = editorItem;
+
+            editorItem.VisualControl.Read();
+
+            Panel panel = editorItem.VisualControl.Panel;
+            panel.Visible = false;
+            panel.Dock = DockStyle.Fill;
+            this.ConfigContainer.Panel2.Controls.Add(panel);
+        }
+        /// <summary>
+        /// Najde nebo vytvoří node s daným názvem
+        /// </summary>
+        /// <param name="nodeText"></param>
+        /// <returns></returns>
         private TreeNode _SearchTreeNode(string nodeText)
         {
             if (String.IsNullOrEmpty(nodeText)) return null;
@@ -233,10 +245,18 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             }
             return node;
         }
+        /// <summary>
+        /// Zajistí aktivaci editoru pro daný node
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void ConfigTree_AfterSelect(object sender, TreeViewEventArgs e)
         {
             TreeNode node = e.Node;
             SchedulerEditorItem editorItem = node.Tag as SchedulerEditorItem;
+
+            if (editorItem == null && node.Nodes.Count > 0)
+                editorItem = node.Nodes[0].Tag as SchedulerEditorItem;
 
             if (this._CurrentEditorItem != null && (editorItem == null || !Object.ReferenceEquals(this._CurrentEditorItem, editorItem)))
             {
@@ -247,7 +267,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (editorItem != null)
             {
                 this._CurrentEditorItem = editorItem;
-                this._CurrentEditorItem.VisualControl.Panel.Visible = true;
+                if (!this._CurrentEditorItem.VisualControl.Panel.Visible)
+                    this._CurrentEditorItem.VisualControl.Panel.Visible = true;
             }
         }
         /// <summary>
