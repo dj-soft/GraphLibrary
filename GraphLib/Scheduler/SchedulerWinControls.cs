@@ -30,6 +30,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             base.Initialize();
 
+            this.PresetButtonsPanel = new WinHorizontalLine() { Caption = "Rychlé nastavení" };
             this.SnapSequencePanel = new ConfigSnapOnePanel() { ImageType = ConfigSnapImageType.Sequence, Caption = "Navazující operace" };
             this.SnapInnerPanel = new ConfigSnapOnePanel() { ImageType = ConfigSnapImageType.InnerItem, Caption = "Operace k pracovní době" };
             this.SnapOriginalTimeNearPanel = new ConfigSnapOnePanel() { ImageType = ConfigSnapImageType.OriginalTimeNear, Caption = "Výchozí čas bez změny místa" };
@@ -38,6 +39,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
             this.SuspendLayout();
 
+            this.Controls.Add(this.PresetButtonsPanel);
             this.Controls.Add(this.SnapSequencePanel);
             this.Controls.Add(this.SnapInnerPanel);
             this.Controls.Add(this.SnapOriginalTimeNearPanel);
@@ -64,12 +66,18 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             int h = ConfigSnapOnePanel.OptimalHeight;
             int s = h + 3;
 
+            this.PresetButtonsPanel.Bounds = new Rectangle(x, y, w, h); y += s;
             this.SnapSequencePanel.Bounds = new Rectangle(x, y, w, h); y += s;
             this.SnapInnerPanel.Bounds = new Rectangle(x, y, w, h); y += s;
             this.SnapOriginalTimeNearPanel.Bounds = new Rectangle(x, y, w, h); y += s;
             this.SnapOriginalTimeLongPanel.Bounds = new Rectangle(x, y, w, h); y += s;
             this.SnapGridTickPanel.Bounds = new Rectangle(x, y, w, h); y += s;
         }
+        /// <summary>
+        /// Panel s nabídkou přednastavení
+        /// </summary>
+        protected WinHorizontalLine PresetButtonsPanel;
+        protected WinButtonImage Preset
         /// <summary>
         /// Panel pro ukázku <see cref="ConfigSnapImageType.Sequence"/>
         /// </summary>
