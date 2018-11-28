@@ -12,9 +12,377 @@ using Asol.Tools.WorkScheduler.Components;
 
 namespace Asol.Tools.WorkScheduler.Scheduler
 {
-    #region ConfigSnapSetPanel : Panel pro zobrazení přichytávání všech konkrétních typu (obsahuje 5 x ConfigSnapOnePanel)
+    #region ConfigLinkLinesSetPanel : Panel pro zobrazení konfigurace Linků
     /// <summary>
-    /// ConfigSnapSetPanel : Panel pro zobrazení přichytávání všech konkrétních typu (obsahuje 5 x ConfigSnapOnePanel)
+    /// ConfigLinkLinesSetPanel : Panel pro zobrazení konfigurace Linků
+    /// </summary>
+    public class ConfigLinkLinesSetPanel : WinHorizontalLine, ISchedulerEditorControlItem
+    {
+        #region Vnitřní život: inicializace
+        /// <summary>
+        /// Inicializace.
+        /// Pozor, jde o virtuální metodu volanou z konstruktoru.
+        /// Tyto controly obecně nemají používat konstruktor, ale tuto inicializaci (kde lze řídit místo výkonu base metody)
+        /// <para/>
+        /// Když se o tom předem ví, tak se to nechá uřídit :-)
+        /// </summary>
+        protected override void Initialize()
+        {
+            base.Initialize();
+
+            this.LineShapePanel = new ConfigLinkLineOnePanel() { LinkLineSetting = ConfigLinkLineSettingType.LineShape, Caption = "Tvar spojovací linie", ValueNoText = "Rovné přímé čáry", ValueYesText = "Plynulé křivky" };
+            this.LinkMousePanel = new ConfigLinkLineOnePanel() { LinkLineSetting = ConfigLinkLineSettingType.LinkMouse, Caption = "Linky vykreslované při pohybu myši", ValueNoText = "Pouze pro prvek pod myší", ValueYesText = "Celý postup (všechny operace)" };
+            this.LinkSelectPanel = new ConfigLinkLineOnePanel() { LinkLineSetting = ConfigLinkLineSettingType.LinkSelect, Caption = "Linky vykreslované při označení prvku", ValueNoText = "Pouze pro označený prvek", ValueYesText = "Celý postup (všechny operace)" };
+
+            this.SuspendLayout();
+
+            this.Controls.Add(this.LineShapePanel);
+            this.Controls.Add(this.LinkMousePanel);
+            this.Controls.Add(this.LinkSelectPanel);
+
+            this.AutoScroll = true;
+
+            this.ResumeLayout(false);
+            this.PerformLayout();
+
+            this.FontInfo.RelativeSize = 116 * this.FontInfo.RelativeSize / 100;
+        }
+        /// <summary>
+        /// Úprava layoutu po změně velikosti
+        /// </summary>
+        protected override void PrepareLayout()
+        {
+            base.PrepareLayout();
+
+            int x = 3;
+            int y = this.OneLineHeight + 3;
+            int w = this.ClientSize.Width - 6;
+            int h = ConfigLinkLineOnePanel.OptimalHeight;
+            int s = h + 3;
+
+            this.LineShapePanel.Bounds = new Rectangle(x, y, w, h); y += s;
+            this.LinkMousePanel.Bounds = new Rectangle(x, y, w, h); y += s;
+            this.LinkSelectPanel.Bounds = new Rectangle(x, y, w, h); y += s;
+        }
+        /// <summary>
+        /// Panel pro zadání tvaru linky
+        /// </summary>
+        protected ConfigLinkLineOnePanel LineShapePanel;
+        /// <summary>
+        /// Panel pro zadání rozsahu linků pro situaci MouseOver
+        /// </summary>
+        protected ConfigLinkLineOnePanel LinkMousePanel;
+        /// <summary>
+        /// Panel pro zadání rozsahu linků pro situaci Selected
+        /// </summary>
+        protected ConfigLinkLineOnePanel LinkSelectPanel;
+        #endregion
+        #region Read, Save, Data
+        /// <summary>
+        /// Načte hodnoty z <see cref="Data"/> do this controlů
+        /// </summary>
+        protected void ReadFromData()
+        {
+            this.ReadFromData(this.Data);
+        }
+        /// <summary>
+        /// Načte hodnoty z dodaného objektu do this controlů
+        /// </summary>
+        /// <param name="data">Data</param>
+        protected void ReadFromData(SchedulerConfig data)
+        {
+            if (data == null) return;
+
+            this.LineShapePanel.CurrentValue = data.GuiEditShowLinkAsSCurve;
+            this.LinkMousePanel.CurrentValue = data.GuiEditShowLinkMouseWholeTask;
+            this.LinkSelectPanel.CurrentValue = data.GuiEditShowLinkSelectedWholeTask;
+        }
+        /// <summary>
+        /// Uloží hodnoty z this controlů do <see cref="Data"/>
+        /// </summary>
+        protected void SaveToData()
+        {
+            this.SaveToData(this.Data);
+        }
+        /// <summary>
+        /// Uloží hodnoty z this controlů do dodaného objektu
+        /// </summary>
+        protected void SaveToData(SchedulerConfig data)
+        {
+            if (data == null) return;
+
+            data.GuiEditShowLinkAsSCurve = this.LineShapePanel.CurrentValue;
+            data.GuiEditShowLinkMouseWholeTask = this.LinkMousePanel.CurrentValue;
+            data.GuiEditShowLinkSelectedWholeTask = this.LinkSelectPanel.CurrentValue;
+        }
+        /// <summary>
+        /// Konfigurační data
+        /// </summary>
+        public SchedulerConfig Data { get; set; }
+        #endregion
+        #region ISchedulerEditorControlItem
+        void ISchedulerEditorControlItem.ReadFromData() { this.ReadFromData(); }
+        void ISchedulerEditorControlItem.SaveToData() { this.SaveToData(); }
+        Panel ISchedulerEditorControlItem.Panel { get { return this; } }
+        #endregion
+    }
+    /// <summary>
+    /// ConfigLinkLineOnePanel : panel zobrazující jednu předvolbu a odpovídající Sample
+    /// </summary>
+    public class ConfigLinkLineOnePanel : WinHorizontalLine
+    {
+        #region Vnitřní život: inicializace
+        /// <summary>
+        /// Inicializace.
+        /// Pozor, jde o virtuální metodu volanou z konstruktoru.
+        /// Tyto controly obecně nemají používat konstruktor, ale tuto inicializaci (kde lze řídit místo výkonu base metody)
+        /// </summary>
+        protected override void Initialize()
+        {
+            base.Initialize();
+
+            this.Radio0 = new RadioButton() { Bounds = new Rectangle(14, 35, 200, 24), TabIndex = 0 };
+            this.Radio1 = new RadioButton() { Bounds = new Rectangle(14, 70, 200, 24), TabIndex = 0 };
+            this.SamplePanel = new ConfigLinkLineSamplePanel();
+
+            this.SuspendLayout();
+
+            this.Radio0.CheckedChanged += Radio_CheckedChanged;
+            this.Radio1.CheckedChanged += Radio_CheckedChanged;
+
+            this.Controls.Add(this.SamplePanel);
+            this.Controls.Add(this.Radio1);
+            this.Controls.Add(this.Radio0);
+
+            this.OnlyOneLine = false;
+            this.Size = new Size(400, OptimalHeight);
+            this.MinimumSize = new Size(350, OptimalHeight);
+            this.MaximumSize = new Size(650, OptimalHeight);
+            this.LineDistanceRight = ConfigSnapSamplePanel.OptimalWidth - 12;
+
+            this.ResumeLayout(false);
+            this.PerformLayout();
+
+            this.Radio0.Checked = true;
+        }
+        /// <summary>
+        /// Úprava layoutu po změně velikosti
+        /// </summary>
+        protected override void PrepareLayout()
+        {
+            base.PrepareLayout();
+
+            int width = this.ClientSize.Width;
+            int height = this.ClientSize.Height;
+            this.SamplePanel.Location = new Point(width - 6 - ConfigLinkLineSamplePanel.OptimalWidth, (height - ConfigLinkLineSamplePanel.OptimalHeight) / 2);
+        }
+        /// <summary>
+        /// Po změně Radio.Checked
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void Radio_CheckedChanged(object sender, EventArgs args)
+        {
+            this.ShowValue();
+        }
+        /// <summary>
+        /// Výška tohoto prvku
+        /// </summary>
+        internal static int OptimalHeight { get { return ConfigLinkLineSamplePanel.OptimalHeight + 12; } }
+        /// <summary>
+        /// RadioButton pro hodnotu 0
+        /// </summary>
+        protected RadioButton Radio0;
+        /// <summary>
+        /// RadioButton pro hodnotu 1
+        /// </summary>
+        protected RadioButton Radio1;
+        /// <summary>
+        /// ConfigSnapSamplePanel 
+        /// </summary>
+        protected ConfigLinkLineSamplePanel SamplePanel;
+        #endregion
+        protected void ShowValue() { }
+        #region Public properties
+        /// <summary>
+        /// Hodnota uvedená na první RadioButtonu, který odpovídá hodnotě <see cref="CurrentValue"/> = false
+        /// </summary>
+        public string ValueNoText
+        {
+            get { return this.Radio0.Text; }
+            set { this.Radio0.Text = value; }
+        }
+        /// <summary>
+        /// Hodnota uvedená na první RadioButtonu, který odpovídá hodnotě <see cref="CurrentValue"/> = false
+        /// </summary>
+        public string ValueYesText
+        {
+            get { return this.Radio1.Text; }
+            set { this.Radio1.Text = value; }
+        }
+        /// <summary>
+        /// Aktuální hodnota v tomto panelu:
+        /// false = označen první RadioButton, true = označen druhý RadioButton
+        /// </summary>
+        public bool CurrentValue
+        {
+            get { return this.Radio1.Checked; }
+            set { this.Radio0.Checked = !value; this.Radio1.Checked = value; /* to samo vyvolá ShowValue() přes Radio_CheckedChanged() */ }
+        }
+        /// <summary>
+        /// Typ údaje, který se v tomto panelu edituje
+        /// </summary>
+        public ConfigLinkLineSettingType LinkLineSetting
+        {
+            get { return this._LinkLineSetting; }
+            set { this._LinkLineSetting = value; this.ShowValue(); }
+        }
+        private ConfigLinkLineSettingType _LinkLineSetting;
+        #endregion
+    }
+    /// <summary>
+    /// ConfigLinkLineSamplePanel : Panel pro grafické zobrazení Linků dle dané konfigurace
+    /// </summary>
+    public class ConfigLinkLineSamplePanel : WinPanel
+    {
+        #region Vnitřní život: inicializace
+        /// <summary>
+        /// Inicializace.
+        /// Pozor, jde o virtuální metodu volanou z konstruktoru.
+        /// Tyto controly obecně nemají používat konstruktor, ale tuto inicializaci (kde lze řídit místo výkonu base metody)
+        /// </summary>
+        protected override void Initialize()
+        {
+            this.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
+
+            base.Initialize();
+
+            this.Size = new Size(OptimalWidth, OptimalHeight);
+            this.MinimumSize = this.Size;
+            this.MaximumSize = this.Size;
+
+            this._LinkAsSCurve = true;
+            this._LinkWholeTask = true;
+
+            this._SampleBackColor = Color.LightGray;
+            this._SampleFixedColor = Color.DarkGray;
+            this._SampleMovedColor = Color.DarkSeaGreen;
+            this._LineColor = Color.DarkViolet;
+        }
+        /// <summary>
+        /// Šířka tohoto prvku
+        /// </summary>
+        internal static int OptimalWidth { get { return 150; } }
+        /// <summary>
+        /// Výška tohoto prvku
+        /// </summary>
+        internal static int OptimalHeight { get { return 90; } }
+        #endregion
+
+
+        #region Public properties
+        /// <summary>
+        /// Tvar spojovací linie jako křivka?
+        /// false = přímá čára; true = S-křivka
+        /// </summary>
+        [Description("Tvar spojovací linie jako křivka? false = přímá čára; true = S-křivka")]
+        [Category(WinConstants.DesignCategory)]
+        [AmbientValue(true)]
+        public bool LinkAsSCurve
+        {
+            get { return this._LinkAsSCurve; }
+            set { this._LinkAsSCurve = value; this.Refresh(); }
+        }
+        private bool _LinkAsSCurve;
+        /// <summary>
+        /// Zobrazovat celý řetěz?
+        /// false = jen přímé sousedy; true = celý řetěz
+        /// </summary>
+        [Description("Zobrazovat celý řetěz? false = jen přímé sousedy; true = celý řetěz")]
+        [Category(WinConstants.DesignCategory)]
+        [AmbientValue(true)]
+        public bool LinkWholeTask
+        {
+            get { return this._LinkWholeTask; }
+            set { this._LinkWholeTask = value; this.Refresh(); }
+        }
+        private bool _LinkWholeTask;
+        /// <summary>
+        /// Barva pozadí pod vzorky
+        /// </summary>
+        [Description("Barva pozadí pod vzorky")]
+        [Category(WinConstants.DesignCategory)]
+        [AmbientValue(typeof(Color), "LightGray")]
+        public Color SampleBackColor
+        {
+            get { return this._SampleBackColor; }
+            set { this._SampleBackColor = value; this.Refresh(); }
+        }
+        private Color _SampleBackColor;
+        /// <summary>
+        /// Barva prvku, který je neaktivní
+        /// </summary>
+        [Description("Barva prvku, který je neaktivní")]
+        [Category(WinConstants.DesignCategory)]
+        [AmbientValue(typeof(Color), "DarkGray")]
+        public Color SampleFixedColor
+        {
+            get { return this._SampleFixedColor; }
+            set { this._SampleFixedColor = value; this.Refresh(); }
+        }
+        private Color _SampleFixedColor;
+        /// <summary>
+        /// Barva prvku, který je aktivní
+        /// </summary>
+        [Description("Barva prvku, který je aktivní")]
+        [Category(WinConstants.DesignCategory)]
+        [AmbientValue(typeof(Color), "DarkSeaGreen")]
+        public Color SampleMovedColor
+        {
+            get { return this._SampleMovedColor; }
+            set { this._SampleMovedColor = value; this.Refresh(); }
+        }
+        private Color _SampleMovedColor;
+        /// <summary>
+        /// Barva spojovací linky
+        /// </summary>
+        [Description("Barva spojovací linky")]
+        [Category(WinConstants.DesignCategory)]
+        [AmbientValue(typeof(Color), "DarkViolet")]
+        public Color LineColor
+        {
+            get { return this._LineColor; }
+            set { this._LineColor = value; this.Refresh(); }
+        }
+        private Color _LineColor;
+        #endregion
+    }
+    /// <summary>
+    /// Druh údaje, který se v konkrétním <see cref="ConfigLinkLineSamplePanel"/> edituje
+    /// </summary>
+    public enum ConfigLinkLineSettingType
+    {
+        /// <summary>
+        /// Neurčeno
+        /// </summary>
+        None,
+        /// <summary>
+        /// Tvar linie: false = rovné čáry, true = S-křivky
+        /// </summary>
+        LineShape,
+        /// <summary>
+        /// Linky pro MouseOver: false = jen aktivní prvek, true = celá sada (dílec)
+        /// </summary>
+        LinkMouse,
+        /// <summary>
+        /// Linky pro Selected: false = jen aktivní prvek, true = celá sada (dílec)
+        /// </summary>
+        LinkSelect
+    }
+    #endregion
+    #region ConfigSnapSetPanel : Panel pro zobrazení přichytávání všech konkrétních typů (obsahuje PresetPanel + 5 x ConfigSnapOnePanel)
+    /// <summary>
+    /// ConfigSnapSetPanel : Panel pro zobrazení přichytávání všech konkrétních typů (obsahuje PresetPanel + 5 x ConfigSnapOnePanel)
     /// </summary>
     public class ConfigSnapSetPanel : WinHorizontalLine, ISchedulerEditorControlItem
     {
@@ -30,12 +398,22 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             base.Initialize();
 
-            this.PresetButtonsPanel = new WinHorizontalLine() { Caption = "Rychlé nastavení" };
+            this.PresetButtonsPanel = new WinHorizontalLine() { Bounds = new Rectangle(0, 0, 456, 70), Caption = "Rychlé nastavení", LineLengthMax = 456 };
             this.SnapSequencePanel = new ConfigSnapOnePanel() { ImageType = ConfigSnapImageType.Sequence, Caption = "Navazující operace" };
             this.SnapInnerPanel = new ConfigSnapOnePanel() { ImageType = ConfigSnapImageType.InnerItem, Caption = "Operace k pracovní době" };
-            this.SnapOriginalTimeNearPanel = new ConfigSnapOnePanel() { ImageType = ConfigSnapImageType.OriginalTimeNear, Caption = "Výchozí čas bez změny místa" };
-            this.SnapOriginalTimeLongPanel = new ConfigSnapOnePanel() { ImageType = ConfigSnapImageType.OriginalTimeLong, Caption = "Výchozí čas na jiném místě" };
+            this.SnapOriginalTimeNearPanel = new ConfigSnapOnePanel() { ImageType = ConfigSnapImageType.OriginalTimeNear, Caption = "Výchozí čas - bez změny místa" };
+            this.SnapOriginalTimeLongPanel = new ConfigSnapOnePanel() { ImageType = ConfigSnapImageType.OriginalTimeLong, Caption = "Výchozí čas - na jiném místě" };
             this.SnapGridTickPanel = new ConfigSnapOnePanel() { ImageType = ConfigSnapImageType.GridTick, Caption = "Zaokrouhlení času" };
+
+            this.PresetKeyNoneButton = new WinButtonImage() { Bounds = new Rectangle(12, 28, 140, 36), Text = "Bez přichycení", Tag = SchedulerConfig.MoveSnapKeyType.Shift };
+            this.PresetKeyNormalButton = new WinButtonImage() { Bounds = new Rectangle(158, 28, 140, 36), Text = "Standardní", Tag = SchedulerConfig.MoveSnapKeyType.None };
+            this.PresetKeyBigButton = new WinButtonImage() { Bounds = new Rectangle(304, 28, 140, 36), Text = "Silné", Tag = SchedulerConfig.MoveSnapKeyType.Ctrl };
+            this.PresetKeyNoneButton.Click += PresetKeyButton_Click;
+            this.PresetKeyNormalButton.Click += PresetKeyButton_Click;
+            this.PresetKeyBigButton.Click += PresetKeyButton_Click;
+            this.PresetButtonsPanel.Controls.Add(this.PresetKeyNoneButton);
+            this.PresetButtonsPanel.Controls.Add(this.PresetKeyNormalButton);
+            this.PresetButtonsPanel.Controls.Add(this.PresetKeyBigButton);
 
             this.SuspendLayout();
 
@@ -66,7 +444,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             int h = ConfigSnapOnePanel.OptimalHeight;
             int s = h + 3;
 
-            this.PresetButtonsPanel.Bounds = new Rectangle(x, y, w, h); y += s;
+            int bh = this.PresetButtonsPanel.Height;
+            this.PresetButtonsPanel.Bounds = new Rectangle(x, y, w, bh); y += bh + 3;
+
             this.SnapSequencePanel.Bounds = new Rectangle(x, y, w, h); y += s;
             this.SnapInnerPanel.Bounds = new Rectangle(x, y, w, h); y += s;
             this.SnapOriginalTimeNearPanel.Bounds = new Rectangle(x, y, w, h); y += s;
@@ -77,7 +457,18 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Panel s nabídkou přednastavení
         /// </summary>
         protected WinHorizontalLine PresetButtonsPanel;
-        protected WinButtonImage Preset
+        /// <summary>
+        /// Button pro nabídku Defaultní nastavení - None
+        /// </summary>
+        protected WinButtonImage PresetKeyNoneButton;
+        /// <summary>
+        /// Button pro nabídku Defaultní nastavení - Normal
+        /// </summary>
+        protected WinButtonImage PresetKeyNormalButton;
+        /// <summary>
+        /// Button pro nabídku Defaultní nastavení - Big
+        /// </summary>
+        protected WinButtonImage PresetKeyBigButton;
         /// <summary>
         /// Panel pro ukázku <see cref="ConfigSnapImageType.Sequence"/>
         /// </summary>
@@ -98,14 +489,42 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Panel pro ukázku <see cref="ConfigSnapImageType.GridTick"/>
         /// </summary>
         protected ConfigSnapOnePanel SnapGridTickPanel;
+        /// <summary>
+        /// Po kliknutí na button Preset
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void PresetKeyButton_Click(object sender, EventArgs e)
+        {
+            Button button = sender as Button;
+            if (button == null || !(button.Tag is SchedulerConfig.MoveSnapKeyType)) return;
+            this.PresetConfigFor((SchedulerConfig.MoveSnapKeyType)button.Tag);
+        }
         #endregion
         #region Read, Save, Data
         /// <summary>
         /// Načte hodnoty z <see cref="Data"/> do this controlů
         /// </summary>
-        protected void Read()
+        protected void ReadFromData()
         {
-            SchedulerConfig.MoveSnapInfo data = this.Data;
+            this.ReadFromData(this.Data);
+        }
+        /// <summary>
+        /// Do this controlů vloží defaultní hodnot
+        /// </summary>
+        /// <param name="keyType"></param>
+        protected void PresetConfigFor(SchedulerConfig.MoveSnapKeyType keyType)
+        {
+            SchedulerConfig.MoveSnapInfo data = new SchedulerConfig.MoveSnapInfo();
+            data.CheckValid(keyType);
+            this.ReadFromData(data);
+        }
+        /// <summary>
+        /// Načte hodnoty z dodaného objektu do this controlů
+        /// </summary>
+        /// <param name="data">Data</param>
+        protected void ReadFromData(SchedulerConfig.MoveSnapInfo data)
+        {
             if (data == null) return;
 
             this.SnapSequencePanel.SnapActive = data.SequenceActive;
@@ -122,9 +541,15 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Uloží hodnoty z this controlů do <see cref="Data"/>
         /// </summary>
-        protected void Save()
+        protected void SaveToData()
         {
-            SchedulerConfig.MoveSnapInfo data = this.Data;
+            this.SaveToData(this.Data);
+        }
+        /// <summary>
+        /// Uloží hodnoty z this controlů do dodaného objektu
+        /// </summary>
+        protected void SaveToData(SchedulerConfig.MoveSnapInfo data)
+        {
             if (data == null) return;
 
             data.SequenceActive = this.SnapSequencePanel.SnapActive;
@@ -144,13 +569,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         public SchedulerConfig.MoveSnapInfo Data { get; set; }
         #endregion
         #region ISchedulerEditorControlItem
-        void ISchedulerEditorControlItem.Read() { this.Read(); }
-        void ISchedulerEditorControlItem.Save() { this.Save(); }
+        void ISchedulerEditorControlItem.ReadFromData() { this.ReadFromData(); }
+        void ISchedulerEditorControlItem.SaveToData() { this.SaveToData(); }
         Panel ISchedulerEditorControlItem.Panel { get { return this; } }
         #endregion
     }
-    #endregion
-    #region ConfigSnapOnePanel : Panel pro zobrazení přichytávání jednoho konkrétního typu (trackbar a obrázek)
     /// <summary>
     /// ConfigSnapOnePanel : Panel pro zobrazení přichytávání jednoho konkrétního typu (trackbar a obrázek)
     /// </summary>
@@ -321,8 +744,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         }
         #endregion
     }
-    #endregion
-    #region ConfigSnapSamplePanel : Panel pro zobrazení přichytávání
     /// <summary>
     /// ConfigSnapSamplePanel : Panel pro zobrazení přichytávání
     /// </summary>
@@ -349,7 +770,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this._SnapDistance = 20;
 
             this._SampleBackColor = Color.LightGray;
-            this._SampleFixColor = Color.DarkGray;
+            this._SampleFixedColor = Color.DarkGray;
             this._SampleOuterColor = Color.Linen;
             this._SampleMovedColor = Color.DarkSeaGreen;
             this._SampleMagnetLinkColor = Color.DarkViolet;
@@ -436,11 +857,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 this.PaintMagnetLine(e, boundsM.GetPoint(ContentAlignment.MiddleLeft).Value, new Point(boundsF.GetPoint(ContentAlignment.MiddleRight).Value.X - 2, 0), true);
 
             // Fixní prvek:
-            color = this.SampleFixColor;
+            color = this.SampleFixedColor;
             GPainter.DrawButtonBase(e.Graphics, boundsF, color, GInteractiveState.Enabled, Orientation.Horizontal, 0, null, null);
 
             // Pohyblivý prvek, vpravo do fixního prvku:
-            color = this.SnapActive ? this.SampleMovedColor : this.SampleFixColor;
+            color = this.SnapActive ? this.SampleMovedColor : this.SampleFixedColor;
             GPainter.DrawButtonBase(e.Graphics, boundsM, color, GInteractiveState.MouseOver, Orientation.Horizontal, 0, null, null);
         }
         /// <summary>
@@ -475,7 +896,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 this.PaintMagnetLine(e, boundsM.GetPoint(ContentAlignment.MiddleLeft).Value, boundsF.GetPoint(ContentAlignment.MiddleLeft).Value, true);
 
             // Pohyblivý prvek, nad fixním prvek:
-            color = this.SnapActive ? this.SampleMovedColor : this.SampleFixColor;
+            color = this.SnapActive ? this.SampleMovedColor : this.SampleFixedColor;
             GPainter.DrawButtonBase(e.Graphics, boundsM, color, GInteractiveState.MouseOver, Orientation.Horizontal, 0, null, null);
         }
         /// <summary>
@@ -521,11 +942,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 this.PaintMagnetLine(e, boundsM.GetPoint(ContentAlignment.MiddleLeft).Value, new Point(boundsF.GetPoint(ContentAlignment.MiddleLeft).Value.X - 1, 0), true);
 
             // Pohyblivý prvek, nad fixním prvek, ve stejném řádku B:
-            color = this.SnapActive ? this.SampleMovedColor : this.SampleFixColor;
+            color = this.SnapActive ? this.SampleMovedColor : this.SampleFixedColor;
             GPainter.DrawButtonBase(e.Graphics, boundsM, color, GInteractiveState.MouseOver, Orientation.Horizontal, 0, null, null);
 
             // Fixní prvek, dole v řádku B:
-            color = this.SampleFixColor;
+            color = this.SampleFixedColor;
             GPainter.DrawButtonBase(e.Graphics, boundsF, color, GInteractiveState.Enabled, Orientation.Horizontal, 0, null, null);
         }
         /// <summary>
@@ -571,11 +992,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 this.PaintMagnetLine(e, boundsM.GetPoint(ContentAlignment.MiddleLeft).Value, new Point(boundsF.GetPoint(ContentAlignment.MiddleLeft).Value.X - 1, 0), true);
 
             // Pohyblivý prvek, nad fixním prvek, v řádku A:
-            color = this.SnapActive ? this.SampleMovedColor : this.SampleFixColor;
+            color = this.SnapActive ? this.SampleMovedColor : this.SampleFixedColor;
             GPainter.DrawButtonBase(e.Graphics, boundsM, color, GInteractiveState.MouseOver, Orientation.Horizontal, 0, null, null);
 
             // Fixní prvek, dole v řádku B:
-            color = this.SampleFixColor;
+            color = this.SampleFixedColor;
             GPainter.DrawButtonBase(e.Graphics, boundsF, color, GInteractiveState.Enabled, Orientation.Horizontal, 0, null, null);
         }
         /// <summary>
@@ -627,7 +1048,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 this.PaintMagnetLine(e, boundsM.GetPoint(ContentAlignment.MiddleLeft).Value, new Point(xL - 1, 0), true);
 
             // Pohyblivý prvek, nad fixním prvek, v řádku A:
-            color = this.SnapActive ? this.SampleMovedColor : this.SampleFixColor;
+            color = this.SnapActive ? this.SampleMovedColor : this.SampleFixedColor;
             GPainter.DrawButtonBase(e.Graphics, boundsM, color, GInteractiveState.MouseOver, Orientation.Horizontal, 0, null, null);
         }
         /// <summary>
@@ -703,12 +1124,12 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         [Description("Barva prvku, který je pevný")]
         [Category(WinConstants.DesignCategory)]
         [AmbientValue(typeof(Color), "DarkGray")]
-        public Color SampleFixColor
+        public Color SampleFixedColor
         {
-            get { return this._SampleFixColor; }
-            set { this._SampleFixColor = value; this.Refresh(); }
+            get { return this._SampleFixedColor; }
+            set { this._SampleFixedColor = value; this.Refresh(); }
         }
-        private Color _SampleFixColor;
+        private Color _SampleFixedColor;
         /// <summary>
         /// Barva prvku, který je vnější okolo pohyblivého prvku, použit jako pozadí při vykreslení InnerItem
         /// </summary>

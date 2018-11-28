@@ -17,7 +17,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Konstruktor, privátní, určený pro <see cref="Persist.Deserialize(string)"/>
         /// </summary>
-        private SchedulerConfig() {   /* Tímto konstruktorem projde i deserializace objektu v rámci Persistor ! */   }
+        private SchedulerConfig()
+        {   /* Tímto konstruktorem projde i deserializace objektu v rámci Persistor ! */
+            this.MoveSnapMouse = new MoveSnapInfo();
+            this.MoveSnapCtrl = new MoveSnapInfo();
+            this.MoveSnapShift = new MoveSnapInfo();
+            this.MoveSnapCtrlShift = new MoveSnapInfo();
+        }
         /// <summary>
         /// Konstruktor pro standardní použití, provede i načtení dat.
         /// Lze zadat soubor = null, pak se použije defaultní. Ale musí se volat tento konstruktor.
@@ -46,12 +52,25 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this._AfterDeserialize();
         }
         /// <summary>
-        /// Uloží aktuální stav objektu do svého souboru
+        /// Uloží data konfigurace
+        /// </summary>
+        public void Save()
+        {
+            this._SaveNow();
+        }
+        /// <summary>
+        /// Uloží aktuální stav objektu do svého souboru, pokud zrovna není nastaveno blokování ukládání <see cref="_SuppressSave"/>.
         /// </summary>
         private void _Save()
         {
-            if (this._SuppressSave) return;
-
+            if (!this._SuppressSave)
+                this._SaveNow();
+        }
+        /// <summary>
+        /// Uloží aktuální stav objektu do svého souboru
+        /// </summary>
+        private void _SaveNow()
+        {
             string configFile = this._ConfigFile;
             if (String.IsNullOrEmpty(configFile)) return;
             string data = Persist.Serialize(this);
@@ -78,81 +97,36 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         public ToolbarSystemItem TimeAxisZoom
         {
             get { return (ToolbarSystemItem)(this._TimeAxisZoom & ToolbarSystemItem.TimeAxisZoomAll); }
-            set { this._SetValue((ToolbarSystemItem)(value & ToolbarSystemItem.TimeAxisZoomAll), ref this._TimeAxisZoom); }
+            set { this._TimeAxisZoom = ((ToolbarSystemItem)(value & ToolbarSystemItem.TimeAxisZoomAll)); }
         }
         private ToolbarSystemItem _TimeAxisZoom = ToolbarSystemItem.TimeAxisZoomWorkWeek;
-        /// <summary>
-        /// Při pohybu prvků v grafu jej přichytávat k blízkým prvkům
-        /// </summary>
-        public bool MoveItemSnapToNearItems
-        {
-            get { return this._MoveItemSnapToNearItems; }
-            set { this._SetValue(value, ref this._MoveItemSnapToNearItems); }
-        }
-        private bool _MoveItemSnapToNearItems = true;
-        /// <summary>
-        /// Vzdálenost v pixelech, na kterou se budou vyhledávat sousední prvky pro přichytávání k blízkým prvkům
-        /// </summary>
-        public int MoveItemSnapDistanceToNearItems
-        {
-            get { return this._MoveItemSnapDistanceToNearItems; }
-            set { this._SetValue(value, 0, 50, ref this._MoveItemSnapDistanceToNearItems); }
-        }
-        private int _MoveItemSnapDistanceToNearItems = 10;
-        /// <summary>
-        /// Při pohybu prvků v grafu jej přichytávat k původnímu času prvku
-        /// </summary>
-        public bool MoveItemSnapToOriginalTime
-        {
-            get { return this._MoveItemSnapToOriginalTime; }
-            set { this._SetValue(value, ref this._MoveItemSnapToOriginalTime); }
-        }
-        private bool _MoveItemSnapToOriginalTime = true;
-        /// <summary>
-        /// Při najetí myší zobrazovat vztahy v rámci celého postupu, nejen nejbližší sousední položky
-        /// </summary>
-        public bool GuiEditShowLinkWholeTask
-        {
-            get { return this._GuiEditShowLinkWholeTask; }
-            set { this._SetValue(value, ref this._GuiEditShowLinkWholeTask); }
-        }
-        private bool _GuiEditShowLinkWholeTask = true;
         /// <summary>
         /// Vztahy zobrazovat jako křivky (výchozí: zobrazovat jako rovné čáry)
         /// </summary>
         public bool GuiEditShowLinkAsSCurve
         {
             get { return this._GuiEditShowLinkAsSCurve; }
-            set { this._SetValue(value, ref this._GuiEditShowLinkAsSCurve); }
+            set { this._GuiEditShowLinkAsSCurve = value; }
         }
         private bool _GuiEditShowLinkAsSCurve = true;
         /// <summary>
-        /// Počet pixelů vzdálenosti od původního času, kdy se k tomuto původnímu času bude prvek přichytávat při pohybu na TOM SAMÉM grafu
+        /// Při najetí myší zobrazovat vztahy v rámci celého postupu, nejen nejbližší sousední položky
         /// </summary>
-        public int MoveItemSnapDistanceToOriginalTimeOnSameGraph
+        public bool GuiEditShowLinkMouseWholeTask
         {
-            get { return this._MoveItemSnapDistanceToOriginalTimeOnSameGraph; }
-            set { this._SetValue(value, 0, 50, ref this._MoveItemSnapDistanceToOriginalTimeOnSameGraph); }
+            get { return this._GuiEditShowLinkMouseWholeTask; }
+            set { this._GuiEditShowLinkMouseWholeTask = value; }
         }
-        private int _MoveItemSnapDistanceToOriginalTimeOnSameGraph = 5;
+        private bool _GuiEditShowLinkMouseWholeTask = true;
         /// <summary>
-        /// Počet pixelů vzdálenosti od původního času, kdy se k tomuto původnímu času bude prvek přichytávat při pohybu na JINÉM grafu
+        /// Při najetí myší zobrazovat vztahy v rámci celého postupu, nejen nejbližší sousední položky
         /// </summary>
-        public int MoveItemSnapDistanceToOriginalTimeOnOtherGraph
+        public bool GuiEditShowLinkSelectedWholeTask
         {
-            get { return this._MoveItemSnapDistanceToOriginalTimeOnOtherGraph; }
-            set { this._SetValue(value, 0, 50, ref this._MoveItemSnapDistanceToOriginalTimeOnOtherGraph); }
+            get { return this._GuiEditShowLinkSelectedWholeTask; }
+            set { this._GuiEditShowLinkSelectedWholeTask = value; }
         }
-        private int _MoveItemSnapDistanceToOriginalTimeOnOtherGraph = 15;
-        /// <summary>
-        /// Při pohybu prvků v grafu jej přichytávat k nejbližšímu zaokrouhlenému času
-        /// </summary>
-        public bool MoveItemSnapToNearRoundTime
-        {
-            get { return this._MoveItemSnapToNearRoundTime; }
-            set { this._SetValue(value, ref this._MoveItemSnapToNearRoundTime); }
-        }
-        private bool _MoveItemSnapToNearRoundTime = true;
+        private bool _GuiEditShowLinkSelectedWholeTask = true;
 
         /// <summary>
         /// Velikost prvku (šířka v pixelech), kdy považujeme vhodné přichytávat vždy na Begin.
@@ -162,7 +136,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         public int MoveItemDetectSideMinSize
         {
             get { return this._MoveItemDetectSideMinSize; }
-            set { this._SetValue(value, 0, 50, ref this._MoveItemDetectSideMinSize); }
+            set { this._MoveItemDetectSideMinSize = GetValue(value, 0, 50); }
         }
         private int _MoveItemDetectSideMinSize = 15;
         /// <summary>
@@ -173,27 +147,123 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         public float MoveItemDetectSideRatio
         {
             get { return this._MoveItemDetectSideRatio; }
-            set { this._SetValue(value, 0f, 1f, ref this._MoveItemDetectSideRatio); }
+            set { this._MoveItemDetectSideRatio = GetValue(value, 0f, 1f); }
         }
         private float _MoveItemDetectSideRatio = 0.60f;
 
         /// <summary>
+        /// Vrátí instanci <see cref="MoveSnapInfo"/>, odpovídající stisknutým modifikačním klávesám
+        /// </summary>
+        /// <param name="modifierKeys">Modifier keys v době vzniku akce (Ctrl, Shift, Alt)</param>
+        /// <returns></returns>
+        public MoveSnapInfo GetMoveSnapForKeys(System.Windows.Forms.Keys modifierKeys)
+        {
+            if (modifierKeys == System.Windows.Forms.Keys.Control) return this.MoveSnapCtrl;
+            if (modifierKeys == System.Windows.Forms.Keys.Shift) return this.MoveSnapShift;
+            if (modifierKeys == (System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.Shift)) return this.MoveSnapCtrlShift;
+            return this.MoveSnapMouse;
+        }
+        /// <summary>
         /// Přichytávání k objektům bez stisknutých kláves
         /// </summary>
-        public MoveSnapInfo MoveSnapMouse { get; set; }
+        public MoveSnapInfo MoveSnapMouse { get { return this._MoveSnapMouse; } set { if (value != null) { this._MoveSnapMouse = value; this._MoveSnapMouse.CheckValid(MoveSnapKeyType.None); } } } private MoveSnapInfo _MoveSnapMouse;
         /// <summary>
         /// Přichytávání k objektům při stisknuté klávese Ctrl
         /// </summary>
-        public MoveSnapInfo MoveSnapCtrl { get; set; }
+        public MoveSnapInfo MoveSnapCtrl { get { return this._MoveSnapCtrl; } set { if (value != null) { this._MoveSnapCtrl = value; this._MoveSnapCtrl.CheckValid(MoveSnapKeyType.Ctrl); } } } private MoveSnapInfo _MoveSnapCtrl;
         /// <summary>
         /// Přichytávání k objektům při stisknuté klávese Shift
         /// </summary>
-        public MoveSnapInfo MoveSnapShift { get; set; }
+        public MoveSnapInfo MoveSnapShift { get { return this._MoveSnapShift; } set { if (value != null) { this._MoveSnapShift = value; this._MoveSnapShift.CheckValid(MoveSnapKeyType.Shift); } } } private MoveSnapInfo _MoveSnapShift;
         /// <summary>
         /// Přichytávání k objektům při stisknuté kombinaci Ctrl + Shift
         /// </summary>
-        public MoveSnapInfo MoveSnapCtrlShift { get; set; }
+        public MoveSnapInfo MoveSnapCtrlShift { get { return this._MoveSnapCtrlShift; } set { if (value != null) { this._MoveSnapCtrlShift = value; this._MoveSnapCtrlShift.CheckValid(MoveSnapKeyType.CtrlShift); } } } private MoveSnapInfo _MoveSnapCtrlShift;
+        #endregion
+        #region EditorItems : vizuální prvky pro formuláře Konfigurace
+        /// <summary>
+        /// Metoda vrací pole prvků, které slouží k editaci konfigurace.
+        /// </summary>
+        /// <returns></returns>
+        public SchedulerEditorItem[] CreateEditorItems()
+        {
+            List<SchedulerEditorItem> itemList = new List<SchedulerEditorItem>();
 
+            // Vkládám jednotlivé prvky: jejich titulek = text v Tree, jejich ToolTip, a jejich instanci editoru:
+            itemList.Add(new SchedulerEditorItem(EditTitle_Snap + EditTitle_Separator + EditTitle_SnapMouse, "", new ConfigSnapSetPanel() { Data = this.MoveSnapMouse, Caption = "Přichycení při přetahování prvku, bez klávesnice" }));
+            itemList.Add(new SchedulerEditorItem(EditTitle_Snap + EditTitle_Separator + EditTitle_SnapCtrl, "", new ConfigSnapSetPanel() { Data = this.MoveSnapCtrl, Caption = "Přichycení při přetahování prvku, s klávesou CTRL" }));
+            itemList.Add(new SchedulerEditorItem(EditTitle_Snap + EditTitle_Separator + EditTitle_SnapShift, "", new ConfigSnapSetPanel() { Data = this.MoveSnapShift, Caption = "Přichycení při přetahování prvku, s klávesou SHIFT" }));
+            itemList.Add(new SchedulerEditorItem(EditTitle_Snap + EditTitle_Separator + EditTitle_SnapCtrlShift, "", new ConfigSnapSetPanel() { Data = this.MoveSnapCtrlShift, Caption = "Přichycení při přetahování prvku, s klávesou CTRL + SHIFT" }));
+
+            itemList.Add(new SchedulerEditorItem(EditTitle_LinkLine, "", new ConfigLinkLinesSetPanel() { Data = this, Caption = "Zobrazení spojovacích linií v grafech" }));
+
+            return itemList.ToArray();
+        }
+        protected static string EditTitle_Snap { get { return "Přichycení při přetahování"; } }
+        protected static string EditTitle_SnapMouse { get { return "Přetahování myší"; } }
+        protected static string EditTitle_SnapCtrl { get { return "Se stisknutým CTRL"; } }
+        protected static string EditTitle_SnapShift { get { return "Se stisknutým SHIFT"; } }
+        protected static string EditTitle_SnapCtrlShift { get { return "Se stisknutým CTRL+SHIFT"; } }
+        protected static string EditTitle_LinkLine { get { return "Spojovací linie"; } }
+        public static string EditTitle_Separator { get { return "\\"; } }
+        #endregion
+        #region EditingScope : Editační scope
+        /// <summary>
+        /// Metoda vrátí new editační scope.
+        /// Po dobu jeho života nebude Config ukládán, uloží se při Dispose tohoto scope.
+        /// </summary>
+        /// <returns></returns>
+        public IDisposable CreateEditingScope()
+        {
+            return new EditingScope(this);
+        }
+        /// <summary>
+        /// EditingScope : Editační scope
+        /// </summary>
+        protected class EditingScope : IDisposable
+        {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="config"></param>
+            public EditingScope(SchedulerConfig config)
+            {
+                this._Config = config;
+                this._SuppressSave = config._SuppressSave;
+                this._Config._SuppressSave = true;
+            }
+            SchedulerConfig _Config;
+            bool _SuppressSave;
+            void IDisposable.Dispose()
+            {
+                this._Config._SuppressSave = this._SuppressSave;
+                this._Config._Save();
+            }
+        }
+        #endregion
+        #region Ověření hodnoty
+        /// <summary>
+        /// Vrátí hodnotu zarovnanou do daných mezí
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="minValue"></param>
+        /// <param name="maxValue"></param>
+        /// <returns></returns>
+        protected static int GetValue(int value, int minValue, int maxValue)
+        {
+            return (value < minValue ? minValue : (value > maxValue ? maxValue : value));
+        }
+        /// <summary>
+        /// Vrátí hodnotu zarovnanou do daných mezí
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="minValue"></param>
+        /// <param name="maxValue"></param>
+        /// <returns></returns>
+        protected static float GetValue(float value, float minValue, float maxValue)
+        {
+            return (value < minValue ? minValue : (value > maxValue ? maxValue : value));
+        }
         #endregion
         #region IXmlPersistNotify : Podpora pro serializaci
         /// <summary>
@@ -222,18 +292,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         }
         private XmlPersistState _XmlPersistState;
         private void _AfterDeserialize()
-        {
-            if (this.MoveSnapMouse == null) this.MoveSnapMouse = new MoveSnapInfo();
-            this.MoveSnapMouse.Owner = this;
-            if (this.MoveSnapCtrl == null) this.MoveSnapCtrl = new MoveSnapInfo();
-            if (this.MoveSnapShift == null) this.MoveSnapShift = new MoveSnapInfo();
-            if (this.MoveSnapCtrlShift == null) this.MoveSnapCtrlShift = new MoveSnapInfo();
-
-
-        }
-
+        { }
         #endregion
-        #region SubClasses
+        #region SubClasses: MoveSnapInfo
         /// <summary>
         /// Definice vlastností pro přichytávání objektů
         /// </summary>
@@ -279,112 +340,90 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             /// Vzdálenost pro algoritmus: Přichytit k rastru osy
             /// </summary>
             public int GridTickDistance { get; set; }
+            /// <summary>
+            /// Typ modifikačních kláves
+            /// </summary>
+            public MoveSnapKeyType? KeyType { get; set; }
 
             /// <summary>
             /// Majitel objektu
             /// </summary>
             [PersistingEnabled(false)]
             internal SchedulerConfig Owner { get; set; }
-        }
-        #endregion
-        #region Podpora pro editaci
-        /// <summary>
-        /// Metoda vrací pole prvků, které slouží k editaci konfigurace.
-        /// </summary>
-        /// <returns></returns>
-        public SchedulerEditorItem[] CreateEditorItems()
-        {
-            List<SchedulerEditorItem> itemList = new List<SchedulerEditorItem>();
+            /// <summary>
+            /// Metoda zajistí platnost dat v this objektu pro daný typ modifikačních kláves
+            /// </summary>
+            /// <param name="keyType">Typ modifikačních kláves</param>
+            internal void CheckValid(MoveSnapKeyType keyType)
+            {
+                if (this.KeyType.HasValue && this.KeyType.Value == keyType) return;   // Data jsou platná
 
-            // Vkládám jednotlivé prvky: jejich titulek = text v Tree, jejich ToolTip, a jejich instanci editoru:
-            itemList.Add(new SchedulerEditorItem(EditTitle_Snap + EditTitle_Separator + EditTitle_SnapMouse, "", new ConfigSnapSetPanel() { Data = this.MoveSnapMouse, Caption = "Přichycení při přetahování prvku, bez klávesnice" }));
-            itemList.Add(new SchedulerEditorItem(EditTitle_Snap + EditTitle_Separator + EditTitle_SnapCtrl, "", new ConfigSnapSetPanel() { Data = this.MoveSnapCtrl, Caption = "Přichycení při přetahování prvku, s klávesou CTRL" }));
-            itemList.Add(new SchedulerEditorItem(EditTitle_Snap + EditTitle_Separator + EditTitle_SnapShift, "", new ConfigSnapSetPanel() { Data = this.MoveSnapShift, Caption = "Přichycení při přetahování prvku, s klávesou SHIFT" }));
-            itemList.Add(new SchedulerEditorItem(EditTitle_Snap + EditTitle_Separator + EditTitle_SnapCtrlShift, "", new ConfigSnapSetPanel() { Data = this.MoveSnapCtrlShift, Caption = "Přichycení při přetahování prvku, s klávesou CTRL + SHIFT" }));
+                // Nastavíme defaultní hodnoty:
+                switch (keyType)
+                {
+                    case MoveSnapKeyType.None:             // Bez kláves = mírné přichycení
+                    case MoveSnapKeyType.CtrlShift:        // CTRL + SHIFT: standardně nemá zvykové právo, nastavíme jako None:
+                        this.SequenceActive = true;
+                        this.SequenceDistance = 5;
+                        this.InnerItemActive = true;
+                        this.InnerItemDistance = 5;
+                        this.OriginalTimeNearActive = true;
+                        this.OriginalTimeNearDistance = 5;
+                        this.OriginalTimeLongActive = true;
+                        this.OriginalTimeLongDistance = 10;
+                        this.GridTickActive = false;
+                        this.GridTickDistance = 3;
+                        break;
+                    case MoveSnapKeyType.Ctrl:             // CTRL = přichycení na větší vzdálenosti
+                        this.SequenceActive = true;
+                        this.SequenceDistance = 20;
+                        this.InnerItemActive = true;
+                        this.InnerItemDistance = 20;
+                        this.OriginalTimeNearActive = true;
+                        this.OriginalTimeNearDistance = 20;
+                        this.OriginalTimeLongActive = true;
+                        this.OriginalTimeLongDistance = 30;
+                        this.GridTickActive = true;
+                        this.GridTickDistance = 7;
+                        break;
+                    case MoveSnapKeyType.Shift:            // SHIFT = bez přichycení
+                        this.SequenceActive = false;
+                        this.SequenceDistance = 10;
+                        this.InnerItemActive = false;
+                        this.InnerItemDistance = 10;
+                        this.OriginalTimeNearActive = false;
+                        this.OriginalTimeNearDistance = 10;
+                        this.OriginalTimeLongActive = false;
+                        this.OriginalTimeLongDistance = 10;
+                        this.GridTickActive = false;
+                        this.GridTickDistance = 10;
+                        break;
+                }
 
-            return itemList.ToArray();
-        }
-        protected static string EditTitle_Snap { get { return "Přichycení při přetahování"; } }
-        protected static string EditTitle_SnapMouse { get { return "Přetahování myší"; } }
-        protected static string EditTitle_SnapCtrl { get { return "Se stisknutým CTRL"; } }
-        protected static string EditTitle_SnapShift { get { return "Se stisknutým SHIFT"; } }
-        protected static string EditTitle_SnapCtrlShift { get { return "Se stisknutým CTRL+SHIFT"; } }
-        public static string EditTitle_Separator { get { return "\\"; } }
-        #endregion
-        #region EditingScope : Editační scope
-        /// <summary>
-        /// Metoda vrátí new editační scope.
-        /// Po dobu jeho života nebude Config ukládán, uloží se při Dispose tohoto scope.
-        /// </summary>
-        /// <returns></returns>
-        public IDisposable CreateEditingScope()
-        {
-            return new EditingScope(this);
+                this.KeyType = keyType;
+            }
         }
         /// <summary>
-        /// EditingScope : Editační scope
+        /// Typ modifikačních kláves pro MoveSnap
         /// </summary>
-        protected class EditingScope : IDisposable
+        public enum MoveSnapKeyType
         {
             /// <summary>
-            /// Konstruktor
+            /// Bez kláves
             /// </summary>
-            /// <param name="config"></param>
-            public EditingScope(SchedulerConfig config)
-            {
-                this._Config = config;
-                this._SuppressSave = config._SuppressSave;
-                this._Config._SuppressSave = true;
-            }
-            SchedulerConfig _Config;
-            bool _SuppressSave;
-            void IDisposable.Dispose()
-            {
-                this._Config._SuppressSave = this._SuppressSave;
-                this._Config._Save();
-            }
-        }
-        #endregion
-        #region Ukládání hodnoty, detekce změny, automatické uložení konfigurace
-        private void _SetValue(bool value, ref bool storage)
-        {
-            if (value == storage) return;
-            storage = value;
-            this._Save();
-        }
-        private void _SetValue(int value, int minValue, int maxValue, ref int storage)
-        {
-            value = (value < minValue ? minValue : (value > maxValue ? maxValue : value));
-            this._SetValue(value, ref storage);
-        }
-        private void _SetValue(int value, ref int storage)
-        {
-            if (value == storage) return;
-            storage = value;
-            this._Save();
-        }
-        private void _SetValue(float value, float minValue, float maxValue, ref float storage)
-        {
-            value = (value < minValue ? minValue : (value > maxValue ? maxValue : value));
-            this._SetValue(value, ref storage);
-        }
-        private void _SetValue(float value, ref float storage)
-        {
-            if (value == storage) return;
-            storage = value;
-            this._Save();
-        }
-        private void _SetValue(string value, ref string storage)
-        {
-            if (value == storage) return;
-            storage = value;
-            this._Save();
-        }
-        private void _SetValue(ToolbarSystemItem value, ref ToolbarSystemItem storage)
-        {
-            if (value == storage) return;
-            storage = value;
-            this._Save();
+            None,
+            /// <summary>
+            /// S klávesou Ctrl
+            /// </summary>
+            Ctrl,
+            /// <summary>
+            /// S klávesou Shift
+            /// </summary>
+            Shift,
+            /// <summary>
+            /// S klávesou Ctrl + Shift
+            /// </summary>
+            CtrlShift
         }
         #endregion
     }
@@ -422,8 +461,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     }
     /// <summary>
     /// Předpis pro objekty, které mohou hrát roli editoru jedné položky konfigurace.
-    /// Objekt musí umět načíst hodnoty z configu do vizuálních prvků <see cref="Read()"/>;
-    /// uložit hodnoty z vizuálních prvků do configu <see cref="Save()"/>;
+    /// Objekt musí umět načíst hodnoty z configu do vizuálních prvků <see cref="ReadFromData()"/>;
+    /// uložit hodnoty z vizuálních prvků do configu <see cref="SaveToData()"/>;
     /// a poskytnout vizuální objekt pro zobrazování <see cref="Panel"/>.
     /// </summary>
     public interface ISchedulerEditorControlItem
@@ -431,11 +470,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Objekt načte hodnoty z configu do vizuálních prvků
         /// </summary>
-        void Read();
+        void ReadFromData();
         /// <summary>
         /// Objekt uloží hodnoty z vizuálních prvků do configu
         /// </summary>
-        void Save();
+        void SaveToData();
         /// <summary>
         /// Vizuální control zobrazovaný pro tuto položku konfigurace
         /// </summary>

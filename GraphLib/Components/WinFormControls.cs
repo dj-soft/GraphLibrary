@@ -911,12 +911,18 @@ namespace Asol.Tools.WorkScheduler.Components
             Rectangle bounds;
             int clientWidth = this.ClientSize.Width;
             int titleWidth = clientWidth;
-            int distanceRight = this.LineDistanceRight;
-            if (distanceRight > 0)
+            int? distanceRight = this.LineDistanceRight;
+            if (distanceRight.HasValue && distanceRight.Value > 0)
             {
-                titleWidth = titleWidth - distanceRight;
+                titleWidth = titleWidth - distanceRight.Value;
                 if (titleWidth < 20) titleWidth = 20;
             }
+            int? lineLengthMax = this.LineLengthMax;
+            if (lineLengthMax.HasValue && lineLengthMax.Value > 20 && titleWidth > lineLengthMax.Value)
+            {
+                titleWidth = lineLengthMax.Value;
+            }
+
             bounds = new Rectangle(0, this.TextLineHeight - 2, titleWidth, 1);
             using (LinearGradientBrush lgb = new LinearGradientBrush(bounds, this._LineColorTop, Color.Transparent, 0f))
                 e.Graphics.FillRectangle(lgb, bounds);
@@ -987,22 +993,38 @@ namespace Asol.Tools.WorkScheduler.Components
         private FontInfo _FontInfo;
         /// <summary>
         /// Prostor vpravo, do něhož není kreslena linka.
-        /// Má význam tehdy, když vpravo chceme vykreslit něco jiného.
+        /// Má smysl tehdy, když vpravo chceme vykreslit něco jiného.
         /// </summary>
         [Category(WinConstants.DesignCategory)]
-        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         [Description("Prostor vpravo, do něhož není kreslena linka. Má význam tehdy, když vpravo chceme vykreslit něco jiného.")]
-        [AmbientValue(0)]
-        public int LineDistanceRight
+        [AmbientValue(null)]
+        public int? LineDistanceRight
         {
             get { return this._LineDistanceRight; }
             set
             {
-                this._LineDistanceRight = (value < 0 ? 0 : value);
+                this._LineDistanceRight = (value.HasValue ? (int?)(value.Value < 0 ? 0 : value.Value) : (int?)null);
                 this.Refresh();
             }
         }
-        private int _LineDistanceRight;
+        private int? _LineDistanceRight;
+        /// <summary>
+        /// Délka linky maximální.
+        /// Má smysl tehdy, když vpravo chceme vykreslit linku jen nad pevně daným obsahem.
+        /// </summary>
+        [Category(WinConstants.DesignCategory)]
+        [Description("Délka linky maximální. Má smysl tehdy, když vpravo chceme vykreslit linku jen nad pevně daným obsahem.")]
+        [AmbientValue(null)]
+        public int? LineLengthMax
+        {
+            get { return this._LineLengthMax; }
+            set
+            {
+                this._LineLengthMax = (value.HasValue ? (int?)(value.Value < 0 ? 0 : value.Value) : (int?)null);
+                this.Refresh();
+            }
+        }
+        private int? _LineLengthMax;
         /// <summary>
         /// Barva textu v titulkovém řádku
         /// </summary>

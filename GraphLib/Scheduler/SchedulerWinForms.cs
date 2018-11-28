@@ -82,6 +82,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.ConfigContainer.ResumeLayout(false);
             this.ResumeLayout(false);
         }
+        /// <summary>
+        /// Obsluha stisknutí tlačítka: zakázali jsme provedení CloseOnClick, proto musíme tlačítka obsloužit ručně. Řešíme tím uložení dat.
+        /// </summary>
+        /// <param name="args"></param>
         protected override void OnButtonClick(GPropertyEventArgs<GuiDialogButtons> args)
         {
             base.OnButtonClick(args);
@@ -123,7 +127,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
             e.DrawDefault = false;
         }
-
         /// <summary>
         /// Při prvním zobrazení formu
         /// </summary>
@@ -203,7 +206,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             TreeNode node = _SearchTreeNode(editorItem.NodeText);
             node.Tag = editorItem;
 
-            editorItem.VisualControl.Read();
+            editorItem.VisualControl.ReadFromData();
 
             Panel panel = editorItem.VisualControl.Panel;
             panel.Visible = false;
@@ -293,7 +296,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             {
                 foreach (SchedulerEditorItem editorItem in this._EditorItems)
                 {
-                    editorItem.VisualControl.Save();
+                    editorItem.VisualControl.SaveToData();
                 }
             }
         }

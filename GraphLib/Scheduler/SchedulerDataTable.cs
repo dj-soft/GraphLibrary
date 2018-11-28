@@ -1615,7 +1615,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             moveInfo.GetRoundedTime = args.GetRoundedTime;
 
             // Modifikace dat pomocí magnetů:
-            this.IMainData.AdjustGraphItemDragMove(moveInfo);
+            SchedulerConfig.MoveSnapInfo snapInfo = this.Config.GetMoveSnapForKeys(Control.ModifierKeys);        // Zajímají nás aktuálně stisknuté klávesy, ne args.ModifierKeys !
+            this.IMainData.AdjustGraphItemDragMove(moveInfo, snapInfo);
 
             return moveInfo;
         }
@@ -1725,7 +1726,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="args"></param>
         protected void GraphItemCreateLinks(CreateLinksArgs args)
         {
-            bool wholeTask = (args.ItemEvent == CreateLinksItemEventType.MouseOver && this.Config != null && this.Config.GuiEditShowLinkWholeTask);
+            bool wholeTask = (args.ItemEvent == CreateLinksItemEventType.MouseOver && this.Config != null && this.Config.GuiEditShowLinkMouseWholeTask);
             bool asSCurve = (this.Config != null && this.Config.GuiEditShowLinkAsSCurve);
 
             GTimeGraphItem currentItem = args.ItemControl ?? args.GroupControl;     // Na tomto prvku začne hledání. Může to být prvek konkrétní, anebo prvek grupy.
