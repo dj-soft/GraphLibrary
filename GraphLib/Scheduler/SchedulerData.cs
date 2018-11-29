@@ -1945,41 +1945,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             GuiDialogButtons dialogResult = this._ProcessResponseDialog(guiResponse);
             return dialogResult;
         }
-        #region Zpracování dialogu
-        /// <summary>
-        /// Metoda zpracuje dialog, zadaný v Response
-        /// </summary>
-        /// <param name="guiResponse"></param>
-        /// <returns></returns>
-        private GuiDialogButtons _ProcessResponseDialog(GuiResponse guiResponse)
-        {
-            GuiDialogButtons response = GuiDialogButtons.None;
-            if (guiResponse != null && guiResponse.Dialog != null && !guiResponse.Dialog.IsEmpty)
-                response = this.ShowDialog(guiResponse.Dialog);
-            return response;
-        }
-        /// <summary>
-        /// Metoda zpracuje požadovaný dialog, vrací výsledek
-        /// </summary>
-        /// <param name="dialog">Data pro dialog</param>
-        /// <returns></returns>
-        protected GuiDialogButtons ShowDialog(GuiDialog dialog)
-        {
-            return this._MainControl.ShowDialog(dialog);
-        }
-        /// <summary>
-        /// Zobrazí daný dialog a vrátí odpověď.
-        /// </summary>
-        /// <param name="message"></param>
-        /// <param name="title"></param>
-        /// <param name="guiButtons"></param>
-        /// <param name="icon"></param>
-        /// <returns></returns>
-        public GuiDialogButtons ShowDialog(string message, string title = null, GuiDialogButtons guiButtons = GuiDialogButtons.None, GuiImage icon = null)
-        {
-            return this._MainControl.ShowDialog(message, title, guiButtons, icon);
-        }
-        #endregion
         #region Zpracování dat
         /// <summary>
         /// Metoda zpracuje odpovědi z aplikace, část týkající se dat
@@ -1989,6 +1954,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             Dictionary<string, MainDataTable> mainTableDict = this.DataTables.Where(t => t.TableName != null).GetDictionary(t => t.TableName, true);
             Dictionary<uint, GTimeGraph> refreshGraphDict = new Dictionary<uint, GTimeGraph>();
+            this._ProcessResponseCommon(guiResponse.Common, mainTableDict);
             this._ProcessResponseToolbarItems(guiResponse.ToolbarItems);
             this._ProcessResponseTime(guiResponse.TimeAxisValue);
             this._ProcessResponseRemoveItems(guiResponse.RemoveItems, mainTableDict, refreshGraphDict);
@@ -1996,6 +1962,39 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this._ProcessResponseAddItems(guiResponse.AddItems, mainTableDict, refreshGraphDict);
             this._ProcessResponseUpdateLinks(guiResponse.ChangeLinks, mainTableDict, refreshGraphDict);
             this._ProcessResponseRefreshGraphs(refreshGraphDict.Values);
+        }
+        /// <summary>
+        /// Zpracuje odpověď z aplikace, část: <see cref="GuiResponse.Common"/>
+        /// </summary>
+        /// <param name="common">Common data z odpovědi</param>
+        /// <param name="mainTableDict">Index tabulek podle jejich jména</param>
+        private void _ProcessResponseCommon(GuiResponseCommon common, Dictionary<string, MainDataTable> mainTableDict)
+        {
+            if (common == null) return;
+            if (common.ClearLinks)
+            {   // Odebrat Linky ze všech tabulek:
+                mainTableDict.Values.ForEachItem(table =>
+                {
+                    GTimeGraphLinkArray graphLink = table.GraphLinkArray;
+                    if (graphLink != null)
+                        graphLink.Clear();
+                });
+            }
+
+            if (common.ClearSelected)
+            {   // Odselectovat všechny selectované prvky:
+                this._MainControl.Selector.ClearSelected();
+            }
+
+            if (common.ClearLinks && !common.ClearSelected)
+            {   // Najít a obnovit Linky:
+                foreach (var item in this._MainControl.Selector.SelectedItems)
+                {
+                    GTimeGraphItem graphItem = item as GTimeGraphItem;
+                    if (graphItem != null)
+                        graphItem.ActivateLink(false, true);
+                }
+            }
         }
         /// <summary>
         /// Zpracuje odpověď z aplikace, část: <see cref="GuiResponse.ToolbarItems"/>
@@ -2090,6 +2089,41 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private void _ProcessResponseRefreshGraphs(IEnumerable<GTimeGraph> refreshGraphs)
         {
             refreshGraphs.ForEachItem(g => g.Refresh());
+        }
+        #endregion
+        #region Zpracování dialogu
+        /// <summary>
+        /// Metoda zpracuje dialog, zadaný v Response
+        /// </summary>
+        /// <param name="guiResponse"></param>
+        /// <returns></returns>
+        private GuiDialogButtons _ProcessResponseDialog(GuiResponse guiResponse)
+        {
+            GuiDialogButtons response = GuiDialogButtons.None;
+            if (guiResponse != null && guiResponse.Dialog != null && !guiResponse.Dialog.IsEmpty)
+                response = this.ShowDialog(guiResponse.Dialog);
+            return response;
+        }
+        /// <summary>
+        /// Metoda zpracuje požadovaný dialog, vrací výsledek
+        /// </summary>
+        /// <param name="dialog">Data pro dialog</param>
+        /// <returns></returns>
+        protected GuiDialogButtons ShowDialog(GuiDialog dialog)
+        {
+            return this._MainControl.ShowDialog(dialog);
+        }
+        /// <summary>
+        /// Zobrazí daný dialog a vrátí odpověď.
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="title"></param>
+        /// <param name="guiButtons"></param>
+        /// <param name="icon"></param>
+        /// <returns></returns>
+        public GuiDialogButtons ShowDialog(string message, string title = null, GuiDialogButtons guiButtons = GuiDialogButtons.None, GuiImage icon = null)
+        {
+            return this._MainControl.ShowDialog(message, title, guiButtons, icon);
         }
         #endregion
         #endregion

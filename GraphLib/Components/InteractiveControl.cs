@@ -391,13 +391,22 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         private void _OnMouseEnterMove()
         {
-            this._OnMouseEnter(new EventArgs());
+            // Do této metody vstupuje řízení za různého stavu controlu, může být v podstatě i po skončení života controlu.
+            // V takové situaci ale nechceme nic dělat:
+            if (this.Disposing || this.IsDisposed) return;
 
-            MouseButtons mouseButtons = Control.MouseButtons;        // Stisknutá tlačítka myši
-            Point mousePoint = Control.MousePosition;                // Souřadnice myši v koordinátech Screenu
-            mousePoint = this.PointToClient(mousePoint);             //  -""- v koordinátech Controlu
-            MouseEventArgs mouseEventArgs = new MouseEventArgs(mouseButtons, 0, mousePoint.X, mousePoint.Y, 0);
-            this._OnMouseMove(mouseEventArgs);
+            // A i v ostatních případech je na místě jistá opatrnost:
+            try
+            {
+                this._OnMouseEnter(new EventArgs());
+
+                MouseButtons mouseButtons = Control.MouseButtons;        // Stisknutá tlačítka myši
+                Point mousePoint = Control.MousePosition;                // Souřadnice myši v koordinátech Screenu
+                mousePoint = this.PointToClient(mousePoint);             //  -""- v koordinátech Controlu
+                MouseEventArgs mouseEventArgs = new MouseEventArgs(mouseButtons, 0, mousePoint.X, mousePoint.Y, 0);
+                this._OnMouseMove(mouseEventArgs);
+            }
+            catch { }
         }
         private void _OnMouseEnter(EventArgs e)
         {

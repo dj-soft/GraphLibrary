@@ -763,6 +763,19 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         #endregion
         #region Vztahy (= Linky) - získání a kreslení
         /// <summary>
+        /// Zajistí aktivaci linků pro this item
+        /// </summary>
+        /// <param name="fromMouse"></param>
+        /// <param name="fromSelect"></param>
+        internal void ActivateLink(bool fromMouse, bool fromSelect)
+        {
+            if (fromMouse)
+                this.PrepareLinksMouse();
+
+            if (fromSelect)
+                this.PrepareLinksSelect(true);
+        }
+        /// <summary>
         /// Zkusí najít vztahy ke kreslení.
         /// Pokud nějaké najde, budou uloženy v <see cref="LinksMouse"/>.
         /// </summary>
@@ -969,7 +982,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 this.Repaint();
         }
         /// <summary>
-        /// Smaže všechny linky z paměti
+        /// Smaže všechny linky z this paměti. Tím není provedeno jejich odstranění z paměti tabulky, ale pouze z paměti vykreslování.
+        /// Jednoduše: linky pro aktuální objekt zhasnou.
         /// </summary>
         public void Clear()
         {

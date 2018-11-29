@@ -3280,7 +3280,11 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiSaveData CloseSaveData { get; set; }
         #endregion
-        #region Data, která se promítají do GUI: ToolbarItems, TimeAxisValue, RemoveItems, AddItems
+        #region Data, která se promítají do GUI: Common, ToolbarItems, TimeAxisValue, RemoveItems, AddItems
+        /// <summary>
+        /// Společné jednoduché proměnné
+        /// </summary>
+        public GuiResponseCommon Common { get; set; }
         /// <summary>
         /// Pole prvků Toolbaru, na nichž mohlo dojít ke změně.
         /// Lze změnit pouze ty položky, které byly při inicializaci GUI deklarovány.
@@ -3478,6 +3482,21 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Zpráva bude zobrazena pouze tehdy, když <see cref="BlockGuiTime"/> bude obsahovat čas timeoutu, bez něj je message nepoužitá.
         /// </summary>
         public string BlockGuiMessage { get; set; }
+    }
+    /// <summary>
+    /// Společné hodnoty v odpovědi
+    /// </summary>
+    public class GuiResponseCommon
+    {
+        /// <summary>
+        /// Zrušit všechny zobrazené linky.
+        /// Pokud existují nějaké prvky, které jsou Selected, obnocí se Linky podle nich (pokud nebudou vlivem <see cref="ClearSelected"/> odselectovány)
+        /// </summary>
+        public bool ClearLinks { get; set; }
+        /// <summary>
+        /// Zrušit příznak IsSelected pro všechny prvky
+        /// </summary>
+        public bool ClearSelected { get; set; }
     }
     /// <summary>
     /// GuiResponseGraph : třída sloužící pro přenos grafů (data z <see cref="GuiGraph"/> z aplikace do GUI v nestrukturovaném seznamu.

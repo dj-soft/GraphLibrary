@@ -1087,6 +1087,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         #endregion
         #region Linky mezi položkami grafů
         /// <summary>
+        /// Reference na koordinační objekt pro kreslení linek všech grafů v této tabulce, třída: <see cref="GTimeGraphLinkItem"/>.
+        /// Tento prvek slouží jednotlivým grafům.
+        /// </summary>
+        public GTimeGraphLinkArray GraphLinkArray { get { return this.GTableRow.GraphLinkArray; } }
+        /// <summary>
         /// Metoda načte a předzpracuje informace o vztazích mezi prvky grafů (Linky)
         /// </summary>
         protected void LoadDataLoadLinks()
