@@ -904,7 +904,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
                 if (requestArgs != null)
                 {   // Máme-li požadavek, pak jej zpracujeme:
-                    this.AppHostWorkOn(requestArgs);
+                    this.AppHostExecCommand(requestArgs);
                     // A ani nechodíme spát, rovnou zjistíme, zda nemáme alší požadavek...
                 }
                 else
@@ -931,7 +931,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// Metoda je volána v threadu na pozadí, má za úkol zpracovat daný požadavek (parametr).
         /// </summary>
         /// <param name="requestArgs"></param>
-        protected void AppHostWorkOn(AppHostRequestArgs requestArgs)
+        protected void AppHostExecCommand(AppHostRequestArgs requestArgs)
         {
             AppHostResponseArgs responseArgs = new AppHostResponseArgs(requestArgs);
             int time;
@@ -940,6 +940,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 switch (requestArgs.Request.Command)
                 {
                     case GuiRequest.COMMAND_GraphItemMove:
+                        this.DataChanged = true;
                         time = this.Rand.Next(100, 350);
                         System.Threading.Thread.Sleep(time);
                         break;
@@ -954,20 +955,24 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                                 responseArgs.GuiResponse.Dialog = GetDialog("Data jsou zaplánovaná.", GuiDialogButtons.Ok);
                                 break;
                             case "SaveData":
+                                this.DataChanged = false;
                                 responseArgs.GuiResponse.Dialog = GetDialog("Data jsou uložena.", GuiDialogButtons.Ok);
                                 break;
                         }
                         break;
 
                     case GuiRequest.COMMAND_QueryCloseWindow:
-                        // Chci si otestovat malou prodlevu před zobrazením dialogu:
-                        time = this.Rand.Next(100, 750);
-                        System.Threading.Thread.Sleep(time);
-                        responseArgs.GuiResponse = new GuiResponse()
+                        if (this.DataChanged)
                         {
-                            Dialog = GetDialog(GetMessageSaveData(), GuiDialogButtons.YesNoCancel, GuiDialog.DialogIconQuestion),
-                            CloseSaveData = new GuiSaveData() { AutoSave = true, BlockGuiTime = TimeSpan.FromSeconds(20d), BlockGuiMessage = "Probíhá ukládání dat...\r\nData se právě ukládají do databáze.\r\nJakmile budou uložena, dostanete od nás spěšnou sovu." }
-                        };
+                            // Chci si otestovat malou prodlevu před zobrazením dialogu:
+                            time = this.Rand.Next(100, 750);
+                            System.Threading.Thread.Sleep(time);
+                            responseArgs.GuiResponse = new GuiResponse()
+                            {
+                                Dialog = GetDialog(GetMessageSaveData(), GuiDialogButtons.YesNoCancel, GuiDialog.DialogIconQuestion),
+                                CloseSaveData = new GuiSaveData() { AutoSave = true, BlockGuiTime = TimeSpan.FromSeconds(20d), BlockGuiMessage = "Probíhá ukládání dat...\r\nData se právě ukládají do databáze.\r\nJakmile budou uložena, dostanete od nás spěšnou sovu." }
+                            };
+                        }
                         break;
 
                     case GuiRequest.COMMAND_SaveBeforeCloseWindow:
@@ -990,6 +995,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             if (requestArgs.CallBackAction != null)
                 requestArgs.CallBackAction(responseArgs);
         }
+        protected bool DataChanged = false;
         protected static string GetMessageSaveData()
         {
             string rtf = @"{\rtf1\ansi\ansicpg1250\deff0\nouicompat\deflang1029{\fonttbl{\f0\fnil\fcharset238 Calibri;}{\f1\fnil\fcharset0 Calibri;}}
