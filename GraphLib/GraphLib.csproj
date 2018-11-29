@@ -119,19 +119,16 @@
     <Compile Include="Rtf\RtfPaint.cs" />
     <Compile Include="Scheduler\Constants.cs" />
     <Compile Include="Scheduler\SchedulerConfig.cs" />
+    <Compile Include="Scheduler\SchedulerConfigGui.cs" />
     <Compile Include="Scheduler\SchedulerDataTable.cs" />
     <Compile Include="Scheduler\MainControl.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Scheduler\SchedulerData.cs" />
-    <Compile Include="Scheduler\SchedulerWinForms.cs">
-      <SubType>Form</SubType>
-    </Compile>
+    <Compile Include="Scheduler\SchedulerWinForms.cs" />
     <Compile Include="Scheduler\SchedulerInterface.cs" />
     <Compile Include="Scheduler\SchedulerPanel.cs" />
-    <Compile Include="Scheduler\SchedulerWinControls.cs">
-      <SubType>Component</SubType>
-    </Compile>
+    <Compile Include="Scheduler\SchedulerWinControls.cs" />
     <Compile Include="Scheduler\_Test.cs" />
     <Compile Include="Services\Interface.cs" />
     <Compile Include="Services\TestDataSource.cs" />

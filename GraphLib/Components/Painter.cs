@@ -2586,6 +2586,165 @@ namespace Asol.Tools.WorkScheduler.Components
             path.Transform(matrix);
         }
         #endregion
+        #region LinkLine
+        /// <summary>
+        /// Metoda vrátí <see cref="GraphicsPath"/>, která reprezentuje linku, která jde z bodu "prevPoint" do bodu "nextPoint",
+        /// a může to být linka nebo rovná čára podle parametru "asSCurve".
+        /// Pokud jde o přímou čáru, není třeba vysvětlivek.
+        /// <para/>
+        /// Pokud jde o křivku:
+        /// Z bodu "prevPoint" vychází křivka vždy ve směru vodorovně doprava, teprve pak se stáčí patřičným směrem.
+        /// Do bodu "nextPoint" vstupuje křivka vždy vodorovně zleva.
+        /// Mezi oběma body se křivka esovitě vine jako had.
+        /// Pokud jsou body na stejné souřadnici Y: pokud bod "nextPoint" je vpravo od bodu "nextPoint", pak je vrácena přímá čára.
+        /// Pokud je tomu naopak, pak je vrácena křivka částečné ležaté osmičky tak, 
+        /// aby vycházela z bodu Prev (který je ale vpravo od Next) doprava, stáčí se pak dolů a doleva, nahoru stále doleva, rovně doleva, pak doleva dolů a nakonec doprava do bodu Prev.
+        /// <para/>
+        /// Kterýkoli z bodů "prevPoint" a "nextPoint" může být null. Pokud jsou null oba, vrací se null.
+        /// Pokud je null jeden, je vrácena krátká vodorovná linka ve směru zleva doprava z/do bodu, který není null.
+        /// </summary>
+        /// <param name="prevPoint"></param>
+        /// <param name="nextPoint"></param>
+        /// <param name="asSCurve"></param>
+        /// <returns></returns>
+        internal static GraphicsPath CreatePathLinkLine(Point? prevPoint, Point? nextPoint, bool asSCurve)
+        {
+            if (!prevPoint.HasValue && !nextPoint.HasValue) return null;
+
+            System.Drawing.Drawing2D.GraphicsPath path = new System.Drawing.Drawing2D.GraphicsPath();
+            int px, py, nx, ny, dx, dy, bx, by;
+
+            // Mám jen prvek Prev: vykreslím linku "z Prev doprava":
+            if (!nextPoint.HasValue)
+            {
+                px = prevPoint.Value.X;
+                py = prevPoint.Value.Y;
+                nx = px + 12;
+                ny = py;
+                path.AddLine(px, py, nx, ny);
+                return path;
+            }
+
+            // Mám jen prvek Next: vykreslím linku "zleva do Next":
+            if (!prevPoint.HasValue)
+            {
+                nx = nextPoint.Value.X;
+                ny = nextPoint.Value.Y;
+                px = nx - 12;
+                py = ny;
+                path.AddLine(px, py, nx, ny);
+                return path;
+            }
+
+            // Máme tedy oba body. Co mezi nimi budeme kreslit?
+            px = prevPoint.Value.X;
+            py = prevPoint.Value.Y;
+            nx = nextPoint.Value.X;
+            ny = nextPoint.Value.Y;
+            dx = nx - px;              // Vzdálenost (Next - Prev).X: kladná = jdeme doprava, záporná = jdeme doleva
+            dy = ny - py;              // Vzdálenost (Next - Prev).Y: kladná = jdeme dolů,    záporná = jdeme nahoru
+            if (dy == 0)
+            {   // Prvky jsou na stejné souřadnici Y, takže bez ohledu na požavek "asSCurve" to nebude klasická S-křivka:
+                if (dx >= 0)
+                {   // Next je (v nebo) za Prev, takže to bude přímka, jen ji trochu prodloužím:
+                    px = px - 2;
+                    nx = nx + 2;
+                    path.AddLine(px, py, nx, ny);
+                    return path;
+                }
+                // Next je PŘED Prev, tedy opačné pořadí než je přirozené. 
+                // Tady vykreslíme křivku, která vychází z Prev (tj. napravo), jde doprava dolů, stáčí se doleva zpátky,
+                //  projde jako ležatá osmička doleva a nahoru nad prvek Next, a pak se stočí doleva dolů do úrovně souřadnice Y a vstoupí zleva do prvku Next (která je vpravo od Prev):
+
+                // 1. část křivky vycházející z Prev, jde kousek doprava, dolů, zpátky doleva a končí na souřadnici Prev.X a Prev.Y + 12
+                int p1y = py + 12;
+                int tx = 25;
+                path.AddBezier(px, py, px + tx, py, px + tx, p1y, px, p1y);
+
+                // 2. část křivky, tvar S, spojující bod (Prev + Y) s bodem (Next - Y):
+                int n1y = ny - 12;
+                bx = (-dx) / 4;
+                if (bx < 12) bx = 12;  // Vzdálenost řídícího bodu na ose X pro tuto část křivky
+                path.AddBezier(px, p1y, px - bx, p1y, nx + bx, n1y, nx, n1y);
+
+                // 3. část křivky vycházející z (Next - Y), jde kousek doleva, dolů, zpátky doprava a končí na souřadnici Next.X a Next.Y (zakončení, podobné části 1):
+                path.AddBezier(nx, n1y, nx - tx, n1y, nx - tx, ny, nx, ny);
+
+                return path;
+            }
+
+            // Prvky jsou na odlišné souřadnici Y, nyní se uplatní volba "asSCurve"
+            if (!asSCurve)
+            {   // Docela obyčejná přímka:
+                path.AddLine(px, py, nx, ny);
+                return path;
+            }
+
+            // Bezierova křivka z Prev do Next - určíme hodnotu bx (vzdálenost řídícího bodu na ose X):
+            bx = dx / 4;                         // Výchozí hodnota je 1/4 vzdálenosti Prev a Next (kladné číslo)
+            if (bx < 0) bx = 3 * (-bx);          // Pokud je ale posun záporný (Next je vlevo od Prev), pak musíme bx výrazně zvětšit, aby se zobrazila křivka jdoucí nejprve doprava, a pak zpátky
+            if (bx < 16) bx = 16;                // Konstanta pro případ, kdy dx je malé, aby se S-křivka projevila
+
+            by = (dy < 0 ? -dy : dy) / 4;        // Vliv vzdálenosti ve směru Y
+            if (by > 40) by = 40;
+            if (bx < by) bx = by;                // Pokud jsou prvky Prev a Next od sebe ve směru Y daleko, zvětšíme křivku.
+
+            path.AddBezier(px, py, px + bx, py, nx - bx, ny, nx, ny);
+            return path;
+        }
+        /// <summary>
+        /// Vykreslí linku vztahu jako rovnou čáru z bodu pointStart do pointEnd.
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="pointStart"></param>
+        /// <param name="pointEnd"></param>
+        /// <param name="color"></param>
+        /// <param name="width"></param>
+        /// <param name="startCap"></param>
+        /// <param name="endCap"></param>
+        /// <param name="ratio"></param>
+        internal static void DrawLinkLine(Graphics graphics, Point pointStart, Point pointEnd, Color color, int? width = null,
+            System.Drawing.Drawing2D.LineCap startCap = LineCap.Round, System.Drawing.Drawing2D.LineCap endCap = LineCap.ArrowAnchor,
+            float? ratio = null)
+        {
+            Color colorB = color.Morph(Color.Black, 0.80f);
+
+            float width1 = (width.HasValue ? (width.Value < 1 ? 1f : (width.Value > 6 ? 6f : (float)width.Value)) : 1f);
+
+            Pen pen = Skin.Pen(colorB, width1 + 2f, opacityRatio: ratio, startCap: startCap, endCap: endCap);
+            graphics.DrawLine(pen, pointStart, pointEnd);
+
+            pen = Skin.Pen(color, width1, opacityRatio: ratio, endCap: endCap);
+            graphics.DrawLine(pen, pointStart, pointEnd);
+        }
+        /// <summary>
+        /// Vykreslí linku vztahu jako křivku z bodu pointStart do pointEnd.
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="graphicsPath"></param>
+        /// <param name="color"></param>
+        /// <param name="width"></param>
+        /// <param name="startCap"></param>
+        /// <param name="endCap"></param>
+        /// <param name="ratio"></param>
+        internal static void DrawLinkPath(Graphics graphics, System.Drawing.Drawing2D.GraphicsPath graphicsPath, Color color, int? width = null,
+            System.Drawing.Drawing2D.LineCap startCap = LineCap.Round, System.Drawing.Drawing2D.LineCap endCap = LineCap.ArrowAnchor,
+            float? ratio = null)
+        {
+            if (graphicsPath == null) return;
+
+            Color colorB = color.Morph(Color.Black, 0.80f);
+
+            float width1 = (width.HasValue ? (width.Value < 1 ? 1f : (width.Value > 6 ? 6f : (float)width.Value)) : 1f);
+
+            Pen pen = Skin.Pen(colorB, width1 + 2f, opacityRatio: ratio, startCap: startCap, endCap: endCap);
+            graphics.DrawPath(pen, graphicsPath);
+
+            pen = Skin.Pen(color, width1, opacityRatio: ratio, endCap: endCap);
+            graphics.DrawPath(pen, graphicsPath);
+        }
+
+        #endregion
         #region Ellipse
         /// <summary>
         /// Returns a rectangle of the ellipse, which is circumscribed by the specified inner area, and distance from edge of inner area.

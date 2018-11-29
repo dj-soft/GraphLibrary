@@ -1726,11 +1726,27 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="args"></param>
         protected void GraphItemCreateLinks(CreateLinksArgs args)
         {
-            bool wholeTask = (args.ItemEvent == CreateLinksItemEventType.MouseOver && this.Config != null && this.Config.GuiEditShowLinkMouseWholeTask);
+            bool wholeTask = GraphItemLinksForWholeTask(args.ItemEvent);
             bool asSCurve = (this.Config != null && this.Config.GuiEditShowLinkAsSCurve);
 
             GTimeGraphItem currentItem = args.ItemControl ?? args.GroupControl;     // Na tomto prvku začne hledání. Může to být prvek konkrétní, anebo prvek grupy.
             args.Links = this.SearchForGraphLink(currentItem, args.SearchSidePrev, args.SearchSideNext, wholeTask, asSCurve);
+        }
+        /// <summary>
+        /// Metoda vrátí true, pokud pro daný typ události se podle konfigurace mají zobrazovat vztahy (Linky) pro všechny prvky tasku = celá sekvence,
+        /// nebo false = jen nejbližší sousedi Prev a Next
+        /// </summary>
+        /// <param name="itemEvent"></param>
+        /// <returns></returns>
+        protected bool GraphItemLinksForWholeTask(CreateLinksItemEventType itemEvent)
+        {
+            if (this.Config == null) return false;
+            switch (itemEvent)
+            {
+                case CreateLinksItemEventType.MouseOver: return this.Config.GuiEditShowLinkMouseWholeTask;
+                case CreateLinksItemEventType.ItemSelected: return this.Config.GuiEditShowLinkSelectedWholeTask;
+            }
+            return false;
         }
         /// <summary>
         /// Uživatel chce vidět kontextové menu na daném grafu

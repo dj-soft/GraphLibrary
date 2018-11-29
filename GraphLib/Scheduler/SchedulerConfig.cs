@@ -11,7 +11,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     /// Třída pro uchování různých nastavení primárně na úrovni lokálního počítače.
     /// Jde víceméně o vlastnosti uživatelské, ne datové, jako je Zoom celého GUI, Zoom časové osy, nastavení přichytávání prvků při jejich pohybu, atd...
     /// </summary>
-    public class SchedulerConfig : IXmlPersistNotify
+    public partial class SchedulerConfig : IXmlPersistNotify
     {
         #region Konstrukce, načtení, uložení
         /// <summary>
@@ -180,34 +180,31 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         public MoveSnapInfo MoveSnapCtrlShift { get { return this._MoveSnapCtrlShift; } set { if (value != null) { this._MoveSnapCtrlShift = value; this._MoveSnapCtrlShift.CheckValid(MoveSnapKeyType.CtrlShift); } } } private MoveSnapInfo _MoveSnapCtrlShift;
         #endregion
-        #region EditorItems : vizuální prvky pro formuláře Konfigurace
+        #region Ověření hodnoty
         /// <summary>
-        /// Metoda vrací pole prvků, které slouží k editaci konfigurace.
+        /// Vrátí hodnotu zarovnanou do daných mezí
         /// </summary>
+        /// <param name="value"></param>
+        /// <param name="minValue"></param>
+        /// <param name="maxValue"></param>
         /// <returns></returns>
-        public SchedulerEditorItem[] CreateEditorItems()
+        protected static int GetValue(int value, int minValue, int maxValue)
         {
-            List<SchedulerEditorItem> itemList = new List<SchedulerEditorItem>();
-
-            // Vkládám jednotlivé prvky: jejich titulek = text v Tree, jejich ToolTip, a jejich instanci editoru:
-            itemList.Add(new SchedulerEditorItem(EditTitle_Snap + EditTitle_Separator + EditTitle_SnapMouse, "", new ConfigSnapSetPanel() { Data = this.MoveSnapMouse, Caption = "Přichycení při přetahování prvku, bez klávesnice" }));
-            itemList.Add(new SchedulerEditorItem(EditTitle_Snap + EditTitle_Separator + EditTitle_SnapCtrl, "", new ConfigSnapSetPanel() { Data = this.MoveSnapCtrl, Caption = "Přichycení při přetahování prvku, s klávesou CTRL" }));
-            itemList.Add(new SchedulerEditorItem(EditTitle_Snap + EditTitle_Separator + EditTitle_SnapShift, "", new ConfigSnapSetPanel() { Data = this.MoveSnapShift, Caption = "Přichycení při přetahování prvku, s klávesou SHIFT" }));
-            itemList.Add(new SchedulerEditorItem(EditTitle_Snap + EditTitle_Separator + EditTitle_SnapCtrlShift, "", new ConfigSnapSetPanel() { Data = this.MoveSnapCtrlShift, Caption = "Přichycení při přetahování prvku, s klávesou CTRL + SHIFT" }));
-
-            itemList.Add(new SchedulerEditorItem(EditTitle_LinkLine, "", new ConfigLinkLinesSetPanel() { Data = this, Caption = "Zobrazení spojovacích linií v grafech" }));
-
-            return itemList.ToArray();
+            return (value < minValue ? minValue : (value > maxValue ? maxValue : value));
         }
-        protected static string EditTitle_Snap { get { return "Přichycení při přetahování"; } }
-        protected static string EditTitle_SnapMouse { get { return "Přetahování myší"; } }
-        protected static string EditTitle_SnapCtrl { get { return "Se stisknutým CTRL"; } }
-        protected static string EditTitle_SnapShift { get { return "Se stisknutým SHIFT"; } }
-        protected static string EditTitle_SnapCtrlShift { get { return "Se stisknutým CTRL+SHIFT"; } }
-        protected static string EditTitle_LinkLine { get { return "Spojovací linie"; } }
-        public static string EditTitle_Separator { get { return "\\"; } }
+        /// <summary>
+        /// Vrátí hodnotu zarovnanou do daných mezí
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="minValue"></param>
+        /// <param name="maxValue"></param>
+        /// <returns></returns>
+        protected static float GetValue(float value, float minValue, float maxValue)
+        {
+            return (value < minValue ? minValue : (value > maxValue ? maxValue : value));
+        }
         #endregion
-        #region EditingScope : Editační scope
+        #region EditingScope : Editační scope - potlačí on-line ukládání po dobu hromadného zadávání dat
         /// <summary>
         /// Metoda vrátí new editační scope.
         /// Po dobu jeho života nebude Config ukládán, uloží se při Dispose tohoto scope.
@@ -241,30 +238,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             }
         }
         #endregion
-        #region Ověření hodnoty
-        /// <summary>
-        /// Vrátí hodnotu zarovnanou do daných mezí
-        /// </summary>
-        /// <param name="value"></param>
-        /// <param name="minValue"></param>
-        /// <param name="maxValue"></param>
-        /// <returns></returns>
-        protected static int GetValue(int value, int minValue, int maxValue)
-        {
-            return (value < minValue ? minValue : (value > maxValue ? maxValue : value));
-        }
-        /// <summary>
-        /// Vrátí hodnotu zarovnanou do daných mezí
-        /// </summary>
-        /// <param name="value"></param>
-        /// <param name="minValue"></param>
-        /// <param name="maxValue"></param>
-        /// <returns></returns>
-        protected static float GetValue(float value, float minValue, float maxValue)
-        {
-            return (value < minValue ? minValue : (value > maxValue ? maxValue : value));
-        }
-        #endregion
         #region IXmlPersistNotify : Podpora pro serializaci
         /// <summary>
         /// Aktuální stav procesu XML persistence.
@@ -284,6 +257,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 this._XmlPersistState = value;
                 switch (value)
                 {
+                    case XmlPersistState.LoadBegin:
+
                     case XmlPersistState.LoadDone:
                         this._AfterDeserialize();
                         break;
@@ -427,58 +402,4 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         }
         #endregion
     }
-    #region class SchedulerEditorItem : jedna položka v editoru konfigurace
-    /// <summary>
-    /// SchedulerEditorItem : jedna položka v editoru konfigurace
-    /// </summary>
-    public class SchedulerEditorItem
-    {
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        /// <param name="nodeText"></param>
-        /// <param name="nodeToolTip"></param>
-        /// <param name="visualControl"></param>
-        public SchedulerEditorItem(string nodeText, string nodeToolTip, ISchedulerEditorControlItem visualControl)
-        {
-            this.NodeText = nodeText;
-            this.NodeToolTip = nodeToolTip;
-            this.VisualControl = visualControl;
-        }
-        /// <summary>
-        /// Text položky konfigurace.
-        /// Pokud bude obsahovat zpětné lomítko, jde o oddělovač v stromové hierarchii.
-        /// </summary>
-        public string NodeText { get; set; }
-        /// <summary>
-        /// ToolTip k položce stromu konfigurace
-        /// </summary>
-        public string NodeToolTip { get; set; }
-        /// <summary>
-        /// Vizuální control, který zobrazuje a edituje konfigurační data
-        /// </summary>
-        public ISchedulerEditorControlItem VisualControl { get; set; }
-    }
-    /// <summary>
-    /// Předpis pro objekty, které mohou hrát roli editoru jedné položky konfigurace.
-    /// Objekt musí umět načíst hodnoty z configu do vizuálních prvků <see cref="ReadFromData()"/>;
-    /// uložit hodnoty z vizuálních prvků do configu <see cref="SaveToData()"/>;
-    /// a poskytnout vizuální objekt pro zobrazování <see cref="Panel"/>.
-    /// </summary>
-    public interface ISchedulerEditorControlItem
-    {
-        /// <summary>
-        /// Objekt načte hodnoty z configu do vizuálních prvků
-        /// </summary>
-        void ReadFromData();
-        /// <summary>
-        /// Objekt uloží hodnoty z vizuálních prvků do configu
-        /// </summary>
-        void SaveToData();
-        /// <summary>
-        /// Vizuální control zobrazovaný pro tuto položku konfigurace
-        /// </summary>
-        System.Windows.Forms.Panel Panel { get; }
-    }
-    #endregion
 }
