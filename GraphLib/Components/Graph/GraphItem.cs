@@ -28,7 +28,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             : base()
         {
             this._Owner = data;
-            this._InteractiveParent = interactiveParent;
+            this.Parent = interactiveParent;
             this._Group = group;
             this._Position = position;
             this.Is.GetSelectable = this._GetSelectable;
@@ -49,10 +49,6 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         ITimeGraphItem IOwnerProperty<ITimeGraphItem>.Owner { get { return this._Owner; } set { this._Owner = value; } }
         private ITimeGraphItem _Owner;
-        /// <summary>
-        /// Parent tohoto grafického prvku = GUI prvek, v němž je tento grafický prvek hostován
-        /// </summary>
-        private IInteractiveParent _InteractiveParent;
         /// <summary>
         /// Grupa, která slouží jako vazba na globální data
         /// </summary>
