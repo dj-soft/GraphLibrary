@@ -943,6 +943,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                         this.DataChanged = true;
                         time = this.Rand.Next(100, 350);
                         System.Threading.Thread.Sleep(time);
+                        responseArgs.GuiResponse = new GuiResponse();
+                        responseArgs.GuiResponse.Common = new GuiResponseCommon() { ClearLinks = true, ClearSelected = true };
                         break;
 
                     case GuiRequest.COMMAND_ToolbarClick:
