@@ -176,9 +176,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             switch (tpv)
             {
                 case ProductTpv.Standard:
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.GreenYellow, "Řez tvaru", "Přeříznout", WP_PILA, qty, 30, 10, 45));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.Blue, "Broušení hran", "Zabrousit", WP_DILN, qty, 0, 10, 30));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.BlueViolet, "Vrtat čepy", "Zavrtat pro čepy", WP_DILN, qty, 15, 5, 30));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.GreenYellow, "Řez tvaru", "Přeříznout", WP_PILA, qty, 30, 10, 45, Pbb(60)));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.Blue, "Broušení hran", "Zabrousit", WP_DILN, qty, 0, 10, 30, Pbb(20)));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.BlueViolet, "Vrtat čepy", "Zavrtat pro čepy", WP_DILN, qty, 15, 5, 30, Pbb(5)));
                     operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.DarkOrange, "Nasadit čepy", "Nasadit a vlepit čepy", WP_DILN, qty, 0, 10, 0));
                     operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.DarkRed, "Klížit", "Sklížit díly", WP_DILN, qty, 30, 5, 360));
                     operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.ForestGreen, "Lakovat", "Lakování základní", WP_LAKO, qty, 30, 30, 240));
@@ -186,12 +186,12 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                     break;
 
                 case ProductTpv.Luxus:
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.GreenYellow, "Řez délky", "Přeříznout", WP_PILA, qty, 30, 15, 45));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.Blue, "Brousit hrany", "Zabrousit", WP_DILN, qty, 0, 20, 45));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.Blue, "Brousit povrch", "Zabrousit", WP_DILN, qty, 0, 20, 30));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.BlueViolet, "Vrtat čepy", "Zavrtat pro čepy", WP_DILN, qty, 30, 5, 45));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.DarkOrange, "Vsadit čepy", "Nasadit a vlepit čepy", WP_DILN, qty, 0, 5, 0));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.DimGray, "Kontrola čepů", "Kontrolovat čepy", WP_KONT, qty, 0, 15, 0));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.GreenYellow, "Řez délky", "Přeříznout", WP_PILA, qty, 30, 15, 45, Pbb(70)));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.Blue, "Brousit hrany", "Zabrousit", WP_DILN, qty, 0, 20, 45, Pbb(50)));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.Blue, "Brousit povrch", "Zabrousit", WP_DILN, qty, 0, 20, 30, Pbb(40)));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.BlueViolet, "Vrtat čepy", "Zavrtat pro čepy", WP_DILN, qty, 30, 5, 45, Pbb(30)));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.DarkOrange, "Vsadit čepy", "Nasadit a vlepit čepy", WP_DILN, qty, 0, 5, 0, Pbb(20)));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.DimGray, "Kontrola čepů", "Kontrolovat čepy", WP_KONT, qty, 0, 15, 0, Pbb(10)));
                     operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.DarkRed, "Klížit celek", "Sklížit díly", WP_DILN, qty, 45, 30, 360));
                     operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.DimGray, "Kontrola klížení", "Kontrolovat klížení", WP_KONT, qty, 0, 15, 0));
                     operations.Add(CreateProductOperation(++recordId, productOrder, ++line, ref time, Color.ForestGreen, "Lakovat základ", "Lakování základní", WP_LAKO, qty, 30, 45, 240));
@@ -221,9 +221,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <param name="tbcMin"></param>
         /// <param name="tacMin"></param>
         /// <param name="tecMin"></param>
+        /// <param name="isFixed"></param>
         /// <returns></returns>
         protected ProductOperation CreateProductOperation(int recordId, ProductOrder productOrder, int line, ref DateTime time, Color backColor, string name, string toolTip,
-            string workPlace, decimal qty, int tbcMin, int tacMin, int tecMin)
+            string workPlace, decimal qty, int tbcMin, int tacMin, int tecMin, bool isFixed = false)
         {
             ProductOperation operation = new ProductOperation()
             {
@@ -232,6 +233,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 Line = line,
                 Refer = (10 * line).ToString(),
                 Name = name,
+                IsFixed = isFixed,
                 BackColor = backColor,
                 Qty = qty,
                 WorkPlace = workPlace,
@@ -503,6 +505,16 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             int count = (items != null ? items.Length : 0);
             if (count == 0) return default(T);
             return items[this.Rand.Next(count)];
+        }
+        /// <summary>
+        /// Vrátí true, s pravděpodobností probability %.
+        /// Pokud probability = 10, pak 10 případů ze 100 vrátí true, 90% bude false.
+        /// </summary>
+        /// <param name="probability"></param>
+        /// <returns></returns>
+        internal bool Pbb(int probability)
+        {
+            return (this.Rand.Next(0, 100) <= probability);
         }
         /// <summary>
         /// Generátor náhodných hodnot
@@ -1104,6 +1116,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         public string ToolTip { get; set; }
         public decimal Qty { get; set; }
         public float Height { get; set; }
+        public bool IsFixed { get; set; }
         public string WorkPlace { get; set; }
         public TimeSpan TBc { get; set; }
         public TimeSpan TAc { get; set; }
@@ -1288,6 +1301,15 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 ToolTip = this.ToolTip,
                 Time = this.Time
             };
+
+            if (this.Operation != null && this.Operation.IsFixed)
+            {
+                guiGraphItem.BackStyle = System.Drawing.Drawing2D.HatchStyle.DarkHorizontal;
+                Color backColor = this.BackColor;
+                guiGraphItem.HatchColor = backColor.Morph(Color.Gray, 0.750f);
+                guiGraphItem.ImageBegin = RES.Images.Actions24.Lock4Png;
+            }
+
             return guiGraphItem;
         }
 
