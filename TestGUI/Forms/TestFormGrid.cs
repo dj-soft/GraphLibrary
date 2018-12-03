@@ -715,6 +715,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         string ITimeGraphItem.Text { get { return this.Text; } }
         string ITimeGraphItem.ToolTip { get { return this.ToolTip; } }
         Color? ITimeGraphItem.BackColor { get { return this.BackColor; } }
+        Color? ITimeGraphItem.HatchColor { get { return null; } }
         Color? ITimeGraphItem.LineColor { get { return this.LineColor; } }
         System.Drawing.Drawing2D.HatchStyle? ITimeGraphItem.BackStyle { get { return null; } }
         float? ITimeGraphItem.RatioBegin { get { return null; } }
@@ -723,6 +724,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         Color? ITimeGraphItem.RatioEndBackColor { get { return null; } }
         Color? ITimeGraphItem.RatioLineColor { get { return null; } }
         int? ITimeGraphItem.RatioLineWidth { get { return null; } }
+        Image ITimeGraphItem.ImageBegin { get { return null; } }
+        Image ITimeGraphItem.ImageEnd { get { return null; } }
         GraphItemBehaviorMode ITimeGraphItem.BehaviorMode { get { return this.BehaviorMode; } }
         WorkScheduler.Components.Graph.GTimeGraphItem ITimeGraphItem.GControl { get { return this.GControl; } set { this.GControl = value; } }
         void ITimeGraphItem.Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode) { this.GControl.DrawItem(e, boundsAbsolute, drawMode); }
