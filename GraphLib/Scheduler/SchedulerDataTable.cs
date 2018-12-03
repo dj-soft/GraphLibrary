@@ -122,21 +122,21 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 if (updateGraph.ResetGraphItems)
                     this._RemoveItemsFromGraph(gTimeGraph, updateGraph.RemoveItems);
 
-                this._AddGraphItems(gTimeGraph, updateGraph.GraphItems);
+                this._UpdateGraphItems(gTimeGraph, updateGraph.GraphItems);
 
                 modifiedGraph = gTimeGraph;
             }
             return modifiedGraph;
         }
-        #region Přidání grafických prvků
+        #region Přidání / Aktualizace grafických prvků
         /// <summary>
         /// Přidá daný prvek jako nový do odpovídajícího grafu (podle jeho řádky).
         /// </summary>
-        /// <param name="addItem"></param>
+        /// <param name="updateItem"></param>
         /// <param name="refreshGraphDict"></param>
-        public void AddGraphItem(GuiGraphBaseItem addItem, Dictionary<uint, GTimeGraph> refreshGraphDict = null)
+        public void UpdateGraphItem(GuiGraphBaseItem updateItem, Dictionary<uint, GTimeGraph> refreshGraphDict = null)
         {
-            GTimeGraph modifiedGraph = this._AddGraphItem(addItem);
+            GTimeGraph modifiedGraph = this._UpdateGraphItem(updateItem);
             _RefreshModifiedGraph(modifiedGraph, refreshGraphDict);
         }
         /// <summary>
@@ -145,19 +145,19 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// podle jeho řádku <see cref="DataGraphItem.RowGId"/> najde v Dictionary <see cref="TimeGraphDict"/> graf, a do něj vloží grafický prvek.
         /// Vrací referenci na zmíněný modifikovaný graf.
         /// </summary>
-        /// <param name="addItem"></param>
+        /// <param name="updateItem"></param>
         /// <returns></returns>
-        private GTimeGraph _AddGraphItem(GuiGraphBaseItem addItem)
+        private GTimeGraph _UpdateGraphItem(GuiGraphBaseItem updateItem)
         {
             GTimeGraph modifiedGraph = null;
 
-            if (addItem == null) return modifiedGraph;
+            if (updateItem == null) return modifiedGraph;
 
-            GId rowGId = addItem.RowId;
+            GId rowGId = updateItem.RowId;
             GTimeGraph gTimeGraph;
             if (this.TimeGraphDict.TryGetValue(rowGId, out gTimeGraph))
             {
-                if (this._AddGraphItem(gTimeGraph, addItem))
+                if (this._UpdateGraphItem(gTimeGraph, updateItem))
                     modifiedGraph = gTimeGraph;
             }
             return modifiedGraph;
@@ -168,16 +168,16 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Vrací true = došlo k přidání / false = nebyla změna.
         /// </summary>
         /// <param name="gTimeGraph"></param>
-        /// <param name="addItems"></param>
+        /// <param name="updateItems"></param>
         /// <returns></returns>
-        private bool _AddGraphItems(GTimeGraph gTimeGraph, IEnumerable<GuiGraphBaseItem> addItems)
+        private bool _UpdateGraphItems(GTimeGraph gTimeGraph, IEnumerable<GuiGraphBaseItem> updateItems)
         {
             bool isChange = false;
-            if (gTimeGraph == null || addItems == null) return isChange;
+            if (gTimeGraph == null || updateItems == null) return isChange;
 
-            foreach (GuiGraphBaseItem addItem in addItems)
+            foreach (GuiGraphBaseItem updateItem in updateItems)
             {
-                bool oneChange = this._AddGraphItem(gTimeGraph, addItem);
+                bool oneChange = this._UpdateGraphItem(gTimeGraph, updateItem);
                 if (!isChange && oneChange)
                     isChange = true;
             }
@@ -190,14 +190,30 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Vrací true = došlo k přidání / false = nebyla změna.
         /// </summary>
         /// <param name="gTimeGraph"></param>
-        /// <param name="addItem"></param>
+        /// <param name="updateItem"></param>
         /// <returns></returns>
-        private bool _AddGraphItem(GTimeGraph gTimeGraph, GuiGraphBaseItem addItem)
+        private bool _UpdateGraphItem(GTimeGraph gTimeGraph, GuiGraphBaseItem updateItem)
         {
             bool isChange = false;
-            if (gTimeGraph == null || addItem == null || addItem.ItemId == null) return isChange;
+            if (gTimeGraph == null || updateItem == null || updateItem.ItemId == null) return isChange;
 
-            DataGraphItem dataGraphItem = DataGraphItem.CreateFrom(this, addItem);
+            DataGraphItem dataGraphItem;
+
+            // Pokud pro daný datový prvek už máme grafický prvek, pak jej aktualizujeme:
+            int itemId = this.GetId(updateItem.ItemId);    // Najde/Vytvoří a vrátí Int32 klíč prvku. To že v případě neexistence se vygeneruje nové Id nám nevadí, protože by se tak jako tak generovalo o něco později.
+            ITimeGraphItem graphItem;
+            if (gTimeGraph.TryGetGraphItem(itemId, out graphItem))
+            {
+                dataGraphItem = graphItem as DataGraphItem;
+                if (dataGraphItem != null)
+                {
+                    isChange = dataGraphItem.UpdateFrom(updateItem);
+                    return isChange;                       // Pokud došlo ke změně obsahu prvku grafu, vracím true => později (hromadně) se provede refresh grafu gTimeGraph.
+                }
+            }
+            
+            // Pokud jej nemáme, pak jej vložíme jako nový:
+            dataGraphItem = DataGraphItem.CreateFrom(this, updateItem);
             if (dataGraphItem == null) return false;
 
             isChange = gTimeGraph.AddGraphItem(dataGraphItem);
@@ -967,7 +983,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (guiGraphDict != null && guiGraphDict.TryGetValue(row.RecordGId, out guiGraph))
             {
                 gTimeGraph.UpdateGraphData(guiGraph);
-                this._AddGraphItems(gTimeGraph, guiGraph.GraphItems);
+                this._UpdateGraphItems(gTimeGraph, guiGraph.GraphItems);
             }
                 
             return gTimeGraph;
@@ -987,7 +1003,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 {
                     if (guiGraphTable == null || guiGraphTable.Count == 0) continue;
                     foreach (GuiGraphItem guiGraphItem in guiGraphTable.GraphItems)
-                        this._AddGraphItem(guiGraphItem);
+                        this._UpdateGraphItem(guiGraphItem);
                 }
             }
         }
@@ -1951,7 +1967,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             IMainDataTableInternal iGraphTable = graphTable as IMainDataTableInternal;
 
             DataGraphItem item = new DataGraphItem(graphTable, guiGraphItem);
-            // Struktura řádku: parent_rec_id int; parent_class_id int; item_rec_id int; item_class_id int; group_rec_id int; group_class_id int; data_rec_id int; data_class_id int; layer int; level int; is_user_fixed int; time_begin datetime; time_end datetime; height decimal; back_color string; join_back_color string; data string
             item._ItemGId = guiGraphItem.ItemId;           // Mezi typy GuiId (=Green) a GId (GraphLibrary) existuje implicitní konverze.
             item._RowGId = guiGraphItem.RowId;             //  Takže do zdejších properties se vytvoří new instance GUid, obsahující stejná data jako vstupní GuiId.
             item._GroupGId = guiGraphItem.GroupId;         //  Další důsledek je ten, že zdejší data lze změnit = přemístit na jiný řádek, například.
@@ -1964,6 +1979,77 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             // Ostatní property jsou načítané přímo z item._GuiGraphItem.
 
             return item;
+        }
+        /// <summary>
+        /// Prvek si aktualizuje data z dodaného prvku.
+        /// </summary>
+        /// <param name="updateItem"></param>
+        public bool UpdateFrom(GuiGraphBaseItem updateItem)
+        {
+            // Tato hodnota je ukládaná do prvku přímo, protože se provádí její editace:
+            if (updateItem.Time != null) this._Time = updateItem.Time;
+
+            // Aktualizovat jednotlivé statické hodnoty:
+            GuiGraphBaseItem currentItem = this._GuiGraphItem;
+
+            if (updateItem.Time != null) currentItem.Time = updateItem.Time;
+            if (updateItem.Layer != 0) currentItem.Layer = updateItem.Layer;
+            if (updateItem.Level != 0) currentItem.Level = updateItem.Level;
+            if (updateItem.Order != 0) currentItem.Order = updateItem.Order;
+            if (updateItem.Height > 0f) currentItem.Height = updateItem.Height;
+            if (updateItem.Text != null) currentItem.Text = updateItem.Text;
+            if (updateItem.ToolTip != null) currentItem.ToolTip = updateItem.ToolTip;
+            if (updateItem.BackColor.HasValue) currentItem.BackColor = GetUpdatedColor(updateItem.BackColor);
+            if (updateItem.LineColor.HasValue) currentItem.LineColor = GetUpdatedColor(updateItem.LineColor);
+            if (updateItem.RatioBegin.HasValue) currentItem.RatioBegin = updateItem.RatioBegin;
+            if (updateItem.RatioEnd.HasValue) currentItem.RatioEnd = updateItem.RatioEnd;
+            if (updateItem.RatioBeginBackColor.HasValue) currentItem.RatioBeginBackColor = GetUpdatedColor(updateItem.RatioBeginBackColor);
+            if (updateItem.RatioEndBackColor.HasValue) currentItem.RatioEndBackColor = GetUpdatedColor(updateItem.RatioEndBackColor);
+            if (updateItem.RatioLineColor.HasValue) currentItem.RatioLineColor = GetUpdatedColor(updateItem.RatioLineColor);
+            if (updateItem.RatioLineWidth.HasValue) currentItem.RatioLineWidth = updateItem.RatioLineWidth;
+            if (updateItem.HatchColor.HasValue) currentItem.HatchColor = GetUpdatedColor(updateItem.HatchColor);
+            if (updateItem.HatchColor.HasValue) currentItem.BackStyle = updateItem.BackStyle;      // Úmyslná změna: pokud je předána hodnota HatchColor, přebírám i BackStyle.
+            if (updateItem.ImageBegin != null) currentItem.ImageBegin = GetUpdatedImage(updateItem.ImageBegin);
+            if (updateItem.ImageEnd != null) currentItem.ImageEnd = GetUpdatedImage(updateItem.ImageEnd);
+            if (updateItem.BehaviorMode != GraphItemBehaviorMode.None) currentItem.BehaviorMode = updateItem.BehaviorMode;
+
+            // Zajistit invalidaci grafu:
+            return true;
+        }
+        /// <summary>
+        /// Metoda vrátí danou barvu.
+        /// Pokud je ale daná barva Empty, pak vrací null.
+        /// </summary>
+        /// <param name="updatedColor"></param>
+        /// <returns></returns>
+        protected static Color? GetUpdatedColor(Color? updatedColor)
+        {
+            if (!updatedColor.HasValue) return null;
+            if (updatedColor.Value == Color.Empty) return null;
+            return updatedColor;
+        }
+        /// <summary>
+        /// Metoda vrátí daný styl.
+        /// Pokud je ale daný styl Sphere, pak vrací null.
+        /// </summary>
+        /// <param name="updatedStyle"></param>
+        /// <returns></returns>
+        protected static System.Drawing.Drawing2D.HatchStyle? GetUpdatedStyle(System.Drawing.Drawing2D.HatchStyle? updatedStyle)
+        {
+            if (!updatedStyle.HasValue) return null;
+            if (updatedStyle.Value == System.Drawing.Drawing2D.HatchStyle.Sphere) return null;
+            return updatedStyle;
+        }
+        /// <summary>
+        /// Metoda vrátí daný <see cref="GuiImage"/>. Pokud je not null, ale je Empty, vrací null.
+        /// </summary>
+        /// <param name="updatedImage"></param>
+        /// <returns></returns>
+        protected static GuiImage GetUpdatedImage(GuiImage updatedImage)
+        {
+            if (updatedImage == null) return null;
+            if (updatedImage.IsEmpty) return null;
+            return updatedImage;
         }
         /// <summary>
         /// privátní konstruktor. Instanci lze založit pomocí metody <see cref="CreateFrom(MainDataTable, GuiGraphBaseItem)"/>.
@@ -2106,6 +2192,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         string ITimeGraphItem.Text { get { return this._GuiGraphItem.Text; } }
         string ITimeGraphItem.ToolTip { get { return this._GuiGraphItem.ToolTip; } }
         Color? ITimeGraphItem.BackColor { get { return this._GuiGraphItem.BackColor; } }
+        Color? ITimeGraphItem.HatchColor { get { return this._GuiGraphItem.HatchColor; } }
         Color? ITimeGraphItem.LineColor { get { return this._GuiGraphItem.LineColor; } }
         System.Drawing.Drawing2D.HatchStyle? ITimeGraphItem.BackStyle { get { return this._GuiGraphItem.BackStyle; } }
         float? ITimeGraphItem.RatioBegin { get { return this._GuiGraphItem.RatioBegin; } }
@@ -2114,6 +2201,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         Color? ITimeGraphItem.RatioEndBackColor { get { return this._GuiGraphItem.RatioEndBackColor; } }
         Color? ITimeGraphItem.RatioLineColor { get { return this._GuiGraphItem.RatioLineColor; } }
         int? ITimeGraphItem.RatioLineWidth { get { return this._GuiGraphItem.RatioLineWidth; } }
+        Image ITimeGraphItem.ImageBegin { get { return App.Resources.GetImage(this._GuiGraphItem.ImageBegin); } }
+        Image ITimeGraphItem.ImageEnd { get { return App.Resources.GetImage(this._GuiGraphItem.ImageEnd); } }
         GraphItemBehaviorMode ITimeGraphItem.BehaviorMode { get { return this._GuiGraphItem.BehaviorMode; } }
         GTimeGraphItem ITimeGraphItem.GControl { get { return this._GControl; } set { this._GControl = value; } }
         void ITimeGraphItem.Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode) { this.Draw(e, boundsAbsolute, drawMode); }

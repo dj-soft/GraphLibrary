@@ -276,11 +276,6 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         public Color? BackColor { get { return this._FirstItem.BackColor; } }
         /// <summary>
-        /// Styl vzorku kresleného v pozadí.
-        /// null = Solid.
-        /// </summary>
-        public System.Drawing.Drawing2D.HatchStyle? BackStyle { get { return this._FirstItem.BackStyle; } }
-        /// <summary>
         /// Barva linek ohraničení prvku.
         /// Pokud je null, pak prvek nemá ohraničení pomocí linky (Border).
         /// </summary>
@@ -298,6 +293,30 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Vkládá se sem v procesu Drag and Drop, čte se v procesu Draw na prvku třídy <see cref="GTimeGraphItem"/>
         /// </summary>
         internal int? DragDropDrawInteractiveOpacity { get; set; }
+        /// <summary>
+        /// Obrázek vykreslený 1x za jednu grupu na souřadnici jejího začátku.
+        /// Obrázek může být umístěn do kteréhokoli jednoho prvku v rámci grupy, akceptován bude první ve směru času.
+        /// </summary>
+        internal Image ImageBegin
+        {
+            get
+            {
+                ITimeGraphItem item = this._Items.FirstOrDefault(i => i.ImageBegin != null);
+                return item?.ImageBegin;
+            }
+        }
+        /// <summary>
+        /// Obrázek vykreslený 1x za jednu grupu na souřadnici jejího konce.
+        /// Obrázek může být umístěn do kteréhokoli jednoho prvku v rámci grupy, akceptován bude poslední ve směru času.
+        /// </summary>
+        internal Image ImageEnd
+        {
+            get
+            {
+                ITimeGraphItem item = this._Items.LastOrDefault(i => i.ImageEnd != null);
+                return item?.ImageEnd;
+            }
+        }
         /// <summary>
         /// Vizuální prvek, který v sobě zahrnuje jak podporu pro vykreslování, tak podporu interaktivity.
         /// A přitom to nevyžaduje od třídy, která fyzicky implementuje <see cref="ITimeGraphItem"/>.
@@ -327,8 +346,14 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="drawMode"></param>
         public void DrawOverChilds(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode)
         {
-            if (!this.DrawTextInCurrentState) return;
             Rectangle boundsVisibleAbsolute = boundsAbsolute;
+            if (e.DrawLayer == GInteractiveDrawLayer.Standard)
+                boundsVisibleAbsolute = e.GetClip(boundsAbsolute);
+
+            this.GControl.DrawImages(e, ref boundsAbsolute, boundsVisibleAbsolute, drawMode);
+
+            if (!this.DrawTextInCurrentState) return;
+
             if (e.DrawLayer == GInteractiveDrawLayer.Standard)
                 boundsVisibleAbsolute = e.GetClip(boundsAbsolute);
 
@@ -511,14 +536,17 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         string ITimeGraphItem.Text { get { return this._FirstItem.Text; } }
         string ITimeGraphItem.ToolTip { get { return this._FirstItem.ToolTip; } }
         Color? ITimeGraphItem.BackColor { get { return this.BackColor; } }
+        Color? ITimeGraphItem.HatchColor { get { return this._FirstItem.HatchColor; } }
         Color? ITimeGraphItem.LineColor { get { return this.LineColor; } }
-        System.Drawing.Drawing2D.HatchStyle? ITimeGraphItem.BackStyle { get { return this.BackStyle; } }
+        System.Drawing.Drawing2D.HatchStyle? ITimeGraphItem.BackStyle { get { return this._FirstItem.BackStyle; } }
         float? ITimeGraphItem.RatioBegin { get { return null; } }
         float? ITimeGraphItem.RatioEnd { get { return null; } }
         Color? ITimeGraphItem.RatioBeginBackColor { get { return null; } }
         Color? ITimeGraphItem.RatioEndBackColor { get { return null; } }
         Color? ITimeGraphItem.RatioLineColor { get { return null; } }
         int? ITimeGraphItem.RatioLineWidth { get { return null; } }
+        Image ITimeGraphItem.ImageBegin { get { return this.ImageBegin; } }
+        Image ITimeGraphItem.ImageEnd { get { return this.ImageEnd; } }
         GraphItemBehaviorMode ITimeGraphItem.BehaviorMode { get { return this.BehaviorMode; } }
         GTimeGraphItem ITimeGraphItem.GControl { get { return this.GControl; } set { this.GControl = value; } }
         void ITimeGraphItem.Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode) { this.Draw(e, boundsAbsolute, drawMode); }

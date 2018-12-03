@@ -153,6 +153,11 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         protected Color? ItemBackColor { get { return this._Owner.BackColor; } }
         /// <summary>
+        /// Barva šrafování pozadí prvku grafu, načtená z <see cref="ITimeGraphItem.HatchColor"/>. 
+        /// Může být null.
+        /// </summary>
+        protected Color? ItemHatchColor { get { return this._Owner.HatchColor; } }
+        /// <summary>
         /// Barva linky prvku grafu, načtená z <see cref="ITimeGraphItem.LineColor"/>. 
         /// Může být null.
         /// </summary>
@@ -577,6 +582,61 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             }
         }
         /// <summary>
+        /// Vykreslí ikonky zadané jako <see cref="ITimeGraphItem.ImageBegin"/> a <see cref="ITimeGraphItem.ImageEnd"/>.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="boundsVisibleAbsolute"></param>
+        /// <param name="drawMode"></param>
+        internal void DrawImages(GInteractiveDrawArgs e, ref Rectangle boundsAbsolute, Rectangle boundsVisibleAbsolute, DrawItemMode drawMode)
+        {
+            Image image;
+
+            image = this._Owner.ImageBegin;
+            if (image != null)
+                this.DrawImage(image, e, ref boundsAbsolute, ContentAlignment.MiddleLeft, boundsVisibleAbsolute, drawMode);
+            image = this._Owner.ImageEnd;
+            if (image != null)
+                this.DrawImage(image, e, ref boundsAbsolute, ContentAlignment.MiddleRight, boundsVisibleAbsolute, drawMode);
+        }
+        /// <summary>
+        /// Vykreslí Image
+        /// </summary>
+        /// <param name="image"></param>
+        /// <param name="e"></param>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="imageAlignment"></param>
+        /// <param name="boundsVisibleAbsolute"></param>
+        /// <param name="drawMode"></param>
+        protected void DrawImage(Image image, GInteractiveDrawArgs e, ref Rectangle boundsAbsolute, ContentAlignment imageAlignment, Rectangle boundsVisibleAbsolute, DrawItemMode drawMode)
+        {
+            if (image == null) return;
+            Size imageSize = image.Size;
+            int height = boundsAbsolute.Height - 2;
+            if (imageSize.Height > height)
+                imageSize = imageSize.ZoomToHeight(height);
+            Rectangle imageBounds = imageSize.AlignTo(boundsAbsolute, imageAlignment);
+            if (!boundsVisibleAbsolute.IntersectsWith(imageBounds)) return;
+
+            // Vykreslit Image:
+            e.Graphics.DrawImage(image, imageBounds);
+
+            // Upravím souřadnice boundsAbsolute tak, aby nepokrývaly oblast, do které byl vykreslen Image:
+            switch (imageAlignment)
+            {
+                case ContentAlignment.TopLeft:
+                case ContentAlignment.MiddleLeft:
+                case ContentAlignment.BottomLeft:
+                    boundsAbsolute = new Rectangle(imageBounds.Right, boundsAbsolute.Y, boundsAbsolute.Right - imageBounds.Right, boundsAbsolute.Height);
+                    break;
+                case ContentAlignment.TopRight:
+                case ContentAlignment.MiddleRight:
+                case ContentAlignment.BottomRight:
+                    boundsAbsolute = new Rectangle(boundsAbsolute.X, boundsAbsolute.Y, imageBounds.X - boundsAbsolute.X, boundsAbsolute.Height);
+                    break;
+            }
+        }
+        /// <summary>
         /// Vykreslí text dané grupy
         /// </summary>
         /// <param name="e"></param>
@@ -609,10 +669,16 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             GTimeGraphItem groupItem = (this._Position == GGraphControlPosition.Group ? this :
                                         this._Position == GGraphControlPosition.Item ? this._Group.GControl : null);
 
+            System.Drawing.Drawing2D.HatchStyle? backStyle = this._Owner.BackStyle;
+
             bool isSelected = (groupItem != null ? groupItem.IsSelected : false);
             bool isFramed = (groupItem != null ? groupItem.IsFramed : false);
             bool isActivated = (groupItem != null ? groupItem.IsActivated : false);
             bool hasBorder = (isSelected | isFramed);
+            bool drawSelect = true;
+
+            Color? colorHatch = (this._Owner.HatchColor ?? this._Owner.LineColor);
+            bool drawHatch = backStyle.HasValue && colorHatch.HasValue;
 
             Rectangle[] boundsParts = _CreateBounds(boundsAbsolute, this._Position, this.IsFirstItem, this.IsLastItem, hasBorder);
 
@@ -621,47 +687,59 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             Color? borderColor = null;
 
             // Vykreslit pozadí pod prvkem:
-            bool drawSelect = true;
+            //  1. Výplň pozadí = solid barva + 3D efekt:
             if (itemBackColor.HasValue)
             {
+                // Čistě pozadí bez Border:
                 color = this._Group.GetColorWithOpacity(itemBackColor.Value, e.DrawLayer, drawMode, false, true);
-                System.Drawing.Drawing2D.HatchStyle? backStyle = this._Owner.BackStyle;
-                if (backStyle.HasValue)
-                {   // Máme-li BackStyle : neřešíme interaktivitu myši, ani vykreslení 3D efektu:
-                    using (System.Drawing.Drawing2D.HatchBrush hb = new System.Drawing.Drawing2D.HatchBrush(backStyle.Value, color, Color.Transparent))
+                float? effect3D = this._GetEffect3D(true);
+                GPainter.DrawEffect3D(e.Graphics, boundsParts[0], color, System.Windows.Forms.Orientation.Horizontal, effect3D, null);
+
+                // Hatch:
+                if (drawHatch)
+                {
+                    using (System.Drawing.Drawing2D.HatchBrush hatchBrush = new System.Drawing.Drawing2D.HatchBrush(backStyle.Value, colorHatch.Value, Color.Transparent))
                     {
-                        e.Graphics.FillRectangle(hb, boundsAbsolute);
+                        e.Graphics.FillRectangle(hatchBrush, boundsParts[0]);
                     }
+                    drawHatch = false;
                 }
-                else
-                {   // Nemáme-li BackStyle : řešíme interaktivitu myši i vykreslení 3D efektu:
-                    float? effect3D = this._GetEffect3D(true);
-                    GPainter.DrawEffect3D(e.Graphics, boundsParts[0], color, System.Windows.Forms.Orientation.Horizontal, effect3D, null);
 
-                    borderColor = (isSelected ? Skin.Graph.ElementSelectedLineColor :
-                                  (isFramed ? Skin.Graph.ElementFramedLineColor : color));
-                    Color colorTop = Skin.Modifiers.GetColor3DBorderLight(borderColor.Value, 0.50f);
-                    Color colorBottom = Skin.Modifiers.GetColor3DBorderDark(borderColor.Value, 0.50f);
-                    e.Graphics.FillRectangle(Skin.Brush(colorTop), boundsParts[2]);
-                    e.Graphics.FillRectangle(Skin.Brush(colorBottom), boundsParts[4]);
-                    if (!hasBorder)
-                    {   // Běžné okraje prvku (3D efekt na krajních prvcích):
-                        if (this.IsFirstItem)
-                            e.Graphics.FillRectangle(Skin.Brush(colorTop), boundsParts[1]);
-                        if (this.IsLastItem)
-                            e.Graphics.FillRectangle(Skin.Brush(colorBottom), boundsParts[3]);
-                    }
-
-                    if (hasBorder && borderColor.HasValue)
-                    {   // Zvýrazněné okraje prvku (Selected, Framed na krajních prvcích):
-                        if (this.IsFirstItem)
-                            e.Graphics.FillRectangle(Skin.Brush(borderColor.Value), boundsParts[1]);
-                        if (this.IsLastItem)
-                            e.Graphics.FillRectangle(Skin.Brush(borderColor.Value), boundsParts[3]);
-                    }
-
-                    drawSelect = false;
+                // Okraje:
+                borderColor = (isSelected ? Skin.Graph.ElementSelectedLineColor :
+                                (isFramed ? Skin.Graph.ElementFramedLineColor : color));
+                Color colorTop = Skin.Modifiers.GetColor3DBorderLight(borderColor.Value, 0.50f);
+                Color colorBottom = Skin.Modifiers.GetColor3DBorderDark(borderColor.Value, 0.50f);
+                e.Graphics.FillRectangle(Skin.Brush(colorTop), boundsParts[2]);
+                e.Graphics.FillRectangle(Skin.Brush(colorBottom), boundsParts[4]);
+                if (!hasBorder)
+                {   // Běžné okraje prvku (3D efekt na krajních prvcích):
+                    if (this.IsFirstItem)
+                        e.Graphics.FillRectangle(Skin.Brush(colorTop), boundsParts[1]);
+                    if (this.IsLastItem)
+                        e.Graphics.FillRectangle(Skin.Brush(colorBottom), boundsParts[3]);
                 }
+
+                if (hasBorder && borderColor.HasValue)
+                {   // Zvýrazněné okraje prvku (Selected, Framed na krajních prvcích):
+                    if (this.IsFirstItem)
+                        e.Graphics.FillRectangle(Skin.Brush(borderColor.Value), boundsParts[1]);
+                    if (this.IsLastItem)
+                        e.Graphics.FillRectangle(Skin.Brush(borderColor.Value), boundsParts[3]);
+                }
+
+                drawSelect = false;
+            }
+
+            // Kreslení šrafovaného prvku = bez vykresleného pozadí:
+            if (drawHatch)
+            {   // Pokud jsme tady, znamená to že se nekreslilo pozadí plnou barvou (BackColor je null).
+                // Tady tedy jen vykreslíme brush:
+                using (System.Drawing.Drawing2D.HatchBrush hb = new System.Drawing.Drawing2D.HatchBrush(backStyle.Value, colorHatch.Value, Color.Transparent))
+                {
+                    e.Graphics.FillRectangle(hb, boundsAbsolute);
+                }
+                drawHatch = false;
             }
 
             // Vykreslit orámování prvku:

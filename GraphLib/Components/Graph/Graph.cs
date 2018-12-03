@@ -253,6 +253,16 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             return true;
         }
         /// <summary>
+        /// Metoda zkusí najít prvek daného ID
+        /// </summary>
+        /// <param name="itemId"></param>
+        /// <param name="graphItem"></param>
+        /// <returns></returns>
+        public bool TryGetGraphItem(int itemId, out ITimeGraphItem graphItem)
+        {
+            return this._ItemDict.TryGetValue(itemId, out graphItem);
+        }
+        /// <summary>
         /// Odebere z grafu daný prvek (podle jeho ItemId).
         /// Pokud daný klíč neexistuje, hlásí chybu (pokud není zadáno ignoreMissing = true).
         /// </summary>
@@ -2271,6 +2281,14 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         Color? BackColor { get; }
         /// <summary>
+        /// Barva šrafování prvku, kreslená stylem <see cref="BackStyle"/>.
+        /// Prvek nejprve vykreslí svoje pozadí barvou <see cref="BackColor"/>, 
+        /// a pokud má definovaný styl <see cref="BackStyle"/>, pak přes toto pozadí vykreslí ještě daný styl (šrafování, jiné překrytí) touto barvou.
+        /// Pokud bude definován styl <see cref="BackStyle"/> a nebude daná barva <see cref="HatchColor"/>,
+        /// použije se barva <see cref="LineColor"/>.
+        /// </summary>
+        Color? HatchColor { get; }
+        /// <summary>
         /// Barva linek ohraničení prvku.
         /// Pokud je null, pak prvek nemá ohraničení pomocí linky (Border).
         /// </summary>
@@ -2335,6 +2353,16 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// a spojuje body Begin = { <see cref="Time"/>.Begin, <see cref="RatioBegin"/> } a { <see cref="Time"/>.End, <see cref="RatioEnd"/> }.
         /// </summary>
         int? RatioLineWidth { get; }
+        /// <summary>
+        /// Obrázek vykreslený 1x za jednu grupu na souřadnici jejího začátku.
+        /// Obrázek může být umístěn do kteréhokoli jednoho prvku v rámci grupy, akceptován bude první ve směru času.
+        /// </summary>
+        Image ImageBegin { get; }
+        /// <summary>
+        /// Obrázek vykreslený 1x za jednu grupu na souřadnici jejího konce.
+        /// Obrázek může být umístěn do kteréhokoli jednoho prvku v rámci grupy, akceptován bude poslední ve směru času.
+        /// </summary>
+        Image ImageEnd { get; }
         /// <summary>
         /// Režim chování položky grafu (editovatelnost, texty, atd).
         /// </summary>

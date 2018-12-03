@@ -2062,7 +2062,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 if (addItem == null || addItem.TableName == null) continue;
                 MainDataTable mainDataTable;
                 if (mainTableDict.TryGetValue(addItem.TableName, out mainDataTable))
-                    mainDataTable.AddGraphItem(addItem, refreshGraphDict);
+                    mainDataTable.UpdateGraphItem(addItem, refreshGraphDict);
             }
         }
         /// <summary>

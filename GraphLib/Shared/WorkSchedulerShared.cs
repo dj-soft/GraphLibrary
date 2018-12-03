@@ -1573,6 +1573,14 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public Color? BackColor { get; set; }
         /// <summary>
+        /// Barva šrafování prvku, kreslená stylem <see cref="BackStyle"/>.
+        /// Prvek nejprve vykreslí svoje pozadí barvou <see cref="BackColor"/>, 
+        /// a pokud má definovaný styl <see cref="BackStyle"/>, pak přes toto pozadí vykreslí ještě daný styl (šrafování, jiné překrytí) touto barvou.
+        /// Pokud bude definován styl <see cref="BackStyle"/> a nebude daná barva <see cref="HatchColor"/>,
+        /// použije se barva <see cref="LineColor"/>.
+        /// </summary>
+        public Color? HatchColor { get; set; }
+        /// <summary>
         /// Barva linek ohraničení prvku.
         /// Pokud je null, pak prvek nemá ohraničení pomocí linky (Border).
         /// Z databáze se načítá ze sloupce: "line_color", je NEPOVINNÝ.
@@ -1647,6 +1655,24 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Z databáze se načítá ze sloupce: "back_style", je NEPOVINNÝ.
         /// </summary>
         public System.Drawing.Drawing2D.HatchStyle? BackStyle { get; set; }
+        /// <summary>
+        /// Obrázek vykreslený 1x za jednu grupu na souřadnici jejího začátku.
+        /// Obrázek může být umístěn do kteréhokoli jednoho prvku v rámci grupy, akceptován bude první ve směru času.
+        /// <para/>
+        /// Informace pro aktualizaci dat, při tvorbě dat do <see cref="GuiResponse"/>:
+        /// Pokud dřívější grafický prvek obsahoval obrázek, a nový jej obsahovat nemá (=je třeba zhasnout obrázek), 
+        /// pak se jako <see cref="ImageBegin"/> má vložit <see cref="GuiImage.Empty"/>
+        /// </summary>
+        public GuiImage ImageBegin { get; set; }
+        /// <summary>
+        /// Obrázek vykreslený 1x za jednu grupu na souřadnici jejího konce.
+        /// Obrázek může být umístěn do kteréhokoli jednoho prvku v rámci grupy, akceptován bude poslední ve směru času.
+        /// <para/>
+        /// Informace pro aktualizaci dat, při tvorbě dat do <see cref="GuiResponse"/>:
+        /// Pokud dřívější grafický prvek obsahoval obrázek, a nový jej obsahovat nemá (=je třeba zhasnout obrázek), 
+        /// pak se jako <see cref="ImageEnd"/> má vložit <see cref="GuiImage.Empty"/>
+        /// </summary>
+        public GuiImage ImageEnd { get; set; }
         /// <summary>
         /// Režim chování položky grafu (editovatelnost, texty, atd).
         /// Tato hodnota se nenačítá z SQL SELECTU, musí se naplnit ručně.
@@ -2321,6 +2347,11 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         [PersistingEnabled(false)]
         public bool IsEmpty { get { return (String.IsNullOrEmpty(this.ImageFile) && this.ImageContent == null && this.Image == null); } }
+        /// <summary>
+        /// Empty obrázek: není null (takže se předává do GUI vrstvy), ale reprezentuje neexistující obrázek (takže se nevykresluje).
+        /// Používá se při aktualizaci dat v <see cref="GuiResponse.AddItems"/>, když dřívější prvek grafu měl Image, ale nově jej mít nemá.
+        /// </summary>
+        public static GuiImage Empty { get { return new GuiImage(); } }
         #endregion
         #region Serializace
         /// <summary>
