@@ -297,6 +297,12 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                     Text = null,
                     ToolTip = workingTimeRange.ToString()
                 };
+
+                float ratio = ((float)this.Rand.Next(0, 101)) / 100f;
+                workTime.Ratio = ratio;
+                workTime.RatioBackColor = backColor.Morph(Color.Red, ratio / 2f); // (workTime.Ratio < 0.25f ? Color.LightGreen : (workTime.Ratio < 0.75f ? Color.LightGoldenrodYellow : Color.LightCoral));
+                workTime.RatioLineColor = Color.Black;
+
                 list.Add(workTime);
             }
             return list;
@@ -1329,6 +1335,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         public bool IsEditable { get; set; }
         public string Text { get; set; }
         public string ToolTip { get; set; }
+        public float Ratio { get; set; }
+        public Color? RatioBackColor { get; set; }
+        public Color? RatioLineColor { get; set; }
         /// <summary>
         /// Vytvoří a vrátí prvek grafu za tuto pracovní směnu.
         /// </summary>
@@ -1345,7 +1354,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 DataId = this.RecordGid,
                 Text = this.Text,
                 ToolTip = this.ToolTip,
-                Time = this.Time
+                Time = this.Time,
+                RatioBegin = this.Ratio,
+                RatioBeginBackColor = this.RatioBackColor,
+                RatioLineColor = this.RatioLineColor
             };
             return guiGraphItem;
         }
