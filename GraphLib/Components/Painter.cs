@@ -1442,12 +1442,6 @@ namespace Asol.Tools.WorkScheduler.Components
                 graphics.DrawLine(pen, x0, y0, x1, y1);
         }
         #endregion
-        #region DrawGraphItem
-        internal static void DrawGraphGroup(Graphics graphics)
-        { }
-        internal static void DrawGraphItem(Graphics graphics)
-        { }
-        #endregion
         #region DrawRelationGrid
         /// <summary>
         /// Metoda vykreslí linku na spodním okraji daného prostoru, podle pravidel pro Grid
@@ -1932,6 +1926,277 @@ namespace Asol.Tools.WorkScheduler.Components
                     graphics.FillPie(b, brushBounds, angle, 90f);
                 }
             }
+        }
+        #endregion
+        #region DrawGraphItem
+        /// <summary>
+        /// Provede kompletní vykreslení prvku grafu
+        /// </summary>
+        /// <param name="args"></param>
+        public static void GraphItemDraw(GraphItemArgs args)
+        {
+            Rectangle[] boundsParts = GraphItemCreateBounds(args);
+
+            GraphItemDrawBack(args, boundsParts);
+            GraphItemDrawHatch(args, boundsParts);
+            GraphItemDrawRatio(args, boundsParts);
+            GraphItemDrawBorder(args, boundsParts);
+        }
+        private static void GraphItemDrawBack(GraphItemArgs args, Rectangle[] boundsParts)
+        {
+            if (!args.BackColor.HasValue) return;
+            GPainter.DrawEffect3D(args.Graphics, boundsParts[0], args.BackColor.Value, Orientation.Horizontal, args.Effect3D, null);
+        }
+        private static void GraphItemDrawHatch(GraphItemArgs args, Rectangle[] boundsParts)
+        {
+            if (!args.HasHatchStyle) return;
+            using (HatchBrush hatchBrush = new HatchBrush(args.HatchStyle.Value, args.HatchColor.Value, Color.Transparent))
+            {
+                args.Graphics.FillRectangle(hatchBrush, boundsParts[0]);
+            }
+        }
+        private static void GraphItemDrawRatio(GraphItemArgs args, Rectangle[] boundsParts)
+        {
+            if (!args.HasRatio) return;
+            Rectangle bounds = boundsParts[0];
+            Point p1 = GraphItemDrawRatioGetPoint(args.RatioBegin.Value, bounds, bounds.X);
+            Point p2 = GraphItemDrawRatioGetPoint((args.RatioEnd.HasValue ? args.RatioEnd.Value : args.RatioBegin.Value), bounds, bounds.Right);
+
+            if (args.RatioBeginBackColor.HasValue)
+            {
+                Point p0 = new Point(bounds.X, bounds.Bottom);
+                Point p3 = new Point(bounds.Right, bounds.Bottom);
+                GraphicsPath path = new GraphicsPath();
+                path.AddLine(p0, p1);
+                path.AddLine(p1, p2);
+                path.AddLine(p2, p3);
+                path.AddLine(p3, p0);
+                path.CloseFigure();
+
+                if (args.RatioEndBackColor.HasValue)
+                {
+                    using (LinearGradientBrush lgb = new LinearGradientBrush(bounds, args.RatioBeginBackColor.Value, args.RatioEndBackColor.Value, 0f))
+                        args.Graphics.FillPath(lgb, path);
+                }
+                else
+                {
+                    args.Graphics.FillPath(Skin.Brush(args.RatioBeginBackColor.Value), path);
+                }
+            }
+
+            if (args.RatioLineColor.HasValue)
+            {
+                Pen pen = Skin.Pen(args.RatioLineColor.Value);
+                if (args.RatioLineWidth.HasValue && args.RatioLineWidth.Value > 0)
+                    pen.Width = args.RatioLineWidth.Value;
+                args.Graphics.DrawLine(pen, p1, p2);
+            }
+        }
+        private static Point GraphItemDrawRatioGetPoint(float ratio, Rectangle bounds, int x)
+        {
+            ratio = (ratio < 0f ? 0f : (ratio > 1f ? 1f : ratio));
+            int y = bounds.Bottom - (int)(Math.Round((float)bounds.Height * ratio, 0));
+            return new Point(x, y);
+        }
+        private static void GraphItemDrawBorder(GraphItemArgs args, Rectangle[] boundsParts)
+        {
+            Color? borderColor = (args.IsSelected ? Skin.Graph.ElementSelectedLineColor :
+                                 (args.IsFramed ? Skin.Graph.ElementFramedLineColor : args.BackColor));
+            if (borderColor.HasValue)
+            {
+                Color colorTop = Skin.Modifiers.GetColor3DBorderLight(borderColor.Value, 0.50f);
+                Color colorBottom = Skin.Modifiers.GetColor3DBorderDark(borderColor.Value, 0.50f);
+                args.Graphics.FillRectangle(Skin.Brush(colorTop), boundsParts[2]);
+                args.Graphics.FillRectangle(Skin.Brush(colorBottom), boundsParts[4]);
+                if (!args.HasBorder)
+                {   // Běžné okraje prvku (3D efekt na krajních prvcích):
+                    if (args.IsFirstItem)
+                        args.Graphics.FillRectangle(Skin.Brush(colorTop), boundsParts[1]);
+                    if (args.IsLastItem)
+                        args.Graphics.FillRectangle(Skin.Brush(colorBottom), boundsParts[3]);
+                }
+                else
+                {   // Zvýrazněné okraje prvku (Selected, Framed na krajních prvcích):
+                    if (args.IsFirstItem)
+                        args.Graphics.FillRectangle(Skin.Brush(borderColor.Value), boundsParts[1]);
+                    if (args.IsLastItem)
+                        args.Graphics.FillRectangle(Skin.Brush(borderColor.Value), boundsParts[3]);
+                }
+            }
+        }
+        /// <summary>
+        /// Metoda vrátí sadu souřadnic vnitřních prvků položky grafu.
+        /// </summary>
+        /// <returns></returns>
+        public static Rectangle[] GraphItemCreateBounds(GraphItemArgs args)
+        {
+            return GraphItemCreateBounds(args.BoundsAbsolute, args.IsGroup, args.IsFirstItem, args.IsLastItem, args.HasBorder);
+        }
+        /// <summary>
+        /// Metoda vrátí sadu souřadnic vnitřních prvků položky grafu.
+        /// </summary>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="forGroupItem"></param>
+        /// <param name="isFirst"></param>
+        /// <param name="isLast"></param>
+        /// <param name="hasBorder"></param>
+        /// <returns></returns>
+        public static Rectangle[] GraphItemCreateBounds(Rectangle boundsAbsolute, bool forGroupItem, bool isFirst, bool isLast, bool hasBorder)
+        {
+            int x = boundsAbsolute.X;
+            int y = boundsAbsolute.Y;
+            int w = boundsAbsolute.Width;
+            int h = boundsAbsolute.Height;
+            int wb = (w <= 2 ? 0 : ((w < 5) ? 1 : (hasBorder ? 2 : 1)));
+            int hb = (h <= 2 ? 0 : ((h < 10 || forGroupItem) ? 1 : (hasBorder ? 3 : 2)));    // Výška proužku "horní a dolní okraj"
+            int hc = h - 2 * hb;
+
+            Rectangle[] boundsParts = new Rectangle[5];
+            if (forGroupItem)
+                boundsParts[0] = new Rectangle(x, y + hb, w, hc);              // Střední prostor pro Group
+            else
+                boundsParts[0] = new Rectangle(x, y, w, h);                    // Střední prostor pro Item
+            if (isFirst)
+                boundsParts[1] = new Rectangle(x, y + hb, wb, hc + hb);        // Levý okraj
+            boundsParts[2] = new Rectangle(x, y, w, hb);                       // Horní okraj
+            if (isLast)
+                boundsParts[3] = new Rectangle(x + w - wb, y, wb, hc + hb);    // Pravý okraj
+            boundsParts[4] = new Rectangle(x, y + hb + hc, w, hb);             // Dolní okraj
+
+            return boundsParts;
+        }
+        /// <summary>
+        /// Třída pro přenos dat pro kreslení grafického prvku
+        /// </summary>
+        public class GraphItemArgs
+        {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="graphics"></param>
+            /// <param name="boundsAbsolute"></param>
+            public GraphItemArgs(Graphics graphics, Rectangle boundsAbsolute)
+            {
+                this.Graphics = graphics;
+                this.BoundsAbsolute = boundsAbsolute;
+            }
+            /// <summary>
+            /// Objekt grafiky, do které se kreslí
+            /// </summary>
+            public Graphics Graphics { get; private set; }
+            /// <summary>
+            /// Souřadnice, kde se prvek nachází
+            /// </summary>
+            public Rectangle BoundsAbsolute { get; private set; }
+            /// <summary>
+            /// Příznak: prvek je grupa?
+            /// </summary>
+            public bool IsGroup { get; set; }
+            /// <summary>
+            /// Příznak: prvek je první v grupě?
+            /// </summary>
+            public bool IsFirstItem { get; set; }
+            /// <summary>
+            /// Příznak: prvek je poslední v grupě?
+            /// </summary>
+            public bool IsLastItem { get; set; }
+            /// <summary>
+            /// Příznak: prvek je selectovaný?
+            /// </summary>
+            public bool IsSelected { get; set; }
+            /// <summary>
+            /// Příznak: prvek je framovaný?
+            /// </summary>
+            public bool IsFramed { get; set; }
+            /// <summary>
+            /// Příznak: prvek je aktivovaný?
+            /// </summary>
+            public bool IsActivated { get; set; }
+            /// <summary>
+            /// Příznak: prvek má výraznější Border?
+            /// </summary>
+            public bool HasBorder { get { return this.IsSelected || this.IsFramed; } }
+            /// <summary>
+            /// Barva plného pozadí prvku
+            /// </summary>
+            public Color? BackColor { get; set; }
+            /// <summary>
+            /// 3D effekt
+            /// </summary>
+            public float? Effect3D { get; set; }
+            /// <summary>
+            /// Styl překreslení prvku (vzorek)
+            /// </summary>
+            public HatchStyle? HatchStyle { get; set; }
+            /// <summary>
+            /// Barva pro kreslení <see cref="HatchStyle"/>
+            /// </summary>
+            public Color? HatchColor { get; set; }
+            /// <summary>
+            /// true pokud se má kreslit Hatch,
+            /// tedy když <see cref="HatchStyle"/> i <see cref="HatchColor"/> mají hodnotu
+            /// </summary>
+            public bool HasHatchStyle { get { return (this.HatchStyle.HasValue && this.HatchColor.HasValue); } }
+            /// <summary>
+            /// Poměrná hodnota "nějakého" splnění v rámci prvku, na jeho počátku.
+            /// Běžně se vykresluje jako poměrná část prvku, měřeno odspodu, která symbolizuje míru "naplnění" daného úseku.
+            /// Část Ratio má tvar lichoběžníku, a spojuje body Begin = { Left, <see cref="RatioBegin"/> } a { Right, <see cref="RatioEnd"/> }.
+            /// <para/>
+            /// Pro zjednodušení zadávání: pokud je naplněno <see cref="RatioBegin"/>, ale v <see cref="RatioEnd"/> je null, 
+            /// pak vykreslovací algoritmus předpokládá hodnotu End stejnou jako Begin. To znamená, že pro "obdélníkové" ratio stačí naplnit jen <see cref="RatioBegin"/>.
+            /// Ale opačně to neplatí.
+            /// </summary>
+            public float? RatioBegin { get; set; }
+            /// <summary>
+            /// Poměrná hodnota "nějakého" splnění v rámci prvku, na jeho konci.
+            /// Běžně se vykresluje jako poměrná část prvku, měřeno odspodu, která symbolizuje míru "naplnění" daného úseku.
+            /// Část Ratio má tvar lichoběžníku, a spojuje body Begin = { Left, <see cref="RatioBegin"/> } a { Right, <see cref="RatioEnd"/> }.
+            /// <para/>
+            /// Pro zjednodušení zadávání: pokud je naplněno <see cref="RatioBegin"/>, ale v <see cref="RatioEnd"/> je null, 
+            /// pak vykreslovací algoritmus předpokládá hodnotu End stejnou jako Begin. To znamená, že pro "obdélníkové" ratio stačí naplnit jen <see cref="RatioBegin"/>.
+            /// Ale opačně to neplatí.
+            /// </summary>
+            public float? RatioEnd { get; set; }
+            /// Barva pozadí prvku, kreslená v části Ratio, na straně času Begin.
+            /// Použije se tehdy, když hodnota <see cref="RatioBegin"/> a/nebo <see cref="RatioEnd"/> má hodnotu větší než 0f.
+            /// Touto barvou je vykreslena dolní část prvku, která symbolizuje míru "naplnění" daného úseku.
+            /// Tato část má tvar lichoběžníku, dolní okraj je na hodnotě 0, levý okraj má výšku <see cref="RatioBegin"/>, pravý okraj má výšku <see cref="RatioEnd"/>.
+            /// Může sloužit k zobrazení vyčerpané pracovní kapacity, nebo jako lineární částečka grafu sloupcového nebo liniového.
+            /// Tato barva se použije buď jako Solid color pro celý prvek v části Ratio, 
+            /// anebo jako počáteční barva na souřadnici X = čas Begin při výplni Linear, 
+            /// a to tehdy, pokud je zadána i barva <see cref="RatioEndBackColor"/> (ta reprezentuje barvu na souřadnici X = čas End).
+            /// Z databáze se načítá ze sloupce: "ratio_begin_back_color", je NEPOVINNÝ.
+            public Color? RatioBeginBackColor { get; set; }
+            /// <summary>
+            /// Barva pozadí prvku, kreslená v části Ratio, na straně času End.
+            /// Použije se tehdy, když hodnota <see cref="RatioBegin"/> a/nebo <see cref="RatioEnd"/> má hodnotu větší než 0f.
+            /// Touto barvou je vykreslena dolní část prvku, která symbolizuje míru "naplnění" daného úseku.
+            /// Tato část má tvar lichoběžníku, dolní okraj je na hodnotě 0, levý okraj má výšku <see cref="RatioBegin"/>, pravý okraj má výšku <see cref="RatioEnd"/>.
+            /// Může sloužit k zobrazení vyčerpané pracovní kapacity, nebo jako lineární částečka grafu sloupcového nebo liniového.
+            /// Tato barva se použije jako koncová barva (na souřadnici X = čas End) v lineární výplni prostoru Ratio,
+            /// kde počáteční barva výplně (na souřadnici X = čas Begin) je dána v <see cref="RatioBeginBackColor"/>.
+            /// Z databáze se načítá ze sloupce: "ratio_end_back_color", je NEPOVINNÝ.
+            /// </summary>
+            public Color? RatioEndBackColor { get; set; }
+            /// <summary>
+            /// Barva linky, kreslená v úrovni Ratio.
+            /// Použije se tehdy, když hodnota <see cref="RatioBegin"/> a/nebo <see cref="RatioEnd"/> má zadanou hodnotu v rozsahu 0 (včetně) a více.
+            /// Touto barvou je vykreslena přímá linie, která symbolizuje míru "naplnění" daného úseku, 
+            /// a spojuje body Begin = { Left, <see cref="RatioBegin"/> } a { Right, <see cref="RatioEnd"/> }.
+            /// </summary>
+            public Color? RatioLineColor { get; set; }
+            /// <summary>
+            /// Šířka linky, kreslená v úrovni Ratio.
+            /// Použije se tehdy, když hodnota <see cref="RatioBegin"/> a/nebo <see cref="RatioEnd"/> má zadanou hodnotu v rozsahu 0 (včetně) a více.
+            /// Čárou této šířky je vykreslena přímá linie, která symbolizuje míru "naplnění" daného úseku, 
+            /// a spojuje body Begin = { Left, <see cref="RatioBegin"/> } a { Right, <see cref="RatioEnd"/> }.
+            /// </summary>
+            public int? RatioLineWidth { get; set; }
+            /// <summary>
+            /// true pokud se má kreslit Ratio,
+            /// tedy když <see cref="RatioBegin"/> a (<see cref="RatioBeginBackColor"/> nebo <see cref="RatioLineColor"/>) mají hodnotu
+            /// </summary>
+            public bool HasRatio { get { return (this.RatioBegin.HasValue && (this.RatioBeginBackColor.HasValue || this.RatioLineColor.HasValue)); } }
         }
         #endregion
         #region Drawing2D.Matrix = transformace vykreslovaných souřadnic

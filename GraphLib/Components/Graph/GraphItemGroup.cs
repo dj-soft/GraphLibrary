@@ -400,6 +400,22 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="forGroup">true = pro barvu grupy / false = pro barvu prvku</param>
         /// <param name="forBackColor">true = pro barvu pozadí / false = pro barvu okrajů, čar a textů</param>
         /// <returns></returns>
+        public Color? GetColorWithOpacity(Color? baseColor, GInteractiveDrawLayer drawLayer, DrawItemMode drawMode, bool forGroup, bool forBackColor)
+        {
+            if (!baseColor.HasValue) return null;
+            return this.GetColorWithOpacity(baseColor.Value, drawLayer, drawMode, forGroup, forBackColor);
+        }
+        /// <summary>
+        /// Vrátí danou barvu, s modifikovanou průhledností Opacity (<see cref="Color.A"/>).
+        /// Zadaná Opacity je respektována, ale pokud celý graf má deklarovaou svoji průhlednost v <see cref="GTimeGraph.GraphOpacity"/>, pak je akceptována rovněž.
+        /// A dále, pokud se aktuálně kreslí do vrstvy <see cref="GInteractiveDrawLayer.Interactive"/>, pak je akceptována i hodnota <see cref="DragDropDrawInteractiveOpacity"/>.
+        /// </summary>
+        /// <param name="baseColor">Výchozí barva, typicky BackColor nebo ForeColor prvku grafu.</param>
+        /// <param name="drawLayer">Vykreslovaná vrstva grafiky</param>
+        /// <param name="drawMode">Režim kreslení předaný systémem</param>
+        /// <param name="forGroup">true = pro barvu grupy / false = pro barvu prvku</param>
+        /// <param name="forBackColor">true = pro barvu pozadí / false = pro barvu okrajů, čar a textů</param>
+        /// <returns></returns>
         public Color GetColorWithOpacity(Color baseColor, GInteractiveDrawLayer drawLayer, DrawItemMode drawMode, bool forGroup, bool forBackColor)
         {
             if (!this.IsDragged)
