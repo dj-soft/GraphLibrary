@@ -430,630 +430,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         #endregion
     }
     #endregion
-    #region ConfigLinkLinesSetPanel : Panel pro zobrazení konfigurace Linků (obsahuje 3 x ConfigLinkLineOnePanel)
-    /// <summary>
-    /// ConfigLinkLinesSetPanel : Panel pro zobrazení konfigurace Linků
-    /// </summary>
-    public class ConfigLinkLinesSetPanel : WinHorizontalLine, ISchedulerEditorControlItem
-    {
-        #region Vnitřní život: inicializace
-        /// <summary>
-        /// Inicializace.
-        /// Pozor, jde o virtuální metodu volanou z konstruktoru.
-        /// Tyto controly obecně nemají používat konstruktor, ale tuto inicializaci (kde lze řídit místo výkonu base metody)
-        /// <para/>
-        /// Když se o tom předem ví, tak se to nechá uřídit :-)
-        /// </summary>
-        protected override void Initialize()
-        {
-            base.Initialize();
-
-            this.LineShapePanel = new ConfigLinkLineOnePanel() { LinkLineSetting = ConfigLinkLineSettingType.LineShape, Caption = "Tvar spojovací linie", ValueNoText = "Rovné přímé čáry", ValueYesText = "Plynulé křivky", GraphSample = 1, LinkWholeTask = true };
-            this.LinkMousePanel = new ConfigLinkLineOnePanel() { LinkLineSetting = ConfigLinkLineSettingType.LinkMouse, Caption = "Linky vykreslované při pohybu myši", ValueNoText = "Pouze pro prvek pod myší", ValueYesText = "Celý postup (všechny operace)", GraphSample = 2 };
-            this.LinkSelectPanel = new ConfigLinkLineOnePanel() { LinkLineSetting = ConfigLinkLineSettingType.LinkSelect, Caption = "Linky vykreslované při označení prvku", ValueNoText = "Pouze pro označený prvek", ValueYesText = "Celý postup (všechny operace)", GraphSample = 3 };
-
-            this.SuspendLayout();
-
-            this.LineShapePanel.CurrentValueChanged += LineShapePanel_CurrentValueChanged;
-
-            this.Controls.Add(this.LineShapePanel);
-            this.Controls.Add(this.LinkMousePanel);
-            this.Controls.Add(this.LinkSelectPanel);
-
-            this.AutoScroll = true;
-
-            this.ResumeLayout(false);
-            this.PerformLayout();
-
-            this.FontInfo.RelativeSize = 116 * this.FontInfo.RelativeSize / 100;
-        }
-        /// <summary>
-        /// Úprava layoutu po změně velikosti
-        /// </summary>
-        protected override void PrepareLayout()
-        {
-            base.PrepareLayout();
-
-            int x = 3;
-            int y = this.OneLineHeight + 3;
-            int w = this.ClientSize.Width - 6;
-            int h = ConfigLinkLineOnePanel.OptimalHeight;
-            int s = h + 3;
-
-            this.LineShapePanel.Bounds = new Rectangle(x, y, w, h); y += s;
-            this.LinkMousePanel.Bounds = new Rectangle(x, y, w, h); y += s;
-            this.LinkSelectPanel.Bounds = new Rectangle(x, y, w, h); y += s;
-        }
-        /// <summary>
-        /// Panel pro zadání tvaru linky
-        /// </summary>
-        protected ConfigLinkLineOnePanel LineShapePanel;
-        /// <summary>
-        /// Panel pro zadání rozsahu linků pro situaci MouseOver
-        /// </summary>
-        protected ConfigLinkLineOnePanel LinkMousePanel;
-        /// <summary>
-        /// Panel pro zadání rozsahu linků pro situaci Selected
-        /// </summary>
-        protected ConfigLinkLineOnePanel LinkSelectPanel;
-        /// <summary>
-        /// Po změně hodnoty "Kreslit čáru jako linku/křivku" v panelu <see cref="LineShapePanel"/>:
-        /// tuto hodnotu nastavíme do ostatních panelů, aby reprezentovaly odpovídající tvar:
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void LineShapePanel_CurrentValueChanged(object sender, EventArgs e)
-        {
-            bool linkLineAsSCurve = this.LineShapePanel.CurrentValue;
-            this.LinkMousePanel.LinkLineAsSCurve = linkLineAsSCurve;
-            this.LinkSelectPanel.LinkLineAsSCurve = linkLineAsSCurve;
-        }
-        #endregion
-        #region Read, Save, Data
-        /// <summary>
-        /// Načte hodnoty z <see cref="Data"/> do this controlů
-        /// </summary>
-        protected void ReadFromData()
-        {
-            this.ReadFromData(this.Data);
-        }
-        /// <summary>
-        /// Načte hodnoty z dodaného objektu do this controlů
-        /// </summary>
-        /// <param name="data">Data</param>
-        protected void ReadFromData(SchedulerConfig data)
-        {
-            if (data == null) return;
-
-            this.LineShapePanel.CurrentValue = data.GuiEditShowLinkAsSCurve;
-            this.LinkMousePanel.CurrentValue = data.GuiEditShowLinkMouseWholeTask;
-            this.LinkMousePanel.LinkLineAsSCurve = data.GuiEditShowLinkAsSCurve;
-            this.LinkSelectPanel.CurrentValue = data.GuiEditShowLinkSelectedWholeTask;
-            this.LinkSelectPanel.LinkLineAsSCurve = data.GuiEditShowLinkAsSCurve;
-        }
-        /// <summary>
-        /// Uloží hodnoty z this controlů do <see cref="Data"/>
-        /// </summary>
-        protected void SaveToData()
-        {
-            this.SaveToData(this.Data);
-        }
-        /// <summary>
-        /// Uloží hodnoty z this controlů do dodaného objektu
-        /// </summary>
-        protected void SaveToData(SchedulerConfig data)
-        {
-            if (data == null) return;
-
-            data.GuiEditShowLinkAsSCurve = this.LineShapePanel.CurrentValue;
-            data.GuiEditShowLinkMouseWholeTask = this.LinkMousePanel.CurrentValue;
-            data.GuiEditShowLinkSelectedWholeTask = this.LinkSelectPanel.CurrentValue;
-        }
-        /// <summary>
-        /// Konfigurační data
-        /// </summary>
-        public SchedulerConfig Data { get; set; }
-        #endregion
-        #region ISchedulerEditorControlItem
-        void ISchedulerEditorControlItem.ReadFromData() { this.ReadFromData(); }
-        void ISchedulerEditorControlItem.SaveToData() { this.SaveToData(); }
-        Panel ISchedulerEditorControlItem.Panel { get { return this; } }
-        #endregion
-    }
-    /// <summary>
-    /// ConfigLinkLineOnePanel : panel zobrazující jednu předvolbu a odpovídající Sample
-    /// </summary>
-    public class ConfigLinkLineOnePanel : WinHorizontalLine
-    {
-        #region Vnitřní život: inicializace
-        /// <summary>
-        /// Inicializace.
-        /// Pozor, jde o virtuální metodu volanou z konstruktoru.
-        /// Tyto controly obecně nemají používat konstruktor, ale tuto inicializaci (kde lze řídit místo výkonu base metody)
-        /// </summary>
-        protected override void Initialize()
-        {
-            base.Initialize();
-
-            this.Radio0 = new RadioButton() { Bounds = new Rectangle(14, 35, 200, 24), TabIndex = 0 };
-            this.Radio1 = new RadioButton() { Bounds = new Rectangle(14, 70, 200, 24), TabIndex = 0 };
-            this.SamplePanel = new ConfigLinkLineSamplePanel();
-
-            this.SuspendLayout();
-
-            this.Radio0.CheckedChanged += Radio_CheckedChanged;
-            this.Radio1.CheckedChanged += Radio_CheckedChanged;
-
-            this.Controls.Add(this.SamplePanel);
-            this.Controls.Add(this.Radio1);
-            this.Controls.Add(this.Radio0);
-
-            this.OnlyOneLine = false;
-            this.Size = new Size(400, OptimalHeight);
-            this.MinimumSize = new Size(350, OptimalHeight);
-            this.MaximumSize = new Size(650, OptimalHeight);
-            this.LineDistanceRight = ConfigSnapSamplePanel.OptimalWidth - 12;
-
-            this.ResumeLayout(false);
-            this.PerformLayout();
-
-            this.Radio0.Checked = true;
-        }
-        /// <summary>
-        /// Úprava layoutu po změně velikosti
-        /// </summary>
-        protected override void PrepareLayout()
-        {
-            base.PrepareLayout();
-
-            int width = this.ClientSize.Width;
-            int height = this.ClientSize.Height;
-            this.SamplePanel.Location = new Point(width - 6 - ConfigLinkLineSamplePanel.OptimalWidth, (height - ConfigLinkLineSamplePanel.OptimalHeight) / 2);
-        }
-        /// <summary>
-        /// Výška tohoto prvku
-        /// </summary>
-        internal static int OptimalHeight { get { return ConfigLinkLineSamplePanel.OptimalHeight + 12; } }
-        /// <summary>
-        /// RadioButton pro hodnotu 0
-        /// </summary>
-        protected RadioButton Radio0;
-        /// <summary>
-        /// RadioButton pro hodnotu 1
-        /// </summary>
-        protected RadioButton Radio1;
-        /// <summary>
-        /// ConfigSnapSamplePanel 
-        /// </summary>
-        protected ConfigLinkLineSamplePanel SamplePanel;
-        #endregion
-        #region Události
-        /// <summary>
-        /// Po změně Radio.Checked
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="args"></param>
-        private void Radio_CheckedChanged(object sender, EventArgs args)
-        {
-            this.CallCurrentValueChanged();
-        }
-        /// <summary>
-        /// Provede akce po změně <see cref="CurrentValue"/>
-        /// </summary>
-        private void CallCurrentValueChanged()
-        {
-            this.ShowValue();
-            this.OnCurrentValueChanged();
-            if (this.CurrentValueChanged != null)
-                this.CurrentValueChanged(this, new EventArgs());
-        }
-        /// <summary>
-        /// Háček po změně <see cref="CurrentValue"/>
-        /// </summary>
-        protected virtual void OnCurrentValueChanged() { }
-        /// <summary>
-        /// Event po změně <see cref="CurrentValue"/>
-        /// </summary>
-        public event EventHandler CurrentValueChanged;
-        /// <summary>
-        /// Zajistí promítnutí hodnoty do sample panelu
-        /// </summary>
-        protected void ShowValue()
-        {
-            bool value = this.CurrentValue;
-            switch (this.LinkLineSetting)
-            {
-                case ConfigLinkLineSettingType.LineShape:
-                    this.LinkLineAsSCurve = value;
-                    break;
-                case ConfigLinkLineSettingType.LinkMouse:
-                case ConfigLinkLineSettingType.LinkSelect:
-                    this.LinkWholeTask = value;
-                    break;
-            }
-        }
-        #endregion
-        #region Public properties vlastní
-        /// <summary>
-        /// Hodnota uvedená na první RadioButtonu, který odpovídá hodnotě <see cref="CurrentValue"/> = false
-        /// </summary>
-        [Description("Hodnota uvedená na první RadioButtonu, který odpovídá hodnotě CurrentValue = false")]
-        [Category(WinConstants.DesignCategory)]
-        public string ValueNoText
-        {
-            get { return this.Radio0.Text; }
-            set { this.Radio0.Text = value; }
-        }
-        /// <summary>
-        /// Hodnota uvedená na první RadioButtonu, který odpovídá hodnotě <see cref="CurrentValue"/> = true
-        /// </summary>
-        [Description("Hodnota uvedená na první RadioButtonu, který odpovídá hodnotě CurrentValue = true")]
-        [Category(WinConstants.DesignCategory)]
-        public string ValueYesText
-        {
-            get { return this.Radio1.Text; }
-            set { this.Radio1.Text = value; }
-        }
-        /// <summary>
-        /// Aktuální hodnota v tomto panelu:
-        /// false = označen první RadioButton, true = označen druhý RadioButton
-        /// </summary>
-        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public bool CurrentValue
-        {
-            get { return this.Radio1.Checked; }
-            set
-            {
-                bool value0 = !value;
-                bool value1 = value;
-                if (this.Radio0.Checked != value0) this.Radio0.Checked = value0;
-                if (this.Radio1.Checked != value1) this.Radio1.Checked = value1;
-                /* to samo vyvolá ShowValue() přes Radio_CheckedChanged() */
-            }
-        }
-        /// <summary>
-        /// Typ údaje, který se v tomto panelu edituje
-        /// </summary>
-        [Description("Typ údaje, který se v tomto panelu edituje")]
-        [Category(WinConstants.DesignCategory)]
-        public ConfigLinkLineSettingType LinkLineSetting
-        {
-            get { return this._LinkLineSetting; }
-            set { this._LinkLineSetting = value; this.ShowValue(); }
-        }
-        private ConfigLinkLineSettingType _LinkLineSetting;
-        #endregion
-        #region Public properties linkované ze SamplePanelu
-        /// <summary>
-        /// Tvar spojovací linie jako křivka?
-        /// false = přímá čára; true = S-křivka
-        /// </summary>
-        [Description("Tvar spojovací linie jako křivka? false = přímá čára; true = S-křivka")]
-        [Category(WinConstants.DesignCategory)]
-        [AmbientValue(true)]
-        public bool LinkLineAsSCurve { get { return this.SamplePanel.LinkLineAsSCurve; } set { this.SamplePanel.LinkLineAsSCurve = value; } }
-        /// <summary>
-        /// Zobrazovat celý řetěz?
-        /// false = jen přímé sousedy; true = celý řetěz
-        /// </summary>
-        [Description("Zobrazovat celý řetěz? false = jen přímé sousedy; true = celý řetěz")]
-        [Category(WinConstants.DesignCategory)]
-        [AmbientValue(true)]
-        public bool LinkWholeTask { get { return this.SamplePanel.LinkWholeTask; } set { this.SamplePanel.LinkWholeTask = value; } }
-        /// <summary>
-        /// Barva pozadí pod vzorky
-        /// </summary>
-        [Description("Barva pozadí pod vzorky")]
-        [Category(WinConstants.DesignCategory)]
-        [AmbientValue(typeof(Color), "LightGray")]
-        public Color SampleBackColor { get { return this.SamplePanel.SampleBackColor; } set { this.SamplePanel.SampleBackColor = value; } }
-        /// <summary>
-        /// Barva prvku, který je neaktivní
-        /// </summary>
-        [Description("Barva prvku, který je neaktivní")]
-        [Category(WinConstants.DesignCategory)]
-        [AmbientValue(typeof(Color), "DarkGray")]
-        public Color SampleFixedColor { get { return this.SamplePanel.SampleFixedColor; } set { this.SamplePanel.SampleFixedColor = value; } }
-        /// <summary>
-        /// Barva prvku, který je aktivní
-        /// </summary>
-        [Description("Barva prvku, který je aktivní")]
-        [Category(WinConstants.DesignCategory)]
-        [AmbientValue(typeof(Color), "DarkSeaGreen")]
-        public Color SampleMovedColor { get { return this.SamplePanel.SampleMovedColor; } set { this.SamplePanel.SampleMovedColor = value; } }
-        /// <summary>
-        /// Barva spojovací linky
-        /// </summary>
-        [Description("Barva spojovací linky")]
-        [Category(WinConstants.DesignCategory)]
-        [AmbientValue(typeof(Color), "LightGreen")]
-        public Color LineColor { get { return this.SamplePanel.LineColor; } set { this.SamplePanel.LineColor = value; } }
-        /// <summary>
-        /// Šířka spojovací linky
-        /// </summary>
-        [Description("Šířka spojovací linky")]
-        [Category(WinConstants.DesignCategory)]
-        [AmbientValue(1)]
-        public int LineWidth { get { return this.SamplePanel.LineWidth; } set { this.SamplePanel.LineWidth = value; } }
-        /// <summary>
-        /// Číslo vzorku dat, 1 - 5
-        /// </summary>
-        [Description("Číslo vzorku dat, 1 - 5")]
-        [Category(WinConstants.DesignCategory)]
-        [AmbientValue(1)]
-        public int GraphSample { get { return this.SamplePanel.GraphSample; } set { this.SamplePanel.GraphSample = value; } }
-        #endregion
-    }
-    /// <summary>
-    /// ConfigLinkLineSamplePanel : Panel pro grafické zobrazení Linků dle dané konfigurace
-    /// </summary>
-    public class ConfigLinkLineSamplePanel : WinPanel
-    {
-        #region Vnitřní život: inicializace
-        /// <summary>
-        /// Inicializace.
-        /// Pozor, jde o virtuální metodu volanou z konstruktoru.
-        /// Tyto controly obecně nemají používat konstruktor, ale tuto inicializaci (kde lze řídit místo výkonu base metody)
-        /// </summary>
-        protected override void Initialize()
-        {
-            this.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
-
-            base.Initialize();
-
-            this.Size = new Size(OptimalWidth, OptimalHeight);
-            this.MinimumSize = this.Size;
-            this.MaximumSize = this.Size;
-
-            this._LinkLineAsSCurve = true;
-            this._LinkWholeTask = true;
-
-            this._SampleBackColor = Color.LightGray;
-            this._SampleFixedColor = Color.DarkGray;
-            this._SampleMovedColor = Color.DarkSeaGreen;
-            this._LineColor = Color.LightGreen;
-            this._LineWidth = 1;
-        }
-        /// <summary>
-        /// Šířka tohoto prvku
-        /// </summary>
-        internal static int OptimalWidth { get { return 280; } }
-        /// <summary>
-        /// Výška tohoto prvku
-        /// </summary>
-        internal static int OptimalHeight { get { return 90; } }
-        #endregion
-        #region Kreslení
-        /// <summary>
-        /// Vykreslení
-        /// </summary>
-        /// <param name="e"></param>
-        protected override void OnPaint(PaintEventArgs e)
-        {
-            e.Graphics.Clear(this.SampleBackColor);
-
-            Rectangle[] items = this.CreateSample();
-
-            // Vykreslit prvky:
-            int activeItem = 2;
-            for (int i = 0; i < items.Length; i++)
-            {
-                Color color = (i == activeItem ? this.SampleMovedColor : this.SampleFixedColor);
-                GInteractiveState state = (i == activeItem ? GInteractiveState.MouseOver : GInteractiveState.Enabled);
-                GPainter.DrawButtonBase(e.Graphics, items[i], color, state, Orientation.Horizontal, 0, null, null);
-            }
-
-            // Linky:
-            bool asSCurve = this.LinkLineAsSCurve;
-            bool wholeTask = this.LinkWholeTask;
-            int linkFrom = (wholeTask ? 0 : 1);
-            int linkTo = (wholeTask ? items.Length - 1 : 3);
-            Color lineColor = this.LineColor;
-            int width = this.LineWidth;
-            // Na grafiku nasadíme hladkou kresbu:
-            using (GPainter.GraphicsUse(e.Graphics, GraphicSetting.Smooth))
-            {
-                for (int l = linkFrom; l < linkTo; l++)
-                {
-                    Point? prevPoint = items[l].GetPoint(ContentAlignment.MiddleRight);
-                    Point? nextPoint = items[l + 1].GetPoint(ContentAlignment.MiddleLeft);
-                    using (GraphicsPath graphicsPath = GPainter.CreatePathLinkLine(prevPoint, nextPoint, asSCurve))
-                    {
-                        GPainter.DrawLinkPath(e.Graphics, graphicsPath, lineColor, width);
-                    }
-                }
-            }
-        }
-        /// <summary>
-        /// Metoda vrací pole s pěti souřadnicemi, podle zadaného čísla vzorku <see cref="GraphSample"/>
-        /// </summary>
-        /// <returns></returns>
-        protected Rectangle[] CreateSample()
-        {
-            // Vykreslovat budeme 5 x Rectangle, z nichž prostřední je Aktivní; postupně jsou umístěny zleva doprava:
-            // Prostor máme W=280, H=90:
-            int h = 14;
-            switch (this.GraphSample)
-            {
-                case 2:
-                    h = 12;
-                    return new Rectangle[]
-                    {
-                        new Rectangle(10, 20, 40, h),
-                        new Rectangle(55, 68, 20, h),
-                        new Rectangle(100, 10, 55, h),
-                        new Rectangle(180, 58, 30, h),
-                        new Rectangle(250, 15, 25, h)
-                    };
-                case 3:
-                    h = 16;
-                    return new Rectangle[]
-                    {
-                        new Rectangle(10, 10, 55, h),
-                        new Rectangle(70, 69, 35, h),
-                        new Rectangle(105, 15, 30, h),
-                        new Rectangle(170, 15, 40, h),
-                        new Rectangle(215, 60, 60, h)
-                    };
-                case 4:
-                    return new Rectangle[]
-                    {
-                        new Rectangle(10, 15, 40, h),
-                        new Rectangle(70, 66, 30, h),
-                        new Rectangle(115, 38, 50, h),
-                        new Rectangle(180, 20, 20, h),
-                        new Rectangle(240, 55, 30, h)
-                    };
-                case 5:
-                    return new Rectangle[]
-                    {
-                        new Rectangle(10, 15, 40, h),
-                        new Rectangle(70, 66, 30, h),
-                        new Rectangle(115, 38, 50, h),
-                        new Rectangle(180, 20, 20, h),
-                        new Rectangle(240, 55, 30, h)
-                    };
-
-            }
-
-            // Defaultní sada:
-            h = 14;
-            return new Rectangle[]
-            {
-                new Rectangle(10, 15, 40, h),
-                new Rectangle(70, 66, 30, h),
-                new Rectangle(115, 38, 50, h),
-                new Rectangle(180, 20, 20, h),
-                new Rectangle(240, 55, 30, h)
-            };
-        }
-        #endregion
-        #region Public properties
-        /// <summary>
-        /// Tvar spojovací linie jako křivka?
-        /// false = přímá čára; true = S-křivka
-        /// </summary>
-        [Description("Tvar spojovací linie jako křivka? false = přímá čára; true = S-křivka")]
-        [Category(WinConstants.DesignCategory)]
-        [AmbientValue(true)]
-        public bool LinkLineAsSCurve
-        {
-            get { return this._LinkLineAsSCurve; }
-            set { this._LinkLineAsSCurve = value; this.Refresh(); }
-        }
-        private bool _LinkLineAsSCurve;
-        /// <summary>
-        /// Zobrazovat celý řetěz?
-        /// false = jen přímé sousedy; true = celý řetěz
-        /// </summary>
-        [Description("Zobrazovat celý řetěz? false = jen přímé sousedy; true = celý řetěz")]
-        [Category(WinConstants.DesignCategory)]
-        [AmbientValue(true)]
-        public bool LinkWholeTask
-        {
-            get { return this._LinkWholeTask; }
-            set { this._LinkWholeTask = value; this.Refresh(); }
-        }
-        private bool _LinkWholeTask;
-        /// <summary>
-        /// Barva pozadí pod vzorky
-        /// </summary>
-        [Description("Barva pozadí pod vzorky")]
-        [Category(WinConstants.DesignCategory)]
-        [AmbientValue(typeof(Color), "LightGray")]
-        public Color SampleBackColor
-        {
-            get { return this._SampleBackColor; }
-            set { this._SampleBackColor = value; this.Refresh(); }
-        }
-        private Color _SampleBackColor;
-        /// <summary>
-        /// Barva prvku, který je neaktivní
-        /// </summary>
-        [Description("Barva prvku, který je neaktivní")]
-        [Category(WinConstants.DesignCategory)]
-        [AmbientValue(typeof(Color), "DarkGray")]
-        public Color SampleFixedColor
-        {
-            get { return this._SampleFixedColor; }
-            set { this._SampleFixedColor = value; this.Refresh(); }
-        }
-        private Color _SampleFixedColor;
-        /// <summary>
-        /// Barva prvku, který je aktivní
-        /// </summary>
-        [Description("Barva prvku, který je aktivní")]
-        [Category(WinConstants.DesignCategory)]
-        [AmbientValue(typeof(Color), "DarkSeaGreen")]
-        public Color SampleMovedColor
-        {
-            get { return this._SampleMovedColor; }
-            set { this._SampleMovedColor = value; this.Refresh(); }
-        }
-        private Color _SampleMovedColor;
-        /// <summary>
-        /// Barva spojovací linky
-        /// </summary>
-        [Description("Barva spojovací linky")]
-        [Category(WinConstants.DesignCategory)]
-        [AmbientValue(typeof(Color), "LightGreen")]
-        public Color LineColor
-        {
-            get { return this._LineColor; }
-            set { this._LineColor = value; this.Refresh(); }
-        }
-        private Color _LineColor;
-        /// <summary>
-        /// Šířka spojovací linky
-        /// </summary>
-        [Description("Šířka spojovací linky")]
-        [Category(WinConstants.DesignCategory)]
-        [AmbientValue(1)]
-        public int LineWidth
-        {
-            get { return this._LineWidth; }
-            set { this._LineWidth = value; this.Refresh(); }
-        }
-        private int _LineWidth;
-        /// <summary>
-        /// Číslo vzorku dat, 1 - 5
-        /// </summary>
-        [Description("Číslo vzorku dat, 1 - 5")]
-        [Category(WinConstants.DesignCategory)]
-        [AmbientValue(1)]
-        public int GraphSample
-        {
-            get { return this._GraphSample; }
-            set { this._GraphSample = (value < 1 ? 1 : value > 5 ? 5 : value); this.Refresh(); }
-        }
-        private int _GraphSample;
-        #endregion
-    }
-    #region enum ConfigLinkLineSettingType
-    /// <summary>
-    /// Druh údaje, který se v konkrétním <see cref="ConfigLinkLineSamplePanel"/> edituje
-    /// </summary>
-    public enum ConfigLinkLineSettingType
-    {
-        /// <summary>
-        /// Neurčeno
-        /// </summary>
-        None,
-        /// <summary>
-        /// Tvar linie: false = rovné čáry, true = S-křivky
-        /// </summary>
-        LineShape,
-        /// <summary>
-        /// Linky pro MouseOver: false = jen aktivní prvek, true = celá sada (dílec)
-        /// </summary>
-        LinkMouse,
-        /// <summary>
-        /// Linky pro Selected: false = jen aktivní prvek, true = celá sada (dílec)
-        /// </summary>
-        LinkSelect
-    }
-    #endregion
-    #endregion
     #region ConfigSnapSetPanel : Panel pro zobrazení přichytávání všech konkrétních typů (obsahuje PresetPanel + 5 x ConfigSnapOnePanel)
     /// <summary>
     /// ConfigSnapSetPanel : Panel pro zobrazení přichytávání všech konkrétních typů (obsahuje PresetPanel + 5 x ConfigSnapOnePanel)
@@ -1949,6 +1325,630 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Přichytávat k rastru
         /// </summary>
         GridTick
+    }
+    #endregion
+    #endregion
+    #region ConfigLinkLinesSetPanel : Panel pro zobrazení konfigurace Linků (obsahuje 3 x ConfigLinkLineOnePanel)
+    /// <summary>
+    /// ConfigLinkLinesSetPanel : Panel pro zobrazení konfigurace Linků
+    /// </summary>
+    public class ConfigLinkLinesSetPanel : WinHorizontalLine, ISchedulerEditorControlItem
+    {
+        #region Vnitřní život: inicializace
+        /// <summary>
+        /// Inicializace.
+        /// Pozor, jde o virtuální metodu volanou z konstruktoru.
+        /// Tyto controly obecně nemají používat konstruktor, ale tuto inicializaci (kde lze řídit místo výkonu base metody)
+        /// <para/>
+        /// Když se o tom předem ví, tak se to nechá uřídit :-)
+        /// </summary>
+        protected override void Initialize()
+        {
+            base.Initialize();
+
+            this.LineShapePanel = new ConfigLinkLineOnePanel() { LinkLineSetting = ConfigLinkLineSettingType.LineShape, Caption = "Tvar spojovací linie", ValueNoText = "Rovné přímé čáry", ValueYesText = "Plynulé křivky", GraphSample = 1, LinkWholeTask = true };
+            this.LinkMousePanel = new ConfigLinkLineOnePanel() { LinkLineSetting = ConfigLinkLineSettingType.LinkMouse, Caption = "Linky vykreslované při pohybu myši", ValueNoText = "Pouze pro prvek pod myší", ValueYesText = "Celý postup (všechny operace)", GraphSample = 2 };
+            this.LinkSelectPanel = new ConfigLinkLineOnePanel() { LinkLineSetting = ConfigLinkLineSettingType.LinkSelect, Caption = "Linky vykreslované při označení prvku", ValueNoText = "Pouze pro označený prvek", ValueYesText = "Celý postup (všechny operace)", GraphSample = 3 };
+
+            this.SuspendLayout();
+
+            this.LineShapePanel.CurrentValueChanged += LineShapePanel_CurrentValueChanged;
+
+            this.Controls.Add(this.LineShapePanel);
+            this.Controls.Add(this.LinkMousePanel);
+            this.Controls.Add(this.LinkSelectPanel);
+
+            this.AutoScroll = true;
+
+            this.ResumeLayout(false);
+            this.PerformLayout();
+
+            this.FontInfo.RelativeSize = 116 * this.FontInfo.RelativeSize / 100;
+        }
+        /// <summary>
+        /// Úprava layoutu po změně velikosti
+        /// </summary>
+        protected override void PrepareLayout()
+        {
+            base.PrepareLayout();
+
+            int x = 3;
+            int y = this.OneLineHeight + 3;
+            int w = this.ClientSize.Width - 6;
+            int h = ConfigLinkLineOnePanel.OptimalHeight;
+            int s = h + 3;
+
+            this.LineShapePanel.Bounds = new Rectangle(x, y, w, h); y += s;
+            this.LinkMousePanel.Bounds = new Rectangle(x, y, w, h); y += s;
+            this.LinkSelectPanel.Bounds = new Rectangle(x, y, w, h); y += s;
+        }
+        /// <summary>
+        /// Panel pro zadání tvaru linky
+        /// </summary>
+        protected ConfigLinkLineOnePanel LineShapePanel;
+        /// <summary>
+        /// Panel pro zadání rozsahu linků pro situaci MouseOver
+        /// </summary>
+        protected ConfigLinkLineOnePanel LinkMousePanel;
+        /// <summary>
+        /// Panel pro zadání rozsahu linků pro situaci Selected
+        /// </summary>
+        protected ConfigLinkLineOnePanel LinkSelectPanel;
+        /// <summary>
+        /// Po změně hodnoty "Kreslit čáru jako linku/křivku" v panelu <see cref="LineShapePanel"/>:
+        /// tuto hodnotu nastavíme do ostatních panelů, aby reprezentovaly odpovídající tvar:
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void LineShapePanel_CurrentValueChanged(object sender, EventArgs e)
+        {
+            bool linkLineAsSCurve = this.LineShapePanel.CurrentValue;
+            this.LinkMousePanel.LinkLineAsSCurve = linkLineAsSCurve;
+            this.LinkSelectPanel.LinkLineAsSCurve = linkLineAsSCurve;
+        }
+        #endregion
+        #region Read, Save, Data
+        /// <summary>
+        /// Načte hodnoty z <see cref="Data"/> do this controlů
+        /// </summary>
+        protected void ReadFromData()
+        {
+            this.ReadFromData(this.Data);
+        }
+        /// <summary>
+        /// Načte hodnoty z dodaného objektu do this controlů
+        /// </summary>
+        /// <param name="data">Data</param>
+        protected void ReadFromData(SchedulerConfig data)
+        {
+            if (data == null) return;
+
+            this.LineShapePanel.CurrentValue = data.GuiEditShowLinkAsSCurve;
+            this.LinkMousePanel.CurrentValue = data.GuiEditShowLinkMouseWholeTask;
+            this.LinkMousePanel.LinkLineAsSCurve = data.GuiEditShowLinkAsSCurve;
+            this.LinkSelectPanel.CurrentValue = data.GuiEditShowLinkSelectedWholeTask;
+            this.LinkSelectPanel.LinkLineAsSCurve = data.GuiEditShowLinkAsSCurve;
+        }
+        /// <summary>
+        /// Uloží hodnoty z this controlů do <see cref="Data"/>
+        /// </summary>
+        protected void SaveToData()
+        {
+            this.SaveToData(this.Data);
+        }
+        /// <summary>
+        /// Uloží hodnoty z this controlů do dodaného objektu
+        /// </summary>
+        protected void SaveToData(SchedulerConfig data)
+        {
+            if (data == null) return;
+
+            data.GuiEditShowLinkAsSCurve = this.LineShapePanel.CurrentValue;
+            data.GuiEditShowLinkMouseWholeTask = this.LinkMousePanel.CurrentValue;
+            data.GuiEditShowLinkSelectedWholeTask = this.LinkSelectPanel.CurrentValue;
+        }
+        /// <summary>
+        /// Konfigurační data
+        /// </summary>
+        public SchedulerConfig Data { get; set; }
+        #endregion
+        #region ISchedulerEditorControlItem
+        void ISchedulerEditorControlItem.ReadFromData() { this.ReadFromData(); }
+        void ISchedulerEditorControlItem.SaveToData() { this.SaveToData(); }
+        Panel ISchedulerEditorControlItem.Panel { get { return this; } }
+        #endregion
+    }
+    /// <summary>
+    /// ConfigLinkLineOnePanel : panel zobrazující jednu předvolbu a odpovídající Sample
+    /// </summary>
+    public class ConfigLinkLineOnePanel : WinHorizontalLine
+    {
+        #region Vnitřní život: inicializace
+        /// <summary>
+        /// Inicializace.
+        /// Pozor, jde o virtuální metodu volanou z konstruktoru.
+        /// Tyto controly obecně nemají používat konstruktor, ale tuto inicializaci (kde lze řídit místo výkonu base metody)
+        /// </summary>
+        protected override void Initialize()
+        {
+            base.Initialize();
+
+            this.Radio0 = new RadioButton() { Bounds = new Rectangle(14, 35, 200, 24), TabIndex = 0 };
+            this.Radio1 = new RadioButton() { Bounds = new Rectangle(14, 70, 200, 24), TabIndex = 0 };
+            this.SamplePanel = new ConfigLinkLineSamplePanel();
+
+            this.SuspendLayout();
+
+            this.Radio0.CheckedChanged += Radio_CheckedChanged;
+            this.Radio1.CheckedChanged += Radio_CheckedChanged;
+
+            this.Controls.Add(this.SamplePanel);
+            this.Controls.Add(this.Radio1);
+            this.Controls.Add(this.Radio0);
+
+            this.OnlyOneLine = false;
+            this.Size = new Size(400, OptimalHeight);
+            this.MinimumSize = new Size(350, OptimalHeight);
+            this.MaximumSize = new Size(650, OptimalHeight);
+            this.LineDistanceRight = ConfigSnapSamplePanel.OptimalWidth - 12;
+
+            this.ResumeLayout(false);
+            this.PerformLayout();
+
+            this.Radio0.Checked = true;
+        }
+        /// <summary>
+        /// Úprava layoutu po změně velikosti
+        /// </summary>
+        protected override void PrepareLayout()
+        {
+            base.PrepareLayout();
+
+            int width = this.ClientSize.Width;
+            int height = this.ClientSize.Height;
+            this.SamplePanel.Location = new Point(width - 6 - ConfigLinkLineSamplePanel.OptimalWidth, (height - ConfigLinkLineSamplePanel.OptimalHeight) / 2);
+        }
+        /// <summary>
+        /// Výška tohoto prvku
+        /// </summary>
+        internal static int OptimalHeight { get { return ConfigLinkLineSamplePanel.OptimalHeight + 12; } }
+        /// <summary>
+        /// RadioButton pro hodnotu 0
+        /// </summary>
+        protected RadioButton Radio0;
+        /// <summary>
+        /// RadioButton pro hodnotu 1
+        /// </summary>
+        protected RadioButton Radio1;
+        /// <summary>
+        /// ConfigSnapSamplePanel 
+        /// </summary>
+        protected ConfigLinkLineSamplePanel SamplePanel;
+        #endregion
+        #region Události
+        /// <summary>
+        /// Po změně Radio.Checked
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void Radio_CheckedChanged(object sender, EventArgs args)
+        {
+            this.CallCurrentValueChanged();
+        }
+        /// <summary>
+        /// Provede akce po změně <see cref="CurrentValue"/>
+        /// </summary>
+        private void CallCurrentValueChanged()
+        {
+            this.ShowValue();
+            this.OnCurrentValueChanged();
+            if (this.CurrentValueChanged != null)
+                this.CurrentValueChanged(this, new EventArgs());
+        }
+        /// <summary>
+        /// Háček po změně <see cref="CurrentValue"/>
+        /// </summary>
+        protected virtual void OnCurrentValueChanged() { }
+        /// <summary>
+        /// Event po změně <see cref="CurrentValue"/>
+        /// </summary>
+        public event EventHandler CurrentValueChanged;
+        /// <summary>
+        /// Zajistí promítnutí hodnoty do sample panelu
+        /// </summary>
+        protected void ShowValue()
+        {
+            bool value = this.CurrentValue;
+            switch (this.LinkLineSetting)
+            {
+                case ConfigLinkLineSettingType.LineShape:
+                    this.LinkLineAsSCurve = value;
+                    break;
+                case ConfigLinkLineSettingType.LinkMouse:
+                case ConfigLinkLineSettingType.LinkSelect:
+                    this.LinkWholeTask = value;
+                    break;
+            }
+        }
+        #endregion
+        #region Public properties vlastní
+        /// <summary>
+        /// Hodnota uvedená na první RadioButtonu, který odpovídá hodnotě <see cref="CurrentValue"/> = false
+        /// </summary>
+        [Description("Hodnota uvedená na první RadioButtonu, který odpovídá hodnotě CurrentValue = false")]
+        [Category(WinConstants.DesignCategory)]
+        public string ValueNoText
+        {
+            get { return this.Radio0.Text; }
+            set { this.Radio0.Text = value; }
+        }
+        /// <summary>
+        /// Hodnota uvedená na první RadioButtonu, který odpovídá hodnotě <see cref="CurrentValue"/> = true
+        /// </summary>
+        [Description("Hodnota uvedená na první RadioButtonu, který odpovídá hodnotě CurrentValue = true")]
+        [Category(WinConstants.DesignCategory)]
+        public string ValueYesText
+        {
+            get { return this.Radio1.Text; }
+            set { this.Radio1.Text = value; }
+        }
+        /// <summary>
+        /// Aktuální hodnota v tomto panelu:
+        /// false = označen první RadioButton, true = označen druhý RadioButton
+        /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        public bool CurrentValue
+        {
+            get { return this.Radio1.Checked; }
+            set
+            {
+                bool value0 = !value;
+                bool value1 = value;
+                if (this.Radio0.Checked != value0) this.Radio0.Checked = value0;
+                if (this.Radio1.Checked != value1) this.Radio1.Checked = value1;
+                /* to samo vyvolá ShowValue() přes Radio_CheckedChanged() */
+            }
+        }
+        /// <summary>
+        /// Typ údaje, který se v tomto panelu edituje
+        /// </summary>
+        [Description("Typ údaje, který se v tomto panelu edituje")]
+        [Category(WinConstants.DesignCategory)]
+        public ConfigLinkLineSettingType LinkLineSetting
+        {
+            get { return this._LinkLineSetting; }
+            set { this._LinkLineSetting = value; this.ShowValue(); }
+        }
+        private ConfigLinkLineSettingType _LinkLineSetting;
+        #endregion
+        #region Public properties linkované ze SamplePanelu
+        /// <summary>
+        /// Tvar spojovací linie jako křivka?
+        /// false = přímá čára; true = S-křivka
+        /// </summary>
+        [Description("Tvar spojovací linie jako křivka? false = přímá čára; true = S-křivka")]
+        [Category(WinConstants.DesignCategory)]
+        [AmbientValue(true)]
+        public bool LinkLineAsSCurve { get { return this.SamplePanel.LinkLineAsSCurve; } set { this.SamplePanel.LinkLineAsSCurve = value; } }
+        /// <summary>
+        /// Zobrazovat celý řetěz?
+        /// false = jen přímé sousedy; true = celý řetěz
+        /// </summary>
+        [Description("Zobrazovat celý řetěz? false = jen přímé sousedy; true = celý řetěz")]
+        [Category(WinConstants.DesignCategory)]
+        [AmbientValue(true)]
+        public bool LinkWholeTask { get { return this.SamplePanel.LinkWholeTask; } set { this.SamplePanel.LinkWholeTask = value; } }
+        /// <summary>
+        /// Barva pozadí pod vzorky
+        /// </summary>
+        [Description("Barva pozadí pod vzorky")]
+        [Category(WinConstants.DesignCategory)]
+        [AmbientValue(typeof(Color), "LightGray")]
+        public Color SampleBackColor { get { return this.SamplePanel.SampleBackColor; } set { this.SamplePanel.SampleBackColor = value; } }
+        /// <summary>
+        /// Barva prvku, který je neaktivní
+        /// </summary>
+        [Description("Barva prvku, který je neaktivní")]
+        [Category(WinConstants.DesignCategory)]
+        [AmbientValue(typeof(Color), "DarkGray")]
+        public Color SampleFixedColor { get { return this.SamplePanel.SampleFixedColor; } set { this.SamplePanel.SampleFixedColor = value; } }
+        /// <summary>
+        /// Barva prvku, který je aktivní
+        /// </summary>
+        [Description("Barva prvku, který je aktivní")]
+        [Category(WinConstants.DesignCategory)]
+        [AmbientValue(typeof(Color), "DarkSeaGreen")]
+        public Color SampleMovedColor { get { return this.SamplePanel.SampleMovedColor; } set { this.SamplePanel.SampleMovedColor = value; } }
+        /// <summary>
+        /// Barva spojovací linky
+        /// </summary>
+        [Description("Barva spojovací linky")]
+        [Category(WinConstants.DesignCategory)]
+        [AmbientValue(typeof(Color), "LightGreen")]
+        public Color LineColor { get { return this.SamplePanel.LineColor; } set { this.SamplePanel.LineColor = value; } }
+        /// <summary>
+        /// Šířka spojovací linky
+        /// </summary>
+        [Description("Šířka spojovací linky")]
+        [Category(WinConstants.DesignCategory)]
+        [AmbientValue(1)]
+        public int LineWidth { get { return this.SamplePanel.LineWidth; } set { this.SamplePanel.LineWidth = value; } }
+        /// <summary>
+        /// Číslo vzorku dat, 1 - 5
+        /// </summary>
+        [Description("Číslo vzorku dat, 1 - 5")]
+        [Category(WinConstants.DesignCategory)]
+        [AmbientValue(1)]
+        public int GraphSample { get { return this.SamplePanel.GraphSample; } set { this.SamplePanel.GraphSample = value; } }
+        #endregion
+    }
+    /// <summary>
+    /// ConfigLinkLineSamplePanel : Panel pro grafické zobrazení Linků dle dané konfigurace
+    /// </summary>
+    public class ConfigLinkLineSamplePanel : WinPanel
+    {
+        #region Vnitřní život: inicializace
+        /// <summary>
+        /// Inicializace.
+        /// Pozor, jde o virtuální metodu volanou z konstruktoru.
+        /// Tyto controly obecně nemají používat konstruktor, ale tuto inicializaci (kde lze řídit místo výkonu base metody)
+        /// </summary>
+        protected override void Initialize()
+        {
+            this.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
+
+            base.Initialize();
+
+            this.Size = new Size(OptimalWidth, OptimalHeight);
+            this.MinimumSize = this.Size;
+            this.MaximumSize = this.Size;
+
+            this._LinkLineAsSCurve = true;
+            this._LinkWholeTask = true;
+
+            this._SampleBackColor = Color.LightGray;
+            this._SampleFixedColor = Color.DarkGray;
+            this._SampleMovedColor = Color.DarkSeaGreen;
+            this._LineColor = Color.LightGreen;
+            this._LineWidth = 1;
+        }
+        /// <summary>
+        /// Šířka tohoto prvku
+        /// </summary>
+        internal static int OptimalWidth { get { return 280; } }
+        /// <summary>
+        /// Výška tohoto prvku
+        /// </summary>
+        internal static int OptimalHeight { get { return 90; } }
+        #endregion
+        #region Kreslení
+        /// <summary>
+        /// Vykreslení
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            e.Graphics.Clear(this.SampleBackColor);
+
+            Rectangle[] items = this.CreateSample();
+
+            // Vykreslit prvky:
+            int activeItem = 2;
+            for (int i = 0; i < items.Length; i++)
+            {
+                Color color = (i == activeItem ? this.SampleMovedColor : this.SampleFixedColor);
+                GInteractiveState state = (i == activeItem ? GInteractiveState.MouseOver : GInteractiveState.Enabled);
+                GPainter.DrawButtonBase(e.Graphics, items[i], color, state, Orientation.Horizontal, 0, null, null);
+            }
+
+            // Linky:
+            bool asSCurve = this.LinkLineAsSCurve;
+            bool wholeTask = this.LinkWholeTask;
+            int linkFrom = (wholeTask ? 0 : 1);
+            int linkTo = (wholeTask ? items.Length - 1 : 3);
+            Color lineColor = this.LineColor;
+            int width = this.LineWidth;
+            // Na grafiku nasadíme hladkou kresbu:
+            using (GPainter.GraphicsUse(e.Graphics, GraphicSetting.Smooth))
+            {
+                for (int l = linkFrom; l < linkTo; l++)
+                {
+                    Point? prevPoint = items[l].GetPoint(ContentAlignment.MiddleRight);
+                    Point? nextPoint = items[l + 1].GetPoint(ContentAlignment.MiddleLeft);
+                    using (GraphicsPath graphicsPath = GPainter.CreatePathLinkLine(prevPoint, nextPoint, asSCurve))
+                    {
+                        GPainter.DrawLinkPath(e.Graphics, graphicsPath, lineColor, width);
+                    }
+                }
+            }
+        }
+        /// <summary>
+        /// Metoda vrací pole s pěti souřadnicemi, podle zadaného čísla vzorku <see cref="GraphSample"/>
+        /// </summary>
+        /// <returns></returns>
+        protected Rectangle[] CreateSample()
+        {
+            // Vykreslovat budeme 5 x Rectangle, z nichž prostřední je Aktivní; postupně jsou umístěny zleva doprava:
+            // Prostor máme W=280, H=90:
+            int h = 14;
+            switch (this.GraphSample)
+            {
+                case 2:
+                    h = 12;
+                    return new Rectangle[]
+                    {
+                        new Rectangle(10, 20, 40, h),
+                        new Rectangle(55, 68, 20, h),
+                        new Rectangle(100, 10, 55, h),
+                        new Rectangle(180, 58, 30, h),
+                        new Rectangle(250, 15, 25, h)
+                    };
+                case 3:
+                    h = 16;
+                    return new Rectangle[]
+                    {
+                        new Rectangle(10, 10, 55, h),
+                        new Rectangle(70, 69, 35, h),
+                        new Rectangle(105, 15, 30, h),
+                        new Rectangle(170, 15, 40, h),
+                        new Rectangle(215, 60, 60, h)
+                    };
+                case 4:
+                    return new Rectangle[]
+                    {
+                        new Rectangle(10, 15, 40, h),
+                        new Rectangle(70, 66, 30, h),
+                        new Rectangle(115, 38, 50, h),
+                        new Rectangle(180, 20, 20, h),
+                        new Rectangle(240, 55, 30, h)
+                    };
+                case 5:
+                    return new Rectangle[]
+                    {
+                        new Rectangle(10, 15, 40, h),
+                        new Rectangle(70, 66, 30, h),
+                        new Rectangle(115, 38, 50, h),
+                        new Rectangle(180, 20, 20, h),
+                        new Rectangle(240, 55, 30, h)
+                    };
+
+            }
+
+            // Defaultní sada:
+            h = 14;
+            return new Rectangle[]
+            {
+                new Rectangle(10, 15, 40, h),
+                new Rectangle(70, 66, 30, h),
+                new Rectangle(115, 38, 50, h),
+                new Rectangle(180, 20, 20, h),
+                new Rectangle(240, 55, 30, h)
+            };
+        }
+        #endregion
+        #region Public properties
+        /// <summary>
+        /// Tvar spojovací linie jako křivka?
+        /// false = přímá čára; true = S-křivka
+        /// </summary>
+        [Description("Tvar spojovací linie jako křivka? false = přímá čára; true = S-křivka")]
+        [Category(WinConstants.DesignCategory)]
+        [AmbientValue(true)]
+        public bool LinkLineAsSCurve
+        {
+            get { return this._LinkLineAsSCurve; }
+            set { this._LinkLineAsSCurve = value; this.Refresh(); }
+        }
+        private bool _LinkLineAsSCurve;
+        /// <summary>
+        /// Zobrazovat celý řetěz?
+        /// false = jen přímé sousedy; true = celý řetěz
+        /// </summary>
+        [Description("Zobrazovat celý řetěz? false = jen přímé sousedy; true = celý řetěz")]
+        [Category(WinConstants.DesignCategory)]
+        [AmbientValue(true)]
+        public bool LinkWholeTask
+        {
+            get { return this._LinkWholeTask; }
+            set { this._LinkWholeTask = value; this.Refresh(); }
+        }
+        private bool _LinkWholeTask;
+        /// <summary>
+        /// Barva pozadí pod vzorky
+        /// </summary>
+        [Description("Barva pozadí pod vzorky")]
+        [Category(WinConstants.DesignCategory)]
+        [AmbientValue(typeof(Color), "LightGray")]
+        public Color SampleBackColor
+        {
+            get { return this._SampleBackColor; }
+            set { this._SampleBackColor = value; this.Refresh(); }
+        }
+        private Color _SampleBackColor;
+        /// <summary>
+        /// Barva prvku, který je neaktivní
+        /// </summary>
+        [Description("Barva prvku, který je neaktivní")]
+        [Category(WinConstants.DesignCategory)]
+        [AmbientValue(typeof(Color), "DarkGray")]
+        public Color SampleFixedColor
+        {
+            get { return this._SampleFixedColor; }
+            set { this._SampleFixedColor = value; this.Refresh(); }
+        }
+        private Color _SampleFixedColor;
+        /// <summary>
+        /// Barva prvku, který je aktivní
+        /// </summary>
+        [Description("Barva prvku, který je aktivní")]
+        [Category(WinConstants.DesignCategory)]
+        [AmbientValue(typeof(Color), "DarkSeaGreen")]
+        public Color SampleMovedColor
+        {
+            get { return this._SampleMovedColor; }
+            set { this._SampleMovedColor = value; this.Refresh(); }
+        }
+        private Color _SampleMovedColor;
+        /// <summary>
+        /// Barva spojovací linky
+        /// </summary>
+        [Description("Barva spojovací linky")]
+        [Category(WinConstants.DesignCategory)]
+        [AmbientValue(typeof(Color), "LightGreen")]
+        public Color LineColor
+        {
+            get { return this._LineColor; }
+            set { this._LineColor = value; this.Refresh(); }
+        }
+        private Color _LineColor;
+        /// <summary>
+        /// Šířka spojovací linky
+        /// </summary>
+        [Description("Šířka spojovací linky")]
+        [Category(WinConstants.DesignCategory)]
+        [AmbientValue(1)]
+        public int LineWidth
+        {
+            get { return this._LineWidth; }
+            set { this._LineWidth = value; this.Refresh(); }
+        }
+        private int _LineWidth;
+        /// <summary>
+        /// Číslo vzorku dat, 1 - 5
+        /// </summary>
+        [Description("Číslo vzorku dat, 1 - 5")]
+        [Category(WinConstants.DesignCategory)]
+        [AmbientValue(1)]
+        public int GraphSample
+        {
+            get { return this._GraphSample; }
+            set { this._GraphSample = (value < 1 ? 1 : value > 5 ? 5 : value); this.Refresh(); }
+        }
+        private int _GraphSample;
+        #endregion
+    }
+    #region enum ConfigLinkLineSettingType
+    /// <summary>
+    /// Druh údaje, který se v konkrétním <see cref="ConfigLinkLineSamplePanel"/> edituje
+    /// </summary>
+    public enum ConfigLinkLineSettingType
+    {
+        /// <summary>
+        /// Neurčeno
+        /// </summary>
+        None,
+        /// <summary>
+        /// Tvar linie: false = rovné čáry, true = S-křivky
+        /// </summary>
+        LineShape,
+        /// <summary>
+        /// Linky pro MouseOver: false = jen aktivní prvek, true = celá sada (dílec)
+        /// </summary>
+        LinkMouse,
+        /// <summary>
+        /// Linky pro Selected: false = jen aktivní prvek, true = celá sada (dílec)
+        /// </summary>
+        LinkSelect
     }
     #endregion
     #endregion
