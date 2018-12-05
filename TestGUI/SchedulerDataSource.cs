@@ -285,6 +285,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             DateTime time = totalTimeRange.Begin.Date;
             GuiTimeRange workingTimeRange;
             Color backColor;
+            float ratio = GetRandomRatio();
             while (this.CreateWorkingTime(ref time, calendar, totalTimeRange, out workingTimeRange, out backColor))
             {
                 WorkTime workTime = new WorkTime()
@@ -298,14 +299,29 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                     ToolTip = workingTimeRange.ToString()
                 };
 
-                float ratio = ((float)this.Rand.Next(0, 101)) / 100f;
-                workTime.Ratio = ratio;
-                workTime.RatioBackColor = backColor.Morph(Color.Red, ratio / 2f); // (workTime.Ratio < 0.25f ? Color.LightGreen : (workTime.Ratio < 0.75f ? Color.LightGoldenrodYellow : Color.LightCoral));
-                workTime.RatioLineColor = Color.Black;
+                if (height >= 2f)
+                {   // U "středních" pracovišť bude použito jednoduché Ratio:
+                    workTime.RatioBegin = ratio;
+                    workTime.RatioBeginBackColor = GetRatioColor(backColor, Color.Red, ratio);
+                    workTime.RatioLineColor = Color.Black;
+                }
+
+                ratio = GetRandomRatio();
+
+                if (height >= 5f)
+                {   // U "vysokých" pracovišť dáme jiný graf Pracovních směn:
+                    workTime.BackColor = null;
+                    workTime.RatioEnd = ratio;
+                    workTime.RatioEndBackColor = GetRatioColor(backColor, Color.Red, ratio);
+                }
 
                 list.Add(workTime);
             }
             return list;
+        }
+        protected static Color GetRatioColor(Color backColor, Color targetColor, float ratio)
+        {
+            return backColor.Morph(targetColor, ratio / 2f);
         }
         /// <summary>
         /// Metoda vytvoří a vrátí další pracovní čas, jehož začátek je roven nebo větší než daný výchozí čas.
@@ -499,6 +515,15 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             GuiTimeRange timeRange = new GuiTimeRange(begin, end);
             begin = end;
             return timeRange;
+        }
+        /// <summary>
+        /// metoda vrací náhodné ratio z rozsahu 0 - 1 včetně
+        /// </summary>
+        /// <returns></returns>
+        internal float GetRandomRatio()
+        {
+            float ratio = ((float)this.Rand.Next(0, 101)) / 100f;
+            return ratio;
         }
         /// <summary>
         /// Vrátí jeden z prvků daného pole
@@ -1365,12 +1390,14 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         public override int ClassId { get { return ClassNumber; } }
         public GuiTimeRange Time { get; set; }
         public float Height { get; set; }
-        public Color BackColor { get; set; }
+        public Color? BackColor { get; set; }
         public bool IsEditable { get; set; }
         public string Text { get; set; }
         public string ToolTip { get; set; }
-        public float Ratio { get; set; }
-        public Color? RatioBackColor { get; set; }
+        public float RatioBegin { get; set; }
+        public float? RatioEnd { get; set; }
+        public Color? RatioBeginBackColor { get; set; }
+        public Color? RatioEndBackColor { get; set; }
         public Color? RatioLineColor { get; set; }
         /// <summary>
         /// Vytvoří a vrátí prvek grafu za tuto pracovní směnu.
@@ -1389,8 +1416,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 Text = this.Text,
                 ToolTip = this.ToolTip,
                 Time = this.Time,
-                RatioBegin = this.Ratio,
-                RatioBeginBackColor = this.RatioBackColor,
+                RatioBegin = this.RatioBegin,
+                RatioBeginBackColor = this.RatioBeginBackColor,
+                RatioEnd = this.RatioEnd,
+                RatioEndBackColor = this.RatioEndBackColor,
                 RatioLineColor = this.RatioLineColor
             };
             return guiGraphItem;
