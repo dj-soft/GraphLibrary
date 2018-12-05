@@ -550,6 +550,29 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             this.MainData.ToolbarItems.Add(new GuiToolbarItem()
             {
+                Name = "TlbSubDay",
+                Size = FunctionGlobalItemSize.Half,
+                LayoutHint = LayoutHint.NextItemSkipToNextRow,
+                GroupName = "FUNKCE",
+                Title = "o den",
+                ToolTip = "Posune časovou osu o 1 den doleva (do minulosti)",
+                Image = RES.Images.Actions.ArrowLeft2Png,
+                ImageHot = RES.Images.Actions.ArrowLeftDouble2Png
+            });
+            this.MainData.ToolbarItems.Add(new GuiToolbarItem()
+            {
+                Name = "TlbAddDay",
+                Size = FunctionGlobalItemSize.Half,
+                LayoutHint = LayoutHint.NextItemSkipToNextTable,
+                GroupName = "FUNKCE",
+                Title = "o den",
+                ToolTip = "Posune časovou osu o 1 den doprava (do budoucnosti)",
+                Image = RES.Images.Actions.ArrowRight2Png,
+                ImageHot = RES.Images.Actions.ArrowRightDouble2Png
+            });
+
+            this.MainData.ToolbarItems.Add(new GuiToolbarItem()
+            {
                 Name = "RePlan",
                 Size = FunctionGlobalItemSize.Whole,
                 GroupName = "FUNKCE",
@@ -953,6 +976,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         {
             AppHostResponseArgs responseArgs = new AppHostResponseArgs(requestArgs);
             int time;
+            GuiTimeRange timeRange = requestArgs.Request?.CurrentState?.TimeAxisValue;
             if (requestArgs != null)
             {
                 switch (requestArgs.Request.Command)
@@ -966,15 +990,25 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                         break;
 
                     case GuiRequest.COMMAND_ToolbarClick:
-                        time = this.Rand.Next(500, 5000);
-                        System.Threading.Thread.Sleep(time);
                         responseArgs.GuiResponse = new GuiResponse();
                         switch (requestArgs.Request.ToolbarItem.Name)
                         {
+                            case "TlbSubDay":
+                                timeRange = new GuiTimeRange(timeRange.Begin.AddDays(-1d), timeRange.End.AddDays(-1d));
+                                responseArgs.GuiResponse.Common = new GuiResponseCommon() { TimeAxisValue = timeRange };
+                                break;
+                            case "TlbAddDay":
+                                timeRange = new GuiTimeRange(timeRange.Begin.AddDays(1d), timeRange.End.AddDays(1d));
+                                responseArgs.GuiResponse.Common = new GuiResponseCommon() { TimeAxisValue = timeRange };
+                                break;
                             case "RePlan":
+                                time = this.Rand.Next(500, 5000);
+                                System.Threading.Thread.Sleep(time);
                                 responseArgs.GuiResponse.Dialog = GetDialog("Data jsou zaplánovaná.", GuiDialogButtons.Ok);
                                 break;
                             case "SaveData":
+                                time = this.Rand.Next(500, 5000);
+                                System.Threading.Thread.Sleep(time);
                                 this.DataChanged = false;
                                 responseArgs.GuiResponse.Dialog = GetDialog("Data jsou uložena.", GuiDialogButtons.Ok);
                                 break;
