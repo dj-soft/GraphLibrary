@@ -1986,10 +1986,13 @@ namespace Asol.Tools.WorkScheduler.Components
 
             if (args.RatioLineColor.HasValue)
             {
-                Pen pen = Skin.Pen(args.RatioLineColor.Value);
-                if (args.RatioLineWidth.HasValue && args.RatioLineWidth.Value > 0)
-                    pen.Width = args.RatioLineWidth.Value;
-                args.Graphics.DrawLine(pen, p1, p2);
+                using (GraphicsUseSmooth(args.Graphics))
+                {
+                    Pen pen = Skin.Pen(args.RatioLineColor.Value);
+                    if (args.RatioLineWidth.HasValue && args.RatioLineWidth.Value > 0)
+                        pen.Width = args.RatioLineWidth.Value;
+                    args.Graphics.DrawLine(pen, p1, p2);
+                }
             }
         }
         private static Point GraphItemDrawRatioGetPoint(float ratio, Rectangle bounds, int x)
