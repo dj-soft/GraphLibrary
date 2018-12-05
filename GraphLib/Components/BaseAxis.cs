@@ -2011,7 +2011,8 @@ namespace Asol.Tools.WorkScheduler.Components
             TValue valueOld = this.Value;
             bool canShift = (this.InteractiveChangeMode.HasFlag(AxisInteractiveChangeMode.Shift));
             bool canZoom = (this.InteractiveChangeMode.HasFlag(AxisInteractiveChangeMode.Zoom));
-            bool isCtrl = e.ModifierKeys == Keys.Control;
+            bool isKeyCtrl = (e.ModifierKeys == Keys.Control);
+            bool isKeyShift = (e.ModifierKeys == Keys.Shift);
             bool isSolved = false;
             switch (e.ChangeState)
             {
@@ -2030,7 +2031,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 case GInteractiveChangeState.LeftDown:
                     this._AxisState = AxisInteractiveState.MouseOver;
                     this._InteractiveOriginalValue = this.GetValue(valueOld);
-                    if ((!isCtrl && canShift) || (isCtrl && canZoom))
+                    if ((!isKeyCtrl && canShift) || (isKeyCtrl && canZoom))
                     {   // Může být Shift nebo Zoom:
                         this.MouseOverRelativePoint = null;
                         this.MouseDownRelativePoint = e.MouseRelativePoint;
@@ -2045,7 +2046,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     }
                     break;
                 case GInteractiveChangeState.LeftDragMoveBegin:
-                    if (!isCtrl)
+                    if (!isKeyCtrl)
                     {   // Shift:
                         if (canShift)
                         {
@@ -2178,14 +2179,16 @@ namespace Asol.Tools.WorkScheduler.Components
                 case GInteractiveChangeState.WheelUp:
                 case GInteractiveChangeState.WheelDown:
                     TValue value = this.Value;
-                    if (!isCtrl)
-                    {   // Myší kolečko: samotné nebo se Shiftem = posun hodnoty:
+                    bool wheelUp = (e.ChangeState == GInteractiveChangeState.WheelUp);
+                    if (!isKeyCtrl)
+                    {   // Myší kolečko bez Ctrl => samotné nebo se Shiftem = posun hodnoty:
                         if (canShift)
                         {   // Posun hodnoty: filozoficky to beru jako Scroll v odkumentu: 
                             //  - když se točí kolečkem dolů, tak dokument se posouvá "dolů" = ukazuje další řádky a stránky, pokračování děje
                             //  - tak i (časová) osa bude při točení dolů (WheelDown) ukazovat pokračování děje = vyšší hodnoty DateTime:
                             this._AxisState = AxisInteractiveState.DragMove;
-                            double shiftRatio = (Control.ModifierKeys == Keys.Shift ? 0.333d : 0.07d) * (e.ChangeState == GInteractiveChangeState.WheelDown ? 1d : -1d);
+                            double shiftWeight = (isKeyShift ? 0.02d : 0.06d);           // Se Shiftem je to 3x jemnější
+                            double shiftRatio = shiftWeight * (wheelUp ? -1d : 1d);
                             TValue shiftValue = this.CalculateValueByShift(valueOld, shiftRatio, AxisTickType.Pixel);
                             shiftValue = this.AlignValue(shiftValue);
                             if (shiftValue != this._Value)
@@ -2198,12 +2201,13 @@ namespace Asol.Tools.WorkScheduler.Components
                             this._AxisState = AxisInteractiveState.MouseOver;
                         }
                     }
-                    else if (Control.ModifierKeys == Keys.Control)
-                    {   // Myší kolečko s Ctrl = Zoom hodnoty se středem pod myší:
+                    else
+                    {   // Myší kolečko s Ctrl => Zoom hodnoty se středem pod myší:
                         if (canZoom)
                         {
                             this._AxisState = AxisInteractiveState.DragZoom;
-                            double zoomRatio = ((e.ChangeState == GInteractiveChangeState.WheelUp) ? 1d / 1.15d : 1.15d);
+                            double zoomWeight = (isKeyShift ? 1.05d : 1.15d);            // Se Shiftem je to 3x jemnější
+                            double zoomRatio = (wheelUp ? 1d / zoomWeight : zoomWeight);
                             TTick zoomCenter = this.CalculateTickForPixelRelative(e.MouseRelativePoint.Value);
                             TValue zoomValue = this.CalculateValueByRatio(valueOld, zoomCenter, zoomRatio);
                             zoomValue = this.AlignValue(zoomValue);

@@ -1132,6 +1132,15 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         #endregion
         #region Časová osa - tvorba menu v ToolBaru, a obsluha akcí tohoto menu
         /// <summary>
+        /// Aktuálně zobrazený čas na synchronní časové ose. Lze vložit hodnotu, pokud není null.
+        /// Vložení hodnoty do této property vyvolá Refresh controlu!
+        /// </summary>
+        protected TimeRange SynchronizedTimeRange
+        {
+            get { return this._MainControl.SynchronizedTime.Value; }
+            set { if (value != null) { this._MainControl.SynchronizedTime.Value = value; this._MainControl.Refresh(); } }
+        }
+        /// <summary>
         /// Inicializace položek ToolBaru (grupa <see cref="_ToolbarSystemTimeAxisGroup"/>) pro časovou osu
         /// </summary>
         private void _TimeAxisToolBarInit()
@@ -1911,7 +1920,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private GuiRequestCurrentState _CreateGuiCurrentState()
         {
             GuiRequestCurrentState currentState = new GuiRequestCurrentState();
-            currentState.TimeAxisValue = this._MainControl.SynchronizedTime.Value;
+            currentState.TimeAxisValue = this.SynchronizedTimeRange;
             currentState.SelectedGraphItems = this._CreateGuiCurrentSelectedGraphItems();
 
             return currentState;
@@ -1994,6 +2003,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                     if (graphItem != null)
                         graphItem.ActivateLink(false, true);
                 }
+            }
+
+            if (common.TimeAxisValue != null)
+            {   // Nastavit zobrazený čas:
+                this.SynchronizedTimeRange = common.TimeAxisValue;
             }
         }
         /// <summary>

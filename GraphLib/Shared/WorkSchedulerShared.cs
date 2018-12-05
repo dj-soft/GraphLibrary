@@ -3489,6 +3489,7 @@ namespace Noris.LCS.Base.WorkScheduler
     /// </summary>
     public class GuiSaveData
     {
+        #region Konfigurace ukládání při zavření pluginu
         /// <summary>
         /// Pokud zde bude true, pak nemusí být deklarován žádný dialog v <see cref="GuiResponse.Dialog"/>,
         /// a ukládání dat bude spuštěno bez dalších podmínek.
@@ -3513,12 +3514,14 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Zpráva bude zobrazena pouze tehdy, když <see cref="BlockGuiTime"/> bude obsahovat čas timeoutu, bez něj je message nepoužitá.
         /// </summary>
         public string BlockGuiMessage { get; set; }
+        #endregion
     }
     /// <summary>
     /// Společné hodnoty v odpovědi
     /// </summary>
     public class GuiResponseCommon
     {
+        #region Obecné vlastnosti v odpovědi
         /// <summary>
         /// Zrušit všechny zobrazené linky.
         /// Pokud existují nějaké prvky, které jsou Selected, obnocí se Linky podle nich (pokud nebudou vlivem <see cref="ClearSelected"/> odselectovány)
@@ -3528,6 +3531,11 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Zrušit příznak IsSelected pro všechny prvky
         /// </summary>
         public bool ClearSelected { get; set; }
+        /// <summary>
+        /// Nastavit toto časové okno v grafech; null = nenastavovat
+        /// </summary>
+        public GuiTimeRange TimeAxisValue { get; set; }
+        #endregion
     }
     /// <summary>
     /// GuiResponseGraph : třída sloužící pro přenos grafů (data z <see cref="GuiGraph"/> z aplikace do GUI v nestrukturovaném seznamu.

@@ -287,11 +287,19 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         /// <summary>
         /// Metoda zajistí překreslení obsahu controlu: zavolá <see cref="Draw()"/> a poté <see cref="Control.Invalidate()"/>.
+        /// Metoda může být volána i z threadu na pozadí, sama zajistí asynchronní invokaci GUI threadu.
         /// </summary>
         public override void Refresh()
         {
-            this.Draw();
-            this.Invalidate();
+            if (this.InvokeRequired)
+            {
+                this.BeginInvoke(new Action(this.Refresh));
+            }
+            else
+            {
+                this.Draw();
+                this.Invalidate();
+            }
         }
         #endregion
         #region Public members

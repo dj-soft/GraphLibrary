@@ -1838,8 +1838,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public override void Refresh()
         {
-            if (!this.InteractiveProcessing)
-                base.Refresh();
+            if (this.InteractiveProcessing) return;
+            base.Refresh();
         }
         #region class DrawRequest + DrawRequestItem
         /// <summary>
