@@ -1945,6 +1945,10 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiImage ImageHot { get; set; }
         /// <summary>
+        /// Název nebo binární obsah obrázku pro stav <see cref="IsChecked"/>
+        /// </summary>
+        public GuiImage ImageChecked { get; set; }
+        /// <summary>
         /// Velikost prvku na toolbaru, vzhledem k výšce toolbaru
         /// Výchozí hodnota = null, bude interpretována jako Half.
         /// </summary>
@@ -1972,6 +1976,16 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Výchozí hodnota = null, bude interpretována jako true.
         /// </summary>
         public bool? Enable { get; set; }
+        /// <summary>
+        /// true = prvek lze zaškrtnout (označit).
+        /// Výchozí hodnota = null, bude interpretována jako false.
+        /// </summary>
+        public bool? IsCheckable { get; set; }
+        /// <summary>
+        /// true = prvek je zaškrtnutý (označený).
+        /// Výchozí hodnota = null, bude interpretována jako false.
+        /// </summary>
+        public bool? IsChecked { get; set; }
         /// <summary>
         /// Čas, po který maximálně bude blokován GUI, po dobu běhu této funkce.
         /// Pokud je zde null, pak běh funkce neblokuje GUI.

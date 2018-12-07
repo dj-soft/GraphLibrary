@@ -429,7 +429,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             GuiToolbarItem guiToolbarItem = _GetGuiToolBarItem(args);
             if (guiToolbarItem != null)
-                this._ToolBarItemClickApplication(guiToolbarItem);
+                this._ToolBarItemClickApplication(args.Item, guiToolbarItem);
             else
                 this._ToolBarItemClickSystem(args.Item);
         }
@@ -445,11 +445,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Obsluha události ItemClick na Aplikační položce ToolBaru
         /// </summary>
-        /// <param name="guiToolbarItem"></param>
-        private void _ToolBarItemClickApplication(GuiToolbarItem guiToolbarItem)
+        /// <param name="toolBarItem">Vizuální položka ToolBaru</param>
+        /// <param name="guiToolbarItem">Datová (GUI) položka ToolBaru</param>
+        private void _ToolBarItemClickApplication(FunctionItem toolBarItem, GuiToolbarItem guiToolbarItem)
         {
             GuiRequest request = new GuiRequest();
             request.Command = GuiRequest.COMMAND_ToolbarClick;
+            guiToolbarItem.IsChecked = toolBarItem.IsChecked;        // Přenesu příznak "Označen"
             request.ToolbarItem = guiToolbarItem;
             request.CurrentState = this._CreateGuiCurrentState();
             this._CallAppHostFunction(request, this._ToolBarItemClickApplicationResponse, guiToolbarItem.BlockGuiTime, guiToolbarItem.BlockGuiMessage);
@@ -587,6 +589,12 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                     currData.Visible = refrData.Visible;
                 if (_Changed(currData.Enable, refrData.Enable, GToolBarRefreshMode.RefreshControl, ref refreshMode))
                     currData.Enable = refrData.Enable;
+                if (_Changed(currData.IsCheckable, refrData.IsCheckable, GToolBarRefreshMode.RefreshControl, ref refreshMode))
+                    currData.IsCheckable = refrData.IsCheckable;
+                if (_Changed(currData.IsChecked, refrData.IsChecked, GToolBarRefreshMode.RefreshControl, ref refreshMode))
+                    currData.IsChecked = refrData.IsChecked;
+                if (_Changed(currData.ImageChecked, refrData.ImageChecked, GToolBarRefreshMode.RefreshControl, ref refreshMode))
+                    currData.ImageChecked = refrData.ImageChecked;
                 if (_Changed(currData.Size, refrData.Size, GToolBarRefreshMode.RefreshLayout, ref refreshMode))
                     currData.Size = refrData.Size;
                 if (_Changed(currData.ModuleWidth, refrData.ModuleWidth, GToolBarRefreshMode.RefreshLayout, ref refreshMode))
