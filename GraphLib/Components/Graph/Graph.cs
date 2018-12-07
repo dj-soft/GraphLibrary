@@ -899,7 +899,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Metoda prověří platnost souřadnic X ve všech grupách <see cref="AllGroupList"/> i v jejich vnořených Items,
         /// s ohledem na aktuální časovou osu a na režim grafu <see cref="TimeGraphProperties.TimeAxisMode"/> a na rozměr grafu (Width).
         /// </summary>
-        protected void CheckValidCoordinateX()
+        internal void CheckValidCoordinateX()
         {
             if (!this.IsValidCoordinateX)
                 this.RecalculateCoordinateX();
@@ -971,12 +971,11 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="counters">Počitadla</param>
         protected void RecalculateCoordinateXStandard(GTimeGraphGroup groupItem, int offsetX, int[] counters)
         {
-            if (!groupItem.IsValidRealTime) return;
             ITimeAxisConvertor timeConvertor = this._TimeConvertor;
             int size = this.Bounds.Width;
             groupItem.PrepareCoordinateX(t => timeConvertor.GetProportionalPixelRange(t, size), offsetX, ref counters[2]);
 
-            if (timeConvertor.Value.HasIntersect(groupItem.Time))
+            if (groupItem.IsValidRealTime && timeConvertor.Value.HasIntersect(groupItem.Time))
             {   // Prvek je alespoň zčásti viditelný v časovém okně:
                 counters[1]++;
                 this._VisibleGroupList.Add(groupItem);
@@ -991,12 +990,11 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="counters">Počitadla</param>
         protected void RecalculateCoordinateXProportional(GTimeGraphGroup groupItem, int offsetX, int[] counters)
         {
-            if (!groupItem.IsValidRealTime) return;
             ITimeAxisConvertor timeConvertor = this._TimeConvertor;
             int size = this.Bounds.Width;
             groupItem.PrepareCoordinateX(t => timeConvertor.GetProportionalPixelRange(t, size), offsetX, ref counters[2]);
 
-            if (timeConvertor.Value.HasIntersect(groupItem.Time))
+            if (groupItem.IsValidRealTime && timeConvertor.Value.HasIntersect(groupItem.Time))
             {   // Prvek je alespoň zčásti viditelný v časovém okně:
                 counters[1]++;
                 this._VisibleGroupList.Add(groupItem);
@@ -1011,15 +1009,17 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="counters">Počitadla</param>
         protected void RecalculateCoordinateXLogarithmic(GTimeGraphGroup groupItem, int offsetX, int[] counters)
         {
-            if (!groupItem.IsValidRealTime) return;
             ITimeAxisConvertor timeConvertor = this._TimeConvertor;
             int size = this.Bounds.Width;
             float proportionalRatio = this.CurrentGraphProperties.LogarithmicRatio;
             groupItem.PrepareCoordinateX(t => timeConvertor.GetLogarithmicPixelRange(t, size, proportionalRatio), offsetX, ref counters[2]);
 
             // Pozor: režim Logarithmic zajistí, že zobrazeny budou VŠECHNY prvky, takže prvky nefiltrujeme s ohledem na jejich čas : VisibleTime.HasIntersect() !
-            counters[1]++;
-            this._VisibleGroupList.Add(groupItem);
+            if (groupItem.IsValidRealTime)
+            {   // ... ale prvek musí mít kladný čas od Begin do End:
+                counters[1]++;
+                this._VisibleGroupList.Add(groupItem);
+            }
         }
         /// <summary>
         /// Seznam všech aktuálně viditelných prvků v grafu.

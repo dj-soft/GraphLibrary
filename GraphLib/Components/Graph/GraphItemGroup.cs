@@ -165,6 +165,11 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         public void CalculateBounds()
         {
             Int32Range groupY = this.CoordinateYVisual;
+            if (this.GControl.CoordinateX == null)
+            {
+                this.Graph.CheckValidCoordinateX();
+                return;
+            }
             this.GControl.Bounds = Int32Range.GetRectangle(this.GControl.CoordinateX, groupY);
 
             // Child prvky mají svoje souřadnice (Bounds) relativní k this prvku (který je jejich parentem), proto mají Y souřadnici { 0 až this.Y.Size }:
