@@ -398,6 +398,391 @@ namespace Asol.Tools.WorkScheduler.Components
         Rectangle? ItemBounds { get; set; }
     }
     #endregion
+    #region class SequenceLayout : řízení pozice vizuálního prvku ve vizuální sekvenci, na základě jeho velikosti ItemSize
+    /// <summary>
+    /// <see cref="SequenceLayout"/> : řízení pozice vizuálního prvku ve vizuální sekvenci, na základě jeho velikosti ItemSize.
+    /// Třída, která v sobě uchovává odkaz na velikost elementu v jednom směru <see cref="ItemSizeInt"/>,
+    /// současně dokáže tuto hodnotu akceptovat z datové i vizuální vrstvy, dokáže hlídat minimální hodnotu a zadaný rozsah hodnot, a obsahuje i defaultní hodnotu.
+    /// Navíc podporuje interface ISequenceLayout, které se používá pro sekvenční řazené prvků za sebe.
+    /// </summary>
+    public class SequenceLayout : ISequenceLayout
+    {
+        #region Konstruktor, proměnné
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="itemSize"></param>
+        public SequenceLayout(ItemSizeInt itemSize)
+        {
+            this._ItemSize = itemSize;
+            this._Visible = true;
+        }
+        private ItemSizeInt _ItemSize;
+        private Int32? _Size;
+        private bool _Visible;
+        private int _ISequenceLayoutBegin;
+        #endregion
+        #region Základní property
+        /// <summary>
+        /// Velikost. Lze vložit hodnotu null, a hodnota null může být vrácena z property. Pak není velikost tohoto prvku dána explicitně.
+        /// Pokud bylo vloženo null, pak příští get čte hodnotu z ParentLayout (i rekurzivně).
+        /// </summary>
+        public Int32? Size
+        {
+            get { return (this._Size.HasValue ? this._ItemSize.AlignSize(this._Size.Value) : this._ItemSize.Size.Value); }
+            set { this._Size = value; }
+        }
+        /// <summary>
+        /// true pokud prvek je viditelný (dáno kódem, nikoli fitry atd). Default = true.
+        /// POZOR: zde je součin viditelnosti z hodnot: <see cref="ItemSize{T}.Visible"/> AND <see cref="SequenceLayout.Visible"/> !
+        /// Tzn. pokud je setováno true, pak get může vrátit false = z podkladové datové vrstvy.
+        /// </summary>
+        public bool Visible { get { return this._Visible && this._ItemSize.Visible; } set { this._Visible = value; } }
+        /// <summary>
+        /// true pokud tento prvek má být použit jako "guma" při změně rozměru hostitelského prvku tak, aby kolekce prvků obsadila celý prostor.
+        /// Na true se nastavuje typicky u "hlavního" sloupce grafové tabulky.
+        /// </summary>
+        public bool AutoSize { get { return this._ItemSize.AutoSize.Value; } set { this._ItemSize.AutoSize = value; } }
+        /// <summary>
+        /// true pokud uživatel může změnit velikost tohoto prvku. Default = true
+        /// </summary>
+        public bool ResizeEnabled { get { return this._ItemSize.ResizeEnabled.Value; } set { this._ItemSize.ResizeEnabled = value; } }
+        #endregion
+        #region implementace ISequenceLayout = pořadí, počáteční pixel, velikost, následující pixel. Podpůrné metody GetLayoutSize() a SetLayoutSize().
+        /// <summary>
+        /// Pozice, kde prvek začíná.
+        /// Interface ISequenceLayout tuto hodnotu setuje v případě, kdy se layout těchto prvků změní (změna prvků nebo jejich velikosti).
+        /// </summary>
+        int ISequenceLayout.Begin { get { return _ISequenceLayoutBegin; } set { _ISequenceLayoutBegin = value; } }
+        /// <summary>
+        /// Velikost prvku v pixelech (šířka sloupce, výška řádku, výška tabulky). 
+        /// Lze ji setovat, protože prvky lze pomocí splitterů zvětšovat / zmenšovat.
+        /// Pokud ale prvek nemá povoleno Resize (ResizeEnabled je false), pak setování hodnoty je ignorováno.
+        /// Aplikační logika prvku musí zabránit vložení neplatné hodnoty (reálně se uloží hodnota platná).
+        /// </summary>
+        int ISequenceLayout.Size { get { return this.Size.Value; } set { if (this.ResizeEnabled) this.Size = value; } }
+        /// <summary>
+        /// Pozice, kde za tímto prvkem začíná následující prvek. 
+        /// Velikost prvku = (End - Begin) = počet pixelů, na které se zobrazuje tento prvek.
+        /// Interface ISequenceLayout tuto hodnotu nesetuje, pouze ji čte.
+        /// </summary>
+        int ISequenceLayout.End { get { return this._ISequenceLayoutBegin + (this.Visible ? this.Size.Value : 0); } }
+        /// <summary>
+        /// true, pokud velikost tohoto objektu (<see cref="Size"/>) bude změněna při změně velikosti celého prvku.
+        /// Typicky: sloupec tabulky s nastavením (<see cref="AutoSize"/> == true) bude rozšířen nebo zúžen při změně šířky tabulky.
+        /// Při této změně bude vložena nová Size, přitom tento objekt může aplikovat svoje restrikce (Min a Max).
+        /// </summary>
+        bool ISequenceLayout.AutoSize { get { return this.AutoSize; } }
+        #endregion
+        #region Public static podpora pro instance ISequenceLayout (Nápočet Begin, AutoSize, FilterVisible)
+        #region Nápočet pozice ISequenceLayout.Begin pro všechny prvky v dané kolekci
+        /// <summary>
+        /// Do všech položek ISequenceLayout dodané kolekce vepíše hodnotu Begin postupně od 0.
+        /// Lze zadat mezeru mezi prvky = vzdálenost Begin prvku [N+1] od End prvku [N].
+        /// Vrací hodnotu End posledního viditelného prvku (toho, který má Size větší enž 0).
+        /// </summary>
+        /// <param name="items">Kolekce položek typu ISequenceLayout, jejich Begin a End se bude nastavovat</param>
+        /// <param name="spacing">Mezera mezi prvky = hodnota, o kterou bude Begin následující položky navýšen proti End položky předešlé.</param>
+        public static int SequenceLayoutCalculate(IEnumerable<ISequenceLayout> items, int spacing = 0)
+        {
+            int begin = 0;
+            return SequenceLayoutCalculate(items, ref begin, spacing);
+        }
+        /// <summary>
+        /// Do všech položek ISequenceLayout dodané kolekce vepíše hodnotu Begin postupně od hodnoty begin.
+        /// Lze zadat mezeru mezi prvky = vzdálenost Begin prvku [N+1] od End prvku [N].
+        /// Vrací hodnotu End posledního viditelného prvku (toho, který má Size větší enž 0).
+        /// Parametr ref begin po skončení metody obsahuje hodnotu, kde by začínal další prvek za posledním prvkem této kolekce (akceptujíc spacing).
+        /// </summary>
+        /// <param name="items">Kolekce položek typu ISequenceLayout, jejich Begin a End se bude nastavovat</param>
+        /// <param name="begin">Hodnota Begin do první položky </param>
+        /// <param name="spacing">Mezera mezi prvky = hodnota, o kterou bude Begin následující položky navýšen proti End položky předešlé.</param>
+        public static int SequenceLayoutCalculate(IEnumerable<ISequenceLayout> items, ref int begin, int spacing)
+        {
+            int end = begin;
+            foreach (ISequenceLayout item in items)
+                _SequenceLayoutCalculate(item, ref begin, ref end, spacing);
+            return end;
+        }
+        /// <summary>
+        /// Do položky ISequenceLayout vepíše Begin = begin.
+        /// Pokud item.Size je kladné, pak:
+        /// K hodnotě begin přičte item.Size, to vloží do ref parametru end, 
+        /// a do ref parametru begin vloží end (plus spacing, pokud je hodnota spacing větší než nula).
+        /// Pokud Size není kladné, pak begin bude nezměněno, a end bude rovněž nezměněno, bez ohledu na spacing. Jde o neviditelný prvek.
+        /// Význam: begin určuje počátek tohoto prvku, a následně i prvku následujícího. Akceptuje spacing, pokud to má smysl.
+        /// Hodnota end obsahuje konec posledního viditelného prvku, nenavýšený o spacing, přeskakuje neviditelné prvky.
+        /// end obsahuje vždy konec 
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="begin"></param>
+        /// <param name="end"></param>
+        /// <param name="spacing"></param>
+        private static void _SequenceLayoutCalculate(ISequenceLayout item, ref int begin, ref int end, int spacing)
+        {
+            item.Begin = begin;
+            int size = item.Size;
+            if (size > 0)
+            {
+                end = begin + size;
+                begin = ((spacing > 0) ? end + spacing : end);
+            }
+        }
+        #endregion
+        #region ISequenceLayout podpora - výpočty AutoSize pro prvky kolekce ISequenceLayout
+        /// <summary>
+        /// Metoda najde explicitně zadané prvky s <see cref="ISequenceLayout.AutoSize"/> == true, anebo najde první nebo poslední (podle parametru implicitAutoSize),
+        /// a upraví jejich velikost (<see cref="ISequenceLayout.Size"/>) tak, aby součet velikostí prvků kolekce měl 
+        /// včetně započtení mezery mezi prvky (podle parametru spacing) hodnotu dle parametru visualSize.
+        /// Pokud dojde k reálné změně velikosti některého prvku, provede se pro kolekci prvků metoda <see cref="SequenceLayout.SequenceLayoutCalculate(IEnumerable{ISequenceLayout}, int)"/> a vrací se true.
+        /// </summary>
+        /// <param name="items">Prvky v kolekci</param>
+        /// <param name="visualSize">Cílová sumární velikost</param>
+        /// <param name="spacing">Mezera mezi prvky</param>
+        /// <param name="implicitAutoSize">Režim <see cref="ImplicitAutoSizeType"/>, uplatněný pokud se mezi prvky kolekce nenajde žádný s (<see cref="ISequenceLayout.AutoSize"/> == true)</param>
+        /// <returns></returns>
+        public static bool AutoSizeLayoutCalculate(IEnumerable<ISequenceLayout> items, int visualSize, int spacing = 0, ImplicitAutoSizeType implicitAutoSize = ImplicitAutoSizeType.None)
+        {
+            return _AutoSizeLayoutCalculate(items, visualSize, spacing, implicitAutoSize);
+        }
+        /// <summary>
+        /// Metoda najde explicitně zadané prvky s <see cref="ISequenceLayout.AutoSize"/> == true, anebo najde první nebo poslední (podle parametru implicitAutoSize),
+        /// a upraví jejich velikost (<see cref="ISequenceLayout.Size"/>) tak, aby součet velikostí prvků kolekce měl 
+        /// včetně započtení mezery mezi prvky (podle parametru spacing) hodnotu dle parametru visualSize.
+        /// Pokud dojde k reálné změně velikosti některého prvku, provede se pro kolekci prvků metoda <see cref="SequenceLayout.SequenceLayoutCalculate(IEnumerable{ISequenceLayout}, int)"/> a vrací se true.
+        /// </summary>
+        /// <param name="items">Prvky v kolekci</param>
+        /// <param name="visualSize">Cílová sumární velikost</param>
+        /// <param name="spacing">Mezera mezi prvky</param>
+        /// <param name="implicitAutoSize">Režim <see cref="ImplicitAutoSizeType"/>, uplatněný pokud se mezi prvky kolekce nenajde žádný s (<see cref="ISequenceLayout.AutoSize"/> == true)</param>
+        /// <returns></returns>
+        private static bool _AutoSizeLayoutCalculate(IEnumerable<ISequenceLayout> items, int visualSize, int spacing, ImplicitAutoSizeType implicitAutoSize)
+        {
+            ISequenceLayout[] array = items.ToArray();
+            int count = array.Length;
+            if (count == 0) return false;
+
+            // Nejprve projdu všechny vstupní prvky, oddělím prvky s AutoSize = true, sečtu jejich Size zvlášť za Fixní a zvlášť za Variabilní:
+            List<ISequenceLayout> itemsVarList = new List<ISequenceLayout>();
+            int sizeSumFix = 0;
+            int sizeSumVar = 0;
+            int sizeOneSpc = (spacing < 0 ? 0 : spacing);
+            int sizeSumSpc = 0;
+            foreach (ISequenceLayout item in items)
+            {
+                if (item.AutoSize)
+                {
+                    sizeSumVar += item.Size;
+                    itemsVarList.Add(item);
+                }
+                else
+                {
+                    sizeSumFix += item.Size;
+                }
+                sizeSumSpc += sizeOneSpc;
+            }
+            if (sizeSumSpc > 0) sizeSumSpc -= sizeOneSpc;                      // Odečtu spacing, který byl přičtený za posledním prvkem pole, protože tam se space již nezapočítává!
+
+            // Žádný prvek není AutoSize => ke slovu přichází ImplicitAutoSizeType:
+            if (itemsVarList.Count == 0)
+            {
+                ISequenceLayout implicitItem = null;
+                switch (implicitAutoSize)
+                {
+                    case ImplicitAutoSizeType.FirstItem:
+                        implicitItem = array[0];
+                        break;
+                    case ImplicitAutoSizeType.LastItem:
+                        implicitItem = array[count - 1];
+                        break;
+                    default:
+                        return false;                                          // Není zde žádný variabilní prvek
+                }
+                // Jako AutoSize vezmeme prvek implicitItem:
+                sizeSumVar += implicitItem.Size;
+                sizeSumFix -= implicitItem.Size;
+                itemsVarList.Add(implicitItem);
+            }
+
+            // Přepočet Size u prvků AutoSize:
+            bool isChanged = false;
+            int sizeNewVar = visualSize - (sizeSumFix + sizeSumSpc);           // Nová sumární šířka variabilních prvků = daný prostor mínus (pevné prvky + mezery)
+            if (sizeNewVar == sizeSumVar) return false;
+
+            decimal ratio = (decimal)sizeNewVar / (decimal)sizeSumVar;
+            foreach (ISequenceLayout column in itemsVarList)
+            {
+                int sizeOneOld = column.Size;
+                int sizeOneNew = (int)(Math.Round(ratio * (decimal)sizeOneOld, 0));
+                column.Size = sizeOneNew;
+                int sizeOneMod = column.Size;
+                if (!isChanged && sizeOneMod != sizeOneOld)
+                    isChanged = true;
+            }
+            if (!isChanged) return false;
+
+            // Zajistím provedení nápočtu pozic (ISequenceLayout.Begin, End):
+            SequenceLayout.SequenceLayoutCalculate(items, sizeOneSpc);
+            return true;
+        }
+        #endregion
+        #region ISequenceLayout podpora - filtrování prvků typu ISequenceLayout podle viditelné oblasti
+        /// <summary>
+        /// Vrátí true, pokud daný prvek (item) se svojí pozicí (Begin, End) bude viditelný v aktuálním datovém prostoru
+        /// </summary>
+        /// <param name="item">Datová položka</param>
+        /// <param name="dataBegin">První viditelný datový pixel</param>
+        /// <param name="dataEnd">První datový pixel za viditelnou oblastí</param>
+        /// <returns></returns>
+        public static bool IsItemVisible(ISequenceLayout item, int dataBegin, int dataEnd)
+        {
+            return _FilterVisibleItem(item, dataBegin, dataEnd);
+        }
+        /// <summary>
+        /// Vrátí true, pokud daný prvek (item) se svojí pozicí (Begin, End) bude viditelný v aktuálním datovém prostoru
+        /// </summary>
+        /// <param name="item">Datová položka</param>
+        /// <param name="dataRange">Rozsah viditelných dat</param>
+        /// <returns></returns>
+        public static bool IsItemVisible(ISequenceLayout item, Int32NRange dataRange)
+        {
+            return _FilterVisibleItem(item, dataRange);
+        }
+        /// <summary>
+        /// Vrátí true, pokud daný prvek (item) se svojí pozicí (Begin, End) bude viditelný v aktuálním datovém prostoru
+        /// </summary>
+        /// <param name="item">Datová položka</param>
+        /// <param name="dataRange">Rozsah viditelných dat</param>
+        /// <returns></returns>
+        public static bool IsItemVisible(ISequenceLayout item, Int32Range dataRange)
+        {
+            return _FilterVisibleItem(item, dataRange);
+        }
+        /// <summary>
+        /// Vrátí danou kolekci, zafiltrovanou na pouze viditelné prvky
+        /// </summary>
+        /// <typeparam name="T">Typ datových položek</typeparam>
+        /// <param name="items">Kolekce datových položek</param>
+        /// <param name="dataBegin">První viditelný datový pixel</param>
+        /// <param name="dataEnd">První datový pixel za viditelnou oblastí</param>
+        /// <returns></returns>
+        public static IEnumerable<T> FilterVisibleItems<T>(IEnumerable<T> items, int dataBegin, int dataEnd) where T : ISequenceLayout
+        {
+            return items.Where(i => _FilterVisibleItem(i, dataBegin, dataEnd));
+        }
+        /// <summary>
+        /// Vrátí danou kolekci, zafiltrovanou na pouze viditelné prvky
+        /// </summary>
+        /// <typeparam name="T">Typ datových položek</typeparam>
+        /// <param name="items">Kolekce datových položek</param>
+        /// <param name="dataRange">Rozsah viditelných dat</param>
+        /// <returns></returns>
+        public static IEnumerable<T> FilterVisibleItems<T>(IEnumerable<T> items, Int32NRange dataRange) where T : ISequenceLayout
+        {
+            return items.Where(i => _FilterVisibleItem(i, dataRange));
+        }
+        /// <summary>
+        /// Vrátí danou kolekci, zafiltrovanou na pouze viditelné prvky
+        /// </summary>
+        /// <typeparam name="T">Typ datových položek</typeparam>
+        /// <param name="items">Kolekce datových položek</param>
+        /// <param name="dataRange">Rozsah viditelných dat</param>
+        /// <returns></returns>
+        public static IEnumerable<T> FilterVisibleItems<T>(IEnumerable<T> items, Int32Range dataRange) where T : ISequenceLayout
+        {
+            return items.Where(i => _FilterVisibleItem(i, dataRange));
+        }
+        /// <summary>
+        /// Vrátí true, pokud daná položka je alespoň částečně viditelná v daném rozsahu
+        /// </summary>
+        /// <param name="item">Datová položka</param>
+        /// <param name="dataBegin">První viditelný datový pixel</param>
+        /// <param name="dataEnd">První datový pixel za viditelnou oblastí</param>
+        /// <returns></returns>
+        private static bool _FilterVisibleItem(ISequenceLayout item, int dataBegin, int dataEnd)
+        {
+            return (item.Size > 0
+                && item.Begin < dataEnd
+                && item.End > dataBegin);
+        }
+        /// <summary>
+        /// Vrátí true, pokud daná položka je alespoň částečně viditelná v daném rozsahu
+        /// </summary>
+        /// <param name="item">Datová položka</param>
+        /// <param name="dataRange">Rozsah viditelných dat</param>
+        /// <returns></returns>
+        private static bool _FilterVisibleItem(ISequenceLayout item, Int32NRange dataRange)
+        {
+            return (item.Size > 0
+                && (!dataRange.HasEnd || item.Begin < dataRange.End.Value)
+                && (!dataRange.HasBegin || item.End > dataRange.Begin.Value));
+        }
+        /// <summary>
+        /// Vrátí true, pokud daná položka je alespoň částečně viditelná v daném rozsahu
+        /// </summary>
+        /// <param name="item">Datová položka</param>
+        /// <param name="dataRange">Rozsah viditelných dat</param>
+        /// <returns></returns>
+        private static bool _FilterVisibleItem(ISequenceLayout item, Int32Range dataRange)
+        {
+            return (item.Size > 0
+                && item.Begin < dataRange.End
+                && item.End > dataRange.Begin);
+        }
+        #endregion
+        #endregion
+    }
+    /// <summary>
+    /// Prvek podporující sekvenční layout (řádek nebo sloupec umístěný v kolekci podobných řádků/sloupců).
+    /// Má svůj Begin a End. Pokud Begin = End, pak prvek nebude zobrazován.
+    /// </summary>
+    public interface ISequenceLayout
+    {
+        /// <summary>
+        /// Pozice, kde prvek začíná.
+        /// Interface ISequenceLayout tuto hodnotu setuje v případě, kdy se layout těchto prvků změní (změna prvků nebo jejich velikosti).
+        /// </summary>
+        int Begin { get; set; }
+        /// <summary>
+        /// Velikost prvku v pixelech (šířka sloupce, výška řádku, výška tabulky). 
+        /// Lze ji setovat, protože prvky lze pomocí splitterů zvětšovat / zmenšovat.
+        /// Aplikační logika prvku musí zabránit vložení neplatné hodnoty (reálně se uloží hodnota platná).
+        /// Setování této hodnoty nesmí vyvolat event SizeChanged, protože by mohlo dojít k zacyklení eventů.
+        /// </summary>
+        int Size { get; set; }
+        /// <summary>
+        /// Pozice, kde za tímto prvkem začíná následující prvek. 
+        /// Velikost prvku = (End - Begin) = počet pixelů, na které se zobrazuje tento prvek.
+        /// Interface ISequenceLayout tuto hodnotu nesetuje, pouze ji čte.
+        /// </summary>
+        int End { get; }
+        /// <summary>
+        /// true, pokud velikost tohoto objektu (<see cref="Size"/>) bude změněna při změně velikosti celého prvku.
+        /// Typicky: sloupec tabulky s nastavením (<see cref="AutoSize"/> == true) bude rozšířen nebo zúžen při změně šířky tabulky.
+        /// Při této změně bude vložena nová Size, přitom tento objekt může aplikovat svoje restrikce (Min a Max).
+        /// </summary>
+        bool AutoSize { get; }
+    }
+    /// <summary>
+    /// Implicitní určování prvku AutoSize, aplikuje se pokud v kolekci prvků <see cref="ISequenceLayout"/> neexistuje žádný, který by měl <see cref="ISequenceLayout.AutoSize"/> == true.
+    /// Pokud je zadáno <see cref="ImplicitAutoSizeType.None"/>, pak kolekce nebude mít chování AutoSize.
+    /// </summary>
+    public enum ImplicitAutoSizeType
+    {
+        /// <summary>
+        /// Žádný z prvků nebude mít chování AutoSize
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Pokud žádný z prvků kolekce <see cref="ISequenceLayout"/> nebude mít nastaveno <see cref="ISequenceLayout.AutoSize"/> = true, pak se za takový prvek bude považovat PRVNÍ prvek kolekce.
+        /// </summary>
+        FirstItem,
+        /// <summary>
+        /// Pokud žádný z prvků kolekce <see cref="ISequenceLayout"/> nebude mít nastaveno <see cref="ISequenceLayout.AutoSize"/> = true, pak se za takový prvek bude považovat POSLEDNÍ prvek kolekce.
+        /// </summary>
+        LastItem
+    }
+    #endregion
     #region Tests
     /// <summary>
     /// Tests for LayoutEngine

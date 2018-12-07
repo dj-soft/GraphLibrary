@@ -18,11 +18,26 @@ namespace Asol.Tools.WorkScheduler.Data
     // Pro jejich požadavky jsou do datových prvků explicitně implementovány rozličné interface, 
     //  takže grafické prvky si objekty přetypují a pracují přes interface, a tyto sady rozšiřujících prvků jsou uživateli skryté při běžné datové práci (=bez interface).
 
+    /* Řešení Layoutu (7.12.2018): Velikost prvku a jeho pozice v celé sekvenci
+     *  Datové prvky (Table, Row, Column) v sobě mají instanci třídy ItemSizeInt:
+     *      - Tato třída je DATOVÁ, proto si řídí jen svoji VELIKOST, ale ne svoji POZICI.
+     *      - Tato třída obsahuje aktuální velikost prvku Size (=Height nebo Width)
+     *      - A dále určuje rozsah této hodnoty (SizeMinimum, SizeMaximum) a výchozí hodnotu (SizeDefault)
+     *      - K tomu obshauje: Visible, Autosize, ResizeEnabled a ReOrderEnabled
+     *      - Dále tato třída obsahuje referenci na Parent instanci (typicky uložená v tabulce),
+     *        kde tato Parent instance obsahuje výchozí hodnoty pro všechny property, které na konkrétním řádku/sloupci nejsou naplněny (jsou null).
+     *  Vizuální prvky (GTable, GRow, GColumn) v sobě mají instanci třídy SequenceLayout (implementuje ISequenceLayout):
+     *      - Je to třída určená pro VIZUÁLNÍ PRÁCI, proto v sobě obsahuje pozici BEGIN a referenci na DATA, která obsahují VELIKOST
+     *      - Tato třída řeší pozici konkrétního vizuálního prvku v sekvenci pole sousedních prvků (řádky pod sebou, sloupce vedle sebe)
+     *      - Při určování souřadnic celoého pole se provádí metoda SequenceLayout.SequenceLayoutCalculate(),
+     *        která pro řadu prvku nastavuje jejich Begin, odvozuje End (=Begin + Size + space), a ten vkládá do Begin následujcího prvku
+     */
+
     #region Table
     /// <summary>
     /// Table : jedna tabulka s daty (sada Column + Row)
     /// </summary>
-    public class Table : IGTableMember, IVisualMember, ISequenceLayout, IContentValidity, ITableEventTarget
+    public class Table : IGTableMember, IVisualMember, IContentValidity, ITableEventTarget
     {
         #region Konstruktor, Inicializace
         /// <summary>
@@ -577,7 +592,7 @@ namespace Asol.Tools.WorkScheduler.Data
 
             List<KeyValuePair<string, TagItem>> tagList = tagDict.ToList();
             if (tagList.Count > 1)
-                tagList.Sort((a,b) => String.Compare(a.Key, b.Key));
+                tagList.Sort((a, b) => String.Compare(a.Key, b.Key));
 
             this._TagItems = tagList.Select(i => i.Value).ToArray();
         }
@@ -620,8 +635,9 @@ namespace Asol.Tools.WorkScheduler.Data
         #endregion
         #region Třídění a filtrování řádků
         /// <summary>
-        /// Tato property vrací soupis všech aktuálně viditelných řádků, setříděný podle pvního ze sloupců, který má nastaven režim třídění jiný než None.
-        /// Tato property vždy kompletně vyhodnotí data a vrátí nový objekt, nepoužívá se žádná úroveň cachování. Pozor na výkon, užívejme tuto property střídmě.
+        /// Tato property vrací soupis všech zobrazitelných (=aktuálně viditelných) řádků, setříděný podle prvního ze sloupců, který má nastaven režim třídění jiný než None.
+        /// Tato property vždy kompletně vyhodnotí data a vrátí nový objekt, nepoužívá se žádná úroveň cachování. 
+        /// Pozor na výkon, užívejme tuto property střídmě.
         /// </summary>
         public Row[] RowsSorted
         {
@@ -710,12 +726,13 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public Int32 Height
         {
-            get { return this.TableHeightLayout.CurrentSize; }
+            get { return this.TableSize.Size.Value; }
             set
             {
-                int oldValue = this.TableHeightLayout.CurrentSize;
-                this.TableHeightLayout.Size = value;
-                if ((this.TableHeightLayout.CurrentSize != oldValue) && this.HasGTable)
+                int oldValue = this.Height;
+                this.TableSize.Size = value;
+                int newValue = this.Height;
+                if ((newValue != oldValue) && this.HasGTable)
                     this.GTable.Invalidate(InvalidateItem.TableHeight);
             }
         }
@@ -724,12 +741,13 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public bool IsVisible
         {
-            get { return this.TableHeightLayout.Visible; }
+            get { return this.TableSize.Visible; }
             set
             {
-                bool oldValue = this.TableHeightLayout.Visible;
-                this.TableHeightLayout.Visible = value;
-                if ((this.TableHeightLayout.Visible != oldValue) && this.HasGTable)
+                bool oldValue = this.IsVisible;
+                this.TableSize.Visible = value;
+                bool newValue = this.IsVisible;
+                if ((newValue != oldValue) && this.HasGTable)
                     this.GTable.Invalidate(InvalidateItem.TableHeight);
             }
         }
@@ -740,12 +758,13 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public Int32 ColumnHeaderHeight
         {
-            get { return this.ColumnHeaderHeightLayout.CurrentSize; }
+            get { return this.HeaderColumnSize.Size.Value; }
             set
             {
-                int oldValue = this.ColumnHeaderHeightLayout.CurrentSize;
-                this.ColumnHeaderHeightLayout.Size = value;
-                if ((this.ColumnHeaderHeightLayout.CurrentSize != oldValue) && this.HasGTable)
+                int oldValue = this.ColumnHeaderHeight;
+                this.HeaderColumnSize.Size = value;
+                int newValue = this.ColumnHeaderHeight;
+                if ((newValue != oldValue) && this.HasGTable)
                     this.GTable.Invalidate(InvalidateItem.ColumnHeader);
             }
         }
@@ -754,12 +773,13 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public Int32 RowHeaderWidth
         {
-            get { return this.RowHeaderWidthLayout.CurrentSize; }
+            get { return this.HeaderRowSize.Size.Value; }
             set
             {
-                int oldValue = this.RowHeaderWidthLayout.CurrentSize;
-                this.RowHeaderWidthLayout.Size = value;
-                if ((this.RowHeaderWidthLayout.CurrentSize != oldValue) && this.HasGTable)
+                int oldValue = this.RowHeaderWidth;
+                this.HeaderRowSize.Size = value;
+                int newValue = this.RowHeaderWidth;
+                if ((newValue != oldValue) && this.HasGTable)
                     this.GTable.Invalidate(InvalidateItem.ColumnHeader);
             }
         }
@@ -778,7 +798,8 @@ namespace Asol.Tools.WorkScheduler.Data
             {
                 int oldValue = this._TableOrder;
                 this._TableOrder = value;
-                if ((this._TableOrder != oldValue) && this.HasGTable)
+                int newValue = this._TableOrder;
+                if ((newValue != oldValue) && this.HasGTable)
                     this.GTable.Invalidate(InvalidateItem.ColumnHeader);
             }
         } private int _TableOrder = -1;
@@ -787,43 +808,46 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public bool AllowTableResize
         {
-            get { return this._AllowTableResize; }
+            get { return this.TableSize.ResizeEnabled.Value; }
             set
             {
-                bool oldValue = this._AllowTableResize;
-                this._AllowTableResize = value;
-                if ((this._AllowTableResize != oldValue) && this.HasGTable)
+                bool oldValue = this.AllowTableResize;
+                this.TableSize.ResizeEnabled = value;
+                bool newValue = this.AllowTableResize;
+                if ((newValue != oldValue) && this.HasGTable)
                     this.GTable.Invalidate(InvalidateItem.GridItems);
             }
-        } private bool _AllowTableResize = true;
+        }
         /// <summary>
         /// true pokud je povoleno interaktivně změnit šířku sloupce, který obsahuje záhlaví řádku (myší). Default = true;
         /// </summary>
         public bool AllowRowHeaderWidthResize
         {
-            get { return this._AllowRowHeaderWidthResize; }
+            get { return this.HeaderRowSize.ResizeEnabled.Value; }
             set
             {
-                bool oldValue = this._AllowRowHeaderWidthResize;
-                this._AllowRowHeaderWidthResize = value;
-                if ((this._AllowRowHeaderWidthResize != oldValue) && this.HasGTable)
+                bool oldValue = this.AllowRowHeaderWidthResize;
+                this.HeaderRowSize.ResizeEnabled = value;
+                bool newValue = this.AllowRowHeaderWidthResize;
+                if ((newValue != oldValue) && this.HasGTable)
                     this.GTable.Invalidate(InvalidateItem.TableItems);
             }
-        } private bool _AllowRowHeaderWidthResize = true;
+        }
         /// <summary>
         /// true pokud je povoleno interaktivně přemisťovat sloupce (přetahovat je myší). Default = true;
         /// </summary>
         public bool AllowColumnReorder
         {
-            get { return this._AllowColumnReorder; }
+            get { return this.HeaderColumnSize.ReOrderEnabled.Value; }
             set
             {
-                bool oldValue = this._AllowColumnReorder;
-                this._AllowColumnReorder = value;
-                if ((this._AllowColumnReorder != oldValue) && this.HasGTable)
+                bool oldValue = this.AllowColumnReorder;
+                this.HeaderColumnSize.ReOrderEnabled = value;
+                bool newValue = this.AllowColumnReorder;
+                if ((newValue != oldValue) && this.HasGTable)
                     this.GTable.Invalidate(InvalidateItem.TableItems);
             }
-        } private bool _AllowColumnReorder = true;
+        }
         /// <summary>
         /// true pokud je povoleno interaktivně změnit výšku záhlaví sloupců (myší). Default = true;
         /// </summary>
@@ -967,38 +991,41 @@ namespace Asol.Tools.WorkScheduler.Data
         #endregion
         #region Layouty (výšky, šířky, rozmezí) : kořenové hodnoty uložené na tabulce
         /// <summary>
-        /// Výška celé tabulky: default, rozmezí, aktuální hodnota
+        /// Koordinátor výšky tabulky
         /// </summary>
-        public SequenceLayout TableHeightLayout { get { return this._TableHeightLayout; } } private SequenceLayout _TableHeightLayout;
+        internal ItemSizeInt TableSize { get { if (this._TableSize == null) this._TableSize = new ItemSizeInt(60, 300, 4000); return this._TableSize; } }
+        private ItemSizeInt _TableSize;
         /// <summary>
-        /// Výška prostoru ColumnHeader: default, rozmezí, aktuální hodnota
+        /// Koordinátor výšky prostoru ColumnHeader
         /// </summary>
-        public SequenceLayout ColumnHeaderHeightLayout { get { return this._ColumnHeaderHeightLayout; } } private SequenceLayout _ColumnHeaderHeightLayout;
+        internal ItemSizeInt HeaderColumnSize { get { if (this._HeaderColumnSize == null) this._HeaderColumnSize = new ItemSizeInt(20, 45, 160); return this._HeaderColumnSize; } }
+        private ItemSizeInt _HeaderColumnSize;
         /// <summary>
-        /// Šířka sloupce obsahujícího RowHeader: default, rozmezí, aktuální hodnota
+        /// Koordinátor výšky prostoru ColumnHeader
         /// </summary>
-        public SequenceLayout RowHeaderWidthLayout { get { return this._RowHeaderWidthLayout; } } private SequenceLayout _RowHeaderWidthLayout;
+        internal ItemSizeInt HeaderRowSize { get { if (this._HeaderRowSize == null) this._HeaderRowSize = new ItemSizeInt(20, 35, 120); return this._HeaderRowSize; } }
+        private ItemSizeInt _HeaderRowSize;
         /// <summary>
-        /// Výchozí hodnota šířky sloupce a povolené rozmezí šířky: default, rozmezí, aktuální hodnota
+        /// Koordinátor výšky řádku
         /// </summary>
-        public SequenceLayout ColumnWidthLayout { get { return this._ColumnWidthLayout; } } private SequenceLayout _ColumnWidthLayout;
+        internal ItemSizeInt RowSize { get { if (this._RowSize == null) this._RowSize = new ItemSizeInt(8, 24, 512); return this._RowSize; } }
+        private ItemSizeInt _RowSize;
         /// <summary>
-        /// Výchozí hodnota výšky řádku a povolené rozmezí výšky: default, rozmezí, aktuální hodnota
+        /// Koordinátor šířky sloupce
         /// </summary>
-        public SequenceLayout RowHeightLayout { get { return this._RowHeightLayout; } } private SequenceLayout _RowHeightLayout;
+        internal ItemSizeInt ColumnSize { get { if (this._ColumnSize == null) this._ColumnSize = new ItemSizeInt(20, 100, 4000); return this._ColumnSize; } }
+        private ItemSizeInt _ColumnSize;
+        /// <summary>
+        /// Inicializace prvků <see cref="ItemSizeInt"/>, definujících layout prvků v tabulce
+        /// </summary>
         private void _LayoutInit()
         {
-            this._TableHeightLayout = new SequenceLayout(60, 250);
-            this._ColumnHeaderHeightLayout = new SequenceLayout(20, 45, 160);
-            this._RowHeaderWidthLayout = new SequenceLayout(20, 35, 120);
-            this._ColumnWidthLayout = new SequenceLayout(20, 160);
-            this._RowHeightLayout = new SequenceLayout(8, 24, 1024);
+            this._TableSize = new ItemSizeInt(60, 300, 4000);
+            this._HeaderColumnSize = new ItemSizeInt(20, 45, 160);
+            this._HeaderRowSize = new ItemSizeInt(20, 35, 120);
+            this._RowSize = new ItemSizeInt(8, 24, 512);
+            this._ColumnSize = new ItemSizeInt(20, 100, 4000);
         }
-        private ISequenceLayout _SequenceLayout { get { return (ISequenceLayout)this._TableHeightLayout; } }
-        int ISequenceLayout.Begin { get { return this._SequenceLayout.Begin; } set { this._SequenceLayout.Begin = value; } }
-        int ISequenceLayout.Size { get { return this._SequenceLayout.Size; } set { this._SequenceLayout.Size = value; } }
-        int ISequenceLayout.End { get { return this._SequenceLayout.End; } }
-        bool ISequenceLayout.AutoSize { get { return this._SequenceLayout.AutoSize; } }
         /// <summary>
         /// Komparátor podle hodnoty TableOrder ASC
         /// </summary>
@@ -1469,11 +1496,11 @@ namespace Asol.Tools.WorkScheduler.Data
             if (!this.HasPrimaryIndex)
                 throw new GraphLibCodeException("Nelze provést Reindex() tabulky, která má nastavenu hodnotu HasPrimaryIndex = false.");
             Column primaryColumn = this.CurrentPrimaryKeyColumn;
-            if (primaryColumn  == null)
+            if (primaryColumn == null)
                 throw new GraphLibCodeException("Nelze provést Reindex() tabulky, která neobsahuje vhodný primární sloupec (DataType = Int32, a existující ClassNumber v ColumnProperties).");
             if (!primaryColumn.ColumnProperties.AllowPrimaryKey)
                 throw new GraphLibCodeException("Nelze provést Reindex() tabulky podle sloupce " + primaryColumn.ColumnName + ", tento sloupec nevyhovuje."); ;
-            
+
             using (App.Trace.Scope(TracePriority.Priority3_BellowNormal, "Table", "Reindex", ""))
             {
                 Dictionary<GId, List<Row>> primaryIndex = new Dictionary<GId, List<Row>>();
@@ -1554,7 +1581,7 @@ namespace Asol.Tools.WorkScheduler.Data
         private Column _CurrentPrimaryKeyColumn;
         private bool _CurrentPrimaryKeyColumnValid;
         private Dictionary<GId, List<Row>> _PrimaryIndex;
-        
+
         #endregion
         #region Statické služby
         /// <summary>
@@ -1646,7 +1673,7 @@ namespace Asol.Tools.WorkScheduler.Data
     /// <summary>
     /// Column : informace o jednom sloupci tabulky
     /// </summary>
-    public class Column : ITableMember, ISequenceLayout, IVisualMember, IIdKey
+    public class Column : ITableMember, /* ISequenceLayout, */ IVisualMember, IIdKey
     {
         #region Konstruktor, základní data
         /// <summary>
@@ -1655,7 +1682,6 @@ namespace Asol.Tools.WorkScheduler.Data
         public Column()
         {
             this._ColumnId = -1;
-            this._SizeLayout = new SequenceLayout(8, 160);
         }
         /// <summary>
         /// Konstruktor
@@ -1683,7 +1709,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="allowColumnResize"></param>
         /// <param name="recordClassNumber"></param>
         public Column(string name, Localizable.TextLoc title = null, Localizable.TextLoc toolTip = null, string formatString = null, int? width = null,
-            ColumnContentType columnContent = ColumnContentType.UserData, bool autoWidth = false, bool sortingEnabled = true, int? widthMininum = null, int? widthMaximum = null, 
+            ColumnContentType columnContent = ColumnContentType.UserData, bool autoWidth = false, bool sortingEnabled = true, int? widthMininum = null, int? widthMaximum = null,
             bool isVisible = true, bool allowColumnResize = true, int? recordClassNumber = null)
             : this()
         {
@@ -1708,8 +1734,8 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <returns></returns>
         public override string ToString()
         {
-            return "Column " + this.ColumnId.ToString() + ": " 
-                + this.ColumnName + ": " + this.ColumnProperties.Title 
+            return "Column " + this.ColumnId.ToString() + ": "
+                + this.ColumnName + ": " + this.ColumnProperties.Title
                 + " in " + (this.HasTable ? this.Table.ToString() : "NULL");
         }
         /// <summary>
@@ -1744,7 +1770,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// ITableMember.Table : Reference na tabulku, která je vlastníkem this objektu
         /// </summary>
-        Table ITableMember.Table { get { return this._Table; } set { this._Table = value; this.WidthLayout.ParentLayout = (value != null ? value.ColumnWidthLayout : null); } }
+        Table ITableMember.Table { get { return this._Table; } set { this._Table = value; this.ColumnSize.Parent = this._Table?.ColumnSize; } }
         /// <summary>
         /// ITableMember.Id : Přidělené ID
         /// </summary>
@@ -1811,15 +1837,15 @@ namespace Asol.Tools.WorkScheduler.Data
         }
         private ColumnProperties _ColumnProperties;
         /// <summary>
-        /// Metoda promítne data z parametru <see cref="Data.ColumnProperties"/> do <see cref="WidthLayout"/>.
+        /// Metoda promítne data z parametru <see cref="Data.ColumnProperties"/> do <see cref="ColumnSize"/>.
         /// </summary>
         private void _ReloadWidthLayout(ColumnProperties columnProperties)
         {
-            this.WidthLayout.Size = columnProperties.Width;
-            this.WidthLayout.Visible = columnProperties.IsVisible;
-            this.WidthLayout.AutoSize = columnProperties.AutoWidth;
-            this.WidthLayout.SizeMinimum = columnProperties.WidthMininum;
-            this.WidthLayout.SizeMaximum = columnProperties.WidthMaximum;
+            this.ColumnSize.Size = columnProperties.Width;
+            this.ColumnSize.Visible = columnProperties.IsVisible;
+            this.ColumnSize.AutoSize = columnProperties.AutoWidth;
+            this.ColumnSize.SizeMinimum = columnProperties.WidthMininum;
+            this.ColumnSize.SizeMaximum = columnProperties.WidthMaximum;
         }
         /// <summary>
         /// Defaultní parametry pro grafy v tomto sloupci.
@@ -1993,14 +2019,11 @@ namespace Asol.Tools.WorkScheduler.Data
         #endregion
         #region Implementace interface ISequenceLayout (Layout šířky sloupce), IVisualMember (vizuální vlastnosti), IIdKey (dvojitý klíč)
         /// <summary>
-        /// Veškeré hodnoty související s šířkou sloupce (rozsah hodnot, povolení Resize)
+        /// Koordinátor šířky sloupce.
+        /// Hodnota může být čtena i jako Int32 (implciitní konverze) = přímo výška řádku.
         /// </summary>
-        public SequenceLayout WidthLayout { get { return this._SizeLayout; } } private SequenceLayout _SizeLayout;
-        private ISequenceLayout _SequenceLayout { get { return (ISequenceLayout)this._SizeLayout; } }
-        int ISequenceLayout.Begin { get { return this._SequenceLayout.Begin; } set { this._SequenceLayout.Begin = value; } }
-        int ISequenceLayout.Size { get { return this._SequenceLayout.Size; } set { this._SequenceLayout.Size = value; } }
-        int ISequenceLayout.End { get { return this._SequenceLayout.End; } }
-        bool ISequenceLayout.AutoSize { get { return this._SequenceLayout.AutoSize; } }
+        internal ItemSizeInt ColumnSize { get { if (this._ColumnSize == null) this._ColumnSize = new ItemSizeInt(this.Table?.ColumnSize); return this._ColumnSize; } }
+        private ItemSizeInt _ColumnSize;
         /// <summary>
         /// Všechny vizuální vlastnosti dat v tomto sloupci (nikoli hlavičky).
         /// Default hodnota je null.
@@ -2035,13 +2058,13 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         Column IOwnerProperty<Column>.Owner { get { return this._Owner; } set { this._Owner = value; } } private Column _Owner;
         /// <summary>
-        /// Layout šířky našeho columnu: <see cref="_Owner"/>: <see cref="Column.WidthLayout"/>
+        /// Layout šířky našeho columnu: <see cref="_Owner"/>: <see cref="Column.ColumnSize"/>
         /// </summary>
-        private SequenceLayout _OwnerWidthLayout { get { return (this._HasOwnerLayout ? this._Owner.WidthLayout : null); } }
+        protected ItemSizeInt ColumnSize { get { return (this.HasOwnerSize ? this._Owner.ColumnSize : null); } }
         /// <summary>
-        /// true pokud máme vlastníka a ten má WidthLayout
+        /// true pokud máme k dispozici objekt <see cref="ColumnSize"/> (máme vlastníka a ten má ColumnSize)
         /// </summary>
-        private bool _HasOwnerLayout { get { return (this._Owner != null && this._Owner.WidthLayout != null); } }
+        protected bool HasOwnerSize { get { return (this._Owner != null && this._Owner.ColumnSize != null); } }
         #endregion
         #region Public data
         /// <summary>
@@ -2106,24 +2129,24 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public Int32? Width
         {
-            get { return (this._HasOwnerLayout ? this._OwnerWidthLayout.Size : this._Width); }
-            set { this._Width = value; if (this._HasOwnerLayout) this._OwnerWidthLayout.Size = value; }
+            get { return (this.HasOwnerSize ? this.ColumnSize.Size : this._Width); }
+            set { this._Width = value; if (this.HasOwnerSize) this.ColumnSize.Size = value; }
         } private Int32? _Width;
         /// <summary>
         /// Nejmenší povolená šířka
         /// </summary>
         public Int32? WidthMininum
         {
-            get { return (this._HasOwnerLayout ? this._OwnerWidthLayout.SizeMinimum : this._WidthMininum); }
-            set { this._WidthMininum = value; if (this._HasOwnerLayout) this._OwnerWidthLayout.SizeMinimum = value; }
+            get { return (this.HasOwnerSize ? this.ColumnSize.SizeMinimum : this._WidthMininum); }
+            set { this._WidthMininum = value; if (this.HasOwnerSize) this.ColumnSize.SizeMinimum = value; }
         } private Int32? _WidthMininum;
         /// <summary>
         /// Největší povolená šířka
         /// </summary>
         public Int32? WidthMaximum
         {
-            get { return (this._HasOwnerLayout ? this._OwnerWidthLayout.SizeMaximum: this._WidthMaximum); }
-            set { this._WidthMaximum = value; if (this._HasOwnerLayout) this._OwnerWidthLayout.SizeMaximum = value; }
+            get { return (this.HasOwnerSize ? this.ColumnSize.SizeMaximum : this._WidthMaximum); }
+            set { this._WidthMaximum = value; if (this.HasOwnerSize) this.ColumnSize.SizeMaximum = value; }
         } private Int32? _WidthMaximum;
         /// <summary>
         /// true pokud tento prvek má být použit jako "guma" při změně šířky tabulky tak, aby kolekce sloupců vyplnila celý prostor.
@@ -2132,8 +2155,8 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public bool AutoWidth
         {
-            get { return (this._HasOwnerLayout ? this._OwnerWidthLayout.AutoSize : this._AutoWidth); }
-            set { this._AutoWidth = value; if (this._HasOwnerLayout) this._OwnerWidthLayout.AutoSize = value; }
+            get { return (this.HasOwnerSize ? this.ColumnSize.AutoSize.Value : this._AutoWidth); }
+            set { this._AutoWidth = value; if (this.HasOwnerSize) this.ColumnSize.AutoSize = value; }
         }
         private bool _AutoWidth;
         /// <summary>
@@ -2141,8 +2164,8 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public bool IsVisible
         {
-            get { return (this.CanBeVisible ? (this._HasOwnerLayout ? this._OwnerWidthLayout.Visible : this._IsVisible) : false); }
-            set { this._IsVisible = value; if (this._HasOwnerLayout) this._OwnerWidthLayout.Visible = (value && this.CanBeVisible); }
+            get { return (this.CanBeVisible ? (this.HasOwnerSize ? this.ColumnSize.Visible : this._IsVisible) : false); }
+            set { this._IsVisible = value; if (this.HasOwnerSize) this.ColumnSize.Visible = (value && this.CanBeVisible); }
         } private bool _IsVisible;
         /// <summary>
         /// true, pokud this sloupec smí být někdy zobrazen uživateli.
@@ -2344,7 +2367,7 @@ namespace Asol.Tools.WorkScheduler.Data
     /// <summary>
     /// Row : informace o jednom řádku tabulky
     /// </summary>
-    public class Row : ITableMember, ITagItemOwner, IVisualMember, IVisualParent, ISequenceLayout, IContentValidity, IComparableItem
+    public class Row : ITableMember, ITagItemOwner, IVisualMember, IVisualParent, /* ISequenceLayout, */ IContentValidity, IComparableItem
     {
         #region Konstruktor, základní data
         /// <summary>
@@ -2354,7 +2377,6 @@ namespace Asol.Tools.WorkScheduler.Data
         {
             this._RowId = -1;
             this._CellDict = new Dictionary<int, Cell>();
-            this._HeightLayout = new SequenceLayout(6, 24);
         }
         /// <summary>
         /// Konstruktor
@@ -2396,7 +2418,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public int RowId { get { return this._RowId; } } private int _RowId = -1;
         #endregion
-        #region Linkování na tabulku
+        #region Linkování na tabulku a na sloupce
         /// <summary>
         /// Reference na tabulku, kam řádek patří.
         /// </summary>
@@ -2416,7 +2438,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// ITableMember.Table : Reference na tabulku, která je vlastníkem this objektu
         /// </summary>
-        Table ITableMember.Table { get { return this._Table; } set { this._Table = value; this.HeightLayout.ParentLayout = (value != null ? value.RowHeightLayout : null); } }
+        Table ITableMember.Table { get { return this._Table; } set { this._Table = value; this.RowSize.Parent = value?.RowSize; } }
         /// <summary>
         /// true pokud tento řádek má svou tabulku, a tabulka má svoji grafickou vrstvu
         /// </summary>
@@ -2639,7 +2661,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public bool IsMouseHot { get { return (this.HasGTable ? this.GTable.IsRowHot(this) : false); } }
         /// <summary>
-        /// Změní hodnotu IsSelected v tomto řádku
+        /// Změní hodnotu <see cref="IsChecked"/> v tomto řádku
         /// </summary>
         public void CheckedChange()
         {
@@ -2694,41 +2716,35 @@ namespace Asol.Tools.WorkScheduler.Data
         #endregion
         #region Výška řádku, kompletní layout okolo výšky řádku, implementace ISequenceLayout a IVisualParent
         /// <summary>
+        /// Koordinátor výšky řádku.
+        /// Hodnota může být čtena i jako Int32 (implciitní konverze) = přímo výška řádku.
+        /// </summary>
+        internal ItemSizeInt RowSize { get { if (this._RowSize == null) this._RowSize = new ItemSizeInt(this.Table?.RowSize); return this._RowSize; } }
+        private ItemSizeInt _RowSize;
+        /// <summary>
         /// Zadaná výška řádku.
         /// Hodnotu může vložit aplikační kód, hodnota se projeví v GUI.
         /// Uživatel může interaktivně měnit velikost objektu, změna se projeví v této hodnotě.
         /// Veškerá další nastavení jsou v property HeightLayout.
         /// </summary>
-        public Int32? Height { get { return this.HeightLayout.Size; } set { this.HeightLayout.Size = value; } }
+        public Int32? Height { get { return this.RowSize.Size.Value; } set { this.RowSize.Size = value; } }
         /// <summary>
         /// true pro viditelný sloupec (default), false for skrytý
         /// </summary>
-        public bool Visible { get { return this.HeightLayout.Visible; } set { this.HeightLayout.Visible = value; } }
-        /// <summary>
-        /// Veškeré hodnoty související s výškou řádku (rozsah hodnot, povolení Resize)
-        /// </summary>
-        public SequenceLayout HeightLayout { get { return this._HeightLayout; } } private SequenceLayout _HeightLayout;
-        private ISequenceLayout _SequenceLayout { get { return (ISequenceLayout)this._HeightLayout; } }
-        int ISequenceLayout.Begin { get { return this._SequenceLayout.Begin; } set { this._SequenceLayout.Begin = value; } }
-        int ISequenceLayout.Size { get { return this._SequenceLayout.Size; } set { this._SequenceLayout.Size = value; } }
-        int ISequenceLayout.End { get { return this._SequenceLayout.End; } }
-        bool ISequenceLayout.AutoSize { get { return this._SequenceLayout.AutoSize; } }
+        public bool Visible { get { return this.RowSize.Visible; } set { this.RowSize.Visible = value; } }
         int IVisualParent.ClientWidth { get { return (this.HasGTable ? this.GTable.Bounds.Width : 0); } set { } }
         int IVisualParent.ClientHeight
         {
-            get { return (this._SequenceLayout.Size - 1); }
+            // Výška řádku je + 1 pixel vyšší proti výšce klientského prostoru (grid line):
+            get { return (this.RowSize.Size.Value - 1); }
             set
             {
-                int height = value + 1;          // Výška řádku je + 1 pixel vyšší proti výšce klientského prostoru (grid line)
-                if (this.HasGTable)
-                    // Pokud datový řádek má referenci na grafickou tabulku:
-                    //  pak změním výšku pomocí tabulky => změna se i tam provede přes ISequenceLayout.Size,
-                    //  ale po změně se provede invalidace výšky řádků v GridTable:
-                    this.GTable.RowResizeTo(this, ref height);
-                else
-                    // Nemáme referenci na grafickou tabulku:
-                    //  změníme jen výšku řádku s akceptováním pravidel v ISequenceLayout:
-                    this._SequenceLayout.Size = value;
+                int height = value + 1;
+                int oldValue = this.RowSize.Size.Value;
+                this.RowSize.Size = height;
+                int newValue = this.RowSize.Size.Value;
+                if (newValue != oldValue && this.HasGTable)
+                    this.GTable.Invalidate(InvalidateItem.RowHeight);
             }
         }
         #endregion
@@ -3100,7 +3116,6 @@ namespace Asol.Tools.WorkScheduler.Data
             }
         }
         #endregion
-
     }
     #endregion
     #region TagItem : Data pro jeden vizuální tag
@@ -3319,7 +3334,7 @@ namespace Asol.Tools.WorkScheduler.Data
         void InvalidateTagItems();
     }
     /// <summary>
-    /// Předpis pro prvek, který je zdrojem Tagů =´visaček do zjednodušeného řádkového filtru
+    /// Předpis pro prvek, který je zdrojem Tagů = "visaček" do zjednodušeného řádkového filtru
     /// </summary>
     public interface ITagItemOwner
     {
@@ -3389,523 +3404,360 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         IComparable ValueComparable { get; }
     }
-    /// <summary>
-    /// Prvek podporující sekvenční layout (řádek, sloupec umístěný v kolekci podobných řádků).
-    /// Má svůj Begin a End. Pokud Begin = End, pak prvek nebud zobrazován.
-    /// </summary>
-    public interface ISequenceLayout
-    {
-        /// <summary>
-        /// Pozice, kde prvek začíná.
-        /// Interface ISequenceLayout tuto hodnotu setuje v případě, kdy se layout těchto prvků změní (změna prvků nebo jejich velikosti).
-        /// </summary>
-        int Begin { get; set; }
-        /// <summary>
-        /// Velikost prvku v pixelech (šířka sloupce, výška řádku, výška tabulky). 
-        /// Lze ji setovat, protože prvky lze pomocí splitterů zvětšovat / zmenšovat.
-        /// Aplikační logika prvku musí zabránit vložení neplatné hodnoty (reálně se uloží hodnota platná).
-        /// Setování této hodnoty nesmí vyvolat event SizeChanged, protože by mohlo dojít k zacyklení eventů.
-        /// </summary>
-        int Size { get; set; }
-        /// <summary>
-        /// Pozice, kde za tímto prvkem začíná následující prvek. 
-        /// Velikost prvku = (End - Begin) = počet pixelů, na které se zobrazuje tento prvek.
-        /// Interface ISequenceLayout tuto hodnotu nesetuje, pouze ji čte.
-        /// </summary>
-        int End { get; }
-        /// <summary>
-        /// true, pokud velikost tohoto objektu (<see cref="Size"/>) bude změněna při změně velikosti celého prvku.
-        /// Typicky: sloupec tabulky s nastavením (<see cref="AutoSize"/> == true) bude rozšířen nebo zúžen při změně šířky tabulky.
-        /// Při této změně bude vložena nová Size, přitom tento objekt může aplikovat svoje restrikce (Min a Max).
-        /// </summary>
-        bool AutoSize { get; }
-    }
-    /// <summary>
-    /// Implicitní určování prvku AutoSize, aplikuje se pokud v kolekci prvků <see cref="ISequenceLayout"/> neexistuje žádný, který by měl <see cref="ISequenceLayout.AutoSize"/> == true.
-    /// Pokud je zadáno <see cref="ImplicitAutoSizeType.None"/>, pak kolekce nebude mít chování AutoSize.
-    /// </summary>
-    public enum ImplicitAutoSizeType
-    {
-        /// <summary>
-        /// Žádný z prvků nebude mít chování AutoSize
-        /// </summary>
-        None = 0,
-        /// <summary>
-        /// Pokud žádný z prvků kolekce <see cref="ISequenceLayout"/> nebude mít nastaveno <see cref="ISequenceLayout.AutoSize"/> = true, pak se za takový prvek bude považovat PRVNÍ prvek kolekce.
-        /// </summary>
-        FirstItem,
-        /// <summary>
-        /// Pokud žádný z prvků kolekce <see cref="ISequenceLayout"/> nebude mít nastaveno <see cref="ISequenceLayout.AutoSize"/> = true, pak se za takový prvek bude považovat POSLEDNÍ prvek kolekce.
-        /// </summary>
-        LastItem
-    }
     #endregion
-    #region class SequenceLayout
+    #region ItemSize : řízení jednorozměrné velikosti datového prvku, bez jeho pozicování ve vizuální sekvenci
     /// <summary>
-    /// Třída, která v sobě uchovává velikost elementu v jednom směru (šířka sloupce, nebo výška tabulky, nebo výška řádku...), 
-    /// současně dokáže tuto hodnotu akceptovat z datové i vizuální vrstvy, dokáže hlídat minimální hodnotu a zadaný rozsah hodnot, a obsahuje i defaultní hodnotu.
-    /// Navíc podporuje interface ISequenceLayout, které se používá pro sekvenční řazené prvků za sebe.
+    /// <see cref="ItemSizeInt"/> : řízení jednorozměrné velikosti datového prvku, bez jeho pozicování ve vizuální sekvenci.
+    /// Instance této třídy má být umístěna v datovém prvku, nikoli v prvku vizuálním,
+    /// protože nese logické údaje (šířku nebo výšku) o jednom prvku - ale bez závislosti 
+    /// na jeho aktuálním pořadí v sekvenci a jeho fyzické pozici mezi ostatními.
     /// </summary>
-    public class SequenceLayout : ISequenceLayout
+    public class ItemSizeInt : ItemSize<Int32>
     {
-        #region Konstruktor a základní property
+        #region Konstruktory
         /// <summary>
         /// Konstruktor
         /// </summary>
+        public ItemSizeInt()
+            : base()
+        { }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="parent"></param>
+        public ItemSizeInt(ItemSizeInt parent)
+            : base(parent)
+        { }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public ItemSizeInt(Int32? sizeMinimum, Int32? sizeDefault, Int32? sizeMaximum)
+            : base(sizeMinimum, sizeDefault, sizeMaximum)
+        { }
+        #endregion
+        #region Overrides
+        /// <summary>
+        /// Metoda vrací danou velikost zarovnanou do platných mezí (dané parametry).
+        /// </summary>
+        /// <param name="size"></param>
         /// <param name="sizeMinimum"></param>
-        /// <param name="sizeDefault"></param>
-        public SequenceLayout(int? sizeMinimum, int sizeDefault)
+        /// <param name="sizeMaximum"></param>
+        /// <returns></returns>
+        protected override int AlignSize(int size, int sizeMinimum, int sizeMaximum)
         {
-            this.SizeMinimum = sizeMinimum;
-            this.SizeDefault = sizeDefault;
+            return (size < sizeMinimum ? sizeMinimum : (size > sizeMaximum ? sizeMaximum : size));
+        }
+        /// <summary>
+        /// Vrací minimální hodnotu, použije se když ani Parent nemá hodnotu definovanou
+        /// </summary>
+        protected override int SizeMinimumDefault { get { return 5; } }
+        /// <summary>
+        /// Vrací maximální hodnotu, použije se když ani Parent nemá hodnotu definovanou
+        /// </summary>
+        protected override int SizeMaximumDefault { get { return 4000; } }
+        /// <summary>
+        /// Vrací implicitní hodnotu, použije se když ani Parent nemá hodnotu definovanou
+        /// </summary>
+        protected override int SizeDefaultDefault { get { return 100; } }
+        #endregion
+        #region Implicitní konverze z/na int, porovnání
+        /// <summary>
+        /// Implicitní konverze z <see cref="Int32"/> na <see cref="ItemSizeInt"/>.
+        /// </summary>
+        /// <param name="value"></param>
+        public static implicit operator ItemSizeInt(Int32 value) { return new ItemSizeInt(value); }
+        /// <summary>
+        /// Implicitní konverze z <see cref="ItemSizeInt"/> na <see cref="Int32"/>.
+        /// Pokud je na vstupu <see cref="ItemSizeInt"/> = null, pak na výstupu je 0.
+        /// </summary>
+        /// <param name="itemSize"></param>
+        public static implicit operator Int32(ItemSizeInt itemSize) { return (itemSize != null ? itemSize.Size.Value : 0); }
+        /// <summary>
+        /// GetHashCode()
+        /// </summary>
+        /// <returns></returns>
+        public override int GetHashCode()
+        {
+            return this.Size.Value;
+        }
+        /// <summary>
+        /// Equals() - pro použití GID v Hashtabulkách
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        public override bool Equals(object obj)
+        {
+            if (!(obj is GId)) return false;
+            return (ItemSizeInt._IsEqual(this, (ItemSizeInt)obj));
+        }
+        /// <summary>
+        /// Porovnání dvou instancí této struktury, zda obsahují shodná data
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        private static bool _IsEqual(ItemSizeInt a, ItemSizeInt b)
+        {
+            Int32 av = (Int32)a;
+            Int32 bv = (Int32)b;
+            return (av == bv);
+        }
+        #endregion
+    }
+    /// <summary>
+    /// <see cref="ItemSize{T}"/> : řízení jednorozměrné velikosti prvku, bez jeho pozicování v sekvenci.
+    /// Instance této třídy má být umístěna v datovém prvku, nikoli v prvku vizuálním,
+    /// protože nese logické údaje (šířku nebo výšku) o jednom prvku - ale bez závislosti 
+    /// na jeho aktuálním pořadí v sekvenci a jeho fyzické pozici mezi ostatními.
+    /// </summary>
+    public abstract class ItemSize<T> where T : struct
+    {
+        #region Konstruktory
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public ItemSize()
+        {
         }
         /// <summary>
         /// Konstruktor
         /// </summary>
-        /// <param name="sizeMinimum"></param>
-        /// <param name="sizeDefault"></param>
-        /// <param name="sizeMaximum"></param>
-        public SequenceLayout(int? sizeMinimum, int sizeDefault, int? sizeMaximum)
+        /// <param name="parent"></param>
+        public ItemSize(ItemSize<T> parent)
+            : this()
+        {
+            this.Parent = parent;
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public ItemSize(T? sizeMinimum, T? sizeDefault, T? sizeMaximum)
+            : this()
         {
             this.SizeMinimum = sizeMinimum;
             this.SizeDefault = sizeDefault;
             this.SizeMaximum = sizeMaximum;
-            this.SizeRange = new Int32NRange(sizeMinimum, sizeMaximum);
         }
         /// <summary>
-        /// Aktuální velikost, vyhodnocená podle všech pravidel a velikosti předků, vždy Int32, tato hodnota není null.
+        /// Vizualizace
         /// </summary>
-        public int CurrentSize { get { return this.GetLayoutSize(); } }
+        /// <returns></returns>
+        public override string ToString()
+        {
+            T size = this.Size.Value;
+            T sizeMinimum = this.SizeMinimum.Value;
+            T sizeMaximum = this.SizeMaximum.Value;
+            return "Size<" + typeof(T).Name + ">: " + size.ToString() + "; Range: {" + sizeMinimum.ToString() + " ÷ " + sizeMaximum.ToString() + "}";
+        }
+        #endregion
+        #region Data
         /// <summary>
-        /// Velikost. Lze vložit hodnotu null, a hodnota null může být vrácena z property. Pak není velikost tohoto prvku dána explicitně.
-        /// Pokud bylo vloženo null, pak příští get čte hodnotu z ParentLayout (i rekurzivně).
+        /// Nositel hodnot, které zde nejsou explicitně zadány. 
+        /// Může být null.
         /// </summary>
-        public Int32? Size { get { return (this._Size.HasValue ? this._Size : (this.HasParent ? this.ParentLayout.Size : null)); } set { this.SetLayoutSize(value); } } private Int32? _Size;
+        public ItemSize<T> Parent { get; set; }
         /// <summary>
-        /// Minimální velikost prvku
+        /// true pokud je zadán parent
         /// </summary>
-        public int? SizeMinimum { get; set; }
+        protected bool HasParent { get { return (this.Parent != null); } }
         /// <summary>
-        /// Minimální velikost prvku
+        /// Aktuální velikost.
+        /// Při čtení: hodnota nikdy není null, obsahuje velikost podle všech pravidel.
+        /// Při zápisu: lze zapsat hodnotu null, pak se bude číst defaultní hodnota (zdejší nebo z parenta).
         /// </summary>
-        public int? SizeMaximum { get; set; }
+        public T? Size
+        {
+            get
+            {
+                T size = (this._Size.HasValue ? this._Size.Value : (this.HasParent ? this.Parent.Size.Value : this.SizeDefault.Value));
+                return this.AlignSize(size);
+            }
+            set
+            {
+                this._Size = value;
+            }
+        }
+        private T? _Size;
         /// <summary>
-        /// Implicitní velikost prvku
+        /// Metoda vrací platnou velikost tohoto prvku.
+        /// Tuto metodu volá vizuální prvek (<see cref="GTable"/>, <see cref="GRow"/> atd), který může / nemusí evidovat velikost tohoto prvku u sebe.
+        /// Předává jako parametr tuto "vizuální" velikost, která může být null (tzn. uživatel dosud nedefinoval velikost prvku).
+        /// Tato metoda vrací reálnou platnou velikost, vycházející z velikosti zadané (parametr), nebo ze zdejší (<see cref="Size"/>),
+        /// vždy zarovnané do platného rozmezí <see cref="SizeMinimum"/> ÷ <see cref="SizeMaximum"/>.
         /// </summary>
-        protected int SizeDefault { get; set; }
+        /// <param name="size"></param>
+        /// <returns></returns>
+        public T GetSize(T? size = null)
+        {
+            if (size.HasValue)
+                return this.AlignSize(size.Value);
+            return this.Size.Value;
+        }
         /// <summary>
-        /// Rozmezí povolené velikosti prvku. Lze vložit null.
-        /// Pokud bylo vloženo null, pak příští get čte hodnotu z ParentLayout (i rekurzivně).
+        /// Metoda vrací danou velikost zarovnanou do platných mezí <see cref="SizeMinimum"/> ÷ <see cref="SizeMaximum"/>.
         /// </summary>
-        public Int32NRange SizeRange { get { return (this._SizeRange != null ? this._SizeRange : (this.HasParent ? this.ParentLayout.SizeRange : null)); } set { this._SizeRange = value; } } private Int32NRange _SizeRange;
+        /// <param name="size"></param>
+        /// <returns></returns>
+        public T AlignSize(T size)
+        {
+            T sizeMinimum = this.SizeMinimum.Value;
+            T sizeMaximum = this.SizeMaximum.Value;
+            return this.AlignSize(size, sizeMinimum, sizeMaximum);
+        }
+        /// <summary>
+        /// Minimální velikost prvku.
+        /// Při čtení: vždy má hodnotu.
+        /// Při zápisu: lze vložit null, tím se jako hodnota této property bude brát odpovídající hodnota z parenta.
+        /// </summary>
+        public T? SizeMinimum
+        {
+            get
+            {
+                if (this._SizeMinimum.HasValue) return this._SizeMinimum.Value;
+                if (this.HasParent) return Parent.SizeMinimum;
+                return this.SizeMinimumDefault;
+            }
+            set
+            {
+                this._SizeMinimum = value;
+            }
+        }
+        private T? _SizeMinimum;
+        /// <summary>
+        /// Maximální velikost prvku.
+        /// Při čtení: vždy má hodnotu.
+        /// Při zápisu: lze vložit null, tím se jako hodnota této property bude brát odpovídající hodnota z parenta.
+        /// </summary>
+        public T? SizeMaximum
+        {
+            get
+            {
+                if (this._SizeMaximum.HasValue) return this._SizeMaximum.Value;
+                if (this.HasParent) return Parent.SizeMaximum;
+                return this.SizeMaximumDefault;
+            }
+            set
+            {
+                this._SizeMaximum = value;
+            }
+        }
+        private T? _SizeMaximum;
+        /// <summary>
+        /// Implicitní velikost prvku.
+        /// Při čtení: vždy má hodnotu.
+        /// Při zápisu: lze vložit null, tím se jako hodnota této property bude brát odpovídající hodnota z parenta.
+        /// </summary>
+        public T? SizeDefault
+        {
+            get
+            {
+                if (this._SizeDefault.HasValue) return this._SizeDefault.Value;
+                if (this.HasParent) return Parent.SizeDefault;
+                return SizeDefaultDefault;
+            }
+            set
+            {
+                this._SizeDefault = value;
+            }
+        }
+        private T? _SizeDefault;
         /// <summary>
         /// true pokud prvek je viditelný (dáno kódem, nikoli fitry atd). Default = true
         /// </summary>
-        public bool Visible { get { return this._Visible; } set { this._Visible = value; } } private bool _Visible = true;
+        public bool Visible { get { return this._Visible; } set { this._Visible = value; } }
+        private bool _Visible = true;
         /// <summary>
         /// true pokud tento prvek má být použit jako "guma" při změně rozměru hostitelského prvku tak, aby kolekce prvků obsadila celý prostor.
         /// Na true se nastavuje typicky u "hlavního" sloupce grafové tabulky.
+        /// Při čtení: vždy má hodnotu.
+        /// Při zápisu: lze vložit null, tím se jako hodnota této property bude brát odpovídající hodnota z parenta.
         /// </summary>
-        public bool AutoSize { get { return this._AutoSize; } set { this._AutoSize = value; } } private bool _AutoSize = false;
+        public bool? AutoSize
+        {
+            get
+            {
+                if (this._AutoSize.HasValue) return this._AutoSize.Value;
+                if (this.HasParent) return Parent.AutoSize;
+                return AutoSizeDefault;
+            }
+            set
+            {
+                this._AutoSize = value;
+            }
+        }
+        private bool? _AutoSize;
         /// <summary>
-        /// true pokud uživatel může změnit velikost tohoto prvku. Default = true
+        /// true pokud uživatel může změnit velikost tohoto prvku. Default = true.
+        /// Při čtení: vždy má hodnotu.
+        /// Při zápisu: lze vložit null, tím se jako hodnota této property bude brát odpovídající hodnota z parenta.
         /// </summary>
-        public bool ResizeEnabled { get { return this._ResizeEnabled; } set { this._ResizeEnabled = value; } } private bool _ResizeEnabled = true;
+        public bool? ResizeEnabled
+        {
+            get
+            {
+                if (this._ResizeEnabled.HasValue) return this._ResizeEnabled.Value;
+                if (this.HasParent) return Parent.ResizeEnabled;
+                return ResizeEnabledDefault;
+            }
+            set
+            {
+                this._ResizeEnabled = value;
+            }
+        }
+        private bool? _ResizeEnabled;
         /// <summary>
-        /// Parent definice velikosti, z něj se čtou hodnoty které v this prvku nejsou určeny.
-        /// Výchozí je null.
+        /// true pokud uživatel může přemístit tento prvek někam jinam. Default = true.
+        /// Při čtení: vždy má hodnotu.
+        /// Při zápisu: lze vložit null, tím se jako hodnota této property bude brát odpovídající hodnota z parenta.
         /// </summary>
-        public SequenceLayout ParentLayout { get; set; }
+        public bool? ReOrderEnabled
+        {
+            get
+            {
+                if (this._ReOrderEnabled.HasValue) return this._ReOrderEnabled.Value;
+                if (this.HasParent) return Parent.ReOrderEnabled;
+                return ReOrderEnabledDefault;
+            }
+            set
+            {
+                this._ReOrderEnabled = value;
+            }
+        }
+        private bool? _ReOrderEnabled;
+        #endregion
+        #region K přepsání na potomkovi
         /// <summary>
-        /// true pokud má parenta
-        /// </summary>
-        protected bool HasParent { get { return (this.ParentLayout != null); } }
-        /// <summary>
-        /// Uloží do this._Size danou hodnotu zarovnanou do platných mezí.
-        /// Pokud je na vstupu null, pak uloží null.
+        /// Metoda vrací danou velikost zarovnanou do platných mezí (dané parametry).
         /// </summary>
         /// <param name="size"></param>
-        protected void SetLayoutSize(Int32? size)
-        {
-            if (size.HasValue)
-                this._Size = this.AlignSizeToValidRange(size.Value);
-            else
-                this._Size = null;
-        }
-        /// <summary>
-        /// Vrátí velikost prvku, která se reálně použije pro layout prvku.
-        /// Vyhodnocuje Size, SizeRange, ParentLayout, SizeMinimum a SizeDefault.
-        /// </summary>
+        /// <param name="sizeMinimum"></param>
+        /// <param name="sizeMaximum"></param>
         /// <returns></returns>
-        protected int GetLayoutSize()
-        {
-            Int32? size = this.Size;                       // Automaticky vyhodnocuje ParentLayout
-            if (!size.HasValue) size = this.SizeDefault;
-            return this.AlignSizeToValidRange(size.Value);
-        }
+        protected abstract T AlignSize(T size , T sizeMinimum, T sizeMaximum);
         /// <summary>
-        /// Zarovná danou velikost do platných mezí a vráti ji
+        /// Vrací minimální hodnotu, použije se když ani Parent nemá hodnotu definovanou
         /// </summary>
-        /// <param name="size"></param>
-        /// <returns></returns>
-        protected int AlignSizeToValidRange(int size)
-        {
-            if (this.SizeMaximum.HasValue && size > this.SizeMaximum.Value) size = this.SizeMaximum.Value;
-            if (this.SizeMinimum.HasValue && size < this.SizeMinimum.Value) size = this.SizeMinimum.Value;
-            if (size < 0) size = 0;
-
-            Int32NRange sizeRange = this.SizeRange;         // Automaticky vyhodnocuje ParentLayout
-            if (sizeRange != null)
-            {
-                Int32? sizeAligned = sizeRange.Align(size);
-                if (sizeAligned.HasValue)
-                    size = sizeAligned.Value;
-            }
-            return size;
-        }
-        #endregion
-        #region ISequenceLayout podpora - nápočet hodnot ISequenceLayout.Begin do prvků pole, a do jednotlivého prvku
+        protected abstract T SizeMinimumDefault { get; }
         /// <summary>
-        /// Do všech položek ISequenceLayout dodané kolekce vepíše hodnotu Begin postupně od 0.
-        /// Vrací hodnotu End posledního viditelného prvku (toho, který má Size větší enž 0).
+        /// Vrací maximální hodnotu, použije se když ani Parent nemá hodnotu definovanou
         /// </summary>
-        /// <param name="items">Kolekce položek typu ISequenceLayout, jejich Begin a End se bude nastavovat</param>
-        public static int SequenceLayoutCalculate(IEnumerable<ISequenceLayout> items)
-        {
-            int begin = 0;
-            return SequenceLayoutCalculate(items, ref begin, 0);
-        }
+        protected abstract T SizeMaximumDefault { get; }
         /// <summary>
-        /// Do všech položek ISequenceLayout dodané kolekce vepíše hodnotu Begin postupně od 0.
-        /// Lze zadat mezeru mezi prvky = vzdálenost Begin prvku [N+1] od End prvku [N].
-        /// Vrací hodnotu End posledního viditelného prvku (toho, který má Size větší enž 0).
+        /// Vrací implicitní hodnotu, použije se když ani Parent nemá hodnotu definovanou
         /// </summary>
-        /// <param name="items">Kolekce položek typu ISequenceLayout, jejich Begin a End se bude nastavovat</param>
-        /// <param name="spacing">Mezera mezi prvky = hodnota, o kterou bude Begin následující položky navýšen proti End položky předešlé.</param>
-        public static int SequenceLayoutCalculate(IEnumerable<ISequenceLayout> items, int spacing)
-        {
-            int begin = 0;
-            return SequenceLayoutCalculate(items, ref begin, spacing);
-        }
+        protected abstract T SizeDefaultDefault { get; }
         /// <summary>
-        /// Do všech položek ISequenceLayout dodané kolekce vepíše hodnotu Begin postupně od hodnoty begin.
-        /// Lze zadat mezeru mezi prvky = vzdálenost Begin prvku [N+1] od End prvku [N].
-        /// Vrací hodnotu End posledního viditelného prvku (toho, který má Size větší enž 0).
-        /// Parametr ref begin po skončení metody obsahuje hodnotu, kde by začínal další prvek za posledním prvkem této kolekce (akceptujíc spacing).
+        /// Výchozí hodnota pro <see cref="AutoSize"/>
         /// </summary>
-        /// <param name="items">Kolekce položek typu ISequenceLayout, jejich Begin a End se bude nastavovat</param>
-        /// <param name="begin">Hodnota Begin do první položky </param>
-        /// <param name="spacing">Mezera mezi prvky = hodnota, o kterou bude Begin následující položky navýšen proti End položky předešlé.</param>
-        public static int SequenceLayoutCalculate(IEnumerable<ISequenceLayout> items, ref int begin, int spacing)
-        {
-            int end = begin;
-            foreach (ISequenceLayout item in items)
-                SequenceLayoutCalculate(item, ref begin, ref end, spacing);
-            return end;
-        }
+        protected virtual bool AutoSizeDefault { get { return false; } }
         /// <summary>
-        /// Do položky ISequenceLayout vepíše Begin = position.
-        /// K hodnotě position přičte item.Size (pouze pokud je hodnota větší než 0), tato upravená position se vrací v ref parametru, a slouží jako Begin pro další položky v kolekci.
+        /// Výchozí hodnota pro <see cref="ResizeEnabled"/>
         /// </summary>
-        /// <param name="item"></param>
-        /// <param name="begin"></param>
-        public static void SequenceLayoutCalculate(ISequenceLayout item, ref int begin)
-        {
-            int end = begin;
-            SequenceLayoutCalculate(item, ref begin, ref end, 0);
-        }
+        protected virtual bool ResizeEnabledDefault { get { return true; } }
         /// <summary>
-        /// Do položky ISequenceLayout vepíše Begin = begin.
-        /// Pokud item.Size je kladné, pak:
-        /// K hodnotě begin přičte item.Size, to vloží do ref parametru end, 
-        /// a do ref parametru begin vloží end (plus spacing, pokud je hodnota spacing větší než nula).
-        /// Pokud Size není kladné, pak begin bude nezměněno, a end bude rovněž nezměněno, bez ohledu na spacing. Jde o neviditelný prvek.
-        /// Význam: begin určuje počátek tohoto prvku, a následně i prvku následujícího. Akceptuje spacing, pokud to má smysl.
-        /// Hodnota end obsahuje konec posledního viditelného prvku, nenavýšený o spacing, přeskakuje neviditelné prvky.
-        /// end obsahuje vždy konec 
+        /// Výchozí hodnota pro <see cref="ReOrderEnabled"/>
         /// </summary>
-        /// <param name="item"></param>
-        /// <param name="begin"></param>
-        /// <param name="end"></param>
-        /// <param name="spacing"></param>
-        public static void SequenceLayoutCalculate(ISequenceLayout item, ref int begin, ref int end, int spacing)
-        {
-            item.Begin = begin;
-            int size = item.Size;
-            if (size > 0)
-            {
-                end = begin + size;
-                begin = ((spacing > 0) ? end + spacing : end);
-            }
-        }
-        #endregion
-        #region SequenceLayout podpora - výpočty AutoSize pro prvky kolekce ISequenceLayout
-        /// <summary>
-        /// Metoda najde explicitně zadané prvky s <see cref="ISequenceLayout.AutoSize"/> == true, anebo najde první nebo poslední (podle parametru implicitAutoSize),
-        /// a upraví jejich velikost (<see cref="ISequenceLayout.Size"/>) tak, aby součet velikostí prvků kolekce měl 
-        /// včetně započtení mezery mezi prvky (podle parametru spacing) hodnotu dle parametru visualSize.
-        /// Pokud dojde k reálné změně velikosti některého prvku, provede se pro kolekci prvků metoda <see cref="SequenceLayout.SequenceLayoutCalculate(IEnumerable{ISequenceLayout}, int)"/> a vrací se true.
-        /// </summary>
-        /// <param name="items">Prvky v kolekci</param>
-        /// <param name="visualSize">Cílová sumární velikost</param>
-        /// <returns></returns>
-        public static bool AutoSizeLayoutCalculate(IEnumerable<ISequenceLayout> items, int visualSize)
-        {
-            return _AutoSizeLayoutCalculate(items, visualSize, 0, ImplicitAutoSizeType.None);
-        }
-        /// <summary>
-        /// Metoda najde explicitně zadané prvky s <see cref="ISequenceLayout.AutoSize"/> == true, anebo najde první nebo poslední (podle parametru implicitAutoSize),
-        /// a upraví jejich velikost (<see cref="ISequenceLayout.Size"/>) tak, aby součet velikostí prvků kolekce měl 
-        /// včetně započtení mezery mezi prvky (podle parametru spacing) hodnotu dle parametru visualSize.
-        /// Pokud dojde k reálné změně velikosti některého prvku, provede se pro kolekci prvků metoda <see cref="SequenceLayout.SequenceLayoutCalculate(IEnumerable{ISequenceLayout}, int)"/> a vrací se true.
-        /// </summary>
-        /// <param name="items">Prvky v kolekci</param>
-        /// <param name="visualSize">Cílová sumární velikost</param>
-        /// <param name="spacing">Mezera mezi prvky</param>
-        /// <returns></returns>
-        public static bool AutoSizeLayoutCalculate(IEnumerable<ISequenceLayout> items, int visualSize, int spacing)
-        {
-            return _AutoSizeLayoutCalculate(items, visualSize, spacing, ImplicitAutoSizeType.None);
-        }
-        /// <summary>
-        /// Metoda najde explicitně zadané prvky s <see cref="ISequenceLayout.AutoSize"/> == true, anebo najde první nebo poslední (podle parametru implicitAutoSize),
-        /// a upraví jejich velikost (<see cref="ISequenceLayout.Size"/>) tak, aby součet velikostí prvků kolekce měl 
-        /// včetně započtení mezery mezi prvky (podle parametru spacing) hodnotu dle parametru visualSize.
-        /// Pokud dojde k reálné změně velikosti některého prvku, provede se pro kolekci prvků metoda <see cref="SequenceLayout.SequenceLayoutCalculate(IEnumerable{ISequenceLayout}, int)"/> a vrací se true.
-        /// </summary>
-        /// <param name="items">Prvky v kolekci</param>
-        /// <param name="visualSize">Cílová sumární velikost</param>
-        /// <param name="implicitAutoSize">Režim <see cref="ImplicitAutoSizeType"/>, uplatněný pokud se mezi prvky kolekce nenajde žádný s (<see cref="ISequenceLayout.AutoSize"/> == true)</param>
-        /// <returns></returns>
-        public static bool AutoSizeLayoutCalculate(IEnumerable<ISequenceLayout> items, int visualSize, ImplicitAutoSizeType implicitAutoSize)
-        {
-            return _AutoSizeLayoutCalculate(items, visualSize, 0, implicitAutoSize);
-        }
-        /// <summary>
-        /// Metoda najde explicitně zadané prvky s <see cref="ISequenceLayout.AutoSize"/> == true, anebo najde první nebo poslední (podle parametru implicitAutoSize),
-        /// a upraví jejich velikost (<see cref="ISequenceLayout.Size"/>) tak, aby součet velikostí prvků kolekce měl 
-        /// včetně započtení mezery mezi prvky (podle parametru spacing) hodnotu dle parametru visualSize.
-        /// Pokud dojde k reálné změně velikosti některého prvku, provede se pro kolekci prvků metoda <see cref="SequenceLayout.SequenceLayoutCalculate(IEnumerable{ISequenceLayout}, int)"/> a vrací se true.
-        /// </summary>
-        /// <param name="items">Prvky v kolekci</param>
-        /// <param name="visualSize">Cílová sumární velikost</param>
-        /// <param name="spacing">Mezera mezi prvky</param>
-        /// <param name="implicitAutoSize">Režim <see cref="ImplicitAutoSizeType"/>, uplatněný pokud se mezi prvky kolekce nenajde žádný s (<see cref="ISequenceLayout.AutoSize"/> == true)</param>
-        /// <returns></returns>
-        public static bool AutoSizeLayoutCalculate(IEnumerable<ISequenceLayout> items, int visualSize, int spacing, ImplicitAutoSizeType implicitAutoSize)
-        {
-            return _AutoSizeLayoutCalculate(items, visualSize, spacing, implicitAutoSize);
-        }
-        /// <summary>
-        /// Metoda najde explicitně zadané prvky s <see cref="ISequenceLayout.AutoSize"/> == true, anebo najde první nebo poslední (podle parametru implicitAutoSize),
-        /// a upraví jejich velikost (<see cref="ISequenceLayout.Size"/>) tak, aby součet velikostí prvků kolekce měl 
-        /// včetně započtení mezery mezi prvky (podle parametru spacing) hodnotu dle parametru visualSize.
-        /// Pokud dojde k reálné změně velikosti některého prvku, provede se pro kolekci prvků metoda <see cref="SequenceLayout.SequenceLayoutCalculate(IEnumerable{ISequenceLayout}, int)"/> a vrací se true.
-        /// </summary>
-        /// <param name="items">Prvky v kolekci</param>
-        /// <param name="visualSize">Cílová sumární velikost</param>
-        /// <param name="spacing">Mezera mezi prvky</param>
-        /// <param name="implicitAutoSize">Režim <see cref="ImplicitAutoSizeType"/>, uplatněný pokud se mezi prvky kolekce nenajde žádný s (<see cref="ISequenceLayout.AutoSize"/> == true)</param>
-        /// <returns></returns>
-        private static bool _AutoSizeLayoutCalculate(IEnumerable<ISequenceLayout> items, int visualSize, int spacing, ImplicitAutoSizeType implicitAutoSize)
-        {
-            ISequenceLayout[] array = items.ToArray();
-            int count = array.Length;
-            if (count == 0) return false;
-
-            // Nejprve projdu všechny vstupní prvky, oddělím prvky s AutoSize = true, sečtu jejich Size zvlášť za Fixní a zvlášť za Variabilní:
-            List<ISequenceLayout> itemsVarList = new List<ISequenceLayout>();
-            int sizeSumFix = 0;
-            int sizeSumVar = 0;
-            int sizeOneSpc = (spacing < 0 ? 0 : spacing);
-            int sizeSumSpc = 0;
-            foreach (ISequenceLayout item in items)
-            {
-                if (item.AutoSize)
-                {
-                    sizeSumVar += item.Size;
-                    itemsVarList.Add(item);
-                }
-                else
-                {
-                    sizeSumFix += item.Size;
-                }
-                sizeSumSpc += sizeOneSpc;
-            }
-            if (sizeSumSpc > 0) sizeSumSpc -= sizeOneSpc;                      // Odečtu spacing, který byl přičtený za posledním prvkem pole, protože tam se space již nezapočítává!
-
-            // Žádný prvek není AutoSize => ke slovu přichází ImplicitAutoSizeType:
-            if (itemsVarList.Count == 0)
-            {
-                ISequenceLayout implicitItem = null;
-                switch (implicitAutoSize)
-                {
-                    case ImplicitAutoSizeType.FirstItem:
-                        implicitItem = array[0];
-                        break;
-                    case ImplicitAutoSizeType.LastItem:
-                        implicitItem = array[count - 1];
-                        break;
-                    default:
-                        return false;                                          // Není zde žádný variabilní prvek
-                }
-                // Jako AutoSize vezmeme prvek implicitItem:
-                sizeSumVar += implicitItem.Size;
-                sizeSumFix -= implicitItem.Size;
-                itemsVarList.Add(implicitItem);
-            }
-
-            // Přepočet Size u prvků AutoSize:
-            bool isChanged = false;
-            int sizeNewVar = visualSize - (sizeSumFix + sizeSumSpc);           // Nová sumární šířka variabilních prvků = daný prostor mínus (pevné prvky + mezery)
-            if (sizeNewVar == sizeSumVar) return false;
-
-            decimal ratio = (decimal)sizeNewVar / (decimal)sizeSumVar;
-            foreach (ISequenceLayout column in itemsVarList)
-            {
-                int sizeOneOld = column.Size;
-                int sizeOneNew = (int)(Math.Round(ratio * (decimal)sizeOneOld, 0));
-                column.Size = sizeOneNew;
-                int sizeOneMod = column.Size;
-                if (!isChanged && sizeOneMod != sizeOneOld)
-                    isChanged = true;
-            }
-            if (!isChanged) return false;
-
-            // Zajistím provedení nápočtu pozic (ISequenceLayout.Begin, End):
-            SequenceLayout.SequenceLayoutCalculate(items, sizeOneSpc);
-            return true;
-        }
-        #endregion
-        #region ISequenceLayout podpora - filtrování prvků typu ISequenceLayout podle viditelné oblasti
-        /// <summary>
-        /// Vrátí true, pokud daný prvek (item) se svojí pozicí (Begin, End) bude viditelný v aktuálním datovém prostoru
-        /// </summary>
-        /// <param name="item">Datová položka</param>
-        /// <param name="dataBegin">První viditelný datový pixel</param>
-        /// <param name="dataEnd">První datový pixel za viditelnou oblastí</param>
-        /// <returns></returns>
-        public static bool IsItemVisible(ISequenceLayout item, int dataBegin, int dataEnd)
-        {
-            return _FilterVisibleItem(item, dataBegin, dataEnd);
-        }
-        /// <summary>
-        /// Vrátí true, pokud daný prvek (item) se svojí pozicí (Begin, End) bude viditelný v aktuálním datovém prostoru
-        /// </summary>
-        /// <param name="item">Datová položka</param>
-        /// <param name="dataRange">Rozsah viditelných dat</param>
-        /// <returns></returns>
-        public static bool IsItemVisible(ISequenceLayout item, Int32NRange dataRange)
-        {
-            return _FilterVisibleItem(item, dataRange);
-        }
-        /// <summary>
-        /// Vrátí true, pokud daný prvek (item) se svojí pozicí (Begin, End) bude viditelný v aktuálním datovém prostoru
-        /// </summary>
-        /// <param name="item">Datová položka</param>
-        /// <param name="dataRange">Rozsah viditelných dat</param>
-        /// <returns></returns>
-        public static bool IsItemVisible(ISequenceLayout item, Int32Range dataRange)
-        {
-            return _FilterVisibleItem(item, dataRange);
-        }
-        /// <summary>
-        /// Vrátí danou kolekci, zafiltrovanou na pouze viditelné prvky
-        /// </summary>
-        /// <typeparam name="T">Typ datových položek</typeparam>
-        /// <param name="items">Kolekce datových položek</param>
-        /// <param name="dataBegin">První viditelný datový pixel</param>
-        /// <param name="dataEnd">První datový pixel za viditelnou oblastí</param>
-        /// <returns></returns>
-        public static IEnumerable<T> FilterVisibleItems<T>(IEnumerable<T> items, int dataBegin, int dataEnd) where T : ISequenceLayout
-        {
-            return items.Where(i => _FilterVisibleItem(i, dataBegin, dataEnd));
-        }
-        /// <summary>
-        /// Vrátí danou kolekci, zafiltrovanou na pouze viditelné prvky
-        /// </summary>
-        /// <typeparam name="T">Typ datových položek</typeparam>
-        /// <param name="items">Kolekce datových položek</param>
-        /// <param name="dataRange">Rozsah viditelných dat</param>
-        /// <returns></returns>
-        public static IEnumerable<T> FilterVisibleItems<T>(IEnumerable<T> items, Int32NRange dataRange) where T : ISequenceLayout
-        {
-            return items.Where(i => _FilterVisibleItem(i, dataRange));
-        }
-        /// <summary>
-        /// Vrátí danou kolekci, zafiltrovanou na pouze viditelné prvky
-        /// </summary>
-        /// <typeparam name="T">Typ datových položek</typeparam>
-        /// <param name="items">Kolekce datových položek</param>
-        /// <param name="dataRange">Rozsah viditelných dat</param>
-        /// <returns></returns>
-        public static IEnumerable<T> FilterVisibleItems<T>(IEnumerable<T> items, Int32Range dataRange) where T : ISequenceLayout
-        {
-            return items.Where(i => _FilterVisibleItem(i, dataRange));
-        }
-        /// <summary>
-        /// Vrátí true, pokud daná položka je alespoň částečně viditelná v daném rozsahu
-        /// </summary>
-        /// <param name="item">Datová položka</param>
-        /// <param name="dataBegin">První viditelný datový pixel</param>
-        /// <param name="dataEnd">První datový pixel za viditelnou oblastí</param>
-        /// <returns></returns>
-        private static bool _FilterVisibleItem(ISequenceLayout item, int dataBegin, int dataEnd)
-        {
-            return (item.Size > 0 
-                && item.Begin < dataEnd 
-                && item.End > dataBegin);
-        }
-        /// <summary>
-        /// Vrátí true, pokud daná položka je alespoň částečně viditelná v daném rozsahu
-        /// </summary>
-        /// <param name="item">Datová položka</param>
-        /// <param name="dataRange">Rozsah viditelných dat</param>
-        /// <returns></returns>
-        private static bool _FilterVisibleItem(ISequenceLayout item, Int32NRange dataRange)
-        {
-            return (item.Size > 0 
-                && (!dataRange.HasEnd || item.Begin < dataRange.End.Value) 
-                && (!dataRange.HasBegin || item.End > dataRange.Begin.Value));
-        }
-        /// <summary>
-        /// Vrátí true, pokud daná položka je alespoň částečně viditelná v daném rozsahu
-        /// </summary>
-        /// <param name="item">Datová položka</param>
-        /// <param name="dataRange">Rozsah viditelných dat</param>
-        /// <returns></returns>
-        private static bool _FilterVisibleItem(ISequenceLayout item, Int32Range dataRange)
-        {
-            return (item.Size > 0
-                && item.Begin < dataRange.End
-                && item.End > dataRange.Begin);
-        }
-        #endregion
-        #region implementace ISequenceLayout = pořadí, počáteční pixel, velikost, následující pixel. Podpůrné metody GetLayoutSize() a SetLayoutSize().
-        /// <summary>
-        /// Pozice, kde prvek začíná.
-        /// Interface ISequenceLayout tuto hodnotu setuje v případě, kdy se layout těchto prvků změní (změna prvků nebo jejich velikosti).
-        /// </summary>
-        int ISequenceLayout.Begin { get { return _ISequenceLayoutBegin; } set { _ISequenceLayoutBegin = value; } } private int _ISequenceLayoutBegin;
-        /// <summary>
-        /// Velikost prvku v pixelech (šířka sloupce, výška řádku, výška tabulky). 
-        /// Lze ji setovat, protože prvky lze pomocí splitterů zvětšovat / zmenšovat.
-        /// Pokud ale prvek nemá povoleno Resize (ResizeEnabled je false), pak setování hodnoty je ignorováno.
-        /// Aplikační logika prvku musí zabránit vložení neplatné hodnoty (reálně se uloží hodnota platná).
-        /// </summary>
-        int ISequenceLayout.Size { get { return this.GetLayoutSize(); } set { if (this.ResizeEnabled) this.SetLayoutSize(value); } }
-        /// <summary>
-        /// Pozice, kde za tímto prvkem začíná následující prvek. 
-        /// Velikost prvku = (End - Begin) = počet pixelů, na které se zobrazuje tento prvek.
-        /// Interface ISequenceLayout tuto hodnotu nesetuje, pouze ji čte.
-        /// </summary>
-        int ISequenceLayout.End { get { return this._ISequenceLayoutBegin + (this.Visible ? this.GetLayoutSize() : 0); } }
-        /// <summary>
-        /// true, pokud velikost tohoto objektu (<see cref="Size"/>) bude změněna při změně velikosti celého prvku.
-        /// Typicky: sloupec tabulky s nastavením (<see cref="AutoSize"/> == true) bude rozšířen nebo zúžen při změně šířky tabulky.
-        /// Při této změně bude vložena nová Size, přitom tento objekt může aplikovat svoje restrikce (Min a Max).
-        /// </summary>
-        bool ISequenceLayout.AutoSize { get { return this.AutoSize; } }
+        protected virtual bool ReOrderEnabledDefault { get { return true; } }
         #endregion
     }
     #endregion

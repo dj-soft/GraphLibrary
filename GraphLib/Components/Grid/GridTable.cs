@@ -34,6 +34,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         private void Init()
         {
             this.InitInteractive();
+            this.InitTableSequence();
             this.InitRowsPositions();
             this.InitHeaderSplitter();
             this.InitTagFilter();
@@ -416,7 +417,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             if (this._Columns != null) return;
             List<Column> columnsList = this.DataTable.Columns.Where(c => c.ColumnProperties.IsVisible).ToList();    // Vybrat viditelné sloupce
             columnsList.Sort(Column.CompareOrder);                                                 // Setřídit podle pořadí
-            SequenceLayout.SequenceLayoutCalculate(columnsList);                                   // Napočítat jejich ISequenceLayout.Begin a .End
+            SequenceLayout.SequenceLayoutCalculate(columnsList.Select(c => c.ColumnHeader));       // Napočítat jejich ISequenceLayout.Begin a .End
             this._ColumnListWidthValid = true;                                                     // ISequenceLayout jsou platné
             this._Columns = columnsList.ToArray();                                                 // Uložit
             this._VisibleColumns = null;                                                           // Invalidovat viditelné sloupce
@@ -432,7 +433,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             Column[] columns = this.Columns;
             if (!this._ColumnListWidthValid)
             {
-                SequenceLayout.SequenceLayoutCalculate(columns);                                   // Napočítat jejich ISequenceLayout.Begin a .End
+                SequenceLayout.SequenceLayoutCalculate(columns.Select(c => c.ColumnHeader));       // Napočítat jejich ISequenceLayout.Begin a .End
                 this._ColumnListWidthValid = true;                                                 // ISequenceLayout jsou platné
             }
 
@@ -441,9 +442,10 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             Int32Range dataVisibleRange = columnsPositions.DataVisibleRange;                       // Rozmezí datových pixelů, které jsou viditelné
             foreach (Column column in columns)
             {
-                ISequenceLayout isl = column as ISequenceLayout;
+                GColumnHeader header = column.ColumnHeader;
+                ISequenceLayout isl = header as ISequenceLayout;
                 bool isColumnVisible = SequenceLayout.IsItemVisible(isl, dataVisibleRange);        // Tento sloupec je vidět?
-                column.ColumnHeader.VisualRange = (isColumnVisible ? columnsPositions.GetVisualPosition(isl) : null);
+                header.VisualRange = (isColumnVisible ? columnsPositions.GetVisualPosition(isl) : null);
                 if (isColumnVisible)
                     visibleColumns.Add(column);
             }
@@ -483,13 +485,13 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             bool heightValid = this._RowListHeightValid;
             if (rows == null)
             {
-                rows = this.DataTable.RowsSorted.ToList();           // Získat viditelné řádky, setříděné podle zvoleného třídícího sloupce
+                rows = this.DataTable.RowsSorted.ToList();           // Získat zobrazitelné řádky, setříděné podle zvoleného třídícího sloupce
                 this._Rows = rows;
                 heightValid = false;
             }
             if (!heightValid)
             {
-                SequenceLayout.SequenceLayoutCalculate(rows);        // Napočítat jejich ISequenceLayout.Begin a .End
+                SequenceLayout.SequenceLayoutCalculate(rows.Select(r => r.Control));     // Napočítat jejich ISequenceLayout.Begin a .End
                 this._RowListHeightValid = true;
                 this._VisibleRows = null;
             }
@@ -512,12 +514,13 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             Int32Range dataVisibleRange = rowsPositions.DataVisibleRange;                          // Rozmezí datových pixelů, které jsou viditelné
             foreach (Row row in this.Rows)
             {
-                row.Control.VisualRange = null;
-                ISequenceLayout isl = row as ISequenceLayout;
+                GRow gRow = row.Control;
+                gRow.VisualRange = null;
+                ISequenceLayout isl = gRow as ISequenceLayout;
                 bool isRowVisible = SequenceLayout.IsItemVisible(isl, dataVisibleRange);           // Tento řádek je vidět?
                 if (isRowVisible || calcBoundsAll)
                 {
-                    row.Control.VisualRange = rowsPositions.GetVisualPosition(isl);
+                    gRow.VisualRange = rowsPositions.GetVisualPosition(isl);
                     this.PrepareRowDataBounds(row, false, rowAreaBounds, rowDataBounds);           // Připravit Bounds pro Row i jeho Cell, ale nedávat do ChilList
                     if (isRowVisible)
                         visibleRows.Add(row);
@@ -533,7 +536,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <returns></returns>
         public bool RowResizeTo(Row row, ref int height)
         {
-            ISequenceLayout isl = row as ISequenceLayout;
+            ISequenceLayout isl = row.Control as ISequenceLayout;
 
             int heightOld = isl.Size;
             isl.Size = height;
@@ -598,7 +601,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         {
             Row[] rows = this.Rows;
             int count = rows.Length;
-            return (count > 0 ? ((ISequenceLayout)rows[count - 1]).End : 0);
+            return (count > 0 ? ((ISequenceLayout)(rows[count - 1]).Control).End : 0);
         }
         /// <summary>
         /// Vrací hodnotu prvního vizuálního pixelu, kde jsou zobrazována data v rímci RowArea.
@@ -1687,12 +1690,21 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             }
         }
         #endregion
-        #region ISequenceLayout - adapter na DataTable jako implementační objekt
-        int ISequenceLayout.Begin { get { return this._SequenceLayout.Begin; } set { this._SequenceLayout.Begin = value; } }
-        int ISequenceLayout.Size { get { return this._SequenceLayout.Size; } set { this._SequenceLayout.Size = value; } }
-        int ISequenceLayout.End { get { return this._SequenceLayout.End; } }
+        #region SequenceLayout - výška a pozice této tabulky [v pixelech]
+        /// <summary>
+        /// Inicializuje řízení pozice této <see cref="GTable"/> v návaznosti na výšku <see cref="Table"/>.
+        /// Metoda je volána poté, kdy reference na tabulku <see cref="DataTable"/> je již naplněna.
+        /// </summary>
+        protected void InitTableSequence()
+        {
+            this._SequenceLayout = new SequenceLayout(this.DataTable.TableSize);
+        }
+        int ISequenceLayout.Begin { get { return this._ISequenceLayout.Begin; } set { this._ISequenceLayout.Begin = value; } }
+        int ISequenceLayout.Size { get { return this._ISequenceLayout.Size; } set { this._SequenceLayout.Size = value; } }
+        int ISequenceLayout.End { get { return this._ISequenceLayout.End; } }
         bool ISequenceLayout.AutoSize { get { return this._SequenceLayout.AutoSize; } }
-        private ISequenceLayout _SequenceLayout { get { return (ISequenceLayout)this.DataTable; } }
+        private ISequenceLayout _ISequenceLayout { get { return (ISequenceLayout)this._SequenceLayout; } }
+        private SequenceLayout _SequenceLayout;
         #endregion
         #region TimeAxis
         /// <summary>

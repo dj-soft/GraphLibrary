@@ -8,14 +8,30 @@ using Asol.Tools.WorkScheduler.Components.Grid;
 
 namespace Asol.Tools.WorkScheduler.Components
 {
-    // Filosofický základ pro obsluhu různých událostí: Grid je línej jako veš! 
-    // Ten je tak línej, že když se dojde ke změně něčeho (třeba výšky některé tabulky), tak ta změna (v property Table.Height) zavolá "nahoru" že došlo k dané změně,
-    //  to volání se dostane do GTable jako invalidace výšky tabulky, to vyvolá obdobné volání do Gridu, a Grid si jen líně poznamená: "Rozložení tabulek na výšku už neplatí".
-    //  Současně s tím si poznamená: "Neplatí ani moje ChildItem prvky (protože některá další tabulka může/nemusí být vidět, protože se odsunula dolů).
-    // Podobně se chová i GTable: poznamená si: moje vnitřní souřadnice ani moje ChildItem prvky nejsou platné.
-    // Teprve až bude někdo chtít pracovat s něčím v Gridu nebo v jeho GTable (typicky: zjištění interaktivity prvků, vykreslení tabulky), tak si požádá o ChildItems,
-    //  tam se zjistí že jsou neplatné, a Grid nebo GTable začne shánět platné údaje. 
-    // Při tom zjistí, že je jich většina neplatných, a začne je přepočítávat z aktuálních reálných hodnot (fyzické rozměry, počet a velikost tabulek, pozice řádků, atd).
+    /* Filosofický základ pro obsluhu různých událostí: Grid je línej jako veš! 
+     *  Ten je tak línej, že když se dojde ke změně něčeho (třeba výšky některé tabulky), tak ta změna (v property Table.Height) zavolá "nahoru" že došlo k dané změně,
+     *   to volání se dostane do GTable jako invalidace výšky tabulky, to vyvolá obdobné volání do Gridu, a Grid si jen líně poznamená: "Rozložení tabulek na výšku už neplatí".
+     *   Současně s tím si poznamená: "Neplatí ani moje ChildItem prvky (protože některá další tabulka může/nemusí být vidět, protože se odsunula dolů).
+     *  Podobně se chová i GTable: poznamená si: moje vnitřní souřadnice ani moje ChildItem prvky nejsou platné.
+     *   Teprve až bude někdo chtít pracovat s něčím v Gridu nebo v jeho GTable (typicky: zjištění interaktivity prvků, vykreslení tabulky), tak si požádá o ChildItems,
+     *   tam se zjistí že jsou neplatné, a Grid nebo GTable začne shánět platné údaje. 
+     *   Při tom zjistí, že je jich většina neplatných, a začne je přepočítávat z aktuálních reálných hodnot (fyzické rozměry, počet a velikost tabulek, pozice řádků, atd).
+     */
+
+    /* Řešení Layoutu (7.12.2018): Velikost prvku a jeho pozice v celé sekvenci
+     *  Datové prvky (Table, Row, Column) v sobě mají instanci třídy ItemSizeInt:
+     *      - Tato třída je DATOVÁ, proto si řídí jen svoji VELIKOST, ale ne svoji POZICI.
+     *      - Tato třída obsahuje aktuální velikost prvku Size (=Height nebo Width)
+     *      - A dále určuje rozsah této hodnoty (SizeMinimum, SizeMaximum) a výchozí hodnotu (SizeDefault)
+     *      - K tomu obshauje: Visible, Autosize, ResizeEnabled a ReOrderEnabled
+     *      - Dále tato třída obsahuje referenci na Parent instanci (typicky uložená v tabulce),
+     *        kde tato Parent instance obsahuje výchozí hodnoty pro všechny property, které na konkrétním řádku/sloupci nejsou naplněny (jsou null).
+     *  Vizuální prvky (GTable, GRow, GColumn) v sobě mají instanci třídy SequenceLayout (implementuje ISequenceLayout):
+     *      - Je to třída určená pro VIZUÁLNÍ PRÁCI, proto v sobě obsahuje pozici BEGIN a referenci na DATA, která obsahují VELIKOST
+     *      - Tato třída řeší pozici konkrétního vizuálního prvku v sekvenci pole sousedních prvků (řádky pod sebou, sloupce vedle sebe)
+     *      - Při určování souřadnic celoého pole se provádí metoda SequenceLayout.SequenceLayoutCalculate(),
+     *        která pro řadu prvku nastavuje jejich Begin, odvozuje End (=Begin + Size + space), a ten vkládá do Begin následujcího prvku
+     */
 
     /// <summary>
     /// GGrid : Vizuální objekt, kontejner na jednu nebo více tabulek pod sebou. Tyto tabulky mají společný layout sloupců (šířka) i společný vodorovný (dolní) posuvník.
@@ -1310,38 +1326,38 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             get
             {
-                return ((ISequenceLayout)this.MasterColumn).Begin;
+                return ((ISequenceLayout)this.MasterColumn.ColumnHeader).Begin;
             }
             set
             {
                 foreach (Column column in this._ColumnList)
-                    ((ISequenceLayout)column).Begin = value;
+                    ((ISequenceLayout)column.ColumnHeader).Begin = value;
             }
         }
         int ISequenceLayout.Size
         {
             get
             {
-                return ((ISequenceLayout)this.MasterColumn).Size;
+                return ((ISequenceLayout)this.MasterColumn.ColumnHeader).Size;
             }
             set
             {
                 foreach (Column column in this._ColumnList)
-                    ((ISequenceLayout)column).Size = value;
+                    ((ISequenceLayout)column.ColumnHeader).Size = value;
             }
         }
         int ISequenceLayout.End
         {
             get
             {
-                return ((ISequenceLayout)this.MasterColumn).End;
+                return ((ISequenceLayout)this.MasterColumn.ColumnHeader).End;
             }
         }
         bool ISequenceLayout.AutoSize
         {
             get
             {
-                return ((ISequenceLayout)this.MasterColumn).AutoSize;
+                return ((ISequenceLayout)this.MasterColumn.ColumnHeader).AutoSize;
             }
         }
         #endregion

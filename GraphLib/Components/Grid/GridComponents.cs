@@ -376,7 +376,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
     /// <summary>
     /// GColumnHeader : vizuální třída pro zobrazování záhlaví sloupce
     /// </summary>
-    public class GColumnHeader : GComponent
+    public class GColumnHeader : GComponent, ISequenceLayout
     {
         #region Konstruktor, data
         /// <summary>
@@ -389,6 +389,8 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             this._OwnerColumn = column;
             this._ColumnSplitterInit();
             this._TimeAxisInit();
+            // Vytvořím si ISequenceLayout:
+            this._SequenceLayout = new SequenceLayout(this._OwnerColumn.ColumnSize);
         }
         private Column _OwnerColumn;
         /// <summary>
@@ -429,6 +431,14 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// Může být null pro sloupce mimo zobrazovaný prostor.
         /// </summary>
         public Int32Range VisualRange { get; set; }
+        #endregion
+        #region ISequenceLayout
+        int ISequenceLayout.Begin { get { return this._ISequenceLayout.Begin; } set { this._ISequenceLayout.Begin = value; } }
+        int ISequenceLayout.Size { get { return this._ISequenceLayout.Size; } set { this._ISequenceLayout.Size = value; } }
+        int ISequenceLayout.End { get { return this._ISequenceLayout.End; } }
+        bool ISequenceLayout.AutoSize { get { return this._SequenceLayout.AutoSize; } }
+        private ISequenceLayout _ISequenceLayout { get { return (ISequenceLayout)this._SequenceLayout; } }
+        private SequenceLayout _SequenceLayout;
         #endregion
         #region ColumnSplitter
         /// <summary>
@@ -1172,7 +1182,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
     /// <summary>
     /// GRow : vizuální třída pro zobrazování podkladu řádku (základní barva nebo podkladový graf nebo jiná data)
     /// </summary>
-    public class GRow : GComponent
+    public class GRow : GComponent, ISequenceLayout
     {
         #region Konstruktor, data
         /// <summary>
@@ -1185,6 +1195,8 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             // Přesměruji údaj Is.GetVisible tohoto grafického objektu na odpovídající hodnotu datového řádku:
             this.Is.GetVisible = this._GetVisible;
             this.Is.SetVisible = this._SetVisible;
+            // Vytvořím si ISequenceLayout:
+            this._SequenceLayout = new SequenceLayout(this._OwnerRow.RowSize);
         }
         private Row _OwnerRow;
         /// <summary>
@@ -1192,12 +1204,12 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         /// <param name="isVisible"></param>
         /// <returns></returns>
-        private bool _GetVisible(bool isVisible) { return this.OwnerRow.Visible; }
+        private bool _GetVisible(bool isVisible) { return this._SequenceLayout.Visible; }
         /// <summary>
         /// Metoda nastavuje viditelnost řádku, hodnotu vepisuje do datového objektu do <see cref="Row.Visible"/>
         /// </summary>
         /// <param name="isVisible"></param>
-        private void _SetVisible(bool isVisible) { this.OwnerRow.Visible = isVisible; }
+        private void _SetVisible(bool isVisible) { this._SequenceLayout.Visible = isVisible; }
         /// <summary>
         /// Umožní nastavit souřadnice pro Child objekty
         /// </summary>
@@ -1239,6 +1251,14 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// Řádky, které jsou viditelné plně nebo i jen zčásti mají <see cref="VisualRange"/> naplněno, s tím že hodnota výšky odpovídá plné výšce řádku i když řádek je vidět jen zčásti.
         /// </summary>
         public Int32Range VisualRange { get; set; }
+        #endregion
+        #region ISequenceLayout
+        int ISequenceLayout.Begin { get { return this._ISequenceLayout.Begin; } set { this._ISequenceLayout.Begin = value; } }
+        int ISequenceLayout.Size { get { return this._ISequenceLayout.Size; } set { this._ISequenceLayout.Size = value; } }
+        int ISequenceLayout.End { get { return this._ISequenceLayout.End; } }
+        bool ISequenceLayout.AutoSize { get { return this._SequenceLayout.AutoSize; } }
+        private ISequenceLayout _ISequenceLayout { get { return (ISequenceLayout)this._SequenceLayout; } }
+        private SequenceLayout _SequenceLayout;
         #endregion
         #region Draw, příprava Childs
         /// <summary>
