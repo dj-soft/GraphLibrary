@@ -84,6 +84,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.LoadDataGraphProperties();
             this.LoadDataPrepareIndex();
             this.LoadDataLoadRow();
+            this.LoadDataLoadParentChild();
             this.LoadDataCreateGraphs();
             this.LoadDataLoadGraphItems();
             this.LoadDataLoadLinks();
@@ -404,44 +405,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Vlastnosti tabulky, načtené z DataDeclaration
         /// </summary>
         public DataGraphProperties DataGraphProperties { get; private set; }
-        #endregion
-        #region Index pro oboustrannou konverzi GId <=> Int32
         /// <summary>
-        /// Připraví index pro převody GId - Int32
+        /// Obsahuje true, pokud tato tabulka má aktuálně focus
         /// </summary>
-        protected void LoadDataPrepareIndex()
-        {
-            this.GIdIntIndex = new Index<GId>();
-        }
-        /// <summary>
-        /// Metoda vrátí Int32 ID pro daný <see cref="GId"/>.
-        /// Pro opakovaný požadavek na tentýž <see cref="GId"/> vrací shodnou hodnotu ID.
-        /// Pro první požadavek na určitý <see cref="GId"/> vytvoří nový ID.
-        /// Reverzní metoda je <see cref="GetId(GId)"/>.
-        /// </summary>
-        /// <param name="gId"></param>
-        /// <returns></returns>
-        protected int GetId(GId gId)
-        {
-            if (gId == null) return 0;
-            return this.GIdIntIndex.GetIndex(gId);
-        }
-        /// <summary>
-        /// Pro daný ID vrátí <see cref="GId"/>, ale pouze pokud byl přidělen v metodě <see cref="GetId(GId)"/>.
-        /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
-        protected GId GetGId(int id)
-        {
-            if (id == 0) return null;
-            GId gId;
-            if (!this.GIdIntIndex.TryGetKey(id, out gId)) return null;
-            return gId;
-        }
-        /// <summary>
-        /// Index pro obousměrnou konverzi Int32 - GId
-        /// </summary>
-        protected Index<GId> GIdIntIndex { get; set; }
+        public bool HasFocus { get { return this.GTableRow.HasFocus; } }
         #endregion
         #region TableRow + TagItems
         /// <summary>
@@ -455,6 +422,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.TableRow.OpenRecordForm += _TableRow_OpenRecordForm;
             this.TableRow.UserData = this;
             if (this.TableRow.AllowPrimaryKey) this.TableRow.HasPrimaryIndex = true;
+            this._ChildRowsEvaluateByTime = (this.GuiGrid.GridProperties != null ? this.GuiGrid.GridProperties.ChildRowsEvaluateByTime : false);
         }
         /// <summary>
         /// Tabulka s řádky.
@@ -477,6 +445,28 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 this.FillGTableEventHandlers();
                 return this.GTableRow;
             }
+        }
+        /// <summary>
+        /// Metoda zajistí zrušení všech filtrů na aktuální tabulce
+        /// </summary>
+        public void ResetAllRowFilters(ref bool callRefresh)
+        {
+            if (this.GTableRow != null)
+                this.GTableRow.ResetAllRowFilters(ref callRefresh);
+            this.InteractionRowFilterDict = null;
+        }
+        /// <summary>
+        /// Metoda zajistí zrušení filtrů Interakce na aktuální tabulce
+        /// </summary>
+        /// <param name="callRefresh"></param>
+        public void ResetInteractionFilters(ref bool callRefresh)
+        {
+            if (this.GTableRow != null)
+            {
+                if (this.GTableRow.RemoveFilter(InteractionRowFilterName))
+                    callRefresh = true;
+            }
+            this.InteractionRowFilterDict = null;
         }
         /// <summary>
         /// Metoda zajistí převedení konfigurace z <see cref="GuiGrid"/> do <see cref="GTableRow"/>
@@ -502,8 +492,12 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             Table table = this.TableRow;
             table.ActiveRowChanged += _TableRowActiveRowChanged;
             table.CheckedRowChanged += _TableRowCheckedRowChanged;
-            // table.LostFocus +=
 
+            GTable gTable = this.GTableRow;
+            gTable.InteractiveStateChange += _GTableInteractiveStateChange;
+
+            if (this._ChildRowsEvaluateByTime)
+                gTable.TimeAxisValueChanged += _GTableTimeAxisValueChanged;
         }
         /// <summary>
         /// Eventhandler události "Byl aktivován řádek"
@@ -515,7 +509,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             Row activeRow = e.NewValue;
             Row[] checkedRows = this.TableRow.CheckedRows;
             bool isOnlyActivadedRow = (checkedRows.Length == 0);
-            GuiGridInteraction[] interactions = this.GetInteractions(isOnlyActivadedRow ? SourceActionType.TableRowActivatedOnly : SourceActionType.TableRowActivatedWithRowsChecked);
+            SourceActionType sourceAction = isOnlyActivadedRow ? SourceActionType.TableRowActivatedOnly : SourceActionType.TableRowActivatedWithRowsChecked;
+            GuiGridInteraction[] interactions = this.GetInteractions(sourceAction);
             if (interactions == null) return;
             this.InteractionThisSource(interactions, activeRow, checkedRows, null, null);
         }
@@ -531,6 +526,30 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             Row checkedRow = e.CurrentObject;
             Row[] checkedRows = this.TableRow.CheckedRows;
             this.InteractionThisSource(interactions, checkedRow, checkedRows, null, null);
+        }
+        /// <summary>
+        /// Hlídáme interaktivitu GTable = ukládáme aktivní tabulku do <see cref="IMainDataInternal.ActiveDataTable"/>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _GTableInteractiveStateChange(object sender, GInteractiveChangeStateArgs e)
+        {
+            switch (e.ChangeState)
+            {
+                case GInteractiveChangeState.KeyboardFocusEnter:
+                case GInteractiveChangeState.LeftDown:
+                    this.IMainData.ActiveDataTable = this;
+                    break;
+            }
+        }
+        /// <summary>
+        /// Eventhandler události "Došlo ke změně času na časové ose v naší tabulce, na daném sloupci"
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _GTableTimeAxisValueChanged(object sender, GPropertyChangeArgs<TimeRange> e)
+        {
+            this.PrepareCurrentChildRows(e.NewValue);
         }
         /// <summary>
         /// Grafická komponenta reprezentující data z <see cref="TableRow"/>.
@@ -579,8 +598,87 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             return new KeyValuePair<GId, TagItem>(rowGId, tagItem);
         }
         #endregion
+        #region ParentChilds - Vztahy mezi řádky 
+        /// <summary>
+        /// Metoda načte a zpracuje data o vztazích Parent-Childs
+        /// </summary>
+        protected void LoadDataLoadParentChild()
+        {
+            List<GuiParentChild> parentChilds = this.GuiGrid.ParentChilds;
+            if (parentChilds == null) return;
+
+            // Nejprve si z prostých indetifikátorů složím datové komplety:
+            // Dictionary, kde Key: GuiId řádku Child; a kde Value = Tuple, jehož Item1 = řádek Child, a Item2 = pole řádků Parent:
+            Dictionary<GuiId, Tuple<Row, List<Row>>> childDataDict = new Dictionary<GuiId, Tuple<Row, List<Row>>>();
+            Row parentRow, childRow;
+            foreach (GuiParentChild parentChild in parentChilds)
+            {
+                bool hasParentRow = this.TableRow.TryFindRow(parentChild.Parent, out parentRow, false);
+                bool hasChildRow = this.TableRow.TryFindRow(parentChild.Child, out childRow, false);
+                if (!(hasParentRow && hasChildRow)) continue;
+
+                // Máme zadané a nalezené řádky Parent i Child => zpracujeme je:
+                GuiId childGuiId = parentChild.Child;
+                Tuple<Row, List<Row>> childData;
+                if (!childDataDict.TryGetValue(childGuiId, out childData))
+                {
+                    childData = new Tuple<Row, List<Row>>(childRow, new List<Row>());
+                    childDataDict.Add(childGuiId, childData);
+                }
+                childData.Item2.Add(parentRow);
+            }
+
+            // Poté zpracuji řádky Childs a jejich soupis Parentů:
+            foreach (Tuple<Row, List<Row>> childData in childDataDict.Values)
+            {
+                childRow = childData.Item1;
+                childRow.ParentChildMode = RowParentChildMode.DynamicChild;
+                childRow.ParentRows = childData.Item2.ToArray();
+            }
+
+            // První vyhodnocení řádků proběhne nyní:
+            TimeRange timeRange = (this._ChildRowsEvaluateByTime ? this.MainData.GuiData.Properties.InitialTimeRange : null);
+            this.PrepareCurrentChildRows(timeRange);
+        }
+        /// <summary>
+        /// Metoda připraví Childs řádky pro řádky Parents, podle aktuálně viditelného času
+        /// </summary>
+        protected void PrepareCurrentChildRows(TimeRange timeRange)
+        {
+            if (this._ChildRowsEvaluateByTime && timeRange != null || this._ChildRowsLastTimeRange != null && this._ChildRowsLastTimeRange == timeRange) return;
+
+
+
+
+            this._ChildRowsLastTimeRange = timeRange;
+        }
+        /// <summary>
+        /// Řádky Childs pro konkrétní řádky Parent vyhodnocovat pouze pro aktuálně zobrazený čas?
+        /// Pochází z <see cref="GuiGridProperties.ChildRowsEvaluateByTime"/>.
+        /// </summary>
+        private bool _ChildRowsEvaluateByTime;
+        private TimeRange _ChildRowsLastTimeRange;
+
+        #endregion
         #region Podpora pro mezitabulkové interakce (kdy akce v jedné tabulce vyvolá jinou akci v jiné tabulce)
         #region Interakce, algoritmy na straně Source
+        /// <summary>
+        /// Obecná metoda, která má provést všechny nyní aktivní interakce této tabulky.
+        /// </summary>
+        internal void RunInteractionThisSource(GuiGridInteraction[] interactions, ref bool callRefresh)
+        {
+            if (interactions == null || interactions.Length == 0) return;
+            interactions = this.GetInteractionsForCurrentState(interactions).ToArray();
+            if (interactions == null || interactions.Length == 0) return;
+
+            Row activeRow = this.TableRow.ActiveRow;
+            Row[] checkedRows = this.TableRow.CheckedRows;
+            bool isOnlyActivadedRow = (checkedRows.Length == 0);
+
+            this.InteractionThisSource(interactions, activeRow, checkedRows, null, null);
+
+            callRefresh = true;
+        }
         /// <summary>
         /// Souhrn všech definic interakcí z <see cref="GuiGrid.GridProperties"/>
         /// </summary>
@@ -594,10 +692,62 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <returns></returns>
         protected GuiGridInteraction[] GetInteractions(SourceActionType sourceAction)
         {
-            List<GuiGridInteraction> interactions = this.AllInteractions;
-            if (interactions == null || interactions.Count == 0) return null;
-            GuiGridInteraction[] result = interactions.Where(i => ((int)(i.SourceAction & sourceAction) != 0)).ToArray();
-            return (result.Length > 0 ? result : null);
+            List<GuiGridInteraction> interactionList = this.AllInteractions;
+            if (interactionList == null || interactionList.Count == 0) return null;
+            GuiGridInteraction[] interactions = interactionList.Where(i => ((int)(i.SourceAction & sourceAction) != 0)).ToArray();
+
+            // Podmíněné interakce = takové, které jsou aktivní pouze za určitého stavu ToolBaru:
+            interactions = this.GetInteractionsForCurrentState(interactions).ToArray();
+
+            return (interactions.Length > 0 ? interactions : null);
+        }
+        /// <summary>
+        /// Metoda vrátí interakce platné jen pro aktuální stav dat (=ToolBaru a konfigurace).
+        /// Zjistí, zda dané interakce obsahují podmínku, a pokud ano pak ji vyhodnotí.
+        /// </summary>
+        /// <param name="interactions"></param>
+        /// <returns></returns>
+        protected IEnumerable<GuiGridInteraction> GetInteractionsForCurrentState(IEnumerable<GuiGridInteraction> interactions)
+        {
+            if (interactions == null || !interactions.Any(i => i.IsConditional)) return interactions;
+
+            Dictionary<string, GuiToolbarItem> toolBarDict = this.IMainData.GuiData.ToolbarItems.Items
+                .Where(t => (t.IsCheckable.HasValue && t.IsCheckable.Value))
+                .GetDictionary(t => t.Name, true);
+
+            List<GuiGridInteraction> interactionList = new List<GuiGridInteraction>();
+            foreach (GuiGridInteraction interaction in interactions)
+            {
+                if (IsInteractionForCurrentCondition(interaction, toolBarDict))
+                    interactionList.Add(interaction);
+            }
+
+            return interactionList.ToArray();
+        }
+        /// <summary>
+        /// Metoda vrací true, pokud se daná interakce má použít za stavu, kdy máme v tolbaru zaškrtnuté některé prvky
+        /// </summary>
+        /// <param name="interaction"></param>
+        /// <param name="toolBarDict"></param>
+        /// <returns></returns>
+        protected bool IsInteractionForCurrentCondition(GuiGridInteraction interaction, Dictionary<string, GuiToolbarItem> toolBarDict)
+        {
+            if (!interaction.IsConditional || String.IsNullOrEmpty(interaction.Conditions)) return true;        // Bez podmínky = vyhovuje, použije se.
+
+            string[] conditions = interaction.Conditions.Split(";, ".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
+
+            // Pokud daný název podmínky odpovídá některému Toolbaru, a tento existuje a je zaškrtnutý, vrátíme true:
+            foreach (string condition in conditions)
+            {
+                GuiToolbarItem toolBarItem;
+                if (toolBarDict.TryGetValue(condition.Trim(), out toolBarItem) && toolBarItem.IsChecked.HasValue && toolBarItem.IsChecked.Value)
+                    return true;
+            }
+
+            // Jsme v prostoru Scheduler: tady můžeme testovat i jiné zdroje stavů než jen ToolBar. 
+            // ... Ale zatím to neděláme.
+
+            return false;
         }
         /// <summary>
         /// Interakce mezi tabulkami, kde this tabulka je zdrojem interakce = zde došlo k akci Aktivace řádků:
@@ -611,7 +761,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         protected void InteractionThisSource(GuiGridInteraction[] interactions, Row activeRow, Row[] checkedRows, GTimeGraph activeGraph, DataGraphItem[] graphItems)
         {
             this.InteractionSelectorClear(interactions);
+            this.InteractionRowFiltersPrepare(interactions);
 
+            // Zjistíme, zda cílová strana bude vyžadovat znalost prvků grafů na zdrojové straně:
             TargetActionType targetFromSourceGraph = (TargetActionType.SearchSourceItemId | TargetActionType.SearchSourceGroupId | TargetActionType.SearchSourceDataId);
             // Na vstupu máme řadu definic interakcí, projdeme je a provedeme potřebné kroky:
             foreach (GuiGridInteraction interaction in interactions)
@@ -631,13 +783,15 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 InteractionArgs args = new InteractionArgs(interaction, activeRow, checkedRows, activeGraph, graphItems);
                 targetTable.InteractionThisTarget(args);
             }
+
+            this.InteractionRowFiltersActivate(interactions);
         }
         /// <summary>
         /// Tato metoda má za úkol provést odebrání příznaku Selected nebo Activated ze všech současně vybraných objektů, 
         /// pokud je to potřeba z hlediska dodaných definic interakcí.
         /// Potřeba je to tehdy, když:
         ///  - existuje definice interakce, která ma cíl označování prvků 
-        ///     (její <see cref="GuiGridInteraction.TargetAction"/> obsahuje například <see cref="TargetActionType.SelectTarget"/>),
+        ///     (její <see cref="GuiGridInteraction.TargetAction"/> obsahuje například <see cref="TargetActionType.SelectTargetItem"/>),
         ///  - a přitom tatáž definice nemá požadavek <see cref="TargetActionType.LeaveCurrentTarget"/> = předpokládá se označování po předešlém odznačení.
         /// </summary>
         /// <param name="interactions"></param>
@@ -645,13 +799,45 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             if (interactions == null || interactions.Length == 0) return;
 
-            bool clearSelected = interactions.Any(i => (i.TargetAction.HasFlag(TargetActionType.SelectTarget) && !i.TargetAction.HasFlag(TargetActionType.LeaveCurrentTarget)));
+            bool clearSelected = interactions.Any(i => (i.TargetAction.HasFlag(TargetActionType.SelectTargetItem) && !i.TargetAction.HasFlag(TargetActionType.LeaveCurrentTarget)));
             if (clearSelected)
                 this.MainControl.Selector.ClearSelected();
 
-            bool clearActivated = interactions.Any(i => (i.TargetAction.HasFlag(TargetActionType.ActivateTarget) && !i.TargetAction.HasFlag(TargetActionType.LeaveCurrentTarget)));
+            bool clearActivated = interactions.Any(i => (i.TargetAction.HasFlag(TargetActionType.ActivateTargetItem) && !i.TargetAction.HasFlag(TargetActionType.LeaveCurrentTarget)));
             if (clearActivated)
                 this.MainControl.Selector.ClearActivated();
+        }
+        /// <summary>
+        /// Metoda zjistí, zda některé Target tabulky budou řešit Řádkový filtr, a pokud ano pak jej připraví:
+        /// </summary>
+        /// <param name="interactions"></param>
+        protected void InteractionRowFiltersPrepare(GuiGridInteraction[] interactions)
+        {
+            if (interactions == null || interactions.Length == 0) return;
+
+            // Získám Dictionary, obsahující Distinct jména tabulek (TargetGridFullName), které jsou Target a kde akce TargetAction obsahuje FilterTargetRows:
+            Dictionary<string, string> nameDict = interactions
+                .Where(i => ((i.TargetAction & TargetActionType.FilterTargetRows) != 0))
+                .Select(i => i.TargetGridFullName)
+                .GetDictionary(s => s, true);
+
+            // Příprava proběhne na všech tabulkách:
+            foreach (MainDataTable table in this.IMainData.DataTables)
+            {
+                string fullName = table.TableName;
+                bool active = (!String.IsNullOrEmpty(fullName) && nameDict.ContainsKey(fullName));
+                if (active)
+                    table.InteractionThisRowFilterPrepare(active);
+            }
+        }
+        /// <summary>
+        /// Metoda aktivuje Řádkový filtr v těch tabulkách, kde je připraven (=kde je aktivní)
+        /// </summary>
+        /// <param name="interactions"></param>
+        protected void InteractionRowFiltersActivate(GuiGridInteraction[] interactions)
+        {
+            foreach (MainDataTable table in this.IMainData.DataTables)
+                table.InteractionThisRowFilterActivate();
         }
         /// <summary>
         /// Metoda vrátí souhrn všech prvků grafů z dodaných řádků
@@ -723,10 +909,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 this.InteractionThisTargetFrom(args, i => i.DataGId);
             if ((action & TargetActionType.SearchSourceRowId) != 0)
                 this.InteractionThisTargetFrom(args, i => i.RowGId);
-
         }
         /// <summary>
-        /// Metoda najde ve vstupních grafických prvcích <see cref="InteractionArgs.SourceGraphItems"/> patřičné klíče zadaných grafických prvků (pomocí keySelectoru),
+        /// Metoda najde ve vstupních grafických prvcích <see cref="InteractionArgs.SourceGraphItems"/> 
+        /// patřičné klíče zadaných grafických prvků (pomocí keySelectoru),
         /// poté pro tyto klíče najde grafické prvky ve zdejším grafu - podle volby <see cref="GuiGridInteraction.TargetAction"/>,
         /// a pro tyto nalezené zdejší prvky provede akci definovanou tamtéž.
         /// </summary>
@@ -735,14 +921,15 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         protected void InteractionThisTargetFrom(InteractionArgs args, Func<DataGraphItem, GId> keySelector)
         {
             Dictionary<GId, DataGraphItem> sourceGIds = args.SourceGraphItems.GetDictionary(keySelector, true);   // Klíče (GId) ze zdrojových prvků, podle selectoru, distinct
-            GTimeGraphGroup[] targetGroups = this.InteractionThisSearchGroupBy(args, sourceGIds);        // Najde grupy grafických prvků podle dodaných klíčů
-            this.InteractionThisProcessAction(args, targetGroups);
+            GRow[] targetRows = this.InteractionThisSearchRowBy(args, sourceGIds);                 // Najde řádky podle dodaných klíčů
+            GTimeGraphGroup[] targetGroups = this.InteractionThisSearchGroupBy(args, sourceGIds);  // Najde grupy grafických prvků podle dodaných klíčů
+            this.InteractionThisProcessAction(args, targetRows, targetGroups);
         }
         /// <summary>
         /// Metoda vrátí pole skupin grafických prvků <see cref="GTimeGraphGroup"/>, které odpovídají vstupním datům.
         /// </summary>
-        /// <param name="args"></param>
-        /// <param name="sourceGIds"></param>
+        /// <param name="args">Data aktuální interakce</param>
+        /// <param name="sourceGIds">Klíče (GId) ze zdrojových prvků</param>
         /// <returns></returns>
         protected GTimeGraphGroup[] InteractionThisSearchGroupBy(InteractionArgs args, Dictionary<GId, DataGraphItem> sourceGIds)
         {
@@ -757,6 +944,22 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 this.InteractionThisSearchGroupInData(sourceGIds, groupDict);
 
             return groupDict.Values.ToArray();
+        }
+        /// <summary>
+        /// Metoda vrátí pole řádků tabulky <see cref="GRow"/>, které odpovídají vstupním datům.
+        /// </summary>
+        /// <param name="args">Data aktuální interakce</param>
+        /// <param name="sourceGIds">Klíče (GId) ze zdrojových prvků</param>
+        /// <returns></returns>
+        protected GRow[] InteractionThisSearchRowBy(InteractionArgs args, Dictionary<GId, DataGraphItem> sourceGIds)
+        {
+            Dictionary<GId, GRow> rowDict = new Dictionary<GId, GRow>();
+
+            TargetActionType action = args.Interaction.TargetAction;
+            if ((action & TargetActionType.SearchTargetRowId) != 0)
+                this.InteractionThisSearchRowInItems(sourceGIds, rowDict);
+
+            return rowDict.Values.ToArray();
         }
         /// <summary>
         /// Metoda se pokusí najít ve své evidenci grupy pro prvky s ItemId odpovídající daným identifikátorům GId, a přidat je do předané Dictionary.
@@ -816,22 +1019,114 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             }
         }
         /// <summary>
+        /// Metoda se pokusí najít ve své evidenci řádky s RowId odpovídající daným identifikátorům GId, a přidat je do předané Dictionary.
+        /// </summary>
+        /// <param name="sourceGIds"></param>
+        /// <param name="rowDict"></param>
+        protected void InteractionThisSearchRowInItems(Dictionary<GId, DataGraphItem> sourceGIds, Dictionary<GId, GRow> rowDict)
+        {
+            foreach (GId gId in sourceGIds.Keys)
+            {   // Na vstupu mám klíče ze zdrojového grafu, zde hledám řádky shodného klíče:
+                if (rowDict.ContainsKey(gId)) continue;
+                Row row;
+                if (!this.TableRow.TryGetRowOnPrimaryKey(gId, out row)) continue;
+                rowDict.Add(gId, row.Control);
+            }
+        }
+        /// <summary>
         /// Metoda provede akci, požadovanou v <see cref="GuiGridInteraction.TargetAction"/> pro všechny grupy dodané v parametru targetGroups.
         /// </summary>
         /// <param name="args"></param>
+        /// <param name="targetRows"></param>
         /// <param name="targetGroups"></param>
-        protected void InteractionThisProcessAction(InteractionArgs args, IEnumerable<GTimeGraphGroup> targetGroups)
+        protected void InteractionThisProcessAction(InteractionArgs args, GRow[] targetRows, GTimeGraphGroup[] targetGroups)
         {
-            TargetActionType action = args.Interaction.TargetAction;
-            bool isSelect = ((action & TargetActionType.SelectTarget) != 0);
-            bool isActivate = ((action & TargetActionType.ActivateTarget) != 0);
+            bool hasRows = (targetRows != null && targetRows.Length > 0);
+            bool hasGroups = (targetGroups != null && targetGroups.Length > 0);
+            if (!hasRows && !hasGroups) return;            // Nemáme žádná data na vstupu
 
-            foreach (GTimeGraphGroup targetGroup in targetGroups)
+            TargetActionType action = args.Interaction.TargetAction;
+            bool isSelect = ((action & TargetActionType.SelectTargetItem) != 0);
+            bool isActivate = ((action & TargetActionType.ActivateTargetItem) != 0);
+            bool isFilterItem = ((action & TargetActionType.FilterTargetItems) != 0);
+            bool isFilterRow = ((action & TargetActionType.FilterTargetRows) != 0);
+
+            if (hasRows)
             {
-                if (isSelect) targetGroup.GControl.IsSelected = true;
-                if (isActivate) targetGroup.GControl.IsActivated = true;
+                foreach (GRow gRow in targetRows)
+                {
+                    if (isFilterRow) this.InteractionThisRowFilterAdd(gRow);
+                }
+            }
+            if (hasGroups)
+            {
+                foreach (GTimeGraphGroup targetGroup in targetGroups)
+                {
+                    if (isSelect) targetGroup.GControl.IsSelected = true;
+                    if (isActivate) targetGroup.GControl.IsActivated = true;
+                    if (isFilterRow) this.InteractionThisRowFilterAdd(targetGroup);
+                }
             }
         }
+        /// <summary>
+        /// Metoda v this instanci připraví pracovní řádkový filtr <see cref="InteractionRowFilterDict"/>;
+        /// </summary>
+        /// <param name="active"></param>
+        protected void InteractionThisRowFilterPrepare(bool active)
+        {
+            this.TableRow.RemoveFilter(InteractionRowFilterName);
+            this.InteractionRowFilterDict = null;
+            if (active)
+                this.InteractionRowFilterDict = new Dictionary<GId, GRow>();
+        }
+        /// <summary>
+        /// Metoda přidá řádek, do něhož patří daná grupa grafu, do připravovaného řádkového filtru
+        /// </summary>
+        /// <param name="targetGroup"></param>
+        protected void InteractionThisRowFilterAdd(GTimeGraphGroup targetGroup)
+        {
+            if (this.InteractionRowFilterDict == null || targetGroup == null) return;
+            this.InteractionThisRowFilterAdd(targetGroup.GControl.SearchForParent(typeof(GRow)) as GRow);
+        }
+        /// <summary>
+        /// Metoda přidá daný řádek do připravovaného řádkového filtru
+        /// </summary>
+        /// <param name="gRow"></param>
+        protected void InteractionThisRowFilterAdd(GRow gRow)
+        {
+            if (this.InteractionRowFilterDict == null || gRow == null) return;
+            GId rowGId = gRow.OwnerRow?.RecordGId;
+            if (rowGId == null) return;
+            if (this.InteractionRowFilterDict.ContainsKey(rowGId)) return;
+            this.InteractionRowFilterDict.Add(rowGId, gRow);
+        }
+        /// <summary>
+        /// Metoda v this instanci aplikuje pracovní řádkový filtr <see cref="InteractionRowFilterDict"/>, pokud je aktivní (není null)
+        /// </summary>
+        protected void InteractionThisRowFilterActivate()
+        {
+            if (this.InteractionRowFilterDict == null) return;
+            this.GTableRow.ApplyRowFilter(InteractionRowFilterName, this.InteractionThisRowFilter);
+            this.GTableRow.Refresh();
+        }
+        /// <summary>
+        /// Filtr na řádky podle zdejší dictionary <see cref="InteractionRowFilterDict"/>.
+        /// Tato metoda je použita jako "filter" v objektu <see cref="TableFilter"/>, který je do zdejší datové tabulky aplikován pro filtrování interakcí.
+        /// </summary>
+        /// <param name="row"></param>
+        /// <returns></returns>
+        protected bool InteractionThisRowFilter(Row row)
+        {
+            return (this.InteractionRowFilterDict != null && row != null && row.RecordGId != null && this.InteractionRowFilterDict.ContainsKey(row.RecordGId));
+        }
+        /// <summary>
+        /// Jméno filtru tabulky pocházejícího z Interakcí
+        /// </summary>
+        protected const string InteractionRowFilterName = "InteractionRowFilter";
+        /// <summary>
+        /// Pracovní řádkový filtr pro přípravu interakcí
+        /// </summary>
+        protected Dictionary<GId, GRow> InteractionRowFilterDict;
         #endregion
         #region class InteractionArgs : Data, předávaná při interakci mezi tabulkami z tabulky Source do tabulky Target
         /// <summary>
@@ -1481,6 +1776,44 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Může rovněž obsahovat NULL pro daný GId, to když nebyl nalezen řádek.
         /// </summary>
         public Dictionary<GId, Row> TableTextRowDict { get; private set; }
+        #endregion
+        #region Index pro oboustrannou konverzi GId <=> Int32
+        /// <summary>
+        /// Připraví index pro převody GId - Int32
+        /// </summary>
+        protected void LoadDataPrepareIndex()
+        {
+            this.GIdIntIndex = new Index<GId>();
+        }
+        /// <summary>
+        /// Metoda vrátí Int32 ID pro daný <see cref="GId"/>.
+        /// Pro opakovaný požadavek na tentýž <see cref="GId"/> vrací shodnou hodnotu ID.
+        /// Pro první požadavek na určitý <see cref="GId"/> vytvoří nový ID.
+        /// Reverzní metoda je <see cref="GetId(GId)"/>.
+        /// </summary>
+        /// <param name="gId"></param>
+        /// <returns></returns>
+        protected int GetId(GId gId)
+        {
+            if (gId == null) return 0;
+            return this.GIdIntIndex.GetIndex(gId);
+        }
+        /// <summary>
+        /// Pro daný ID vrátí <see cref="GId"/>, ale pouze pokud byl přidělen v metodě <see cref="GetId(GId)"/>.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        protected GId GetGId(int id)
+        {
+            if (id == 0) return null;
+            GId gId;
+            if (!this.GIdIntIndex.TryGetKey(id, out gId)) return null;
+            return gId;
+        }
+        /// <summary>
+        /// Index pro obousměrnou konverzi Int32 - GId
+        /// </summary>
+        protected Index<GId> GIdIntIndex { get; set; }
         #endregion
         #region Otevření formuláře záznamu
         /// <summary>

@@ -407,7 +407,6 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                     this._DataTable.ColumnHeaderHeight = value;
             }
         }
-
         /// <summary>
         /// Ověří a zajistí připravenost pole Columns.
         /// Toto pole obsahuje správné souřadnice (ISequenceLayout), proto po změně šířky sloupce nebo po změně Order je třeba toto pole invalidovat.
@@ -487,6 +486,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             {
                 rows = this.DataTable.RowsSorted.ToList();           // Získat zobrazitelné řádky, setříděné podle zvoleného třídícího sloupce
                 this._Rows = rows;
+                this._IsTreeView = this.DataTable.ContainsChildRows; // true = z běžné tabulky se stane TreeView
                 heightValid = false;
             }
             if (!heightValid)
@@ -1263,7 +1263,97 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         private GSplitter _HeaderSplitter;
         #endregion
+        #region Obecný filtr na tabulce
+        /// <summary>
+        /// Metoda zajistí zrušení všech filtrů na aktuální tabulce
+        /// </summary>
+        public void ResetAllRowFilters(ref bool callRefresh)
+        {
+            // Reset TagFilter:
+            if (this.TagFilterVisible)
+                this.TagFilterReset(ref callRefresh);
+
+            // Reset programového filtru:
+            if (this.DataTable.RowFiltersExists)
+                callRefresh = true;
+            this.DataTable.ResetFilters();
+        }
+        /// <summary>
+        /// Metoda aplikuje daný Aplikační filtr na řádky tabulky
+        /// </summary>
+        /// <param name="tableFilter"></param>
+        public void ApplyRowFilter(TableFilter tableFilter)
+        {
+            this.DataTable.AddFilter(tableFilter);
+        }
+        /// <summary>
+        /// Metoda aplikuje daný Aplikační filtr na řádky tabulky
+        /// </summary>
+        /// <param name="filterName">Název filtru</param>
+        /// <param name="filterFunc">Funkce filtru</param>
+        public void ApplyRowFilter(string filterName, Func<Row, bool> filterFunc)
+        {
+            this.DataTable.AddFilter(filterName, filterFunc);
+        }
+        /// <summary>
+        /// Odewbere filtr daného jména
+        /// </summary>
+        /// <param name="filterName"></param>
+        /// <returns></returns>
+        public bool RemoveFilter(string filterName)
+        {
+            return this.DataTable.RemoveFilter(filterName);
+        }
+        #endregion
         #region TagFilter : filtr řádků na základě TagItems, je součástí GTable.Items
+        /// <summary>
+        /// Příznak existence dat pro filtr TagFilter.
+        /// Obsahuje true, pokud napojená datová tabulka obsahuje položky pro filtr TagFilter.
+        /// Tuto hodnotu nelze nastavit dle přání, k tomu se používá property <see cref="TagFilterEnabled"/>.
+        /// </summary>
+        public bool TagFilterExists { get { this._TagFilterExistsCheck(); return this._TagFilterExists.Value; } }
+        /// <summary>
+        /// Uživatelská hodnota, reprezentující přání aplikace, aby byl zobrazen filtr TagFilter.
+        /// Aplikace může filtr skrýt nastavením <see cref="TagFilterEnabled"/> = false (pak filtr nebude zobrazen).
+        /// Pokud aplikace nastaví <see cref="TagFilterEnabled"/> = true, pak bude filtr zobrazen jen tehdy, pokud filtr reálně existuje (<see cref="TagFilterExists"/>).
+        /// Reálná viditelnost filtru je pak tedy součinem: <see cref="TagFilterVisible"/> = (<see cref="TagFilterEnabled"/> and <see cref="TagFilterExists"/>);
+        /// Výchozí hodnota <see cref="TagFilterEnabled"/> je true.
+        /// </summary>
+        public bool TagFilterEnabled { get { return this._TagFilterEnabled; } set { this._TagFilterEnabled = value; this.Invalidate(InvalidateItem.TableTagFilter); } }
+        /// <summary>
+        /// Barva pozadí filtru TagFilter
+        /// </summary>
+        public Color? TagFilterBackColor { get { return this._TagFilter.BackColorUser; } set { this._TagFilter.BackColorUser = value; this.Invalidate(InvalidateItem.Paint); } }
+        /// <summary>
+        /// Filtr řádků TagFilter:
+        /// Výška jednoho prvku.
+        /// </summary>
+        public int TagFilterItemHeight { get { return this._TagFilter.ItemHeight; } set { this._TagFilter.ItemHeight = value; this.Invalidate(InvalidateItem.TableTagFilter); } }
+        /// <summary>
+        /// Filtr řádků TagFilter:
+        /// Nejvyšší počet zobrazitelných prvků.
+        /// Zatím bez efektu.
+        /// </summary>
+        public int TagFilterItemMaxCount { get { return 0; } set { } }
+        /// <summary>
+        /// Obsahuje true, pokud je reálně zobrazen filtr TagFilter.
+        /// <see cref="TagFilterVisible"/> = (<see cref="TagFilterEnabled"/> and <see cref="TagFilterExists"/>);
+        /// </summary>
+        public bool TagFilterVisible { get { return (this.TagFilterEnabled && this.TagFilterExists); } }
+        /// <summary>
+        /// Vlastnost <see cref="GTagFilter.RoundItemPercent"/> pro filtr TagFilter:
+        /// Procento kulatých krajů jednotlivých prvků.
+        /// 0 = hranaté prvky; 100 = 100% = čisté půlkruhy. Hodnoty mimo rozsah jsou zarovnané do rozsahu 0 až 100 (včetně).
+        /// </summary>
+        public int TagFilterRoundItemPercent { get { return this._TagFilter.RoundItemPercent; } set { this._TagFilter.RoundItemPercent = value; } }
+        /// <summary>
+        /// Metoda zruší filtr TagFilter
+        /// </summary>
+        public void TagFilterReset(ref bool callRefresh)
+        {
+            if (this._TagFilter == null) return;
+            this._TagFilter.TagFilterReset(ref callRefresh);
+        }
         /// <summary>
         /// Inicializace systému TagFilter
         /// </summary>
@@ -1285,9 +1375,8 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="e"></param>
         private void _TagFilter_FilterChanged(object sender, EventArgs e)
         {
-            var filter = this._TagFilter.FilteredItems;
             if (this._DataTable != null)
-                this._DataTable.TagItemsApply();
+                this._DataTable.TagItemsSetFilter(this._TagFilter.FilteredItems);
         }
         /// <summary>
         /// Eventhandler události, kdy navázaná <see cref="DataTable"/> provede změnu <see cref="Table.TagItemsChanged"/>
@@ -1330,47 +1419,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// Na platnou hodnotu je nastaven v <see cref="_TagFilterHeightCheck()"/>.
         /// </summary>
         private int? _TagFilterHeight;
-        /// <summary>
-        /// Příznak existence dat pro filtr TagFilter.
-        /// Obsahuje true, pokud napojená datová tabulka obsahuje položky pro filtr TagFilter.
-        /// Tuto hodnotu nelze nastavit dle přání, k tomu se používá property <see cref="TagFilterEnabled"/>.
-        /// </summary>
-        public bool TagFilterExists { get { this._TagFilterExistsCheck(); return this._TagFilterExists.Value; } }
-        /// <summary>
-        /// Uživatelská hodnota, reprezentující přání aplikace, aby byl zobrazen filtr TagFilter.
-        /// Aplikace může filtr skrýt nastavením <see cref="TagFilterEnabled"/> = false (pak filtr nebude zobrazen).
-        /// Pokud aplikace nastaví <see cref="TagFilterEnabled"/> = true, pak bude filtr zobrazen jen tehdy, pokud filtr reálně existuje (<see cref="TagFilterExists"/>).
-        /// Reálná viditelnost filtru je pak tedy součinem: <see cref="TagFilterVisible"/> = (<see cref="TagFilterEnabled"/> and <see cref="TagFilterExists"/>);
-        /// Výchozí hodnota <see cref="TagFilterEnabled"/> je true.
-        /// </summary>
-        public bool TagFilterEnabled { get { return this._TagFilterEnabled; } set { this._TagFilterEnabled = value; this.Invalidate(InvalidateItem.TableTagFilter); } }
         private bool _TagFilterEnabled;
-        /// <summary>
-        /// Barva pozadí filtru TagFilter
-        /// </summary>
-        public Color? TagFilterBackColor { get { return this._TagFilter.BackColorUser; } set { this._TagFilter.BackColorUser = value; this.Invalidate(InvalidateItem.Paint); } }
-        /// <summary>
-        /// Filtr řádků TagFilter:
-        /// Výška jednoho prvku.
-        /// </summary>
-        public int TagFilterItemHeight { get { return this._TagFilter.ItemHeight; } set { this._TagFilter.ItemHeight = value; this.Invalidate(InvalidateItem.TableTagFilter); } }
-        /// <summary>
-        /// Filtr řádků TagFilter:
-        /// Nejvyšší počet zobrazitelných prvků.
-        /// Zatím bez efektu.
-        /// </summary>
-        public int TagFilterItemMaxCount { get { return 0; } set { } }
-        /// <summary>
-        /// Obsahuje true, pokud je reálně zobrazen filtr TagFilter.
-        /// <see cref="TagFilterVisible"/> = (<see cref="TagFilterEnabled"/> and <see cref="TagFilterExists"/>);
-        /// </summary>
-        public bool TagFilterVisible { get { return (this.TagFilterEnabled && this.TagFilterExists); } }
-        /// <summary>
-        /// Vlastnost <see cref="GTagFilter.RoundItemPercent"/> pro filtr TagFilter:
-        /// Procento kulatých krajů jednotlivých prvků.
-        /// 0 = hranaté prvky; 100 = 100% = čisté půlkruhy. Hodnoty mimo rozsah jsou zarovnané do rozsahu 0 až 100 (včetně).
-        /// </summary>
-        public int TagFilterRoundItemPercent { get { return this._TagFilter.RoundItemPercent; } set { this._TagFilter.RoundItemPercent = value; } }
         /// <summary>
         /// Prověří/nastaví platnost hodnoty <see cref="_TagFilterExists"/>.
         /// </summary>
@@ -1699,12 +1748,30 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         {
             this._SequenceLayout = new SequenceLayout(this.DataTable.TableSize);
         }
+        int ISequenceLayout.Order { get { return this._ISequenceLayout.Order; } set { this._ISequenceLayout.Order = value; } }
         int ISequenceLayout.Begin { get { return this._ISequenceLayout.Begin; } set { this._ISequenceLayout.Begin = value; } }
         int ISequenceLayout.Size { get { return this._ISequenceLayout.Size; } set { this._SequenceLayout.Size = value; } }
         int ISequenceLayout.End { get { return this._ISequenceLayout.End; } }
         bool ISequenceLayout.AutoSize { get { return this._SequenceLayout.AutoSize; } }
         private ISequenceLayout _ISequenceLayout { get { return (ISequenceLayout)this._SequenceLayout; } }
         private SequenceLayout _SequenceLayout;
+        #endregion
+        #region TreeView - řízení
+        /// <summary>
+        /// true pokud this tabulka může zobrazovat stromovou strukturu prvků
+        /// </summary>
+        internal bool IsTreeView { get { return this._IsTreeView; } } private bool _IsTreeView;
+
+        internal void DrawTreeView(GInteractiveDrawArgs e, Cell ownerCell, Rectangle boundsAbsolute, ref int offsetX)
+        {
+            Image image = Application.App.Resources.GetImage(global::Noris.LCS.Base.WorkScheduler.Resources.Images.Actions24.ArrowRight2Png);
+            if (image == null) return;
+            if (!this.HasMouse) return;
+            bool rowHasMouse = (ownerCell.Row.Control.HasMouse);
+            Rectangle imageBounds = new Size(16, 16).AlignTo(boundsAbsolute, ContentAlignment.BottomLeft);
+            imageBounds = imageBounds.ShiftBy(1, -1);
+            GPainter.DrawImage(e.Graphics, imageBounds, image, rowHasMouse);
+        }
         #endregion
         #region TimeAxis
         /// <summary>
@@ -1719,6 +1786,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         internal void OnChangeTimeAxis(Column column, GPropertyChangeArgs<TimeRange> e)
         {
             if (column == null) return;
+            this.CallTimeAxisValueChanged(column, e);
             this.RepaintColumn(column);
             if (this.HasGrid && column.ColumnProperties.UseTimeAxis)
             {   // Já (GTable) zavolám můj GGrid, aby zavolal GridColumn.OnChangeTimeAxis(int?, GPropertyChangeArgs<TimeRange>) pro daný sloupec:
@@ -1749,6 +1817,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         {
             if (column == null || !column.ColumnProperties.UseTimeAxis) return;
             column.ColumnHeader.RefreshTimeAxis(e);
+            this.CallTimeAxisValueChanged(column, e);
             this.RepaintColumn(column);
         }
         /// <summary>
@@ -1759,6 +1828,28 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         {
             get { return this.DataTable.UseBackgroundTimeAxis; }
         }
+        /// <summary>
+        /// Metoda vyvolá event TimeAxisValueChanged za daný sloupec a hodnotu.
+        /// Event je volán po změně provedené v this tabulce (Master), i v tabulce jiné (kdy se m byla změna promítnuta jako do Slave tabulky)
+        /// </summary>
+        /// <param name="column"></param>
+        /// <param name="e"></param>
+        protected void CallTimeAxisValueChanged(Column column, GPropertyChangeArgs<TimeRange> e)
+        {
+            this.OnTimeAxisValueChanged(column, e);
+            if (this.TimeAxisValueChanged != null)
+                this.TimeAxisValueChanged(column, e);
+        }
+        /// <summary>
+        /// Háček volaný po změně času na časové ose v daném sloupci
+        /// </summary>
+        /// <param name="column"></param>
+        /// <param name="e"></param>
+        protected virtual void OnTimeAxisValueChanged(Column column, GPropertyChangeArgs<TimeRange> e) { }
+        /// <summary>
+        /// Event volaný po změně času na časové ose v daném sloupci
+        /// </summary>
+        public event GPropertyChangedHandler<TimeRange> TimeAxisValueChanged;
         #endregion
         #region Interaktivita vlastní GTable
         /// <summary>

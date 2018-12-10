@@ -1327,17 +1327,6 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region DrawImage
         /// <summary>
-        /// Vykreslí daný Image
-        /// </summary>
-        /// <param name="graphics"></param>
-        /// <param name="bounds"></param>
-        /// <param name="image"></param>
-        /// <param name="alignment"></param>
-        internal static void DrawImage(Graphics graphics, Rectangle bounds, Image image, ContentAlignment alignment)
-        {
-            _DrawImage(graphics, bounds, image, null, alignment);
-        }
-        /// <summary>
         /// Vykreslí daný Image, pokud isEnabled je false, pak bude Image modifikovaný do šedé barvy
         /// </summary>
         /// <param name="graphics"></param>
@@ -1345,9 +1334,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="image"></param>
         /// <param name="isEnabled"></param>
         /// <param name="alignment"></param>
-        internal static void DrawImage(Graphics graphics, Rectangle bounds, Image image, bool isEnabled, ContentAlignment alignment)
+        internal static void DrawImage(Graphics graphics, Rectangle bounds, Image image, bool isEnabled = true, ContentAlignment? alignment = null)
         {
-            System.Drawing.Imaging.ColorMatrix colorMatrix = (!isEnabled  ? CreateColorMatrixGray(0.75f, 0.25f) : null);
+            System.Drawing.Imaging.ColorMatrix colorMatrix = (isEnabled ? null : CreateColorMatrixAlpha(0.45f));
             _DrawImage(graphics, bounds, image, colorMatrix, alignment);
         }
         /// <summary>
@@ -1358,17 +1347,17 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="image"></param>
         /// <param name="state"></param>
         /// <param name="alignment"></param>
-        internal static void DrawImage(Graphics graphics, Rectangle bounds, Image image, GInteractiveState? state, ContentAlignment alignment)
+        internal static void DrawImage(Graphics graphics, Rectangle bounds, Image image, GInteractiveState? state = null, ContentAlignment? alignment = null)
         {
             System.Drawing.Imaging.ColorMatrix colorMatrix = ((state.HasValue && state.Value != GInteractiveState.Enabled) ? CreateColorMatrixForState(state.Value) : null);
             _DrawImage(graphics, bounds, image, colorMatrix, alignment);
         }
-        private static void _DrawImage(Graphics graphics, Rectangle bounds, Image image, System.Drawing.Imaging.ColorMatrix colorMatrix, ContentAlignment alignment)
+        private static void _DrawImage(Graphics graphics, Rectangle bounds, Image image, System.Drawing.Imaging.ColorMatrix colorMatrix, ContentAlignment? alignment)
         {
             if (image == null || bounds.Width <= 0 || bounds.Height <= 0) return;
 
             Size imageSize = image.Size;
-            Rectangle imageBounds = imageSize.AlignTo(bounds, alignment, true);
+            Rectangle imageBounds = (alignment.HasValue ? imageSize.AlignTo(bounds, alignment.Value, true) : bounds);
             if (colorMatrix != null)
             {   // Vykreslení s barevnou transformací:
                 using (System.Drawing.Imaging.ImageAttributes imageAttributes = new System.Drawing.Imaging.ImageAttributes())

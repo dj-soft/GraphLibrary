@@ -470,16 +470,21 @@ namespace Asol.Tools.WorkScheduler.Services
         /// <summary>
         /// Obsahuje název skupiny prvků, které se vzájemně chovají jako OptionGroup.
         /// To znamená, že právě jeden z prvků skupiny může být <see cref="IsChecked"/> = být označen jako aktivní.
+        /// <para/>
         /// Chování:
+        /// <para/>
         /// a) Pokud je <see cref="CheckedGroupName"/> prázdné, pak se button chová jako CheckBox: změna jeho hodnoty <see cref="IsChecked"/> neovlivní žádný jiný prvek.
         /// Kliknutí na takový prvek mění hodnotu <see cref="IsChecked"/> z false na true a naopak = lze jej shodit na false.
+        /// <para/>
         /// b) Pokud je <see cref="CheckedGroupName"/> prázdné, pak se button chová jako RadioButton: kliknutí na neoznačený button jej označí a současně odznačí ostatní buttony v grupě.
         /// Opakované kliknutí na označený button jej neodznačí.
-        /// Prvky jedné grupy <see cref="CheckedGroupName"/> se musí nacházet v jedné grafické skupině (platí pro Toolbar).
+        /// Prvky jedné grupy <see cref="CheckedGroupName"/> se musí nacházet v jedné grafické skupině "GroupName" (platí pro Toolbar).
         /// Pokud by byly umístěny v jiné grupě, nebudou považovány za jednu skupinu, ale více oddělených skupin.
+        /// Naproti tomu jedna grafická grupa "GroupName" může obsahovat více skupin <see cref="CheckedGroupName"/>.
+        /// <para/>
+        /// Je rozumné dávat prvky jedné <see cref="CheckedGroupName"/> blízko k sobě, ale technicky nutné to není.
         /// </summary>
         public virtual string CheckedGroupName { get; set; }
-
         /// <summary>
         /// Any Value for this function.
         /// For CheckButton + RadioButton: boolean true / false;

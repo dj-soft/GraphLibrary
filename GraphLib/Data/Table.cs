@@ -419,17 +419,19 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         private int _RowId;
         /// <summary>
-        /// Počet řádků v tabulce
+        /// Počet všech řádků v tabulce (viditelné + neviditelné; Root + Childs)
         /// </summary>
         public int RowsCount { get { return this._Rows.Count; } }
+        /// <summary>
+        /// Obsahuje true, pokud v této tabulce existuje nějaký řádek, který je Child k nějakému Parentovi.
+        /// V takovém případě se Table bude vykreslovat jako TreeView.
+        /// </summary>
+        public bool ContainsChildRows { get { return this.Rows.Any(r => r.IsChildNode); } }
         /// <summary>
         /// Obsahuje true, pokud v této tabulce existuje nějaký řádek, který potřebuje časovou osu ke svému vlastnímu zobrazení 
         /// (tj. má nastaveno <see cref="Row.UseBackgroundTimeAxis"/> == true).
         /// </summary>
-        internal bool UseBackgroundTimeAxis
-        {
-            get { return this.Rows.Any(r => r.UseBackgroundTimeAxis); }
-        }
+        internal bool UseBackgroundTimeAxis { get { return this.Rows.Any(r => r.UseBackgroundTimeAxis); } }
         /// <summary>
         /// Přidá nový řádek, vrátí jeho objekt
         /// </summary>
@@ -504,6 +506,8 @@ namespace Asol.Tools.WorkScheduler.Data
 
             if (row.TagItems != null)
                 this._InvalidateTagItems();
+
+            this.RowsValid = false;
         }
         /// <summary>
         /// Protected virtual metoda volaná v procesu přidání řádku, řádek je platný, event RowAddAfter ještě neproběhl. V DTable je tato metoda prázdná.
@@ -540,6 +544,7 @@ namespace Asol.Tools.WorkScheduler.Data
                 itm.Id = -1;
             }
             this._InvalidateTagItems();
+            this.RowsValid = false;
         }
         /// <summary>
         /// Protected virtual metoda volaná v procesu odebrání řádku, řádek je platný, event RowRemoveAfter ještě neproběhl. V DTable je tato metoda prázdná.
@@ -551,7 +556,184 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public event EList<Row>.EListEventAfterHandler RowRemoveAfter;
         #endregion
-        #region TagItems = štítky náležející k řádku
+        #region Viditelné řádky, třídění a filtrování řádků
+        /// <summary>
+        /// Tato property vrací soupis všech zobrazitelných (=aktuálně viditelných) řádků, setříděný podle prvního ze sloupců, který má nastaven režim třídění jiný než None.
+        /// Tato property vždy kompletně vyhodnotí data a vrátí nový objekt, nepoužívá se žádná úroveň cachování. 
+        /// Pozor na výkon, užívejme tuto property střídmě.
+        /// </summary>
+        public Row[] RowsSorted
+        {
+            get
+            {
+                // Základní viditelnost řádku daná kódem (Row.Visible) a řádkovým filtrem (RowFiltersExists):
+                bool rowFiltersExists = this.RowFiltersExists;
+                List<Row> list = this.Rows
+                    .Where(r => (r.Visible && r.IsRootNode && (rowFiltersExists ? this.FilterRow(r) : true)))
+                    .ToList();
+
+                // Třídění podle sloupce:
+                if (list.Count > 1)
+                {
+                    Column sortColumn = this.Columns.FirstOrDefault(c => (c.SortCurrent == ItemSortType.Ascending || c.SortCurrent == ItemSortType.Descending));
+                    if (sortColumn != null)
+                        // Bude to tříděné...
+                        _RowsSort(list, sortColumn);
+                }
+
+                return list.ToArray();
+            }
+        }
+        /// <summary>
+        /// Proměnná, která pomáhá detekovat platnost pole řádků.
+        /// Po různých změnách je nastavována na false, aplikace (<see cref="GTable"/>) může nastavit na true při převzetí řádků.
+        /// </summary>
+        public bool RowsValid { get; set; }
+        /// <summary>
+        /// Metoda zajistí setřídění seznamu řádků podle dodaného sloupce.
+        /// Metoda sama detekuje směr třídění, sloupec, jeho komparátor, přípravu komparační hodnoty (IComparableItem.Value) a konečně i provedení odpovídajícího třídění seznamu.
+        /// </summary>
+        /// <param name="list"></param>
+        /// <param name="sortColumn"></param>
+        private void _RowsSort(List<Row> list, Column sortColumn)
+        {
+            // Pokud třídící sloupec obsahuje komparátor (funkce sortColumn.ValueComparator je zadaná), 
+            //   pak metoda PrepareValue() dostává parametr "valueIsComparable" = false, metoda PrepareValue() tedy naplní Value, 
+            //   a komparátor (sortColumn.ValueComparator) dostane k porovnání hodnotu object IComparableItem.Value :
+            bool columnHasComparator = (sortColumn.ColumnProperties.ValueComparator != null);
+            bool valueIsComparable = !columnHasComparator;
+            list.ForEach(r => (r as IComparableItem).PrepareValue(sortColumn.ColumnId, valueIsComparable));
+
+            switch (sortColumn.SortCurrent)
+            {
+                case ItemSortType.Ascending:
+                    if (columnHasComparator)
+                        list.Sort((a, b) => sortColumn.ColumnProperties.ValueComparator((a as IComparableItem).Value, (b as IComparableItem).Value));
+                    else
+                        list.Sort((a, b) => SortRowsCompare((a as IComparableItem).ValueComparable, (b as IComparableItem).ValueComparable));
+                    break;
+
+                case ItemSortType.Descending:
+                    if (columnHasComparator)
+                        list.Sort((a, b) => sortColumn.ColumnProperties.ValueComparator((b as IComparableItem).Value, (a as IComparableItem).Value));
+                    else
+                        list.Sort((a, b) => SortRowsCompare((b as IComparableItem).ValueComparable, (a as IComparableItem).ValueComparable));
+                    break;
+
+            }
+        }
+        /// <summary>
+        /// Komparátor dvou hodnot typu IComparable, z nichž kterákoli smí být null
+        /// </summary>
+        /// <param name="valueA"></param>
+        /// <param name="valueB"></param>
+        /// <returns></returns>
+        private static int SortRowsCompare(IComparable valueA, IComparable valueB)
+        {
+            if (valueA == null && valueB == null) return 0;
+            if (valueA == null) return -1;
+            if (valueB == null) return 1;
+            return valueA.CompareTo(valueB);
+        }
+        /// <summary>
+        /// Do tabulky přidá další filtr
+        /// </summary>
+        /// <param name="filterName">Název filtru</param>
+        /// <param name="filterFunc">Funkce filtru</param>
+        public void AddFilter(string filterName, Func<Row, bool> filterFunc)
+        {
+            if (String.IsNullOrEmpty(filterName))
+                throw new GraphLibCodeException("Do tabulky nelze přidat filtr, jehož název není zadán.");
+            if (filterFunc == null)
+                throw new GraphLibCodeException("Do tabulky nelze přidat filtr, jehož funkce by byla null.");
+
+            TableFilter tableFilter = new TableFilter(filterName);
+            tableFilter.Filter = filterFunc;
+            this.AddFilter(tableFilter);
+        }
+        /// <summary>
+        /// Do tabulky přidá další filtr
+        /// </summary>
+        /// <param name="tableFilter"></param>
+        public void AddFilter(TableFilter tableFilter)
+        {
+            if (tableFilter == null)
+                throw new GraphLibCodeException("Do tabulky nelze přidat filtr, který je null.");
+            if (String.IsNullOrEmpty(tableFilter.Name))
+                throw new GraphLibCodeException("Do tabulky nelze přidat filtr, jehož název není zadán.");
+
+            if (this.FilterDict.ContainsKey(tableFilter.Name))
+                this.FilterDict[tableFilter.Name] = tableFilter;
+            else
+                this.FilterDict.Add(tableFilter.Name, tableFilter);
+            this.InvalidateRows();
+        }
+        /// <summary>
+        /// Odebere daný filtr
+        /// </summary>
+        /// <param name="filter"></param>
+        public bool RemoveFilter(TableFilter filter)
+        {
+            return (filter != null ? this.RemoveFilter(filter.Name) : false);
+        }
+        /// <summary>
+        /// Odebere filtr daného jména
+        /// </summary>
+        /// <param name="name"></param>
+        public bool RemoveFilter(string name)
+        {
+            if (!String.IsNullOrEmpty(name) && this.FilterDict.ContainsKey(name))
+            {
+                this.FilterDict.Remove(name);
+                this.InvalidateRows();
+                return true;
+            }
+            return false;
+        }
+        /// <summary>
+        /// Zahodí všechny filtry
+        /// </summary>
+        public void ResetFilters()
+        {
+            this.FilterDict.Clear();
+            this.InvalidateRows();
+        }
+        /// <summary>
+        /// Invaliduje počet řádků v grafické tabulce
+        /// </summary>
+        internal void InvalidateRows()
+        {
+            this.RowsValid = false;
+            if (this.HasGTable)
+                this.GTable.Invalidate(InvalidateItem.RowsCount);
+        }
+        /// <summary>
+        /// Metoda vrátí true, pokud daný řádek má být zobrazen v kolekci <see cref="RowsSorted"/>, na základě řádkových filtrů.
+        /// Tuto metodu nemá význam volat, když <see cref="RowFiltersExists"/> je false.
+        /// Tato metoda ale sama <see cref="RowFiltersExists"/> netestuje, kvůli rychlosti (předpokládá se, že tuto hodnotu otestovala funkce volající).
+        /// </summary>
+        /// <param name="row"></param>
+        /// <returns></returns>
+        protected bool FilterRow(Row row)
+        {
+            foreach (TableFilter tableFilter in this.FilterDict.Values)
+            {
+                if (!tableFilter.Filter(row)) return false;
+            }
+            return true;
+        }
+        /// <summary>
+        /// Obsahuje true, pokud existují nějaké řádkové filtry, a volání metody <see cref="FilterRow(Row)"/> má význam.
+        /// Pokud neexistují řádkové filtr, berou se řádky za viditelné.
+        /// </summary>
+        public bool RowFiltersExists { get { return (this._FilterDict != null && this._FilterDict.Count > 0); } }
+        /// <summary>
+        /// Index filtrů
+        /// </summary>
+        protected Dictionary<string, TableFilter> FilterDict { get { if (this._FilterDict == null) this._FilterDict = new Dictionary<string, TableFilter>(); return this._FilterDict; } }
+        private Dictionary<string, TableFilter> _FilterDict;
+        #endregion
+        #region TagItems = štítky náležející k řádku, podpora pro filtrování
         /// <summary>
         /// Obsahuje true, pokud this tabulka má alespoň jednu položku v <see cref="TagItems"/>.
         /// </summary>
@@ -562,18 +744,36 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public TagItem[] TagItems { get { this._CheckTagItems(); return this._TagItems; } }
         /// <summary>
-        /// Metoda projde svoje <see cref="TagItems"/>, a aplikuje jejich filtr na základě hodnoty <see cref="TagItem.Checked"/>.
+        /// 
         /// </summary>
-        public void TagItemsApply()
+        /// <param name="filterTagItems"></param>
+        public void TagItemsSetFilter(TagItem[] filterTagItems)
         {
-            TagItem[] tagFilter = this.TagItems.Where(t => t.Checked).ToArray();
-
-            foreach (Row row in this.Rows)
-                row.Visible = ((ITagItemOwner)row).FilterByTagValues(tagFilter);
-
-            if (this.HasGTable)
-                this.GTable.Invalidate(InvalidateItem.RowsCount);
+            if (filterTagItems == null || filterTagItems.Length == 0)
+                this.RemoveFilter(TagItemFilterName);
+            else
+            {
+                this.TagItemFilterItems = filterTagItems;
+                this.AddFilter(TagItemFilterName, this.TagItemFilter);
+            }
         }
+        /// <summary>
+        /// Metoda provede filtrování daného řádku pomocí TagFilter
+        /// </summary>
+        /// <param name="row"></param>
+        /// <returns></returns>
+        protected bool TagItemFilter(Row row)
+        {
+            return ((ITagItemOwner)row).FilterByTagValues(this.TagItemFilterItems);
+        }
+        /// <summary>
+        /// Položky filtru TagItems
+        /// </summary>
+        protected TagItem[] TagItemFilterItems { get; private set; }
+        /// <summary>
+        /// Název filtru podle TagItems
+        /// </summary>
+        protected const string TagItemFilterName = "TagItemFilterName";
         /// <summary>
         /// Výška jednoho řádku filtru s položkami <see cref="TagItems"/>.
         /// Nezadáno = default (24 pixelů)
@@ -629,92 +829,9 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public event EventHandler TagItemsChanged;
         /// <summary>
-        /// Soupis štítků ze všech řádků.
+        /// Soupis všech štítků ze všech řádků.
         /// </summary>
         private TagItem[] _TagItems;
-        #endregion
-        #region Třídění a filtrování řádků
-        /// <summary>
-        /// Tato property vrací soupis všech zobrazitelných (=aktuálně viditelných) řádků, setříděný podle prvního ze sloupců, který má nastaven režim třídění jiný než None.
-        /// Tato property vždy kompletně vyhodnotí data a vrátí nový objekt, nepoužívá se žádná úroveň cachování. 
-        /// Pozor na výkon, užívejme tuto property střídmě.
-        /// </summary>
-        public Row[] RowsSorted
-        {
-            get
-            {
-                // Základní viditelnost řádku daná kódem (Row.Visible) a řádkovým filtrem (RowFilterApply):
-                bool hasRowFilter = this.HasRowFilter;
-                List<Row> list = this.Rows.Where(r => (r.Visible && (hasRowFilter ? this.RowFilterApply(r) : true))).ToList();
-
-                // Třídění podle sloupce:
-                if (list.Count > 1)
-                {
-                    Column sortColumn = this.Columns.FirstOrDefault(c => (c.SortCurrent == ItemSortType.Ascending || c.SortCurrent == ItemSortType.Descending));
-                    if (sortColumn != null)
-                        // Bude to tříděné...
-                        _RowsSort(list, sortColumn);
-                }
-
-                return list.ToArray();
-            }
-        }
-        /// <summary>
-        /// Metoda zajistí setřídění seznamu řádků podle dodaného sloupce.
-        /// Metoda sama detekuje směr třídění, sloupec, jeho komparátor, přípravu komparační hodnoty (IComparableItem.Value) a konečně i provedení odpovídajícího třídění seznamu.
-        /// </summary>
-        /// <param name="list"></param>
-        /// <param name="sortColumn"></param>
-        private void _RowsSort(List<Row> list, Column sortColumn)
-        {
-            // Pokud třídící sloupec obsahuje komparátor (funkce sortColumn.ValueComparator je zadaná), 
-            //   pak metoda PrepareValue() dostává parametr "valueIsComparable" = false, metoda PrepareValue() tedy naplní Value, 
-            //   a komparátor (sortColumn.ValueComparator) dostane k porovnání hodnotu object IComparableItem.Value :
-            bool columnHasComparator = (sortColumn.ColumnProperties.ValueComparator != null);
-            bool valueIsComparable = !columnHasComparator;
-            list.ForEach(r => (r as IComparableItem).PrepareValue(sortColumn.ColumnId, valueIsComparable));
-
-            switch (sortColumn.SortCurrent)
-            {
-                case ItemSortType.Ascending:
-                    if (columnHasComparator)
-                        list.Sort((a, b) => sortColumn.ColumnProperties.ValueComparator((a as IComparableItem).Value, (b as IComparableItem).Value));
-                    else
-                        list.Sort((a, b) => SortRowsCompare((a as IComparableItem).ValueComparable, (b as IComparableItem).ValueComparable));
-                    break;
-
-                case ItemSortType.Descending:
-                    if (columnHasComparator)
-                        list.Sort((a, b) => sortColumn.ColumnProperties.ValueComparator((b as IComparableItem).Value, (a as IComparableItem).Value));
-                    else
-                        list.Sort((a, b) => SortRowsCompare((b as IComparableItem).ValueComparable, (a as IComparableItem).ValueComparable));
-                    break;
-
-            }
-        }
-        /// <summary>
-        /// Komparátor dvou hodnot typu IComparable, z nichž kterákoli smí být null
-        /// </summary>
-        /// <param name="valueA"></param>
-        /// <param name="valueB"></param>
-        /// <returns></returns>
-        private static int SortRowsCompare(IComparable valueA, IComparable valueB)
-        {
-            if (valueA == null && valueB == null) return 0;
-            if (valueA == null) return -1;
-            if (valueB == null) return 1;
-            return valueA.CompareTo(valueB);
-        }
-        /// <summary>
-        /// true pokud tabulka má řádkový filtr
-        /// </summary>
-        protected bool HasRowFilter { get { return false; } }
-        /// <summary>
-        /// aplikuje řádkový filtr na daný řádek, vrátí true = řádek má být viditelný / false = skrýt, nevyhovuje filtru
-        /// </summary>
-        /// <param name="row"></param>
-        /// <returns></returns>
-        protected bool RowFilterApply(Row row) { return true; }
         #endregion
         #region GUI vlastnosti
         /// <summary>
@@ -1520,25 +1637,60 @@ namespace Asol.Tools.WorkScheduler.Data
             }
         }
         /// <summary>
-        /// Metoda se pokusí vrátit řádek pro daný GId. Pokud záznam neexistuje, vrací false a jako out Row dává null.
-        /// Metoda vyhodí chybu, pokud GId je null, nebo tabulka nemá <see cref="HasPrimaryIndex"/>, nebo pokud pro GId existuje více řádků.
+        /// Metoda se pokusí najít řádek podle daného klíče, vrací true pokud je nalezen.
+        /// Pokud dojde k chybě (nezadaný ID, neexistující PrimaryKey, více záznamů pro daný klíč), pak vrací false (=řádek nenalezen).
+        /// Toto chování lze změnit parametrem checkErrors: false = default = chyby nehlásit, vrátit false; true = chyby hlásit.
         /// </summary>
-        /// <param name="gId"></param>
-        /// <param name="row"></param>
+        /// <param name="gId">Identifikátor řádku</param>
+        /// <param name="row">Out nalezený řádek</param>
+        /// <param name="checkErrors">false: Jakékoli chyby ignoruj, prostě vrať false. true = chyby hlásit normálně jako chyby (GraphLibCodeException).</param>
+        /// <returns></returns>
+        public bool TryFindRow(GId gId, out Row row, bool checkErrors = false)
+        {
+            return this._TryGetRowOnPrimaryKey(gId, out row, checkErrors);
+
+        }
+        /// <summary>
+        /// Metoda se pokusí vrátit řádek pro daný GId. Pokud záznam neexistuje, vrací false a jako out Row dává null.
+        /// Metoda vyhodí chybu, pokud daný klíč GId je null, nebo tabulka nemá <see cref="HasPrimaryIndex"/>, nebo pokud pro GId existuje více řádků.
+        /// </summary>
+        /// <param name="gId">Identifikátor řádku</param>
+        /// <param name="row">Out nalezený řádek</param>
         /// <returns></returns>
         public bool TryGetRowOnPrimaryKey(GId gId, out Row row)
         {
-            if (!this.HasPrimaryIndex)
-                throw new GraphLibCodeException("Tabulka <" + this.TableName + "> nemá primární index, nelze v ní použít metodu TryGetRowOnPrimaryKey().");
-            if (gId == null)
-                throw new GraphLibCodeException("Nelze vyhledávat v tabulce podle GId, pokud je null.");
-
+            return this._TryGetRowOnPrimaryKey(gId, out row, false);
+        }
+        /// <summary>
+        /// Metoda se pokusí vrátit řádek pro daný GId. Pokud záznam neexistuje, vrací false a jako out Row dává null.
+        /// Metoda vyhodí chybu, pokud daný klíč GId je null, nebo tabulka nemá <see cref="HasPrimaryIndex"/>, nebo pokud pro GId existuje více řádků.
+        /// </summary>
+        /// <param name="gId">Identifikátor řádku</param>
+        /// <param name="row">Out nalezený řádek</param>
+        /// <param name="checkErrors">false: Jakékoli chyby ignoruj, prostě vrať false. true = chyby hlásit normálně jako chyby (GraphLibCodeException).</param>
+        /// <returns></returns>
+        private bool _TryGetRowOnPrimaryKey(GId gId, out Row row, bool checkErrors)
+        {
             row = null;
+            if (!this.HasPrimaryIndex)
+            {
+                if (!checkErrors) return false;
+                throw new GraphLibCodeException("Tabulka <" + this.TableName + "> nemá primární index, nelze v ní použít metodu TryGetRowOnPrimaryKey().");
+            }
+            if (gId == null)
+            {
+                if (!checkErrors) return false;
+                throw new GraphLibCodeException("Nelze vyhledávat v tabulce podle GId, pokud je null.");
+            }
+
             List<Row> rowList;
             if (!this._PrimaryIndex.TryGetValue(gId, out rowList)) return false;
             if (rowList.Count == 0) return false;
             if (rowList.Count > 1)
+            {
+                if (!checkErrors) return false;
                 throw new GraphLibCodeException("Tabulka <" + this.TableName + "> obsahuje pro primární klíč <" + gId + "> víc než jeden záznam. Nelze v ní použít metodu TryGetRowOnPrimaryKey(), ale TryGetRowsOnPrimaryKey().");
+            }
             row = rowList[0];
             return true;
         }
@@ -1871,6 +2023,10 @@ namespace Asol.Tools.WorkScheduler.Data
             set { this._ColumnHeader = value; }
         }
         private GColumnHeader _ColumnHeader;
+        /// <summary>
+        /// Vizuální pořadí tohoto sloupce, 0 má první vizuálně dostupný sloupec (tzn. po přemístění jiného sloupce na první pozici bude ten nový mít Order = 0)
+        /// </summary>
+        public int VisualOrder { get { return this.ColumnSize.Order; } }
         #endregion
         #region Třídění podle sloupce
         /// <summary>
@@ -2376,13 +2532,15 @@ namespace Asol.Tools.WorkScheduler.Data
         public Row()
         {
             this._RowId = -1;
+            this._ParentChildMode = RowParentChildMode.Root;
             this._CellDict = new Dictionary<int, Cell>();
         }
         /// <summary>
         /// Konstruktor
         /// </summary>
         /// <param name="values"></param>
-        public Row(params object[] values) : this()
+        public Row(params object[] values)
+            : this()
         {
             this._CellInit(values);
         }
@@ -2714,6 +2872,38 @@ namespace Asol.Tools.WorkScheduler.Data
             }
         }
         #endregion
+        #region Parent Rows, Child, Nodes, Tree
+        /// <summary>
+        /// Parent řádky tohoto řádku.
+        /// Jeden řádek může být Child řádkem v několika Parent řádcích, v závislosti na datové konstrukci.
+        /// Samozřejmě jeden Parent řádek může mít více Child řádků.
+        /// Vizuálně: pokud je jeden Child nastaven pro více Parentů, pak nemohou být tyto Child zobrazovány současně.
+        /// To naše technika nedovoluje: jeden prvek může být zobrazen buď tam, nebo jinde; ale ne na dvou místech současně.
+        /// Proto takové řádky před zobrazením takových Childs nodů zavřou jiné nody, aby se prvek zobrazil jen jednou.
+        /// </summary>
+        public Row[] ParentRows { get; set; }
+        /// <summary>
+        /// Režim chování řádku z hlediska Parent - Child
+        /// </summary>
+        public RowParentChildMode ParentChildMode { get { return this._ParentChildMode; } set { this._ParentChildMode = value; this.Table?.InvalidateRows(); } }
+        /// <summary>
+        /// true pokud this řádek je nějaký Child (<see cref="RowParentChildMode.Child"/> nebo <see cref="RowParentChildMode.DynamicChild"/>)
+        /// </summary>
+        public bool IsChildNode { get { return (this._ParentChildMode == RowParentChildMode.Child || this._ParentChildMode == RowParentChildMode.DynamicChild); } }
+        /// <summary>
+        /// true pokud this řádek je Root (<see cref="RowParentChildMode.Root"/> nebo <see cref="RowParentChildMode.DynamicChild"/>)
+        /// </summary>
+        public bool IsRootNode { get { return (this._ParentChildMode == RowParentChildMode.Root); } }
+        private RowParentChildMode _ParentChildMode;
+        /// <summary>
+        /// Obsahuje true, pokud this řádek obsahuje nějaké <see cref="ChildRows"/> řádky
+        /// </summary>
+        public bool HasChildRows { get { return true /* ??? */;  } }
+        /// <summary>
+        /// Obsahuje Childs řádky tohoto Parent řádku. Může být null nebo může obsahovat 0 prvků.
+        /// </summary>
+        public Row[] ChildRows { get { return null; /* ??? */  } }
+        #endregion
         #region Výška řádku, kompletní layout okolo výšky řádku, implementace ISequenceLayout a IVisualParent
         /// <summary>
         /// Koordinátor výšky řádku.
@@ -2861,6 +3051,35 @@ namespace Asol.Tools.WorkScheduler.Data
         object IComparableItem.Value { get { return _IComparableItemValue; } } private object _IComparableItemValue;
         IComparable IComparableItem.ValueComparable { get { return _IComparableItemValueComparable; } } private IComparable _IComparableItemValueComparable;
         #endregion
+    }
+    /// <summary>
+    /// Režim chování řádku z hlediska Parent - Child
+    /// </summary>
+    public enum RowParentChildMode
+    {
+        /// <summary>
+        /// Neurčeno, nepoužívá se, řádek není zobrazován nikdy
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Root řádek = jde zobrazován v základním seznamu řádků v tabulce, používá se na něj filtrování a třídění.
+        /// Toto je výchozí hodnota pro new instanci třídy <see cref="Row"/>.
+        /// </summary>
+        Root,
+        /// <summary>
+        /// Child řádek = zobrazuje se jako podřízený řádek pod svým Parent řádkem.
+        /// Hierarchie Root - Child - Child může být víceúrovňová.
+        /// Vztahy mezi Parent a Child jsou { N : N }.
+        /// Tento konkrétní typ popisuje statický vztah Child na Parenta, tzn. seznam Parentů se nemění.
+        /// </summary>
+        Child,
+        /// <summary>
+        /// Child řádek = zobrazuje se jako podřízený řádek pod svým Parent řádkem.
+        /// Hierarchie Root - Child - Child může být víceúrovňová.
+        /// Vztahy mezi Parent a Child jsou { N : N }.
+        /// Tento konkrétní typ popisuje dynamický vztah Child na Parenta, tzn. seznam Parentů se může změnit.
+        /// </summary>
+        DynamicChild
     }
     #endregion
     #region Cell
@@ -3238,6 +3457,45 @@ namespace Asol.Tools.WorkScheduler.Data
         #endregion
     }
     #endregion
+    #region MyRegion
+    /// <summary>
+    /// Předek pro třídy implementující filtr tabulky
+    /// </summary>
+    public class TableFilter
+    {
+        /// <summary>
+        /// Konsturktor
+        /// </summary>
+        /// <param name="name"></param>
+        public TableFilter(string name)
+        {
+            this.Name = name;
+        }
+        /// <summary>
+        /// Jméno filtru
+        /// </summary>
+        public string Name { get; set; }
+        /// <summary>
+        /// Tato funkce aplikuje filtr <see cref="Filter"/>, 
+        /// vrací true pro řádek který má být zobrazen.
+        /// </summary>
+        /// <param name="row"></param>
+        /// <returns></returns>
+        protected virtual bool ApplyFilter(Row row)
+        {
+            if (Filter == null) return false;
+            return Filter(row);
+        }
+        /// <summary>
+        /// Funkce, která se používá v metodě <see cref="ApplyFilter(Row)"/>
+        /// </summary>
+        public Func<Row, bool> Filter;
+        /// <summary>
+        /// Možné úložiště pro datový podklad filtru
+        /// </summary>
+        public object UserData;
+    }
+    #endregion
     #region Interfaces
     /// <summary>
     /// Předpis pro tabulku, aby mohla dostávat události napřímo
@@ -3404,6 +3662,22 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         IComparable ValueComparable { get; }
     }
+    /// <summary>
+    /// Definice objektu, který bude filtrovat řádky
+    /// </summary>
+    public interface ITableFilter
+    {
+        /// <summary>
+        /// Jméno filtru
+        /// </summary>
+        string Name { get; }
+        /// <summary>
+        /// Filtrování řádku. Vstupem je řádek, výstupem je true = řádek je viditelný / false = neviditelný
+        /// </summary>
+        /// <param name="row"></param>
+        /// <returns></returns>
+        bool Filter(Row row);
+    }
     #endregion
     #region ItemSize : řízení jednorozměrné velikosti datového prvku, bez jeho pozicování ve vizuální sekvenci
     /// <summary>
@@ -3435,6 +3709,12 @@ namespace Asol.Tools.WorkScheduler.Data
             : base(sizeMinimum, sizeDefault, sizeMaximum)
         { }
         #endregion
+        #region Order
+        /// <summary>
+        /// Vizuální pořadí; -1 = neviditelné (velikost není kladná)
+        /// </summary>
+        public int Order { get; set; }
+        #endregion
         #region Overrides
         /// <summary>
         /// Metoda vrací danou velikost zarovnanou do platných mezí (dané parametry).
@@ -3459,6 +3739,14 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Vrací implicitní hodnotu, použije se když ani Parent nemá hodnotu definovanou
         /// </summary>
         protected override int SizeDefaultDefault { get { return 100; } }
+        /// <summary>
+        /// Výchozí hodnoty
+        /// </summary>
+        protected override void Clear()
+        {
+            base.Clear();
+            this.Order = -1;
+        }
         #endregion
         #region Implicitní konverze z/na int, porovnání
         /// <summary>
@@ -3518,6 +3806,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public ItemSize()
         {
+            this.Clear();
         }
         /// <summary>
         /// Konstruktor
@@ -3758,6 +4047,10 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Výchozí hodnota pro <see cref="ReOrderEnabled"/>
         /// </summary>
         protected virtual bool ReOrderEnabledDefault { get { return true; } }
+        /// <summary>
+        /// Je voláno na začátku každého konstruktoru!
+        /// </summary>
+        protected virtual void Clear() { }
         #endregion
     }
     #endregion

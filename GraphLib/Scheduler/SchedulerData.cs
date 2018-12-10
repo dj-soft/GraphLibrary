@@ -449,9 +449,35 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="guiToolbarItem">Datová (GUI) položka ToolBaru</param>
         private void _ToolBarItemClickApplication(FunctionItem toolBarItem, GuiToolbarItem guiToolbarItem)
         {
+            bool callAppHost = this._ToolBarItemClickApplicationRunGuiActions(toolBarItem, guiToolbarItem);
+            if (callAppHost)
+                this._ToolBarItemClickApplicationCallAppHost(toolBarItem, guiToolbarItem);
+        }
+        /// <summary>
+        /// Metoda detekuje GUI akce, které jsou předepsané v tlačítku Toolbaru <see cref="GuiToolbarItem.GuiActions"/>, a provede je.
+        /// Vrací true, pokud má být volána servisní funkci v AppHost (tj. když toto volání NENÍ potlačeno příznakem <see cref="GuiActionType.SuppressCallAppHost"/>).
+        /// </summary>
+        /// <param name="toolBarItem"></param>
+        /// <param name="guiToolbarItem"></param>
+        /// <returns></returns>
+        private bool _ToolBarItemClickApplicationRunGuiActions(FunctionItem toolBarItem, GuiToolbarItem guiToolbarItem)
+        {
+            if (guiToolbarItem == null ||!guiToolbarItem.GuiActions.HasValue) return true;    // Žádná akce = žádné potlačení, vracím true
+            GuiActionType guiActions = guiToolbarItem.GuiActions.Value;
+            this.RunGuiActions(toolBarItem, guiToolbarItem, guiActions);
+            bool suppressCallAppHost = guiActions.HasFlag(GuiActionType.SuppressCallAppHost);
+            return !suppressCallAppHost;
+        }
+        /// <summary>
+        /// Metoda zavolá servisní funkci v AppHost, s commandem <see cref="GuiRequest.COMMAND_ToolbarClick"/>, a předá tam button, na nějž bylo kliknuto
+        /// </summary>
+        /// <param name="toolBarItem"></param>
+        /// <param name="guiToolbarItem"></param>
+        private void _ToolBarItemClickApplicationCallAppHost(FunctionItem toolBarItem, GuiToolbarItem guiToolbarItem)
+        {
             GuiRequest request = new GuiRequest();
             request.Command = GuiRequest.COMMAND_ToolbarClick;
-            guiToolbarItem.IsChecked = toolBarItem.IsChecked;        // Přenesu příznak "Označen"
+            guiToolbarItem.IsChecked = toolBarItem.IsChecked;        // Přenesu příznak "Označen" (je to nutné?)
             request.ToolbarItem = guiToolbarItem;
             request.CurrentState = this._CreateGuiCurrentState();
             this._CallAppHostFunction(request, this._ToolBarItemClickApplicationResponse, guiToolbarItem.BlockGuiTime, guiToolbarItem.BlockGuiMessage);
@@ -593,6 +619,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                     currData.IsCheckable = refrData.IsCheckable;
                 if (_Changed(currData.IsChecked, refrData.IsChecked, GToolBarRefreshMode.RefreshControl, ref refreshMode))
                     currData.IsChecked = refrData.IsChecked;
+                if (_Changed(currData.CheckedGroupName, refrData.CheckedGroupName, GToolBarRefreshMode.RefreshControl, ref refreshMode))
+                    currData.CheckedGroupName = refrData.CheckedGroupName;
                 if (_Changed(currData.ImageChecked, refrData.ImageChecked, GToolBarRefreshMode.RefreshControl, ref refreshMode))
                     currData.ImageChecked = refrData.ImageChecked;
                 if (_Changed(currData.Size, refrData.Size, GToolBarRefreshMode.RefreshLayout, ref refreshMode))
@@ -605,6 +633,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                     currData.BlockGuiTime = refrData.BlockGuiTime;
                 if (_Changed(currData.BlockGuiMessage, refrData.BlockGuiMessage, GToolBarRefreshMode.None, ref refreshMode))
                     currData.BlockGuiMessage = refrData.BlockGuiMessage;
+                if (_Changed(currData.GuiActions, refrData.GuiActions, GToolBarRefreshMode.RefreshControl, ref refreshMode))
+                    currData.GuiActions = refrData.GuiActions;
+                if (_Changed(currData.RunInteractionNames, refrData.RunInteractionNames, GToolBarRefreshMode.RefreshControl, ref refreshMode))
+                    currData.RunInteractionNames = refrData.RunInteractionNames;
 
                 return refreshMode;
             }
@@ -642,6 +674,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 return true;
             }
             private static bool _Changed(LayoutHint? oldValue, LayoutHint? newValue, GToolBarRefreshMode result, ref GToolBarRefreshMode refreshMode)
+            {
+                if (!newValue.HasValue) return false;                // Pokud newValue není zadáno, pak nejde o změnu (jen nebyl nový údaj vepsán).
+                if (oldValue.HasValue && oldValue.Value == newValue.Value) return false;         // Pokud oldValue má hodnotu, a hodnota je beze změny, pak nejde o změnu.
+                // Jde o změnu (buď z null na not null, anebo změnu hodnoty):
+                refreshMode = (GToolBarRefreshMode)((int)refreshMode | (int)result);
+                return true;
+            }
+            private static bool _Changed(GuiActionType? oldValue, GuiActionType? newValue, GToolBarRefreshMode result, ref GToolBarRefreshMode refreshMode)
             {
                 if (!newValue.HasValue) return false;                // Pokud newValue není zadáno, pak nejde o změnu (jen nebyl nový údaj vepsán).
                 if (oldValue.HasValue && oldValue.Value == newValue.Value) return false;         // Pokud oldValue má hodnotu, a hodnota je beze změny, pak nejde o změnu.
@@ -729,413 +769,135 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             /// Název grupy, kde se tento prvek objeví. Nezadaná grupa = implicitní s názvem "FUNKCE".
             /// </summary>
             public string GroupName { get { return (this._HasItem ? this._GuiToolBarItem.GroupName : ""); } set { if (this._HasItem) this._GuiToolBarItem.GroupName = value; } }
-            #endregion
-        }
-        #endregion
-        #region Datové panely, jednotlivé datové tabulky
-        /// <summary>
-        /// Načte položky do panelů z dodaných dat Gui
-        /// </summary>
-        /// <param name="guiPages"></param>
-        private void _LoadGuiPanels(GuiPages guiPages)
-        {
-            this._GuiPages = guiPages;
-        }
-        /// <summary>
-        /// Data o stránkách dat z Gui
-        /// </summary>
-        private GuiPages _GuiPages;
-        /// <summary>
-        /// Do připraveného vizuálního controlu <see cref="_MainControl"/> vloží objekty za jednotlivé stránky s daty z <see cref="_GuiPages"/>.
-        /// </summary>
-        private void _FillMainControlPagesFromGui()
-        {
-            using (App.Trace.Scope(TracePriority.Priority2_Lowest, "MainData", "FillMainControlPagesFromGui", ""))
-            {
-                this._MainControl.ClearPages();
-                this._MainControl.SynchronizedTime.Value = this.GuiData.Properties.InitialTimeRange;
-                this._MainControl.SynchronizedTime.ValueLimit = this.GuiData.Properties.TotalTimeRange;
-                foreach (GuiPage guiPage in this._GuiPages.Pages)
-                    App.TryRun(() => this._MainControl.AddPage(guiPage));
-                this._FillDataTables();
-            }
-        }
-        /// <summary>
-        /// Souhrn všech datových tabulek ze všech panelů.
-        /// Každá tabulka má své unikátní jméno (alespoň měla by mít), uložené v <see cref="MainDataTable.TableName"/>.
-        /// </summary>
-        protected MainDataTable[] DataTables { get { return this._DataTables; } }
-        /// <summary>
-        /// Metoda načte souhrn všech tabulek <see cref="MainDataTable"/> ze všech vytvořených panelů do <see cref="_DataTables"/>.
-        /// </summary>
-        private void _FillDataTables()
-        {
-            using (App.Trace.Scope(TracePriority.Priority2_Lowest, "MainData", "FillDataTables", ""))
-            {
-                List<MainDataTable> tableList = new List<MainDataTable>();
-                foreach (SchedulerPanelInfo panel in this._MainControl.SchedulerPanels)
-                    tableList.AddRange(panel.SchedulerPanel.DataTables);
-                this._DataTables = tableList.ToArray();
-            }
-        }
-        /// <summary>
-        /// Metoda má najít a vrátit komplexní tabulku MainDataTable podle jejího plného jména.
-        /// Může vrátit null.
-        /// Pokud by existovalo více tabulek shodného jména, vrací první z nich.
-        /// </summary>
-        /// <param name="fullName"></param>
-        /// <returns></returns>
-        private MainDataTable _SearchTable(string fullName)
-        {
-            return this._DataTables.FirstOrDefault(t => String.Equals(t.TableName, fullName));
-        }
-        /// <summary>
-        /// Souhrn všech datových tabulek ze všech panelů.
-        /// </summary>
-        private MainDataTable[] _DataTables;
-        #endregion
-        #region Kontextové menu
-        /// <summary>
-        /// Načte položky do Kontextových menu z dodaných dat Gui
-        /// </summary>
-        /// <param name="guiContextMenuSet"></param>
-        private void _LoadGuiContext(GuiContextMenuSet guiContextMenuSet)
-        {
-            this._GuiContextMenuSet = guiContextMenuSet;
-
-            List<ContextFunctionItem> functions = new List<ContextFunctionItem>();
-            foreach (GuiContextMenuItem guiContextMenuItem in guiContextMenuSet.Items)
-            {
-                ContextFunctionItem item = ContextFunctionItem.Create(this, guiContextMenuItem);
-                if (item != null)
-                    functions.Add(item);
-            }
-            this._ContextFunctions = functions.ToArray();
-        }
-        /// <summary>
-        /// Data o kontextových funkcích z Gui
-        /// </summary>
-        private GuiContextMenuSet _GuiContextMenuSet;
-        /// <summary>
-        /// Souhrn všech definovaných funkcí pro všechna kontextová menu v systému.
-        /// Souhrn je načten z <see cref="GuiContextMenuSet"/> v metodě <see cref="_LoadGuiContext(GuiContextMenuSet)"/>, 
-        /// z tohoto souhrnu je vytvořeno kontextové menu pro konkrétní situaci, v metodě <see cref="CreateContextMenu(GuiGridItemId)"/>.
-        /// </summary>
-        protected ContextFunctionItem[] _ContextFunctions;
-        /// <summary>
-        /// Metoda vytvoří a vrátí kontextové menu pro konkrétní prvek grafu, zadaný jeho identifikátorem
-        /// </summary>
-        /// <param name="gridItemId">Identifikátor gridu, řádku, a prvku grafu</param>
-        /// <returns></returns>
-        protected ToolStripDropDownMenu CreateContextMenu(GuiGridItemId gridItemId)
-        {
-            if (this._ContextFunctions == null || this._ContextFunctions.Length == 0) return null;              // Nejsou data => není menu.
-            ContextFunctionItem[] items = this._ContextFunctions.Where(cfi => cfi.IsValidFor(gridItemId)).ToArray();  // Vybereme jen ty funkce, které jsou vhodné pro daný prvek
-            if (items.Length == 0) return null;         // Nic se nehodí => nic se nezobrazí
-
-            // Celkové menu:
-            ToolStripDropDownMenu menu = FunctionItem.CreateDropDownMenuFrom(items, m =>
-            {   // Tuto akci vyvolá metoda CreateDropDownMenuFrom() po vytvoření menu, ale před přidáním položek:
-                m.Tag = gridItemId;
-                m.Items.Add(new ToolStripLabel("NABÍDKA FUNKCÍ"));
-                m.Items.Add(new ToolStripSeparator());
-            });
-
-            menu.ItemClicked += this.ContextMenuItemClicked;
-            return menu;
-        }
-        /// <summary>
-        /// Obsluha kliknutí na položku kontextového menu
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void ContextMenuItemClicked(object sender, ToolStripItemClickedEventArgs e)
-        {
-            ToolStripDropDownMenu menu = sender as ToolStripDropDownMenu;
-            if (menu == null) return;
-            menu.Hide();
-
-            // Vyjmeme data:  a) identifikátor prvku grafu (tabulka, řádek, prvek),   b) data konkrétní vybrané funkce:
-            GuiGridItemId gridItemId = menu.Tag as GuiGridItemId;
-            ContextFunctionItem funcArgs = e.ClickedItem.Tag as ContextFunctionItem;
-            GuiContextMenuItem guiContextMenuItem = (funcArgs != null ? funcArgs.GuiContextMenuItem : null);
-            if (guiContextMenuItem != null)
-                // Kontextové menu obsahuje výhradně aplikační funkce (GuiContextMenuItem):
-                this._ContextMenuItemClickApplication(guiContextMenuItem, gridItemId);
-        }
-        /// <summary>
-        /// Obsluha události ItemClick na Aplikační položce kontextového menu
-        /// </summary>
-        /// <param name="guiContextMenuItem"></param>
-        /// <param name="gridItemId">Identifikátor gridu, řádku, a prvku grafu</param>
-        private void _ContextMenuItemClickApplication(GuiContextMenuItem guiContextMenuItem, GuiGridItemId gridItemId)
-        {
-            GuiRequest request = new GuiRequest();
-            request.Command = GuiRequest.COMMAND_ContextMenuClick;
-            request.ContextMenuItem = guiContextMenuItem;
-            request.ActiveGraphItem = gridItemId;
-            request.CurrentState = this._CreateGuiCurrentState();
-            this._CallAppHostFunction(request, this._ContextMenuItemClickApplicationResponse);
-        }
-        /// <summary>
-        /// Zpracování odpovědi z aplikační funkce, na událost ItemClick na Aplikační položce ToolBaru
-        /// </summary>
-        /// <param name="response"></param>
-        private void _ContextMenuItemClickApplicationResponse(AppHostResponseArgs response)
-        {
-            this._ProcessResponse(response.GuiResponse);
-        }
-        /// <summary>
-        /// ContextFunctionItem : adapter mezi <see cref="GuiContextMenuItem"/>, a položku kontextového menu <see cref="FunctionItem"/>.
-        /// </summary>
-        protected class ContextFunctionItem : FunctionItem
-        {
-            #region Konstrukce, načtení dat
             /// <summary>
-            /// Konstruktor
+            /// Obsahuje true pokud this prvek může být <see cref="IsChecked"/> = být označen jako "aktivní"
             /// </summary>
-            /// <param name="provider"></param>
-            /// <param name="guiContextMenuItem"></param>
-            protected ContextFunctionItem(IFunctionProvider provider, GuiContextMenuItem guiContextMenuItem) : base(provider)
-            {
-                this._GuiContextMenuItem = guiContextMenuItem;
-                this._VisibleFor = ContextFunctionValidInfo.ParseValidInfo(guiContextMenuItem.VisibleFor);
-                this._EnableFor = ContextFunctionValidInfo.ParseValidInfo(guiContextMenuItem.EnableFor);
-            }
+            public override bool IsCheckable { get { return (this._HasItem ? (this._GuiToolBarItem.IsCheckable.HasValue ? this._GuiToolBarItem.IsCheckable.Value : false) : base.IsCheckable); } set { if (this._HasItem) this._GuiToolBarItem.IsCheckable = value; else base.IsCheckable = value; } }
             /// <summary>
-            /// Z této deklarace je funkce načtena
+            /// Obsahuje true, pokud tento prvek je aktivní (má u sebe zaškrtávátko)
             /// </summary>
-            private GuiContextMenuItem _GuiContextMenuItem;
+            public override bool IsChecked { get { return (this._HasItem ? (this._GuiToolBarItem.IsChecked.HasValue ? this._GuiToolBarItem.IsChecked.Value : false) : base.IsChecked); } set { if (this._HasItem) this._GuiToolBarItem.IsChecked = value; else base.IsChecked = value; } }
             /// <summary>
-            /// true pokud je reálně přítomna položka <see cref="_GuiContextMenuItem"/>
-            /// </summary>
-            private bool _HasItem { get { return (this._GuiContextMenuItem != null); } }
-            /// <summary>
-            /// Vytvoří a vrátí new instanci <see cref="ContextFunctionItem"/> pro data definovaná v <see cref="GuiContextMenuItem"/>.
-            /// Může vrátit null pro neplatné zadání.
-            /// </summary>
-            /// <param name="provider"></param>
-            /// <param name="guiContextMenuItem"></param>
-            /// <returns></returns>
-            public static ContextFunctionItem Create(IFunctionProvider provider, GuiContextMenuItem guiContextMenuItem)
-            {
-                if (provider == null || guiContextMenuItem == null) return null;
-
-                ContextFunctionItem funcItem = new ContextFunctionItem(provider, guiContextMenuItem);
-                return funcItem;
-            }
-            #endregion
-            #region Public override property třídy FunctionItem, načítané z GuiContextMenuItem
-            /// <summary>
-            /// Z této deklarace je funkce načtena
-            /// </summary>
-            public GuiContextMenuItem GuiContextMenuItem { get { return this._GuiContextMenuItem; } }
-            /// <summary>
-            /// Jméno tohoto prvku, prostor pro aplikační identifikátor položky
-            /// </summary>
-            public override string Name { get { return (this._HasItem ? this._GuiContextMenuItem.Name : base.Name); } set { if (this._HasItem) this._GuiContextMenuItem.Name = value; else base.Name = value; } }
-            /// <summary>
-            /// Text do funkce
-            /// </summary>
-            public override string TextText { get { return this._GuiContextMenuItem.Title; } }
-            /// <summary>
-            /// ToolTip k textu
-            /// </summary>
-            public override string ToolTipText { get { return this._GuiContextMenuItem.ToolTip; } }
-            /// <summary>
-            /// Obrázek pro položku menu
-            /// </summary>
-            public override Image Image { get { return Application.App.Resources.GetImage(this._GuiContextMenuItem.Image); } }
-            #endregion
-            #region Určení dostupnosti položky pro konkrétní situaci
-            /// <summary>
-            /// Vrátí true, pokud tato položka kontextového menu se má použít pro prvek, jehož identifikátor <see cref="GuiGridItemId"/> je předán v parametru.
-            /// Pokud tato metoda vrátí true, bude tato položka zařazena do menu.
-            /// Položka si v této metodě může sama určit, zda bude v menu zobrazena jako Enabled nebo Disabled:
-            /// Pokud chce být zobrazena, ale jako Disabled, pak si v této metodě nastaví <see cref="FunctionItem.IsEnabled"/> = false, a pak vrátí true.
-            /// Následně bude vyvolána metoda <see cref="FunctionItem.CreateWinFormItem()"/>, která vygeneruje WinForm položku s odpovídající hodnotou <see cref="System.Windows.Forms.ToolStripMenuItem.Enabled"/>.
-            /// Obdobně se do položky menu přebírají hodnoty <see cref="System.Windows.Forms.ToolStripMenuItem.CheckOnClick"/> (z <see cref="FunctionItem.IsCheckable"/>);
-            /// a <see cref="System.Windows.Forms.ToolStripMenuItem.Checked"/> (z <see cref="FunctionItem.IsChecked"/>).
+            /// Obsahuje název skupiny prvků, které se vzájemně chovají jako OptionGroup.
+            /// To znamená, že právě jeden z prvků skupiny může být <see cref="IsChecked"/> = být označen jako aktivní.
             /// <para/>
-            /// Metoda je volána po každém RightClick, když se má zobrazit kontextové menu, a je volána pro každou definovanou položku kontextového menu.
-            /// Její vyhodnocení by nemělo trvat déle než 1ms.
+            /// Chování:
+            /// <para/>
+            /// a) Pokud je <see cref="CheckedGroupName"/> prázdné, pak se button chová jako CheckBox: změna jeho hodnoty <see cref="IsChecked"/> neovlivní žádný jiný prvek.
+            /// Kliknutí na takový prvek mění hodnotu <see cref="IsChecked"/> z false na true a naopak = lze jej shodit na false.
+            /// <para/>
+            /// b) Pokud je <see cref="CheckedGroupName"/> prázdné, pak se button chová jako RadioButton: kliknutí na neoznačený button jej označí a současně odznačí ostatní buttony v grupě.
+            /// Opakované kliknutí na označený button jej neodznačí.
+            /// Prvky jedné grupy <see cref="CheckedGroupName"/> se musí nacházet v jedné grafické skupině <see cref="GroupName"/> (platí pro Toolbar).
+            /// Pokud by byly umístěny v jiné grupě, nebudou považovány za jednu skupinu, ale více oddělených skupin.
+            /// Naproti tomu jedna grafická grupa <see cref="GroupName"/> může obsahovat více skupin <see cref="CheckedGroupName"/>.
+            /// <para/>
+            /// Je rozumné dávat prvky jedné <see cref="CheckedGroupName"/> blízko k sobě, ale technicky nutné to není.
             /// </summary>
-            /// <param name="gridItemId">Identifikátor gridu, řádku, a prvku grafu</param>
-            /// <returns></returns>
-            public bool IsValidFor(GuiGridItemId gridItemId)
-            {
-                bool isValid = ContextFunctionValidInfo.IsValidFor(gridItemId, this._VisibleFor);
-                if (isValid)
-                    this.IsEnabled = ContextFunctionValidInfo.IsValidFor(gridItemId, this._EnableFor);
-                return isValid;
-            }
-            /// <summary>
-            /// Pole regulárních výrazů, které definují prvky, pro které se má tato funkce zobrazovat.
-            /// </summary>
-            private ContextFunctionValidInfo[] _VisibleFor;
-            /// <summary>
-            /// Pole regulárních výrazů, které definují prvky, pro které má být tato funkce Enabled.
-            /// </summary>
-            private ContextFunctionValidInfo[] _EnableFor;
+            public override string CheckedGroupName { get { return (this._HasItem ? this._GuiToolBarItem.CheckedGroupName : base.CheckedGroupName); } set { if (this._HasItem) this._GuiToolBarItem.CheckedGroupName = value; else base.CheckedGroupName = value; } }
             #endregion
         }
+        #endregion
+        #region GuiActions - provádění reakcí GUI, podle deklarace v toolbaru nebo kdekoliv jinde
         /// <summary>
-        /// Třída, která řeší vhodnost konkrétní kontextové funkce <see cref="ContextFunctionItem"/> pro konkrétní prvek grafu <see cref="GuiGridItemId"/>.
-        /// Podklady získává z definice <see cref="GuiContextMenuItem.VisibleFor"/> a <see cref="GuiContextMenuItem.EnableFor"/>.
+        /// Metoda detekuje akce požadované v <see cref="GuiActionType"/>, a provede je.
         /// </summary>
-        protected class ContextFunctionValidInfo
+        /// <param name="toolBarItem">Vizuální prvek Toolbaru</param>
+        /// <param name="guiToolbarItem">Datový prvek Toolbaru</param>
+        /// <param name="guiActions">Akce</param>
+        internal void RunGuiActions(FunctionItem toolBarItem, GuiToolbarItem guiToolbarItem, GuiActionType guiActions)
         {
-            /// <summary>
-            /// Privátní konstruktor
-            /// </summary>
-            /// <param name="fullNameRegex"></param>
-            /// <param name="classDict"></param>
-            private ContextFunctionValidInfo(System.Text.RegularExpressions.Regex fullNameRegex, Dictionary<int, object> classDict)
-            {
-                this.FullNameRegex = fullNameRegex;
-                this.ClassDict = classDict;
-            }
-            /// <summary>
-            /// Zadaná cesta k <see cref="GuiGrid"/>. Může obsahovat wildcards.
-            /// </summary>
-            protected System.Text.RegularExpressions.Regex FullNameRegex { get; private set; }
-            /// <summary>
-            /// Povolené třídy. Pokud není žádná, neřeší se.
-            /// </summary>
-            protected Dictionary<int, object> ClassDict { get; private set; }
-            /// <summary>
-            /// Metoda vrátí parsované pole prvků <see cref="ContextFunctionValidInfo"/>, získané z daného stringu.
-            /// Může vrátit null.
-            /// </summary>
-            /// <param name="valid"></param>
-            /// <returns></returns>
-            public static ContextFunctionValidInfo[] ParseValidInfo(string valid)
-            {
-                if (String.IsNullOrEmpty(valid)) return null;             // Bez zadání => bez omezení => null
+            bool callRefresh = false;
 
-                List<ContextFunctionValidInfo> result = new List<ContextFunctionValidInfo>();
-                string[] items = valid.Split(';');                        // Jednotlivé prvky ContextFunctionValidInfo
-                foreach (string item in items)
+            if (guiActions.HasFlag(GuiActionType.ResetAllRowFilters))
+                this._RunGuiActionsResetAllRowFilters(toolBarItem, guiToolbarItem, ref callRefresh);
+
+            if (guiActions.HasFlag(GuiActionType.ResetTargetInteractiveFilters))
+                this._RunGuiActionsResetTargetInteractiveFilters(toolBarItem, guiToolbarItem, ref callRefresh);
+
+            if (guiActions.HasFlag(GuiActionType.RunInteractionRowActivated))
+                this._RunGuiActionsInteractionRowActivated(toolBarItem, guiToolbarItem, ref callRefresh);
+
+
+            if (callRefresh)
+                this._MainControl.Refresh();
+        }
+        /// <summary>
+        /// Zruší řádkové filtry všech tabulek
+        /// </summary>
+        /// <param name="toolBarItem"></param>
+        /// <param name="guiToolbarItem"></param>
+        /// <param name="callRefresh">Nastavit na true v případě potřeby Refreshe</param>
+        private void _RunGuiActionsResetAllRowFilters(FunctionItem toolBarItem, GuiToolbarItem guiToolbarItem, ref bool callRefresh)
+        {
+            foreach (MainDataTable table in this.DataTables)
+                table.ResetAllRowFilters(ref callRefresh);
+        }
+        /// <summary>
+        /// Metoda provede akci "Zrušit interaktivní filtry pro target tabulky"
+        /// </summary>
+        private void _RunGuiActionsResetTargetInteractiveFilters(FunctionItem toolBarItem, GuiToolbarItem guiToolbarItem, ref bool callRefresh)
+        {
+            foreach (MainDataTable table in this.DataTables)
+                table.ResetInteractionFilters(ref callRefresh);
+        }
+        /// <summary>
+        /// Provede znovu aktuálně platné interakce všech tabulek
+        /// </summary>
+        /// <param name="toolBarItem"></param>
+        /// <param name="guiToolbarItem"></param>
+        /// <param name="callRefresh">Nastavit na true v případě potřeby Refreshe</param>
+        private void _RunGuiActionsInteractionRowActivated(FunctionItem toolBarItem, GuiToolbarItem guiToolbarItem, ref bool callRefresh)
+        {
+            var interactions = this._GetTableInteractions(guiToolbarItem.RunInteractionNames);
+            if (interactions == null) return;
+
+            foreach (var interaction in interactions)
+                // MainDataTable . RunInteractionThisSource( GuiGridInteraction[] ):
+                interaction.Item1.RunInteractionThisSource(interaction.Item2.ToArray(), ref callRefresh);
+        }
+        /// <summary>
+        /// Metoda vrací soupis tabulek a jejich interakcí, které se mají provést při kliknutí na tlačítko, které má zadané interakce v <see cref="GuiToolbarItem.RunInteractionNames"/>.
+        /// Na vstupu je formát: "GridName1:InteractionNameA;GridName2:InteractionNameB;..."
+        /// Výstupem této metody je pole obsahující páry: Tabulka + všechny její Interakce.
+        /// </summary>
+        /// <param name="runInteractionNames"></param>
+        /// <returns></returns>
+        protected Tuple<MainDataTable, List<GuiGridInteraction>>[] _GetTableInteractions(string runInteractionNames)
+        {
+            if (String.IsNullOrEmpty(runInteractionNames)) return null;
+
+            Dictionary<string, Tuple<MainDataTable, List<GuiGridInteraction>>> result = new Dictionary<string, Tuple<MainDataTable, List<GuiGridInteraction>>>();
+
+            var tableDict = this._DataTables.GetDictionary(t => t.TableName, true);
+
+            string[] pairs = runInteractionNames.Split(';', ',');
+            foreach (string pair in pairs)
+            {
+                if (String.IsNullOrEmpty(pair) || !(pair.Contains(":") || pair.Contains("."))) continue;
+                string[] items = pair.Split(':', '.');
+                if (items.Length < 2) continue;
+                string tableName = items[0].Trim();
+                string interName = items[1].Trim();
+                if (String.IsNullOrEmpty(tableName) || String.IsNullOrEmpty(interName)) continue;
+
+                MainDataTable dataTable;
+                if (!tableDict.TryGetValue(tableName, out dataTable)) continue;
+
+                var interDict = dataTable?.GuiGrid?.GridProperties?.InteractionList.GetDictionary(i => i.Name, true);
+                GuiGridInteraction interaction;
+                if (!interDict.TryGetValue(interName, out interaction)) continue;
+
+                Tuple<MainDataTable, List<GuiGridInteraction>> tableList;
+                if (!result.TryGetValue(tableName, out tableList))
                 {
-                    if (String.IsNullOrEmpty(item)) continue;
-                    System.Text.RegularExpressions.Regex fullNameRegex = null;
-                    Dictionary<int, object> classDict = null;
-                    string[] parts = item.Split(':');                     // FullName:Classes
-                    int partCount = parts.Length;
-                    if (partCount == 1)
-                    {   // Položka s jedním prvkem je autodetect:
-                        classDict = _ParseClasses(parts[0], true);        // Parsování bude striktní = pokud najdu položku, která není číslo, pak se vrátí null
-                        if (classDict == null)
-                            fullNameRegex = _ParseRegex(parts[0]);        // Pokud to nejsou striktně jen číslice, může to být Regex
-                    }
-                    else if (partCount == 2)
-                    {   // Položka s dvěma prvky je jasná:
-                        fullNameRegex = _ParseRegex(parts[0]);
-                        classDict = _ParseClasses(parts[1], false);       // Parsování nebude striktní = beru vše, co se najde
-                    }
-                    if (fullNameRegex != null || classDict != null)
-                    {
-                        ContextFunctionValidInfo info = new ContextFunctionValidInfo(fullNameRegex, classDict);
-                        result.Add(info);
-                    }
+                    tableList = new Tuple<MainDataTable, List<GuiGridInteraction>>(dataTable, new List<GuiGridInteraction>());
+                    result.Add(tableName, tableList);
                 }
+                tableList.Item2.Add(interaction);
+            }
 
-                return result.ToArray();
-            }
-            /// <summary>
-            /// Z dodaného textu, který obsahuje lidsky zadaný Regex, vrátí formální Regex
-            /// </summary>
-            /// <param name="text"></param>
-            /// <returns></returns>
-            private static System.Text.RegularExpressions.Regex _ParseRegex(string text)
-            {
-                if (String.IsNullOrEmpty(text)) return null;
-                return RegexSupport.CreateWildcardsRegex(text);
-            }
-            /// <summary>
-            /// Z dodaného textu, který obsahuje čísla tříd oddělená čárkami, vrátí jejich Dictionary.
-            /// </summary>
-            /// <param name="text"></param>
-            /// <param name="strictParse">Požadavek (true), aby se výsledná Dictionary vrátila pouze tehdy, když vstupní text je korektní = obsahuje jen čísla a oddělovače. Pokud by obsahoval jiné znaky, vrací se null.</param>
-            /// <returns></returns>
-            private static Dictionary<int, object> _ParseClasses(string text, bool strictParse)
-            {
-                if (String.IsNullOrEmpty(text)) return null;
-                Dictionary<int, object> result = new Dictionary<int, object>();
-                string[] items = text.Split(',');
-                foreach (string item in items)
-                {
-                    string number = item.Trim();
-                    int value;
-                    if (number.Length > 0 && Int32.TryParse(number, out value))
-                    {   // Je to číslo, OK:
-                        if (value > 0 && !result.ContainsKey(value))
-                            result.Add(value, null);
-                    }
-                    else if (strictParse)
-                    {   // Není to číslo, a pokud máme být striktní, pak ihned vrátíme null:
-                        return null;
-                    }
-                }
-                return (result.Count == 0 ? null : result);
-            }
-            /// <summary>
-            /// Metoda zjistí, zda pro daný prvek máme nějaké platné záznamy <see cref="ContextFunctionValidInfo"/>.
-            /// Pokud není určeno, vrací se true.
-            /// </summary>
-            /// <param name="gridItemId"></param>
-            /// <param name="infos"></param>
-            /// <returns></returns>
-            public static bool IsValidFor(GuiGridItemId gridItemId, ContextFunctionValidInfo[] infos)
-            {
-                if (gridItemId == null ||infos == null || infos.Length == 0) return true;      // Bez zadání => null => bez omezení => true
-
-                foreach (ContextFunctionValidInfo info in infos)
-                {
-                    if (info.IsValidFor(gridItemId)) return true;
-                }
-
-                return false;
-            }
-            /// <summary>
-            /// Vrátí true, pokud this instance je platná pro daný prvek
-            /// </summary>
-            /// <param name="gridItemId"></param>
-            /// <returns></returns>
-            public bool IsValidFor(GuiGridItemId gridItemId)
-            {
-                if (gridItemId == null || this.ClassDict == null || this.FullNameRegex == null) return true;      // Bez zadání => null => bez omezení => true
-                if (!this._IsValidClass(gridItemId.ItemId, gridItemId.GroupId)) return false;
-                if (!this._IsValidRegex(gridItemId.TableName)) return false;
-                return true;
-            }
-            /// <summary>
-            /// Vrátí true, pokud nejsme omezeni třídami (<see cref="ClassDict"/> je null), anebo pokud některá ze zadaných tříd je povolená.
-            /// Vrátí false, pokud máme definované povolené třídy, ale ani jedna ze tříd zadaných na vstupu povolená není.
-            /// </summary>
-            /// <param name="guiIds"></param>
-            /// <returns></returns>
-            private bool _IsValidClass(params GuiId[] guiIds)
-            {
-                if (this.ClassDict == null) return true;
-                foreach (GuiId guiId in guiIds)
-                {   // Jakýkoli GuiId s povolenou třídou zajistí vrácení true:
-                    if (this.ClassDict.ContainsKey(guiId.ClassId)) return true;
-                }
-                // Žádný zadaný GuiId nemá povolenou třídu, vrátíme false:
-                return false;
-            }
-            /// <summary>
-            /// Vrátí true, pokud nejsme omezeni jménem tabulky (<see cref="FullNameRegex"/> je null), anebo pokud zadaná tabulka vyhovuje.
-            /// Vrátí false, pokud máme zadané jméno tabulky, ale aktuálně zadaná nevyhovuje.
-            /// </summary>
-            /// <param name="fullName"></param>
-            /// <returns></returns>
-            private bool _IsValidRegex(string fullName)
-            {
-                if (this.FullNameRegex == null) return true;
-                return this.FullNameRegex.IsMatch(fullName);
-            }
+            return result.Values.ToArray();
         }
         #endregion
         #region Časová osa - tvorba menu v ToolBaru, a obsluha akcí tohoto menu
@@ -1896,6 +1658,419 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private const string _Tlb_GuiEdit_ShowLinkWholeTask = "GuiEditShowLinkWholeTask";
         private const string _Tlb_GuiEdit_ShowLinkAsSCurve = "GuiEditShowLinkAsSCurve";
         #endregion
+        #region Datové panely, jednotlivé datové tabulky
+        /// <summary>
+        /// Načte položky do panelů z dodaných dat Gui
+        /// </summary>
+        /// <param name="guiPages"></param>
+        private void _LoadGuiPanels(GuiPages guiPages)
+        {
+            this._GuiPages = guiPages;
+        }
+        /// <summary>
+        /// Data o stránkách dat z Gui
+        /// </summary>
+        private GuiPages _GuiPages;
+        /// <summary>
+        /// Do připraveného vizuálního controlu <see cref="_MainControl"/> vloží objekty za jednotlivé stránky s daty z <see cref="_GuiPages"/>.
+        /// </summary>
+        private void _FillMainControlPagesFromGui()
+        {
+            using (App.Trace.Scope(TracePriority.Priority2_Lowest, "MainData", "FillMainControlPagesFromGui", ""))
+            {
+                this._MainControl.ClearPages();
+                this._MainControl.SynchronizedTime.Value = this.GuiData.Properties.InitialTimeRange;
+                this._MainControl.SynchronizedTime.ValueLimit = this.GuiData.Properties.TotalTimeRange;
+                foreach (GuiPage guiPage in this._GuiPages.Pages)
+                    App.TryRun(() => this._MainControl.AddPage(guiPage));
+                this._FillDataTables();
+            }
+        }
+        /// <summary>
+        /// Souhrn všech datových tabulek ze všech panelů.
+        /// Každá tabulka má své unikátní jméno (alespoň měla by mít), uložené v <see cref="MainDataTable.TableName"/>.
+        /// </summary>
+        protected MainDataTable[] DataTables { get { return this._DataTables; } }
+        /// <summary>
+        /// Metoda načte souhrn všech tabulek <see cref="MainDataTable"/> ze všech vytvořených panelů do <see cref="_DataTables"/>.
+        /// </summary>
+        private void _FillDataTables()
+        {
+            using (App.Trace.Scope(TracePriority.Priority2_Lowest, "MainData", "FillDataTables", ""))
+            {
+                List<MainDataTable> tableList = new List<MainDataTable>();
+                foreach (SchedulerPanelInfo panel in this._MainControl.SchedulerPanels)
+                    tableList.AddRange(panel.SchedulerPanel.DataTables);
+                this._DataTables = tableList.ToArray();
+            }
+        }
+        /// <summary>
+        /// Metoda má najít a vrátit komplexní tabulku MainDataTable podle jejího plného jména.
+        /// Může vrátit null.
+        /// Pokud by existovalo více tabulek shodného jména, vrací první z nich.
+        /// </summary>
+        /// <param name="fullName"></param>
+        /// <returns></returns>
+        private MainDataTable _SearchTable(string fullName)
+        {
+            return this._DataTables.FirstOrDefault(t => String.Equals(t.TableName, fullName));
+        }
+        /// <summary>
+        /// Souhrn všech datových tabulek ze všech panelů.
+        /// </summary>
+        private MainDataTable[] _DataTables;
+        /// <summary>
+        /// Tabulka s daty, která je nyní aktivní.
+        /// Obsahuje tabulku, která má nebo měla poslední focus.
+        /// Pokud focus odejde na jiný objekt, než tabulka, pak zde zůstává odkaz na poslední tabulku.
+        /// Null je zde jen po spuštění, ale je to přípustný stav.
+        /// </summary>
+        internal MainDataTable ActiveDataTable { get; private set; }
+        #endregion
+        #region Kontextové menu
+        /// <summary>
+        /// Načte položky do Kontextových menu z dodaných dat Gui
+        /// </summary>
+        /// <param name="guiContextMenuSet"></param>
+        private void _LoadGuiContext(GuiContextMenuSet guiContextMenuSet)
+        {
+            this._GuiContextMenuSet = guiContextMenuSet;
+
+            List<ContextFunctionItem> functions = new List<ContextFunctionItem>();
+            foreach (GuiContextMenuItem guiContextMenuItem in guiContextMenuSet.Items)
+            {
+                ContextFunctionItem item = ContextFunctionItem.Create(this, guiContextMenuItem);
+                if (item != null)
+                    functions.Add(item);
+            }
+            this._ContextFunctions = functions.ToArray();
+        }
+        /// <summary>
+        /// Data o kontextových funkcích z Gui
+        /// </summary>
+        private GuiContextMenuSet _GuiContextMenuSet;
+        /// <summary>
+        /// Souhrn všech definovaných funkcí pro všechna kontextová menu v systému.
+        /// Souhrn je načten z <see cref="GuiContextMenuSet"/> v metodě <see cref="_LoadGuiContext(GuiContextMenuSet)"/>, 
+        /// z tohoto souhrnu je vytvořeno kontextové menu pro konkrétní situaci, v metodě <see cref="CreateContextMenu(GuiGridItemId)"/>.
+        /// </summary>
+        protected ContextFunctionItem[] _ContextFunctions;
+        /// <summary>
+        /// Metoda vytvoří a vrátí kontextové menu pro konkrétní prvek grafu, zadaný jeho identifikátorem
+        /// </summary>
+        /// <param name="gridItemId">Identifikátor gridu, řádku, a prvku grafu</param>
+        /// <returns></returns>
+        protected ToolStripDropDownMenu CreateContextMenu(GuiGridItemId gridItemId)
+        {
+            if (this._ContextFunctions == null || this._ContextFunctions.Length == 0) return null;              // Nejsou data => není menu.
+            ContextFunctionItem[] items = this._ContextFunctions.Where(cfi => cfi.IsValidFor(gridItemId)).ToArray();  // Vybereme jen ty funkce, které jsou vhodné pro daný prvek
+            if (items.Length == 0) return null;         // Nic se nehodí => nic se nezobrazí
+
+            // Celkové menu:
+            ToolStripDropDownMenu menu = FunctionItem.CreateDropDownMenuFrom(items, m =>
+            {   // Tuto akci vyvolá metoda CreateDropDownMenuFrom() po vytvoření menu, ale před přidáním položek:
+                m.Tag = gridItemId;
+                m.Items.Add(new ToolStripLabel("NABÍDKA FUNKCÍ"));
+                m.Items.Add(new ToolStripSeparator());
+            });
+
+            menu.ItemClicked += this.ContextMenuItemClicked;
+            return menu;
+        }
+        /// <summary>
+        /// Obsluha kliknutí na položku kontextového menu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ContextMenuItemClicked(object sender, ToolStripItemClickedEventArgs e)
+        {
+            ToolStripDropDownMenu menu = sender as ToolStripDropDownMenu;
+            if (menu == null) return;
+            menu.Hide();
+
+            // Vyjmeme data:  a) identifikátor prvku grafu (tabulka, řádek, prvek),   b) data konkrétní vybrané funkce:
+            GuiGridItemId gridItemId = menu.Tag as GuiGridItemId;
+            ContextFunctionItem funcArgs = e.ClickedItem.Tag as ContextFunctionItem;
+            GuiContextMenuItem guiContextMenuItem = (funcArgs != null ? funcArgs.GuiContextMenuItem : null);
+            if (guiContextMenuItem != null)
+                // Kontextové menu obsahuje výhradně aplikační funkce (GuiContextMenuItem):
+                this._ContextMenuItemClickApplication(guiContextMenuItem, gridItemId);
+        }
+        /// <summary>
+        /// Obsluha události ItemClick na Aplikační položce kontextového menu
+        /// </summary>
+        /// <param name="guiContextMenuItem"></param>
+        /// <param name="gridItemId">Identifikátor gridu, řádku, a prvku grafu</param>
+        private void _ContextMenuItemClickApplication(GuiContextMenuItem guiContextMenuItem, GuiGridItemId gridItemId)
+        {
+            GuiRequest request = new GuiRequest();
+            request.Command = GuiRequest.COMMAND_ContextMenuClick;
+            request.ContextMenuItem = guiContextMenuItem;
+            request.ActiveGraphItem = gridItemId;
+            request.CurrentState = this._CreateGuiCurrentState();
+            this._CallAppHostFunction(request, this._ContextMenuItemClickApplicationResponse);
+        }
+        /// <summary>
+        /// Zpracování odpovědi z aplikační funkce, na událost ItemClick na Aplikační položce ToolBaru
+        /// </summary>
+        /// <param name="response"></param>
+        private void _ContextMenuItemClickApplicationResponse(AppHostResponseArgs response)
+        {
+            this._ProcessResponse(response.GuiResponse);
+        }
+        /// <summary>
+        /// ContextFunctionItem : adapter mezi <see cref="GuiContextMenuItem"/>, a položku kontextového menu <see cref="FunctionItem"/>.
+        /// </summary>
+        protected class ContextFunctionItem : FunctionItem
+        {
+            #region Konstrukce, načtení dat
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="provider"></param>
+            /// <param name="guiContextMenuItem"></param>
+            protected ContextFunctionItem(IFunctionProvider provider, GuiContextMenuItem guiContextMenuItem) : base(provider)
+            {
+                this._GuiContextMenuItem = guiContextMenuItem;
+                this._VisibleFor = ContextFunctionValidInfo.ParseValidInfo(guiContextMenuItem.VisibleFor);
+                this._EnableFor = ContextFunctionValidInfo.ParseValidInfo(guiContextMenuItem.EnableFor);
+            }
+            /// <summary>
+            /// Z této deklarace je funkce načtena
+            /// </summary>
+            private GuiContextMenuItem _GuiContextMenuItem;
+            /// <summary>
+            /// true pokud je reálně přítomna položka <see cref="_GuiContextMenuItem"/>
+            /// </summary>
+            private bool _HasItem { get { return (this._GuiContextMenuItem != null); } }
+            /// <summary>
+            /// Vytvoří a vrátí new instanci <see cref="ContextFunctionItem"/> pro data definovaná v <see cref="GuiContextMenuItem"/>.
+            /// Může vrátit null pro neplatné zadání.
+            /// </summary>
+            /// <param name="provider"></param>
+            /// <param name="guiContextMenuItem"></param>
+            /// <returns></returns>
+            public static ContextFunctionItem Create(IFunctionProvider provider, GuiContextMenuItem guiContextMenuItem)
+            {
+                if (provider == null || guiContextMenuItem == null) return null;
+
+                ContextFunctionItem funcItem = new ContextFunctionItem(provider, guiContextMenuItem);
+                return funcItem;
+            }
+            #endregion
+            #region Public override property třídy FunctionItem, načítané z GuiContextMenuItem
+            /// <summary>
+            /// Z této deklarace je funkce načtena
+            /// </summary>
+            public GuiContextMenuItem GuiContextMenuItem { get { return this._GuiContextMenuItem; } }
+            /// <summary>
+            /// Jméno tohoto prvku, prostor pro aplikační identifikátor položky
+            /// </summary>
+            public override string Name { get { return (this._HasItem ? this._GuiContextMenuItem.Name : base.Name); } set { if (this._HasItem) this._GuiContextMenuItem.Name = value; else base.Name = value; } }
+            /// <summary>
+            /// Text do funkce
+            /// </summary>
+            public override string TextText { get { return this._GuiContextMenuItem.Title; } }
+            /// <summary>
+            /// ToolTip k textu
+            /// </summary>
+            public override string ToolTipText { get { return this._GuiContextMenuItem.ToolTip; } }
+            /// <summary>
+            /// Obrázek pro položku menu
+            /// </summary>
+            public override Image Image { get { return Application.App.Resources.GetImage(this._GuiContextMenuItem.Image); } }
+            #endregion
+            #region Určení dostupnosti položky pro konkrétní situaci
+            /// <summary>
+            /// Vrátí true, pokud tato položka kontextového menu se má použít pro prvek, jehož identifikátor <see cref="GuiGridItemId"/> je předán v parametru.
+            /// Pokud tato metoda vrátí true, bude tato položka zařazena do menu.
+            /// Položka si v této metodě může sama určit, zda bude v menu zobrazena jako Enabled nebo Disabled:
+            /// Pokud chce být zobrazena, ale jako Disabled, pak si v této metodě nastaví <see cref="FunctionItem.IsEnabled"/> = false, a pak vrátí true.
+            /// Následně bude vyvolána metoda <see cref="FunctionItem.CreateWinFormItem()"/>, která vygeneruje WinForm položku s odpovídající hodnotou <see cref="System.Windows.Forms.ToolStripMenuItem.Enabled"/>.
+            /// Obdobně se do položky menu přebírají hodnoty <see cref="System.Windows.Forms.ToolStripMenuItem.CheckOnClick"/> (z <see cref="FunctionItem.IsCheckable"/>);
+            /// a <see cref="System.Windows.Forms.ToolStripMenuItem.Checked"/> (z <see cref="FunctionItem.IsChecked"/>).
+            /// <para/>
+            /// Metoda je volána po každém RightClick, když se má zobrazit kontextové menu, a je volána pro každou definovanou položku kontextového menu.
+            /// Její vyhodnocení by nemělo trvat déle než 1ms.
+            /// </summary>
+            /// <param name="gridItemId">Identifikátor gridu, řádku, a prvku grafu</param>
+            /// <returns></returns>
+            public bool IsValidFor(GuiGridItemId gridItemId)
+            {
+                bool isValid = ContextFunctionValidInfo.IsValidFor(gridItemId, this._VisibleFor);
+                if (isValid)
+                    this.IsEnabled = ContextFunctionValidInfo.IsValidFor(gridItemId, this._EnableFor);
+                return isValid;
+            }
+            /// <summary>
+            /// Pole regulárních výrazů, které definují prvky, pro které se má tato funkce zobrazovat.
+            /// </summary>
+            private ContextFunctionValidInfo[] _VisibleFor;
+            /// <summary>
+            /// Pole regulárních výrazů, které definují prvky, pro které má být tato funkce Enabled.
+            /// </summary>
+            private ContextFunctionValidInfo[] _EnableFor;
+            #endregion
+        }
+        /// <summary>
+        /// Třída, která řeší vhodnost konkrétní kontextové funkce <see cref="ContextFunctionItem"/> pro konkrétní prvek grafu <see cref="GuiGridItemId"/>.
+        /// Podklady získává z definice <see cref="GuiContextMenuItem.VisibleFor"/> a <see cref="GuiContextMenuItem.EnableFor"/>.
+        /// </summary>
+        protected class ContextFunctionValidInfo
+        {
+            /// <summary>
+            /// Privátní konstruktor
+            /// </summary>
+            /// <param name="fullNameRegex"></param>
+            /// <param name="classDict"></param>
+            private ContextFunctionValidInfo(System.Text.RegularExpressions.Regex fullNameRegex, Dictionary<int, object> classDict)
+            {
+                this.FullNameRegex = fullNameRegex;
+                this.ClassDict = classDict;
+            }
+            /// <summary>
+            /// Zadaná cesta k <see cref="GuiGrid"/>. Může obsahovat wildcards.
+            /// </summary>
+            protected System.Text.RegularExpressions.Regex FullNameRegex { get; private set; }
+            /// <summary>
+            /// Povolené třídy. Pokud není žádná, neřeší se.
+            /// </summary>
+            protected Dictionary<int, object> ClassDict { get; private set; }
+            /// <summary>
+            /// Metoda vrátí parsované pole prvků <see cref="ContextFunctionValidInfo"/>, získané z daného stringu.
+            /// Může vrátit null.
+            /// </summary>
+            /// <param name="valid"></param>
+            /// <returns></returns>
+            public static ContextFunctionValidInfo[] ParseValidInfo(string valid)
+            {
+                if (String.IsNullOrEmpty(valid)) return null;             // Bez zadání => bez omezení => null
+
+                List<ContextFunctionValidInfo> result = new List<ContextFunctionValidInfo>();
+                string[] items = valid.Split(';');                        // Jednotlivé prvky ContextFunctionValidInfo
+                foreach (string item in items)
+                {
+                    if (String.IsNullOrEmpty(item)) continue;
+                    System.Text.RegularExpressions.Regex fullNameRegex = null;
+                    Dictionary<int, object> classDict = null;
+                    string[] parts = item.Split(':');                     // FullName:Classes
+                    int partCount = parts.Length;
+                    if (partCount == 1)
+                    {   // Položka s jedním prvkem je autodetect:
+                        classDict = _ParseClasses(parts[0], true);        // Parsování bude striktní = pokud najdu položku, která není číslo, pak se vrátí null
+                        if (classDict == null)
+                            fullNameRegex = _ParseRegex(parts[0]);        // Pokud to nejsou striktně jen číslice, může to být Regex
+                    }
+                    else if (partCount == 2)
+                    {   // Položka s dvěma prvky je jasná:
+                        fullNameRegex = _ParseRegex(parts[0]);
+                        classDict = _ParseClasses(parts[1], false);       // Parsování nebude striktní = beru vše, co se najde
+                    }
+                    if (fullNameRegex != null || classDict != null)
+                    {
+                        ContextFunctionValidInfo info = new ContextFunctionValidInfo(fullNameRegex, classDict);
+                        result.Add(info);
+                    }
+                }
+
+                return result.ToArray();
+            }
+            /// <summary>
+            /// Z dodaného textu, který obsahuje lidsky zadaný Regex, vrátí formální Regex
+            /// </summary>
+            /// <param name="text"></param>
+            /// <returns></returns>
+            private static System.Text.RegularExpressions.Regex _ParseRegex(string text)
+            {
+                if (String.IsNullOrEmpty(text)) return null;
+                return RegexSupport.CreateWildcardsRegex(text);
+            }
+            /// <summary>
+            /// Z dodaného textu, který obsahuje čísla tříd oddělená čárkami, vrátí jejich Dictionary.
+            /// </summary>
+            /// <param name="text"></param>
+            /// <param name="strictParse">Požadavek (true), aby se výsledná Dictionary vrátila pouze tehdy, když vstupní text je korektní = obsahuje jen čísla a oddělovače. Pokud by obsahoval jiné znaky, vrací se null.</param>
+            /// <returns></returns>
+            private static Dictionary<int, object> _ParseClasses(string text, bool strictParse)
+            {
+                if (String.IsNullOrEmpty(text)) return null;
+                Dictionary<int, object> result = new Dictionary<int, object>();
+                string[] items = text.Split(',');
+                foreach (string item in items)
+                {
+                    string number = item.Trim();
+                    int value;
+                    if (number.Length > 0 && Int32.TryParse(number, out value))
+                    {   // Je to číslo, OK:
+                        if (value > 0 && !result.ContainsKey(value))
+                            result.Add(value, null);
+                    }
+                    else if (strictParse)
+                    {   // Není to číslo, a pokud máme být striktní, pak ihned vrátíme null:
+                        return null;
+                    }
+                }
+                return (result.Count == 0 ? null : result);
+            }
+            /// <summary>
+            /// Metoda zjistí, zda pro daný prvek máme nějaké platné záznamy <see cref="ContextFunctionValidInfo"/>.
+            /// Pokud není určeno, vrací se true.
+            /// </summary>
+            /// <param name="gridItemId"></param>
+            /// <param name="infos"></param>
+            /// <returns></returns>
+            public static bool IsValidFor(GuiGridItemId gridItemId, ContextFunctionValidInfo[] infos)
+            {
+                if (gridItemId == null || infos == null || infos.Length == 0) return true;      // Bez zadání => null => bez omezení => true
+
+                foreach (ContextFunctionValidInfo info in infos)
+                {
+                    if (info.IsValidFor(gridItemId)) return true;
+                }
+
+                return false;
+            }
+            /// <summary>
+            /// Vrátí true, pokud this instance je platná pro daný prvek
+            /// </summary>
+            /// <param name="gridItemId"></param>
+            /// <returns></returns>
+            public bool IsValidFor(GuiGridItemId gridItemId)
+            {
+                if (gridItemId == null || this.ClassDict == null || this.FullNameRegex == null) return true;      // Bez zadání => null => bez omezení => true
+                if (!this._IsValidClass(gridItemId.ItemId, gridItemId.GroupId)) return false;
+                if (!this._IsValidRegex(gridItemId.TableName)) return false;
+                return true;
+            }
+            /// <summary>
+            /// Vrátí true, pokud nejsme omezeni třídami (<see cref="ClassDict"/> je null), anebo pokud některá ze zadaných tříd je povolená.
+            /// Vrátí false, pokud máme definované povolené třídy, ale ani jedna ze tříd zadaných na vstupu povolená není.
+            /// </summary>
+            /// <param name="guiIds"></param>
+            /// <returns></returns>
+            private bool _IsValidClass(params GuiId[] guiIds)
+            {
+                if (this.ClassDict == null) return true;
+                foreach (GuiId guiId in guiIds)
+                {   // Jakýkoli GuiId s povolenou třídou zajistí vrácení true:
+                    if (this.ClassDict.ContainsKey(guiId.ClassId)) return true;
+                }
+                // Žádný zadaný GuiId nemá povolenou třídu, vrátíme false:
+                return false;
+            }
+            /// <summary>
+            /// Vrátí true, pokud nejsme omezeni jménem tabulky (<see cref="FullNameRegex"/> je null), anebo pokud zadaná tabulka vyhovuje.
+            /// Vrátí false, pokud máme zadané jméno tabulky, ale aktuálně zadaná nevyhovuje.
+            /// </summary>
+            /// <param name="fullName"></param>
+            /// <returns></returns>
+            private bool _IsValidRegex(string fullName)
+            {
+                if (this.FullNameRegex == null) return true;
+                return this.FullNameRegex.IsMatch(fullName);
+            }
+        }
+        #endregion
         #region Otevření formulářů záznamů
         /// <summary>
         /// Metoda vyvolá akci RunOpenRecordsForm do AppHost
@@ -2348,6 +2523,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         #endregion
         #region Implementace IMainDataInternal
         /// <summary>
+        /// Reference na main data celého systému
+        /// </summary>
+        GuiData IMainDataInternal.GuiData { get { return this.GuiData; } }
+        /// <summary>
         /// Metoda zavolá hostitele a předá mu požadavek.
         /// </summary>
         /// <param name="request"></param>
@@ -2381,6 +2560,17 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <returns></returns>
         MainDataTable IMainDataInternal.SearchTable(string fullName) { return this._SearchTable(fullName); }
         /// <summary>
+        /// Tabulka s daty, která je nyní aktivní.
+        /// Obsahuje tabulku, která má nebo měla poslední focus.
+        /// Pokud focus odejde na jiný objekt, než tabulka, pak zde zůstává odkaz na poslední tabulku.
+        /// Null je zde jen po spuštění, ale je to přípustný stav.
+        /// </summary>
+        MainDataTable IMainDataInternal.ActiveDataTable { get { return this.ActiveDataTable; } set { this.ActiveDataTable = value; } }
+        /// <summary>
+        /// Všechny tabulky s daty
+        /// </summary>
+        IEnumerable<MainDataTable> IMainDataInternal.DataTables { get { return this._DataTables; } }
+        /// <summary>
         /// Metoda zpracuje odpovědi z aplikace.
         /// </summary>
         /// <param name="guiResponse"></param>
@@ -2392,6 +2582,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     /// </summary>
     public interface IMainDataInternal
     {
+        /// <summary>
+        /// Reference na main data celého systému
+        /// </summary>
+        GuiData GuiData { get; }
         /// <summary>
         /// Metoda zavolá hostitele a předá mu požadavek.
         /// </summary>
@@ -2425,6 +2619,17 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="fullName"></param>
         /// <returns></returns>
         MainDataTable SearchTable(string fullName);
+        /// <summary>
+        /// Tabulka s daty, která je nyní aktivní.
+        /// Obsahuje tabulku, která má nebo měla poslední focus.
+        /// Pokud focus odejde na jiný objekt, než tabulka, pak zde zůstává odkaz na poslední tabulku.
+        /// Null je zde jen po spuštění, ale je to přípustný stav.
+        /// </summary>
+        MainDataTable ActiveDataTable { get; set; }
+        /// <summary>
+        /// Všechny tabulky s daty
+        /// </summary>
+        IEnumerable<MainDataTable> DataTables { get; }
         /// <summary>
         /// Metoda zpracuje odpovědi z aplikace.
         /// </summary>

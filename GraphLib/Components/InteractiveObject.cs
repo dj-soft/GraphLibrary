@@ -57,7 +57,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// An array of sub-items in this item
         /// </summary>
         protected virtual IEnumerable<IInteractiveItem> Childs { get { return null; } }
-
         /// <summary>
         /// Souřadnice tohoto prvku v rámci jeho Parenta.
         /// Přepočet na absolutní souřadnice provádí (extension) metoda IInteractiveItem.GetAbsoluteVisibleBounds().
@@ -164,9 +163,13 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected virtual Rectangle? BoundsInteractive { get { return this._BoundsInteractive; } set { this._BoundsInteractive = value; } } private Rectangle? _BoundsInteractive;
         /// <summary>
+        /// Obsahuje true, pokud this prvek má nad sebou myš (nebo některý jeho Child)
+        /// </summary>
+        public virtual bool HasMouse { get { return this._HasMouse; } set { this._HasMouse = value; } } private bool _HasMouse;
+        /// <summary>
         /// Obsahuje true, pokud this prvek má klávesový focus.
         /// </summary>
-        protected virtual bool HasFocus { get { return this._HasFocus; } set { this._HasFocus = value; } } private bool _HasFocus;
+        public virtual bool HasFocus { get { return this._HasFocus; } set { this._HasFocus = value; } } private bool _HasFocus;
         #endregion
         #region Bounds support
         /// <summary>
@@ -282,7 +285,6 @@ namespace Asol.Tools.WorkScheduler.Components
         private Rectangle? __AbsoluteInteractiveBounds;
         #endregion
         #region Events and virtual methods
-
         /// <summary>
         /// Call method OnBoundsChanged() and event BoundsChanged
         /// </summary>
@@ -301,7 +303,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Event on this.Bounds changes
         /// </summary>
         public event GPropertyChangedHandler<Rectangle> BoundsChanged;
-
         /// <summary>
         /// Call method OnDrawRequest() and event DrawRequest.
         /// Set: this.RepaintToLayers = this.StandardDrawToLayer;
@@ -321,7 +322,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Event on this.DrawRequest occured
         /// </summary>
         public event EventHandler DrawRequest;
-
         #endregion
         #region Protected, virtual properties (for IInteractiveItem support)
         /// <summary>
@@ -373,10 +373,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Volba, zda metoda <see cref="Repaint()"/> způsobí i vyvolání metody <see cref="Parent"/>.<see cref="IInteractiveParent.Repaint"/>.
         /// </summary>
         protected virtual RepaintParentMode RepaintParent { get { return RepaintParentMode.None; } }
-        /// <summary>
-        /// Aktuální stav tohoto objektu po dokončení aktuálního eventu (ne před ním)
-        /// </summary>
-        public GInteractiveState InteractiveState { get { return (this.Is.Enabled ? this._InteractiveState : GInteractiveState.Disabled); } protected set { this._InteractiveState = value; } } private GInteractiveState _InteractiveState;
         /// <summary>
         /// Obsahuje true, pokud this objekt je nyní přemisťován akcí DragMove 
         /// (<see cref="InteractiveState"/> je <see cref="GInteractiveState.LeftDrag"/> nebo <see cref="GInteractiveState.RightDrag"/>)
@@ -450,6 +446,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     break;
 
                 case GInteractiveChangeState.MouseEnter:
+                    this._HasMouse = true;
                     this.AfterStateChangedMouseEnter(e);
                     this.PrepareToolTip(e);
                     this.Repaint();
@@ -461,6 +458,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     this.Repaint();
                     break;
                 case GInteractiveChangeState.MouseLeave:
+                    this._HasMouse = false;
                     this.AfterStateChangedMouseLeave(e);
                     this.Repaint();
                     break;
@@ -862,6 +860,35 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Interaktivní vlastnosti
         /// <summary>
+        /// Aktuální stav tohoto objektu po dokončení aktuálního eventu (ne před ním)
+        /// </summary>
+        public GInteractiveState InteractiveState { get { return (this.Is.Enabled ? this._InteractiveState : GInteractiveState.Disabled); } protected set { this._InteractiveState = value; } }
+        private GInteractiveState _InteractiveState;
+        /// <summary>
+        /// Vyvolá háček OnInteractiveStateChanged a event InteractiveStateChanged
+        /// </summary>
+        /// <param name="args"></param>
+        protected void CallInteractiveStateChanged(GPropertyChangeArgs<GInteractiveState> args)
+        {
+            this.OnInteractiveStateChanged(args);
+            if (this.InteractiveStateChanged != null)
+                this.InteractiveStateChanged(this, args);
+        }
+        /// <summary>
+        /// Háček při změně hodnoty <see cref="InteractiveObject.InteractiveState"/>
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnInteractiveStateChanged(GPropertyChangeArgs<GInteractiveState> args)
+        { }
+        /// <summary>
+        /// Událost při změně hodnoty <see cref="InteractiveObject.InteractiveState"/>
+        /// </summary>
+        public event GPropertyChangedHandler<GInteractiveState> InteractiveStateChanged;
+        /// <summary>
+        /// Událost před změnou interaktivního stavu
+        /// </summary>
+        public event GInteractiveChangeStateHandler InteractiveStateChange;
+        /// <summary>
         /// Tato hodnota vyjadřuje výběr prvků ze strany hostitele, k další editaci / Copy and Paste / atd.
         /// Hostitel tuto hodnotu nastavuje tehdy, když <see cref="InteractiveProperties.Selectable"/> je true, jinak ne.
         /// Hodnota je evidována centrálně v instanci <see cref="GInteractiveControl.Selector"/>.
@@ -914,7 +941,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Vyvolá háček OnIsSelectedChanged a event IsSelectedChanged
         /// </summary>
         /// <param name="args"></param>
-        protected void CallIsSelectedChanged(Data.GPropertyChangeArgs<bool> args)
+        protected void CallIsSelectedChanged(GPropertyChangeArgs<bool> args)
         {
             this.OnIsSelectedChanged(args);
             if (this.IsSelectedChanged != null)
@@ -1034,9 +1061,16 @@ namespace Asol.Tools.WorkScheduler.Components
         Boolean IInteractiveItem.IsActiveAtPoint(Point relativePoint) { return this.IsActiveAtPoint(relativePoint); }
         void IInteractiveItem.AfterStateChanged(GInteractiveChangeStateArgs e)
         {
+            if (this.InteractiveStateChange != null)
+                this.InteractiveStateChange(this, e);
+
+            GInteractiveState oldState = this.InteractiveState;
             this.InteractiveState = e.TargetState;
             this.CurrentMouseRelativePoint = e.MouseRelativePoint;
             this.AfterStateChanged(e);
+            GInteractiveState newState = this.InteractiveState;
+
+            this.CallInteractiveStateChanged(new GPropertyChangeArgs<GInteractiveState>(oldState, newState, EventSourceType.InteractiveChanged));
         }
         void IInteractiveItem.DragAction(GDragActionArgs e) { this.DragAction(e); }
         void IInteractiveItem.Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds) { this.Draw(e, absoluteBounds, absoluteVisibleBounds); }

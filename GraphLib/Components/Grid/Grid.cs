@@ -1322,6 +1322,18 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         #endregion
         #region ISequenceLayout - adapter: get čte data z Master sloupce, set ukládá data do všech sloupců
+        int ISequenceLayout.Order
+        {
+            get
+            {
+                return ((ISequenceLayout)this.MasterColumn.ColumnHeader).Order;
+            }
+            set
+            {
+                foreach (Column column in this._ColumnList)
+                    ((ISequenceLayout)column.ColumnHeader).Order = value;
+            }
+        }
         int ISequenceLayout.Begin
         {
             get

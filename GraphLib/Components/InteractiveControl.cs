@@ -683,13 +683,13 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             GActivePosition oldActiveItem = this._CurrentActiveItem;
             if (e != null)
-            {
+            {   // Standarndí pohyb myši nad Controlem:
                 GActivePosition newActiveItem = this.FindActivePositionAtPoint(e.Location, true);
                 this._ItemMouseExchange(oldActiveItem, newActiveItem, this._MouseCurrentRelativePoint);
                 this._ToolTipMouseMove(this._MouseCurrentAbsolutePoint);
             }
             else
-            {
+            {   // MouseLeave z tohoto Controlu:
                 this._MouseCurrentRelativePoint = null;
                 this._ItemMouseExchange(oldActiveItem, null, null);
                 this._ActivateCursor(SysCursorType.Default);
@@ -1021,11 +1021,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Call events MouseLeave and MouseEnter when neccessary
         /// </summary>
-        /// <param name="gcItemPrev"></param>
-        /// <param name="gcItemNext"></param>
-        private void _ItemMouseExchange(GActivePosition gcItemPrev, GActivePosition gcItemNext)
+        /// <param name="oldActiveItem"></param>
+        /// <param name="newActiveItem"></param>
+        private void _ItemMouseExchange(GActivePosition oldActiveItem, GActivePosition newActiveItem)
         {
-            this._ItemMouseExchange(gcItemPrev, gcItemNext, null);
+            this._ItemMouseExchange(oldActiveItem, newActiveItem, null);
         }
         /// <summary>
         /// Zajistí přechod mezi dosud aktivním prvkem (oldActiveItem) a nově aktivním prvkem (newActiveItem).

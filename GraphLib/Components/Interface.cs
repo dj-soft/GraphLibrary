@@ -1076,7 +1076,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public Rectangle UserAbsoluteBounds { get; private set; }
     }
     #endregion
-    #region Enums ZOrder, GInteractiveStyles, GInteractiveState, GInteractiveChangeState, GInteractiveDrawLayer, DragResponseType, ProcessAction, EventSourceType
+    #region Enums ZOrder, GInteractiveState, GInteractiveChangeState, GInteractiveDrawLayer, DragResponseType, ProcessAction, EventSourceType
     /// <summary>
     /// Z-Order position of item.
     /// Order from bottom to top is: OnBackground - BelowStandard - Standard - AboveStandard - OnTop.
@@ -1103,98 +1103,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// On background below all other order
         /// </summary>
         OnBackground = -20
-    }
-    /// <summary>
-    /// Interactive styles of an interactive object.
-    /// Specifies action to be taken on object.
-    /// </summary>
-    [Flags]
-    public enum GInteractiveStylesXxx : int
-    {
-        /// <summary>
-        /// Žádný styl
-        /// </summary>
-        None = 0,
-        /// <summary>
-        /// Area is active for mouse move
-        /// </summary>
-        Mouse = 0x0001,
-        /// <summary>
-        /// Area can be clicked (left, right)
-        /// </summary>
-        Click = 0x0002,
-        /// <summary>
-        /// Area can be double-clicked (left, right)
-        /// </summary>
-        DoubleClick = 0x0004,
-        /// <summary>
-        /// Area can be long-clicked (left, right) (MouseDown - long pause - MouseUp)
-        /// </summary>
-        LongClick = 0x0004,
-        /// <summary>
-        /// Call event MouseOver for MouseMove for each pixel (none = call only MouseEnter and MouseLeave)
-        /// </summary>
-        CallMouseOver = 0x0010,
-        /// <summary>
-        /// Area can be dragged
-        /// </summary>
-        Drag = 0x0020,
-        /// <summary>
-        /// Enables move of item
-        /// </summary>
-        DragMove = 0x0100,
-        /// <summary>
-        /// Enables resize of item in X axis
-        /// </summary>
-        DragResizeX = 0x0200,
-        /// <summary>
-        /// Enables resize of item in Y axis
-        /// </summary>
-        DragResizeY = 0x0400,
-        /// <summary>
-        /// Item can be selected
-        /// </summary>
-        Select = 0x1000,
-        /// <summary>
-        /// Item can be dragged only in selected state
-        /// </summary>
-        DragOnlySelected = 0x2000,
-        /// <summary>
-        /// During drag and resize operation: Draw ghost image as Interactive layer (=Ghost is moved with mouse on Interactive layer, original image is on Standard layer)
-        /// Without values (DragDrawGhostInteractive and DragDrawGhostOriginal) is during Drag operation item drawed to Interactive layer, and Original bounds are empty (no draw to Standard layer)
-        /// </summary>
-        DragDrawGhostInteractive = 0x4000,
-        /// <summary>
-        /// During drag and resize operation: Draw ghost image into Standard layer (=Standard image of control is moved with mouse on Interactive layer, Ghost image is painted on Standard layer)
-        /// Without values (DragDrawGhostInteractive and DragDrawGhostOriginal) is during Drag operation item drawed to Interactive layer, and Original bounds are empty (no draw to Standard layer)
-        /// </summary>
-        DragDrawGhostOriginal = 0x8000,
-        /// <summary>
-        /// Can accept an keyboard input.
-        /// Note: There is no need to set the KeyboardInput flag to accept the cancellation of Drag action (which is: Escape key during Drag)
-        /// </summary>
-        KeyboardInput = 0x00010000,
-        /// <summary>
-        /// Enables resize of item in X and Y axis
-        /// </summary>
-        DragResize = DragResizeX | DragResizeY | Drag,
-        /// <summary>
-        /// Enables move and resize of item
-        /// </summary>
-        DragMoveResize = DragMove | DragResizeX | DragResizeY | Drag,
-        /// <summary>
-        /// Standard Mouse = Mouse | Click | LongClick | DoubleClick | Drag | Select. 
-        /// Not contain CallMouseOver.
-        /// </summary>
-        StandardMouseInteractivity = Mouse | Click | LongClick | DoubleClick | Drag | Select,
-        /// <summary>
-        /// All Mouse = StandardMouseInteractivity + CallMouseOver (= Mouse | Click | LongClick | DoubleClick | Drag | Select | CallMouseOver).
-        /// </summary>
-        AllMouseInteractivity = StandardMouseInteractivity | CallMouseOver,
-        /// <summary>
-        /// StandardKeyboardInetractivity = StandardMouseInteractivity except Drag + KeyboardInput (= Mouse | Click | LongClick | DoubleClick | Select | KeyboardInput)
-        /// </summary>
-        StandardKeyboardInteractivity = Mouse | Click | LongClick | DoubleClick | Select | KeyboardInput
     }
     /// <summary>
     /// State of item by mouse activity. Not change of state (eg. Click, DragBegin and so on), only static status (Dragging, MouseDown, MouseOver, ...)

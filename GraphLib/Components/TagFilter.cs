@@ -106,6 +106,40 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public int OptimalHeightAllRows { get; private set; }
         #endregion
+        #region Podpora pro externí řízení filtru (reset, set)
+        /// <summary>
+        /// Metoda zajistí, že TagFilter bude ukazovat všechny položky
+        /// </summary>
+        public bool TagFilterReset(ref bool callRefresh)
+        {
+            return this.TagFilterSet(null, ref callRefresh);
+        }
+        /// <summary>
+        /// Metoda zajistí, že TagFilter bude ukazovat jen TagItem vyhovující dodanému filtru
+        /// </summary>
+        /// <param name="selector">Filtr, který pro danou položku filtru vrací příznak, že má být Checked</param>
+        /// <param name="callRefresh">Nastaví se na true při požadavku na změnu</param>
+        public bool TagFilterSet(Func<TagItem, bool> selector, ref bool callRefresh)
+        {
+            bool isChange = false;
+            var dataItems = this._DataItemList;
+            foreach (GTagItem gTagItem in dataItems)
+            {
+                bool oldValue = gTagItem.TagItem.CheckedSilent;
+                bool newValue = (selector != null ? selector(gTagItem.TagItem) : false);
+                if (newValue != oldValue)
+                {
+                    gTagItem.TagItem.CheckedSilent = newValue;
+                    isChange = true;
+                    callRefresh = true;
+                }
+            }
+            if (isChange)
+                this.CallFilterChanged();
+
+            return isChange;
+        }
+        #endregion
         #region Vnitřní prvky
         /// <summary>
         /// Grafické prvky <see cref="GTagItem"/>, pole obsahuje pouze viditelné prvky z pole <see cref="TagItems"/>.
@@ -332,16 +366,6 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Interaktivita prvků, výběr prvků podle režimu, eventy
         /// <summary>
-        /// Událost, kdy došlo ke změně ve filtru.
-        /// Aktuálně vybrané položky si eventhandler najde v property <see cref="FilteredItems"/>.
-        /// </summary>
-        public event EventHandler FilterChanged;
-        /// <summary>
-        /// Háček při změně ve filtru
-        /// </summary>
-        /// <param name="args"></param>
-        protected virtual void OnFilterChanged(EventArgs args) { }
-        /// <summary>
         /// Zavolá háček OnFilterChanged() a event FilterChanged
         /// </summary>
         protected void CallFilterChanged()
@@ -353,6 +377,16 @@ namespace Asol.Tools.WorkScheduler.Components
             if (this.FilterChanged != null)
                 this.FilterChanged(this, args);
         }
+        /// <summary>
+        /// Háček při změně ve filtru
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnFilterChanged(EventArgs args) { }
+        /// <summary>
+        /// Událost, kdy došlo ke změně ve filtru.
+        /// Aktuálně vybrané položky si eventhandler najde v property <see cref="FilteredItems"/>.
+        /// </summary>
+        public event EventHandler FilterChanged;
         /// <summary>
         /// Souhrn položek filtru, které jsou aktuálně vybrané.
         /// Pokud je zde počet položek = 0, mívá to význam "Zobrazit vše".
@@ -479,7 +513,7 @@ namespace Asol.Tools.WorkScheduler.Components
             this._SelectAllItem.CheckedSilent = (checkedItems.Count == 0);
         }
         #endregion
-        #region Automatické rozbalení na plnou výšku přo MouseEnter
+        #region Automatické rozbalení na plnou výšku při MouseEnter
         /// <summary>
         /// Dovolí prvku, aby se "roztáhnul" na potřebnou výšku v situaci, kdy jeho aktuální výška je menší než je potebná pro zobrazení všech tlačítek.
         /// K roztáhnutí dojde v eventu MouseEnter, k následnému sbalení v eventu MouseLeave.

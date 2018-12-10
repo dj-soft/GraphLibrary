@@ -448,7 +448,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public bool ResizeEnabled { get { return this._ItemSize.ResizeEnabled.Value; } set { this._ItemSize.ResizeEnabled = value; } }
         #endregion
-        #region implementace ISequenceLayout = pořadí, počáteční pixel, velikost, následující pixel. Podpůrné metody GetLayoutSize() a SetLayoutSize().
+        #region Implementace ISequenceLayout = pořadí, počáteční pixel, velikost, následující pixel. Podpůrné metody GetLayoutSize() a SetLayoutSize().
+        /// <summary>
+        /// Pořadí tohoto prvku v kolekci; -1 pro prvky neviditelné
+        /// </summary>
+        int ISequenceLayout.Order { get { return this._ItemSize.Order; } set { this._ItemSize.Order = value; } }
         /// <summary>
         /// Pozice, kde prvek začíná.
         /// Interface ISequenceLayout tuto hodnotu setuje v případě, kdy se layout těchto prvků změní (změna prvků nebo jejich velikosti).
@@ -485,8 +489,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="spacing">Mezera mezi prvky = hodnota, o kterou bude Begin následující položky navýšen proti End položky předešlé.</param>
         public static int SequenceLayoutCalculate(IEnumerable<ISequenceLayout> items, int spacing = 0)
         {
+            int order = 0;
             int begin = 0;
-            return SequenceLayoutCalculate(items, ref begin, spacing);
+            return SequenceLayoutCalculate(items, ref order, ref begin, spacing);
         }
         /// <summary>
         /// Do všech položek ISequenceLayout dodané kolekce vepíše hodnotu Begin postupně od hodnoty begin.
@@ -495,13 +500,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Parametr ref begin po skončení metody obsahuje hodnotu, kde by začínal další prvek za posledním prvkem této kolekce (akceptujíc spacing).
         /// </summary>
         /// <param name="items">Kolekce položek typu ISequenceLayout, jejich Begin a End se bude nastavovat</param>
-        /// <param name="begin">Hodnota Begin do první položky </param>
+        /// <param name="order">Hodnota Order do první položky, která bude mít Size kladné</param>
+        /// <param name="begin">Hodnota Begin do první položky</param>
         /// <param name="spacing">Mezera mezi prvky = hodnota, o kterou bude Begin následující položky navýšen proti End položky předešlé.</param>
-        public static int SequenceLayoutCalculate(IEnumerable<ISequenceLayout> items, ref int begin, int spacing)
+        public static int SequenceLayoutCalculate(IEnumerable<ISequenceLayout> items, ref int order, ref int begin, int spacing)
         {
             int end = begin;
             foreach (ISequenceLayout item in items)
-                _SequenceLayoutCalculate(item, ref begin, ref end, spacing);
+                _SequenceLayoutCalculate(item, ref order, ref begin, ref end, spacing);
             return end;
         }
         /// <summary>
@@ -515,15 +521,18 @@ namespace Asol.Tools.WorkScheduler.Components
         /// end obsahuje vždy konec 
         /// </summary>
         /// <param name="item"></param>
-        /// <param name="begin"></param>
+        /// <param name="order">Hodnota Order do první položky, která bude mít Size kladné</param>
+        /// <param name="begin">Hodnota Begin do první položky</param>
         /// <param name="end"></param>
         /// <param name="spacing"></param>
-        private static void _SequenceLayoutCalculate(ISequenceLayout item, ref int begin, ref int end, int spacing)
+        private static void _SequenceLayoutCalculate(ISequenceLayout item, ref int order, ref int begin, ref int end, int spacing)
         {
+            item.Order = -1;
             item.Begin = begin;
             int size = item.Size;
             if (size > 0)
             {
+                item.Order = order++;
                 end = begin + size;
                 begin = ((spacing > 0) ? end + spacing : end);
             }
@@ -738,6 +747,12 @@ namespace Asol.Tools.WorkScheduler.Components
     /// </summary>
     public interface ISequenceLayout
     {
+        /// <summary>
+        /// Pořadí tohoto prvku v kolekci.
+        /// První prvek má <see cref="Order"/> = 0, následující 1,2, ...
+        /// Pořadí je napočítáváno společně s Begin.
+        /// </summary>
+        int Order { get; set; }
         /// <summary>
         /// Pozice, kde prvek začíná.
         /// Interface ISequenceLayout tuto hodnotu setuje v případě, kdy se layout těchto prvků změní (změna prvků nebo jejich velikosti).

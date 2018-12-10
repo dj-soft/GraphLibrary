@@ -510,11 +510,37 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiTable Rows { get; set; }
         /// <summary>
+        /// Přidá jeden graf do tabulky <see cref="Graphs"/>
+        /// </summary>
+        /// <param name="graph"></param>
+        public void AddGraph(GuiGraph graph)
+        {
+            if (graph != null)
+            {
+                if (this.Graphs == null)
+                    this.Graphs = new List<GuiGraph>();
+                this.Graphs.Add(graph);
+            }
+        }
+        /// <summary>
         /// Grafy v této tabulce.
         /// Pokud pro některý řádek tabulky nebude definován graf, vytvoří se nový implicitní.
         /// Pokud by zde bylo více grafů pro jeden řádek, akceptuje se jen ten první.
         /// </summary>
         public List<GuiGraph> Graphs { get; set; }
+        /// <summary>
+        /// Přidá jednu tabulku s prvky grafů
+        /// </summary>
+        /// <param name="graphTable"></param>
+        public void AddGraphTable(GuiGraphTable graphTable)
+        {
+            if (graphTable != null)
+            {
+                if (this.GraphItems == null)
+                    this.GraphItems = new List<GuiGraphTable>();
+                this.GraphItems.Add(graphTable);
+            }
+        }
         /// <summary>
         /// Tabulky s grafickými prvky.
         /// Jedna vizuální tabulka může v grafech zobrazovat prvky, pocházející z různých zdrojů.
@@ -528,14 +554,59 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public List<GuiTable> GraphTexts { get; set; }
         /// <summary>
+        /// Tabulky s popisnými texty pro ToolTipy grafu, typicky načtená dle přehledové šablony.
+        /// Tabulek je možno vložit více, každá tabulka může obsahovat přehledovou šablonu jiné třídy nebo s jiným filtrem.
+        /// Konkrétní řádek se dohledává podle GuiId grafického prvku, který se vyhledává v těchto tabulkách.
+        /// </summary>
+        public List<GuiTable> GraphToolTips { get; set; }
+        /// <summary>
         /// Tabulky s propojovacími linkami mezi prvky grafů GuiGraphItem.
         /// </summary>
         public GuiGraphLinks GraphLinks { get; set; }
+        /// <summary>
+        /// Přidá jeden vztah Parent - Child
+        /// </summary>
+        /// <param name="parentChild"></param>
+        public void AddParentChild(GuiParentChild parentChild)
+        {
+            if (parentChild != null)
+            {
+                if (this.ParentChilds == null)
+                    this.ParentChilds = new List<GuiParentChild>();
+                this.ParentChilds.Add(parentChild);
+            }
+        }
+        /// <summary>
+        /// Tabulka definující vztah Parent - Child mezi dvěma řádky tabulky <see cref="Rows"/>
+        /// </summary>
+        public List<GuiParentChild> ParentChilds { get; set; }
         /// <summary>
         /// Potomek zde vrací soupis svých Child prvků
         /// </summary>
         [PersistingEnabled(false)]
         protected override IEnumerable<IGuiItem> Childs { get { return Union(this.GridProperties, this.GraphProperties, this.Rows, this.GraphItems, this.GraphTexts, this.GraphLinks); } }
+    }
+    /// <summary>
+    /// Pár klíčů Parent - Child pro tvorbu stromové struktury
+    /// </summary>
+    public class GuiParentChild
+    {
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return "Parent: " + this.Parent + "; Child: " + this.Child;
+        }
+        /// <summary>
+        /// Klíč řádku Parent
+        /// </summary>
+        public GuiId Parent { get; set; }
+        /// <summary>
+        /// Klíč řádku Child
+        /// </summary>
+        public GuiId Child { get; set; }
     }
     #endregion
     #region GuiGridProperties : definiční vlastnosti jedné vizuální tabulky, vyjma vlastností grafů
@@ -583,6 +654,10 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public Color? TagFilterBackColor { get; set; }
         /// <summary>
+        /// Řádky Childs pro konkrétní řádky Parent vyhodnocovat pouze pro aktuálně zobrazený čas?
+        /// </summary>
+        public bool ChildRowsEvaluateByTime { get; set; }
+        /// <summary>
         /// Přidá jednu další definici interakce <see cref="GuiGridInteraction"/>
         /// </summary>
         /// <param name="interaction"></param>
@@ -628,6 +703,17 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Akce, kterou má provést cílová tabulka
         /// </summary>
         public TargetActionType TargetAction { get; set; }
+        /// <summary>
+        /// Podmínky dle nastavení Toolbaru, za kterých se má tato interakce provést.
+        /// V aktuální verzi se podmínky mohou vázat pouze na stav <see cref="GuiToolbarItem.IsChecked"/> prkvů toolbaru <see cref="GuiToolbarItem"/>.
+        /// Na prvek toolbaru se vážou přes jeho jméno <see cref="GuiBase.Name"/>.
+        /// Pokud některá ze zde vyjmenovaných položek bude zaškrtnutá, bude tato interakce použita, a naopak.
+        /// </summary>
+        public string Conditions { get; set; }
+        /// <summary>
+        /// true pokud tato interakce je podmíněná stavem Toolbarů
+        /// </summary>
+        public bool IsConditional { get { return !String.IsNullOrEmpty(this.Conditions); } }
     }
     /// <summary>
     /// Typ akce ve zdrojové tabulce, kterou je daná interakce spuštěna
@@ -664,67 +750,72 @@ namespace Noris.LCS.Base.WorkScheduler
     /// Typ akce v cílové tabulce, která je provedena
     /// </summary>
     [Flags]
-    public enum TargetActionType
+    public enum TargetActionType : UInt64
     {
         /// <summary>
         /// Žádná akce v cíli
         /// </summary>
         None = 0,
+
         /// <summary>
         /// Hledej ze zdrojového prvku, podle jeho RowId
         /// </summary>
-        SearchSourceRowId = 0x0001,
+        SearchSourceRowId = 0x00000001,
         /// <summary>
         /// Hledej ze zdrojového prvku, podle jeho GroupId
         /// </summary>
-        SearchSourceGroupId = 0x0002,
+        SearchSourceGroupId = 0x00000002,
         /// <summary>
         /// Hledej ze zdrojového prvku, podle jeho ItemId
         /// </summary>
-        SearchSourceItemId = 0x0004,
+        SearchSourceItemId = 0x00000004,
         /// <summary>
         /// Hledej ze zdrojového prvku, podle jeho DataId
         /// </summary>
-        SearchSourceDataId = 0x0008,
+        SearchSourceDataId = 0x00000008,
 
         /// <summary>
         /// Hledej v cílovém prvku, najdi identické RowId
         /// </summary>
-        SearchTargetRowId = 0x0010,
+        SearchTargetRowId = 0x00000100,
         /// <summary>
         /// Hledej v cílovém prvku, najdi identické GroupId
         /// </summary>
-        SearchTargetGroupId = 0x0020,
+        SearchTargetGroupId = 0x00000200,
         /// <summary>
         /// Hledej v cílovém prvku, najdi identické ItemId
         /// </summary>
-        SearchTargetItemId = 0x0040,
+        SearchTargetItemId = 0x00000400,
         /// <summary>
         /// Hledej v cílovém prvku, najdi identické DataId
         /// </summary>
-        SearchTargetDataId = 0x0080,
+        SearchTargetDataId = 0x00000800,
 
         /// <summary>
         /// Nastav na nalezené prvky IsSelected (platí jen na prvky grafu),
         /// tím se zobrazí jejich vztahy
         /// </summary>
-        SelectTarget = 0x0100,
+        SelectTargetItem = 0x00010000,
         /// <summary>
         /// Nastav na nalezené prvky IsActivated (platí jen na prvky grafu),
         /// tím se více graficky zvýrazní, toto zvýraznění lze odebrat jen jinou programovou aktivitou
         /// </summary>
-        ActivateTarget = 0x0200,
+        ActivateTargetItem = 0x00020000,
+        /// <summary>
+        /// Nastav filtr na prvky v cílové tabulce
+        /// </summary>
+        FilterTargetItems = 0x00040000,
         /// <summary>
         /// Nastav filtr na řádky v cílové tabulce
         /// </summary>
-        FilterTargetRows = 0x0400,
+        FilterTargetRows = 0x00080000,
         /// <summary>
-        /// Pokud je specifikována tato hodnota v součinnosti s hodnotami <see cref="SelectTarget"/>, <see cref="ActivateTarget"/>, <see cref="FilterTargetRows"/>;
+        /// Pokud je specifikována tato hodnota v součinnosti s hodnotami <see cref="SelectTargetItem"/>, <see cref="ActivateTargetItem"/>, <see cref="FilterTargetRows"/>;
         /// tak před výběrem cílových prvků NEBUDE provedeno zrušení stávajících hodnot.
-        /// Jinými slovy: pokud bude specifikováno jen <see cref="SelectTarget"/>, ale ne <see cref="LeaveCurrentTarget"/>, tak dosavadní stav Selected prvků bude ZRUŠEN.
-        /// Pokud ale bude specifikováno jak <see cref="SelectTarget"/>, tak současně i <see cref="LeaveCurrentTarget"/>, tak dosavadní stav Selected prvků bude PONECHÁN.
+        /// Jinými slovy: pokud bude specifikováno jen <see cref="SelectTargetItem"/>, ale ne <see cref="LeaveCurrentTarget"/>, tak dosavadní stav Selected prvků bude ZRUŠEN.
+        /// Pokud ale bude specifikováno jak <see cref="SelectTargetItem"/>, tak současně i <see cref="LeaveCurrentTarget"/>, tak dosavadní stav Selected prvků bude PONECHÁN.
         /// </summary>
-        LeaveCurrentTarget = 0x0800
+        LeaveCurrentTarget = 0x00100000
     }
     #endregion
     #region GuiTable : Jedna fyzická tabulka (ekvivalent DataTable, s podporou serializace a implicitní konverze z/na DataTable)
@@ -1945,7 +2036,8 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiImage ImageHot { get; set; }
         /// <summary>
-        /// Název nebo binární obsah obrázku pro stav <see cref="IsChecked"/>
+        /// Název nebo binární obsah obrázku pro stav <see cref="IsChecked"/>.
+        /// Pokud prvek nebude mít nastaveno <see cref="IsCheckable"/>, pak nebude nikdy ve stavu <see cref="IsChecked"/>, a tento obrázek se neuplatní.
         /// </summary>
         public GuiImage ImageChecked { get; set; }
         /// <summary>
@@ -1987,6 +2079,24 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public bool? IsChecked { get; set; }
         /// <summary>
+        /// Obsahuje název skupiny prvků, které se vzájemně chovají jako OptionGroup.
+        /// To znamená, že právě jeden z prvků skupiny může být <see cref="IsChecked"/> = být označen jako aktivní.
+        /// <para/>
+        /// Chování:
+        /// <para/>
+        /// a) Pokud je <see cref="CheckedGroupName"/> prázdné, pak se button chová jako CheckBox: změna jeho hodnoty <see cref="IsChecked"/> neovlivní žádný jiný prvek.
+        /// Kliknutí na takový prvek mění hodnotu <see cref="IsChecked"/> z false na true a naopak = lze jej shodit na false.
+        /// <para/>
+        /// b) Pokud je <see cref="CheckedGroupName"/> prázdné, pak se button chová jako RadioButton: kliknutí na neoznačený button jej označí a současně odznačí ostatní buttony v grupě.
+        /// Opakované kliknutí na označený button jej neodznačí.
+        /// Prvky jedné grupy <see cref="CheckedGroupName"/> se musí nacházet v jedné grafické skupině <see cref="GroupName"/> (platí pro Toolbar).
+        /// Pokud by byly umístěny v jiné grupě, nebudou považovány za jednu skupinu, ale více oddělených skupin.
+        /// Naproti tomu jedna grafická grupa <see cref="GroupName"/> může obsahovat více skupin <see cref="CheckedGroupName"/>.
+        /// <para/>
+        /// Je rozumné dávat prvky jedné <see cref="CheckedGroupName"/> blízko k sobě, ale technicky nutné to není.
+        /// </summary>
+        public string CheckedGroupName { get; set; }
+        /// <summary>
         /// Čas, po který maximálně bude blokován GUI, po dobu běhu této funkce.
         /// Pokud je zde null, pak běh funkce neblokuje GUI.
         /// Pokud je zde nějaký (kladný) čas, pak po tuto dobu bude GUI okna blokováno, do doby doběhnutí funkce nebo do doběhnutí tohoto Timeoutu.
@@ -2000,6 +2110,53 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Zpráva bude zobrazena pouze tehdy, když <see cref="BlockGuiTime"/> bude obsahovat čas timeoutu, bez něj je message nepoužitá.
         /// </summary>
         public string BlockGuiMessage { get; set; }
+        /// <summary>
+        /// Předpis pro akce, které na základě aktivace tohoto prvku má provést vrstva GUI.
+        /// Lze deklarovat více než jednu akci.
+        /// Lze potlačit volání servisní funkce aplikačního serveru : <see cref="GuiActionType.SuppressCallAppHost"/>
+        /// </summary>
+        public GuiActionType? GuiActions { get; set; }
+        /// <summary>
+        /// Jména akcí, které se mají provést, pokud <see cref="GuiActions"/> bude obsahovat <see cref="GuiActionType.RunInteractionRowActivated"/>.
+        /// Jde o seznam oddělený středníky nebo čárkami, jehož jednotlivé položky určují názvy tabulek Source a názvy interakcí <see cref="GuiGridInteraction"/>, které se na základě tohoto tlačítka mají provést.
+        /// Název tabulky a název interakce je oddělen dvojtečkou (nebo tečkou);
+        /// Název tabulky musí být FullName (například Data\pages\MainPage\mainPanel\GridCenter);
+        /// interakce jako data jsou totiž definovány v rámci <see cref="GuiGrid.GridProperties"/>, v <see cref="GuiGridProperties.InteractionList"/>.
+        /// Příklad: pokud toto tlačítko Toolbaru obsahuje <see cref="RunInteractionNames"/> = "GridLeft:SelectOperations", pak se provede:
+        /// a) najde se tabulka (<see cref="GuiGrid"/>) s Name = "GridLeft", a
+        /// b) provede se její interakce "SelectOperations".
+        /// <para/>
+        /// Pokud bude požadována akce <see cref="GuiActions"/> : <see cref="GuiActionType.RunInteractionRowActivated"/>, ale <see cref="RunInteractionNames"/>, 
+        /// žádná interakce se neprovede.
+        /// </summary>
+        public string RunInteractionNames { get; set; }
+    }
+    /// <summary>
+    /// Akce, které má provést vrstva Gui po aktivaci tlačítka / funkce
+    /// </summary>
+    [Flags]
+    public enum GuiActionType : UInt64
+    {
+        /// <summary>
+        /// GUI nemá provídět žádnou akci, výchozí hodnota.
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Zrušit všechny řádkové filtry pro všechny tabulky
+        /// </summary>
+        ResetAllRowFilters = 0x0000000000000010,
+        /// <summary>
+        /// Zrušit interaktivní filtry pro target tabulky
+        /// </summary>
+        ResetTargetInteractiveFilters = 0x0000000000000020,
+        /// <summary>
+        /// Zopakuje provedení interakcí, které se provádějí po aktivaci řádku
+        /// </summary>
+        RunInteractionRowActivated = 0x0000000000000100,
+        /// <summary>
+        /// Aktivace této funkce NEBUDE volat funkci aplikačního serveru
+        /// </summary>
+        SuppressCallAppHost = 0x1000000000000000        // Nastaven bit 60
     }
     #endregion
     #region GuiContextMenuSet : Všechny položky všech Kontextových menu

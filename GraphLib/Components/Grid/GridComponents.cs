@@ -431,8 +431,13 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// Může být null pro sloupce mimo zobrazovaný prostor.
         /// </summary>
         public Int32Range VisualRange { get; set; }
+        /// <summary>
+        /// Vizuální pořadí tohoto sloupce, 0 má první vizuálně dostupný sloupec (tzn. po přemístění jiného sloupce na první pozici bude ten nový mít Order = 0)
+        /// </summary>
+        public int VisualOrder { get { return this._OwnerColumn.ColumnSize.Order; } }
         #endregion
         #region ISequenceLayout
+        int ISequenceLayout.Order { get { return this._ISequenceLayout.Order; } set { this._ISequenceLayout.Order = value; } }
         int ISequenceLayout.Begin { get { return this._ISequenceLayout.Begin; } set { this._ISequenceLayout.Begin = value; } }
         int ISequenceLayout.Size { get { return this._ISequenceLayout.Size; } set { this._ISequenceLayout.Size = value; } }
         int ISequenceLayout.End { get { return this._ISequenceLayout.End; } }
@@ -1204,12 +1209,12 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// </summary>
         /// <param name="isVisible"></param>
         /// <returns></returns>
-        private bool _GetVisible(bool isVisible) { return this._SequenceLayout.Visible; }
+        private bool _GetVisible(bool isVisible) { return this.OwnerRow.Visible; }
         /// <summary>
         /// Metoda nastavuje viditelnost řádku, hodnotu vepisuje do datového objektu do <see cref="Row.Visible"/>
         /// </summary>
         /// <param name="isVisible"></param>
-        private void _SetVisible(bool isVisible) { this._SequenceLayout.Visible = isVisible; }
+        private void _SetVisible(bool isVisible) { this.OwnerRow.Visible = isVisible; }
         /// <summary>
         /// Umožní nastavit souřadnice pro Child objekty
         /// </summary>
@@ -1253,6 +1258,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         public Int32Range VisualRange { get; set; }
         #endregion
         #region ISequenceLayout
+        int ISequenceLayout.Order { get { return this._ISequenceLayout.Order; } set { this._ISequenceLayout.Order = value; } }
         int ISequenceLayout.Begin { get { return this._ISequenceLayout.Begin; } set { this._ISequenceLayout.Begin = value; } }
         int ISequenceLayout.Size { get { return this._ISequenceLayout.Size; } set { this._ISequenceLayout.Size = value; } }
         int ISequenceLayout.End { get { return this._ISequenceLayout.End; } }
@@ -1841,7 +1847,12 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="opacity"></param>
         protected override void DrawContent(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
         {
+            int offsetX = 0;
             base.DrawContent(e, boundsAbsolute, drawAsGhost, opacity);
+            if (this.OwnerColumn.VisualOrder == 0 && this.OwnerGTable.IsTreeView)
+            {
+                this.OwnerGTable.DrawTreeView(e, this.OwnerCell, boundsAbsolute, ref offsetX);
+            }
             this.OwnerGTable.DrawValue(e, boundsAbsolute, this.OwnerCell.Value, this.OwnerCell.ValueType, this.OwnerCell.Row, this.OwnerCell);
             this.OwnerGTable.DrawRowGridLines(e, this.OwnerCell, boundsAbsolute);
             this.DrawDebugBorder(e, boundsAbsolute, opacity);
