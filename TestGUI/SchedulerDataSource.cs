@@ -122,12 +122,16 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this.CreatePlanUnitC(++recordId, "Kontrola standardní", WP_KONT, "kontrola",  2, CalendarType.Work5d2x8h);
             this.CreatePlanUnitC(++recordId, "Kontrola mistr", WP_KONT, "kontrola",  1, CalendarType.Work5d1x8h);
             this.CreatePlanUnitC(++recordId, "Kooperace DŘEVEX", WP_KOOP, "kooperace",  1, CalendarType.Work7d3x8h);
-            this.CreatePlanUnitC(++recordId, "Kooperace TRUHLEX", WP_KOOP, "kooperace", 1, CalendarType.Work7d3x8h);
-            this.CreatePlanUnitC(++recordId, "Kooperace JAREŠ", WP_KOOP, "kooperace;soukromník", 1, CalendarType.Work7d3x8h);
-            this.CreatePlanUnitC(++recordId, "Kooperace TEIMER", WP_KOOP, "kooperace;soukromník",  1, CalendarType.Work7d3x8h);
+            this._WplParent = this.CreatePlanUnitC(++recordId, "Kooperace TRUHLEX", WP_KOOP, "kooperace", 1, CalendarType.Work7d3x8h);
+            this._WplChild1 = this.CreatePlanUnitC(++recordId, "Kooperace JAREŠ", WP_KOOP, "kooperace;soukromník", 1, CalendarType.Work7d3x8h);
+            this._WplChild2 = this.CreatePlanUnitC(++recordId, "Kooperace TEIMER", WP_KOOP, "kooperace;soukromník",  1, CalendarType.Work7d3x8h);
 
             this.PlanOperationsToWorkplaces();
         }
+        protected GuiId _WplParent;
+        protected GuiId _WplChild1;
+        protected GuiId _WplChild2;
+
         /// <summary>
         /// Vytvoří a uloží jeden výrobní příkaz včetně jeho operací, pro dané zadání.
         /// </summary>
@@ -256,7 +260,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <param name="tagText"></param>
         /// <param name="machinesCount"></param>
         /// <param name="calendar"></param>
-        protected void CreatePlanUnitC(int recordId, string name, string workPlace, string tagText, int machinesCount, CalendarType calendar)
+        protected GuiId CreatePlanUnitC(int recordId, string name, string workPlace, string tagText, int machinesCount, CalendarType calendar)
         {
             string refer = "VP" + recordId.ToString();
             PlanUnitC planUnitC = new PlanUnitC()
@@ -270,6 +274,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 WorkTimes = CreateWorkingItems(1000 * recordId, calendar, (float)machinesCount, this.TimeRangeTotal)
             };
             this.PlanUnitCDict.Add(planUnitC.RecordGid, planUnitC);
+
+            return planUnitC.RecordGid;
         }
         /// <summary>
         /// Vytvoří a vrátí záznamy pro pracovní směny.
@@ -613,6 +619,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             {
                 Name = "SaveData",
                 Size = FunctionGlobalItemSize.Whole,
+                Enable = false,
                 GroupName = "FUNKCE",
                 Title = "ULOŽ",
                 ToolTip = "Uloží aktuální stav dat do databáze",
@@ -622,6 +629,29 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 BlockGuiMessage = "Probíhá uložení dat\r\nPočkejte prosím..."
             });
 
+            this.MainData.ToolbarItems.Add(new GuiToolbarItem()
+            {
+                Name = "TlbApplyFilterMainToLeft",
+                Size = FunctionGlobalItemSize.Half,
+                LayoutHint = LayoutHint.NextItemSkipToNextRow,
+                GroupName = "NASTAVENÍ",
+                Title = "Filtruj VP",
+                ToolTip = "Pokud bude aktivní, budou v levé tabulce zobrazeny jen ty Výrobní příkazy, jejichž některá operace se provádí na aktuálním pracovišti.",
+                IsCheckable = true,
+                Image = RES.Images.Actions24.FormatIndentLess3Png,
+                GuiActions = GuiActionType.ResetAllRowFilters | GuiActionType.RunInteractionRowActivated | GuiActionType.SuppressCallAppHost,
+                RunInteractionNames = @"Data\pages\MainPage\mainPanel\GridCenter:InteractionFilterProductOrder"
+            });
+
+            this.MainData.ToolbarItems.Add(new GuiToolbarItem()
+            {
+                Name = "TlbResetAllFilters",
+                Size = FunctionGlobalItemSize.Half,
+                GroupName = "NASTAVENÍ",
+                Title = "Zruš filtry",
+                Image = RES.Images.Actions24.TabClose2Png,
+                GuiActions = GuiActionType.ResetAllRowFilters | GuiActionType.SuppressCallAppHost
+            });
         }
         /// <summary>
         /// Vygeneruje hlavní (a jedinou) stránku pro data, zatím bez dat
@@ -646,11 +676,11 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             gridLeft.GridProperties.AddInteraction(new GuiGridInteraction()
             {
+                Name = "InteractionSelectOperations",
                 SourceAction = (SourceActionType.TableRowActivatedOnly | SourceActionType.TableRowChecked),
                 TargetGridFullName = @"Data\pages\MainPage\mainPanel\GridCenter",
-                TargetAction = (TargetActionType.SearchSourceItemId | TargetActionType.SearchTargetGroupId | TargetActionType.SelectTarget)
+                TargetAction = (TargetActionType.SearchSourceItemId | TargetActionType.SearchTargetGroupId | TargetActionType.SelectTargetItem)
             });
-
 
             gridLeft.GraphProperties.AxisResizeMode = AxisResizeContentMode.ChangeScale;
             gridLeft.GraphProperties.BottomMarginPixel = 2;
@@ -706,6 +736,20 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             gridCenter.GridProperties.TagFilterRoundItemPercent = 50;
             gridCenter.GridProperties.TagFilterEnabled = true;
             gridCenter.GridProperties.TagFilterBackColor = Color.FromArgb(64, 128, 64);
+            gridCenter.GridProperties.ChildRowsEvaluateByTime = true;
+
+            gridCenter.GridProperties.AddInteraction(new GuiGridInteraction()
+            {
+                Name = "InteractionFilterProductOrder",
+                SourceAction = (SourceActionType.TableRowActivatedOnly | SourceActionType.TableRowChecked),
+                TargetGridFullName = @"Data\pages\MainPage\leftPanel\GridLeft",
+                // Hledáme: SearchSourceDataId : ve Zdrojovém grafu načteme DataId = GID Operace VP, 
+                //          SearchTargetItemId : tento GID vyhledáme v Cílovém grafu jako ItemId = GID Operace VP,
+                //          FilterTargetRows   : a pro cílové prvky zjistíme jejich Row a na ně dáme filtr:
+                TargetAction = (TargetActionType.SearchSourceDataId | TargetActionType.SearchTargetItemId | TargetActionType.FilterTargetRows),
+                // Interakce je podmíněna stavem IsChecked = true u tohoto buttonu v ToolBaru:
+                Conditions = "TlbApplyFilterMainToLeft"
+            });
 
             gridCenter.GraphProperties.AxisResizeMode = AxisResizeContentMode.ChangeScale;
             gridCenter.GraphProperties.TimeAxisBackColor = Color.FromArgb(192, 224, 255);
@@ -746,6 +790,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             // Vztahy prvků (Link):
             foreach (ProductOrder productOrder in this.ProductOrderDict.Values)
                 this.AddGraphLinkToGrid(gridCenter, productOrder);
+
+            // Závislosti řádků (ParentChild):
+            gridCenter.AddParentChild(new GuiParentChild() { Parent = this._WplParent, Child = this._WplChild1 });
+            gridCenter.AddParentChild(new GuiParentChild() { Parent = this._WplParent, Child = this._WplChild2 });
 
             this.GridCenter = gridCenter;
             this.MainPage.MainPanel.Grids.Add(gridCenter);
@@ -1012,6 +1060,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                         System.Threading.Thread.Sleep(time);
                         responseArgs.GuiResponse = new GuiResponse();
                         responseArgs.GuiResponse.Common = new GuiResponseCommon() { ClearLinks = true, ClearSelected = true };
+                        responseArgs.GuiResponse.ToolbarItems = new GuiToolbarItem[]
+                        {
+                            new GuiToolbarItem() { Name = "SaveData", Enable = true }
+                        };
                         break;
 
                     case GuiRequest.COMMAND_ToolbarClick:
@@ -1036,6 +1088,11 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                                 System.Threading.Thread.Sleep(time);
                                 this.DataChanged = false;
                                 responseArgs.GuiResponse.Dialog = GetDialog("Data jsou uložena.", GuiDialogButtons.Ok);
+                                responseArgs.GuiResponse.ToolbarItems = new GuiToolbarItem[]
+                                {
+                                    new GuiToolbarItem() { Name = "SaveData", Enable = false }
+                                };
+
                                 break;
                         }
                         break;
