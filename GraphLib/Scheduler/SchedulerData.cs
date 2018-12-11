@@ -389,12 +389,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
                 string groupName = guiToolBarItem.GroupName;
                 if (String.IsNullOrEmpty(groupName)) groupName = defaultGroupName;
-                FunctionGlobalGroup group;
-                if (!toolBarGroups.TryGetValue(groupName, out group))
-                {
-                    group = new FunctionGlobalGroup() { Title = groupName };
-                    toolBarGroups.Add(groupName, group);
-                }
+
+                FunctionGlobalGroup group = toolBarGroups.GetAdd(groupName, key => new FunctionGlobalGroup() { Title = groupName });
+
                 ToolBarItem item = ToolBarItem.Create(this, guiToolBarItem);
                 if (item != null)
                 {

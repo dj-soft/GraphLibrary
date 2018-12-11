@@ -2683,6 +2683,15 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public int RecordId { get; private set; }
         /// <summary>
+        /// true pro prázdný ID (kdy <see cref="ClassId"/> i <see cref="RecordId"/> == 0)
+        /// </summary>
+        public bool IsEmpty { get { return (this.ClassId == 0 && this.RecordId == 0); } }
+        /// <summary>
+        /// Vrátí new instanci <see cref="GuiId"/>, která je <see cref="IsEmpty"/>.
+        /// Proč? Třeba pro klíč v Dictionary, který nesmí být null.
+        /// </summary>
+        public static GuiId Empty { get { return new GuiId(0, 0); } }
+        /// <summary>
         /// Vizualizace
         /// </summary>
         /// <returns></returns>

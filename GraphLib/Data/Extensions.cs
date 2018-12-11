@@ -682,6 +682,25 @@ namespace Asol.Tools.WorkScheduler.Data
                     dictionary.Add(key, item);
             }
         }
+        /// <summary>
+        /// Vrací danou kolekci sestavenou do jednoho stringu
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="collection"></param>
+        /// <param name="delimiter"></param>
+        /// <returns></returns>
+        public static string ToString(this IEnumerable<object> collection, string delimiter)
+        {
+            if (collection == null) return "";
+            StringBuilder sb = new StringBuilder();
+            foreach (object item in collection)
+            {
+                if (sb.Length > 0) sb.Append(delimiter);
+                sb.Append(item != null ? item.ToString() : "Null");
+            }
+            return sb.ToString();
+
+        }
         #endregion
         #region List<T>
         /// <summary>
@@ -693,6 +712,30 @@ namespace Asol.Tools.WorkScheduler.Data
         {
             if (list == null || list.Count == 0) return default(T);
             return list[list.Count - 1];
+        }
+        #endregion
+        #region Dictionary
+        /// <summary>
+        /// Metoda zajistí typickou operaci: 
+        /// "Najdi v Dictionary hodnotu pro daný klíč, a pokud ji nenajdeš tak vytvoř novou hodnotu, vlož ji tam a vrať".
+        /// </summary>
+        /// <typeparam name="TKey"></typeparam>
+        /// <typeparam name="TValue"></typeparam>
+        /// <param name="dictionary"></param>
+        /// <param name="key"></param>
+        /// <param name="creator"></param>
+        /// <returns></returns>
+        public static TValue GetAdd<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, TKey key, Func<TKey, TValue> creator)
+        {
+            if (dictionary == null) return default(TValue);
+
+            TValue value;
+            if (!dictionary.TryGetValue(key, out value))
+            {
+                value = creator(key);
+                dictionary.Add(key, value);
+            }
+            return value;
         }
         #endregion
         #region Data.Direction

@@ -36,6 +36,10 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public string ClassName { get { return Scheduler.GreenClasses.GetClassName(this.ClassId); } }
         /// <summary>
+        /// true pokud this je Empty (<see cref="ClassId"/> == 0 and <see cref="RecordId"/> == 0)
+        /// </summary>
+        public bool IsEmpty { get { return (this.ClassId == 0 && this.RecordId == 0); } }
+        /// <summary>
         /// Privátní uložený hashcode
         /// </summary>
         private int HashCode { get; set; }

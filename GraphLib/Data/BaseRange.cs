@@ -114,21 +114,9 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Vrací false, když this není naplněn (když <see cref="IsFilled"/> je false = když Begin a/nebo End nemají hodnotu).
         /// </summary>
         /// <param name="value"></param>
-        /// <returns></returns>
-        public bool Contains(TEdge value)
-        {
-            return this.Contains(value, true);
-        }
-        /// <summary>
-        /// Vrací true, když dodaná hodnota (bod) leží uvnitř this intervalu.
-        /// Vrací true, když hodnota leží i přímo na hodnotě Begin nebo End.
-        /// Vrací false, když this interval není reálný (jeho Begin je větší než End).
-        /// Vrací false, když this není naplněn (když <see cref="IsFilled"/> je false = když Begin a/nebo End nemají hodnotu).
-        /// </summary>
-        /// <param name="value"></param>
         /// <param name="acceptOnEnd"></param>
         /// <returns></returns>
-        public bool Contains(TEdge value, bool acceptOnEnd)
+        public bool Contains(TEdge value, bool acceptOnEnd = true)
         {
             if (!this.IsFilled) return false;
 

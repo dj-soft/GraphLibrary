@@ -1340,6 +1340,19 @@ namespace Asol.Tools.WorkScheduler.Components
             _DrawImage(graphics, bounds, image, colorMatrix, alignment);
         }
         /// <summary>
+        /// Vykreslí daný Image s danou úrovní průhlednosti
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="image"></param>
+        /// <param name="opacityRatio"></param>
+        /// <param name="alignment"></param>
+        internal static void DrawImage(Graphics graphics, Rectangle bounds, Image image, float opacityRatio, ContentAlignment? alignment = null)
+        {
+            System.Drawing.Imaging.ColorMatrix colorMatrix = CreateColorMatrixAlpha(opacityRatio);
+            _DrawImage(graphics, bounds, image, colorMatrix, alignment);
+        }
+        /// <summary>
         /// Vykreslí daný Image s aplikací barevného posunu dle interaktivního stavu
         /// </summary>
         /// <param name="graphics"></param>

@@ -451,6 +451,9 @@ namespace Asol.Tools.WorkScheduler.Components
                     this.PrepareToolTip(e);
                     this.Repaint();
                     break;
+                case GInteractiveChangeState.MouseOver:
+                    this.AfterStateChangedMouseOver(e);
+                    break;
                 case GInteractiveChangeState.LeftDown:
                     this.Repaint();
                     break;
@@ -525,6 +528,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="e"></param>
         protected virtual void AfterStateChangedMouseEnter(GInteractiveChangeStateArgs e) { }
+        /// <summary>
+        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = MouseOver.
+        /// Základní třída nedělá vůbec nic.
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void AfterStateChangedMouseOver(GInteractiveChangeStateArgs e) { }
         /// <summary>
         /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = MouseLeave
         /// </summary>

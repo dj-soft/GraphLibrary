@@ -99,7 +99,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             set { this._SynchronizedTime = value; }
         }
         private ValueTimeRangeSynchronizer _SynchronizedTime;
-
         #endregion
         #region ToolBar
         /// <summary>

@@ -84,9 +84,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.LoadDataGraphProperties();
             this.LoadDataPrepareIndex();
             this.LoadDataLoadRow();
-            this.LoadDataLoadParentChild();
             this.LoadDataCreateGraphs();
             this.LoadDataLoadGraphItems();
+            this.LoadDataLoadParentChild();
             this.LoadDataLoadLinks();
             this.LoadDataLoadTexts();
         }
@@ -604,54 +604,183 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         protected void LoadDataLoadParentChild()
         {
-            List<GuiParentChild> parentChilds = this.GuiGrid.ParentChilds;
-            if (parentChilds == null) return;
+            List<GuiParentChild> guiParentChilds = this.GuiGrid.ParentChilds;
+            if (guiParentChilds == null) return;
 
-            // Nejprve si z prostých indetifikátorů složím datové komplety:
-            // Dictionary, kde Key: GuiId řádku Child; a kde Value = Tuple, jehož Item1 = řádek Child, a Item2 = pole řádků Parent:
+            // Nejprve si z prostých identifikátorů párů { Klíč Parent :: Klíč Child } složím datové komplety:
+            //  a) Dictionary, kde Key: Child; a kde Value = Tuple, jehož Item1 = řádek Child, a Item2 = pole řádků Parent:
             Dictionary<GuiId, Tuple<Row, List<Row>>> childDataDict = new Dictionary<GuiId, Tuple<Row, List<Row>>>();
-            Row parentRow, childRow;
-            foreach (GuiParentChild parentChild in parentChilds)
-            {
-                bool hasParentRow = this.TableRow.TryFindRow(parentChild.Parent, out parentRow, false);
-                bool hasChildRow = this.TableRow.TryFindRow(parentChild.Child, out childRow, false);
-                if (!(hasParentRow && hasChildRow)) continue;
+            //  b) Dictionary, kde Key: Parent; a Value = List všech jemu podřízených řádků Childs
+            Dictionary<GuiId, List<Row>> parentDict = new Dictionary<GuiId, List<Row>>();
 
-                // Máme zadané a nalezené řádky Parent i Child => zpracujeme je:
-                GuiId childGuiId = parentChild.Child;
-                Tuple<Row, List<Row>> childData;
-                if (!childDataDict.TryGetValue(childGuiId, out childData))
-                {
-                    childData = new Tuple<Row, List<Row>>(childRow, new List<Row>());
-                    childDataDict.Add(childGuiId, childData);
-                }
-                childData.Item2.Add(parentRow);
+            Row parentRow, childRow;
+            foreach (GuiParentChild guiParentChild in guiParentChilds)
+            {
+                // Child řádek musíme mít vždy, bez něj to nemá smysl:
+                if (guiParentChild.Child == null || guiParentChild.Child.IsEmpty) continue;
+                if (!this.TableRow.TryFindRow(guiParentChild.Child, out childRow, false)) continue;
+
+                // Parent řádek být může a nemusí:
+                bool hasParentRow = this.TableRow.TryFindRow(guiParentChild.Parent, out parentRow, false);
+
+                // a1) Zajistím evidenci Child řádků:
+                var childData = childDataDict.GetAdd(guiParentChild.Child, key => new Tuple<Row, List<Row>>(childRow, new List<Row>()));
+                // a2) Zajistím přidání Parenta (pokud existuje) do řádku v (childDataDict) k danému Child řádku (childData):
+                if (hasParentRow)
+                    childData.Item2.Add(parentRow);
+
+                // b) Zajistím přidání Child řádku do seznamu (parentDict) do řádků Parenta, kde Parent může být Empty:
+                GuiId parentKey = (hasParentRow ? guiParentChild.Parent : GuiId.Empty);
+                parentDict
+                    .GetAdd(parentKey, key => new List<Row>())
+                    .Add(childRow);
             }
 
-            // Poté zpracuji řádky Childs a jejich soupis Parentů:
+            // Poté zpracuji řádky Childs: jejich soupis Parentů:
             foreach (Tuple<Row, List<Row>> childData in childDataDict.Values)
             {
                 childRow = childData.Item1;
                 childRow.ParentChildMode = RowParentChildMode.DynamicChild;
-                childRow.ParentRows = childData.Item2.ToArray();
+                childRow.TreeNodeParents = childData.Item2.ToArray();
             }
+
+            // Uložím si Dictionary parentů, bude se používat pro dohledání Child prvků konkrétního Parenta:
+            this.TreeNodeChildDict = parentDict;
 
             // První vyhodnocení řádků proběhne nyní:
             TimeRange timeRange = (this._ChildRowsEvaluateByTime ? this.MainData.GuiData.Properties.InitialTimeRange : null);
             this.PrepareCurrentChildRows(timeRange);
         }
         /// <summary>
-        /// Metoda připraví Childs řádky pro řádky Parents, podle aktuálně viditelného času
+        /// Metoda připraví Childs řádky pro řádky Root, podle aktuálně viditelného času
         /// </summary>
         protected void PrepareCurrentChildRows(TimeRange timeRange)
         {
-            if (this._ChildRowsEvaluateByTime && timeRange != null || this._ChildRowsLastTimeRange != null && this._ChildRowsLastTimeRange == timeRange) return;
+            if (this._ChildRowsEvaluateByTime && timeRange != null && this._ChildRowsLastTimeRange != null && this._ChildRowsLastTimeRange == timeRange) return;
+            if (this.TreeNodeChildDict == null || this.TreeNodeChildDict.Count == 0) return;
 
-
-
+            // dynamicky určuji vztahy Parent - Child pro aktuální čas, anebo pro čas null = statické určení:
+            Row[] rootRows = this.TreeNodeRootRows;
+            bool childByTime = this._ChildRowsEvaluateByTime;
+            foreach (Row rootRow in rootRows)
+                this.PrepareCurrentChildRowsFor(rootRow, childByTime, timeRange);
 
             this._ChildRowsLastTimeRange = timeRange;
         }
+        /// <summary>
+        /// Metoda najde a připraví Child řádky pro daný Parent řádek
+        /// </summary>
+        /// <param name="parentRow"></param>
+        /// <param name="childByTime"></param>
+        /// <param name="timeRange"></param>
+        protected void PrepareCurrentChildRowsFor(Row parentRow, bool childByTime, TimeRange timeRange)
+        {
+            if (parentRow == null) return;
+            parentRow.TreeNodeChilds = null;
+            GId recordGId = parentRow.RecordGId;
+            if (this.TreeNodeChildDict == null || recordGId == null || recordGId.IsEmpty) return;
+            GuiId parentGuiId = recordGId;
+
+            // Najdeme řádky, které pro daného Parenta mohou hrát roli Child prvků:
+            Dictionary<GId, Row> childDict = new Dictionary<GId, Row>();
+            List<Row> childList;
+            if (this.TreeNodeChildDict.TryGetValue(parentGuiId, out childList))
+                childDict.AddNewItems(childList, r => r.RecordGId);
+
+            parentGuiId = GuiId.Empty;
+            if (this.TreeNodeChildDict.TryGetValue(parentGuiId, out childList))
+                childDict.AddNewItems(childList, r => r.RecordGId);
+
+            // Daný řádek (parentRow) nemá žádnou šanci mít nějaké childs:
+            if (childDict.Count == 0) return;
+
+            // Pro daný řádek máme několik kandidátů na Childs. Pokud je vztah Dynamický, pak zjistíme konkrétní možnosti vztahů:
+            Dictionary<GId, TimeRange> parentItemDict = this.PrepareCurrentChildGetItems(parentRow, childByTime, timeRange);
+
+            // Určíme řádky, které mají společnou práci s Parentem:
+            parentRow.TreeNodeChilds = (childDict.Count > 0 ? childDict.Values.Where(r => PrepareCurrentChildRowsFilter(parentItemDict, r, childByTime, timeRange)).ToArray() : null);
+
+            // A rekurzivně:
+
+
+
+
+        }
+        /// <summary>
+        /// Metoda vrátí true, pokud daný řádek má být dostupný jako Child řádek v daném čase
+        /// </summary>
+        /// <param name="parentItemDict">Prvky grafu v řádku Parent v daném čase, může být null</param>
+        /// <param name="childRow"></param>
+        /// <param name="childByTime"></param>
+        /// <param name="timeRange"></param>
+        /// <returns></returns>
+        protected bool PrepareCurrentChildRowsFilter(Dictionary<GId, TimeRange> parentItemDict, Row childRow, bool childByTime, TimeRange timeRange)
+        {
+            if (!childByTime) return true;
+            if (parentItemDict == null || parentItemDict.Count == 0 || timeRange == null) return false;
+
+            // Najdeme prvky grafu v řádku Child v zadané době:
+            Dictionary<GId, TimeRange> childItemDict = this.PrepareCurrentChildGetItems(childRow, childByTime, timeRange);
+            if (childItemDict == null || childItemDict.Count == 0) return false;
+
+            // Enumerovat budeme skrz kratší kolekci:
+            bool shortIsParent = (parentItemDict.Count < childItemDict.Count);
+            var shortDict = (shortIsParent ? parentItemDict : childItemDict);
+            var longDict = (!shortIsParent ? parentItemDict : childItemDict);
+
+            // A pokud najdeme alespoň jeden, který má stejný klíč a mají společný čas, pak vrátíme true:
+            foreach (var shortItem in shortDict)
+            {
+                GId key = shortItem.Key;
+                TimeRange longTime;
+                if (longDict.TryGetValue(key, out longTime) && longTime.HasIntersect(shortItem.Value))
+                    return true;
+            }
+
+            return false;
+        }
+        /// <summary>
+        /// Metoda najde prvky grafu daného řádku v daném období a vrátí jejich index.
+        /// Hledá jen ty prvky, které mají zadaný identifikátor skupiny Group.
+        /// </summary>
+        /// <param name="row"></param>
+        /// <param name="childByTime"></param>
+        /// <param name="timeRange"></param>
+        /// <returns></returns>
+        protected Dictionary<GId, TimeRange> PrepareCurrentChildGetItems(Row row, bool childByTime, TimeRange timeRange)
+        {
+            if (!childByTime || row == null || timeRange == null) return null;
+
+            GTimeGraph graph;
+            if (!this.TimeGraphDict.TryGetValue(row.RecordGId, out graph)) return null;
+
+            Dictionary<GId, TimeRange> groupDict = new Dictionary<GId, TimeRange>();
+            foreach (ITimeGraphItem iItem in graph.GraphItems)
+            {
+                DataGraphItem gItem = (iItem as DataGraphItem);
+                if (gItem == null) continue;
+                GId groupGId = gItem.GroupGId;
+                if (groupGId == null || groupGId.IsEmpty) continue;
+                TimeRange itemTime = gItem.Time;
+                if (!timeRange.HasIntersect(itemTime)) continue;
+
+                TimeRange groupTime;
+                if (groupDict.TryGetValue(groupGId, out groupTime))
+                    groupDict[groupGId] = (groupTime + itemTime);
+                else
+                    groupDict.Add(groupGId, itemTime);
+            }
+
+            return groupDict;
+        }
+        /// <summary>
+        /// Pole řádků, které jsou Root v TreeView
+        /// </summary>
+        protected Row[] TreeNodeRootRows { get { return this.TableRow.Rows.Where(r => r.TreeNodeIsRoot).ToArray(); } }
+        /// <summary>
+        /// Dictionary, kde Key = klíč Parent řádků a Value = seznam všech potenciálních Child řádků
+        /// </summary>
+        protected Dictionary<GuiId, List<Row>> TreeNodeChildDict { get; private set; }
         /// <summary>
         /// Řádky Childs pro konkrétní řádky Parent vyhodnocovat pouze pro aktuálně zobrazený čas?
         /// Pochází z <see cref="GuiGridProperties.ChildRowsEvaluateByTime"/>.

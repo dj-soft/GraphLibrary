@@ -486,7 +486,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             {
                 rows = this.DataTable.RowsSorted.ToList();           // Získat zobrazitelné řádky, setříděné podle zvoleného třídícího sloupce
                 this._Rows = rows;
-                this._IsTreeView = this.DataTable.ContainsChildRows; // true = z běžné tabulky se stane TreeView
+                this._IsTreeView = this.DataTable.IsTreeViewTable; // true = z běžné tabulky se stane TreeView
                 heightValid = false;
             }
             if (!heightValid)
@@ -1761,16 +1761,76 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// true pokud this tabulka může zobrazovat stromovou strukturu prvků
         /// </summary>
         internal bool IsTreeView { get { return this._IsTreeView; } } private bool _IsTreeView;
-
-        internal void DrawTreeView(GInteractiveDrawArgs e, Cell ownerCell, Rectangle boundsAbsolute, ref int offsetX)
+        /// <summary>
+        /// Metoda vykreslí všechny prvky související s TreeView.
+        /// Vrátí souřadnici prostoru, který má být interaktivní - zde je vykreslena ikona pro Expand/Collapse nodu daného řádku.
+        /// Pokud řádek nemá tuto ikonu, vrací null.
+        /// Nastavuje out parametr offsetX, který posouvá vykreslovaný textový obsah doprava.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="ownerCell"></param>
+        /// <param name="iconOffsetX"></param>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="iconIsHot"></param>
+        /// <param name="iconIsDown"></param>
+        /// <returns></returns>
+        internal Rectangle? DrawTreeView(GInteractiveDrawArgs e, Cell ownerCell, int iconOffsetX, Rectangle boundsAbsolute, bool iconIsHot, bool iconIsDown)
         {
-            Image image = Application.App.Resources.GetImage(global::Noris.LCS.Base.WorkScheduler.Resources.Images.Actions24.ArrowRight2Png);
-            if (image == null) return;
-            if (!this.HasMouse) return;
-            bool rowHasMouse = (ownerCell.Row.Control.HasMouse);
-            Rectangle imageBounds = new Size(16, 16).AlignTo(boundsAbsolute, ContentAlignment.BottomLeft);
-            imageBounds = imageBounds.ShiftBy(1, -1);
-            GPainter.DrawImage(e.Graphics, imageBounds, image, rowHasMouse);
+            Rectangle? interactiveBounds = null;
+            if (!this.HasMouse) return interactiveBounds;
+            Row row = ownerCell.Row;
+            bool nodeHasChilds = row.TreeNodeHasChilds;
+            if (nodeHasChilds)
+            {
+                Image image = DrawTreeViewGetIcon(row.TreeNodeIsExpanded, iconIsHot, iconIsDown);
+                if (image != null)
+                {
+                    bool rowHasMouse = (row.Control.HasMouse);
+                    float opacityRatio = (!rowHasMouse ? 0.40f : (!iconIsHot ? 0.80f : 1.00f));
+                    Rectangle outerBounds = new Rectangle(boundsAbsolute.X + 1 + iconOffsetX, boundsAbsolute.Bottom - 2 - 20, 20, 26);
+                    Rectangle imageBounds = new Rectangle(outerBounds.X + 2, outerBounds.Y + 2, 16, 16);
+                    GPainter.DrawImage(e.Graphics, imageBounds, image, opacityRatio);
+                    interactiveBounds = outerBounds;
+                }
+            }
+            return interactiveBounds;
+        }
+        /// <summary>
+        /// Vrátí Image pro vykreslení ikony nodu TreeView
+        /// </summary>
+        /// <param name="nodeIsExpanded"></param>
+        /// <param name="iconIsHot"></param>
+        /// <param name="iconIsDown"></param>
+        /// <returns></returns>
+        protected Image DrawTreeViewGetIcon(bool nodeIsExpanded, bool iconIsHot, bool iconIsDown)
+        {
+            string iconName = null;
+            if (!nodeIsExpanded)
+            {   // Zavřený uzel:
+                if (iconIsDown)
+                    // stisknuto   =>  zelená ikona doprava, plná:
+                    iconName = Noris.LCS.Base.WorkScheduler.Resources.Images.Actions24.ArrowRight3Png;
+                else if (iconIsHot)
+                    // s myší      =>  modrá ikona doprava, plná:
+                    iconName = Noris.LCS.Base.WorkScheduler.Resources.Images.Actions24.ArrowRightPng;
+                else
+                    // bez myši    =>  modrá ikona doprava, prázdná:
+                    iconName = Noris.LCS.Base.WorkScheduler.Resources.Images.Actions24.ArrowRight2Png;
+            }
+            else
+            {   // Otevřený uzel:
+                if (iconIsDown)
+                    // stisknuto   =>  zelená ikona dolů, plná:
+                    iconName = Noris.LCS.Base.WorkScheduler.Resources.Images.Actions24.ArrowDown3Png;
+                else if (iconIsHot)
+                    // s myší      =>  modrá ikona dolů, plná:
+                    iconName = Noris.LCS.Base.WorkScheduler.Resources.Images.Actions24.ArrowDownPng;
+                else
+                    // bez myši    =>  modrá ikona dolů, prázdná:
+                    iconName = Noris.LCS.Base.WorkScheduler.Resources.Images.Actions24.ArrowDown2Png;
+            }
+
+            return Application.App.Resources.GetImage(iconName);
         }
         #endregion
         #region TimeAxis

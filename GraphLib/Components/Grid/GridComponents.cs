@@ -23,6 +23,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         protected GComponent() : base()
         {
             this.Is.GetMouseDragMove = this.GetMouseDragMove;
+            this.Is.GetMouseMoveOver = this.GetMouseMoveOver;
         }
         /// <summary>
         /// Souřadnice headeru.
@@ -69,9 +70,13 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         #endregion
         #region Podpora kreslení
         /// <summary>
-        /// true pokud tento prvek může být přetahován myší jinam
+        /// true pokud tento prvek může být přetahován myší jinam; deault = false
         /// </summary>
         protected virtual bool GetMouseDragMove(bool value) { return false; }
+        /// <summary>
+        /// true pokud tento prvek chce dostávat událost MouseMoveOver; deault = false
+        /// </summary>
+        protected virtual bool GetMouseMoveOver(bool value) { return false; }
         /// <summary>
         /// Kreslí prvek standardně (včetně kompletního obsahu).
         /// Může to být do vrstvy Standard i do jiné vrstvy, záleží na nastavení režimu Drag.
@@ -1621,6 +1626,12 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             }
         }
         /// <summary>
+        /// true pokud tento prvek chce dostávat událost MouseMoveOver; deault = false; true pokud <see cref="IsTreeViewCell"/> je true
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        protected override bool GetMouseMoveOver(bool value) { return this.IsTreeViewCell; }
+        /// <summary>
         /// Vizualizace
         /// </summary>
         /// <returns></returns>
@@ -1705,12 +1716,23 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             */
         }
         /// <summary>
+        /// Metoda je volaná z InteractiveObject.AfterStateChanged() pro ChangeState = MouseOver.
+        /// Zde voláme <see cref="TreeViewMouseMove(GInteractiveChangeStateArgs)"/>.
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void AfterStateChangedMouseOver(GInteractiveChangeStateArgs e)
+        {
+            base.AfterStateChangedMouseOver(e);
+            this.TreeViewMouseMove(e);
+        }
+        /// <summary>
         /// Myš vstoupila nad tuto buňku
         /// </summary>
         /// <param name="e"></param>
         protected override void AfterStateChangedMouseEnter(GInteractiveChangeStateArgs e)
         {
             base.AfterStateChangedMouseEnter(e);
+            this.TreeViewResetData();
             this.Repaint();
             this.OwnerITable.CellMouseEnter(e, this.OwnerCell);
         }
@@ -1730,6 +1752,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         protected override void AfterStateChangedLeftClick(GInteractiveChangeStateArgs e)
         {
             base.AfterStateChangedLeftClick(e);
+            this.TreeViewLeftClick(e);
             this.OwnerITable.CellClick(e, this.OwnerCell);
         }
         /// <summary>
@@ -1837,6 +1860,89 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             return new IInteractiveItem[] { graph };
         }
         #endregion
+        #region TreeView - řízení práce s rozbalováním nodů
+        /// <summary>
+        /// true pokud this Cell má v sobě zobrazovat prvky TreeView - sloupec je na pozici VisualOrder = 0 a tabulka je typu TreeView
+        /// </summary>
+        protected bool IsTreeViewCell { get { return (this.OwnerColumn.VisualOrder == 0 && this.OwnerGTable.IsTreeView); } }
+        /// <summary>
+        /// Metoda resetuje pracovní data pro kreslení a interaktivitu TreeView.
+        /// Metodu je vhodné volat při MouseEnter.
+        /// </summary>
+        protected void TreeViewResetData()
+        {
+            if (!this.IsTreeViewCell) return;
+            this.TreeViewIconBounds = null;
+        }
+        /// <summary>
+        /// Pohyb myši nad buňkou, která zobrazuje TreeView prvky
+        /// </summary>
+        /// <param name="e"></param>
+        protected void TreeViewMouseMove(GInteractiveChangeStateArgs e)
+        {
+            if (!this.IsTreeViewCell) return;
+            if (!this.TreeViewIconBounds.HasValue || !e.MouseAbsolutePoint.HasValue) return;
+
+            bool newValue = this.TreeViewIconBounds.Value.Contains(e.MouseAbsolutePoint.Value);
+            bool oldValue = this.TreeViewIconIsHot;
+            this.TreeViewIconIsHot = newValue;
+            if (oldValue != newValue)
+                this.Repaint();
+        }
+        /// <summary>
+        /// Kliknutí na buňku, řešení TreeView
+        /// </summary>
+        /// <param name="e"></param>
+        protected void TreeViewLeftClick(GInteractiveChangeStateArgs e)
+        {
+            if (!this.IsTreeViewCell) return;
+            if (!this.TreeViewIconBounds.HasValue || !e.MouseAbsolutePoint.HasValue) return;
+
+            bool isInIcon = this.TreeViewIconBounds.Value.Contains(e.MouseAbsolutePoint.Value);
+            if (!isInIcon) return;
+
+            this.TreeViewExpandChange();
+        }
+        /// <summary>
+        /// Zajistí otevření / zavření nodu
+        /// </summary>
+        /// <returns></returns>
+        protected void TreeViewExpandChange()
+        {
+            this.OwnerRow.TreeNodeIsExpanded = !this.OwnerRow.TreeNodeIsExpanded;
+        }
+        /// <summary>
+        /// Zajistí vykreslení TreeView prvků
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="ownerCell"></param>
+        /// <param name="boundsAbsolute"></param>
+        /// <param name="boundsValue"></param>
+        protected void TreeViewDraw(GInteractiveDrawArgs e, Cell ownerCell, Rectangle boundsAbsolute, ref Rectangle boundsValue)
+        {
+            if (!this.IsTreeViewCell) return;
+            bool iconIsHot = this.TreeViewIconIsHot;
+            bool iconIsDown = iconIsHot && this.InteractiveState.HasFlag(GInteractiveState.FlagDown);
+            int nodeLevel = this.OwnerRow.TreeNodeLevel;
+            int iconOffsetX = 24 * nodeLevel;
+            this.TreeViewIconBounds = this.OwnerGTable.DrawTreeView(e, this.OwnerCell, iconOffsetX, boundsAbsolute, iconIsHot, iconIsDown);
+            boundsValue = new Rectangle(boundsAbsolute.X + iconOffsetX, boundsAbsolute.Y, boundsAbsolute.Width - iconOffsetX, boundsAbsolute.Height);
+        }
+        /// <summary>
+        /// Souřadnice ikony TreeView (ekvivalent [+] nebo [-], rozbalí/sbalí node).
+        /// Souřadnice je absolutní, a určuje ji <see cref="GTable"/> v metodě <see cref="GTable.DrawTreeView(GInteractiveDrawArgs, Cell, int, Rectangle, bool, bool)"/>.
+        /// </summary>
+        protected Rectangle? TreeViewIconBounds { get; set; }
+        /// <summary>
+        /// Obsahuje true, pokud this buňka hostuje TreeView prvky, včetně ikonky, a myš je právě nad ikonkou
+        /// </summary>
+        protected bool TreeViewIconIsHot
+        {
+            get { return (this._TreeViewIconIsHot && this.IsMouseActive ); }
+            set { this._TreeViewIconIsHot = value; }
+        }
+        private bool _TreeViewIconIsHot;
+        #endregion
         #region Draw
         /// <summary>
         /// Vykreslení obsahu
@@ -1847,13 +1953,10 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="opacity"></param>
         protected override void DrawContent(GInteractiveDrawArgs e, Rectangle boundsAbsolute, bool drawAsGhost, int? opacity)
         {
-            int offsetX = 0;
+            Rectangle boundsValue = boundsAbsolute;
             base.DrawContent(e, boundsAbsolute, drawAsGhost, opacity);
-            if (this.OwnerColumn.VisualOrder == 0 && this.OwnerGTable.IsTreeView)
-            {
-                this.OwnerGTable.DrawTreeView(e, this.OwnerCell, boundsAbsolute, ref offsetX);
-            }
-            this.OwnerGTable.DrawValue(e, boundsAbsolute, this.OwnerCell.Value, this.OwnerCell.ValueType, this.OwnerCell.Row, this.OwnerCell);
+            this.TreeViewDraw(e, this.OwnerCell, boundsAbsolute, ref boundsValue);
+            this.OwnerGTable.DrawValue(e, boundsValue, this.OwnerCell.Value, this.OwnerCell.ValueType, this.OwnerCell.Row, this.OwnerCell);
             this.OwnerGTable.DrawRowGridLines(e, this.OwnerCell, boundsAbsolute);
             this.DrawDebugBorder(e, boundsAbsolute, opacity);
         }

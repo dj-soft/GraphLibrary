@@ -322,8 +322,16 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Prvek chce dostávat i eventy o každém pohybu myši nad prvkem (MouseOver)
         /// </summary>
-        public bool MouseMoveOver { get { return this.GetBitValue((uint)Bit.MouseMoveOver); } set { this.SetBitValue((uint)Bit.MouseMoveOver, value); } }
-        
+        public bool MouseMoveOver { get { return this.GetBitValue((uint)Bit.MouseMoveOver, GetMouseMoveOver); } set { this.SetBitValue((uint)Bit.MouseMoveOver, value, SetMouseMoveOver); } }
+        /// <summary>
+        /// Funkce, která vrací explicitní hodnotu <see cref="MouseMoveOver"/>
+        /// </summary>
+        public Func<bool, bool> GetMouseMoveOver;
+        /// <summary>
+        /// Akce, která setuje hodnotu <see cref="MouseMoveOver"/> nad rámec základní třídy
+        /// </summary>
+        public Action<bool> SetMouseMoveOver;
+
         /// <summary>
         /// Prvek může dostávat Mouse Click eventy
         /// </summary>
