@@ -811,10 +811,11 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 Name = "InteractionFilterProductOrder",
                 SourceAction = (SourceActionType.TableRowActivatedOnly | SourceActionType.TableRowChecked),
                 TargetGridFullName = @"Data\pages\MainPage\leftPanel\GridLeft",
-                // Hledáme: SearchSourceDataId : ve Zdrojovém grafu načteme DataId = GID Operace VP, 
+                // Hledáme: SearchSourceDataId : ve Zdrojovém grafu načteme DataId (= GID Operace VP),
+                //          SearchSourceVisibleTime : vezmeme pouze prvky ve viditelném čase,
                 //          SearchTargetItemId : tento GID vyhledáme v Cílovém grafu jako ItemId = GID Operace VP,
                 //          FilterTargetRows   : a pro cílové prvky zjistíme jejich Row a na ně dáme filtr:
-                TargetAction = (TargetActionType.SearchSourceDataId | TargetActionType.SearchTargetItemId | TargetActionType.FilterTargetRows),
+                TargetAction = (TargetActionType.SearchSourceDataId | TargetActionType.SearchSourceVisibleTime | TargetActionType.SearchTargetItemId | TargetActionType.FilterTargetRows),
                 // Interakce je podmíněna stavem IsChecked = true u tohoto buttonu v ToolBaru:
                 Conditions = "TlbApplyFilterMainToLeft"
             });
