@@ -739,6 +739,24 @@ namespace Asol.Tools.WorkScheduler.Components
                     item.Repaint();
         }
         #endregion
+        #region Další metody typicky používané v Controlech
+        /// <summary>
+        /// Vrací výsledek matrice 2 x 2
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="t0">Vstup 0</param>
+        /// <param name="t1">Vstup 1</param>
+        /// <param name="value00">Výstup pro 0 = false; 1 = false</param>
+        /// <param name="value01">Výstup pro 0 = false; 1 = true</param>
+        /// <param name="value10">Výstup pro 0 = true; 1 = false</param>
+        /// <param name="value11">Výstup pro 0 = true; 1 = true</param>
+        /// <returns></returns>
+        public static T GetMatrix<T>(bool t0, bool t1, T value00, T value01, T value10, T value11)
+        {
+            return (t0 ? (t1 ? value11 : value10) : (t1 ? value01 : value00));
+        }
+
+        #endregion
         #endregion
         #region Podpora pro hledání parentů: SearchForParent(), SearchForItem()
         /// <summary>

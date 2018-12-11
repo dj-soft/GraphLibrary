@@ -378,6 +378,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.TableName = this.GuiGrid.FullName;
         }
         /// <summary>
+        /// Aktuální synchronizovaný časový interval
+        /// </summary>
+        protected TimeRange SynchronizedTime { get { return this.IMainData.SynchronizedTime; } set { this.IMainData.SynchronizedTime = value; } }
+        /// <summary>
         /// Režim časové osy v grafu, podle zadání v deklaraci
         /// </summary>
         protected TimeGraphTimeAxisMode TimeAxisMode
@@ -660,10 +664,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (this.TreeNodeChildDict == null || this.TreeNodeChildDict.Count == 0) return;
 
             // dynamicky určuji vztahy Parent - Child pro aktuální čas, anebo pro čas null = statické určení:
-            Row[] rootRows = this.TreeNodeRootRows;
+            Row[] rootRows = this.TableRow.TreeNodeRootRows;
             bool childByTime = this._ChildRowsEvaluateByTime;
+            Dictionary<GId, Row> visibleRowDict = new Dictionary<GId, Row>();
             foreach (Row rootRow in rootRows)
+            {
                 this.PrepareCurrentChildRowsFor(rootRow, childByTime, timeRange);
+                this.PrepareCurrentChildCollapse(rootRow, visibleRowDict);
+            }
 
             this._ChildRowsLastTimeRange = timeRange;
         }
@@ -671,6 +679,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Metoda najde a připraví Child řádky pro daný Parent řádek
         /// </summary>
         /// <param name="parentRow"></param>
+        /// <param name="visibleRowDict">Dictionary řádků, které jsou viditelné (root + všechny Childs), kvůli zavírání Parentů nad duplicitně viditelnými Childs</param>
         /// <param name="childByTime"></param>
         /// <param name="timeRange"></param>
         protected void PrepareCurrentChildRowsFor(Row parentRow, bool childByTime, TimeRange timeRange)
@@ -705,6 +714,71 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
 
 
+        }
+        /// <summary>
+        /// Metoda zajistí, že daný Root bude Collapsed, pokud by obsahoval některé z již viditelných Childs.
+        /// <para/>
+        /// Jinými slovy: tahle metoda zajišťuje následující chování:
+        /// * Pokud mám Table s řádky s grafy a s takovými Child řádky, které se vyhodnocují dynamicky (tzn. pod Root řádkem se jako 
+        /// Child řádky zobrazují ty, které mají s Root řádkem nějakou společnou práci);
+        /// * A pokud pod dvěma různými Root řádky lze teoreticky zobrazit jeden identický Child řádek, což technicky vylučujeme,
+        /// takže při Expand nodu A proběhne Collapse nodu B (viz metoda <see cref="Row.TreeNodeExpand()"/>, vyvolávající metodu Row._TreeNodeCollapseOtherParents());
+        /// * A v tabulce posunu časovou osu tak, aby některé Root řádky ukazovaly jen několik málo prvků grafu;
+        /// * A nyní otevřu více Root prvků, což může jít protože jejich Child řádky jsou vzájemně nekonfliktní;
+        /// - a teď to přijde:
+        /// * Mám tedy viditelné Root řádky ve stavu Expandend, zobrazující různé Child řádky;
+        /// * Začnu posouvat časovou osu tam, kde je více prvků grafů, a k nim se dynamicky dohledají další a další Child řádky;
+        /// * A protože Root řádky jsou Expanded, pak Child řádky se přidávají do otevřených nodů - ale neprobíhá tam metoda <see cref="Row.TreeNodeExpand()"/>;
+        /// * Takže nejspíš by došlo k tomu, že jeden konkrétní Child řádek by se dostal pod dva (nebo více) Root řádků současně !!! (=chyba)
+        /// <para/>
+        /// Proto zdejší metoda využívá postupně načítaného soupisu viditelných řádků Child (visibleChildDict), 
+        /// a pokud by další řádek chtěl zobrazit některý z již viditelných Child řádků, pak tento Root řádek bude zavřen (Collapse).
+        /// </summary>
+        /// <param name="rootRow"></param>
+        /// <param name="visibleChildDict"></param>
+        protected void PrepareCurrentChildCollapse(Row rootRow, Dictionary<GId, Row> visibleChildDict)
+        {
+            if (!(rootRow.TreeNodeHasChilds && rootRow.TreeNodeIsExpanded)) return;     // Bez Childs anebo Collapsed node: neřeším.
+            
+            // Pokud daný rootRow obsahuje nějaké Childs z těch, které už máme zobrazené (visibleRowDict), tak rootRow zavřeme a skončíme:
+            bool containsChilds = false;
+            if (visibleChildDict.Count > 0)
+            {
+                rootRow.TreeNodeScan(
+                    (row, level) =>
+                    {   // Tady vidíme každý prvek, včetně rootu (tam je ale level == 0):
+                    if (level > 0 && visibleChildDict.ContainsKey(row.RecordGId))
+                        // Zajímá nás, zda node je roven některému z již viditelných:
+                        containsChilds = true;
+                    },
+                    row =>
+                    {   // Ptáme se, zda pokračovat ve scanování Child prvků daného node:
+                        // Ano pokud je otevřený:
+                    return row.TreeNodeIsExpanded;
+                    }
+                    );
+            }
+            if (containsChilds)
+            {   // Aktuální řádek rootRow je Expanded, a zobrazoval by některý Child, který už je zobrazen jinde => řádek zavřeme a skončíme:
+                rootRow.TreeNodeCollapse();
+                return;
+            }
+
+            // Protože rootRow nám zůstal otevřený, pak to znamená, že obsahuje nekonfliktní ChildNodes;
+            //  tak do visibleRowDict je přidáme, abychom příště prověřovali všechny (tj. i nyní přidané) viditelné Childs:
+            // Použiju téměř identickou sekvenci jako před chvílí, ale Child nody budu do Dictionary přidávat:
+            rootRow.TreeNodeScan(
+                (row, level) =>
+                {   // Tady vidíme každý prvek, včetně rootu (tam je ale level == 0):
+                    if (level > 0 && !visibleChildDict.ContainsKey(row.RecordGId))
+                        visibleChildDict.Add(row.RecordGId, row);
+                },
+                row =>
+                {   // Ptáme se, zda pokračovat ve scanování Child prvků daného node:
+                    // Ano pokud je otevřený:
+                    return row.TreeNodeIsExpanded;
+                }
+                );
         }
         /// <summary>
         /// Metoda vrátí true, pokud daný řádek má být dostupný jako Child řádek v daném čase
@@ -774,10 +848,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             return groupDict;
         }
         /// <summary>
-        /// Pole řádků, které jsou Root v TreeView
-        /// </summary>
-        protected Row[] TreeNodeRootRows { get { return this.TableRow.Rows.Where(r => r.TreeNodeIsRoot).ToArray(); } }
-        /// <summary>
         /// Dictionary, kde Key = klíč Parent řádků a Value = seznam všech potenciálních Child řádků
         /// </summary>
         protected Dictionary<GuiId, List<Row>> TreeNodeChildDict { get; private set; }
@@ -787,7 +857,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         private bool _ChildRowsEvaluateByTime;
         private TimeRange _ChildRowsLastTimeRange;
-
         #endregion
         #region Podpora pro mezitabulkové interakce (kdy akce v jedné tabulce vyvolá jinou akci v jiné tabulce)
         #region Interakce, algoritmy na straně Source
@@ -908,12 +977,35 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 if (((interaction.TargetAction & targetFromSourceGraph) != 0) && graphItems == null)
                     graphItems = this.InteractionThisSourceGetGraphItems(activeRow, checkedRows);
 
+                // Pokud interakce má na vstupu reflektovat pouze prvky grafů ve viditelném intervalu, řešíme to zde:
+                DataGraphItem[] validGraphItems = this.InteractionThisSourceFilterItems(interaction, graphItems);
+
                 // Odešleme do cílové tabulky požadavek na interakci:
-                InteractionArgs args = new InteractionArgs(interaction, activeRow, checkedRows, activeGraph, graphItems);
+                InteractionArgs args = new InteractionArgs(interaction, activeRow, checkedRows, activeGraph, validGraphItems);
                 targetTable.InteractionThisTarget(args);
             }
 
             this.InteractionRowFiltersActivate(interactions);
+        }
+        /// <summary>
+        /// Metoda vrátí dané prvky grafů: buď všechny, anebo pouze ty, které spadají do aktuálního viditelného času.
+        /// Řídí to definice interakce, její <see cref="GuiGridInteraction.TargetAction"/>, hodnota <see cref="TargetActionType.SearchSourceVisibleTime"/>.
+        /// </summary>
+        /// <param name="interaction"></param>
+        /// <param name="graphItems"></param>
+        /// <returns></returns>
+        protected DataGraphItem[] InteractionThisSourceFilterItems(GuiGridInteraction interaction, DataGraphItem[] graphItems)
+        {
+            if (interaction == null || graphItems == null || graphItems.Length == 0) return graphItems;
+            bool onlyVisibleTime = interaction.TargetAction.HasFlag(TargetActionType.SearchSourceVisibleTime);
+            if (!onlyVisibleTime) return graphItems;
+            TimeRange searchInTime = (onlyVisibleTime ? this.SynchronizedTime : null);
+            if (searchInTime == null) return graphItems;
+
+            DataGraphItem[] validGraphItems = graphItems
+                .Where(i => searchInTime.HasIntersect(i.Time))
+                .ToArray();
+            return validGraphItems;
         }
         /// <summary>
         /// Tato metoda má za úkol provést odebrání příznaku Selected nebo Activated ze všech současně vybraných objektů, 

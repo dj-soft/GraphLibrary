@@ -1652,14 +1652,15 @@ namespace Asol.Tools.WorkScheduler.Components
                 if (this.Font == null) this.Font = style.Font;
                 if (!this.ContentAlignment.HasValue) this.ContentAlignment = style.ContentAlignment;
                 if (!this.BackColor.HasValue) this.BackColor = style.BackColor;
+                if (!this.SubBackColor.HasValue) this.SubBackColor = style.SubBackColor;
                 if (!this.TextColor.HasValue) this.TextColor = style.TextColor;
                 if (!this.SelectedBackColor.HasValue) this.SelectedBackColor = style.SelectedBackColor;
+                if (!this.SelectedSubBackColor.HasValue) this.SelectedSubBackColor = style.SelectedSubBackColor;
                 if (!this.SelectedTextColor.HasValue) this.SelectedTextColor = style.SelectedTextColor;
                 if (!this.ActiveBackColor.HasValue) this.ActiveBackColor = style.ActiveBackColor;
                 if (!this.ActiveTextColor.HasValue) this.ActiveTextColor = style.ActiveTextColor;
                 if (!this.BorderColor.HasValue) this.BorderColor = style.BorderColor;
                 if (!this.BorderLines.HasValue) this.BorderLines = style.BorderLines;
-
             }
         }
         /// <summary>
@@ -1675,6 +1676,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public Color? BackColor { get; set; }
         /// <summary>
+        /// Barva pozadí v prvku (řádek, buňka) pokud není Selected, pro podřízené prvky
+        /// </summary>
+        public Color? SubBackColor { get; set; }
+        /// <summary>
         /// Barva textu v prvku (řádek, buňka) pokud není Selected, a není to aktivní položka (řádek tabulky), prostě běžný prvek (řádek)
         /// </summary>
         public Color? TextColor { get; set; }
@@ -1682,6 +1687,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Barva pozadí v prvku (řádek, buňka) pokud je Selected, a není to aktivní položka (řádek tabulky)
         /// </summary>
         public Color? SelectedBackColor { get; set; }
+        /// <summary>
+        /// Barva pozadí v prvku (řádek, buňka) pokud je Selected, pro podřízené prvky
+        /// </summary>
+        public Color? SelectedSubBackColor { get; set; }
         /// <summary>
         /// Barva textu v prvku (řádek, buňka) pokud je Selected, a není to aktivní položka (řádek tabulky)
         /// </summary>
@@ -1704,7 +1713,16 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Styl linek okrajů prvku
         /// </summary>
         public BorderLinesType? BorderLines { get; set; }
-
+        /// <summary>
+        /// Vrací barvu pozadí řádků (buněk) pro řádek root/child, normal/selected
+        /// </summary>
+        /// <param name="isRoot"></param>
+        /// <param name="isChecked"></param>
+        /// <returns></returns>
+        public Color? GetBackColor(bool isRoot, bool isChecked)
+        {
+            return InteractiveObject.GetMatrix(isRoot, isChecked, this.SubBackColor, this.SelectedSubBackColor, this.BackColor, this.SelectedBackColor);
+        }
     }
     /// <summary>
     /// Typ čáry při kreslení Borders, hodnoty lze sčítat

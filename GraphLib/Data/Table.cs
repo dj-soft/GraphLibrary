@@ -739,35 +739,17 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public bool IsTreeViewTable { get { return this.Rows.Any(r => r.TreeNodeIsChild); } }
         /// <summary>
+        /// Pole řádků, které jsou Root v TreeView
+        /// </summary>
+        public Row[] TreeNodeRootRows { get { return this.Rows.Where(r => r.TreeNodeIsRoot).ToArray(); } }
+        /// <summary>
         /// Provede scanování všech řádků a jejich Childs kolekcí
         /// </summary>
         /// <param name="scanAction">Akce volaná pro každý řádek, druhý parametr je level; 0 = root</param>
         /// <param name="testScanChilds">Volitelná funkce, která rozhoduje, zda se mají scanovat Childs prvky</param>
         public void TreeNodeScan(Action<Row, int> scanAction, Func<Row, bool> testScanChilds = null)
         {
-            TreeNodeScan(this._Rows, 0, scanAction, testScanChilds);
-        }
-        /// <summary>
-        /// Scanner dané kolekce + rekurzivně
-        /// </summary>
-        /// <param name="rows"></param>
-        /// <param name="level"></param>
-        /// <param name="scanAction"></param>
-        /// <param name="testScanChilds"></param>
-        protected static void TreeNodeScan(IEnumerable<Row> rows, int level, Action<Row, int> scanAction, Func<Row, bool> testScanChilds)
-        {
-            if (rows == null) return;
-            bool isTest = (testScanChilds != null);
-            foreach (Row row in rows)
-            {
-                scanAction(row, level);
-                if (row.TreeNodeHasChilds)
-                {
-                    bool scanChilds = (!isTest || testScanChilds(row));
-                    if (scanChilds)
-                        TreeNodeScan(row.TreeNodeChilds, level + 1, scanAction, testScanChilds);
-                }
-            }
+            Row.TreeNodeScan(this.TreeNodeRootRows, 0, scanAction, testScanChilds);
         }
         /// <summary>
         /// Metoda vrátí lineární seznam řádků, vzniklý z řádků úrovně Root plus všechny Child řádky z nodů, které jsou Expanded
@@ -2955,6 +2937,38 @@ namespace Asol.Tools.WorkScheduler.Data
                 child.AddChilds(treeList, level);
             }
         }
+        /// <summary>
+        /// Scanner dané kolekce + rekurzivně
+        /// </summary>
+        /// <param name="scanAction"></param>
+        /// <param name="testScanChilds"></param>
+        public void TreeNodeScan(Action<Row, int> scanAction, Func<Row, bool> testScanChilds = null)
+        {
+            TreeNodeScan(new Row[] { this }, 0, scanAction, testScanChilds);
+        }
+        /// <summary>
+        /// Scanner dané kolekce + rekurzivně
+        /// </summary>
+        /// <param name="rows"></param>
+        /// <param name="level"></param>
+        /// <param name="scanAction"></param>
+        /// <param name="testScanChilds"></param>
+        public static void TreeNodeScan(IEnumerable<Row> rows, int level, Action<Row, int> scanAction, Func<Row, bool> testScanChilds = null)
+        {
+            if (rows == null) return;
+            bool isTest = (testScanChilds != null);
+            foreach (Row row in rows)
+            {
+                scanAction(row, level);
+                if (row.TreeNodeHasChilds)
+                {
+                    bool scanChilds = (!isTest || testScanChilds(row));
+                    if (scanChilds)
+                        TreeNodeScan(row.TreeNodeChilds, level + 1, scanAction, testScanChilds);
+                }
+            }
+        }
+
         /// <summary>
         /// Level Tree nodu
         /// </summary>

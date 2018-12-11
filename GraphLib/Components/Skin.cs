@@ -1219,8 +1219,10 @@ namespace Asol.Tools.WorkScheduler.Components
         public Color HeaderLineHorizontalColor { get { return this._Owner.GetValue(this._SkinSetKey, "HeaderLineHorizontalColor", DefaultHeaderLineHorizontalColor); } set { this._Owner.SetValue(this._SkinSetKey, "HeaderLineHorizontalColor", value); } }
         public Color TableBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "TableBackColor", DefaultTableBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "TableBackColor", value); } }
         public Color RowBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "RowBackColor", DefaultRowBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "RowBackColor", value); } }
+        public Color RowChildBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "RowChildBackColor", DefaultRowChildBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "RowChildBackColor", value); } }
         public Color RowTextColor { get { return this._Owner.GetValue(this._SkinSetKey, "RowTextColor", DefaultRowTextColor); } set { this._Owner.SetValue(this._SkinSetKey, "RowTextColor", value); } }
         public Color SelectedRowBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "SelectedRowBackColor", DefaultSelectedRowBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "SelectedRowBackColor", value); } }
+        public Color SelectedRowChildBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "SelectedRowChildBackColor", DefaultSelectedRowChildBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "SelectedRowChildBackColor", value); } }
         public Color SelectedRowTextColor { get { return this._Owner.GetValue(this._SkinSetKey, "SelectedRowTextColor", DefaultSelectedRowTextColor); } set { this._Owner.SetValue(this._SkinSetKey, "SelectedRowTextColor", value); } }
         public Color ActiveCellBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "ActiveCellBackColor;", DefaultActiveCellBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "ActiveCellBackColor;", value); } }
         public Color ActiveCellTextColor { get { return this._Owner.GetValue(this._SkinSetKey, "ActiveCellTextColor ", DefaultActiveCellTextColor); } set { this._Owner.SetValue(this._SkinSetKey, "ActiveCellTextColor ", value); } }
@@ -1229,6 +1231,18 @@ namespace Asol.Tools.WorkScheduler.Components
         public Image SortAscendingImage { get { return this._Owner.GetValue(this._SkinSetKey, "SortAscendingImage", DefaultSortAscendingImage); } set { this._Owner.SetValue(this._SkinSetKey, "SortAscendingImage", value); } }
         public Image SortDescendingImage { get { return this._Owner.GetValue(this._SkinSetKey, "SortDescendingImage", DefaultSortDescendingImage); } set { this._Owner.SetValue(this._SkinSetKey, "SortDescendingImage", value); } }
         public Image RowSelectedImage { get { return this._Owner.GetValue(this._SkinSetKey, "RowSelectedImage", DefaultRowSelectedImage); } set { this._Owner.SetValue(this._SkinSetKey, "RowSelectedImage", value); } }
+        #endregion
+        #region Další metody
+        /// <summary>
+        /// Vrací barvu pozadí řádků (buněk) pro řádek root/child, normal/selected
+        /// </summary>
+        /// <param name="isRoot"></param>
+        /// <param name="isChecked"></param>
+        /// <returns></returns>
+        public Color GetBackColor(bool isRoot, bool isChecked)
+        {
+            return GetMatrix(isRoot, isChecked, this.RowChildBackColor, this.SelectedRowChildBackColor, this.RowBackColor, this.SelectedRowBackColor);
+        }
         #endregion
         #region Default colors
         protected virtual Color DefaultHeaderBackColor { get { return Color.LightSkyBlue.Morph(Color.White, 0.33f); } }
@@ -1239,8 +1253,10 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual Color DefaultHeaderLineHorizontalColor { get { return Color.LightGray; } }
         protected virtual Color DefaultTableBackColor { get { return Color.DimGray; } }
         protected virtual Color DefaultRowBackColor { get { return Color.White; } }
+        protected virtual Color DefaultRowChildBackColor { get { return Color.FromArgb(215, 230, 220); } }
         protected virtual Color DefaultRowTextColor { get { return Color.Black; } }
-        protected virtual Color DefaultSelectedRowBackColor { get { return Color.White.Morph(Color.CadetBlue, 0.45f); } }
+        protected virtual Color DefaultSelectedRowBackColor { get { return Color.White.Morph(Color.CadetBlue, 0.25f); } }
+        protected virtual Color DefaultSelectedRowChildBackColor { get { return Color.FromArgb(185, 210, 195); } }
         protected virtual Color DefaultSelectedRowTextColor { get { return Color.Black; } }
         protected virtual Color DefaultActiveCellBackColor { get { return Color.White.Morph(Color.CadetBlue, 0.25f); } }
         protected virtual Color DefaultActiveCellTextColor { get { return Color.Black; } }
@@ -1378,6 +1394,21 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         protected Skin _Owner;
         protected string _SkinSetKey;
+        /// <summary>
+        /// Vrací výsledek matrice 2 x 2
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="t0">Vstup 0</param>
+        /// <param name="t1">Vstup 1</param>
+        /// <param name="value00">Výstup pro 0 = false; 1 = false</param>
+        /// <param name="value01">Výstup pro 0 = false; 1 = true</param>
+        /// <param name="value10">Výstup pro 0 = true; 1 = false</param>
+        /// <param name="value11">Výstup pro 0 = true; 1 = true</param>
+        /// <returns></returns>
+        public static T GetMatrix<T>(bool t0, bool t1, T value00, T value01, T value10, T value11)
+        {
+            return (t0 ? (t1 ? value11 : value10) : (t1 ? value01 : value00));
+        }
         #endregion
     }
     #region class InitialiserAttribute

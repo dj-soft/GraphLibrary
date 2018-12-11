@@ -2441,9 +2441,10 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             VisualStyle style = (cell != null ? ((IVisualMember)cell).Style : (row != null ? ((IVisualMember)row).Style : ((IVisualMember)this.DataTable).Style));
 
             // Základní barva pozadí prvku vychází z barvy standardní, nebo Selected, podle stavu row.IsSelected; primárně z dodaného vizuálního stylu, sekundárně z palety:
-            Color baseColor = ((style == null) ?
-                (row.IsChecked ? Skin.Grid.SelectedRowBackColor : Skin.Grid.RowBackColor) :
-                (row.IsChecked ? (style.SelectedBackColor ?? Skin.Grid.SelectedRowBackColor) : (style.BackColor ?? Skin.Grid.RowBackColor)));
+            bool isRowChecked = row.IsChecked;
+            bool isTreeRoot = row.TreeNodeIsRoot;
+            Color? styleColor = ((style != null) ? style.GetBackColor(isTreeRoot, isRowChecked) : null);
+            Color baseColor = styleColor ?? Skin.Grid.GetBackColor(isTreeRoot, isRowChecked);
 
             // Základní barva je poté morfována do barvy Active v poměru, který vyjadřuje aktivitu řádku, buňky, a focus tabulky, a stav HotMouse:
             float ratio = this.GetMorphRatio(row, cell, ref effect3D);

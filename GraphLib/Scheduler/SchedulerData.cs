@@ -902,7 +902,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Aktuálně zobrazený čas na synchronní časové ose. Lze vložit hodnotu, pokud není null.
         /// Vložení hodnoty do této property vyvolá Refresh controlu!
         /// </summary>
-        protected TimeRange SynchronizedTimeRange
+        protected TimeRange SynchronizedTime
         {
             get { return this._MainControl.SynchronizedTime.Value; }
             set { if (value != null) { this._MainControl.SynchronizedTime.Value = value; this._MainControl.Refresh(); } }
@@ -2100,7 +2100,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private GuiRequestCurrentState _CreateGuiCurrentState()
         {
             GuiRequestCurrentState currentState = new GuiRequestCurrentState();
-            currentState.TimeAxisValue = this.SynchronizedTimeRange;
+            currentState.TimeAxisValue = this.SynchronizedTime;
             currentState.SelectedGraphItems = this._CreateGuiCurrentSelectedGraphItems();
 
             return currentState;
@@ -2187,7 +2187,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
             if (common.TimeAxisValue != null)
             {   // Nastavit zobrazený čas:
-                this.SynchronizedTimeRange = common.TimeAxisValue;
+                this.SynchronizedTime = common.TimeAxisValue;
             }
         }
         /// <summary>
@@ -2524,6 +2524,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         GuiData IMainDataInternal.GuiData { get { return this.GuiData; } }
         /// <summary>
+        /// Aktuální synchronizovaný časový interval
+        /// </summary>
+        TimeRange IMainDataInternal.SynchronizedTime { get { return this.SynchronizedTime; } set { this.SynchronizedTime = value; } }
+        /// <summary>
         /// Metoda zavolá hostitele a předá mu požadavek.
         /// </summary>
         /// <param name="request"></param>
@@ -2583,6 +2587,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Reference na main data celého systému
         /// </summary>
         GuiData GuiData { get; }
+        /// <summary>
+        /// Aktuální synchronizovaný časový interval
+        /// </summary>
+        TimeRange SynchronizedTime { get; set; }
         /// <summary>
         /// Metoda zavolá hostitele a předá mu požadavek.
         /// </summary>

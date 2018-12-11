@@ -773,6 +773,10 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Hledej ze zdrojového prvku, podle jeho DataId
         /// </summary>
         SearchSourceDataId = 0x00000008,
+        /// <summary>
+        /// Hledej ze zdrojového prvku pouze ve viditelné časové oblasti
+        /// </summary>
+        SearchSourceVisibleTime = 0x00000040,
 
         /// <summary>
         /// Hledej v cílovém prvku, najdi identické RowId
