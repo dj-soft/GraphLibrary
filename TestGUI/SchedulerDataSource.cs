@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 
 using Asol.Tools.WorkScheduler.Components;
+using Asol.Tools.WorkScheduler.Data;
 using Noris.LCS.Base.WorkScheduler;
 using RES = Noris.LCS.Base.WorkScheduler.Resources;
 
@@ -79,6 +80,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             int recordId;
 
             this.ProductOrderDict = new Dictionary<GuiId, ProductOrder>();
+
             recordId = 10000;
             this.CreateProductOrder(++recordId, "Židle lakovaná červená", Color.DarkGreen, 12, "židle", ProductTpv.Luxus);
             this.CreateProductOrder(++recordId, "Stůl konferenční", Color.DarkGreen, 3, "stoly", ProductTpv.Luxus);
@@ -108,30 +110,51 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this.CreateProductOrder(++recordId, "Krabička dřevěná 45cm", Color.DarkCyan, 36, "jiné", ProductTpv.Standard);
             this.CreateProductOrder(++recordId, "Krabička dřevěná 60cm", Color.DarkCyan, 48, "jiné", ProductTpv.Standard);
 
-            this.PlanUnitCDict = new Dictionary<GuiId, PlanUnitC>();
             recordId = 10000;
-            this.CreatePlanUnitC(++recordId, "Pila pásmová", WP_PILA, "pila", 2, CalendarType.Work5d1x8h);
-            this.CreatePlanUnitC(++recordId, "Pila okružní", WP_PILA, "pila", 2, CalendarType.Work5d1x8h);
-            this.CreatePlanUnitC(++recordId, "Pilka vyřezávací malá", WP_PILA, "pila;drobné", 1, CalendarType.Work5d1x8h);
-            this.CreatePlanUnitC(++recordId, "Dílna truhlářská velká", WP_DILN, "truhláři",  4, CalendarType.Work5d2x8h);
-            this.CreatePlanUnitC(++recordId, "Dílna truhlářská malá", WP_DILN, "truhláři",  1, CalendarType.Work5d1x8h);
-            this.CreatePlanUnitC(++recordId, "Lakovna aceton", WP_LAKO, "lakovna;chemie",  5, CalendarType.Work7d3x8h);
-            this.CreatePlanUnitC(++recordId, "Lakovna akryl", WP_LAKO, "lakovna",  5, CalendarType.Work7d3x8h);
-            this.CreatePlanUnitC(++recordId, "Moření", WP_LAKO, "lakovna;chemie",  2, CalendarType.Work7d3x8h);
-            this.CreatePlanUnitC(++recordId, "Dílna lakýrnická", WP_LAKO, "lakovna;chemie",  1, CalendarType.Work5d1x8h);
-            this.CreatePlanUnitC(++recordId, "Kontrola standardní", WP_KONT, "kontrola",  2, CalendarType.Work5d2x8h);
-            this.CreatePlanUnitC(++recordId, "Kontrola mistr", WP_KONT, "kontrola",  1, CalendarType.Work5d1x8h);
-            this.CreatePlanUnitC(++recordId, "Kooperace DŘEVEX", WP_KOOP, "kooperace",  1, CalendarType.Work7d3x8h);
-            this._WplParent = this.CreatePlanUnitC(++recordId, "Kooperace TRUHLEX", WP_KOOP, "kooperace", 1, CalendarType.Work7d3x8h);
-            this._WplChild1 = this.CreatePlanUnitC(++recordId, "Kooperace JAREŠ", WP_KOOP, "kooperace;soukromník", 1, CalendarType.Work7d3x8h);
-            this._WplChild2 = this.CreatePlanUnitC(++recordId, "Kooperace TEIMER", WP_KOOP, "kooperace;soukromník",  1, CalendarType.Work7d3x8h);
+            this.WorkplaceDict = new Dictionary<GuiId, PlanUnitC>();
+            this.CreatePlanUnitCWp(++recordId, "Pila pásmová", WP_PILA, "pila", 2, CalendarType.Work5d1x8hR);
+            this.CreatePlanUnitCWp(++recordId, "Pila okružní", WP_PILA, "pila", 2, CalendarType.Work5d1x8hR);
+            this.CreatePlanUnitCWp(++recordId, "Pilka vyřezávací malá", WP_PILA, "pila;drobné", 1, CalendarType.Work5d1x8hR);
+            this.CreatePlanUnitCWp(++recordId, "Dílna truhlářská velká", WP_DILN, "truhláři",  4, CalendarType.Work5d2x8h);
+            this.CreatePlanUnitCWp(++recordId, "Dílna truhlářská malá", WP_DILN, "truhláři",  1, CalendarType.Work5d1x8hR);
+            this.CreatePlanUnitCWp(++recordId, "Lakovna aceton", WP_LAKO, "lakovna;chemie",  5, CalendarType.Work7d3x8h);
+            this.CreatePlanUnitCWp(++recordId, "Lakovna akryl", WP_LAKO, "lakovna",  5, CalendarType.Work7d3x8h);
+            this.CreatePlanUnitCWp(++recordId, "Moření", WP_LAKO, "lakovna;chemie",  2, CalendarType.Work7d3x8h);
+            this.CreatePlanUnitCWp(++recordId, "Dílna lakýrnická", WP_LAKO, "lakovna;chemie",  1, CalendarType.Work5d1x8hR);
+            this.CreatePlanUnitCWp(++recordId, "Kontrola standardní", WP_KONT, "kontrola",  2, CalendarType.Work5d2x8h);
+            this.CreatePlanUnitCWp(++recordId, "Kontrola mistr", WP_KONT, "kontrola",  1, CalendarType.Work5d1x8hR);
+            this.CreatePlanUnitCWp(++recordId, "Kooperace DŘEVEX", WP_KOOP, "kooperace",  1, CalendarType.Work7d3x8h);
+            this.CreatePlanUnitCWp(++recordId, "Kooperace TRUHLEX", WP_KOOP, "kooperace", 1, CalendarType.Work7d3x8h);
+            this.CreatePlanUnitCWp(++recordId, "Kooperace JAREŠ", WP_KOOP, "kooperace;soukromník", 1, CalendarType.Work7d3x8h);
+            this.CreatePlanUnitCWp(++recordId, "Kooperace TEIMER", WP_KOOP, "kooperace;soukromník",  1, CalendarType.Work7d3x8h);
+
+
+            recordId = 10100;
+            this.WorkerDict = new Dictionary<GuiId, PlanUnitC>();
+            this.CreatePlanUnitCZm(++recordId, "NOVÁK Jiří", CalendarType.Work5d1x8hR, WP_PILA, WP_DILN);
+            this.CreatePlanUnitCZm(++recordId, "DVOŘÁK Pavel", CalendarType.Work5d1x8hR, WP_PILA, WP_LAKO);
+            this.CreatePlanUnitCZm(++recordId, "STARÝ Slavomír", CalendarType.Work5d1x8hR, WP_PILA, WP_DILN);
+            this.CreatePlanUnitCZm(++recordId, "PEŠEK Petr", CalendarType.Work5d1x8hR, WP_PILA, WP_LAKO);
+            this.CreatePlanUnitCZm(++recordId, "JENČÍK Jan", CalendarType.Work5d1x8hR, WP_PILA, WP_DILN);
+            this.CreatePlanUnitCZm(++recordId, "KRULIŠ Karel", CalendarType.Work5d1x8hR, WP_LAKO);
+            this.CreatePlanUnitCZm(++recordId, "BLÁHOVÁ Božena", CalendarType.Work5d1x8hR, WP_DILN);
+            this.CreatePlanUnitCZm(++recordId, "NEKOKSA Jindřich", CalendarType.Work5d1x8hR, WP_LAKO);
+            this.CreatePlanUnitCZm(++recordId, "POKORNÝ Dan", CalendarType.Work5d1x8hR, WP_DILN, WP_KONT);
+            this.CreatePlanUnitCZm(++recordId, "DRAHOKOUPIL Martin", CalendarType.Work5d1x8hR, WP_KONT);
+
+            this.CreatePlanUnitCZm(++recordId, "VETCHÝ Marek", CalendarType.Work5d1x8hO, WP_PILA, WP_DILN);
+            this.CreatePlanUnitCZm(++recordId, "SUP Václav", CalendarType.Work5d1x8hO, WP_PILA, WP_LAKO);
+            this.CreatePlanUnitCZm(++recordId, "OSOLSOBĚ Viktor", CalendarType.Work5d1x8hO, WP_PILA, WP_DILN);
+            this.CreatePlanUnitCZm(++recordId, "ČERNÁ Marta", CalendarType.Work5d1x8hO, WP_PILA, WP_LAKO);
+            this.CreatePlanUnitCZm(++recordId, "VIDÍM Dan", CalendarType.Work5d1x8hO, WP_PILA, WP_DILN);
+            this.CreatePlanUnitCZm(++recordId, "NĚMEC Jaroslav", CalendarType.Work5d1x8hO, WP_LAKO);
+            this.CreatePlanUnitCZm(++recordId, "DLOUHÝ Bedřich", CalendarType.Work5d1x8hO, WP_DILN);
+            this.CreatePlanUnitCZm(++recordId, "HANZAL Patrik", CalendarType.Work5d1x8hO, WP_LAKO);
+            this.CreatePlanUnitCZm(++recordId, "SPÍVALOVÁ Ilona", CalendarType.Work5d1x8hO, WP_DILN);
+            this.CreatePlanUnitCZm(++recordId, "DIETRICH Zdenek", CalendarType.Work5d1x8hO, WP_KONT);
 
             this.PlanOperationsToWorkplaces();
         }
-        protected GuiId _WplParent;
-        protected GuiId _WplChild1;
-        protected GuiId _WplChild2;
-
         /// <summary>
         /// Vytvoří a uloží jeden výrobní příkaz včetně jeho operací, pro dané zadání.
         /// </summary>
@@ -260,9 +283,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <param name="tagText"></param>
         /// <param name="machinesCount"></param>
         /// <param name="calendar"></param>
-        protected GuiId CreatePlanUnitC(int recordId, string name, string workPlace, string tagText, int machinesCount, CalendarType calendar)
+        protected GuiId CreatePlanUnitCWp(int recordId, string name, string workPlace, string tagText, int machinesCount, CalendarType calendar)
         {
-            string refer = "VP" + recordId.ToString();
+            string refer = "D" + recordId.ToString();
             PlanUnitC planUnitC = new PlanUnitC()
             {
                 RecordId = recordId,
@@ -273,7 +296,34 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 MachinesCount = machinesCount,
                 WorkTimes = CreateWorkingItems(1000 * recordId, calendar, (float)machinesCount, this.TimeRangeTotal)
             };
-            this.PlanUnitCDict.Add(planUnitC.RecordGid, planUnitC);
+            this.WorkplaceDict.Add(planUnitC.RecordGid, planUnitC);
+
+            return planUnitC.RecordGid;
+        }
+        /// <summary>
+        /// Vytvoří a uloží jeden záznam Zaměstnanec včetně jeho pracovních směn, pro dané zadání.
+        /// </summary>
+        /// <param name="recordId"></param>
+        /// <param name="name"></param>
+        /// <param name="workPlace"></param>
+        /// <param name="tagText"></param>
+        /// <param name="machinesCount"></param>
+        /// <param name="calendar"></param>
+        protected GuiId CreatePlanUnitCZm(int recordId, string name, CalendarType calendar, params string[] workPlaces)
+        {
+            string refer = "Z" + recordId.ToString();
+            string workplace = workPlaces.ToString(";");
+            PlanUnitC planUnitC = new PlanUnitC()
+            {
+                RecordId = recordId,
+                Refer = refer,
+                Name = name,
+                WorkPlace = workplace,
+                TagTexts = null,
+                MachinesCount = 1,
+                WorkTimes = CreateWorkingItems(1000 * recordId, calendar, 1f, this.TimeRangeTotal)
+            };
+            this.WorkerDict.Add(planUnitC.RecordGid, planUnitC);
 
             return planUnitC.RecordGid;
         }
@@ -348,13 +398,22 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             double hour = time.TimeOfDay.TotalHours;       // Hodina počátku (včetně minut a sekund), například hodnota 6.75 = čas 06:45
             switch (calendar)
             {
-                case CalendarType.Work5d1x8h:
+                case CalendarType.Work5d1x8hR:
                     // Po ÷ Pá; { 7:00 ÷ 15:30 }
                     if (hour > 7d || !IsWorkingDay(time))
                         MoveToNextDay(ref time, true, 0);
                     time = time.Date;
                     workingTimeRange = new GuiTimeRange(time.AddHours(7), time.AddHours(15.5d));
                     backColor = Color.FromArgb(160, Color.LightGreen);
+                    time = time.AddDays(1d);
+                    break;
+                case CalendarType.Work5d1x8hO:
+                    // Po ÷ Pá; { 15:00 ÷ 23:30 }
+                    if (hour > 7d || !IsWorkingDay(time))
+                        MoveToNextDay(ref time, true, 0);
+                    time = time.Date;
+                    workingTimeRange = new GuiTimeRange(time.AddHours(15), time.AddHours(23.5d));
+                    backColor = Color.FromArgb(160, Color.LightSalmon);
                     time = time.AddDays(1d);
                     break;
 
@@ -445,7 +504,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <summary>
         /// Typ kalendáře
         /// </summary>
-        protected enum CalendarType { None, Work5d1x8h, Work5d2x8h, Work7d3x8h }
+        protected enum CalendarType { None, Work5d1x8hR, Work5d1x8hO, Work5d2x8h, Work7d3x8h }
         /// <summary>
         /// Dictionary s Výrobními příkazy
         /// </summary>
@@ -453,7 +512,11 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <summary>
         /// Dictionary s Pracovišti
         /// </summary>
-        protected Dictionary<GuiId, PlanUnitC> PlanUnitCDict;
+        protected Dictionary<GuiId, PlanUnitC> WorkplaceDict;
+        /// <summary>
+        /// Dictionary s Dělníky
+        /// </summary>
+        protected Dictionary<GuiId, PlanUnitC> WorkerDict;
         protected const string WP_PILA = "Pila";
         protected const string WP_DILN = "Dílna";
         protected const string WP_LAKO = "Lakovna";
@@ -480,11 +543,16 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         {
             string workPlace = productOperation.WorkPlace;
             if (String.IsNullOrEmpty(workPlace)) return;
-            PlanUnitC[] units = this.PlanUnitCDict.Values.Where(p => p.WorkPlace == workPlace).ToArray();
-            int count = units.Length;
+
+            PlanUnitC[] workplaces = this.WorkplaceDict.Values.Where(p => p.WorkPlace == workPlace).ToArray();
+            int count = workplaces.Length;
             if (count == 0) return;
-            PlanUnitC planUnitC = this.GetRandom(units);
-            productOperation.PlanOperationToWorkplace(ref recordId, planUnitC);
+            PlanUnitC workplace = this.GetRandom(workplaces);
+
+            PlanUnitC[] workers = this.WorkerDict.Values.Where(p => p.WorkPlace.Contains(workPlace)).ToArray();
+            PlanUnitC worker = this.GetRandom(workers);
+
+            productOperation.PlanOperationToWorkplace(ref recordId, workplace, worker);
         }
         #endregion
         #endregion
@@ -761,8 +829,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             gridCenter.GraphProperties.LogarithmicGraphDrawOuterShadow = 0.15f;
             gridCenter.GraphProperties.LogarithmicRatio = 0.60f;
             gridCenter.GraphProperties.Opacity = 255;
-            gridCenter.GraphProperties.TableRowHeightMax = 260;
             gridCenter.GraphProperties.TableRowHeightMin = 22;
+            gridCenter.GraphProperties.TableRowHeightMax = 260;
             gridCenter.GraphProperties.TimeAxisMode = TimeGraphTimeAxisMode.Standard;
             gridCenter.GraphProperties.UpperSpaceLogical = 1f;
             gridCenter.GraphProperties.LinkColorStandard = Color.LightGreen;
@@ -783,8 +851,11 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             gridCenter.Rows.ColumnsExtendedInfo[3].PrepareDataColumn("Počet", 45, true, null, true);
             gridCenter.Rows.RowTags = new GuiTagItems();
 
-            // Data tabulky = Plánovací jednotky:
-            foreach (PlanUnitC planUnitC in this.PlanUnitCDict.Values)
+            // Data tabulky = Plánovací jednotky Pracoviště:
+            foreach (PlanUnitC planUnitC in this.WorkplaceDict.Values)
+                this.AddPlanUnitCToGrid(gridCenter, planUnitC);
+
+            foreach (PlanUnitC planUnitC in this.WorkerDict.Values)
                 this.AddPlanUnitCToGrid(gridCenter, planUnitC);
 
             // Vztahy prvků (Link):
@@ -792,8 +863,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 this.AddGraphLinkToGrid(gridCenter, productOrder);
 
             // Závislosti řádků (ParentChild):
-            gridCenter.AddParentChild(new GuiParentChild() { Parent = this._WplParent, Child = this._WplChild1 });
-            gridCenter.AddParentChild(new GuiParentChild() { Parent = this._WplParent, Child = this._WplChild2 });
+            foreach (PlanUnitC planUnitC in this.WorkerDict.Values)
+                gridCenter.AddParentChild(new GuiParentChild() { Parent = null, Child = planUnitC.RecordGid });
 
             this.GridCenter = gridCenter;
             this.MainPage.MainPanel.Grids.Add(gridCenter);
@@ -1282,27 +1353,30 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// Zaplánuje tuto operaci (její jednotlivé časy) do pracoviště
         /// </summary>
         /// <param name="recordId"></param>
-        /// <param name="planUnitC"></param>
-        public void PlanOperationToWorkplace(ref int recordId, PlanUnitC planUnitC)
+        /// <param name="workplace"></param>
+        /// <param name="worker"></param>
+        public void PlanOperationToWorkplace(ref int recordId, PlanUnitC workplace, PlanUnitC worker)
         {
-            if (planUnitC == null) return;
-            this.PlanUnitTimeToWorkplace(ref recordId, planUnitC, this.TimeTBc, this.BackColor.Morph(Color.Green, 0.25f));
-            this.PlanUnitTimeToWorkplace(ref recordId, planUnitC, this.TimeTAc, this.BackColor);
-            this.PlanUnitTimeToWorkplace(ref recordId, planUnitC, this.TimeTEc, this.BackColor.Morph(Color.Black, 0.25f));
+            if (workplace == null) return;
+            this.PlanUnitTimeToWorkplace(ref recordId, workplace, worker, this.TimeTBc, this.BackColor.Morph(Color.Green, 0.25f));
+            this.PlanUnitTimeToWorkplace(ref recordId, workplace, worker, this.TimeTAc, this.BackColor);
+            this.PlanUnitTimeToWorkplace(ref recordId, workplace, worker, this.TimeTEc, this.BackColor.Morph(Color.Black, 0.25f));
         }
         /// <summary>
         /// Uloží jednotku práce pro daný čas do pracoviště
         /// </summary>
         /// <param name="recordId"></param>
-        /// <param name="planUnitC"></param>
+        /// <param name="workplace"></param>
         /// <param name="time"></param>
         /// <param name="backColor"></param>
-        protected void PlanUnitTimeToWorkplace(ref int recordId, PlanUnitC planUnitC, GuiTimeRange time, Color backColor)
+        protected void PlanUnitTimeToWorkplace(ref int recordId, PlanUnitC workplace, PlanUnitC worker, GuiTimeRange time, Color backColor)
         {
-            if (planUnitC == null || time == null || time.End <= time.Begin) return;
-            if (planUnitC.UnitTimes == null)
-                planUnitC.UnitTimes = new List<UnitTime>();
-            planUnitC.UnitTimes.Add(this.CreateUnitTime(ref recordId, planUnitC, time, backColor));
+            if (workplace == null || time == null || time.End <= time.Begin) return;
+
+            workplace.AddUnitTime(this.CreateUnitTime(ref recordId, workplace, time, backColor));
+
+            if (worker != null)
+                worker.AddUnitTime(this.CreateUnitTime(ref recordId, worker, time, backColor));
         }
         /// <summary>
         /// Vytvoří a vrátí jednotku práce
@@ -1364,6 +1438,15 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         public IEnumerable<GuiTagItem> TagItems { get { IEnumerable<string> tt = this.TagTexts; return (tt == null ? new GuiTagItem[0] : tt.Select(text => new GuiTagItem() { RowId = this.RecordGid, TagText = text }).ToArray()); } }
         public int MachinesCount { get; set; }
         public List<WorkTime> WorkTimes { get; set; }
+        public void AddUnitTime(UnitTime unitTime)
+        {
+            if (unitTime != null)
+            {
+                if (this.UnitTimes == null)
+                    this.UnitTimes = new List<UnitTime>();
+                this.UnitTimes.Add(unitTime);
+            }
+        }
         public List<UnitTime> UnitTimes { get; set; }
         /// <summary>
         /// Vytvoří a vrátí graf za toto Pracoviště (obsahuje prvky = pracovní směny a prvky práce)
