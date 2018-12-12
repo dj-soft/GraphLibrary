@@ -600,7 +600,10 @@ namespace Noris.LCS.Base.WorkScheduler
             return "Parent: " + this.Parent + "; Child: " + this.Child;
         }
         /// <summary>
-        /// Klíč řádku Parent
+        /// Klíč řádku Parent.
+        /// určuje řádek, pod kterým bude jako Sub-Node zobrazen řádek <see cref="Child"/>.
+        /// Za určitých okolností může být null, a to pokud je definován Grid jako Dynamický strom, kde se prvky Childs vyhodnocují dynamicky podle zobrazeného času:
+        /// <see cref="GuiGridProperties.ChildRowsEvaluate"/>
         /// </summary>
         public GuiId Parent { get; set; }
         /// <summary>
@@ -654,9 +657,10 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public Color? TagFilterBackColor { get; set; }
         /// <summary>
-        /// Řádky Childs pro konkrétní řádky Parent vyhodnocovat pouze pro aktuálně zobrazený čas?
+        /// Režim pro vyhodnocení Child řádků v této tabulce.
+        /// Nezadáno = <see cref="ChildRowsEvaluateMode.Static"/>.
         /// </summary>
-        public bool ChildRowsEvaluateByTime { get; set; }
+        public ChildRowsEvaluateMode? ChildRowsEvaluate { get; set; }
         /// <summary>
         /// Přidá jednu další definici interakce <see cref="GuiGridInteraction"/>
         /// </summary>
@@ -683,6 +687,61 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Soupis definic interakcí
         /// </summary>
         public List<GuiGridInteraction> InteractionList { get; set; }
+    }
+    /// <summary>
+    /// Předpis pro vyhledání Child řádků k danému Parent řádku
+    /// </summary>
+    [Flags]
+    public enum ChildRowsEvaluateMode
+    {
+        /// <summary>
+        /// Není zadáno Dynamické vyhodnocení. Co je definováno v datech <see cref="GuiGrid.ParentChilds"/>, to bude zobrazováno.
+        /// </summary>
+        Static = 0,
+        /// <summary>
+        /// Brát prvky grafu pouze ve viditelném časovém rozsahu
+        /// </summary>
+        VisibleTimeOnly = 0x0001,
+
+        /// <summary>
+        /// Brát prvky grafu pouze tehdy, když čas parenta a čas child prvku mají společný časový průsečík 
+        /// (=když parent prvek a child prvek pracují ve společný čas)
+        /// </summary>
+        ParentChildIntersectTimeOnly = 0x0002,
+
+        /// <summary>
+        /// Z Parenta hledat prvky grafu a z nich <see cref="GuiGraphBaseItem.ItemId"/>, a tento <see cref="GuiId"/> vyhledávat v Child prvcích
+        /// </summary>
+        OnParentItem = 0x0010,
+        /// <summary>
+        /// Z Parenta hledat prvky grafu a z nich <see cref="GuiGraphBaseItem.GroupId"/>, a tento <see cref="GuiId"/> vyhledávat v Child prvcích
+        /// </summary>
+        OnParentGroup = 0x0020,
+        /// <summary>
+        /// Z Parenta hledat prvky grafu a z nich <see cref="GuiGraphBaseItem.DataId"/>, a tento <see cref="GuiId"/> vyhledávat v Child prvcích
+        /// </summary>
+        OnParentData = 0x0040,
+        /// <summary>
+        /// Z Parenta hledat prvky grafu a z nich <see cref="GuiGraphBaseItem.RowId"/>, a tento <see cref="GuiId"/> vyhledávat v Child prvcích
+        /// </summary>
+        OnParentRow = 0x0080,
+
+        /// <summary>
+        /// V Child řádku vyhledat prvky grafu podle jejich <see cref="GuiGraphBaseItem.ItemId"/>
+        /// </summary>
+        ToChildItem = 0x0100,
+        /// <summary>
+        /// V Child řádku vyhledat prvky grafu podle jejich <see cref="GuiGraphBaseItem.GroupId"/>
+        /// </summary>
+        ToChildGroup = 0x0200,
+        /// <summary>
+        /// V Child řádku vyhledat prvky grafu podle jejich <see cref="GuiGraphBaseItem.DataId"/>
+        /// </summary>
+        ToChildData = 0x0400,
+        /// <summary>
+        /// V Child řádku vyhledat prvky grafu podle jejich <see cref="GuiGraphBaseItem.RowId"/>
+        /// </summary>
+        ToChildRow = 0x0800,
     }
     #endregion
     #region GuiGridInteraction : definice interakcí v rámci GUI (akce v jednom místě způsobí jinou akci jinde)

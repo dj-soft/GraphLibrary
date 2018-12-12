@@ -426,7 +426,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.TableRow.OpenRecordForm += _TableRow_OpenRecordForm;
             this.TableRow.UserData = this;
             if (this.TableRow.AllowPrimaryKey) this.TableRow.HasPrimaryIndex = true;
-            this._ChildRowsEvaluateByTime = (this.GuiGrid.GridProperties != null ? this.GuiGrid.GridProperties.ChildRowsEvaluateByTime : false);
+            GuiGridProperties properties = this.GuiGrid.GridProperties;
+            this.ChildRowsEvaluate = (properties != null && properties.ChildRowsEvaluate.HasValue ? properties.ChildRowsEvaluate.Value : ChildRowsEvaluateMode.Static);
         }
         /// <summary>
         /// Tabulka s řádky.
@@ -500,7 +501,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             GTable gTable = this.GTableRow;
             gTable.InteractiveStateChange += _GTableInteractiveStateChange;
 
-            if (this._ChildRowsEvaluateByTime)
+            if (this.ChildRowsEvaluate)
                 gTable.TimeAxisValueChanged += _GTableTimeAxisValueChanged;
         }
         /// <summary>
@@ -553,7 +554,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="e"></param>
         private void _GTableTimeAxisValueChanged(object sender, GPropertyChangeArgs<TimeRange> e)
         {
-            this.PrepareCurrentChildRows(e.NewValue);
+            this.PrepareCurrentChildRows(e.NewValue, false);
         }
         /// <summary>
         /// Grafická komponenta reprezentující data z <see cref="TableRow"/>.
@@ -602,9 +603,19 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             return new KeyValuePair<GId, TagItem>(rowGId, tagItem);
         }
         #endregion
-        #region ParentChilds - Vztahy mezi řádky 
+        #region ParentChilds - Vztahy mezi řádky
         /// <summary>
-        /// Metoda načte a zpracuje data o vztazích Parent-Childs
+        /// Metoda připraví Childs řádky pro řádky Root, podle aktuálně viditelného času.
+        /// Volá se z metod, které změní obsah grafů v této tabulce, po provedení všech změn.
+        /// </summary>
+        public void PrepareCurrentChildRows()
+        {
+            this.PrepareCurrentChildRows(this.SynchronizedTime, true);
+        }
+        /// <summary>
+        /// Metoda načte a zpracuje data o vztazích Parent-Childs.
+        /// Volá se jedenkrát při načítání řádků.
+        /// Zatím není potřeba tato data donačítat později.
         /// </summary>
         protected void LoadDataLoadParentChild()
         {
@@ -651,21 +662,23 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             // Uložím si Dictionary parentů, bude se používat pro dohledání Child prvků konkrétního Parenta:
             this.TreeNodeChildDict = parentDict;
 
-            // První vyhodnocení řádků proběhne nyní:
-            TimeRange timeRange = (this._ChildRowsEvaluateByTime ? this.MainData.GuiData.Properties.InitialTimeRange : null);
-            this.PrepareCurrentChildRows(timeRange);
+            // První vyhodnocení Childs řádků proběhne nyní:
+            TimeRange timeRange = this.MainData.GuiData.Properties.InitialTimeRange;
+            this.PrepareCurrentChildRows(timeRange, true);
         }
         /// <summary>
-        /// Metoda připraví Childs řádky pro řádky Root, podle aktuálně viditelného času
+        /// Metoda připraví Childs řádky pro řádky Root, podle zadaného viditelného času
         /// </summary>
-        protected void PrepareCurrentChildRows(TimeRange timeRange)
+        /// <param name="timeRange">Viditelný časový interval</param>
+        /// <param name="force">Povinně, bez ohledu na to že pro daný čas už bylo provedeno (=když máme nová data v grafech)</param>
+        protected void PrepareCurrentChildRows(TimeRange timeRange, bool force)
         {
-            if (this._ChildRowsEvaluateByTime && timeRange != null && this._ChildRowsLastTimeRange != null && this._ChildRowsLastTimeRange == timeRange) return;
+            if (this.ChildRowsEvaluate && timeRange != null && this._ChildRowsLastTimeRange != null && this._ChildRowsLastTimeRange == timeRange) return;
             if (this.TreeNodeChildDict == null || this.TreeNodeChildDict.Count == 0) return;
 
             // dynamicky určuji vztahy Parent - Child pro aktuální čas, anebo pro čas null = statické určení:
             Row[] rootRows = this.TableRow.TreeNodeRootRows;
-            bool childByTime = this._ChildRowsEvaluateByTime;
+            bool childByTime = this.ChildRowsEvaluate;
             Dictionary<GId, Row> visibleRowDict = new Dictionary<GId, Row>();
             foreach (Row rootRow in rootRows)
             {
@@ -679,7 +692,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Metoda najde a připraví Child řádky pro daný Parent řádek
         /// </summary>
         /// <param name="parentRow"></param>
-        /// <param name="visibleRowDict">Dictionary řádků, které jsou viditelné (root + všechny Childs), kvůli zavírání Parentů nad duplicitně viditelnými Childs</param>
         /// <param name="childByTime"></param>
         /// <param name="timeRange"></param>
         protected void PrepareCurrentChildRowsFor(Row parentRow, bool childByTime, TimeRange timeRange)
@@ -852,10 +864,35 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         protected Dictionary<GuiId, List<Row>> TreeNodeChildDict { get; private set; }
         /// <summary>
-        /// Řádky Childs pro konkrétní řádky Parent vyhodnocovat pouze pro aktuálně zobrazený čas?
-        /// Pochází z <see cref="GuiGridProperties.ChildRowsEvaluateByTime"/>.
+        /// Režim pro vyhodnocení Child řádků v této tabulce.
+        /// Pochází z <see cref="GuiGridProperties.ChildRowsEvaluate"/>.
         /// </summary>
-        private bool _ChildRowsEvaluateByTime;
+        protected ChildRowsEvaluateMode ChildRowsEvaluate { get { return this._ChildRowsEvaluate; } set { this._SetChildRowsEvaluate(value); } }
+        /// <summary>
+        /// Vyhodnotí a uloží režim <see cref="ChildRowsEvaluate"/>
+        /// </summary>
+        /// <param name="mode"></param>
+        private void _SetChildRowsEvaluate(ChildRowsEvaluateMode mode)
+        {
+            this.ChildRowsIsStatic = (mode == ChildRowsEvaluateMode.Static);
+            this.ChildRowsIsTimeDependent = ((mode & ChildRowsEvaluateMode.VisibleTimeOnly) != 0);
+            this._ChildRowsEvaluate = mode;
+        }
+        /// <summary>
+        /// true pokud vztah Parent - Child je pevně daný, statický, a nezmění se ani změnou času, ani změnou obsahuj grafů
+        /// </summary>
+        protected bool ChildRowsIsStatic { get; private set; }
+        /// <summary>
+        /// true pokud vztah Parent - Child je závislý na zobrazeném čase = po každé změně časové osy je třeba vztah znovu vyhodnotit
+        /// </summary>
+        protected bool ChildRowsIsTimeDependent { get; private set; }
+        /// <summary>
+        /// Hodnota režimu <see cref="ChildRowsEvaluate"/>
+        /// </summary>
+        private ChildRowsEvaluateMode _ChildRowsEvaluate;
+        /// <summary>
+        /// Posledně platná hodnota času při detekci v metodě <see cref="PrepareCurrentChildRows(TimeRange, bool)"/>
+        /// </summary>
         private TimeRange _ChildRowsLastTimeRange;
         #endregion
         #region Podpora pro mezitabulkové interakce (kdy akce v jedné tabulce vyvolá jinou akci v jiné tabulce)
@@ -1429,7 +1466,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
                 GTimeGraph gTimeGraph = this.LoadDataCreateOneGTimeGraph(row, graphPosition, guiGraphDict);
                 if (!this.TimeGraphDict.ContainsKey(rowGid))
+                {
                     this.TimeGraphDict.Add(rowGid, gTimeGraph);
+                    gTimeGraph.UserData = this;
+                }
             }
         }
         /// <summary>

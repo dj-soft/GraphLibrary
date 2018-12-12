@@ -2234,6 +2234,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this._ProcessResponseAddItems(guiResponse.AddItems, mainTableDict, refreshGraphDict);
             this._ProcessResponseUpdateLinks(guiResponse.ChangeLinks, mainTableDict, refreshGraphDict);
             this._ProcessResponseRefreshGraphs(refreshGraphDict.Values);
+            this._ProcessResponseRefreshParentChilds(refreshGraphDict.Values);
         }
         /// <summary>
         /// Zpracuje odpověď z aplikace, část: <see cref="GuiResponse.Common"/>
@@ -2366,6 +2367,23 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private void _ProcessResponseRefreshGraphs(IEnumerable<GTimeGraph> refreshGraphs)
         {
             refreshGraphs.ForEachItem(g => g.Refresh());
+        }
+        /// <summary>
+        /// Metoda zajistí nové vyhodnocení vztahů Parent - Child v těch tabulkách, kde došlo ke změně v grafech
+        /// </summary>
+        /// <param name="refreshGraphs"></param>
+        private void _ProcessResponseRefreshParentChilds(IEnumerable<GTimeGraph> refreshGraphs)
+        {
+            // Z objektů grafů, kde došlo ke změně, s pomocí GTimeGraph.UserData, což je reference na MainDataTable, získám distinct seznam tabulek:
+            MainDataTable[] tables = refreshGraphs
+                .Where(g => g.UserData != null && g.UserData is MainDataTable)
+                .Select(g => g.UserData as MainDataTable)
+                .GetDictionary(t => t.TableName, true)
+                .Values
+                .ToArray();
+
+            // Pro každou z tabulek zavolám metodu pro vyhodnocení jejich Parent - Child:
+            tables.ForEachItem(t => t.PrepareCurrentChildRows());
         }
         #endregion
         #region Zpracování dialogu
