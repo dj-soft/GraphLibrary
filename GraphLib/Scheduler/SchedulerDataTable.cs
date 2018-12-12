@@ -859,6 +859,18 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private TimeRange _ChildRowsLastTimeRange;
         #endregion
         #region Podpora pro mezitabulkové interakce (kdy akce v jedné tabulce vyvolá jinou akci v jiné tabulce)
+        /// <summary>
+        /// Všechny interakce deklarované pro tuto tabulku. Zde nikdy není null.
+        /// Pokud nejsou definovány (jsou null), pak zde je prázdné pole.
+        /// </summary>
+        public GuiGridInteraction[] Interactions
+        {
+            get
+            {
+                List<GuiGridInteraction> list = this.GuiGrid.GridProperties?.InteractionList;
+                return (list != null ? list.ToArray() : new GuiGridInteraction[0]);
+            }
+        }
         #region Interakce, algoritmy na straně Source
         /// <summary>
         /// Obecná metoda, která má provést všechny nyní aktivní interakce této tabulky.

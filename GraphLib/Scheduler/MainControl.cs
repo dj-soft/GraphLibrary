@@ -324,9 +324,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         public Form MainForm { get { return this.FindForm(); } }
         #endregion
     }
-    #region class SchedulerPanelInfo - třída obsaující data o jednom panelu.
+    #region class SchedulerPanelInfo - třída obsahující data o jednom panelu.
     /// <summary>
-    /// SchedulerPanelInfo - třída obsaující data o jednom panelu.
+    /// SchedulerPanelInfo - třída obsahující data o jednom panelu.
     /// Obsahuje referenci na vstupní data <see cref="GuiPage"/>, referenci na záložku <see cref="GTabPage"/> 
     /// i referenci na vlastní vizuální control <see cref="SchedulerPanel"/>.
     /// </summary>
