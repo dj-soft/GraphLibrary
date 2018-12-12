@@ -802,7 +802,14 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             gridCenter.GridProperties.TagFilterRoundItemPercent = 50;
             gridCenter.GridProperties.TagFilterEnabled = true;
             gridCenter.GridProperties.TagFilterBackColor = Color.FromArgb(64, 128, 64);
-            gridCenter.GridProperties.ChildRowsEvaluate = true;
+            gridCenter.GridProperties.ChildRowsEvaluate =
+                // Child řádky k Parent řádkům navážeme dynamicky, podle viditelného časového okna:
+                GuiChildRowsEvaluateMode.VisibleTimeOnly |
+                // K identifikátoru GroupId z Parent řádku najdeme shodný GroupId v Child řádku 
+                //   (tzn. Child pracuje na stejné operaci, jako Parent):
+                GuiChildRowsEvaluateMode.OnParentGroup | GuiChildRowsEvaluateMode.ToChildGroup | 
+                // A navíc ty dva prvky musí mít společný čas:
+                GuiChildRowsEvaluateMode.ParentChildIntersectTimeOnly;
 
             gridCenter.GridProperties.AddInteraction(new GuiGridInteraction()
             {
