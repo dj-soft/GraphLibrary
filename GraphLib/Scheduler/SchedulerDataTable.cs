@@ -750,9 +750,12 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             //    pak tento řádek zavřeme:
             this.PrepareCurrentChildCollapse(parentRow, visibleRowDict);
 
-            // A rekurzivně i pro řádky v parentRow.TreeNodeChilds:
-            // foreach (Row childRow in parentRow.TreeNodeChilds)
-            //    this.PrepareCurrentChildRowsFor(childRow, searchInfo, timeFrame, visibleRowDict);
+            // A rekurzivně i pro řádky v parentRow.TreeNodeChilds, pouze pokud je to Static:
+            if (searchInfo.IsStatic)
+            {
+                foreach (Row childRow in parentRow.TreeNodeChilds)
+                    this.PrepareCurrentChildRowsFor(childRow, searchInfo, timeFrame, visibleRowDict);
+            }
         }
         /// <summary>
         /// Metoda najde prvky grafu daného řádku v daném období a vrátí jejich index.
