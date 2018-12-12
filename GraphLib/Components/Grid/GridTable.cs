@@ -1782,15 +1782,19 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             bool nodeHasChilds = row.TreeNodeHasChilds;
             if (nodeHasChilds)
             {
-                Image image = DrawTreeViewGetIcon(row.TreeNodeIsExpanded, iconIsHot, iconIsDown);
+                bool isExpanded = row.TreeNodeIsExpanded;
+                Image image = DrawTreeViewGetIcon(isExpanded, iconIsHot, iconIsDown);
                 if (image != null)
                 {
                     bool rowHasMouse = (row.Control.HasMouse);
-                    float opacityRatio = (!rowHasMouse ? 0.40f : (!iconIsHot ? 0.80f : 1.00f));
-                    Rectangle outerBounds = new Rectangle(boundsAbsolute.X + 1 + iconOffsetX, boundsAbsolute.Bottom - 2 - 20, 20, 26);
-                    Rectangle imageBounds = new Rectangle(outerBounds.X + 2, outerBounds.Y + 2, 16, 16);
-                    GPainter.DrawImage(e.Graphics, imageBounds, image, opacityRatio);
-                    interactiveBounds = outerBounds;
+                    float opacityRatio = DrawTreeViewGetOpacity(isExpanded, rowHasMouse, iconIsHot, iconIsDown);
+                    if (opacityRatio > 0f)
+                    {
+                        Rectangle outerBounds = new Rectangle(boundsAbsolute.X + 1 + iconOffsetX, boundsAbsolute.Bottom - 2 - 20, 20, 26);
+                        Rectangle imageBounds = new Rectangle(outerBounds.X + 2, outerBounds.Y + 2, 16, 16);
+                        GPainter.DrawImage(e.Graphics, imageBounds, image, opacityRatio);
+                        interactiveBounds = outerBounds;
+                    }
                 }
             }
             return interactiveBounds;
@@ -1826,11 +1830,38 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                     // s myší      =>  modrá ikona dolů, plná:
                     iconName = Noris.LCS.Base.WorkScheduler.Resources.Images.Actions24.ArrowDownPng;
                 else
-                    // bez myši    =>  modrá ikona dolů, prázdná:
-                    iconName = Noris.LCS.Base.WorkScheduler.Resources.Images.Actions24.ArrowDown2Png;
+                    // bez myši    =>  modrá ikona dolů, taky plná (nikoli prázdná):
+                    // iconName = Noris.LCS.Base.WorkScheduler.Resources.Images.Actions24.ArrowDown2Png;
+                    iconName = Noris.LCS.Base.WorkScheduler.Resources.Images.Actions24.ArrowDownPng;
             }
 
             return Application.App.Resources.GetImage(iconName);
+        }
+        /// <summary>
+        /// Vrátí sytost barvy pro ikonu a daný stav
+        /// </summary>
+        /// <param name="nodeIsExpanded"></param>
+        /// <param name="rowHasMouse"></param>
+        /// <param name="iconIsHot"></param>
+        /// <param name="iconIsDown"></param>
+        /// <returns></returns>
+        protected float DrawTreeViewGetOpacity(bool nodeIsExpanded, bool rowHasMouse, bool iconIsHot, bool iconIsDown)
+        {
+            // (!rowHasMouse ? 0.40f : (!iconIsHot ? 0.80f : 1.00f));
+            if (!nodeIsExpanded)
+            {   // Zavřený uzel:
+                if (iconIsDown) return 1.00f;         // stisknuto        =>  plná barva
+                else if (iconIsHot) return 0.80f;     // s myší na ikoně  =>  80%
+                else if (rowHasMouse) return 0.70f;   // s myší na řádku  =>  70%;
+                return 0.40f;                         // bez myši         =>  40%;
+            }
+            else
+            {   // Otevřený uzel:
+                if (iconIsDown) return 1.00f;         // stisknuto        =>  plná barva
+                else if (iconIsHot) return 0.90f;     // s myší na ikoně  =>  90%
+                else if (rowHasMouse) return 0.80f;   // s myší na řádku  =>  80%;
+                return 0.70f;                         // bez myši         =>  70%;
+            }
         }
         #endregion
         #region TimeAxis
