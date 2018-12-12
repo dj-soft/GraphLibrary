@@ -46,9 +46,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this.MainData = new Noris.LCS.Base.WorkScheduler.GuiData();
 
             this.InitData();
-
             this.CreateData();
-
             this.CreateProperties();
             this.CreateToolBar();
             this.CreateMainPage();
@@ -364,7 +362,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
                 ratio = GetRandomRatio();
 
-                if (height >= 5f)
+                if (height >= 7f)
                 {   // U "vysokých" pracovišť dáme jiný graf Pracovních směn:
                     workTime.BackColor = null;
                     workTime.RatioEnd = ratio;
