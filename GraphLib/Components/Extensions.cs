@@ -462,6 +462,32 @@ namespace Asol.Tools.WorkScheduler.Components
             return new PointF((float)basePoint.X - subPoint.X, (float)basePoint.Y - subPoint.Y);
         }
         #endregion
+        #region souřadnice: IsVisible()
+        /// <summary>
+        /// Vrátí true pokud this objekt může být svou velikostí viditelný (šířka a výška je větší než 0)
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static bool IsVisible(this Size value) { return (value.Width > 0 && value.Height > 0); }
+        /// <summary>
+        /// Vrátí true pokud this objekt může být svou velikostí viditelný (šířka a výška je větší než 0)
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static bool IsVisible(this SizeF value) { return (value.Width > 0f && value.Height > 0f); }
+        /// <summary>
+        /// Vrátí true pokud this objekt může být svou velikostí viditelný (šířka a výška je větší než 0)
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static bool IsVisible(this Rectangle value) { return (value.Width > 0 && value.Height > 0); }
+        /// <summary>
+        /// Vrátí true pokud this objekt může být svou velikostí viditelný (šířka a výška je větší než 0)
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static bool IsVisible(this RectangleF value) { return (value.Width > 0f && value.Height > 0f); }
+        #endregion
         #region Size, SizeF, Rectangle, RectangleF: zooming
         /// <summary>
         /// Zvětší danou velikost o daný rozměr na každé straně = velikost se zvětší o dvojnásobek.

@@ -563,11 +563,21 @@ namespace Asol.Tools.WorkScheduler.Data
             {
                 // Základní viditelnost řádku daná kódem (Row.Visible) a řádkovým filtrem (RowFiltersExists):
                 bool rowFiltersExists = this.RowFiltersExists;
-                List<Row> list = this.Rows
-                    .Where(r => (r.Visible && r.TreeNodeIsRoot && (rowFiltersExists ? this.FilterRow(r) : true)))
-                    .ToList();
+                List<Row> list = new List<Row>();
+                foreach (Row row in this.Rows)
+                {
+                    bool isVisible = false;
+                    if (!row.Hidden && row.TreeNodeIsRoot && (rowFiltersExists ? this.FilterRow(row) : true))
+                    {
+                        isVisible = true;
+                        list.Add(row);
+                    }
+                    // Visible = true dostanou jen řádky, které jsou zobrazeny v úrovni Root. 
+                    //   Child řádky dostanou false, na true přejdou až později v metodě CreateTreeViewList().
+                    row.Visible = isVisible;     // Viditelnost pro všechny řádky je zde, přičemž pouze Root úroveň zde může dostat Visible = true.
+                }
 
-                // Třídění podle sloupce:
+                // Třídění Root úrovně podle sloupce:
                 if (list.Count > 1)
                 {
                     Column sortColumn = this.Columns.FirstOrDefault(c => (c.SortCurrent == ItemSortType.Ascending || c.SortCurrent == ItemSortType.Descending));
@@ -2932,6 +2942,7 @@ namespace Asol.Tools.WorkScheduler.Data
                 child.TreeNodeLevel = level;
                 child.TreeNodeOrder = (i == 0 ? (count > 1 ? TreeNodeOrderType.First : TreeNodeOrderType.Single) : (i < (count - 1) ? TreeNodeOrderType.Inner : TreeNodeOrderType.Last));
                 treeList.Add(child);
+                child.Visible = true;            // Viditelnost pro Child řádky nastavuji výhradně zde.
 
                 // Rekurzivně:
                 child.AddChilds(treeList, level);
@@ -3257,9 +3268,14 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public Int32? Height { get { return this.RowSize.Size.Value; } set { this.RowSize.Size = value; } }
         /// <summary>
-        /// true pro viditelný sloupec (default), false for skrytý
+        /// true pro aktuálně viditelný řádek (default), false for skrytý (řádkové filtry, Tree nody).
+        /// Tato hodnota odráží reálnou aktuální viditelnost v Gridu.
         /// </summary>
         public bool Visible { get { return this.RowSize.Visible; } set { this.RowSize.Visible = value; } }
+        /// <summary>
+        /// true pro řádek, který nemá být zobrazován z aplikačního důvodu, false (default) = řádek je dostupný
+        /// </summary>
+        public bool Hidden { get; set; }
         int IVisualParent.ClientWidth { get { return (this.HasGTable ? this.GTable.Bounds.Width : 0); } set { } }
         int IVisualParent.ClientHeight
         {

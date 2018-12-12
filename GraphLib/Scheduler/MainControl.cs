@@ -62,6 +62,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         protected void CalculateLayout()
         {
             Size size = this.ClientSize;
+            if (!size.IsVisible()) return;
             int y = 0;
             if (this._ToolBar.Is.Visible)
             {
