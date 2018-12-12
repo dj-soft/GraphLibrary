@@ -327,6 +327,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="graphics"></param>
         protected void PrepareLayoutRun(Graphics graphics)
         {
+            this._Splitter.SplitterVisibleWidth = this.TBarSetting.SplitterHeight;
             int x = this.TBarSetting.ContentBounds.X;                // Prepare this.TBarSetting for current ToolbarSize, when current item is null or has not valid Size
             foreach (GToolBarGroup group in this._ToolbarItemList)
                 group.PrepareLayout(graphics, ref x);
@@ -411,7 +412,8 @@ namespace Asol.Tools.WorkScheduler.Components
                             this.PixelPerModule = 10;
                             this.ContentBounds = new Rectangle(2, 1, 1000, 60);
                             this.TitleBounds = new Rectangle(0, 64, 1000, 16);
-                            this.ToolbarBounds = new Rectangle(0, 0, 1000, 80);
+                            this.ToolbarBounds = new Rectangle(0, 0, 1000, 82);
+                            this.SplitterHeight = 2;
                             this.TitleZoom = 0.80f;
                             this.ItemDict.Add(FunctionGlobalItemSize.Micro, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Micro, 1, 10, 1,  8,  0, 0f));
                             this.ItemDict.Add(FunctionGlobalItemSize.Small, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Small, 2, 20, 2, 16, 18, 0.50f));
@@ -424,7 +426,8 @@ namespace Asol.Tools.WorkScheduler.Components
                             this.PixelPerModule = 20;
                             this.ContentBounds = new Rectangle(1, 1, 1000, 120);
                             this.TitleBounds = new Rectangle(0, 124, 1000, 24);
-                            this.ToolbarBounds = new Rectangle(0, 0, 1000, 148);
+                            this.ToolbarBounds = new Rectangle(0, 0, 1000, 150);
+                            this.SplitterHeight = 2;
                             this.TitleZoom = 1.05f;
                             this.ItemDict.Add(FunctionGlobalItemSize.Micro, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Micro, 1,  20, 2, 16,  0, 0f));
                             this.ItemDict.Add(FunctionGlobalItemSize.Small, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Small, 2,  40, 3, 32, 22, 0.95f));
@@ -438,7 +441,8 @@ namespace Asol.Tools.WorkScheduler.Components
                             this.PixelPerModule = 15;
                             this.ContentBounds = new Rectangle(1, 1, 1000, 90);
                             this.TitleBounds = new Rectangle(0, 94, 1000, 20);
-                            this.ToolbarBounds = new Rectangle(0, 0, 1000, 114);
+                            this.ToolbarBounds = new Rectangle(0, 0, 1000, 116);
+                            this.SplitterHeight = 2;
                             this.TitleZoom = 1.00f;
                             this.ItemDict.Add(FunctionGlobalItemSize.Micro, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Micro, 1, 15, 2, 12,  0, 0f));
                             this.ItemDict.Add(FunctionGlobalItemSize.Small, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Small, 2, 30, 3, 24, 24, 0.85f));
@@ -458,6 +462,7 @@ namespace Asol.Tools.WorkScheduler.Components
                             this.ContentBounds = new Rectangle(2, 1, 1000, 60);
                             this.TitleBounds = new Rectangle(0, 64, 1000, 16);
                             this.ToolbarBounds = new Rectangle(0, 0, 1000, 80);
+                            this.SplitterHeight = 2;
                             this.TitleZoom = 0.80f;
                             this.ItemDict.Add(FunctionGlobalItemSize.Micro, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Micro, 1, 10, 1, 8, 0, 0f));
                             this.ItemDict.Add(FunctionGlobalItemSize.Small, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Small, 2, 20, 1, 18, 18, 0.50f));
@@ -471,6 +476,7 @@ namespace Asol.Tools.WorkScheduler.Components
                             this.ContentBounds = new Rectangle(1, 1, 1000, 120);
                             this.TitleBounds = new Rectangle(0, 124, 1000, 24);
                             this.ToolbarBounds = new Rectangle(0, 0, 1000, 148);
+                            this.SplitterHeight = 2;
                             this.TitleZoom = 1.05f;
                             this.ItemDict.Add(FunctionGlobalItemSize.Micro, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Micro, 1, 20, 2, 16, 0, 0f));
                             this.ItemDict.Add(FunctionGlobalItemSize.Small, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Small, 2, 40, 2, 36, 22, 0.95f));
@@ -485,6 +491,7 @@ namespace Asol.Tools.WorkScheduler.Components
                             this.ContentBounds = new Rectangle(1, 1, 1000, 90);
                             this.TitleBounds = new Rectangle(0, 94, 1000, 20);
                             this.ToolbarBounds = new Rectangle(0, 0, 1000, 114);
+                            this.SplitterHeight = 2;
                             this.TitleZoom = 1.00f;
                             this.ItemDict.Add(FunctionGlobalItemSize.Micro, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Micro, 1, 15, 1, 12, 0, 0f));
                             this.ItemDict.Add(FunctionGlobalItemSize.Small, new LayoutSettingTItemInfo(this, FunctionGlobalItemSize.Small, 2, 30, 1, 24, 24, 0.85f));
@@ -522,6 +529,10 @@ namespace Asol.Tools.WorkScheduler.Components
             /// Souřadnice na ose X jsou převzaty z grupy.
             /// </summary>
             public Rectangle TitleBounds { get; private set; }
+            /// <summary>
+            /// Výška Splitteru
+            /// </summary>
+            public int SplitterHeight { get; private set; }
             /// <summary>
             /// Zoom pro titulky
             /// </summary>
@@ -901,7 +912,7 @@ namespace Asol.Tools.WorkScheduler.Components
             int groupX = x;
             int groupY = tBarSetting.ToolbarBounds.Y;
             int groupW = tableX;
-            int groupH = tBarSetting.ToolbarBounds.Height;
+            int groupH = tBarSetting.ToolbarBounds.Height - tBarSetting.SplitterHeight;
             this.Bounds = new Rectangle(groupX, groupY, groupW, groupH);
 
             x += tableX;
@@ -1020,6 +1031,9 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             GToolBar.LayoutSettingTBarInfo tBarSetting = this.TBarSetting;
             Rectangle tb = tBarSetting.TitleBounds;
+
+            Rectangle toolb = tBarSetting.ToolbarBounds;
+
             int dy = absoluteBounds.Y - this.Bounds.Y;
             Rectangle titleAbsoluteBounds = new Rectangle(absoluteBounds.X + 1, dy + tb.Y, absoluteBounds.Width - 3, tb.Height);
 

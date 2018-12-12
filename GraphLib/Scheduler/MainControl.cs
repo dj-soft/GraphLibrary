@@ -68,7 +68,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             {
                 int th = this._ToolBar.Bounds.Height;
                 this._ToolBar.Bounds = new Rectangle(y, 0, size.Width, th);
-                y = this._ToolBar.Bounds.Bottom + 1;
+                y = this._ToolBar.Bounds.Bottom;
             }
             this._TabContainer.Bounds = new Rectangle(0, y, size.Width, size.Height - y);
             this.Refresh();
