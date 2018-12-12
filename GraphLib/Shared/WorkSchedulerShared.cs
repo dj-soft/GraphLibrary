@@ -658,9 +658,9 @@ namespace Noris.LCS.Base.WorkScheduler
         public Color? TagFilterBackColor { get; set; }
         /// <summary>
         /// Režim pro vyhodnocení Child řádků v této tabulce.
-        /// Nezadáno = <see cref="ChildRowsEvaluateMode.Static"/>.
+        /// Nezadáno = <see cref="GuiChildRowsEvaluateMode.Static"/>.
         /// </summary>
-        public ChildRowsEvaluateMode? ChildRowsEvaluate { get; set; }
+        public GuiChildRowsEvaluateMode? ChildRowsEvaluate { get; set; }
         /// <summary>
         /// Přidá jednu další definici interakce <see cref="GuiGridInteraction"/>
         /// </summary>
@@ -692,7 +692,7 @@ namespace Noris.LCS.Base.WorkScheduler
     /// Předpis pro vyhledání Child řádků k danému Parent řádku
     /// </summary>
     [Flags]
-    public enum ChildRowsEvaluateMode
+    public enum GuiChildRowsEvaluateMode
     {
         /// <summary>
         /// Není zadáno Dynamické vyhodnocení. Co je definováno v datech <see cref="GuiGrid.ParentChilds"/>, to bude zobrazováno.

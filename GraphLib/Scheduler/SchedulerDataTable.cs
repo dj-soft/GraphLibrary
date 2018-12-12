@@ -382,6 +382,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         protected TimeRange SynchronizedTime { get { return this.IMainData.SynchronizedTime; } set { this.IMainData.SynchronizedTime = value; } }
         /// <summary>
+        /// Celkový časový interval <see cref="GuiProperties.TotalTimeRange"/>
+        /// </summary>
+        protected TimeRange TotalTime { get { return this.IMainData?.GuiData?.Properties?.TotalTimeRange; } }
+        /// <summary>
         /// Režim časové osy v grafu, podle zadání v deklaraci
         /// </summary>
         protected TimeGraphTimeAxisMode TimeAxisMode
@@ -427,7 +431,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.TableRow.UserData = this;
             if (this.TableRow.AllowPrimaryKey) this.TableRow.HasPrimaryIndex = true;
             GuiGridProperties properties = this.GuiGrid.GridProperties;
-            this.ChildRowsEvaluate = (properties != null && properties.ChildRowsEvaluate.HasValue ? properties.ChildRowsEvaluate.Value : ChildRowsEvaluateMode.Static);
+            this.ChildRowsEvaluate = (properties != null && properties.ChildRowsEvaluate.HasValue ? properties.ChildRowsEvaluate.Value : GuiChildRowsEvaluateMode.Static);
         }
         /// <summary>
         /// Tabulka s řádky.
@@ -501,8 +505,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             GTable gTable = this.GTableRow;
             gTable.InteractiveStateChange += _GTableInteractiveStateChange;
 
-            if (this.ChildRowsEvaluate)
-                gTable.TimeAxisValueChanged += _GTableTimeAxisValueChanged;
+            gTable.TimeAxisValueChanged += _GTableTimeAxisValueChanged;
         }
         /// <summary>
         /// Eventhandler události "Byl aktivován řádek"
@@ -554,7 +557,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="e"></param>
         private void _GTableTimeAxisValueChanged(object sender, GPropertyChangeArgs<TimeRange> e)
         {
-            this.PrepareCurrentChildRows(e.NewValue, false);
+            // Pokud současný systém vztahů Parent-Child je závislý na viditelném časovém intervalu, zavoláme jeho refresh:
+            if (this.CurrentSearchChildInfo.IsVisibleTimeOnly)
+                this.PrepareCurrentChildRows(e.NewValue, false);
         }
         /// <summary>
         /// Grafická komponenta reprezentující data z <see cref="TableRow"/>.
@@ -663,8 +668,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.TreeNodeChildDict = parentDict;
 
             // První vyhodnocení Childs řádků proběhne nyní:
-            TimeRange timeRange = this.MainData.GuiData.Properties.InitialTimeRange;
-            this.PrepareCurrentChildRows(timeRange, true);
+            this.PrepareCurrentChildRows(this.MainData.GuiData.Properties?.InitialTimeRange, true);
         }
         /// <summary>
         /// Metoda připraví Childs řádky pro řádky Root, podle zadaného viditelného času
@@ -673,59 +677,124 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="force">Povinně, bez ohledu na to že pro daný čas už bylo provedeno (=když máme nová data v grafech)</param>
         protected void PrepareCurrentChildRows(TimeRange timeRange, bool force)
         {
-            if (this.ChildRowsEvaluate && timeRange != null && this._ChildRowsLastTimeRange != null && this._ChildRowsLastTimeRange == timeRange) return;
             if (this.TreeNodeChildDict == null || this.TreeNodeChildDict.Count == 0) return;
 
-            // dynamicky určuji vztahy Parent - Child pro aktuální čas, anebo pro čas null = statické určení:
+            // Test, zda je nutno akci provádět, s ohledem na režim, zadaný čas a posledně zpracovaný čas:
+            SearchChildInfo searchInfo = this.CurrentSearchChildInfo;
+            TimeRange timeFrame = (searchInfo.IsVisibleTimeOnly ? timeRange : this.TotalTime);
+            if (!PrepareCurrentChildRowsRequired(force, searchInfo, timeFrame, this._ChildRowsLastTimeRange)) return;
+
+            // Určuji vztahy Parent - Child, podle daného režimu:
             Row[] rootRows = this.TableRow.TreeNodeRootRows;
-            bool childByTime = this.ChildRowsEvaluate;
             Dictionary<GId, Row> visibleRowDict = new Dictionary<GId, Row>();
             foreach (Row rootRow in rootRows)
-            {
-                this.PrepareCurrentChildRowsFor(rootRow, childByTime, timeRange);
-                this.PrepareCurrentChildCollapse(rootRow, visibleRowDict);
-            }
+                this.PrepareCurrentChildRowsFor(rootRow, searchInfo, timeFrame, visibleRowDict);
 
-            this._ChildRowsLastTimeRange = timeRange;
+            this._ChildRowsLastTimeRange = timeFrame;
+        }
+        /// <summary>
+        /// Vrátí true, pokud je nutno za daných okolností znovu vyhodnotit vztahy Parent - Child a určit Child prvky do parentRow.TreeNodeChilds
+        /// </summary>
+        /// <param name="force">Požadavek na povinné provedení</param>
+        /// <param name="searchInfo">Režim vztahů, určuje parametry hledání</param>
+        /// <param name="currentTimeRange">Aktuální viditelný čas</param>
+        /// <param name="lastTimeRange">Posledně zpracovaný viditelný čas</param>
+        /// <returns></returns>
+        protected static bool PrepareCurrentChildRowsRequired(bool force, SearchChildInfo searchInfo, TimeRange currentTimeRange, TimeRange lastTimeRange)
+        {
+            if (force) return true;                        // Je-li to povinné, pak to udělat musíme.
+            if (searchInfo.IsStatic) return false;         // Jelito statické (a není to povinné), tak to dělat nemusíme.
+            if (currentTimeRange == null) return false;    // Aktuální čas není dodán, a jsme v dynamickém režimu, tak to dělat nemusíme.
+            if (lastTimeRange == null) return true;        // Poslední čas není uložen, asi to ještě neběželo, musí se to provést.
+            return (currentTimeRange != lastTimeRange);    // Pokud čas Last a Curr jsou odlišené, musí se to provést!
         }
         /// <summary>
         /// Metoda najde a připraví Child řádky pro daný Parent řádek
         /// </summary>
         /// <param name="parentRow"></param>
-        /// <param name="childByTime"></param>
-        /// <param name="timeRange"></param>
-        protected void PrepareCurrentChildRowsFor(Row parentRow, bool childByTime, TimeRange timeRange)
+        /// <param name="searchInfo">Režim vztahů, určuje parametry hledání</param>
+        /// <param name="timeFrame"></param>
+        /// <param name="visibleRowDict"></param>
+        protected void PrepareCurrentChildRowsFor(Row parentRow, SearchChildInfo searchInfo, TimeRange timeFrame, Dictionary<GId, Row> visibleRowDict)
         {
             if (parentRow == null) return;
             parentRow.TreeNodeChilds = null;
             GId recordGId = parentRow.RecordGId;
             if (this.TreeNodeChildDict == null || recordGId == null || recordGId.IsEmpty) return;
-            GuiId parentGuiId = recordGId;
 
             // Najdeme řádky, které pro daného Parenta mohou hrát roli Child prvků:
             Dictionary<GId, Row> childDict = new Dictionary<GId, Row>();
             List<Row> childList;
+            GuiId parentGuiId = recordGId;
             if (this.TreeNodeChildDict.TryGetValue(parentGuiId, out childList))
                 childDict.AddNewItems(childList, r => r.RecordGId);
 
-            parentGuiId = GuiId.Empty;
-            if (this.TreeNodeChildDict.TryGetValue(parentGuiId, out childList))
-                childDict.AddNewItems(childList, r => r.RecordGId);
+            if (!searchInfo.IsStatic)
+            {   // Druhá část hledání (pro Parenta = Empty) se provádí jen v Dynamickém režimu:
+                parentGuiId = GuiId.Empty;
+                if (this.TreeNodeChildDict.TryGetValue(parentGuiId, out childList))
+                    childDict.AddNewItems(childList, r => r.RecordGId);
+            }
 
             // Daný řádek (parentRow) nemá žádnou šanci mít nějaké childs:
             if (childDict.Count == 0) return;
 
-            // Pro daný řádek máme několik kandidátů na Childs. Pokud je vztah Dynamický, pak zjistíme konkrétní možnosti vztahů:
-            Dictionary<GId, TimeRange> parentItemDict = this.PrepareCurrentChildGetItems(parentRow, childByTime, timeRange);
+            // Pro daný řádek máme několik položek (v childDict), které jsou/mohou být Childs.
+            //    Pokud je vztah Dynamický, pak zjistíme konkrétní možnosti vztahů (=z parentRow si načteme směrodatné klíče a jejich časové úseky):
+            Dictionary<GId, TimeRange> parentDataDict = this.PrepareCurrentRowGetItems(parentRow, searchInfo, searchInfo.ParentIdType, timeFrame);
 
             // Určíme řádky, které mají společnou práci s Parentem:
-            parentRow.TreeNodeChilds = (childDict.Count > 0 ? childDict.Values.Where(r => PrepareCurrentChildRowsFilter(parentItemDict, r, childByTime, timeRange)).ToArray() : null);
+            parentRow.TreeNodeChilds = childDict.Values.Where(r => PrepareCurrentChildRowsFilter(parentDataDict, r, searchInfo, searchInfo.ChildIdType, timeFrame)).ToArray();
 
-            // A rekurzivně:
+            // Pokud tento řádek je Expanded, a obshauje nějaký Child z řádků, které jsou Expanded někde jinde,
+            //    pak tento řádek zavřeme:
+            this.PrepareCurrentChildCollapse(parentRow, visibleRowDict);
 
+            // A rekurzivně i pro řádky v parentRow.TreeNodeChilds:
+            // foreach (Row childRow in parentRow.TreeNodeChilds)
+            //    this.PrepareCurrentChildRowsFor(childRow, searchInfo, timeFrame, visibleRowDict);
+        }
+        /// <summary>
+        /// Metoda najde prvky grafu daného řádku v daném období a vrátí jejich index.
+        /// Hledá jen ty prvky, které mají zadaný identifikátor skupiny Group.
+        /// </summary>
+        /// <param name="row"></param>
+        /// <param name="searchInfo"></param>
+        /// <param name="idType">Druh klíče</param>
+        /// <param name="timeFrame"></param>
+        /// <returns></returns>
+        protected Dictionary<GId, TimeRange> PrepareCurrentRowGetItems(Row row, SearchChildInfo searchInfo, DataGraphItem.IdType idType, TimeRange timeFrame)
+        {
+            if (row == null || row.RecordGId == null || idType == DataGraphItem.IdType.None) return null;
+            GTimeGraph graph;
+            if (!this.TimeGraphDict.TryGetValue(row.RecordGId, out graph)) return null;
 
+            Dictionary<GId, TimeRange> resultDict = new Dictionary<GId, TimeRange>();
+            if (idType == DataGraphItem.IdType.Row)
+            {   // Jako podklad slouží celý řádek, nikoli jeho grafické prvky:
+                resultDict.Add(row.RecordGId, timeFrame);
+                return resultDict;
+            }
 
+            // Jako podklad slouží nějaký identifikátor grafického prvku:
+            foreach (ITimeGraphItem iItem in graph.GraphItems)
+            {
+                DataGraphItem gItem = (iItem as DataGraphItem);
+                if (gItem == null) continue;
+                GId gId = gItem.GetGId(idType);
+                if (gId == null || gId.IsEmpty) continue;
 
+                TimeRange itemTime = gItem.Time;
+                if (!timeFrame.HasIntersect(itemTime)) continue;
+
+                TimeRange groupTime;
+                if (resultDict.TryGetValue(gId, out groupTime))
+                    resultDict[gId] = (groupTime + itemTime);
+                else
+                    resultDict.Add(gId, itemTime);
+            }
+
+            return resultDict;
         }
         /// <summary>
         /// Metoda zajistí, že daný Root bude Collapsed, pokud by obsahoval některé z již viditelných Childs.
@@ -795,105 +864,143 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Metoda vrátí true, pokud daný řádek má být dostupný jako Child řádek v daném čase
         /// </summary>
-        /// <param name="parentItemDict">Prvky grafu v řádku Parent v daném čase, může být null</param>
-        /// <param name="childRow"></param>
-        /// <param name="childByTime"></param>
-        /// <param name="timeRange"></param>
+        /// <param name="parentDataDict">Prvky grafu v řádku Parent v daném čase, může být null</param>
+        /// <param name="childRow">Potenciální child řádek, který testujeme zda bude Child řádkem určitého Parenta</param>
+        /// <param name="searchInfo">Režim vztahů, určuje parametry hledání</param>
+        /// <param name="idType"></param>
+        /// <param name="timeFrame"></param>
         /// <returns></returns>
-        protected bool PrepareCurrentChildRowsFilter(Dictionary<GId, TimeRange> parentItemDict, Row childRow, bool childByTime, TimeRange timeRange)
+        protected bool PrepareCurrentChildRowsFilter(Dictionary<GId, TimeRange> parentDataDict, Row childRow, SearchChildInfo searchInfo, DataGraphItem.IdType idType, TimeRange timeFrame)
         {
-            if (!childByTime) return true;
-            if (parentItemDict == null || parentItemDict.Count == 0 || timeRange == null) return false;
+            if (searchInfo.IsStatic) return true;
+            if (parentDataDict == null || parentDataDict.Count == 0 || timeFrame == null) return false;
 
-            // Najdeme prvky grafu v řádku Child v zadané době:
-            Dictionary<GId, TimeRange> childItemDict = this.PrepareCurrentChildGetItems(childRow, childByTime, timeRange);
-            if (childItemDict == null || childItemDict.Count == 0) return false;
+            // Najdeme prvky grafu v řádku Child v zadané době (anebo celý řádek Child, podle idType):
+            Dictionary<GId, TimeRange> childDataDict = this.PrepareCurrentRowGetItems(childRow, searchInfo, idType, timeFrame);
+            if (childDataDict == null || childDataDict.Count == 0) return false;
 
             // Enumerovat budeme skrz kratší kolekci:
-            bool shortIsParent = (parentItemDict.Count < childItemDict.Count);
-            var shortDict = (shortIsParent ? parentItemDict : childItemDict);
-            var longDict = (!shortIsParent ? parentItemDict : childItemDict);
+            bool shortIsParent = (parentDataDict.Count < childDataDict.Count);
+            var shortDict = (shortIsParent ? parentDataDict : childDataDict);
+            var longDict = (!shortIsParent ? parentDataDict : childDataDict);
+
+            // Budeme testovat časový průsečík?
+            bool testIntersect = searchInfo.IsParentChildIntersectTimeOnly;
 
             // A pokud najdeme alespoň jeden, který má stejný klíč a mají společný čas, pak vrátíme true:
             foreach (var shortItem in shortDict)
             {
                 GId key = shortItem.Key;
                 TimeRange longTime;
-                if (longDict.TryGetValue(key, out longTime) && longTime.HasIntersect(shortItem.Value))
+                if (longDict.TryGetValue(key, out longTime) && (!testIntersect || (testIntersect && longTime.HasIntersect(shortItem.Value))))
                     return true;
             }
 
             return false;
         }
         /// <summary>
-        /// Metoda najde prvky grafu daného řádku v daném období a vrátí jejich index.
-        /// Hledá jen ty prvky, které mají zadaný identifikátor skupiny Group.
-        /// </summary>
-        /// <param name="row"></param>
-        /// <param name="childByTime"></param>
-        /// <param name="timeRange"></param>
-        /// <returns></returns>
-        protected Dictionary<GId, TimeRange> PrepareCurrentChildGetItems(Row row, bool childByTime, TimeRange timeRange)
-        {
-            if (!childByTime || row == null || timeRange == null) return null;
-
-            GTimeGraph graph;
-            if (!this.TimeGraphDict.TryGetValue(row.RecordGId, out graph)) return null;
-
-            Dictionary<GId, TimeRange> groupDict = new Dictionary<GId, TimeRange>();
-            foreach (ITimeGraphItem iItem in graph.GraphItems)
-            {
-                DataGraphItem gItem = (iItem as DataGraphItem);
-                if (gItem == null) continue;
-                GId groupGId = gItem.GroupGId;
-                if (groupGId == null || groupGId.IsEmpty) continue;
-                TimeRange itemTime = gItem.Time;
-                if (!timeRange.HasIntersect(itemTime)) continue;
-
-                TimeRange groupTime;
-                if (groupDict.TryGetValue(groupGId, out groupTime))
-                    groupDict[groupGId] = (groupTime + itemTime);
-                else
-                    groupDict.Add(groupGId, itemTime);
-            }
-
-            return groupDict;
-        }
-        /// <summary>
         /// Dictionary, kde Key = klíč Parent řádků a Value = seznam všech potenciálních Child řádků
         /// </summary>
         protected Dictionary<GuiId, List<Row>> TreeNodeChildDict { get; private set; }
         /// <summary>
-        /// Režim pro vyhodnocení Child řádků v této tabulce.
-        /// Pochází z <see cref="GuiGridProperties.ChildRowsEvaluate"/>.
-        /// </summary>
-        protected ChildRowsEvaluateMode ChildRowsEvaluate { get { return this._ChildRowsEvaluate; } set { this._SetChildRowsEvaluate(value); } }
-        /// <summary>
-        /// Vyhodnotí a uloží režim <see cref="ChildRowsEvaluate"/>
-        /// </summary>
-        /// <param name="mode"></param>
-        private void _SetChildRowsEvaluate(ChildRowsEvaluateMode mode)
-        {
-            this.ChildRowsIsStatic = (mode == ChildRowsEvaluateMode.Static);
-            this.ChildRowsIsTimeDependent = ((mode & ChildRowsEvaluateMode.VisibleTimeOnly) != 0);
-            this._ChildRowsEvaluate = mode;
-        }
-        /// <summary>
-        /// true pokud vztah Parent - Child je pevně daný, statický, a nezmění se ani změnou času, ani změnou obsahuj grafů
-        /// </summary>
-        protected bool ChildRowsIsStatic { get; private set; }
-        /// <summary>
-        /// true pokud vztah Parent - Child je závislý na zobrazeném čase = po každé změně časové osy je třeba vztah znovu vyhodnotit
-        /// </summary>
-        protected bool ChildRowsIsTimeDependent { get; private set; }
-        /// <summary>
-        /// Hodnota režimu <see cref="ChildRowsEvaluate"/>
-        /// </summary>
-        private ChildRowsEvaluateMode _ChildRowsEvaluate;
-        /// <summary>
         /// Posledně platná hodnota času při detekci v metodě <see cref="PrepareCurrentChildRows(TimeRange, bool)"/>
         /// </summary>
         private TimeRange _ChildRowsLastTimeRange;
+        #region Režim hledání Childs pro Parent - režim, analýza atd.
+        /// <summary>
+        /// Režim pro vyhodnocení Child řádků v této tabulce.
+        /// Pochází z <see cref="GuiGridProperties.ChildRowsEvaluate"/>.
+        /// </summary>
+        public GuiChildRowsEvaluateMode ChildRowsEvaluate
+        {
+            get { return this.CurrentSearchChildInfo.Mode; }
+            protected set { this._CurrentSearchChildInfo = SearchChildInfo.CreateForMode(value); }
+        }
+        /// <summary>
+        /// Analyzovaný režim <see cref="GuiChildRowsEvaluateMode"/>.
+        /// Property je autoinicializační, výchozí hodnota je <see cref="SearchChildInfo.Static"/>.
+        /// </summary>
+        protected SearchChildInfo CurrentSearchChildInfo
+        {
+            get { if (this._CurrentSearchChildInfo == null) this._CurrentSearchChildInfo = SearchChildInfo.Static; return this._CurrentSearchChildInfo; }
+        }
+        /// <summary>
+        /// Proměnná pro <see cref="CurrentSearchChildInfo"/>
+        /// </summary>
+        private SearchChildInfo _CurrentSearchChildInfo;
+        /// <summary>
+        /// Třída obsahující zpracované informace z <see cref="GuiChildRowsEvaluateMode"/>
+        /// </summary>
+        protected class SearchChildInfo
+        {
+            /// <summary>
+            /// Vrací new instanci pro daný režim
+            /// </summary>
+            /// <param name="mode"></param>
+            /// <returns></returns>
+            public static SearchChildInfo CreateForMode(GuiChildRowsEvaluateMode? mode)
+            {
+                SearchChildInfo info = new SearchChildInfo();
+                if (mode.HasValue && mode.Value != GuiChildRowsEvaluateMode.Static)
+                {
+                    GuiChildRowsEvaluateMode m = mode.Value;
+                    info.Mode = m;
+                    info.IsStatic = false;
+                    info.ParentIdType = (m.HasFlag(GuiChildRowsEvaluateMode.OnParentItem) ? DataGraphItem.IdType.Item :
+                                        (m.HasFlag(GuiChildRowsEvaluateMode.OnParentGroup) ? DataGraphItem.IdType.Group :
+                                        (m.HasFlag(GuiChildRowsEvaluateMode.OnParentData) ? DataGraphItem.IdType.Data :
+                                        (m.HasFlag(GuiChildRowsEvaluateMode.OnParentRow) ? DataGraphItem.IdType.Row : DataGraphItem.IdType.None))));
+                    info.ChildIdType =  (m.HasFlag(GuiChildRowsEvaluateMode.ToChildItem) ? DataGraphItem.IdType.Item :
+                                        (m.HasFlag(GuiChildRowsEvaluateMode.ToChildGroup) ? DataGraphItem.IdType.Group :
+                                        (m.HasFlag(GuiChildRowsEvaluateMode.ToChildData) ? DataGraphItem.IdType.Data :
+                                        (m.HasFlag(GuiChildRowsEvaluateMode.ToChildRow) ? DataGraphItem.IdType.Row : DataGraphItem.IdType.None))));
+                    info.IsVisibleTimeOnly = m.HasFlag(GuiChildRowsEvaluateMode.VisibleTimeOnly);
+                    info.IsParentChildIntersectTimeOnly = m.HasFlag(GuiChildRowsEvaluateMode.ParentChildIntersectTimeOnly);
+                }
+                return info;
+            }
+            /// <summary>
+            /// Obsahuje new instanci definující statickou vazbu
+            /// </summary>
+            public static SearchChildInfo Static { get { return new SearchChildInfo(); } }
+            /// <summary>
+            /// Privátní konstruktor
+            /// </summary>
+            private SearchChildInfo()
+            {
+                this.Mode = GuiChildRowsEvaluateMode.Static;
+                this.IsStatic = true;
+                this.ParentIdType = DataGraphItem.IdType.None;
+                this.ChildIdType = DataGraphItem.IdType.None;
+                this.IsVisibleTimeOnly = false;
+                this.IsParentChildIntersectTimeOnly = false;
+            }
+            /// <summary>
+            /// Režim
+            /// </summary>
+            public GuiChildRowsEvaluateMode Mode { get; private set; }
+            /// <summary>
+            /// true pokud vztah je čistě statický
+            /// </summary>
+            public bool IsStatic { get; private set; }
+            /// <summary>
+            /// Druh identifikátoru v Parent prvku
+            /// </summary>
+            public DataGraphItem.IdType ParentIdType { get; private set; }
+            /// <summary>
+            /// Druh identifikátoru v Child prvku
+            /// </summary>
+            public DataGraphItem.IdType ChildIdType { get; private set; }
+            /// <summary>
+            /// true = zpracovat pouze viditelné období / false = brát všechno
+            /// </summary>
+            public bool IsVisibleTimeOnly { get; private set; }
+            /// <summary>
+            /// true = spárovat prvky pouze pokud mají časový průsečík / false = brát všechno
+            /// </summary>
+            public bool IsParentChildIntersectTimeOnly { get; private set; }
+        }
+        #endregion
         #endregion
         #region Podpora pro mezitabulkové interakce (kdy akce v jedné tabulce vyvolá jinou akci v jiné tabulce)
         /// <summary>
@@ -2772,6 +2879,50 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Časový interval tohoto prvku
         /// </summary>
         public TimeRange Time { get { return this._Time; } set { this._Time = value; } }
+        #endregion
+        #region Variabilní čtení identifikátoru
+        /// <summary>
+        /// Vrátí identifikátor daného typu
+        /// </summary>
+        /// <param name="idType"></param>
+        /// <returns></returns>
+        public GId GetGId(IdType idType)
+        {
+            switch (idType)
+            {
+                case IdType.Item: return this.ItemGId;
+                case IdType.Group: return this.GroupGId;
+                case IdType.Data: return this.DataGId;
+                case IdType.Row: return this.RowGId;
+            }
+            return null;
+        }
+        /// <summary>
+        /// Druh identifikátoru
+        /// </summary>
+        public enum IdType
+        {
+            /// <summary>
+            /// Žádný
+            /// </summary>
+            None = 0,
+            /// <summary>
+            /// ItemId
+            /// </summary>
+            Item,
+            /// <summary>
+            /// GroupId
+            /// </summary>
+            Group,
+            /// <summary>
+            /// DataId
+            /// </summary>
+            Data,
+            /// <summary>
+            /// RowId
+            /// </summary>
+            Row
+        }
         #endregion
         #region Podpora pro kreslení a interaktivitu
         /// <summary>
