@@ -802,7 +802,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             gridCenter.GridProperties.TagFilterRoundItemPercent = 50;
             gridCenter.GridProperties.TagFilterEnabled = true;
             gridCenter.GridProperties.TagFilterBackColor = Color.FromArgb(64, 128, 64);
-            gridCenter.GridProperties.ChildRowsEvaluateByTime = true;
+            gridCenter.GridProperties.ChildRowsEvaluate = true;
 
             gridCenter.GridProperties.AddInteraction(new GuiGridInteraction()
             {
