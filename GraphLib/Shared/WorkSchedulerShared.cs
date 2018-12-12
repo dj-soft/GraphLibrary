@@ -602,12 +602,15 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <summary>
         /// Klíč řádku Parent.
         /// určuje řádek, pod kterým bude jako Sub-Node zobrazen řádek <see cref="Child"/>.
-        /// Za určitých okolností může být null, a to pokud je definován Grid jako Dynamický strom, kde se prvky Childs vyhodnocují dynamicky podle zobrazeného času:
+        /// Za určitých okolností může být <see cref="Parent"/> = null, a to pokud je definován Grid jako Dynamický strom, 
+        /// kde se prvky Childs vyhodnocují dynamicky podle zobrazeného času. 
+        /// Viz <see cref="GuiGridProperties.ChildRowsEvaluate"/>, a hodnoty v <see cref="GuiChildRowsEvaluateMode"/>.
         /// <see cref="GuiGridProperties.ChildRowsEvaluate"/>
         /// </summary>
         public GuiId Parent { get; set; }
         /// <summary>
-        /// Klíč řádku Child
+        /// Klíč řádku Child. Je logicky povinný.
+        /// Pokud nebude vyplněn, pak tento záznam <see cref="GuiParentChild"/> bude při zpracování ignorován.
         /// </summary>
         public GuiId Child { get; set; }
     }
