@@ -2034,6 +2034,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private GTimeGraphItem _SearchGraphItemsForLink(ITimeGraphItem iGraphItem, GGraphControlPosition position)
         {
             if (iGraphItem == null) return null;
+            if (iGraphItem.GControl == null)
+            {   // Prvek grafu ještě nemá vytvořen GControl = jde o řádek, který ještě nebyl kreslen.
+                // Požádáme tedy jeho graf, aby si prověřil platnost svých dat:
+                GTimeGraph graph = iGraphItem.OwnerGraph as GTimeGraph;
+                if (graph == null) return null;
+                graph.CheckValid();
+                if (iGraphItem.GControl == null) return null;
+            }
             switch (iGraphItem.GControl.Position)
             {
                 case GGraphControlPosition.Group:

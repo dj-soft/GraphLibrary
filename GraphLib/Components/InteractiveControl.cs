@@ -395,18 +395,13 @@ namespace Asol.Tools.WorkScheduler.Components
             // V takové situaci ale nechceme nic dělat:
             if (this.Disposing || this.IsDisposed) return;
 
-            // A i v ostatních případech je na místě jistá opatrnost:
-            try
-            {
-                this._OnMouseEnter(new EventArgs());
+            this._OnMouseEnter(new EventArgs());
 
-                MouseButtons mouseButtons = Control.MouseButtons;        // Stisknutá tlačítka myši
-                Point mousePoint = Control.MousePosition;                // Souřadnice myši v koordinátech Screenu
-                mousePoint = this.PointToClient(mousePoint);             //  -""- v koordinátech Controlu
-                MouseEventArgs mouseEventArgs = new MouseEventArgs(mouseButtons, 0, mousePoint.X, mousePoint.Y, 0);
-                this._OnMouseMove(mouseEventArgs);
-            }
-            catch { }
+            MouseButtons mouseButtons = Control.MouseButtons;        // Stisknutá tlačítka myši
+            Point mousePoint = Control.MousePosition;                // Souřadnice myši v koordinátech Screenu
+            mousePoint = this.PointToClient(mousePoint);             //  -""- v koordinátech Controlu
+            MouseEventArgs mouseEventArgs = new MouseEventArgs(mouseButtons, 0, mousePoint.X, mousePoint.Y, 0);
+            this._OnMouseMove(mouseEventArgs);
         }
         private void _OnMouseEnter(EventArgs e)
         {
@@ -429,34 +424,27 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         protected override void OnMouseMove(MouseEventArgs e)
         {
-            this.InteractiveAction(GInteractiveChangeState.MouseOver, () => this._OnMouseMove(e), () => base.OnMouseMove(e));
+            this.InteractiveAction(GInteractiveChangeState.MouseOver, () => this._OnMouseMove(e), () => base.OnMouseMove(e), () => this._InteractiveDrawRun());
         }
         private void _OnMouseMove(MouseEventArgs e)
         {
             using (ITraceScope scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "MouseMove", ""))
             {
-                try
-                {
-                    this._InteractiveDrawInit(e);
-                    if (!this._MouseDownAbsolutePoint.HasValue && (e.Button == System.Windows.Forms.MouseButtons.Left || e.Button == System.Windows.Forms.MouseButtons.Right))
-                    {   // Nějak jsme zmeškali event MouseDown, a nyní máme event MouseMove bez připravených dat z MouseDown:
-                        this._MouseFell(e);
-                        scope.AddItem("Missed: MouseFell!");
-                    }
-
-                    if (!this._MouseDownAbsolutePoint.HasValue)
-                    {   // Myš se pohybuje nad Controlem, ale žádný knoflík myši není zmáčknutý:
-                        this._MouseOver(e);
-                        scope.Result = "MouseOver";
-                    }
-                    else
-                    {   // Myš má zmáčknutý nějaký čudlík, a pohybuje se => tam je možností vícero:
-                        this._OnMouseDrag(e, scope);
-                    }
+                this._InteractiveDrawInit(e);
+                if (!this._MouseDownAbsolutePoint.HasValue && (e.Button == System.Windows.Forms.MouseButtons.Left || e.Button == System.Windows.Forms.MouseButtons.Right))
+                {   // Nějak jsme zmeškali event MouseDown, a nyní máme event MouseMove bez připravených dat z MouseDown:
+                    this._MouseFell(e);
+                    scope.AddItem("Missed: MouseFell!");
                 }
-                finally
-                {
-                    this._InteractiveDrawRun();
+
+                if (!this._MouseDownAbsolutePoint.HasValue)
+                {   // Myš se pohybuje nad Controlem, ale žádný knoflík myši není zmáčknutý:
+                    this._MouseOver(e);
+                    scope.Result = "MouseOver";
+                }
+                else
+                {   // Myš má zmáčknutý nějaký čudlík, a pohybuje se => tam je možností vícero:
+                    this._OnMouseDrag(e, scope);
                 }
             }
         }
@@ -575,21 +563,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         protected override void OnMouseDown(MouseEventArgs e)
         {
-            this.InteractiveAction(GInteractiveChangeState.LeftDown, () => this._OnMouseDown(e), () => base.OnMouseDown(e));
+            this.InteractiveAction(GInteractiveChangeState.LeftDown, () => this._OnMouseDown(e), () => base.OnMouseDown(e), () => this._InteractiveDrawRun());
         }
         private void _OnMouseDown(MouseEventArgs e)
         {
             using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "MouseDown", ""))
             {
-                try
-                {
-                    this._InteractiveDrawInit(e);
-                    this._MouseFell(e);
-                }
-                finally
-                {
-                    this._InteractiveDrawRun();
-                }
+                this._InteractiveDrawInit(e);
+                this._MouseFell(e);
             }
         }
         /// <summary>
@@ -598,24 +579,17 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         protected override void OnMouseUp(MouseEventArgs e)
         {
-            this.InteractiveAction(GInteractiveChangeState.LeftUp, () => this._OnMouseUp(e), () => base.OnMouseUp(e), this._MouseDownReset);
+            this.InteractiveAction(GInteractiveChangeState.LeftUp, () => this._OnMouseUp(e), () => base.OnMouseUp(e), () => { this._MouseDownReset(); this._InteractiveDrawRun(); });
         }
         private void _OnMouseUp(MouseEventArgs e)
         {
             using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "MouseUp", ""))
             {
-                try
-                {
-                    this._InteractiveDrawInit(e);
-                    if (this._CurrentMouseDragCanceled) { }
-                    else if (this._MouseDragState == MouseMoveDragState.DragMove) this._MouseDragMoveDone(e);
-                    else if (this._MouseDragState == MouseMoveDragState.DragFrame) this._MouseDragFrameDone(e);
-                    else this._MouseRaise(e);
-                }
-                finally
-                {
-                    this._InteractiveDrawRun();
-                }
+                this._InteractiveDrawInit(e);
+                if (this._CurrentMouseDragCanceled) { }
+                else if (this._MouseDragState == MouseMoveDragState.DragMove) this._MouseDragMoveDone(e);
+                else if (this._MouseDragState == MouseMoveDragState.DragFrame) this._MouseDragFrameDone(e);
+                else this._MouseRaise(e);
             }
         }
         /// <summary>
@@ -624,21 +598,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         protected override void OnMouseWheel(MouseEventArgs e)
         {
-            this.InteractiveAction(GInteractiveChangeState.WheelUp, () => this._OnMouseWheel(e), () => base.OnMouseWheel(e));
+            this.InteractiveAction(GInteractiveChangeState.WheelUp, () => this._OnMouseWheel(e), () => base.OnMouseWheel(e), () => this._InteractiveDrawRun());
         }
         private void _OnMouseWheel(MouseEventArgs e)
         {
             using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "MouseWheel", ""))
             {
-                try
-                {
-                    this._InteractiveDrawInit(e);
-                    this._MouseOneWheel(e);
-                }
-                finally
-                {
-                    this._InteractiveDrawRun();
-                }
+                this._InteractiveDrawInit(e);
+                this._MouseOneWheel(e);
             }
         }
         /// <summary>
@@ -647,30 +614,23 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         protected override void OnMouseLeave(EventArgs e)
         {
-            this.InteractiveAction(GInteractiveChangeState.MouseLeave, () => this._OnMouseLeave(e), () => base.OnMouseLeave(e));
+            this.InteractiveAction(GInteractiveChangeState.MouseLeave, () => this._OnMouseLeave(e), () => base.OnMouseLeave(e), () => this._InteractiveDrawRun());
         }
         /// <summary>
         /// Zajistí provedení téže akce, jako by myš opustila control
         /// </summary>
         private void _OnMouseLeave()
         {
-            this._OnMouseLeave(new EventArgs());
+            EventArgs e = new EventArgs();
+            this.InteractiveAction(GInteractiveChangeState.MouseLeave, () => this._OnMouseLeave(e), null, () => this._InteractiveDrawRun());
         }
         private void _OnMouseLeave(EventArgs e)
         {
             using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "MouseLeave", ""))
             {
-                try
-                {
-                    this._InteractiveDrawInit(null);
-                    this._MouseOver(null);
-                    this._MouseAllReset();
-                    this._InteractiveDrawRun();
-                }
-                finally
-                {
-                    this._InteractiveDrawRun();
-                }
+                this._InteractiveDrawInit(null);
+                this._MouseOver(null);
+                this._MouseAllReset();
             }
         }
         #endregion

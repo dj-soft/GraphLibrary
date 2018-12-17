@@ -31,8 +31,9 @@ namespace Asol.Tools.WorkScheduler.Components
             this._IsCollapsed = false;
 
             this._TabHeader = new GTabHeader(this) { Position = RectangleSide.Top };
-            this._TabItemCollapse = this._TabHeader.AddHeader(TabItemKeyCollapse, "", Components.IconStandard.GoTop, tabOrder: 99999);
-            this._TabItemCollapse.Is.Visible = this._TabItemCollapseIsAvailable;
+            this._TabItemCollapse = this._TabHeader.AddCollapseHeader();
+            this._TabItemCollapse.Is.GetVisible = this._GetCollapseIsVisible;
+            this._TabItemCollapse.Is.SetVisible = this._SetCollapseIsVisible;
             this._TabHeader.ActivePageChanged += _TabHeader_ActiveItemChanged;
             this._TabOrderData = 1;
 
@@ -58,7 +59,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             // Změna záložky:
             GTabPage newPage = e.NewValue;
-            bool isCollapseNew = (newPage != null && newPage.Key == TabItemKeyCollapse);
+            bool isCollapseNew = (newPage != null && newPage.IsCollapse);
             if (!isCollapseNew)
             {
                 this._TabItemLastActive = newPage;
@@ -84,6 +85,19 @@ namespace Asol.Tools.WorkScheduler.Components
         /// true pokud má být zobrazen TabItem pro Collapse
         /// </summary>
         private bool _TabItemCollapseIsAvailable { get { return this._TabHeaderMode.HasFlag(ShowTabHeaderMode.CollapseItem); } }
+        /// <summary>
+        /// Pomocí této metody si prvek <see cref="GTabPage"/> reprezentující záložku Collapse (<see cref="_TabItemCollapse"/>) zjišťuje svoji viditelnost.
+        /// Získává ji z <see cref="_TabItemCollapseIsAvailable"/>.
+        /// </summary>
+        /// <param name="isVisible"></param>
+        /// <returns></returns>
+        private bool _GetCollapseIsVisible(bool isVisible) { return this._TabItemCollapseIsAvailable; }
+        /// <summary>
+        /// Prvek <see cref="GTabPage"/> reprezentující záložku Collapse (<see cref="_TabItemCollapse"/>) zde nastavuje svoji viditelnost.
+        /// Reálně nedělá nic.
+        /// </summary>
+        /// <param name="isVisible"></param>
+        private void _SetCollapseIsVisible(bool isVisible) { }
         /// <summary>
         /// Záložka (TabItem), která byla naposledy aktivní před provedením Collapse.
         /// Pokud bude stav Collapse zrušen prostým nastavením IsCollapsed = false, pak algoritmus provede aktivaci této záložky.
@@ -119,7 +133,7 @@ namespace Asol.Tools.WorkScheduler.Components
             if (item == null) return null;
             item.Parent = this;
             bool setItemAsActive = (this._TabHeader.PageCount <= 1);
-            GTabPage tabItem = this._TabHeader.AddHeader(TabItemKeyControl, text, image, linkItem: item);
+            GTabPage tabItem = this._TabHeader.AddHeader(null, text, image, linkItem: item);
             tabItem.TabOrder = this._TabOrderData++;
             if (toolTip != null)
                 tabItem.ToolTipText = toolTip;
@@ -144,15 +158,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         /// <param name="item"></param>
         protected new void AddItem(IInteractiveItem item) { }
-
-        /// <summary>
-        /// Key název prvku TabItem, který obsahuje uživatelský Control
-        /// </summary>
-        private const string TabItemKeyControl = "ControlItem";
-        /// <summary>
-        /// Key název prvku TabItem, který provádí Collapse
-        /// </summary>
-        private const string TabItemKeyCollapse = "CollapseItem";
         #endregion
         #region Layout
         /// <summary>
@@ -173,16 +178,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected void PrepareLayout()
         {
-            ShowTabHeaderMode tabHeaderMode = this.TabHeaderMode;
-            int headerHeight = this.HeaderHeight;
-            bool isHeaderVisible = ((headerHeight > 0) && (tabHeaderMode != ShowTabHeaderMode.NoTabHeader));
-            if (isHeaderVisible)
-            {   // Záhlaví by mohlo být zobrazované (má danou výšku, a režim není "Zakázané"):
-                // Nyní přihlédneme k počtu datových záložek:
-                int tabDataCount = this._TabHeader.Pages.Count(t => (t.Key == TabItemKeyControl));
-                if (tabHeaderMode == ShowTabHeaderMode.Default && tabDataCount == 0)
-                    isHeaderVisible = false;
-            }
+            bool isHeaderVisible = this.IsCurrentVisibleTabHeader;
 
             Rectangle oldBounds = this.Bounds;
             Size oldSize = this.ClientSize;
@@ -190,7 +186,7 @@ namespace Asol.Tools.WorkScheduler.Components
             Rectangle headerBounds = Rectangle.Empty;
             bool isDataVisible = !this.IsCollapsed;
             Rectangle dataBounds = Rectangle.Empty;
-            int headerSize = (isHeaderVisible ? headerHeight : 0);
+            int headerSize = (isHeaderVisible ? this.HeaderHeight : 0);
             int dataSize = 0;
             int controlSize = 0;
             switch (this._TabHeader.Position)
@@ -232,7 +228,24 @@ namespace Asol.Tools.WorkScheduler.Components
             // Zapamatujeme si výšku celého containeru za situace, kdy není Collapsed:
             if (isDataVisible)
                 this._TabContainerHeight = controlSize;
-
+        }
+        /// <summary>
+        /// Obsahuje true, pokud aktuálně má být vidět záhlaví Tabů.
+        /// Reaguje na režim <see cref="TabHeaderMode"/>, na zadanou výšku záhlaví <see cref="HeaderHeight"/>, 
+        /// a na počet datových záložek <see cref="TabCount"/>.
+        /// </summary>
+        protected bool IsCurrentVisibleTabHeader
+        {
+            get
+            {
+                ShowTabHeaderMode tabHeaderMode = this.TabHeaderMode;
+                if (this.HeaderHeight <= 0 || tabHeaderMode.HasFlag(ShowTabHeaderMode.NoTabHeader)) return false;      // Je nastaveno "Nezobrazovat"
+                int tabCount = this.TabCount;
+                if (tabCount == 0) return false;                                         // Pro počet záhlaví 0 se Header nezobrazuje nikdy
+                if (tabHeaderMode.HasFlag(ShowTabHeaderMode.Always)) return true;        // V režimu Always se Header zobrazuje vždy
+                if (tabCount == 1 && tabHeaderMode == ShowTabHeaderMode.Default) return false;     // Režim je Default (bez požadavku na CollapseItem) a počet = 1 => nezobrazovat záhlaví
+                return true;
+            }
         }
         /// <summary>
         /// Zajistí platnost dat layoutu
@@ -278,10 +291,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Pole všech položek, v jejich nativním pořadí (=tak jak se přidávaly).
         /// </summary>
-        public GTabPage[] TabItems { get { return this._TabHeader.Pages.Where(t => (t.Key != TabItemKeyCollapse)).ToArray(); } }
+        /// <remarks>V těchto záložkách není uvedena záložka "Collapse".</remarks>
+        public GTabPage[] TabItems { get { return this._TabHeader.Pages.Where(t => (!t.IsCollapse)).ToArray(); } }
         /// <summary>
         /// Počet TAB prvků
         /// </summary>
+        /// <remarks>V těchto záložkách není uvedena záložka "Collapse".</remarks>
         public int TabCount { get { return this.TabItems.Length; } }
         /// <summary>
         /// Režim zobrazování záhlaví
@@ -381,7 +396,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 GTabPage tabItem = ((newValue) ? this._TabItemCollapse : this._TabItemLastActive);
                 if (!newValue && tabItem == null)
                     // Pokud je požadováno IsCollapsed = false (tzn. zobrazit data), ale v _TabItemLastActive je null, pak budeme aktivovat první záložku s daty:
-                    tabItem = this._TabHeader.Pages.FirstOrDefault(t => t.Key == TabItemKeyControl);
+                    tabItem = this._TabHeader.Pages.FirstOrDefault(t => !t.IsCollapse);
 
                 // Toto setování zajistí aktivaci odpovídající záložky tak, jako by na ni klikl uživatel, 
                 // poté this._TabHeader vyvolá event this._TabHeader.ActiveItemChanged, a tedy jeho zdejší handler this._TabHeader_ActiveItemChanged,
@@ -651,7 +666,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         /// <summary>
         /// Font obecně použitý pro všechny položky.
-        /// Pokud je null (což je default), pak se použije <see cref="FontInfo.Caption"/>.
+        /// Pokud je null (což je default), pak se použije <see cref="FontInfo.CaptionBoldBig"/>.
         /// </summary>
         public FontInfo Font { get { return this._Font; } set { this._Font = value; this.InvalidateChildItems(); } } private FontInfo _Font;
         /// <summary>
@@ -670,7 +685,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         public GTabPage AddHeader(Localizable.TextLoc text, Image image = null, int tabOrder = 0, IInteractiveItem linkItem = null)
         {
-            return this._AddHeader(null, text, image, tabOrder, linkItem);
+            return this._AddHeader(false, null, text, image, tabOrder, linkItem);
         }
         /// <summary>
         /// Přidá další záložku
@@ -683,20 +698,30 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         public GTabPage AddHeader(string key, Localizable.TextLoc text, Image image = null, int tabOrder = 0, IInteractiveItem linkItem = null)
         {
-            return this._AddHeader(key, text, image, tabOrder, linkItem);
+            return this._AddHeader(false, key, text, image, tabOrder, linkItem);
+        }
+        /// <summary>
+        /// Přidá záložku pro button Collapse
+        /// </summary>
+        /// <returns></returns>
+        public GTabPage AddCollapseHeader()
+        {
+            // TabItemKeyCollapse, "", Components.IconStandard.GoTop, tabOrder: 99999
+            return this._AddHeader(true, null, "", Components.IconStandard.GoTop, 99999, null);
         }
         /// <summary>
         /// Přidá další záložku
         /// </summary>
+        /// <param name="isCollapse"></param>
         /// <param name="key"></param>
         /// <param name="text"></param>
         /// <param name="image"></param>
         /// <param name="tabOrder"></param>
         /// <param name="linkItem"></param>
         /// <returns></returns>
-        private GTabPage _AddHeader(string key, Localizable.TextLoc text, Image image, int tabOrder, IInteractiveItem linkItem)
+        private GTabPage _AddHeader(bool isCollapse, string key, Localizable.TextLoc text, Image image, int tabOrder, IInteractiveItem linkItem)
         {
-            GTabPage tabPage = new GTabPage(this, key, text, image, linkItem, tabOrder);
+            GTabPage tabPage = new GTabPage(this, isCollapse, key, text, image, linkItem, tabOrder);
             this._PageList.Add(tabPage);
             tabPage.TabPagePaintBackGround += _TabHeaderItemPaintBackGround;
             if (this.ActivePage == null)
@@ -738,7 +763,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Jako parametr sender je předán objekt konkrétního záhlaví <see cref="GTabPage"/>.
         /// </summary>
         public event GUserDrawHandler TabPagePaintBackGround;
-
         /// <summary>
         /// Vyvolá háček OnActiveItemChanged a event ActiveItemChanged
         /// </summary>
@@ -830,7 +854,8 @@ namespace Asol.Tools.WorkScheduler.Components
                 childList.Add(item);
             }
 
-            // Poté přidám prvky vpravo od aktivního prvku, počínaje posledním, a konče právě tím aktivním = tak se dostane na poslední místo v childList:
+            // Poté přidám prvky ležící napravo od aktivního prvku, počínaje posledním, a konče právě tím aktivním 
+            //  = tak se dostane na poslední místo = tj. na vrcholek v seznamu childList:
             if (activeIndex >= 0)
             {
                 for (int i = count - 1; i >= activeIndex; i--)
@@ -993,15 +1018,17 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Konstruktor
         /// </summary>
         /// <param name="tabHeader"></param>
+        /// <param name="isCollapse"></param>
         /// <param name="key"></param>
         /// <param name="text"></param>
         /// <param name="image"></param>
         /// <param name="dataControl"></param>
         /// <param name="tabOrder"></param>
-        internal GTabPage(GTabHeader tabHeader, string key, Localizable.TextLoc text, Image image, IInteractiveItem dataControl, int tabOrder)
+        internal GTabPage(GTabHeader tabHeader, bool isCollapse, string key, Localizable.TextLoc text, Image image, IInteractiveItem dataControl, int tabOrder)
         {
             this.Parent = tabHeader;
             this.TabHeader = tabHeader;
+            this._IsCollapse = isCollapse;
             this._Key = key;
             this._Text = text;
             this._Image = image;
@@ -1011,6 +1038,14 @@ namespace Asol.Tools.WorkScheduler.Components
             this.Is.SetVisible = this._SetVisible;
         }
         /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return "TabPage: " + (this.IsCollapse ? "[Collapse]" : (this.Text != null ? this.Text.Text : "{Null}")) + "; " + base.ToString();
+        }
+        /// <summary>
         /// Zajistí invalidaci obsahu v <see cref="TabHeader"/>
         /// </summary>
         protected void TabHeaderInvalidate() { ((ITabHeaderInternal)this.TabHeader).InvalidateChildItems(); }
@@ -1018,6 +1053,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Reference na vlastníka této záložky
         /// </summary>
         protected GTabHeader TabHeader { get; private set; }
+        /// <summary>
+        /// Příznak, že toto záhlaví reprezentuje tlačítko Collapse.
+        /// </summary>
+        public bool IsCollapse { get { return this._IsCollapse; } }
+        private bool _IsCollapse;
         /// <summary>
         /// Klíč headeru, zadaný při jeho vytváření.
         /// Jeho obsah a unikátnost je čistě na uživateli.
@@ -1088,25 +1128,25 @@ namespace Asol.Tools.WorkScheduler.Components
             int height = this.TabHeader.HeaderHeight;
             bool headerIsVertical = ((ITabHeaderInternal)this.TabHeader).HeaderIsVertical;
             bool headerIsReverseOrder = (this.TabHeader.Position == RectangleSide.Left);
-            Int32Range contentHeight = Int32Range.CreateFromCenterSize(height / 2, height - 6);     // Prostor pro vnitřní obsah ve směru výšky headeru
+            Int32Range contentHeight = Int32Range.CreateFromCenterSize(height / 2, height - 6);         // Prostor pro vnitřní obsah ve směru výšky headeru
             Int32Range textLengthRange = GetLengthRangeText(contentHeight);
 
             int contentPosition = LengthBorder;    // Začátek následujícího prvku ve směru délky headeru
             if (!headerIsReverseOrder)
             {
-                PrepareBoundsImage(graphics, headerIsVertical, ref contentPosition, contentHeight);                // Ikonka
+                PrepareBoundsImage(graphics, headerIsVertical, ref contentPosition, contentHeight);     // Ikonka
                 PrepareBoundsText(graphics, headerIsVertical, ref contentPosition, contentHeight, textLengthRange);// Text
-                PrepareBoundsClose(graphics, headerIsVertical, ref contentPosition, contentHeight);                // Close button
+                PrepareBoundsClose(graphics, headerIsVertical, ref contentPosition, contentHeight);     // Close button
             }
             else
             {
-                PrepareBoundsClose(graphics, headerIsVertical, ref contentPosition, contentHeight);                // Close button
+                PrepareBoundsClose(graphics, headerIsVertical, ref contentPosition, contentHeight);     // Close button
                 PrepareBoundsText(graphics, headerIsVertical, ref contentPosition, contentHeight, textLengthRange);// Text
-                PrepareBoundsImage(graphics, headerIsVertical, ref contentPosition, contentHeight);                // Ikonka
+                PrepareBoundsImage(graphics, headerIsVertical, ref contentPosition, contentHeight);     // Ikonka
             }
             contentPosition += (LengthBorder - LengthSpace);
 
-            PrepareBoundsTotal(graphics, headerIsVertical, ref begin, contentPosition, height);     // Celkové rozměry
+            PrepareBoundsTotal(graphics, headerIsVertical, ref begin, contentPosition, height);         // Celkové rozměry
         }
         /// <summary>
         /// Metoda vypočte a vrátí rozsah délky (v pixelech) pro pole Text.
