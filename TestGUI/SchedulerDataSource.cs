@@ -51,7 +51,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this.CreateToolBar();
             this.CreateMainPage();
             this.CreateLeftPanel();
-            this.CreateCenterPanel();
+            this.CreateCenterPanelWorkplace();
+            this.CreateCenterPanelWorkers();
             this.CreateRightPanel();
             this.CreateContextFunctions();
 
@@ -793,16 +794,13 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <summary>
         /// Vygeneruje kompletní data do středního panelu = Pracoviště
         /// </summary>
-        protected void CreateCenterPanel()
+        protected void CreateCenterPanelWorkplace()
         {
-            GuiGrid gridCenter = new GuiGrid() { Name = "GridCenter", Title = "Pracoviště" };
+            GuiGrid gridCenterWorkplace = new GuiGrid() { Name = "GridCenter", Title = "Pracoviště" };
 
-            gridCenter.GridProperties.TagFilterItemHeight = 26;
-            gridCenter.GridProperties.TagFilterItemMaxCount = 60;
-            gridCenter.GridProperties.TagFilterRoundItemPercent = 50;
-            gridCenter.GridProperties.TagFilterEnabled = true;
-            gridCenter.GridProperties.TagFilterBackColor = Color.FromArgb(64, 128, 64);
-            gridCenter.GridProperties.ChildRowsEvaluate =
+            this.SetCenterGridProperties(gridCenterWorkplace, true, true, true, true);
+
+            gridCenterWorkplace.GridProperties.ChildRowsEvaluate =
                 // Child řádky k Parent řádkům navážeme dynamicky, podle viditelného časového okna:
                 GuiChildRowsEvaluateMode.VisibleTimeOnly |
                 // K identifikátoru GroupId z Parent řádku najdeme shodný GroupId v Child řádku 
@@ -811,7 +809,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 // A navíc ty dva prvky musí mít společný čas:
                 GuiChildRowsEvaluateMode.ParentChildIntersectTimeOnly;
 
-            gridCenter.GridProperties.AddInteraction(new GuiGridInteraction()
+            gridCenterWorkplace.GridProperties.AddInteraction(new GuiGridInteraction()
             {
                 Name = "InteractionFilterProductOrder",
                 SourceAction = (SourceActionType.TableRowActivatedOnly | SourceActionType.TableRowChecked),
@@ -825,55 +823,103 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 Conditions = "TlbApplyFilterMainToLeft"
             });
 
-            gridCenter.GraphProperties.AxisResizeMode = AxisResizeContentMode.ChangeScale;
-            gridCenter.GraphProperties.TimeAxisBackColor = Color.FromArgb(192, 224, 255);
-            gridCenter.GraphProperties.BottomMarginPixel = 2;
-            gridCenter.GraphProperties.GraphLineHeight = 20;
-            gridCenter.GraphProperties.GraphLinePartialHeight = 40;
-            gridCenter.GraphProperties.GraphPosition = DataGraphPositionType.InLastColumn;
-            gridCenter.GraphProperties.InteractiveChangeMode = AxisInteractiveChangeMode.Shift;
-            gridCenter.GraphProperties.LogarithmicGraphDrawOuterShadow = 0.15f;
-            gridCenter.GraphProperties.LogarithmicRatio = 0.60f;
-            gridCenter.GraphProperties.Opacity = 255;
-            gridCenter.GraphProperties.TableRowHeightMin = 22;
-            gridCenter.GraphProperties.TableRowHeightMax = 260;
-            gridCenter.GraphProperties.TimeAxisMode = TimeGraphTimeAxisMode.Standard;
-            gridCenter.GraphProperties.UpperSpaceLogical = 1f;
-            gridCenter.GraphProperties.LinkColorStandard = Color.LightGreen;
-            gridCenter.GraphProperties.LinkColorWarning = Color.Yellow;
-            gridCenter.GraphProperties.LinkColorError = Color.DarkRed;
-            gridCenter.GraphProperties.TimeAxisSegmentList = new List<GuiTimeAxisSegment>();
-            gridCenter.GraphProperties.TimeAxisSegmentList.AddRange(CreateHistory(this.TimeRangeTotal, Color.FromArgb(255, 192, 224)));
-            gridCenter.GraphProperties.TimeAxisSegmentList.AddRange(CreateWeekends(this.TimeRangeTotal, Color.FromArgb(255, 96, 32)));
-            gridCenter.GraphProperties.TimeAxisSegmentList.AddRange(CreateHolidays(this.TimeRangeTotal, Color.FromArgb(255, 32, 255)));
-
-
-            DataTable rowTable = WorkSchedulerSupport.CreateTable("RowsCenter", "cislo_subjektu int, reference_subjektu string, nazev_subjektu string, machines_count decimal");
-            gridCenter.Rows = new GuiTable() { Name = "GridCenter", DataTable = rowTable };
-            gridCenter.Rows.ColumnsExtendedInfo[0].ClassNumber = PlanUnitC.ClassNumber;
-            gridCenter.Rows.ColumnsExtendedInfo[0].BrowseColumnType = BrowseColumnType.SubjectNumber;
-            gridCenter.Rows.ColumnsExtendedInfo[1].PrepareDataColumn("Číslo", 85, true, null, true);
-            gridCenter.Rows.ColumnsExtendedInfo[2].PrepareDataColumn("Název", 200, true, null, true);
-            gridCenter.Rows.ColumnsExtendedInfo[3].PrepareDataColumn("Počet", 45, true, null, true);
-            gridCenter.Rows.RowTags = new GuiTagItems();
-
             // Data tabulky = Plánovací jednotky Pracoviště:
             foreach (PlanUnitC planUnitC in this.WorkplaceDict.Values)
-                this.AddPlanUnitCToGrid(gridCenter, planUnitC);
+                this.AddPlanUnitCToGrid(gridCenterWorkplace, planUnitC);
 
             foreach (PlanUnitC planUnitC in this.WorkerDict.Values)
-                this.AddPlanUnitCToGrid(gridCenter, planUnitC);
+                this.AddPlanUnitCToGrid(gridCenterWorkplace, planUnitC);
 
             // Vztahy prvků (Link):
             foreach (ProductOrder productOrder in this.ProductOrderDict.Values)
-                this.AddGraphLinkToGrid(gridCenter, productOrder);
+                this.AddGraphLinkToGrid(gridCenterWorkplace, productOrder);
 
             // Závislosti řádků (ParentChild):
             foreach (PlanUnitC planUnitC in this.WorkerDict.Values)
-                gridCenter.AddParentChild(new GuiParentChild() { Parent = null, Child = planUnitC.RecordGid });
+                gridCenterWorkplace.AddParentChild(new GuiParentChild() { Parent = null, Child = planUnitC.RecordGid });
 
-            this.GridCenter = gridCenter;
-            this.MainPage.MainPanel.Grids.Add(gridCenter);
+            this.GridCenterWorkplace = gridCenterWorkplace;
+            this.MainPage.MainPanel.Grids.Add(gridCenterWorkplace);
+        }
+        /// <summary>
+        /// Vygeneruje kompletní data do středního panelu = Pracoviště
+        /// </summary>
+        protected void CreateCenterPanelWorkers()
+        {
+            GuiGrid gridCenterWorkers = new GuiGrid() { Name = "GridCenterWorkers", Title = "Pracovníci" };
+
+            this.SetCenterGridProperties(gridCenterWorkers, true, true, true, true);
+
+            // Data tabulky = Plánovací jednotky Pracovníci:
+            foreach (PlanUnitC planUnitC in this.WorkerDict.Values)
+                this.AddPlanUnitCToGrid(gridCenterWorkers, planUnitC);
+
+            this.GridCenterWorkers = gridCenterWorkers;
+            this.MainPage.MainPanel.Grids.Add(gridCenterWorkers);
+        }
+        /// <summary>
+        /// Připraví v Gridu podporu pro Center zobrazení
+        /// </summary>
+        /// <param name="gridCenterWorkplace"></param>
+        /// <param name="tagFilter"></param>
+        /// <param name="timeAxis"></param>
+        /// <param name="graph"></param>
+        /// <param name="table"></param>
+        protected void SetCenterGridProperties(GuiGrid gridCenterWorkplace, bool tagFilter, bool timeAxis, bool graph, bool table)
+        {
+            if (tagFilter)
+            {
+                gridCenterWorkplace.GridProperties.TagFilterItemHeight = 26;
+                gridCenterWorkplace.GridProperties.TagFilterItemMaxCount = 60;
+                gridCenterWorkplace.GridProperties.TagFilterRoundItemPercent = 50;
+                gridCenterWorkplace.GridProperties.TagFilterEnabled = true;
+                gridCenterWorkplace.GridProperties.TagFilterBackColor = Color.FromArgb(64, 128, 64);
+            }
+
+            if (timeAxis)
+            {
+                gridCenterWorkplace.GraphProperties.AxisResizeMode = AxisResizeContentMode.ChangeScale;
+                gridCenterWorkplace.GraphProperties.TimeAxisBackColor = Color.FromArgb(192, 224, 255);
+                gridCenterWorkplace.GraphProperties.TimeAxisSegmentList = new List<GuiTimeAxisSegment>();
+                gridCenterWorkplace.GraphProperties.TimeAxisSegmentList.AddRange(CreateHistory(this.TimeRangeTotal, Color.FromArgb(255, 192, 224)));
+                gridCenterWorkplace.GraphProperties.TimeAxisSegmentList.AddRange(CreateWeekends(this.TimeRangeTotal, Color.FromArgb(255, 96, 32)));
+                gridCenterWorkplace.GraphProperties.TimeAxisSegmentList.AddRange(CreateHolidays(this.TimeRangeTotal, Color.FromArgb(255, 32, 255)));
+            }
+
+            if (graph)
+            {
+                gridCenterWorkplace.GraphProperties.BottomMarginPixel = 2;
+                gridCenterWorkplace.GraphProperties.GraphLineHeight = 20;
+                gridCenterWorkplace.GraphProperties.GraphLinePartialHeight = 40;
+                gridCenterWorkplace.GraphProperties.GraphPosition = DataGraphPositionType.InLastColumn;
+                gridCenterWorkplace.GraphProperties.InteractiveChangeMode = AxisInteractiveChangeMode.Shift;
+                gridCenterWorkplace.GraphProperties.LogarithmicGraphDrawOuterShadow = 0.15f;
+                gridCenterWorkplace.GraphProperties.LogarithmicRatio = 0.60f;
+                gridCenterWorkplace.GraphProperties.Opacity = 255;
+                gridCenterWorkplace.GraphProperties.TableRowHeightMin = 22;
+                gridCenterWorkplace.GraphProperties.TableRowHeightMax = 260;
+                gridCenterWorkplace.GraphProperties.TimeAxisMode = TimeGraphTimeAxisMode.Standard;
+                gridCenterWorkplace.GraphProperties.UpperSpaceLogical = 1f;
+                gridCenterWorkplace.GraphProperties.LinkColorStandard = Color.LightGreen;
+                gridCenterWorkplace.GraphProperties.LinkColorWarning = Color.Yellow;
+                gridCenterWorkplace.GraphProperties.LinkColorError = Color.DarkRed;
+            }
+
+            if (table)
+            {
+                DataTable rowTable = WorkSchedulerSupport.CreateTable("RowsCenter", "cislo_subjektu int, reference_subjektu string, nazev_subjektu string, machines_count decimal");
+                gridCenterWorkplace.Rows = new GuiTable() { Name = "GridCenter", DataTable = rowTable };
+                gridCenterWorkplace.Rows.ColumnsExtendedInfo[0].ClassNumber = PlanUnitC.ClassNumber;
+                gridCenterWorkplace.Rows.ColumnsExtendedInfo[0].BrowseColumnType = BrowseColumnType.SubjectNumber;
+                gridCenterWorkplace.Rows.ColumnsExtendedInfo[1].PrepareDataColumn("Číslo", 85, true, null, true);
+                gridCenterWorkplace.Rows.ColumnsExtendedInfo[2].PrepareDataColumn("Název", 200, true, null, true);
+                gridCenterWorkplace.Rows.ColumnsExtendedInfo[3].PrepareDataColumn("Počet", 45, true, null, true);
+
+                if (tagFilter)
+                {
+                    gridCenterWorkplace.Rows.RowTags = new GuiTagItems();
+                }
+            }
         }
         /// <summary>
         /// Vrátí pole, obsahující jeden prvek <see cref="GuiTimeAxisSegment"/>, představující minulý čas.
@@ -1054,7 +1100,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         protected GuiData MainData;
         protected GuiPage MainPage;
         protected GuiGrid GridLeft;
-        protected GuiGrid GridCenter;
+        protected GuiGrid GridCenterWorkplace;
+        protected GuiGrid GridCenterWorkers;
         protected DateTime DateTimeNow;
         protected DateTime DateTimeFirst;
         protected GuiTimeRange TimeRangeTotal;
