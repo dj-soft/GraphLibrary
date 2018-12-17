@@ -3519,7 +3519,21 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Hodnota v této buňce. 
         /// Vložení hodnoty provede invalidaci dat řádku a tabulky, protože může dojít ke změně výšky a k požadavku na nové vykreslení obsahu.
         /// </summary>
-        public object Value { get { return _Value; } set { _Value = value; this.InvalidateRowData(); } } private object _Value;
+        public object Value
+        {
+            get { return _Value; }
+            set
+            {
+                _Value = value;
+                this.InvalidateRowData();
+                if (value != null && value is IInteractiveParent)
+                {
+                    IInteractiveParent iParent = (value as IInteractiveParent);
+                    iParent.Parent = this.Control;
+                }
+            }
+        }
+        private object _Value;
         /// <summary>
         /// Explicitně daná výška v tomto řádku. Je daná obsahem.
         /// Výška se uplatní při určení výšky řádku.
