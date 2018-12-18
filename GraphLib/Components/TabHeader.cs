@@ -46,32 +46,34 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         private void _TabHeader_ActiveItemChanged(object sender, GPropertyChangeArgs<GTabPage> e)
         {
-            // Nejprve řeším vnitřní záležitosti, bez eventů:
-            this._TabHeaderItemChanged(e);
-            // Poté volám eventhandlery:
-            e.CorrectValue = this.CallActivePageChanged(e.OldValue, e.NewValue, e.EventSource);
-        }
-        /// <summary>
-        /// Provede se po změně aktivního záhlaví, řeší pouze změnu stavu IsCollapsed.
-        /// </summary>
-        /// <param name="e"></param>
-        private void _TabHeaderItemChanged(GPropertyChangeArgs<GTabPage> e)
-        {
-            // Změna záložky:
+            GTabPage oldPage = this._TabItemLastActive;
             GTabPage newPage = e.NewValue;
-            bool isCollapseNew = (newPage != null && newPage.IsCollapse);
-            if (!isCollapseNew)
-            {
-                this._TabItemLastActive = newPage;
-                if (newPage.DataControl != null)
-                    newPage.DataControl.Repaint();
-            }
-            this.InvalidateChilds();
-
-            // Řeším změnu Collapsed:
             bool isCollapseOld = this._IsCollapsed;
-            if (isCollapseOld == isCollapseNew) return;
-            this.IsCollapsedInternal = isCollapseNew;              // Set property řeší layout, volání eventů, atd.
+            bool isCollapseNew = (newPage != null && newPage.IsCollapse);
+            bool canRepaint = (newPage != null && newPage.DataControl != null);
+            if (!isCollapseOld && !isCollapseNew)
+            {   // Jde o reálnou změnu aktivní datové stránky, přičemž dosud nebyl a ani nově nebude stav IsCollapsed:
+                if (canRepaint)
+                    newPage.DataControl.Repaint();
+                e.CorrectValue = this.CallActivePageChanged(oldPage, newPage, e.EventSource);
+                this._TabItemLastActive = newPage;
+                this.InvalidateChilds();
+            }
+            else if (!isCollapseOld && isCollapseNew)
+            {   // Provádíme Collapse:
+                this.IsCollapsedInternal = true;           // Set property řeší layout, volání eventů, atd.
+                // Nevoláme CallActivePageChanged(), protože nejde o změnu datové záložky.
+                this.InvalidateChilds();
+            }
+            else if (isCollapseOld && !isCollapseNew)
+            {   // Provádíme Expand - to může být na původní záložku, anebo na jinou:
+                this.IsCollapsedInternal = false;          // Set property řeší layout, volání eventů, atd.
+                // Metodu CallActivePageChanged() voláme jen tejhdy, když nová záložka se liší od dosavadní datové záložky:
+                if (oldPage != null && !Object.ReferenceEquals(oldPage, newPage))
+                    e.CorrectValue = this.CallActivePageChanged(oldPage, newPage, e.EventSource);
+                this._TabItemLastActive = newPage;
+                this.InvalidateChilds();
+            }
         }
         /// <summary>
         /// Sada záložek
@@ -173,6 +175,25 @@ namespace Asol.Tools.WorkScheduler.Components
             this.InvalidateLayout();
         }
         /// <summary>
+        /// Zneplatní data layoutu
+        /// </summary>
+        protected void InvalidateLayout()
+        {
+            this._IsHeaderVisible = null;
+            this._HeaderBounds = null;
+            this._IsDataVisible = null;
+            this._DataBounds = null;
+            this._TabControlChilds = null;
+        }
+        /// <summary>
+        /// Zajistí platnost dat layoutu
+        /// </summary>
+        protected void CheckLayout()
+        {
+            if (this._IsHeaderVisible.HasValue && this._HeaderBounds.HasValue && this._IsDataVisible.HasValue && this._DataBounds.HasValue) return;
+            this.PrepareLayout();
+        }
+        /// <summary>
         /// Metoda upraví vlastní layout podle parametrů.
         /// Tzn. Umístí TabHeader, a v případě Collapse nastaví this.Bounds podle potřeby.
         /// </summary>
@@ -192,11 +213,11 @@ namespace Asol.Tools.WorkScheduler.Components
             switch (this._TabHeader.Position)
             {
                 case RectangleSide.Top:
-                    dataSize = (isDataVisible ? (oldSize.Height - headerSize) : 0);
-                    controlSize = headerSize + dataSize;
-                    headerBounds = new Rectangle(0, 0, oldSize.Width, headerSize);
-                    dataBounds = new Rectangle(0, headerSize, oldSize.Width, dataSize);
-                    newBounds = new Rectangle(0, 0, oldSize.Width, controlSize);
+                    dataSize = (isDataVisible ? (oldSize.Height - headerSize) : 0);      // Výška prostoru pro datový container = daný prostor mínus záhlaví, nebo 0 pro Collapsed
+                    controlSize = headerSize + dataSize;                                 // Výška celého GTabContaineru reaguje na viditelnost záhlaví i Collapsed datového panelu
+                    headerBounds = new Rectangle(0, 0, oldSize.Width, headerSize);       // Prostor záhlaví
+                    dataBounds = new Rectangle(0, headerSize, oldSize.Width, dataSize);  // Prostor datového panelu
+                    newBounds = new Rectangle(0, 0, oldSize.Width, controlSize);         // Prostor celého controlu
                     break;
                 case RectangleSide.Right:
                     dataSize = (isDataVisible ? (oldSize.Width - headerSize) : 0);
@@ -220,10 +241,14 @@ namespace Asol.Tools.WorkScheduler.Components
                     newBounds = new Rectangle(0, 0, controlSize, oldSize.Height);
                     break;
             }
-            this._HeaderBounds = headerBounds;
+
+            if (this.Bounds != newBounds)
+                this.Bounds = newBounds;         // Tady dojde k SetBoundsPrepareInnerItems() a následně InvalidateLayout(),
+            // .. jenže ty invalidované hodnoty hned zase správně validujeme:
             this._IsHeaderVisible = isHeaderVisible;
-            this._DataBounds = dataBounds;
+            this._HeaderBounds = headerBounds;
             this._IsDataVisible = isDataVisible;
+            this._DataBounds = dataBounds;
 
             // Zapamatujeme si výšku celého containeru za situace, kdy není Collapsed:
             if (isDataVisible)
@@ -248,25 +273,6 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         /// <summary>
-        /// Zajistí platnost dat layoutu
-        /// </summary>
-        protected void CheckLayout()
-        {
-            if (this._IsHeaderVisible.HasValue && this._HeaderBounds.HasValue && this._IsDataVisible.HasValue && this._DataBounds.HasValue) return;
-            this.PrepareLayout();
-        }
-        /// <summary>
-        /// Zneplatní data layoutu
-        /// </summary>
-        protected void InvalidateLayout()
-        {
-            this._IsHeaderVisible = null;
-            this._HeaderBounds = null;
-            this._IsDataVisible = null;
-            this._DataBounds = null;
-            this._TabControlChilds = null;
-        }
-        /// <summary>
         /// Je viditelný prostor TabHeader?
         /// </summary>
         protected bool IsHeaderVisible { get { this.CheckLayout(); return this._IsHeaderVisible.Value; } }
@@ -282,19 +288,31 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Souřadnice prostoru Data v rámci this.Bounds
         /// </summary>
         protected Rectangle DataBounds { get { this.CheckLayout(); return this._DataBounds.Value; } }
+        /// <summary>
+        /// Viditelnost Header
+        /// </summary>
         private bool? _IsHeaderVisible;
+        /// <summary>
+        /// Souřadnice prostoru Header
+        /// </summary>
         private Rectangle? _HeaderBounds;
+        /// <summary>
+        /// Viditelnost dat
+        /// </summary>
         private bool? _IsDataVisible;
+        /// <summary>
+        /// Souřadnice prostoru Data
+        /// </summary>
         private Rectangle? _DataBounds;
         #endregion
         #region Public property a metody
         /// <summary>
-        /// Pole všech položek, v jejich nativním pořadí (=tak jak se přidávaly).
+        /// Pole všech položek, které reprezentují datové záložky - v jejich nativním pořadí (=tak jak se přidávaly).
         /// </summary>
         /// <remarks>V těchto záložkách není uvedena záložka "Collapse".</remarks>
         public GTabPage[] TabItems { get { return this._TabHeader.Pages.Where(t => (!t.IsCollapse)).ToArray(); } }
         /// <summary>
-        /// Počet TAB prvků
+        /// Počet TAB prvků, které reprezentují datové záložky
         /// </summary>
         /// <remarks>V těchto záložkách není uvedena záložka "Collapse".</remarks>
         public int TabCount { get { return this.TabItems.Length; } }
@@ -421,6 +439,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     this._IsCollapsed = value;
                     this.InvalidateChilds();
                     this.InvalidateLayout();
+                    this.PrepareLayout();        // Chceme mít platné hodnoty souřadnic ještě před tím, než zavoláme event IsCollapsedChanged, protože v něm můžeme reagovat na již platné hodnoty
                     this.CallIsCollapsedChanged(oldValue, newValue, EventSourceType.ApplicationCode);
                 }
             }
@@ -472,9 +491,9 @@ namespace Asol.Tools.WorkScheduler.Components
         private IInteractiveItem[] _TabControlChilds;
         #endregion
         #region Eventy
-
         /// <summary>
         /// Zavolá metody <see cref="OnActivePageChanged"/> a eventhandler <see cref="ActivePageChanged"/>.
+        /// Tato metoda se má volat pouze při reálné změně stránky, nikoli při změně <see cref="IsCollapsed"/>.
         /// </summary>
         protected GTabPage CallActivePageChanged(GTabPage oldValue, GTabPage newValue, EventSourceType eventSource)
         {

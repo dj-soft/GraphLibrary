@@ -41,17 +41,19 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             using (App.Trace.Scope(TracePriority.Priority2_Lowest, "SchedulerPanel", "InitComponents", ""))
             {
                 this.Bounds = new Rectangle(0, 0, 800, 600);
+                this._PanelLayout = new SchedulerPanelLayout();
+                this._PanelLayout.CurrentControlSize = this.ClientSize;
                 Size size = this.ClientSize;
                 int x1 = 300;
                 int x2 = size.Width - 300;
                 int y2 = size.Height - 200;
 
                 this._LeftPanelTabs = new GTabContainer(this) { TabHeaderPosition = RectangleSide.Left, TabHeaderMode = ShowTabHeaderMode.CollapseItem };
-                this._LeftPanelSplitter = new GSplitter() { SplitterVisibleWidth = SplitterSize, SplitterActiveOverlap = 2, Orientation = Orientation.Vertical, Value = x1, BoundsNonActive = new Int32NRange(0, 200) };
+                this._LeftPanelSplitter = new GSplitter() { SplitterVisibleWidth = this._PanelLayout.SplitterSize, SplitterActiveOverlap = 2, Orientation = Orientation.Vertical, Value = this._PanelLayout.LeftSplitterValue, BoundsNonActive = new Int32NRange(0, 200) };
                 this._MainPanelGrid = new GGrid(this);
-                this._RightPanelSplitter = new GSplitter() { SplitterVisibleWidth = SplitterSize, SplitterActiveOverlap = 2, Orientation = Orientation.Vertical, Value = x2, BoundsNonActive = new Int32NRange(0, 200) };
+                this._RightPanelSplitter = new GSplitter() { SplitterVisibleWidth = this._PanelLayout.SplitterSize, SplitterActiveOverlap = 2, Orientation = Orientation.Vertical, Value = this._PanelLayout.RightSplitterValue, BoundsNonActive = new Int32NRange(0, 200) };
                 this._RightPanelTabs = new GTabContainer(this) { TabHeaderPosition = RectangleSide.Right, TabHeaderMode = ShowTabHeaderMode.CollapseItem };
-                this._BottomPanelSplitter = new GSplitter() { SplitterVisibleWidth = SplitterSize, SplitterActiveOverlap = 2, Orientation = Orientation.Horizontal, Value = y2, BoundsNonActive = new Int32NRange(0, 600) };
+                this._BottomPanelSplitter = new GSplitter() { SplitterVisibleWidth = this._PanelLayout.SplitterSize, SplitterActiveOverlap = 2, Orientation = Orientation.Horizontal, Value = this._PanelLayout.BottomSplitterValue, BoundsNonActive = new Int32NRange(0, 600) };
                 this._BottomPanelTabs = new GTabContainer(this) { TabHeaderPosition = RectangleSide.Bottom, TabHeaderMode = ShowTabHeaderMode.CollapseItem };
 
                 this.AddItem(this._LeftPanelTabs);
@@ -64,12 +66,15 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
                 this.CalculateLayout();
 
-                this._LeftPanelSplitter.ValueChanging += LayoutChanging;
-                this._LeftPanelSplitter.ValueChanged += LayoutChanging;
-                this._RightPanelSplitter.ValueChanging += LayoutChanging;
-                this._RightPanelSplitter.ValueChanged += LayoutChanging;
-                this._BottomPanelSplitter.ValueChanging += LayoutChanging;
-                this._BottomPanelSplitter.ValueChanged += LayoutChanging;
+                this._LeftPanelTabs.IsCollapsedChanged += _TabContainers_IsCollapsedChanged;
+                this._LeftPanelSplitter.ValueChanging += _SplitterL_ValueChanging;
+                this._LeftPanelSplitter.ValueChanged += _SplitterL_ValueChanging;
+                this._RightPanelTabs.IsCollapsedChanged += _TabContainers_IsCollapsedChanged;
+                this._RightPanelSplitter.ValueChanging += _SplitterR_ValueChanging;
+                this._RightPanelSplitter.ValueChanged += _SplitterR_ValueChanging;
+                this._BottomPanelTabs.IsCollapsedChanged += _TabContainers_IsCollapsedChanged;
+                this._BottomPanelSplitter.ValueChanging += _SplitterB_ValueChanging;
+                this._BottomPanelSplitter.ValueChanged += _SplitterB_ValueChanging;
             }
         }
         /// <summary>
@@ -85,11 +90,53 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.CalculateLayout();
         }
         /// <summary>
-        /// Po změně pozice kteréhokoliv splitteru
+        /// Po změně pozice splitteru Left
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void LayoutChanging(object sender, GPropertyChangeArgs<int> e)
+        private void _SplitterL_ValueChanging(object sender, GPropertyChangeArgs<int> e)
+        {
+            if (this.IsSuppressedEvent) return;
+            if (this._LeftSplitterIsVisible)
+            {
+                this._PanelLayout.LeftSplit = this._LeftPanelSplitter.Value;
+                this.CalculateLayout();
+            }
+        }
+        /// <summary>
+        /// Po změně pozice splitteru Right
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _SplitterR_ValueChanging(object sender, GPropertyChangeArgs<int> e)
+        {
+            if (this.IsSuppressedEvent) return;
+            if (this._RightSplitterIsVisible)
+            {
+                this._PanelLayout.RightSplit = (this.ClientSize.Width - this._RightPanelSplitter.Value);
+                this.CalculateLayout();
+            }
+        }
+        /// <summary>
+        /// Po změně pozice splitteru Bottom
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _SplitterB_ValueChanging(object sender, GPropertyChangeArgs<int> e)
+        {
+            if (this.IsSuppressedEvent) return;
+            if (this._BottomSplitterIsVisible)
+            {
+                this._PanelLayout.BottomSplit = (this.ClientSize.Height - this._BottomPanelSplitter.Value);
+                this.CalculateLayout();
+            }
+        }
+        /// <summary>
+        /// Po změně IsCollapsed na některém z panelů
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _TabContainers_IsCollapsedChanged(object sender, GPropertyChangeArgs<bool> e)
         {
             this.CalculateLayout();
         }
@@ -98,6 +145,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (this.IsSuppressedEvent) return;
             if (this._BottomPanelTabs == null) return;       // Před dokončením inicializace
 
+            this._PanelLayout.CurrentControlSize = this.ClientSize;
             Size size = this.ClientSize;
             if (size.Width < 100 || size.Height < 100) return;
 
@@ -123,11 +171,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 int x3 = width;
 
                 this._LeftPanelIsVisible = (this._LeftPanelIsEnabled && this._LeftPanelTabs.TabCount > 0 && width >= MinControlWidthForSideGrids);
+                this._LeftSplitterIsVisible = (this._LeftPanelIsVisible && !this._LeftPanelTabs.IsCollapsed);
                 int x1 = CalculateLayoutOne(this._LeftPanelIsVisible, x0, this._LeftPanelSplitter.Value, x0 + MinGridWidth, x0 + maxw);
 
                 this._MainPanelIsVisible = true;
 
                 this._RightPanelIsVisible = (this._RightPanelIsEnabled && this._RightPanelTabs.TabCount > 0 && width >= MinControlWidthForSideGrids);
+                this._RightSplitterIsVisible = (this._RightPanelIsVisible && !this._RightPanelTabs.IsCollapsed);
                 int x2old = this._RightPanelSplitter.Value;
                 if (this._RightPanelIsVisible && isChangeSizeX)
                 {   // Proběhla změna šířky celého okna => o tuto změnu posuneme i pozici splitteru Source (aby držel vpravo):
@@ -143,6 +193,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 int y3 = size.Height;
 
                 this._BottomPanelIsVisible = (this._BottomPanelIsEnabled && this._BottomPanelTabs.TabCount > 0 && height >= MinControlHeightForSideGrids);
+                this._BottomSplitterIsVisible = (this._BottomPanelIsVisible && !this._BottomPanelTabs.IsCollapsed);
                 int y2old = this._BottomPanelSplitter.Value;
                 if (this._RightPanelIsVisible && isChangeSizeY)
                 {   // Proběhla změna výšky celého okna => o tuto změnu posuneme i pozici splitteru Info (aby držel dole):
@@ -154,19 +205,19 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 int b = y2 - (this._BottomPanelIsVisible ? sp : 0);
 
                 bool isChangeChildItems = (this._LeftPanelTabs.Is.Visible != this._LeftPanelIsVisible) ||
-                                          (this._LeftPanelSplitter.Is.Visible != this._LeftPanelIsVisible) ||
+                                          (this._LeftPanelSplitter.Is.Visible != this._LeftSplitterIsVisible) ||
                                           (this._MainPanelGrid.Is.Visible != this._MainPanelIsVisible) ||
                                           (this._RightPanelSplitter.Is.Visible != this._RightPanelIsVisible) ||
-                                          (this._RightPanelTabs.Is.Visible != this._RightPanelIsVisible) ||
-                                          (this._BottomPanelSplitter.Is.Visible != this._BottomPanelIsVisible) ||
+                                          (this._RightPanelTabs.Is.Visible != this._RightSplitterIsVisible) ||
+                                          (this._BottomPanelSplitter.Is.Visible != this._BottomSplitterIsVisible) ||
                                           (this._BottomPanelTabs.Is.Visible != this._BottomPanelIsVisible);
 
                 this._LeftPanelTabs.Is.Visible = this._LeftPanelIsVisible;
-                this._LeftPanelSplitter.Is.Visible = this._LeftPanelIsVisible;
+                this._LeftPanelSplitter.Is.Visible = this._LeftSplitterIsVisible;
                 this._MainPanelGrid.Is.Visible = this._MainPanelIsVisible;
-                this._RightPanelSplitter.Is.Visible = this._RightPanelIsVisible;
+                this._RightPanelSplitter.Is.Visible = this._RightSplitterIsVisible;
                 this._RightPanelTabs.Is.Visible = this._RightPanelIsVisible;
-                this._BottomPanelSplitter.Is.Visible = this._BottomPanelIsVisible;
+                this._BottomPanelSplitter.Is.Visible = this._BottomSplitterIsVisible;
                 this._BottomPanelTabs.Is.Visible = this._BottomPanelIsVisible;
 
                 if (this._LeftPanelIsVisible)
@@ -213,21 +264,26 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private const int MinGridWidth = 95;
         private const int MinGridHeight = 75;
         private const int SplitterSize = 4;
-        
+
+        private SchedulerPanelLayout _PanelLayout;
+
         private GTabContainer _LeftPanelTabs;
         private GSplitter _LeftPanelSplitter;
         private bool _LeftPanelIsVisible;
         private bool _LeftPanelIsEnabled;
+        private bool _LeftSplitterIsVisible;
         private GGrid _MainPanelGrid;
         private bool _MainPanelIsVisible;
         private GSplitter _RightPanelSplitter;
         private GTabContainer _RightPanelTabs;
         private bool _RightPanelIsVisible;
         private bool _RightPanelIsEnabled;
+        private bool _RightSplitterIsVisible;
         private GSplitter _BottomPanelSplitter;
         private GTabContainer _BottomPanelTabs;
         private bool _BottomPanelIsVisible;
         private bool _BottomPanelIsEnabled;
+        private bool _BottomSplitterIsVisible;
         private Size? _LastSize;
 
         private MainControl _MainControl;
@@ -383,5 +439,140 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         public ValueTimeRangeSynchronizer SynchronizedTime { get { return this._MainControl.SynchronizedTime; } }
         #endregion
+    }
+    /// <summary>
+    /// Metoda řídí Layout jednoho panelu <see cref="SchedulerPanel"/>,
+    /// a dále slouží k jeho ukládání/načítání do/z Configu a k jeho reaktivaci.
+    /// </summary>
+    public class SchedulerPanelLayout
+    {
+        /// <summary>
+        /// Pozice levého splitteru, měřeno zleva, pokud je viditelný
+        /// </summary>
+        public int LeftSplit { get { return this._LeftSplit; } set { this._LeftSplit = _AlignV(value); } } private int _LeftSplit = DefVSplit;
+        /// <summary>
+        /// Pozice splitteru v MainGrid, měřeno odspodu Gridu, pokud má více než jednu tabulku
+        /// </summary>
+        public int MainSplit { get { return this._MainSplit; } set { this._MainSplit = _AlignV(value); } } private int _MainSplit = DefVSplit;
+        /// <summary>
+        /// Pozice pravého splitteru, měřeno odprava, pokud je viditelný
+        /// </summary>
+        public int RightSplit { get { return this._RightSplit; } set { this._RightSplit = _AlignH(value); } } private int _RightSplit = DefHSplit;
+        /// <summary>
+        /// Pozice dolního splitteru, měřeno odspodu, pokud je viditelný
+        /// </summary>
+        public int BottomSplit { get { return this._BottomSplit; } set { this._BottomSplit = _AlignH(value); } } private int _BottomSplit = DefHSplit;
+        /// <summary>
+        /// Viditelná šířka Splitteru
+        /// </summary>
+        public int SplitterSize { get { return this._SplitterSize; } set { this._SplitterSize = _Align(value, 1, 6); } } private int _SplitterSize = 4;
+
+        /// <summary>
+        /// Minimální šířka controlu potřebná pro to, aby bylo možno zobrazit postranní panely
+        /// </summary>
+        public const int MinControlWidthForSideGrids = 800;
+        /// <summary>
+        /// Minimální výška controlu potřebná pro to, aby bylo možno zobrazit dolní panel
+        /// </summary>
+        public const int MinControlHeightForSideGrids = 600;
+        #region Zarovnání hodnoty
+        /// <summary>
+        /// Zarovná hodnotu do mezí MinVSplit, MaxVSplit
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        private static int _AlignV(int value)
+        {
+            return _Align(value, MinVSplit, MaxVSplit);
+        }
+        /// <summary>
+        /// Zarovná hodnotu do mezí MinHSplit, MaxHSplit
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        private static int _AlignH(int value)
+        {
+            return _Align(value, MinHSplit, MaxHSplit);
+        }
+        /// <summary>
+        /// Zarovná hodnotu do daných mezí
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="min"></param>
+        /// <param name="max"></param>
+        /// <returns></returns>
+        private static int _Align(int value, int min, int max)
+        {
+            return (value > max ? max : (value < min ? min : value));
+        }
+        /// <summary>
+        /// Minimální hodnota Vertikálního (svislého) splitteru
+        /// </summary>
+        private const int MinVSplit = 85;
+        /// <summary>
+        /// Maximální hodnota Vertikálního (svislého) splitteru
+        /// </summary>
+        private const int MaxVSplit = 800;
+        /// <summary>
+        /// Defaultní hodnota Vertikálního (svislého) splitteru
+        /// </summary>
+        private const int DefVSplit = 185;
+        /// <summary>
+        /// Minimální hodnota Horizontálního (vodorovného) splitteru
+        /// </summary>
+        private const int MinHSplit = 60;
+        /// <summary>
+        /// Maximální hodnota Horizontálního (vodorovného) splitteru
+        /// </summary>
+        private const int MaxHSplit = 600;
+        /// <summary>
+        /// Defaultní hodnota Horizontálního (vodorovného) splitteru
+        /// </summary>
+        private const int DefHSplit = 150;
+        #endregion
+        #region Výpočty Current souřadnic, non persisted
+        /// <summary>
+        /// Aktuální velikost plochy Controlu
+        /// </summary>
+        [PersistingEnabled(false)]
+        public Size CurrentControlSize { get; set; }
+        protected int CurrentWidth { get { return this.CurrentControlSize.Width; } }
+        protected int CurrentHeight { get { return this.CurrentControlSize.Width; } }
+        /// <summary>
+        /// Obsahuje true, pokud <see cref="CurrentControlSize"/> má výšku i šířku alespoň 100 nebo více
+        /// </summary>
+        public bool IsCurrentSizeValid { get { return (this.CurrentWidth >= 100 && this.CurrentHeight >= 100); } }
+        /// <summary>
+        /// Obsahuje true, pokud <see cref="CurrentControlSize"/> má šířku alespoň <see cref="MinControlWidthForSideGrids"/> nebo více
+        /// </summary>
+        public bool IsLeftTabsEnabled { get { return (this.CurrentWidth >= MinControlWidthForSideGrids); } }
+        /// <summary>
+        /// Obsahuje true, pokud <see cref="CurrentControlSize"/> má šířku alespoň <see cref="MinControlWidthForSideGrids"/> nebo více
+        /// </summary>
+        public bool IsRightTabsEnabled { get { return (this.CurrentWidth >= MinControlWidthForSideGrids); } }
+        /// <summary>
+        /// Obsahuje true, pokud <see cref="CurrentControlSize"/> má šířku alespoň <see cref="MinControlHeightForSideGrids"/> nebo více
+        /// </summary>
+        public bool IsBottomTabsEnabled { get { return (this.CurrentHeight >= MinControlHeightForSideGrids); } }
+        /// <summary>
+        /// Value pro LeftSplitter
+        /// </summary>
+        public int LeftSplitterValue { get { return this.LeftSplit; } }
+        /// <summary>
+        /// Value pro RightSplitter
+        /// </summary>
+        public int RightSplitterValue { get { return this.CurrentWidth - this.RightSplit; } }
+        /// <summary>
+        /// Value pro BottomSplitter
+        /// </summary>
+        public int BottomSplitterValue { get { return this.CurrentHeight - this.BottomSplit; } }
+
+
+        
+        #endregion
+
+
+        public void 
+
     }
 }
