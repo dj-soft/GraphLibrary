@@ -54,6 +54,23 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected bool HasParent { get { return (this.Parent != null); } }
         /// <summary>
+        /// Textem vyjádřená cesta ke všem Parentům, pro kontroly
+        /// </summary>
+        public string AllParentsPath
+        {
+            get
+            {
+                string result = "";
+                IInteractiveParent item = this;
+                while (item != null)
+                {
+                    result = item.GetType().Name + (result.Length == 0 ? "" : " => " + result);
+                    item = item.Parent;
+                }
+                return result;
+            }
+        }
+        /// <summary>
         /// An array of sub-items in this item
         /// </summary>
         protected virtual IEnumerable<IInteractiveItem> Childs { get { return null; } }
@@ -122,7 +139,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Defaultní barva pozadí. Potomek může přepsat na svoji dle Skinu
         /// </summary>
-        protected virtual Color DefaultBackColor { get { return Skin.Control.BackColor; } }
+        protected virtual Color DefaultBackColor { get { return Skin.Control.ControlBackColor; } }
         /// <summary>
         /// Libovolný popisný údaj, na funkci nemá vliv.
         /// </summary>

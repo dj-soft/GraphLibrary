@@ -180,6 +180,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         public MoveSnapInfo MoveSnapCtrlShift { get { return this._MoveSnapCtrlShift; } set { if (value != null) { this._MoveSnapCtrlShift = value; this._MoveSnapCtrlShift.CheckValid(MoveSnapKeyType.CtrlShift); } } } private MoveSnapInfo _MoveSnapCtrlShift;
         #endregion
+        #region UserConfig
+        public 
+        #endregion
         #region Ověření hodnoty
         /// <summary>
         /// Vrátí hodnotu zarovnanou do daných mezí

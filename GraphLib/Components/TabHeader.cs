@@ -203,7 +203,7 @@ namespace Asol.Tools.WorkScheduler.Components
 
             Rectangle oldBounds = this.Bounds;
             Size oldSize = this.ClientSize;
-            Rectangle newBounds = Rectangle.Empty;
+            Size newSize = oldBounds.Size;
             Rectangle headerBounds = Rectangle.Empty;
             bool isDataVisible = !this.IsCollapsed;
             Rectangle dataBounds = Rectangle.Empty;
@@ -217,31 +217,32 @@ namespace Asol.Tools.WorkScheduler.Components
                     controlSize = headerSize + dataSize;                                 // Výška celého GTabContaineru reaguje na viditelnost záhlaví i Collapsed datového panelu
                     headerBounds = new Rectangle(0, 0, oldSize.Width, headerSize);       // Prostor záhlaví
                     dataBounds = new Rectangle(0, headerSize, oldSize.Width, dataSize);  // Prostor datového panelu
-                    newBounds = new Rectangle(0, 0, oldSize.Width, controlSize);         // Prostor celého controlu
+                    newSize = new Size(oldSize.Width, controlSize);                      // Prostor celého controlu
                     break;
                 case RectangleSide.Right:
                     dataSize = (isDataVisible ? (oldSize.Width - headerSize) : 0);
                     controlSize = headerSize + dataSize;
                     headerBounds = new Rectangle(oldSize.Width - headerSize, 0, headerSize, oldSize.Height);
                     dataBounds = new Rectangle(0, 0, dataSize, oldSize.Height);
-                    newBounds = new Rectangle(0, 0, controlSize, oldSize.Height);
+                    newSize = new Size(controlSize, oldSize.Height);
                     break;
                 case RectangleSide.Bottom:
                     dataSize = (isDataVisible ? (oldSize.Height - headerSize) : 0);
                     controlSize = headerSize + dataSize;
                     headerBounds = new Rectangle(0, oldSize.Height - headerSize, oldSize.Width, headerSize);
                     dataBounds = new Rectangle(0, 0, oldSize.Width, dataSize);
-                    newBounds = new Rectangle(0, 0, oldSize.Width, controlSize);
+                    newSize = new Size(oldSize.Width, controlSize);
                     break;
                 case RectangleSide.Left:
                     dataSize = (isDataVisible ? (oldSize.Width - headerSize) : 0);
                     controlSize = headerSize + dataSize;
                     headerBounds = new Rectangle(0, 0, headerSize, oldSize.Height);
                     dataBounds = new Rectangle(headerSize, 0, dataSize, oldSize.Height);
-                    newBounds = new Rectangle(0, 0, controlSize, oldSize.Height);
+                    newSize = new Size(controlSize, oldSize.Height);
                     break;
             }
 
+            Rectangle newBounds = new Rectangle(oldBounds.Location, newSize);
             if (this.Bounds != newBounds)
                 this.Bounds = newBounds;         // Tady dojde k SetBoundsPrepareInnerItems() a následně InvalidateLayout(),
             // .. jenže ty invalidované hodnoty hned zase správně validujeme:

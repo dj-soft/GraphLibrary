@@ -704,6 +704,17 @@ namespace Asol.Tools.WorkScheduler.Data
         #endregion
         #region List<T>
         /// <summary>
+        /// Přidá řadu prvků do Listu
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="list"></param>
+        /// <param name="items"></param>
+        public static void AddItems<T>(this List<T> list, params T[] items)
+        {
+            if (list != null && items != null)
+                list.AddRange(items);
+        }
+        /// <summary>
         /// Returns last item in list, by list.Count. Or return default(T).
         /// </summary>
         /// <typeparam name="T"></typeparam>

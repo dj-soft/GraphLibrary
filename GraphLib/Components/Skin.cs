@@ -98,7 +98,16 @@ namespace Asol.Tools.WorkScheduler.Components
         private Skin()
         {
             this._ValueDict = new Dictionary<string, object>();
+        }
+        /// <summary>
+        /// Provede inicializaci instance, volat po konstruktoru
+        /// </summary>
+        private void _Init()
+        {
+            // Standardní inicializátor nejdřív:
+            this._StandardSkinInit();
 
+            // Další incializátory následně:
             var methods = this.GetType().GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             foreach (var method in methods)
             {
@@ -107,12 +116,15 @@ namespace Asol.Tools.WorkScheduler.Components
                     method.Invoke(this, null);
             }
         }
-        [Initialiser]
+        /// <summary>
+        /// Inicializer
+        /// </summary>
         private void _StandardSkinInit()
         {
+            // Na pořadí záleží; některé SkinSety mohou využívat hodnot z "nižších" SkinSetů:
             this._Modifiers = new SkinModifierSet(this, "Modifiers");
-            this._Shadow = new SkinShadowSet(this, "Shadow");
             this._Control = new SkinControlSet(this, "Control");
+            this._Shadow = new SkinShadowSet(this, "Shadow");
             this._BlockedGui = new SkinBlockedGuiSet(this, "BlockedGui");
             this._ToolTip = new SkinToolTipSet(this, "ToolTip");
             this._ToolBar = new SkinToolBarSet(this, "ToolBar");
@@ -126,7 +138,6 @@ namespace Asol.Tools.WorkScheduler.Components
             this._Grid = new SkinGridSet(this, "Grid");
             this._Graph = new SkinGraphSet(this, "Graph");
             this._Relation = new SkinRelationSet(this, "Relation");
-
         }
         /// <summary>
         /// Add a new instance of SkinSet to Skin.
@@ -746,7 +757,9 @@ namespace Asol.Tools.WorkScheduler.Components
                     {
                         if (__Instance == null)
                         {
+                            // Tato sekvence zajistí částečnou dostupnost instance již v průběhu inicializace jednotlivých properties:
                             __Instance = new Skin();
+                            __Instance._Init();
                         }
                     }
                 }
@@ -877,7 +890,7 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
     }
     /// <summary>
-    /// Skin set for Shadow.
+    /// Skin pro stínování.
     /// Has colors: BackColor; TextColor;
     /// </summary>
     public class SkinShadowSet : SkinSet
@@ -908,14 +921,20 @@ namespace Asol.Tools.WorkScheduler.Components
         { }
         #endregion
         #region Public colors
-        public Color BackColor { get { return this._Owner.GetValue(this._SkinSetKey, "BackColor", DefaultBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "BackColor", value); } }
-        public Color TextColor { get { return this._Owner.GetValue(this._SkinSetKey, "TextColor", DefaultTextColor); } set { this._Owner.SetValue(this._SkinSetKey, "TextColor", value); } }
+        public Color AmbientBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "AmbientBackColor", DefaultAmbientBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "AmbientBackColor", value); } }
+        public Color ControlBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "ControlBackColor", DefaultControlBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "ControlBackColor", value); } }
+        public Color ActiveBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "ActiveBackColor", DefaultActiveBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "ActiveBackColor", value); } }
+        public Color ControlTextColor { get { return this._Owner.GetValue(this._SkinSetKey, "TextColor", DefaultTextColor); } set { this._Owner.SetValue(this._SkinSetKey, "TextColor", value); } }
+        public Color BorderColor { get { return this._Owner.GetValue(this._SkinSetKey, "BorderColor", DefaultBorderColor); } set { this._Owner.SetValue(this._SkinSetKey, "BorderColor", value); } }
         public Color FrameSelectBackColor { get { return this._Owner.GetValue(this._SkinSetKey, "FrameSelectBackColor", DefaultFrameSelectBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "FrameSelectBackColor", value); } }
         public Color FrameSelectLineColor { get { return this._Owner.GetValue(this._SkinSetKey, "FrameSelectLineColor", DefaultFrameSelectLineColor); } set { this._Owner.SetValue(this._SkinSetKey, "FrameSelectLineColor", value); } }
         #endregion
         #region Default colors
-        protected virtual Color DefaultBackColor { get { return Color.LightGray; } }
+        protected virtual Color DefaultAmbientBackColor { get { return Color.Gray; } }
+        protected virtual Color DefaultControlBackColor { get { return Color.LightGray; } }
+        protected virtual Color DefaultActiveBackColor { get { return Color.FromArgb(255, 216, 216, 216); } }
         protected virtual Color DefaultTextColor { get { return Color.Black; } }
+        protected virtual Color DefaultBorderColor { get { return Color.DimGray; } }
         protected virtual Color DefaultFrameSelectBackColor { get { return Color.FromArgb(48, Color.LightYellow); } }
         protected virtual Color DefaultFrameSelectLineColor { get { return Color.DarkViolet; } }
         #endregion
@@ -1077,23 +1096,23 @@ namespace Asol.Tools.WorkScheduler.Components
         public int HeaderHeight { get { return this._Owner.GetValue(this._SkinSetKey, "HeaderHeight", DefaultHeaderHeight); } set { this._Owner.SetValue(this._SkinSetKey, "HeaderHeight", value); } }
         public Color SpaceColor { get { return this._Owner.GetValue(this._SkinSetKey, "SpaceColor", DefaultSpaceColor); } set { this._Owner.SetValue(this._SkinSetKey, "SpaceColor", value); } }
         public Color BorderColor { get { return this._Owner.GetValue(this._SkinSetKey, "BorderColor", DefaultBorderColor); } set { this._Owner.SetValue(this._SkinSetKey, "BorderColor", value); } }
-        public Color LineColorHot { get { return this._Owner.GetValue(this._SkinSetKey, "LineColorHot", DefaultLineColorHot); } set { this._Owner.SetValue(this._SkinSetKey, "LineColorHot", value); } }
         public Color BackColor { get { return this._Owner.GetValue(this._SkinSetKey, "BackColor", DefaultBackColor); } set { this._Owner.SetValue(this._SkinSetKey, "BackColor", value); } }
         public Color TextColor { get { return this._Owner.GetValue(this._SkinSetKey, "TextColor", DefaultTextColor); } set { this._Owner.SetValue(this._SkinSetKey, "TextColor", value); } }
         public Color LineColorActive { get { return this._Owner.GetValue(this._SkinSetKey, "LineColorActive", DefaultLineColorActive); } set { this._Owner.SetValue(this._SkinSetKey, "LineColorActive", value); } }
         public Color BackColorActive { get { return this._Owner.GetValue(this._SkinSetKey, "BackColorActive", DefaultBackColorActive); } set { this._Owner.SetValue(this._SkinSetKey, "BackColorActive", value); } }
+        public Color LineColorHot { get { return this._Owner.GetValue(this._SkinSetKey, "LineColorHot", DefaultLineColorHot); } set { this._Owner.SetValue(this._SkinSetKey, "LineColorHot", value); } }
         public Color TextColorActive { get { return this._Owner.GetValue(this._SkinSetKey, "TextColorActive", DefaultTextColorActive); } set { this._Owner.SetValue(this._SkinSetKey, "TextColorActive", value); } }
         #endregion
         #region Default colors
         protected virtual int DefaultHeaderHeight { get { return 28; } }
-        protected virtual Color DefaultSpaceColor { get { return Color.FromArgb(0, 255, 255, 255); } }
-        protected virtual Color DefaultBorderColor { get { return Color.DimGray; } }
+        protected virtual Color DefaultSpaceColor { get { return Skin.Control.AmbientBackColor; } }
+        protected virtual Color DefaultBorderColor { get { return Skin.Control.BorderColor; } }
+        protected virtual Color DefaultBackColor { get { return Skin.Control.ControlBackColor; } }
+        protected virtual Color DefaultTextColor { get { return Skin.Control.ControlTextColor; } }
+        protected virtual Color DefaultBackColorActive { get { return Skin.Control.ActiveBackColor; } }
+        protected virtual Color DefaultTextColorActive { get { return Skin.Control.ControlTextColor; } }
         protected virtual Color DefaultLineColorHot { get { return Color.FromArgb(255, 216, 216, 128); } }
-        protected virtual Color DefaultBackColor { get { return Color.FromArgb(255, 160, 160, 160); } }
-        protected virtual Color DefaultTextColor { get { return Color.Black; } }
         protected virtual Color DefaultLineColorActive { get { return Color.FromArgb(255, 255, 255, 128); } }
-        protected virtual Color DefaultBackColorActive { get { return Color.FromArgb(255, 216, 216, 216); } }
-        protected virtual Color DefaultTextColorActive { get { return Color.Black; } }
         #endregion
     }
     /// <summary>
@@ -1232,18 +1251,6 @@ namespace Asol.Tools.WorkScheduler.Components
         public Image SortDescendingImage { get { return this._Owner.GetValue(this._SkinSetKey, "SortDescendingImage", DefaultSortDescendingImage); } set { this._Owner.SetValue(this._SkinSetKey, "SortDescendingImage", value); } }
         public Image RowSelectedImage { get { return this._Owner.GetValue(this._SkinSetKey, "RowSelectedImage", DefaultRowSelectedImage); } set { this._Owner.SetValue(this._SkinSetKey, "RowSelectedImage", value); } }
         #endregion
-        #region Další metody
-        /// <summary>
-        /// Vrací barvu pozadí řádků (buněk) pro řádek root/child, normal/selected
-        /// </summary>
-        /// <param name="isRoot"></param>
-        /// <param name="isChecked"></param>
-        /// <returns></returns>
-        public Color GetBackColor(bool isRoot, bool isChecked)
-        {
-            return GetMatrix(isRoot, isChecked, this.RowChildBackColor, this.SelectedRowChildBackColor, this.RowBackColor, this.SelectedRowBackColor);
-        }
-        #endregion
         #region Default colors
         protected virtual Color DefaultHeaderBackColor { get { return Color.LightSkyBlue.Morph(Color.White, 0.33f); } }
         protected virtual Color DefaultHeaderTextColor { get { return Color.Black; } }
@@ -1251,7 +1258,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual Color DefaultHeaderLineLeftVerticalColor { get { return Color.Gray; } }
         protected virtual Color DefaultHeaderLineRightVerticalColor { get { return Color.LightGray; } }
         protected virtual Color DefaultHeaderLineHorizontalColor { get { return Color.LightGray; } }
-        protected virtual Color DefaultTableBackColor { get { return Color.DimGray; } }
+        protected virtual Color DefaultTableBackColor { get { return Skin.Control.AmbientBackColor; } }
         protected virtual Color DefaultRowBackColor { get { return Color.White; } }
         protected virtual Color DefaultRowChildBackColor { get { return Color.FromArgb(215, 230, 220); } }
         protected virtual Color DefaultRowTextColor { get { return Color.Black; } }
@@ -1265,6 +1272,18 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual Image DefaultSortAscendingImage { get { return IconStandard.SortAsc; } }
         protected virtual Image DefaultSortDescendingImage { get { return IconStandard.SortDesc; } }
         protected virtual Image DefaultRowSelectedImage { get { return IconStandard.RowSelected; } }
+        #endregion
+        #region Další metody
+        /// <summary>
+        /// Vrací barvu pozadí řádků (buněk) pro řádek root/child, normal/selected
+        /// </summary>
+        /// <param name="isRoot"></param>
+        /// <param name="isChecked"></param>
+        /// <returns></returns>
+        public Color GetBackColor(bool isRoot, bool isChecked)
+        {
+            return GetMatrix(isRoot, isChecked, this.RowChildBackColor, this.SelectedRowChildBackColor, this.RowBackColor, this.SelectedRowBackColor);
+        }
         #endregion
     }
     /// <summary>
@@ -1383,7 +1402,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             var properties = this.GetType().GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.FlattenHierarchy);
             foreach (var property in properties)
-            {
+            {   // Provedu načtení hodnoty ze všech public instančních property; tím se tyto property a jejich hodnoty dostanou do centrální cache:
                 var getMethod = property.GetGetMethod();
                 if (getMethod != null)
                 {
