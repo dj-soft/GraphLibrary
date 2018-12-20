@@ -699,7 +699,72 @@ namespace Asol.Tools.WorkScheduler.Data
                 sb.Append(item != null ? item.ToString() : "Null");
             }
             return sb.ToString();
-
+        }
+        #endregion
+        #region IEnumerable<TimeRange>
+        /// <summary>
+        /// Vrátí časový průsečík dodaných časů.
+        /// Pokud kolekce je null nebo je prázdná, vrací null.
+        /// Pokud ale kolekce obsahuje časy, které nemají průsečík, vrací instanci TimeRange, jejíž hodnoty Begin a End jsou null.
+        /// </summary>
+        /// <param name="collection"></param>
+        /// <returns></returns>
+        public static TimeRange TimeIntersect(this IEnumerable<TimeRange> collection)
+        {
+            bool first = true;
+            DateTime? begin = null;
+            DateTime? end = null;
+            if (collection != null)
+            {
+                foreach (TimeRange time in collection)
+                {
+                    if (time == null) continue;
+                    if (first)
+                    {
+                        begin = time.Begin;
+                        end = time.End;
+                        first = false;
+                    }
+                    else
+                    {
+                        if (time.Begin.HasValue && (!begin.HasValue || begin.Value < time.Begin.Value)) begin = time.Begin;
+                        if (time.End.HasValue && (!end.HasValue || end.Value > time.End.Value)) end = time.End;
+                    }
+                }
+            }
+            return (!first ? new TimeRange(begin, end) : null);
+        }
+        /// <summary>
+        /// Vrátí časový souhrn dodaných časů.
+        /// Pokud kolekce je null nebo je prázdná, vrací null.
+        /// Pokud ale kolekce obsahuje časy, které nemají uvedeny hodnoty Begin ani End, vrací instanci TimeRange, jejíž hodnoty Begin a End jsou null.
+        /// </summary>
+        /// <param name="collection"></param>
+        /// <returns></returns>
+        public static TimeRange TimeUnion(this IEnumerable<TimeRange> collection)
+        {
+            bool first = true;
+            DateTime? begin = null;
+            DateTime? end = null;
+            if (collection != null)
+            {
+                foreach (TimeRange time in collection)
+                {
+                    if (time == null) continue;
+                    if (first)
+                    {
+                        begin = time.Begin;
+                        end = time.End;
+                        first = false;
+                    }
+                    else
+                    {
+                        if (time.Begin.HasValue && (!begin.HasValue || begin.Value > time.Begin.Value)) begin = time.Begin;
+                        if (time.End.HasValue && (!end.HasValue || end.Value < time.End.Value)) end = time.End;
+                    }
+                }
+            }
+            return (!first ? new TimeRange(begin, end) : null);
         }
         #endregion
         #region List<T>
