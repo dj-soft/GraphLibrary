@@ -2033,15 +2033,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <returns></returns>
         private GTimeGraphItem _SearchGraphItemsForLink(ITimeGraphItem iGraphItem, GGraphControlPosition position)
         {
-            if (iGraphItem == null) return null;
-            if (iGraphItem.GControl == null)
-            {   // Prvek grafu ještě nemá vytvořen GControl = jde o řádek, který ještě nebyl kreslen.
-                // Požádáme tedy jeho graf, aby si prověřil platnost svých dat:
-                GTimeGraph graph = iGraphItem.OwnerGraph as GTimeGraph;
-                if (graph == null) return null;
-                graph.CheckValid();
-                if (iGraphItem.GControl == null) return null;
-            }
+            if (iGraphItem == null || iGraphItem.GControl == null) return null;
             switch (iGraphItem.GControl.Position)
             {
                 case GGraphControlPosition.Group:
@@ -2839,6 +2831,19 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Vizuální control
         /// </summary>
         private GTimeGraphItem _GControl;
+        /// <summary>
+        /// Metoda se pokusí zajistit, aby existoval vizuální prvek <see cref="_GControl"/> (pokud dosud neexistuje), a aby měl napočtené korektní hodnoty.
+        /// </summary>
+        private void _CheckGControl()
+        {
+            if (this._GControl == null)
+            {   // Prvek grafu ještě nemá vytvořen GControl = jde o řádek, který ještě nebyl kreslen.
+                // Požádáme tedy jeho graf, aby si prověřil platnost svých dat:
+                GTimeGraph graph = this._OwnerGraph as GTimeGraph;
+                if (graph != null)
+                    graph.CheckValid();
+            }
+        }
         #endregion
         #region Aplikační data - identifikátory atd
         /// <summary>
@@ -2972,7 +2977,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         Image ITimeGraphItem.ImageBegin { get { return App.Resources.GetImage(this._GuiGraphItem.ImageBegin); } }
         Image ITimeGraphItem.ImageEnd { get { return App.Resources.GetImage(this._GuiGraphItem.ImageEnd); } }
         GraphItemBehaviorMode ITimeGraphItem.BehaviorMode { get { return this._GuiGraphItem.BehaviorMode; } }
-        GTimeGraphItem ITimeGraphItem.GControl { get { return this._GControl; } set { this._GControl = value; } }
+        GTimeGraphItem ITimeGraphItem.GControl { get { this._CheckGControl(); return this._GControl; } set { this._GControl = value; } }
         void ITimeGraphItem.Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode) { this.Draw(e, boundsAbsolute, drawMode); }
         #endregion
     }

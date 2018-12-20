@@ -430,7 +430,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public Int32? Size
         {
             get { return (this._Size.HasValue ? this._ItemSize.AlignSize(this._Size.Value) : this._ItemSize.Size.Value); }
-            set { this._Size = value; }
+            set { this._Size = value; if (value.HasValue) this._ItemSize.Size = value; }
         }
         /// <summary>
         /// true pokud prvek je viditelný (dáno kódem, nikoli fitry atd). Default = true.
