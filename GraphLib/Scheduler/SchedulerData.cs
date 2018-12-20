@@ -2584,6 +2584,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="e"></param>
         private void _MainFormClosed(object sender, FormClosedEventArgs e)
         {
+            this.CloseSchedulerData();
+
             GuiRequest request = new GuiRequest();
             request.Command = GuiRequest.COMMAND_CloseWindow;
             this._CallAppHostFunction(request, null);
@@ -2617,6 +2619,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             /// Nyní reálně zavíráme okno
             /// </summary>
             ClosingForm
+        }
+        /// <summary>
+        /// Reálné zavření okna, těsně před odesláním commandu <see cref="GuiRequest.COMMAND_CloseWindow"/>.
+        /// Zde se například provádí uložení konfigurace.
+        /// </summary>
+        protected void CloseSchedulerData()
+        {
+            this.Config.Save();
         }
         #endregion
         #region Implementace IMainDataInternal

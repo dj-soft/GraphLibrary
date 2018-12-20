@@ -95,6 +95,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (this.IsSuppressedEvent) return;
             this._PanelLayout.LeftSplitterValue = this._LeftPanelSplitter.Value;
             e.CorrectValue = this._PanelLayout.LeftSplitterValue;
+            if (e.IsChangeValue)
+                this.ConfigSaveDeffered();
             this.CalculateLayout();
         }
         /// <summary>
@@ -107,6 +109,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (this.IsSuppressedEvent) return;
             this._PanelLayout.RightSplitterValue = this._RightPanelSplitter.Value;
             e.CorrectValue = this._PanelLayout.RightSplitterValue;
+            if (e.IsChangeValue)
+                this.ConfigSaveDeffered();
             this.CalculateLayout();
         }
         /// <summary>
@@ -118,6 +122,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             if (this.IsSuppressedEvent) return;
             this._PanelLayout.BottomSplitterValue = this._BottomPanelSplitter.Value;
+            e.CorrectValue = this._PanelLayout.BottomSplitterValue;
+            if (e.IsChangeValue)
+                this.ConfigSaveDeffered();
             this.CalculateLayout();
         }
         /// <summary>
@@ -291,6 +298,15 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Konfigurace uživatelská
         /// </summary>
         protected SchedulerConfig Config { get { return this._MainControl?.MainData?.Config; } }
+        /// <summary>
+        /// Zajistí uložení konfigurace. Ne hned, provede se za 30 sekund od prvního požadavku.
+        /// </summary>
+        protected void ConfigSaveDeffered()
+        {
+            SchedulerConfig config = this.Config;
+            if (config != null)
+                config.Save(TimeSpan.FromSeconds(30d));
+        }
         #endregion
         #region Načítání dat jednotlivých tabulek
         /// <summary>
@@ -314,7 +330,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             }
         }
         /// <summary>
-        /// Napojí zdejší Layout do Configu, protože tak se bude ukládat a načítat rozložení stránky.
+        /// Napojí zdejší Layout do/z Configu, protože tak se bude ukládat a načítat rozložení stránky.
+        /// 
         /// </summary>
         /// <param name="guiPage"></param>
         protected void ConnectConfigLayout(GuiPage guiPage)
@@ -322,6 +339,22 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             SchedulerConfig config = this.Config;
             if (config == null) return;
 
+            // Máme načtená data z GUI, zkusíme najít SchedulerPanelLayout našeho jména v Configu, aneo tam náš přidáme:
+            string name = guiPage.Name;
+            if (String.IsNullOrEmpty(name)) name = guiPage.Title;
+            SchedulerPanelLayout panelLayout = config.UserConfigSearch<SchedulerPanelLayout>(l => String.Equals(l.Name, name)).FirstOrDefault();
+            if (panelLayout != null)
+            {   // Máme data nalezená z konfigurace => použijeme je:
+                panelLayout.CurrentControlSize = this.ClientSize;
+                this._PanelLayout = panelLayout;
+                this.CalculateLayout();
+            }
+            else
+            {   // V konfiguraci ještě náš PanelLayout není => přidáme tam zdejší:
+                panelLayout = this._PanelLayout;
+                panelLayout.Name = name;
+                config.UserConfig.Add(panelLayout);
+            }
         }
         /// <summary>
         /// Souhrn všech tabulek této stránky, bez ohledu na to ve kterém panelu se nacházejí
@@ -439,13 +472,18 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         public ValueTimeRangeSynchronizer SynchronizedTime { get { return this._MainControl.SynchronizedTime; } }
         #endregion
     }
+    #region SchedulerPanelLayout : controller pro Layout jednoho panelu SchedulerPanel
     /// <summary>
-    /// Metoda řídí Layout jednoho panelu <see cref="SchedulerPanel"/>,
+    /// SchedulerPanelLayout : controller pro Layout jednoho panelu <see cref="SchedulerPanel"/>,
     /// a dále slouží k jeho ukládání/načítání do/z Configu a k jeho reaktivaci.
     /// </summary>
     public class SchedulerPanelLayout
     {
         #region Public data persistovaná
+        /// <summary>
+        /// Jméno layoutu v uložené konfiguraci (pro persistenci)
+        /// </summary>
+        public string Name { get; set; }
         /// <summary>
         /// Pozice levého splitteru, měřeno zleva, pokud je viditelný
         /// </summary>
@@ -518,7 +556,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Defaultní hodnota Vertikálního (svislého) splitteru
         /// </summary>
-        private const int DefVSplit = 185;
+        private const int DefVSplit = 235;
         /// <summary>
         /// Minimální hodnota Horizontálního (vodorovného) splitteru
         /// </summary>
@@ -530,7 +568,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Defaultní hodnota Horizontálního (vodorovného) splitteru
         /// </summary>
-        private const int DefHSplit = 150;
+        private const int DefHSplit = 180;
         #endregion
         #region Výpočty Current souřadnic, non persisted
         /// <summary>
@@ -773,4 +811,5 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         protected int SplitterSize2 { get { return this.SplitterSize - this.SplitterSize1; } }
         #endregion
     }
+    #endregion
 }

@@ -20,19 +20,21 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     {
         #region Konstruktor, inicializace, privátní proměnné grafiky
         /// <summary>
+        /// Konstruktor základní
+        /// </summary>
+        public MainControl()
+            : this(null)
+        { }
+        /// <summary>
         /// Konstruktor s předáním reference na datový objekt
         /// </summary>
         /// <param name="mainData"></param>
         public MainControl(MainData mainData)
-            : this()
         {
             this._MainData = mainData;
-        }
-        /// <summary>
-        /// Konstruktor základní
-        /// </summary>
-        public MainControl()
-        {
+            using (App.Trace.Scope(TracePriority.Priority2_Lowest, "MainControl", "LayoutInit", ""))
+                this._LayoutInit();
+
             using (App.Trace.Scope(TracePriority.Priority2_Lowest, "MainControl", "ToolBarInit", ""))
                 this._ToolBarInit();
 
@@ -43,10 +45,43 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 this.CalculateLayout();
         }
         /// <summary>
+        /// Inicializace objektu pro Layout
+        /// </summary>
+        private void _LayoutInit()
+        {
+            SchedulerConfig config = this.Config;
+            MainControlLayout layout = (config != null ? config.UserConfigSearch<MainControlLayout>().FirstOrDefault() : null);
+            if (layout == null)
+            {   // Pokud nemáme MainData, nebo nemáme Config, nebo v něm dosud není Layout, vytvoříme si Layout nový:
+                layout = new MainControlLayout();
+                // Pokud máme Config, pak Layout do něj přidáme:
+                if (config != null)
+                    config.UserConfig.Add(layout);
+            }
+            this._ControlLayout = layout;
+        }
+        /// <summary>
+        /// Controller layoutu
+        /// </summary>
+        private MainControlLayout _ControlLayout;
+        /// <summary>
         /// Reference na hlavní datový objekt
         /// </summary>
         public MainData MainData { get { return this._MainData; } }
         private MainData _MainData;
+        /// <summary>
+        /// Konfigurace uživatelská
+        /// </summary>
+        protected SchedulerConfig Config { get { return this._MainData?.Config; } }
+        /// <summary>
+        /// Zajistí uložení konfigurace. Ne hned, provede se za 30 sekund od prvního požadavku.
+        /// </summary>
+        protected void ConfigSaveDeffered()
+        {
+            SchedulerConfig config = this.Config;
+            if (config != null)
+                config.Save(TimeSpan.FromSeconds(30d));
+        }
         /// <summary>
         /// Po změně velikosti controlu přepočítá souřadnice vnitřních prvků
         /// </summary>
@@ -143,6 +178,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private void _ToolBarInit()
         {
             this._ToolBar = new GToolBar() { Bounds = new Rectangle(0, 0, 1024, 64) };
+            this._ToolBar.ToolbarSize = this._ControlLayout.ToolbarSize;
             this._ToolBar.ToolbarSizeChanged += _ToolBarSizeChanged;
             this.AddItem(this._ToolBar);
             this._ToolBar.ItemCheckedChange += _ToolBar_ItemSelectedChange;
@@ -185,6 +221,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="e"></param>
         private void _ToolBarSizeChanged(object sender, GPropertyChangeArgs<ComponentSize> e)
         {
+            this._ControlLayout.ToolbarSize = e.NewValue;
+            this.ConfigSaveDeffered();
             this.CalculateLayout();
         }
         /// <summary>
@@ -325,6 +363,21 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         public Form MainForm { get { return this.FindForm(); } }
         #endregion
     }
+    #region MainControlLayout : controller pro Layout hlavního controlu MainControl
+    /// <summary>
+    /// MainControlLayout : controller pro Layout hlavního controlu <see cref="MainControl"/>,
+    /// a dále slouží k jeho ukládání/načítání do/z Configu a k jeho reaktivaci.
+    /// </summary>
+    public class MainControlLayout
+    {
+        #region Public data persistovaná
+        /// <summary>
+        /// Velikost Toolbaru
+        /// </summary>
+        public ComponentSize ToolbarSize { get { return this._ToolbarSize; } set { this._ToolbarSize = value; } } private ComponentSize _ToolbarSize = ComponentSize.Medium;
+        #endregion
+    }
+    #endregion
     #region class SchedulerPanelInfo - třída obsahující data o jednom panelu.
     /// <summary>
     /// SchedulerPanelInfo - třída obsahující data o jednom panelu.

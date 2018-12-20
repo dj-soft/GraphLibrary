@@ -367,9 +367,9 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         private ComponentSize _ToolbarSize = ComponentSize.Medium;
         #endregion
-        #region Public events and virtual methods
+        #region Public eventy
         /// <summary>
-        /// Call method OnValueChanging() and event ValueChanging
+        /// Vyvolá metodu <see cref="OnToolbarSizeChanged(GPropertyChangeArgs{ComponentSize})"/> a event <see cref="ToolbarSizeChanged"/>, po změně hodnoty <see cref="ToolbarSize"/>
         /// </summary>
         protected void CallToolbarSizeChanged(ComponentSize oldValue, ComponentSize newValue, EventSourceType eventSource)
         {
@@ -379,11 +379,11 @@ namespace Asol.Tools.WorkScheduler.Components
                 this.ToolbarSizeChanged(this, args);
         }
         /// <summary>
-        /// Occured during interactive changing Value value
+        /// Háček volaný při změně hodnoty <see cref="ToolbarSize"/>
         /// </summary>
         protected virtual void OnToolbarSizeChanged(GPropertyChangeArgs<ComponentSize> args) { }
         /// <summary>
-        /// Event on this.Value interactive changing
+        /// Event volaný při změně hodnoty <see cref="ToolbarSize"/>
         /// </summary>
         public event GPropertyChangedHandler<ComponentSize> ToolbarSizeChanged;
 

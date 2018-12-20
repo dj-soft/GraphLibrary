@@ -59,6 +59,43 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this._SaveNow();
         }
         /// <summary>
+        /// Uloží data konfigurace, ale ne hned, ale až za nějaký (daný) čas.
+        /// </summary>
+        /// <param name="wait">Čas čekání. Pokud bude zadán čas menší než 200ms, provede se ihned.</param>
+        public void Save(TimeSpan wait)
+        {
+            if (wait.TotalMilliseconds < 200d)
+            {   // Bez čekání:
+                this._SaveNow();
+            }
+            else
+            {   // S čekáním:
+                lock (this._SaveLock)
+                {   // Jen jeden thread smí pracovat se _SaveWaiting v jednom čase:
+                    if (!this._SaveNowWaiting)
+                    {   // Pokud nečekáme na spuštění ukládání již teď, odložené spuštění nastartujeme nyní:
+                        Application.App.RunAfter(wait, this._SaveDeferred);
+                        this._SaveNowWaiting = true;
+                        this._SaveRequesting = true;
+                    }
+                }
+            }
+        }
+        /// <summary>
+        /// Uplynul čas a je třeba provést odložené ukládání dat:
+        /// </summary>
+        private void _SaveDeferred()
+        {
+            bool saveRequesting = true;
+            lock (this._SaveLock)
+            {
+                this._SaveNowWaiting = false;
+                saveRequesting = this._SaveRequesting;
+            }
+            if (saveRequesting)
+                this._SaveNow();
+        }
+        /// <summary>
         /// Uloží aktuální stav objektu do svého souboru, pokud zrovna není nastaveno blokování ukládání <see cref="_SuppressSave"/>.
         /// </summary>
         private void _Save()
@@ -73,6 +110,12 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             string configFile = this._ConfigFile;
             if (String.IsNullOrEmpty(configFile)) return;
+            lock (this._SaveLock)
+            {
+                this._SaveRequesting = false;
+                // Od teď už odložené čekání na uložení nemusí volat fyzické ukládání.
+            }
+
             string data = Persist.Serialize(this);
             Application.App.TryRunBgr(() => System.IO.File.WriteAllText(configFile, data, Encoding.UTF8));
         }
@@ -84,6 +127,24 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// true = ukládání do souboru je potlačeno
         /// </summary>
         private bool _SuppressSave;
+        /// <summary>
+        /// Objekt zámku pro synchorny okolo odloženého ukládání dat
+        /// </summary>
+        private object _SaveLock = new object();
+        /// <summary>
+        /// Jsme ve stavu, kdy běží čas čekání na odložené uložení konfigurace.
+        /// Na true se nastaví v metodě, která požaduje odložené uložení <see cref="Save(TimeSpan)"/>, na false se dává v metodě která řeší odložené uložení <see cref="_SaveDeferred"/>.
+        /// 
+        /// Změny se provádí pod zámkem <see cref="_SaveLock"/>.
+        /// </summary>
+        private bool _SaveNowWaiting;
+        /// <summary>
+        /// Jsme ve stavu, kdy požadujeme provést uložení dat.
+        /// Na true se nastaví v metodě, která zahajuje odložené uložení <see cref="Save(TimeSpan)"/>, na false se dává v metodě která data ukládá <see cref="_SaveNow"/>.
+        /// 
+        /// Změny se provádí pod zámkem <see cref="_SaveLock"/>.
+        /// </summary>
+        private bool _SaveRequesting;
         /// <summary>
         /// Default holé jméno konfiguračního souboru.
         /// Ukládá se do adresáře <see cref="Application.App.AppLocalDataPath"/>.
@@ -181,7 +242,32 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         public MoveSnapInfo MoveSnapCtrlShift { get { return this._MoveSnapCtrlShift; } set { if (value != null) { this._MoveSnapCtrlShift = value; this._MoveSnapCtrlShift.CheckValid(MoveSnapKeyType.CtrlShift); } } } private MoveSnapInfo _MoveSnapCtrlShift;
         #endregion
         #region UserConfig
-        public 
+        /// <summary>
+        /// Pole libovolných objektů, které jsou ukládány spolu s konfigurací.
+        /// Aplikační vrstva si v tomto poli může najít co potřebuje, anebo přidat co potřebuje.
+        /// Konfigurační objekt nijak neřeší, co je zde skladováno.
+        /// Tato property je autoinicializační (nikdy není čtena jako null).
+        /// </summary>
+        public List<object> UserConfig
+        {
+            get { if (this._UserConfig == null) this._UserConfig = new List<object>(); return this._UserConfig; }
+            set { this._UserConfig = value; }
+        }
+        private List<object> _UserConfig;
+        /// <summary>
+        /// Metoda projde data v <see cref="UserConfig"/>, vybere z položek ty, které jsou dané třídy,
+        /// přefiltruje je dodaným filtrem (pokud je dodán, jinak bere vše) a vrátí výsledný seznam.
+        /// Aplikační kód pak může dát FirstOrDefault() a získat jeden vyhovující prvek...
+        /// Metoda slouží k nalezení určité položky User konfigurace.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="filter"></param>
+        /// <returns></returns>
+        public IEnumerable<T> UserConfigSearch<T>(Func<T, bool> filter = null)
+        {
+            bool hasFilter = (filter != null);
+            return this.UserConfig.OfType<T>().Where(i => (!hasFilter || filter(i)));
+        }
         #endregion
         #region Ověření hodnoty
         /// <summary>

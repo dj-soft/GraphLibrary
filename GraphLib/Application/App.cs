@@ -126,6 +126,7 @@ namespace Asol.Tools.WorkScheduler.Application
         {
             Trace.End();
             this._WorkerEnd();
+            this._BackgroundStop();
             Asol.Tools.WorkScheduler.Components.FontInfo.ResetFonts();
         }
         #endregion
@@ -328,6 +329,136 @@ namespace Asol.Tools.WorkScheduler.Application
                     ShowError(exc);
             }
         }
+        #endregion
+        #region RunAfter
+        /// <summary>
+        /// Zajistí, že za daný čas bude vyvolána daná akce. Samozřejmě dojde k jejímu vyvolání v threadu na pozadí, nikoli v aktuálním threadu.
+        /// </summary>
+        /// <param name="time"></param>
+        /// <param name="action"></param>
+        public static void RunAfter(TimeSpan time, Action action)
+        {
+            Instance._BackgroundAddAction(time, action);
+        }
+        /// <summary>
+        /// Připraví thread na pozadí.
+        /// Pokud už je připraven, nic nemění.
+        /// </summary>
+        private void _BackgroundPrepare()
+        {
+            if (this._BackgroundSemaphore != null) return;
+
+            lock (this._BackgroundLock)
+            {
+                if (this._BackgroundSemaphore == null)
+                {
+                    this._BackgroundThread = new System.Threading.Thread(this._BackgroundLoop)
+                    {
+                        Name = "AppBackground",
+                        Priority = System.Threading.ThreadPriority.BelowNormal,
+                        IsBackground = true
+                    };
+
+                    this._BackgroundWorkList = new List<Tuple<DateTime, Action>>();
+                    this._BackgroundSemaphore = new System.Threading.AutoResetEvent(false);
+                }
+            }
+            this._BackgroundThread.Start();
+        }
+        /// <summary>
+        /// Metoda, v níž si žije thread <see cref="_BackgroundThread"/>, do té doby než bude nastaveno <see cref="_BackgroundRunning"/> = false.
+        /// </summary>
+        private void _BackgroundLoop()
+        {
+            this._BackgroundRunning = true;
+            while (this._BackgroundRunning)
+            {
+                TimeSpan? waitToAction;
+                Action action = this._BackgroundGetAction(out waitToAction);
+                if (!this._BackgroundRunning) break;
+                if (action != null)
+                {   // Máme něco na práci?
+                    try { action(); }
+                    catch (Exception exc) { Trace.Exception(exc); }
+                }
+                if (!this._BackgroundRunning) break;
+                if (waitToAction.HasValue)
+                {   // Máme si počkat, než se podíváme co je na práci?
+                    this._BackgroundSemaphore.WaitOne(waitToAction.Value);
+                }
+                if (!this._BackgroundRunning) break;
+            }
+            this._BackgroundWorkList.Clear();
+            this._BackgroundWorkList = null;
+            this._BackgroundSemaphore.Dispose();
+            this._BackgroundSemaphore = null;
+            this._BackgroundThread = null;
+        }
+        /// <summary>
+        /// Přidá danou akci do souhrnu akcí k provedení v threadu <see cref="_BackgroundThread"/>, za daný čas od teď
+        /// </summary>
+        /// <param name="time"></param>
+        /// <param name="action"></param>
+        private void _BackgroundAddAction(TimeSpan time, Action action)
+        {
+            if (action == null) return;
+            this._BackgroundPrepare();
+
+            DateTime start = DateTime.Now.Add(time);
+            Tuple<DateTime, Action> tuple = new Tuple<DateTime, Action>(start, action);
+            lock (this._BackgroundLock)
+            {   // Přidáme akci do soupisu, a setřídíme podle času spuštění vzestupně:
+                this._BackgroundWorkList.Add(tuple);
+                if (this._BackgroundWorkList.Count > 1)
+                    this._BackgroundWorkList.Sort((a, b) => a.Item1.CompareTo(b.Item1));
+            }
+            // Probudíme thread na pozadí, ten si načte akci, kterou má dělat; nebo čas který má ještě počkat:
+            this._BackgroundSemaphore.Set();
+        }
+        /// <summary>
+        /// Metoda vrací akci, kterou je nutno spustit v threadu <see cref="_BackgroundThread"/>, anebo čas, která je nutno počkat
+        /// </summary>
+        /// <param name="waitToAction"></param>
+        /// <returns></returns>
+        private Action _BackgroundGetAction(out TimeSpan? waitToAction)
+        {
+            lock (this._BackgroundLock)
+            {
+                if (this._BackgroundWorkList.Count == 0)
+                {   // Není vůbec nic na práci => počkejme 60 sekund (default) a uvidí se...
+                    waitToAction = TimeSpan.FromSeconds(60d);
+                    return null;                           // Nyní nebudu dělat žádnou akci.
+                }
+                // Nějaká práce tu je, ale otázkou je, zda už je to aktuální:
+                DateTime now = DateTime.Now;
+                Tuple<DateTime, Action> tuple = this._BackgroundWorkList[0];
+                if (tuple.Item1 <= now)
+                {   // Máme práci, a už se může provést:
+                    this._BackgroundWorkList.RemoveAt(0);  // Tuhle akci z fronty práce odeberu.
+                    waitToAction = null;                   // Po jejím provedení nebudu čekat, ale znovu se podívám do fronty.
+                    return tuple.Item2;                    // Zajistím provedení dané akce
+                }
+                // Máme práci, ale ještě nepřišel její čas:
+                waitToAction = (tuple.Item1 - now);        // Na to, abych se pustil do dané akce, máme ještě nějaký kladný čas k čekání...
+                return null;                               //  a zatím se nebudeme pouštět do žádných větších akcí :-)
+            }
+        }
+        /// <summary>
+        /// Zastaví běh threadu <see cref="_BackgroundThread"/>
+        /// </summary>
+        private void _BackgroundStop()
+        {
+            if (this._BackgroundRunning && this._BackgroundSemaphore != null)
+            {
+                this._BackgroundRunning = false;
+                this._BackgroundSemaphore.Set();
+            }
+        }
+        private System.Threading.Thread _BackgroundThread;
+        private List<Tuple<DateTime, Action>> _BackgroundWorkList;
+        private object _BackgroundLock = new object();
+        private System.Threading.AutoResetEvent _BackgroundSemaphore;
+        private bool _BackgroundRunning;
         #endregion
         #region Dialog window
         /// <summary>
