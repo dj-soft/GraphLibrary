@@ -794,7 +794,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <summary>
         /// Vygeneruje kompletní data do středního panelu = Pracoviště
         /// </summary>
-        protected void CreateCenterPanelWorkplace()
+        protected void CreateCenterPanelWorkplace(bool withDirectChilds = false)
         {
             GuiGrid gridCenterWorkplace = new GuiGrid() { Name = "GridCenter", Title = "Pracoviště" };
 
@@ -827,16 +827,20 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             foreach (PlanUnitC planUnitC in this.WorkplaceDict.Values)
                 this.AddPlanUnitCToGrid(gridCenterWorkplace, planUnitC);
 
-            foreach (PlanUnitC planUnitC in this.WorkerDict.Values)
-                this.AddPlanUnitCToGrid(gridCenterWorkplace, planUnitC);
-
             // Vztahy prvků (Link):
             foreach (ProductOrder productOrder in this.ProductOrderDict.Values)
                 this.AddGraphLinkToGrid(gridCenterWorkplace, productOrder);
 
-            // Závislosti řádků (ParentChild):
-            foreach (PlanUnitC planUnitC in this.WorkerDict.Values)
-                gridCenterWorkplace.AddParentChild(new GuiParentChild() { Parent = null, Child = planUnitC.RecordGid });
+            if (withDirectChilds)
+            {
+                // Child řádky = pracovníci:
+                foreach (PlanUnitC planUnitC in this.WorkerDict.Values)
+                    this.AddPlanUnitCToGrid(gridCenterWorkplace, planUnitC);
+
+                // Závislosti řádků (ParentChild):
+                foreach (PlanUnitC planUnitC in this.WorkerDict.Values)
+                    gridCenterWorkplace.AddParentChild(new GuiParentChild() { Parent = null, Child = planUnitC.RecordGid });
+            }
 
             this.GridCenterWorkplace = gridCenterWorkplace;
             this.MainPage.MainPanel.Grids.Add(gridCenterWorkplace);
