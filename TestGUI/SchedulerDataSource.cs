@@ -80,6 +80,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             this.ProductOrderDict = new Dictionary<GuiId, ProductOrder>();
 
+            // VÝROBA:
             recordId = 10000;
             this.CreateProductOrder(++recordId, "Židle lakovaná červená", Color.DarkGreen, 12, "židle", ProductTpv.Luxus);
             this.CreateProductOrder(++recordId, "Stůl konferenční", Color.DarkGreen, 3, "stoly", ProductTpv.Luxus);
@@ -105,29 +106,36 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this.CreateProductOrder(++recordId, "Stolek servírovací malý", Color.DarkGreen, 1, "stoly", ProductTpv.Standard);
             this.CreateProductOrder(++recordId, "Stůl pracovní (\"ponk\"), dub", Color.DarkGray, 2, "stoly", ProductTpv.Cooperation);
             this.CreateProductOrder(++recordId, "Skříňka zásuvková 85cm", Color.DarkGreen, 6, "skříně", ProductTpv.Standard);
-            this.CreateProductOrder(++recordId, "Krabička dřevěná 35cm", Color.DarkCyan, 30, "jiné", ProductTpv.Standard);
-            this.CreateProductOrder(++recordId, "Krabička dřevěná 45cm", Color.DarkCyan, 36, "jiné", ProductTpv.Standard);
-            this.CreateProductOrder(++recordId, "Krabička dřevěná 60cm", Color.DarkCyan, 48, "jiné", ProductTpv.Standard);
+            this.CreateProductOrder(++recordId, "Krabička dřevěná 35cm", Color.DarkCyan, 30, "jiné", ProductTpv.Simple);
+            this.CreateProductOrder(++recordId, "Krabička dřevěná 45cm", Color.DarkCyan, 36, "jiné", ProductTpv.Simple);
+            this.CreateProductOrder(++recordId, "Krabička dřevěná 60cm", Color.DarkBlue, 48, "jiné", ProductTpv.Standard);
+            this.CreateProductOrder(++recordId, "Houpací křeslo tmavé", Color.DarkBlue, 6, "jiné", ProductTpv.Luxus);
+            this.CreateProductOrder(++recordId, "Psí bouda střední", Color.DarkOrange, 12, "outdoor", ProductTpv.Simple);
+            this.CreateProductOrder(++recordId, "Zábradlí schodišťové standard", Color.DarkGreen, 30, "stavba", ProductTpv.Standard);
+            this.CreateProductOrder(++recordId, "Stříška před vchodem", Color.DarkRed, 3, "stavba", ProductTpv.Simple);
+            this.CreateProductOrder(++recordId, "Krmítko pro menší ptactvo", Color.DarkViolet, 42, "outdoor", ProductTpv.Simple);
+            this.CreateProductOrder(++recordId, "Pergola zahradní 4x5 m", Color.DarkCyan, 3, "stavba", ProductTpv.Simple);
 
+            // DÍLNY:
             recordId = 10000;
             this.WorkplaceDict = new Dictionary<GuiId, PlanUnitC>();
             this.CreatePlanUnitCWp(++recordId, "Pila pásmová", WP_PILA, "pila", 2, CalendarType.Work5d2x8h);
             this.CreatePlanUnitCWp(++recordId, "Pila okružní", WP_PILA, "pila", 2, CalendarType.Work5d2x8h);
             this.CreatePlanUnitCWp(++recordId, "Pilka vyřezávací malá", WP_PILA, "pila;drobné", 1, CalendarType.Work5d2x8h);
             this.CreatePlanUnitCWp(++recordId, "Dílna truhlářská velká", WP_DILN, "truhláři",  4, CalendarType.Work5d2x8h);
-            this.CreatePlanUnitCWp(++recordId, "Dílna truhlářská malá", WP_DILN, "truhláři",  1, CalendarType.Work5d2x8h);
+            this.CreatePlanUnitCWp(++recordId, "Dílna truhlářská malá", WP_DILN, "truhláři",  2, CalendarType.Work5d2x8h);
             this.CreatePlanUnitCWp(++recordId, "Lakovna aceton", WP_LAKO, "lakovna;chemie",  5, CalendarType.Work7d3x8h);
             this.CreatePlanUnitCWp(++recordId, "Lakovna akryl", WP_LAKO, "lakovna",  5, CalendarType.Work7d3x8h);
-            this.CreatePlanUnitCWp(++recordId, "Moření", WP_LAKO, "lakovna;chemie",  2, CalendarType.Work7d3x8h);
-            this.CreatePlanUnitCWp(++recordId, "Dílna lakýrnická", WP_LAKO, "lakovna;chemie",  1, CalendarType.Work5d2x8h);
+            this.CreatePlanUnitCWp(++recordId, "Moření", WP_LAKO, "lakovna;chemie",  3, CalendarType.Work7d3x8h);
+            this.CreatePlanUnitCWp(++recordId, "Dílna lakýrnická", WP_LAKO, "lakovna;chemie",  2, CalendarType.Work5d2x8h);
             this.CreatePlanUnitCWp(++recordId, "Kontrola standardní", WP_KONT, "kontrola",  2, CalendarType.Work5d2x8h);
             this.CreatePlanUnitCWp(++recordId, "Kontrola mistr", WP_KONT, "kontrola",  1, CalendarType.Work5d2x8h);
-            this.CreatePlanUnitCWp(++recordId, "Kooperace DŘEVEX", WP_KOOP, "kooperace",  1, CalendarType.Work7d3x8h);
-            this.CreatePlanUnitCWp(++recordId, "Kooperace TRUHLEX", WP_KOOP, "kooperace", 1, CalendarType.Work7d3x8h);
-            this.CreatePlanUnitCWp(++recordId, "Kooperace JAREŠ", WP_KOOP, "kooperace;soukromník", 1, CalendarType.Work7d3x8h);
-            this.CreatePlanUnitCWp(++recordId, "Kooperace TEIMER", WP_KOOP, "kooperace;soukromník",  1, CalendarType.Work7d3x8h);
+            this.CreatePlanUnitCWp(++recordId, "Kooperace DŘEVEX", WP_KOOP, "kooperace",  1, CalendarType.Work5d1x24h);
+            this.CreatePlanUnitCWp(++recordId, "Kooperace TRUHLEX", WP_KOOP, "kooperace", 1, CalendarType.Work5d1x24h);
+            this.CreatePlanUnitCWp(++recordId, "Kooperace JAREŠ", WP_KOOP, "kooperace;soukromník", 1, CalendarType.Work5d1x24h);
+            this.CreatePlanUnitCWp(++recordId, "Kooperace TEIMER", WP_KOOP, "kooperace;soukromník",  1, CalendarType.Work5d1x24h);
 
-
+            // OSOBY, RANNÍ SMĚNA:
             recordId = 10100;
             this.PersonDict = new Dictionary<GuiId, PlanUnitC>();
             this.CreatePlanUnitCZm(++recordId, "NOVÁK Jiří", CalendarType.Work5d1x8hR, WP_PILA, WP_DILN);
@@ -141,6 +149,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this.CreatePlanUnitCZm(++recordId, "POKORNÝ Dan", CalendarType.Work5d1x8hR, WP_DILN, WP_KONT);
             this.CreatePlanUnitCZm(++recordId, "DRAHOKOUPIL Martin", CalendarType.Work5d1x8hR, WP_KONT);
 
+            // OSOBY, ODPOLEDNÍ SMĚNA:
             this.CreatePlanUnitCZm(++recordId, "VETCHÝ Marek", CalendarType.Work5d1x8hO, WP_PILA, WP_DILN);
             this.CreatePlanUnitCZm(++recordId, "SUP Václav", CalendarType.Work5d1x8hO, WP_PILA, WP_LAKO);
             this.CreatePlanUnitCZm(++recordId, "OSOLSOBĚ Viktor", CalendarType.Work5d1x8hO, WP_PILA, WP_DILN);
@@ -200,34 +209,41 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             int line = 0;
             switch (tpv)
             {
-                case ProductTpv.Standard:
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.GreenYellow, "Řez tvaru", "Přeříznout", WP_PILA, qty, 30, 10, 45, Pbb(60)));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.Blue, "Broušení hran", "Zabrousit", WP_DILN, qty, 0, 10, 30, Pbb(20)));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.BlueViolet, "Vrtat čepy", "Zavrtat pro čepy", WP_DILN, qty, 15, 5, 30, Pbb(5)));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DarkOrange, "Nasadit čepy", "Nasadit a vlepit čepy", WP_DILN, qty, 0, 10, 0));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DarkRed, "Klížit", "Sklížit díly", WP_DILN, qty, 30, 5, 360));
+                case ProductTpv.Simple:
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.GreenYellow, "Řez tvaru", "Přeříznout", WP_PILA, qty, 30, 20, 45, Pbb(60)));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DarkOrange, "Šroubovat", "Nasadit šrouby a sešroubovat", WP_DILN, qty, 0, 15, 0));
                     operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.ForestGreen, "Lakovat", "Lakování základní", WP_LAKO, qty, 30, 30, 240));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DimGray, "Kontrola", "Kontrola finální", WP_KONT, qty, 30, 10, 0));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DimGray, "Kontrola", "Kontrola finální", WP_KONT, qty, 30, 15, 0));
+                    break;
+
+                case ProductTpv.Standard:
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.GreenYellow, "Řez tvaru", "Přeříznout", WP_PILA, qty, 30, 20, 45, Pbb(60)));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.Blue, "Broušení hran", "Zabrousit", WP_DILN, qty, 0, 20, 30, Pbb(20)));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.BlueViolet, "Vrtat čepy", "Zavrtat pro čepy", WP_DILN, qty, 15, 15, 30, Pbb(5)));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DarkOrange, "Nasadit čepy", "Nasadit a vlepit čepy", WP_DILN, qty, 0, 30, 0));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DarkRed, "Klížit", "Sklížit díly", WP_DILN, qty, 30, 20, 360));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.ForestGreen, "Lakovat", "Lakování základní", WP_LAKO, qty, 30, 45, 240));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DimGray, "Kontrola", "Kontrola finální", WP_KONT, qty, 30, 20, 0));
                     break;
 
                 case ProductTpv.Luxus:
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.GreenYellow, "Řez délky", "Přeříznout", WP_PILA, qty, 30, 15, 45, Pbb(70)));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.Blue, "Brousit hrany", "Zabrousit", WP_DILN, qty, 0, 20, 45, Pbb(50)));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.GreenYellow, "Řez délky", "Přeříznout", WP_PILA, qty, 30, 25, 45, Pbb(70)));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.Blue, "Brousit hrany", "Zabrousit", WP_DILN, qty, 0, 30, 45, Pbb(50)));
                     operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.Blue, "Brousit povrch", "Zabrousit", WP_DILN, qty, 0, 20, 30, Pbb(40)));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.BlueViolet, "Vrtat čepy", "Zavrtat pro čepy", WP_DILN, qty, 30, 5, 45, Pbb(30)));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DarkOrange, "Vsadit čepy", "Nasadit a vlepit čepy", WP_DILN, qty, 0, 5, 0, Pbb(20)));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DimGray, "Kontrola čepů", "Kontrolovat čepy", WP_KONT, qty, 0, 15, 0, Pbb(10)));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DarkRed, "Klížit celek", "Sklížit díly", WP_DILN, qty, 45, 30, 360));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DimGray, "Kontrola klížení", "Kontrolovat klížení", WP_KONT, qty, 0, 15, 0));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.BlueViolet, "Vrtat čepy", "Zavrtat pro čepy", WP_DILN, qty, 30, 15, 45, Pbb(30)));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DarkOrange, "Vsadit čepy", "Nasadit a vlepit čepy", WP_DILN, qty, 0, 20, 0, Pbb(20)));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DimGray, "Kontrola čepů", "Kontrolovat čepy", WP_KONT, qty, 0, 30, 0, Pbb(10)));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DarkRed, "Klížit celek", "Sklížit díly", WP_DILN, qty, 45, 60, 360));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DimGray, "Kontrola klížení", "Kontrolovat klížení", WP_KONT, qty, 0, 30, 0));
                     operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.ForestGreen, "Lakovat základ", "Lakování základní", WP_LAKO, qty, 30, 45, 240));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.Blue, "Brousit lak", "Zabrousit", WP_DILN, qty, 0, 20, 5));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DarkGreen, "Lakovat lesk", "Lakování lesklé", WP_LAKO, qty, 60, 45, 240));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DimGray, "Kontrola celku", "Kontrolovat lakování", WP_KONT, qty, 0, 10, 0));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.Blue, "Brousit lak", "Zabrousit", WP_DILN, qty, 0, 30, 5));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DarkGreen, "Lakovat lesk", "Lakování lesklé", WP_LAKO, qty, 60, 60, 240));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DimGray, "Kontrola celku", "Kontrolovat lakování", WP_KONT, qty, 0, 30, 0));
                     break;
 
                 case ProductTpv.Cooperation:
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.Gray, "Kooperace", "Udělá to někdo jiný", WP_KOOP, qty, 360, 0, 1440));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DimGray, "Kontrola", "Kontrolovat kooperaci", WP_KONT, qty, 30, 5, 0));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.Gray, "Kooperace", "Udělá to někdo jiný", WP_KOOP, qty, 360, 30, 1440));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DimGray, "Kontrola", "Kontrolovat kooperaci", WP_KONT, qty, 1440, 30, 60));
                     break;
 
             }
@@ -290,6 +306,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 WorkPlace = workPlace,
                 TagTexts = (tagText != null ? tagText.Split(',', ';') : null),
                 MachinesCount = machinesCount,
+                PlanUnitType = PlanUnitType.Workplace,
                 WorkTimes = CreateWorkingItems(1000 * recordId, calendar, (float)machinesCount, this.TimeRangeTotal)
             };
             this.WorkplaceDict.Add(planUnitC.RecordGid, planUnitC);
@@ -317,6 +334,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 WorkPlace = workplace,
                 TagTexts = null,
                 MachinesCount = 1,
+                PlanUnitType = PlanUnitType.Person,
                 WorkTimes = CreateWorkingItems(1000 * recordId, calendar, 1f, this.TimeRangeTotal)
             };
             this.PersonDict.Add(planUnitC.RecordGid, planUnitC);
@@ -463,6 +481,20 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                             break;
                     }
                     break;
+
+                case CalendarType.Work5d1x24h:
+                    // Po ÷ Pá; { 0:00 ÷ 0:00 }
+                    if (hour > 6d || !IsWorkingDay(time))
+                        MoveToNextDay(ref time, true, 0);
+                    time = time.Date;
+                    workingTimeRange = new GuiTimeRange(time.AddHours(0), time.AddHours(24));
+                    backColor = Color.FromArgb(160, Color.LightBlue);
+                    time = time.AddDays(1d);
+                    break;
+
+                default:
+                    var kalendar = calendar;
+                    break;
             }
             return (workingTimeRange != null);
         }
@@ -497,11 +529,11 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <summary>
         /// Typ výroby
         /// </summary>
-        protected enum ProductTpv { None, Standard, Luxus, Cooperation }
+        protected enum ProductTpv { None, Simple, Standard, Luxus, Cooperation }
         /// <summary>
         /// Typ kalendáře
         /// </summary>
-        protected enum CalendarType { None, Work5d1x8hR, Work5d1x8hO, Work5d2x8h, Work7d3x8h }
+        protected enum CalendarType { None, Work5d1x8hR, Work5d1x8hO, Work5d2x8h, Work7d3x8h, Work5d1x24h }
         /// <summary>
         /// Dictionary s Výrobními příkazy
         /// </summary>
@@ -555,7 +587,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             PlanUnitC[] persons = this.PersonDict.Values.Where(p => p.WorkPlace.Contains(workPlace)).ToArray();
             PlanUnitC person = this.GetRandom(persons);
 
-            productOperation.PlanTimeOperation(ref recordId, ref flowTime, workplace, person);
+            if (Pbb(25))
+                flowTime = flowTime + TimeSpan.FromHours(Rand.Next(1, 9));        // Random pauza mezi operacemi 1 až 8 hodin, zařadím v 25% případů
+            productOperation.PlanTimeOperation(ref recordId, ref flowTime, Direction.Positive, workplace, person);
         }
         #endregion
         #endregion
@@ -652,7 +686,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             this.MainData.ToolbarItems.Add(new GuiToolbarItem()
             {
-                Name = "TlbSubDay",
+                Name = GuiNameToolbarSubDay,
                 Size = FunctionGlobalItemSize.Half,
                 LayoutHint = LayoutHint.NextItemSkipToNextRow,
                 GroupName = "FUNKCE",
@@ -663,7 +697,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             });
             this.MainData.ToolbarItems.Add(new GuiToolbarItem()
             {
-                Name = "TlbAddDay",
+                Name = GuiNameToolbarAddDay,
                 Size = FunctionGlobalItemSize.Half,
                 LayoutHint = LayoutHint.NextItemSkipToNextTable,
                 GroupName = "FUNKCE",
@@ -675,7 +709,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             this.MainData.ToolbarItems.Add(new GuiToolbarItem()
             {
-                Name = "RePlan",
+                Name = GuiNameToolbarRePlan,
                 Size = FunctionGlobalItemSize.Whole,
                 GroupName = "FUNKCE",
                 Title = "PLÁN",
@@ -688,7 +722,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             this.MainData.ToolbarItems.Add(new GuiToolbarItem()
             {
-                Name = "SaveData",
+                Name = GuiNameToolbarSaveData,
                 Size = FunctionGlobalItemSize.Whole,
                 Enable = false,
                 GroupName = "FUNKCE",
@@ -702,7 +736,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             this.MainData.ToolbarItems.Add(new GuiToolbarItem()
             {
-                Name = "TlbApplyFilterMainToLeft",
+                Name = GuiNameToolbarFilterLeft,
                 Size = FunctionGlobalItemSize.Half,
                 LayoutHint = LayoutHint.NextItemSkipToNextRow,
                 GroupName = "NASTAVENÍ",
@@ -711,12 +745,12 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 IsCheckable = true,
                 Image = RES.Images.Actions24.FormatIndentLess3Png,
                 GuiActions = GuiActionType.ResetAllRowFilters | GuiActionType.RunInteractionRowActivated | GuiActionType.SuppressCallAppHost,
-                RunInteractionNames = @"Data\pages\MainPage\mainPanel\GridCenter:InteractionFilterProductOrder"
+                RunInteractionNames = GuiFullNameGridCenterTop + ":" + GuiNameInteractionFilterProductOrder
             });
 
             this.MainData.ToolbarItems.Add(new GuiToolbarItem()
             {
-                Name = "TlbResetAllFilters",
+                Name = GuiNameToolbarResetFilters,
                 Size = FunctionGlobalItemSize.Half,
                 GroupName = "NASTAVENÍ",
                 Title = "Zruš filtry",
@@ -729,7 +763,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// </summary>
         protected void CreateMainPage()
         {
-            this.MainPage = new GuiPage() { Name = "MainPage", Title = "Plánování dílny POLOTOVARY", ToolTip = "Toto je pouze ukázková knihovna" };
+            this.MainPage = new GuiPage() { Name = GuiNameMainPage, Title = "Plánování dílny POLOTOVARY", ToolTip = "Toto je pouze ukázková knihovna" };
             this.MainData.Pages.Add(this.MainPage);
         }
         /// <summary>
@@ -737,7 +771,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// </summary>
         protected void CreateLeftPanel()
         {
-            GuiGrid gridLeft = new GuiGrid() { Name = "GridLeft", Title = "Výrobní příkazy" };
+            GuiGrid gridLeft = new GuiGrid() { Name = GuiNameGridLeft, Title = "Výrobní příkazy" };
 
             gridLeft.GridProperties.TagFilterItemHeight = 26;
             gridLeft.GridProperties.TagFilterItemMaxCount = 60;
@@ -747,9 +781,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             gridLeft.GridProperties.AddInteraction(new GuiGridInteraction()
             {
-                Name = "InteractionSelectOperations",
+                Name = GuiNameInteractionSelectOperations,
                 SourceAction = (SourceActionType.TableRowActivatedOnly | SourceActionType.TableRowChecked),
-                TargetGridFullName = @"Data\pages\MainPage\mainPanel\GridCenter",
+                TargetGridFullName = GuiFullNameGridCenterTop,
                 TargetAction = (TargetActionType.SearchSourceItemId | TargetActionType.SearchTargetGroupId | TargetActionType.SelectTargetItem)
             });
 
@@ -767,8 +801,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             gridLeft.GraphProperties.TimeAxisMode = TimeGraphTimeAxisMode.LogarithmicScale;
             gridLeft.GraphProperties.UpperSpaceLogical = 1f;
 
-            DataTable rowTable = WorkSchedulerSupport.CreateTable("RowsLeft", "cislo_subjektu int, reference_subjektu string, nazev_subjektu string, qty decimal");
-            gridLeft.Rows = new GuiTable() { Name = "GridLeft", DataTable = rowTable };
+            DataTable rowTable = WorkSchedulerSupport.CreateTable(GuiNameLeftRowTable, "cislo_subjektu int, reference_subjektu string, nazev_subjektu string, qty decimal");
+            gridLeft.Rows = new GuiTable() { Name = GuiNameLeftRowTable, DataTable = rowTable };
             gridLeft.Rows.ColumnsExtendedInfo[0].ClassNumber = ProductOrder.ClassNumber;
             gridLeft.Rows.ColumnsExtendedInfo[0].BrowseColumnType = BrowseColumnType.SubjectNumber;
             gridLeft.Rows.ColumnsExtendedInfo[1].PrepareDataColumn("Číslo", 85, true, null, true);
@@ -800,31 +834,37 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// </summary>
         protected void CreateCenterPanelWorkplace(bool withDirectChilds = false)
         {
-            GuiGrid gridCenterWorkplace = new GuiGrid() { Name = "GridCenter", Title = "Pracoviště" };
+            GuiGrid gridCenterWorkplace = new GuiGrid() { Name = GuiNameGridCenterTop, Title = "Pracoviště" };
 
-            this.SetCenterGridProperties(gridCenterWorkplace, true, true, true, true);
+            this.SetCenterGridProperties(gridCenterWorkplace, true, true, true, true, GuiNameLeftCenterTable);
 
             gridCenterWorkplace.GridProperties.ChildRowsEvaluate =
                 // Child řádky k Parent řádkům navážeme dynamicky, podle viditelného časového okna:
                 GuiChildRowsEvaluateMode.VisibleTimeOnly |
                 // K identifikátoru GroupId z Parent řádku najdeme shodný GroupId v Child řádku 
                 //   (tzn. Child pracuje na stejné operaci, jako Parent):
-                GuiChildRowsEvaluateMode.OnParentGroup | GuiChildRowsEvaluateMode.ToChildGroup | 
+                GuiChildRowsEvaluateMode.OnParentGroup | GuiChildRowsEvaluateMode.ToChildGroup |
+                // Child věty budeme hledat v jiné tabulce (což znamená provést duplikát řádku!), a to pouze v jejích Root řádcích:
+                GuiChildRowsEvaluateMode.InOtherTable | GuiChildRowsEvaluateMode.InOtherRootRowsOnly |
+                // Při duplikaci grafu duplikovat pouze synchronní prvky grafu:
+                GuiChildRowsEvaluateMode.DuplicateOnlyPairGraphItem |
                 // A navíc ty dva prvky musí mít společný čas:
                 GuiChildRowsEvaluateMode.ParentChildIntersectTimeOnly;
 
+            gridCenterWorkplace.GridProperties.ChildRowsTableName = GuiFullNameGridCenterBottom;
+
             gridCenterWorkplace.GridProperties.AddInteraction(new GuiGridInteraction()
             {
-                Name = "InteractionFilterProductOrder",
+                Name = GuiNameInteractionFilterProductOrder,
                 SourceAction = (SourceActionType.TableRowActivatedOnly | SourceActionType.TableRowChecked),
-                TargetGridFullName = @"Data\pages\MainPage\leftPanel\GridLeft",
+                TargetGridFullName = GuiFullNameGridLeft,
                 // Hledáme: SearchSourceDataId : ve Zdrojovém grafu načteme DataId (= GID Operace VP),
                 //          SearchSourceVisibleTime : vezmeme pouze prvky ve viditelném čase,
                 //          SearchTargetItemId : tento GID vyhledáme v Cílovém grafu jako ItemId = GID Operace VP,
                 //          FilterTargetRows   : a pro cílové prvky zjistíme jejich Row a na ně dáme filtr:
                 TargetAction = (TargetActionType.SearchSourceDataId | TargetActionType.SearchSourceVisibleTime | TargetActionType.SearchTargetItemId | TargetActionType.FilterTargetRows),
                 // Interakce je podmíněna stavem IsChecked = true u tohoto buttonu v ToolBaru:
-                Conditions = "TlbApplyFilterMainToLeft"
+                Conditions = GuiNameToolbarFilterLeft
             });
 
             // Data tabulky = Plánovací jednotky Pracoviště:
@@ -856,9 +896,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// </summary>
         protected void CreateCenterPanelPersons()
         {
-            GuiGrid gridCenterPersons = new GuiGrid() { Name = "GridCenterPersons", Title = "Pracovníci" };
+            GuiGrid gridCenterPersons = new GuiGrid() { Name = GuiNameGridCenterBottom, Title = "Pracovníci" };
 
-            this.SetCenterGridProperties(gridCenterPersons, true, true, true, true);
+            this.SetCenterGridProperties(gridCenterPersons, true, true, true, true, GuiNameLeftCenterTable);
 
             // Data tabulky = Plánovací jednotky Pracovníci:
             foreach (PlanUnitC planUnitC in this.PersonDict.Values)
@@ -875,7 +915,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <param name="timeAxis"></param>
         /// <param name="graph"></param>
         /// <param name="table"></param>
-        protected void SetCenterGridProperties(GuiGrid gridCenterWorkplace, bool tagFilter, bool timeAxis, bool graph, bool table)
+        protected void SetCenterGridProperties(GuiGrid gridCenterWorkplace, bool tagFilter, bool timeAxis, bool graph, bool table, string tableName)
         {
             if (tagFilter)
             {
@@ -917,8 +957,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             if (table)
             {
-                DataTable rowTable = WorkSchedulerSupport.CreateTable("RowsCenter", "cislo_subjektu int, reference_subjektu string, nazev_subjektu string, machines_count decimal");
-                gridCenterWorkplace.Rows = new GuiTable() { Name = "GridCenter", DataTable = rowTable };
+                DataTable rowTable = WorkSchedulerSupport.CreateTable(tableName, "cislo_subjektu int, reference_subjektu string, nazev_subjektu string, machines_count decimal");
+                gridCenterWorkplace.Rows = new GuiTable() { Name = tableName, DataTable = rowTable };
                 gridCenterWorkplace.Rows.ColumnsExtendedInfo[0].ClassNumber = PlanUnitC.ClassNumber;
                 gridCenterWorkplace.Rows.ColumnsExtendedInfo[0].BrowseColumnType = BrowseColumnType.SubjectNumber;
                 gridCenterWorkplace.Rows.ColumnsExtendedInfo[1].PrepareDataColumn("Číslo", 85, true, null, true);
@@ -1116,6 +1156,39 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         protected DateTime DateTimeFirst;
         protected GuiTimeRange TimeRangeTotal;
         protected GuiTimeRange TimeRangeCurrent;
+        #endregion
+        #region Konstanty, jména GUI prvků
+        protected const string GuiNameData = "Data";
+        protected const string GuiNameToolbarSubDay = "TlbSubDay";
+        protected const string GuiNameToolbarAddDay = "TlbAddDay";
+        protected const string GuiNameToolbarRePlan = "RePlan";
+        protected const string GuiNameToolbarSaveData = "SaveData";
+        protected const string GuiNameToolbarFilterLeft = "TlbApplyFilterMainToLeft";
+        protected const string GuiNameToolbarResetFilters = "TlbResetAllFilters";
+
+        protected const string GuiNameMainPage = "MainPage";
+        protected const string GuiNameGridLeft = "GridLeft";
+        protected const string GuiNameGridCenterTop = "GridTop";
+        protected const string GuiNameGridCenterBottom = "GridBottom";
+
+        protected const string GuiNameInteractionSelectOperations = "InteractionSelectOperations";
+        protected const string GuiNameInteractionFilterProductOrder = "InteractionFilterProductOrder";
+
+        protected const string GuiNameLeftRowTable = "RowsLeft";
+        protected const string GuiNameLeftCenterTable = "RowsCenter";
+
+        protected const string GuiFullNameLeftPanel = GuiNameData + GuiNameDelimiter + GuiNamePages + GuiNameDelimiter + GuiNameMainPage + GuiNameDelimiter + GuiNameLeftPanel + GuiNameDelimiter;
+        protected const string GuiFullNameGridLeft = GuiFullNameLeftPanel + GuiNameGridLeft;
+        protected const string GuiFullNameMainPanel = GuiNameData + GuiNameDelimiter + GuiNamePages + GuiNameDelimiter + GuiNameMainPage + GuiNameDelimiter + GuiNameMainPanel + GuiNameDelimiter;
+        protected const string GuiFullNameGridCenterTop = GuiFullNameMainPanel + GuiNameGridCenterTop;
+        protected const string GuiFullNameGridCenterBottom = GuiFullNameMainPanel + GuiNameGridCenterBottom;
+
+        protected const string GuiNameDelimiter = "\\";
+        protected const string GuiNamePages = "pages";
+        protected const string GuiNameLeftPanel = "leftPanel";
+        protected const string GuiNameMainPanel = "mainPanel";
+        protected const string GuiNameRightPanel = "rightPanel";
+        protected const string GuiNameBottomPanel = "bottomPanel";
         #endregion
         #region IAppHost : vyvolání funkce z Pluginu do AppHost
         AppHostResponseArgs IAppHost.CallAppHostFunction(AppHostRequestArgs requestArgs)
@@ -1406,14 +1479,18 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// </summary>
         /// <param name="recordId"></param>
         /// <param name="flowTime"></param>
+        /// <param name="direction"></param>
         /// <param name="workplace"></param>
         /// <param name="person"></param>
-        public void PlanTimeOperation(ref int recordId, ref DateTime flowTime, PlanUnitC workplace, PlanUnitC person)
+        public void PlanTimeOperation(ref int recordId, ref DateTime flowTime, Data.Direction direction, PlanUnitC workplace, PlanUnitC person)
         {
             if (workplace == null) return;
-            this.TimeTBc = this.PlanTimePhase(ref recordId, ref flowTime, workplace, person, this.TBc, this.BackColor.Morph(Color.Green, 0.25f));
-            this.TimeTAc = this.PlanTimePhase(ref recordId, ref flowTime, workplace, person, this.TAc, this.BackColor);
-            this.TimeTEc = this.PlanTimePhase(ref recordId, ref flowTime, workplace, person, this.TEc, this.BackColor.Morph(Color.Black, 0.25f));
+            if (!(direction == Direction.Positive || direction == Direction.Negative))
+                throw new Asol.Tools.WorkScheduler.Application.GraphLibCodeException("Směr plánu musí být pouze Positive nebo Negative.");
+
+            this.TimeTBc = this.PlanTimePhase(ref recordId, ref flowTime, direction, workplace, person, this.TBc, this.BackColor.Morph(Color.Green, 0.25f));
+            this.TimeTAc = this.PlanTimePhase(ref recordId, ref flowTime, direction, workplace, person, this.TAc, this.BackColor);
+            this.TimeTEc = this.PlanTimePhase(ref recordId, ref flowTime, direction, workplace, person, this.TEc, this.BackColor.Morph(Color.Black, 0.25f));
             this.Time = new GuiTimeRange(this.TimeTBc.Begin, this.TimeTEc.End);
         }
         /// <summary>
@@ -1421,11 +1498,12 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// </summary>
         /// <param name="recordId"></param>
         /// <param name="flowTime"></param>
+        /// <param name="direction"></param>
         /// <param name="workplace"></param>
         /// <param name="person"></param>
         /// <param name="time"></param>
         /// <param name="backColor"></param>
-        protected GuiTimeRange PlanTimePhase(ref int recordId, ref DateTime flowTime, PlanUnitC workplace, PlanUnitC person, TimeSpan time, Color backColor)
+        protected GuiTimeRange PlanTimePhase(ref int recordId, ref DateTime flowTime, Data.Direction direction, PlanUnitC workplace, PlanUnitC person, TimeSpan time, Color backColor)
         {
             if (workplace == null || time.Ticks <= 0L) return new GuiTimeRange(flowTime, flowTime);
 
@@ -1439,7 +1517,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 for (int t = 0; t < 25; t++)         // jenom Timeout
                 {
                     if (time.Ticks <= 0L) break;     // Je hotovo.
-                    bool isPlanned = this.PlanTimePart(ref recordId, ref phaseBegin, ref flowTime, ref phaseEnd, planUnits, ref time, backColor);
+                    bool isPlanned = this.PlanTimePart(ref recordId, ref flowTime, direction, ref phaseBegin, ref phaseEnd, planUnits, ref time, backColor);
                     if (!isPlanned) break;           // Nejde to.
                 }
                 if (time.Ticks <= 0L) break;         // Je hotovo.
@@ -1458,16 +1536,17 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <param name="recordId"></param>
         /// <param name="begin"></param>
         /// <param name="flowTime"></param>
+        /// <param name="direction"></param>
         /// <param name="end"></param>
         /// <param name="planUnits"></param>
         /// <param name="needTime"></param>
         /// <param name="backColor"></param>
         /// <returns></returns>
-        protected bool PlanTimePart(ref int recordId, ref DateTime? phaseBegin, ref DateTime flowTime, ref DateTime? phaseEnd, PlanUnitC[] planUnits, ref TimeSpan needTime, Color backColor)
+        protected bool PlanTimePart(ref int recordId, ref DateTime flowTime, Data.Direction direction, ref DateTime? phaseBegin, ref DateTime? phaseEnd, PlanUnitC[] planUnits, ref TimeSpan needTime, Color backColor)
         {
             // Provedu přípravu pracovních časů pro každou PlanUnitC tak, aby její CurrentWorkTime začínal v flowTime nebo později:
             foreach (PlanUnitC planUnit in planUnits)
-                planUnit.FindTime(flowTime);
+                planUnit.FindTime(flowTime, direction);
 
             // Určím ty PlanUnitC, které v dané době ještě mají pracovní směny:
             PlanUnitC[] workingUnits = planUnits
@@ -1489,27 +1568,47 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             DateTime end = commonTime.End.Value;
             if (begin >= end)
             {   // Společný čas je nereálný nebo prázdný => zajistíme, že proběhne další kolo, ale od nového flowTime:
-                flowTime = begin;
+                flowTime = (direction == Direction.Positive ? begin : end);
                 return true;
             }
 
-            // Máme společný čas na práci => určíme, kolik ho reálně potřebujeme:
+            // Máme určen nějaký (společný) čas na práci => určíme, kolik ho reálně potřebujeme pro naši operaci (a fázi):
             TimeSpan dispTime = commonTime.Size.Value;
+            TimeSpan usedTime = dispTime;
             if (needTime < dispTime)
-                end = begin + needTime;
+            {
+                usedTime = needTime;
+                switch (direction)
+                {
+                    case Direction.Positive:
+                        end = begin + usedTime;
+                        break;
+                    case Direction.Negative:
+                        begin = end - usedTime;
+                        break;
+                }
+            }
+            needTime -= usedTime;
 
-            // Vygenerujeme pracovní časy:
+            // Vygenerujeme pracovní časy do odpovídajících Kapacitních jednotek:
             GuiTimeRange workTimeRange = new GuiTimeRange(begin, end);
             foreach (PlanUnitC workingUnit in workingUnits)
                 workingUnit.AddUnitTime(this.CreateUnitTime(ref recordId, workingUnit, workTimeRange, backColor));
 
-            // Řešíme čas fáze:
-            if (!phaseBegin.HasValue) phaseBegin = begin;
-            phaseEnd = end;
-
-            // Posuneme čas, zmenšíme potřebu kapacit a vrátíme true:
-            flowTime = end;
-            needTime -= ((TimeSpan)(workTimeRange.End - workTimeRange.Begin));
+            // Řešíme čas celé fáze (phaseBegin - phaseEnd), a posun flowTime - a to podle směru plánu:
+            switch (direction)
+            {
+                case Direction.Positive:
+                    if (!phaseBegin.HasValue) phaseBegin = begin;
+                    phaseEnd = end;
+                    flowTime = end;
+                    break;
+                case Direction.Negative:
+                    if (!phaseEnd.HasValue) phaseEnd = end;
+                    phaseBegin = begin;
+                    flowTime = begin;
+                    break;
+            }
             return true;
         }
         /// <summary>
@@ -1570,6 +1669,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         public string WorkPlace { get; set; }
         public IEnumerable<string> TagTexts { get; set; }
         public IEnumerable<GuiTagItem> TagItems { get { IEnumerable<string> tt = this.TagTexts; return (tt == null ? new GuiTagItem[0] : tt.Select(text => new GuiTagItem() { RowId = this.RecordGid, TagText = text }).ToArray()); } }
+        public PlanUnitType PlanUnitType { get; set; }
         public int MachinesCount { get; set; }
         public List<WorkTime> WorkTimes { get; set; }
         public void AddUnitTime(UnitTime unitTime)
@@ -1583,23 +1683,39 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         }
         public List<UnitTime> UnitTimes { get; set; }
         /// <summary>
-        /// Metoda umístí do <see cref="CurrentWorkTime"/> nejbližší vyhovující pracovní čas, počínaje daným časem, ToFuture.
-        /// Jeho Begin bude buď rovný nebo vyšší než požadavek (nikdy nebude menší), jeho End bude vyšší.
+        /// Metoda umístí do <see cref="CurrentWorkTime"/> nejbližší vyhovující pracovní čas, počínaje daným časem, v daném směru.
+        /// Směr Positive: Jeho Begin bude buď rovný nebo vyšší než požadavek (nikdy nebude menší), jeho End bude vyšší.
+        /// Směr Negative: Jeho End bude buď rovný nebo nižší než požadavek (nikdy nebude větší), jeho Begin bude nižší.
         /// </summary>
         /// <param name="flowTime"></param>
-        public void FindTime(DateTime flowTime)
+        public void FindTime(DateTime flowTime, Data.Direction direction)
         {
             this.CurrentWorkTime = null;
-            WorkTime workTime = this.WorkTimes.FirstOrDefault(wt => wt.Time.End > flowTime);
-            if (workTime == null) return;
-            DateTime begin = (workTime.Time.Begin < flowTime ? flowTime : workTime.Time.Begin);
-            this.CurrentWorkTime = new GuiTimeRange(begin, workTime.Time.End);
+            WorkTime workTime;
+            switch (direction)
+            {
+                case Direction.Positive:
+                    workTime = this.WorkTimes.FirstOrDefault(wt => wt.Time.End > flowTime);
+                    if (workTime != null)
+                    {
+                        DateTime begin = (workTime.Time.Begin < flowTime ? flowTime : workTime.Time.Begin);
+                        this.CurrentWorkTime = new GuiTimeRange(begin, workTime.Time.End);
+                    }
+                    break;
+                case Direction.Negative:
+                    workTime = this.WorkTimes.LastOrDefault(wt => wt.Time.Begin < flowTime);
+                    if (workTime != null)
+                    {
+                        DateTime end = (workTime.Time.End > flowTime ? flowTime : workTime.Time.End);
+                        this.CurrentWorkTime = new GuiTimeRange(workTime.Time.Begin, end);
+                    }
+                    break;
+            }
         }
         /// <summary>
         /// Pracovní čas nalezený v metodě <see cref="FindTime(DateTime)"/>
         /// </summary>
         public GuiTimeRange CurrentWorkTime { get; set; }
-
         /// <summary>
         /// Vytvoří a vrátí graf za toto Pracoviště (obsahuje prvky = pracovní směny a prvky práce)
         /// </summary>
@@ -1617,6 +1733,21 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             return guiGraph;
         }
+    }
+    /// <summary>
+    /// Druh kapacity
+    /// </summary>
+    public enum PlanUnitType
+    {
+        None = 0,
+        /// <summary>
+        /// Pracoviště
+        /// </summary>
+        Workplace,
+        /// <summary>
+        /// Osoba
+        /// </summary>
+        Person
     }
     #endregion
     #region class UnitTime : Pracovní jednotka = kus práce na pracovišti
@@ -1654,15 +1785,20 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 RowId = this.PlanUnitC?.RecordGid,
                 Layer = 1,
                 BackColor = this.BackColor,
-                BehaviorMode = GraphItemBehaviorMode.ShowCaptionAllways | GraphItemBehaviorMode.ShowToolTipFadeIn | 
-                        GraphItemBehaviorMode.ShowLinkInMouseOver | GraphItemBehaviorMode.ShowLinkInSelected |
-                        GraphItemBehaviorMode.MoveToAnotherRow | GraphItemBehaviorMode.MoveToAnotherTime,
+                BehaviorMode = GraphItemBehaviorMode.ShowCaptionAllways | GraphItemBehaviorMode.ShowToolTipFadeIn,
                 Height = this.Height,
                 Text = this.Text,
                 ToolTip = this.ToolTip,
                 Time = this.Time
             };
 
+            // Aktivita se liší pro Pracoviště a pro Osobu:
+            if (this.PlanUnitC != null && this.PlanUnitC.PlanUnitType == PlanUnitType.Workplace)
+                guiGraphItem.BehaviorMode |=
+                    GraphItemBehaviorMode.ShowLinkInMouseOver | GraphItemBehaviorMode.ShowLinkInSelected |
+                    GraphItemBehaviorMode.MoveToAnotherRow | GraphItemBehaviorMode.MoveToAnotherTime;
+
+            // Fixed:
             if (this.Operation != null && this.Operation.IsFixed)
             {
                 guiGraphItem.BackStyle = System.Drawing.Drawing2D.HatchStyle.DarkHorizontal;
@@ -1673,7 +1809,6 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             return guiGraphItem;
         }
-
     }
     #endregion
     #region class WorkTime : Pracovní směna
@@ -1791,6 +1926,26 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// Číslo záznamu
         /// </summary>
         public int RecordId { get; set; }
+    }
+    #endregion
+    #region enumy
+    /// <summary>
+    /// Směr času
+    /// </summary>
+    public enum TimeDirectionx
+    {
+        /// <summary>
+        /// ANi tam, ani jinam
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Do minulosti, zpětně, na časové ose doleva
+        /// </summary>
+        ToHistory,
+        /// <summary>
+        /// Do budoucnosti, dopředně, na časové ose doprava
+        /// </summary>
+        ToFuture
     }
     #endregion
     #endregion
