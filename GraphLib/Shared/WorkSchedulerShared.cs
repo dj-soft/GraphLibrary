@@ -665,6 +665,10 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiChildRowsEvaluateMode? ChildRowsEvaluate { get; set; }
         /// <summary>
+        /// Zdrojová tabulka pro Child řádky, pokud v <see cref="ChildRowsEvaluate"/> je nastaven bit <see cref="GuiChildRowsEvaluateMode.InOtherTable"/>
+        /// </summary>
+        public string ChildRowsTableName { get; set; }
+        /// <summary>
         /// Přidá jednu další definici interakce <see cref="GuiGridInteraction"/>
         /// </summary>
         /// <param name="interaction"></param>
@@ -745,6 +749,22 @@ namespace Noris.LCS.Base.WorkScheduler
         /// V Child řádku vyhledat prvky grafu podle jejich <see cref="GuiGraphBaseItem.RowId"/>
         /// </summary>
         ToChildRow = 0x0800,
+
+        /// <summary>
+        /// Hledat Child řádky v jiné tabulce (její název je určen v property <see cref="GuiGridProperties.ChildRowsTableName"/>).
+        /// Nalezený řádek z Child tabulky bude do this tabulky zkopírován (nebude do ní referencován) = vznikne new instance.
+        /// Duplikování se provede i pro případný graf a jeho položky.
+        /// </summary>
+        InOtherTable = 0x1000,
+        /// <summary>
+        /// Hledat Child řádky pouze mezi Root řádky v jiné tabulce (její název je určen v property <see cref="GuiGridProperties.ChildRowsTableName"/>).
+        /// K tomuto bitu může i nemusí být nastaven bit <see cref="InOtherRootRowsOnly"/>
+        /// </summary>
+        InOtherRootRowsOnly = 0x2000,
+        /// <summary>
+        /// Do child řádku provádět duplikaci položek grafu ze zdrojovho řádku pouze takových, které souvisejí s Parent řádkem.
+        /// </summary>
+        DuplicateOnlyPairGraphItem = 0x4000
     }
     #endregion
     #region GuiGridInteraction : definice interakcí v rámci GUI (akce v jednom místě způsobí jinou akci jinde)
