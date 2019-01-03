@@ -2589,6 +2589,16 @@ namespace Asol.Tools.WorkScheduler.Data
             this._CellInit(values);
         }
         /// <summary>
+        /// Konstruktor, který do nové instance překopíruje data ze zdrojového řádku
+        /// </summary>
+        /// <param name="original"></param>
+        public Row(Row original)
+             : this()
+        {
+            if (original != null)
+                CopyData(original, this);
+        }
+        /// <summary>
         /// Vizualizace
         /// </summary>
         /// <returns></returns>
@@ -2619,6 +2629,35 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Po odebrání z tabulky je hodnota -1.
         /// </summary>
         public int RowId { get { return this._RowId; } } private int _RowId = -1;
+        #endregion
+        #region Klonování řádku
+        /// <summary>
+        /// Přenese obsah z řádku Source to Target.
+        /// </summary>
+        /// <param name="source"></param>
+        /// <param name="target"></param>
+        public static void CopyData(Row source, Row target)
+        {
+            target._CellDict.Clear();
+            foreach (var kvp in source._CellDict)
+            {
+                int columnId = kvp.Key;
+                object value = CloneValue(kvp.Value);
+                target._GetCell(columnId).Value = value;
+            }
+
+            target.BackgroundValue = CloneValue(source.BackgroundValue);
+            target._TagItemDict = (source._TagItemDict != null ? new Dictionary<string, TagItem>(source._TagItemDict) : null);
+        }
+        /// <summary>
+        /// Metoda vrací klon z dodané hodnoty
+        /// </summary>
+        /// <param name="source"></param>
+        /// <returns></returns>
+        private static object CloneValue(object source)
+        {
+            return (source == null ? null : (source is ICloneable) ? ((source as ICloneable).Clone()) : source);
+        }
         #endregion
         #region Linkování na tabulku a na sloupce
         /// <summary>

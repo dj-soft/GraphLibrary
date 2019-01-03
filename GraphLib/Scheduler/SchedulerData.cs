@@ -1758,6 +1758,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 foreach (GuiPage guiPage in this._GuiPages.Pages)
                     App.TryRun(() => this._MainControl.AddPage(guiPage));
                 this._FillDataTables();
+                this._PrepareAllTablesAfterLoad();
 
                 // Následující řádek musí být až po _FillDataTables():
                 //  protože tam se registruje eventhandler změny času do jednotlivých Gridů (a proto se vykoná dříve),
@@ -1785,6 +1786,19 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             }
         }
         /// <summary>
+        /// Metoda zavolá akci <see cref="MainDataTable.PrepareAfterLoad()"/> pro všechny načtené tabulky ze soupisu <see cref="_DataTables"/>.
+        /// </summary>
+        private void _PrepareAllTablesAfterLoad()
+        {
+            using (App.Trace.Scope(TracePriority.Priority2_Lowest, "MainData", "PrepareAllTables", ""))
+            {
+                foreach (MainDataTable dataTable in this._DataTables)
+                {
+                    dataTable.PrepareAfterLoad();
+                }
+            }
+        }
+        /// <summary>
         /// Metoda má najít a vrátit komplexní tabulku MainDataTable podle jejího plného jména.
         /// Může vrátit null.
         /// Pokud by existovalo více tabulek shodného jména, vrací první z nich.
@@ -1793,7 +1807,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <returns></returns>
         private MainDataTable _SearchTable(string fullName)
         {
-            return this._DataTables.FirstOrDefault(t => String.Equals(t.TableName, fullName));
+            return (this._DataTables != null ? this._DataTables.FirstOrDefault(t => String.Equals(t.TableName, fullName)) : null);
         }
         /// <summary>
         /// Souhrn všech datových tabulek ze všech panelů.
