@@ -845,7 +845,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 //   (tzn. Child pracuje na stejné operaci, jako Parent):
                 GuiChildRowsEvaluateMode.OnParentGroup | GuiChildRowsEvaluateMode.ToChildGroup |
                 // Child věty budeme hledat v jiné tabulce (což znamená provést duplikát řádku!), a to pouze v jejích Root řádcích:
-                GuiChildRowsEvaluateMode.InOtherTable | GuiChildRowsEvaluateMode.InOtherRootRowsOnly |
+                GuiChildRowsEvaluateMode.InOtherRootRowsOnly |
                 // Při duplikaci grafu duplikovat pouze synchronní prvky grafu:
                 GuiChildRowsEvaluateMode.DuplicateOnlyPairGraphItem |
                 // A navíc ty dva prvky musí mít společný čas:
