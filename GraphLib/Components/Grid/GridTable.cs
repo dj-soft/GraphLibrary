@@ -486,7 +486,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             {
                 rows = this.DataTable.RowsSorted.ToList();           // Získat zobrazitelné řádky, setříděné podle zvoleného třídícího sloupce
                 this._Rows = rows;
-                this._IsTreeView = this.DataTable.IsTreeViewTable; // true = z běžné tabulky se stane TreeView
+                this._IsTreeView = this.DataTable.IsTreeViewTable;   // true = z běžné tabulky se stane TreeView
                 heightValid = false;
             }
             if (!heightValid)
@@ -948,7 +948,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         protected bool AllowSelectSingleCell { get { return this.DataTable.AllowSelectSingleCell; } }
         #endregion
         #endregion
-        #region Nastavení aktivního řádku, aktivní tabulky; Scroll řádku/tabulky do viditlné oblasti; Repaint řádku, Repaint sloupce
+        #region Nastavení aktivního řádku, aktivní tabulky; Scroll řádku/tabulky do viditelné oblasti; Repaint řádku, Repaint sloupce
         /// <summary>
         /// Nastaví daný řádek jako aktivní, vyvolá event ActiveRowChanged, nastaví daný řádek tak aby byl vidět.
         /// Zajistí překreslení řádku.

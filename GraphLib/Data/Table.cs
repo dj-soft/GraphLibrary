@@ -2642,7 +2642,7 @@ namespace Asol.Tools.WorkScheduler.Data
             foreach (var kvp in source._CellDict)
             {
                 int columnId = kvp.Key;
-                object value = CloneValue(kvp.Value);
+                object value = CloneValue(kvp.Value.Value);
                 target._GetCell(columnId).Value = value;
             }
 
@@ -3135,12 +3135,13 @@ namespace Asol.Tools.WorkScheduler.Data
         private void _TreeNodeCollapseOtherParents()
         {
             if (!this.HasTable) return;
-            var childDict = this.TreeNodeChilds.GetDictionary(row => row.RecordGId, true);
+            var childDict = this.TreeNodeChilds
+                .GetDictionary(row => row.RowId, true);
             this.Table.TreeNodeScan(
                 (row, level) =>
                 {   // Akce pro každý řádek: 
                     // Pokud daný řádek je otevřený, a některý z jeho Child řádků je obsažen v Dictionary childDict:
-                    if (row.TreeNodeIsExpanded && row.TreeNodeChilds.Any(r => childDict.ContainsKey(r.RecordGId)))
+                    if (row.TreeNodeIsExpanded && row.TreeNodeChilds.Any(r => childDict.ContainsKey(r.RowId)))
                         // Pak takový řádek zavřeme:
                         row._TreeNodeCollapse(false);
                 },

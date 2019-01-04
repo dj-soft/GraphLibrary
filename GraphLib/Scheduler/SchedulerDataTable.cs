@@ -978,7 +978,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             foreach (Row child in childs)
             {
                 Row clone = this.OtherChildGetCloneRow(parentDict, child);
-                qqq
                 if (clone != null)
                     currentChilds.Add(clone);
             }
@@ -1061,9 +1060,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         protected Row OtherChildCreateCloneRow(Row originalRow)
         {
             Row cloneRow = new Row(originalRow);
-
-            qqq
-
+            cloneRow.ParentChildMode = RowParentChildMode.Child;
+            cloneRow.Control = null;
+            this.TableRow.AddRow(cloneRow);
             return cloneRow;
         }
         /// <summary>
