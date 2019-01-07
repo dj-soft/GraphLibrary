@@ -237,6 +237,10 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         public GTimeGraph Graph { get { return this._ParentGraph; } }
         /// <summary>
+        /// Prvek je viditelný?
+        /// </summary>
+        public bool IsVisible { get { return this._IsVisible; } set { this._IsVisible = value; } } private bool _IsVisible = true;
+        /// <summary>
         /// Pole všech základních prvků <see cref="ITimeGraphItem"/> zahrnutých v tomto objektu.
         /// Pole má vždy nejméně jeden prvek.
         /// První prvek tohoto pole <see cref="_FirstItem"/> je nositelem některých klíčových informací.
@@ -545,8 +549,20 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         internal bool IsDragged { get { return this.GControl.InteractiveState.HasFlag(GInteractiveState.FlagDrag); } }
         #endregion
+        #region ICloneable members
+        object ICloneable.Clone()
+        {
+            GTimeGraphGroup gTimeGroup = new GTimeGraphGroup(this._ParentGraph);
+
+            return gTimeGroup;
+
+            // GTimeGraph clone = (GTimeGraph)this.MemberwiseClone();
+            // return clone;
+        }
+        #endregion
         #region explicit ITimeGraphItem members
         ITimeInteractiveGraph ITimeGraphItem.OwnerGraph { get { return this._OwnerGraph; } set { this._OwnerGraph = value; } }
+        bool ITimeGraphItem.IsVisible { get { return this.IsVisible; } set { this.IsVisible = value; } }
         int ITimeGraphItem.ItemId { get { return this._ItemId; } }
         int ITimeGraphItem.GroupId { get { return this._FirstItem.GroupId; } }
         TimeRange ITimeGraphItem.Time { get { return this._Time; } set { this._Time = value; } }

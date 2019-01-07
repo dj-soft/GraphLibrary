@@ -33,7 +33,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
     /// <summary>
     /// Graf na časové ose
     /// </summary>
-    public class GTimeGraph : InteractiveContainer, ITimeInteractiveGraph
+    public class GTimeGraph : InteractiveContainer, ITimeInteractiveGraph, ICloneable
     {
         #region Konstrukce, pole položek Items
         /// <summary>
@@ -333,13 +333,17 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             return true;
         }
         /// <summary>
-        /// Počet prvků grafu
+        /// Počet všech prvků grafu (tj. včetně neviditelných)
         /// </summary>
         public int ItemCount { get { return this._ItemDict.Count; } }
         /// <summary>
-        /// Všechny prvky this grafu
+        /// Všechny prvky this grafu, včetně neviditelných = těch, které mají <see cref="ITimeGraphItem.IsVisible"/> == false
         /// </summary>
-        public IEnumerable<ITimeGraphItem> GraphItems { get { return this._ItemDict.Values; } }
+        public IEnumerable<ITimeGraphItem> AllGraphItems { get { return this._ItemDict.Values; } }
+        /// <summary>
+        /// Všechny viditelné prvky this grafu
+        /// </summary>
+        public IEnumerable<ITimeGraphItem> VisibleGraphItems { get { return this._ItemDict.Values.Where(i => i.IsVisible); } }
         /// <summary>
         /// Index prvků
         /// </summary>
@@ -358,7 +362,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 this.RecalculateAllGroupList();
         }
         /// <summary>
-        /// Vypočítá logické souřadnice Y pro všechny položky pole <see cref="GraphItems"/>.
+        /// Vypočítá logické souřadnice Y pro všechny položky pole <see cref="VisibleGraphItems"/>.
         /// Naplní hodnoty: <see cref="GTimeGraphGroup.CoordinateYLogical"/> a <see cref="GTimeGraphGroup.CoordinateYVirtual"/>, 
         /// připraví kalkulátor <see cref="CalculatorY"/>.
         /// </summary>
@@ -376,7 +380,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 float minimalFragmentHeight = 1f;
 
                 // Vytvoříme oddělené skupiny prvků, podle jejich příslušnosti do grafické vrstvy (ITimeGraphItem.Layer), vzestupně:
-                List<IGrouping<int, ITimeGraphItem>> layerGroups = this.GraphItems.GroupBy(i => i.Layer).ToList();
+                List<IGrouping<int, ITimeGraphItem>> layerGroups = this.VisibleGraphItems.GroupBy(i => i.Layer).ToList();
                 if (layerGroups.Count > 1)
                     layerGroups.Sort((a, b) => a.Key.CompareTo(b.Key));        // Vrstvy setřídit podle Key = ITimeGraphItem.Layer, vzestupně
                 layers = layerGroups.Count;
@@ -1920,9 +1924,41 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             return false;
         }
         #endregion
+        #region ICloneable members, GetGraphClone()
+        object ICloneable.Clone()
+        {
+            return this.GetGraphClone();
+        }
+        /// <summary>
+        /// Vrací klon grafu, který může obsahovat podmnožinu prvků danou filtrem.
+        /// Klon grafu obsahuje prvky, které jsou vytvořeny klonováním prvků zdejších.
+        /// </summary>
+        /// <param name="cloneItem">Klonovat položky grafů? default = true = ano</param>
+        /// <param name="cloneItemFilter"></param>
+        /// <returns></returns>
+        protected GTimeGraph GetGraphClone(bool cloneItem = true, Func<ITimeGraphItem, bool> cloneItemFilter = null)
+        {
+            GTimeGraph gTimeGraph = new GTimeGraph(this._GuiGraph);
+
+            if (cloneItem)
+            {
+                foreach (ITimeGraphItem sourceItem in this._ItemDict.Values)
+                {
+                    if (cloneItemFilter == null || cloneItemFilter(sourceItem))
+                    {
+                        ITimeGraphItem targetItem = ((ICloneable)sourceItem.Clone()) as ITimeGraphItem;
+                        gTimeGraph._AddGraphItems(targetItem, false);
+                    }
+                }
+            }
+
+            return gTimeGraph;
+        }
+        #endregion
         #region ITimeInteractiveGraph members
         ITimeAxisConvertor ITimeInteractiveGraph.TimeAxisConvertor { get { return this._TimeConvertor; } set { this._TimeConvertor = value; this.Invalidate(InvalidateItems.CoordinateX); } }
         IVisualParent ITimeInteractiveGraph.VisualParent { get { return this.VisualParent; } set { this.VisualParent = value; } }
+        GTimeGraph ITimeInteractiveGraph.GetGraphClone(bool cloneItem, Func<ITimeGraphItem, bool> cloneItemFilter) { return this.GetGraphClone(cloneItem, cloneItemFilter); }
         #endregion
     }
     #region class TimeGraphProperties : třída obsahující vlastnosti vykreslovaného grafu
@@ -2192,6 +2228,14 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Po přepočtu výšky grafu může graf chtít nastavit výšku (i šířku?) svého hostitele tak, aby bylo zobrazeno vše, co je třeba.
         /// </summary>
         IVisualParent VisualParent { get; set; }
+        /// <summary>
+        /// Vrací klon grafu, který může obsahovat podmnožinu prvků danou filtrem.
+        /// Klon grafu obsahuje prvky, které jsou vytvořeny klonováním prvků zdejších.
+        /// </summary>
+        /// <param name="cloneItem">Klonovat položky grafů? default = true = ano</param>
+        /// <param name="cloneItemFilter"></param>
+        /// <returns></returns>
+        GTimeGraph GetGraphClone(bool cloneItem, Func<ITimeGraphItem, bool> cloneItemFilter);
     }
     /// <summary>
     /// Deklarace grafu, který má časovou osu a není interaktivní
@@ -2217,12 +2261,16 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
     /// <summary>
     /// Předpis rozhraní pro prvky grafu
     /// </summary>
-    public interface ITimeGraphItem
+    public interface ITimeGraphItem : ICloneable
     {
         /// <summary>
         /// Graf, v němž je prvek umístěn. Hodnotu vkládá sám graf v okamžiku vložení prvku / odebrání prvku z kolekce.
         /// </summary>
         ITimeInteractiveGraph OwnerGraph { get; set; }
+        /// <summary>
+        /// Prvek je viditelný?
+        /// </summary>
+        bool IsVisible { get; set; }
         /// <summary>
         /// Jednoznačný identifikátor prvku
         /// </summary>
@@ -2603,12 +2651,21 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         public GTimeGraphLinkItem[] Links { get; set; }
     }
     /// <summary>
-    /// 
+    /// Typ události, pro kterou se mají vytvářet Linky
     /// </summary>
     public enum CreateLinksItemEventType
     {
-        None,
+        /// <summary>
+        /// Nezadáno
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// MouseOver
+        /// </summary>
         MouseOver,
+        /// <summary>
+        /// Item Selected
+        /// </summary>
         ItemSelected
     }
     #endregion

@@ -669,6 +669,13 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public string ChildRowsTableName { get; set; }
         /// <summary>
+        /// Seznam čísel tříd (čísla oddělená středníkem), jejichž prvky grafu budou zobrazovány v Child řádcích i tehdy, když k nim nebudou existovat ekvivalenty v Parent řádku.
+        /// Touto cestou lze v child řádku zobrazit jeho vlastní pracovní směny (=jeho prvky grafu v Child řádku), které přitom nejsou přítomny v Parent řádku.
+        /// Má to význam tehdy, když je nastaven bit <see cref="GuiChildRowsEvaluateMode.DuplicateOnlyPairGraphItem"/> v <see cref="ChildRowsEvaluate"/>, 
+        /// tedy když se v Child řádku zobrazují jen párové prvky grafu.
+        /// </summary>
+        public string ChildRowsCopyAllItemFromClasses { get; set; }
+        /// <summary>
         /// Přidá jednu další definici interakce <see cref="GuiGridInteraction"/>
         /// </summary>
         /// <param name="interaction"></param>

@@ -249,6 +249,41 @@ namespace Asol.Tools.WorkScheduler.Data
             return ContainsAnyFromChars(test, "0123456789");
         }
         /// <summary>
+        /// Metoda vezme daný string, rozdělí jej na prvky v místě oddělovačů (delimiters), prvky převede na klíč, a sestaví a vrátí z prvků Dictionary.
+        /// </summary>
+        /// <typeparam name="TKey"></typeparam>
+        /// <param name="text"></param>
+        /// <param name="keyGenerator"></param>
+        /// <param name="delimiters"></param>
+        /// <returns></returns>
+        public static Dictionary<TKey, string> GetDictionary<TKey>(this string text, Func<string, TKey> keyGenerator, params string[] delimiters)
+        {
+            return GetDictionary(text, null, keyGenerator, delimiters);
+        }
+        /// <summary>
+        /// Metoda vezme daný string, rozdělí jej na prvky v místě oddělovačů (delimiters), prvky převede na klíč, a sestaví a vrátí z prvků Dictionary.
+        /// </summary>
+        /// <typeparam name="TKey"></typeparam>
+        /// <param name="text"></param>
+        /// <param name="filter"></param>
+        /// <param name="keyGenerator"></param>
+        /// <param name="delimiters"></param>
+        /// <returns></returns>
+        public static Dictionary<TKey, string> GetDictionary<TKey>(this string text, Func<string, bool> filter, Func<string, TKey> keyGenerator, params string[] delimiters)
+        {
+            Dictionary<TKey, string> result = new Dictionary<TKey, string>();
+            if (String.IsNullOrEmpty(text) || delimiters == null || delimiters.Length == 0) return result;
+            string[] items = text.Split(delimiters, StringSplitOptions.RemoveEmptyEntries);
+            foreach (string item in items)
+            {
+                if (filter != null || !filter(item)) continue;
+                TKey key = keyGenerator(item);
+                if (!result.ContainsKey(key))
+                    result.Add(key, item);
+            }
+            return result;
+        }
+        /// <summary>
         /// Vrátí část daného textu před separátorem.
         /// Volitelně se může hledat poslední separátor (když parametr searchFromEnd je true).
         /// Volitelně se může vracet text za nalezeným separátorem (když parametr getEnding je true).

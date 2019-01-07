@@ -2591,12 +2591,14 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// Konstruktor, který do nové instance překopíruje data ze zdrojového řádku
         /// </summary>
-        /// <param name="original"></param>
-        public Row(Row original)
+        /// <param name="original">Zdrojový řádek</param>
+        /// <param name="cloneItem">Klonovat položky grafů? default = true = ano</param>
+        /// <param name="cloneItemFilter">Filtr na položky grafů</param>
+        public Row(Row original, bool cloneItem = true, Func<Components.Graph.ITimeGraphItem, bool> cloneItemFilter = null)
              : this()
         {
             if (original != null)
-                CopyData(original, this);
+                CopyData(original, this, cloneItem, cloneItemFilter);
         }
         /// <summary>
         /// Vizualizace
@@ -2634,29 +2636,36 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// Přenese obsah z řádku Source to Target.
         /// </summary>
-        /// <param name="source"></param>
-        /// <param name="target"></param>
-        public static void CopyData(Row source, Row target)
+        /// <param name="source">Zdrojový řádek</param>
+        /// <param name="target">Cílový řádek</param>
+        /// <param name="cloneItem">Klonovat položky grafů? default = true = ano</param>
+        /// <param name="cloneItemFilter">Filtr na položky grafů</param>
+        public static void CopyData(Row source, Row target, bool cloneItem = true, Func<Components.Graph.ITimeGraphItem, bool> cloneItemFilter = null)
         {
             target._CellDict.Clear();
             foreach (var kvp in source._CellDict)
             {
                 int columnId = kvp.Key;
-                object value = CloneValue(kvp.Value.Value);
+                object value = CloneValue(kvp.Value.Value, cloneItem, cloneItemFilter);
                 target._GetCell(columnId).Value = value;
             }
 
-            target.BackgroundValue = CloneValue(source.BackgroundValue);
+            target.BackgroundValue = CloneValue(source.BackgroundValue, cloneItem, cloneItemFilter);
             target._TagItemDict = (source._TagItemDict != null ? new Dictionary<string, TagItem>(source._TagItemDict) : null);
         }
         /// <summary>
         /// Metoda vrací klon z dodané hodnoty
         /// </summary>
-        /// <param name="source"></param>
+        /// <param name="source">Zdrojový objekt</param>
+        /// <param name="cloneItem">Klonovat položky grafů? default = true = ano</param>
+        /// <param name="cloneItemFilter">Filtr na položky grafů</param>
         /// <returns></returns>
-        private static object CloneValue(object source)
+        private static object CloneValue(object source, bool cloneItem = true, Func<Components.Graph.ITimeGraphItem, bool> cloneItemFilter = null)
         {
-            return (source == null ? null : (source is ICloneable) ? ((source as ICloneable).Clone()) : source);
+            if (source == null) return null;
+            if (source is Components.Graph.ITimeInteractiveGraph) return (source as Components.Graph.ITimeInteractiveGraph).GetGraphClone(cloneItem, cloneItemFilter);
+            if (source is ICloneable) return (source as ICloneable).Clone();
+            return source;
         }
         #endregion
         #region Linkování na tabulku a na sloupce
@@ -3135,13 +3144,12 @@ namespace Asol.Tools.WorkScheduler.Data
         private void _TreeNodeCollapseOtherParents()
         {
             if (!this.HasTable) return;
-            var childDict = this.TreeNodeChilds
-                .GetDictionary(row => row.RowId, true);
+            var childDict = this.TreeNodeChilds.GetDictionary(row => row.RowId, true);
             this.Table.TreeNodeScan(
                 (row, level) =>
                 {   // Akce pro každý řádek: 
                     // Pokud daný řádek je otevřený, a některý z jeho Child řádků je obsažen v Dictionary childDict:
-                    if (row.TreeNodeIsExpanded && row.TreeNodeChilds.Any(r => childDict.ContainsKey(r.RowId)))
+                    if (row.TreeNodeIsExpanded && row.TreeNodeChilds != null && row.TreeNodeChilds.Any(r => childDict.ContainsKey(r.RowId)))
                         // Pak takový řádek zavřeme:
                         row._TreeNodeCollapse(false);
                 },
