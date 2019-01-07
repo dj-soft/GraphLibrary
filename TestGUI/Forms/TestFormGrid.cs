@@ -643,6 +643,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         }
         private ITimeInteractiveGraph _OwnerGraph;
         /// <summary>
+        /// Prvek je viditelný?
+        /// </summary>
+        public bool IsVisible { get { return this._IsVisible; } set { this._IsVisible = value; } } private bool _IsVisible = true;
+        /// <summary>
         /// Jednoznačný identifikátor prvku
         /// </summary>
         public Int32 ItemId { get; private set; }
@@ -705,6 +709,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         #endregion
         #region explicit ITimeGraphItem members
         ITimeInteractiveGraph ITimeGraphItem.OwnerGraph { get { return this._OwnerGraph; } set { this._OwnerGraph = value; } }
+        bool ITimeGraphItem.IsVisible { get { return this.IsVisible; } set { this.IsVisible = value; } }
         int ITimeGraphItem.ItemId { get { return this.ItemId; } }
         int ITimeGraphItem.GroupId { get { return this.GroupId; } }
         TimeRange ITimeGraphItem.Time { get { return this.Time; } set { this.Time = value; } }
@@ -729,6 +734,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         GraphItemBehaviorMode ITimeGraphItem.BehaviorMode { get { return this.BehaviorMode; } }
         WorkScheduler.Components.Graph.GTimeGraphItem ITimeGraphItem.GControl { get { return this.GControl; } set { this.GControl = value; } }
         void ITimeGraphItem.Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode) { this.GControl.DrawItem(e, boundsAbsolute, drawMode); }
+        object ICloneable.Clone() { return this.MemberwiseClone(); }
         #endregion
     }
     #endregion
