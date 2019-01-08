@@ -655,6 +655,36 @@ namespace Asol.Tools.WorkScheduler.Data
             return dictionary;
         }
         /// <summary>
+        /// Metoda vrací Dictionary z daných dat, s pomocí keySelectoru.
+        /// Umožňuje řídit přeskakování duplicit.
+        /// </summary>
+        /// <typeparam name="TData">Typ vstupních dat</typeparam>
+        /// <typeparam name="TKey">Typ výsledného klíče</typeparam>
+        /// <typeparam name="TValue">Typ výsledného hodnoty</typeparam>
+        /// <param name="collection">Kolekce</param>
+        /// <param name="keySelector">Funkce pro získání klíče ze záznamu</param>
+        /// <param name="valueSelector">Funkce pro získání hodnoty ze záznamu</param>
+        /// <param name="skipDuplicityItems">true = pokud je klíč ve vstupním poli vícekrát, pak ve výstupní Dictionary bude jen jednou (ten první výskyt), ale nedojde k chybě. Hodnota false = při duplicitě dojde k chybě.</param>
+        /// <returns></returns>
+        public static Dictionary<TKey, TValue> GetDictionary<TData, TKey, TValue>(this IEnumerable<TData> collection, 
+            Func<TData, TKey> keySelector, Func<TData, TValue> valueSelector, bool skipDuplicityItems)
+        {
+            Dictionary<TKey, TValue> dictionary = new Dictionary<TKey, TValue>();
+            if (collection != null)
+            {
+                foreach (TData data in collection)
+                {
+                    TKey key = keySelector(data);
+                    TValue value = valueSelector(data);
+                    if (!skipDuplicityItems)
+                        dictionary.Add(key, value);             // Pokud daný klíč už je v Dictionary, dojde k chybě.
+                    else if (!dictionary.ContainsKey(key))
+                        dictionary.Add(key, value);             // Přeskočit duplicitní položky: přidáváme položku jen když dosud nemáme klíč.
+                }
+            }
+            return dictionary;
+        }
+        /// <summary>
         /// Metoda z this dictionary odebere všechny výskyty daných klíčů.
         /// </summary>
         /// <typeparam name="TKey"></typeparam>

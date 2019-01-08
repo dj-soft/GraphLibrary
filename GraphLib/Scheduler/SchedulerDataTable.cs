@@ -89,6 +89,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.LoadDataLoadParentChild();
             this.LoadDataLoadLinks();
             this.LoadDataLoadTexts();
+            this.LoadDataLoadToolTips();
         }
         /// <summary>
         /// Metoda zajistí přípravu dat této tabulky poté, kdy projdou přípravou všechny tabulky systému.
@@ -439,8 +440,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.TableRow.OpenRecordForm += _TableRow_OpenRecordForm;
             this.TableRow.UserData = this;
             if (this.TableRow.AllowPrimaryKey) this.TableRow.HasPrimaryIndex = true;
-            GuiGridProperties properties = this.GuiGrid.GridProperties;
-            this._CurrentSearchChildInfo = SearchChildInfo.CreateForProperties(properties);
+            this._CurrentSearchChildInfo = SearchChildInfo.CreateForProperties(this.GuiGrid.GridProperties);
         }
         /// <summary>
         /// Tabulka s řádky.
@@ -712,6 +712,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 if (!String.IsNullOrEmpty(searchInfo.ChildRowsTableName))
                     otherTable = this.IMainData.SearchTable(searchInfo.ChildRowsTableName);        // Vyhledám zdrojovu tabulku s Child řádky (anebo skončím)
                 if (otherTable == null) return;
+                // Jako Child řádky z other tabulky vezmu buď pouze Root řádky, anebo všechny:
                 Row[] otherRows = (searchInfo.IsInOtherRootRowsOnly ? otherTable.TableRow.TreeNodeRootRows : otherTable.TableRow.Rows.ToArray());
                 if (otherRows.Length > 0)
                 {
@@ -982,7 +983,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             foreach (Row sourceChild in childs)
             {   // Child řádky z Other tabulky:
                 // Majdu / vytvořím klon řádku, odpovídající řádku Child z other tabulky, ale pokud v něm bude graf, pak prvky grafu klonovat nebudeme:
-                Row cloneChild = this.OtherChildGetCloneRow(parentDict, sourceChild);
+                Row cloneChild = this.OtherChildGetCloneRow(parentDict, otherTable, sourceChild);
                 if (cloneChild != null)
                 {   // Do klonu řádku vložím odpovídající prvky grafu.
                     // K tomu malé vysvětlení:
@@ -1018,25 +1019,30 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Metoda vrátí Row, který je klonem dodaného childRow, jenž je umístěn v jiné tabulce než v this.
         /// Tato metoda vytvořený Child řádek nevkládá do this tabulky, 
         /// </summary>
-        /// <param name="parentDict"></param>
-        /// <param name="childRow"></param>
+        /// <param name="parentDict">Data z Parent řádku</param>
+        /// <param name="sourceTable">Tabulka, která je zdrojem dat</param>
+        /// <param name="sourceRow">Řádek, který se zde bude klonovat</param>
         /// <returns></returns>
-        protected Row OtherChildGetCloneRow(Dictionary<GId, Row> parentDict, Row childRow)
+        protected Row OtherChildGetCloneRow(Dictionary<GId, Row> parentDict, MainDataTable sourceTable, Row sourceRow)
         {
-            GId childGId = childRow.RecordGId;
-            Row cloneRow = parentDict.GetAdd(childGId, g => this.OtherChildCreateCloneRow(childRow));
+            GId childGId = sourceRow.RecordGId;
+            Row cloneRow = parentDict.GetAdd(childGId, g => this.OtherChildCreateCloneRow(sourceTable, sourceRow));
             return cloneRow;
         }
         /// <summary>
         /// Metoda vytvoří new instanci Row a překopíruje do ní data z dodaného řádku. Tento klon umístí do this tabulky, jako Child řádek.
         /// </summary>
-        /// <param name="originalRow"></param>
+        /// <param name="sourceTable">Tabulka, která je zdrojem dat</param>
+        /// <param name="sourceRow"></param>
         /// <returns></returns>
-        protected Row OtherChildCreateCloneRow(Row originalRow)
+        protected Row OtherChildCreateCloneRow(MainDataTable sourceTable, Row sourceRow)
         {
-            Row cloneRow = new Row(originalRow, false);              // V rámci klonování řádku se u jeho grafu nebude provádět přenos položek grafů
+            TableRowCloneArgs cloneArgs = new TableRowCloneArgs() { CloneGraphItems = false, CloneRowTagItems = false };
+            Row cloneRow = new Row(sourceRow, cloneArgs);                 // V rámci klonování řádku se u jeho grafu nebude provádět přenos položek grafů, ani TagItems
             cloneRow.ParentChildMode = RowParentChildMode.Child;
             cloneRow.Control = null;
+            GTimeGraph cloneGraph = SearchGraphInRow(cloneRow);
+            if (cloneGraph != null) cloneGraph.DataSource = sourceTable;  // Zdrojem dat v klonovaném grafu je původní zdrojová tabulka (obsahuje texty, tooltipy...)
             this.TableRow.AddRow(cloneRow);
             return cloneRow;
         }
@@ -1057,7 +1063,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (targetGraph == null) return;
 
             // V cílovém grafu (targetGraph) může už být několik prvků grafu od posledního zobrazení; všechny skryjeme:
-            targetGraph.AllGraphItems.ForEachItem(i => i.IsVisible = false);
+            targetGraph.ModifyGraphItems(i => i.IsVisible = false);
 
             // Nyní ze zdrojového grafu vyhledáme prvky grafu, které mají být synchronizovány:
             foreach (ITimeGraphItem sourceItem in sourceGraph.AllGraphItems)
@@ -1095,27 +1101,36 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <returns></returns>
         protected bool OtherChildFilterGraphItem(ITimeGraphItem iItem, Dictionary<GId, TimeRange> parentDataDict, SearchChildInfo searchInfo)
         {
-            // Pokud NEMÁME duplikovat prvky, které jsou spárované s parent řádkem, pak bereme VŠECHNY prvky grafu:
-            if (!searchInfo.DuplicateOnlyPairGraphItem) return true;
-
-            // Máme provést filtrování položek grafu podle předpisů v SearchChildInfo, budeme potřebovat údaje o položce grafu typu Scheduler.DataGraphItem:
+            // Máme-li provést filtrování položek grafu podle předpisů v SearchChildInfo, budeme potřebovat údaje o položce grafu typu Scheduler.DataGraphItem:
             DataGraphItem gItem = (iItem as DataGraphItem);
-
-            // Z prvku grafu přečteme jeho ID podle předpisu searchInfo.ChildIdType:
             if (gItem == null) return false;
+
+            // Podle třídy prvku můžeme určit režim filtrování:
+            GId itemGId = gItem.ItemGId;
+            if (itemGId == null || itemGId.ClassId == 0) return true;          // Tohle je nouzová cesta. Prvky by měly mít ItemGId včetně čísla třídy. Nouzovka = zobrazit.
+            ItemClassCopyBehavior copyBehavior = searchInfo.GetItemCopyBehavior(itemGId.ClassId);
+            if (copyBehavior == ItemClassCopyBehavior.Always) return true;     // Konstantní hodnota, bez dalšího testování vzhledem k Parent datům
+            if (copyBehavior == ItemClassCopyBehavior.None) return false;
+
+            // Umíme zpracovat jen čtyři hodnoty (None, Always, ExistsPair, SynchronPair), ostatní chování neumíme:
+            if (!(copyBehavior == ItemClassCopyBehavior.ExistsPair || copyBehavior == ItemClassCopyBehavior.SynchronPair)) return false;
+
+            // Pro hodnoty ItemClassCopyBehavior.ExistsPair a SynchronPair musíme dohledat odpovídající prvek v Parent řádku:
+            // Z prvku grafu přečteme jeho patřičné ID podle předpisu searchInfo.ChildIdType:
             GId gId = gItem.GetGId(searchInfo.ChildIdType);
             if (gId == null || gId.IsEmpty) return false;
 
-            // Pokud takový prvek nemáme v parent datech, NEBUDEME jej kopírovat:
+            // Pokud takový prvek NEMÁME v parent datech, NEBUDEME jej kopírovat (poznámka: prvek může být v parentDataDict přítomen, a mít čas null, to řešíme později):
             TimeRange parentTime;
             if (!parentDataDict.TryGetValue(gId, out parentTime)) return false;
 
             // Máme tedy ověřeno, že Parent a Child řádek obsahují prvek grafu, který má v obou řádcích shodný daný identifikátor.
 
-            // Pokud prvky NEMUSÍ mít časový průsečík, pak nám postačuje jen fakt, že oba řádky obsahují shodný ID, a testovaný prvek do grafu PŘIDÁME:
-            if (!searchInfo.IsParentChildIntersectTimeOnly) return true;
+            // Pokud stačí, že prvky existují, ale NEMUSÍ mít společný časový průsečík, 
+            //  pak nám postačuje už jen fakt, že oba řádky obsahují prvek se shodným ID, a testovaný prvek do grafu PŘIDÁME:
+            if (copyBehavior == ItemClassCopyBehavior.ExistsPair) return true;
 
-            // Prvky musí mít časový průsečík:
+            // Prvky grafu (v Parent a Child řádku) musí mít společný časový průsečík:
             if (parentTime == null || gItem.Time == null) return false;
             TimeRange intersect = (parentTime * gItem.Time);
             return (intersect != null && intersect.Size.HasValue && intersect.Size.Value.Ticks > 0L);
@@ -1152,9 +1167,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 }
             }
             else
-            {
+            {   // Klonování prvku grafu:
                 targetData = DataGraphItem.CreateFrom(this, sourceData.GuiGraphItem);
                 targetData.Time = sourceData.Time;
+                targetData.BehaviorMode = (sourceData.BehaviorMode & GraphItemBehaviorMode.AllEnabledForChildRows);
                 targetGraph.AddGraphItem(targetData);
                 targetItem = targetData;
             }
@@ -1168,7 +1184,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         protected Dictionary<GId, Dictionary<GId, Row>> OtherChildRowDict;
         #endregion
         #region Režim hledání Childs pro Parent - režim, analýza atd.
-        
         /// <summary>
         /// Analyzovaný režim <see cref="GuiChildRowsEvaluateMode"/>.
         /// Property je autoinicializační, výchozí hodnota je <see cref="SearchChildInfo.Static"/>.
@@ -1195,7 +1210,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             {
                 if (properties == null) return SearchChildInfo.Static;
 
-                return CreateForData(properties.ChildRowsEvaluate, properties.ChildRowsTableName, properties.ChildRowsCopyAllItemFromClasses);
+                return CreateForData(properties.ChildRowsEvaluate, properties.ChildRowsTableName, properties.ChildRowsCopyClassesMode);
             }
             /// <summary>
             /// Vrací new instanci pro daný režim
@@ -1226,18 +1241,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                     info.IsParentChildIntersectTimeOnly = m.HasFlag(GuiChildRowsEvaluateMode.ParentChildIntersectTimeOnly);
                     info.IsInOtherTable = m.HasFlag(GuiChildRowsEvaluateMode.InOtherTable) || m.HasFlag(GuiChildRowsEvaluateMode.InOtherRootRowsOnly);
                     info.IsInOtherRootRowsOnly = m.HasFlag(GuiChildRowsEvaluateMode.InOtherRootRowsOnly);
-                    info.DuplicateOnlyPairGraphItem = m.HasFlag(GuiChildRowsEvaluateMode.DuplicateOnlyPairGraphItem);
                 }
 
                 info.ChildRowsTableName = ((hasOtherTable && info.IsInOtherTable) ? otherTable.Trim() : null);
+                info.CopyAllItemFromClasses = ParseCopyClasses(copyClasses);
 
-                int value;
-                info._CopyAllItemFromClasses = copyClasses.GetDictionary(
-                    i => i.ContainsOnlyNumeric(true, false) && Int32.TryParse(i, out value) && value != 0,  /* filter       : tyto vstupní prvky budeme akceptovat */
-                    i => { Int32.TryParse(i.Trim(), out value); return value; },                            /* keyGenerator : z textu vrací číslo klíče            */
-                    ";", ",", " ");
-
-                qqq;
                 return info;
             }
             /// <summary>
@@ -1257,7 +1265,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 this.IsParentChildIntersectTimeOnly = false;
                 this.IsInOtherTable = false;
                 this.IsInOtherRootRowsOnly = false;
-                this.DuplicateOnlyPairGraphItem = false;
+                this.CopyAllItemFromClasses = null;
             }
             /// <summary>
             /// Režim
@@ -1299,12 +1307,104 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             /// </summary>
             public bool IsInOtherRootRowsOnly { get; private set; }
             /// <summary>
-            /// true = Do child řádku provádět duplikaci položek grafu ze zdrojovho řádku pouze takových, které souvisejí s Parent řádkem.
+            /// Definice režimu kopírování prvků grafu podle čísla třídy
             /// </summary>
-            public bool DuplicateOnlyPairGraphItem { get; private set; }
+            protected Dictionary<int, ItemClassCopyBehavior> CopyAllItemFromClasses;
+            /// <summary>
+            /// Z textu <see cref="GuiGridProperties.ChildRowsCopyClassesMode"/> vytvoří a vrátí Dictionary, kde Key = číslo třídy a Value = režim kopírování
+            /// </summary>
+            /// <param name="copyClasses"></param>
+            /// <returns></returns>
+            protected static Dictionary<int, ItemClassCopyBehavior> ParseCopyClasses(string copyClasses)
+            {
+                Dictionary<int, ItemClassCopyBehavior> result = new Dictionary<int, ItemClassCopyBehavior>();
+                if (!String.IsNullOrEmpty(copyClasses))
+                {
+                    KeyValuePair<string, string>[] items = copyClasses.ToKeyValues(";", ":", true, true);
+                    foreach (KeyValuePair<string, string> item in items)
+                    {
+                        // Číslo třídy "0" je povolená hodnota a slouží jako default pro "všechny nezadané třídy":
+                        int classNumber = 0;
+                        if (String.IsNullOrEmpty(item.Key) || !Int32.TryParse(item.Key, out classNumber) || (item.Key != "0" && classNumber == 0)) continue;
+                        ItemClassCopyBehavior behavior = ParseCopyClassesBehavior(item.Value);
+                        if (result.ContainsKey(classNumber))
+                            result[classNumber] = behavior;
+                        else
+                            result.Add(classNumber, behavior);
+                    }
+                }
 
-
-            private Dictionary<int, string> _CopyAllItemFromClasses;
+                return result;
+            }
+            /// <summary>
+            /// Metoda vrací režim kopírování prvků grafu <see cref="ItemClassCopyBehavior"/> pro daný text.
+            /// </summary>
+            /// <param name="value"></param>
+            /// <returns></returns>
+            protected static ItemClassCopyBehavior ParseCopyClassesBehavior(string value)
+            {
+                if (String.IsNullOrEmpty(value)) return ItemClassCopyBehavior.Default;
+                string text = value.Trim().ToLower();
+                switch (text)
+                {
+                    case "n":
+                    case "none":
+                        return ItemClassCopyBehavior.None;
+                    case "a":
+                    case "always":
+                        return ItemClassCopyBehavior.Always;
+                    case "e":
+                    case "existspair":
+                        return ItemClassCopyBehavior.ExistsPair;
+                    case "s":
+                    case "synchronpair":
+                        return ItemClassCopyBehavior.SynchronPair;
+                }
+                return ItemClassCopyBehavior.Default;
+            }
+            /// <summary>
+            /// Metoda vrátí režim kopírování prvku grafu pro danou třídu, podle definice kterou má graf vepsanou v <see cref="GuiGridProperties.ChildRowsCopyClassesMode"/>.
+            /// Používá se tehdy, když Child řádky pro určitý Parent řádek se hledají v jiné tabulce (<see cref="IsInOtherTable"/>),
+            /// a do aktuální tabulky se tedy přenáší duplikát řádku včetně duplikátu grafu. Pak lze řídit viditelnost zkopírovaných prvků grafu 
+            /// na základě jejich vlastností i s ohledem na Parent řádek.
+            /// </summary>
+            /// <param name="classNumber"></param>
+            /// <param name="defaultValue"></param>
+            /// <returns></returns>
+            public ItemClassCopyBehavior GetItemCopyBehavior(int classNumber, ItemClassCopyBehavior defaultValue = ItemClassCopyBehavior.Always)
+            {
+                if (this.CopyAllItemFromClasses == null) return defaultValue;
+                ItemClassCopyBehavior behavior;
+                if (classNumber != 0 && this.CopyAllItemFromClasses.TryGetValue(classNumber, out behavior)) return behavior;     // Pro konkrétní zadanou třídu
+                if (this.CopyAllItemFromClasses.TryGetValue(0, out behavior)) return behavior;                                   // Definice pro "všechny ostatní třídy"
+                return defaultValue;
+            }
+        }
+        /// <summary>
+        /// Režim kopírování prvků grafu v závislosti na čísle třídy
+        /// </summary>
+        protected enum ItemClassCopyBehavior
+        {
+            /// <summary>
+            /// Nedefinováno, použije se Always
+            /// </summary>
+            Default = 0,
+            /// <summary>
+            /// "None" = nepřenášet nikdy
+            /// </summary>
+            None,
+            /// <summary>
+            /// "Always" = přenášet vždy
+            /// </summary>
+            Always,
+            /// <summary>
+            /// "ExistsPair" = přenášet, jen když v Parent řádku existuje shodný prvek bez ohledu na synchronní čas
+            /// </summary>
+            ExistsPair,
+            /// <summary>
+            /// "SynchronPair" = přenášet, jen když jsou synchronní časy (v Parent řádku existuje shodný prvek s časem společným s prvekm v Child řádku)
+            /// </summary>
+            SynchronPair
         }
         #endregion
         #endregion
@@ -2379,7 +2479,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         protected DictionaryList<int, GTimeGraphLinkItem> GraphLinkNextDict;
         #endregion
-        #region Textové údaje (popisky grafů)
+        #region Textové údaje (popisky grafů) a ToolTipy
         /// <summary>
         /// Načte tabulky s texty
         /// </summary>
@@ -2402,27 +2502,65 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             }
         }
         /// <summary>
-        /// Metoda se pokusí najít první řádek z tabulky textů, obsahující textové informace pro daný prvek.
+        /// Načte tabulky s tooltipy
+        /// </summary>
+        protected void LoadDataLoadToolTips()
+        {
+            this.TableToolTipList = new List<Table>();
+            this.TableToolTipRowDict = new Dictionary<GId, Row>();
+            GuiGrid guiGrid = this.GuiGrid;
+            if (guiGrid.GraphToolTips == null || guiGrid.GraphToolTips.Count == 0) return;
+
+            foreach (GuiTable guiTable in guiGrid.GraphToolTips)
+            {
+                if (guiTable == null || guiTable.DataTable == null) continue;
+                Table table = Table.CreateFrom(guiTable.DataTable);
+                if (!table.AllowPrimaryKey)
+                    throw new GraphLibDataException("Data v tabulce tooltipů «" + guiTable.FullName + "." + table.TableName + "» nepodporují PrimaryKey.");
+                table.HasPrimaryIndex = true;
+                if (table.RowsCount > 0)
+                    this.TableToolTipList.Add(table);
+            }
+        }
+        /// <summary>
+        /// Metoda se pokusí najít první řádek z tabulky TEXTŮ, obsahující informace pro daný prvek.
         /// Může vrátit NULL.
         /// </summary>
         /// <param name="graphItem"></param>
         /// <returns></returns>
-        protected Row GetTableInfoRow(DataGraphItem graphItem)
+        protected Row GetTableTextRow(DataGraphItem graphItem)
         {
             if (graphItem == null) return null;
-            return this.GetTableInfoRow(graphItem.ItemGId, graphItem.GroupGId, graphItem.DataGId, graphItem.RowGId);
+            List<Table> sourceTables = this.TableTextList;
+            Dictionary<GId, Row> cacheDict = this.TableTextRowDict;
+            return this.GetTableInfoRow(sourceTables, cacheDict, graphItem.ItemGId, graphItem.GroupGId, graphItem.DataGId, graphItem.RowGId);
+        }
+        /// <summary>
+        /// Metoda se pokusí najít první řádek z tabulky TOOLTIPŮ, obsahující informace pro daný prvek.
+        /// Může vrátit NULL.
+        /// </summary>
+        /// <param name="graphItem"></param>
+        /// <returns></returns>
+        protected Row GetTableToolTipRow(DataGraphItem graphItem)
+        {
+            if (graphItem == null) return null;
+            List<Table> sourceTables = (this.TableToolTipList.Count > 0 ? this.TableToolTipList : this.TableTextList);
+            Dictionary<GId, Row> cacheDict = this.TableToolTipRowDict;
+            return this.GetTableInfoRow(sourceTables, cacheDict, graphItem.ItemGId, graphItem.GroupGId, graphItem.DataGId, graphItem.RowGId);
         }
         /// <summary>
         /// Metoda se pokusí najít první řádek z tabulky INFO, obsahující textové informace pro některý GID.
         /// Může vrátit NULL.
         /// </summary>
-        /// <param name="gids"></param>
+        /// <param name="sourceTables">Sada tabulek, kde lze najít potřebné texty</param>
+        /// <param name="cacheDict">Dictionary, kde jsou pro konkrétní GId ukládány dříve již hledané údaje (včetně hodnoty NULL, pokud neexistuje).</param>
+        /// <param name="gids">Jednotlivé klíče, pro které se má řádek v tabulce hledat</param>
         /// <returns></returns>
-        protected Row GetTableInfoRow(params GId[] gids)
+        protected Row GetTableInfoRow(List<Table> sourceTables, Dictionary<GId, Row> cacheDict, params GId[] gids)
         {
             foreach (GId gId in gids)
             {
-                Row row = this.GetTableInfoRowForGId(gId);
+                Row row = this.GetTableInfoRowForGId(sourceTables, cacheDict, gId);
                 if (row != null) return row;
             }
             return null;
@@ -2431,26 +2569,28 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Metoda se pokusí najít první řádek z tabulky INFO, obsahující textové informace pro daný GID.
         /// Může vrátit NULL.
         /// </summary>
-        /// <param name="gId"></param>
+        /// <param name="sourceTables">Sada tabulek, kde lze najít potřebné texty</param>
+        /// <param name="cacheDict">Dictionary, kde jsou pro konkrétní GId ukládány dříve již hledané údaje (včetně hodnoty NULL, pokud neexistuje).</param>
+        /// <param name="gId">Hledaný klíč</param>
         /// <returns></returns>
-        protected Row GetTableInfoRowForGId(GId gId)
+        protected Row GetTableInfoRowForGId(List<Table> sourceTables, Dictionary<GId, Row> cacheDict, GId gId)
         {
             Row row = null;
             if (gId == null) return row;
 
             // Nejprve hledáme v "cache":
-            if (this.TableTextRowDict.TryGetValue(gId, out row))
+            if (cacheDict.TryGetValue(gId, out row))
                 return row;
 
-            // V cache nic není - budeme hledat v kompletních datech:
-            foreach (Table table in this.TableTextList)
+            // V cache nic není - budeme hledat v kompletních datech = v soupisu tabulek:
+            foreach (Table table in sourceTables)
             {
                 if (table.TryGetRowOnPrimaryKey(gId, out row))
                     break;
             }
 
-            // Co jsme našli, dáme do cache (pro příští hledání), a vrátíme:
-            this.TableTextRowDict.Add(gId, row);
+            // Co jsme našli, dáme do cache (pro příští hledání), i kdyby to bylo NULL, a vrátíme to:
+            cacheDict.Add(gId, row);
             return row;
         }
         /// <summary>
@@ -2458,10 +2598,19 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         public List<Table> TableTextList { get; private set; }
         /// <summary>
+        /// Tabulky s informacemi = ToolTipy pro položky grafů.
+        /// </summary>
+        public List<Table> TableToolTipList { get; private set; }
+        /// <summary>
         /// Index textů = obsahuje GId, pro který se někdy hledal text, a k němu nalezený řádek.
         /// Může rovněž obsahovat NULL pro daný GId, to když nebyl nalezen řádek.
         /// </summary>
         public Dictionary<GId, Row> TableTextRowDict { get; private set; }
+        /// <summary>
+        /// Index ToolTipů = obsahuje GId, pro který se někdy hledal ToolTip, a k němu nalezený řádek.
+        /// Může rovněž obsahovat NULL pro daný GId, to když nebyl nalezen řádek.
+        /// </summary>
+        public Dictionary<GId, Row> TableToolTipRowDict { get; private set; }
         #endregion
         #region Index pro oboustrannou konverzi GId <=> Int32
         /// <summary>
@@ -2705,31 +2854,62 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             DataGraphItem graphItem = this.GetActiveGraphItem(args); // Najde datový prvek grafu odpovídající buď konkrétnímu prvku, nebo najde první prvek grupy
             if (graphItem == null) return;
 
-            Row infoRow = this.GetTableInfoRow(graphItem);
+            Row infoRow = this.GetTableTextRow(graphItem);
             if (infoRow == null) return;
 
-            string text = "";
-            int width = args.GraphItemSize.Width - 4;
+            string textAll = "";                           // Kompletní text, víceřádkový (oddělovač = Cr+Lf)
+            string textRow = "";                           // Text aktuálního řádku, střádáme jej dokud readRow je true
+            bool readRow = true;                           // true = zkusme přidat další sloupce do řádku textRow; false = další sloupce nepřidávcat (ale můžeme hledat nový řádek)
+            int heightRow = 0;                             // Výška aktuálního řádku, o to se sníží height
+            int width = args.GraphItemSize.Width - 4;      // Šířka prostoru, který máme vyplnit textem; v průběhu metody se nezmění
+            int height = args.GraphItemSize.Height - 4;    // Výška prostoru, který máme vyplnit textem; v průběhu metody se snižuje o vložené řádky
+            string rowDelimiter = this.GuiGrid.GraphProperties.GraphTextRowDelimiter;
+            bool hasRowDelimiter = !String.IsNullOrEmpty(rowDelimiter);                  // true = máme oddělovač řádků, výsledek může být víceřádkový
             foreach (Column column in infoRow.Table.Columns)
             {
-                if (!column.ColumnProperties.IsVisible) continue;
                 Cell cell = infoRow[column];
                 if (cell.ValueType == TableValueType.Text && cell.Value != null)
-                {
-                    bool isEmpty = (text.Length == 0);
-                    string test = text + (isEmpty ? "" : " ") + cell.Value.ToString();
-                    if (isEmpty)
-                        text = test;
-                    else
-                    {
-                        Size size = args.MeasureString(test);
+                {   // Textový sloupec; může být neviditelný, může to být oddělovač řádků:
+                    string value = cell.Value.ToString().Trim();
+                    if (hasRowDelimiter && String.Equals(value, rowDelimiter))
+                    {   // Sloupec obsahuje oddělovač řádků:
+                        _GraphItemSumTextRows(ref textAll, ref textRow, ref height, ref heightRow);
+                        if (height <= 0) break;
+                        readRow = true;
+                    }
+                    else if (column.ColumnProperties.IsVisible && value.Length > 0 && readRow)
+                    {   // Sloupec je viditelný, obsahuje něco neprázdného, a do našeho řádku textRow se má ještě něco přidávat:
+                        textRow = (textRow.Length > 0 ? textRow + " " : "") + value;
+                        Size size = args.MeasureString(textRow);
+                        if (size.Height > heightRow)
+                            heightRow = size.Height;       // Střádám si Max(Height)
                         if (size.Width > width)
-                            break;
-                        text = test;
+                            readRow = false;               // Pokud jsme naplnili disponibilní šířku prostoru, pak další text do jednoho řádku už nepřidáme.
                     }
                 }
-                args.Text = text;
+                if (!readRow && (!hasRowDelimiter || height <= 0))   // Když už je řádek naplněn (co do šířky), a nelze očekávat že by se do textu vešel další řádek, skončíme.
+                    break;
             }
+            _GraphItemSumTextRows(ref textAll, ref textRow, ref height, ref heightRow);
+            args.Text = textAll;
+        }
+        /// <summary>
+        /// Metoda zajistí přidání textu řádku textRow do celkového textu textAll, a zpracování výšky textu.
+        /// </summary>
+        /// <param name="textAll"></param>
+        /// <param name="textRow"></param>
+        /// <param name="height"></param>
+        /// <param name="heightRow"></param>
+        private static void _GraphItemSumTextRows(ref string textAll, ref string textRow, ref int height, ref int heightRow)
+        {
+            if (textRow.Length > 0 && heightRow > 0 && (textAll.Length == 0 || heightRow <= height))
+            {   // Máme nastřádaný text aktuálního řádku, a známe jeho výšku, a (výsledný text je zatím prázdný, anebo se do něj na výšku další řádek ještě vejde):
+                //  => přidáme jej do textAll:
+                textAll = (textAll.Length > 0 ? textAll + "\r\n" : "") + textRow;
+                height -= heightRow;
+            }
+            textRow = "";
+            heightRow = 0;
         }
         /// <summary>
         /// Připraví tooltip pro položku grafu.
@@ -2741,7 +2921,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             DataGraphItem graphItem = this.GetActiveGraphItem(args); // Najde datový prvek grafu odpovídající buď konkrétnímu prvku, nebo najde první prvek grupy
             if (graphItem == null) return;
 
-            Row infoRow = this.GetTableInfoRow(graphItem);
+            Row infoRow = this.GetTableToolTipRow(graphItem);
             if (infoRow == null) return;
 
             GId recordGId = infoRow.RecordGId;
@@ -2991,6 +3171,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             item._GroupGId = guiGraphItem.GroupId;         //  Další důsledek je ten, že zdejší data lze změnit = přemístit na jiný řádek, například.
             item._DataGId = guiGraphItem.DataId;
             item._Time = guiGraphItem.Time;                // Existuje implicitní konverze mezi typy TimeRange a GuiTimeRange.
+            item._BehaviorMode = guiGraphItem.BehaviorMode;
+
             // ID pro grafickou vrstvu: vygenerujeme Int32 klíč pro daný GId, za pomoci indexu uloženého v hlavní tabulce (iGraphTable):
             item._ItemId = iGraphTable.GetId(item.ItemGId);
             item._GroupId = iGraphTable.GetId(item.GroupGId);
@@ -3011,7 +3193,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             // Aktualizovat jednotlivé statické hodnoty:
             GuiGraphBaseItem currentItem = this._GuiGraphItem;
 
-            if (updateItem.Time != null) currentItem.Time = updateItem.Time;
             if (updateItem.Layer != 0) currentItem.Layer = updateItem.Layer;
             if (updateItem.Level != 0) currentItem.Level = updateItem.Level;
             if (updateItem.Order != 0) currentItem.Order = updateItem.Order;
@@ -3030,7 +3211,19 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (updateItem.HatchColor.HasValue) currentItem.BackStyle = updateItem.BackStyle;      // Úmyslná změna: pokud je předána hodnota HatchColor, přebírám i BackStyle.
             if (updateItem.ImageBegin != null) currentItem.ImageBegin = GetUpdatedImage(updateItem.ImageBegin);
             if (updateItem.ImageEnd != null) currentItem.ImageEnd = GetUpdatedImage(updateItem.ImageEnd);
-            if (updateItem.BehaviorMode != GraphItemBehaviorMode.None) currentItem.BehaviorMode = updateItem.BehaviorMode;
+
+            // Tyto property budeme aktualizovat do zdejšího datového prvku GuiGraphBaseItem _GuiGraphItem, 
+            //   i do this.*, protože tyto hodnoty zde máme jako pracovní (=editovatelné):
+            if (updateItem.Time != null)
+            {
+                currentItem.Time = updateItem.Time;
+                this.Time = updateItem.Time;
+            }
+            if (updateItem.BehaviorMode != GraphItemBehaviorMode.None)
+            {
+                currentItem.BehaviorMode = updateItem.BehaviorMode;
+                this._BehaviorMode = updateItem.BehaviorMode;
+            }
 
             // Zajistit invalidaci grafu:
             return true;
@@ -3131,6 +3324,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         private TimeRange _Time;
         /// <summary>
+        /// Režim chování
+        /// </summary>
+        private GraphItemBehaviorMode _BehaviorMode;
+        /// <summary>
         /// Vizuální control
         /// </summary>
         private GTimeGraphItem _GControl;
@@ -3202,6 +3399,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Časový interval tohoto prvku
         /// </summary>
         public TimeRange Time { get { return this._Time; } set { this._Time = value; } }
+        /// <summary>
+        /// Režim chování položky grafu (editovatelnost, texty, atd).
+        /// </summary>
+        public GraphItemBehaviorMode BehaviorMode { get { return this._BehaviorMode; } set { this._BehaviorMode = value; } }
         #endregion
         #region Variabilní čtení identifikátoru
         /// <summary>
@@ -3291,7 +3492,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         int? ITimeGraphItem.RatioLineWidth { get { return this._GuiGraphItem.RatioLineWidth; } }
         Image ITimeGraphItem.ImageBegin { get { return App.Resources.GetImage(this._GuiGraphItem.ImageBegin); } }
         Image ITimeGraphItem.ImageEnd { get { return App.Resources.GetImage(this._GuiGraphItem.ImageEnd); } }
-        GraphItemBehaviorMode ITimeGraphItem.BehaviorMode { get { return this._GuiGraphItem.BehaviorMode; } }
+        GraphItemBehaviorMode ITimeGraphItem.BehaviorMode { get { return this.BehaviorMode; } }
         GTimeGraphItem ITimeGraphItem.GControl { get { this._CheckGControl(); return this._GControl; } set { this._GControl = value; } }
         void ITimeGraphItem.Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode) { this.Draw(e, boundsAbsolute, drawMode); }
         #endregion

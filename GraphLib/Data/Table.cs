@@ -2592,13 +2592,12 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Konstruktor, který do nové instance překopíruje data ze zdrojového řádku
         /// </summary>
         /// <param name="original">Zdrojový řádek</param>
-        /// <param name="cloneItem">Klonovat položky grafů? default = true = ano</param>
-        /// <param name="cloneItemFilter">Filtr na položky grafů</param>
-        public Row(Row original, bool cloneItem = true, Func<Components.Graph.ITimeGraphItem, bool> cloneItemFilter = null)
+        /// <param name="cloneArgs">Data pro klonování</param>
+        public Row(Row original, TableRowCloneArgs cloneArgs = null)
              : this()
         {
             if (original != null)
-                CopyData(original, this, cloneItem, cloneItemFilter);
+                CopyData(original, this, cloneArgs);
         }
         /// <summary>
         /// Vizualizace
@@ -2638,32 +2637,33 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         /// <param name="source">Zdrojový řádek</param>
         /// <param name="target">Cílový řádek</param>
-        /// <param name="cloneItem">Klonovat položky grafů? default = true = ano</param>
-        /// <param name="cloneItemFilter">Filtr na položky grafů</param>
-        public static void CopyData(Row source, Row target, bool cloneItem = true, Func<Components.Graph.ITimeGraphItem, bool> cloneItemFilter = null)
+        /// <param name="cloneArgs">Data pro klonování</param>
+        public static void CopyData(Row source, Row target, TableRowCloneArgs cloneArgs = null)
         {
             target._CellDict.Clear();
             foreach (var kvp in source._CellDict)
             {
                 int columnId = kvp.Key;
-                object value = CloneValue(kvp.Value.Value, cloneItem, cloneItemFilter);
+                object value = CloneValue(kvp.Value.Value, cloneArgs);
                 target._GetCell(columnId).Value = value;
             }
 
-            target.BackgroundValue = CloneValue(source.BackgroundValue, cloneItem, cloneItemFilter);
-            target._TagItemDict = (source._TagItemDict != null ? new Dictionary<string, TagItem>(source._TagItemDict) : null);
+            target.BackgroundValue = CloneValue(source.BackgroundValue, cloneArgs);
+
+            target._TagItemDict = null;
+            if (cloneArgs != null && cloneArgs.CloneRowTagItems && source._TagItemDict != null)
+                target._TagItemDict = source._TagItemDict.GetDictionary(kvp => kvp.Key, kvp => new TagItem(kvp.Value), true);
         }
         /// <summary>
         /// Metoda vrací klon z dodané hodnoty
         /// </summary>
         /// <param name="source">Zdrojový objekt</param>
-        /// <param name="cloneItem">Klonovat položky grafů? default = true = ano</param>
-        /// <param name="cloneItemFilter">Filtr na položky grafů</param>
+        /// <param name="cloneArgs">Data pro klonování</param>
         /// <returns></returns>
-        private static object CloneValue(object source, bool cloneItem = true, Func<Components.Graph.ITimeGraphItem, bool> cloneItemFilter = null)
+        private static object CloneValue(object source, TableRowCloneArgs cloneArgs = null)
         {
             if (source == null) return null;
-            if (source is Components.Graph.ITimeInteractiveGraph) return (source as Components.Graph.ITimeInteractiveGraph).GetGraphClone(cloneItem, cloneItemFilter);
+            if (source is Components.Graph.ITimeInteractiveGraph) return (source as Components.Graph.ITimeInteractiveGraph).GetGraphClone(cloneArgs);
             if (source is ICloneable) return (source as ICloneable).Clone();
             return source;
         }
@@ -3774,6 +3774,26 @@ namespace Asol.Tools.WorkScheduler.Data
             this._Text = text;
         }
         /// <summary>
+        /// Konstruktor pro vytvoření klonu.
+        /// Neklonuje se Owner.
+        /// </summary>
+        /// <param name="source"></param>
+        public TagItem(TagItem source)
+        {
+            if (source != null)
+            {
+                this._Text = source._Text;
+                this._BackColor = source._BackColor;
+                this._CheckedBackColor = source._CheckedBackColor;
+                this._BorderColor = source._BorderColor;
+                this._TextColor = source._TextColor;
+                this._Size = source._Size;
+                this._Visible = source._Visible;
+                this._Checked = source._Checked;
+                this.UserData = source.UserData;
+            }
+        }
+        /// <summary>
         /// Vizualizace
         /// </summary>
         /// <returns></returns>
@@ -3873,9 +3893,9 @@ namespace Asol.Tools.WorkScheduler.Data
         #endregion
     }
     #endregion
-    #region MyRegion
+    #region TableFilter : Předek pro třídy implementující filtr tabulky
     /// <summary>
-    /// Předek pro třídy implementující filtr tabulky
+    /// TableFilter : Předek pro třídy implementující filtr tabulky
     /// </summary>
     public class TableFilter
     {
@@ -3910,6 +3930,32 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Možné úložiště pro datový podklad filtru
         /// </summary>
         public object UserData;
+    }
+    #endregion
+    #region TableRowCloneArgs : data pro podporu klonování obsahu řádku
+    /// <summary>
+    /// TableRowCloneArgs : data pro podporu klonování obsahu řádku
+    /// </summary>
+    public class TableRowCloneArgs
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public TableRowCloneArgs()
+        { }
+        /// <summary>
+        /// true = klonovat prvky TagItems; false = ne
+        /// </summary>
+        public bool CloneRowTagItems { get; set; }
+        /// <summary>
+        /// true = klonovat v rámci grafu jeho grafické prvky; false = ne
+        /// </summary>
+        public bool CloneGraphItems { get; set; }
+        /// <summary>
+        /// Filtr pro klonování prvů grafu
+        /// </summary>
+        public Func<Components.Graph.ITimeGraphItem, bool> CloneGraphsFilter { get; set; }
+
     }
     #endregion
     #region Interfaces

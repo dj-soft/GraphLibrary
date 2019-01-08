@@ -345,6 +345,19 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         public IEnumerable<ITimeGraphItem> VisibleGraphItems { get { return this._ItemDict.Values.Where(i => i.IsVisible); } }
         /// <summary>
+        /// Metoda provede danou akci pro každý prvek grafu (i pro invisible), a poté zajistí kompletní invalidaci dat
+        /// </summary>
+        /// <param name="action"></param>
+        public void ModifyGraphItems(Action<ITimeGraphItem> action)
+        {
+            if (action != null)
+            {
+                foreach (ITimeGraphItem iItem in this._ItemDict.Values)
+                    action(iItem);
+            }
+            this.Invalidate(InvalidateItems.AllGroups);
+        }
+        /// <summary>
         /// Index prvků
         /// </summary>
         private Dictionary<int, ITimeGraphItem> _ItemDict;
@@ -1927,24 +1940,23 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         #region ICloneable members, GetGraphClone()
         object ICloneable.Clone()
         {
-            return this.GetGraphClone();
+            return this.GetGraphClone(null);
         }
         /// <summary>
         /// Vrací klon grafu, který může obsahovat podmnožinu prvků danou filtrem.
         /// Klon grafu obsahuje prvky, které jsou vytvořeny klonováním prvků zdejších.
         /// </summary>
-        /// <param name="cloneItem">Klonovat položky grafů? default = true = ano</param>
-        /// <param name="cloneItemFilter"></param>
+        /// <param name="cloneArgs">Data pro klonování</param>
         /// <returns></returns>
-        protected GTimeGraph GetGraphClone(bool cloneItem = true, Func<ITimeGraphItem, bool> cloneItemFilter = null)
+        protected GTimeGraph GetGraphClone(TableRowCloneArgs cloneArgs)
         {
             GTimeGraph gTimeGraph = new GTimeGraph(this._GuiGraph);
 
-            if (cloneItem)
+            if (cloneArgs == null || cloneArgs.CloneGraphItems)
             {
                 foreach (ITimeGraphItem sourceItem in this._ItemDict.Values)
                 {
-                    if (cloneItemFilter == null || cloneItemFilter(sourceItem))
+                    if (cloneArgs == null || cloneArgs.CloneGraphsFilter == null || cloneArgs.CloneGraphsFilter(sourceItem))
                     {
                         ITimeGraphItem targetItem = ((ICloneable)sourceItem.Clone()) as ITimeGraphItem;
                         gTimeGraph._AddGraphItems(targetItem, false);
@@ -1958,7 +1970,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         #region ITimeInteractiveGraph members
         ITimeAxisConvertor ITimeInteractiveGraph.TimeAxisConvertor { get { return this._TimeConvertor; } set { this._TimeConvertor = value; this.Invalidate(InvalidateItems.CoordinateX); } }
         IVisualParent ITimeInteractiveGraph.VisualParent { get { return this.VisualParent; } set { this.VisualParent = value; } }
-        GTimeGraph ITimeInteractiveGraph.GetGraphClone(bool cloneItem, Func<ITimeGraphItem, bool> cloneItemFilter) { return this.GetGraphClone(cloneItem, cloneItemFilter); }
+        GTimeGraph ITimeInteractiveGraph.GetGraphClone(TableRowCloneArgs cloneArgs) { return this.GetGraphClone(cloneArgs); }
         #endregion
     }
     #region class TimeGraphProperties : třída obsahující vlastnosti vykreslovaného grafu
@@ -2232,10 +2244,9 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Vrací klon grafu, který může obsahovat podmnožinu prvků danou filtrem.
         /// Klon grafu obsahuje prvky, které jsou vytvořeny klonováním prvků zdejších.
         /// </summary>
-        /// <param name="cloneItem">Klonovat položky grafů? default = true = ano</param>
-        /// <param name="cloneItemFilter"></param>
+        /// <param name="cloneArgs">Data pro klonování</param>
         /// <returns></returns>
-        GTimeGraph GetGraphClone(bool cloneItem, Func<ITimeGraphItem, bool> cloneItemFilter);
+        GTimeGraph GetGraphClone(TableRowCloneArgs cloneArgs);
     }
     /// <summary>
     /// Deklarace grafu, který má časovou osu a není interaktivní

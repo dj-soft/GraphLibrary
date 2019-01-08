@@ -455,7 +455,8 @@ namespace Noris.LCS.Base.WorkScheduler
     #region GuiGrid : obsahuje veškeré data pro zobrazení jedné tabulky v WorkScheduler pluginu (Rows, Graph, Text).
     /// <summary>
     /// GuiGrid : obsahuje veškeré data pro zobrazení jedné tabulky v WorkScheduler pluginu.
-    /// Obsahuje řádky <see cref="Rows"/>, obsahuje jednotlivé prvky časových grafů <see cref="GraphItems"/>, a obsahuje textové popisky k těmto grafům <see cref="GraphTexts"/>.
+    /// Obsahuje řádky <see cref="Rows"/>, obsahuje jednotlivé prvky časových grafů <see cref="GraphItems"/>, 
+    /// a obsahuje textové popisky k těmto grafům <see cref="GraphTexts"/> plus tooltipy v <see cref="GraphToolTips"/>.
     /// Obsahuje i zadání vlastností grafu <see cref="GraphProperties"/>, a textové popisky tabulky (Name, Title, ToolTip, Image).
     /// Tyto prvky jsou zde uloženy takříkajíc na hromadě, bez nějakého ladu a skladu.
     /// Teprve až WorkScheduler si je probere a poskládá z nich vizuální tabulku a do ní vloží patřičné grafy.
@@ -472,6 +473,7 @@ namespace Noris.LCS.Base.WorkScheduler
             this.Graphs = new List<GuiGraph>();
             this.GraphItems = new List<GuiGraphTable>();
             this.GraphTexts = new List<GuiTable>();
+            this.GraphToolTips = new List<GuiTable>();
             this.GraphLinks = new GuiGraphLinks() { Name = GRAPH_LINKS_NAME };
         }
         /// <summary>
@@ -584,7 +586,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Potomek zde vrací soupis svých Child prvků
         /// </summary>
         [PersistingEnabled(false)]
-        protected override IEnumerable<IGuiItem> Childs { get { return Union(this.GridProperties, this.GraphProperties, this.Rows, this.GraphItems, this.GraphTexts, this.GraphLinks); } }
+        protected override IEnumerable<IGuiItem> Childs { get { return Union(this.GridProperties, this.GraphProperties, this.Rows, this.GraphItems, this.GraphTexts, this.GraphToolTips, this.GraphLinks); } }
     }
     /// <summary>
     /// Pár klíčů Parent - Child pro tvorbu stromové struktury
@@ -660,7 +662,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public Color? TagFilterBackColor { get; set; }
         /// <summary>
-        /// Režim pro vyhodnocení Child řádků v této tabulce.
+        /// Režim pro nalezení Child řádků v této tabulce.
         /// Nezadáno = <see cref="GuiChildRowsEvaluateMode.Static"/>.
         /// </summary>
         public GuiChildRowsEvaluateMode? ChildRowsEvaluate { get; set; }
@@ -669,12 +671,24 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public string ChildRowsTableName { get; set; }
         /// <summary>
-        /// Seznam čísel tříd (čísla oddělená středníkem), jejichž prvky grafu budou zobrazovány v Child řádcích i tehdy, když k nim nebudou existovat ekvivalenty v Parent řádku.
-        /// Touto cestou lze v child řádku zobrazit jeho vlastní pracovní směny (=jeho prvky grafu v Child řádku), které přitom nejsou přítomny v Parent řádku.
-        /// Má to význam tehdy, když je nastaven bit <see cref="GuiChildRowsEvaluateMode.DuplicateOnlyPairGraphItem"/> v <see cref="ChildRowsEvaluate"/>, 
-        /// tedy když se v Child řádku zobrazují jen párové prvky grafu.
+        /// Specifikace chování pro přenos položek grafu pro Child řádek, pokud se přenáší z jiné tabulky <see cref="ChildRowsTableName"/>.
+        /// V takovém přenosu lze zajistit přenášení položek ze zdrojového grafu (v tabulce <see cref="ChildRowsTableName"/>) do cílového grafu v this tabulce
+        /// v závislosti na čísle třídy, z níž pochází prvek grafu (podle jeho <see cref="GuiGraphBaseItem.ItemId"/>, hodnota <see cref="GuiId.ClassId"/>).
+        /// Prvky různých tříd tak mohou být přenášeny různým způsobem.
+        /// Typické je, že "Pracovní doba" se bude přenášet vždy bez dalších podmínek, 
+        /// "Pracovní úkol" se bude přenášet jen tehdy, když spadá do zobrazeného času a má synchronní prvek v Parent řádku, a ostatní prvky se přenášet nebudou.
+        /// Pokud bude nalezen prvek, jehož číslo třídy nebude zadáno v této property, pak se vyhledá definice pro třídu 0 (=implicitní režim).
+        /// Pokud nebude zadána definice pro třídu 0, pak se použije chování "Always" = přenášet vždy.
+        /// <para/>
+        /// Hodnota je poskládaná do textu ve formátu "číslo třídy:chování;číslo třídy:chování;..."
+        /// kde chování je string:
+        /// "None" = nepřenášet nikdy; 
+        /// "Always" = přenášet vždy; 
+        /// "ExistsPair" = přenášet, jen když v Parent řádku existuje shodný prvek bez ohledu na synchronní čas;
+        /// "SynchronPair" = přenášet, jen když jsou synchronní časy (v Parent řádku existuje shodný prvek s časem společným s prvekm v Child řádku).
+        /// Chování je case-insensitive, a postačuje zadat první znak.
         /// </summary>
-        public string ChildRowsCopyAllItemFromClasses { get; set; }
+        public string ChildRowsCopyClassesMode { get; set; }
         /// <summary>
         /// Přidá jednu další definici interakce <see cref="GuiGridInteraction"/>
         /// </summary>
@@ -767,11 +781,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Hledat Child řádky pouze mezi Root řádky v jiné tabulce (její název je určen v property <see cref="GuiGridProperties.ChildRowsTableName"/>).
         /// K tomuto bitu může i nemusí být nastaven bit <see cref="InOtherRootRowsOnly"/>
         /// </summary>
-        InOtherRootRowsOnly = 0x2000,
-        /// <summary>
-        /// Do child řádku provádět duplikaci položek grafu ze zdrojovho řádku pouze takových, které souvisejí s Parent řádkem.
-        /// </summary>
-        DuplicateOnlyPairGraphItem = 0x4000
+        InOtherRootRowsOnly = 0x2000
     }
     #endregion
     #region GuiGridInteraction : definice interakcí v rámci GUI (akce v jednom místě způsobí jinou akci jinde)
@@ -1439,6 +1449,11 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Výchozí hodnota je 40.
         /// </summary>
         public int GraphLinePartialHeight { get; set; }
+        /// <summary>
+        /// Text, který pokud je obsažen v některém sloupci v tabulce textů <see cref="GuiGrid.GraphTexts"/>, je rozpoznán jako zlom na nový řádek textu.
+        /// Lze tak definovat Přehledovou šablonu, která definuje více řádků popisku v grafu, s definováním místa začátku nového řádku.
+        /// </summary>
+        public string GraphTextRowDelimiter { get; set; }
         /// <summary>
         /// Horní okraj = prostor nad nejvyšším prvkem grafu, který by měl být zobrazen jako prázdný, tak aby bylo vidět že nic dalšího už není.
         /// V tomto prostoru (těsně pod souřadnicí Top) se provádí Drag and Drop prvků.
@@ -4329,7 +4344,13 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <summary>
         /// Souhrn příznaků, povolujících Drag and Drop prvku = <see cref="MoveToAnotherTime"/> | <see cref="MoveToAnotherRow"/> | <see cref="MoveToAnotherTable"/>
         /// </summary>
-        AnyMove = MoveToAnotherTime | MoveToAnotherRow | MoveToAnotherTable
+        AnyMove = MoveToAnotherTime | MoveToAnotherRow | MoveToAnotherTable,
+        /// <summary>
+        /// Souhrn příznaků, které smí mít prvek grafu, který je umístěn v Child řádku v tabulce.
+        /// </summary>
+        AllEnabledForChildRows = 
+            ShowCaptionNone | ShowCaptionInMouseOver | ShowCaptionInSelected | ShowCaptionAllways |
+            ShowToolTipNone | ShowToolTipFadeIn | ShowToolTipImmediatelly
     }
     /// <summary>
     /// Režim přepočtu DateTime na osu X.
