@@ -210,40 +210,40 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             switch (tpv)
             {
                 case ProductTpv.Simple:
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.GreenYellow, "Řez tvaru", "Přeříznout", WP_PILA, qty, 30, 20, 45, Pbb(60)));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DarkOrange, "Šroubovat", "Nasadit šrouby a sešroubovat", WP_DILN, qty, 0, 15, 0));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.ForestGreen, "Lakovat", "Lakování základní", WP_LAKO, qty, 30, 30, 240));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DimGray, "Kontrola", "Kontrola finální", WP_KONT, qty, 30, 15, 0));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.GreenYellow, "Řez tvaru", "Přeříznout", WP_PILA, qty, false, 30, 20, 45, Pbb(60)));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DarkOrange, "Šroubovat", "Nasadit šrouby a sešroubovat", WP_DILN, qty, false, 0, 15, 0));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.ForestGreen, "Lakovat", "Lakování základní", WP_LAKO, qty, true, 30, 30, 240));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DimGray, "Kontrola", "Kontrola finální", WP_KONT, qty, false, 30, 15, 0));
                     break;
 
                 case ProductTpv.Standard:
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.GreenYellow, "Řez tvaru", "Přeříznout", WP_PILA, qty, 30, 20, 45, Pbb(60)));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.Blue, "Broušení hran", "Zabrousit", WP_DILN, qty, 0, 20, 30, Pbb(20)));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.BlueViolet, "Vrtat čepy", "Zavrtat pro čepy", WP_DILN, qty, 15, 15, 30, Pbb(5)));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DarkOrange, "Nasadit čepy", "Nasadit a vlepit čepy", WP_DILN, qty, 0, 30, 0));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DarkRed, "Klížit", "Sklížit díly", WP_DILN, qty, 30, 20, 360));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.ForestGreen, "Lakovat", "Lakování základní", WP_LAKO, qty, 30, 45, 240));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DimGray, "Kontrola", "Kontrola finální", WP_KONT, qty, 30, 20, 0));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.GreenYellow, "Řez tvaru", "Přeříznout", WP_PILA, qty, false, 30, 20, 45, Pbb(60)));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.Blue, "Broušení hran", "Zabrousit", WP_DILN, qty, false, 0, 20, 30, Pbb(20)));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.BlueViolet, "Vrtat čepy", "Zavrtat pro čepy", WP_DILN, qty, false, 15, 15, 30, Pbb(5)));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DarkOrange, "Nasadit čepy", "Nasadit a vlepit čepy", WP_DILN, qty, false, 0, 30, 0));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DarkRed, "Klížit", "Sklížit díly", WP_DILN, qty, false, 30, 20, 360));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.ForestGreen, "Lakovat", "Lakování základní", WP_LAKO, qty, true, 30, 45, 240));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DimGray, "Kontrola", "Kontrola finální", WP_KONT, qty, false, 30, 20, 0));
                     break;
 
                 case ProductTpv.Luxus:
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.GreenYellow, "Řez délky", "Přeříznout", WP_PILA, qty, 30, 25, 45, Pbb(70)));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.Blue, "Brousit hrany", "Zabrousit", WP_DILN, qty, 0, 30, 45, Pbb(50)));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.Blue, "Brousit povrch", "Zabrousit", WP_DILN, qty, 0, 20, 30, Pbb(40)));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.BlueViolet, "Vrtat čepy", "Zavrtat pro čepy", WP_DILN, qty, 30, 15, 45, Pbb(30)));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DarkOrange, "Vsadit čepy", "Nasadit a vlepit čepy", WP_DILN, qty, 0, 20, 0, Pbb(20)));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DimGray, "Kontrola čepů", "Kontrolovat čepy", WP_KONT, qty, 0, 30, 0, Pbb(10)));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DarkRed, "Klížit celek", "Sklížit díly", WP_DILN, qty, 45, 60, 360));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DimGray, "Kontrola klížení", "Kontrolovat klížení", WP_KONT, qty, 0, 30, 0));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.ForestGreen, "Lakovat základ", "Lakování základní", WP_LAKO, qty, 30, 45, 240));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.Blue, "Brousit lak", "Zabrousit", WP_DILN, qty, 0, 30, 5));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DarkGreen, "Lakovat lesk", "Lakování lesklé", WP_LAKO, qty, 60, 60, 240));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DimGray, "Kontrola celku", "Kontrolovat lakování", WP_KONT, qty, 0, 30, 0));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.GreenYellow, "Řez délky", "Přeříznout", WP_PILA, qty, false, 30, 25, 45, Pbb(70)));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.Blue, "Brousit hrany", "Zabrousit", WP_DILN, qty, false, 0, 30, 45, Pbb(50)));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.Blue, "Brousit povrch", "Zabrousit", WP_DILN, qty, false, 0, 20, 30, Pbb(40)));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.BlueViolet, "Vrtat čepy", "Zavrtat pro čepy", WP_DILN, qty, false, 30, 15, 45, Pbb(30)));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DarkOrange, "Vsadit čepy", "Nasadit a vlepit čepy", WP_DILN, qty, false, 0, 20, 0, Pbb(20)));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DimGray, "Kontrola čepů", "Kontrolovat čepy", WP_KONT, qty, false, 0, 30, 0, Pbb(10)));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DarkRed, "Klížit celek", "Sklížit díly", WP_DILN, qty, false, 45, 60, 360));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DimGray, "Kontrola klížení", "Kontrolovat klížení", WP_KONT, qty, false, 0, 30, 0));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.ForestGreen, "Lakovat základ", "Lakování základní", WP_LAKO, qty, true, 30, 45, 240));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.Blue, "Brousit lak", "Zabrousit", WP_DILN, qty, false, 0, 30, 5));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DarkGreen, "Lakovat lesk", "Lakování lesklé", WP_LAKO, qty, true, 60, 60, 240));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DimGray, "Kontrola celku", "Kontrolovat lakování", WP_KONT, qty, false, 0, 30, 0));
                     break;
 
                 case ProductTpv.Cooperation:
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.Gray, "Kooperace", "Udělá to někdo jiný", WP_KOOP, qty, 360, 30, 1440));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DimGray, "Kontrola", "Kontrolovat kooperaci", WP_KONT, qty, 1440, 30, 60));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.Gray, "Kooperace", "Udělá to někdo jiný", WP_KOOP, qty, false, 360, 30, 1440));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DimGray, "Kontrola", "Kontrolovat kooperaci", WP_KONT, qty, false, 1440, 30, 60));
                     break;
 
             }
@@ -259,14 +259,16 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <param name="name"></param>
         /// <param name="toolTip"></param>
         /// <param name="qty"></param>
+        /// <param name="isFragment"></param>
         /// <param name="tbcMin"></param>
         /// <param name="tacMin"></param>
         /// <param name="tecMin"></param>
         /// <param name="isFixed"></param>
         /// <returns></returns>
         protected ProductOperation CreateProductOperation(int recordId, ProductOrder productOrder, int line, Color backColor, string name, string toolTip,
-            string workPlace, decimal qty, int tbcMin, int tacMin, int tecMin, bool isFixed = false)
+            string workPlace, decimal qty, bool isFragment, int tbcMin, int tacMin, int tecMin, bool isFixed = false)
         {
+            float height = CreateOperationHeight(isFragment);
             ProductOperation operation = new ProductOperation()
             {
                 RecordId = recordId,
@@ -277,6 +279,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 IsFixed = isFixed,
                 BackColor = backColor,
                 Qty = qty,
+                Height = height,
                 WorkPlace = workPlace,
                 TBc = TimeSpan.FromMinutes(tbcMin),
                 TAc = TimeSpan.FromMinutes(tacMin),
@@ -286,6 +289,20 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             return operation;
         }
+        /// <summary>
+        /// Vrátí výšku operace
+        /// </summary>
+        /// <param name="isFragment"></param>
+        /// <returns></returns>
+        protected float CreateOperationHeight(bool isFragment)
+        {
+            if (!isFragment) return 1f;
+            return this.GetRandom(OperationHeights);
+        }
+        /// <summary>
+        /// Pole vhodných výšek pro operace, které jsou fragmentované
+        /// </summary>
+        protected static float[] OperationHeights { get { return new float[] { 2.0f, 1.0f, 1.0f, 1.0f, 2.0f }; } }
         /// <summary>
         /// Vytvoří a uloží jeden záznam Dílna včetně jeho pracovních směn, pro dané zadání.
         /// </summary>
@@ -836,7 +853,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         {
             GuiGrid gridCenterWorkplace = new GuiGrid() { Name = GuiNameGridCenterTop, Title = "Pracoviště" };
 
-            this.SetCenterGridProperties(gridCenterWorkplace, true, true, true, true, GuiNameLeftCenterTable);
+            this.SetCenterGridProperties(gridCenterWorkplace, true, true, true, true, GuiNameRowsCenterTop);
 
             gridCenterWorkplace.GridProperties.ChildRowsEvaluate =
                 // Child řádky k Parent řádkům navážeme dynamicky, podle viditelného časového okna:
@@ -846,12 +863,14 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 GuiChildRowsEvaluateMode.OnParentGroup | GuiChildRowsEvaluateMode.ToChildGroup |
                 // Child věty budeme hledat v jiné tabulce (což znamená provést duplikát řádku!), a to pouze v jejích Root řádcích:
                 GuiChildRowsEvaluateMode.InOtherRootRowsOnly |
-                // Při duplikaci grafu duplikovat pouze synchronní prvky grafu:
-                GuiChildRowsEvaluateMode.DuplicateOnlyPairGraphItem |
                 // A navíc ty dva prvky musí mít společný čas:
                 GuiChildRowsEvaluateMode.ParentChildIntersectTimeOnly;
 
             gridCenterWorkplace.GridProperties.ChildRowsTableName = GuiFullNameGridCenterBottom;
+            gridCenterWorkplace.GridProperties.ChildRowsCopyClassesMode =
+                WorkTime.ClassNumber + ":A;" +        // Pracovní čas     : z OtherTable přenést vždy (=chceme vždy vykreslit směny daného child řádku = pracovníka)
+                UnitTime.ClassNumber + ":S;" +        // Pracovní jednotka: z OtherTable přenést jen tehdy, pokud na Parent řádku máme synchronní údaj GroupId
+                "0:N";                                // 0 = jiné třídy   : nepřenášet
 
             gridCenterWorkplace.GridProperties.AddInteraction(new GuiGridInteraction()
             {
@@ -898,7 +917,25 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         {
             GuiGrid gridCenterPersons = new GuiGrid() { Name = GuiNameGridCenterBottom, Title = "Pracovníci" };
 
-            this.SetCenterGridProperties(gridCenterPersons, true, true, true, true, GuiNameLeftCenterTable);
+            this.SetCenterGridProperties(gridCenterPersons, true, true, true, true, GuiNameRowsCenterBottom);
+
+            gridCenterPersons.GridProperties.ChildRowsEvaluate =
+                // Child řádky k Parent řádkům navážeme dynamicky, podle viditelného časového okna:
+                GuiChildRowsEvaluateMode.VisibleTimeOnly |
+                // K identifikátoru GroupId z Parent řádku najdeme shodný GroupId v Child řádku 
+                //   (tzn. Child pracuje na stejné operaci, jako Parent):
+                GuiChildRowsEvaluateMode.OnParentGroup | GuiChildRowsEvaluateMode.ToChildGroup |
+                // Child věty budeme hledat v jiné tabulce (což znamená provést duplikát řádku!), a to pouze v jejích Root řádcích:
+                GuiChildRowsEvaluateMode.InOtherRootRowsOnly |
+                // A navíc ty dva prvky musí mít společný čas:
+                GuiChildRowsEvaluateMode.ParentChildIntersectTimeOnly;
+
+            gridCenterPersons.GridProperties.ChildRowsTableName = GuiFullNameGridCenterTop;
+            gridCenterPersons.GridProperties.ChildRowsCopyClassesMode =
+                WorkTime.ClassNumber + ":A;" +        // Pracovní čas     : z OtherTable přenést vždy (=chceme vždy vykreslit směny daného child řádku = pracovníka)
+                UnitTime.ClassNumber + ":S;" +        // Pracovní jednotka: z OtherTable přenést jen tehdy, pokud na Parent řádku máme synchronní údaj GroupId
+                "0:N";                                // 0 = jiné třídy   : nepřenášet
+
 
             // Data tabulky = Plánovací jednotky Pracovníci:
             foreach (PlanUnitC planUnitC in this.PersonDict.Values)
@@ -1128,7 +1165,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             return false;
         }
         /// <summary>
-        /// Do dodaného GuiGridu přidá řádek za danou Plánovací jednotkupříkaz, přidá jeho TagItems a graf z jeho operací.
+        /// Do dodaného GuiGridu přidá řádek za danou Plánovací jednotku, přidá jeho TagItems a graf z jeho operací.
         /// </summary>
         /// <param name="guiGrid"></param>
         /// <param name="planUnitC"></param>
@@ -1168,14 +1205,15 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
         protected const string GuiNameMainPage = "MainPage";
         protected const string GuiNameGridLeft = "GridLeft";
-        protected const string GuiNameGridCenterTop = "GridTop";
-        protected const string GuiNameGridCenterBottom = "GridBottom";
+        protected const string GuiNameGridCenterTop = "GridCenterTop";
+        protected const string GuiNameGridCenterBottom = "GridCenterBottom";
 
         protected const string GuiNameInteractionSelectOperations = "InteractionSelectOperations";
         protected const string GuiNameInteractionFilterProductOrder = "InteractionFilterProductOrder";
 
         protected const string GuiNameLeftRowTable = "RowsLeft";
-        protected const string GuiNameLeftCenterTable = "RowsCenter";
+        protected const string GuiNameRowsCenterTop = "RowsCenterTop";
+        protected const string GuiNameRowsCenterBottom = "RowsCenterBottom";
 
         protected const string GuiFullNameLeftPanel = GuiNameData + GuiNameDelimiter + GuiNamePages + GuiNameDelimiter + GuiNameMainPage + GuiNameDelimiter + GuiNameLeftPanel + GuiNameDelimiter;
         protected const string GuiFullNameGridLeft = GuiFullNameLeftPanel + GuiNameGridLeft;
@@ -1630,9 +1668,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 Height = this.Height,
                 BackColor = backColor,
                 IsEditable = true,
-                Text = this.ReferName,
                 ToolTip = this.ToolTip
             };
+            unitTime.Text = (unitTime.Height <= 1f ? this.ReferName : this.ReferName + "\r\n" + this.ProductOrder.ReferName);
             return unitTime;
         }
         /// <summary>
