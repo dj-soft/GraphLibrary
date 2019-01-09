@@ -1368,7 +1368,7 @@ namespace Noris.LCS.Base.WorkScheduler
             else
             {
                 foreach (object cell in this.Cells)
-                    text = (text.Length == 0 ? "| " : " ") + (cell == null ? "Null" : cell.ToString()) + " |";
+                    text = (text.Length == 0 ? "| " : text + " ") + (cell == null ? "Null" : cell.ToString()) + " |";
             }
             return text;
         }
@@ -1820,7 +1820,8 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <returns></returns>
         public override string ToString()
         {
-            return "Graph RowId: " + this.RowId.ToString() + "; Items.Count: " + (this.GraphItems != null ? this.GraphItems.Count.ToString() : "{Null}");
+            return "Graph RowId: " + (this.RowId == null ? "Null" : this.RowId.ToString()) + 
+                "; Items.Count: " + (this.GraphItems != null ? this.GraphItems.Count.ToString() : "{Null}");
         }
         /// <summary>
         /// Název prvku <see cref="GraphProperties"/>
