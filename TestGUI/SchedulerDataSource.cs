@@ -825,7 +825,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             guiTable.Columns.Add(new GuiDataColumn() { Alias = "reference_subjektu", Label = "Číslo", Width = 85 });
             guiTable.Columns.Add(new GuiDataColumn() { Alias = "nazev_subjektu", Label = "Dílec", Width = 200 });
             guiTable.Columns.Add(new GuiDataColumn() { Alias = "qty", Label = "Množství", Width = 45 });
+            guiTable.Rows.Add(new GuiDataRow(new GuiId(1188, 12345), "VP10101", "Plechová nádhera", 12.45, new GuiGraph()));
 
+            string x = guiTable.Rows[0].ToString();
 
             DataTable rowTable = WorkSchedulerSupport.CreateTable(GuiNameLeftRowTable, "cislo_subjektu int, reference_subjektu string, nazev_subjektu string, qty decimal");
             gridLeft.Rows = new GuiTable() { Name = GuiNameLeftRowTable, DataTable = rowTable };
