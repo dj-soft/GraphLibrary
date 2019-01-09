@@ -820,6 +820,13 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             gridLeft.GraphProperties.TimeAxisMode = TimeGraphTimeAxisMode.LogarithmicScale;
             gridLeft.GraphProperties.UpperSpaceLogical = 1f;
 
+            GuiDataTable guiTable = new GuiDataTable();
+            guiTable.Columns.Add(new GuiDataColumn() { Alias = "cislo_subjektu", BrowseColumnType = BrowseColumnType.SubjectNumber, ClassNumber = ProductOrder.ClassNumber });
+            guiTable.Columns.Add(new GuiDataColumn() { Alias = "reference_subjektu", Label = "Číslo", Width = 85 });
+            guiTable.Columns.Add(new GuiDataColumn() { Alias = "nazev_subjektu", Label = "Dílec", Width = 200 });
+            guiTable.Columns.Add(new GuiDataColumn() { Alias = "qty", Label = "Množství", Width = 45 });
+
+
             DataTable rowTable = WorkSchedulerSupport.CreateTable(GuiNameLeftRowTable, "cislo_subjektu int, reference_subjektu string, nazev_subjektu string, qty decimal");
             gridLeft.Rows = new GuiTable() { Name = GuiNameLeftRowTable, DataTable = rowTable };
             gridLeft.Rows.ColumnsExtendedInfo[0].ClassNumber = ProductOrder.ClassNumber;
@@ -847,6 +854,20 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             guiGrid.Rows.DataTable.Rows.Add(productOrder.RecordId, productOrder.Refer, productOrder.Name, productOrder.Qty);
             guiGrid.Rows.RowTags.TagItemList.AddRange(productOrder.TagItems);
             guiGrid.Graphs.Add(productOrder.CreateGuiGraph());
+
+            foreach (ProductOperation productOperation in productOrder.OperationList)
+                this.AddProductOperationToGrid(guiGrid, productOperation);
+        }
+        /// <summary>
+        /// Přidá danou operaci do gridu, jako Child řádek ke svému parentu
+        /// </summary>
+        /// <param name="guiGrid"></param>
+        /// <param name="productOperation"></param>
+        protected void AddProductOperationToGrid(GuiGrid guiGrid, ProductOperation productOperation)
+        {
+            GuiId rowId = productOperation.RecordGid;
+            guiGrid.Rows.DataTable.Rows.Add(productOperation.RecordId, productOperation.Refer, productOperation.Name, productOperation.Qty);
+            guiGrid.AddParentChild(new GuiParentChild() { Parent = productOperation.ProductOrder.RecordGid, Child = productOperation.RecordGid });
         }
         /// <summary>
         /// Vygeneruje kompletní data do středního panelu do horní tabulky = Pracoviště
