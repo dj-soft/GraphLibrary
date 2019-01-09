@@ -2567,7 +2567,7 @@ namespace Asol.Tools.WorkScheduler.Data
     /// <summary>
     /// Row : informace o jednom řádku tabulky
     /// </summary>
-    public class Row : ITableMember, ITagItemOwner, IVisualMember, IVisualParent, /* ISequenceLayout, */ IContentValidity, IComparableItem
+    public class Row : ITableMember, ITagItemOwner, IVisualMember, IVisualParent, IContentValidity, IComparableItem
     {
         #region Konstruktor, základní data
         /// <summary>
@@ -3027,7 +3027,6 @@ namespace Asol.Tools.WorkScheduler.Data
                 }
             }
         }
-
         /// <summary>
         /// Level Tree nodu
         /// </summary>

@@ -921,6 +921,535 @@ namespace Noris.LCS.Base.WorkScheduler
         LeaveCurrentTarget = 0x00100000
     }
     #endregion
+    #region GuiDataTable + GuiDataColumn + GuiDataRow + GuiDataCell = tabulka
+    /// <summary>
+    /// GuiDataTable : tabulka pro přenášení dat
+    /// </summary>
+    public class GuiDataTable : GuiBase
+    {
+        #region Konstrukce a overrides
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public GuiDataTable()
+        {
+            this.Columns = new List<GuiDataColumn>();
+            this.Rows = new List<GuiDataRow>();
+            this.ParentChilds = new List<GuiParentChild>();
+        }
+        /// <summary>
+        /// Potomek zde vrací soupis svých Child prvků
+        /// </summary>
+        [PersistingEnabled(false)]
+        protected override IEnumerable<IGuiItem> Childs { get { return Union(this.Columns, this.Rows, this.GraphLinks); } }
+        #endregion
+        #region Public properties
+        /// <summary>
+        /// Název tabulky
+        /// </summary>
+        public string TableName { get; set; }
+        /// <summary>
+        /// Sloupce.
+        /// Výchozí hodnota je prázdný List.
+        /// </summary>
+        public List<GuiDataColumn> Columns { get; set; }
+        /// <summary>
+        /// Řádky.
+        /// Výchozí hodnota je prázdný List.
+        /// </summary>
+        public List<GuiDataRow> Rows { get; set; }
+        /// <summary>
+        /// Tabulka definující vztah Parent - Child mezi dvěma řádky tabulky <see cref="Rows"/>.
+        /// Výchozí hodnota je prázdný List.
+        /// </summary>
+        public List<GuiParentChild> ParentChilds { get; set; }
+        /// <summary>
+        /// Linky pro prvky grafů.
+        /// Výchozí hodnota je null.
+        /// </summary>
+        public List<GuiGraphLink> GraphLinks { get; set; }
+        #endregion
+        #region Vytvoření instance GuiDataTable z System.Data.DataTable
+        /// <summary>
+        /// Metoda vytvoří a vrátí instanci <see cref="GuiDataTable"/> z dodané tabulky <see cref="DataTable"/>
+        /// </summary>
+        /// <param name="dataTable"></param>
+        /// <returns></returns>
+        public static GuiDataTable CreateFromTable(DataTable dataTable)
+        {
+            if (dataTable == null) return null;
+
+            GuiDataTable guiTable = new GuiDataTable();
+
+            guiTable.TableName = dataTable.TableName;
+            guiTable.Columns = GuiDataColumn.CreateFromTable(dataTable);
+            guiTable.Rows = GuiDataRow.CreateFromTable(dataTable);
+
+            return guiTable;
+        }
+        #endregion
+    }
+    /// <summary>
+    /// GuiDataColumn : definice jednoho sloupce tabulky <see cref="GuiDataTable"/>
+    /// </summary>
+    public class GuiDataColumn : GuiBase
+    {
+        #region Konstruktor a overrides
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public GuiDataColumn()
+        {
+            this.AllowRowFilter = true;
+            this.AllowSort = true;
+            this.BrowseColumnType = WorkScheduler.BrowseColumnType.DataColumn;
+            this.IsVisible = true;
+            this.Width = 100;
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return "[" + (this.Alias == null ? "Null" : this.Alias) + "]" + (this.Label == null ? "" : " = \"" + this.Label + "\"");
+        }
+        #endregion
+        #region Public properties
+        /// <summary>
+        /// Vrátí index sloupce v seznamu sloupců. Pokud sloupec do žádného seznamu nepatří, vrátí -1.
+        /// </summary>
+        public int Index { get; set; }
+        /// <summary>
+        /// Hodnota <see cref="System.Data.DataColumn.DataType"/>
+        /// </summary>
+        public Type ColumnType { get; set; }
+        /// <summary>
+        /// Hodnota <see cref="System.Data.DataColumn.ColumnName"/>
+        /// </summary>
+        public string ColumnName { get; set; }
+        /// <summary>
+        /// Číslo třídy, z níž pochází data šablony
+        /// </summary>
+        public int? ClassNumber { get; set; }
+        /// <summary>
+        /// Číslo šablony
+        /// </summary>
+        public int? TemplateNumber { get; set; }
+        /// <summary>
+        /// Alias sloupce = ColumnName
+        /// </summary>
+        public string Alias { get; set; }
+        /// <summary>
+        /// Povolit řádkové filtrování
+        /// </summary>
+        public bool AllowRowFilter { get; set; }
+        /// <summary>
+        /// Povolit třídění
+        /// </summary>
+        public bool AllowSort { get; set; }
+        /// <summary>
+        /// Typ sloupce v přehledu: pomocný, datový, ... Zobrazují se vždy jen sloupce typu DataColumn, ostatní sloupce jsou pomocné.
+        /// Aktuálně hodnoty: SubjectNumber, ObjectNumber, DataColumn, RelationHelpfulColumn, TotalCountHelpfulColumn
+        /// </summary>
+        public BrowseColumnType BrowseColumnType { get; set; }
+        /// <summary>
+        /// Název sloupce v SQL selectu
+        /// </summary>
+        public string CodeName_FromSelect { get; set; }
+        /// <summary>
+        /// Název sloupce uvedený v definici šablony
+        /// </summary>
+        public string CodeName_FromTemplate { get; set; }
+        /// <summary>
+        /// Číslo vztahu, z něhož pochází tento sloupec
+        /// </summary>
+        public int ColRelNum { get; set; }
+        /// <summary>
+        /// Datový typ sloupce - NrsTypes (může se lišit od Repozitory, upravuje se dle dat, která se načtou do přehledu - DDLB, ...)
+        /// </summary>
+        public string ColType { get; set; }
+        /// <summary>
+        /// Datový typ sloupce - NrsTypes (definice dle Repozitory - to, co je vidět)
+        /// </summary>
+        public string DataTypeRepo { get; set; }
+        /// <summary>
+        /// Datový typ sloupce - c# SystemTypes
+        /// </summary>
+        public string DataTypeSystem { get; set; }
+        /// <summary>
+        /// Formát sloupce v přehledu
+        /// </summary>
+        public string Format { get; set; }
+        /// <summary>
+        /// Informace o viditelnosti sloupce (zda má být vidět v přehledu)
+        /// </summary>
+        public bool IsVisible { get; set; }
+        /// <summary>
+        /// Nadpis sloupce v přehledu
+        /// </summary>
+        public string Label { get; set; }
+        /// <summary>
+        /// Pořadí sloupce v přehledu - pořadí zobrazení
+        /// </summary>
+        public int? SortIndex { get; set; }
+        /// <summary>
+        /// Šířka sloupce v přehledu
+        /// </summary>
+        public int Width { get; set; }
+        /// <summary>
+        /// Číslo třídy vztaženého záznamu v tomto sloupci
+        /// </summary>
+        public int? RelationClassNumber { get; set; }
+        /// <summary>
+        /// Číslo vztahu v tomto sloupci, je rovno <see cref="ColRelNum"/>
+        /// </summary>
+        public int? RelationNumber { get; set; }
+        /// <summary>
+        /// Strana vztahu: Undefined, Left, Right
+        /// </summary>
+        public string RelationSide { get; set; }
+        /// <summary>
+        /// Databáze, kde máme hledat vztah (Product, Archival)
+        /// </summary>
+        public string RelationVolumeType { get; set; }
+        /// <summary>
+        /// Alias tabulky, která nese číslo záznamu ve vztahu pro jeho rozkliknutí.
+        /// Typický obsah: "TabGS_1_4".
+        /// Jednoduchý návod, kterak vyhledati název sloupce této tabulky, ve kterém jest uloženo číslo záznamu v tomto vztahu:
+        /// $"H_RN_{RelationNumber}_{RelationTableAlias}_RN_H", tedy ve výsledku: "H_RN_102037_TabGS_1_4_RN_H".
+        /// Zcela stačí načíst obsah property <see cref="RelationRecordColumnName"/>.
+        /// </summary>
+        public string RelationTableAlias { get; set; }
+        /// <summary>
+        /// Název sloupce, který obsahuje číslo záznamu, jehož reference nebo název jsou v aktuálním sloupci zobrazeny.
+        /// </summary>
+        public string RelationRecordColumnName { get { return (this.RelationNumber != 0 && !String.IsNullOrEmpty(this.RelationTableAlias) ? "H_RN_" + RelationNumber + "_" + RelationTableAlias + "_RN_H" : ""); } }
+        /// <summary>
+        /// true pokud tento sloupec má být k dispozici uživateli (jeho viditelnost se pak řídí pomocí <see cref="IsVisible"/>),
+        /// false pro sloupce "systémové", které se nikdy nezobrazují.
+        /// </summary>
+        public bool ColumnIsForUser { get { return (this.BrowseColumnType == BrowseColumnType.DataColumn); } }
+        #endregion
+        #region Servis
+        /// <summary>
+        /// Metoda vrátí <see cref="GuiId"/> pro daný řádek
+        /// </summary>
+        /// <param name="guiDataRow"></param>
+        /// <returns></returns>
+        public GuiId CreateRowGuiId(GuiDataRow guiDataRow)
+        {
+            if (guiDataRow == null || guiDataRow.Cells == null || guiDataRow.Cells.Count == 0) return null;
+            Int32? classId = this.ClassNumber;
+            if (!classId.HasValue || classId.Value == 0) return null;
+
+            Int32? recordId = null;
+            object value = guiDataRow.Cells[0];
+            if (value is Int32) recordId = (Int32)value;
+            else if (value is Int32?) recordId = (Int32?)value;
+            else if (value is Int16) recordId = (Int16)value;
+            else if (value is Int16?) recordId = (Int16?)value;
+            if (!recordId.HasValue) return null;
+
+            return new GuiId(classId.Value, recordId.Value);
+        }
+        #endregion
+        #region Vytvoření instance GuiDataColumn z System.Data.DataColumn
+        /// <summary>
+        /// Vrátí seznam <see cref="GuiDataColumn"/> pro sloupce z dodané tabulky
+        /// </summary>
+        /// <param name="dataTable"></param>
+        /// <returns></returns>
+        public static List<GuiDataColumn> CreateFromTable(System.Data.DataTable dataTable)
+        {
+            if (dataTable == null) return null;
+            return CreateFromColumns(dataTable.Columns);
+        }
+        /// <summary>
+        /// Vrátí seznam <see cref="GuiDataColumn"/> pro sloupce z dodané kolekce
+        /// </summary>
+        /// <param name="dataColumns"></param>
+        /// <returns></returns>
+        public static List<GuiDataColumn> CreateFromColumns(System.Data.DataColumnCollection dataColumns)
+        {
+            if (dataColumns == null) return null;
+            List<GuiDataColumn> guiColumns = new List<GuiDataColumn>();
+            foreach (System.Data.DataColumn dataColumn in dataColumns)
+                guiColumns.Add(CreateFromColumn(dataColumn));
+            return guiColumns;
+        }
+        /// <summary>
+        /// Vrátí instanci <see cref="GuiDataColumn"/> pro daný sloupec
+        /// </summary>
+        /// <param name="dataColumn"></param>
+        /// <returns></returns>
+        public static GuiDataColumn CreateFromColumn(System.Data.DataColumn dataColumn)
+        {
+            if (dataColumn == null) return null;
+
+            GuiDataColumn guiColumn = new GuiDataColumn();
+
+            guiColumn.Index = dataColumn.Ordinal;
+            guiColumn.ColumnName = dataColumn.ColumnName;
+            guiColumn.ColumnType = dataColumn.DataType;
+
+            guiColumn.ClassNumber = GetPropertyValue(dataColumn, "ClassNumber", (int?)null);
+            guiColumn.TemplateNumber = GetPropertyValue(dataColumn, "TemplateNumber", (int?)null);
+            guiColumn.Alias = GetPropertyValue(dataColumn, "Alias", "");
+            guiColumn.AllowRowFilter = GetPropertyValue(dataColumn, "AllowRowFilter", true);
+            guiColumn.AllowSort = GetPropertyValue(dataColumn, "AllowSort", true);
+            guiColumn.BrowseColumnType = GetPropertyValue(dataColumn, "BrowseColumnType", BrowseColumnType.None);
+            guiColumn.CodeName_FromSelect = GetPropertyValue(dataColumn, "CodeName_FromSelect", "");
+            guiColumn.CodeName_FromTemplate = GetPropertyValue(dataColumn, "CodeName_FromTemplate", "");
+            guiColumn.ColRelNum = GetPropertyValue(dataColumn, "ColRelNum", 0);
+            guiColumn.ColType = GetPropertyValue(dataColumn, "ColType", "");
+            guiColumn.DataTypeRepo = GetPropertyValue(dataColumn, "DataTypeRepo", "");
+            guiColumn.DataTypeSystem = GetPropertyValue(dataColumn, "DataTypeSystem", "");
+            guiColumn.Format = GetPropertyValue(dataColumn, "Format", "");
+            guiColumn.IsVisible = GetPropertyValue(dataColumn, "IsVisible", true);
+            guiColumn.Label = GetPropertyValue(dataColumn, "Label", "");
+            guiColumn.SortIndex = GetPropertyValue(dataColumn, "SortIndex", (int?)null);
+            guiColumn.Width = GetPropertyValue(dataColumn, "Width", 0);
+            guiColumn.RelationClassNumber = GetPropertyValue(dataColumn, "RelationClassNumber", (int?)null);
+            guiColumn.RelationNumber = GetPropertyValue(dataColumn, "RelationNumber", (int?)null);
+            guiColumn.RelationSide = GetPropertyValue(dataColumn, "RelationSide", "");
+            guiColumn.RelationVolumeType = GetPropertyValue(dataColumn, "RelationVolumeType", "");
+            guiColumn.RelationTableAlias = GetPropertyValue(dataColumn, "RelationTableAlias", "");
+
+            return guiColumn;
+        }
+        /// <summary>
+        /// Vrátí hodnotu požadovaného typu z dané property
+        /// </summary>
+        /// <param name="dataColumn">Data column</param>
+        /// <param name="propertyName">Název extended property</param>
+        /// <param name="defaultValue">Default hodnota</param>
+        /// <returns></returns>
+        protected static int GetPropertyValue(DataColumn dataColumn, string propertyName, int defaultValue)
+        {
+            object value;
+            if (!TryGetPropertyValue(dataColumn, propertyName, out value)) return defaultValue;
+            if (value is Int32) return (Int32)value;
+            if (value is Int16) return (Int32)value;
+            int number;
+            if (value is string && Int32.TryParse((string)value, out number)) return number;
+            return defaultValue;
+        }
+        /// <summary>
+        /// Vrátí hodnotu požadovaného typu z dané property
+        /// </summary>
+        /// <param name="dataColumn">Data column</param>
+        /// <param name="propertyName">Název extended property</param>
+        /// <param name="defaultValue">Default hodnota</param>
+        /// <returns></returns>
+        protected static int? GetPropertyValue(DataColumn dataColumn, string propertyName, int? defaultValue)
+        {
+            object value;
+            if (!TryGetPropertyValue(dataColumn, propertyName, out value)) return defaultValue;
+            if (value is Int32) return (Int32)value;
+            if (value is Int16) return (Int32)value;
+            int number;
+            if (value is string && Int32.TryParse((string)value, out number)) return number;
+            return defaultValue;
+        }
+        /// <summary>
+        /// Vrátí hodnotu požadovaného typu z dané property
+        /// </summary>
+        /// <param name="dataColumn">Data column</param>
+        /// <param name="propertyName">Název extended property</param>
+        /// <param name="defaultValue">Default hodnota</param>
+        /// <returns></returns>
+        protected static bool GetPropertyValue(DataColumn dataColumn, string propertyName, bool defaultValue)
+        {
+            object value;
+            if (!TryGetPropertyValue(dataColumn, propertyName, out value)) return defaultValue;
+            if (value == null) return defaultValue;
+            if (value is Boolean) return (Boolean)value;
+            if (!(value is String)) return defaultValue;
+            string text = ((string)value).Trim();
+            return String.Equals(text, "true", StringComparison.InvariantCultureIgnoreCase);
+        }
+        /// <summary>
+        /// Vrátí hodnotu požadovaného typu z dané property
+        /// </summary>
+        /// <param name="dataColumn">Data column</param>
+        /// <param name="propertyName">Název extended property</param>
+        /// <param name="defaultValue">Default hodnota</param>
+        /// <returns></returns>
+        protected static string GetPropertyValue(DataColumn dataColumn, string propertyName, string defaultValue)
+        {
+            object value;
+            if (!TryGetPropertyValue(dataColumn, propertyName, out value)) return defaultValue;
+            if (value == null) return defaultValue;
+            if (value is String) return (String)value;
+            return value.ToString();
+        }
+        /// <summary>
+        /// Vrátí hodnotu požadovaného typu z dané property
+        /// </summary>
+        /// <param name="dataColumn">Data column</param>
+        /// <param name="propertyName">Název extended property</param>
+        /// <param name="defaultValue">Default hodnota</param>
+        /// <returns></returns>
+        protected static BrowseColumnType GetPropertyValue(DataColumn dataColumn, string propertyName, BrowseColumnType defaultValue)
+        {
+            string text = GetPropertyValue(dataColumn, propertyName, "");
+            return GetPropertyValue(text, defaultValue);
+        }
+        /// <summary>
+        /// Vrátí hodnotu požadovaného typu z daného textu
+        /// </summary>
+        /// <param name="text">Text</param>
+        /// <param name="defaultValue">Default hodnota</param>
+        /// <returns></returns>
+        protected static BrowseColumnType GetPropertyValue(string text, BrowseColumnType defaultValue)
+        {
+            if (!String.IsNullOrEmpty(text))
+            {
+                switch (text)
+                {
+                    case "SubjectNumber": return BrowseColumnType.SubjectNumber;
+                    case "ObjectNumber": return BrowseColumnType.ObjectNumber;
+                    case "DataColumn": return BrowseColumnType.DataColumn;
+                    case "RelationHelpfulColumn": return BrowseColumnType.RelationHelpfulColumn;
+                    case "TotalCountHelpfulColumn": return BrowseColumnType.TotalCountHelpfulColumn;
+                }
+            }
+            return defaultValue;
+        }
+        /// <summary>
+        /// Pokusí se najít a vrátit hodnotu z dané property
+        /// </summary>
+        /// <param name="dataColumn">Data column</param>
+        /// <param name="propertyName">Název extended property</param>
+        /// <param name="value">Výstup hodnoty</param>
+        /// <returns></returns>
+        protected static bool TryGetPropertyValue(DataColumn dataColumn, string propertyName, out object value)
+        {
+            value = null;
+            if (dataColumn == null || dataColumn.ExtendedProperties.Count == 0 || !dataColumn.ExtendedProperties.ContainsKey(propertyName)) return false;
+            value = dataColumn.ExtendedProperties[propertyName];
+            return true;
+        }
+        #endregion
+    }
+    /// <summary>
+    /// GuiDataRow : obsah jednoho řádku v tabulce <see cref="GuiDataTable"/>
+    /// </summary>
+    public class GuiDataRow : GuiBase
+    {
+        #region Konstruktor a overrides
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public GuiDataRow()
+        {
+            this.Cells = new List<object>();
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public GuiDataRow(params object[] values)
+            : this()
+        {
+            this.Cells.AddRange(values);
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            string text = "";
+            if (this.Cells == null)
+            {
+                text = "Null";
+            }
+            else
+            {
+                foreach (object cell in this.Cells)
+                    text = (text.Length == 0 ? "| " : " ") + (cell == null ? "Null" : cell.ToString()) + " |";
+            }
+            return text;
+        }
+        /// <summary>
+        /// Potomek zde vrací soupis svých Child prvků
+        /// </summary>
+        [PersistingEnabled(false)]
+        protected override IEnumerable<IGuiItem> Childs { get { return Union(this.Cells, this.TagItems, this.Graph); } }
+        #endregion
+        #region Public properties
+        /// <summary>
+        /// Klíč this řádku
+        /// </summary>
+        public GuiId RowGuiId { get; set; }
+        /// <summary>
+        /// Klíč mého Parent řádku, pokud this řádek patří jen pod jednoho parenta
+        /// </summary>
+        public GuiId ParentRowGuiId { get; set; }
+        /// <summary>
+        /// Jednotlivé buňky v řádku
+        /// Výchozí hodnota je prázdný List.
+        /// </summary>
+        public List<object> Cells { get; set; }
+        /// <summary>
+        /// Jednotlivé prvky typu <see cref="GuiTagItem"/>.
+        /// Výchozí hodnota je null.
+        /// </summary>
+        public List<GuiTagItem> TagItems { get; set; }
+        /// <summary>
+        /// Graf pro tento řádek (bude použit jako Background graf).
+        /// Pokud má být graf umístěn ve sloupci, má být vepsán do některé buňky <see cref="Cells"/>.
+        /// </summary>
+        public GuiGraph Graph { get; set; }
+        #endregion
+        #region Vytvoření instance GuiDataTable z System.Data.DataTable
+        /// <summary>
+        /// Vrátí seznam řádků <see cref="GuiDataRow"/> pro danou tabulku
+        /// </summary>
+        /// <param name="dataTable"></param>
+        /// <param name="keyColumn">Klíčový sloupec [0]</param>
+        /// <returns></returns>
+        public static List<GuiDataRow> CreateFromTable(DataTable dataTable, GuiDataColumn keyColumn = null)
+        {
+            if (dataTable == null) return null;
+            if (keyColumn == null && dataTable.Columns.Count > 0) keyColumn = GuiDataColumn.CreateFromColumn(dataTable.Columns[0]);
+            return CreateFromTable(dataTable.Rows, keyColumn);
+        }
+        /// <summary>
+        /// Vrátí seznam řádků <see cref="GuiDataRow"/> pro dané řádky
+        /// </summary>
+        /// <param name="dataRows"></param>
+        /// <param name="keyColumn">Klíčový sloupec [0]</param>
+        /// <returns></returns>
+        public static List<GuiDataRow> CreateFromTable(DataRowCollection dataRows, GuiDataColumn keyColumn = null)
+        {
+            if (dataRows == null) return null;
+            if (keyColumn == null && dataRows.Count > 0 && dataRows[0].Table.Columns.Count > 0) keyColumn = GuiDataColumn.CreateFromColumn(dataRows[0].Table.Columns[0]);
+            List<GuiDataRow> guiRows = new List<GuiDataRow>();
+            foreach (DataRow dataRow in dataRows)
+                guiRows.Add(CreateFromRow(dataRow));
+            return guiRows;
+        }
+        /// <summary>
+        /// Vrátí instanci <see cref="GuiDataRow"/> pro daný řádek
+        /// </summary>
+        /// <param name="dataRow"></param>
+        /// <param name="keyColumn">Klíčový sloupec [0]</param>
+        /// <returns></returns>
+        public static GuiDataRow CreateFromRow(DataRow dataRow, GuiDataColumn keyColumn = null)
+        {
+            if (dataRow == null) return null;
+            int columnCount = dataRow.Table.Columns.Count;
+            if (keyColumn == null && columnCount > 0) keyColumn = GuiDataColumn.CreateFromColumn(dataRow.Table.Columns[0]);
+            GuiDataRow guiRow = new GuiDataRow();
+            guiRow.Cells = new List<object>(dataRow.ItemArray);
+            guiRow.RowGuiId = ((keyColumn != null && guiRow.Cells.Count > 0) ? keyColumn.CreateRowGuiId(guiRow) : null);
+            return guiRow;
+        }
+        #endregion
+    }
+    #endregion
     #region GuiTable : Jedna fyzická tabulka (ekvivalent DataTable, s podporou serializace a implicitní konverze z/na DataTable)
     /// <summary>
     /// GuiTable : Jedna fyzická tabulka (ekvivalent DataTable, s podporou serializace a implicitní konverze z/na DataTable)
@@ -2383,6 +2912,8 @@ namespace Noris.LCS.Base.WorkScheduler
     #region GuiBase : Bázová třída všech prvků Gui*
     /// <summary>
     /// GuiBase : Bázová třída všech prvků Gui*
+    /// <para/>
+    /// Obsahuje <see cref="Name"/>, <see cref="Parent"/>, <see cref="UserData"/>, <see cref="Childs"/>
     /// </summary>
     public abstract class GuiBase : IGuiItem
     {
@@ -2403,17 +2934,17 @@ namespace Noris.LCS.Base.WorkScheduler
         public virtual string Name { get { return this._Name; } set { this._Name = (value == null ? NAME_NULL : value.Replace(NAME_SEPARATOR, "/")); } }
         private string _Name = NAME_NULL;
         /// <summary>
+        /// Objekt parenta, v němž je tento prvek umístěn.
+        /// </summary>
+        [PersistingEnabled(false)]
+        public IGuiItem Parent { get { return this._Parent; } }
+        /// <summary>
         /// Libovolná aplikační data, která neprochází serializací.
         /// Toto je prostor, který může využít aplikace k uložení svých dat nad rámec dat třídy, protože Gui třídy jsou sealed 
         /// a aplikace nemůže používat potomky základních tříd.
         /// </summary>
         [PersistingEnabled(false)]
         public object UserData { get; set; }
-        /// <summary>
-        /// Objekt parenta, v němž je tento prvek umístěn.
-        /// </summary>
-        [PersistingEnabled(false)]
-        public IGuiItem Parent { get { return this._Parent; } }
         /// <summary>
         /// Úložiště parenta
         /// </summary>
@@ -4467,6 +4998,36 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         OnGraphTopPosition
     }
+    /// <summary>
+    /// Typ dat ve sloupci
+    /// </summary>
+    public enum BrowseColumnType
+    {
+        /// <summary>
+        /// Neurčeno
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Číslo [non]subjektu
+        /// </summary>
+        SubjectNumber,
+        /// <summary>
+        /// Číslo objektu
+        /// </summary>
+        ObjectNumber,
+        /// <summary>
+        /// Data zobrazovaná uživateli
+        /// </summary>
+        DataColumn,
+        /// <summary>
+        /// Data pomocná pro řešení statického vztahu
+        /// </summary>
+        RelationHelpfulColumn,
+        /// <summary>
+        /// Informace o počtu záznamů
+        /// </summary>
+        TotalCountHelpfulColumn
+    }
     #endregion
     #region class WorkSchedulerSupport : Třída obsahující konstanty a další podporu WorkScheduleru - identický kód je v Helios Green i v GraphLibrary !!!
     /// <summary>
@@ -5571,37 +6132,5 @@ namespace Noris.LCS.Base.WorkScheduler
         public int Count { get { return this._InfoIndexDict.Count; } }
         #endregion
     }
-    #region Enum BrowseColumnType
-    /// <summary>
-    /// Typ dat ve sloupci
-    /// </summary>
-    public enum BrowseColumnType
-    {
-        /// <summary>
-        /// Neurčeno
-        /// </summary>
-        None = 0,
-        /// <summary>
-        /// Číslo [non]subjektu
-        /// </summary>
-        SubjectNumber,
-        /// <summary>
-        /// Číslo objektu
-        /// </summary>
-        ObjectNumber,
-        /// <summary>
-        /// Data zobrazovaná uživateli
-        /// </summary>
-        DataColumn,
-        /// <summary>
-        /// Data pomocná pro řešení statického vztahu
-        /// </summary>
-        RelationHelpfulColumn,
-        /// <summary>
-        /// Informace o počtu záznamů
-        /// </summary>
-        TotalCountHelpfulColumn
-    }
-    #endregion
     #endregion
 }
