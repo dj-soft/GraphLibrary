@@ -27,10 +27,12 @@ namespace Asol.Tools.WorkScheduler.Components
             this.Invalidate();
             if (point.HasValue && this._Data != null)
             {
+                Application.App.Trace.Info(Application.TracePriority.Priority2_Lowest, "ToolTipItem", "ToolTipSet", "(Point?)", "Data: exists", "Point: " + point.Value);
                 this.Point = point;
             }
             else
             {
+                Application.App.Trace.Info(Application.TracePriority.Priority2_Lowest, "ToolTipItem", "ToolTipSet", "(Point?)", "Data: " + (this._Data != null ? "exists" : "NULL"), "Point: " + (point.HasValue ? point.Value.ToString() : "NULL"));
                 this.Point = null;
                 this.Data = null;
             }
@@ -43,6 +45,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public void ToolTipSet(Point? point, ToolTipData data)
         {
             this.Invalidate();
+            Application.App.Trace.Info(Application.TracePriority.Priority2_Lowest, "ToolTipItem", "ToolTipSet", "(Point?, Data)", "Point: " + (point.HasValue ? point.Value.ToString() : "NULL"), "Data: " + (data != null ? "exists" : "NULL"));
             if (point.HasValue && data != null)
             {
                 this.Point = point;
@@ -59,6 +62,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public void ToolTipClear()
         {
+            Application.App.Trace.Info(Application.TracePriority.Priority2_Lowest, "ToolTipItem", "ToolTipClear", "");
             this.Point = null;
             this.Data = null;
         }

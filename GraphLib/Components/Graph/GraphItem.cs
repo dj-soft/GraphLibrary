@@ -286,7 +286,6 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             string eol = Environment.NewLine;
             string timeText = "Začátek:\t" + timeRange.Begin.Value.ToUser() + eol + "Konec:\t" + timeRange.End.Value.ToUser() + eol;
             CreateToolTipArgs args = new CreateToolTipArgs(e, this.Graph, this._Group, timeText, this._Owner, this._Position);
-
             this.Graph.GraphItemPrepareToolTip(args);
         }
         /// <summary>

@@ -2558,7 +2558,7 @@ namespace Asol.Tools.WorkScheduler.Components
 
                 // Zeptáme se ToolTipu, zda má potřebu nějaké animace:
                 if (this._ToolTipNeedTick)
-                {   // Pošleme to ToolTipu Tick, on nám vrátí, jestli potřebuje překreslit:
+                {   // Pošleme do ToolTipu Tick, on nám vrátí true, pokud potřebuje překreslit:
                     bool needDrawToolTip = this._ToolTip.AnimateTick();
                     needDraw |= needDrawToolTip;
                 }

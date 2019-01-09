@@ -1112,7 +1112,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
 
             bool isFadeIn = item.BehaviorMode.HasFlag(GraphItemBehaviorMode.ShowToolTipFadeIn);
             bool isImmediatelly = item.BehaviorMode.HasFlag(GraphItemBehaviorMode.ShowToolTipImmediatelly);
-            bool hasMouseLinks = item.BehaviorMode.HasFlag(GraphItemBehaviorMode.ShowLinkInMouseOver);
+            bool hasMouseLinks = item.BehaviorMode.HasFlag(GraphItemBehaviorMode.ShowLinkInMouseOver);        // Linky: odloží zobrazení ToolTipu, aby nejdříve byly vidět jen Linky
             if (!isFadeIn && !isImmediatelly) return;
 
             ToolTipData toolTipData = args.InteractiveArgs.ToolTipData;         // Vytvoří se new instance
