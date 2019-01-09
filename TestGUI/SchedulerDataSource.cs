@@ -56,7 +56,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this.CreateRightPanel();
             this.CreateContextFunctions();
 
-            // Application.App.TracePriority = Application.TracePriority.Priority1_ElementaryTimeDebug;
+            // Application.App.TracePriority = Application.TracePriority.Priority2_Lowest;
 
             return this.MainData;
         }
