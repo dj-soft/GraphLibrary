@@ -1153,8 +1153,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 else if (isFadeIn)
                 {
                     infoText = args.InteractiveArgs.ToolTipData.InfoText;
-                    toolTipData.AnimationWaitBeforeTime = TimeSpan.FromMilliseconds(hasMouseLinks ? 650 : 50);
-                    toolTipData.AnimationFadeInTime = TimeSpan.FromMilliseconds(hasMouseLinks ? 300 : 150);
+                    toolTipData.AnimationWaitBeforeTime = TimeSpan.FromMilliseconds(hasMouseLinks ? 650 : 150);
+                    toolTipData.AnimationFadeInTime = TimeSpan.FromMilliseconds(hasMouseLinks ? 350 : 250);
                     toolTipData.AnimationShowTime = TimeSpan.FromMilliseconds(100 * infoText.Length);     // 1 sekunda na přečtení 10 znaků
                     toolTipData.AnimationFadeOutTime = TimeSpan.FromMilliseconds(10 * infoText.Length);
                 }

@@ -69,7 +69,24 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// ToolTip has data for drawing (have Point, have Data and have Title or Info text plus font)?
         /// </summary>
-        public bool NeedDraw { get { return (this.Point.HasValue && this.DataIsValid && this.IsVisible && this.ToolTipExist); } }
+        public bool NeedDraw
+        {
+            get
+            {
+                bool hasPoint = this.Point.HasValue;
+                bool dataIsValid = this.DataIsValid;
+                bool isVisible = this.IsVisible;
+                bool toolTipExist = this.ToolTipExist;
+                bool needDraw = (hasPoint && dataIsValid && isVisible && toolTipExist);
+                Application.App.Trace.Info(Application.TracePriority.Priority2_Lowest, "ToolTipItem", "NeedDraw",
+                    "Result: " + (needDraw ? "True" : "False"),
+                    "HasPoint: " + (hasPoint ? "True" : "False"),
+                    "DataIsValid: " + (dataIsValid ? "True" : "False"),
+                    "IsVisible: " + (isVisible ? "True" : "False"),
+                    "ToolTipExist: " + (toolTipExist ? "True" : "False"));
+                return needDraw;
+            }
+        }
         #endregion
         #region Properties for ToolTip
         /// <summary>
@@ -190,7 +207,16 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// ToolTip need animation (=repeatedly calling AnimateStep() method)
         /// </summary>
-        public bool NeedAnimation { get { return (this.NeedDraw && this.AnimationActive); } }
+        public bool NeedAnimation
+        {
+            get
+            {
+                bool needAnimation = (this.NeedDraw && this.AnimationActive);
+                Application.App.Trace.Info(Application.TracePriority.Priority2_Lowest, "ToolTipItem", "NeedAnimation", 
+                    "Result: " + (needAnimation ? "True" : "False"));
+                return needAnimation;
+            }
+        }
         private void AnimationInit()
         {
             this._AnimationDict = new Dictionary<AnimationPhase, AnimationState>();
@@ -249,6 +275,8 @@ namespace Asol.Tools.WorkScheduler.Components
             bool isCtrl = (Control.ModifierKeys == Keys.Control);
             if (isCtrl) return;
 
+            bool isMouseMoveToolTipHide = false;
+
             lock (this._AnimationDict)
             {
                 currentPhase = this.AnimationCurrentPhase;
@@ -256,17 +284,27 @@ namespace Asol.Tools.WorkScheduler.Components
                 {
                     case AnimationPhase.Wait:
                     case AnimationPhase.RepeatedWait:
+                        Application.App.Trace.Info(Application.TracePriority.Priority2_Lowest, "ToolTipItem", "AnimationRefreshMouse", "Wait => Restart");
                         this.AnimationCurrentState.Restart();
                         break;
                     case AnimationPhase.FadeIn:
-                        float currentAlpha = this.AnimationCurrentState.AlphaCurrent;
-                        this.AnimationCurrentPhase = AnimationPhase.FadeOut;
-                        this.AnimationCurrentState.PrepareForAlpha(currentAlpha);
+                        if (isMouseMoveToolTipHide)
+                        {
+                            Application.App.Trace.Info(Application.TracePriority.Priority2_Lowest, "ToolTipItem", "AnimationRefreshMouse", "FadeIn => FadeOut");
+                            float currentAlpha = this.AnimationCurrentState.AlphaCurrent;
+                            this.AnimationCurrentPhase = AnimationPhase.FadeOut;
+                            this.AnimationCurrentState.PrepareForAlpha(currentAlpha);
+                        }
                         break;
                     case AnimationPhase.Show:
-                        this.GoToNextPhase(false);
+                        if (isMouseMoveToolTipHide || this.AnimationCurrentState.TimeElapsed > 50)
+                        {   // (TimeElapsed > 50) : pokud se myš pohnula po 50 tickách (1 tick = 40ms; 50 tick = 2 sekundy), přejdeme do fáze FadeOut:
+                            Application.App.Trace.Info(Application.TracePriority.Priority2_Lowest, "ToolTipItem", "AnimationRefreshMouse", "Show => GoNextPhase");
+                            this.GoToNextPhase(false);
+                        }
                         break;
                     case AnimationPhase.End:
+                        Application.App.Trace.Info(Application.TracePriority.Priority2_Lowest, "ToolTipItem", "AnimationRefreshMouse", "End => RepeatedWait");
                         this.AnimationCurrentPhase = AnimationPhase.RepeatedWait;
                         break;
                 }
@@ -326,6 +364,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="skipEmptyPhases"></param>
         protected void GoToNextPhase(bool skipEmptyPhases)
         {
+            Application.App.Trace.Info(Application.TracePriority.Priority2_Lowest, "ToolTipItem", "GoToNextPhase", "skipEmptyPhases: " + (skipEmptyPhases ? "True" : "False"));
+
             AnimationPhase oldPhase = this.AnimationCurrentPhase;
             for (int tx = 0; tx < 5; tx++)
             {   // tx is only time-out for this loop:
@@ -345,12 +385,23 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         private void AnimateReloadPoint()
         {
+            Application.App.Trace.Info(Application.TracePriority.Priority2_Lowest, "ToolTipItem", "AnimateReloadPoint", "");
+
             this.Point = this._MouseLocationCurrent;
         }
         /// <summary>
         /// true when this phase need another animation
         /// </summary>
-        protected bool AnimationActive { get { return this.AnimationCurrentState.IsActive; } }
+        protected bool AnimationActive
+        {
+            get
+            {
+                bool animationActive = (this.AnimationCurrentState.IsActive);
+                Application.App.Trace.Info(Application.TracePriority.Priority2_Lowest, "ToolTipItem", "AnimationActive",
+                    "Result: " + (animationActive ? "True" : "False"));
+                return animationActive;
+            }
+        }
         /// <summary>
         /// Data for current animation state
         /// </summary>
@@ -541,6 +592,10 @@ namespace Asol.Tools.WorkScheduler.Components
             /// Remaining time for this phase (in ticks)
             /// </summary>
             public int TimeRemaining { get; private set; }
+            /// <summary>
+            /// Elapsed time (=TimeTotal - TimeRemaining), in ticks
+            /// </summary>
+            public int TimeElapsed { get { return this.TimeTotal - this.TimeRemaining; } }
             /// <summary>
             /// Current value of Alpha chanell
             /// </summary>
