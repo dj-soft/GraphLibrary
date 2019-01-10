@@ -508,13 +508,33 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiGraphProperties GraphProperties { get; set; }
         /// <summary>
+        /// Tabulka obsahující řádky k zobrazení.
+        /// Součástí řádků je i možnost vkládat grafy do buňky anebo na pozadí.
+        /// Řádky přímo obsahují filtry <see cref="GuiTagItem"/>.
+        /// Řádky obsahují statický vztah na Parent řádek <see cref="GuiDataRow.ParentRowGuiId"/>.
+        /// Tabulka jako taková obsahuje sadu vztahy <see cref="GuiGraphLink"/> v <see cref="GuiDataTable.GraphLinks"/>.
+        /// </summary>
+        public GuiDataTable RowTable { get; set; }
+        /// <summary>
+        /// Tabulka obsahující texty pro grafy
+        /// </summary>
+        public GuiDataTable GraphTextTable { get; set; }
+        /// <summary>
+        /// Tabulka obsahující ToolTipy pro grafy
+        /// </summary>
+        public GuiDataTable GraphToolTipTable { get; set; }
+
+
+        /// <summary>
         /// Tabulka s řádky, typicky načtená dle přehledové šablony
         /// </summary>
+        [Obsolete("NEPOUŽÍVAT", true)]
         public GuiTable Rows { get; set; }
         /// <summary>
         /// Přidá jeden graf do tabulky <see cref="Graphs"/>
         /// </summary>
         /// <param name="graph"></param>
+        [Obsolete("NEPOUŽÍVAT", true)]
         public void AddGraph(GuiGraph graph)
         {
             if (graph != null)
@@ -529,11 +549,13 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Pokud pro některý řádek tabulky nebude definován graf, vytvoří se nový implicitní.
         /// Pokud by zde bylo více grafů pro jeden řádek, akceptuje se jen ten první.
         /// </summary>
+        [Obsolete("NEPOUŽÍVAT", true)]
         public List<GuiGraph> Graphs { get; set; }
         /// <summary>
         /// Přidá jednu tabulku s prvky grafů
         /// </summary>
         /// <param name="graphTable"></param>
+        [Obsolete("NEPOUŽÍVAT", true)]
         public void AddGraphTable(GuiGraphTable graphTable)
         {
             if (graphTable != null)
@@ -548,27 +570,32 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Jedna vizuální tabulka může v grafech zobrazovat prvky, pocházející z různých zdrojů.
         /// V této property tak může být více tabulek třídy <see cref="GuiGraphTable"/>, kde každá tabulka obsahuje typicky prvky grafů z jednoho konkrétního zdroje.
         /// </summary>
+        [Obsolete("NEPOUŽÍVAT", true)]
         public List<GuiGraphTable> GraphItems { get; set; }
         /// <summary>
         /// Tabulky s popisnými texty pro položky grafu, typicky načtená dle přehledové šablony.
         /// Tabulek je možno vložit více, každá tabulka může obsahovat přehledovou šablonu jiné třídy nebo s jiným filtrem.
         /// Konkrétní řádek se dohledává podle GuiId grafického prvku, který se vyhledává v těchto tabulkách.
         /// </summary>
+        [Obsolete("NEPOUŽÍVAT", true)]
         public List<GuiTable> GraphTexts { get; set; }
         /// <summary>
         /// Tabulky s popisnými texty pro ToolTipy grafu, typicky načtená dle přehledové šablony.
         /// Tabulek je možno vložit více, každá tabulka může obsahovat přehledovou šablonu jiné třídy nebo s jiným filtrem.
         /// Konkrétní řádek se dohledává podle GuiId grafického prvku, který se vyhledává v těchto tabulkách.
         /// </summary>
+        [Obsolete("NEPOUŽÍVAT", true)]
         public List<GuiTable> GraphToolTips { get; set; }
         /// <summary>
         /// Tabulky s propojovacími linkami mezi prvky grafů GuiGraphItem.
         /// </summary>
+        [Obsolete("NEPOUŽÍVAT", true)]
         public GuiGraphLinks GraphLinks { get; set; }
         /// <summary>
         /// Přidá jeden vztah Parent - Child
         /// </summary>
         /// <param name="parentChild"></param>
+        [Obsolete("NEPOUŽÍVAT", true)]
         public void AddParentChild(GuiParentChild parentChild)
         {
             if (parentChild != null)
@@ -581,7 +608,10 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <summary>
         /// Tabulka definující vztah Parent - Child mezi dvěma řádky tabulky <see cref="Rows"/>
         /// </summary>
+        [Obsolete("NEPOUŽÍVAT", true)]
         public List<GuiParentChild> ParentChilds { get; set; }
+
+
         /// <summary>
         /// Potomek zde vrací soupis svých Child prvků
         /// </summary>
@@ -921,11 +951,11 @@ namespace Noris.LCS.Base.WorkScheduler
         LeaveCurrentTarget = 0x00100000
     }
     #endregion
-    #region GuiDataTable + GuiDataColumn + GuiDataRow + GuiDataCell = tabulka
+    #region GuiDataTable + GuiDataColumn + GuiDataRow = tabulka
     /// <summary>
     /// GuiDataTable : tabulka pro přenášení dat
     /// </summary>
-    public class GuiDataTable : GuiBase
+    public class GuiDataTable : GuiBase, IGuiDataTable
     {
         #region Konstrukce a overrides
         /// <summary>
@@ -933,31 +963,199 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiDataTable()
         {
-            this.Columns = new List<GuiDataColumn>();
-            this.Rows = new List<GuiDataRow>();
+            this.TableName = TABLE_NAME;
+            this.ColumnList = new List<GuiDataColumn>();
+            this.RowList = new List<GuiDataRow>();
             this.ParentChilds = new List<GuiParentChild>();
         }
+        /// <summary>
+        /// Výchozí název prvku <see cref="GuiDataTable"/>
+        /// </summary>
+        public const string TABLE_NAME = "table";
+        /// <summary>
+        /// Klíčové jméno, používané v aplikaci jako strojový název prvku.
+        /// <see cref="Name"/> nesmí obsahovat zpětné lomítko (při pokusu o jeho použití je nahrazeno obyčejným lomítkem).
+        /// Jméno nikdy není null; při vložení hodnoty null je vložena stringová konstanta "{Null}".
+        public override string Name { get { return this.TableName; } set { } }
         /// <summary>
         /// Potomek zde vrací soupis svých Child prvků
         /// </summary>
         [PersistingEnabled(false)]
         protected override IEnumerable<IGuiItem> Childs { get { return Union(this.Columns, this.Rows, this.GraphLinks); } }
         #endregion
+        #region Columns
+        /// <summary>
+        /// Sloupce.
+        /// Přidávání a odebírání se provádí metodami AddColumn a RemoveColumn.
+        /// </summary>
+        [PersistingEnabled(false)]
+        public GuiDataColumn[] Columns { get { return this.ColumnList.ToArray(); } }
+        /// <summary>
+        /// Počet řádků
+        /// </summary>
+        public int ColumnCount { get { return this.ColumnList.Count; } }
+        /// <summary>
+        /// Do this tabulky přidá daný sloupec.
+        /// Sloupec nesmí být null, a nesmí patřit do žádné tabulky (tzn. ani do this tabulky).
+        /// Sloupec lze z tabulky odebrat a teprve pak přidat do jiné tabulky.
+        /// </summary>
+        /// <param name="column"></param>
+        public void AddColumn(GuiDataColumn column)
+        {
+            if (column == null) throw new ArgumentNullException("It is not allowed to add a NULL column to the table.");
+            if (column.Table != null) throw new ArgumentException("It is not allowed in one table to add a column that belongs to another table.");
+            ((IGuiDataTableMember)column).Table = this;
+            this.ColumnList.Add(column);
+        }
+        /// <summary>
+        /// Odebere z this tabulky daný sloupec.
+        /// Ze všech řádků tabulky odebere buňku odpovídající indexu tohoto sloupce.
+        /// </summary>
+        /// <param name="column"></param>
+        public void RemoveColumn(GuiDataColumn column)
+        {
+            if (column == null) throw new ArgumentNullException("It is not allowed to remove a NULL column from the table.");
+            int columnIndex = this.ColumnList.FindIndex(c => Object.ReferenceEquals(c, column));
+            if (columnIndex < 0) throw new ArgumentException("It is not allowed to remove a column that is not included in the table.");
+            this.RemoveColumn(columnIndex);
+        }
+        /// <summary>
+        /// Odebere z this tabulky sloupec na daném indexu.
+        /// Ze všech řádků tabulky odebere buňku na daném indexu.
+        /// </summary>
+        /// <param name="columnIndex"></param>
+        public void RemoveColumn(int columnIndex)
+        {
+            if (columnIndex < 0 || columnIndex >= this.ColumnCount) throw new ArgumentNullException("It is not allowed to remove a column whose index is out of range.");
+            GuiDataColumn column = this.ColumnList[columnIndex];
+            this.RowList.ForEach(r => r.RemoveCell(columnIndex));
+            this.ColumnList.RemoveAt(columnIndex);
+            ((IGuiDataTableMember)column).Table = null;
+        }
+        /// <summary>
+        /// Z this tabulky odebere všechny sloupce.
+        /// Ze všech řádků tabulky odebere všechny buňky.
+        /// Řádky ponechává.
+        /// </summary>
+        public void ClearColumns()
+        {
+            this.ColumnList.ForEach(c => ((IGuiDataTableMember)c).Table = null);
+            this.RowList.ForEach(r => r.ClearCells());
+            this.ColumnList.Clear();
+        }
+        /// <summary>
+        /// Vrátí index daného sloupce, nebo -1
+        /// </summary>
+        /// <param name="column"></param>
+        /// <returns></returns>
+        int IGuiDataTable.GetColumnIndex(GuiDataColumn column)
+        {
+            if (column == null) return -1;
+            return this.ColumnList.FindIndex(c => Object.ReferenceEquals(c, column));
+        }
+        /// <summary>
+        /// Sloupce.
+        /// Výchozí hodnota je prázdný List.
+        /// </summary>
+        [PropertyName("Columns")]
+        protected List<GuiDataColumn> ColumnList { get; set; }
+        #endregion
+        #region Rows
+        /// <summary>
+        /// Řádky.
+        /// Přidávání a odebírání se provádí metodami AddRow a RemoveRow.
+        /// </summary>
+        [PersistingEnabled(false)]
+        public GuiDataRow[] Rows { get { return this.RowList.ToArray(); } }
+        /// <summary>
+        /// Počet řádků
+        /// </summary>
+        public int RowCount { get { return this.RowList.Count; } }
+        /// <summary>
+        /// Do this tabulky přidá řádek nově vytvořený pro dané hodnoty.
+        /// </summary>
+        /// <param name="values"></param>
+        public GuiDataRow AddRow(params object[] values)
+        {
+            GuiDataRow row = new GuiDataRow(values);
+            this.AddRow(row);
+            return row;
+        }
+        /// <summary>
+        /// Do this tabulky přidá daný řádek.
+        /// Řádek nesmí být null, a nesmí patřit do žádné tabulky (tzn. ani do this tabulky).
+        /// Řádek lze z tabulky odebrat a teprve pak přidat do jiné tabulky.
+        /// <para/>
+        /// Pokud dodaný řádek má <see cref="GuiDataRow.RowGuiId"/> == null, a přitom v první buňce řádku je instance typu <see cref="GuiId"/>, 
+        /// pak tuto ji vloží do <see cref="GuiDataRow.RowGuiId"/>.
+        /// </summary>
+        /// <param name="row"></param>
+        public void AddRow(GuiDataRow row)
+        {
+            if (row == null) throw new ArgumentNullException("It is not allowed to add a NULL row to the table.");
+            if (row.Table != null) throw new ArgumentException("It is not allowed in one table to add a row that belongs to another table.");
+            if (row.RowGuiId == null && row.CellCount > 0)
+            {
+                object cell0 = row.Cells[0];
+                if (cell0 != null && cell0 is GuiId)
+                    row.RowGuiId = cell0 as GuiId;
+            }
+            ((IGuiDataTableMember)row).Table = this;
+            this.RowList.Add(row);
+        }
+        /// <summary>
+        /// Odebere z this tabulky daný řádek.
+        /// </summary>
+        /// <param name="row"></param>
+        public void RemoveColumn(GuiDataRow row)
+        {
+            if (row == null) throw new ArgumentNullException("It is not allowed to remove a NULL row from the table.");
+            int rowIndex = this.RowList.FindIndex(r => Object.ReferenceEquals(r, row));
+            if (rowIndex < 0) throw new ArgumentException("It is not allowed to remove a row that is not included in the table.");
+            this.RemoveRow(rowIndex);
+        }
+        /// <summary>
+        /// Odebere z this tabulky řádek na daném indexu.
+        /// </summary>
+        /// <param name="rowIndex"></param>
+        public void RemoveRow(int rowIndex)
+        {
+            if (rowIndex < 0 || rowIndex >= this.RowCount) throw new ArgumentException("It is not allowed to remove a row whose index is out of range.");
+            GuiDataRow row = this.RowList[rowIndex];
+            this.RowList.RemoveAt(rowIndex);
+            ((IGuiDataTableMember)row).Table = null;
+        }
+        /// <summary>
+        /// Z this tabulky odebere všechny řádky.
+        /// Sloupce ponechává.
+        /// </summary>
+        public void ClearRows()
+        {
+            this.RowList.ForEach(c => ((IGuiDataTableMember)c).Table = null);
+            this.RowList.Clear();
+        }
+        /// <summary>
+        /// Vrátí index daného řádku, nebo -1
+        /// </summary>
+        /// <param name="row"></param>
+        /// <returns></returns>
+        int IGuiDataTable.GetRowIndex(GuiDataRow row)
+        {
+            if (row == null) return -1;
+            return this.RowList.FindIndex(r => Object.ReferenceEquals(r, row));
+        }
+        /// <summary>
+        /// Řádky.
+        /// Výchozí hodnota je prázdný List.
+        /// </summary>
+        [PropertyName("Rows")]
+        public List<GuiDataRow> RowList { get; set; }
+        #endregion
         #region Public properties
         /// <summary>
         /// Název tabulky
         /// </summary>
         public string TableName { get; set; }
-        /// <summary>
-        /// Sloupce.
-        /// Výchozí hodnota je prázdný List.
-        /// </summary>
-        public List<GuiDataColumn> Columns { get; set; }
-        /// <summary>
-        /// Řádky.
-        /// Výchozí hodnota je prázdný List.
-        /// </summary>
-        public List<GuiDataRow> Rows { get; set; }
         /// <summary>
         /// Tabulka definující vztah Parent - Child mezi dvěma řádky tabulky <see cref="Rows"/>.
         /// Výchozí hodnota je prázdný List.
@@ -982,8 +1180,8 @@ namespace Noris.LCS.Base.WorkScheduler
             GuiDataTable guiTable = new GuiDataTable();
 
             guiTable.TableName = dataTable.TableName;
-            guiTable.Columns = GuiDataColumn.CreateFromTable(dataTable);
-            guiTable.Rows = GuiDataRow.CreateFromTable(dataTable);
+            guiTable.ColumnList = GuiDataColumn.CreateFromTable(dataTable);
+            guiTable.RowList = GuiDataRow.CreateFromTable(dataTable);
 
             return guiTable;
         }
@@ -992,7 +1190,7 @@ namespace Noris.LCS.Base.WorkScheduler
     /// <summary>
     /// GuiDataColumn : definice jednoho sloupce tabulky <see cref="GuiDataTable"/>
     /// </summary>
-    public class GuiDataColumn : GuiBase
+    public class GuiDataColumn : GuiBase, IGuiDataTableMember
     {
         #region Konstruktor a overrides
         /// <summary>
@@ -1014,12 +1212,45 @@ namespace Noris.LCS.Base.WorkScheduler
         {
             return "[" + (this.Alias == null ? "Null" : this.Alias) + "]" + (this.Label == null ? "" : " = \"" + this.Label + "\"");
         }
+        /// <summary>
+        /// Klíčové jméno, používané v aplikaci jako strojový název prvku.
+        /// <see cref="Name"/> nesmí obsahovat zpětné lomítko (při pokusu o jeho použití je nahrazeno obyčejným lomítkem).
+        /// Jméno nikdy není null; při vložení hodnoty null je vložena stringová konstanta "{Null}".
+        public override string Name { get { return this.Alias; } set { } }
+        #endregion
+        #region Table
+        /// <summary>
+        /// Reference na vlastníka = tabulka.
+        /// Je nastaveno při přidání do tabulky, je nulováno při odebrání.
+        /// </summary>
+        [PersistingEnabled(false)]
+        public GuiDataTable Table { get { return this._Table; } }
+        /// <summary>
+        /// Member of IGuiDataTableMember
+        /// </summary>
+        [PersistingEnabled(false)]
+        GuiDataTable IGuiDataTableMember.Table { get { return this._Table; } set { this._Table = value; } }
+        /// <summary>
+        /// Fyzické úložiště reference na <see cref="GuiDataTable"/>
+        /// </summary>
+        [PersistingEnabled(false)]
+        private GuiDataTable _Table;
+        /// <summary>
+        /// Reference na <see cref="Table"/> typovaná na interface <see cref="IGuiDataTable"/>, pro přístup k vnitřním metodám.
+        /// </summary>
+        [PersistingEnabled(false)]
+        protected IGuiDataTable ITable { get { return (this._Table as IGuiDataTable); } }
+        /// <summary>
+        /// true pokud máme referenci na <see cref="Table"/>
+        /// </summary>
+        [PersistingEnabled(false)]
+        protected bool HasTable { get { return (this._Table != null); } }
         #endregion
         #region Public properties
         /// <summary>
-        /// Vrátí index sloupce v seznamu sloupců. Pokud sloupec do žádného seznamu nepatří, vrátí -1.
+        /// Vrátí index sloupce v seznamu sloupců své tabulky. Pokud sloupec do žádné tabulky nepatří, vrátí -1.
         /// </summary>
-        public int Index { get; set; }
+        public int Index { get { return (this.HasTable ? this.ITable.GetColumnIndex(this) : -1); } }
         /// <summary>
         /// Hodnota <see cref="System.Data.DataColumn.DataType"/>
         /// </summary>
@@ -1050,7 +1281,7 @@ namespace Noris.LCS.Base.WorkScheduler
         public bool AllowSort { get; set; }
         /// <summary>
         /// Typ sloupce v přehledu: pomocný, datový, ... Zobrazují se vždy jen sloupce typu DataColumn, ostatní sloupce jsou pomocné.
-        /// Aktuálně hodnoty: SubjectNumber, ObjectNumber, DataColumn, RelationHelpfulColumn, TotalCountHelpfulColumn
+        /// Aktuálně hodnoty: RecordId, SubjectNumber, ObjectNumber, DataColumn, RelationHelpfulColumn, TotalCountHelpfulColumn
         /// </summary>
         public BrowseColumnType BrowseColumnType { get; set; }
         /// <summary>
@@ -1189,7 +1420,6 @@ namespace Noris.LCS.Base.WorkScheduler
 
             GuiDataColumn guiColumn = new GuiDataColumn();
 
-            guiColumn.Index = dataColumn.Ordinal;
             guiColumn.ColumnName = dataColumn.ColumnName;
             guiColumn.ColumnType = dataColumn.DataType;
 
@@ -1308,6 +1538,7 @@ namespace Noris.LCS.Base.WorkScheduler
             {
                 switch (text)
                 {
+                    case "RecordId": return BrowseColumnType.RecordId;
                     case "SubjectNumber": return BrowseColumnType.SubjectNumber;
                     case "ObjectNumber": return BrowseColumnType.ObjectNumber;
                     case "DataColumn": return BrowseColumnType.DataColumn;
@@ -1336,7 +1567,7 @@ namespace Noris.LCS.Base.WorkScheduler
     /// <summary>
     /// GuiDataRow : obsah jednoho řádku v tabulce <see cref="GuiDataTable"/>
     /// </summary>
-    public class GuiDataRow : GuiBase
+    public class GuiDataRow : GuiBase, IGuiDataTableMember
     {
         #region Konstruktor a overrides
         /// <summary>
@@ -1373,12 +1604,123 @@ namespace Noris.LCS.Base.WorkScheduler
             return text;
         }
         /// <summary>
+        /// Klíčové jméno, používané v aplikaci jako strojový název prvku.
+        /// <see cref="Name"/> nesmí obsahovat zpětné lomítko (při pokusu o jeho použití je nahrazeno obyčejným lomítkem).
+        /// Jméno nikdy není null; při vložení hodnoty null je vložena stringová konstanta "{Null}".
+        public override string Name { get { return "Row"; } set { } }
+        /// <summary>
         /// Potomek zde vrací soupis svých Child prvků
         /// </summary>
         [PersistingEnabled(false)]
         protected override IEnumerable<IGuiItem> Childs { get { return Union(this.Cells, this.TagItems, this.Graph); } }
         #endregion
+        #region Table
+        /// <summary>
+        /// Reference na vlastníka = tabulka.
+        /// Je nastaveno při přidání do tabulky, je nulováno při odebrání.
+        /// </summary>
+        [PersistingEnabled(false)]
+        public GuiDataTable Table { get { return this._Table; } }
+        /// <summary>
+        /// Member of IGuiDataTableMember
+        /// </summary>
+        [PersistingEnabled(false)]
+        GuiDataTable IGuiDataTableMember.Table { get { return this._Table; } set { this._Table = value; } }
+        /// <summary>
+        /// Fyzické úložiště reference na <see cref="GuiDataTable"/>
+        /// </summary>
+        [PersistingEnabled(false)]
+        private GuiDataTable _Table;
+        /// <summary>
+        /// Reference na <see cref="Table"/> typovaná na interface <see cref="IGuiDataTable"/>, pro přístup k vnitřním metodám.
+        /// </summary>
+        [PersistingEnabled(false)]
+        protected IGuiDataTable ITable { get { return (this._Table as IGuiDataTable); } }
+        /// <summary>
+        /// true pokud máme referenci na <see cref="Table"/>
+        /// </summary>
+        [PersistingEnabled(false)]
+        protected bool HasTable { get { return (this._Table != null); } }
+        #endregion
+        #region Cells
+        /// <summary>
+        /// Typové čtení dat z daného indexu
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="columnIndex"></param>
+        /// <returns></returns>
+        public T Get<T>(int columnIndex)
+        {
+            object value = this[columnIndex];
+            if (value == null) return default(T);
+            if (value is T) return (T)value;          // Rychlá cesta pro exaktní shodu typu
+
+
+            return default(T);
+        }
+        /// <summary>
+        /// Vrátí true, pokud na daném indexu nic není
+        /// </summary>
+        /// <param name="columnIndex"></param>
+        /// <returns></returns>
+        public bool HasValue(int columnIndex)
+        {
+            object value = this[columnIndex];
+            return (value != null);
+        }
+        /// <summary>
+        /// Hodnota v buňce na daném indexu.
+        /// Index musí být nezáporný.
+        /// Při čtení z neexistujícího indexu je vracena hodnota null.
+        /// Při zápisu na neexistující index pro hodnotu jinou než null je pole buněk rozšířeno tak, aby daný index existoval.
+        /// </summary>
+        /// <param name="columnIndex"></param>
+        /// <returns></returns>
+        public object this[int columnIndex]
+        {
+            get
+            {
+                if (columnIndex < 0) throw new ArgumentException("It is not allowed to read a cell whose index is negative.");
+                return ((columnIndex < this.Cells.Count) ? this.Cells[columnIndex] : null);
+            }
+            set
+            {
+                if (columnIndex < 0) throw new ArgumentException("It is not allowed to write a cell whose index is negative.");
+                if (this.HasTable)
+                {
+                    if (columnIndex >= this.Table.ColumnCount) throw new ArgumentException("It is not allowed to write a cell whose index is above TableColumnCount.");
+                }
+                else
+                {
+                    if (columnIndex > 100) throw new ArgumentException("It is not allowed to write a cell (in lonely row) whose index is above 100.");
+                }
+
+                // Pokud je zapisovaná hodnota = null, a v poli Cells dosud není daný columnIndex přítomen, skončím 
+                //  (protože není potřeba rozšiřovat pole Cells jen proto, abych do nové buňky vložil null):
+                if (value == null && columnIndex >= this.Cells.Count) return;
+
+                // Je zapotřebí provést zápis; a pokud pro daný index ještě nemám buňku, tak ji vytvořím:
+                while (this.Cells.Count <= columnIndex)
+                    this.Cells.Add(null);
+
+                this.Cells[columnIndex] = value;
+            }
+        }
+        /// <summary>
+        /// Jednotlivé buňky v řádku.
+        /// Výchozí hodnota je prázdný List.
+        /// </summary>
+        public List<object> Cells { get; set; }
+        /// <summary>
+        /// Počet buněk v řádku.
+        /// </summary>
+        public int CellCount { get { return this.Cells.Count; } }
+        #endregion
         #region Public properties
+        /// <summary>
+        /// Vrátí index řádku v seznamu řádků this tabulky. Pokud řádek do žádné tabulky nepatří, vrátí -1.
+        /// </summary>
+        public int Index { get { return (this.HasTable ? this.ITable.GetRowIndex(this) : -1); } }
         /// <summary>
         /// Klíč this řádku
         /// </summary>
@@ -1387,11 +1729,6 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Klíč mého Parent řádku, pokud this řádek patří jen pod jednoho parenta
         /// </summary>
         public GuiId ParentRowGuiId { get; set; }
-        /// <summary>
-        /// Jednotlivé buňky v řádku
-        /// Výchozí hodnota je prázdný List.
-        /// </summary>
-        public List<object> Cells { get; set; }
         /// <summary>
         /// Jednotlivé prvky typu <see cref="GuiTagItem"/>.
         /// Výchozí hodnota je null.
@@ -1402,6 +1739,25 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Pokud má být graf umístěn ve sloupci, má být vepsán do některé buňky <see cref="Cells"/>.
         /// </summary>
         public GuiGraph Graph { get; set; }
+        #endregion
+        #region Servis
+        /// <summary>
+        /// Odebere buňku na daném indexu.
+        /// Pokud je index mimo rozsah, tak neodebere nic a chybu nevyvolá.
+        /// </summary>
+        /// <param name="columnIndex"></param>
+        internal void RemoveCell(int columnIndex)
+        {
+            if (columnIndex >= 0 && columnIndex < this.Cells.Count)
+                this.Cells.RemoveAt(columnIndex);
+        }
+        /// <summary>
+        /// Odebere všechny buňky
+        /// </summary>
+        internal void ClearCells()
+        {
+            this.Cells.Clear();
+        }
         #endregion
         #region Vytvoření instance GuiDataTable z System.Data.DataTable
         /// <summary>
@@ -1448,6 +1804,36 @@ namespace Noris.LCS.Base.WorkScheduler
             return guiRow;
         }
         #endregion
+    }
+    /// <summary>
+    /// Interface pro <see cref="GuiDataTable"/> pro přístup k interním metodám
+    /// </summary>
+    public interface IGuiDataTable
+    {
+        /// <summary>
+        /// Vrací index řádku
+        /// </summary>
+        /// <param name="row"></param>
+        /// <returns></returns>
+        int GetRowIndex(GuiDataRow row);
+        /// <summary>
+        /// Vrací index sloupce
+        /// </summary>
+        /// <param name="column"></param>
+        /// <returns></returns>
+        int GetColumnIndex(GuiDataColumn column);
+    }
+    /// <summary>
+    /// Interface pro členy tabulky <see cref="GuiDataTable"/>
+    /// </summary>
+    public interface IGuiDataTableMember
+    {
+        /// <summary>
+        /// Reference na vlastníka = tabulka.
+        /// Je nastaveno při přidání do tabulky, je nulováno při odebrání.
+        /// Neprovádí se persistence.
+        /// </summary>
+        GuiDataTable Table { get; set; }
     }
     #endregion
     #region GuiTable : Jedna fyzická tabulka (ekvivalent DataTable, s podporou serializace a implicitní konverze z/na DataTable)
@@ -2940,6 +3326,11 @@ namespace Noris.LCS.Base.WorkScheduler
         [PersistingEnabled(false)]
         public IGuiItem Parent { get { return this._Parent; } }
         /// <summary>
+        /// Úložiště parenta
+        /// </summary>
+        [PersistingEnabled(false)]
+        private IGuiItem _Parent;
+        /// <summary>
         /// Libovolná aplikační data, která neprochází serializací.
         /// Toto je prostor, který může využít aplikace k uložení svých dat nad rámec dat třídy, protože Gui třídy jsou sealed 
         /// a aplikace nemůže používat potomky základních tříd.
@@ -2947,10 +3338,12 @@ namespace Noris.LCS.Base.WorkScheduler
         [PersistingEnabled(false)]
         public object UserData { get; set; }
         /// <summary>
-        /// Úložiště parenta
+        /// Finalizace vnitřních dat objektu.
+        /// Volá se těsně před vyhodnocením pole <see cref="Childs"/>, v procesu FillParentToChilds().
+        /// Konkrétní instance nemusí provádět nic, anebo si může provést "rekalkulaci" svých dat.
+        /// Tato metoda je volána vždy před odesláním dat Gui*.
         /// </summary>
-        [PersistingEnabled(false)]
-        private IGuiItem _Parent;
+        protected virtual void Finalise() { }
         /// <summary>
         /// V této property vrací daný objekt všechny svoje přímé Child objekty.
         /// Pokud objekt nemá Child objekty, vrací null (to zajišťuje bázová třída <see cref="GuiBase"/>).
@@ -3011,6 +3404,7 @@ namespace Noris.LCS.Base.WorkScheduler
             while (queue.Count > 0)
             {
                 IGuiItem item = queue.Dequeue();
+                item.Finalise();
                 IEnumerable<IGuiItem> childs = item.Childs;
                 if (childs == null) continue;
                 foreach (IGuiItem child in childs)
@@ -3081,6 +3475,10 @@ namespace Noris.LCS.Base.WorkScheduler
         [PersistingEnabled(false)]
         IGuiItem IGuiItem.Parent { get { return this._Parent; } set { this._Parent = value; } }
         /// <summary>
+        /// Member of interface IGuiBase : finalizace objektu před jeho odesláním.
+        /// </summary>
+        void IGuiItem.Finalise() { this.Finalise(); }
+        /// <summary>
         /// Member of interface IGuiBase : soupis všech Child objektů tohoto objektu.
         /// </summary>
         [PersistingEnabled(false)]
@@ -3105,6 +3503,13 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Parent this objektu
         /// </summary>
         IGuiItem Parent { get; set; }
+        /// <summary>
+        /// Finalizace vnitřních dat objektu.
+        /// Volá se těsně před vyhodnocením pole <see cref="Childs"/>, v procesu FillParentToChilds().
+        /// Konkrétní instance nemusí provádět nic, anebo si může provést "rekalkulaci" svých dat.
+        /// Tato metoda je volána vždy před odesláním dat Gui*.
+        /// </summary>
+        void Finalise();
         /// <summary>
         /// V této property vrací daný objekt všechny svoje přímé Child objekty.
         /// Pokud objekt nemá Child objekty, vrací null.
@@ -5009,6 +5414,10 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         None = 0,
         /// <summary>
+        /// Identifikátor záznamu komplexní
+        /// </summary>
+        RecordId,
+        /// <summary>
         /// Číslo [non]subjektu
         /// </summary>
         SubjectNumber,
@@ -5905,6 +6314,7 @@ namespace Noris.LCS.Base.WorkScheduler
             {
                 switch (text)
                 {
+                    case "RecordId": return BrowseColumnType.RecordId;
                     case "SubjectNumber": return BrowseColumnType.SubjectNumber;
                     case "ObjectNumber": return BrowseColumnType.ObjectNumber;
                     case "DataColumn": return BrowseColumnType.DataColumn;
@@ -5923,6 +6333,7 @@ namespace Noris.LCS.Base.WorkScheduler
         {
             switch (value)
             {
+                case BrowseColumnType.RecordId: return "RecordId";
                 case BrowseColumnType.SubjectNumber: return "SubjectNumber";
                 case BrowseColumnType.ObjectNumber: return "ObjectNumber";
                 case BrowseColumnType.DataColumn: return "DataColumn";
@@ -5955,7 +6366,7 @@ namespace Noris.LCS.Base.WorkScheduler
         public bool AllowSort { get { return this.GetPropertyValue("AllowSort", true); } set { this.SetPropertyValue("AllowSort", value); } }
         /// <summary>
         /// Typ sloupce v přehledu: pomocný, datový, ... Zobrazují se vždy jen sloupce typu DataColumn, ostatní sloupce jsou pomocné.
-        /// Aktuálně hodnoty: SubjectNumber, ObjectNumber, DataColumn, RelationHelpfulColumn, TotalCountHelpfulColumn
+        /// Aktuálně hodnoty: RecordId, SubjectNumber, ObjectNumber, DataColumn, RelationHelpfulColumn, TotalCountHelpfulColumn
         /// </summary>
         public BrowseColumnType BrowseColumnType { get { return GetEnum(this.GetPropertyValue("BrowseColumnType", ""), BrowseColumnType.None); } set { this.SetPropertyValue("BrowseColumnType", GetText(value)); } }
         /// <summary>
