@@ -217,7 +217,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="e"></param>
         private void ConfigTree_DrawNode(object sender, DrawTreeNodeEventArgs e)
         {
-            TreeNode node = e.Node;
+            System.Windows.Forms.TreeNode node = e.Node;
 
             Rectangle nodeBounds = e.Bounds;
             Size treeSize = this.ConfigTree.ClientSize;
@@ -286,7 +286,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         private void InitData()
         {
-            this._TreeNodeDict = new Dictionary<string, TreeNode>();
+            this._TreeNodeDict = new Dictionary<string, System.Windows.Forms.TreeNode>();
         }
         /// <summary>
         /// Do jednotlivých controlů načte data z Configu
@@ -314,7 +314,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="editorItem"></param>
         private void _CreateNodeData(SchedulerEditorItem editorItem)
         {
-            TreeNode node = _SearchTreeNode(editorItem.NodeText);
+            System.Windows.Forms.TreeNode node = _SearchTreeNode(editorItem.NodeText);
             node.Tag = editorItem;
 
             editorItem.VisualControl.ReadFromData();
@@ -329,10 +329,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="nodeText"></param>
         /// <returns></returns>
-        private TreeNode _SearchTreeNode(string nodeText)
+        private System.Windows.Forms.TreeNode _SearchTreeNode(string nodeText)
         {
             if (String.IsNullOrEmpty(nodeText)) return null;
-            TreeNode node;
+            System.Windows.Forms.TreeNode node;
             if (!this._TreeNodeDict.TryGetValue(nodeText, out node))
             {
                 string text = null;
@@ -347,12 +347,12 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 }
                 else
                 {   // Máme text před separátorem = jde o parent našeho hledaného node, necháme si ho rekurzivně najít:
-                    TreeNode parentNode = this._SearchTreeNode(parentText);
+                    System.Windows.Forms.TreeNode parentNode = this._SearchTreeNode(parentText);
                     parentCollection = parentNode.Nodes;
                     text = nodeText.SplitOn(SchedulerConfig.EditTitle_Separator, true, true);
                     font = this.NodeFontStandard;
                 }
-                node = new TreeNode(text);
+                node = new System.Windows.Forms.TreeNode(text);
                 node.NodeFont = font;
                 parentCollection.Add(node);
                 this._TreeNodeDict.Add(nodeText, node);
@@ -366,7 +366,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="e"></param>
         private void ConfigTree_AfterSelect(object sender, TreeViewEventArgs e)
         {
-            TreeNode node = e.Node;
+            System.Windows.Forms.TreeNode node = e.Node;
             SchedulerEditorItem editorItem = node.Tag as SchedulerEditorItem;
 
             if (editorItem == null && node.Nodes.Count > 0)
@@ -396,7 +396,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Dictionary obsahující TreeNode podle jejich názvu
         /// </summary>
-        private Dictionary<string, TreeNode> _TreeNodeDict;
+        private Dictionary<string, System.Windows.Forms.TreeNode> _TreeNodeDict;
         /// <summary>
         /// Uloží data
         /// </summary>

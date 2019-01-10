@@ -83,11 +83,12 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             this.LoadDataGraphProperties();
             this.LoadDataPrepareIndex();
-            this.LoadDataLoadRow();
+            this.LoadDataLoadRows();
             this.LoadDataCreateGraphs();
             this.LoadDataLoadGraphItems();
             this.LoadDataLoadParentChild();
             this.LoadDataLoadLinks();
+
             this.LoadDataLoadTexts();
             this.LoadDataLoadToolTips();
         }
@@ -428,14 +429,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         public bool HasFocus { get { return this.GTableRow.HasFocus; } }
         #endregion
-        #region TableRow + TagItems
+        #region TableRow, GTableRow : tvorba, naplnění daty, navázání eventhandlerů a jejich obsluha
         /// <summary>
         /// Načte tabulku s řádky <see cref="TableRow"/>: sloupce, řádky, filtr
         /// </summary>
-        protected void LoadDataLoadRow()
+        protected void LoadDataLoadRows()
         {
-            var tagItems = this.CreateTagArray();
-            this.TableRow = Table.CreateFrom(this.GuiGrid.Rows.DataTable, tagItems);
+            this.TableRow = Table.CreateFrom(this.GuiGrid.RowTable);
             this.TableRow.CalculateBoundsForAllRows = true;
             this.TableRow.OpenRecordForm += _TableRow_OpenRecordForm;
             this.TableRow.UserData = this;
@@ -447,6 +447,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Tato tabulka je zobrazována.
         /// </summary>
         public Table TableRow { get; private set; }
+        /// <summary>
+        /// Grafická komponenta reprezentující data z <see cref="TableRow"/>.
+        /// </summary>
+        protected GTable GTableRow { get; private set; }
         /// <summary>
         /// Metoda vloží svoji datovou tabulku <see cref="TableRow"/> do předaného grafické komponenty <see cref="GGrid"/>.
         /// Tím vytvoří grafickou komponentu <see cref="GTable"/> (kterou nakonec vrací).
@@ -570,65 +574,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (this.CurrentSearchChildInfo.IsVisibleTimeOnly)
                 this.PrepareCurrentChildRows(e.NewValue, false);
         }
-        /// <summary>
-        /// Grafická komponenta reprezentující data z <see cref="TableRow"/>.
-        /// </summary>
-        protected GTable GTableRow { get; private set; }
-        /// <summary>
-        /// Metoda vrátí pole štítků <see cref="TagItem"/>, načtených z <see cref="GuiGrid"/>.
-        /// </summary>
-        /// <returns></returns>
-        protected KeyValuePair<GId, TagItem>[] CreateTagArray()
-        {
-            List<GuiTagItem> tagItemList = this.GuiGrid?.Rows?.RowTags?.TagItemList;
-            return CreateTagArray(tagItemList);
-        }
-        /// <summary>
-        /// Metoda vrátí pole štítků <see cref="TagItem"/>, načtených z <see cref="GuiGrid"/>.
-        /// </summary>
-        /// <returns></returns>
-        protected static KeyValuePair<GId, TagItem>[] CreateTagArray(IEnumerable<GuiTagItem> guiTagItems)
-        {
-            if (guiTagItems == null) return null;
-            return guiTagItems
-                .Select(gti => CreateTagItem(gti))
-                .ToArray();
-        }
-        /// <summary>
-        /// Metoda vrátí párový údaj KeyValuePair, který obsahuje v Key = ID řádku, a ve Value = data štítku <see cref="TagItem"/>.
-        /// </summary>
-        /// <param name="guiTagItem"></param>
-        /// <returns></returns>
-        protected static KeyValuePair<GId, TagItem> CreateTagItem(GuiTagItem guiTagItem)
-        {
-            TagItem tagItem = new TagItem()
-            {
-                Text = guiTagItem.TagText,
-                BackColor = guiTagItem.BackColor,
-                CheckedBackColor = guiTagItem.BackColorChecked,
-                BorderColor = null,
-                TextColor = null,
-                Size = null,
-                Visible = true,
-                Checked = false,
-                UserData = guiTagItem.UserData
-            };
-            GId rowGId = guiTagItem.RowId;
-            return new KeyValuePair<GId, TagItem>(rowGId, tagItem);
-        }
         #endregion
         #region ParentChilds - Vztahy mezi řádky
         /// <summary>
-        /// Metoda připraví Childs řádky pro řádky Root, podle aktuálně viditelného času.
-        /// Volá se z metod, které změní obsah grafů v této tabulce, po provedení všech změn.
-        /// </summary>
-        public void PrepareCurrentChildRows()
-        {
-            this.PrepareCurrentChildRows(this.SynchronizedTime, true);
-        }
-        /// <summary>
         /// Metoda načte a zpracuje data o vztazích Parent-Childs.
-        /// Volá se jedenkrát při načítání řádků.
+        /// Volá se jen jedenkrát, v procesu načítání řádků.
         /// Zatím není potřeba tato data donačítat později.
         /// </summary>
         protected void LoadDataLoadParentChild()
@@ -675,6 +625,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
             // Uložím si Dictionary parentů, bude se používat pro dohledání Child prvků konkrétního Parenta:
             this.TreeNodeChildDict = parentDict;
+        }
+        /// <summary>
+        /// Metoda připraví Childs řádky pro řádky Root, podle aktuálně viditelného času.
+        /// Volá se z metod, které změní obsah grafů v této tabulce, po provedení všech změn.
+        /// </summary>
+        public void PrepareCurrentChildRows()
+        {
+            this.PrepareCurrentChildRows(this.SynchronizedTime, true);
         }
         /// <summary>
         /// Metoda se pokusí najít Child řádky pro aktuální časový interval
@@ -755,7 +713,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         protected void PrepareCurrentChildRowsFor(Row parentRow, MainDataTable dataTable, SearchChildInfo searchInfo, TimeRange timeFrame, Dictionary<GId, Row> visibleRowDict)
         {
             if (parentRow == null) return;
-            parentRow.TreeNodeChilds = null;
+            parentRow.TreeNode.Childs = null;
             GId recordGId = parentRow.RecordGId;
             if (this.TreeNodeChildDict == null || recordGId == null || recordGId.IsEmpty) return;
 
@@ -781,7 +739,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             Dictionary<GId, TimeRange> parentDataDict = this.PrepareCurrentRowGetItems(parentRow, dataTable, searchInfo, searchInfo.ParentIdType, timeFrame);
 
             // Určíme řádky, které mají společnou práci s Parentem:
-            parentRow.TreeNodeChilds = childDict.Values.Where(r => PrepareCurrentChildRowsFilter(parentDataDict, r, dataTable, searchInfo, searchInfo.ChildIdType, timeFrame)).ToArray();
+            parentRow.TreeNode.Childs = childDict.Values.Where(r => PrepareCurrentChildRowsFilter(parentDataDict, r, dataTable, searchInfo, searchInfo.ChildIdType, timeFrame)).ToArray();
 
             // Pokud tento řádek je Expanded, a obsahuje nějaký Child z řádků, které jsou Expanded někde jinde,
             //    pak tento řádek zavřeme:
@@ -790,7 +748,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             // A rekurzivně i pro řádky v parentRow.TreeNodeChilds, pouze pokud je to Static:
             if (searchInfo.IsStatic)
             {
-                foreach (Row childRow in parentRow.TreeNodeChilds)
+                foreach (Row childRow in parentRow.TreeNode.Childs)
                     this.PrepareCurrentChildRowsFor(childRow, dataTable, searchInfo, timeFrame, visibleRowDict);
             }
         }
@@ -849,13 +807,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// * Pokud mám Table s řádky s grafy a s takovými Child řádky, které se vyhodnocují dynamicky (tzn. pod Root řádkem se jako 
         /// Child řádky zobrazují ty, které mají s Root řádkem nějakou společnou práci);
         /// * A pokud pod dvěma různými Root řádky lze teoreticky zobrazit jeden identický Child řádek, což technicky vylučujeme,
-        /// takže při Expand nodu A proběhne Collapse nodu B (viz metoda <see cref="Row.TreeNodeExpand()"/>, vyvolávající metodu Row._TreeNodeCollapseOtherParents());
+        /// takže při Expand nodu A proběhne Collapse nodu B (viz metoda <see cref="Data.TreeNode.Expand()"/>, 
+        /// vyvolávající metodu Row._TreeNodeCollapseOtherParents());
         /// * A v tabulce posunu časovou osu tak, aby některé Root řádky ukazovaly jen několik málo prvků grafu;
         /// * A nyní otevřu více Root prvků, což může jít protože jejich Child řádky jsou vzájemně nekonfliktní;
         /// - a teď to přijde:
         /// * Mám tedy viditelné Root řádky ve stavu Expandend, zobrazující různé Child řádky;
         /// * Začnu posouvat časovou osu tam, kde je více prvků grafů, a k nim se dynamicky dohledají další a další Child řádky;
-        /// * A protože Root řádky jsou Expanded, pak Child řádky se přidávají do otevřených nodů - ale neprobíhá tam metoda <see cref="Row.TreeNodeExpand()"/>;
+        /// * A protože Root řádky jsou Expanded, pak Child řádky se přidávají do otevřených nodů - ale neprobíhá tam metoda <see cref="Data.TreeNode.Expand()"/>;
         /// * Takže nejspíš by došlo k tomu, že jeden konkrétní Child řádek by se dostal pod dva (nebo více) Root řádků současně !!! (=chyba)
         /// <para/>
         /// Proto zdejší metoda využívá postupně načítaného soupisu viditelných řádků Child (visibleChildDict), 
@@ -865,13 +824,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="visibleChildDict"></param>
         protected void PrepareCurrentChildCollapse(Row rootRow, Dictionary<GId, Row> visibleChildDict)
         {
-            if (!(rootRow.TreeNodeHasChilds && rootRow.TreeNodeIsExpanded)) return;     // Bez Childs anebo Collapsed node: neřeším.
+            if (!(rootRow.TreeNode.HasChilds && rootRow.TreeNode.IsExpanded)) return;     // Bez Childs anebo Collapsed node: neřeším.
 
             // Pokud daný rootRow obsahuje nějaké Childs z těch, které už máme zobrazené (visibleRowDict), tak rootRow zavřeme a skončíme:
             bool containsChilds = false;
             if (visibleChildDict.Count > 0)
             {
-                rootRow.TreeNodeScan(
+                rootRow.TreeNode.Scan(
                     (row, level) =>
                     {   // Tady vidíme každý prvek, včetně rootu (tam je ale level == 0):
                         if (level > 0 && visibleChildDict.ContainsKey(row.RecordGId))
@@ -881,20 +840,20 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                     row =>
                     {   // Ptáme se, zda pokračovat ve scanování Child prvků daného node:
                         // Ano pokud je otevřený:
-                        return row.TreeNodeIsExpanded;
+                        return row.TreeNode.IsExpanded;
                     }
                     );
             }
             if (containsChilds)
             {   // Aktuální řádek rootRow je Expanded, a zobrazoval by některý Child, který už je zobrazen jinde => řádek zavřeme a skončíme:
-                rootRow.TreeNodeCollapse();
+                rootRow.TreeNode.Collapse();
                 return;
             }
 
             // Protože rootRow nám zůstal otevřený, pak to znamená, že obsahuje nekonfliktní ChildNodes;
             //  tak do visibleRowDict je přidáme, abychom příště prověřovali všechny (tj. i nyní přidané) viditelné Childs:
             // Použiju téměř identickou sekvenci jako před chvílí, ale Child nody budu do Dictionary přidávat:
-            rootRow.TreeNodeScan(
+            rootRow.TreeNode.Scan(
                 (row, level) =>
                 {   // Tady vidíme každý prvek, včetně rootu (tam je ale level == 0):
                     if (level > 0 && !visibleChildDict.ContainsKey(row.RecordGId))
@@ -903,7 +862,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 row =>
                 {   // Ptáme se, zda pokračovat ve scanování Child prvků daného node:
                     // Ano pokud je otevřený:
-                    return row.TreeNodeIsExpanded;
+                    return row.TreeNode.IsExpanded;
                 }
                 );
         }
@@ -962,7 +921,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         protected void PrepareOtherChildRowsFor(Row parentRow, SearchChildInfo searchInfo, TimeRange timeFrame, MainDataTable otherTable, Row[] otherRows)
         {
             if (parentRow == null) return;
-            parentRow.TreeNodeChilds = null;
+            parentRow.TreeNode.Childs = null;
             GId recordGId = parentRow.RecordGId;
 
             // Nejprve si připravím Dictionary, obsahující zdrojové vazební prvky z Parent řádku, z this tabulky:
@@ -997,7 +956,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                     currentChilds.Add(cloneChild);
                 }
             }
-            parentRow.TreeNodeChilds = currentChilds.ToArray();
+            parentRow.TreeNode.Childs = currentChilds.ToArray();
         }
         /// <summary>
         /// Metoda vrací Dictionary, která obsahuje pro daný GId parenta jeho existující klony Child řádků.

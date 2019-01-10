@@ -1779,10 +1779,10 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             Rectangle? interactiveBounds = null;
             if (!this.HasMouse) return interactiveBounds;
             Row row = ownerCell.Row;
-            bool nodeHasChilds = row.TreeNodeHasChilds;
+            bool nodeHasChilds = row.TreeNode.HasChilds;
             if (nodeHasChilds)
             {
-                bool isExpanded = row.TreeNodeIsExpanded;
+                bool isExpanded = row.TreeNode.IsExpanded;
                 Image image = DrawTreeViewGetIcon(isExpanded, iconIsHot, iconIsDown);
                 if (image != null)
                 {
@@ -2473,7 +2473,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
 
             // Základní barva pozadí prvku vychází z barvy standardní, nebo Selected, podle stavu row.IsSelected; primárně z dodaného vizuálního stylu, sekundárně z palety:
             bool isRowChecked = row.IsChecked;
-            bool isTreeRoot = row.TreeNodeIsRoot;
+            bool isTreeRoot = row.TreeNode.IsRoot;
             Color? styleColor = ((style != null) ? style.GetBackColor(isTreeRoot, isRowChecked) : null);
             Color baseColor = styleColor ?? Skin.Grid.GetBackColor(isTreeRoot, isRowChecked);
 

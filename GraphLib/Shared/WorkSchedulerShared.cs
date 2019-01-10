@@ -104,7 +104,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Metoda provede kompletní finalizaci dat v objektu.
         /// Aktuálně provede pouze metodu <see cref="FillParents()"/>.
         /// </summary>
-        public void Finalise()
+        public new void Finalise()
         {
             this.FillParents();
         }
@@ -470,11 +470,6 @@ namespace Noris.LCS.Base.WorkScheduler
         {
             this.GridProperties = new GuiGridProperties() { Name = GRID_PROPERTIES_NAME };
             this.GraphProperties = new GuiGraphProperties() { Name = GRAPH_PROPERTIES_NAME };
-            this.Graphs = new List<GuiGraph>();
-            this.GraphItems = new List<GuiGraphTable>();
-            this.GraphTexts = new List<GuiTable>();
-            this.GraphToolTips = new List<GuiTable>();
-            this.GraphLinks = new GuiGraphLinks() { Name = GRAPH_LINKS_NAME };
         }
         /// <summary>
         /// Název prvku <see cref="GridProperties"/>
@@ -485,18 +480,14 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public const string GRAPH_PROPERTIES_NAME = "graphProperties";
         /// <summary>
-        /// Název prvku <see cref="GraphLinks"/>
-        /// </summary>
-        public const string GRAPH_LINKS_NAME = "graphLinks";
-        /// <summary>
         /// Vizualizace
         /// </summary>
         /// <returns></returns>
         public override string ToString()
         {
             string text = "{ empty grid }";
-            if (this.Rows != null)
-                text = "Rows: " + this.Rows.ToString();
+            if (this.RowTable != null)
+                text = "RowTable: " + this.RowTable.ToString();
             return text;
         }
         /// <summary>
@@ -616,7 +607,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Potomek zde vrací soupis svých Child prvků
         /// </summary>
         [PersistingEnabled(false)]
-        protected override IEnumerable<IGuiItem> Childs { get { return Union(this.GridProperties, this.GraphProperties, this.Rows, this.GraphItems, this.GraphTexts, this.GraphToolTips, this.GraphLinks); } }
+        protected override IEnumerable<IGuiItem> Childs { get { return Union(this.GridProperties, this.GraphProperties, this.RowTable, this.GraphTextTable, this.GraphToolTipTable); } }
     }
     /// <summary>
     /// Pár klíčů Parent - Child pro tvorbu stromové struktury
@@ -976,6 +967,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Klíčové jméno, používané v aplikaci jako strojový název prvku.
         /// <see cref="Name"/> nesmí obsahovat zpětné lomítko (při pokusu o jeho použití je nahrazeno obyčejným lomítkem).
         /// Jméno nikdy není null; při vložení hodnoty null je vložena stringová konstanta "{Null}".
+        /// </summary>
         public override string Name { get { return this.TableName; } set { } }
         /// <summary>
         /// Potomek zde vrací soupis svých Child prvků
@@ -1210,13 +1202,14 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <returns></returns>
         public override string ToString()
         {
-            return "[" + (this.Alias == null ? "Null" : this.Alias) + "]" + (this.Label == null ? "" : " = \"" + this.Label + "\"");
+            return "[" + (this.ColumnName == null ? "Null" : this.ColumnName) + "]" + (this.Label == null ? "" : " = \"" + this.Label + "\"");
         }
         /// <summary>
         /// Klíčové jméno, používané v aplikaci jako strojový název prvku.
         /// <see cref="Name"/> nesmí obsahovat zpětné lomítko (při pokusu o jeho použití je nahrazeno obyčejným lomítkem).
         /// Jméno nikdy není null; při vložení hodnoty null je vložena stringová konstanta "{Null}".
-        public override string Name { get { return this.Alias; } set { } }
+        /// </summary>
+        public override string Name { get { return this.ColumnName; } set { } }
         #endregion
         #region Table
         /// <summary>
@@ -1259,6 +1252,18 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Hodnota <see cref="System.Data.DataColumn.ColumnName"/>
         /// </summary>
         public string ColumnName { get; set; }
+        /// <summary>
+        /// Hodnota <see cref="System.Data.DataColumn.Caption"/>
+        /// </summary>
+        public string ColumnCaption { get; set; }
+        /// <summary>
+        /// Hodnota <see cref="System.Data.DataColumn.DefaultValue"/>
+        /// </summary>
+        public object ColumnDefaultValue { get; set; }
+        /// <summary>
+        /// Hodnota <see cref="System.Data.DataColumn.ReadOnly"/>
+        /// </summary>
+        public bool ColumnReadOnly { get; set; }
         /// <summary>
         /// Číslo třídy, z níž pochází data šablony
         /// </summary>
@@ -1422,6 +1427,9 @@ namespace Noris.LCS.Base.WorkScheduler
 
             guiColumn.ColumnName = dataColumn.ColumnName;
             guiColumn.ColumnType = dataColumn.DataType;
+            guiColumn.ColumnCaption = dataColumn.Caption;
+            guiColumn.ColumnDefaultValue = dataColumn.DefaultValue;
+            guiColumn.ColumnReadOnly = dataColumn.ReadOnly;
 
             guiColumn.ClassNumber = GetPropertyValue(dataColumn, "ClassNumber", (int?)null);
             guiColumn.TemplateNumber = GetPropertyValue(dataColumn, "TemplateNumber", (int?)null);
@@ -1607,6 +1615,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Klíčové jméno, používané v aplikaci jako strojový název prvku.
         /// <see cref="Name"/> nesmí obsahovat zpětné lomítko (při pokusu o jeho použití je nahrazeno obyčejným lomítkem).
         /// Jméno nikdy není null; při vložení hodnoty null je vložena stringová konstanta "{Null}".
+        /// </summary>
         public override string Name { get { return "Row"; } set { } }
         /// <summary>
         /// Potomek zde vrací soupis svých Child prvků
@@ -1659,7 +1668,7 @@ namespace Noris.LCS.Base.WorkScheduler
             return default(T);
         }
         /// <summary>
-        /// Vrátí true, pokud na daném indexu nic není
+        /// Vrátí true, pokud buňka na daném indexu obsahuje něco jiného než null.
         /// </summary>
         /// <param name="columnIndex"></param>
         /// <returns></returns>
@@ -1692,7 +1701,7 @@ namespace Noris.LCS.Base.WorkScheduler
                 }
                 else
                 {
-                    if (columnIndex > 100) throw new ArgumentException("It is not allowed to write a cell (in lonely row) whose index is above 100.");
+                    if (columnIndex > 100) throw new ArgumentException("It is not allowed to write a cell (in isolated row) whose index is above 100.");
                 }
 
                 // Pokud je zapisovaná hodnota = null, a v poli Cells dosud není daný columnIndex přítomen, skončím 
@@ -1726,7 +1735,10 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiId RowGuiId { get; set; }
         /// <summary>
-        /// Klíč mého Parent řádku, pokud this řádek patří jen pod jednoho parenta
+        /// Konkrétní klíč mého Parent řádku, pokud this řádek patří jen pod jednoho parenta.
+        /// Pokud this řádek patří pod více parentů, pak je zde uložen prázdný GuiId = <see cref="GuiId.Empty"/>, 
+        /// tím se řádek stane "holkou pro všechny": nebude se zobrazovat jako Root, a jako svůj Child řádek si jej vyhledá 
+        /// některý Parent řádek, podle definice v <see cref="GuiGridProperties.ChildRowsEvaluate"/>.
         /// </summary>
         public GuiId ParentRowGuiId { get; set; }
         /// <summary>
@@ -3706,6 +3718,10 @@ namespace Noris.LCS.Base.WorkScheduler
     public sealed class GuiId : IXmlSerializer
     {
         /// <summary>
+        /// Konstruktor bez parametrů musí existovat kvůli deserialiaci.
+        /// </summary>
+        public GuiId() { }
+        /// <summary>
         /// Konstruktor
         /// </summary>
         /// <param name="classId">Číslo třídy</param>
@@ -3714,23 +3730,38 @@ namespace Noris.LCS.Base.WorkScheduler
         {
             this.ClassId = classId;
             this.RecordId = recordId;
+            this.EntryId = null;
         }
         /// <summary>
-        /// Konstruktor bez parametrů musí existovat kvůli deserialiaci.
+        /// Konstruktor
         /// </summary>
-        public GuiId() { }
+        /// <param name="classId">Číslo třídy</param>
+        /// <param name="recordId">Číslo záznamu (MasterId)</param>
+        /// <param name="entryId">Číslo položky (EntryId)</param>
+        public GuiId(int classId, int recordId, int entryId)
+        {
+            this.ClassId = classId;
+            this.RecordId = recordId;
+            this.EntryId = entryId;
+        }
         /// <summary>
         /// Číslo třídy
         /// </summary>
         public int ClassId { get; private set; }
         /// <summary>
-        /// Číslo záznamu
+        /// Číslo záznamu = Master (subjekt, nonsubjekt).
+        /// U položkového <see cref="GuiId"/> může být 0, nebo může obsahovat číslo Master záznamu.
         /// </summary>
         public int RecordId { get; private set; }
         /// <summary>
-        /// true pro prázdný ID (kdy <see cref="ClassId"/> i <see cref="RecordId"/> == 0)
+        /// Číslo položky = Entry (objekt).
+        /// Pokud je null (=nemá hodnotu), pak jde o ID Master záznamu.
         /// </summary>
-        public bool IsEmpty { get { return (this.ClassId == 0 && this.RecordId == 0); } }
+        public int? EntryId { get; private set; }
+        /// <summary>
+        /// true pro prázdný ID (kdy <see cref="ClassId"/> i <see cref="RecordId"/> == 0 a <see cref="EntryId"/> nemá hodnotu)
+        /// </summary>
+        public bool IsEmpty { get { return (this.ClassId == 0 && this.RecordId == 0 && !this.EntryId.HasValue); } }
         /// <summary>
         /// Vrátí new instanci <see cref="GuiId"/>, která je <see cref="IsEmpty"/>.
         /// Proč? Třeba pro klíč v Dictionary, který nesmí být null.
@@ -3742,7 +3773,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <returns></returns>
         public override string ToString()
         {
-            return "C:" + this.ClassId.ToString() + "; R:" + this.RecordId.ToString();
+            return "C:" + this.ClassId.ToString() + "; R:" + this.RecordId.ToString() + (this.EntryId.HasValue ? "; E:" + this.EntryId.Value.ToString() : "");
         }
         /// <summary>
         /// Vrátí HashCode
@@ -3751,7 +3782,7 @@ namespace Noris.LCS.Base.WorkScheduler
         public override int GetHashCode()
         {
             if (!this._HashCode.HasValue)
-                this._HashCode = this.ClassId.GetHashCode() ^ this.RecordId.GetHashCode();
+                this._HashCode = this.ClassId.GetHashCode() ^ this.RecordId.GetHashCode() ^ (this.EntryId.HasValue ? this.EntryId.Value.GetHashCode() : 0);
             return this._HashCode.Value;
         }
         /// <summary>
@@ -3775,7 +3806,7 @@ namespace Noris.LCS.Base.WorkScheduler
             bool bn = ((object)b == null);
             if (an && bn) return true;
             if (an || bn) return false;
-            return (a.ClassId == b.ClassId && a.RecordId == b.RecordId);
+            return (a.Name == b.Name);
         }
         /// <summary>
         /// Lazy initialized HasCode
@@ -3800,32 +3831,33 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public string Name
         {
-            get { return this.ClassId.ToString() + ":" + this.RecordId.ToString(); }
+            get { return this.ClassId.ToString() + ":" + this.RecordId.ToString() + (this.EntryId.HasValue ? ":" + this.EntryId.Value.ToString() : ""); }
             private set
             {
                 int classId = 0;
                 int recordId = 0;
+                int entryId = 0;
                 bool isValid = false;
+                bool isEntry = false;
                 if (!String.IsNullOrEmpty(value) && value.Contains(":"))
                 {
                     string[] items = value.Split(':');
                     isValid = (Int32.TryParse(items[0], out classId) && Int32.TryParse(items[1], out recordId));
+                    if (isValid && items.Length > 2)
+                        isEntry = Int32.TryParse(items[2], out entryId);
                 }
                 this.ClassId = (isValid ? classId : 0);
                 this.RecordId = (isValid ? recordId : 0);
+                this.EntryId = (isEntry ? (int?)entryId : (int?)null);
             }
         }
         /// <summary>
         /// Tato property má obsahovat (get vrací, set akceptuje) XML data z celého aktuálního objektu.
         /// </summary>
-        string IXmlSerializer.XmlSerialData
-        {
-            get { return this.Name; }
-            set { this.Name = value; }
-        }
+        string IXmlSerializer.XmlSerialData { get { return this.Name; } set { this.Name = value; } }
     }
     #endregion
-    #region GuiRange : rozsah { Begin ÷ End } dvou hodnot stejného datového typu; class GuiTimeRange, GuiSingleRange
+    #region GuiRange + GuiTimeRange + GuiSingleRange: rozsah { Begin ÷ End } dvou hodnot stejného datového typu
     /// <summary>
     /// GuiRange : rozsah { Begin ÷ End } dvou hodnot stejného datového typu
     /// </summary>

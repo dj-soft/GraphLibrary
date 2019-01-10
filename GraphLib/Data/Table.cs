@@ -567,7 +567,7 @@ namespace Asol.Tools.WorkScheduler.Data
                 foreach (Row row in this.Rows)
                 {
                     bool isVisible = false;
-                    if (!row.Hidden && row.TreeNodeIsRoot && (rowFiltersExists ? this.FilterRow(row) : true))
+                    if (!row.Hidden && row.TreeNode.IsRoot && (rowFiltersExists ? this.FilterRow(row) : true))
                     {
                         isVisible = true;
                         list.Add(row);
@@ -747,11 +747,11 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Obsahuje true, pokud v této tabulce existuje nějaký řádek, který je Child k nějakému Parentovi.
         /// V takovém případě se Table bude vykreslovat jako TreeView.
         /// </summary>
-        public bool IsTreeViewTable { get { return this.Rows.Any(r => r.TreeNodeIsChild); } }
+        public bool IsTreeViewTable { get { return this.Rows.Any(r => r.TreeNode.IsChild); } }
         /// <summary>
         /// Pole řádků, které jsou Root v TreeView
         /// </summary>
-        public Row[] TreeNodeRootRows { get { return this.Rows.Where(r => r.TreeNodeIsRoot).ToArray(); } }
+        public Row[] TreeNodeRootRows { get { return this.Rows.Where(r => r.TreeNode.IsRoot).ToArray(); } }
         /// <summary>
         /// Provede scanování všech řádků a jejich Childs kolekcí
         /// </summary>
@@ -759,7 +759,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="testScanChilds">Volitelná funkce, která rozhoduje, zda se mají scanovat Childs prvky</param>
         public void TreeNodeScan(Action<Row, int> scanAction, Func<Row, bool> testScanChilds = null)
         {
-            Row.TreeNodeScan(this.TreeNodeRootRows, 0, scanAction, testScanChilds);
+            TreeNode.Scan(this.TreeNodeRootRows, 0, scanAction, testScanChilds);
         }
         /// <summary>
         /// Metoda vrátí lineární seznam řádků, vzniklý z řádků úrovně Root plus všechny Child řádky z nodů, které jsou Expanded
@@ -772,7 +772,7 @@ namespace Asol.Tools.WorkScheduler.Data
             foreach (Row rootRow in rootRowList)
             {
                 treeList.Add(rootRow);
-                rootRow.AddChilds(treeList);
+                rootRow.TreeNode.AddChildRowsTo(treeList);
             }
             return treeList;
         }
@@ -1793,7 +1793,7 @@ namespace Asol.Tools.WorkScheduler.Data
             return TableValueType.Text;
         }
         #endregion
-        #region Import tabulky Table z DataTable
+        #region Import tabulky Table z DataTable a z GuiDataTable
         /// <summary>
         /// Metoda vytvoří novou tabulku <see cref="Table"/> na základě dat z tabulky <see cref="System.Data.DataTable"/>.
         /// </summary>
@@ -1805,7 +1805,20 @@ namespace Asol.Tools.WorkScheduler.Data
             if (dataTable == null) return null;
             Table table = new Table(dataTable.TableName);
             table.Columns.AddRange(Column.CreateFrom(dataTable.Columns));      // Přidávat prvky musím včetně logiky AddItemAfter, kvůli navazujícím algoritmům (indexy, owner)
-            table.Rows.AddRange(Row.CreateFrom(dataTable.Rows, tagItems, table.RowsClassId));     // Vytvoří řádky, a současně do nich vloží TagItems
+            table.Rows.AddRange(Row.CreateFrom(dataTable.Rows, table.RowsClassId, tagItems));     // Vytvoří řádky, a současně do nich vloží TagItems
+            return table;
+        }
+        /// <summary>
+        /// Metoda vytvoří novou tabulku <see cref="Table"/> na základě dat z tabulky <see cref="GuiDataTable"/>.
+        /// </summary>
+        /// <param name="dataTable"></param>
+        /// <returns></returns>
+        public static Table CreateFrom(GuiDataTable dataTable)
+        {
+            if (dataTable == null) return null;
+            Table table = new Table(dataTable.TableName);
+            table.Columns.AddRange(Column.CreateFrom(dataTable.Columns));      // Přidávat prvky musím včetně logiky AddItemAfter, kvůli navazujícím algoritmům (indexy, owner)
+            table.Rows.AddRange(Row.CreateFrom(dataTable.Rows));               // Vytvoří řádky
             return table;
         }
         #endregion
@@ -2146,7 +2159,7 @@ namespace Asol.Tools.WorkScheduler.Data
             return a.ColumnProperties.ColumnOrder.CompareTo(b.ColumnProperties.ColumnOrder);
         }
         #endregion
-        #region Import sloupců Column z DataColumn
+        #region Import sloupců Column z DataColumn a z GuiDataColumn
         /// <summary>
         /// Metoda vytvoří soupis sloupců <see cref="Column"/> na základě dat o sloupcích z tabulky <see cref="System.Data.DataColumnCollection"/>.
         /// </summary>
@@ -2170,6 +2183,54 @@ namespace Asol.Tools.WorkScheduler.Data
                 SetRelationClassNumberToKeyColumn(column, columnList);
 
             return columnList;
+        }
+        /// <summary>
+        /// Metoda vytvoří jeden sloupec <see cref="Column"/> na základě dat o sloupci z tabulky <see cref="System.Data.DataColumn"/>.
+        /// </summary>
+        /// <param name="dataColumn">Konkrétní sloupec, vstup</param>
+        /// <returns></returns>
+        public static Column CreateFrom(System.Data.DataColumn dataColumn)
+        {
+            if (dataColumn == null) return null;
+            Column column = new Column(dataColumn.ColumnName);
+            column.ColumnProperties.FillFrom(dataColumn);
+            return column;
+        }
+        /// <summary>
+        /// Metoda vytvoří soupis sloupců <see cref="Column"/> na základě dat o sloupcích z tabulky <see cref="GuiDataColumn"/>.
+        /// </summary>
+        /// <param name="dataColumns">Kolekce sloupců, vstup</param>
+        /// <returns></returns>
+        public static IEnumerable<Column> CreateFrom(IEnumerable<GuiDataColumn> dataColumns)
+        {
+            if (dataColumns == null) return null;
+
+            // 1. Načíst data o sloupcích:
+            List<Column> columnList = new List<Column>();
+            foreach (GuiDataColumn dataColumn in dataColumns)
+            {
+                Column column = Column.CreateFrom(dataColumn);
+                if (column != null)
+                    columnList.Add(column);
+            }
+
+            // 2. Najít křížově uložené údaje o vztazích:
+            foreach (Column column in columnList.Where(c => c.ColumnProperties.ColumnContent == ColumnContentType.RelationRecordData))
+                SetRelationClassNumberToKeyColumn(column, columnList);
+
+            return columnList;
+        }
+        /// <summary>
+        /// Metoda vytvoří jeden sloupec <see cref="Column"/> na základě dat o sloupci z tabulky <see cref="GuiDataColumn"/>.
+        /// </summary>
+        /// <param name="dataColumn">Konkrétní sloupec, vstup</param>
+        /// <returns></returns>
+        public static Column CreateFrom(GuiDataColumn dataColumn)
+        {
+            if (dataColumn == null) return null;
+            Column column = new Column(dataColumn.ColumnName);
+            column.ColumnProperties.FillFrom(dataColumn);
+            return column;
         }
         /// <summary>
         /// Pro daný sloupec, který obsahuje data vztaženého záznamu (jeho <see cref="ColumnProperties.ColumnContent"/> == <see cref="ColumnContentType.RelationRecordData"/>)
@@ -2203,18 +2264,6 @@ namespace Asol.Tools.WorkScheduler.Data
             if (String.IsNullOrEmpty(relationColumnName)) return null;
             Column relationKeyColumn = columnList.FirstOrDefault(c => String.Equals(c.ColumnName, relationColumnName, StringComparison.InvariantCultureIgnoreCase));
             return relationKeyColumn;
-        }
-        /// <summary>
-        /// Metoda vytvoří jeden sloupec <see cref="Column"/> na základě dat o sloupci z tabulky <see cref="System.Data.DataColumn"/>.
-        /// </summary>
-        /// <param name="dataColumn">Konkrétní sloupec, vstup</param>
-        /// <returns></returns>
-        public static Column CreateFrom(System.Data.DataColumn dataColumn)
-        {
-            if (dataColumn == null) return null;
-            Column column = new Column(dataColumn.ColumnName);
-            column.ColumnProperties.FillFrom(dataColumn);
-            return column;
         }
         #endregion
         #region Implementace interface ISequenceLayout (Layout šířky sloupce), IVisualMember (vizuální vlastnosti), IIdKey (dvojitý klíč)
@@ -2429,14 +2478,38 @@ namespace Asol.Tools.WorkScheduler.Data
             DataColumnExtendedInfo extendedInfo = DataColumnExtendedInfo.CreateForColumn(dataColumn);
             this.AllowColumnSortByClick = extendedInfo.AllowSort;                   // Povoleno třídění kliknutím
             this.ColumnContent = GetColumnContent(extendedInfo);                    // Obsah sloupce
-            this.FormatString = GetFormatString(extendedInfo);                      // Formátovací string z Norisu, musí se převést na .NET
+            this.FormatString = GetFormatString(extendedInfo.Format);               // Formátovací string z Norisu, musí se převést na .NET
             this.IsVisible = extendedInfo.IsVisible;                                // Je viditelný
             if (!String.IsNullOrEmpty(extendedInfo.Label)) this.Title = extendedInfo.Label;      // Jen pokud je vyplněno
-            this.Width = GetWidth(extendedInfo);                                    // Na vstupu je šířka Noris, což je něco jako čtvrtpísmeno
+            this.Width = GetWidth(extendedInfo.Width);                              // Na vstupu je šířka Noris, v této metodě to lze upravit
             this.RecordClassNumber = GetClassNumber(extendedInfo);
             this.RelationNumber = extendedInfo.RelationNumber;
             this.RelationSide = GetRelationSide(extendedInfo);
             this.RelatedRecordColumnName = extendedInfo.RelationRecordColumnName;
+        }
+        /// <summary>
+        /// Metoda naplní this objekt daty, která načte z dodaného sloupce <see cref="GuiDataColumn"/>.
+        /// </summary>
+        /// <param name="dataColumn"></param>
+        /// <returns></returns>
+        public void FillFrom(GuiDataColumn dataColumn)
+        {
+            if (dataColumn == null) return;
+            this.DataType = dataColumn.ColumnType;
+            this.Title = dataColumn.ColumnCaption;
+            this.DefaultValue = dataColumn.ColumnDefaultValue;
+            this.ReadOnly = dataColumn.ColumnReadOnly;
+
+            this.AllowColumnSortByClick = dataColumn.AllowSort;                // Povoleno třídění kliknutím
+            this.ColumnContent = GetColumnContent(dataColumn);                 // Obsah sloupce
+            this.FormatString = GetFormatString(dataColumn.Format);            // Formátovací string z Norisu, musí se převést na .NET
+            this.IsVisible = dataColumn.IsVisible;                             // Je viditelný
+            if (!String.IsNullOrEmpty(dataColumn.Label)) this.Title = dataColumn.Label;      // Jen pokud je vyplněno
+            this.Width = GetWidth(dataColumn.Width);                           // Na vstupu je šířka Noris, v této metodě to lze upravit
+            this.RecordClassNumber = GetClassNumber(dataColumn);
+            this.RelationNumber = dataColumn.RelationNumber;
+            this.RelationSide = GetRelationSide(dataColumn);
+            this.RelatedRecordColumnName = dataColumn.RelationRecordColumnName;
         }
         /// <summary>
         /// Vrátí typ obsahu pro daný sloupec, podle jeho <see cref="DataColumnExtendedInfo.BrowseColumnType"/> a dalších hodnot
@@ -2445,15 +2518,36 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <returns></returns>
         protected static ColumnContentType GetColumnContent(DataColumnExtendedInfo extendedInfo)
         {
-            if (extendedInfo.Index == 0) return ColumnContentType.RecordId;
-            switch (extendedInfo.BrowseColumnType)
+            return GetColumnContent(extendedInfo.Index, extendedInfo.BrowseColumnType, extendedInfo.RelationNumber, extendedInfo.RelationClassNumber);
+        }
+        /// <summary>
+        /// Vrátí typ obsahu pro daný sloupec, podle jeho <see cref="DataColumnExtendedInfo.BrowseColumnType"/> a dalších hodnot
+        /// </summary>
+        /// <param name="dataColumn"></param>
+        /// <returns></returns>
+        protected static ColumnContentType GetColumnContent(GuiDataColumn dataColumn)
+        {
+            return GetColumnContent(dataColumn.Index, dataColumn.BrowseColumnType, dataColumn.RelationNumber, dataColumn.RelationClassNumber);
+        }
+        /// <summary>
+        /// Vrátí typ obsahu pro daný sloupec, podle jeho <see cref="DataColumnExtendedInfo.BrowseColumnType"/> a dalších hodnot
+        /// </summary>
+        /// <param name="index"></param>
+        /// <param name="columnType"></param>
+        /// <param name="relationNumber"></param>
+        /// <param name="relationClassNumber"></param>
+        /// <returns></returns>
+        protected static ColumnContentType GetColumnContent(int index, BrowseColumnType columnType, int? relationNumber, int? relationClassNumber)
+        {
+            if (index == 0) return ColumnContentType.RecordId;
+            switch (columnType)
             {
                 case BrowseColumnType.SubjectNumber:
                     return ColumnContentType.RecordId;
                 case BrowseColumnType.ObjectNumber:
                     return ColumnContentType.EntryId;
                 case BrowseColumnType.DataColumn:
-                    bool isRelation = (extendedInfo.RelationNumber > 0 && extendedInfo.RelationClassNumber > 0);
+                    bool isRelation = (relationNumber > 0 && relationClassNumber > 0);
                     return (isRelation ? ColumnContentType.RelationRecordData : ColumnContentType.UserData);
                 case BrowseColumnType.RelationHelpfulColumn:
                     return ColumnContentType.RelationRecordId;
@@ -2465,21 +2559,20 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// Vrací formátovací string pro sloupec
         /// </summary>
-        /// <param name="extendedInfo"></param>
+        /// <param name="greenFormat"></param>
         /// <returns></returns>
-        protected static string GetFormatString(DataColumnExtendedInfo extendedInfo)
+        protected static string GetFormatString(string greenFormat)
         {
-            string format = extendedInfo.Format;
             return null;
         }
         /// <summary>
         /// Vrací šířku v pixelech pro daný sloupec
         /// </summary>
-        /// <param name="extendedInfo"></param>
+        /// <param name="greenWidth"></param>
         /// <returns></returns>
-        protected static int? GetWidth(DataColumnExtendedInfo extendedInfo)
+        protected static int? GetWidth(int greenWidth)
         {
-            return 1 * extendedInfo.Width;
+            return 1 * greenWidth;
         }
         /// <summary>
         /// Vrací šíslo třídy pro daný sloupec, pokud je zadaná
@@ -2493,6 +2586,17 @@ namespace Asol.Tools.WorkScheduler.Data
             return null;
         }
         /// <summary>
+        /// Vrací šíslo třídy pro daný sloupec, pokud je zadaná
+        /// </summary>
+        /// <param name="dataColumn"></param>
+        /// <returns></returns>
+        protected static int? GetClassNumber(GuiDataColumn dataColumn)
+        {
+            if (dataColumn.Index == 0) return dataColumn.ClassNumber;
+            if (dataColumn.RelationClassNumber.HasValue) return dataColumn.RelationClassNumber;
+            return null;
+        }
+        /// <summary>
         /// Vrací stranu vztahu pro daný sloupec
         /// </summary>
         /// <param name="extendedInfo"></param>
@@ -2501,6 +2605,21 @@ namespace Asol.Tools.WorkScheduler.Data
         {
             if (!extendedInfo.RelationClassNumber.HasValue) return null;
             switch (extendedInfo.RelationSide)
+            {
+                case "Left": return RelationMasterSide.Left;
+                case "Right": return RelationMasterSide.Right;
+            }
+            return null;
+        }
+        /// <summary>
+        /// Vrací stranu vztahu pro daný sloupec
+        /// </summary>
+        /// <param name="dataColumn"></param>
+        /// <returns></returns>
+        protected static RelationMasterSide? GetRelationSide(GuiDataColumn dataColumn)
+        {
+            if (!dataColumn.RelationClassNumber.HasValue) return null;
+            switch (dataColumn.RelationSide)
             {
                 case "Left": return RelationMasterSide.Left;
                 case "Right": return RelationMasterSide.Right;
@@ -2576,7 +2695,6 @@ namespace Asol.Tools.WorkScheduler.Data
         public Row()
         {
             this._RowId = -1;
-            this._ParentChildMode = RowParentChildMode.Root;
             this._CellDict = new Dictionary<int, Cell>();
         }
         /// <summary>
@@ -2949,6 +3067,19 @@ namespace Asol.Tools.WorkScheduler.Data
             set { this._RowHeader = value; }
         }
         private GRowHeader _RowHeader;
+        /// <summary>
+        /// Řídící prvek TreeNode, autoinicializační
+        /// </summary>
+        public TreeNode TreeNode
+        {
+            get
+            {
+                if (this._TreeNode == null)
+                    this._TreeNode = new TreeNode(this);
+                return this._TreeNode;
+            }
+        }
+        private TreeNode _TreeNode;
         #endregion
         #region Visual style
         /// <summary>
@@ -2964,82 +3095,6 @@ namespace Asol.Tools.WorkScheduler.Data
             }
         }
         #endregion
-        #region TreeView : Parent Rows, Child, Nodes, Tree
-        /// <summary>
-        /// Do daného seznamu řádků přidá svoje Child řádky
-        /// </summary>
-        /// <param name="treeList"></param>
-        public void AddChilds(List<Row> treeList)
-        {
-            this.AddChilds(treeList, 0);
-        }
-        /// <summary>
-        /// Do daného seznamu řádků přidá svoje Child řádky
-        /// </summary>
-        /// <param name="treeList"></param>
-        /// <param name="level"></param>
-        protected void AddChilds(List<Row> treeList, int level)
-        {
-            if (!this.TreeNodeHasChilds) return;
-            if (!this.TreeNodeIsExpanded) return;
-            level++;
-            int count = this.TreeNodeChilds.Length;
-            for (int i = 0; i < count; i++)
-            {
-                Row child = this.TreeNodeChilds[i];
-                child.TreeNodeLevel = level;
-                child.TreeNodeOrder = (i == 0 ? (count > 1 ? TreeNodeOrderType.First : TreeNodeOrderType.Single) : (i < (count - 1) ? TreeNodeOrderType.Inner : TreeNodeOrderType.Last));
-                treeList.Add(child);
-                child.Visible = true;            // Viditelnost pro Child řádky nastavuji výhradně zde.
-
-                // Rekurzivně:
-                child.AddChilds(treeList, level);
-            }
-        }
-        /// <summary>
-        /// Scanner dané kolekce + rekurzivně
-        /// </summary>
-        /// <param name="scanAction"></param>
-        /// <param name="testScanChilds"></param>
-        public void TreeNodeScan(Action<Row, int> scanAction, Func<Row, bool> testScanChilds = null)
-        {
-            TreeNodeScan(new Row[] { this }, 0, scanAction, testScanChilds);
-        }
-        /// <summary>
-        /// Scanner dané kolekce + rekurzivně
-        /// </summary>
-        /// <param name="rows"></param>
-        /// <param name="level"></param>
-        /// <param name="scanAction"></param>
-        /// <param name="testScanChilds"></param>
-        public static void TreeNodeScan(IEnumerable<Row> rows, int level, Action<Row, int> scanAction, Func<Row, bool> testScanChilds = null)
-        {
-            if (rows == null) return;
-            bool isTest = (testScanChilds != null);
-            foreach (Row row in rows)
-            {
-                scanAction(row, level);
-                if (row.TreeNodeHasChilds)
-                {
-                    bool scanChilds = (!isTest || testScanChilds(row));
-                    if (scanChilds)
-                        TreeNodeScan(row.TreeNodeChilds, level + 1, scanAction, testScanChilds);
-                }
-            }
-        }
-        /// <summary>
-        /// Level Tree nodu
-        /// </summary>
-        internal int TreeNodeLevel { get; private set; }
-        /// <summary>
-        /// Pořadí nodu v sekvenci. 
-        /// Má význam při vykreslování spojovacích linek.
-        /// </summary>
-        internal TreeNodeOrderType TreeNodeOrder { get; private set; }
-        /// <summary>
-        /// Druh pořadí TreeNode v kolekci (první, vnitřní, poslední, jediný)
-        /// </summary>
-        internal enum TreeNodeOrderType { None, First, Inner, Last, Single }
         /// <summary>
         /// Parent řádky tohoto řádku.
         /// Jeden řádek může být Child řádkem v několika Parent řádcích, v závislosti na datové konstrukci.
@@ -3049,257 +3104,6 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Proto takové řádky před zobrazením takových Childs nodů zavřou jiné nody, aby se prvek zobrazil jen jednou.
         /// </summary>
         public Row[] TreeNodeParents { get; set; }
-        /// <summary>
-        /// Režim chování řádku z hlediska Parent - Child
-        /// </summary>
-        public RowParentChildMode ParentChildMode { get { return this._ParentChildMode; } set { this._ParentChildMode = value; this.Table?.InvalidateRows(); } }
-        /// <summary>
-        /// true pokud this řádek je nějaký Child (<see cref="RowParentChildMode.Child"/> nebo <see cref="RowParentChildMode.DynamicChild"/>)
-        /// </summary>
-        public bool TreeNodeIsChild { get { return (this._ParentChildMode == RowParentChildMode.Child || this._ParentChildMode == RowParentChildMode.DynamicChild); } }
-        /// <summary>
-        /// true pokud this řádek je Root (<see cref="RowParentChildMode.Root"/> nebo <see cref="RowParentChildMode.DynamicChild"/>)
-        /// </summary>
-        public bool TreeNodeIsRoot { get { return (this._ParentChildMode == RowParentChildMode.Root); } }
-        private RowParentChildMode _ParentChildMode;
-        /// <summary>
-        /// Obsahuje true, pokud this řádek obsahuje nějaké <see cref="TreeNodeChilds"/> řádky
-        /// </summary>
-        public bool TreeNodeHasChilds { get { var childs = this._TreeNodeChilds; return (childs != null && childs.Length > 0); } }
-        /// <summary>
-        /// Obsahuje Childs řádky tohoto Parent řádku. Může být null nebo může obsahovat 0 prvků.
-        /// Setování vyvolá invalidaci řádků tabulky.
-        /// </summary>
-        public Row[] TreeNodeChilds { get { return this._TreeNodeChilds; } set { this._TreeNodeChilds = value; this.InvalidateTableRows(); } }
-        /// <summary>
-        /// Obsahuje Childs řádky tohoto Parent řádku. Může být null nebo může obsahovat 0 prvků.
-        /// Setování je Silent = NEvyvolá invalidaci řádků tabulky.
-        /// </summary>
-        internal Row[] TreeNodeChildsSilent { get { return this._TreeNodeChilds; } set { this._TreeNodeChilds = value; } }
-        /// <summary>
-        /// Child nody tohoto řádku jsou otevřené?
-        /// </summary>
-        public bool TreeNodeIsExpanded
-        {
-            get { return this._TreeNodeIsExpanded; }
-            set
-            {
-                bool oldValue = this._TreeNodeIsExpanded;
-                bool newValue = value;
-                if (newValue && !oldValue)
-                    this.TreeNodeExpand();
-                else if (!newValue && oldValue)
-                    this.TreeNodeCollapse();
-            }
-        }
-        /// <summary>
-        /// Příznak otevření Child nodů
-        /// </summary>
-        private bool _TreeNodeIsExpanded;
-        /// <summary>
-        /// Lineární cesta od this řádku nahoru přes Parenty k Root řádku.
-        /// <para/>
-        /// Protože jsme umožnili, aby jeden Node měl více Parentů, a současně jeden Parent měl více Child nodů,
-        /// a přitom chceme zobrazit Child řádky jako klasický Strom, pak pro určitý prvek Child musíme umět sestavit jednoznačnou cestu k Root řádku.
-        /// Klíčem je fakt, že jeden řádek smí být v jednu chvíli viditelný (jako otevřený Node) jen pod jedním Parentem.
-        /// Pokud bychom otevřeli jiný Node, jehož Child prvek je viditelný pod jiným Parentem, pak tyto ostatní parenty musí být zavřené.
-        /// To řeší metoda <see cref="TreeNodeExpand()"/>.
-        /// </summary>
-        public Row[] TreeNodePathToParent { get { return this._GetTreeNodePathToParent(); } }
-        /// <summary>
-        /// Zajistí, že zdejší nody <see cref="TreeNodeChilds"/> budou viditelné.
-        /// Po vyvolání této metody nebudou ale ChildNody Expandend, metoda na nich nastaví <see cref="TreeNodeIsExpanded"/> = false.
-        /// </summary>
-        public void TreeNodeExpand()
-        {
-            this._TreeNodeExpand(true);
-        }
-        /// <summary>
-        /// Metoda zavře this node, a zavře i všechny jeho Child nody.
-        /// </summary>
-        public void TreeNodeCollapse()
-        {
-            this._TreeNodeCollapse(true);
-        }
-        /// <summary>
-        /// Otevře this node, volitelně volá invalidaci
-        /// </summary>
-        /// <param name="invalidateRows"></param>
-        private void _TreeNodeExpand(bool invalidateRows)
-        {
-            if (!this.TreeNodeHasChilds) return;
-
-            bool oldValue = this._TreeNodeIsExpanded;
-            this._TreeNodeCollapseChilds();
-            this._TreeNodeCollapseOtherParents();
-            this._TreeNodeIsExpanded = this.TreeNodeHasChilds;
-
-            if (invalidateRows && (this._TreeNodeIsExpanded != oldValue) && this.HasTable)
-                this.Table.InvalidateRows();
-        }
-        /// <summary>
-        /// Metoda zajistí, že všichni Parenti, kteří obsahují jako Child některý řádek z mých Childs, budou Collapsed.
-        /// </summary>
-        private void _TreeNodeCollapseOtherParents()
-        {
-            if (!this.HasTable) return;
-            var childDict = this.TreeNodeChilds.GetDictionary(row => row.RowId, true);
-            this.Table.TreeNodeScan(
-                (row, level) =>
-                {   // Akce pro každý řádek: 
-                    // Pokud daný řádek je otevřený, a některý z jeho Child řádků je obsažen v Dictionary childDict:
-                    if (row.TreeNodeIsExpanded && row.TreeNodeChilds != null && row.TreeNodeChilds.Any(r => childDict.ContainsKey(r.RowId)))
-                        // Pak takový řádek zavřeme:
-                        row._TreeNodeCollapse(false);
-                },
-                // Projít Childs daného řádku?
-                //  Ano, pokud řádek je otevřený:
-                row => row.TreeNodeIsExpanded
-                );
-        }
-        /// <summary>
-        /// Zavře this node, volitelně volá invalidaci
-        /// </summary>
-        /// <param name="invalidateRows"></param>
-        private void _TreeNodeCollapse(bool invalidateRows)
-        {
-            bool oldValue = this._TreeNodeIsExpanded;
-            this._TreeNodeCollapseChilds();
-            this._TreeNodeIsExpanded = false;
-            if (invalidateRows && (this._TreeNodeIsExpanded != oldValue) && this.HasTable)
-                this.InvalidateTableRows();
-        }
-        /// <summary>
-        /// Provede <see cref="_TreeNodeCollapse"/> pro všechny <see cref="TreeNodeChilds"/>
-        /// </summary>
-        private void _TreeNodeCollapseChilds()
-        {
-            if (this.TreeNodeHasChilds)
-            {
-                foreach (Row child in this.TreeNodeChilds)
-                    child._TreeNodeCollapse(false);
-            }
-        }
-        private Row[] _GetTreeNodePathToParent()
-        {
-            NodeNext<Row> node = new NodeNext<Row>(this);
-            NodeNext<Row>.AddNextRecursive(node, row => row.TreeNodeChilds, row => row.TreeNodeIsExpanded);
-
-            return null;
-        }
-        /// <summary>
-        /// Pokud this řádek má referenci na tabulku, pak v ní provede invalidaci řádků.
-        /// </summary>
-        protected void InvalidateTableRows()
-        {
-            if (this.HasTable)
-                this.Table.InvalidateRows();
-        }
-        private Row[] _TreeNodeChilds;
-        #region class NodeNext : třída pro tvorbu stromu řádků
-        /// <summary>
-        /// NodeNext : třída pro tvorbu stromu řádků
-        /// </summary>
-        protected class NodeNext<T>
-        {
-            #region Konstruktory
-            /// <summary>
-            /// Konstruktor
-            /// </summary>
-            /// <param name="row"></param>
-            public NodeNext(T row)
-            {
-                this.Parent = null;
-                this.Item = row;
-                this.NextList = new List<NodeNext<T>>();
-            }
-            /// <summary>
-            /// Konstruktor
-            /// </summary>
-            /// <param name="parent"></param>
-            /// <param name="row"></param>
-            public NodeNext(NodeNext<T> parent, T row)
-            {
-                this.Parent = parent;
-                this.Item = row;
-                this.NextList = new List<NodeNext<T>>();
-            }
-            #endregion
-            #region Public data
-            /// <summary>
-            /// Předchůdce
-            /// </summary>
-            public NodeNext<T> Parent { get; private set; }
-            /// <summary>
-            /// true = jsem první v řadě
-            /// </summary>
-            public bool IsFirst { get { return (this.Parent == null); } }
-            /// <summary>
-            /// Řádek
-            /// </summary>
-            public T Item { get; private set; }
-            /// <summary>
-            /// Seznam sousedních nodů
-            /// </summary>
-            public List<NodeNext<T>> NextList { get; private set; }
-            /// <summary>
-            /// Počet sousedních nodů
-            /// </summary>
-            public int NextCount { get { return this.NextList.Count; } }
-            /// <summary>
-            /// true = máme něco v NextCount
-            /// </summary>
-            public bool HasNext { get { return (this.NextCount > 0); } }
-            /// <summary>
-            /// Vloží Next řádky
-            /// </summary>
-            /// <param name="nextRows"></param>
-            /// <param name="filter"></param>
-            public void AddNextRows(IEnumerable<T> nextRows, Func<T, bool> filter)
-            {
-                if (nextRows == null) return;
-                foreach (T row in nextRows)
-                {
-                    if (filter == null || filter(row))
-                        this.NextList.Add(new NodeNext<T>(this, row));
-                }
-            }
-            #endregion
-            #region Kvazirekurze
-            /// <summary>
-            /// Metoda do daného nodu přidá prvky z kolekce, kterou získá danou metodou, a jejích prvky profiltruje je další metodou.
-            /// Provádí to rekurzivně = pro přidané prvky se spustí identický algoritmus.
-            /// </summary>
-            /// <param name="node">Výchozí node, do něj se budou přidávat prvky</param>
-            /// <param name="getCollection">Funkce, která získá kolekci next nodů</param>
-            /// <param name="filter">Funkce, která každý získaný node proěří před tím, než se přidá do parent nodu. Null = přidají se všechny.</param>
-            public static void AddNextRecursive(NodeNext<T> node, Func<T, IEnumerable<T>> getCollection, Func<T, bool> filter = null)
-            {
-                bool hasFilter = (filter != null);
-
-                Queue<NodeNext<T>> queue = new Queue<NodeNext<T>>();
-                queue.Enqueue(node);
-                while (queue.Count > 0)
-                {
-                    NodeNext<T> workNode = queue.Dequeue();
-                    IEnumerable<T> items = getCollection(workNode.Item);
-                    if (items == null) continue;
-
-                    foreach (T item in items)
-                    {
-                        if (!hasFilter || filter(item))
-                        {
-                            NodeNext<T> nextNode = new NodeNext<T>(workNode, item);
-                            workNode.NextList.Add(nextNode);
-                            queue.Enqueue(nextNode);
-                        }
-                    }
-                }
-            }
-            #endregion
-        }
-        #endregion
-        #endregion
         #region Výška řádku, kompletní layout okolo výšky řádku, implementace ISequenceLayout a IVisualParent
         /// <summary>
         /// Koordinátor výšky řádku.
@@ -3362,25 +3166,67 @@ namespace Asol.Tools.WorkScheduler.Data
         {
             get
             {
-                if (this.Columns == null || this.Columns.Count <= 0) return null;
-                Column keyColumn = this.Columns[0];
-                if (!(keyColumn.ColumnProperties.ColumnContent == ColumnContentType.RecordId && keyColumn.ColumnProperties.RecordClassNumber.HasValue)) return null;
-
-                int recordNumber;
-                if (!this[keyColumn].TryGetValue<int>(out recordNumber)) return null;          // Sloupec[0] neobsahuje číslo?
-                return new GId(keyColumn.ColumnProperties.RecordClassNumber.Value, recordNumber);
+                if (this._RecordGId == null)
+                    this._RecordGId = this._GetRecordGId();
+                return this._RecordGId;
+            }
+            protected set
+            {
+                this._RecordGId = value;
             }
         }
-        #endregion
-        #region Import řádků Row z DataRows
         /// <summary>
-        /// Metoda vytvoří soupis sloupců <see cref="Row"/> na základě dat o sloupcích z tabulky <see cref="System.Data.DataRowCollection"/>.
+        /// Určí ID záznamu <see cref="GId"/> z this řádku
+        /// </summary>
+        /// <returns></returns>
+        private GId _GetRecordGId()
+        {
+            if (this.Columns == null || this.Columns.Count <= 0) return null;
+
+            // Ve sloupci [0] může být umístěn GId nebo GuiId:
+            object value = this[0];
+            if (value is GId) return value as GId;
+            if (value is GuiId) return (GId)(value as GuiId);
+
+            // Ve sloupci [0] může být umístěn Int32, reprezentující číslo záznamu; pak ale potřebujeme i číslo třídy = z dat sloupce [0]:
+            if (!(value is Int32)) return null;
+            Column keyColumn = this.Columns[0];
+            if (!keyColumn.ColumnProperties.RecordClassNumber.HasValue) return null;
+            Int32 recordId = (Int32)value;
+            Int32 classId = keyColumn.ColumnProperties.RecordClassNumber.Value;
+
+            // Číslo záznamu může být Master nebo Entry:
+            switch (keyColumn.ColumnProperties.ColumnContent)
+            {
+                case ColumnContentType.RecordId: return new GId(classId, recordId);
+                case ColumnContentType.EntryId: return new GId(classId, 0, recordId);
+            }
+            return null;
+        }
+        private GId _RecordGId;
+        /// <summary>
+        /// Obsahuje identifikátor Parent záznamu, pod kterým je this řádek Childem.
+        /// </summary>
+        public GId ParentRecordGId
+        {
+            get { return this.TreeNode.ParentRecordGId; }
+            set { this.TreeNode.ParentRecordGId = value; }
+        }
+        /// <summary>
+        /// Libovolná aplikační data.
+        /// Toto je prostor, který může využít aplikace k uložení svých dat nad rámec dat třídy.
+        /// </summary>
+        public object UserData { get; set; }
+        #endregion
+        #region Import řádků Row z DataRowCollection
+        /// <summary>
+        /// Metoda vytvoří soupis řádků <see cref="Row"/> na základě dat o řádcích z tabulky <see cref="System.Data.DataRowCollection"/>.
         /// </summary>
         /// <param name="dataRows">Kolekce řádků, vstup</param>
         /// <param name="tagItems">Data štítků <see cref="TagItem"/> ke všem řádkům</param>
         /// <param name="rowClassId">Číslo třídy tabulky (pochází z <see cref="Data.Table.RowsClassId"/>)</param>
         /// <returns></returns>
-        public static IEnumerable<Row> CreateFrom(System.Data.DataRowCollection dataRows, IEnumerable<KeyValuePair<GId, TagItem>> tagItems = null, int? rowClassId = null)
+        public static IEnumerable<Row> CreateFrom(System.Data.DataRowCollection dataRows, int? rowClassId = null, IEnumerable<KeyValuePair<GId, TagItem>> tagItems = null)
         {
             if (dataRows == null) return null;
             bool addTags = (tagItems != null);
@@ -3426,6 +3272,40 @@ namespace Asol.Tools.WorkScheduler.Data
             return tagItems;
         }
         #endregion
+        #region Import řádků Row z GuiDataRow
+        /// <summary>
+        /// Metoda vytvoří soupis řádků <see cref="Row"/> na základě dat o řádcích třídy <see cref="GuiDataRow"/>.
+        /// </summary>
+        /// <param name="dataRows">Kolekce řádků, vstup</param>
+        /// <returns></returns>
+        public static IEnumerable<Row> CreateFrom(IEnumerable<GuiDataRow> dataRows)
+        {
+            if (dataRows == null) return null;
+            List<Row> rowList = new List<Row>();
+            foreach (GuiDataRow dataRow in dataRows)
+            {
+                Row row = Row.CreateFrom(dataRow);
+                if (row != null)
+                    rowList.Add(row);
+            }
+            return rowList;
+        }
+        /// <summary>
+        /// Metoda vytvoří jeden řádek <see cref="Row"/> na základě dat o řádku z tabulky <see cref="GuiDataRow"/>.
+        /// </summary>
+        /// <param name="dataRow">Konkrétní řádek, vstup</param>
+        /// <returns></returns>
+        public static Row CreateFrom(GuiDataRow dataRow)
+        {
+            if (dataRow == null) return null;
+            Row row = new Row(dataRow.Cells);
+            row.RecordGId = dataRow.RowGuiId;
+            row.ParentRecordGId = dataRow.ParentRowGuiId;
+            row.TagItems = TagItem.CreateFrom(dataRow.TagItems);
+            row.UserData = dataRow;
+            return row;
+        }
+        #endregion
         #region IContentValidity
         bool IContentValidity.DataIsValid { get { return _RowDataIsValid; } set { _RowDataIsValid = value; } } private bool _RowDataIsValid;
         bool IContentValidity.RowLayoutIsValid { get { return _RowLayoutIsValid; } set { _RowLayoutIsValid = value; } } private bool _RowLayoutIsValid;
@@ -3452,35 +3332,6 @@ namespace Asol.Tools.WorkScheduler.Data
         object IComparableItem.Value { get { return _IComparableItemValue; } } private object _IComparableItemValue;
         IComparable IComparableItem.ValueComparable { get { return _IComparableItemValueComparable; } } private IComparable _IComparableItemValueComparable;
         #endregion
-    }
-    /// <summary>
-    /// Režim chování řádku z hlediska Parent - Child
-    /// </summary>
-    public enum RowParentChildMode
-    {
-        /// <summary>
-        /// Neurčeno, nepoužívá se, řádek není zobrazován nikdy
-        /// </summary>
-        None = 0,
-        /// <summary>
-        /// Root řádek = jde zobrazován v základním seznamu řádků v tabulce, používá se na něj filtrování a třídění.
-        /// Toto je výchozí hodnota pro new instanci třídy <see cref="Row"/>.
-        /// </summary>
-        Root,
-        /// <summary>
-        /// Child řádek = zobrazuje se jako podřízený řádek pod svým Parent řádkem.
-        /// Hierarchie Root - Child - Child může být víceúrovňová.
-        /// Vztahy mezi Parent a Child jsou { N : N }.
-        /// Tento konkrétní typ popisuje statický vztah Child na Parenta, tzn. seznam Parentů se nemění.
-        /// </summary>
-        Child,
-        /// <summary>
-        /// Child řádek = zobrazuje se jako podřízený řádek pod svým Parent řádkem.
-        /// Hierarchie Root - Child - Child může být víceúrovňová.
-        /// Vztahy mezi Parent a Child jsou { N : N }.
-        /// Tento konkrétní typ popisuje dynamický vztah Child na Parenta, tzn. seznam Parentů se může změnit.
-        /// </summary>
-        DynamicChild
     }
     #endregion
     #region Cell
@@ -3752,6 +3603,366 @@ namespace Asol.Tools.WorkScheduler.Data
         #endregion
     }
     #endregion
+    #region TreeNode : Třída, které v sobě řeší všechny vlastnosti TreeNode pro jeden řádek Row
+    /// <summary>
+    /// TreeNode : Třída, které v sobě řeší všechny vlastnosti TreeNode pro jeden řádek <see cref="Row"/>
+    /// </summary>
+    public class TreeNode
+    {
+        #region Konstruktor
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="owner"></param>
+        public TreeNode(Row owner)
+        {
+            this._Owner = owner;
+        }
+        private Row _Owner;
+        #endregion
+        #region Vztahy na Ownera a na Table
+        /// <summary>
+        /// Řádek, pro který je vytvořen this node
+        /// </summary>
+        protected Row Owner { get { return this._Owner; } }
+        /// <summary>
+        /// Tabulka
+        /// </summary>
+        protected Table Table { get { return this._Owner?.Table; } }
+        /// <summary>
+        /// Vyvolá invalidaci řádků tabulky
+        /// </summary>
+        protected void TableRowsInvalidate()
+        {
+            Table table = this.Table;
+            if (table != null)
+                table.InvalidateRows();
+        }
+        #endregion
+        #region Public properties statické
+        /// <summary>
+        /// Obsahuje identifikátor Parent záznamu, pod kterým je this řádek Childem.
+        /// </summary>
+        public GId ParentRecordGId
+        {
+            get { return this._ParentRecordGId; }
+            set { this._ParentRecordGId = value; }
+        }
+        private GId _ParentRecordGId;
+        /// <summary>
+        /// true pokud this řádek je Root, tj. nemá žádného Parenta.
+        /// </summary>
+        public bool IsRoot { get { return (this._ParentRecordGId == null); } }
+        /// <summary>
+        /// true pokud this řádek je Child řádkem, ať už statickým, nebo dynamickým. Dynamický Child řádek má nastaveno <see cref="IsDynamicChild"/> = true.
+        /// </summary>
+        public bool IsChild { get { return (this._ParentRecordGId != null); } }
+        /// <summary>
+        /// true pokud this řádek je Dynamickým Child řádkem = může se objevit jako Child řádek pod kterýmkoli Parent řádkem, 
+        /// což je dáno chování tabulky.
+        /// </summary>
+        public bool IsDynamicChild { get { return (this._ParentRecordGId != null && this._ParentRecordGId.IsEmpty); } }
+        #endregion
+        #region Public properties dynamické : vztahy Parent - Childs, Level, Order
+        /// <summary>
+        /// Obsahuje Childs řádky tohoto Parent řádku. Může být null nebo může obsahovat 0 prvků.
+        /// Setování vyvolá invalidaci řádků tabulky.
+        /// </summary>
+        public Row[] Childs { get { return this._Childs; } set { this._Childs = value; this.TableRowsInvalidate(); } }
+        /// <summary>
+        /// Obsahuje Childs řádky tohoto Parent řádku. Může být null nebo může obsahovat 0 prvků.
+        /// Setování je Silent = NEvyvolá invalidaci řádků tabulky.
+        /// </summary>
+        internal Row[] ChildsSilent { get { return this._Childs; } set { this._Childs = value; } }
+        /// <summary>
+        /// Obsahuje true, pokud this řádek obsahuje nějaké <see cref="Childs"/> řádky
+        /// </summary>
+        public bool HasChilds { get { var childs = this._Childs; return (childs != null && childs.Length > 0); } }
+        /// <summary>
+        /// Level Tree nodu.
+        /// Hodnota 0 = Root řádek, hodnota 1 = Child řádek pod Root řádkem, atd.
+        /// </summary>
+        internal int Level { get; private set; }
+        /// <summary>
+        /// Pořadí nodu v sekvenci. 
+        /// Má význam při vykreslování spojovacích linek.
+        /// </summary>
+        internal TreeNodeOrderType Order { get; private set; }
+        /// <summary>
+        /// Fyzické pole Child řádků
+        /// </summary>
+        private Row[] _Childs;
+        #endregion
+        #region Expand, Collapse
+        /// <summary>
+        /// Child nody tohoto řádku jsou otevřené?
+        /// </summary>
+        public bool IsExpanded
+        {
+            get { return this._IsExpanded; }
+            set
+            {
+                bool oldValue = this._IsExpanded;
+                bool newValue = value;
+                if (newValue && !oldValue)
+                    this.Expand();
+                else if (!newValue && oldValue)
+                    this.Collapse();
+            }
+        }
+        /// <summary>
+        /// Zajistí, že zdejší nody <see cref="Childs"/> budou viditelné.
+        /// Po vyvolání této metody nebudou ale ChildNody Expandend, metoda na nich nastaví <see cref="IsExpanded"/> = false.
+        /// </summary>
+        public void Expand()
+        {
+            this._Expand(true);
+        }
+        /// <summary>
+        /// Metoda zavře this node, a zavře i všechny jeho Child nody.
+        /// </summary>
+        public void Collapse()
+        {
+            this._Collapse(true);
+        }
+        /// <summary>
+        /// Otevře this node, volitelně volá invalidaci
+        /// </summary>
+        /// <param name="invalidateRows"></param>
+        private void _Expand(bool invalidateRows)
+        {
+            if (!this.HasChilds) return;
+
+            bool oldValue = this._IsExpanded;
+            this._CollapseChilds();
+            this._CollapseOtherParents();
+            this._IsExpanded = this.HasChilds;
+
+            if (invalidateRows && (this._IsExpanded != oldValue))
+                this.TableRowsInvalidate();
+        }
+        /// <summary>
+        /// Zavře this node, volitelně volá invalidaci
+        /// </summary>
+        /// <param name="invalidateRows"></param>
+        private void _Collapse(bool invalidateRows)
+        {
+            bool oldValue = this._IsExpanded;
+            this._CollapseChilds();
+            this._IsExpanded = false;
+            if (invalidateRows && (this._IsExpanded != oldValue))
+                this.TableRowsInvalidate();
+        }
+        /// <summary>
+        /// Provede <see cref="_Collapse"/> pro všechny svoje <see cref="Childs"/>
+        /// </summary>
+        private void _CollapseChilds()
+        {
+            if (this.HasChilds)
+            {
+                foreach (Row child in this.Childs)
+                    child.TreeNode._Collapse(false);
+            }
+        }
+        /// <summary>
+        /// Příznak otevření Child nodů
+        /// </summary>
+        private bool _IsExpanded;
+        #endregion
+        #region TreeView : Parent Rows, Child, Nodes, Tree
+        /// <summary>
+        /// Do daného seznamu řádků přidá svoje Child řádky
+        /// </summary>
+        /// <param name="allRowList"></param>
+        public void AddChildRowsTo(List<Row> allRowList)
+        {
+            this.AddChildRowsTo(allRowList, 0);
+        }
+        /// <summary>
+        /// Do daného seznamu řádků přidá svoje Child řádky
+        /// </summary>
+        /// <param name="allRowList"></param>
+        /// <param name="level"></param>
+        protected void AddChildRowsTo(List<Row> allRowList, int level)
+        {
+            if (!this.HasChilds) return;
+            if (!this.IsExpanded) return;
+            level++;
+            int count = this.Childs.Length;
+            for (int i = 0; i < count; i++)
+            {
+                Row child = this.Childs[i];
+                child.TreeNode.Level = level;
+                child.TreeNode.Order = (i == 0 ? (count > 1 ? TreeNodeOrderType.First : TreeNodeOrderType.Single) : (i < (count - 1) ? TreeNodeOrderType.Inner : TreeNodeOrderType.Last));
+                allRowList.Add(child);
+                child.Visible = true;            // Viditelnost pro Child řádky nastavuji výhradně zde.
+
+                // Rekurzivně:
+                child.TreeNode.AddChildRowsTo(allRowList, level);
+            }
+        }
+        /// <summary>
+        /// Scanner nodů tohoto řádku + rekurzivně
+        /// </summary>
+        /// <param name="scanAction"></param>
+        /// <param name="testScanChilds"></param>
+        public void Scan(Action<Row, int> scanAction, Func<Row, bool> testScanChilds = null)
+        {
+            Scan(new Row[] { this._Owner }, 0, scanAction, testScanChilds);
+        }
+        /// <summary>
+        /// Scanner dané kolekce + rekurzivně
+        /// </summary>
+        /// <param name="rows"></param>
+        /// <param name="level"></param>
+        /// <param name="scanAction"></param>
+        /// <param name="testScanChilds"></param>
+        public static void Scan(IEnumerable<Row> rows, int level, Action<Row, int> scanAction, Func<Row, bool> testScanChilds = null)
+        {
+            if (rows == null) return;
+            bool isTest = (testScanChilds != null);
+            foreach (Row row in rows)
+            {
+                scanAction(row, level);
+                if (row.TreeNode.HasChilds)
+                {
+                    bool scanChilds = (!isTest || testScanChilds(row));
+                    if (scanChilds)
+                        Scan(row.TreeNode.Childs, level + 1, scanAction, testScanChilds);
+                }
+            }
+        }
+        /// <summary>
+        /// Metoda zajistí, že všichni Parenti, kteří obsahují jako Child některý řádek z mých Childs, budou Collapsed.
+        /// </summary>
+        private void _CollapseOtherParents()
+        {
+            if (this.Table == null) return;
+
+            var childDict = this.Childs.GetDictionary(row => row.RowId, true);
+            this.Table.TreeNodeScan(
+                (row, level) =>
+                {   // Akce pro každý řádek: 
+                    // Pokud daný řádek je otevřený, a některý z jeho Child řádků je obsažen v Dictionary childDict:
+                    if (row.TreeNode.IsExpanded && row.TreeNode.Childs != null && row.TreeNode.Childs.Any(r => childDict.ContainsKey(r.RowId)))
+                        // Pak takový řádek zavřeme:
+                        row.TreeNode._Collapse(false);
+                },
+                // Projít Childs daného řádku?
+                //  Ano, pokud řádek je otevřený:
+                row => row.TreeNode.IsExpanded
+                );
+        }
+        #region class NodeNext : třída pro tvorbu stromu řádků
+        /// <summary>
+        /// NodeNext : třída pro tvorbu stromu řádků
+        /// </summary>
+        protected class NodeNext<T>
+        {
+            #region Konstruktory
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="row"></param>
+            public NodeNext(T row)
+            {
+                this.Parent = null;
+                this.Item = row;
+                this.NextList = new List<NodeNext<T>>();
+            }
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="parent"></param>
+            /// <param name="row"></param>
+            public NodeNext(NodeNext<T> parent, T row)
+            {
+                this.Parent = parent;
+                this.Item = row;
+                this.NextList = new List<NodeNext<T>>();
+            }
+            #endregion
+            #region Public data
+            /// <summary>
+            /// Předchůdce
+            /// </summary>
+            public NodeNext<T> Parent { get; private set; }
+            /// <summary>
+            /// true = jsem první v řadě
+            /// </summary>
+            public bool IsFirst { get { return (this.Parent == null); } }
+            /// <summary>
+            /// Řádek
+            /// </summary>
+            public T Item { get; private set; }
+            /// <summary>
+            /// Seznam sousedních nodů
+            /// </summary>
+            public List<NodeNext<T>> NextList { get; private set; }
+            /// <summary>
+            /// Počet sousedních nodů
+            /// </summary>
+            public int NextCount { get { return this.NextList.Count; } }
+            /// <summary>
+            /// true = máme něco v NextCount
+            /// </summary>
+            public bool HasNext { get { return (this.NextCount > 0); } }
+            /// <summary>
+            /// Vloží Next řádky
+            /// </summary>
+            /// <param name="nextRows"></param>
+            /// <param name="filter"></param>
+            public void AddNextRows(IEnumerable<T> nextRows, Func<T, bool> filter)
+            {
+                if (nextRows == null) return;
+                foreach (T row in nextRows)
+                {
+                    if (filter == null || filter(row))
+                        this.NextList.Add(new NodeNext<T>(this, row));
+                }
+            }
+            #endregion
+            #region Kvazirekurze
+            /// <summary>
+            /// Metoda do daného nodu přidá prvky z kolekce, kterou získá danou metodou, a jejích prvky profiltruje je další metodou.
+            /// Provádí to rekurzivně = pro přidané prvky se spustí identický algoritmus.
+            /// </summary>
+            /// <param name="node">Výchozí node, do něj se budou přidávat prvky</param>
+            /// <param name="getCollection">Funkce, která získá kolekci next nodů</param>
+            /// <param name="filter">Funkce, která každý získaný node proěří před tím, než se přidá do parent nodu. Null = přidají se všechny.</param>
+            public static void AddNextRecursive(NodeNext<T> node, Func<T, IEnumerable<T>> getCollection, Func<T, bool> filter = null)
+            {
+                bool hasFilter = (filter != null);
+
+                Queue<NodeNext<T>> queue = new Queue<NodeNext<T>>();
+                queue.Enqueue(node);
+                while (queue.Count > 0)
+                {
+                    NodeNext<T> workNode = queue.Dequeue();
+                    IEnumerable<T> items = getCollection(workNode.Item);
+                    if (items == null) continue;
+
+                    foreach (T item in items)
+                    {
+                        if (!hasFilter || filter(item))
+                        {
+                            NodeNext<T> nextNode = new NodeNext<T>(workNode, item);
+                            workNode.NextList.Add(nextNode);
+                            queue.Enqueue(nextNode);
+                        }
+                    }
+                }
+            }
+            #endregion
+        }
+        #endregion
+        #endregion
+    }
+    /// <summary>
+    /// Druh pořadí TreeNode v kolekci (první, vnitřní, poslední, jediný)
+    /// </summary>
+    internal enum TreeNodeOrderType { None, First, Inner, Last, Single }
+    #endregion
     #region TagItem : Data pro jeden vizuální tag
     /// <summary>
     /// TagItem : Data pro jeden vizuální tag.
@@ -3791,6 +4002,40 @@ namespace Asol.Tools.WorkScheduler.Data
                 this._Checked = source._Checked;
                 this.UserData = source.UserData;
             }
+        }
+        /// <summary>
+        /// Konstruktor pro vytvoření <see cref="TagItem"/> z instance <see cref="GuiTagItem"/>
+        /// </summary>
+        public TagItem(GuiTagItem guiTagItem)
+        {
+            if (guiTagItem != null)
+            {
+                this.Text = guiTagItem.TagText;
+                this.BackColor = guiTagItem.BackColor;
+                this.CheckedBackColor = guiTagItem.BackColorChecked;
+                this.BorderColor = null;
+                this.TextColor = null;
+                this.Size = null;
+                this.Visible = true;
+                this.Checked = false;
+                this.UserData = guiTagItem.UserData;
+            }
+        }
+        /// <summary>
+        /// Vrátí pole <see cref="TagItem"/> z dodané kolekce <see cref="GuiTagItem"/>
+        /// </summary>
+        /// <param name="guiTagItems"></param>
+        /// <returns></returns>
+        public static TagItem[] CreateFrom(IEnumerable<GuiTagItem> guiTagItems)
+        {
+            if (guiTagItems == null) return null;
+            List<TagItem> tagItems = new List<TagItem>();
+            foreach (GuiTagItem guiTagItem in guiTagItems)
+            {
+                if (guiTagItem != null)
+                    tagItems.Add(new TagItem(guiTagItem));
+            }
+            return tagItems.ToArray();
         }
         /// <summary>
         /// Vizualizace

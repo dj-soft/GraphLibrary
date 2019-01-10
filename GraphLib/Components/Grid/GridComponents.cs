@@ -1909,7 +1909,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <returns></returns>
         protected void TreeViewExpandChange()
         {
-            this.OwnerRow.TreeNodeIsExpanded = !this.OwnerRow.TreeNodeIsExpanded;
+            this.OwnerRow.TreeNode.IsExpanded = !this.OwnerRow.TreeNode.IsExpanded;
         }
         /// <summary>
         /// Zajistí vykreslení TreeView prvků
@@ -1923,7 +1923,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             if (!this.IsTreeViewCell) return;
             bool iconIsHot = this.TreeViewIconIsHot;
             bool iconIsDown = iconIsHot && this.InteractiveState.HasFlag(GInteractiveState.FlagDown);
-            int nodeLevel = this.OwnerRow.TreeNodeLevel;
+            int nodeLevel = this.OwnerRow.TreeNode.Level;
             int iconOffsetX = 24 * nodeLevel;
             this.TreeViewIconBounds = this.OwnerGTable.DrawTreeView(e, this.OwnerCell, iconOffsetX, boundsAbsolute, iconIsHot, iconIsDown);
             boundsValue = new Rectangle(boundsAbsolute.X + iconOffsetX, boundsAbsolute.Y, boundsAbsolute.Width - iconOffsetX, boundsAbsolute.Height);
