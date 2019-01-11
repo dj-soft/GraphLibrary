@@ -2457,7 +2457,8 @@ namespace Asol.Tools.WorkScheduler.Data
         {
             get
             {
-                return (this.DataType == typeof(Int32) && this.ColumnContent == ColumnContentType.RecordId && this.RecordClassNumber.HasValue);
+                if (this.ColumnContent == ColumnContentType.MasterId)
+                return (this.DataType == typeof(Int32) && this.ColumnContent == ColumnContentType.MasterId && this.RecordClassNumber.HasValue);
             }
         }
         #endregion
@@ -2539,11 +2540,13 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <returns></returns>
         protected static ColumnContentType GetColumnContent(int index, BrowseColumnType columnType, int? relationNumber, int? relationClassNumber)
         {
-            if (index == 0) return ColumnContentType.RecordId;
+            if (index == 0) return ColumnContentType.MasterId;
             switch (columnType)
             {
+                case BrowseColumnType.RecordId:
+                    return ColumnContentType.RecordGId;
                 case BrowseColumnType.SubjectNumber:
-                    return ColumnContentType.RecordId;
+                    return ColumnContentType.MasterId;
                 case BrowseColumnType.ObjectNumber:
                     return ColumnContentType.EntryId;
                 case BrowseColumnType.DataColumn:
@@ -2660,10 +2663,14 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         TimeGraphStandalone,
         /// <summary>
+        /// Identifikátor záznamu, GId
+        /// </summary>
+        RecordGId,
+        /// <summary>
         /// Číslo záznamu celého řádku.
         /// Tento sloupec se nikdy nezobrazuje.
         /// </summary>
-        RecordId,
+        MasterId,
         /// <summary>
         /// Číslo položky v záznamu celého řádku.
         /// Tento sloupec se nikdy nezobrazuje.
@@ -3158,7 +3165,7 @@ namespace Asol.Tools.WorkScheduler.Data
         }
         /// <summary>
         /// Obsahuje identifikátor záznamu, který se nachází v tomto řádku.
-        /// To funguje pouze tehdy, když tabulka má sloupec [0] s obsahem <see cref="ColumnProperties.ColumnContent"/> == <see cref="ColumnContentType.RecordId"/>,
+        /// To funguje pouze tehdy, když tabulka má sloupec [0] s obsahem <see cref="ColumnProperties.ColumnContent"/> == <see cref="ColumnContentType.MasterId"/>,
         /// na tomto sloupci je vyplněno číslo třídy v <see cref="ColumnProperties.RecordClassNumber"/>,
         /// a řádek má v buňce [0] hodnotu typu Int32. Jinak se vrací null.
         /// </summary>
@@ -3198,7 +3205,7 @@ namespace Asol.Tools.WorkScheduler.Data
             // Číslo záznamu může být Master nebo Entry:
             switch (keyColumn.ColumnProperties.ColumnContent)
             {
-                case ColumnContentType.RecordId: return new GId(classId, recordId);
+                case ColumnContentType.MasterId: return new GId(classId, recordId);
                 case ColumnContentType.EntryId: return new GId(classId, 0, recordId);
             }
             return null;

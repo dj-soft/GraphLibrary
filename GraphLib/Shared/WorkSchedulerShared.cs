@@ -5446,7 +5446,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         None = 0,
         /// <summary>
-        /// Identifikátor záznamu komplexní
+        /// Identifikátor záznamu komplexní <see cref="GuiId"/>
         /// </summary>
         RecordId,
         /// <summary>
