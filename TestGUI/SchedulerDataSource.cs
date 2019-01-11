@@ -822,7 +822,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             // Nový postup:
             GuiDataTable guiTable = new GuiDataTable();
-            guiTable.AddColumn(new GuiDataColumn() { Alias = "cislo_subjektu", BrowseColumnType = BrowseColumnType.RecordId, ClassNumber = ProductOrder.ClassNumber });
+            guiTable.AddColumn(new GuiDataColumn() { Alias = "record_gid", BrowseColumnType = BrowseColumnType.RecordId, ClassNumber = ProductOrder.ClassNumber });
             guiTable.AddColumn(new GuiDataColumn() { Alias = "reference_subjektu", Label = "Číslo", Width = 85 });
             guiTable.AddColumn(new GuiDataColumn() { Alias = "nazev_subjektu", Label = "Dílec", Width = 200 });
             guiTable.AddColumn(new GuiDataColumn() { Alias = "qty", Label = "Množství", Width = 45 });

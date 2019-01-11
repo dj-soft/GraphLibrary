@@ -169,7 +169,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
                 table.AddColumns
                     (
-                        new Column("recordid", columnContent: ColumnContentType.RecordId, recordClassNumber: 1188),
+                        new Column("recordid", columnContent: ColumnContentType.MasterId, recordClassNumber: 1188),
                         new Column("key", "Reference", "Reference záznamu v tomto sloupci", "0000000", 75),
                         new Column("date_from", "Datum OD", "Počáteční datum směny", "yyyy-MM-dd HH:mm", 80),
                         new Column("date_to", "Datum DO", "Koncové datum směny", "yyyy-MM-dd HH:mm:ss", 80),
@@ -277,7 +277,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
                 table.AddColumns
                     (
-                        new Column("id", columnContent: ColumnContentType.RecordId, recordClassNumber: 1364),
+                        new Column("id", columnContent: ColumnContentType.MasterId, recordClassNumber: 1364),
                         new Column("profesion_id", columnContent: ColumnContentType.RelationRecordId, recordClassNumber: 1190),
                         new Column("photo", "Fotografie", sortingEnabled: false, width: 45, widthMininum: 10, widthMaximum: 60),
                         new Column("nazev", "Jméno", "Jméno zaměstnance", width: 200, widthMininum: 50, widthMaximum: 300),
