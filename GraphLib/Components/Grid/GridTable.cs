@@ -2630,7 +2630,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="eventSource"></param>
         protected void CallActiveRowChanged(Row oldActiveRow, Row newActiveRow, EventSourceType eventSource)
         {
-            ITableEventTarget target = (this.DataTable as ITableEventTarget);
+            ITableInternal target = (this.DataTable as ITableInternal);
             if (target != null)
                 target.CallActiveRowChanged(oldActiveRow, newActiveRow, eventSource, !this.IsSuppressedEvent);
         }
@@ -2642,7 +2642,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="eventSource"></param>
         protected void CallHotRowChanged(Row oldHotRow, Row newHotRow, EventSourceType eventSource)
         {
-            ITableEventTarget target = (this.DataTable as ITableEventTarget);
+            ITableInternal target = (this.DataTable as ITableInternal);
             if (target != null)
                 target.CallHotRowChanged(oldHotRow, newHotRow, eventSource, !this.IsSuppressedEvent);
         }
@@ -2654,7 +2654,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="eventSource"></param>
         protected void CallHotCellChanged(Cell oldHotCell, Cell newHotCell, EventSourceType eventSource)
         {
-            ITableEventTarget target = (this.DataTable as ITableEventTarget);
+            ITableInternal target = (this.DataTable as ITableInternal);
             if (target != null)
                 target.CallHotCellChanged(oldHotCell, newHotCell, eventSource, !this.IsSuppressedEvent);
         }
@@ -2666,7 +2666,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="eventSource"></param>
         protected void CallActiveCellChanged(Cell oldActiveCell, Cell newActiveCell, EventSourceType eventSource)
         {
-            ITableEventTarget target = (this.DataTable as ITableEventTarget);
+            ITableInternal target = (this.DataTable as ITableInternal);
             if (target != null)
                 target.CallActiveCellChanged(oldActiveCell, oldActiveCell, eventSource, !this.IsSuppressedEvent);
         }
@@ -2677,7 +2677,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="e"></param>
         protected void CallCellMouseEnter(Cell cell, GInteractiveChangeStateArgs e)
         {
-            ITableEventTarget target = (this.DataTable as ITableEventTarget);
+            ITableInternal target = (this.DataTable as ITableInternal);
             if (target != null)
                 target.CallCellMouseEnter(cell, e, !this.IsSuppressedEvent);
         }
@@ -2688,7 +2688,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="e"></param>
         protected void CallCellMouseLeave(Cell cell, GInteractiveChangeStateArgs e)
         {
-            ITableEventTarget target = (this.DataTable as ITableEventTarget);
+            ITableInternal target = (this.DataTable as ITableInternal);
             if (target != null)
                 target.CallCellMouseLeave(cell, e, !this.IsSuppressedEvent);
         }
@@ -2699,7 +2699,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="e"></param>
         protected void CallActiveCellClick(Cell cell, GInteractiveChangeStateArgs e)
         {
-            ITableEventTarget target = (this.DataTable as ITableEventTarget);
+            ITableInternal target = (this.DataTable as ITableInternal);
             if (target != null)
                 target.CallActiveCellClick(cell, e, !this.IsSuppressedEvent);
         }
@@ -2710,7 +2710,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="e"></param>
         protected void CallActiveCellDoubleClick(Cell cell, GInteractiveChangeStateArgs e)
         {
-            ITableEventTarget target = (this.DataTable as ITableEventTarget);
+            ITableInternal target = (this.DataTable as ITableInternal);
             if (target != null)
                 target.CallActiveCellDoubleClick(cell, e, !this.IsSuppressedEvent);
         }
@@ -2721,7 +2721,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="e"></param>
         protected void CallActiveCellLongClick(Cell cell, GInteractiveChangeStateArgs e)
         {
-            ITableEventTarget target = (this.DataTable as ITableEventTarget);
+            ITableInternal target = (this.DataTable as ITableInternal);
             if (target != null)
                 target.CallActiveCellLongClick(cell, e, !this.IsSuppressedEvent);
         }
@@ -2732,7 +2732,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="e"></param>
         protected void CallActiveCellRightClick(Cell cell, GInteractiveChangeStateArgs e)
         {
-            ITableEventTarget target = (this.DataTable as ITableEventTarget);
+            ITableInternal target = (this.DataTable as ITableInternal);
             if (target != null)
                 target.CallActiveCellRightClick(cell, e, !this.IsSuppressedEvent);
         }

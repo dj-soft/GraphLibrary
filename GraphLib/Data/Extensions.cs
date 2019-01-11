@@ -860,11 +860,11 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Metoda zajistí typickou operaci: 
         /// "Najdi v Dictionary hodnotu pro daný klíč, a pokud ji nenajdeš tak vytvoř novou hodnotu, vlož ji tam a vrať".
         /// </summary>
-        /// <typeparam name="TKey"></typeparam>
-        /// <typeparam name="TValue"></typeparam>
-        /// <param name="dictionary"></param>
-        /// <param name="key"></param>
-        /// <param name="creator"></param>
+        /// <typeparam name="TKey">Typ klíče</typeparam>
+        /// <typeparam name="TValue">Typ hodnoty</typeparam>
+        /// <param name="dictionary">Dictionary</param>
+        /// <param name="key">Klíč</param>
+        /// <param name="creator">Funkce, která vytvoří Value pokud v Dictionary dosud není. Pokud key je přítomen, tato funkce se nevyvolá.</param>
         /// <returns></returns>
         public static TValue GetAdd<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, TKey key, Func<TKey, TValue> creator)
         {
@@ -878,6 +878,86 @@ namespace Asol.Tools.WorkScheduler.Data
             }
             return value;
         }
+        /// <summary>
+        /// Metoda zajistí, že v this Dictionary bude pod daným klíčem uložena daná hodnota.
+        /// Tedy: if not exists key then add (key, value); if exists key then update ([key] = value).
+        /// </summary>
+        /// <typeparam name="TKey">Typ klíče</typeparam>
+        /// <typeparam name="TValue">Typ hodnoty</typeparam>
+        /// <param name="dictionary">Dictionary</param>
+        /// <param name="key">Klíč</param>
+        /// <param name="value">Hodnota</param>
+        public static void AddRefresh<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, TKey key, TValue value)
+        {
+            if (dictionary == null || key == null) return;
+
+            if (dictionary.ContainsKey(key))
+                dictionary[key] = value;
+            else
+                dictionary.Add(key, value);
+        }
+        /// <summary>
+        /// Metoda zajistí, že v this Dictionary bude pod danými klíči uložena daná hodnota.
+        /// Tedy: if not exists key then add (key, value); if exists key then update ([key] = value).
+        /// </summary>
+        /// <typeparam name="TKey1">Typ klíče první úrovně</typeparam>
+        /// <typeparam name="TKey2">Typ klíče druhé úrovně</typeparam>
+        /// <typeparam name="TValue">Typ hodnoty</typeparam>
+        /// <param name="dictionary">Dictionary</param>
+        /// <param name="key1">Klíč první úrovně</param>
+        /// <param name="key2">Klíč druhé úrovně</param>
+        /// <param name="value">Hodnota</param>
+        public static void AddRefresh<TKey1, TKey2, TValue>(this Dictionary<TKey1, Dictionary<TKey2, TValue>> dictionary, TKey1 key1, TKey2 key2, TValue value)
+        {
+            if (dictionary == null || key1 == null || key2 == null) return;
+
+            Dictionary<TKey2, TValue> dictionary2 = dictionary.GetAdd(key1, k => new Dictionary<TKey2, TValue>());      // Pro key1 najdu / vytvořím jeho dictionary druhé úrovně
+            dictionary2.AddRefresh(key2, value);           // Pro key2 vložím nebo aktualizuji hodnotu
+        }
+        /// <summary>
+        /// Metoda z this Dictionary odebere záznam daného klíče, pokud tam existuje.
+        /// Tedy: if exists key then remove (key);
+        /// </summary>
+        /// <typeparam name="TKey"></typeparam>
+        /// <typeparam name="TValue"></typeparam>
+        /// <param name="dictionary"></param>
+        /// <param name="key"></param>
+        public static void RemoveIfExists<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, TKey key)
+        {
+            if (dictionary == null || key == null) return;
+
+            if (dictionary.ContainsKey(key))
+                dictionary.Remove(key);
+        }
+        /// <summary>
+        /// Metoda z this Dictionary odebere záznam pro dané klíče, pokud tam existuje.
+        /// Tedy: if exists key then remove (key);
+        /// </summary>
+        /// <typeparam name="TKey1">Typ klíče první úrovně</typeparam>
+        /// <typeparam name="TKey2">Typ klíče druhé úrovně</typeparam>
+        /// <typeparam name="TValue">Typ hodnoty</typeparam>
+        /// <param name="dictionary">Dictionary</param>
+        /// <param name="key1">Klíč první úrovně</param>
+        /// <param name="key2">Klíč druhé úrovně</param>
+        public static void RemoveIfExists<TKey1, TKey2, TValue>(this Dictionary<TKey1, Dictionary<TKey2, TValue>> dictionary, TKey1 key1, TKey2 key2)
+        {
+            if (dictionary == null || key1 == null || key2 == null) return;
+
+            // Pokud neexistuje záznam pro klíč 1, skončím rovnou, protože nebude odkud odebírat klíč 2:
+            Dictionary<TKey2, TValue> dictionary2;
+            if (!dictionary.TryGetValue(key1, out dictionary2)) return;
+
+            // Pokud v dictionary2 existuje záznam pro klíč 2, tak jej odeberu:
+            if (dictionary2.ContainsKey(key2))
+                dictionary2.Remove(key2);
+
+            // Pokud po odebrání Value je dictionary2 prázdná, tak ji odstraním z main dictionary (pro klíč 1):
+            if (dictionary2.Count == 0)
+                dictionary.Remove(key1);
+        }
+
+
+
         #endregion
         #region Data.Direction
         /// <summary>

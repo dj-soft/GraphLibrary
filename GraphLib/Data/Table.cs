@@ -37,7 +37,7 @@ namespace Asol.Tools.WorkScheduler.Data
     /// <summary>
     /// Table : jedna tabulka s daty (sada Column + Row)
     /// </summary>
-    public class Table : IGTableMember, IVisualMember, IContentValidity, ITableEventTarget
+    public class Table : IGTableMember, IVisualMember, IContentValidity, ITableInternal
     {
         #region Konstruktor, Inicializace
         /// <summary>
@@ -62,6 +62,8 @@ namespace Asol.Tools.WorkScheduler.Data
         private void _TableInit()
         {
             this._TableId = Application.App.GetNextId(this.GetType());
+            this._PrimaryKeyInit();
+            this._TreeChildInit();
             this._ColumnsInit();
             this._RowsInit();
             this._LayoutInit();
@@ -502,6 +504,9 @@ namespace Asol.Tools.WorkScheduler.Data
             if (row.TagItems != null)
                 this._InvalidateTagItems();
 
+            this._PrimaryKeyAddRow(row);
+            this.TreeChildAdded(row);
+
             this.RowsValid = false;
         }
         /// <summary>
@@ -532,6 +537,10 @@ namespace Asol.Tools.WorkScheduler.Data
         protected void RowRemoved(EList<Row>.EListAfterEventArgs args)
         {
             Row row = args.Item;
+
+            this.TreeChildRemoved(row);
+            this._PrimaryKeyRemoveRow(row);
+
             ITableMember itm = row as ITableMember;
             if (itm != null)
             {
@@ -742,7 +751,66 @@ namespace Asol.Tools.WorkScheduler.Data
         protected Dictionary<string, TableFilter> FilterDict { get { if (this._FilterDict == null) this._FilterDict = new Dictionary<string, TableFilter>(); return this._FilterDict; } }
         private Dictionary<string, TableFilter> _FilterDict;
         #endregion
-        #region TreeView
+        #region TreeView, Statické a Dynamické Child řádky
+        /// <summary>
+        /// Inicializace dat pro TreeChilds
+        /// </summary>
+        private void _TreeChildInit()
+        {
+            this.TreeDynamicChildDict = new Dictionary<int, Row>();
+        }
+        /// <summary>
+        /// Po přidání řádku, po jeho přidání do indexu.
+        /// Řeší věci okolo Child řádků.
+        /// </summary>
+        /// <param name="row"></param>
+        protected void TreeChildAdded(Row row)
+        {
+            TreeNode treeNode = row.TreeNode;
+            if (treeNode.IsRoot) return;
+            if (treeNode.IsStaticChild)
+            {   // Statický Child: má svého fixního Parenta:
+                Row parentRow;
+                if (this.TryGetRow(row.ParentRecordGId, out parentRow))
+                    parentRow.TreeNode.AddStaticChild(row);
+            }
+            else if (treeNode.IsDynamicChild)
+            {   // Dynamický Child: může být Childem pod kýmkoliv:
+                this.TreeDynamicChildDict.AddRefresh(row.RowId, row);
+            }
+        }
+        /// <summary>
+        /// Po odebrání řádku, před jeho odebráním z indexu
+        /// Řeší věci okolo Child řádků.
+        /// </summary>
+        /// <param name="row"></param>
+        protected void TreeChildRemoved(Row row)
+        {
+            TreeNode treeNode = row.TreeNode;
+            if (treeNode.IsRoot) return;
+            if (treeNode.IsStaticChild)
+            {   // Statický Child: má svého fixního Parenta:
+                Row parentRow;
+                if (this.TryGetRow(row.ParentRecordGId, out parentRow))
+                    parentRow.TreeNode.RemoveStaticChild(row);
+            }
+            else if (treeNode.IsDynamicChild)
+            {   // Dynamický Child: může být Childem pod kýmkoliv:
+                this.TreeDynamicChildDict.RemoveIfExists(row.RowId);
+            }
+        }
+        /// <summary>
+        /// Soupis řádků v this tabulce, které jsou Dynamické Childs.
+        /// Jsou to řádky this tabulky, které nejsou Root, a mají jako svůj Parent = Empty GID.
+        /// Systém je může používat jako zdroj dynamických childs podle svých pravidel.
+        /// </summary>
+        public IEnumerable<Row> DynamicChilds { get { return this.TreeDynamicChildDict.Values; } }
+        /// <summary>
+        /// Index řádků v this tabulce, které jsou Dynamické Childs.
+        /// Jsou to řádky this tabulky, které nejsou Root, a mají jako svůj Parent = Empty GID.
+        /// Systém je může používat jako zdroj dynamických childs podle svých pravidel.
+        /// </summary>
+        protected Dictionary<int, Row> TreeDynamicChildDict { get; set; }
         /// <summary>
         /// Obsahuje true, pokud v této tabulce existuje nějaký řádek, který je Child k nějakému Parentovi.
         /// V takovém případě se Table bude vykreslovat jako TreeView.
@@ -772,7 +840,7 @@ namespace Asol.Tools.WorkScheduler.Data
             foreach (Row rootRow in rootRowList)
             {
                 treeList.Add(rootRow);
-                rootRow.TreeNode.AddChildRowsTo(treeList);
+                rootRow.TreeNode.StoreChildsTo(treeList);
             }
             return treeList;
         }
@@ -843,7 +911,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// Invaliduje pole štítků
         /// </summary>
-        void ITableEventTarget.InvalidateTagItems()
+        void ITableInternal.InvalidateTagItems()
         {
             this._InvalidateTagItems();
         }
@@ -1238,7 +1306,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="newHotRow"></param>
         /// <param name="eventSource"></param>
         /// <param name="callEvents"></param>
-        void ITableEventTarget.CallHotRowChanged(Row oldActiveRow, Row newHotRow, EventSourceType eventSource, bool callEvents)
+        void ITableInternal.CallHotRowChanged(Row oldActiveRow, Row newHotRow, EventSourceType eventSource, bool callEvents)
         {
             GPropertyChangeArgs<Row> args = new GPropertyChangeArgs<Row>(oldActiveRow, newHotRow, eventSource);
             this.OnHotRowChanged(args);
@@ -1262,7 +1330,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="newHotCell"></param>
         /// <param name="eventSource"></param>
         /// <param name="callEvents"></param>
-        void ITableEventTarget.CallHotCellChanged(Cell oldHotCell, Cell newHotCell, EventSourceType eventSource, bool callEvents)
+        void ITableInternal.CallHotCellChanged(Cell oldHotCell, Cell newHotCell, EventSourceType eventSource, bool callEvents)
         {
             GPropertyChangeArgs<Cell> args = new GPropertyChangeArgs<Cell>(oldHotCell, newHotCell, eventSource);
             this.OnHotCellChanged(args);
@@ -1286,7 +1354,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="newActiveRow"></param>
         /// <param name="eventSource"></param>
         /// <param name="callEvents"></param>
-        void ITableEventTarget.CallActiveRowChanged(Row oldActiveRow, Row newActiveRow, EventSourceType eventSource, bool callEvents)
+        void ITableInternal.CallActiveRowChanged(Row oldActiveRow, Row newActiveRow, EventSourceType eventSource, bool callEvents)
         {
             this.ActiveRow = newActiveRow;
             GPropertyChangeArgs<Row> args = new GPropertyChangeArgs<Row>(oldActiveRow, newActiveRow, eventSource);
@@ -1311,7 +1379,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="newActiveCell"></param>
         /// <param name="eventSource"></param>
         /// <param name="callEvents"></param>
-        void ITableEventTarget.CallActiveCellChanged(Cell oldActiveCell, Cell newActiveCell, EventSourceType eventSource, bool callEvents)
+        void ITableInternal.CallActiveCellChanged(Cell oldActiveCell, Cell newActiveCell, EventSourceType eventSource, bool callEvents)
         {
             this.ActiveCell = newActiveCell;
             GPropertyChangeArgs<Cell> args = new GPropertyChangeArgs<Cell>(oldActiveCell, newActiveCell, eventSource);
@@ -1337,7 +1405,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="newValue"></param>
         /// <param name="eventSource"></param>
         /// <param name="callEvents"></param>
-        void ITableEventTarget.CallCheckedRowChanged(Row row, bool oldValue, bool newValue, EventSourceType eventSource, bool callEvents)
+        void ITableInternal.CallCheckedRowChanged(Row row, bool oldValue, bool newValue, EventSourceType eventSource, bool callEvents)
         {
             GObjectPropertyChangeArgs<Row, bool> args = new GObjectPropertyChangeArgs<Row, bool>(row, oldValue, newValue, eventSource);
             this.OnCheckedRowChanged(args);
@@ -1360,7 +1428,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="cell"></param>
         /// <param name="e"></param>
         /// <param name="callEvents"></param>
-        void ITableEventTarget.CallCellMouseEnter(Cell cell, GInteractiveChangeStateArgs e, bool callEvents)
+        void ITableInternal.CallCellMouseEnter(Cell cell, GInteractiveChangeStateArgs e, bool callEvents)
         {
             GPropertyEventArgs<Cell> args = new GPropertyEventArgs<Cell>(cell, EventSourceType.InteractiveChanged, e);
             this.OnCellMouseEnter(args);
@@ -1383,7 +1451,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="cell"></param>
         /// <param name="e"></param>
         /// <param name="callEvents"></param>
-        void ITableEventTarget.CallCellMouseLeave(Cell cell, GInteractiveChangeStateArgs e, bool callEvents)
+        void ITableInternal.CallCellMouseLeave(Cell cell, GInteractiveChangeStateArgs e, bool callEvents)
         {
             GPropertyEventArgs<Cell> args = new GPropertyEventArgs<Cell>(cell, EventSourceType.InteractiveChanged, e);
             this.OnCellMouseLeave(args);
@@ -1406,7 +1474,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="cell"></param>
         /// <param name="e"></param>
         /// <param name="callEvents"></param>
-        void ITableEventTarget.CallActiveCellClick(Cell cell, GInteractiveChangeStateArgs e, bool callEvents)
+        void ITableInternal.CallActiveCellClick(Cell cell, GInteractiveChangeStateArgs e, bool callEvents)
         {
             GPropertyEventArgs<Cell> args = new GPropertyEventArgs<Cell>(cell, EventSourceType.InteractiveChanged, e);
             this.OnActiveCellClick(args);
@@ -1429,7 +1497,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="cell"></param>
         /// <param name="e"></param>
         /// <param name="callEvents"></param>
-        void ITableEventTarget.CallActiveCellDoubleClick(Cell cell, GInteractiveChangeStateArgs e, bool callEvents)
+        void ITableInternal.CallActiveCellDoubleClick(Cell cell, GInteractiveChangeStateArgs e, bool callEvents)
         {
             GPropertyEventArgs<Cell> args = new GPropertyEventArgs<Cell>(cell, EventSourceType.InteractiveChanged, e);
             this.OnActiveCellDoubleClick(args);
@@ -1453,7 +1521,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="cell"></param>
         /// <param name="e"></param>
         /// <param name="callEvents"></param>
-        void ITableEventTarget.CallActiveCellLongClick(Cell cell, GInteractiveChangeStateArgs e, bool callEvents)
+        void ITableInternal.CallActiveCellLongClick(Cell cell, GInteractiveChangeStateArgs e, bool callEvents)
         {
             GPropertyEventArgs<Cell> args = new GPropertyEventArgs<Cell>(cell, EventSourceType.InteractiveChanged, e);
             this.OnActiveCellLongClick(args);
@@ -1476,7 +1544,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="cell"></param>
         /// <param name="e"></param>
         /// <param name="callEvents"></param>
-        void ITableEventTarget.CallActiveCellRightClick(Cell cell, GInteractiveChangeStateArgs e, bool callEvents)
+        void ITableInternal.CallActiveCellRightClick(Cell cell, GInteractiveChangeStateArgs e, bool callEvents)
         {
             GPropertyEventArgs<Cell> args = new GPropertyEventArgs<Cell>(cell, EventSourceType.InteractiveChanged, e);
             this.OnActiveCellRightClick(args);
@@ -1628,58 +1696,72 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public Row[] CheckedRows { get { return this.Rows.Where(r => r.IsChecked).ToArray(); } }
         #endregion
-        #region Primární index
+        #region Primární index = podle RecordGId řádků a podle RowId, jeho init, ReIndex, automatická údržba, hledání
         /// <summary>
-        /// Obsahuje true, pokud tato tabulka může mít primární index.
+        /// Provést regenerování indexů
         /// </summary>
-        public bool AllowPrimaryKey { get { return this.Columns.Any(c => c.ColumnProperties.AllowPrimaryKey); } }
-        /// <summary>
-        /// Obsahuje true, pokud tabulka má primární index. Lze setovat, pak proběhne reindexace.
-        /// </summary>
-        public bool HasPrimaryIndex
+        public void ReIndex()
         {
-            get { return this._HasPrimaryIndex; }
-            set
-            {
-                if (value == this._HasPrimaryIndex) return;
-                this._HasPrimaryIndex = value;
-                if (this._HasPrimaryIndex)
-                    this.Reindex();
-                else
-                    this._PrimaryIndex = null;
-            }
-        } private bool _HasPrimaryIndex;
+            this._PrimaryKeyInit();
+            this.Rows.ForEach(row => this._PrimaryKeyAddRow(row));
+        }
         /// <summary>
-        /// Provede znovuvytvoření Primárního indexu
+        /// Inicializace primárních indexů
         /// </summary>
-        public void Reindex()
+        private void _PrimaryKeyInit()
         {
-            if (!this.HasPrimaryIndex)
-                throw new GraphLibCodeException("Nelze provést Reindex() tabulky, která má nastavenu hodnotu HasPrimaryIndex = false.");
-            Column primaryColumn = this.CurrentPrimaryKeyColumn;
-            if (primaryColumn == null)
-                throw new GraphLibCodeException("Nelze provést Reindex() tabulky, která neobsahuje vhodný primární sloupec (DataType = Int32, a existující ClassNumber v ColumnProperties).");
-            if (!primaryColumn.ColumnProperties.AllowPrimaryKey)
-                throw new GraphLibCodeException("Nelze provést Reindex() tabulky podle sloupce " + primaryColumn.ColumnName + ", tento sloupec nevyhovuje."); ;
-
-            using (App.Trace.Scope(TracePriority.Priority3_BellowNormal, "Table", "Reindex", ""))
+            this._PrimaryKeyId = new Dictionary<int, Row>();
+            this._PrimaryKeyGId = new Dictionary<GId, Dictionary<int, Row>>();
+        }
+        /// <summary>
+        /// Přidat řádek do primárních indexů
+        /// </summary>
+        /// <param name="row"></param>
+        private void _PrimaryKeyAddRow(Row row)
+        {
+            if (row == null) return;
+            this._PrimaryKeyId.AddRefresh(row.RowId, row);
+            this._PrimaryKeyGId.AddRefresh(row.RecordGId, row.RowId, row);
+        }
+        /// <summary>
+        /// Odebrat řádek z primárních indexů
+        /// </summary>
+        /// <param name="row"></param>
+        private void _PrimaryKeyRemoveRow(Row row)
+        {
+            if (row == null) return;
+            this._PrimaryKeyId.RemoveIfExists(row.RowId);
+            this._PrimaryKeyGId.RemoveIfExists(row.RecordGId, row.RowId);
+        }
+        /// <summary>
+        /// Primární klíč jednoduchý;
+        /// Key = <see cref="Row.RowId"/>; Value = Row
+        /// </summary>
+        private Dictionary<int, Row> _PrimaryKeyId;
+        /// <summary>
+        /// Primární klíč složený;
+        /// Key1 = <see cref="Row.RecordGId"/>; Key2 = <see cref="Row.RowId"/>; Value = Row
+        /// </summary>
+        private Dictionary<GId, Dictionary<int, Row>> _PrimaryKeyGId;
+        /// <summary>
+        /// Sloupec, podle něhož se vytváří primární index v situaci, kdy <see cref="Row.RecordGId"/> není zadán explicitně
+        /// </summary>
+        protected Column PrimaryKeyColumn
+        {
+            get
             {
-                Dictionary<GId, List<Row>> primaryIndex = new Dictionary<GId, List<Row>>();
-                Int32 classId = primaryColumn.ColumnProperties.RecordClassNumber.Value;
-                foreach (Row row in this.Rows)
+                if (!this._PrimaryKeyColumnValid)
                 {
-                    GId key = new GId(classId, row[primaryColumn].GetValue<Int32>());
-                    List<Row> value;
-                    if (!primaryIndex.TryGetValue(key, out value))
-                    {
-                        value = new List<Row>();
-                        primaryIndex.Add(key, value);
-                    }
-                    value.Add(row);
+                    this._PrimaryKeyColumn = this.Columns.FirstOrDefault(c => c.ColumnProperties.AllowPrimaryKey);
+                    this._PrimaryKeyColumnValid = true;
                 }
-                this._PrimaryIndex = primaryIndex;
+                return this._PrimaryKeyColumn;
             }
         }
+        private Column _PrimaryKeyColumn;
+        private bool _PrimaryKeyColumnValid;
+        /// <summary>ITableInternal member</summary>
+        Column ITableInternal.PrimaryKeyColumn { get { return this.PrimaryKeyColumn; } }
         /// <summary>
         /// Metoda se pokusí najít řádek podle daného klíče, vrací true pokud je nalezen.
         /// Pokud dojde k chybě (nezadaný ID, neexistující PrimaryKey, více záznamů pro daný klíč), pak vrací false (=řádek nenalezen).
@@ -1687,97 +1769,72 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         /// <param name="gId">Identifikátor řádku</param>
         /// <param name="row">Out nalezený řádek</param>
-        /// <param name="checkErrors">false: Jakékoli chyby ignoruj, prostě vrať false. true = chyby hlásit normálně jako chyby (GraphLibCodeException).</param>
+        /// <param name="checkErrors">false: Jakékoli chyby ignoruj, prostě vrať false (defaultní hodnota). true = chyby hlásit normálně jako chyby (GraphLibCodeException).</param>
         /// <returns></returns>
-        public bool TryFindRow(GId gId, out Row row, bool checkErrors = false)
+        public bool TryGetRow(GId gId, out Row row, bool checkErrors = false)
         {
-            return this._TryGetRowOnPrimaryKey(gId, out row, checkErrors);
-
+            return this._TryGetRow(gId, out row, checkErrors);
         }
         /// <summary>
         /// Metoda se pokusí vrátit řádek pro daný GId. Pokud záznam neexistuje, vrací false a jako out Row dává null.
-        /// Metoda vyhodí chybu, pokud daný klíč GId je null, nebo tabulka nemá <see cref="HasPrimaryIndex"/>, nebo pokud pro GId existuje více řádků.
-        /// </summary>
-        /// <param name="gId">Identifikátor řádku</param>
-        /// <param name="row">Out nalezený řádek</param>
-        /// <returns></returns>
-        public bool TryGetRowOnPrimaryKey(GId gId, out Row row)
-        {
-            return this._TryGetRowOnPrimaryKey(gId, out row, false);
-        }
-        /// <summary>
-        /// Metoda se pokusí vrátit řádek pro daný GId. Pokud záznam neexistuje, vrací false a jako out Row dává null.
-        /// Metoda vyhodí chybu, pokud daný klíč GId je null, nebo tabulka nemá <see cref="HasPrimaryIndex"/>, nebo pokud pro GId existuje více řádků.
+        /// Metoda vyhodí chybu, pokud daný klíč GId je null, nebo pokud pro GId existuje více řádků.
         /// </summary>
         /// <param name="gId">Identifikátor řádku</param>
         /// <param name="row">Out nalezený řádek</param>
         /// <param name="checkErrors">false: Jakékoli chyby ignoruj, prostě vrať false. true = chyby hlásit normálně jako chyby (GraphLibCodeException).</param>
         /// <returns></returns>
-        private bool _TryGetRowOnPrimaryKey(GId gId, out Row row, bool checkErrors)
+        private bool _TryGetRow(GId gId, out Row row, bool checkErrors)
         {
             row = null;
-            if (!this.HasPrimaryIndex)
-            {
-                if (!checkErrors) return false;
-                throw new GraphLibCodeException("Tabulka <" + this.TableName + "> nemá primární index, nelze v ní použít metodu TryGetRowOnPrimaryKey().");
-            }
             if (gId == null)
             {
                 if (!checkErrors) return false;
                 throw new GraphLibCodeException("Nelze vyhledávat v tabulce podle GId, pokud je null.");
             }
 
-            List<Row> rowList;
-            if (!this._PrimaryIndex.TryGetValue(gId, out rowList)) return false;
-            if (rowList.Count == 0) return false;
-            if (rowList.Count > 1)
+            Row[] rows = this._GetRows(gId);
+            if (rows == null || rows.Length == 0) return false;
+            if (rows.Length > 1)
             {
                 if (!checkErrors) return false;
                 throw new GraphLibCodeException("Tabulka <" + this.TableName + "> obsahuje pro primární klíč <" + gId + "> víc než jeden záznam. Nelze v ní použít metodu TryGetRowOnPrimaryKey(), ale TryGetRowsOnPrimaryKey().");
             }
-            row = rowList[0];
+            row = rows[0];
             return true;
         }
         /// <summary>
         /// Metoda se pokusí vrátit všechny řádky pro daný GId. Pokud záznam neexistuje, vrací false a jako out Rows dává null.
-        /// Metoda vyhodí chybu, pokud GId je null, nebo tabulka nemá <see cref="HasPrimaryIndex"/>.
+        /// Metoda vyhodí chybu, pokud GId je null.
         /// </summary>
         /// <param name="gId"></param>
         /// <param name="rows"></param>
+        /// <param name="checkErrors">false: Jakékoli chyby ignoruj, prostě vrať false. true = chyby hlásit normálně jako chyby (GraphLibCodeException).</param>
         /// <returns></returns>
-        public bool TryGetRowsOnPrimaryKey(GId gId, out Row[] rows)
+        public bool TryGetRows(GId gId, out Row[] rows, bool checkErrors = false)
         {
-            if (!this.HasPrimaryIndex)
-                throw new GraphLibCodeException("Tabulka <" + this.TableName + "> nemá primární index, nelze v ní použít metodu TryGetRowOnPrimaryKey().");
-            if (gId == null)
-                throw new GraphLibCodeException("Nelze vyhledávat v tabulce podle GId, pokud je null.");
-
             rows = null;
-            List<Row> rowList;
-            if (!this._PrimaryIndex.TryGetValue(gId, out rowList)) return false;
-            if (rowList.Count == 0) return false;
-            rows = rowList.ToArray();
+            if (gId == null)
+            {
+                if (!checkErrors) return false;
+                throw new GraphLibCodeException("Nelze vyhledávat v tabulce podle GId, pokud je null.");
+            }
+
+            rows = this._GetRows(gId);
+            if (rows == null || rows.Length == 0) return false;
             return true;
         }
         /// <summary>
-        /// Sloupec, podle něhož se vytváří primární index
+        /// Metoda vrátí pole řádků odpovídající danému klíči.
         /// </summary>
-        protected Column CurrentPrimaryKeyColumn
+        /// <param name="gId"></param>
+        /// <returns></returns>
+        private Row[] _GetRows(GId gId)
         {
-            get
-            {
-                if (!this._CurrentPrimaryKeyColumnValid)
-                {
-                    this._CurrentPrimaryKeyColumn = this.Columns.FirstOrDefault(c => c.ColumnProperties.AllowPrimaryKey);
-                    this._CurrentPrimaryKeyColumnValid = true;
-                }
-                return this._CurrentPrimaryKeyColumn;
-            }
+            Dictionary<int, Row> dictionary;
+            if (!this._PrimaryKeyGId.TryGetValue(gId, out dictionary)) return null;
+            if (dictionary == null || dictionary.Count == 0) return null;
+            return dictionary.Values.ToArray();
         }
-        private Column _CurrentPrimaryKeyColumn;
-        private bool _CurrentPrimaryKeyColumnValid;
-        private Dictionary<GId, List<Row>> _PrimaryIndex;
-
         #endregion
         #region Statické služby
         /// <summary>
@@ -2291,404 +2348,6 @@ namespace Asol.Tools.WorkScheduler.Data
         #endregion
     }
     #endregion
-    #region ColumnProperties
-    /// <summary>
-    /// Vlastnosti konkrétního sloupce tabulky
-    /// </summary>
-    public class ColumnProperties : IOwnerProperty<Column>
-    {
-        #region Konstruktory a privátní záležitosti
-        /// <summary>
-        /// Obsahuje defaultní vlastnosti
-        /// </summary>
-        public static ColumnProperties Default { get { return new ColumnProperties(); } }
-        /// <summary>
-        /// Vlastník tohoto objektu
-        /// </summary>
-        Column IOwnerProperty<Column>.Owner { get { return this._Owner; } set { this._Owner = value; } } private Column _Owner;
-        /// <summary>
-        /// Layout šířky našeho columnu: <see cref="_Owner"/>: <see cref="Column.ColumnSize"/>
-        /// </summary>
-        protected ItemSizeInt ColumnSize { get { return (this.HasOwnerSize ? this._Owner.ColumnSize : null); } }
-        /// <summary>
-        /// true pokud máme k dispozici objekt <see cref="ColumnSize"/> (máme vlastníka a ten má ColumnSize)
-        /// </summary>
-        protected bool HasOwnerSize { get { return (this._Owner != null && this._Owner.ColumnSize != null); } }
-        #endregion
-        #region Public data
-        /// <summary>
-        /// Titulkový text, lokalizovaný
-        /// </summary>
-        public Localizable.TextLoc Title { get { return (this._Title != null ? this._Title : (Localizable.TextLoc)this._Owner.ColumnName); } set { this._Title = value; } } private Localizable.TextLoc _Title;
-        /// <summary>
-        /// Text pro ToolTip pro hlavičku tohoto sloupce, lokalizovaný
-        /// </summary>
-        public Localizable.TextLoc ToolTip { get { return this._ToolTip; } set { this._ToolTip = value; } } private Localizable.TextLoc _ToolTip;
-        /// <summary>
-        /// Pořadí tohoto sloupce při zobrazování.
-        /// Výchozí je -1, takový sloupec je při přidání do tabulky zařazen na její konec.
-        /// Pokud je vytvořen sloupec s ColumnOrder nula a kladným, pak při přidání do tabulky se jeho ColumnOrder nezmění.
-        /// Jednotlivé sloupce nemusí mít hodnoty ColumnOrder v nepřerušovaném pořadí.
-        /// Po napojení sloupce do tabulky je do ColumnOrder vepsána hodnota = ColumnID, takže nový sloupec se zařadí vždy na konec.
-        /// </summary>
-        public int ColumnOrder { get { return this._ColumnOrder; } set { this._ColumnOrder = value; } } private int _ColumnOrder = -1;
-        /// <summary>
-        /// Jaká data obsahuje tento sloupec
-        /// </summary>
-        public ColumnContentType ColumnContent { get { return this._ColumnContent; } set { this._ColumnContent = value; } } private ColumnContentType _ColumnContent;
-        /// <summary>
-        /// Datový typ obsahu sloupce. Null = obecná data
-        /// </summary>
-        public Type DataType { get { return this._DataType; } set { this._DataType = value; } } private Type _DataType;
-        /// <summary>
-        /// Defaultní hodnota pro nové řádky
-        /// </summary>
-        public object DefaultValue { get { return this._DefaultValue; } set { this._DefaultValue = value; } } private object _DefaultValue;
-        /// <summary>
-        /// Formátovací string pro data zobrazovaná v tomto sloupci.
-        /// </summary>
-        public string FormatString { get { return this._FormatString; } set { this._FormatString = value; } } private string _FormatString;
-        /// <summary>
-        /// Pouze pro čtení
-        /// </summary>
-        public bool ReadOnly { get { return this._ReadOnly; } set { this._ReadOnly = value; } } private bool _ReadOnly;
-        /// <summary>
-        /// true pokud je povoleno třídit řádky kliknutím na záhlaví tohoto sloupce. Default = true;
-        /// </summary>
-        public bool AllowColumnSortByClick { get { return this._AllowColumnSortByClick; } set { this._AllowColumnSortByClick = value; } } private bool _AllowColumnSortByClick = true;
-        /// <summary>
-        /// true pokud je měnit šířku tohoto sloupce pomocí myši. Default = true;
-        /// </summary>
-        public bool AllowColumnResize { get { return this._AllowColumnResize; } set { this._AllowColumnResize = value; } } private bool _AllowColumnResize = true;
-        /// <summary>
-        /// Obsahuje true, pokud se pro sloupec má zobrazit časová osa v záhlaví.
-        /// To je jen tehdy, když sloupec obsahuje časový graf (<see cref="ColumnContent"/> == <see cref="ColumnContentType.TimeGraphSynchronized"/> nebo <see cref="ColumnContentType.TimeGraphStandalone"/>).
-        /// </summary>
-        public bool UseTimeAxis { get { return (this.ColumnContent == ColumnContentType.TimeGraphSynchronized || this.ColumnContent == ColumnContentType.TimeGraphStandalone); } }
-        /// <summary>
-        /// Obsahuje true, pokud se pro sloupec má zobrazit časová osa v záhlaví, a tato časová osa se má synchronizovat do dalších Gridů a objektů.
-        /// To je jen tehdy, když sloupec obsahuje časový graf (<see cref="ColumnContent"/> == <see cref="ColumnContentType.TimeGraphSynchronized"/>).
-        /// </summary>
-        public bool UseTimeAxisSynchronized { get { return (this.ColumnContent == ColumnContentType.TimeGraphSynchronized); } }
-        /// <summary>
-        /// Zadaná šířka sloupce.
-        /// Hodnotu může vložit aplikační kód, hodnota se projeví v GUI.
-        /// Uživatel může interaktivně měnit velikost objektu, změna se projeví v této hodnotě.
-        /// Veškerá další nastavení jsou v property WidthLayout.
-        /// </summary>
-        public Int32? Width
-        {
-            get { return (this.HasOwnerSize ? this.ColumnSize.Size : this._Width); }
-            set { this._Width = value; if (this.HasOwnerSize) this.ColumnSize.Size = value; }
-        } private Int32? _Width;
-        /// <summary>
-        /// Nejmenší povolená šířka
-        /// </summary>
-        public Int32? WidthMininum
-        {
-            get { return (this.HasOwnerSize ? this.ColumnSize.SizeMinimum : this._WidthMininum); }
-            set { this._WidthMininum = value; if (this.HasOwnerSize) this.ColumnSize.SizeMinimum = value; }
-        } private Int32? _WidthMininum;
-        /// <summary>
-        /// Největší povolená šířka
-        /// </summary>
-        public Int32? WidthMaximum
-        {
-            get { return (this.HasOwnerSize ? this.ColumnSize.SizeMaximum : this._WidthMaximum); }
-            set { this._WidthMaximum = value; if (this.HasOwnerSize) this.ColumnSize.SizeMaximum = value; }
-        } private Int32? _WidthMaximum;
-        /// <summary>
-        /// true pokud tento prvek má být použit jako "guma" při změně šířky tabulky tak, aby kolekce sloupců vyplnila celý prostor.
-        /// Na true se nastavuje typicky u "hlavního" sloupce grafové tabulky.
-        /// Je vhodné přitom nastavit minimální šířku sloupce (WidthLayout.SizeMinimum) tak, aby při zmenšení prostoru z daného sloupce něco zbylo.
-        /// </summary>
-        public bool AutoWidth
-        {
-            get { return (this.HasOwnerSize ? this.ColumnSize.AutoSize.Value : this._AutoWidth); }
-            set { this._AutoWidth = value; if (this.HasOwnerSize) this.ColumnSize.AutoSize = value; }
-        }
-        private bool _AutoWidth;
-        /// <summary>
-        /// true pro viditelný sloupec (default), false for skrytý
-        /// </summary>
-        public bool IsVisible
-        {
-            get { return (this.CanBeVisible ? (this.HasOwnerSize ? this.ColumnSize.Visible : this._IsVisible) : false); }
-            set { this._IsVisible = value; if (this.HasOwnerSize) this.ColumnSize.Visible = (value && this.CanBeVisible); }
-        } private bool _IsVisible;
-        /// <summary>
-        /// true, pokud this sloupec smí být někdy zobrazen uživateli.
-        /// To mohou být pouze sloupce, jejichž obsah <see cref="ColumnContent"/> 
-        /// je <see cref="ColumnContentType.UserData"/> nebo <see cref="ColumnContentType.RelationRecordData"/> nebo <see cref="ColumnContentType.TimeGraphSynchronized"/> nebo <see cref="ColumnContentType.TimeGraphStandalone"/>.
-        /// </summary>
-        public bool CanBeVisible { get { ColumnContentType cc = this.ColumnContent; return (cc == ColumnContentType.UserData || cc == ColumnContentType.RelationRecordData || cc == ColumnContentType.TimeGraphSynchronized || cc == ColumnContentType.TimeGraphStandalone); } }
-        /// <summary>
-        /// Komparátor pro dvě hodnoty v tomto sloupci, pro třídění podle tohoto sloupce
-        /// </summary>
-        public Func<object, object, int> ValueComparator { get { return this._ValueComparator; } set { this._ValueComparator = value; } } private Func<object, object, int> _ValueComparator;
-        /// <summary>
-        /// Číslo třídy tohoto záznamu.
-        /// U sloupce [0] jde o číslo třídy záznamů v tabulce, 
-        /// u jiných sloupců jde o číslo třídy záznamů ve vztahu, které jsou zobrazeny v některém ze sloupců.
-        /// </summary>
-        public int? RecordClassNumber { get { return this._RecordClassNumber; } set { this._RecordClassNumber = value; } } private int? _RecordClassNumber;
-        /// <summary>
-        /// true pokud tento sloupec zobrazuje vztažený záznam, a lze jej tedy rozkliknout (pomocí Ctrl + DoubleClick).
-        /// Vztahový sloupec má typ obsahu <see cref="ColumnContent"/> buď <see cref="ColumnContentType.RelationRecordId"/> nebo <see cref="ColumnContentType.RelationRecordData"/>.
-        /// </summary>
-        public bool IsRelation { get { ColumnContentType cc = this.ColumnContent; return (cc == ColumnContentType.RelationRecordId || cc == ColumnContentType.RelationRecordData); } }
-        /// <summary>
-        /// Číslo vztahu, pokud this sloupec je vztahový (<see cref="IsRelation"/> je true)
-        /// </summary>
-        public int? RelationNumber { get { return this._RelationNumber; } set { this._RelationNumber = value; } } private int? _RelationNumber;
-        /// <summary>
-        /// Strana vztahu, kde najdeme Master, pokud this sloupec je vztahový (<see cref="IsRelation"/> je true)
-        /// </summary>
-        public RelationMasterSide? RelationSide { get { return this._RelationSide; } set { this._RelationSide = value; } } private RelationMasterSide? _RelationSide;
-        /// <summary>
-        /// Název sloupce (ColumnName), v němž je uloženo číslo vztaženého záznamu, pokud this sloupec je vztahový (<see cref="IsRelation"/> je true).
-        /// Při otevírání vztaženého záznamu (pomocí Ctrl + DoubleClick) je nalezen tento sloupec, přečteno jeho číslo a získaný záznam je otevřen.
-        /// </summary>
-        public string RelatedRecordColumnName { get { return this._RelatedRecordColumnName; } set { this._RelatedRecordColumnName = value; } } private string _RelatedRecordColumnName;
-        /// <summary>
-        /// Obsahuje true, pokud tento sloupec může být použit jako PrimaryKey. To jest: jeho datový typ je Int32, a obsah je RecordId. 
-        /// </summary>
-        internal bool AllowPrimaryKey
-        {
-            get
-            {
-                if (this.ColumnContent == ColumnContentType.MasterId)
-                return (this.DataType == typeof(Int32) && this.ColumnContent == ColumnContentType.MasterId && this.RecordClassNumber.HasValue);
-            }
-        }
-        #endregion
-        #region Import vlastností sloupce ColumnProperties z dat v DataColumn
-        /// <summary>
-        /// Metoda naplní this objekt daty, která načte z dodaného sloupce <see cref="System.Data.DataColumn"/>.
-        /// </summary>
-        /// <param name="dataColumn"></param>
-        /// <returns></returns>
-        public void FillFrom(System.Data.DataColumn dataColumn)
-        {
-            if (dataColumn == null) return;
-            this.Title = dataColumn.Caption;
-            this.DataType = dataColumn.DataType;
-            this.DefaultValue = dataColumn.DefaultValue;
-            this.ReadOnly = dataColumn.ReadOnly;
-
-            DataColumnExtendedInfo extendedInfo = DataColumnExtendedInfo.CreateForColumn(dataColumn);
-            this.AllowColumnSortByClick = extendedInfo.AllowSort;                   // Povoleno třídění kliknutím
-            this.ColumnContent = GetColumnContent(extendedInfo);                    // Obsah sloupce
-            this.FormatString = GetFormatString(extendedInfo.Format);               // Formátovací string z Norisu, musí se převést na .NET
-            this.IsVisible = extendedInfo.IsVisible;                                // Je viditelný
-            if (!String.IsNullOrEmpty(extendedInfo.Label)) this.Title = extendedInfo.Label;      // Jen pokud je vyplněno
-            this.Width = GetWidth(extendedInfo.Width);                              // Na vstupu je šířka Noris, v této metodě to lze upravit
-            this.RecordClassNumber = GetClassNumber(extendedInfo);
-            this.RelationNumber = extendedInfo.RelationNumber;
-            this.RelationSide = GetRelationSide(extendedInfo);
-            this.RelatedRecordColumnName = extendedInfo.RelationRecordColumnName;
-        }
-        /// <summary>
-        /// Metoda naplní this objekt daty, která načte z dodaného sloupce <see cref="GuiDataColumn"/>.
-        /// </summary>
-        /// <param name="dataColumn"></param>
-        /// <returns></returns>
-        public void FillFrom(GuiDataColumn dataColumn)
-        {
-            if (dataColumn == null) return;
-            this.DataType = dataColumn.ColumnType;
-            this.Title = dataColumn.ColumnCaption;
-            this.DefaultValue = dataColumn.ColumnDefaultValue;
-            this.ReadOnly = dataColumn.ColumnReadOnly;
-
-            this.AllowColumnSortByClick = dataColumn.AllowSort;                // Povoleno třídění kliknutím
-            this.ColumnContent = GetColumnContent(dataColumn);                 // Obsah sloupce
-            this.FormatString = GetFormatString(dataColumn.Format);            // Formátovací string z Norisu, musí se převést na .NET
-            this.IsVisible = dataColumn.IsVisible;                             // Je viditelný
-            if (!String.IsNullOrEmpty(dataColumn.Label)) this.Title = dataColumn.Label;      // Jen pokud je vyplněno
-            this.Width = GetWidth(dataColumn.Width);                           // Na vstupu je šířka Noris, v této metodě to lze upravit
-            this.RecordClassNumber = GetClassNumber(dataColumn);
-            this.RelationNumber = dataColumn.RelationNumber;
-            this.RelationSide = GetRelationSide(dataColumn);
-            this.RelatedRecordColumnName = dataColumn.RelationRecordColumnName;
-        }
-        /// <summary>
-        /// Vrátí typ obsahu pro daný sloupec, podle jeho <see cref="DataColumnExtendedInfo.BrowseColumnType"/> a dalších hodnot
-        /// </summary>
-        /// <param name="extendedInfo"></param>
-        /// <returns></returns>
-        protected static ColumnContentType GetColumnContent(DataColumnExtendedInfo extendedInfo)
-        {
-            return GetColumnContent(extendedInfo.Index, extendedInfo.BrowseColumnType, extendedInfo.RelationNumber, extendedInfo.RelationClassNumber);
-        }
-        /// <summary>
-        /// Vrátí typ obsahu pro daný sloupec, podle jeho <see cref="DataColumnExtendedInfo.BrowseColumnType"/> a dalších hodnot
-        /// </summary>
-        /// <param name="dataColumn"></param>
-        /// <returns></returns>
-        protected static ColumnContentType GetColumnContent(GuiDataColumn dataColumn)
-        {
-            return GetColumnContent(dataColumn.Index, dataColumn.BrowseColumnType, dataColumn.RelationNumber, dataColumn.RelationClassNumber);
-        }
-        /// <summary>
-        /// Vrátí typ obsahu pro daný sloupec, podle jeho <see cref="DataColumnExtendedInfo.BrowseColumnType"/> a dalších hodnot
-        /// </summary>
-        /// <param name="index"></param>
-        /// <param name="columnType"></param>
-        /// <param name="relationNumber"></param>
-        /// <param name="relationClassNumber"></param>
-        /// <returns></returns>
-        protected static ColumnContentType GetColumnContent(int index, BrowseColumnType columnType, int? relationNumber, int? relationClassNumber)
-        {
-            if (index == 0) return ColumnContentType.MasterId;
-            switch (columnType)
-            {
-                case BrowseColumnType.RecordId:
-                    return ColumnContentType.RecordGId;
-                case BrowseColumnType.SubjectNumber:
-                    return ColumnContentType.MasterId;
-                case BrowseColumnType.ObjectNumber:
-                    return ColumnContentType.EntryId;
-                case BrowseColumnType.DataColumn:
-                    bool isRelation = (relationNumber > 0 && relationClassNumber > 0);
-                    return (isRelation ? ColumnContentType.RelationRecordData : ColumnContentType.UserData);
-                case BrowseColumnType.RelationHelpfulColumn:
-                    return ColumnContentType.RelationRecordId;
-                case BrowseColumnType.TotalCountHelpfulColumn:
-                    return ColumnContentType.HiddenData;
-            }
-            return ColumnContentType.None;
-        }
-        /// <summary>
-        /// Vrací formátovací string pro sloupec
-        /// </summary>
-        /// <param name="greenFormat"></param>
-        /// <returns></returns>
-        protected static string GetFormatString(string greenFormat)
-        {
-            return null;
-        }
-        /// <summary>
-        /// Vrací šířku v pixelech pro daný sloupec
-        /// </summary>
-        /// <param name="greenWidth"></param>
-        /// <returns></returns>
-        protected static int? GetWidth(int greenWidth)
-        {
-            return 1 * greenWidth;
-        }
-        /// <summary>
-        /// Vrací šíslo třídy pro daný sloupec, pokud je zadaná
-        /// </summary>
-        /// <param name="extendedInfo"></param>
-        /// <returns></returns>
-        protected static int? GetClassNumber(DataColumnExtendedInfo extendedInfo)
-        {
-            if (extendedInfo.Index == 0) return extendedInfo.ClassNumber;
-            if (extendedInfo.RelationClassNumber.HasValue) return extendedInfo.RelationClassNumber;
-            return null;
-        }
-        /// <summary>
-        /// Vrací šíslo třídy pro daný sloupec, pokud je zadaná
-        /// </summary>
-        /// <param name="dataColumn"></param>
-        /// <returns></returns>
-        protected static int? GetClassNumber(GuiDataColumn dataColumn)
-        {
-            if (dataColumn.Index == 0) return dataColumn.ClassNumber;
-            if (dataColumn.RelationClassNumber.HasValue) return dataColumn.RelationClassNumber;
-            return null;
-        }
-        /// <summary>
-        /// Vrací stranu vztahu pro daný sloupec
-        /// </summary>
-        /// <param name="extendedInfo"></param>
-        /// <returns></returns>
-        protected static RelationMasterSide? GetRelationSide(DataColumnExtendedInfo extendedInfo)
-        {
-            if (!extendedInfo.RelationClassNumber.HasValue) return null;
-            switch (extendedInfo.RelationSide)
-            {
-                case "Left": return RelationMasterSide.Left;
-                case "Right": return RelationMasterSide.Right;
-            }
-            return null;
-        }
-        /// <summary>
-        /// Vrací stranu vztahu pro daný sloupec
-        /// </summary>
-        /// <param name="dataColumn"></param>
-        /// <returns></returns>
-        protected static RelationMasterSide? GetRelationSide(GuiDataColumn dataColumn)
-        {
-            if (!dataColumn.RelationClassNumber.HasValue) return null;
-            switch (dataColumn.RelationSide)
-            {
-                case "Left": return RelationMasterSide.Left;
-                case "Right": return RelationMasterSide.Right;
-            }
-            return null;
-        }
-        #endregion
-    }
-    /// <summary>
-    /// Jaký druh údaje je obsažen ve sloupci
-    /// </summary>
-    public enum ColumnContentType
-    {
-        /// <summary>
-        /// Žádná data
-        /// </summary>
-        None,
-        /// <summary>
-        /// Běžná uživatelská data. 
-        /// Tento sloupec může být viditelný.
-        /// </summary>
-        UserData,
-        /// <summary>
-        /// Zobrazovaná data záznamu, který je navázán ve vztahu. 
-        /// Tento sloupec může být viditelný.
-        /// Tento sloupec je vykreslován podtržený.
-        /// </summary>
-        RelationRecordData,
-        /// <summary>
-        /// Časový graf s časovou synchronizací do všech okolních Gridů.
-        /// Tento sloupec může být viditelný.
-        /// </summary>
-        TimeGraphSynchronized,
-        /// <summary>
-        /// Časový graf bez časové synchronizace do všech okolních Gridů.
-        /// Tento časový graf se synchronizuje pouze do sousedních tabulek v rámci jednoho Gridu.
-        /// Tento sloupec může být viditelný.
-        /// </summary>
-        TimeGraphStandalone,
-        /// <summary>
-        /// Identifikátor záznamu, GId
-        /// </summary>
-        RecordGId,
-        /// <summary>
-        /// Číslo záznamu celého řádku.
-        /// Tento sloupec se nikdy nezobrazuje.
-        /// </summary>
-        MasterId,
-        /// <summary>
-        /// Číslo položky v záznamu celého řádku.
-        /// Tento sloupec se nikdy nezobrazuje.
-        /// </summary>
-        EntryId,
-        /// <summary>
-        /// Číslo vztaženého záznamu (takového, jehož typ == <see cref="RelationRecordData"/>).
-        /// Tento sloupec se nikdy nezobrazuje.
-        /// </summary>
-        RelationRecordId,
-        /// <summary>
-        /// Jiná skrytá data.
-        /// Tento sloupec se nikdy nezobrazuje.
-        /// Typicky ID číslo řádku ze systému Green.
-        /// </summary>
-        HiddenData
-    }
-    #endregion
     #region Row
     /// <summary>
     /// Row : informace o jednom řádku tabulky
@@ -2799,9 +2458,9 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public Table Table { get { return this._Table; } } private Table _Table;
         /// <summary>
-        /// Reference na tabulku, kam řádek patří, typovaná na interní interface <see cref="ITableEventTarget"/>.
+        /// Reference na tabulku, kam řádek patří, typovaná na interní interface <see cref="ITableInternal"/>.
         /// </summary>
-        protected ITableEventTarget ITable { get { return this._Table as ITableEventTarget; } }
+        protected ITableInternal ITable { get { return this._Table as ITableInternal; } }
         /// <summary>
         /// Kolekce sloupců z tabulky, může být null pokud řádek není napojen do tabulky
         /// </summary>
@@ -2967,7 +2626,7 @@ namespace Asol.Tools.WorkScheduler.Data
             _AddTagItemsToDict(tagItems, tagDict);
             this._TagItemDict = tagDict;
             if (this.HasTable)
-                ((ITableEventTarget)this.Table).InvalidateTagItems();
+                ((ITableInternal)this.Table).InvalidateTagItems();
         }
         /// <summary>
         /// Projde prvky z kolekce tagItems, a přidá je do Dictionary tagDict (přidá klíč a navýší hodnotu za každý jeden přidaný klíč).
@@ -3102,15 +2761,6 @@ namespace Asol.Tools.WorkScheduler.Data
             }
         }
         #endregion
-        /// <summary>
-        /// Parent řádky tohoto řádku.
-        /// Jeden řádek může být Child řádkem v několika Parent řádcích, v závislosti na datové konstrukci.
-        /// Samozřejmě jeden Parent řádek může mít více Child řádků.
-        /// Vizuálně: pokud je jeden Child nastaven pro více Parentů, pak nemohou být tyto Child zobrazovány současně.
-        /// To naše technika nedovoluje: jeden prvek může být zobrazen buď tam, nebo jinde; ale ne na dvou místech současně.
-        /// Proto takové řádky před zobrazením takových Childs nodů zavřou jiné nody, aby se prvek zobrazil jen jednou.
-        /// </summary>
-        public Row[] TreeNodeParents { get; set; }
         #region Výška řádku, kompletní layout okolo výšky řádku, implementace ISequenceLayout a IVisualParent
         /// <summary>
         /// Koordinátor výšky řádku.
@@ -3165,9 +2815,7 @@ namespace Asol.Tools.WorkScheduler.Data
         }
         /// <summary>
         /// Obsahuje identifikátor záznamu, který se nachází v tomto řádku.
-        /// To funguje pouze tehdy, když tabulka má sloupec [0] s obsahem <see cref="ColumnProperties.ColumnContent"/> == <see cref="ColumnContentType.MasterId"/>,
-        /// na tomto sloupci je vyplněno číslo třídy v <see cref="ColumnProperties.RecordClassNumber"/>,
-        /// a řádek má v buňce [0] hodnotu typu Int32. Jinak se vrací null.
+        /// Ten může být zadán explicitně do této property, anebo jej řádek vygeneruje ze svých dat a z údajů o sloupci <see cref="Table.PrimaryKeyColumn"/>.
         /// </summary>
         public GId RecordGId
         {
@@ -3183,33 +2831,41 @@ namespace Asol.Tools.WorkScheduler.Data
             }
         }
         /// <summary>
-        /// Určí ID záznamu <see cref="GId"/> z this řádku
+        /// Určí ID záznamu <see cref="GId"/> z this řádku.
+        /// Tato metoda ignoruje hodnotu v <see cref="_RecordGId"/>, volá se právě proto, že <see cref="_RecordGId"/> je null.
+        /// Tato metoda získá <see cref="ITableInternal.PrimaryKeyColumn"/>, najde data v odpovídající buňce tohoto řádku, 
+        /// vyhodnotí je a vrátí <see cref="GId"/> nebo null.
         /// </summary>
         /// <returns></returns>
         private GId _GetRecordGId()
         {
-            if (this.Columns == null || this.Columns.Count <= 0) return null;
+            // Bez tabulky a bez PrimaryKeyColumn to nepůjde:
+            if (!this.HasTable) return null;
+            Column primaryColumn = this.ITable.PrimaryKeyColumn;
+            if (primaryColumn == null) return null;
 
-            // Ve sloupci [0] může být umístěn GId nebo GuiId:
-            object value = this[0];
+            // Ve sloupci [primaryColumn] může být umístěn GId nebo GuiId:
+            object value = this[primaryColumn];
             if (value is GId) return value as GId;
             if (value is GuiId) return (GId)(value as GuiId);
 
-            // Ve sloupci [0] může být umístěn Int32, reprezentující číslo záznamu; pak ale potřebujeme i číslo třídy = z dat sloupce [0]:
+            // Ve sloupci [primaryColumn] může být umístěn Int32, reprezentující číslo záznamu; pak ale potřebujeme i číslo třídy = z dat sloupce [primaryColumn]:
             if (!(value is Int32)) return null;
-            Column keyColumn = this.Columns[0];
-            if (!keyColumn.ColumnProperties.RecordClassNumber.HasValue) return null;
+            if (!primaryColumn.ColumnProperties.RecordClassNumber.HasValue) return null;
             Int32 recordId = (Int32)value;
-            Int32 classId = keyColumn.ColumnProperties.RecordClassNumber.Value;
+            Int32 classId = primaryColumn.ColumnProperties.RecordClassNumber.Value;
 
             // Číslo záznamu může být Master nebo Entry:
-            switch (keyColumn.ColumnProperties.ColumnContent)
+            switch (primaryColumn.ColumnProperties.ColumnContent)
             {
                 case ColumnContentType.MasterId: return new GId(classId, recordId);
                 case ColumnContentType.EntryId: return new GId(classId, 0, recordId);
             }
             return null;
         }
+        /// <summary>
+        /// Úložiště pro hodnotu klíče tohoto řádku
+        /// </summary>
         private GId _RecordGId;
         /// <summary>
         /// Obsahuje identifikátor Parent záznamu, pod kterým je this řádek Childem.
@@ -3610,6 +3266,429 @@ namespace Asol.Tools.WorkScheduler.Data
         #endregion
     }
     #endregion
+    #region ColumnProperties
+    /// <summary>
+    /// Vlastnosti konkrétního sloupce tabulky
+    /// </summary>
+    public class ColumnProperties : IOwnerProperty<Column>
+    {
+        #region Konstruktory a privátní záležitosti
+        /// <summary>
+        /// Obsahuje defaultní vlastnosti
+        /// </summary>
+        public static ColumnProperties Default { get { return new ColumnProperties(); } }
+        /// <summary>
+        /// Vlastník tohoto objektu
+        /// </summary>
+        Column IOwnerProperty<Column>.Owner { get { return this._Owner; } set { this._Owner = value; } }
+        private Column _Owner;
+        /// <summary>
+        /// Layout šířky našeho columnu: <see cref="_Owner"/>: <see cref="Column.ColumnSize"/>
+        /// </summary>
+        protected ItemSizeInt ColumnSize { get { return (this.HasOwnerSize ? this._Owner.ColumnSize : null); } }
+        /// <summary>
+        /// true pokud máme k dispozici objekt <see cref="ColumnSize"/> (máme vlastníka a ten má ColumnSize)
+        /// </summary>
+        protected bool HasOwnerSize { get { return (this._Owner != null && this._Owner.ColumnSize != null); } }
+        #endregion
+        #region Public data
+        /// <summary>
+        /// Titulkový text, lokalizovaný
+        /// </summary>
+        public Localizable.TextLoc Title { get { return (this._Title != null ? this._Title : (Localizable.TextLoc)this._Owner.ColumnName); } set { this._Title = value; } }
+        private Localizable.TextLoc _Title;
+        /// <summary>
+        /// Text pro ToolTip pro hlavičku tohoto sloupce, lokalizovaný
+        /// </summary>
+        public Localizable.TextLoc ToolTip { get { return this._ToolTip; } set { this._ToolTip = value; } }
+        private Localizable.TextLoc _ToolTip;
+        /// <summary>
+        /// Pořadí tohoto sloupce při zobrazování.
+        /// Výchozí je -1, takový sloupec je při přidání do tabulky zařazen na její konec.
+        /// Pokud je vytvořen sloupec s ColumnOrder nula a kladným, pak při přidání do tabulky se jeho ColumnOrder nezmění.
+        /// Jednotlivé sloupce nemusí mít hodnoty ColumnOrder v nepřerušovaném pořadí.
+        /// Po napojení sloupce do tabulky je do ColumnOrder vepsána hodnota = ColumnID, takže nový sloupec se zařadí vždy na konec.
+        /// </summary>
+        public int ColumnOrder { get { return this._ColumnOrder; } set { this._ColumnOrder = value; } }
+        private int _ColumnOrder = -1;
+        /// <summary>
+        /// Jaká data obsahuje tento sloupec
+        /// </summary>
+        public ColumnContentType ColumnContent { get { return this._ColumnContent; } set { this._ColumnContent = value; } }
+        private ColumnContentType _ColumnContent;
+        /// <summary>
+        /// Datový typ obsahu sloupce. Null = obecná data
+        /// </summary>
+        public Type DataType { get { return this._DataType; } set { this._DataType = value; } }
+        private Type _DataType;
+        /// <summary>
+        /// Defaultní hodnota pro nové řádky
+        /// </summary>
+        public object DefaultValue { get { return this._DefaultValue; } set { this._DefaultValue = value; } }
+        private object _DefaultValue;
+        /// <summary>
+        /// Formátovací string pro data zobrazovaná v tomto sloupci.
+        /// </summary>
+        public string FormatString { get { return this._FormatString; } set { this._FormatString = value; } }
+        private string _FormatString;
+        /// <summary>
+        /// Pouze pro čtení
+        /// </summary>
+        public bool ReadOnly { get { return this._ReadOnly; } set { this._ReadOnly = value; } }
+        private bool _ReadOnly;
+        /// <summary>
+        /// true pokud je povoleno třídit řádky kliknutím na záhlaví tohoto sloupce. Default = true;
+        /// </summary>
+        public bool AllowColumnSortByClick { get { return this._AllowColumnSortByClick; } set { this._AllowColumnSortByClick = value; } }
+        private bool _AllowColumnSortByClick = true;
+        /// <summary>
+        /// true pokud je měnit šířku tohoto sloupce pomocí myši. Default = true;
+        /// </summary>
+        public bool AllowColumnResize { get { return this._AllowColumnResize; } set { this._AllowColumnResize = value; } }
+        private bool _AllowColumnResize = true;
+        /// <summary>
+        /// Obsahuje true, pokud se pro sloupec má zobrazit časová osa v záhlaví.
+        /// To je jen tehdy, když sloupec obsahuje časový graf (<see cref="ColumnContent"/> == <see cref="ColumnContentType.TimeGraphSynchronized"/> nebo <see cref="ColumnContentType.TimeGraphStandalone"/>).
+        /// </summary>
+        public bool UseTimeAxis { get { return (this.ColumnContent == ColumnContentType.TimeGraphSynchronized || this.ColumnContent == ColumnContentType.TimeGraphStandalone); } }
+        /// <summary>
+        /// Obsahuje true, pokud se pro sloupec má zobrazit časová osa v záhlaví, a tato časová osa se má synchronizovat do dalších Gridů a objektů.
+        /// To je jen tehdy, když sloupec obsahuje časový graf (<see cref="ColumnContent"/> == <see cref="ColumnContentType.TimeGraphSynchronized"/>).
+        /// </summary>
+        public bool UseTimeAxisSynchronized { get { return (this.ColumnContent == ColumnContentType.TimeGraphSynchronized); } }
+        /// <summary>
+        /// Zadaná šířka sloupce.
+        /// Hodnotu může vložit aplikační kód, hodnota se projeví v GUI.
+        /// Uživatel může interaktivně měnit velikost objektu, změna se projeví v této hodnotě.
+        /// Veškerá další nastavení jsou v property WidthLayout.
+        /// </summary>
+        public Int32? Width
+        {
+            get { return (this.HasOwnerSize ? this.ColumnSize.Size : this._Width); }
+            set { this._Width = value; if (this.HasOwnerSize) this.ColumnSize.Size = value; }
+        }
+        private Int32? _Width;
+        /// <summary>
+        /// Nejmenší povolená šířka
+        /// </summary>
+        public Int32? WidthMininum
+        {
+            get { return (this.HasOwnerSize ? this.ColumnSize.SizeMinimum : this._WidthMininum); }
+            set { this._WidthMininum = value; if (this.HasOwnerSize) this.ColumnSize.SizeMinimum = value; }
+        }
+        private Int32? _WidthMininum;
+        /// <summary>
+        /// Největší povolená šířka
+        /// </summary>
+        public Int32? WidthMaximum
+        {
+            get { return (this.HasOwnerSize ? this.ColumnSize.SizeMaximum : this._WidthMaximum); }
+            set { this._WidthMaximum = value; if (this.HasOwnerSize) this.ColumnSize.SizeMaximum = value; }
+        }
+        private Int32? _WidthMaximum;
+        /// <summary>
+        /// true pokud tento prvek má být použit jako "guma" při změně šířky tabulky tak, aby kolekce sloupců vyplnila celý prostor.
+        /// Na true se nastavuje typicky u "hlavního" sloupce grafové tabulky.
+        /// Je vhodné přitom nastavit minimální šířku sloupce (WidthLayout.SizeMinimum) tak, aby při zmenšení prostoru z daného sloupce něco zbylo.
+        /// </summary>
+        public bool AutoWidth
+        {
+            get { return (this.HasOwnerSize ? this.ColumnSize.AutoSize.Value : this._AutoWidth); }
+            set { this._AutoWidth = value; if (this.HasOwnerSize) this.ColumnSize.AutoSize = value; }
+        }
+        private bool _AutoWidth;
+        /// <summary>
+        /// true pro viditelný sloupec (default), false for skrytý
+        /// </summary>
+        public bool IsVisible
+        {
+            get { return (this.CanBeVisible ? (this.HasOwnerSize ? this.ColumnSize.Visible : this._IsVisible) : false); }
+            set { this._IsVisible = value; if (this.HasOwnerSize) this.ColumnSize.Visible = (value && this.CanBeVisible); }
+        }
+        private bool _IsVisible;
+        /// <summary>
+        /// true, pokud this sloupec smí být někdy zobrazen uživateli.
+        /// To mohou být pouze sloupce, jejichž obsah <see cref="ColumnContent"/> 
+        /// je <see cref="ColumnContentType.UserData"/> nebo <see cref="ColumnContentType.RelationRecordData"/> nebo <see cref="ColumnContentType.TimeGraphSynchronized"/> nebo <see cref="ColumnContentType.TimeGraphStandalone"/>.
+        /// </summary>
+        public bool CanBeVisible { get { ColumnContentType cc = this.ColumnContent; return (cc == ColumnContentType.UserData || cc == ColumnContentType.RelationRecordData || cc == ColumnContentType.TimeGraphSynchronized || cc == ColumnContentType.TimeGraphStandalone); } }
+        /// <summary>
+        /// Komparátor pro dvě hodnoty v tomto sloupci, pro třídění podle tohoto sloupce
+        /// </summary>
+        public Func<object, object, int> ValueComparator { get { return this._ValueComparator; } set { this._ValueComparator = value; } }
+        private Func<object, object, int> _ValueComparator;
+        /// <summary>
+        /// Číslo třídy tohoto záznamu.
+        /// U sloupce [0] jde o číslo třídy záznamů v tabulce, 
+        /// u jiných sloupců jde o číslo třídy záznamů ve vztahu, které jsou zobrazeny v některém ze sloupců.
+        /// </summary>
+        public int? RecordClassNumber { get { return this._RecordClassNumber; } set { this._RecordClassNumber = value; } }
+        private int? _RecordClassNumber;
+        /// <summary>
+        /// true pokud tento sloupec zobrazuje vztažený záznam, a lze jej tedy rozkliknout (pomocí Ctrl + DoubleClick).
+        /// Vztahový sloupec má typ obsahu <see cref="ColumnContent"/> buď <see cref="ColumnContentType.RelationRecordId"/> nebo <see cref="ColumnContentType.RelationRecordData"/>.
+        /// </summary>
+        public bool IsRelation { get { ColumnContentType cc = this.ColumnContent; return (cc == ColumnContentType.RelationRecordId || cc == ColumnContentType.RelationRecordData); } }
+        /// <summary>
+        /// Číslo vztahu, pokud this sloupec je vztahový (<see cref="IsRelation"/> je true)
+        /// </summary>
+        public int? RelationNumber { get { return this._RelationNumber; } set { this._RelationNumber = value; } }
+        private int? _RelationNumber;
+        /// <summary>
+        /// Strana vztahu, kde najdeme Master, pokud this sloupec je vztahový (<see cref="IsRelation"/> je true)
+        /// </summary>
+        public RelationMasterSide? RelationSide { get { return this._RelationSide; } set { this._RelationSide = value; } }
+        private RelationMasterSide? _RelationSide;
+        /// <summary>
+        /// Název sloupce (ColumnName), v němž je uloženo číslo vztaženého záznamu, pokud this sloupec je vztahový (<see cref="IsRelation"/> je true).
+        /// Při otevírání vztaženého záznamu (pomocí Ctrl + DoubleClick) je nalezen tento sloupec, přečteno jeho číslo a získaný záznam je otevřen.
+        /// </summary>
+        public string RelatedRecordColumnName { get { return this._RelatedRecordColumnName; } set { this._RelatedRecordColumnName = value; } }
+        private string _RelatedRecordColumnName;
+        /// <summary>
+        /// Obsahuje true, pokud tento sloupec může být použit jako PrimaryKey.
+        /// Může to být sloupec, jehož <see cref="ColumnContent"/> je <see cref="ColumnContentType.RecordGId"/>,
+        /// anebo sloupec typu <see cref="ColumnContentType.MasterId"/> nebo <see cref="ColumnContentType.EntryId"/>, 
+        /// pokud jeho <see cref="DataType"/> je Int32 a jeho číslo třídy <see cref="RecordClassNumber"/> má hodnotu.
+        /// To jest: jeho datový typ je Int32, a obsah je RecordId. 
+        /// </summary>
+        internal bool AllowPrimaryKey
+        {
+            get
+            {
+                if (this.ColumnContent == ColumnContentType.RecordGId) return true;
+                if (this.DataType == typeof(Int32) && this.RecordClassNumber.HasValue && (this.ColumnContent == ColumnContentType.MasterId || this.ColumnContent == ColumnContentType.EntryId)) return true;
+                return false;
+            }
+        }
+        #endregion
+        #region Import vlastností sloupce ColumnProperties z dat v DataColumn
+        /// <summary>
+        /// Metoda naplní this objekt daty, která načte z dodaného sloupce <see cref="System.Data.DataColumn"/>.
+        /// </summary>
+        /// <param name="dataColumn"></param>
+        /// <returns></returns>
+        public void FillFrom(System.Data.DataColumn dataColumn)
+        {
+            if (dataColumn == null) return;
+            this.Title = dataColumn.Caption;
+            this.DataType = dataColumn.DataType;
+            this.DefaultValue = dataColumn.DefaultValue;
+            this.ReadOnly = dataColumn.ReadOnly;
+
+            DataColumnExtendedInfo extendedInfo = DataColumnExtendedInfo.CreateForColumn(dataColumn);
+            this.AllowColumnSortByClick = extendedInfo.AllowSort;                   // Povoleno třídění kliknutím
+            this.ColumnContent = GetColumnContent(extendedInfo);                    // Obsah sloupce
+            this.FormatString = GetFormatString(extendedInfo.Format);               // Formátovací string z Norisu, musí se převést na .NET
+            this.IsVisible = extendedInfo.IsVisible;                                // Je viditelný
+            if (!String.IsNullOrEmpty(extendedInfo.Label)) this.Title = extendedInfo.Label;      // Jen pokud je vyplněno
+            this.Width = GetWidth(extendedInfo.Width);                              // Na vstupu je šířka Noris, v této metodě to lze upravit
+            this.RecordClassNumber = GetClassNumber(extendedInfo);
+            this.RelationNumber = extendedInfo.RelationNumber;
+            this.RelationSide = GetRelationSide(extendedInfo);
+            this.RelatedRecordColumnName = extendedInfo.RelationRecordColumnName;
+        }
+        /// <summary>
+        /// Metoda naplní this objekt daty, která načte z dodaného sloupce <see cref="GuiDataColumn"/>.
+        /// </summary>
+        /// <param name="dataColumn"></param>
+        /// <returns></returns>
+        public void FillFrom(GuiDataColumn dataColumn)
+        {
+            if (dataColumn == null) return;
+            this.DataType = dataColumn.ColumnType;
+            this.Title = dataColumn.ColumnCaption;
+            this.DefaultValue = dataColumn.ColumnDefaultValue;
+            this.ReadOnly = dataColumn.ColumnReadOnly;
+
+            this.AllowColumnSortByClick = dataColumn.AllowSort;                // Povoleno třídění kliknutím
+            this.ColumnContent = GetColumnContent(dataColumn);                 // Obsah sloupce
+            this.FormatString = GetFormatString(dataColumn.Format);            // Formátovací string z Norisu, musí se převést na .NET
+            this.IsVisible = dataColumn.IsVisible;                             // Je viditelný
+            if (!String.IsNullOrEmpty(dataColumn.Label)) this.Title = dataColumn.Label;      // Jen pokud je vyplněno
+            this.Width = GetWidth(dataColumn.Width);                           // Na vstupu je šířka Noris, v této metodě to lze upravit
+            this.RecordClassNumber = GetClassNumber(dataColumn);
+            this.RelationNumber = dataColumn.RelationNumber;
+            this.RelationSide = GetRelationSide(dataColumn);
+            this.RelatedRecordColumnName = dataColumn.RelationRecordColumnName;
+        }
+        /// <summary>
+        /// Vrátí typ obsahu pro daný sloupec, podle jeho <see cref="DataColumnExtendedInfo.BrowseColumnType"/> a dalších hodnot
+        /// </summary>
+        /// <param name="extendedInfo"></param>
+        /// <returns></returns>
+        protected static ColumnContentType GetColumnContent(DataColumnExtendedInfo extendedInfo)
+        {
+            return GetColumnContent(extendedInfo.Index, extendedInfo.BrowseColumnType, extendedInfo.RelationNumber, extendedInfo.RelationClassNumber);
+        }
+        /// <summary>
+        /// Vrátí typ obsahu pro daný sloupec, podle jeho <see cref="DataColumnExtendedInfo.BrowseColumnType"/> a dalších hodnot
+        /// </summary>
+        /// <param name="dataColumn"></param>
+        /// <returns></returns>
+        protected static ColumnContentType GetColumnContent(GuiDataColumn dataColumn)
+        {
+            return GetColumnContent(dataColumn.Index, dataColumn.BrowseColumnType, dataColumn.RelationNumber, dataColumn.RelationClassNumber);
+        }
+        /// <summary>
+        /// Vrátí typ obsahu pro daný sloupec, podle jeho <see cref="DataColumnExtendedInfo.BrowseColumnType"/> a dalších hodnot
+        /// </summary>
+        /// <param name="index"></param>
+        /// <param name="columnType"></param>
+        /// <param name="relationNumber"></param>
+        /// <param name="relationClassNumber"></param>
+        /// <returns></returns>
+        protected static ColumnContentType GetColumnContent(int index, BrowseColumnType columnType, int? relationNumber, int? relationClassNumber)
+        {
+            if (index == 0) return ColumnContentType.MasterId;
+            switch (columnType)
+            {
+                case BrowseColumnType.RecordId:
+                    return ColumnContentType.RecordGId;
+                case BrowseColumnType.SubjectNumber:
+                    return ColumnContentType.MasterId;
+                case BrowseColumnType.ObjectNumber:
+                    return ColumnContentType.EntryId;
+                case BrowseColumnType.DataColumn:
+                    bool isRelation = (relationNumber > 0 && relationClassNumber > 0);
+                    return (isRelation ? ColumnContentType.RelationRecordData : ColumnContentType.UserData);
+                case BrowseColumnType.RelationHelpfulColumn:
+                    return ColumnContentType.RelationRecordId;
+                case BrowseColumnType.TotalCountHelpfulColumn:
+                    return ColumnContentType.HiddenData;
+            }
+            return ColumnContentType.None;
+        }
+        /// <summary>
+        /// Vrací formátovací string pro sloupec
+        /// </summary>
+        /// <param name="greenFormat"></param>
+        /// <returns></returns>
+        protected static string GetFormatString(string greenFormat)
+        {
+            return null;
+        }
+        /// <summary>
+        /// Vrací šířku v pixelech pro daný sloupec
+        /// </summary>
+        /// <param name="greenWidth"></param>
+        /// <returns></returns>
+        protected static int? GetWidth(int greenWidth)
+        {
+            return 1 * greenWidth;
+        }
+        /// <summary>
+        /// Vrací šíslo třídy pro daný sloupec, pokud je zadaná
+        /// </summary>
+        /// <param name="extendedInfo"></param>
+        /// <returns></returns>
+        protected static int? GetClassNumber(DataColumnExtendedInfo extendedInfo)
+        {
+            if (extendedInfo.Index == 0) return extendedInfo.ClassNumber;
+            if (extendedInfo.RelationClassNumber.HasValue) return extendedInfo.RelationClassNumber;
+            return null;
+        }
+        /// <summary>
+        /// Vrací šíslo třídy pro daný sloupec, pokud je zadaná
+        /// </summary>
+        /// <param name="dataColumn"></param>
+        /// <returns></returns>
+        protected static int? GetClassNumber(GuiDataColumn dataColumn)
+        {
+            if (dataColumn.Index == 0) return dataColumn.ClassNumber;
+            if (dataColumn.RelationClassNumber.HasValue) return dataColumn.RelationClassNumber;
+            return null;
+        }
+        /// <summary>
+        /// Vrací stranu vztahu pro daný sloupec
+        /// </summary>
+        /// <param name="extendedInfo"></param>
+        /// <returns></returns>
+        protected static RelationMasterSide? GetRelationSide(DataColumnExtendedInfo extendedInfo)
+        {
+            if (!extendedInfo.RelationClassNumber.HasValue) return null;
+            switch (extendedInfo.RelationSide)
+            {
+                case "Left": return RelationMasterSide.Left;
+                case "Right": return RelationMasterSide.Right;
+            }
+            return null;
+        }
+        /// <summary>
+        /// Vrací stranu vztahu pro daný sloupec
+        /// </summary>
+        /// <param name="dataColumn"></param>
+        /// <returns></returns>
+        protected static RelationMasterSide? GetRelationSide(GuiDataColumn dataColumn)
+        {
+            if (!dataColumn.RelationClassNumber.HasValue) return null;
+            switch (dataColumn.RelationSide)
+            {
+                case "Left": return RelationMasterSide.Left;
+                case "Right": return RelationMasterSide.Right;
+            }
+            return null;
+        }
+        #endregion
+    }
+    /// <summary>
+    /// Jaký druh údaje je obsažen ve sloupci
+    /// </summary>
+    public enum ColumnContentType
+    {
+        /// <summary>
+        /// Žádná data
+        /// </summary>
+        None,
+        /// <summary>
+        /// Běžná uživatelská data. 
+        /// Tento sloupec může být viditelný.
+        /// </summary>
+        UserData,
+        /// <summary>
+        /// Zobrazovaná data záznamu, který je navázán ve vztahu. 
+        /// Tento sloupec může být viditelný.
+        /// Tento sloupec je vykreslován podtržený.
+        /// </summary>
+        RelationRecordData,
+        /// <summary>
+        /// Časový graf s časovou synchronizací do všech okolních Gridů.
+        /// Tento sloupec může být viditelný.
+        /// </summary>
+        TimeGraphSynchronized,
+        /// <summary>
+        /// Časový graf bez časové synchronizace do všech okolních Gridů.
+        /// Tento časový graf se synchronizuje pouze do sousedních tabulek v rámci jednoho Gridu.
+        /// Tento sloupec může být viditelný.
+        /// </summary>
+        TimeGraphStandalone,
+        /// <summary>
+        /// Identifikátor záznamu, GId
+        /// </summary>
+        RecordGId,
+        /// <summary>
+        /// Číslo záznamu celého řádku.
+        /// Tento sloupec se nikdy nezobrazuje.
+        /// </summary>
+        MasterId,
+        /// <summary>
+        /// Číslo položky v záznamu celého řádku.
+        /// Tento sloupec se nikdy nezobrazuje.
+        /// </summary>
+        EntryId,
+        /// <summary>
+        /// Číslo vztaženého záznamu (takového, jehož typ == <see cref="RelationRecordData"/>).
+        /// Tento sloupec se nikdy nezobrazuje.
+        /// </summary>
+        RelationRecordId,
+        /// <summary>
+        /// Jiná skrytá data.
+        /// Tento sloupec se nikdy nezobrazuje.
+        /// Typicky ID číslo řádku ze systému Green.
+        /// </summary>
+        HiddenData
+    }
+    #endregion
     #region TreeNode : Třída, které v sobě řeší všechny vlastnosti TreeNode pro jeden řádek Row
     /// <summary>
     /// TreeNode : Třída, které v sobě řeší všechny vlastnosti TreeNode pro jeden řádek <see cref="Row"/>
@@ -3665,26 +3744,51 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public bool IsChild { get { return (this._ParentRecordGId != null); } }
         /// <summary>
+        /// true pokud this řádek je Statickým Child řádkem = může se objevit jako Child řádek jen pod svým vlastním Parent řádkem.
+        /// </summary>
+        public bool IsStaticChild { get { return (this._ParentRecordGId != null && !this._ParentRecordGId.IsEmpty); } }
+        /// <summary>
         /// true pokud this řádek je Dynamickým Child řádkem = může se objevit jako Child řádek pod kterýmkoli Parent řádkem, 
         /// což je dáno chování tabulky.
         /// </summary>
         public bool IsDynamicChild { get { return (this._ParentRecordGId != null && this._ParentRecordGId.IsEmpty); } }
         #endregion
-        #region Public properties dynamické : vztahy Parent - Childs, Level, Order
+        #region Child prvky tohoto nodu + vlastnosti nodu Level, Order
         /// <summary>
         /// Obsahuje Childs řádky tohoto Parent řádku. Může být null nebo může obsahovat 0 prvků.
         /// Setování vyvolá invalidaci řádků tabulky.
         /// </summary>
-        public Row[] Childs { get { return this._Childs; } set { this._Childs = value; this.TableRowsInvalidate(); } }
+        public IEnumerable<Row> Childs { get { return this.ChildList; } }
         /// <summary>
-        /// Obsahuje Childs řádky tohoto Parent řádku. Může být null nebo může obsahovat 0 prvků.
-        /// Setování je Silent = NEvyvolá invalidaci řádků tabulky.
+        /// Položky Childs, vždy platné, nikdy null
         /// </summary>
-        internal Row[] ChildsSilent { get { return this._Childs; } set { this._Childs = value; } }
+        protected List<Row> ChildList
+        {
+            get
+            {
+                if (this._ChildList == null)
+                {
+                    this._ChildList = new List<Row>();
+                    if (this._StaticChildDict != null && this._StaticChildDict.Count > 0)
+                        this._ChildList.AddRange(this._StaticChildDict.Values);
+                    if (this._DynamicChildList != null && this._DynamicChildList.Count > 0)
+                        this._ChildList.AddRange(this._DynamicChildList);
+                }
+                return this._ChildList;
+            }
+        }
+        
         /// <summary>
         /// Obsahuje true, pokud this řádek obsahuje nějaké <see cref="Childs"/> řádky
         /// </summary>
-        public bool HasChilds { get { var childs = this._Childs; return (childs != null && childs.Length > 0); } }
+        public bool HasChilds
+        {
+            get
+            {
+                return ((this._StaticChildDict != null && this._StaticChildDict.Count > 0) ||
+                       (this._DynamicChildList != null && this._DynamicChildList.Count > 0));
+            }
+        }
         /// <summary>
         /// Level Tree nodu.
         /// Hodnota 0 = Root řádek, hodnota 1 = Child řádek pod Root řádkem, atd.
@@ -3696,9 +3800,76 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         internal TreeNodeOrderType Order { get; private set; }
         /// <summary>
-        /// Fyzické pole Child řádků
+        /// Metoda přidá daný řádek jako Static Child
         /// </summary>
-        private Row[] _Childs;
+        /// <param name="row"></param>
+        internal void AddStaticChild(Row row)
+        {
+            if (this._StaticChildDict == null)
+                this._StaticChildDict = new Dictionary<int, Row>();
+            this._StaticChildDict.AddRefresh(row.RowId, row);
+            this._ChildsInvalidate();
+        }
+        /// <summary>
+        /// Metoda odebere daný řádek ze Static Child
+        /// </summary>
+        /// <param name="row"></param>
+        internal void RemoveStaticChild(Row row)
+        {
+            if (this._StaticChildDict != null && this._StaticChildDict.ContainsKey(row.RowId))
+            {
+                this._StaticChildDict.Remove(row.RowId);
+                this._ChildsInvalidate();
+            }
+        }
+        /// <summary>
+        /// Metoda přidá daný řádek jako Dynamic Child
+        /// </summary>
+        /// <param name="row"></param>
+        internal void AddDynamicChild(Row row)
+        {
+            if (this._DynamicChildList == null)
+                this._DynamicChildList = new List<Row>();
+            if (this._DynamicChildList.Count == 0 || !this._DynamicChildList.Any(r => Object.ReferenceEquals(r, row)))
+            {
+                this._DynamicChildList.Add(row);
+                this._ChildsInvalidate();
+            }
+        }
+        /// <summary>
+        /// Metoda odebere daný řádek z Dynamic Child
+        /// </summary>
+        /// <param name="row"></param>
+        internal void RemoveDynamicChild(Row row)
+        {
+            if (this._DynamicChildList != null)
+            {
+                if (this._DynamicChildList.RemoveAll(r => Object.ReferenceEquals(r, row)) > 0)
+                    this._ChildsInvalidate();
+            }
+        }
+        /// <summary>
+        /// Invaliduje svoje Childs řádky, volá se po jakékoli změně.
+        /// </summary>
+        private void _ChildsInvalidate()
+        {
+            this._ChildList = null;
+            this.TableRowsInvalidate();
+        }
+        /// <summary>
+        /// List obsahující všechny aktuální Child řádky; null když je invalidován.
+        /// </summary>
+        private List<Row> _ChildList;
+        /// <summary>
+        /// List obsahující dynamické Child řádky; null když není žádný.
+        /// Dynamické Childs mohou pocházet z různých tabulek, nelze je indexovat, a jediným identifikátorem je ObjectReference.
+        /// </summary>
+        private List<Row> _DynamicChildList;
+        /// <summary>
+        /// Dictionary obsahující statické Child řádky; null když není žádný.
+        /// Statické Childs mohou pocházet pouze ze stejné tabulky jako Parent, proto lze použít Dictionary podle RowId (=v rámci jedné tabulky je unikátní).
+        /// </summary>
+        private Dictionary<int, Row> _StaticChildDict;
         #endregion
         #region Expand, Collapse
         /// <summary>
@@ -3772,40 +3943,62 @@ namespace Asol.Tools.WorkScheduler.Data
             }
         }
         /// <summary>
+        /// Metoda zajistí, že všichni Parenti, kteří obsahují jako Child některý řádek z mých Childs, budou Collapsed.
+        /// </summary>
+        private void _CollapseOtherParents()
+        {
+            if (this.Table == null) return;
+
+            var childDict = this.Childs.GetDictionary(row => row.RowId, true);
+            this.Table.TreeNodeScan(
+                (row, level) =>
+                {   // Akce pro každý řádek: 
+                    // Pokud daný řádek je otevřený, a některý z jeho Child řádků je obsažen v Dictionary childDict:
+                    if (row.TreeNode.IsExpanded && row.TreeNode.Childs != null && row.TreeNode.Childs.Any(r => childDict.ContainsKey(r.RowId)))
+                        // Pak takový řádek zavřeme:
+                        row.TreeNode._Collapse(false);
+                },
+                // Projít Childs daného řádku?
+                //  Ano, pokud řádek je otevřený:
+                row => row.TreeNode.IsExpanded
+                );
+        }
+        /// <summary>
         /// Příznak otevření Child nodů
         /// </summary>
         private bool _IsExpanded;
         #endregion
-        #region TreeView : Parent Rows, Child, Nodes, Tree
+        #region Table + TreeView : vkládání Childs řádků do lineární sekvence; scanování Childs řádků
         /// <summary>
         /// Do daného seznamu řádků přidá svoje Child řádky
         /// </summary>
         /// <param name="allRowList"></param>
-        public void AddChildRowsTo(List<Row> allRowList)
+        public void StoreChildsTo(List<Row> allRowList)
         {
-            this.AddChildRowsTo(allRowList, 0);
+            this.StoreChildsTo(allRowList, 0);
         }
         /// <summary>
         /// Do daného seznamu řádků přidá svoje Child řádky
         /// </summary>
         /// <param name="allRowList"></param>
         /// <param name="level"></param>
-        protected void AddChildRowsTo(List<Row> allRowList, int level)
+        protected void StoreChildsTo(List<Row> allRowList, int level)
         {
             if (!this.HasChilds) return;
             if (!this.IsExpanded) return;
             level++;
-            int count = this.Childs.Length;
+            var childs = this.ChildList;
+            int count = childs.Count;
             for (int i = 0; i < count; i++)
             {
-                Row child = this.Childs[i];
+                Row child = childs[i];
                 child.TreeNode.Level = level;
                 child.TreeNode.Order = (i == 0 ? (count > 1 ? TreeNodeOrderType.First : TreeNodeOrderType.Single) : (i < (count - 1) ? TreeNodeOrderType.Inner : TreeNodeOrderType.Last));
                 allRowList.Add(child);
                 child.Visible = true;            // Viditelnost pro Child řádky nastavuji výhradně zde.
 
                 // Rekurzivně:
-                child.TreeNode.AddChildRowsTo(allRowList, level);
+                child.TreeNode.StoreChildsTo(allRowList, level);
             }
         }
         /// <summary>
@@ -3838,27 +4031,6 @@ namespace Asol.Tools.WorkScheduler.Data
                         Scan(row.TreeNode.Childs, level + 1, scanAction, testScanChilds);
                 }
             }
-        }
-        /// <summary>
-        /// Metoda zajistí, že všichni Parenti, kteří obsahují jako Child některý řádek z mých Childs, budou Collapsed.
-        /// </summary>
-        private void _CollapseOtherParents()
-        {
-            if (this.Table == null) return;
-
-            var childDict = this.Childs.GetDictionary(row => row.RowId, true);
-            this.Table.TreeNodeScan(
-                (row, level) =>
-                {   // Akce pro každý řádek: 
-                    // Pokud daný řádek je otevřený, a některý z jeho Child řádků je obsažen v Dictionary childDict:
-                    if (row.TreeNode.IsExpanded && row.TreeNode.Childs != null && row.TreeNode.Childs.Any(r => childDict.ContainsKey(r.RowId)))
-                        // Pak takový řádek zavřeme:
-                        row.TreeNode._Collapse(false);
-                },
-                // Projít Childs daného řádku?
-                //  Ano, pokud řádek je otevřený:
-                row => row.TreeNode.IsExpanded
-                );
         }
         #region class NodeNext : třída pro tvorbu stromu řádků
         /// <summary>
@@ -4213,7 +4385,7 @@ namespace Asol.Tools.WorkScheduler.Data
     /// <summary>
     /// Předpis pro tabulku, aby mohla dostávat události napřímo
     /// </summary>
-    public interface ITableEventTarget
+    public interface ITableInternal
     {
         /// <summary>
         /// Změna hot řádku
@@ -4303,6 +4475,11 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Invaliduje pole štítků
         /// </summary>
         void InvalidateTagItems();
+        /// <summary>
+        /// Sloupec, podle něhož se vytváří primární index v situaci, kdy <see cref="Row.RecordGId"/> není zadán explicitně
+        /// </summary>
+        Column PrimaryKeyColumn { get; }
+
     }
     /// <summary>
     /// Předpis pro prvek, který je zdrojem Tagů = "visaček" do zjednodušeného řádkového filtru
