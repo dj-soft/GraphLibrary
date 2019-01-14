@@ -85,7 +85,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.LoadGraphs();
             this.LoadLinks();
             this.LoadTexts();
-            this.LoadChilds();
         }
         /// <summary>
         /// Metoda zajistí přípravu dat této tabulky poté, kdy projdou přípravou všechny tabulky systému.
@@ -94,7 +93,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         internal void PrepareAfterLoad()
         {
-            this.LoadDataSearchChildRows();
+            this.PrepareDynamicChilds(this.MainData.GuiData.Properties?.InitialTimeRange, true);
         }
         #endregion
         #region Tabulka s řádky (TableRow, GTableRow) : tvorba, naplnění daty, navázání eventhandlerů a jejich obsluha
@@ -244,7 +243,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             // Pokud současný systém vztahů Parent-Child je závislý na viditelném časovém intervalu, zavoláme jeho refresh:
             if (this.CurrentSearchChildInfo.IsVisibleTimeOnly)
-                this.PrepareCurrentChildRows(e.NewValue, false);
+                this.PrepareDynamicChilds(e.NewValue, false);
         }
         #endregion
         #region Grafy a položky grafů
@@ -1193,111 +1192,35 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         #endregion
         #region ParentChilds - Vztahy mezi řádky
         /// <summary>
-        /// Metoda načte a zpracuje data o vztazích Parent-Childs.
-        /// Najde ty Childs řádky, které mají konkrétního Parenta (tj. statické Childs) a vloží je do Parent řádku.
-        /// Najde dynamické Child řádky (mají Parenta ne null, ale Empty), a vytvoří z nich index
-        /// Najde v řádcích tabulky ty, které jsou Child
-        /// Volá se jen jedenkrát, v procesu načítání řádků.
-        /// Zatím není potřeba tato data donačítat později.
-        /// </summary>
-        protected void LoadChilds()
-        {
-            List<GuiParentChild> guiParentChilds = this.GuiGrid.ParentChilds;
-            if (guiParentChilds == null) return;
-
-            // Nejprve si z prostých identifikátorů párů { Klíč Parent :: Klíč Child } složím datové komplety:
-            //  a) Dictionary, kde Key: Child; a kde Value = Tuple, jehož Item1 = řádek Child, a Item2 = pole řádků Parent:
-            Dictionary<GuiId, Tuple<Row, List<Row>>> childDataDict = new Dictionary<GuiId, Tuple<Row, List<Row>>>();
-            //  b) Dictionary, kde Key: Parent; a Value = List všech jemu podřízených řádků Childs
-            Dictionary<GuiId, List<Row>> parentDict = new Dictionary<GuiId, List<Row>>();
-
-            Row parentRow, childRow;
-            foreach (GuiParentChild guiParentChild in guiParentChilds)
-            {
-                // Child řádek musíme mít vždy, bez něj to nemá smysl:
-                if (guiParentChild.Child == null || guiParentChild.Child.IsEmpty) continue;
-                if (!this.TableRow.TryGetRow(guiParentChild.Child, out childRow, false)) continue;
-
-                // Parent řádek být může a nemusí:
-                bool hasParentRow = this.TableRow.TryGetRow(guiParentChild.Parent, out parentRow, false);
-
-                // a1) Zajistím evidenci Child řádků:
-                var childData = childDataDict.GetAdd(guiParentChild.Child, key => new Tuple<Row, List<Row>>(childRow, new List<Row>()));
-                // a2) Zajistím přidání Parenta (pokud existuje) do řádku v (childDataDict) k danému Child řádku (childData):
-                if (hasParentRow)
-                    childData.Item2.Add(parentRow);
-
-                // b) Zajistím přidání Child řádku do seznamu (parentDict) do řádků Parenta, kde Parent může být Empty:
-                GuiId parentKey = (hasParentRow ? guiParentChild.Parent : GuiId.Empty);
-                parentDict
-                    .GetAdd(parentKey, key => new List<Row>())
-                    .Add(childRow);
-            }
-
-            // Poté zpracuji řádky Childs: jejich soupis Parentů:
-            foreach (Tuple<Row, List<Row>> childData in childDataDict.Values)
-            {
-                childRow = childData.Item1;
-                childRow.ParentChildMode = RowParentChildMode.DynamicChild;
-                childRow.TreeNodeParents = childData.Item2.ToArray();
-            }
-
-            // Uložím si Dictionary parentů, bude se používat pro dohledání Child prvků konkrétního Parenta:
-            this.TreeNodeChildDict = parentDict;
-        }
-        /// <summary>
         /// Metoda připraví Childs řádky pro řádky Root, podle aktuálně viditelného času.
         /// Volá se z metod, které změní obsah grafů v této tabulce, po provedení všech změn.
         /// </summary>
-        public void PrepareCurrentChildRows()
+        public void PrepareDynamicChilds()
         {
-            this.PrepareCurrentChildRows(this.SynchronizedTime, true);
-        }
-        /// <summary>
-        /// Metoda se pokusí najít Child řádky pro aktuální časový interval
-        /// </summary>
-        protected void LoadDataSearchChildRows()
-        {
-            this.PrepareCurrentChildRows(this.MainData.GuiData.Properties?.InitialTimeRange, true);
+            this.PrepareDynamicChilds(this.SynchronizedTime, true);
         }
         /// <summary>
         /// Metoda připraví Childs řádky pro řádky Root, podle zadaného viditelného času
         /// </summary>
         /// <param name="timeRange">Viditelný časový interval</param>
         /// <param name="force">Povinně, bez ohledu na to že pro daný čas už bylo provedeno (=když máme nová data v grafech)</param>
-        protected void PrepareCurrentChildRows(TimeRange timeRange, bool force)
+        protected void PrepareDynamicChilds(TimeRange timeRange, bool force)
         {
             // Test, zda je nutno akci provádět, s ohledem na režim, zadaný čas a posledně zpracovaný čas:
             SearchChildInfo searchInfo = this.CurrentSearchChildInfo;
             TimeRange timeFrame = (searchInfo.IsVisibleTimeOnly ? timeRange : this.TotalTime);
             if (!PrepareCurrentChildRowsRequired(force, searchInfo, timeFrame, this._ChildRowsLastTimeRange)) return;
 
-            // Určuji vztahy Parent - Child, podle daného režimu, pro tyto naše Root řádky:
+            // Dynamické řádky se vždy hledají v poli TableRow.DynamicChilds, buď v this tabulce, anebo v tabulce jiné:
+            MainDataTable sourceTable = this.GetDynamicChildsSource(searchInfo);
+            Row[] sourceRows = this.GetDynamicChildsRow(searchInfo, sourceTable);
+            if (sourceRows == null) return;
+
+            // Pro naše Root řádky budu hledat jejich Child řádky v sourceTable a sourceRows:
             Row[] rootRows = this.TableRow.TreeNodeRootRows;
-
-            // Existují dva režimy: a) hledat ve vlastních řádcích, b) hledat v jiné tabulce
-            if (!searchInfo.IsInOtherTable)
-            {   // a) Hledat Childs řádky ve vlastních řádcích:
-                if (this.TreeNodeChildDict == null || this.TreeNodeChildDict.Count == 0) return;   // Pokud nemám definované vlastní Child řádky, skončím.
-                Dictionary<GId, Row> visibleRowDict = new Dictionary<GId, Row>();                  // Toto jsou Child řádky, které jsou aktuálně viditelné (jejich Parent je Expanded a řádky jsou viditelné)
-                foreach (Row rootRow in rootRows)
-                    this.PrepareCurrentChildRowsFor(rootRow, this, searchInfo, timeFrame, visibleRowDict);   // Pro daný root najdu odpovídající Childs
-            }
-            else
-            {   // Hledat Child řádky v cizí tabulce:
-                MainDataTable otherTable = null;
-                if (!String.IsNullOrEmpty(searchInfo.ChildRowsTableName))
-                    otherTable = this.IMainData.SearchTable(searchInfo.ChildRowsTableName);        // Vyhledám zdrojovu tabulku s Child řádky (anebo skončím)
-                if (otherTable == null) return;
-                // Jako Child řádky z other tabulky vezmu buď pouze Root řádky, anebo všechny:
-                Row[] otherRows = (searchInfo.IsInOtherRootRowsOnly ? otherTable.TableRow.TreeNodeRootRows : otherTable.TableRow.Rows.ToArray());
-                if (otherRows.Length > 0)
-                {
-                    foreach (Row rootRow in rootRows)
-                        this.PrepareOtherChildRowsFor(rootRow, searchInfo, timeFrame, otherTable, otherRows);// Komplexní zpracování Child řádků z cizí tabulky
-                }
-            }
-
+            foreach (Row rootRow in rootRows)
+                this.PrepareDynamicChildsOne(rootRow, searchInfo, timeFrame, sourceTable, sourceRows);
+            
             this._ChildRowsLastTimeRange = timeFrame;
         }
         /// <summary>
@@ -1317,59 +1240,86 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             return (currentTimeRange != lastTimeRange);    // Pokud čas Last a Curr jsou odlišené, musí se to provést!
         }
         /// <summary>
-        /// Posledně platná hodnota času při detekci v metodě <see cref="PrepareCurrentChildRows(TimeRange, bool)"/>
+        /// Metoda vrací tabulku <see cref="MainDataTable"/>, z níž máme vyhledat dynamické Child řádky.
+        /// Může vrátit null.
+        /// </summary>
+        /// <param name="searchInfo"></param>
+        /// <returns></returns>
+        protected MainDataTable GetDynamicChildsSource(SearchChildInfo searchInfo)
+        {
+            if (searchInfo.IsStatic) return null;                    // Pouze statické řádky
+            if (!searchInfo.IsInOtherTable) return this;             // Zdrojem není jiná tabulka => zdrojem tedy je this tabulka
+            return this.IMainData.SearchTable(searchInfo.ChildRowsTableName);  // Vyhledám zdrojovu tabulku s Child řádky (nebo vrátím null)
+        }
+        /// <summary>
+        /// Metoda vrací pole řádků Childs ze zdrojové tabulky sourceTable, podle předpisu pro vyhledávání
+        /// </summary>
+        /// <param name="searchInfo"></param>
+        /// <param name="sourceTable"></param>
+        /// <returns></returns>
+        protected Row[] GetDynamicChildsRow(SearchChildInfo searchInfo, MainDataTable sourceTable)
+        {
+            if (sourceTable == null) return null;
+
+            // Ve vlastní tabulce, anebo výhradně v DynamicChilds:
+            if (!searchInfo.IsInOtherTable || searchInfo.IsInDynamicChildOnly) return sourceTable.TableRow.DynamicChilds.ToArray();
+
+            // V cizí tabulce a s požadavkem na RootRowsOnly:
+            if (searchInfo.IsInOtherTable && searchInfo.IsInOtherRootRowsOnly) return sourceTable.TableRow.TreeNodeRootRows;
+
+            // Ve všech řádcích:
+            return sourceTable.TableRow.Rows.ToArray();
+        }
+        /// <summary>
+        /// Posledně platná hodnota času při detekci v metodě <see cref="PrepareDynamicChilds(TimeRange, bool)"/>
         /// </summary>
         private TimeRange _ChildRowsLastTimeRange;
-        #region Dynamicky dohledané Child řádky z vlastní tabulky
+        #region Dynamicky dohledané Child řádky z dodané zdrojové tabulky
         /// <summary>
-        /// Metoda najde a připraví Child řádky pro daný Parent řádek
+        /// Metoda najde a připraví Child řádky pro daný Parent řádek, řádky hledá v dodané cizí tabulce, do daného root řádku ukládá jejich vhodné klony
         /// </summary>
-        /// <param name="parentRow"></param>
-        /// <param name="dataTable"></param>
+        /// <param name="parentRow">Parent řádek z this tabulky</param>
         /// <param name="searchInfo">Režim vztahů, určuje parametry hledání</param>
-        /// <param name="timeFrame"></param>
-        /// <param name="visibleRowDict"></param>
-        protected void PrepareCurrentChildRowsFor(Row parentRow, MainDataTable dataTable, SearchChildInfo searchInfo, TimeRange timeFrame, Dictionary<GId, Row> visibleRowDict)
+        /// <param name="timeFrame">Časový interval</param>
+        /// <param name="sourceTable">Zdrojová tabulka</param>
+        /// <param name="sourceRows">Sada všech vhodných řádků ze zdrojové tabulky, mezi nimi mohou být i Childs k danému Parentu</param>
+        protected void PrepareDynamicChildsOne(Row parentRow, SearchChildInfo searchInfo, TimeRange timeFrame, MainDataTable sourceTable, Row[] sourceRows)
         {
             if (parentRow == null) return;
-            parentRow.TreeNode.Childs = null;
+            parentRow.TreeNode.DynamicChilds = null;
             GId recordGId = parentRow.RecordGId;
-            if (this.TreeNodeChildDict == null || recordGId == null || recordGId.IsEmpty) return;
 
-            // Najdeme řádky, které pro daného Parenta mohou hrát roli Child prvků:
-            Dictionary<GId, Row> childDict = new Dictionary<GId, Row>();
-            List<Row> childList;
-            GuiId parentGuiId = recordGId;
-            if (this.TreeNodeChildDict.TryGetValue(parentGuiId, out childList))
-                childDict.AddNewItems(childList, r => r.RecordGId);
+            // Nejprve si připravím Dictionary, obsahující zdrojové vazební prvky z Parent řádku, z this tabulky:
+            Dictionary<GId, TimeRange> parentDataDict = this.GetSearchPairDataFromRow(parentRow, this, searchInfo, searchInfo.ParentIdType, timeFrame);
 
-            if (!searchInfo.IsStatic)
-            {   // Druhá část hledání (pro Parenta = Empty) se provádí jen v Dynamickém režimu:
-                parentGuiId = GuiId.Empty;
-                if (this.TreeNodeChildDict.TryGetValue(parentGuiId, out childList))
-                    childDict.AddNewItems(childList, r => r.RecordGId);
+            // Nyní vyhledám Child řádky, které mají s Parentem něco společného (nějakou aktuálně viditelnou práci):
+            //  (tady jde o řádky, pocházející z Other tabulky = před jejich duplikováním)
+            Row[] childRows = sourceRows
+                .Where(r => TestSearchPairDataInRow(r, sourceTable, searchInfo, searchInfo.ChildIdType, timeFrame, parentDataDict))
+                .ToArray();
+            if (childRows.Length == 0) return;
+
+            // Nyní provedu synchronizaci dat z childs (=ostrá data) do jejich klonu, který bude vložen do parentRow.TreeNodeChilds:
+            Dictionary<GId, Row> parentRowDict = this.GetDynamicParentChildDict(recordGId);
+            List<Row> cloneRows = new List<Row>();
+            foreach (Row childRow in childRows)
+            {   // Child řádky ze Source tabulky:
+                // Najdu / vytvořím klon řádku, odpovídající řádku Child z other tabulky, ale pokud v něm bude graf, pak prvky grafu klonovat nebudeme:
+                Row cloneRow = this.GetChildCloneRow(parentRowDict, sourceTable, childRow);
+                if (cloneRow != null)
+                {   // Do klonu řádku vložím odpovídající prvky grafu.
+                    // K tomu malé vysvětlení:
+                    //  - řádek v proměnné sourceChild je ze zdrojové (other) tabulky, a obsahuje graf s kompletní a platnou sadou prvků
+                    //  - řádek v proměnné cloneChild je vytvořený Clone z řádku sourceChild, jeho trvanlivost je dlouhodobá (od prvního vytvoření do zavření celého okna)
+                    //  - řádek v proměnné cloneChild má obsahovat aktuálně platné prvky grafu z grafu v řádku sourceChild
+                    //  - graf v řádku cloneChild po vytvoření neobsahuje nic, po přesunu časové osy obsahuje zastaralé údaje (prvky mimo aktuální čas)
+                    //  - nyní musíme do řádku cloneChild nasynchronizovat prvky z grafu v řádku sourceChild:
+                    this.SynchronizeChildGraphItems(parentDataDict, searchInfo, timeFrame, childRow, cloneRow);
+
+                    cloneRows.Add(cloneRow);
+                }
             }
-
-            // Daný řádek (parentRow) nemá žádnou šanci mít nějaké childs:
-            if (childDict.Count == 0) return;
-
-            // Pro daný řádek máme několik položek (v childDict), které jsou/mohou být Childs.
-            //    Pokud je vztah Dynamický, pak zjistíme konkrétní možnosti vztahů (=z parentRow si načteme směrodatné klíče a jejich časové úseky):
-            Dictionary<GId, TimeRange> parentDataDict = this.PrepareCurrentRowGetItems(parentRow, dataTable, searchInfo, searchInfo.ParentIdType, timeFrame);
-
-            // Určíme řádky, které mají společnou práci s Parentem:
-            parentRow.TreeNode.Childs = childDict.Values.Where(r => PrepareCurrentChildRowsFilter(parentDataDict, r, dataTable, searchInfo, searchInfo.ChildIdType, timeFrame)).ToArray();
-
-            // Pokud tento řádek je Expanded, a obsahuje nějaký Child z řádků, které jsou Expanded někde jinde,
-            //    pak tento řádek zavřeme:
-            this.PrepareCurrentChildCollapse(parentRow, visibleRowDict);
-
-            // A rekurzivně i pro řádky v parentRow.TreeNodeChilds, pouze pokud je to Static:
-            if (searchInfo.IsStatic)
-            {
-                foreach (Row childRow in parentRow.TreeNode.Childs)
-                    this.PrepareCurrentChildRowsFor(childRow, dataTable, searchInfo, timeFrame, visibleRowDict);
-            }
+            parentRow.TreeNode.DynamicChilds = cloneRows.ToArray();
         }
         /// <summary>
         /// Metoda najde prvky grafu daného řádku v daném období a vrátí jejich Dictionary.
@@ -1384,7 +1334,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="idType">Druh klíče</param>
         /// <param name="timeFrame"></param>
         /// <returns></returns>
-        protected Dictionary<GId, TimeRange> PrepareCurrentRowGetItems(Row row, MainDataTable dataTable, SearchChildInfo searchInfo, DataGraphItem.IdType idType, TimeRange timeFrame)
+        protected Dictionary<GId, TimeRange> GetSearchPairDataFromRow(Row row, MainDataTable dataTable, SearchChildInfo searchInfo, DataGraphItem.IdType idType, TimeRange timeFrame)
         {
             if (row == null || row.RecordGId == null || idType == DataGraphItem.IdType.None) return null;
             GTimeGraph graph;
@@ -1420,88 +1370,22 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             return resultDict;
         }
         /// <summary>
-        /// Metoda zajistí, že daný Root bude Collapsed, pokud by obsahoval některé z již viditelných Childs.
-        /// <para/>
-        /// Jinými slovy: tahle metoda zajišťuje následující chování:
-        /// * Pokud mám Table s řádky s grafy a s takovými Child řádky, které se vyhodnocují dynamicky (tzn. pod Root řádkem se jako 
-        /// Child řádky zobrazují ty, které mají s Root řádkem nějakou společnou práci);
-        /// * A pokud pod dvěma různými Root řádky lze teoreticky zobrazit jeden identický Child řádek, což technicky vylučujeme,
-        /// takže při Expand nodu A proběhne Collapse nodu B (viz metoda <see cref="Data.TreeNode.Expand()"/>, 
-        /// vyvolávající metodu Row._TreeNodeCollapseOtherParents());
-        /// * A v tabulce posunu časovou osu tak, aby některé Root řádky ukazovaly jen několik málo prvků grafu;
-        /// * A nyní otevřu více Root prvků, což může jít protože jejich Child řádky jsou vzájemně nekonfliktní;
-        /// - a teď to přijde:
-        /// * Mám tedy viditelné Root řádky ve stavu Expandend, zobrazující různé Child řádky;
-        /// * Začnu posouvat časovou osu tam, kde je více prvků grafů, a k nim se dynamicky dohledají další a další Child řádky;
-        /// * A protože Root řádky jsou Expanded, pak Child řádky se přidávají do otevřených nodů - ale neprobíhá tam metoda <see cref="Data.TreeNode.Expand()"/>;
-        /// * Takže nejspíš by došlo k tomu, že jeden konkrétní Child řádek by se dostal pod dva (nebo více) Root řádků současně !!! (=chyba)
-        /// <para/>
-        /// Proto zdejší metoda využívá postupně načítaného soupisu viditelných řádků Child (visibleChildDict), 
-        /// a pokud by další řádek chtěl zobrazit některý z již viditelných Child řádků, pak tento Root řádek bude zavřen (Collapse).
-        /// </summary>
-        /// <param name="rootRow"></param>
-        /// <param name="visibleChildDict"></param>
-        protected void PrepareCurrentChildCollapse(Row rootRow, Dictionary<GId, Row> visibleChildDict)
-        {
-            if (!(rootRow.TreeNode.HasChilds && rootRow.TreeNode.IsExpanded)) return;     // Bez Childs anebo Collapsed node: neřeším.
-
-            // Pokud daný rootRow obsahuje nějaké Childs z těch, které už máme zobrazené (visibleRowDict), tak rootRow zavřeme a skončíme:
-            bool containsChilds = false;
-            if (visibleChildDict.Count > 0)
-            {
-                rootRow.TreeNode.Scan(
-                    (row, level) =>
-                    {   // Tady vidíme každý prvek, včetně rootu (tam je ale level == 0):
-                        if (level > 0 && visibleChildDict.ContainsKey(row.RecordGId))
-                            // Zajímá nás, zda node je roven některému z již viditelných:
-                            containsChilds = true;
-                    },
-                    row =>
-                    {   // Ptáme se, zda pokračovat ve scanování Child prvků daného node:
-                        // Ano pokud je otevřený:
-                        return row.TreeNode.IsExpanded;
-                    }
-                    );
-            }
-            if (containsChilds)
-            {   // Aktuální řádek rootRow je Expanded, a zobrazoval by některý Child, který už je zobrazen jinde => řádek zavřeme a skončíme:
-                rootRow.TreeNode.Collapse();
-                return;
-            }
-
-            // Protože rootRow nám zůstal otevřený, pak to znamená, že obsahuje nekonfliktní ChildNodes;
-            //  tak do visibleRowDict je přidáme, abychom příště prověřovali všechny (tj. i nyní přidané) viditelné Childs:
-            // Použiju téměř identickou sekvenci jako před chvílí, ale Child nody budu do Dictionary přidávat:
-            rootRow.TreeNode.Scan(
-                (row, level) =>
-                {   // Tady vidíme každý prvek, včetně rootu (tam je ale level == 0):
-                    if (level > 0 && !visibleChildDict.ContainsKey(row.RecordGId))
-                        visibleChildDict.Add(row.RecordGId, row);
-                },
-                row =>
-                {   // Ptáme se, zda pokračovat ve scanování Child prvků daného node:
-                    // Ano pokud je otevřený:
-                    return row.TreeNode.IsExpanded;
-                }
-                );
-        }
-        /// <summary>
         /// Metoda vrátí true, pokud daný řádek má být dostupný jako Child řádek v daném čase
         /// </summary>
-        /// <param name="parentDataDict">Prvky grafu v řádku Parent v daném čase, může být null</param>
         /// <param name="childRow">Potenciální child řádek, který testujeme zda bude Child řádkem určitého Parenta</param>
-        /// <param name="childTable"></param>
+        /// <param name="childTable">Datová tabulka, z níž pochází tento Child řádek</param>
         /// <param name="searchInfo">Režim vztahů, určuje parametry hledání</param>
         /// <param name="idType"></param>
         /// <param name="timeFrame"></param>
+        /// <param name="parentDataDict">Prvky grafu v řádku Parent v daném čase, může být null</param>
         /// <returns></returns>
-        protected bool PrepareCurrentChildRowsFilter(Dictionary<GId, TimeRange> parentDataDict, Row childRow, MainDataTable childTable, SearchChildInfo searchInfo, DataGraphItem.IdType idType, TimeRange timeFrame)
+        protected bool TestSearchPairDataInRow(Row childRow, MainDataTable childTable, SearchChildInfo searchInfo, DataGraphItem.IdType idType, TimeRange timeFrame, Dictionary<GId, TimeRange> parentDataDict)
         {
             if (searchInfo.IsStatic) return true;
             if (parentDataDict == null || parentDataDict.Count == 0 || timeFrame == null) return false;
 
             // Najdeme prvky grafu v řádku Child v zadané době (anebo celý řádek Child, podle idType):
-            Dictionary<GId, TimeRange> childDataDict = this.PrepareCurrentRowGetItems(childRow, childTable, searchInfo, idType, timeFrame);
+            Dictionary<GId, TimeRange> childDataDict = this.GetSearchPairDataFromRow(childRow, childTable, searchInfo, idType, timeFrame);
             if (childDataDict == null || childDataDict.Count == 0) return false;
 
             // Enumerovat budeme skrz kratší kolekci:
@@ -1524,67 +1408,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             return false;
         }
         /// <summary>
-        /// Dictionary, kde Key = klíč Parent řádků a Value = seznam všech potenciálních Child řádků
-        /// </summary>
-        protected Dictionary<GuiId, List<Row>> TreeNodeChildDict { get; private set; }
-        #endregion
-        #region Dynamicky dohledané Child řádky z cizí tabulky
-        /// <summary>
-        /// Metoda najde a připraví Child řádky pro daný Parent řádek, řádky hledá v dodané cizí tabulce, do daného root řádku ukládá jejich vhodné klony
-        /// </summary>
-        /// <param name="parentRow">Parent řádek z this tabulky</param>
-        /// <param name="searchInfo">Režim vztahů, určuje parametry hledání</param>
-        /// <param name="timeFrame">Časový interval</param>
-        /// <param name="otherTable">Zdrojová tabulka</param>
-        /// <param name="otherRows">Sada řádků z jiné tabulky, mezi nimi mohou být Childs k danému Parentu</param>
-        protected void PrepareOtherChildRowsFor(Row parentRow, SearchChildInfo searchInfo, TimeRange timeFrame, MainDataTable otherTable, Row[] otherRows)
-        {
-            if (parentRow == null) return;
-            parentRow.TreeNode.Childs = null;
-            GId recordGId = parentRow.RecordGId;
-
-            // Nejprve si připravím Dictionary, obsahující zdrojové vazební prvky z Parent řádku, z this tabulky:
-            Dictionary<GId, TimeRange> parentDataDict = this.PrepareCurrentRowGetItems(parentRow, this, searchInfo, searchInfo.ParentIdType, timeFrame);
-
-            // Nyní vyhledám Child řádky, které mají s Parentem něco společného (nějakou aktuálně viditelnou práci):
-            //  (tady jde o řádky, pocházející z Other tabulky = před jejich duplikováním)
-            Row[] childs = otherRows
-                .Where(r => PrepareCurrentChildRowsFilter(parentDataDict, r, otherTable, searchInfo, searchInfo.ChildIdType, timeFrame))
-                .ToArray();
-
-            // Pokud není žádný, skončíme:
-            if (childs.Length == 0) return;
-
-            // Nyní provedu synchronizaci dat z childs (=ostrá data) do jejich klonu, který bude vložen do parentRow.TreeNodeChilds:
-            Dictionary<GId, Row> parentDict = this.OtherChildGetParentDict(recordGId);
-            List<Row> currentChilds = new List<Row>();
-            foreach (Row sourceChild in childs)
-            {   // Child řádky z Other tabulky:
-                // Majdu / vytvořím klon řádku, odpovídající řádku Child z other tabulky, ale pokud v něm bude graf, pak prvky grafu klonovat nebudeme:
-                Row cloneChild = this.OtherChildGetCloneRow(parentDict, otherTable, sourceChild);
-                if (cloneChild != null)
-                {   // Do klonu řádku vložím odpovídající prvky grafu.
-                    // K tomu malé vysvětlení:
-                    //  - řádek v proměnné sourceChild je ze zdrojové (other) tabulky, a obsahuje graf s kompletní a platnou sadou prvků
-                    //  - řádek v proměnné cloneChild je vytvořený Clone z řádku sourceChild, jeho trvanlivost je dlouhodobá (od prvního vytvoření do zavření celého okna)
-                    //  - řádek v proměnné cloneChild má obsahovat aktuálně platné prvky grafu z grafu v řádku sourceChild
-                    //  - graf v řádku cloneChild po vytvoření neobsahuje nic, po přesunu časové osy obsahuje zastaralé údaje (prvky mimo aktuální čas)
-                    //  - nyní musíme do řádku cloneChild nasynchronizovat prvky z grafu v řádku sourceChild:
-                    this.OtherChildSyncGraphItems(parentDataDict, searchInfo, timeFrame, sourceChild, cloneChild);
-
-                    currentChilds.Add(cloneChild);
-                }
-            }
-            parentRow.TreeNode.Childs = currentChilds.ToArray();
-        }
-        /// <summary>
         /// Metoda vrací Dictionary, která obsahuje pro daný GId parenta jeho existující klony Child řádků.
         /// Využívá instanční proměnnou <see cref="OtherChildRowDict"/>, kde jsou tyto klony permanentně uloženy.
         /// Pokud pro daného parenta ještě neexistuje Dictionary, bude založena a uložena do paměti.
         /// </summary>
         /// <param name="parentGId"></param>
         /// <returns></returns>
-        protected Dictionary<GId, Row> OtherChildGetParentDict(GId parentGId)
+        protected Dictionary<GId, Row> GetDynamicParentChildDict(GId parentGId)
         {
             if (this.OtherChildRowDict == null)
                 this.OtherChildRowDict = new Dictionary<GId, Dictionary<GId, Row>>();
@@ -1601,7 +1431,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="sourceTable">Tabulka, která je zdrojem dat</param>
         /// <param name="sourceRow">Řádek, který se zde bude klonovat</param>
         /// <returns></returns>
-        protected Row OtherChildGetCloneRow(Dictionary<GId, Row> parentDict, MainDataTable sourceTable, Row sourceRow)
+        protected Row GetChildCloneRow(Dictionary<GId, Row> parentDict, MainDataTable sourceTable, Row sourceRow)
         {
             GId childGId = sourceRow.RecordGId;
             Row cloneRow = parentDict.GetAdd(childGId, g => this.OtherChildCreateCloneRow(sourceTable, sourceRow));
@@ -1617,8 +1447,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             TableRowCloneArgs cloneArgs = new TableRowCloneArgs() { CloneGraphItems = false, CloneRowTagItems = false };
             Row cloneRow = new Row(sourceRow, cloneArgs);                 // V rámci klonování řádku se u jeho grafu nebude provádět přenos položek grafů, ani TagItems
-            cloneRow.ParentChildMode = RowParentChildMode.Child;
             cloneRow.Control = null;
+            cloneRow.ParentRecordGId = GId.Empty;                         // Dynamické Child řádky mají ParentRecordGId = Empty
             GTimeGraph cloneGraph = SearchGraphInRow(cloneRow);
             if (cloneGraph != null) cloneGraph.DataSource = sourceTable;  // Zdrojem dat v klonovaném grafu je původní zdrojová tabulka (obsahuje texty, tooltipy...)
             this.TableRow.AddRow(cloneRow);
@@ -1633,7 +1463,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="timeFrame"></param>
         /// <param name="sourceChild"></param>
         /// <param name="targetChild"></param>
-        protected void OtherChildSyncGraphItems(Dictionary<GId, TimeRange> parentDataDict, SearchChildInfo searchInfo, TimeRange timeFrame, Row sourceChild, Row targetChild)
+        protected void SynchronizeChildGraphItems(Dictionary<GId, TimeRange> parentDataDict, SearchChildInfo searchInfo, TimeRange timeFrame, Row sourceChild, Row targetChild)
         {
             GTimeGraph sourceGraph = SearchGraphInRow(sourceChild);
             if (sourceGraph == null) return;
@@ -1819,6 +1649,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                     info.IsParentChildIntersectTimeOnly = m.HasFlag(GuiChildRowsEvaluateMode.ParentChildIntersectTimeOnly);
                     info.IsInOtherTable = m.HasFlag(GuiChildRowsEvaluateMode.InOtherTable) || m.HasFlag(GuiChildRowsEvaluateMode.InOtherRootRowsOnly);
                     info.IsInOtherRootRowsOnly = m.HasFlag(GuiChildRowsEvaluateMode.InOtherRootRowsOnly);
+                    info.IsInDynamicChildOnly = m.HasFlag(GuiChildRowsEvaluateMode.InDynamicChildOnly);
                 }
 
                 info.ChildRowsTableName = ((hasOtherTable && info.IsInOtherTable) ? otherTable.Trim() : null);
@@ -1843,6 +1674,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 this.IsParentChildIntersectTimeOnly = false;
                 this.IsInOtherTable = false;
                 this.IsInOtherRootRowsOnly = false;
+                this.IsInDynamicChildOnly = false;
                 this.CopyAllItemFromClasses = null;
             }
             /// <summary>
@@ -1884,6 +1716,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             /// K tomuto bitu může i nemusí být nastaven bit <see cref="IsInOtherTable"/>
             /// </summary>
             public bool IsInOtherRootRowsOnly { get; private set; }
+            /// <summary>
+            /// true = Hledat Child řádky pouze mezi DynamicChild řádky.
+            /// K tomuto bitu může i nemusí být nastaven bit <see cref="IsInOtherTable"/>
+            /// </summary>
+            public bool IsInDynamicChildOnly { get; private set; }
             /// <summary>
             /// Definice režimu kopírování prvků grafu podle čísla třídy
             /// </summary>

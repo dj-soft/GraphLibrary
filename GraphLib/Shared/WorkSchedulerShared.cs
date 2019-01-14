@@ -802,7 +802,12 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Hledat Child řádky pouze mezi Root řádky v jiné tabulce (její název je určen v property <see cref="GuiGridProperties.ChildRowsTableName"/>).
         /// K tomuto bitu může i nemusí být nastaven bit <see cref="InOtherRootRowsOnly"/>
         /// </summary>
-        InOtherRootRowsOnly = 0x2000
+        InOtherRootRowsOnly = 0x2000,
+        /// <summary>
+        /// Hledat Child řádky pouze mezi DynamicChild řádky.
+        /// K tomuto bitu může i nemusí být nastaven bit <see cref="InOtherRootRowsOnly"/>
+        /// </summary>
+        InDynamicChildOnly = 0x4000
     }
     #endregion
     #region GuiGridInteraction : definice interakcí v rámci GUI (akce v jednom místě způsobí jinou akci jinde)
@@ -1852,6 +1857,7 @@ namespace Noris.LCS.Base.WorkScheduler
     /// <summary>
     /// GuiTable : Jedna fyzická tabulka (ekvivalent DataTable, s podporou serializace a implicitní konverze z/na DataTable)
     /// </summary>
+    [Obsolete("NEPOUŽÍVAT", true)]
     public sealed class GuiTable : GuiBase
     {
         #region Standardní public properties

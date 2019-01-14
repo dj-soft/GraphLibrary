@@ -803,6 +803,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Soupis řádků v this tabulce, které jsou Dynamické Childs.
         /// Jsou to řádky this tabulky, které nejsou Root, a mají jako svůj Parent = Empty GID.
         /// Systém je může používat jako zdroj dynamických childs podle svých pravidel.
+        /// Toto pole není nikdy null.
         /// </summary>
         public IEnumerable<Row> DynamicChilds { get { return this.TreeDynamicChildDict.Values; } }
         /// <summary>
@@ -2433,6 +2434,10 @@ namespace Asol.Tools.WorkScheduler.Data
             }
 
             target.BackgroundValue = CloneValue(source.BackgroundValue, cloneArgs);
+            target.RecordGId = source.RecordGId;
+            target.ParentRecordGId = source.ParentRecordGId;
+            target.UserData = source.UserData;
+            target.SelectedRowImage = source.SelectedRowImage;
 
             target._TagItemDict = null;
             if (cloneArgs != null && cloneArgs.CloneRowTagItems && source._TagItemDict != null)
@@ -2961,7 +2966,9 @@ namespace Asol.Tools.WorkScheduler.Data
         public static Row CreateFrom(GuiDataRow dataRow)
         {
             if (dataRow == null) return null;
-            Row row = new Row(dataRow.Cells);
+            Row row = new Row(dataRow.Cells.ToArray());
+            
+
             row.RecordGId = dataRow.RowGuiId;
             row.ParentRecordGId = dataRow.ParentRowGuiId;
             row.TagItems = TagItem.CreateFrom(dataRow.TagItems);
@@ -3846,6 +3853,18 @@ namespace Asol.Tools.WorkScheduler.Data
             {
                 if (this._DynamicChildList.RemoveAll(r => Object.ReferenceEquals(r, row)) > 0)
                     this._ChildsInvalidate();
+            }
+        }
+        /// <summary>
+        /// Child řádky tohoto řádku, dynamicky určované. Lze setovat.
+        /// </summary>
+        internal IEnumerable<Row> DynamicChilds
+        {
+            get { return this._DynamicChildList; }
+            set
+            {
+                this._DynamicChildList = (value != null ? new List<Row>(value) : null);
+                this._ChildsInvalidate();
             }
         }
         /// <summary>

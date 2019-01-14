@@ -52,6 +52,10 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public bool IsEmpty { get { return (this.ClassId == 0 && this.RecordId == 0 && !this.EntryId.HasValue); } }
         /// <summary>
+        /// Obsahuje Empty instanci <see cref="GId"/>. Vždy vrací new instanci.
+        /// </summary>
+        public static GId Empty { get { return new GId(0, 0); } }
+        /// <summary>
         /// Název třídy záznamu
         /// </summary>
         public string ClassName { get { return Scheduler.GreenClasses.GetClassName(this.ClassId); } }

@@ -1807,7 +1807,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <returns></returns>
         private MainDataTable _SearchTable(string fullName)
         {
-            return (this._DataTables != null ? this._DataTables.FirstOrDefault(t => String.Equals(t.TableName, fullName)) : null);
+            return (this._DataTables != null && !String.IsNullOrEmpty(fullName) ? this._DataTables.FirstOrDefault(t => String.Equals(t.TableName, fullName)) : null);
         }
         /// <summary>
         /// Souhrn všech datových tabulek ze všech panelů.
@@ -2397,7 +2397,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 .ToArray();
 
             // Pro každou z tabulek zavolám metodu pro vyhodnocení jejich Parent - Child:
-            tables.ForEachItem(t => t.PrepareCurrentChildRows());
+            tables.ForEachItem(t => t.PrepareDynamicChilds());
         }
         #endregion
         #region Zpracování dialogu
