@@ -1178,7 +1178,8 @@ namespace Noris.LCS.Base.WorkScheduler
 
             guiTable.TableName = dataTable.TableName;
             guiTable.ColumnList = GuiDataColumn.CreateFromTable(dataTable);
-            guiTable.RowList = GuiDataRow.CreateFromTable(dataTable);
+            GuiTableKeyColumns keyColumns = GuiTableKeyColumns.SearchInTable(guiTable);
+            guiTable.RowList = GuiDataRow.CreateFromTable(dataTable, keyColumns);
 
             return guiTable;
         }
@@ -1371,29 +1372,6 @@ namespace Noris.LCS.Base.WorkScheduler
         /// false pro sloupce "systémové", které se nikdy nezobrazují.
         /// </summary>
         public bool ColumnIsForUser { get { return (this.BrowseColumnType == BrowseColumnType.DataColumn); } }
-        #endregion
-        #region Servis
-        /// <summary>
-        /// Metoda vrátí <see cref="GuiId"/> pro daný řádek
-        /// </summary>
-        /// <param name="guiDataRow"></param>
-        /// <returns></returns>
-        public GuiId CreateRowGuiId(GuiDataRow guiDataRow)
-        {
-            if (guiDataRow == null || guiDataRow.Cells == null || guiDataRow.Cells.Count == 0) return null;
-            Int32? classId = this.ClassNumber;
-            if (!classId.HasValue || classId.Value == 0) return null;
-
-            Int32? recordId = null;
-            object value = guiDataRow.Cells[0];
-            if (value is Int32) recordId = (Int32)value;
-            else if (value is Int32?) recordId = (Int32?)value;
-            else if (value is Int16) recordId = (Int16)value;
-            else if (value is Int16?) recordId = (Int16?)value;
-            if (!recordId.HasValue) return null;
-
-            return new GuiId(classId.Value, recordId.Value);
-        }
         #endregion
         #region Vytvoření instance GuiDataColumn z System.Data.DataColumn
         /// <summary>
@@ -1781,45 +1759,177 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Vrátí seznam řádků <see cref="GuiDataRow"/> pro danou tabulku
         /// </summary>
         /// <param name="dataTable"></param>
-        /// <param name="keyColumn">Klíčový sloupec [0]</param>
+        /// <param name="keyColumns">Klíčové sloupce tabulky</param>
         /// <returns></returns>
-        public static List<GuiDataRow> CreateFromTable(DataTable dataTable, GuiDataColumn keyColumn = null)
+        public static List<GuiDataRow> CreateFromTable(DataTable dataTable, GuiTableKeyColumns keyColumns = null)
         {
             if (dataTable == null) return null;
-            if (keyColumn == null && dataTable.Columns.Count > 0) keyColumn = GuiDataColumn.CreateFromColumn(dataTable.Columns[0]);
-            return CreateFromTable(dataTable.Rows, keyColumn);
+            if (keyColumns == null) keyColumns = GuiTableKeyColumns.SearchInTable(dataTable);
+            return CreateFromTable(dataTable.Rows, keyColumns);
         }
         /// <summary>
         /// Vrátí seznam řádků <see cref="GuiDataRow"/> pro dané řádky
         /// </summary>
         /// <param name="dataRows"></param>
-        /// <param name="keyColumn">Klíčový sloupec [0]</param>
+        /// <param name="keyColumns">Klíčové sloupce tabulky</param>
         /// <returns></returns>
-        public static List<GuiDataRow> CreateFromTable(DataRowCollection dataRows, GuiDataColumn keyColumn = null)
+        public static List<GuiDataRow> CreateFromTable(DataRowCollection dataRows, GuiTableKeyColumns keyColumns = null)
         {
             if (dataRows == null) return null;
-            if (keyColumn == null && dataRows.Count > 0 && dataRows[0].Table.Columns.Count > 0) keyColumn = GuiDataColumn.CreateFromColumn(dataRows[0].Table.Columns[0]);
+            if (keyColumns == null && dataRows.Count > 0) keyColumns = GuiTableKeyColumns.SearchInTable(dataRows[0].Table);
             List<GuiDataRow> guiRows = new List<GuiDataRow>();
             foreach (DataRow dataRow in dataRows)
-                guiRows.Add(CreateFromRow(dataRow));
+                guiRows.Add(CreateFromRow(dataRow, keyColumns));
             return guiRows;
         }
         /// <summary>
         /// Vrátí instanci <see cref="GuiDataRow"/> pro daný řádek
         /// </summary>
         /// <param name="dataRow"></param>
-        /// <param name="keyColumn">Klíčový sloupec [0]</param>
+        /// <param name="keyColumns">Klíčové sloupce tabulky</param>
         /// <returns></returns>
-        public static GuiDataRow CreateFromRow(DataRow dataRow, GuiDataColumn keyColumn = null)
+        public static GuiDataRow CreateFromRow(DataRow dataRow, GuiTableKeyColumns keyColumns = null)
         {
             if (dataRow == null) return null;
-            int columnCount = dataRow.Table.Columns.Count;
-            if (keyColumn == null && columnCount > 0) keyColumn = GuiDataColumn.CreateFromColumn(dataRow.Table.Columns[0]);
+            if (keyColumns == null) keyColumns = GuiTableKeyColumns.SearchInTable(dataRow.Table);
             GuiDataRow guiRow = new GuiDataRow();
             guiRow.Cells = new List<object>(dataRow.ItemArray);
-            guiRow.RowGuiId = ((keyColumn != null && guiRow.Cells.Count > 0) ? keyColumn.CreateRowGuiId(guiRow) : null);
+            guiRow.RowGuiId = keyColumns.CreateRowGuiId(guiRow); // ((keyColumn != null && guiRow.Cells.Count > 0) ? keyColumn.CreateRowGuiId(guiRow) : null);
             return guiRow;
         }
+        #endregion
+    }
+    /// <summary>
+    /// Třída určená pro nalezení RecordID v tabulce <see cref="GuiDataTable"/>
+    /// </summary>
+    public class GuiTableKeyColumns
+    {
+        #region Konstrukce
+        /// <summary>
+        /// Vrací instanci <see cref="GuiTableKeyColumns"/> vytvořenou ze sloupců v <see cref="DataTable"/>
+        /// </summary>
+        /// <param name="dataTable"></param>
+        /// <returns></returns>
+        public static GuiTableKeyColumns SearchInTable(DataTable dataTable)
+        {
+            List<GuiDataColumn> guiColumns = (dataTable != null ? GuiDataColumn.CreateFromTable(dataTable) : null);
+            return new GuiTableKeyColumns(guiColumns);
+        }
+        /// <summary>
+        /// Vrací instanci <see cref="GuiTableKeyColumns"/> vytvořenou ze sloupců v <see cref="GuiDataTable"/>
+        /// </summary>
+        /// <param name="guiTable"></param>
+        /// <returns></returns>
+        public static GuiTableKeyColumns SearchInTable(GuiDataTable guiTable)
+        {
+            GuiDataColumn[] guiColumns = (guiTable != null ? guiTable.Columns : null);
+            return new GuiTableKeyColumns(guiColumns);
+        }
+        /// <summary>
+        /// Konstruktor pro danou sadu sloupců
+        /// </summary>
+        /// <param name="guiColumns"></param>
+        private GuiTableKeyColumns(IEnumerable<GuiDataColumn> guiColumns)
+        {
+            this.RecordColumn = null;
+            this.ObjectColumn = null;
+            if (guiColumns != null)
+            {
+                this.RecordColumn = guiColumns.FirstOrDefault(c => c.BrowseColumnType == BrowseColumnType.RecordId);
+                this.RecordColumnId = (this.RecordColumn != null ? this.RecordColumn.Index : -1);
+                this.SubjectColumn = guiColumns.FirstOrDefault(c => c.BrowseColumnType == BrowseColumnType.SubjectNumber);
+                this.SubjectColumnId = (this.SubjectColumn != null ? this.SubjectColumn.Index : -1);
+                this.ObjectColumn = guiColumns.FirstOrDefault(c => c.BrowseColumnType == BrowseColumnType.ObjectNumber);
+                this.ObjectColumnId = (this.ObjectColumn != null ? this.ObjectColumn.Index : -1);
+            }
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return "RecordColumn: " + (this.RecordColumn != null ? this.RecordColumn.ColumnName : "Null") + "; " +
+                   "SubjectColumn: " + (this.SubjectColumn != null ? this.SubjectColumn.ColumnName : "Null") + "; " +
+                   "ObjectColumn: " + (this.ObjectColumn != null ? this.ObjectColumn.ColumnName : "Null");
+        }
+        #endregion
+        #region Klíčové sloupce
+        /// <summary>
+        /// Sloupec, který nese číslo záznamu = první sloupec tabulky, jehož <see cref="GuiDataColumn.BrowseColumnType"/> == <see cref="BrowseColumnType.RecordId"/>
+        /// </summary>
+        public GuiDataColumn RecordColumn { get; private set; }
+        /// <summary>
+        /// Sloupec, který nese číslo záznamu = první sloupec tabulky, jehož <see cref="GuiDataColumn.BrowseColumnType"/> == <see cref="BrowseColumnType.SubjectNumber"/>
+        /// </summary>
+        public GuiDataColumn SubjectColumn { get; private set; }
+        /// <summary>
+        /// Sloupec, který nese číslo položky = první sloupec tabulky, jehož <see cref="GuiDataColumn.BrowseColumnType"/> == <see cref="BrowseColumnType.ObjectNumber"/>
+        /// </summary>
+        public GuiDataColumn ObjectColumn { get; private set; }
+        #endregion
+        #region Tvorba GuiId pro dodaný řádek
+        /// <summary>
+        /// Metoda vrátí identifikátor <see cref="GuiId"/> pro dodaný řádek <see cref="GuiDataRow"/>, vytvořený z dat v řádku pro klíčové sloupce (this).
+        /// </summary>
+        /// <param name="guiRow"></param>
+        /// <returns></returns>
+        public GuiId CreateRowGuiId(GuiDataRow guiRow)
+        {
+            if (guiRow == null) return null;
+            if (this.HasRecordColumn)
+            {
+                object value = guiRow[this.RecordColumnId];
+                return value as GuiId;
+            }
+            if (this.HasSubjectColumn && this.HasObjectColumn)
+            {
+                int classId = (this.SubjectColumn.ClassNumber.HasValue ? this.SubjectColumn.ClassNumber.Value : 0);
+                int subjectId = Convert.ToInt32(guiRow[this.SubjectColumnId]);
+                int objectId = Convert.ToInt32(guiRow[this.ObjectColumnId]);
+                if (subjectId == 0 && objectId == 0) return null;
+                return new GuiId(classId, subjectId, objectId);
+            }
+            if (this.HasSubjectColumn)
+            {
+                int classId = (this.SubjectColumn.ClassNumber.HasValue ? this.SubjectColumn.ClassNumber.Value : 0);
+                int subjectId = Convert.ToInt32(guiRow[this.SubjectColumnId]);
+                if (subjectId == 0) return null;
+                return new GuiId(classId, subjectId);
+            }
+            if (this.HasObjectColumn)
+            {
+                int classId = (this.ObjectColumn.ClassNumber.HasValue ? this.ObjectColumn.ClassNumber.Value : 0);
+                int objectId = Convert.ToInt32(guiRow[this.ObjectColumnId]);
+                if (objectId == 0) return null;
+                return new GuiId(classId, 0, objectId);
+            }
+            return null;
+        }
+        /// <summary>
+        /// Index sloupce <see cref="RecordColumn"/>
+        /// </summary>
+        protected int RecordColumnId { get; set; }
+        /// <summary>
+        /// true = existuje sloupec <see cref="RecordColumn"/>
+        /// </summary>
+        protected bool HasRecordColumn { get { return (this.RecordColumnId >= 0); } }
+        /// <summary>
+        /// Index sloupce <see cref="SubjectColumnId"/>
+        /// </summary>
+        protected int SubjectColumnId { get; set; }
+        /// <summary>
+        /// true = existuje sloupec <see cref="SubjectColumn"/>
+        /// </summary>
+        protected bool HasSubjectColumn { get { return (this.SubjectColumnId >= 0); } }
+        /// <summary>
+        /// Index sloupce <see cref="ObjectColumnId"/>
+        /// </summary>
+        protected int ObjectColumnId { get; set; }
+        /// <summary>
+        /// true = existuje sloupec <see cref="ObjectColumn"/>
+        /// </summary>
+        protected bool HasObjectColumn { get { return (this.ObjectColumnId >= 0); } }
         #endregion
     }
     /// <summary>
