@@ -40,8 +40,12 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 using (App.Trace.Scope("SchedulerDataSource", ".ctor", ""))
                     this.DataSource = new SchedulerDataSource();
 
+                GUI.GuiData guiData = null;
                 using (App.Trace.Scope("SchedulerDataSource", "CreateGuiData", ""))
-                    this.GuiData = this.DataSource.CreateGuiData();
+                    guiData = this.DataSource.CreateGuiData();
+
+                using (App.Trace.Scope("SchedulerDataSource", "SerializeGuiData", ""))
+                    this.GuiData = SchedulerDataSource.SerialDeserialData(guiData);
 
                 using (var scope = App.Trace.Scope(Application.TracePriority.Priority3_BellowNormal, "SchedulerForm", "Initialize.MainData", ""))
                 {

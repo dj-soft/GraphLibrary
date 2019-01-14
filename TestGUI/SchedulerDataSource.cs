@@ -820,7 +820,6 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             gridLeft.GraphProperties.TimeAxisMode = TimeGraphTimeAxisMode.LogarithmicScale;
             gridLeft.GraphProperties.UpperSpaceLogical = 1f;
 
-            // Nový postup:
             GuiDataTable guiTable = new GuiDataTable();
             guiTable.AddColumn(new GuiDataColumn() { Alias = "record_gid", BrowseColumnType = BrowseColumnType.RecordId, ClassNumber = ProductOrder.ClassNumber });
             guiTable.AddColumn(new GuiDataColumn() { Alias = "reference_subjektu", Label = "Číslo", Width = 85 });
@@ -831,54 +830,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 this.AddProductOrderToGrid(guiTable, productOrder);
 
             gridLeft.RowTable = guiTable;
-            // Nový postup konec.
-
-
-            // Starý postup:
-            DataTable rowTable = WorkSchedulerSupport.CreateTable(GuiNameLeftRowTable, "cislo_subjektu int, reference_subjektu string, nazev_subjektu string, qty decimal");
-            gridLeft.Rows = new GuiTable() { Name = GuiNameLeftRowTable, DataTable = rowTable };
-            gridLeft.Rows.ColumnsExtendedInfo[0].ClassNumber = ProductOrder.ClassNumber;
-            gridLeft.Rows.ColumnsExtendedInfo[0].BrowseColumnType = BrowseColumnType.SubjectNumber;
-            gridLeft.Rows.ColumnsExtendedInfo[1].PrepareDataColumn("Číslo", 85, true, null, true);
-            gridLeft.Rows.ColumnsExtendedInfo[2].PrepareDataColumn("Dílec", 200, true, null, true);
-            gridLeft.Rows.ColumnsExtendedInfo[3].PrepareDataColumn("Množství", 45, true, null, true);
-            gridLeft.Rows.RowTags = new GuiTagItems();
-
-            // Data tabulky = Výrobní příkazy:
-            foreach (ProductOrder productOrder in this.ProductOrderDict.Values)
-                this.AddProductOrderToGrid(gridLeft, productOrder);
-            // Starý postup konec.
-
-
 
             this.GridLeft = gridLeft;
             this.MainPage.LeftPanel.Grids.Add(gridLeft);
-        }
-        /// <summary>
-        /// Do dodaného GuiGridu přidá řádek za daný Výrobní příkaz, přidá jeho TagItems a graf z jeho operací.
-        /// </summary>
-        /// <param name="guiGrid"></param>
-        /// <param name="productOrder"></param>
-        protected void AddProductOrderToGrid(GuiGrid guiGrid, ProductOrder productOrder)
-        {
-            GuiId rowId = productOrder.RecordGid;
-            guiGrid.Rows.DataTable.Rows.Add(productOrder.RecordId, productOrder.Refer, productOrder.Name, productOrder.Qty);
-            guiGrid.Rows.RowTags.TagItemList.AddRange(productOrder.TagItems);
-            guiGrid.Graphs.Add(productOrder.CreateGuiGraph());
-
-            foreach (ProductOperation productOperation in productOrder.OperationList)
-                this.AddProductOperationToGrid(guiGrid, productOperation);
-        }
-        /// <summary>
-        /// Přidá danou operaci do gridu, jako Child řádek ke svému parentu
-        /// </summary>
-        /// <param name="guiGrid"></param>
-        /// <param name="productOperation"></param>
-        protected void AddProductOperationToGrid(GuiGrid guiGrid, ProductOperation productOperation)
-        {
-            GuiId rowId = productOperation.RecordGid;
-            guiGrid.Rows.DataTable.Rows.Add(productOperation.RecordId, productOperation.Refer, productOperation.Name, productOperation.Qty);
-            guiGrid.AddParentChild(new GuiParentChild() { Parent = productOperation.ProductOrder.RecordGid, Child = productOperation.RecordGid });
         }
         /// <summary>
         /// Do dodané tabulky přidá řádek za daný Výrobní příkaz, přidá jeho TagItems a graf z jeho operací.
@@ -909,7 +863,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <summary>
         /// Vygeneruje kompletní data do středního panelu do horní tabulky = Pracoviště
         /// </summary>
-        protected void CreateCenterPanelWorkplace(bool withDirectChilds = false)
+        protected void CreateCenterPanelWorkplace()
         {
             GuiGrid gridCenterWorkplace = new GuiGrid() { Name = GuiNameGridCenterTop, Title = "Pracoviště" };
 
@@ -948,24 +902,11 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             // Data tabulky = Plánovací jednotky Pracoviště:
             foreach (PlanUnitC planUnitC in this.WorkplaceDict.Values)
-                this.AddPlanUnitCToGrid(gridCenterWorkplace, planUnitC);
+                this.AddPlanUnitCToGrid(gridCenterWorkplace.RowTable, planUnitC);
 
             // Vztahy prvků (Link):
             foreach (ProductOrder productOrder in this.ProductOrderDict.Values)
-                this.AddGraphLinkToGrid(gridCenterWorkplace, productOrder);
-
-            // Vložit tam i Persons?
-            if (withDirectChilds)
-            {
-                foreach (PlanUnitC person in this.PersonDict.Values)
-                {
-                    // Child řádky = pracovníci:
-                    this.AddPlanUnitCToGrid(gridCenterWorkplace, person);
-
-                    // Závislosti řádků (ParentChild):
-                    gridCenterWorkplace.AddParentChild(new GuiParentChild() { Parent = null, Child = person.RecordGid });
-                }
-            }
+                this.AddGraphLinkToGrid(gridCenterWorkplace.RowTable, productOrder);
 
             this.GridCenterWorkplace = gridCenterWorkplace;
             this.MainPage.MainPanel.Grids.Add(gridCenterWorkplace);
@@ -999,7 +940,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             // Data tabulky = Plánovací jednotky Pracovníci:
             foreach (PlanUnitC planUnitC in this.PersonDict.Values)
-                this.AddPlanUnitCToGrid(gridCenterPersons, planUnitC);
+                this.AddPlanUnitCToGrid(gridCenterPersons.RowTable, planUnitC);
 
             this.GridCenterPersons = gridCenterPersons;
             this.MainPage.MainPanel.Grids.Add(gridCenterPersons);
@@ -1054,18 +995,12 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             if (table)
             {
-                DataTable rowTable = WorkSchedulerSupport.CreateTable(tableName, "cislo_subjektu int, reference_subjektu string, nazev_subjektu string, machines_count decimal");
-                gridCenterWorkplace.Rows = new GuiTable() { Name = tableName, DataTable = rowTable };
-                gridCenterWorkplace.Rows.ColumnsExtendedInfo[0].ClassNumber = PlanUnitC.ClassNumber;
-                gridCenterWorkplace.Rows.ColumnsExtendedInfo[0].BrowseColumnType = BrowseColumnType.SubjectNumber;
-                gridCenterWorkplace.Rows.ColumnsExtendedInfo[1].PrepareDataColumn("Číslo", 85, true, null, true);
-                gridCenterWorkplace.Rows.ColumnsExtendedInfo[2].PrepareDataColumn("Název", 200, true, null, true);
-                gridCenterWorkplace.Rows.ColumnsExtendedInfo[3].PrepareDataColumn("Počet", 45, true, null, true);
-
-                if (tagFilter)
-                {
-                    gridCenterWorkplace.Rows.RowTags = new GuiTagItems();
-                }
+                GuiDataTable guiTable = new GuiDataTable() { Name = tableName };
+                guiTable.AddColumn(new GuiDataColumn() { Alias = "record_gid", BrowseColumnType = BrowseColumnType.RecordId, ClassNumber = PlanUnitC.ClassNumber });
+                guiTable.AddColumn(new GuiDataColumn() { Alias = "reference_subjektu", Label = "Číslo", Width = 85 });
+                guiTable.AddColumn(new GuiDataColumn() { Alias = "nazev_subjektu", Label = "Název", Width = 200 });
+                guiTable.AddColumn(new GuiDataColumn() { Alias = "machines_count", Label = "Počet", Width = 45 });
+                gridCenterWorkplace.RowTable = guiTable;
             }
         }
         /// <summary>
@@ -1225,20 +1160,28 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             return false;
         }
         /// <summary>
-        /// Do dodaného GuiGridu přidá řádek za danou Plánovací jednotku, přidá jeho TagItems a graf z jeho operací.
+        /// Do dodané tabulky přidá řádek za danou Plánovací jednotku, přidá jeho TagItems a graf z jeho operací.
         /// </summary>
-        /// <param name="guiGrid"></param>
+        /// <param name="guiTable"></param>
         /// <param name="planUnitC"></param>
-        protected void AddPlanUnitCToGrid(GuiGrid guiGrid, PlanUnitC planUnitC)
+        protected void AddPlanUnitCToGrid(GuiDataTable guiTable, PlanUnitC planUnitC)
         {
-            GuiId rowId = planUnitC.RecordGid;
-            guiGrid.Rows.DataTable.Rows.Add(planUnitC.RecordId, planUnitC.Refer, planUnitC.Name, planUnitC.MachinesCount);
-            guiGrid.Rows.RowTags.TagItemList.AddRange(planUnitC.TagItems);
-            guiGrid.Graphs.Add(planUnitC.CreateGuiGraph());
+            GuiId rowGid = planUnitC.RecordGid;
+            GuiDataRow row = guiTable.AddRow(rowGid, planUnitC.Refer, planUnitC.Name, planUnitC.MachinesCount);
+            row.TagItems = new List<GuiTagItem>(planUnitC.TagItems);
+            row.Graph = planUnitC.CreateGuiGraph();
         }
-        protected void AddGraphLinkToGrid(GuiGrid guiGrid, ProductOrder productOrder)
+        /// <summary>
+        /// Do dodané tabulky přidá linky mezi operacemi daného Výrobního příkazu
+        /// </summary>
+        /// <param name="guiTable"></param>
+        /// <param name="productOrder"></param>
+        protected void AddGraphLinkToGrid(GuiDataTable guiTable, ProductOrder productOrder)
         {
-            guiGrid.GraphLinks.AddRange(productOrder.CreateGuiLinks());
+            var links = productOrder.CreateGuiLinks();
+            if (links == null || links.Length == 0) return;
+            if (guiTable.GraphLinks == null) guiTable.GraphLinks = new List<GuiGraphLink>();
+            guiTable.GraphLinks.AddRange(links);
         }
         protected void CreateRightPanel()
         { }
@@ -1253,6 +1196,27 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         protected DateTime DateTimeFirst;
         protected GuiTimeRange TimeRangeTotal;
         protected GuiTimeRange TimeRangeCurrent;
+        #endregion
+        #region Test Serializace + Deserializace
+        /// <summary>
+        /// Metoda provede serializaci daného objektu a jeho následnou deserializaci, výsledek vrací.
+        /// Testuje se tak přenositelnost všech dat.
+        /// </summary>
+        /// <param name="guiData"></param>
+        /// <returns></returns>
+        public static GuiData SerialDeserialData(GuiData guiData)
+        {
+            PersistArgs serArgs = new PersistArgs() { CompressMode = XmlCompressMode.Compress };
+            string serial = XmlPersist.Serialize(guiData, serArgs);
+
+            PersistArgs desArgs = new PersistArgs() { CompressMode = XmlCompressMode.Compress, DataContent = serial };
+            GuiData desData = XmlPersist.Deserialize(desArgs) as GuiData;
+
+            if (desData == null)
+                throw new FormatException("Serialize and Deserialize of GuiData fail; Deserialize process returns null value.");
+
+            return desData;
+        }
         #endregion
         #region Konstanty, jména GUI prvků
         protected const string GuiNameData = "Data";
