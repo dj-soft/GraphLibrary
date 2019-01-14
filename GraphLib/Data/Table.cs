@@ -2850,7 +2850,7 @@ namespace Asol.Tools.WorkScheduler.Data
             if (primaryColumn == null) return null;
 
             // Ve sloupci [primaryColumn] může být umístěn GId nebo GuiId:
-            object value = this[primaryColumn];
+            object value = this[primaryColumn].Value;
             if (value is GId) return value as GId;
             if (value is GuiId) return (GId)(value as GuiId);
 
@@ -3324,11 +3324,6 @@ namespace Asol.Tools.WorkScheduler.Data
         public ColumnContentType ColumnContent { get { return this._ColumnContent; } set { this._ColumnContent = value; } }
         private ColumnContentType _ColumnContent;
         /// <summary>
-        /// Datový typ obsahu sloupce. Null = obecná data
-        /// </summary>
-        public Type DataType { get { return this._DataType; } set { this._DataType = value; } }
-        private Type _DataType;
-        /// <summary>
         /// Defaultní hodnota pro nové řádky
         /// </summary>
         public object DefaultValue { get { return this._DefaultValue; } set { this._DefaultValue = value; } }
@@ -3456,7 +3451,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Obsahuje true, pokud tento sloupec může být použit jako PrimaryKey.
         /// Může to být sloupec, jehož <see cref="ColumnContent"/> je <see cref="ColumnContentType.RecordGId"/>,
         /// anebo sloupec typu <see cref="ColumnContentType.MasterId"/> nebo <see cref="ColumnContentType.EntryId"/>, 
-        /// pokud jeho <see cref="DataType"/> je Int32 a jeho číslo třídy <see cref="RecordClassNumber"/> má hodnotu.
+        /// pokud jeho číslo třídy <see cref="RecordClassNumber"/> má hodnotu.
         /// To jest: jeho datový typ je Int32, a obsah je RecordId. 
         /// </summary>
         internal bool AllowPrimaryKey
@@ -3464,7 +3459,7 @@ namespace Asol.Tools.WorkScheduler.Data
             get
             {
                 if (this.ColumnContent == ColumnContentType.RecordGId) return true;
-                if (this.DataType == typeof(Int32) && this.RecordClassNumber.HasValue && (this.ColumnContent == ColumnContentType.MasterId || this.ColumnContent == ColumnContentType.EntryId)) return true;
+                if (this.RecordClassNumber.HasValue && (this.ColumnContent == ColumnContentType.MasterId || this.ColumnContent == ColumnContentType.EntryId)) return true;
                 return false;
             }
         }
@@ -3479,7 +3474,6 @@ namespace Asol.Tools.WorkScheduler.Data
         {
             if (dataColumn == null) return;
             this.Title = dataColumn.Caption;
-            this.DataType = dataColumn.DataType;
             this.DefaultValue = dataColumn.DefaultValue;
             this.ReadOnly = dataColumn.ReadOnly;
 
@@ -3503,7 +3497,6 @@ namespace Asol.Tools.WorkScheduler.Data
         public void FillFrom(GuiDataColumn dataColumn)
         {
             if (dataColumn == null) return;
-            this.DataType = dataColumn.ColumnType;
             this.Title = dataColumn.ColumnCaption;
             this.DefaultValue = dataColumn.ColumnDefaultValue;
             this.ReadOnly = dataColumn.ColumnReadOnly;
@@ -3602,7 +3595,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <returns></returns>
         protected static int? GetClassNumber(GuiDataColumn dataColumn)
         {
-            if (dataColumn.Index == 0) return dataColumn.ClassNumber;
+            if (dataColumn.ClassNumber.HasValue && dataColumn.ClassNumber.Value != 0) return dataColumn.ClassNumber;
             if (dataColumn.RelationClassNumber.HasValue) return dataColumn.RelationClassNumber;
             return null;
         }

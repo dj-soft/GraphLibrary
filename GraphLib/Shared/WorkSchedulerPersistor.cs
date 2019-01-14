@@ -3912,7 +3912,7 @@ anebo neprázdný objekt:
                 this.XmlItemName = XmlPersist.CreateXmlName(this.XmlItemName);
             }
             /// <summary>
-            /// Určí, zda danou property je možno serializovat z hlediska jejich get a set metod
+            /// Určí, zda danou property je možno serializovat z hlediska jejich get a set metod a z hlediska datového typu
             /// </summary>
             /// <param name="property"></param>
             /// <returns></returns>
@@ -3927,6 +3927,10 @@ anebo neprázdný objekt:
                 if (setMethod == null) return false;                           // Nemá SET metodu
                 ParameterInfo[] setParams = setMethod.GetParameters();
                 if (setParams != null && setParams.Length > 1) return false;   // Má SET metodu s více parametry (tj. indexer)  (jeden parametr má vždy = setovaná hodnota)
+
+                Type propertyType = property.PropertyType;
+                string typeName = propertyType.Namespace + "." + propertyType.Name;
+                if (typeName == "System.Type" || typeName == "System.RuntimeType") return false;
 
                 return true;
             }

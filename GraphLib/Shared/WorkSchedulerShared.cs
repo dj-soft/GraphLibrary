@@ -992,6 +992,18 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public int ColumnCount { get { return this.ColumnList.Count; } }
         /// <summary>
+        /// Do this tabulky přidá dané sloupce.
+        /// Sloupec nesmí být null, a nesmí patřit do žádné tabulky (tzn. ani do this tabulky).
+        /// Sloupec lze z tabulky odebrat a teprve pak přidat do jiné tabulky.
+        /// </summary>
+        /// <param name="columns"></param>
+        public void AddColumns(IEnumerable<GuiDataColumn> columns)
+        {
+            if (columns == null) return;
+            foreach (GuiDataColumn column in columns)
+                this.AddColumn(column);
+        }
+        /// <summary>
         /// Do this tabulky přidá daný sloupec.
         /// Sloupec nesmí být null, a nesmí patřit do žádné tabulky (tzn. ani do this tabulky).
         /// Sloupec lze z tabulky odebrat a teprve pak přidat do jiné tabulky.
@@ -1069,14 +1081,16 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public int RowCount { get { return this.RowList.Count; } }
         /// <summary>
-        /// Do this tabulky přidá řádek nově vytvořený pro dané hodnoty.
+        /// Do this tabulky přidá dané řádky.
+        /// Řádek nesmí být null, a nesmí patřit do žádné tabulky (tzn. ani do this tabulky).
+        /// Řádek lze z tabulky odebrat a teprve pak přidat do jiné tabulky.
         /// </summary>
-        /// <param name="values"></param>
-        public GuiDataRow AddRow(params object[] values)
+        /// <param name="rows"></param>
+        public void AddRows(IEnumerable<GuiDataRow> rows)
         {
-            GuiDataRow row = new GuiDataRow(values);
-            this.AddRow(row);
-            return row;
+            if (rows == null) return;
+            foreach (GuiDataRow row in rows)
+                this.AddRow(row);
         }
         /// <summary>
         /// Do this tabulky přidá daný řádek.
@@ -1099,6 +1113,16 @@ namespace Noris.LCS.Base.WorkScheduler
             }
             ((IGuiDataTableMember)row).Table = this;
             this.RowList.Add(row);
+        }
+        /// <summary>
+        /// Do this tabulky přidá řádek nově vytvořený pro dané hodnoty.
+        /// </summary>
+        /// <param name="values"></param>
+        public GuiDataRow AddRow(params object[] values)
+        {
+            GuiDataRow row = new GuiDataRow(values);
+            this.AddRow(row);
+            return row;
         }
         /// <summary>
         /// Odebere z this tabulky daný řádek.
@@ -1177,9 +1201,9 @@ namespace Noris.LCS.Base.WorkScheduler
             GuiDataTable guiTable = new GuiDataTable();
 
             guiTable.TableName = dataTable.TableName;
-            guiTable.ColumnList = GuiDataColumn.CreateFromTable(dataTable);
+            guiTable.AddColumns(GuiDataColumn.CreateFromTable(dataTable));
             GuiTableKeyColumns keyColumns = GuiTableKeyColumns.SearchInTable(guiTable);
-            guiTable.RowList = GuiDataRow.CreateFromTable(dataTable, keyColumns);
+            guiTable.AddRows(GuiDataRow.CreateFromTable(dataTable, keyColumns));
 
             return guiTable;
         }
@@ -1250,10 +1274,6 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Vrátí index sloupce v seznamu sloupců své tabulky. Pokud sloupec do žádné tabulky nepatří, vrátí -1.
         /// </summary>
         public int Index { get { return (this.HasTable ? this.ITable.GetColumnIndex(this) : -1); } }
-        /// <summary>
-        /// Hodnota <see cref="System.Data.DataColumn.DataType"/>
-        /// </summary>
-        public Type ColumnType { get; set; }
         /// <summary>
         /// Hodnota <see cref="System.Data.DataColumn.ColumnName"/>
         /// </summary>
@@ -1409,7 +1429,6 @@ namespace Noris.LCS.Base.WorkScheduler
             GuiDataColumn guiColumn = new GuiDataColumn();
 
             guiColumn.ColumnName = dataColumn.ColumnName;
-            guiColumn.ColumnType = dataColumn.DataType;
             guiColumn.ColumnCaption = dataColumn.Caption;
             guiColumn.ColumnDefaultValue = dataColumn.DefaultValue;
             guiColumn.ColumnReadOnly = dataColumn.ReadOnly;
@@ -1849,9 +1868,12 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <returns></returns>
         public override string ToString()
         {
-            return "RecordColumn: " + (this.RecordColumn != null ? this.RecordColumn.ColumnName : "Null") + "; " +
-                   "SubjectColumn: " + (this.SubjectColumn != null ? this.SubjectColumn.ColumnName : "Null") + "; " +
-                   "ObjectColumn: " + (this.ObjectColumn != null ? this.ObjectColumn.ColumnName : "Null");
+            string text = "";
+            if (this.HasRecordColumn) text += (text.Length > 0 ? "; " : "") + "RecordColumn: " + this.RecordColumn.ColumnName;
+            if (this.HasSubjectColumn) text += (text.Length > 0 ? "; " : "") + "SubjectColumn: " + this.SubjectColumn.ColumnName;
+            if (this.HasObjectColumn) text += (text.Length > 0 ? "; " : "") + "ObjectColumn: " + this.ObjectColumn.ColumnName;
+            if (text.Length == 0) text = "Empty";
+            return text;
         }
         #endregion
         #region Klíčové sloupce
