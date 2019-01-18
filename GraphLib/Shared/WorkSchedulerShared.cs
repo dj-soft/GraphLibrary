@@ -3847,6 +3847,75 @@ namespace Noris.LCS.Base.WorkScheduler
         #endregion
     }
     #endregion
+    #region GuiIdText : třída pro předání odkazu na záznam (GuiId) plus vizuální text
+    /// <summary>
+    /// GuiIdText : třída pro předání odkazu na záznam (GuiId) plus vizuální text.
+    /// Instance třídy se běžně používá jako Value v tabulce, kde reprezentuje vztažený záznam.
+    /// Její text je zobrazen s podtržením (vztah), a Ctrl + DoubleClick provede otevření daného záznamu.
+    /// </summary>
+    public class GuiIdText : IXmlSerializer
+    {
+        #region Konstruktor, standardní properties
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public GuiIdText()
+        { }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return "GuiId: " + (this.GuiId != null ? this.GuiId.ToString() : "Null") +
+                  "; Text: " + (this.Text != null ? this.Text : "Null");
+        }
+        /// <summary>
+        /// Identifikátor záznamu
+        /// </summary>
+        public GuiId GuiId { get; set; }
+        /// <summary>
+        /// Vizuální text (reference, název, jakýkoli jiný atribut záznamu)
+        /// </summary>
+        public string Text { get; set; }
+        #endregion
+        #region Serializace
+        /// <summary>
+        /// Obsahuje textové vyjádření zdejších dat
+        /// </summary>
+        public string Name
+        {
+            get { return (this.GuiId != null ? this.GuiId.Name : "") + "=" + (this.Text != null ? this.Text : ""); }
+            private set
+            {
+                GuiId guiId = null;
+                string text = null;
+                qqq
+
+                int classId = 0;
+                int recordId = 0;
+                int entryId = 0;
+                bool isValid = false;
+                bool isEntry = false;
+                if (!String.IsNullOrEmpty(value) && value.Contains(":"))
+                {
+                    string[] items = value.Split(':');
+                    isValid = (Int32.TryParse(items[0], out classId) && Int32.TryParse(items[1], out recordId));
+                    if (isValid && items.Length > 2)
+                        isEntry = Int32.TryParse(items[2], out entryId);
+                }
+                this.ClassId = (isValid ? classId : 0);
+                this.RecordId = (isValid ? recordId : 0);
+                this.EntryId = (isEntry ? (int?)entryId : (int?)null);
+            }
+        }
+        /// <summary>
+        /// Tato property má obsahovat (get vrací, set akceptuje) XML data z celého aktuálního objektu.
+        /// </summary>
+        string IXmlSerializer.XmlSerialData { get { return this.Name; } set { this.Name = value; } }
+        #endregion
+    }
+    #endregion
     #region GuiId : Identifikátor čísla třídy a čísla záznamu, použitelný i jako klíč v Dictionary.
     /// <summary>
     /// GuiId : Identifikátor čísla třídy a čísla záznamu, použitelný i jako klíč v Dictionary.
@@ -3855,6 +3924,7 @@ namespace Noris.LCS.Base.WorkScheduler
     /// </summary>
     public sealed class GuiId : IXmlSerializer
     {
+        #region Konstruktor, standardní properties
         /// <summary>
         /// Konstruktor bez parametrů musí existovat kvůli deserialiaci.
         /// </summary>
@@ -3913,6 +3983,8 @@ namespace Noris.LCS.Base.WorkScheduler
         {
             return "C:" + this.ClassId.ToString() + "; R:" + this.RecordId.ToString() + (this.EntryId.HasValue ? "; E:" + this.EntryId.Value.ToString() : "");
         }
+        #endregion
+        #region HashCode, Equals, ==, !=
         /// <summary>
         /// Vrátí HashCode
         /// </summary>
@@ -3964,6 +4036,8 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <param name="b"></param>
         /// <returns></returns>
         public static bool operator !=(GuiId a, GuiId b) { return !_Equals(a, b); }
+        #endregion
+        #region Serializace
         /// <summary>
         /// Obsahuje textové vyjádření zdejších dat
         /// </summary>
@@ -3993,6 +4067,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Tato property má obsahovat (get vrací, set akceptuje) XML data z celého aktuálního objektu.
         /// </summary>
         string IXmlSerializer.XmlSerialData { get { return this.Name; } set { this.Name = value; } }
+        #endregion
     }
     #endregion
     #region GuiRange + GuiTimeRange + GuiSingleRange: rozsah { Begin ÷ End } dvou hodnot stejného datového typu
