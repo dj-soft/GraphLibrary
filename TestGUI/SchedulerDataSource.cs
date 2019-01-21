@@ -284,9 +284,12 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 Height = height,
                 WorkPlace = workPlace,
                 TBc = TimeSpan.FromMinutes(tbcMin),
-                TAc = TimeSpan.FromMinutes(tacMin),
+                TAc = TimeSpan.FromMinutes((double)(qty = (decimal)tacMin)),
                 TEc = TimeSpan.FromMinutes(tecMin)
             };
+            TimeSpan add = TimeSpan.FromHours(1d) - operation.TTc;
+            if (add.Ticks > 0L) operation.TAc = operation.TAc + add;
+
             operation.ToolTip = operation.ReferName + Eol + productOrder.ReferName + Eol + toolTip;
 
             // Komponenty:
@@ -870,11 +873,11 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             gridLeft.GraphProperties.TimeAxisMode = TimeGraphTimeAxisMode.LogarithmicScale;
             gridLeft.GraphProperties.UpperSpaceLogical = 1f;
 
-            GuiDataTable guiTable = new GuiDataTable();
-            guiTable.AddColumn(new GuiDataColumn() { Alias = "record_gid", BrowseColumnType = BrowseColumnType.RecordId, ClassNumber = ProductOrder.ClassNumber });
-            guiTable.AddColumn(new GuiDataColumn() { Alias = "reference_subjektu", Label = "Číslo", Width = 85 });
-            guiTable.AddColumn(new GuiDataColumn() { Alias = "nazev_subjektu", Label = "Dílec", Width = 200 });
-            guiTable.AddColumn(new GuiDataColumn() { Alias = "qty", Label = "Množství", Width = 45 });
+            GuiDataTable guiTable = new GuiDataTable() { ClassId = ProductOrder.ClassNumber };
+            guiTable.AddColumn(new GuiDataColumn() { Name = "record_gid", BrowseColumnType = BrowseColumnType.RecordId, TableClassId = ProductOrder.ClassNumber });
+            guiTable.AddColumn(new GuiDataColumn() { Name = "reference_subjektu", Title = "Číslo", Width = 85 });
+            guiTable.AddColumn(new GuiDataColumn() { Name = "nazev_subjektu", Title = "Dílec", Width = 200 });
+            guiTable.AddColumn(new GuiDataColumn() { Name = "qty", Title = "Množství", Width = 45 });
 
             foreach (ProductOrder productOrder in this.ProductOrderDict.Values)
                 this.AddProductOrderToGrid(guiTable, productOrder);
@@ -892,7 +895,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         protected void AddProductOrderToGrid(GuiDataTable guiTable, ProductOrder productOrder)
         {
             GuiId rowGid = productOrder.RecordGid;
-            GuiDataRow row = guiTable.AddRow(rowGid, productOrder.Refer, productOrder.Name, productOrder.Qty);
+            GuiIdText name = new GuiIdText() { GuiId = new GuiId(343, productOrder.RecordId), Text = productOrder.Name };
+            GuiDataRow row = guiTable.AddRow(rowGid, productOrder.Refer, name, productOrder.Qty);         // productOrder.Name
             row.TagItems = new List<GuiTagItem>(productOrder.TagItems);
             row.Graph = productOrder.CreateGuiGraph();
 
@@ -1059,11 +1063,11 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             if (table)
             {
-                GuiDataTable guiTable = new GuiDataTable() { Name = tableName };
-                guiTable.AddColumn(new GuiDataColumn() { Alias = "record_gid", BrowseColumnType = BrowseColumnType.RecordId, ClassNumber = PlanUnitC.ClassNumber });
-                guiTable.AddColumn(new GuiDataColumn() { Alias = "reference_subjektu", Label = "Číslo", Width = 85 });
-                guiTable.AddColumn(new GuiDataColumn() { Alias = "nazev_subjektu", Label = "Název", Width = 200 });
-                guiTable.AddColumn(new GuiDataColumn() { Alias = "machines_count", Label = "Počet", Width = 45 });
+                GuiDataTable guiTable = new GuiDataTable() { Name = tableName , ClassId = PlanUnitC.ClassNumber };
+                guiTable.AddColumn(new GuiDataColumn() { Name = "record_gid", BrowseColumnType = BrowseColumnType.RecordId, TableClassId = PlanUnitC.ClassNumber });
+                guiTable.AddColumn(new GuiDataColumn() { Name = "reference_subjektu", Title = "Číslo", Width = 85 });
+                guiTable.AddColumn(new GuiDataColumn() { Name = "nazev_subjektu", Title = "Název", Width = 200 });
+                guiTable.AddColumn(new GuiDataColumn() { Name = "machines_count", Title = "Počet", Width = 45 });
                 gridCenterWorkplace.RowTable = guiTable;
             }
         }
@@ -1231,7 +1235,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         protected void AddPlanUnitCToGrid(GuiDataTable guiTable, PlanUnitC planUnitC)
         {
             GuiId rowGid = planUnitC.RecordGid;
-            GuiDataRow row = guiTable.AddRow(rowGid, planUnitC.Refer, planUnitC.Name, planUnitC.MachinesCount);
+            GuiIdText mc = new GuiIdText() { GuiId = new GuiId(1365, planUnitC.RecordId), Text = planUnitC.MachinesCount.ToString() };
+            GuiDataRow row = guiTable.AddRow(rowGid, planUnitC.Refer, planUnitC.Name, mc);      // planUnitC.MachinesCount
             row.TagItems = new List<GuiTagItem>(planUnitC.TagItems);
             row.Graph = planUnitC.CreateGuiGraph();
         }
@@ -1430,6 +1435,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                         }
                         break;
 
+                    case GuiRequest.COMMAND_OpenRecords:
+                        Application.App.ShowInfo("Bohužel neumím otevřít záznam, jehož ID=" + requestArgs.Request.RecordsToOpen.ToString(";"));
+                        break;
+
                     case GuiRequest.COMMAND_QueryCloseWindow:
                         if (this.DataChanged)
                         {
@@ -1585,6 +1594,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         public TimeSpan TBc { get; set; }
         public TimeSpan TAc { get; set; }
         public TimeSpan TEc { get; set; }
+        public TimeSpan TTc { get { return this.TBc + this.TAc + this.TEc; } }
         public GuiTimeRange Time { get; set; }
         public GuiTimeRange TimeTBc { get; set; }
         public GuiTimeRange TimeTAc { get; set; }

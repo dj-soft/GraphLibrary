@@ -285,7 +285,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                         new Column("gender", "Rod", sortingEnabled: false, width: 35, allowColumnResize: false, widthMininum: 35, widthMaximum: 35)
                     );
 
-                table.Columns["profesion"].ColumnProperties.RelatedRecordColumnName = "profesion_id";
+                table.Columns["profesion"].RelatedRecordColumnName = "profesion_id";
 
                 Image[] images = _LoadImages();
 
