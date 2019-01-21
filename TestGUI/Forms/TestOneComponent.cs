@@ -27,7 +27,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI.Forms
 
         protected void InitGComp()
         {
-            this._Test = new GCtrlTest() { Bounds = new Rectangle(25, 10, 150, 40), BackColor = Color.LimeGreen };
+            this._Test = new GCtrlTest() { Bounds = new Rectangle(25, 10, 150, 40), BackColor = Color.LightSkyBlue };
             this._Control.AddItem(_Test);
         }
         protected GCtrlTest _Test;
@@ -36,8 +36,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI.Forms
     {
         public GCtrlTest()
         {
-            this._ResizeLeft = new ResizeItem() { Bounds = new Rectangle(0, 0, 5, 40), BackColor = Color.DarkViolet };
-            this._ResizeRight = new ResizeItem() { Bounds = new Rectangle(145, 0, 5, 40), BackColor = Color.DarkViolet };
+            this._ResizeLeft = new ResizeItem() { Side = RectangleSide.Left, BackColor = Color.Navy };
+            this._ResizeRight = new ResizeItem() { Side = RectangleSide.Right, BackColor = Color.Navy };
             this.AddItems(this._ResizeLeft, this._ResizeRight);
         }
         private ResizeItem _ResizeLeft;
