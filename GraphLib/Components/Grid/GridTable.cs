@@ -414,7 +414,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         private void _ColumnsCheck()
         {
             if (this._Columns != null) return;
-            List<Column> columnsList = this.DataTable.Columns.Where(c => c.ColumnProperties.IsVisible).ToList();    // Vybrat viditelné sloupce
+            List<Column> columnsList = this.DataTable.Columns.Where(c => c.IsVisible).ToList();    // Vybrat viditelné sloupce
             columnsList.Sort(Column.CompareOrder);                                                 // Setřídit podle pořadí
             SequenceLayout.SequenceLayoutCalculate(columnsList.Select(c => c.ColumnHeader));       // Napočítat jejich ISequenceLayout.Begin a .End
             this._ColumnListWidthValid = true;                                                     // ISequenceLayout jsou platné
@@ -1879,7 +1879,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             if (column == null) return;
             this.CallTimeAxisValueChanged(column, e);
             this.RepaintColumn(column);
-            if (this.HasGrid && column.ColumnProperties.UseTimeAxis)
+            if (this.HasGrid && column.UseTimeAxis)
             {   // Já (GTable) zavolám můj GGrid, aby zavolal GridColumn.OnChangeTimeAxis(int?, GPropertyChangeArgs<TimeRange>) pro daný sloupec:
                 // Grid dále zajistí aktualizaci synchronizované časové osy (nahoru), a následně i obsluhy jejího eventu o změně (dolů).
                 this.Grid.OnChangeTimeAxis(this.TableId, column.ColumnId, e);
@@ -1906,7 +1906,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="e">Data o změně</param>
         internal void RefreshTimeAxis(Column column, GPropertyChangeArgs<TimeRange> e)
         {
-            if (column == null || !column.ColumnProperties.UseTimeAxis) return;
+            if (column == null || !column.UseTimeAxis) return;
             column.ColumnHeader.RefreshTimeAxis(e);
             this.CallTimeAxisValueChanged(column, e);
             this.RepaintColumn(column);
@@ -2020,7 +2020,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             if (column != null)
             {
                 column.Table.ColumnHeaderClick(column);
-                if (column.ColumnProperties.AllowColumnSortByClick && column.Table.AllowColumnSortByClick)
+                if (column.AllowColumnSortByClick && column.Table.AllowColumnSortByClick)
                 {
                     if (column.SortChange())
                         this.Repaint();
@@ -2192,8 +2192,9 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
                 case TableValueType.Image:
                     this.DrawContentImage(e, boundsAbsolute, row, cell, value as Image);
                     break;
+                case TableValueType.TextRelation:
                 case TableValueType.Text:
-                    this.DrawContentText(e, boundsAbsolute, row, cell, value);
+                    this.DrawContentText(e, boundsAbsolute, row, cell, value, valueType);
                     break;
             }
         }
@@ -2228,21 +2229,24 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="row"></param>
         /// <param name="cell"></param>
         /// <param name="value"></param>
-        private void DrawContentText(GInteractiveDrawArgs e, Rectangle boundsAbsolute, Row row, Cell cell, object value)
+        /// <param name="valueType"></param>
+        private void DrawContentText(GInteractiveDrawArgs e, Rectangle boundsAbsolute, Row row, Cell cell, object value, TableValueType valueType)
         {
             if (row == null || cell == null) return;
 
             // Nejprve podtržení, pokud sloupec zobrazuje vztah:
-            if (cell.Column.ColumnProperties.IsRelation)
+            if (cell.IsRelation)
                 this.DrawContentRelation(e, boundsAbsolute, row, cell, value);
 
-            // Obsah řádku:
-            string formatString = cell.Column.ColumnProperties.FormatString;
-            ContentAlignment textAlignment;
-            string text = GetText(value, formatString, out textAlignment);
+            // Obsah a zarovnání řádku:
+            string formatString = cell.Column.FormatString;
+            ContentAlignment defaultAlignment;
+            string text = GetText(value, valueType, formatString, out defaultAlignment);
+            if (cell.Column.Alignment.HasValue) defaultAlignment = cell.Column.Alignment.Value;
 
             VisualStyle style = ((IVisualMember)cell).Style;
-            ContentAlignment alignment = style.ContentAlignment ?? textAlignment;
+            ContentAlignment alignment = (cell.Column.Alignment.HasValue ? cell.Column.Alignment.Value :
+                                         (style.ContentAlignment.HasValue ? style.ContentAlignment.Value : defaultAlignment));
             FontInfo font = style.Font ?? FontInfo.Default;
             Color textColor = this.GetTextColor(row, cell);
 
@@ -2330,20 +2334,23 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// Převede danou hodnotu (obsah buňky) na string s využitím formátovacího řetězce, a podle konkrétního datového typu určí výchozí zarovnání.
         /// </summary>
         /// <param name="value"></param>
+        /// <param name="valueType"></param>
         /// <param name="formatString"></param>
-        /// <param name="alignment"></param>
+        /// <param name="defaultAlignment"></param>
         /// <returns></returns>
-        internal static string GetText(object value, string formatString, out ContentAlignment alignment)
+        internal static string GetText(object value, TableValueType valueType, string formatString, out ContentAlignment defaultAlignment)
         {
-            alignment = ContentAlignment.MiddleLeft;
+            defaultAlignment = ContentAlignment.MiddleLeft;
             if (value == null) return "";
+
+            if (valueType == TableValueType.TextRelation) return (value as Noris.LCS.Base.WorkScheduler.GuiIdText).Text;
 
             bool hasFormatString = (!String.IsNullOrEmpty(formatString));
 
             if (value is DateTime)
             {
                 DateTime valueDT = (DateTime)value;
-                alignment = ContentAlignment.MiddleCenter;
+                defaultAlignment = ContentAlignment.MiddleCenter;
                 if (hasFormatString) return valueDT.ToString(formatString);
                 return valueDT.ToString();
             }
@@ -2351,7 +2358,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             if (value is Int32)
             {
                 Int32 valueInt32 = (Int32)value;
-                alignment = ContentAlignment.MiddleRight;
+                defaultAlignment = ContentAlignment.MiddleRight;
                 if (hasFormatString) return valueInt32.ToString(formatString);
                 return valueInt32.ToString();
             }
@@ -2359,11 +2366,11 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             if (value is Decimal)
             {
                 Decimal valueDecimal = (Decimal)value;
-                alignment = ContentAlignment.MiddleRight;
+                defaultAlignment = ContentAlignment.MiddleRight;
                 if (hasFormatString) return valueDecimal.ToString(formatString);
                 return valueDecimal.ToString();
             }
-            alignment = ContentAlignment.MiddleLeft;
+            defaultAlignment = ContentAlignment.MiddleLeft;
 
             return value.ToString();
         }

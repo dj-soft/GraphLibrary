@@ -488,7 +488,26 @@ namespace Asol.Tools.WorkScheduler.Application
         /// <param name="icon"></param>
         private static void _ShowMsg(string message, System.Windows.Forms.MessageBoxIcon icon)
         {
-            System.Windows.Forms.MessageBox.Show(MainForm, message, App.AppProductTitle, System.Windows.Forms.MessageBoxButtons.OK, icon);
+            System.Windows.Forms.Form mainForm = MainForm;
+            if (mainForm == null)
+                _ShowMsgGui(null, message, icon);
+            else if (mainForm.InvokeRequired)
+                mainForm.BeginInvoke(new Action<System.Windows.Forms.Form, string, System.Windows.Forms.MessageBoxIcon>(_ShowMsgGui), mainForm, message, icon);
+            else
+                _ShowMsgGui(mainForm, message, icon);
+        }
+        /// <summary>
+        /// Zobrazí danou hlášku
+        /// </summary>
+        /// <param name="mainForm"></param>
+        /// <param name="message"></param>
+        /// <param name="icon"></param>
+        private static void _ShowMsgGui(System.Windows.Forms.Form mainForm, string message, System.Windows.Forms.MessageBoxIcon icon)
+        {
+            if (mainForm == null)
+                System.Windows.Forms.MessageBox.Show(message, App.AppProductTitle, System.Windows.Forms.MessageBoxButtons.OK, icon);
+            else
+                System.Windows.Forms.MessageBox.Show(mainForm, message, App.AppProductTitle, System.Windows.Forms.MessageBoxButtons.OK, icon);
         }
         #endregion
         #region ProcessRequestOnbackground() : Worker (process requests in background thread in queue)

@@ -1100,7 +1100,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 clip = Rectangle.Intersect(clip, dataBounds);
 
                 // Pokud v tabulce najdu alespoň jeden sloupec typu Graf (používá časovou osu)...
-                var graphColumns = this._OwnerGTable.Columns.Where(c => c.ColumnProperties.UseTimeAxis).ToArray();
+                var graphColumns = this._OwnerGTable.Columns.Where(c => c.UseTimeAxis).ToArray();
                 if (graphColumns != null && graphColumns.Length > 0)
                 {   // ...pak zmenším prostor clipu ve směru X pouze na prostor daný všemi grafy v tabulce (on nemusí být pouze jeden):
                     Rectangle c0 = graphColumns[0].ColumnHeader.BoundsAbsolute;  // Souřadnice (X) prvního sloupce s grafem

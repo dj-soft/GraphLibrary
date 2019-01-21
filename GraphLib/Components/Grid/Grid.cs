@@ -408,7 +408,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     foreach (GTable table in this._Tables)
                     {
                         if (table.DataTable == null || !table.DataTable.IsVisible) continue;
-                        foreach (Column column in table.DataTable.Columns.Where(c => c.ColumnProperties.IsVisible))
+                        foreach (Column column in table.DataTable.Columns.Where(c => c.IsVisible))
                         {
                             int columnId = column.ColumnId;
                             GridColumn gridColumn;
@@ -1248,11 +1248,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public int ColumnOrder
         {
-            get { return this._MasterColumn.ColumnProperties.ColumnOrder; }
+            get { return this._MasterColumn.ColumnOrder; }
             set
             {
                 foreach (Column column in this._ColumnList)
-                    column.ColumnProperties.ColumnOrder = value;
+                    column.ColumnOrder = value;
             }
         }
         /// <summary>
@@ -1268,12 +1268,12 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// true pokud se pro sloupec má zobrazit časová osa v záhlaví
         /// </summary>
-        public bool UseTimeAxis { get { return this._MasterColumn.ColumnProperties.UseTimeAxis; } }
+        public bool UseTimeAxis { get { return this._MasterColumn.UseTimeAxis; } }
         /// <summary>
         /// Obsahuje true, pokud se pro sloupec má zobrazit časová osa v záhlaví, a tato časová osa se má synchronizovat do dalších Gridů a objektů.
-        /// To je jen tehdy, když sloupec obsahuje časový graf (<see cref="ColumnProperties.ColumnContent"/> == <see cref="ColumnContentType.TimeGraphSynchronized"/>).
+        /// To je jen tehdy, když sloupec obsahuje časový graf (<see cref="Column.ColumnContent"/> == <see cref="ColumnContentType.TimeGraphSynchronized"/>).
         /// </summary>
-        public bool UseTimeAxisSynchronized { get { return this._MasterColumn.ColumnProperties.UseTimeAxisSynchronized; } }
+        public bool UseTimeAxisSynchronized { get { return this._MasterColumn.UseTimeAxisSynchronized; } }
         /// <summary>
         /// Objekt, který provádí konverze časových údajů a pixelů, jde o vizuální časovou osu
         /// </summary>

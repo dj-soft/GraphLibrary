@@ -302,12 +302,12 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             {
                 Column graphColumn = new Column("__time__graph__");
 
-                graphColumn.ColumnProperties.AllowColumnResize = true;
-                graphColumn.ColumnProperties.AllowColumnSortByClick = false;
-                graphColumn.ColumnProperties.AutoWidth = true;
-                graphColumn.ColumnProperties.ColumnContent = ColumnContentType.TimeGraphSynchronized;
-                graphColumn.ColumnProperties.IsVisible = true;
-                graphColumn.ColumnProperties.WidthMininum = 250;
+                graphColumn.AllowColumnResize = true;
+                graphColumn.AllowColumnSortByClick = false;
+                graphColumn.AutoWidth = true;
+                graphColumn.ColumnContent = ColumnContentType.TimeGraphSynchronized;
+                graphColumn.IsVisible = true;
+                graphColumn.WidthMininum = 250;
                 graphColumn.GraphParameters = graphProperties;
 
                 this.TableRow.Columns.Add(graphColumn);
@@ -2591,7 +2591,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             foreach (Column column in infoRow.Table.Columns)
             {
                 Cell cell = infoRow[column];
-                if (cell.ValueType == TableValueType.Text && cell.Value != null)
+                if ((cell.ValueType == TableValueType.Text || cell.ValueType == TableValueType.TextRelation) && cell.Value != null)
                 {   // Textový sloupec; může být neviditelný, může to být oddělovač řádků:
                     string value = cell.Value.ToString().Trim();
                     if (hasRowDelimiter && String.Equals(value, rowDelimiter))
@@ -2600,7 +2600,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                         if (height <= 0) break;
                         readRow = true;
                     }
-                    else if (column.ColumnProperties.IsVisible && value.Length > 0 && readRow)
+                    else if (column.IsVisible && value.Length > 0 && readRow)
                     {   // Sloupec je viditelný, obsahuje něco neprázdného, a do našeho řádku textRow se má ještě něco přidávat:
                         textRow = (textRow.Length > 0 ? textRow + " " : "") + value;
                         Size size = args.MeasureString(textRow);
@@ -2654,10 +2654,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             sb.Append(args.TimeText);
             foreach (Column column in infoRow.Table.Columns)
             {
-                if (!column.ColumnProperties.IsVisible) continue;
+                if (!column.IsVisible) continue;
                 Cell cell = infoRow[column];
-                if (cell.ValueType == TableValueType.Text)
-                    sb.AppendLine(column.ColumnProperties.Title + "\t" + cell.Value);
+                if (cell.ValueType == TableValueType.Text || cell.ValueType == TableValueType.TextRelation)
+                    sb.AppendLine(column.Title + "\t" + cell.Value);
             }
             string text = sb.ToString();
             args.ToolTipData.InfoText = text;

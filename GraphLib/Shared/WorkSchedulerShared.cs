@@ -1177,7 +1177,6 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Název tabulky
         /// </summary>
         public string TableName { get; set; }
-
         /// <summary>
         /// Číslo třídy, z níž pochází data šablony
         /// </summary>
@@ -1186,8 +1185,6 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Číslo šablony
         /// </summary>
         public int? TemplateId { get; set; }
-
-
         /// <summary>
         /// Tabulka definující vztah Parent - Child mezi dvěma řádky tabulky <see cref="Rows"/>.
         /// Výchozí hodnota je prázdný List.
@@ -1492,7 +1489,7 @@ namespace Noris.LCS.Base.WorkScheduler
             guiColumn.Title = GetPropertyValue(dataColumn, "Label", dataColumn.Caption);
             guiColumn.BrowseColumnType = GetPropertyValue(dataColumn, "BrowseColumnType", BrowseColumnType.None);
             guiColumn.Format = GetPropertyValue(dataColumn, "Format", "");
-            guiColumn.Alignment = ContentAlignment.MiddleLeft;
+            guiColumn.Alignment = ContentAlignment.MiddleLeft;                           // Není odkud brát?
             guiColumn.IsVisible = GetPropertyValue(dataColumn, "IsVisible", true);
             guiColumn.Width = GetPropertyValue(dataColumn, "Width", 0);
             guiColumn.ColumnDefaultValue = dataColumn.DefaultValue;
@@ -1501,7 +1498,7 @@ namespace Noris.LCS.Base.WorkScheduler
             guiColumn.AllowSort = GetPropertyValue(dataColumn, "AllowSort", true);
             guiColumn.SortIndex = GetPropertyValue(dataColumn, "SortIndex", (int?)null);
 
-            // Převzetí dočasných údajů:
+            // Převzetí dočasných údajů (jejich finálním cílem je Table, ale to až při zpracování z GuiDataTable do Table)
             guiColumn.TableClassId = GetPropertyValue(dataColumn, "ClassNumber", (int?)null);
             guiColumn.TableTemplateId = GetPropertyValue(dataColumn, "TemplateNumber", (int?)null);
 
@@ -3956,8 +3953,8 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <returns></returns>
         public override string ToString()
         {
-            return "GuiId: " + (this.GuiId != null ? this.GuiId.ToString() : "Null") +
-                  "; Text: " + (this.Text != null ? this.Text : "Null");
+            return this.Text;
+            // nehodící se: "GuiId: " + (this.GuiId != null ? this.GuiId.ToString() : "Null") + "; Text: " + (this.Text != null ? this.Text : "Null");
         }
         /// <summary>
         /// Identifikátor záznamu

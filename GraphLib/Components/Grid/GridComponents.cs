@@ -458,7 +458,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <summary>
         /// true pokud má být zobrazen splitter za tímto sloupcem, závisí na (OwnerTable.AllowColumnResize and OwnerColumn.AllowColumnResize)
         /// </summary>
-        public bool ColumnSplitterVisible { get { return (this.OwnerTable.AllowColumnResize && this.OwnerColumn.ColumnProperties.AllowColumnResize); } }
+        public bool ColumnSplitterVisible { get { return (this.OwnerTable.AllowColumnResize && this.OwnerColumn.AllowColumnResize); } }
         /// <summary>
         /// Připraví ColumnSplitter.
         /// Splitter je připraven vždy, i když se aktuálně nepoužívá.
@@ -502,12 +502,12 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <summary>
         /// true pokud se pro sloupec má zobrazit časová osa v záhlaví
         /// </summary>
-        public bool UseTimeAxis { get { return this.OwnerColumn.ColumnProperties.UseTimeAxis; } }
+        public bool UseTimeAxis { get { return this.OwnerColumn.UseTimeAxis; } }
         /// <summary>
         /// Obsahuje true, pokud se pro sloupec má zobrazit časová osa v záhlaví, a tato časová osa se má synchronizovat do dalších Gridů a objektů.
-        /// To je jen tehdy, když sloupec obsahuje časový graf (<see cref="ColumnProperties.ColumnContent"/> == <see cref="ColumnContentType.TimeGraphSynchronized"/>).
+        /// To je jen tehdy, když sloupec obsahuje časový graf (<see cref="Column.ColumnContent"/> == <see cref="ColumnContentType.TimeGraphSynchronized"/>).
         /// </summary>
-        public bool UseTimeAxisSynchronized { get { return this.OwnerColumn.ColumnProperties.UseTimeAxisSynchronized; } }
+        public bool UseTimeAxisSynchronized { get { return this.OwnerColumn.UseTimeAxisSynchronized; } }
         /// <summary>
         /// Objekt, který provádí konverze časových údajů a pixelů, jde o vizuální časovou osu.
         /// Může být null, pokud this.UseTimeAxis je false.
@@ -521,7 +521,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         {
             get
             {
-                if (!this.OwnerColumn.ColumnProperties.UseTimeAxis) return null;
+                if (!this.OwnerColumn.UseTimeAxis) return null;
                 this._TimeAxisCheck();
                 return this._TimeAxis;
             }
@@ -629,7 +629,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         protected override IEnumerable<IInteractiveItem> Childs { get { this._ChildArrayCheck(); return this._ChildList; } }
         private void _ChildArrayCheck()
         {
-            bool useTimeAxis = this.OwnerColumn.ColumnProperties.UseTimeAxis;
+            bool useTimeAxis = this.OwnerColumn.UseTimeAxis;
             if (useTimeAxis)
             {
                 if (this._ChildList == null)
@@ -666,7 +666,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="e"></param>
         protected override void PrepareToolTip(GInteractiveChangeStateArgs e)
         {
-            Localizable.TextLoc toolTip = this.OwnerColumn.ColumnProperties.ToolTip;
+            Localizable.TextLoc toolTip = this.OwnerColumn.ToolTip;
             if (toolTip != null && !String.IsNullOrEmpty(toolTip.Text))
             {
                 e.ToolTipData.TitleText = "Column info";
@@ -832,10 +832,10 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             if (setDragToOrder)
             {   // Nastavíme _DragThisToColumnOrder na hodnotu toho sloupce, před kterým chceme být umístěni:
                 if (nextColumn != null)
-                    this.DragThisToColumnOrder = nextColumn.ColumnProperties.ColumnOrder;
+                    this.DragThisToColumnOrder = nextColumn.ColumnOrder;
                 else
                     // Pokud máme být umístěni za poslední sloupec, dáme hodnotu posledního sloupce + 1:
-                    this.DragThisToColumnOrder = columns[lastIndex].ColumnProperties.ColumnOrder + 1;
+                    this.DragThisToColumnOrder = columns[lastIndex].ColumnOrder + 1;
             }
         }
         /// <summary>
@@ -924,9 +924,9 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         protected void DrawColumnHeader(GInteractiveDrawArgs e, Rectangle boundsAbsolute, int? opacity)
         {
             Column column = this.OwnerColumn;
-            string text = column.ColumnProperties.Title;
+            string text = column.Title;
             Rectangle textArea = Rectangle.Empty;
-            if (!String.IsNullOrEmpty(text) && !column.ColumnProperties.UseTimeAxis)
+            if (!String.IsNullOrEmpty(text) && !column.UseTimeAxis)
             {   // Sloupec má zadaný titulek, a přitom nepoužívá časovou osu (pod časovou osou se nebude kreslit titulek, bude tam jen osa):
                 FontInfo fontInfo = FontInfo.Caption;
                 fontInfo.Bold = (column.SortCurrent == ItemSortType.Ascending || column.SortCurrent == ItemSortType.Descending);
