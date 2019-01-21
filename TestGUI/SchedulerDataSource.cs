@@ -1964,7 +1964,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             if (this.PlanUnitC != null && this.PlanUnitC.PlanUnitType == PlanUnitType.Workplace)
                 guiGraphItem.BehaviorMode |=
                     GraphItemBehaviorMode.ShowLinkInMouseOver | GraphItemBehaviorMode.ShowLinkInSelected |
-                    GraphItemBehaviorMode.MoveToAnotherRow | GraphItemBehaviorMode.MoveToAnotherTime;
+                    GraphItemBehaviorMode.MoveToAnotherRow | GraphItemBehaviorMode.MoveToAnotherTime | GraphItemBehaviorMode.ResizeTime;
 
             // Fixed:
             if (this.Operation != null && this.Operation.IsFixed)
