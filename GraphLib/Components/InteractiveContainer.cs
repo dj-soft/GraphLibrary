@@ -21,11 +21,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public InteractiveContainer() : base()
         {
-            this._ItemList = new EList<IInteractiveItem>();
-            this._ItemList.ItemAddBefore += new EList<IInteractiveItem>.EListEventBeforeHandler(_ItemList_ItemAddBefore);
-            this._ItemList.ItemAddAfter += new EList<IInteractiveItem>.EListEventAfterHandler(_ItemList_ItemAddAfter);
-            this._ItemList.ItemRemoveBefore += new EList<IInteractiveItem>.EListEventBeforeHandler(_ItemList_ItemRemoveBefore);
-            this._ItemList.ItemRemoveAfter += new EList<IInteractiveItem>.EListEventAfterHandler(_ItemList_ItemRemoveAfter);
+            this._ChildList = new EList<IInteractiveItem>();
+            this._ChildList.ItemAddBefore += new EList<IInteractiveItem>.EListEventBeforeHandler(_ItemList_ItemAddBefore);
+            this._ChildList.ItemAddAfter += new EList<IInteractiveItem>.EListEventAfterHandler(_ItemList_ItemAddAfter);
+            this._ChildList.ItemRemoveBefore += new EList<IInteractiveItem>.EListEventBeforeHandler(_ItemList_ItemRemoveBefore);
+            this._ChildList.ItemRemoveAfter += new EList<IInteractiveItem>.EListEventAfterHandler(_ItemList_ItemRemoveAfter);
         }
         /// <summary>
         /// ToString()
@@ -33,7 +33,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         public override string ToString()
         {
-            return base.ToString() + "; " + this._ItemList.Count.ToString() + " child items";
+            return base.ToString() + "; " + this._ChildList.Count.ToString() + " child items";
         }
         #endregion
         #region Items Add/Remove events
@@ -139,8 +139,8 @@ namespace Asol.Tools.WorkScheduler.Components
             get { return this.ChildList; }
             set
             {
-                this._ItemList.ClearSilent();
-                this._ItemList.AddRangeSilent(value);
+                this._ChildList.ClearSilent();
+                this._ChildList.AddRangeSilent(value);
             }
         }
         /// <summary>
@@ -184,12 +184,24 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             get
             {
-                if (this._ItemList == null)
-                    this._ItemList = new EList<IInteractiveItem>();
-                return this._ItemList;
+                if (this._ChildList == null)
+                {
+                    this._ChildList = new EList<IInteractiveItem>();
+                    this._ChildList.ItemAddAfter += _ChildList_ItemAddAfter;
+                    this._ChildList.ItemRemoveAfter += _ChildList_ItemRemoveAfter;
+                }
+                return this._ChildList;
             }
         }
-        private EList<IInteractiveItem> _ItemList;
+        private void _ChildList_ItemAddAfter(object sender, EList<IInteractiveItem>.EListAfterEventArgs args)
+        {
+            args.Item.Parent = this;
+        }
+        private void _ChildList_ItemRemoveAfter(object sender, EList<IInteractiveItem>.EListAfterEventArgs args)
+        {
+            args.Item.Parent = null;
+        }
+        private EList<IInteractiveItem> _ChildList;
         #endregion
         #region Interactive property and methods
        
