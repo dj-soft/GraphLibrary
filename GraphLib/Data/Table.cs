@@ -2286,7 +2286,7 @@ namespace Asol.Tools.WorkScheduler.Data
         public static Column CreateFrom(GuiDataColumn dataColumn)
         {
             if (dataColumn == null) return null;
-            Column column = new Column(dataColumn.ColumnName);
+            Column column = new Column(dataColumn.Name);
             column.ColumnProperties.FillFrom(dataColumn);
             return column;
         }
@@ -3497,7 +3497,7 @@ namespace Asol.Tools.WorkScheduler.Data
         public void FillFrom(GuiDataColumn dataColumn)
         {
             if (dataColumn == null) return;
-            this.Title = dataColumn.ColumnCaption;
+            this.Title = dataColumn.Title;
             this.DefaultValue = dataColumn.ColumnDefaultValue;
             this.ReadOnly = dataColumn.ColumnReadOnly;
 
@@ -3505,7 +3505,7 @@ namespace Asol.Tools.WorkScheduler.Data
             this.ColumnContent = GetColumnContent(dataColumn);                 // Obsah sloupce
             this.FormatString = GetFormatString(dataColumn.Format);            // Formátovací string z Norisu, musí se převést na .NET
             this.IsVisible = dataColumn.IsVisible;                             // Je viditelný
-            if (!String.IsNullOrEmpty(dataColumn.Label)) this.Title = dataColumn.Label;      // Jen pokud je vyplněno
+            if (!String.IsNullOrEmpty(dataColumn.Title)) this.Title = dataColumn.Title;      // Jen pokud je vyplněno
             this.Width = GetWidth(dataColumn.Width);                           // Na vstupu je šířka Noris, v této metodě to lze upravit
             this.RecordClassNumber = GetClassNumber(dataColumn);
             this.RelationNumber = dataColumn.RelationNumber;
@@ -3528,7 +3528,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <returns></returns>
         protected static ColumnContentType GetColumnContent(GuiDataColumn dataColumn)
         {
-            return GetColumnContent(dataColumn.Index, dataColumn.BrowseColumnType, dataColumn.RelationNumber, dataColumn.RelationClassNumber);
+            return GetColumnContent(dataColumn.Index, dataColumn.BrowseColumnType, dataColumn.RelationNumber, dataColumn.RelationClassId);
         }
         /// <summary>
         /// Vrátí typ obsahu pro daný sloupec, podle jeho <see cref="DataColumnExtendedInfo.BrowseColumnType"/> a dalších hodnot
@@ -3589,7 +3589,7 @@ namespace Asol.Tools.WorkScheduler.Data
             return null;
         }
         /// <summary>
-        /// Vrací šíslo třídy pro daný sloupec, pokud je zadaná
+        /// Vrací číslo třídy pro daný sloupec, pokud je zadaná
         /// </summary>
         /// <param name="dataColumn"></param>
         /// <returns></returns>

@@ -1177,6 +1177,17 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Název tabulky
         /// </summary>
         public string TableName { get; set; }
+
+        /// <summary>
+        /// Číslo třídy, z níž pochází data šablony
+        /// </summary>
+        public int? ClassId { get; set; }
+        /// <summary>
+        /// Číslo šablony
+        /// </summary>
+        public int? TemplateId { get; set; }
+
+
         /// <summary>
         /// Tabulka definující vztah Parent - Child mezi dvěma řádky tabulky <see cref="Rows"/>.
         /// Výchozí hodnota je prázdný List.
@@ -1212,7 +1223,7 @@ namespace Noris.LCS.Base.WorkScheduler
     /// <summary>
     /// GuiDataColumn : definice jednoho sloupce tabulky <see cref="GuiDataTable"/>
     /// </summary>
-    public class GuiDataColumn : GuiBase, IGuiDataTableMember
+    public class GuiDataColumn : GuiTextItem, IGuiDataTableMember
     {
         #region Konstruktor a overrides
         /// <summary>
@@ -1232,14 +1243,8 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <returns></returns>
         public override string ToString()
         {
-            return "[" + (this.ColumnName == null ? "Null" : this.ColumnName) + "]" + (this.Label == null ? "" : " = \"" + this.Label + "\"");
+            return "[" + (this.Name == null ? "Null" : this.Name) + "]" + (this.Title == null ? "" : " = \"" + this.Title + "\"");
         }
-        /// <summary>
-        /// Klíčové jméno, používané v aplikaci jako strojový název prvku.
-        /// <see cref="Name"/> nesmí obsahovat zpětné lomítko (při pokusu o jeho použití je nahrazeno obyčejným lomítkem).
-        /// Jméno nikdy není null; při vložení hodnoty null je vložena stringová konstanta "{Null}".
-        /// </summary>
-        public override string Name { get { return this.ColumnName; } set { } }
         #endregion
         #region Table
         /// <summary>
@@ -1275,13 +1280,26 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public int Index { get { return (this.HasTable ? this.ITable.GetColumnIndex(this) : -1); } }
         /// <summary>
-        /// Hodnota <see cref="System.Data.DataColumn.ColumnName"/>
+        /// Typ sloupce v přehledu: pomocný, datový, ... Zobrazují se vždy jen sloupce typu DataColumn, ostatní sloupce jsou pomocné.
+        /// Aktuálně hodnoty: RecordId, SubjectNumber, ObjectNumber, DataColumn, RelationHelpfulColumn, TotalCountHelpfulColumn
         /// </summary>
-        public string ColumnName { get; set; }
+        public BrowseColumnType BrowseColumnType { get; set; }
         /// <summary>
-        /// Hodnota <see cref="System.Data.DataColumn.Caption"/>
+        /// Formát sloupce v přehledu
         /// </summary>
-        public string ColumnCaption { get; set; }
+        public string Format { get; set; }
+        /// <summary>
+        /// Zarovnání obsahu sloupce, uplatňuje se podle jeho typu
+        /// </summary>
+        public ContentAlignment? Alignment { get; set; }
+        /// <summary>
+        /// Informace o viditelnosti sloupce (zda má být vidět v přehledu)
+        /// </summary>
+        public bool IsVisible { get; set; }
+        /// <summary>
+        /// Šířka sloupce v přehledu
+        /// </summary>
+        public int Width { get; set; }
         /// <summary>
         /// Hodnota <see cref="System.Data.DataColumn.DefaultValue"/>
         /// </summary>
@@ -1291,18 +1309,6 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public bool ColumnReadOnly { get; set; }
         /// <summary>
-        /// Číslo třídy, z níž pochází data šablony
-        /// </summary>
-        public int? ClassNumber { get; set; }
-        /// <summary>
-        /// Číslo šablony
-        /// </summary>
-        public int? TemplateNumber { get; set; }
-        /// <summary>
-        /// Alias sloupce = ColumnName
-        /// </summary>
-        public string Alias { get; set; }
-        /// <summary>
         /// Povolit řádkové filtrování
         /// </summary>
         public bool AllowRowFilter { get; set; }
@@ -1311,69 +1317,123 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public bool AllowSort { get; set; }
         /// <summary>
-        /// Typ sloupce v přehledu: pomocný, datový, ... Zobrazují se vždy jen sloupce typu DataColumn, ostatní sloupce jsou pomocné.
-        /// Aktuálně hodnoty: RecordId, SubjectNumber, ObjectNumber, DataColumn, RelationHelpfulColumn, TotalCountHelpfulColumn
-        /// </summary>
-        public BrowseColumnType BrowseColumnType { get; set; }
-        /// <summary>
-        /// Název sloupce v SQL selectu
-        /// </summary>
-        public string CodeName_FromSelect { get; set; }
-        /// <summary>
-        /// Název sloupce uvedený v definici šablony
-        /// </summary>
-        public string CodeName_FromTemplate { get; set; }
-        /// <summary>
-        /// Číslo vztahu, z něhož pochází tento sloupec
-        /// </summary>
-        public int ColRelNum { get; set; }
-        /// <summary>
-        /// Datový typ sloupce - NrsTypes (může se lišit od Repozitory, upravuje se dle dat, která se načtou do přehledu - DDLB, ...)
-        /// </summary>
-        public string ColType { get; set; }
-        /// <summary>
-        /// Datový typ sloupce - NrsTypes (definice dle Repozitory - to, co je vidět)
-        /// </summary>
-        public string DataTypeRepo { get; set; }
-        /// <summary>
-        /// Datový typ sloupce - c# SystemTypes
-        /// </summary>
-        public string DataTypeSystem { get; set; }
-        /// <summary>
-        /// Formát sloupce v přehledu
-        /// </summary>
-        public string Format { get; set; }
-        /// <summary>
-        /// Informace o viditelnosti sloupce (zda má být vidět v přehledu)
-        /// </summary>
-        public bool IsVisible { get; set; }
-        /// <summary>
-        /// Nadpis sloupce v přehledu
-        /// </summary>
-        public string Label { get; set; }
-        /// <summary>
         /// Pořadí sloupce v přehledu - pořadí zobrazení
         /// </summary>
         public int? SortIndex { get; set; }
         /// <summary>
-        /// Šířka sloupce v přehledu
+        /// true pokud tento sloupec má být k dispozici uživateli (jeho viditelnost se pak řídí pomocí <see cref="IsVisible"/>),
+        /// false pro sloupce "systémové", které se nikdy nezobrazují.
         /// </summary>
-        public int Width { get; set; }
+        public bool ColumnIsForUser { get { return (this.BrowseColumnType == BrowseColumnType.DataColumn); } }
+
+        /// <summary>
+        /// V této property je uloženo číslo třídy celé tabulky.
+        /// Je to z historických důvodů, kdy Green generuje přehledovou šablonu do DataTable, a některá data dává do prvního sloupce.
+        /// Po sestavení celé tabulky je toto číslo přeneseno do <see cref="GuiDataTable.ClassId"/>, a zde je vloženo NULL.
+        /// </summary>
+        public int? TableClassId { get; set; }
+        /// <summary>
+        /// V této property je uloženo číslo šablony celé tabulky.
+        /// Je to z historických důvodů, kdy Green generuje přehledovou šablonu do DataTable, a některá data dává do prvního sloupce.
+        /// Po sestavení celé tabulky je toto číslo přeneseno do <see cref="GuiDataTable.TemplateId"/>, a zde je vloženo NULL.
+        /// </summary>
+        public int? TableTemplateId { get; set; }
+        /// <summary>
+        /// Pokud this sloupec je textový, a obsahuje data ze záznamu ve vztahu, 
+        /// pak tato property obsahuje název sloupce, který nese číslo vztaženého záznamu 
+        /// (v odkázaném sloupci najdeme cislo_subjektu, a v jeho hlavičce pak RelationClassId)
+        /// </summary>
+        public string RelationRecordIdColumnName { get; set; }
+        /// <summary>
+        /// Pokud this sloupec obsahuje číslo záznamu v nějakém vztahu, pak zde je společné číslo třídy tohoto záznamu ve vztahu.
+        /// POkud je vztah netypový, pak je zde asi číslo Obecného subjektu.
+        /// </summary>
+        public int? RelationClassId { get; set; }
+
+
+
+
+        /// <summary>
+        /// Hodnota <see cref="System.Data.DataColumn.ColumnName"/>
+        /// </summary>
+        [Obsolete("Používejme property Name", true)]
+        public string ColumnName { get; set; }
+        /// <summary>
+        /// Hodnota <see cref="System.Data.DataColumn.Caption"/>
+        /// </summary>
+        [Obsolete("Používejme property Title", true)]
+        public string ColumnCaption { get; set; }
+        /// <summary>
+        /// Nadpis sloupce v přehledu
+        /// </summary>
+        [Obsolete("Používejme property Title", true)]
+        public string Label { get; set; }
+        /// <summary>
+        /// Alias sloupce = ColumnName
+        /// </summary>
+        [Obsolete("Používejme property Name", true)]
+        public string Alias { get; set; }
+        /// <summary>
+        /// Číslo třídy, z níž pochází data šablony
+        /// </summary>
+        [Obsolete("Používejme property ClassNumber v tabulce", true)]
+        public int? ClassNumber { get; set; }
+        /// <summary>
+        /// Číslo šablony
+        /// </summary>
+        [Obsolete("Používejme property TemplateNumber v tabulce", true)]
+        public int? TemplateNumber { get; set; }
+
+
+        /// <summary>
+        /// Název sloupce v SQL selectu
+        /// </summary>
+        [Obsolete("Nemá význam, zruší se", true)]
+        public string CodeName_FromSelect { get; set; }
+        /// <summary>
+        /// Název sloupce uvedený v definici šablony
+        /// </summary>
+        [Obsolete("Nemá význam, zruší se", true)]
+        public string CodeName_FromTemplate { get; set; }
+        /// <summary>
+        /// Číslo vztahu, z něhož pochází tento sloupec
+        /// </summary>
+        [Obsolete("Nemá význam, zruší se", true)]
+        public int ColRelNum { get; set; }
+        /// <summary>
+        /// Datový typ sloupce - NrsTypes (může se lišit od Repozitory, upravuje se dle dat, která se načtou do přehledu - DDLB, ...)
+        /// </summary>
+        [Obsolete("Nemá význam, zruší se", true)]
+        public string ColType { get; set; }
+        /// <summary>
+        /// Datový typ sloupce - NrsTypes (definice dle Repozitory - to, co je vidět)
+        /// </summary>
+        [Obsolete("Nemá význam, zruší se", true)]
+        public string DataTypeRepo { get; set; }
+        /// <summary>
+        /// Datový typ sloupce - c# SystemTypes
+        /// </summary>
+        [Obsolete("Nemá význam, zruší se", true)]
+        public string DataTypeSystem { get; set; }
         /// <summary>
         /// Číslo třídy vztaženého záznamu v tomto sloupci
         /// </summary>
+        [Obsolete("Nemá význam, zruší se", true)]
         public int? RelationClassNumber { get; set; }
         /// <summary>
         /// Číslo vztahu v tomto sloupci, je rovno <see cref="ColRelNum"/>
         /// </summary>
+        [Obsolete("Nemá význam, zruší se", true)]
         public int? RelationNumber { get; set; }
         /// <summary>
         /// Strana vztahu: Undefined, Left, Right
         /// </summary>
+        [Obsolete("Nemá význam, zruší se", true)]
         public string RelationSide { get; set; }
         /// <summary>
         /// Databáze, kde máme hledat vztah (Product, Archival)
         /// </summary>
+        [Obsolete("Nemá význam, zruší se", true)]
         public string RelationVolumeType { get; set; }
         /// <summary>
         /// Alias tabulky, která nese číslo záznamu ve vztahu pro jeho rozkliknutí.
@@ -1382,16 +1442,16 @@ namespace Noris.LCS.Base.WorkScheduler
         /// $"H_RN_{RelationNumber}_{RelationTableAlias}_RN_H", tedy ve výsledku: "H_RN_102037_TabGS_1_4_RN_H".
         /// Zcela stačí načíst obsah property <see cref="RelationRecordColumnName"/>.
         /// </summary>
+        [Obsolete("Nemá význam, zruší se", true)]
         public string RelationTableAlias { get; set; }
         /// <summary>
         /// Název sloupce, který obsahuje číslo záznamu, jehož reference nebo název jsou v aktuálním sloupci zobrazeny.
         /// </summary>
+        [Obsolete("Nemá význam, zruší se", true)]
         public string RelationRecordColumnName { get { return (this.RelationNumber != 0 && !String.IsNullOrEmpty(this.RelationTableAlias) ? "H_RN_" + RelationNumber + "_" + RelationTableAlias + "_RN_H" : ""); } }
-        /// <summary>
-        /// true pokud tento sloupec má být k dispozici uživateli (jeho viditelnost se pak řídí pomocí <see cref="IsVisible"/>),
-        /// false pro sloupce "systémové", které se nikdy nezobrazují.
-        /// </summary>
-        public bool ColumnIsForUser { get { return (this.BrowseColumnType == BrowseColumnType.DataColumn); } }
+
+
+
         #endregion
         #region Vytvoření instance GuiDataColumn z System.Data.DataColumn
         /// <summary>
@@ -1428,33 +1488,62 @@ namespace Noris.LCS.Base.WorkScheduler
 
             GuiDataColumn guiColumn = new GuiDataColumn();
 
-            guiColumn.ColumnName = dataColumn.ColumnName;
-            guiColumn.ColumnCaption = dataColumn.Caption;
+            guiColumn.Name = dataColumn.ColumnName;
+            guiColumn.Title = GetPropertyValue(dataColumn, "Label", dataColumn.Caption);
+            guiColumn.BrowseColumnType = GetPropertyValue(dataColumn, "BrowseColumnType", BrowseColumnType.None);
+            guiColumn.Format = GetPropertyValue(dataColumn, "Format", "");
+            guiColumn.Alignment = ContentAlignment.MiddleLeft;
+            guiColumn.IsVisible = GetPropertyValue(dataColumn, "IsVisible", true);
+            guiColumn.Width = GetPropertyValue(dataColumn, "Width", 0);
             guiColumn.ColumnDefaultValue = dataColumn.DefaultValue;
             guiColumn.ColumnReadOnly = dataColumn.ReadOnly;
-
-            guiColumn.ClassNumber = GetPropertyValue(dataColumn, "ClassNumber", (int?)null);
-            guiColumn.TemplateNumber = GetPropertyValue(dataColumn, "TemplateNumber", (int?)null);
-            guiColumn.Alias = GetPropertyValue(dataColumn, "Alias", "");
             guiColumn.AllowRowFilter = GetPropertyValue(dataColumn, "AllowRowFilter", true);
             guiColumn.AllowSort = GetPropertyValue(dataColumn, "AllowSort", true);
-            guiColumn.BrowseColumnType = GetPropertyValue(dataColumn, "BrowseColumnType", BrowseColumnType.None);
-            guiColumn.CodeName_FromSelect = GetPropertyValue(dataColumn, "CodeName_FromSelect", "");
-            guiColumn.CodeName_FromTemplate = GetPropertyValue(dataColumn, "CodeName_FromTemplate", "");
-            guiColumn.ColRelNum = GetPropertyValue(dataColumn, "ColRelNum", 0);
-            guiColumn.ColType = GetPropertyValue(dataColumn, "ColType", "");
-            guiColumn.DataTypeRepo = GetPropertyValue(dataColumn, "DataTypeRepo", "");
-            guiColumn.DataTypeSystem = GetPropertyValue(dataColumn, "DataTypeSystem", "");
-            guiColumn.Format = GetPropertyValue(dataColumn, "Format", "");
-            guiColumn.IsVisible = GetPropertyValue(dataColumn, "IsVisible", true);
-            guiColumn.Label = GetPropertyValue(dataColumn, "Label", "");
             guiColumn.SortIndex = GetPropertyValue(dataColumn, "SortIndex", (int?)null);
-            guiColumn.Width = GetPropertyValue(dataColumn, "Width", 0);
-            guiColumn.RelationClassNumber = GetPropertyValue(dataColumn, "RelationClassNumber", (int?)null);
-            guiColumn.RelationNumber = GetPropertyValue(dataColumn, "RelationNumber", (int?)null);
-            guiColumn.RelationSide = GetPropertyValue(dataColumn, "RelationSide", "");
-            guiColumn.RelationVolumeType = GetPropertyValue(dataColumn, "RelationVolumeType", "");
-            guiColumn.RelationTableAlias = GetPropertyValue(dataColumn, "RelationTableAlias", "");
+
+            // Převzetí dočasných údajů:
+            guiColumn.TableClassId = GetPropertyValue(dataColumn, "ClassNumber", (int?)null);
+            guiColumn.TableTemplateId = GetPropertyValue(dataColumn, "TemplateNumber", (int?)null);
+
+            // Zpracování údajů o vztahu:
+            int? relationNumber = GetPropertyValue(dataColumn, "RelationNumber", (int?)null);
+            string relationTableAlias = GetPropertyValue(dataColumn, "RelationTableAlias", "");
+            if (relationNumber.HasValue && relationNumber.Value != 0 && !String.IsNullOrEmpty(relationTableAlias))
+                guiColumn.RelationRecordIdColumnName = "H_RN_" + relationNumber.Value.ToString() + "_" + relationTableAlias + "_RN_H";
+
+            int? relationClassNumber = GetPropertyValue(dataColumn, "RelationClassNumber", (int?)null);
+            if (relationClassNumber.HasValue && relationClassNumber.Value != 0)
+                guiColumn.RelationClassId = relationClassNumber;
+
+
+            // Původní konverze načítala všechny properties:
+            // ---------------------------------------------
+            //guiColumn.ColumnName = dataColumn.ColumnName;
+            //guiColumn.ColumnCaption = dataColumn.Caption;
+            //guiColumn.ColumnDefaultValue = dataColumn.DefaultValue;
+            //guiColumn.ColumnReadOnly = dataColumn.ReadOnly;
+            //guiColumn.ClassNumber = GetPropertyValue(dataColumn, "ClassNumber", (int?)null);
+            //guiColumn.TemplateNumber = GetPropertyValue(dataColumn, "TemplateNumber", (int?)null);
+            //guiColumn.Alias = GetPropertyValue(dataColumn, "Alias", "");
+            //guiColumn.AllowRowFilter = GetPropertyValue(dataColumn, "AllowRowFilter", true);
+            //guiColumn.AllowSort = GetPropertyValue(dataColumn, "AllowSort", true);
+            //guiColumn.BrowseColumnType = GetPropertyValue(dataColumn, "BrowseColumnType", BrowseColumnType.None);
+            //guiColumn.CodeName_FromSelect = GetPropertyValue(dataColumn, "CodeName_FromSelect", "");
+            //guiColumn.CodeName_FromTemplate = GetPropertyValue(dataColumn, "CodeName_FromTemplate", "");
+            //guiColumn.ColRelNum = GetPropertyValue(dataColumn, "ColRelNum", 0);
+            //guiColumn.ColType = GetPropertyValue(dataColumn, "ColType", "");
+            //guiColumn.DataTypeRepo = GetPropertyValue(dataColumn, "DataTypeRepo", "");
+            //guiColumn.DataTypeSystem = GetPropertyValue(dataColumn, "DataTypeSystem", "");
+            //guiColumn.Format = GetPropertyValue(dataColumn, "Format", "");
+            //guiColumn.IsVisible = GetPropertyValue(dataColumn, "IsVisible", true);
+            //guiColumn.Label = GetPropertyValue(dataColumn, "Label", "");
+            //guiColumn.SortIndex = GetPropertyValue(dataColumn, "SortIndex", (int?)null);
+            //guiColumn.Width = GetPropertyValue(dataColumn, "Width", 0);
+            //guiColumn.RelationClassNumber = GetPropertyValue(dataColumn, "RelationClassNumber", (int?)null);
+            //guiColumn.RelationNumber = GetPropertyValue(dataColumn, "RelationNumber", (int?)null);
+            //guiColumn.RelationSide = GetPropertyValue(dataColumn, "RelationSide", "");
+            //guiColumn.RelationVolumeType = GetPropertyValue(dataColumn, "RelationVolumeType", "");
+            //guiColumn.RelationTableAlias = GetPropertyValue(dataColumn, "RelationTableAlias", "");
 
             return guiColumn;
         }
@@ -1869,9 +1958,9 @@ namespace Noris.LCS.Base.WorkScheduler
         public override string ToString()
         {
             string text = "";
-            if (this.HasRecordColumn) text += (text.Length > 0 ? "; " : "") + "RecordColumn: " + this.RecordColumn.ColumnName;
-            if (this.HasSubjectColumn) text += (text.Length > 0 ? "; " : "") + "SubjectColumn: " + this.SubjectColumn.ColumnName;
-            if (this.HasObjectColumn) text += (text.Length > 0 ? "; " : "") + "ObjectColumn: " + this.ObjectColumn.ColumnName;
+            if (this.HasRecordColumn) text += (text.Length > 0 ? "; " : "") + "RecordColumn: " + this.RecordColumn.Name;
+            if (this.HasSubjectColumn) text += (text.Length > 0 ? "; " : "") + "SubjectColumn: " + this.SubjectColumn.Name;
+            if (this.HasObjectColumn) text += (text.Length > 0 ? "; " : "") + "ObjectColumn: " + this.ObjectColumn.Name;
             if (text.Length == 0) text = "Empty";
             return text;
         }
@@ -1906,7 +1995,7 @@ namespace Noris.LCS.Base.WorkScheduler
             }
             if (this.HasSubjectColumn && this.HasObjectColumn)
             {
-                int classId = (this.SubjectColumn.ClassNumber.HasValue ? this.SubjectColumn.ClassNumber.Value : 0);
+                int classId = (this.SubjectColumn.TableClassId.HasValue ? this.SubjectColumn.TableClassId.Value : 0);
                 int subjectId = Convert.ToInt32(guiRow[this.SubjectColumnId]);
                 int objectId = Convert.ToInt32(guiRow[this.ObjectColumnId]);
                 if (subjectId == 0 && objectId == 0) return null;
@@ -1914,14 +2003,14 @@ namespace Noris.LCS.Base.WorkScheduler
             }
             if (this.HasSubjectColumn)
             {
-                int classId = (this.SubjectColumn.ClassNumber.HasValue ? this.SubjectColumn.ClassNumber.Value : 0);
+                int classId = (this.SubjectColumn.TableClassId.HasValue ? this.SubjectColumn.TableClassId.Value : 0);
                 int subjectId = Convert.ToInt32(guiRow[this.SubjectColumnId]);
                 if (subjectId == 0) return null;
                 return new GuiId(classId, subjectId);
             }
             if (this.HasObjectColumn)
             {
-                int classId = (this.ObjectColumn.ClassNumber.HasValue ? this.ObjectColumn.ClassNumber.Value : 0);
+                int classId = (this.ObjectColumn.TableClassId.HasValue ? this.ObjectColumn.TableClassId.Value : 0);
                 int objectId = Convert.ToInt32(guiRow[this.ObjectColumnId]);
                 if (objectId == 0) return null;
                 return new GuiId(classId, 0, objectId);
@@ -3884,29 +3973,30 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Obsahuje textové vyjádření zdejších dat
         /// </summary>
         public string Name
-        {
-            get { return (this.GuiId != null ? this.GuiId.Name : "") + "=" + (this.Text != null ? this.Text : ""); }
+        {   // Name = "GuiId==Text" nebo "GuiId=."    ...   kde GuiId je: "1188:123456" + optional Entry: ":1234"
+            get { return (this.GuiId != null ? ((IXmlSerializer)this.GuiId).XmlSerialData : "") + "=" + (this.Text != null ? "=" + this.Text : "."); }
             private set
             {
                 GuiId guiId = null;
                 string text = null;
-                qqq
-
-                int classId = 0;
-                int recordId = 0;
-                int entryId = 0;
-                bool isValid = false;
-                bool isEntry = false;
-                if (!String.IsNullOrEmpty(value) && value.Contains(":"))
+                if (!String.IsNullOrEmpty(value) && value.Contains("="))
                 {
-                    string[] items = value.Split(':');
-                    isValid = (Int32.TryParse(items[0], out classId) && Int32.TryParse(items[1], out recordId));
-                    if (isValid && items.Length > 2)
-                        isEntry = Int32.TryParse(items[2], out entryId);
+                    int length = value.Length;
+                    int index = value.IndexOf("=");
+                    if (index > 0 && index <= (length - 2))
+                    {   // Za rovnítkem musí být nejméně jeden znak!
+                        // 1. Před rovnítkem je GuiId:
+                        guiId = new GuiId();
+                        ((IXmlSerializer)guiId).XmlSerialData = value.Substring(0, index);
+                        // 2. Za rovnítkem je vždy povinně znak:
+                        //  a) ještě jedno rovnítko: a za ním je text nebo prázdná string (=už nic)
+                        //  b) tečka: text je NULL:
+                        if (value[index + 1] == '=')
+                            text = (index == (length - 2) ? "" : value.Substring(index + 2));
+                    }
                 }
-                this.ClassId = (isValid ? classId : 0);
-                this.RecordId = (isValid ? recordId : 0);
-                this.EntryId = (isEntry ? (int?)entryId : (int?)null);
+                this.GuiId = guiId;
+                this.Text = text;
             }
         }
         /// <summary>
@@ -5675,7 +5765,9 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         DataColumn,
         /// <summary>
-        /// Data pomocná pro řešení statického vztahu
+        /// Data pomocná pro řešení statického vztahu = číslo záznamu ve vztahu.
+        /// Číslo třídy je v záhlaví tohoto sloupce.
+        /// Jiné (datové) sloupce, které zobrazují texty ze vztaženého záznamu, se odkazují na tento sloupec, aby bylo možno otevřít záznam.
         /// </summary>
         RelationHelpfulColumn,
         /// <summary>

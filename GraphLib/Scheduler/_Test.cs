@@ -32,19 +32,21 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
             GuiGrid taskGrid = new GuiGrid() { Name = "taskGrid", Title = "Pracovní úkoly", ToolTip = "Zobrazuje úkoly, které se mají na této dílně provádět" };
             GuiDataTable taskRows = new GuiDataTable() { Name = "taskRows" };
-            taskRows.AddColumn(new GuiDataColumn() { Alias = "record_gid", BrowseColumnType = BrowseColumnType.RecordId, ClassNumber = 1363 });
-            taskRows.AddColumn(new GuiDataColumn() { Alias = "reference", Label = "Reference", Width = 85 });
-            taskRows.AddColumn(new GuiDataColumn() { Alias = "nazev", Label = "Název", Width = 200 });
-            taskRows.AddColumn(new GuiDataColumn() { Alias = "constr_element", Label = "Dílec", Width = 200 });
+            taskRows.ClassId = 1363;
+            taskRows.AddColumn(new GuiDataColumn() { Name = "record_gid", BrowseColumnType = BrowseColumnType.RecordId });
+            taskRows.AddColumn(new GuiDataColumn() { Name = "reference", Title = "Reference", Width = 85 });
+            taskRows.AddColumn(new GuiDataColumn() { Name = "nazev", Title = "Název", Width = 200 });
+            taskRows.AddColumn(new GuiDataColumn() { Name = "constr_element", Title = "Dílec", Width = 200 });
             taskGrid.RowTable = taskRows;
             page.LeftPanel.Grids.Add(taskGrid);
 
             GuiGrid workGrid = new GuiGrid() { Name = "workGrid", Title = "Pracovní rozvrh", ToolTip = "Zobrazuje prostor dílny a její využití" };
             GuiDataTable workRows = new GuiDataTable() { Name = "workRows" };
-            workRows.AddColumn(new GuiDataColumn() { Alias = "record_gid", BrowseColumnType = BrowseColumnType.RecordId, ClassNumber = 1817 });
-            workRows.AddColumn(new GuiDataColumn() { Alias = "reference", Label = "Reference", Width = 85 });
-            workRows.AddColumn(new GuiDataColumn() { Alias = "nazev", Label = "Název", Width = 200 });
-            workRows.AddColumn(new GuiDataColumn() { Alias = "constr_element", Label = "Dílec", Width = 200 });
+            workRows.ClassId = 1817;
+            workRows.AddColumn(new GuiDataColumn() { Name = "record_gid", BrowseColumnType = BrowseColumnType.RecordId });
+            workRows.AddColumn(new GuiDataColumn() { Name = "reference", Title = "Reference", Width = 85 });
+            workRows.AddColumn(new GuiDataColumn() { Name = "nazev", Title = "Název", Width = 200 });
+            workRows.AddColumn(new GuiDataColumn() { Name = "constr_element", Title = "Dílec", Width = 200 });
             GuiDataRow wr1 = workRows.AddRow(new GuiId(1817, 1), "Refer 1", "Název 1", "Výrobek A");
             wr1.Graph = new GuiGraph();
             wr1.Graph.GraphItems.Add(new GuiGraphItem() { ItemId = new GuiId(1817, 1), RowId = new GuiId(1364, 1), Time = new GuiTimeRange(new DateTime(2018, 8, 1, 12, 0, 0), new DateTime(2018, 8, 1, 16, 0, 0)) });
