@@ -1116,6 +1116,7 @@ namespace Asol.Tools.WorkScheduler.Components
 
             this.CallInteractiveStateChanged(new GPropertyChangeArgs<GInteractiveState>(oldState, newState, EventSourceType.InteractiveChanged));
         }
+        GInteractiveState IInteractiveItem.InteractiveState { get { return this.InteractiveState; } }
         void IInteractiveItem.DragAction(GDragActionArgs e) { this.DragAction(e); }
         void IInteractiveItem.Draw(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds) { this.Draw(e, absoluteBounds, absoluteVisibleBounds); }
         void IInteractiveItem.DrawOverChilds(GInteractiveDrawArgs e, Rectangle absoluteBounds, Rectangle absoluteVisibleBounds) { this.DrawOverChilds(e, absoluteBounds, absoluteVisibleBounds); }

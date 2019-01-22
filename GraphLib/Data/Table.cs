@@ -2823,6 +2823,10 @@ namespace Asol.Tools.WorkScheduler.Data
             set { this.TreeNode.ParentRecordGId = value; }
         }
         /// <summary>
+        /// Barva pozadí tohoto řádku, null = výchozí
+        /// </summary>
+        public Color? BackColor { get; set; }
+        /// <summary>
         /// Libovolná aplikační data.
         /// Toto je prostor, který může využít aplikace k uložení svých dat nad rámec dat třídy.
         /// </summary>
@@ -3423,10 +3427,9 @@ namespace Asol.Tools.WorkScheduler.Data
         {
             if (guiRow == null) return null;
             Row row = new Row(guiRow.Cells.ToArray());
-
-
             row.RecordGId = guiRow.RowGuiId;
             row.ParentRecordGId = guiRow.ParentRowGuiId;
+            row.BackColor = guiRow.BackColor;
             row.TagItems = TagItem.CreateFrom(guiRow.TagItems);
             row.UserData = guiRow;
             return row;

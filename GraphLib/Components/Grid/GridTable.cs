@@ -2475,6 +2475,9 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         {
             if (row == null && cell == null) return Skin.Grid.RowBackColor;
 
+            // Explicitní barva zadaná v řádku (ale i na ni se aplikuje barva daná aktivitou buňky i řádku, a selectováním):
+            Color? rowColor = row.BackColor;
+
             // Vizuální styl z buňky - z řádku - z tabulky:
             VisualStyle style = (cell != null ? ((IVisualMember)cell).Style : (row != null ? ((IVisualMember)row).Style : ((IVisualMember)this.DataTable).Style));
 
@@ -2482,7 +2485,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             bool isRowChecked = row.IsChecked;
             bool isTreeRoot = row.TreeNode.IsRoot;
             Color? styleColor = ((style != null) ? style.GetBackColor(isTreeRoot, isRowChecked) : null);
-            Color baseColor = styleColor ?? Skin.Grid.GetBackColor(isTreeRoot, isRowChecked);
+            Color baseColor = rowColor ?? styleColor ?? Skin.Grid.GetBackColor(isTreeRoot, isRowChecked);
 
             // Základní barva je poté morfována do barvy Active v poměru, který vyjadřuje aktivitu řádku, buňky, a focus tabulky, a stav HotMouse:
             float ratio = this.GetMorphRatio(row, cell, ref effect3D);

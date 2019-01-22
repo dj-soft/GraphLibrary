@@ -37,7 +37,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             this._PrepareGControlItem(item);                              // Připravím GUI prvek pro jednotlivý prvek grafu, jeho parentem bude grafický prvek této grupy (=this.GControl)
             this._FirstItem = item;
             this._Items = new ITimeGraphItem[] { item };
-            this._Store(item.Time.Begin, item.Time.End, item.Height);
+            bool canResize = item.BehaviorMode.HasFlag(GraphItemBehaviorMode.ResizeTime);
+            this._Store(item.Time.Begin, item.Time.End, item.Height, canResize);
         }
         /// <summary>
         /// Konstruktor s předáním skupiny položek, s výpočtem jejich sumárního časového intervalu a výšky
@@ -56,6 +57,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             DateTime? begin = null;
             DateTime? end = null;
             float height = 0f;
+            bool canResize = false;
             foreach (ITimeGraphItem item in this.Items)
             {
                 this._PrepareGControlItem(item);                          // Připravím GUI prvek pro jednotlivý prvek grafu, jeho parentem bude grafický prvek této grupy (=this.GControl)
@@ -63,9 +65,10 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                 if (item.Height > height) height = item.Height;
                 if (item.Time.Begin.HasValue && (!begin.HasValue || item.Time.Begin.Value < begin.Value)) begin = item.Time.Begin;
                 if (item.Time.End.HasValue && (!end.HasValue || item.Time.End.Value > end.Value)) end = item.Time.End;
+                if (!canResize && item.BehaviorMode.HasFlag(GraphItemBehaviorMode.ResizeTime)) canResize = true;
                 item.OwnerGraph = parent;
             }
-            this._Store(begin, end, height);
+            this._Store(begin, end, height, canResize);
         }
         /// <summary>
         /// Metoda vytvoří grafický control třídy <see cref="GTimeGraphItem"/> (<see cref="ITimeGraphItem.GControl"/>) pro this grupu.
@@ -83,7 +86,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         private void _PrepareGControlItem(ITimeGraphItem item)
         {
             item.GControl = new GTimeGraphItem(item, this.GControl, this, GGraphControlPosition.Item);    // GUI prvek (GTimeGraphItem) dostává data (=item) a dostává vizuálního parenta (this.GControl)
-            this.GControl.AddItem(item.GControl);                         // Náš hlavní GUI prvek (ten od grupy) si přidá další svůj Child prvek
+            this.GControl.AddGraphItem(item.GControl);                         // Náš hlavní GUI prvek (ten od grupy) si přidá další svůj Child prvek
         }
         /// <summary>
         /// Zadané údaje vloží do <see cref="Time"/> a <see cref="Height"/>, vypočte hodnotu <see cref="IsValidRealTime"/>.
@@ -91,11 +94,13 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <param name="begin"></param>
         /// <param name="end"></param>
         /// <param name="height"></param>
-        private void _Store(DateTime? begin, DateTime? end, float height)
+        /// <param name="canResize"></param>
+        private void _Store(DateTime? begin, DateTime? end, float height, bool canResize)
         {
             this._Time = new TimeRange(begin, end);
             this._Height = height;
             this._IsValidRealTime = ((height > 0f) && (begin.HasValue && end.HasValue && end.Value > begin.Value));
+            this.GControl.CanResize = canResize;
         }
         /// <summary>
         /// Vizualizace
@@ -293,6 +298,11 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Režim editovatelnosti položky grafu
         /// </summary>
         public GraphItemBehaviorMode BehaviorMode { get { return this._FirstItem.BehaviorMode; } }
+        /// <summary>
+        /// true pokud this grupu je možno resizovat.
+        /// Hodnota je platná až po doběhnutí konstruktoru, nikoli v době tvorby controlu <see cref="GControl"/>.
+        /// </summary>
+        public bool CanResize { get { return this.BehaviorMode.HasFlag(GraphItemBehaviorMode.ResizeTime); } }
         /// <summary>
         /// Obsahuje true, když tento prvek je vhodné zobrazovat (má kladný čas i výšku).
         /// </summary>

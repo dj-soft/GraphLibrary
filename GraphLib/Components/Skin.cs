@@ -38,6 +38,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public static SkinControlSet Control { get { return Instance._Control; } }
         /// <summary>
+        /// Barvy pro Splitter a Resizer
+        /// </summary>
+        public static SkinSplitterSet Splitter { get { return Instance._Splitter; } }
+        /// <summary>
         /// Barvy pro zobrazení Blokovaného GUI
         /// </summary>
         public static SkinBlockedGuiSet BlockedGui { get { return Instance._BlockedGui; } }
@@ -124,6 +128,7 @@ namespace Asol.Tools.WorkScheduler.Components
             // Na pořadí záleží; některé SkinSety mohou využívat hodnot z "nižších" SkinSetů:
             this._Modifiers = new SkinModifierSet(this, "Modifiers");
             this._Control = new SkinControlSet(this, "Control");
+            this._Splitter = new SkinSplitterSet(this, "Splitter");
             this._Shadow = new SkinShadowSet(this, "Shadow");
             this._BlockedGui = new SkinBlockedGuiSet(this, "BlockedGui");
             this._ToolTip = new SkinToolTipSet(this, "ToolTip");
@@ -151,6 +156,7 @@ namespace Asol.Tools.WorkScheduler.Components
         private SkinModifierSet _Modifiers;
         private SkinShadowSet _Shadow;
         private SkinControlSet _Control;
+        private SkinSplitterSet _Splitter;
         private SkinBlockedGuiSet _BlockedGui;
         private SkinToolTipSet _ToolTip;
         private SkinToolBarSet _ToolBar;
@@ -937,6 +943,37 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual Color DefaultBorderColor { get { return Color.DimGray; } }
         protected virtual Color DefaultFrameSelectBackColor { get { return Color.FromArgb(48, Color.LightYellow); } }
         protected virtual Color DefaultFrameSelectLineColor { get { return Color.DarkViolet; } }
+        #endregion
+    }
+    /// <summary>
+    /// Skin set pro Splitter a Resizer.
+    /// </summary>
+    public class SkinSplitterSet : SkinSet
+    {
+        #region Internal and private
+        internal SkinSplitterSet(Skin owner, string skinSetKey)
+            : base(owner, skinSetKey)
+        { }
+        #endregion
+        #region Public colors
+        public Color InactiveColor { get { return this._Owner.GetValue(this._SkinSetKey, "InactiveColor", DefaultInactiveColor); } set { this._Owner.SetValue(this._SkinSetKey, "InactiveColor", value); } }
+        public int InactiveSize { get { return this._Owner.GetValue(this._SkinSetKey, "InactiveSize", DefaultInactiveSize); } set { this._Owner.SetValue(this._SkinSetKey, "InactiveSize", value); } }
+        public Color MouseOnParentColor { get { return this._Owner.GetValue(this._SkinSetKey, "MouseOnParentColor", DefaultMouseOnParentColor); } set { this._Owner.SetValue(this._SkinSetKey, "MouseOnParentColor", value); } }
+        public int MouseOnParentSize { get { return this._Owner.GetValue(this._SkinSetKey, "MouseOnParentSize", DefaultMouseOnParentSize); } set { this._Owner.SetValue(this._SkinSetKey, "MouseOnParentSize", value); } }
+        public Color MouseOverColor { get { return this._Owner.GetValue(this._SkinSetKey, "MouseOverColor", DefaultMouseOverColor); } set { this._Owner.SetValue(this._SkinSetKey, "MouseOverColor", value); } }
+        public int MouseOverSize { get { return this._Owner.GetValue(this._SkinSetKey, "MouseOverSize", DefaultMouseOverSize); } set { this._Owner.SetValue(this._SkinSetKey, "MouseOverSize", value); } }
+        public Color MouseDownColor { get { return this._Owner.GetValue(this._SkinSetKey, "MouseDownColor", DefaultMouseDownColor); } set { this._Owner.SetValue(this._SkinSetKey, "MouseDownColor", value); } }
+        public int MouseDownSize { get { return this._Owner.GetValue(this._SkinSetKey, "MouseDownSize", DefaultMouseDownSize); } set { this._Owner.SetValue(this._SkinSetKey, "MouseDownSize", value); } }
+        #endregion
+        #region Default colors
+        protected virtual Color DefaultInactiveColor { get { return Color.FromArgb(96, 96, 96, 64); } }
+        protected virtual int DefaultInactiveSize { get { return 2; } }
+        protected virtual Color DefaultMouseOnParentColor { get { return Color.FromArgb(160, 96, 96, 64); } }
+        protected virtual int DefaultMouseOnParentSize { get { return 3; } }
+        protected virtual Color DefaultMouseOverColor { get { return Color.FromArgb(220, 96, 96, 96); } }
+        protected virtual int DefaultMouseOverSize { get { return 4; } }
+        protected virtual Color DefaultMouseDownColor { get { return Color.FromArgb(255, 64, 64, 64); } }
+        protected virtual int DefaultMouseDownSize { get { return 4; } }
         #endregion
     }
     /// <summary>

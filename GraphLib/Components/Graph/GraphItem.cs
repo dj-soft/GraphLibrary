@@ -14,7 +14,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
     /// Tento prvek je zobrazován ve dvou režimech: buď jako přímý child prvek vizuálního grafu, pak reprezentuje grupu prvků (i kdyby grupa měla jen jeden prvek),
     /// anebo jako child prvek této grupy, pak reprezentuje jeden konkrétní prvek grafu (GraphItem).
     /// </summary>
-    public class GTimeGraphItem : InteractiveDragObject, IOwnerProperty<ITimeGraphItem>
+    public class GTimeGraphItem : InteractiveDragObject, IResizeObject, IOwnerProperty<ITimeGraphItem>
     {
         #region Konstruktor, privátní proměnné
         /// <summary>
@@ -185,16 +185,45 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         protected override IEnumerable<IInteractiveItem> Childs { get { return this._Childs; } }
         /// <summary>
+        /// Pole Child prvků: obsahuje jednak prvky z <see cref="_GraphItems"/>, a k tomu prvky pro Resize z <see cref="_ResizeControl"/>
+        /// </summary>
+        private List<IInteractiveItem> _Childs
+        {
+            get
+            {
+                if (this.__Childs == null)
+                {   // CheckValid:
+                    this.__Childs = new List<IInteractiveItem>();
+                    // Pole grafických prvků:
+                    if (this._GraphItems != null && this._GraphItems.Count > 0)
+                        this.__Childs.AddRange(this._GraphItems);
+                    // Pole prvků Resize:
+                    if (this._CanResize && this._ResizeControl != null && this._ResizeControl.HasChilds)
+                        this.__Childs.AddRange(this._ResizeControl.Childs);
+                }
+                return this.__Childs;
+            }
+        }
+        /// <summary>
+        /// Invaliduje pole Childs
+        /// </summary>
+        private void _InvalidateChilds()
+        {
+            this.__Childs = null;
+        }
+        private List<IInteractiveItem> __Childs;
+        /// <summary>
         /// Přidá vnořený objekt
         /// </summary>
-        /// <param name="child"></param>
-        public void AddItem(IInteractiveItem child)
+        /// <param name="graphItem"></param>
+        public void AddGraphItem(GTimeGraphItem graphItem)
         {
-            if (this._Childs == null)
-                this._Childs = new List<Components.IInteractiveItem>();
-            this._Childs.Add(child);
+            if (this._GraphItems == null)
+                this._GraphItems = new List<GTimeGraphItem>();
+            this._GraphItems.Add(graphItem);
+            this._InvalidateChilds();
         }
-        private List<IInteractiveItem> _Childs;
+        private List<GTimeGraphItem> _GraphItems;
         #endregion
         #region Interaktivita
         /// <summary>
@@ -501,6 +530,49 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             if (distance > maxDistance) return minValue;
             return minValue + ((maxDistance - distance) / maxDistance) * (maxValue - minValue);
         }
+        #endregion
+        #region Resize (pomocí instance třídy ResizeControl)
+        /// <summary>
+        /// true pokud this control může provádět Resize
+        /// </summary>
+        public bool CanResize { get { return this._CanResize; } set { this._SetCanResize(value); } } private bool _CanResize;
+        /// <summary>
+        /// Nastaví hodnotu <see cref="CanResize"/> a naváže další akce
+        /// </summary>
+        /// <param name="canResize"></param>
+        private void _SetCanResize(bool canResize)
+        {
+            bool isChange = (canResize != this._CanResize);
+            this._CanResize = canResize;
+
+            if (canResize)
+            {
+                if (this._ResizeControl == null)
+                {
+                    this._ResizeControl = new ResizeControl(this) { };
+                    this._ResizeControl.ShowResizeAllways = false;
+                    this._ResizeControl.CanUpsideDown = false;
+                    this._ResizeControl.ResizeSides = RectangleSide.Vertical;
+                    isChange = true;
+                }
+            }
+            if (isChange) this._InvalidateChilds();
+        }
+        /// <summary>
+        /// Do této metody je posílána informace o probíhajícím Resize tohoto grafického prvku
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <param name="changedSide"></param>
+        /// <param name="action"></param>
+        void IResizeObject.SetBoundsResized(Rectangle bounds, RectangleSide changedSide, DragActionType action)
+        {
+            this.Bounds = bounds;
+            this.Parent.Repaint();
+        }
+        /// <summary>
+        /// Řídící control pro interaktivitu Resize
+        /// </summary>
+        private ResizeControl _ResizeControl;
         #endregion
         #region Kreslení prvku - řízení a obecná rovina
         /// <summary>

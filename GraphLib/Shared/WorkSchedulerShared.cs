@@ -1839,6 +1839,10 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Pokud má být graf umístěn ve sloupci, má být vepsán do některé buňky <see cref="Cells"/>.
         /// </summary>
         public GuiGraph Graph { get; set; }
+        /// <summary>
+        /// Barva pozadí tohoto řádku, null = výchozí
+        /// </summary>
+        public Color? BackColor { get; set; }
         #endregion
         #region Servis
         /// <summary>

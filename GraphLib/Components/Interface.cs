@@ -85,6 +85,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         void AfterStateChanged(GInteractiveChangeStateArgs e);
         /// <summary>
+        /// Aktuální stav interaktivity
+        /// </summary>
+        GInteractiveState InteractiveState { get; }
+        /// <summary>
         /// Tato metoda je volaná postupně pro jednotlivé fáze akce Drag and Drop.
         /// </summary>
         /// <param name="e"></param>
