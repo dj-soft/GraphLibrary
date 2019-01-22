@@ -50,8 +50,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI.Forms
         public bool CanUpsideDown { get { return this._ResizeControl.CanUpsideDown; } set { this._ResizeControl.CanUpsideDown = value; } }
         protected override IEnumerable<IInteractiveItem> Childs { get { return this._ResizeControl.Childs; } }
 
-        void IResizeObject.SetBoundsResized(Rectangle bounds, RectangleSide changedSide, DragActionType action)
+        void IResizeObject.SetBoundsResized(ResizeObjectArgs e)
         {
+            Rectangle bounds = e.BoundsTarget;
             if (bounds.X < 5)
             {
                 int r = bounds.Right;
