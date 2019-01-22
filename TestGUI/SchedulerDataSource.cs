@@ -119,49 +119,50 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this.CreateProductOrder(++recordId, "Pergola zahradní 4x5 m", Color.DarkCyan, 3, "stavba", ProductTpv.Simple);
 
             // DÍLNY:
+            Color colorLak = Color.FromArgb(224, 240, 255);
             recordId = 10000;
             this.WorkplaceDict = new Dictionary<GuiId, PlanUnitC>();
-            this.CreatePlanUnitCWp(++recordId, "Pila pásmová", WP_PILA, "pila", 2, CalendarType.Work5d2x8h);
-            this.CreatePlanUnitCWp(++recordId, "Pila okružní", WP_PILA, "pila", 2, CalendarType.Work5d2x8h);
-            this.CreatePlanUnitCWp(++recordId, "Pilka vyřezávací malá", WP_PILA, "pila;drobné", 1, CalendarType.Work5d2x8h);
-            this.CreatePlanUnitCWp(++recordId, "Dílna truhlářská velká", WP_DILN, "truhláři",  4, CalendarType.Work5d2x8h);
-            this.CreatePlanUnitCWp(++recordId, "Dílna truhlářská malá", WP_DILN, "truhláři",  2, CalendarType.Work5d2x8h);
-            this.CreatePlanUnitCWp(++recordId, "Lakovna aceton", WP_LAKO, "lakovna;chemie",  5, CalendarType.Work7d3x8h);
-            this.CreatePlanUnitCWp(++recordId, "Lakovna akryl", WP_LAKO, "lakovna",  5, CalendarType.Work7d3x8h);
-            this.CreatePlanUnitCWp(++recordId, "Moření", WP_LAKO, "lakovna;chemie",  3, CalendarType.Work7d3x8h);
-            this.CreatePlanUnitCWp(++recordId, "Dílna lakýrnická", WP_LAKO, "lakovna;chemie",  2, CalendarType.Work5d2x8h);
-            this.CreatePlanUnitCWp(++recordId, "Kontrola standardní", WP_KONT, "kontrola",  2, CalendarType.Work5d2x8h);
-            this.CreatePlanUnitCWp(++recordId, "Kontrola mistr", WP_KONT, "kontrola",  1, CalendarType.Work5d2x8h);
-            this.CreatePlanUnitCWp(++recordId, "Kooperace DŘEVEX", WP_KOOP, "kooperace",  1, CalendarType.Work5d1x24h);
-            this.CreatePlanUnitCWp(++recordId, "Kooperace TRUHLEX", WP_KOOP, "kooperace", 1, CalendarType.Work5d1x24h);
-            this.CreatePlanUnitCWp(++recordId, "Kooperace JAREŠ", WP_KOOP, "kooperace;soukromník", 1, CalendarType.Work5d1x24h);
-            this.CreatePlanUnitCWp(++recordId, "Kooperace TEIMER", WP_KOOP, "kooperace;soukromník",  1, CalendarType.Work5d1x24h);
+            this.CreatePlanUnitCWp(++recordId, "Pila pásmová", WP_PILA, "pila", 2, CalendarType.Work5d2x8h, null);
+            this.CreatePlanUnitCWp(++recordId, "Pila okružní", WP_PILA, "pila", 2, CalendarType.Work5d2x8h, null);
+            this.CreatePlanUnitCWp(++recordId, "Pilka vyřezávací malá", WP_PILA, "pila;drobné", 1, CalendarType.Work5d2x8h, null);
+            this.CreatePlanUnitCWp(++recordId, "Dílna truhlářská velká", WP_DILN, "truhláři",  4, CalendarType.Work5d2x8h, null);
+            this.CreatePlanUnitCWp(++recordId, "Dílna truhlářská malá", WP_DILN, "truhláři",  2, CalendarType.Work5d2x8h, null);
+            this.CreatePlanUnitCWp(++recordId, "Lakovna aceton", WP_LAKO, "lakovna;chemie",  5, CalendarType.Work7d3x8h, colorLak);
+            this.CreatePlanUnitCWp(++recordId, "Lakovna akryl", WP_LAKO, "lakovna",  5, CalendarType.Work7d3x8h, colorLak);
+            this.CreatePlanUnitCWp(++recordId, "Moření", WP_LAKO, "lakovna;chemie",  3, CalendarType.Work7d3x8h, colorLak);
+            this.CreatePlanUnitCWp(++recordId, "Dílna lakýrnická", WP_LAKO, "lakovna;chemie",  2, CalendarType.Work5d2x8h, colorLak);
+            this.CreatePlanUnitCWp(++recordId, "Kontrola standardní", WP_KONT, "kontrola",  2, CalendarType.Work5d2x8h, null);
+            this.CreatePlanUnitCWp(++recordId, "Kontrola mistr", WP_KONT, "kontrola",  1, CalendarType.Work5d2x8h, null);
+            this.CreatePlanUnitCWp(++recordId, "Kooperace DŘEVEX", WP_KOOP, "kooperace",  1, CalendarType.Work5d1x24h, null);
+            this.CreatePlanUnitCWp(++recordId, "Kooperace TRUHLEX", WP_KOOP, "kooperace", 1, CalendarType.Work5d1x24h, null);
+            this.CreatePlanUnitCWp(++recordId, "Kooperace JAREŠ", WP_KOOP, "kooperace;soukromník", 1, CalendarType.Work5d1x24h, null);
+            this.CreatePlanUnitCWp(++recordId, "Kooperace TEIMER", WP_KOOP, "kooperace;soukromník",  1, CalendarType.Work5d1x24h, null);
 
             // OSOBY, RANNÍ SMĚNA:
             recordId = 10100;
             this.PersonDict = new Dictionary<GuiId, PlanUnitC>();
-            this.CreatePlanUnitCZm(++recordId, "NOVÁK Jiří", CalendarType.Work5d1x8hR, WP_PILA, WP_DILN);
-            this.CreatePlanUnitCZm(++recordId, "DVOŘÁK Pavel", CalendarType.Work5d1x8hR, WP_PILA, WP_LAKO);
-            this.CreatePlanUnitCZm(++recordId, "STARÝ Slavomír", CalendarType.Work5d1x8hR, WP_PILA, WP_DILN);
-            this.CreatePlanUnitCZm(++recordId, "PEŠEK Petr", CalendarType.Work5d1x8hR, WP_PILA, WP_LAKO);
-            this.CreatePlanUnitCZm(++recordId, "JENČÍK Jan", CalendarType.Work5d1x8hR, WP_PILA, WP_DILN);
-            this.CreatePlanUnitCZm(++recordId, "KRULIŠ Karel", CalendarType.Work5d1x8hR, WP_LAKO);
-            this.CreatePlanUnitCZm(++recordId, "BLÁHOVÁ Božena", CalendarType.Work5d1x8hR, WP_DILN);
-            this.CreatePlanUnitCZm(++recordId, "NEKOKSA Jindřich", CalendarType.Work5d1x8hR, WP_LAKO);
-            this.CreatePlanUnitCZm(++recordId, "POKORNÝ Dan", CalendarType.Work5d1x8hR, WP_DILN, WP_KONT);
-            this.CreatePlanUnitCZm(++recordId, "DRAHOKOUPIL Martin", CalendarType.Work5d1x8hR, WP_KONT);
+            this.CreatePlanUnitCZm(++recordId, "NOVÁK Jiří", CalendarType.Work5d1x8hR, null, WP_PILA, WP_DILN);
+            this.CreatePlanUnitCZm(++recordId, "DVOŘÁK Pavel", CalendarType.Work5d1x8hR, colorLak, WP_PILA, WP_LAKO);
+            this.CreatePlanUnitCZm(++recordId, "STARÝ Slavomír", CalendarType.Work5d1x8hR, null, WP_PILA, WP_DILN);
+            this.CreatePlanUnitCZm(++recordId, "PEŠEK Petr", CalendarType.Work5d1x8hR, colorLak, WP_PILA, WP_LAKO);
+            this.CreatePlanUnitCZm(++recordId, "JENČÍK Jan", CalendarType.Work5d1x8hR, null, WP_PILA, WP_DILN);
+            this.CreatePlanUnitCZm(++recordId, "KRULIŠ Karel", CalendarType.Work5d1x8hR, colorLak, WP_LAKO);
+            this.CreatePlanUnitCZm(++recordId, "BLÁHOVÁ Božena", CalendarType.Work5d1x8hR, null, WP_DILN);
+            this.CreatePlanUnitCZm(++recordId, "NEKOKSA Jindřich", CalendarType.Work5d1x8hR, colorLak, WP_LAKO);
+            this.CreatePlanUnitCZm(++recordId, "POKORNÝ Dan", CalendarType.Work5d1x8hR, null, WP_DILN, WP_KONT);
+            this.CreatePlanUnitCZm(++recordId, "DRAHOKOUPIL Martin", CalendarType.Work5d1x8hR, null, WP_KONT);
 
             // OSOBY, ODPOLEDNÍ SMĚNA:
-            this.CreatePlanUnitCZm(++recordId, "VETCHÝ Marek", CalendarType.Work5d1x8hO, WP_PILA, WP_DILN);
-            this.CreatePlanUnitCZm(++recordId, "SUP Václav", CalendarType.Work5d1x8hO, WP_PILA, WP_LAKO);
-            this.CreatePlanUnitCZm(++recordId, "OSOLSOBĚ Viktor", CalendarType.Work5d1x8hO, WP_PILA, WP_DILN);
-            this.CreatePlanUnitCZm(++recordId, "ČERNÁ Marta", CalendarType.Work5d1x8hO, WP_PILA, WP_LAKO);
-            this.CreatePlanUnitCZm(++recordId, "VIDÍM Dan", CalendarType.Work5d1x8hO, WP_PILA, WP_DILN);
-            this.CreatePlanUnitCZm(++recordId, "NĚMEC Jaroslav", CalendarType.Work5d1x8hO, WP_LAKO);
-            this.CreatePlanUnitCZm(++recordId, "DLOUHÝ Bedřich", CalendarType.Work5d1x8hO, WP_DILN);
-            this.CreatePlanUnitCZm(++recordId, "HANZAL Patrik", CalendarType.Work5d1x8hO, WP_LAKO);
-            this.CreatePlanUnitCZm(++recordId, "SPÍVALOVÁ Ilona", CalendarType.Work5d1x8hO, WP_DILN);
-            this.CreatePlanUnitCZm(++recordId, "DIETRICH Zdenek", CalendarType.Work5d1x8hO, WP_KONT);
+            this.CreatePlanUnitCZm(++recordId, "VETCHÝ Marek", CalendarType.Work5d1x8hO, null, WP_PILA, WP_DILN);
+            this.CreatePlanUnitCZm(++recordId, "SUP Václav", CalendarType.Work5d1x8hO, colorLak, WP_PILA, WP_LAKO);
+            this.CreatePlanUnitCZm(++recordId, "OSOLSOBĚ Viktor", CalendarType.Work5d1x8hO, null, WP_PILA, WP_DILN);
+            this.CreatePlanUnitCZm(++recordId, "ČERNÁ Marta", CalendarType.Work5d1x8hO, colorLak, WP_PILA, WP_LAKO);
+            this.CreatePlanUnitCZm(++recordId, "VIDÍM Dan", CalendarType.Work5d1x8hO, null, WP_PILA, WP_DILN);
+            this.CreatePlanUnitCZm(++recordId, "NĚMEC Jaroslav", CalendarType.Work5d1x8hO, colorLak, WP_LAKO);
+            this.CreatePlanUnitCZm(++recordId, "DLOUHÝ Bedřich", CalendarType.Work5d1x8hO, null, WP_DILN);
+            this.CreatePlanUnitCZm(++recordId, "HANZAL Patrik", CalendarType.Work5d1x8hO, colorLak, WP_LAKO);
+            this.CreatePlanUnitCZm(++recordId, "SPÍVALOVÁ Ilona", CalendarType.Work5d1x8hO, null, WP_DILN);
+            this.CreatePlanUnitCZm(++recordId, "DIETRICH Zdenek", CalendarType.Work5d1x8hO, null, WP_KONT);
 
             this.PlanOperationsToWorkplaces();
         }
@@ -367,7 +368,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <param name="tagText"></param>
         /// <param name="machinesCount"></param>
         /// <param name="calendar"></param>
-        protected GuiId CreatePlanUnitCWp(int recordId, string name, string workPlace, string tagText, int machinesCount, CalendarType calendar)
+        /// <param name="rowBackColor"></param>
+        protected GuiId CreatePlanUnitCWp(int recordId, string name, string workPlace, string tagText, int machinesCount, CalendarType calendar, Color? rowBackColor)
         {
             string refer = "D" + recordId.ToString();
             PlanUnitC planUnitC = new PlanUnitC()
@@ -376,6 +378,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 Refer = refer,
                 Name = name,
                 WorkPlace = workPlace,
+                RowBackColor = rowBackColor,
                 TagTexts = (tagText != null ? tagText.Split(',', ';') : null),
                 MachinesCount = machinesCount,
                 PlanUnitType = PlanUnitType.Workplace,
@@ -390,11 +393,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// </summary>
         /// <param name="recordId"></param>
         /// <param name="name"></param>
-        /// <param name="workPlace"></param>
-        /// <param name="tagText"></param>
-        /// <param name="machinesCount"></param>
         /// <param name="calendar"></param>
-        protected GuiId CreatePlanUnitCZm(int recordId, string name, CalendarType calendar, params string[] workPlaces)
+        /// <param name="rowBackColor"></param>
+        /// <param name="workPlaces"></param>
+        protected GuiId CreatePlanUnitCZm(int recordId, string name, CalendarType calendar, Color? rowBackColor, params string[] workPlaces)
         {
             string refer = "Z" + recordId.ToString();
             string workplace = workPlaces.ToString(";");
@@ -404,6 +406,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 Refer = refer,
                 Name = name,
                 WorkPlace = workplace,
+                RowBackColor = rowBackColor,
                 TagTexts = null,
                 MachinesCount = 1,
                 PlanUnitType = PlanUnitType.Person,
@@ -1237,6 +1240,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             GuiId rowGid = planUnitC.RecordGid;
             GuiIdText mc = new GuiIdText() { GuiId = new GuiId(1365, planUnitC.RecordId), Text = planUnitC.MachinesCount.ToString() };
             GuiDataRow row = guiTable.AddRow(rowGid, planUnitC.Refer, planUnitC.Name, mc);      // planUnitC.MachinesCount
+            row.BackColor = planUnitC.RowBackColor;
             row.TagItems = new List<GuiTagItem>(planUnitC.TagItems);
             row.Graph = planUnitC.CreateGuiGraph();
         }
@@ -1838,6 +1842,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         public IEnumerable<string> TagTexts { get; set; }
         public IEnumerable<GuiTagItem> TagItems { get { IEnumerable<string> tt = this.TagTexts; return (tt == null ? new GuiTagItem[0] : tt.Select(text => new GuiTagItem() { RowId = this.RecordGid, TagText = text }).ToArray()); } }
         public PlanUnitType PlanUnitType { get; set; }
+        public Color? RowBackColor { get; set; }
         public int MachinesCount { get; set; }
         public List<WorkTime> WorkTimes { get; set; }
         public void AddUnitTime(UnitTime unitTime)

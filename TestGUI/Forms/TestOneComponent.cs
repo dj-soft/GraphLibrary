@@ -27,20 +27,42 @@ namespace Asol.Tools.WorkScheduler.TestGUI.Forms
 
         protected void InitGComp()
         {
-            this._Test = new GCtrlTest() { Bounds = new Rectangle(25, 10, 150, 40), BackColor = Color.LightSkyBlue };
-            this._Control.AddItem(_Test);
+            this._TestV = new GCtrlTest() { Bounds = new Rectangle(25, 10, 150, 40), BackColor = Color.LightSkyBlue, ResizeSides = RectangleSide.Vertical, ShowResizeAllways = true };
+            this._TestH = new GCtrlTest() { Bounds = new Rectangle(200, 60, 100, 70), BackColor = Color.LightSeaGreen, ResizeSides = RectangleSide.Horizontal, CanUpsideDown = true };
+            this._TestB = new GCtrlTest() { Bounds = new Rectangle(25, 60, 150, 70), BackColor = Color.LightGoldenrodYellow, ResizeSides = RectangleSide.Vertical | RectangleSide.Horizontal, ShowResizeAllways = true };
+            this._Control.AddItem(_TestV);
+            this._Control.AddItem(_TestH);
+            this._Control.AddItem(_TestB);
         }
-        protected GCtrlTest _Test;
+        protected GCtrlTest _TestV;
+        protected GCtrlTest _TestH;
+        protected GCtrlTest _TestB;
     }
-    public class GCtrlTest : InteractiveContainer
+    public class GCtrlTest : InteractiveContainer, IResizeObject
     {
         public GCtrlTest()
         {
-            this._ResizeLeft = new ResizeItem() { Side = RectangleSide.Left, BackColor = Color.Navy };
-            this._ResizeRight = new ResizeItem() { Side = RectangleSide.Right, BackColor = Color.Navy };
-            this.AddItems(this._ResizeLeft, this._ResizeRight);
+            this._ResizeControl = new ResizeControl(this);
         }
-        private ResizeItem _ResizeLeft;
-        private ResizeItem _ResizeRight;
+        private ResizeControl _ResizeControl;
+        public RectangleSide ResizeSides { get { return this._ResizeControl.ResizeSides; } set { this._ResizeControl.ResizeSides = value; } }
+        public bool ShowResizeAllways { get { return this._ResizeControl.ShowResizeAllways; } set { this._ResizeControl.ShowResizeAllways = value; } }
+        public bool CanUpsideDown { get { return this._ResizeControl.CanUpsideDown; } set { this._ResizeControl.CanUpsideDown = value; } }
+        protected override IEnumerable<IInteractiveItem> Childs { get { return this._ResizeControl.Childs; } }
+
+        void IResizeObject.SetBoundsResized(Rectangle bounds, RectangleSide changedSide, DragActionType action)
+        {
+            if (bounds.X < 5)
+            {
+                int r = bounds.Right;
+                bounds.X = 5;
+                bounds.Width = r - 5;
+            }
+            if (bounds.Right > (this.Parent.ClientSize.Width - 5))
+                bounds.Width = this.Parent.ClientSize.Width - 5 - bounds.X;
+
+            this.Bounds = bounds;
+            this.Parent.Repaint();
+        }
     }
 }
