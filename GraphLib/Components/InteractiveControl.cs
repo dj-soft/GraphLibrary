@@ -2556,20 +2556,24 @@ namespace Asol.Tools.WorkScheduler.Components
                 bool needDraw = false;
                 bool drawItems = false;
 
-                // Zeptáme se ToolTipu, zda má potřebu nějaké animace:
-                if (this._ToolTipNeedTick)
-                {   // Pošleme do ToolTipu Tick, on nám vrátí true, pokud potřebuje překreslit:
-                    bool needDrawToolTip = this._ToolTip.AnimateTick();
-                    needDraw |= needDrawToolTip;
-                }
-
-                // Jakákoli jiná animace:
-                if (this._AnimationNeedTick)
+                try
                 {
-                    bool needDrawAnimation = this._AnimatorTick();
-                    needDraw |= needDrawAnimation;
-                    drawItems = needDrawAnimation;
+                    // Zeptáme se ToolTipu, zda má potřebu nějaké animace:
+                    if (this._ToolTipNeedTick)
+                    {   // Pošleme do ToolTipu Tick, on nám vrátí true, pokud potřebuje překreslit:
+                        bool needDrawToolTip = this._ToolTip.AnimateTick();
+                        needDraw |= needDrawToolTip;
+                    }
+
+                    // Jakákoli jiná animace:
+                    if (this._AnimationNeedTick)
+                    {
+                        bool needDrawAnimation = this._AnimatorTick();
+                        needDraw |= needDrawAnimation;
+                        drawItems = needDrawAnimation;
+                    }
                 }
+                catch (Exception) { }
 
                 // Zkusíme přejít do Suspend režimu (pokud všichni animátoři mají hotovo):
                 this._BackThreadTrySuspend();
@@ -2577,6 +2581,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 // Kreslení:
                 if (needDraw)
                     this._BackThreadRunDraw(drawItems);
+
             }
             finally
             {
@@ -2616,6 +2621,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 request.InteractiveMode = true;
                 this.Draw(request);
             }
+            catch (Exception) { }
             finally
             {
                 this._BackThreadRunDrawGuiProcess = false;

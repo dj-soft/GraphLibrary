@@ -221,30 +221,30 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="boundsTarget"></param>
         private void _DragOwnerCall(GDragActionArgs e, Rectangle boundsTarget)
         {
-            Rectangle boundsSource = (this._DragOwnerBoundsOriginal.HasValue ? this._DragOwnerBoundsOriginal.Value : this._InteractiveOwner.Bounds);
+            if (!this._DragOwnerBoundsOriginal.HasValue) return;
+
+            Rectangle boundsOriginal = this._DragOwnerBoundsOriginal.Value;    // Souřadnice výchozí, před začátkem procesu Resize
+            Rectangle boundsCurrent = this._InteractiveOwner.Bounds;           // Souřadnice nynější, před jejich změnou aktuálním krokem Resize
             DragActionType action = e.DragAction;
             if (this._IResizeObject != null)
-            {
+            {   // a) varianta přes interface IResizeObject a jeho metodu SetBoundsResized():
                 RectangleSide side = RectangleSide.None;
-                if (this._DragOwnerBoundsOriginal.HasValue)
-                {
-                    side = (boundsSource.Left   != boundsTarget.Left   ? RectangleSide.Left   : RectangleSide.None)
-                         | (boundsSource.Top    != boundsTarget.Top    ? RectangleSide.Top    : RectangleSide.None)
-                         | (boundsSource.Right  != boundsTarget.Right  ? RectangleSide.Right  : RectangleSide.None)
-                         | (boundsSource.Bottom != boundsTarget.Bottom ? RectangleSide.Bottom : RectangleSide.None);
-                }
-                else if (this._DragOwnerItemSide.HasValue)
-                {
-                    side = this._DragOwnerItemSide.Value;
-                }
+                // Najdeme reálné strany, kde došlo ke změně souřadnice proti původní souřadnici:
+                //  (ono při pohybu myši NAHORU na LEVÉ straně sice máme pohyb, ale nemáme změnu Bounds)
+                //  (a dále při povolení UpsideDown můžeme sice pohybovat PRAVÝM resizerem doleva, ale nakonec měníme LEFT i RIGHT souřadnici)
+                side = (boundsOriginal.Left   != boundsTarget.Left   ? RectangleSide.Left   : RectangleSide.None)
+                     | (boundsOriginal.Top    != boundsTarget.Top    ? RectangleSide.Top    : RectangleSide.None)
+                     | (boundsOriginal.Right  != boundsTarget.Right  ? RectangleSide.Right  : RectangleSide.None)
+                     | (boundsOriginal.Bottom != boundsTarget.Bottom ? RectangleSide.Bottom : RectangleSide.None);
+                
                 if (side != RectangleSide.None || action == DragActionType.DragThisCancel)
                 {
-                    ResizeObjectArgs args = new ResizeObjectArgs(e, boundsSource, boundsTarget, side);
+                    ResizeObjectArgs args = new ResizeObjectArgs(e, boundsOriginal, boundsCurrent, boundsTarget, side);
                     this._IResizeObject.SetBoundsResized(args);
                 }
             }
-            else if (boundsTarget != boundsSource || action == DragActionType.DragThisCancel)
-            {
+            else if (boundsTarget != boundsCurrent || action == DragActionType.DragThisCancel)
+            {   // b) varianta s prostým setováním Bounds do prvku (tehdy, když prvek nemá interface IResizeObject):
                 this._InteractiveOwner.Bounds = boundsTarget;
                 ((IInteractiveItem)this._InteractiveOwner).Parent.Repaint();
             }
@@ -438,16 +438,28 @@ namespace Asol.Tools.WorkScheduler.Components
         protected bool ParentHasMouse { get { return (this._IParent.InteractiveState.HasAnyFlag(GInteractiveState.MouseOver | GInteractiveState.FlagDown)); } }
         #endregion
         #region Interaktivita = myš a Drag
+        /// <summary>
+        /// Interakce: po vstupu myši - nastavit kurzor
+        /// </summary>
+        /// <param name="e"></param>
         protected override void AfterStateChangedMouseEnter(GInteractiveChangeStateArgs e)
         {
             base.AfterStateChangedMouseEnter(e);
             e.RequiredCursorType = (this.Orientation == Orientation.Vertical ? SysCursorType.VSplit : SysCursorType.HSplit);
         }
+        /// <summary>
+        /// Interakce: po odchodu myši - nastavit kurzor
+        /// </summary>
+        /// <param name="e"></param>
         protected override void AfterStateChangedMouseLeave(GInteractiveChangeStateArgs e)
         {
             base.AfterStateChangedMouseLeave(e);
             e.RequiredCursorType = SysCursorType.Default;
         }
+        /// <summary>
+        /// Interakce: Drag and Drop - předání do controleru
+        /// </summary>
+        /// <param name="e"></param>
         protected override void DragAction(GDragActionArgs e)
         {
             // Nepoužíváme base podporu : base.DragAction(e);
@@ -526,6 +538,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         #endregion
     }
+    #region interface IResizeObject + class ResizeObjectArgs
     /// <summary>
     /// Interface pro objekt, který dovoluje být resizován pomocí <see cref="ResizeControl"/>, a chce dostávat rozšíření informace o procesu Resize.
     /// Objekt musí implementovat metodu <see cref="SetBoundsResized(Rectangle, RectangleSide, DragActionType)"/>
@@ -538,7 +551,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <para/>
         /// Pozor, objekt by si měl sám zajistit provedení Parent.Repaint() !!! Jinak bude poškozena grafika.
         /// </summary>
-        /// <param name="args"></param>
+        /// <param name="args">Data o procesu Resize (pomocí Drag and Drop)</param>
         void SetBoundsResized(ResizeObjectArgs args);
     }
     /// <summary>
@@ -546,17 +559,53 @@ namespace Asol.Tools.WorkScheduler.Components
     /// </summary>
     public class ResizeObjectArgs
     {
-        public ResizeObjectArgs(GDragActionArgs e, Rectangle boundsSource, Rectangle boundsTarget, RectangleSide side)
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsSource"></param>
+        /// <param name="boundsCurrent"></param>
+        /// <param name="boundsTarget"></param>
+        /// <param name="side"></param>
+        public ResizeObjectArgs(GDragActionArgs e, Rectangle boundsSource, Rectangle boundsCurrent, Rectangle boundsTarget, RectangleSide side)
         {
             this.DragArgs = e;
-            this.BoundsSource = boundsSource;
+            this.BoundsOriginal = boundsSource;
+            this.BoundsCurrent = boundsCurrent;
             this.BoundsTarget = boundsTarget;
             this.ChangedSide = side;
         }
+        /// <summary>
+        /// Kompletní argument Drag and Drop
+        /// </summary>
         public GDragActionArgs DragArgs { get; private set; }
-        public Rectangle BoundsSource { get; private set; }
+        /// <summary>
+        /// Souřadnice objektu výchozí, v okamžiku startu.
+        /// Souřadnice je relativní, odpovídající Item.Bounds.
+        /// </summary>
+        public Rectangle BoundsOriginal { get; private set; }
+        /// <summary>
+        /// Souřadnice objektu aktuální, v průběhu resize, před provedením aktuálního kroku.
+        /// Souřadnice je relativní, odpovídající Item.Bounds.
+        /// </summary>
+        public Rectangle BoundsCurrent { get; private set; }
+        /// <summary>
+        /// Souřadnice objektu cílová, odvozená pouze od pozice myši.
+        /// Souřadnice je relativní, odpovídající Item.Bounds.
+        /// </summary>
         public Rectangle BoundsTarget { get; private set; }
+        /// <summary>
+        /// Strana prvku, která se pohybuje
+        /// </summary>
         public RectangleSide ChangedSide { get; private set; }
-        public DragActionType Action { get { return this.DragArgs.DragAction; } }
+        /// <summary>
+        /// Kompletní data o interaktivní akci
+        /// </summary>
+        public GInteractiveChangeStateArgs ChangeArgs { get { return this.DragArgs.ChangeArgs; } }
+        /// <summary>
+        /// Typ akce (start, pohyb, cancel, ukončení)
+        /// </summary>
+        public DragActionType ResizeAction { get { return this.DragArgs.DragAction; } }
     }
+    #endregion
 }

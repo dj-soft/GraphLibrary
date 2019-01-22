@@ -110,6 +110,32 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         internal ITimeGraphItem Item { get { return this._Owner; } }
         /// <summary>
+        /// Časový interval
+        /// </summary>
+        internal TimeRange Time
+        {
+            get
+            {
+                switch (this.Position)
+                {
+                    case GGraphControlPosition.Group: return this.Group.Time;
+                    case GGraphControlPosition.Item: return this.Item.Time;
+                }
+                return null;
+            }
+            set
+            {
+                switch (this.Position)
+                {
+                    case GGraphControlPosition.Group:
+                        this.Group.SetTime(value);
+                        break;
+                    case GGraphControlPosition.Item:
+                        break;
+                }
+            }
+        }
+        /// <summary>
         /// Souřadnice na ose X. Jednotkou jsou pixely.
         /// Tato osa je společná jak pro virtuální, tak pro reálné souřadnice.
         /// Hodnota 0 odpovídá prvnímu viditelnému pixelu vlevo.
@@ -561,13 +587,49 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Do této metody je posílána informace o probíhajícím Resize tohoto grafického prvku
         /// </summary>
-        /// <param name="bounds"></param>
-        /// <param name="changedSide"></param>
-        /// <param name="action"></param>
-        void IResizeObject.SetBoundsResized(Rectangle bounds, RectangleSide changedSide, DragActionType action)
+        /// <param name="e">Data</param>
+        void IResizeObject.SetBoundsResized(ResizeObjectArgs e)
         {
-            this.Bounds = bounds;
+            BoundsInfo boundsInfo = this.BoundsInfo;
+            TimeRange timeRangeTarget = this._GetResizedTimeRange(e, boundsInfo);
+            ItemResizeArgs args = new ItemResizeArgs(e, this.Graph, this._Group, this._Owner, this._Position, boundsInfo, timeRangeTarget);
+            
+            // vyvolat datasource;
+
+
+            this.Bounds = args.BoundsFinal;
+            if (e.ResizeAction == DragActionType.DragThisDrop)
+                this.Time = args.TimeRangeFinal;
             this.Parent.Repaint();
+        }
+        /// <summary>
+        /// Metoda určí a vrátí časový interval prvku this po Resize
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="boundsInfo"></param>
+        /// <returns></returns>
+        private TimeRange _GetResizedTimeRange(ResizeObjectArgs e, BoundsInfo boundsInfo)
+        {
+            TimeRange timeRangeCurrent = this.Time;
+            TimeRange timeRangeTarget = timeRangeCurrent;
+            int x;
+            DateTime? d;
+            switch (e.ChangedSide)
+            {
+                case RectangleSide.Left:
+                    x = e.BoundsTarget.X;
+                    d = this.Graph.GetTimeForPosition(x);
+                    if (d.HasValue)
+                        timeRangeTarget = new TimeRange(d.Value, timeRangeCurrent.End);
+                    break;
+                case RectangleSide.Right:
+                    x = e.BoundsTarget.Right;
+                    d = this.Graph.GetTimeForPosition(x);
+                    if (d.HasValue)
+                        timeRangeTarget = new TimeRange(timeRangeCurrent.Begin, d.Value);
+                    break;
+            }
+            return timeRangeTarget;
         }
         /// <summary>
         /// Řídící control pro interaktivitu Resize
@@ -1153,7 +1215,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             using (GPainter.GraphicsUse(e.Graphics, clip, GraphicSetting.Smooth))
             {
                 // Vykreslíme prvky:
-                foreach (LinkInfo linkInfo in this._LinkDict.Values)
+                LinkInfo[] linkInfos = this._LinkDict.Values.ToArray();        // Zhmotníme kolekci kvůli enumeraci
+                foreach (LinkInfo linkInfo in linkInfos)
                     linkInfo.Draw(e);
             }
         }

@@ -259,7 +259,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Souhrnný čas všech prvků v této skupině. Je vypočten při vytvoření prvku.
         /// Pouze prvek, jehož čas je kladný (End je vyšší než Begin) je zobrazován.
         /// </summary>
-        public TimeRange Time { get { return this._Time; } set { this._Time = value; } }
+        public TimeRange Time { get { return this._Time; } private set { this._Time = value; } }
         /// <summary>
         /// Relativní výška tohoto prvku. Standardní hodnota = 1.0F. Fyzická výška (v pixelech) jednoho prvku je dána součinem 
         /// <see cref="Height"/> * <see cref="GTimeGraph.CurrentGraphProperties"/>: <see cref="TimeGraphProperties.OneLineHeight"/> nebo <see cref="TimeGraphProperties.OneLinePartialHeight"/>, 
@@ -545,7 +545,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             return cmp;
         }
         #endregion
-        #region Podpora pro Drag and Drop
+        #region Podpora pro Drag and Drop a Resize
         /// <summary>
         /// Vrací true, pokud daný prvek může být přemísťován.
         /// Rozhoduje o tom Group, protože jednotlivé Items přemisťovat nelze.
@@ -558,6 +558,35 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Obsahuje true, pokud this grupa je nyní přemisťována akcí DragMove.
         /// </summary>
         internal bool IsDragged { get { return this.GControl.InteractiveState.HasFlag(GInteractiveState.FlagDrag); } }
+        /// <summary>
+        /// Metoda do sebe vloží nově zadaný čas.
+        /// Musí jej vložit i do konkrétních Items, proto aby po jakékoli vizuální invalidaci tento čas byl zachován.
+        /// </summary>
+        /// <param name="timeNew"></param>
+        internal void SetTime(TimeRange timeNew)
+        {
+            if (timeNew == null) return;
+            TimeRange timeOld = this.Time;
+            ITimeGraphItem[] items = this._Items;
+            if (items != null && items.Length > 0)
+            {   // Standardní situace, kdy grupa má alespoň jeden Item:
+                int l = items.Length - 1;
+                bool hasChange = false;
+                if (timeNew.Begin.HasValue && timeOld.Begin.Value != timeNew.Begin.Value)
+                {   // Změna hodnoty Begin se vepíše do prvku [0] do Time.Begin:
+                    items[0].Time = new TimeRange(timeNew.Begin, items[0].Time.End);
+                    hasChange = true;
+                }
+                if (timeNew.End.HasValue && timeOld.End.Value != timeNew.End.Value)
+                {   // Změna hodnoty End se vepíše do prvku [last] do Time.End:
+                    items[l].Time = new TimeRange(items[l].Time.Begin, timeNew.End);
+                    hasChange = true;
+                }
+                if (hasChange)
+                    this.Graph.Invalidate(GTimeGraph.InvalidateItems.CoordinateX | GTimeGraph.InvalidateItems.CoordinateYReal | GTimeGraph.InvalidateItems.AllGroups);
+            }
+            this._Time = timeNew;
+        }
         #endregion
         #region ICloneable members
         object ICloneable.Clone()

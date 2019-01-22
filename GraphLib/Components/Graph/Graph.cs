@@ -1637,7 +1637,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Invalidace typu <see cref="InvalidateItems.Repaint"/> se nepřidává automaticky, tu musí volající specifikovat explicitně.
         /// </summary>
         /// <param name="items"></param>
-        protected void Invalidate(InvalidateItems items)
+        internal void Invalidate(InvalidateItems items)
         {
             if ((items & InvalidateItems.AllGroups) != 0)
             {
@@ -1699,7 +1699,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Prvky grafu, které budou invalidovány
         /// </summary>
         [Flags]
-        protected enum InvalidateItems : int
+        internal enum InvalidateItems : int
         {
             /// <summary>
             /// Nic
@@ -2960,6 +2960,136 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         OnOtherTable = 0x0200,
         /// <summary>Na nějakou tabulku</summary>
         OnTable = OnSameTable | OnOtherTable
+    }
+    #endregion
+    #region class ItemResizeArgs : Argument obsahující data pro Resize
+    /// <summary>
+    /// ItemResizeArgs : Argument obsahující data pro Resize
+    /// </summary>
+    public class ItemResizeArgs : ItemInteractiveArgs
+    {
+        #region Konstruktor, základní properties
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="resizeArgs"></param>
+        /// <param name="graph"></param>
+        /// <param name="group"></param>
+        /// <param name="data"></param>
+        /// <param name="position"></param>
+        /// <param name="itemBoundsInfo"></param>
+        /// <param name="timeRangeTarget"></param>
+        public ItemResizeArgs(ResizeObjectArgs resizeArgs, GTimeGraph graph, GTimeGraphGroup group, ITimeGraphItem data, GGraphControlPosition position, BoundsInfo itemBoundsInfo, TimeRange timeRangeTarget)
+            : base(resizeArgs.ChangeArgs, graph, group, data, position)
+        {
+            this._ResizeArgs = resizeArgs;
+            this._ItemBoundsInfo = itemBoundsInfo;
+            this._TimeRangeTarget = timeRangeTarget;
+            this._AbsOrigin = itemBoundsInfo.AbsOrigin;
+            this.BoundsFinal = resizeArgs.BoundsTarget;
+            this.TimeRangeFinal = timeRangeTarget;
+        }
+        /// <summary>
+        /// Vstupní argument akce Resize
+        /// </summary>
+        private ResizeObjectArgs _ResizeArgs;
+        /// <summary>
+        /// Souřadný systém prvku grafu
+        /// </summary>
+        private BoundsInfo _ItemBoundsInfo;
+        /// <summary>
+        /// Absolutní souřadnice počátku prostoru relativních hodnot Bounds = počáteční souřadnice počátku grafu, v němž se aktuální prvek pohybuje
+        /// </summary>
+        private Point _AbsOrigin;
+        /// <summary>
+        /// Časový interval cílový
+        /// </summary>
+        private TimeRange _TimeRangeTarget;
+        /// <summary>
+        /// Souřadný systém aktuálního prvku, lze jej použít pro převody relativních a absolutních souřadnic
+        /// </summary>
+        public BoundsInfo ItemBoundsInfo { get { return this._ItemBoundsInfo; } }
+        /// <summary>
+        /// Absolutní souřadnice myši, kde se nachází nyní.
+        /// Může být null pouze při akci <see cref="ResizeAction"/> == <see cref="DragActionType.DragThisCancel"/>.
+        /// </summary>
+        public Point? MouseCurrentAbsolutePoint { get { return this._ResizeArgs.DragArgs.MouseCurrentAbsolutePoint; } }
+        /// <summary>
+        /// Hrana prvku, která je přemísťována
+        /// </summary>
+        public RectangleSide ResizeSide { get { return this._ResizeArgs.ChangedSide; } }
+        /// <summary>
+        /// Typ akce (start, pohyb, cancel, ukončení)
+        /// </summary>
+        public DragActionType ResizeAction { get { return this._ResizeArgs.ResizeAction; } }
+        /// <summary>
+        /// Souřadnice objektu výchozí, v okamžiku startu.
+        /// Souřadnice je relativní, odpovídající Item.Bounds.
+        /// </summary>
+        public Rectangle BoundsOriginal { get { return this._ResizeArgs.BoundsOriginal; } }
+        /// <summary>
+        /// Souřadnice objektu aktuální, v průběhu resize, před provedením aktuálního kroku.
+        /// Souřadnice je relativní, odpovídající Item.Bounds.
+        /// </summary>
+        public Rectangle BoundsCurrent { get { return this._ResizeArgs.BoundsCurrent; } }
+        /// <summary>
+        /// Souřadnice objektu cílová, odvozená pouze od pozice myši.
+        /// Souřadnice je relativní, odpovídající Item.Bounds.
+        /// </summary>
+        public Rectangle BoundsTarget { get { return this._ResizeArgs.BoundsTarget; } }
+        /// <summary>
+        /// Časový interval prvku cílový, odvozená pouze od pozice myši.
+        /// </summary>
+        public TimeRange TimeRangeTarget { get { return this._TimeRangeTarget; } }
+        /// <summary>
+        /// Souřadnice objektu finální, potvrzená aplikací, tato hodnota se použije do prvku.
+        /// Souřadnice je relativní, odpovídající Item.Bounds.
+        /// </summary>
+        public Rectangle BoundsFinal { get; set; }
+        /// <summary>
+        /// Časový interval prvku finální, potvrzený aplikací, tato hodnota se použije do prvku.
+        /// </summary>
+        public TimeRange TimeRangeFinal { get; set; }
+        #endregion
+        #region Podpůrné metody
+        /// <summary>
+        /// Metoda vrátí čas, odpovídající dané absolutní souřadnici X
+        /// </summary>
+        /// <param name="absolutePositionX"></param>
+        /// <returns></returns>
+        public DateTime? GetTimeForPosition(int absolutePositionX)
+        {
+            int relativePositionX = this._ItemBoundsInfo.GetRelPoint(new Point(absolutePositionX, 0)).X;
+            return this.Graph.GetTimeForPosition(relativePositionX);
+        }
+        /// <summary>
+        /// Metoda vrátí absolutní souřadnici X, odpovídající danému času.
+        /// Vstupem je datum a čas, výstupem absolutní souřadnice X.
+        /// </summary>
+        /// <param name="time">Datum a čas, jehož pozici hledáme</param>
+        /// <returns>Absoutní souřadnice X</returns>
+        public int? GetPositionForTime(DateTime time)
+        {
+            int? relativePositionX = this.Graph.GetPositionForTime(time);
+            if (!relativePositionX.HasValue) return null;
+            return this._ItemBoundsInfo.GetAbsPoint(new Point(relativePositionX.Value, 0)).X;
+        }
+        /// <summary>
+        /// Metoda vrátí dané datum zaokrouhlené na vhodné jednotky na aktuální časové ose.
+        /// </summary>
+        /// <param name="time">Daný přesný čas</param>
+        /// <param name="tickType">Druh zaokrouhlení, odpovídá typu značky na časové ose</param>
+        public DateTime? GetRoundedTime(DateTime time, AxisTickType tickType)
+        {
+            return this.Graph.GetRoundedTime(time, tickType);
+        }
+        #endregion
+        #region Výstupní proměnné
+        /// <summary>
+        /// Souřadnice prvku upravená aplikací
+        /// </summary>
+        public Rectangle? ResultBounds { get; set; }
+        #endregion
     }
     #endregion
     #region class ItemActionArgs : Argument obsahující data prosté akce
