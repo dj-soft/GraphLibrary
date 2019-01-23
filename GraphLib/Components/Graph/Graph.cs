@@ -1078,7 +1078,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         protected bool IsValidBounds { get { return this._IsValidBounds; } } private bool _IsValidBounds;
         #endregion
-        #region Komunikace s datovým zdrojem: Caption, ToolTip, Link, DoubleClick, LongClick, Drag and Drop
+        #region Komunikace s datovým zdrojem: Caption, ToolTip, Link, DoubleClick, LongClick, Drag and Drop, Resize
         /// <summary>
         /// Metoda získá text, který se bude vykreslovat do prvku
         /// </summary>
@@ -1235,6 +1235,15 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             if (!this.HasDataSource) return;
             this.DataSource.ItemDragDropAction(args);
+        }
+        /// <summary>
+        /// Zavolá datový zdroj pro řízení akce Resize
+        /// </summary>
+        /// <param name="args"></param>
+        internal void ResizeGroupCallSource(ItemResizeArgs args)
+        {
+            if (!this.HasDataSource) return;
+            this.DataSource.ItemResizeAction(args);
         }
         /// <summary>
         /// true pokud máme datový zdroj
@@ -1745,8 +1754,22 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         #region Konverze času a pixelů
         /// <summary>
         /// Metoda vrátí čas, odpovídající dané relativní souřadnici X.
+        /// Výsledný čas může zaokrouhlit podle daného požadavku "tickType".
         /// </summary>
-        /// <param name="relativePositionX"></param>
+        /// <param name="relativePositionX">Souřadnice X, relativně k počátku osy</param>
+        /// <param name="roundTickType">Režim zaokrouhlení (vzhledem k aktuálnímu rozlišení osy)</param>
+        /// <returns></returns>
+        public DateTime? GetTimeForPosition(int relativePositionX, AxisTickType roundTickType)
+        {
+            DateTime? time = this.GetTimeForPosition(relativePositionX);
+            if (time.HasValue && roundTickType != AxisTickType.None)
+                time = this.GetRoundedTime(time.Value, roundTickType);
+            return time;
+        }
+        /// <summary>
+        /// Metoda vrátí čas, odpovídající dané relativní souřadnici X.
+        /// </summary>
+        /// <param name="relativePositionX">Souřadnice X, relativně k počátku osy</param>
         /// <returns></returns>
         public DateTime? GetTimeForPosition(int relativePositionX)
         {
@@ -1792,10 +1815,12 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Metoda vrátí dané datum zaokrouhlené na vhodné jednotky na aktuální časové ose.
         /// </summary>
-        public DateTime? GetRoundedTime(DateTime time, AxisTickType tickType)
+        /// <param name="time">Dané datum, které se bude zaokrouhlovat</param>
+        /// <param name="roundTickType">Režim zaokrouhlení (vzhledem k aktuálnímu rozlišení osy)</param>
+        public DateTime? GetRoundedTime(DateTime time, AxisTickType roundTickType)
         {
             if (this._TimeConvertor == null) return null;
-            return this._TimeConvertor.GetRoundedTime(time, tickType);
+            return this._TimeConvertor.GetRoundedTime(time, roundTickType);
         }
         #endregion
         #region Podpora pro aplikační vrstvu
@@ -2512,6 +2537,11 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         /// <param name="args"></param>
         void ItemDragDropAction(ItemDragDropArgs args);
+        /// <summary>
+        /// Řeší Resize
+        /// </summary>
+        /// <param name="args"></param>
+        void ItemResizeAction(ItemResizeArgs args);
     }
     #region class CreateTextArgs : Argumenty pro tvobu textu (Caption)
     /// <summary>
@@ -2700,8 +2730,10 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             : base(dragArgs.ChangeArgs, graph, group, data, position)
         {
             this._DragArgs = dragArgs;
-            this._AbsOrigin = (dragArgs.BoundsInfo != null ? (Point?)dragArgs.BoundsInfo.AbsOrigin : (Point?)null);
-            this.DragToAbsoluteBounds = targetAbsoluteBounds;             // Musí se provést až po vložení hodnoty do this._AbsOrigin.
+            this._ItemBoundsInfo = dragArgs.BoundsInfo;                   // Od teď je možno používat absolutní i relativní souřadnice
+            this.BoundsOriginal = (dragArgs.DragOriginRelativeBounds.HasValue ? dragArgs.DragOriginRelativeBounds.Value : Rectangle.Empty);
+            this.BoundsTargetAbsolute = (targetAbsoluteBounds.HasValue ? targetAbsoluteBounds.Value : Rectangle.Empty);    // Tady proběhne konverze Abs => Rel
+
             this.TargetIsValid = true;
         }
         /// <summary>
@@ -2709,14 +2741,9 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         private GDragActionArgs _DragArgs;
         /// <summary>
-        /// Aktuální souřadnice cílová v průběhu akce Drag and Drop, relativní koordináty.
-        /// Jedná se o souřadnice odpovídající pohybu myši; prvek sám může svoje cílové souřadnice modifikovat s ohledem na svoje vlastní pravidla.
+        /// Souřadný systém prvku grafu (Group) - pro přepočty souřadnic relativních / absolutních
         /// </summary>
-        private Rectangle? _DragToRelativeBounds;
-        /// <summary>
-        /// Absolutní souřadnice počátku relativního prostoru = offset mezi <see cref="DragToRelativeBounds"/> a <see cref="DragToAbsoluteBounds"/>.
-        /// </summary>
-        private Point? _AbsOrigin;
+        private BoundsInfo _ItemBoundsInfo;
         /// <summary>
         /// false = lze zadávat data do properties "WriteInit", true = už to nejde
         /// </summary>
@@ -2748,25 +2775,59 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         public Point? MouseCurrentAbsolutePoint { get { return this._DragArgs.MouseCurrentAbsolutePoint; } }
         /// <summary>
-        /// Souřadnice prvku cílová v průběhu akce Drag and Drop, relativní koordináty.
-        /// Souřadnice je ve výchozím stavu nastavena systémem - podle pohybu myši, ale aplikační kód ji může změnit na hodnotu, kam se má prvek skutečně přemístit.
-        /// Aplikační kód může stejně tak pracovat i s absolutní souřadnicí <see cref="DragToAbsoluteBounds"/>.
-        /// Pro akci <see cref="DragAction"/> == <see cref="DragActionType.DragThisCancel"/> je null, jinak obsahuje hodnotu.
-        /// Výchozí hodnota je k dispozici v <see cref="DragArgs"/>, tam ji měnit nelze.
+        /// Souřadnice objektu výchozí, v okamžiku startu procesu Resize.
+        /// Souřadnice je relativní, odpovídající Item.Bounds.
         /// </summary>
-        public Rectangle? DragToRelativeBounds { get { return this._DragToRelativeBounds; } set { this._DragToRelativeBounds = value; } }
+        public Rectangle BoundsOriginal { get; private set; }
         /// <summary>
-        /// Souřadnice prvku cílová v průběhu akce Drag and Drop, absolutní koordináty. 
-        /// Souřadnice je ve výchozím stavu nastavena systémem - podle pohybu myši, ale aplikační kód ji může změnit na hodnotu, kam se má prvek skutečně přemístit.
-        /// Aplikační kód může stejně tak pracovat i s relativní souřadnicí <see cref="DragToRelativeBounds"/>.
-        /// Pro akci <see cref="DragAction"/> == <see cref="DragActionType.DragThisCancel"/> je null, jinak obsahuje hodnotu.
-        /// Výchozí hodnota je k dispozici v <see cref="DragArgs"/>, tam ji měnit nelze.
+        /// Souřadnice objektu aktuální, v průběhu resize, před provedením aktuálního kroku.
+        /// Souřadnice je relativní, odpovídající Item.Bounds.
         /// </summary>
-        public Rectangle? DragToAbsoluteBounds { get { return this._DragToRelativeBounds.Add(this._AbsOrigin); } set { this._DragToRelativeBounds = value.Sub(this._AbsOrigin); } }
+        public Rectangle BoundsCurrent { get; private set; }
         /// <summary>
-        /// Absolutní souřadnice prvku na výchozí pozici = odkud se začal přesouvat
+        /// Souřadnice objektu cílová, odvozená pouze od pozice myši.
+        /// Souřadnice je relativní, odpovídající Item.Bounds.
         /// </summary>
-        public Rectangle OriginalAbsoluteBounds { get { return this._DragArgs.BoundsInfo.CurrentAbsBounds; } }
+        public Rectangle BoundsTarget { get; private set; }
+        #endregion
+        #region Absolutní souřadnice
+        /// <summary>
+        /// Souřadnice objektu výchozí, v okamžiku startu procesu Resize.
+        /// Souřadnice je absolutní.
+        /// </summary>
+        public Rectangle BoundsOriginalAbsolute { get { return GetBoundsAbsolute(this.BoundsOriginal).Value; } private set { this.BoundsOriginal = GetBoundsRelative(value).Value; } }
+        /// <summary>
+        /// Souřadnice objektu cílová, odvozená pouze od pozice myši.
+        /// Souřadnice je absolutní.
+        /// </summary>
+        public Rectangle BoundsTargetAbsolute { get { return GetBoundsAbsolute(this.BoundsTarget).Value; } private set { this.BoundsTarget = GetBoundsRelative(value).Value; } }
+        /// <summary>
+        /// Souřadnice objektu finální, potvrzená aplikací, tato hodnota se použije do prvku.
+        /// Souřadnice je absolutní.
+        /// </summary>
+        public Rectangle? BoundsFinalAbsolute { get { return GetBoundsAbsolute(this.BoundsFinal); } set { this.BoundsFinal = GetBoundsRelative(value); } }
+        /// <summary>
+        /// Vrátí absolutní souřadnice pro dané relativní hodnoty
+        /// </summary>
+        /// <param name="boundsRelative"></param>
+        /// <returns></returns>
+        public Rectangle? GetBoundsAbsolute(Rectangle? boundsRelative)
+        {
+            return this.ItemBoundsInfo.GetAbsBoundsN(boundsRelative);
+        }
+        /// <summary>
+        /// Vrátí relativní souřadnice pro dané absolutní hodnoty
+        /// </summary>
+        /// <param name="boundsAbsolute"></param>
+        /// <returns></returns>
+        public Rectangle? GetBoundsRelative(Rectangle? boundsAbsolute)
+        {
+            return this.ItemBoundsInfo.GetRelBoundsN(boundsAbsolute);
+        }
+        /// <summary>
+        /// Souřadný systém aktuálního prvku (Grupy v rámci Grafu), lze jej použít pro převody relativních a absolutních souřadnic
+        /// </summary>
+        public BoundsInfo ItemBoundsInfo { get { return this._ItemBoundsInfo; } }
         #endregion
         #region Properties WriteInit
         /// <summary>
@@ -2882,12 +2943,22 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Metoda vrátí čas, odpovídající dané absolutní souřadnici X
         /// </summary>
-        /// <param name="absolutePositionX"></param>
+        /// <param name="absolutePositionX">Souřadnice X absolutní, odpovídá například pozici myši <see cref="MouseCurrentAbsolutePoint"/></param>
         /// <returns></returns>
         public DateTime? GetTimeForPosition(int absolutePositionX)
         {
+            return this.GetTimeForPosition(absolutePositionX, AxisTickType.None);
+        }
+        /// <summary>
+        /// Metoda vrátí čas, odpovídající dané absolutní souřadnici X
+        /// </summary>
+        /// <param name="absolutePositionX">Souřadnice X absolutní, odpovídá například pozici myši <see cref="MouseCurrentAbsolutePoint"/></param>
+        /// <param name="roundTickType">Druh zaokrouhlení času</param>
+        /// <returns></returns>
+        public DateTime? GetTimeForPosition(int absolutePositionX, AxisTickType roundTickType)
+        {
             int relativePositionX = this.DragArgs.BoundsInfo.GetRelPoint(new Point(absolutePositionX, 0)).X;
-            return this.Graph.GetTimeForPosition(relativePositionX);
+            return this.Graph.GetTimeForPosition(relativePositionX, roundTickType);
         }
         /// <summary>
         /// Metoda vrátí absolutní souřadnici X, odpovídající danému času.
@@ -2912,6 +2983,12 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         }
         #endregion
         #region Výstupní proměnné
+        /// <summary>
+        /// Souřadnice objektu finální, potvrzená aplikací, tato hodnota se použije do prvku.
+        /// Výchozí hodnota = <see cref="BoundsTarget"/>, ale aplikace ji může změnit.
+        /// Souřadnice je relativní, odpovídající Item.Bounds.
+        /// </summary>
+        public Rectangle? BoundsFinal { get; set; }
         /// <summary>
         /// Vyjadřuje platnost cílové souřadnice (pozice Drag and Drop) pro aktuální prvek.
         /// Hodnota 1 je výchozí a značí ANO, prvek se na dané místo může přemístit, hodnota menší než 1 = nemůže.
@@ -3006,14 +3083,15 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         private TimeRange _TimeRangeTarget;
         /// <summary>
-        /// Souřadný systém aktuálního prvku, lze jej použít pro převody relativních a absolutních souřadnic
-        /// </summary>
-        public BoundsInfo ItemBoundsInfo { get { return this._ItemBoundsInfo; } }
-        /// <summary>
         /// Absolutní souřadnice myši, kde se nachází nyní.
         /// Může být null pouze při akci <see cref="ResizeAction"/> == <see cref="DragActionType.DragThisCancel"/>.
         /// </summary>
         public Point? MouseCurrentAbsolutePoint { get { return this._ResizeArgs.DragArgs.MouseCurrentAbsolutePoint; } }
+        /// <summary>
+        /// Data pro tooltip.
+        /// Tuto property lze setovat, nebo ji lze rovnou naplnit (je autoinicializační).
+        /// </summary>
+        public ToolTipData ToolTipData { get { return this._ResizeArgs.ToolTipData; } set { this._ResizeArgs.ToolTipData = value; } }
         /// <summary>
         /// Hrana prvku, která je přemísťována
         /// </summary>
@@ -3023,7 +3101,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// </summary>
         public DragActionType ResizeAction { get { return this._ResizeArgs.ResizeAction; } }
         /// <summary>
-        /// Souřadnice objektu výchozí, v okamžiku startu.
+        /// Souřadnice objektu výchozí, v okamžiku startu procesu Resize.
         /// Souřadnice je relativní, odpovídající Item.Bounds.
         /// </summary>
         public Rectangle BoundsOriginal { get { return this._ResizeArgs.BoundsOriginal; } }
@@ -3041,26 +3119,66 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Časový interval prvku cílový, odvozená pouze od pozice myši.
         /// </summary>
         public TimeRange TimeRangeTarget { get { return this._TimeRangeTarget; } }
+        #endregion
+        #region Absolutní souřadnice
+        /// <summary>
+        /// Souřadnice objektu výchozí, v okamžiku startu procesu Resize.
+        /// Souřadnice je absolutní.
+        /// </summary>
+        public Rectangle BoundsOriginalAbsolute { get { return GetBoundsAbsolute(this.BoundsOriginal).Value; } }
+        /// <summary>
+        /// Souřadnice objektu cílová, odvozená pouze od pozice myši.
+        /// Souřadnice je absolutní.
+        /// </summary>
+        public Rectangle BoundsTargetAbsolute { get { return GetBoundsAbsolute(this.BoundsTarget).Value; } }
         /// <summary>
         /// Souřadnice objektu finální, potvrzená aplikací, tato hodnota se použije do prvku.
-        /// Souřadnice je relativní, odpovídající Item.Bounds.
+        /// Souřadnice je absolutní.
         /// </summary>
-        public Rectangle BoundsFinal { get; set; }
+        public Rectangle? BoundsFinalAbsolute { get { return GetBoundsAbsolute(this.BoundsFinal); } set { this.BoundsFinal = GetBoundsRelative(value); } }
         /// <summary>
-        /// Časový interval prvku finální, potvrzený aplikací, tato hodnota se použije do prvku.
+        /// Vrátí absolutní souřadnice pro dané relativní hodnoty
         /// </summary>
-        public TimeRange TimeRangeFinal { get; set; }
+        /// <param name="boundsRelative"></param>
+        /// <returns></returns>
+        public Rectangle? GetBoundsAbsolute(Rectangle? boundsRelative)
+        {
+            return this.ItemBoundsInfo.GetAbsBoundsN(boundsRelative);
+        }
+        /// <summary>
+        /// Vrátí relativní souřadnice pro dané absolutní hodnoty
+        /// </summary>
+        /// <param name="boundsAbsolute"></param>
+        /// <returns></returns>
+        public Rectangle? GetBoundsRelative(Rectangle? boundsAbsolute)
+        {
+            return this.ItemBoundsInfo.GetRelBoundsN(boundsAbsolute);
+        }
+        /// <summary>
+        /// Souřadný systém aktuálního prvku (Grupy v rámci Grafu), lze jej použít pro převody relativních a absolutních souřadnic
+        /// </summary>
+        public BoundsInfo ItemBoundsInfo { get { return this._ItemBoundsInfo; } }
         #endregion
         #region Podpůrné metody
         /// <summary>
         /// Metoda vrátí čas, odpovídající dané absolutní souřadnici X
         /// </summary>
-        /// <param name="absolutePositionX"></param>
+        /// <param name="absolutePositionX">Souřadnice X absolutní, odpovídá například pozici myši <see cref="MouseCurrentAbsolutePoint"/></param>
         /// <returns></returns>
         public DateTime? GetTimeForPosition(int absolutePositionX)
         {
+            return this.GetTimeForPosition(absolutePositionX, AxisTickType.None);
+        }
+        /// <summary>
+        /// Metoda vrátí čas, odpovídající dané absolutní souřadnici X
+        /// </summary>
+        /// <param name="absolutePositionX">Souřadnice X absolutní, odpovídá například pozici myši <see cref="MouseCurrentAbsolutePoint"/></param>
+        /// <param name="roundTickType">Druh zaokrouhlení času</param>
+        /// <returns></returns>
+        public DateTime? GetTimeForPosition(int absolutePositionX, AxisTickType roundTickType)
+        {
             int relativePositionX = this._ItemBoundsInfo.GetRelPoint(new Point(absolutePositionX, 0)).X;
-            return this.Graph.GetTimeForPosition(relativePositionX);
+            return this.Graph.GetTimeForPosition(relativePositionX, roundTickType);
         }
         /// <summary>
         /// Metoda vrátí absolutní souřadnici X, odpovídající danému času.
@@ -3086,9 +3204,16 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         #endregion
         #region Výstupní proměnné
         /// <summary>
-        /// Souřadnice prvku upravená aplikací
+        /// Souřadnice objektu finální, potvrzená aplikací, tato hodnota se použije do prvku.
+        /// Výchozí hodnota = <see cref="BoundsTarget"/>, ale aplikace ji může změnit.
+        /// Souřadnice je relativní, odpovídající Item.Bounds.
         /// </summary>
-        public Rectangle? ResultBounds { get; set; }
+        public Rectangle? BoundsFinal { get; set; }
+        /// <summary>
+        /// Časový interval prvku finální, potvrzený aplikací, tato hodnota se použije do prvku.
+        /// Výchozí hodnota = <see cref="TimeRangeTarget"/>, ale aplikace ji může změnit.
+        /// </summary>
+        public TimeRange TimeRangeFinal { get; set; }
         #endregion
     }
     #endregion

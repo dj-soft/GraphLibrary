@@ -580,6 +580,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public GDragActionArgs DragArgs { get; private set; }
         /// <summary>
+        /// Data pro tooltip.
+        /// Tuto property lze setovat, nebo ji lze rovnou naplnit (je autoinicializační).
+        /// </summary>
+        public ToolTipData ToolTipData { get { return this.DragArgs.ToolTipData; } set { this.DragArgs.ToolTipData = value; } }
+        /// <summary>
         /// Souřadnice objektu výchozí, v okamžiku startu.
         /// Souřadnice je relativní, odpovídající Item.Bounds.
         /// </summary>

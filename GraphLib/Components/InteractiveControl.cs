@@ -1650,8 +1650,9 @@ namespace Asol.Tools.WorkScheduler.Components
             using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GInteractiveControl", "OnPaintLayers", "", "Bounds: " + this.Bounds))
             {
                 DrawRequest request = e.UserData as DrawRequest;
-                scope.AddItem("e.UserData: " + ((request == null) ? "null => Draw " : "Explicit request"));
-                if (request == null)
+                scope.AddItem("e.UserData: " + ((request == null) ? "null => Full Draw" : "Explicit request"));
+                scope.AddItem("PendingFullDraw: " + (this.PendingFullDraw ? "true => Full Draw" : "false"));
+                if (request == null || this.PendingFullDraw)
                 {   // Explicit request not specified, we will draw all items:
                     request = new DrawRequest(true, this._NeedDrawFrameBounds, this._ToolTip, this._ProgressItem);
                     request.Fill(this.ClientSize, this, this.ItemsList, true, false);

@@ -392,6 +392,26 @@ namespace Asol.Tools.WorkScheduler.Components
             return absoluteBounds.Sub(this._OriginX, this._OriginY);
         }
         /// <summary>
+        /// Vrátí danou relativní souřadnici posunutou do absolutních koordinátů (k souřadnici se přičte <see cref="_OriginX"/>, <see cref="_OriginY"/>).
+        /// Pro hodnotu null vrací null.
+        /// </summary>
+        /// <param name="relativeBounds"></param>
+        /// <returns></returns>
+        public Rectangle? GetAbsBoundsN(Rectangle? relativeBounds)
+        {
+            return (relativeBounds.HasValue ? (Rectangle?)relativeBounds.Value.Add(this._OriginX, this._OriginY) : (Rectangle?)null);
+        }
+        /// <summary>
+        /// Vrátí danou absolutní souřadnici posunutou do relativních koordinátů (k souřadnici se odečte <see cref="_OriginX"/>, <see cref="_OriginY"/>)
+        /// Pro hodnotu null vrací null.
+        /// </summary>
+        /// <param name="absoluteBounds"></param>
+        /// <returns></returns>
+        public Rectangle? GetRelBoundsN(Rectangle? absoluteBounds)
+        {
+            return (absoluteBounds.HasValue ? (Rectangle?)absoluteBounds.Value.Sub(this._OriginX, this._OriginY) : (Rectangle?)null);
+        }
+        /// <summary>
         /// Vrátí daný relativní bod posunutý do absolutních koordinátů (k souřadnici se přičte <see cref="_OriginX"/>, <see cref="_OriginY"/>)
         /// </summary>
         /// <param name="relativePoint"></param>

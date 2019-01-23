@@ -505,10 +505,10 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
             // Převezmu výsledky (buď defaultní, nebo modifikované aplikační logikou):
             this.DragDropTargetItem = args.TargetDropItem;
             this._Group.DragDropDrawInteractiveOpacity = args.TargetValidityOpacity;
-            if (args.DragToAbsoluteBounds.HasValue)
+            if (args.BoundsFinal.HasValue)
             {
-                targetAbsoluteBounds = args.DragToAbsoluteBounds.Value;
-                targetRelativeBounds = e.BoundsInfo.GetRelBounds(targetAbsoluteBounds);
+                targetRelativeBounds = args.BoundsFinal.Value;
+                targetAbsoluteBounds = args.BoundsFinalAbsolute.Value;
             }
         }
         /// <summary>
@@ -591,44 +591,43 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         void IResizeObject.SetBoundsResized(ResizeObjectArgs e)
         {
             BoundsInfo boundsInfo = this.BoundsInfo;
-            TimeRange timeRangeTarget = this._GetResizedTimeRange(e, boundsInfo);
+            TimeRange timeRangeTarget = this._GetResizedTimeRange(e, boundsInfo, AxisTickType.Pixel);
             ItemResizeArgs args = new ItemResizeArgs(e, this.Graph, this._Group, this._Owner, this._Position, boundsInfo, timeRangeTarget);
-            
-            // vyvolat datasource;
 
+            this.Graph.ResizeGroupCallSource(args);
 
-            this.Bounds = args.BoundsFinal;
-            if (e.ResizeAction == DragActionType.DragThisDrop)
-                this.Time = args.TimeRangeFinal;
-            this.Parent.Repaint();
+            if (args.BoundsFinal.HasValue)
+            {
+                this.Bounds = args.BoundsFinal.Value;
+                if (e.ResizeAction == DragActionType.DragThisDrop)
+                    this.Time = args.TimeRangeFinal;
+                this.Parent.Repaint();
+            }
         }
         /// <summary>
         /// Metoda určí a vrátí časový interval prvku this po Resize
         /// </summary>
         /// <param name="e"></param>
         /// <param name="boundsInfo"></param>
+        /// <param name="roundTickType">Režim zaokrouhlení (vzhledem k aktuálnímu rozlišení osy)</param>
         /// <returns></returns>
-        private TimeRange _GetResizedTimeRange(ResizeObjectArgs e, BoundsInfo boundsInfo)
+        private TimeRange _GetResizedTimeRange(ResizeObjectArgs e, BoundsInfo boundsInfo, AxisTickType roundTickType = AxisTickType.None)
         {
+            // Tento algoritmus zachová přesné DateTime z původního stavu v situaci, kdy se nezměnila pixelová pozice vizuálního prvku
+            //  (pokud BoundsTarget.X == BoundsOriginal.X, tak se nezmění DateTime Begin...)
+            // Pokud došlo ke změně pozice (X nebo Right), pak se z pozice pixelu vypočítá DateTime (s pomocí časové osy grafu).
+            // Nepřihlížíme k tvrzení ze zdroje akce k tomu, kterou stranu prvku přemísťoval.
             TimeRange timeRangeCurrent = this.Time;
-            TimeRange timeRangeTarget = timeRangeCurrent;
-            int x;
-            DateTime? d;
-            switch (e.ChangedSide)
-            {
-                case RectangleSide.Left:
-                    x = e.BoundsTarget.X;
-                    d = this.Graph.GetTimeForPosition(x);
-                    if (d.HasValue)
-                        timeRangeTarget = new TimeRange(d.Value, timeRangeCurrent.End);
-                    break;
-                case RectangleSide.Right:
-                    x = e.BoundsTarget.Right;
-                    d = this.Graph.GetTimeForPosition(x);
-                    if (d.HasValue)
-                        timeRangeTarget = new TimeRange(timeRangeCurrent.Begin, d.Value);
-                    break;
-            }
+            DateTime? begin = timeRangeCurrent.Begin.Value;
+            DateTime? end = timeRangeCurrent.End.Value;
+
+            if (e.BoundsTarget.X != e.BoundsOriginal.X)
+                begin = this.Graph.GetTimeForPosition(e.BoundsTarget.X);
+
+            if (e.BoundsTarget.Right != e.BoundsOriginal.Right)
+                end = this.Graph.GetTimeForPosition(e.BoundsTarget.Right);
+
+            TimeRange timeRangeTarget = new TimeRange(begin, end);
             return timeRangeTarget;
         }
         /// <summary>

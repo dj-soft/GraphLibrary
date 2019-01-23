@@ -4714,9 +4714,9 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <returns></returns>
         public override string ToString()
         {
-            string text = "ResizeItem: ";
-            if (this.ResizeItem != null)
-                text += this.ResizeItem.ToString();
+            string text = "ResizeItems: ";
+            if (this.ResizeItems != null && this.ResizeItems.Length > 0)
+                text += this.ResizeItems[0].ToString();
             else
                 text += "{Null}";
 
@@ -4727,9 +4727,13 @@ namespace Noris.LCS.Base.WorkScheduler
             return text;
         }
         /// <summary>
-        /// Prvek, kterého se Resize týká
+        /// Prvek, kterého se Resize týká. Jde o prvky jedné grupy.
         /// </summary>
-        public GuiGridItemId ResizeItem { get; set; }
+        public GuiGridItemId[] ResizeItems { get; set; }
+        /// <summary>
+        /// Zdrojový řádek, kde probíhá přesouvání.
+        /// </summary>
+        public GuiId SourceRow { get; set; }
         /// <summary>
         /// Původní výška prvku grafu (od-do v grafu).
         /// </summary>

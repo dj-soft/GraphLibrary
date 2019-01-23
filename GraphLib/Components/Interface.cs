@@ -848,7 +848,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Data pro tooltip.
         /// Tuto property lze setovat, nebo ji lze rovnou naplnit (je autoinicializační).
         /// </summary>
-        public ToolTipData ToolTipData { get { return this._ChangeArgs.ToolTipData; } }
+        public ToolTipData ToolTipData { get { return this._ChangeArgs.ToolTipData; } set { this._ChangeArgs.ToolTipData = value; } }
         /// <summary>
         /// Souřadnice prvku výchozí před zahájením akce Drag and Drop, relativní koordináty. 
         /// </summary>

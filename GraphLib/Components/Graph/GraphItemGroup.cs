@@ -561,31 +561,177 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// <summary>
         /// Metoda do sebe vloží nově zadaný čas.
         /// Musí jej vložit i do konkrétních Items, proto aby po jakékoli vizuální invalidaci tento čas byl zachován.
+        /// V podstatě jde o jiné rozmístění časů v Items tak, aby respektovaly původní velikost a rozmístění v celkovém čase, a vešly se do nového času.
+        /// Nutným výsledkem je přesné zarovnání času Begin u prvního prvku a End u posledního, z toho se odvozuje při rekalkulacích čas grupy (který je cílem této metody).
         /// </summary>
         /// <param name="timeNew"></param>
         internal void SetTime(TimeRange timeNew)
         {
             if (timeNew == null) return;
             TimeRange timeOld = this.Time;
-            ITimeGraphItem[] items = this._Items;
-            if (items != null && items.Length > 0)
-            {   // Standardní situace, kdy grupa má alespoň jeden Item:
-                int l = items.Length - 1;
-                bool hasChange = false;
-                if (timeNew.Begin.HasValue && timeOld.Begin.Value != timeNew.Begin.Value)
-                {   // Změna hodnoty Begin se vepíše do prvku [0] do Time.Begin:
-                    items[0].Time = new TimeRange(timeNew.Begin, items[0].Time.End);
-                    hasChange = true;
+            if (timeNew == timeOld) return;                                    // Beze změny hodnoty
+
+            // Mít prvky v Items je téměř povinnost. Ale pojistka je jistota :-) :
+            if (this._Items != null && this._Items.Length > 0)
+            {
+                DateTime beginNew = timeNew.Begin.Value;
+                DateTime endNew = timeNew.End.Value;
+                if (this._Items.Length == 1)
+                {   // Pokud máme jen jeden prvek v grupě, pak jednoduše změníme jeho čas na čas požadovaný:
+                    this._Items[0].Time = new TimeRange(beginNew, endNew);
                 }
-                if (timeNew.End.HasValue && timeOld.End.Value != timeNew.End.Value)
-                {   // Změna hodnoty End se vepíše do prvku [last] do Time.End:
-                    items[l].Time = new TimeRange(items[l].Time.Begin, timeNew.End);
-                    hasChange = true;
+                else
+                {   // Pokud máme více než jeden prvek, musíme je do daného času rozprostřít a pokud možno zachovat jejich vlastní délky:
+                    DateTime beginOld = timeOld.Begin.Value;
+                    DateTime endOld = timeOld.End.Value;
+                    long tickNew = timeNew.Size.Value.Ticks;
+                    long tickOld = timeOld.Size.Value.Ticks;
+
+                    // Varianty kombinací:
+                    if (tickNew == tickOld) this._SetTimeShift(timeNew);           // Shift = přesun intervalu na jiné místo beze změny jeho délky
+                    else if (tickNew > tickOld)                                    // Prodloužení času
+                    {
+                        if (beginNew == beginOld) this._SetTimeAddEnd(timeNew);    // Begin se nemění, End se zvyšuje
+                        else if (endNew == endOld) this._SetTimeAddBegin(timeNew); // End se nemění, Begin se snižuje (délka se zvyšuje)
+                        else this._SetTimeAddBooth(timeNew);                       // Mění se Begin i End, délka se zvyšuje
+                    }
+                    else                                                           // Zkrácení času
+                    {
+                        if (beginNew == beginOld) this._SetTimeSubEnd(timeNew);    // Begin se nemění, End se snižuje (délka se snižuje)
+                        else if (endNew == endOld) this._SetTimeSubBegin(timeNew); // End se nemění, Begin se zvyšuje (délka se snižuje)
+                        else this._SetTimeSubBooth(timeNew);                       // Mění se Begin i End, délka se snižuje
+                    }
                 }
-                if (hasChange)
-                    this.Graph.Invalidate(GTimeGraph.InvalidateItems.CoordinateX | GTimeGraph.InvalidateItems.CoordinateYReal | GTimeGraph.InvalidateItems.AllGroups);
             }
             this._Time = timeNew;
+            this.Graph.Invalidate(GTimeGraph.InvalidateItems.AllGroups);
+        }
+        /// <summary>
+        /// Změna intervalu: posun času všech prvků o stejnou vzdálenost
+        /// </summary>
+        /// <param name="timeNew"></param>
+        private void _SetTimeShift(TimeRange timeNew)
+        {
+            TimeSpan shift = timeNew.Begin.Value - this.Time.Begin.Value;      // Hodnota posunu, může být kladný nebo záporný
+            this._SetTimeShiftBy(shift);                                       //  aplikuje se na všechny časy
+        }
+        /// <summary>
+        /// Změna intervalu: prodloužení celkové doby - zvýšení hodnoty End, beze změny Begin
+        /// </summary>
+        /// <param name="timeNew"></param>
+        private void _SetTimeAddEnd(TimeRange timeNew)
+        {
+            TimeSpan shift = timeNew.End.Value - this.Time.End.Value;          // Hodnota posunu hodnoty End, shift bude kladný
+            int last = this._Items.Length - 1;
+            var item = this._Items[last];                                      //  aplikuje se pouze na poslední prvek
+            item.Time = item.Time.ShiftByTime(shift);
+        }
+        /// <summary>
+        /// Změna intervalu: prodloužení celkové doby - snížení hodnoty Begin, beze změny End
+        /// </summary>
+        /// <param name="timeNew"></param>
+        private void _SetTimeAddBegin(TimeRange timeNew)
+        {
+            TimeSpan shift = timeNew.Begin.Value - this.Time.Begin.Value;      // Hodnota posunu hodnoty Begin, shift bude záporný
+            var item = this._Items[0];                                         //  aplikuje se pouze na první prvek
+            item.Time = item.Time.ShiftByTime(shift);
+        }
+        /// <summary>
+        /// Změna intervalu: prodloužení celkové doby - změna hodnoty Begin i End
+        /// </summary>
+        /// <param name="timeNew"></param>
+        private void _SetTimeAddBooth(TimeRange timeNew)
+        {
+            TimeSpan shift = timeNew.Begin.Value - this.Time.Begin.Value;      // Hodnota posunu hodnoty Begin, shift může být kladný nebo záporný
+            this._SetTimeShiftBy(shift);                                       //  aplikuje se na všechny časy
+            int last = this._Items.Length - 1;                                 //  a poslední prvek bude mít upravený i End
+            var item = this._Items[last];
+            item.Time = TimeRange.CreateFromSizeEnd(item.Time.Size.Value, timeNew.End.Value);
+        }
+        /// <summary>
+        /// Změna intervalu: zkrácení celkové doby - snížení hodnoty End, beze změny Begin
+        /// </summary>
+        /// <param name="timeNew"></param>
+        private void _SetTimeSubEnd(TimeRange timeNew)
+        {
+            this._SetTimeShrinkTo(timeNew);
+        }
+        /// <summary>
+        /// Změna intervalu: zkrácení celkové doby - zvýšení hodnoty Begin, beze změny End
+        /// </summary>
+        /// <param name="timeNew"></param>
+        private void _SetTimeSubBegin(TimeRange timeNew)
+        {
+            this._SetTimeShrinkTo(timeNew);
+        }
+        /// <summary>
+        /// Změna intervalu: zkrácení celkové doby - změna hodnoty Begin i End
+        /// </summary>
+        /// <param name="timeNew"></param>
+        private void _SetTimeSubBooth(TimeRange timeNew)
+        {
+            TimeSpan shift = timeNew.Begin.Value - this.Time.Begin.Value;      // Nejprve všechny prvky posunu o daný posun
+            this._SetTimeShiftBy(shift);                                       //  aplikuje se na všechny časy
+            this._SetTimeShrinkTo(timeNew);                                    // a po posunutí je namačkám do daného času.
+        }
+        /// <summary>
+        /// Změna intervalu: posun o daný časový úsek, pro všechny prvky
+        /// </summary>
+        /// <param name="shift"></param>
+        private void _SetTimeShiftBy(TimeSpan shift)
+        {
+            foreach (var item in this._Items)
+                item.Time = item.Time.ShiftByTime(shift);
+        }
+
+        /// <summary>
+        /// Změna intervalu: zmenšení intervalu, zajištění že všechny prvky budou mít čas posunutý nebo zmenšený do daného nového intervalu
+        /// </summary>
+        /// <param name="timeNew"></param>
+        private void _SetTimeShrinkTo(TimeRange timeNew)
+        {
+            foreach (var item in this._Items)
+                item.Time = _SetTimeShrink(item.Time, timeNew);
+        }
+        /// <summary>
+        /// Metoda vrátí daný čas prvku "itemTime" upravený tak, aby se vešel do mezního času "shrinkTime".
+        /// Pokud možno čas prvku neupravuje (když se vejde beze změn).
+        /// Když už jej musí upravit, snaží se zachovat jeho délku (když je menší než délka mezního času).
+        /// Pokud ale délka času prvku je stejnáý nebo větší než mezní čas, pak vrací mezní čas.
+        /// <para/>
+        /// Povinný předpoklad: oba časy jsou plně vyplněné a nezáporné.
+        /// </summary>
+        /// <param name="itemTime"></param>
+        /// <param name="shrinkTime"></param>
+        /// <returns></returns>
+        private static TimeRange _SetTimeShrink(TimeRange itemTime, TimeRange shrinkTime)
+        {
+            TimeSpan itemSize = itemTime.Size.Value;
+            TimeSpan shrinkSize = shrinkTime.Size.Value;
+
+            // Pokud shrinkTime mám menší (nebo stejnou) délku než čas prvku, pak nejde čas prvku upravit jinak než na čas shrink:
+            if (shrinkSize.Ticks < itemSize.Ticks) return shrinkTime.Clone;
+
+            DateTime itemBegin = itemTime.Begin.Value;
+            DateTime itemEnd = itemTime.End.Value;
+            DateTime shrinkBegin = shrinkTime.Begin.Value;
+            DateTime shrinkEnd = shrinkTime.End.Value;
+
+            if (itemBegin < shrinkBegin)
+            {
+                itemBegin = shrinkBegin;
+                itemEnd = itemBegin + itemSize;
+                if (itemEnd > shrinkEnd)
+                    itemEnd = shrinkEnd;
+            }
+            else if (itemEnd > shrinkEnd)
+            {
+                itemEnd = shrinkEnd;
+                itemBegin = itemEnd - itemSize;
+                if (itemBegin < shrinkBegin)
+                    itemBegin = shrinkBegin;
+            }
+            return new TimeRange(itemBegin, itemEnd);
         }
         #endregion
         #region ICloneable members
