@@ -1258,8 +1258,29 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         }
         protected void CreateRightPanel()
         { }
+        /// <summary>
+        /// Vygeneruje kontextové funkce
+        /// </summary>
         protected void CreateContextFunctions()
-        { }
+        {
+            this.MainData.ContextMenuItems = new GuiContextMenuSet();
+            this.MainData.ContextMenuItems.Add(new GuiContextMenuItem()
+            {
+                Name = GuiNameContextFixItem,
+                Title = "Nastav FIXOVÁNÍ",
+                Image = RES.Images.Actions24.Lock4Png,
+                ToolTip = "Tato funkce nastaví fixování u daného záznamu.\r\nTo pak znamená, že s tím nejde hnout.\r\nVŮBEC.",
+                VisibleFor = GuiFullNameGridCenterTop + ":" + UnitTime.ClassNumber.ToString()
+            });
+            this.MainData.ContextMenuItems.Add(new GuiContextMenuItem()
+            {
+                Name = "test",
+                Title = "Zobrazit čas",
+                Image = RES.Images.Actions24.ViewCalendarTimeSpentPng,
+                ToolTip = "Tato funkce nastaví fixování u daného záznamu.\r\nTo pak znamená, že s tím nejde hnout.\r\nVŮBEC.",
+                VisibleFor = GuiFullNameGridCenterTop + ":" + GuiContextMenuItem.AREA_GRAF + "," + GuiContextMenuItem.AREA_ROW + ":" + PlanUnitC.ClassNumber.ToString()
+            });
+        }
         protected GuiData MainData;
         protected GuiPage MainPage;
         protected GuiGrid GridLeft;
@@ -1317,6 +1338,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         protected const string GuiFullNameMainPanel = GuiNameData + GuiNameDelimiter + GuiNamePages + GuiNameDelimiter + GuiNameMainPage + GuiNameDelimiter + GuiNameMainPanel + GuiNameDelimiter;
         protected const string GuiFullNameGridCenterTop = GuiFullNameMainPanel + GuiNameGridCenterTop;
         protected const string GuiFullNameGridCenterBottom = GuiFullNameMainPanel + GuiNameGridCenterBottom;
+
+        protected const string GuiNameContextFixItem = "CtxFixItem";
 
         protected const string GuiNameDelimiter = "\\";
         protected const string GuiNamePages = "pages";
@@ -1449,6 +1472,13 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
                                 break;
                         }
+                        break;
+
+                    case GuiRequest.COMMAND_ContextMenuClick:
+                        Application.App.ShowInfo(
+                            "Někdo chce provést funkci: " + requestArgs.Request.ContextMenu.ContextMenuItem.Title + Environment.NewLine +
+                            "Pro prvek grafu: " + requestArgs.Request.ContextMenu.ContextItemId.ToString() + Environment.NewLine +
+                            "V čase: " + requestArgs.Request.ContextMenu.ClickTime);
                         break;
 
                     case GuiRequest.COMMAND_OpenRecords:
