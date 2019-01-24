@@ -2434,6 +2434,8 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="e"></param>
         private void _PaintStopwatch(LayeredPaintEventArgs e)
         {
+            if (!App.IsDeveloperMode) return;
+
             decimal avt = this.StopwatchAverageTime;
             if (avt <= 0m) return;
 
@@ -2442,8 +2444,8 @@ namespace Asol.Tools.WorkScheduler.Components
             Size size = new System.Drawing.Size(90, 20);
             Rectangle bounds = size.AlignTo(this.ClientRectangle, ContentAlignment.BottomRight).Enlarge(0, 0, -1, -1);
             Graphics graphics = e.GetGraphicsCurrent();
-            Color backColor = Color.FromArgb(48, Color.LightSkyBlue);
-            Color foreColor = Color.FromArgb(96, Color.Black);
+            Color backColor = Color.FromArgb(240, Color.LightSkyBlue);
+            Color foreColor = Color.FromArgb(240, Color.Black);
             GraphicsPath gp = GPainter.CreatePathRoundRectangle(bounds, 2, 2);
 
             using (GPainter.GraphicsUseSmooth(graphics))

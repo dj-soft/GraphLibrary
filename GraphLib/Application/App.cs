@@ -77,39 +77,11 @@ namespace Asol.Tools.WorkScheduler.Application
             /// </summary>
             Working
         }
-        #region Constructor, Initialisation
         /// <summary>
-        /// Konstruktor instance <see cref="App"/>, vyvolá první fázi inicializace <see cref="_InitRaw()"/>.
-        /// Teprve po proběhnutí konstruktoru a uložení instance do singletonu lze provést druhou fázi inicializace <see cref="_InitApp()"/>.
+        /// true pokud byla aplikace spuštěna v Debug režimu.
+        /// Tato property nereaguje na změny (Attach / Detach) ve Visual Studiu, provedené až po spuštění aplikace.
         /// </summary>
-        private App()
-        {
-            this._InitRaw();
-        }
-        /// <summary>
-        /// První fáze inicializace, kdy ještě není k dispozici property <see cref="Instance"/>.
-        /// Objekty, které se zde inicializují, nesmí používat metody App.
-        /// Použití property <see cref="Instance"/> property vyvolá chybu InvalidOperationException.
-        /// </summary>
-        private void _InitRaw()
-        {   // Tyto inicializátory NESMÍ používat instanci App. Pořadí inicializátorů je libovolné (každý si udělá jen to svoje).
-            this._TraceInit();
-            this._NextIdInit();
-            this._RegisterInit();
-            this._ZoomInit();
-        }
-        /// <summary>
-        /// Druhá fáze inicializace, kdy už je k dispozici property <see cref="Instance"/>.
-        /// Objekty, které se zde inicializují, mohou používat metody App.
-        /// </summary>
-        private void _InitApp()
-        {   // Tyto inicializátory MOHOU používat instanci App. Pořadí inicializátorů je DŮLEŽITÉ, protože již mohou využívat navzájem svých služeb.
-            this._PluginInit();
-            this._WorkerInit();
-            this._ResourcesInit();
-            this._RunTest();
-        }
-        #endregion
+        public static bool IsDebugMode { get { return Instance._IsDebugMode; } }
         private void _RunTest()
         {
             TestEngine.RunTests(TestType.AllStandard);
@@ -129,6 +101,49 @@ namespace Asol.Tools.WorkScheduler.Application
             this._BackgroundStop();
             Asol.Tools.WorkScheduler.Components.FontInfo.ResetFonts();
         }
+        #endregion
+        #region Constructor, Initialisation
+        /// <summary>
+        /// Konstruktor instance <see cref="App"/>, vyvolá první fázi inicializace <see cref="_InitRaw()"/>.
+        /// Teprve po proběhnutí konstruktoru a uložení instance do singletonu lze provést druhou fázi inicializace <see cref="_InitApp()"/>.
+        /// </summary>
+        private App()
+        {
+            this._InitRaw();
+        }
+        /// <summary>
+        /// První fáze inicializace, kdy ještě není k dispozici property <see cref="Instance"/>.
+        /// Objekty, které se zde inicializují, nesmí používat metody App.
+        /// Použití property <see cref="Instance"/> property vyvolá chybu InvalidOperationException.
+        /// </summary>
+        private void _InitRaw()
+        {   // Tyto inicializátory NESMÍ používat instanci App. Pořadí inicializátorů je libovolné (každý si udělá jen to svoje).
+            this._AppInit();
+            this._TraceInit();
+            this._NextIdInit();
+            this._RegisterInit();
+            this._ZoomInit();
+        }
+        /// <summary>
+        /// Druhá fáze inicializace, kdy už je k dispozici property <see cref="Instance"/>.
+        /// Objekty, které se zde inicializují, mohou používat metody App.
+        /// </summary>
+        private void _InitApp()
+        {   // Tyto inicializátory MOHOU používat instanci App. Pořadí inicializátorů je DŮLEŽITÉ, protože již mohou využívat navzájem svých služeb.
+            this._PluginInit();
+            this._WorkerInit();
+            this._ResourcesInit();
+            this._RunTest();
+        }
+        /// <summary>
+        /// Prvotní inicializace samotného objektu
+        /// </summary>
+        private void _AppInit()
+        {
+            this._IsDebugMode = System.Diagnostics.Debugger.IsAttached;
+            this._IsDeveloperMode = null;
+        }
+        private bool _IsDebugMode;
         #endregion
         #region Run main form
         /// <summary>
@@ -214,15 +229,9 @@ namespace Asol.Tools.WorkScheduler.Application
             get { return Instance._TracePriority; }
             set { Instance._TracePriority = value; }
         }
-        /// <summary>
-        /// true pokud byla aplikace spuštěna v Debug režimu.
-        /// Tato property nereaguje na změny (Attach / Detach) ve Visual Studiu, provedené až po spuštění aplikace.
-        /// </summary>
-        public static bool IsDebugMode { get { return Instance._IsDebugMode; } }
         private void _TraceInit()
         {
             this._Trace = new Trace();
-            this._IsDebugMode = System.Diagnostics.Debugger.IsAttached;
             this._TracePriority = (this._IsDebugMode ? Application.TracePriority.Priority3_BellowNormal : Application.TracePriority.Priority5_Normal);
         }
         /// <summary>
@@ -241,7 +250,6 @@ namespace Asol.Tools.WorkScheduler.Application
         /// Instance of Trace object, for writing into file
         /// </summary>
         private Trace _Trace;
-        private bool _IsDebugMode;
         #endregion
         #region Plugins (search for implementations of IPlugin interfaces)
         /// <summary>
@@ -867,7 +875,55 @@ namespace Asol.Tools.WorkScheduler.Application
                 return instance._AppCodePath;
             }
         }
+        /// <summary>
+        /// true pokud je aplikace spuštěna ve vývojovém prostředí.
+        /// Tato property reaguje na přítomnost zdrojových kódů v přiměřené blízkosti u DLL souborů aplikace.
+        /// </summary>
+        public static bool IsDeveloperMode
+        {
+            get
+            {
+                bool? isDeveloperMode = Instance._IsDeveloperMode;
+                if (!isDeveloperMode.HasValue)
+                {
+                    isDeveloperMode = false;
+                    try
+                    {
+                        string path = AppCodePath;
+                        // D:\Working\Csharp\GraphLibrary\TestGUI\bin\Debug\  =>  D:\Working\Csharp\GraphLibrary\TestGUI\Program.cs
+                        if (System.IO.File.Exists(_GetPath(path, 2, "Program.cs")))
+                            isDeveloperMode = true;
+                        // D:\Working\Csharp\GraphLibrary\TestGUI\bin\Debug\  =>  D:\Working\Csharp\GraphLibrary\TestGUI\SchedulerDataSource.cs
+                        else if (System.IO.File.Exists(_GetPath(path, 2, "SchedulerDataSource.cs")))
+                            isDeveloperMode = true;
+                        // D:\Working\Csharp\GraphLibrary\bin\  =>  D:\Working\Csharp\GraphLibrary\GraphLib\Application\App.cs 
+                        else if (System.IO.File.Exists(_GetPath(path, 1, "GraphLib", "Application", "App.cs")))
+                            isDeveloperMode = true;
+                    }
+                    catch (Exception) { isDeveloperMode = false; }
+                    Instance._IsDeveloperMode = isDeveloperMode;
+                }
+                return isDeveloperMode.Value;
+            }
+        }
         private string _AppCodePath;
+        private bool? _IsDeveloperMode;
+        /// <summary>
+        /// Metoda vrátí název souboru/cesty vytvořený z dané cesty (path), jejím zkrácení o (upDirs) složek nahoru, a přidáním (addItems) složek.
+        /// </summary>
+        /// <param name="path"></param>
+        /// <param name="upDirs"></param>
+        /// <param name="addItems"></param>
+        /// <returns></returns>
+        private static string _GetPath(string path, int upDirs, params string[] addItems)
+        {
+            if (path == null) return "";
+            while (!String.IsNullOrEmpty(path) && upDirs-- > 0)
+                path = System.IO.Path.GetDirectoryName(path);
+            foreach (string addItem in addItems)
+                path = System.IO.Path.Combine(path, addItem);
+            return path;
+        }
         #endregion
     }
     #region Exceptions : třídy výjimek používaných v GraphLibrary
