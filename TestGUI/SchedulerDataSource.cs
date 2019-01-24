@@ -433,6 +433,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             float ratio = GetRandomRatio();
             while (this.CreateWorkingTime(ref time, calendar, totalTimeRange, out workingTimeRange, out backColor))
             {
+                backColor = Color.FromArgb(64, backColor);
                 WorkTime workTime = new WorkTime()
                 {
                     RecordId = ++recordId,
@@ -2065,12 +2066,12 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 DataId = this.RecordGid,
                 Text = this.Text,
                 ToolTip = this.ToolTip,
-                Time = this.Time,
-                RatioBegin = this.RatioBegin,
-                RatioBeginBackColor = this.RatioBeginBackColor,
-                RatioEnd = this.RatioEnd,
-                RatioEndBackColor = this.RatioEndBackColor,
-                RatioLineColor = this.RatioLineColor
+                Time = this.Time
+                //RatioBegin = this.RatioBegin,
+                //RatioBeginBackColor = this.RatioBeginBackColor,
+                //RatioEnd = this.RatioEnd,
+                //RatioEndBackColor = this.RatioEndBackColor,
+                //RatioLineColor = this.RatioLineColor
             };
             return guiGraphItem;
         }
