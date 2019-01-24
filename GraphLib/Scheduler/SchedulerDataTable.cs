@@ -2820,8 +2820,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <returns></returns>
         protected ToolStripDropDownMenu GetContextMenuForGraph(ItemActionArgs args)
         {
-            GuiGridItemId gridItemId = this.GetGridItemId(args);
-            return this.IMainData.CreateContextMenu(gridItemId);
+            return this.GetContextMenu(args);
         }
         /// <summary>
         /// Uživatel chce vidět kontextové menu na daném prvku grafu
@@ -2830,8 +2829,20 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <returns></returns>
         protected ToolStripDropDownMenu GetContextMenuForItem(ItemActionArgs args)
         {
-            GuiGridItemId gridItemId = this.GetGridItemId(args);
-            return this.IMainData.CreateContextMenu(gridItemId);
+            return this.GetContextMenu(args);
+        }
+        /// <summary>
+        /// Vytvoří a vrátí kontextové menu pro daný prvek
+        /// </summary>
+        /// <param name="args"></param>
+        /// <returns></returns>
+        protected ToolStripDropDownMenu GetContextMenu(ItemActionArgs args)
+        {
+            int x = args.Graph.BoundsInfo.GetRelPoint(args.ActionPoint.Value).X;
+            GuiContextMenuRunArgs menuRunArgs = new GuiContextMenuRunArgs();
+            menuRunArgs.ContextItemId = this.GetGridItemId(args);
+            menuRunArgs.ClickTime = args.Graph.GetTimeForPosition(x);
+            return this.IMainData.CreateContextMenu(menuRunArgs, null);
         }
         /// <summary>
         /// Uživatel dal doubleclick na grafický prvek
@@ -2911,9 +2922,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <returns></returns>
         protected DataGraphItem GetActiveGraphItem(ItemArgs args)
         {
-            int itemId = (args.Item ?? args.GroupedItems[0]).ItemId;
-            if (itemId <= 0) return null;
-            return this.GetGraphItem(itemId);
+            if (args.Item != null && args.Item is DataGraphItem) return args.Item as DataGraphItem;
+            if (args.Group != null && args.Group.Items != null && args.Group.Items.Length > 0 && args.Group.Items[0] is DataGraphItem) return args.Group.Items[0] as DataGraphItem;
+            return null;
+            //    int itemId = (args.Item != null ? args.Item.ItemId :
+            //             (args.GroupedItems != null ?? args.GroupedItems[0]).ItemId;
+            //if (itemId <= 0) return null;
+            //return this.GetGraphItem(itemId);
         }
         /// <summary>
         /// Scheduler zde pomáhá určovat, zda jak a kam lze nebo nelze přemisťovat prvek grafu.

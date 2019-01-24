@@ -3303,7 +3303,8 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             this.Graph = graph;
             this.Group = group;
-            this.Item = (position == GGraphControlPosition.Item ? data : group.Items[0]);
+            this.Item = (position == GGraphControlPosition.Item ? data :
+                        (position == GGraphControlPosition.Group ? group.Items[0] : null));
             this.Position = position;
         }
         /// <summary>
@@ -3334,7 +3335,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         /// Skupina prvků, jejíhož člena se akce týká, nebo jejíž spojovací linie se akce týká.
         /// Nikdy není null, vždy obsahuje alespoň jeden prvek.
         /// </summary>
-        public ITimeGraphItem[] GroupedItems { get { return this.Group.Items; } }
+        public ITimeGraphItem[] GroupedItems { get { return this.Group?.Items; } }
         /// <summary>
         /// Typ prvku, kterého se akce týká (Item / Group).
         /// </summary>

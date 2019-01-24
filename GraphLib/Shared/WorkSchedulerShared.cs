@@ -3488,14 +3488,21 @@ namespace Noris.LCS.Base.WorkScheduler
         /// FullName gridu <see cref="GuiGrid"/> má formu: "Data\pageMain\mainPanel\workGrid". Více viz <see cref="GuiBase.FullName"/>.
         /// Text pro definici <see cref="VisibleFor"/> i <see cref="EnableFor"/> obsahuje FullName gridu, volitelně pak dvojtečku a číslo třídy prvku grafu, pro který je funkce určená.
         /// Číslo třídy: může jich být uvedeno více, oddělené čárkami.
-        /// Definice může obsahovat více prvků, oddělených středníkem.
-        /// Definice může v rámci FullName obsahovat hvězdičku, která nahrazuje část FullName (nebo i celou hodnotu FullName).
+        /// Pokud nebude zadáno číslo třídy, pak definice platí pro všechny třídy. Jakmile bude zadáno alespoň jedno nebo více číslo třídy, pak bude platit definice jen pro zadané třídu.
+        /// Číslo třídy se testuje z grafického prvku z jeho <see cref="GuiGraphBaseItem.ItemId"/> a z <see cref="GuiGraphBaseItem.GroupId"/> a z <see cref="GuiGraphBaseItem.DataId"/>.
+        /// Jedna definice může obsahovat více výše popsaných prvků, oddělených středníkem.
+        /// Definice může v rámci FullName obsahovat hvězdičku, která nahrazuje část FullName (nebo i celou hodnotu FullName). Hvězdičku lze použít namísto tříd, anebo se čísla tříd nemusí zadávat.
+        /// <para/>
+        /// Pokud chceme deklarovat nějakou funkci dostupnou v rámci celého grafu (tj. i v ploše grafu mimo konkrétní prvky), nebo i jinde v řádku mimo graf, 
+        /// pak použijeme tříprvkovou definici (prvky oddělené dvojtečkou), která má na druhé pozici konstantní string <see cref="AREA_GRAF"/> nebo <see cref="AREA_ROW"/>.
+        /// Zde jsou pak čísla tříd uváděna ve třetím prvku.
         /// <para/>
         /// Příklady celého textu:
         /// "Data\pageMain\mainPanel\workGrid:1190": funkce je dostupná pro hlavní stranu (pageMain), hlavní panel (mainPanel), pro jednu tabulku (workGrid), pro prvky třídy 1190;
         /// "Data\pageMain\*:1190": funkce je dostupná pro hlavní stranu (pageMain), pro všechny panely a tabulky, pro prvky třídy 1190;
         /// "Data\pageMain\*": funkce je dostupná pro hlavní stranu (pageMain), pro všechny panely a tabulky, pro prvky všech tříd;
-        /// "Data\pageMain\*:1190,1815": funkce je dostupná pro hlavní stranu (pageMain), pro všechny panely a tabulky, pro prvky tříd 1190 a 1815
+        /// "Data\pageMain\*:1190,1815": funkce je dostupná pro hlavní stranu (pageMain), pro všechny panely a tabulky, pro prvky tříd 1190 a 1815;
+        /// "Data\pageMain\mainPanel\workGrid:1190;Data\pageMain\*:1815": kombinace dvou deklarací
         /// </summary>
         public string VisibleFor { get; set; }
         /// <summary>
@@ -3506,6 +3513,18 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Pravidla pro zadávání textu: stejná jako pro <see cref="VisibleFor"/>.
         /// </summary>
         public string EnableFor { get; set; }
+        /// <summary>
+        /// Konstanta, určující že daná definice kontextové funkce se má použít pro plochu prvku grafu
+        /// </summary>
+        public const string AREA_ITEM = "Item";
+        /// <summary>
+        /// Konstanta, určující že daná definice kontextové funkce se má použít pro plochu grafu = tj. i mimo prvky grafu
+        /// </summary>
+        public const string AREA_GRAF = "Graf";
+        /// <summary>
+        /// Konstanta, určující že daná definice kontextové funkce se má použít pro plochu celého řádku = tj. i mimo graf
+        /// </summary>
+        public const string AREA_ROW = "Row";
     }
     #endregion
     #region GuiTextItem : Vizuální prvek v GUI, obsahuje Name, Title, ToolTip a Image
@@ -4520,7 +4539,7 @@ namespace Noris.LCS.Base.WorkScheduler
                 case COMMAND_ToolbarClick:
                     return text + ((this.ToolbarItem != null) ? "; Item: " + this.ToolbarItem.ToString() : "; ToolbarItem is null");
                 case COMMAND_ContextMenuClick:
-                    return text + ((this.ContextMenuItem != null) ? "; Item: " + this.ContextMenuItem.ToString() : "; ContextMenuItem is null");
+                    return text + ((this.ContextMenu != null && this.ContextMenu.ContextMenuItem != null) ? "; ContextItem: " + this.ContextMenu.ContextMenuItem.ToString() : "; ContextMenuItem is null");
                 case COMMAND_GraphItemMove:
                     return text + ((this.GraphItemMove != null) ? "; Item: " + this.GraphItemMove.ToString() : "; GraphItemMove is null");
                 case COMMAND_GraphItemResize:
@@ -4547,8 +4566,17 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiToolbarItem ToolbarItem { get; set; }
         /// <summary>
+        /// Data pro řízení akce vyvolané kliknutím na kontextové menu.
+        /// Data obsahují: určení funkce <see cref="GuiContextMenuRunArgs.ContextMenuItem"/>,
+        /// určení místa (prvku) kde se kliklo <see cref="GuiContextMenuRunArgs.ContextItemId"/>,
+        /// čas v grafu (pokud to bylo v časovém grafu) <see cref="GuiContextMenuRunArgs.ClickTime"/>.
+        /// Další informace jsou uloženy v objektu popisujícím stav pluginu = v <see cref="CurrentState"/>.
+        /// </summary>
+        public GuiContextMenuRunArgs ContextMenu { get; set; }
+        /// <summary>
         /// Kontextová funkce, která vyvolala akci
         /// </summary>
+        [Obsolete("Používejme data v property ContextMenu.", true)]
         public GuiContextMenuItem ContextMenuItem { get; set; }
         /// <summary>
         /// Aktivní prvek grafu, jehož se akce týká (buď kliknutí na kontextové menu, nebo interaktivní změna prvku = přesouvání / resize)
@@ -4754,6 +4782,28 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Pokud je zde hodnota, pak se může lišit od <see cref="SourceTime"/> buď v hodnotě Begin, nebo End (nelze najednou měnit obě hodnoty, to by bylo Move a ne Resize).
         /// </summary>
         public GuiTimeRange TargetTime { get; set; }
+    }
+    /// <summary>
+    /// Informace o stavu při kliknutí na kontextové menu
+    /// </summary>
+    public class GuiContextMenuRunArgs
+    {
+        /// <summary>
+        /// Kontextová funkce, která vyvolala akci
+        /// </summary>
+        public GuiContextMenuItem ContextMenuItem { get; set; }
+        /// <summary>
+        /// Položka, na které bylo kliknuto.
+        /// Může to být prvek grafu (pak má vyplněný údaj <see cref="GuiGridItemId.ItemId"/> a čas <see cref="ClickTime"/>), 
+        /// nebo to může být graf mimo prvky (pak má vyplněn údaj <see cref="GuiGridRowId.RowId"/> a čas <see cref="ClickTime"/>),
+        /// anebo to může být řádek mimo graf (pak má vyplněn pouze řádek <see cref="GuiGridRowId.RowId"/>, ale čas <see cref="ClickTime"/> je null).
+        /// </summary>
+        public GuiGridItemId ContextItemId { get; set; }
+        /// <summary>
+        /// Přesná časová pozice, kam bylo kliknuto.
+        /// Je vyplněno tehdy, když je kliknuto na prvek grafu nebo na plochu grafu, ale je null pokud je kliknuto na řádek mimo prostor grafu.
+        /// </summary>
+        public DateTime? ClickTime { get; set; }
     }
     /// <summary>
     /// GuiCurrentState : stav okna Scheduleru v době události.
