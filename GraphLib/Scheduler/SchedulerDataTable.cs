@@ -106,6 +106,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.TableRow = Table.CreateFrom(this.GuiGrid.RowTable);
             this.TableRow.CalculateBoundsForAllRows = true;
             this.TableRow.OpenRecordForm += _TableRow_OpenRecordForm;
+            this.TableRow.ActiveCellRightClick += TableRow_ActiveCellRightClick;
             this.TableRow.UserData = this;
             this._CurrentSearchChildInfo = SearchChildInfo.CreateForProperties(this.GuiGrid.GridProperties);
         }
@@ -2689,6 +2690,48 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.IMainData.ProcessResponse(guiResponse);
         }
         #endregion
+        #region Kontextové menu k řádku, ke grafu, k jednotlivému prvku grafu
+        /// <summary>
+        /// Eventhandler události RightClick v prostoru buňky tabulky
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void TableRow_ActiveCellRightClick(object sender, GPropertyEventArgs<Cell> args)
+        {
+            
+        }
+        /// <summary>
+        /// Uživatel chce vidět kontextové menu na daném grafu
+        /// </summary>
+        /// <param name="args"></param>
+        /// <returns></returns>
+        protected ToolStripDropDownMenu GetContextMenuForGraph(ItemActionArgs args)
+        {
+            return this.GetContextMenu(args);
+        }
+        /// <summary>
+        /// Uživatel chce vidět kontextové menu na daném prvku grafu
+        /// </summary>
+        /// <param name="args"></param>
+        /// <returns></returns>
+        protected ToolStripDropDownMenu GetContextMenuForItem(ItemActionArgs args)
+        {
+            return this.GetContextMenu(args);
+        }
+        /// <summary>
+        /// Vytvoří a vrátí kontextové menu pro daný prvek
+        /// </summary>
+        /// <param name="args"></param>
+        /// <returns></returns>
+        protected ToolStripDropDownMenu GetContextMenu(ItemActionArgs args)
+        {
+            int x = args.Graph.BoundsInfo.GetRelPoint(args.ActionPoint.Value).X;
+            GuiContextMenuRunArgs menuRunArgs = new GuiContextMenuRunArgs();
+            menuRunArgs.ContextItemId = this.GetGridItemId(args);
+            menuRunArgs.ClickTime = args.Graph.GetTimeForPosition(x);
+            return this.IMainData.CreateContextMenu(menuRunArgs, null);
+        }
+        #endregion
         #region Implementace ITimeGraphDataSource: Zdroj dat pro grafy: tvorba textu, tooltipu, kontextové menu, podpora Drag and Drop
         /// <summary>
         /// Připraví text pro položku grafu
@@ -2812,37 +2855,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 case CreateLinksItemEventType.ItemSelected: return this.Config.GuiEditShowLinkSelectedWholeTask;
             }
             return false;
-        }
-        /// <summary>
-        /// Uživatel chce vidět kontextové menu na daném grafu
-        /// </summary>
-        /// <param name="args"></param>
-        /// <returns></returns>
-        protected ToolStripDropDownMenu GetContextMenuForGraph(ItemActionArgs args)
-        {
-            return this.GetContextMenu(args);
-        }
-        /// <summary>
-        /// Uživatel chce vidět kontextové menu na daném prvku grafu
-        /// </summary>
-        /// <param name="args"></param>
-        /// <returns></returns>
-        protected ToolStripDropDownMenu GetContextMenuForItem(ItemActionArgs args)
-        {
-            return this.GetContextMenu(args);
-        }
-        /// <summary>
-        /// Vytvoří a vrátí kontextové menu pro daný prvek
-        /// </summary>
-        /// <param name="args"></param>
-        /// <returns></returns>
-        protected ToolStripDropDownMenu GetContextMenu(ItemActionArgs args)
-        {
-            int x = args.Graph.BoundsInfo.GetRelPoint(args.ActionPoint.Value).X;
-            GuiContextMenuRunArgs menuRunArgs = new GuiContextMenuRunArgs();
-            menuRunArgs.ContextItemId = this.GetGridItemId(args);
-            menuRunArgs.ClickTime = args.Graph.GetTimeForPosition(x);
-            return this.IMainData.CreateContextMenu(menuRunArgs, null);
         }
         /// <summary>
         /// Uživatel dal doubleclick na grafický prvek

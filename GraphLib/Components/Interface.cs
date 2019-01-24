@@ -1645,8 +1645,9 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         /// <summary>
         /// Do this instance vloží potřebné hodnoty z dodané instance.
+        /// Instance typicky pochází z parenta tohoto prvku, a nese "obecnější" hodnoty než konkrétní instance.
         /// Dodaná instance může být null, pak se nic neprovádí.
-        /// Plní se jen takové property v this, které obsahují null.
+        /// Plní se jen takové property v this, které zatím obsahují null.
         /// </summary>
         /// <param name="style"></param>
         private void _AddFrom(VisualStyle style)

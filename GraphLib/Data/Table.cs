@@ -2370,8 +2370,9 @@ namespace Asol.Tools.WorkScheduler.Data
             target.BackgroundValue = CloneValue(source.BackgroundValue, cloneArgs);
             target.RecordGId = source.RecordGId;
             target.ParentRecordGId = source.ParentRecordGId;
-            target.UserData = source.UserData;
             target.SelectedRowImage = source.SelectedRowImage;
+            target.BackColor = source.BackColor;
+            target.UserData = source.UserData;
 
             target._TagItemDict = null;
             if (cloneArgs != null && cloneArgs.CloneRowTagItems && source._TagItemDict != null)

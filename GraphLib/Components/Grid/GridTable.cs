@@ -2748,6 +2748,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         }
         #endregion
     }
+    #region Interface IGTable, který dává přístup k interním metodám GTable
     /// <summary>
     /// Interface pro <see cref="GTable"/>, aby interní metody nebyly veřejně viditelné
     /// </summary>
@@ -2819,4 +2820,5 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <param name="cell">řádek</param>
         void CellRightClick(GInteractiveChangeStateArgs e, Cell cell);
     }
+    #endregion
 }
