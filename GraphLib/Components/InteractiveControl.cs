@@ -1295,6 +1295,7 @@ namespace Asol.Tools.WorkScheduler.Components
             }
             this._MouseCursorType = null;
             this._DrawState = InteractiveDrawState.Standard;
+            this._ShowContextMenu();
         }
         /// <summary>
         /// Required cursor type.
@@ -1349,6 +1350,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         private void _ShowContextMenu()
         {
+            qqq
             if (this._ContextMenu == null) return;
 
             var host = this;

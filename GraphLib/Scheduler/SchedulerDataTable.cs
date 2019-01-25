@@ -2698,7 +2698,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="args"></param>
         private void TableRow_ActiveCellRightClick(object sender, GPropertyEventArgs<Cell> args)
         {
-            
+            args.InteractiveArgs.ContextMenu = this.GetContextMenu(args.Value);
         }
         /// <summary>
         /// Uživatel chce vidět kontextové menu na daném grafu
@@ -2717,6 +2717,17 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         protected ToolStripDropDownMenu GetContextMenuForItem(ItemActionArgs args)
         {
             return this.GetContextMenu(args);
+        }
+        /// <summary>
+        /// Vytvoří a vrátí kontextové menu pro danou buňku tabulky, ale bez časového grafu
+        /// </summary>
+        /// <param name="cell"></param>
+        /// <returns></returns>
+        protected ToolStripDropDownMenu GetContextMenu(Cell cell)
+        {
+            GuiContextMenuRunArgs menuRunArgs = new GuiContextMenuRunArgs();
+            menuRunArgs.ContextItemId = new GuiGridItemId() { TableName = this.TableName, RowId = cell.Row.RecordGId };
+            return this.IMainData.CreateContextMenu(menuRunArgs, null);
         }
         /// <summary>
         /// Vytvoří a vrátí kontextové menu pro daný prvek
