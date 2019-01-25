@@ -1328,8 +1328,13 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="stateArgs"></param>
         private void _StoreContextMenu(GInteractiveChangeStateArgs stateArgs)
         {
+            // Kontextové menu může v podstatě definovat kterákoli událost, a kterákoli její část (typicky: RightClick + GetContextMenu).
+            // Tedy tato metoda _StoreContextMenu() může být volána v rámci jedné Win události i dvakrát.
+            // V této metodě máme za úkol uložit menu pro jeho zobrazení, až přijde vhodný čas. 
+            // A protože menu může být nanejvýše jedno, bude střádat to posledně zadané, ale nikoli null:
+            if (this._ContextMenu != null && stateArgs.ContextMenu == null) return;
+
             this._ContextMenu = stateArgs.ContextMenu;
-            this._ContextMenuMousePoint = null;
             if (this._ContextMenu != null)
             {
                 if (stateArgs.MouseAbsolutePoint.HasValue)
@@ -1350,7 +1355,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         private void _ShowContextMenu()
         {
-            qqq
             if (this._ContextMenu == null) return;
 
             var host = this;
@@ -1364,7 +1368,8 @@ namespace Asol.Tools.WorkScheduler.Components
             this._ContextMenu = null;
             this._ContextMenuMousePoint = null;
         }
-        private ToolStripDropDownMenu _ContextMenu;
+        private ToolStripDropDownMenu _ContextMenu { get { return this.__ContextMenu; } set { this.__ContextMenu = value; } }
+        private ToolStripDropDownMenu __ContextMenu;
         private Point? _ContextMenuMousePoint;
         #endregion
         #region Podpora pro ToolTip
