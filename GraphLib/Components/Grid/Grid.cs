@@ -415,7 +415,7 @@ namespace Asol.Tools.WorkScheduler.Components
                             if (columnDict.TryGetValue(columnId, out gridColumn))
                                 gridColumn.AddColumn(column);
                             else
-                                columnDict.Add(columnId, new GridColumn(column));
+                                columnDict.Add(columnId, new GridColumn(this, column));
                         }
                     }
                 }
@@ -553,25 +553,28 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Metoda zajistí změnu šířky daného sloupce, a návazné změny v interních strukturách plus překreslení
         /// </summary>
         /// <param name="column"></param>
+        /// <param name="e"></param>
         /// <param name="width">Požadovaná šířka, může se změnit</param>
         /// <returns></returns>
-        public bool ColumnResizeTo(Column column, ref int width)
+        public bool ColumnResizeTo(Column column, GPropertyChangeArgs<int> e, ref int width)
         {
             if (column == null) return false;
-            return this.ColumnResizeTo(column.ColumnId, ref width);
+            return this.ColumnResizeTo(column.ColumnId, e, ref width);
         }
         /// <summary>
         /// Metoda zajistí změnu šířky daného sloupce, a návazné změny v interních strukturách plus překreslení
         /// </summary>
         /// <param name="columnId"></param>
+        /// <param name="e"></param>
         /// <param name="width"></param>
         /// <returns></returns>
-        public bool ColumnResizeTo(int columnId, ref int width)
+        public bool ColumnResizeTo(int columnId, GPropertyChangeArgs<int> e, ref int width)
         {
             GridColumn sourceColumn;
             if (!this.TryGetGridColumn(columnId, out sourceColumn)) return false;        // Daný sloupec neznáme
 
             int widthOld = sourceColumn.ColumnWidth;
+            if (!sourceColumn.ColumnWidthOriginal.HasValue) sourceColumn.ColumnWidthOriginal = widthOld;
             sourceColumn.ColumnWidth = width;
             int widthNew = sourceColumn.ColumnWidth;
 
@@ -582,8 +585,41 @@ namespace Asol.Tools.WorkScheduler.Components
                 // Zajistit invalidaci a překresení:
                 this.Invalidate(InvalidateItem.GridColumnsScroll);
             }
+
+            // Finální změna (=nejde o změnu typu "Changing" = stále probíhající, ale změna už je finální):
+            EventSourceType eventSource = (e != null ? e.EventSource : EventSourceType.ValueChange);
+            bool isFinal = !eventSource.HasAnyFlag(EventSourceType.InteractiveChanging | EventSourceType.ValueChanging);
+            if (isFinal)
+            {
+                int widthOriginal = (sourceColumn.ColumnWidthOriginal.HasValue ? sourceColumn.ColumnWidthOriginal.Value : widthOld);
+                if (widthNew != widthOriginal)
+                    this.CallColumnWidthChanged(sourceColumn, widthOriginal, widthNew, eventSource);
+            }
+
             return isChanged;
         }
+        /// <summary>
+        /// Metoda vyvolá háček <see cref="OnColumnWidthChanged"/> a event <see cref="ColumnWidthChanged"/>
+        /// </summary>
+        /// <param name="column"></param>
+        /// <param name="oldWidth"></param>
+        /// <param name="newWidth"></param>
+        /// <param name="eventSource"></param>
+        protected void CallColumnWidthChanged(GridColumn column, int oldWidth, int newWidth, EventSourceType eventSource)
+        {
+            GObjectPropertyChangeArgs<GridColumn, int> args = new GObjectPropertyChangeArgs<GridColumn, int>(column, oldWidth, newWidth, eventSource);
+            this.OnColumnWidthChanged(args);
+            if (!this.IsSuppressedEvent && this.ColumnWidthChanged != null)
+                this.ColumnWidthChanged(this, args);
+        }
+        /// <summary>
+        /// Háček volaný před událostí <see cref="ColumnWidthChanged"/> = změna šířky sloupce
+        /// </summary>
+        protected virtual void OnColumnWidthChanged(GObjectPropertyChangeArgs<GridColumn, int> args) { }
+        /// <summary>
+        /// Událost <see cref="ColumnWidthChanged"/> = změna šířky sloupce
+        /// </summary>
+        public event GObjectPropertyChangedHandler<GridColumn, int> ColumnWidthChanged;
         #endregion
         #region Pozicování svislé - tabulky a vpravo svislý scrollbar
         /// <summary>
@@ -1217,12 +1253,18 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Vytvoří novou instanci pro daný Master column
         /// </summary>
+        /// <param name="gGrid"></param>
         /// <param name="column"></param>
-        public GridColumn(Column column)
+        public GridColumn(GGrid gGrid, Column column)
         {
+            this._Grid = gGrid;
             this._ColumnList = new List<Column>();
             this.AddColumn(column);
         }
+        /// <summary>
+        /// Vztah na Grid, v němž je tento sloupec doma
+        /// </summary>
+        private GGrid _Grid;
         /// <summary>
         /// Soupis datových sloupců stejného ColumnId ze všech tabulek jednoho Gridu = "svislé pole" obsahující všechny synchronizované sloupce = pod sebou
         /// </summary>
@@ -1255,6 +1297,11 @@ namespace Asol.Tools.WorkScheduler.Components
                     column.ColumnOrder = value;
             }
         }
+        /// <summary>
+        /// Šířka tohoto sloupce výchozí, platná na začátku interaktivního procesu Resize.
+        /// Běžně je null.
+        /// </summary>
+        public int? ColumnWidthOriginal { get; set; }
         /// <summary>
         /// Šířka tohoto sloupce při zobrazování. 
         /// Načítá se z MasterColumn.Size.
@@ -1303,7 +1350,7 @@ namespace Asol.Tools.WorkScheduler.Components
             return a.ColumnOrder.CompareTo(b.ColumnOrder);
         }
         #endregion
-        #region Volání 
+        #region Volání změn do konkrétních podřízených sloupců Data.Column
         /// <summary>
         /// Vyvolá RefreshTimeAxis pro všechny GTable, vyjma tabulky s daným TableId (ta se považuje za zdroj události, a řeší si svůj event jinak), a předá jim ID sloupce pro refresh.
         /// Metoda se volá po jakékoli změně hodnot na časové ose daného sloupce.

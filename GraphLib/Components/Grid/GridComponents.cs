@@ -481,7 +481,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             int left = this.Bounds.Left;
             int location = this.ColumnSplitter.Value;
             int width = location - left;
-            this.OwnerGGrid.ColumnResizeTo(this.OwnerColumn, ref width);
+            this.OwnerGGrid.ColumnResizeTo(this.OwnerColumn, e, ref width);
             e.CorrectValue = left + width;
         }
         /// <summary>

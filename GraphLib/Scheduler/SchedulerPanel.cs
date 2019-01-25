@@ -314,20 +314,22 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         protected void LoadData()
         {
+            List<GGrid> gridList = new List<GGrid>();
             using (App.Trace.Scope(TracePriority.Priority2_Lowest, "SchedulerPanel", "LoadData", ""))
             {
                 this._DataTableList = new List<MainDataTable>();
                 GuiPage guiPage = this._GuiPage;
                 if (guiPage != null)
                 {
-                    this._LoadDataToTabs(guiPage.LeftPanel, this._LeftPanelTabs);
-                    this._LoadDataToGrid(guiPage.MainPanel, this._MainPanelGrid);
-                    this._LoadDataToTabs(guiPage.RightPanel, this._RightPanelTabs);
-                    this._LoadDataToTabs(guiPage.BottomPanel, this._BottomPanelTabs);
+                    this._LoadDataToTabs(guiPage.LeftPanel, this._LeftPanelTabs, gridList);
+                    this._LoadDataToGrid(guiPage.MainPanel, this._MainPanelGrid, gridList);
+                    this._LoadDataToTabs(guiPage.RightPanel, this._RightPanelTabs, gridList);
+                    this._LoadDataToTabs(guiPage.BottomPanel, this._BottomPanelTabs, gridList);
 
                     this.ConnectConfigLayout(guiPage);
                 }
             }
+            this.ConnectGridEvents(gridList);
         }
         /// <summary>
         /// Napojí zdejší Layout do/z Configu, protože tak se bude ukládat a načítat rozložení stránky.
@@ -370,13 +372,16 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="guiPanel"></param>
         /// <param name="gGrid"></param>
+        /// <param name="gridList">výsledný soupis GGridů</param>
         /// <returns></returns>
-        private bool _LoadDataToGrid(GuiPanel guiPanel, GGrid gGrid)
+        private bool _LoadDataToGrid(GuiPanel guiPanel, GGrid gGrid, List<GGrid> gridList)
         {
             if (guiPanel == null || guiPanel.Grids.Count == 0) return false;
 
             if (gGrid.SynchronizedTime == null)
                 gGrid.SynchronizedTime = this.SynchronizedTime;
+
+            gridList.Add(gGrid);
 
             foreach (GuiGrid guiGrid in guiPanel.Grids)
             {
@@ -391,8 +396,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="guiPanel"></param>
         /// <param name="tabs"></param>
+        /// <param name="gridList">výsledný soupis GGridů</param>
         /// <returns></returns>
-        private bool _LoadDataToTabs(GuiPanel guiPanel, GTabContainer tabs)
+        private bool _LoadDataToTabs(GuiPanel guiPanel, GTabContainer tabs, List<GGrid> gridList)
         {
             if (guiPanel == null || guiPanel.Grids.Count == 0) return false;
 
@@ -405,9 +411,22 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 if (mainDataTable == null) continue;
 
                 tabs.AddTabItem(gGrid, guiGrid.Title, guiGrid.ToolTip);
+
+                gridList.Add(gGrid);
             }
             return true;
         }
+        private void ConnectGridEvents(List<GGrid> gridList)
+        {
+            foreach (GGrid grid in gridList)
+                grid.ColumnWidthChanged += GGrid_ColumnWidthChanged;
+        }
+
+        private void GGrid_ColumnWidthChanged(object sender, GObjectPropertyChangeArgs<GridColumn, int> e)
+        {
+            qqq;
+        }
+
         /// <summary>
         /// Metoda vytvoří novou tabulku <see cref="MainDataTable"/> s daty dodanými v <see cref="GuiGrid"/>.
         /// Pokud data neobsahují tabulku s řádky, vrací null.
