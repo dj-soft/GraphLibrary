@@ -391,6 +391,58 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public GridColumn[] Columns { get { this._ColumnsCheck(); return this._Columns; } }
         /// <summary>
+        /// Rozložení sloupců tohoto gridu. Používá se pro uložení layoutu. 
+        /// Get i Set jsou přímo napojeny na živé sloupce; obsah <see cref="ColumnLayout"/> se nikde izolovaně neukládá.
+        /// </summary>
+        public string ColumnLayout
+        {
+            get
+            {
+                GridColumn[] columns = this.Columns;
+                if (columns == null || columns.Length == 0) return null;
+                StringBuilder sb = new StringBuilder();
+                foreach (var column in columns)
+                {
+                    string name = column.MasterColumn.ColumnName;
+                    if (String.IsNullOrEmpty(name)) continue;
+                    if (sb.Length > 0) sb.Append(";");
+                    sb.Append(name + ":" + column.ColumnOrder.ToString() + ":" + column.ColumnWidth.ToString());
+                }
+                return sb.ToString();
+            }
+            set
+            {
+                if (String.IsNullOrEmpty(value)) return;
+                GridColumn[] columns = this.Columns;
+                if (columns == null || columns.Length == 0) return;
+                Dictionary<string, GridColumn> colDict = columns
+                    .Where(c => !String.IsNullOrEmpty(c.MasterColumn.ColumnName))
+                    .GetDictionary(c => c.MasterColumn.ColumnName, true);
+
+                var table = value.ToTable(";", ":", true, true);
+                foreach (var row in table)
+                {
+                    if (row.Length < 3) continue;
+                    GridColumn column;
+                    string name = row[0];
+                    if (String.IsNullOrEmpty(name) || !colDict.TryGetValue(name, out column)) continue;
+                    column.ColumnOrder = _ToInt(row[1]);
+                    column.ColumnWidth = _ToInt(row[2]);
+                }
+            }
+        }
+        /// <summary>
+        /// Vrací Int32 hodnotu z daného stringu
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        private static int _ToInt(string text)
+        {
+            int value;
+            if (Int32.TryParse(text, out value)) return value;
+            return -1;
+        }
+        /// <summary>
         /// Zajistí, že pole sloupců budou obsahovat platné hodnoty
         /// </summary>
         private void _ColumnsCheck()
@@ -510,13 +562,13 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Provede to tak, že změní hodnoty ColumnOrder vhodných sloupců, a zajistí přepočty polí sloupců a zajistí i překreslení.
         /// </summary>
         /// <param name="columnId">Id sloupce, který chceme přesunout.</param>
-        /// <param name="targetOrder">Cíl přesunu = ColumnOrder jiného sloupce, na jehož místo chci dát daný column. Tento jiný sloupec bude až za aktuálním sloupcem. Cíl přesunu může být i vyšší, než je nejvyšší ID, pak aktuální sloupec bude zařazen za poslední prvek.</param>
-        public bool ColumnMoveTo(int columnId, int targetOrder)
+        /// <param name="newOrder">Cíl přesunu = ColumnOrder jiného sloupce, na jehož místo chci dát daný column. Tento jiný sloupec bude až za aktuálním sloupcem. Cíl přesunu může být i vyšší, než je nejvyšší ID, pak aktuální sloupec bude zařazen za poslední prvek.</param>
+        public bool ColumnMoveTo(int columnId, int newOrder)
         {
             GridColumn sourceColumn;
             if (!this.TryGetGridColumn(columnId, out sourceColumn)) return false;        // Daný sloupec neznáme
-            int sourceOrder = sourceColumn.ColumnOrder;
-            if (sourceOrder == targetOrder) return false;                                // Není co dělat
+            int oldOrder = sourceColumn.ColumnOrder;
+            if (oldOrder == newOrder) return false;                                      // Není co dělat
 
             GridColumn[] columns = this.Columns;
             int length = columns.Length;
@@ -530,7 +582,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 if (current.ColumnId == sourceColumn.ColumnId) continue;                 // Přemisťovaný sloupec = v tuto chvíli jej přeskočím, dostane se do pole jinak!
                 int currentOrder = current.ColumnOrder;
                 // Nyní řeším sloupec (current), jehož pořadí je menší než požadované cílové = přidám ho do seznamu reorderedColumns:
-                if (currentOrder < targetOrder) { reorderedColumns.Add(current); }
+                if (currentOrder < newOrder) { reorderedColumns.Add(current); }
                 // Nynější sloupec (current) má být za přemisťovaným sloupcem, a ten jsme ještě do seznamu reorderedColumns nezařadili - zařadíme tam sourceColumn, a za ním current:
                 else if (!isSourceAdded) { reorderedColumns.Add(sourceColumn); isSourceAdded = true; reorderedColumns.Add(current); }
                 // Sloupec current má být za sloupcem sourceColumn, a ten (sourceColumn) už byl do seznamu reorderedColumns přidán dříve:
@@ -546,6 +598,9 @@ namespace Asol.Tools.WorkScheduler.Components
 
             // Zajistit invalidaci a překresení:
             this.Invalidate(InvalidateItem.GridColumnsChange);
+
+            // Zavolám event:
+            this.CallColumnOrderChanged(sourceColumn, oldOrder, newOrder, EventSourceType.InteractiveChanged);
 
             return true;
         }
@@ -620,6 +675,28 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Událost <see cref="ColumnWidthChanged"/> = změna šířky sloupce
         /// </summary>
         public event GObjectPropertyChangedHandler<GridColumn, int> ColumnWidthChanged;
+        /// <summary>
+        /// Metoda vyvolá háček <see cref="OnColumnWidthChanged"/> a event <see cref="ColumnWidthChanged"/>
+        /// </summary>
+        /// <param name="column"></param>
+        /// <param name="oldOrder"></param>
+        /// <param name="newOrder"></param>
+        /// <param name="eventSource"></param>
+        protected void CallColumnOrderChanged(GridColumn column, int oldOrder, int newOrder, EventSourceType eventSource)
+        {
+            GObjectPropertyChangeArgs<GridColumn, int> args = new GObjectPropertyChangeArgs<GridColumn, int>(column, oldOrder, newOrder, eventSource);
+            this.OnColumnOrderChanged(args);
+            if (!this.IsSuppressedEvent && this.ColumnOrderChanged != null)
+                this.ColumnOrderChanged(this, args);
+        }
+        /// <summary>
+        /// Háček volaný před událostí <see cref="ColumnOrderChanged"/> = změna pozice sloupce
+        /// </summary>
+        protected virtual void OnColumnOrderChanged(GObjectPropertyChangeArgs<GridColumn, int> args) { }
+        /// <summary>
+        /// Událost <see cref="ColumnOrderChanged"/> = změna šířky sloupce
+        /// </summary>
+        public event GObjectPropertyChangedHandler<GridColumn, int> ColumnOrderChanged;
         #endregion
         #region Pozicování svislé - tabulky a vpravo svislý scrollbar
         /// <summary>
@@ -1275,6 +1352,10 @@ namespace Asol.Tools.WorkScheduler.Components
         private Column _MasterColumn;
         #endregion
         #region Public rozhraní: Master, properties, AddColumn(), CompareOrder()
+        /// <summary>
+        /// Grid, do něhož patří this column
+        /// </summary>
+        public GGrid Grid { get { return this._Grid; } }
         /// <summary>
         /// Hlavní sloupec = první sloupec nalezený s tímto ID
         /// </summary>

@@ -316,6 +316,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             using (App.Trace.Scope(TracePriority.Priority2_Lowest, "SchedulerPanel", "LoadData", ""))
             {
+                this._GGridList = new List<GGrid>();
                 this._DataTableList = new List<MainDataTable>();
                 GuiPage guiPage = this._GuiPage;
                 if (guiPage != null)
@@ -357,8 +358,15 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 config.UserConfig.Add(panelLayout);
             }
 
-            // Layouty pro jednotlivé GGridy:
-            config.UserConfigSearchCreate()
+            // Načteme Layouty sloupců pro jednotlivé GGridy:
+            foreach (GGrid gGrid in this._GGridList)
+            {
+                if (!String.IsNullOrEmpty(gGrid.Name))
+                {
+                    string layout = this._PanelLayout.GridColumns[gGrid.Name];
+                    gGrid.ColumnLayout = layout;
+                }
+            }
         }
         /// <summary>
         /// Souhrn všech tabulek této stránky, bez ohledu na to ve kterém panelu se nacházejí
@@ -386,8 +394,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (gGrid.SynchronizedTime == null)
                 gGrid.SynchronizedTime = this.SynchronizedTime;
 
-            this._GGridList.Add(gGrid);                    // Toto je seznam GRIDŮ. A v této metodě se pracuje jen s jedním gridem.
-            gGrid.Name = guiPanel.FullName + "\\" + 
+            gGrid.Name = guiPanel.FullName + "\\" + _GRID_MAIN_NAME; // Fullname gridu slouží jako ID do konfigurace pro data o layoutu sloupců v gridu
+            this._GGridList.Add(gGrid);                              // Toto je seznam GRIDŮ. A v této metodě se pracuje jen s jedním gridem.
 
             foreach (GuiGrid guiGrid in guiPanel.Grids)
             {
@@ -411,14 +419,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             {
                 GGrid gGrid = new GGrid();
                 gGrid.SynchronizedTime = this.SynchronizedTime;
-                gGrid.Name = guiGrid.FullName;
+                gGrid.Name = guiGrid.FullName;                       // Fullname gridu slouží jako ID do konfigurace pro data o layoutu sloupců v gridu
 
                 MainDataTable mainDataTable = this._LoadDataToMainTable(gGrid, guiGrid);
                 if (mainDataTable == null) continue;
 
                 tabs.AddTabItem(gGrid, guiGrid.Title, guiGrid.ToolTip);
 
-                this._GGridList.Add(gGrid);                // Toto je seznam GRIDŮ. A v této metodě se pracuje více gridy - jedna smyčka = jeden grid
+                this._GGridList.Add(gGrid);                          // Toto je seznam GRIDŮ. A v této metodě se pracuje více gridy - jedna smyčka = jeden grid
             }
             return true;
         }
@@ -429,20 +437,32 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             List<GGrid> gridList = this._GGridList;
             foreach (GGrid grid in gridList)
-                grid.ColumnWidthChanged += GGrid_ColumnWidthChanged;
+            {
+                grid.ColumnWidthChanged += GGrid_ColumnLayoutChanged;
+                grid.ColumnOrderChanged += GGrid_ColumnLayoutChanged;
+            }
         }
         /// <summary>
         /// Eventhandler události, kdy grafický <see cref="GGrid"/> provedl změnu šířky sloupce
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void GGrid_ColumnWidthChanged(object sender, GObjectPropertyChangeArgs<GridColumn, int> e)
+        private void GGrid_ColumnLayoutChanged(object sender, GObjectPropertyChangeArgs<GridColumn, int> e)
         {
-            SchedulerConfig config = this.Config;
-            if (config == null) return;
-            qqq;
+            this._SaveGridLayout(e.CurrentObject?.Grid);
         }
-
+        /// <summary>
+        /// Metoda zajistí uložení layoutu jednoho daného GGridu do konfigurace <see cref="_PanelLayout"/> a návazně do souboru .config
+        /// </summary>
+        /// <param name="gGrid"></param>
+        private void _SaveGridLayout(GGrid gGrid)
+        {
+            if (gGrid != null && !String.IsNullOrEmpty(gGrid.Name))
+            {
+                this._PanelLayout.GridColumns[gGrid.Name] = gGrid.ColumnLayout;
+                this.ConfigSaveDeffered();
+            }
+        }
         /// <summary>
         /// Metoda vytvoří novou tabulku <see cref="MainDataTable"/> s daty dodanými v <see cref="GuiGrid"/>.
         /// Pokud data neobsahují tabulku s řádky, vrací null.
@@ -466,6 +486,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
             return mainDataTable;
         }
+        private const string _GRID_MAIN_NAME = "MainGrid";
         #endregion
         #region Child items
         /// <summary>
@@ -539,6 +560,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Viditelná šířka Splitteru
         /// </summary>
         public int SplitterSize { get { return this._SplitterSize; } set { this._SplitterSize = _Align(value, 1, 6); } } private int _SplitterSize = 4;
+        /// <summary>
+        /// Layouty pro jednotlivé Gridy
+        /// </summary>
+        public KeyValueArray<string, string> GridColumns { get { if (this._GridColumns == null) this._GridColumns = new KeyValueArray<string, string>(); return this._GridColumns; } set { this._GridColumns = value; } } private KeyValueArray<string, string> _GridColumns;
         #endregion
         #region Konstanty
         /// <summary>
@@ -845,6 +870,83 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         protected int SplitterSize2 { get { return this.SplitterSize - this.SplitterSize1; } }
         #endregion
+    }
+    /// <summary>
+    /// Třída, která pro určitý klíč ukládá / vrací hodnotu, interně řeší tvorbu nového klíče.
+    /// </summary>
+    /// <typeparam name="TKey"></typeparam>
+    /// <typeparam name="TValue"></typeparam>
+    public class KeyValueArray<TKey, TValue>
+    {
+        /// <summary>
+        /// Načte nebo uloží hodnotu pro daný klíč
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        [PersistingEnabled(false)]
+        public TValue this[TKey key]
+        {
+            get
+            {
+                Dictionary<TKey, TValue> valueDict = this._GetValueDict();
+                if (key == null || !valueDict.ContainsKey(key)) return this.DefaultValue;
+                return valueDict[key];
+            }
+            set
+            {
+                if (key != null)
+                {
+                    Dictionary<TKey, TValue> valueDict = this._GetValueDict();
+                    if (valueDict.ContainsKey(key))
+                        valueDict[key] = value;
+                    else
+                        valueDict.Add(key, value);
+                }
+            }
+        }
+        /// <summary>
+        /// Odebere hodnotu pro daný klíč
+        /// </summary>
+        /// <param name="key"></param>
+        public void Remove(TKey key)
+        {
+            if (key != null)
+            {
+                Dictionary<TKey, TValue> valueDict = this._GetValueDict();
+                if (valueDict.ContainsKey(key))
+                    valueDict.Remove(key);
+            }
+        }
+        /// <summary>
+        /// Odebere všechny hodnoty
+        /// </summary>
+        public void Clear()
+        {
+            this._ValueDict = null;
+        }
+        /// <summary>
+        /// Počet prvků v úložišti
+        /// </summary>
+        [PersistingEnabled(false)]
+        public int Count { get { return (this._ValueDict != null ? this._ValueDict.Count : 0); } }
+        /// <summary>
+        /// Defaultní hodnota, vracená v případě kdy je požadován dosud nezadaný klíč
+        /// </summary>
+        public TValue DefaultValue { get { return this._DefaultValue; } set { this._DefaultValue = value; } } private TValue _DefaultValue;
+        /// <summary>
+        /// Property obsahující Dictionary s hodnotami, pro persistenci
+        /// </summary>
+        private Dictionary<TKey, TValue> ValueDict { get { return this._ValueDict; } set { this._ValueDict = value; } } private Dictionary<TKey, TValue> _ValueDict;
+        /// <summary>
+        /// Vrací not null Dictionary
+        /// </summary>
+        /// <returns></returns>
+        private Dictionary<TKey, TValue> _GetValueDict()
+        {
+            if (this._ValueDict == null)
+                this._ValueDict = new Dictionary<TKey, TValue>();
+            return this._ValueDict;
+        }
     }
     #endregion
 }
