@@ -304,8 +304,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         protected void ConfigSaveDeffered()
         {
             SchedulerConfig config = this.Config;
-            if (config != null)
-                config.Save(TimeSpan.FromSeconds(30d));
+            if (config == null) return;
+            config.Save(TimeSpan.FromSeconds(30d));
         }
         #endregion
         #region Načítání dat jednotlivých tabulek
@@ -314,26 +314,25 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         protected void LoadData()
         {
-            List<GGrid> gridList = new List<GGrid>();
             using (App.Trace.Scope(TracePriority.Priority2_Lowest, "SchedulerPanel", "LoadData", ""))
             {
                 this._DataTableList = new List<MainDataTable>();
                 GuiPage guiPage = this._GuiPage;
                 if (guiPage != null)
                 {
-                    this._LoadDataToTabs(guiPage.LeftPanel, this._LeftPanelTabs, gridList);
-                    this._LoadDataToGrid(guiPage.MainPanel, this._MainPanelGrid, gridList);
-                    this._LoadDataToTabs(guiPage.RightPanel, this._RightPanelTabs, gridList);
-                    this._LoadDataToTabs(guiPage.BottomPanel, this._BottomPanelTabs, gridList);
+                    this._LoadDataToTabs(guiPage.LeftPanel, this._LeftPanelTabs);
+                    this._LoadDataToGrid(guiPage.MainPanel, this._MainPanelGrid);
+                    this._LoadDataToTabs(guiPage.RightPanel, this._RightPanelTabs);
+                    this._LoadDataToTabs(guiPage.BottomPanel, this._BottomPanelTabs);
 
                     this.ConnectConfigLayout(guiPage);
                 }
             }
-            this.ConnectGridEvents(gridList);
+            this.ConnectGridEvents();
         }
         /// <summary>
         /// Napojí zdejší Layout do/z Configu, protože tak se bude ukládat a načítat rozložení stránky.
-        /// 
+        /// Je vyvoláno na konci načítání dat.
         /// </summary>
         /// <param name="guiPage"></param>
         protected void ConnectConfigLayout(GuiPage guiPage)
@@ -357,6 +356,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 panelLayout.Name = name;
                 config.UserConfig.Add(panelLayout);
             }
+
+            // Layouty pro jednotlivé GGridy:
+            config.UserConfigSearchCreate()
         }
         /// <summary>
         /// Souhrn všech tabulek této stránky, bez ohledu na to ve kterém panelu se nacházejí
@@ -367,21 +369,25 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         private List<MainDataTable> _DataTableList;
         /// <summary>
+        /// Souhrn všech grafických gridů této stránky, bez ohledu na to ve kterém panelu se nacházejí
+        /// </summary>
+        private List<GGrid> _GGridList;
+        /// <summary>
         /// Metoda načte všechny tabulky typu <see cref="GuiGrid"/> z dodaného <see cref="GuiPanel"/> a vloží je do dodaného vizuálního objektu <see cref="GGrid"/>.
         /// Současně je ukládá do <see cref="_DataTableList"/>.
         /// </summary>
         /// <param name="guiPanel"></param>
         /// <param name="gGrid"></param>
-        /// <param name="gridList">výsledný soupis GGridů</param>
         /// <returns></returns>
-        private bool _LoadDataToGrid(GuiPanel guiPanel, GGrid gGrid, List<GGrid> gridList)
+        private bool _LoadDataToGrid(GuiPanel guiPanel, GGrid gGrid)
         {
             if (guiPanel == null || guiPanel.Grids.Count == 0) return false;
 
             if (gGrid.SynchronizedTime == null)
                 gGrid.SynchronizedTime = this.SynchronizedTime;
 
-            gridList.Add(gGrid);
+            this._GGridList.Add(gGrid);                    // Toto je seznam GRIDŮ. A v této metodě se pracuje jen s jedním gridem.
+            gGrid.Name = guiPanel.FullName + "\\" + 
 
             foreach (GuiGrid guiGrid in guiPanel.Grids)
             {
@@ -396,9 +402,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="guiPanel"></param>
         /// <param name="tabs"></param>
-        /// <param name="gridList">výsledný soupis GGridů</param>
         /// <returns></returns>
-        private bool _LoadDataToTabs(GuiPanel guiPanel, GTabContainer tabs, List<GGrid> gridList)
+        private bool _LoadDataToTabs(GuiPanel guiPanel, GTabContainer tabs)
         {
             if (guiPanel == null || guiPanel.Grids.Count == 0) return false;
 
@@ -406,24 +411,35 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             {
                 GGrid gGrid = new GGrid();
                 gGrid.SynchronizedTime = this.SynchronizedTime;
+                gGrid.Name = guiGrid.FullName;
 
                 MainDataTable mainDataTable = this._LoadDataToMainTable(gGrid, guiGrid);
                 if (mainDataTable == null) continue;
 
                 tabs.AddTabItem(gGrid, guiGrid.Title, guiGrid.ToolTip);
 
-                gridList.Add(gGrid);
+                this._GGridList.Add(gGrid);                // Toto je seznam GRIDŮ. A v této metodě se pracuje více gridy - jedna smyčka = jeden grid
             }
             return true;
         }
-        private void ConnectGridEvents(List<GGrid> gridList)
+        /// <summary>
+        /// Vloží eventhandlery do všech grafických komponent <see cref="GGrid"/> uvedených v <see cref="_GGridList"/>.
+        /// </summary>
+        private void ConnectGridEvents()
         {
+            List<GGrid> gridList = this._GGridList;
             foreach (GGrid grid in gridList)
                 grid.ColumnWidthChanged += GGrid_ColumnWidthChanged;
         }
-
+        /// <summary>
+        /// Eventhandler události, kdy grafický <see cref="GGrid"/> provedl změnu šířky sloupce
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void GGrid_ColumnWidthChanged(object sender, GObjectPropertyChangeArgs<GridColumn, int> e)
         {
+            SchedulerConfig config = this.Config;
+            if (config == null) return;
             qqq;
         }
 

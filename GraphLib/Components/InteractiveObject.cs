@@ -23,6 +23,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public UInt32 Id { get { return this._Id; } }
         /// <summary>
+        /// Libovolný název tohoto controlu. Není povinné jej zadávat. Nemusí být jednoznačný. Nemá žádná pravidla co do obsahu.
+        /// Je na aplikaci, jak jej naplní a jak jej bude vyhodnocovat.
+        /// </summary>
+        public string Name { get; set; }
+        /// <summary>
         /// Grafický prvek GInteractiveControl, který je hostitelem tohoto prvku nebo jeho Parenta.
         /// Může být null, pokud prvek this ještě není nikam přidán.
         /// </summary>

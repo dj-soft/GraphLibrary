@@ -260,13 +260,38 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Aplikační kód pak může dát FirstOrDefault() a získat jeden vyhovující prvek...
         /// Metoda slouží k nalezení určité položky User konfigurace.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="filter"></param>
+        /// <typeparam name="T">Hledaný datový typ</typeparam>
+        /// <param name="filter">Filtr, aplikuje se pouze na položky daného typu. Pokud je null, bere všechny položky daného typu.</param>
         /// <returns></returns>
         public IEnumerable<T> UserConfigSearch<T>(Func<T, bool> filter = null)
         {
             bool hasFilter = (filter != null);
-            return this.UserConfig.OfType<T>().Where(i => (!hasFilter || filter(i)));
+            return this.UserConfig
+                .OfType<T>()
+                .Where(i => (!hasFilter || filter(i)));
+        }
+        /// <summary>
+        /// Metoda projde data v <see cref="UserConfig"/>, vybere z položek ty, které jsou dané třídy,
+        /// přefiltruje je dodaným filtrem (pokud je dodán, jinak bere vše) a poté:
+        /// a) pokud existuje alespoň jedna vyhovující položka, tak ji vrátí (vrací první z několika).
+        /// b) pokud neexistuje žádná vyhovující položka, pak ji pomocí dodaného creatoru vytvoří, do konfigurace <see cref="UserConfig"/> přidá a vrátí.
+        /// </summary>
+        /// <typeparam name="T">Hledaný datový typ</typeparam>
+        /// <param name="filter">Filtr, aplikuje se pouze na položky daného typu. Pokud je null, bere všechny položky daného typu.</param>
+        /// <param name="create">Funkce, která vytvoří nový objekt</param>
+        /// <returns></returns>
+        public T UserConfigSearchCreate<T>(Func<T, bool> filter, Func<T> create)
+        {
+            bool hasFilter = (filter != null);
+            var items = this.UserConfig
+                .OfType<T>()
+                .Where(i => (!hasFilter || filter(i)))
+                .ToArray();
+            if (items.Length > 0) return items[0];
+
+            T item = create();
+            this.UserConfig.Add(item);
+            return item;
         }
         #endregion
         #region Ověření hodnoty
