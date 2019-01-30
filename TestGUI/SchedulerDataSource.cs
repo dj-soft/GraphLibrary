@@ -1301,16 +1301,36 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <returns></returns>
         public static GuiData SerialDeserialData(GuiData guiData)
         {
-            PersistArgs serArgs = new PersistArgs() { CompressMode = XmlCompressMode.Compress };
-            string serial = XmlPersist.Serialize(guiData, serArgs);
+            // GuiData guiDataP = SerialDeserialData(guiData, XmlCompressMode.None);
+            GuiData guiDataC = SerialDeserialData(guiData, XmlCompressMode.Compress);
+            return guiDataC;
+        }
+        private static GuiData SerialDeserialData(GuiData guiData, XmlCompressMode mode)
+        {
+            string serial = null;
+            PersistArgs desArgs = null;
+            GuiData result = null;
+            string compress = (mode == XmlCompressMode.None ? "Plain" : "Compress");
+            string runMode = (System.Diagnostics.Debugger.IsAttached ? "Debug" : "Run");
 
-            PersistArgs desArgs = new PersistArgs() { CompressMode = XmlCompressMode.Compress, DataContent = serial };
-            GuiData desData = XmlPersist.Deserialize(desArgs) as GuiData;
+            using (var scopeS = Application.App.Trace.Scope("SchedulerDataSource", "SerialDeserialData", "Serialize", compress, runMode))
+            {
+                PersistArgs serArgs = new PersistArgs() { CompressMode = mode };
+                serial = XmlPersist.Serialize(guiData, serArgs);
+                scopeS.AddItem("SerialLength: " + serial.Length.ToString());
+            }
 
-            if (desData == null)
+            using (var scopeD = Application.App.Trace.Scope("SchedulerDataSource", "SerialDeserialData", "Deserialize", compress, runMode))
+            {
+                desArgs = new PersistArgs() { CompressMode = mode, DataContent = serial };
+                result = XmlPersist.Deserialize(desArgs) as GuiData;
+                scopeD.AddItem("SerialLength: " + serial.Length.ToString());
+            }
+
+            if (result == null)
                 throw new FormatException("Serialize and Deserialize of GuiData fail; Deserialize process returns null value.");
 
-            return desData;
+            return result;
         }
         #endregion
         #region Konstanty, jména GUI prvků
