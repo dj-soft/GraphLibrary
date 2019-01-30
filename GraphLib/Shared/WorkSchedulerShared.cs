@@ -2858,11 +2858,13 @@ namespace Noris.LCS.Base.WorkScheduler
         /// ID položky časového grafu (ID obdélníčku).
         /// Z databáze se načítá ze sloupců: "item_class_id", "item_record_id", je POVINNÝ.
         /// </summary>
+        [PropertyName("Item")]
         public GuiId ItemId { get; set; }
         /// <summary>
         /// ID řádku, v jehož grafu se má tento prvek zobrazovat.
         /// Z databáze se načítá ze sloupců: "row_class_id", "row_record_id", je POVINNÝ.
         /// </summary>
+        [PropertyName("Row")]
         public GuiId RowId { get; set; }
         /// <summary>
         /// GroupId: číslo skupiny. Prvky se shodným GroupId budou vykreslovány do společného "rámce", 
@@ -2870,11 +2872,13 @@ namespace Noris.LCS.Base.WorkScheduler
         /// nebude mezi nimi vykreslován žádný "cizí" prvek.
         /// Z databáze se načítá ze sloupců: "group_class_id", "group_record_id", je NEPOVINNÝ.
         /// </summary>
+        [PropertyName("Group")]
         public GuiId GroupId { get; set; }
         /// <summary>
         /// ID datového záznamu, jehož formulář se má rozkliknout po Ctrl + DoubleKliknutí na záznam.
         /// Z databáze se načítá ze sloupců: "data_class_id", "data_record_id", je NEPOVINNÝ.
         /// </summary>
+        [PropertyName("Rec")]
         public GuiId DataId { get; set; }
         /// <summary>
         /// Datum a čas počátku tohoto prvku.
@@ -3045,6 +3049,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Property která slouží k serializaci hodnot z <see cref="BehaviorMode"/>, <see cref="Layer"/>, 
         /// <see cref="Level"/>, <see cref="Order"/>, <see cref="Height"/>
         /// </summary>
+        [PropertyName("Spec")]
         protected string Specification
         {
             get
@@ -3177,6 +3182,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Z vizuálního hlediska je vhodnější používat <see cref="GuiGraphBaseItem.GroupId"/>, neboť grupa se vykresluje jako kompaktní obdélník, 
         /// a pokud by se Linky vykreslovaly z jednotlivého Itemu (=někde z prostředka grupy), vypadalo by to divoce.
         /// </summary>
+        [PropertyName("Prev")]
         public GuiId ItemIdPrev { get; set; }
         /// <summary>
         /// ID prvku následujícího v tomto vztahu.
@@ -3185,6 +3191,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Z vizuálního hlediska je vhodnější používat <see cref="GuiGraphBaseItem.GroupId"/>, neboť grupa se vykresluje jako kompaktní obdélník, 
         /// a pokud by se Linky vykreslovaly z jednotlivého Itemu (=někde z prostředka grupy), vypadalo by to divoce.
         /// </summary>
+        [PropertyName("Next")]
         public GuiId ItemIdNext { get; set; }
         /// <summary>
         /// Typ vztahu logický.
@@ -3234,6 +3241,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <summary>
         /// Property která slouží k serializaci hodnot z <see cref="RelationType"/>, <see cref="LinkType"/>, <see cref="LinkWidth"/>
         /// </summary>
+        [PropertyName("Spec")]
         protected string Specification
         {
             get
