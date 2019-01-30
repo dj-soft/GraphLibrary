@@ -1860,7 +1860,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             return new IInteractiveItem[] { graph };
         }
         #endregion
-        #region TreeView - řízení práce s rozbalováním nodů
+        #region TreeView - řízení práce s rozbalováním nodů, kreslení nodu
         /// <summary>
         /// true pokud this Cell má v sobě zobrazovat prvky TreeView - sloupec je na pozici VisualOrder = 0 a tabulka je typu TreeView
         /// </summary>
@@ -1924,9 +1924,14 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
             bool iconIsHot = this.TreeViewIconIsHot;
             bool iconIsDown = iconIsHot && this.InteractiveState.HasFlag(GInteractiveState.FlagDown);
             int nodeLevel = this.OwnerRow.TreeNode.Level;
-            int iconOffsetX = 24 * nodeLevel;
+            int iconOffsetX = this.TreeViewNodeOffset * nodeLevel;
             this.TreeViewIconBounds = this.OwnerGTable.DrawTreeView(e, this.OwnerCell, iconOffsetX, boundsAbsolute, iconIsHot, iconIsDown);
             boundsValue = new Rectangle(boundsAbsolute.X + iconOffsetX, boundsAbsolute.Y, boundsAbsolute.Width - iconOffsetX, boundsAbsolute.Height);
+        }
+        protected int TreeViewNodeOffset
+        {
+            get
+            { return 12; }
         }
         /// <summary>
         /// Souřadnice ikony TreeView (ekvivalent [+] nebo [-], rozbalí/sbalí node).

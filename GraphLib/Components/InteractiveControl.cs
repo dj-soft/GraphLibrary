@@ -658,6 +658,9 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         private void _MouseFell(MouseEventArgs e)
         {
+            MouseButtons mouseButtons = e.Button;
+            bool mouseButtonsLeft = (mouseButtons == MouseButtons.Left);
+
             GActivePosition oldActiveItem = this._CurrentActiveItem;
             GActivePosition newActiveItem = this.FindActivePositionAtPoint(e.Location, false);
             newActiveItem.CurrentStateFill(e.Location);
@@ -670,6 +673,9 @@ namespace Asol.Tools.WorkScheduler.Components
             this._MouseDragStartBounds = e.Location.CreateRectangleFromCenter(this._DragStartSize);
             this._MouseDragMoveItemOffset = null;
             this._ItemMouseCallStateChangedEvent(newActiveItem, GInteractiveChangeState.LeftDown, newActiveItem.CurrentMouseRelativePoint);
+
+            if (mouseButtonsLeft && newActiveItem.ItemIsSelectable)
+                this._ItemMouseLeftDownUnSelect(newActiveItem);
         }
         /// <summary>
         /// Voláno při zvednutí tlačítka myši (=konec kliknutí), v situaci kdy NEPROBÍHALA žádná akce "Drag and Drop", ani "Drag and Frame". 
@@ -1485,15 +1491,25 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         private Selector _Selector;
         /// <summary>
+        /// Metoda je volána při MouseDown, při stisku LeftMouse, a pokud aktuální prvek má <see cref="GActivePosition.ItemIsSelectable"/> == true.
+        /// Metoda sama zjistí Modifier keys z <see cref="GActivePosition.CurrentModifierKeys"/>, 
+        /// a pokud NENÍ stisknutý Control, tak zruší stav IsSelect na všech aktuálně označených objektech.
+        /// </summary>
+        /// <param name="activeItem"></param>
+        private void _ItemMouseLeftDownUnSelect(GActivePosition activeItem)
+        {
+            bool leaveOther = activeItem.CurrentModifierKeys.HasFlag(Keys.Control);
+            if (!leaveOther)
+                this.Selector.ClearSelected();
+        }
+        /// <summary>
         /// Uživatel provedl LeftClick na prvku, který má nastaveno <see cref="InteractiveProperties.Selectable"/>, proto by měl být změněn stav <see cref="IInteractiveItem.IsSelected"/>.
         /// </summary>
-        /// <param name="newActiveItem"></param>
+        /// <param name="activeItem"></param>
         /// <param name="modifierKeys"></param>
-        private void _ItemMouseLeftClickSelect(GActivePosition newActiveItem, Keys modifierKeys)
+        private void _ItemMouseLeftClickSelect(GActivePosition activeItem, Keys modifierKeys)
         {
-            bool leaveOther = modifierKeys.HasFlag(Keys.Control);
-            //   this.Selector.ChangeSelection(newActiveItem.ActiveItem, leaveOther);
-            this._ItemMouseCallStateChangedEvent(newActiveItem, GInteractiveChangeState.LeftClickSelect, newActiveItem.CurrentMouseRelativePoint);
+            this._ItemMouseCallStateChangedEvent(activeItem, GInteractiveChangeState.LeftClickSelect, activeItem.CurrentMouseRelativePoint);
         }
         /// <summary>
         /// Zahájení označování Drag and Frame.
