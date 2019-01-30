@@ -548,6 +548,82 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
+        public static string DateTimeToSerial(object value)
+        {
+            DateTime dateTime = (DateTime)value;
+            string u = (dateTime.Kind == DateTimeKind.Utc ? "U" : (dateTime.Kind == DateTimeKind.Local ? "L" : ""));
+            bool h = (dateTime.TimeOfDay.Ticks > 0L);
+            bool s = (h && dateTime.Second > 0);
+            bool f = (h && dateTime.Millisecond > 0);
+            string format = (f ? "yyyyMMddHHmmssfff" : (s ? "yyyyMMddHHmmss" : (h ? "yyyyMMddHHmm" : "yyyyMMdd")));
+            return u + dateTime.ToString(format);
+        }
+        /// <summary>
+        /// Konkrétní konvertor
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        public static object SerialToDateTime(string text)
+        {
+            if (String.IsNullOrEmpty(text)) return DateTime.MinValue;
+            string serial = text.Trim();
+            if (serial.Length < 8) return DateTime.MinValue;
+            DateTimeKind kind = _GetDateTimeKind(ref serial);
+            int length = serial.Length;
+            if (length < 8) return DateTime.MinValue;
+            int dy = _GetInt(serial, 0, 4, 100);
+            int dm = _GetInt(serial, 4, 2, 1);
+            int dd = _GetInt(serial, 6, 2, 1);
+            if (dm < 1 || dm > 12 || dd < 1 || dd > 31) return DateTime.MinValue;
+
+            try
+            {
+                if (length == 8) return new DateTime(dy, dm, dd, 0, 0, 0, kind);
+
+                int th = _GetInt(serial, 8, 2, 0);
+                int tm = _GetInt(serial, 10, 2, 0);
+                int ts = _GetInt(serial, 12, 2, 0);
+                if (th < 0 || th > 23 || tm < 0 || tm > 59 || ts < 0 || ts > 59) return new DateTime(dy, dm, dd, 0, 0, 0, kind);
+
+                int tf = _GetInt(serial, 14, 3, 0);
+                return new DateTime(dy, dm, dd, th, tm, ts, tf, kind);
+            }
+            catch { }
+            return DateTime.MinValue;
+        }
+        private static DateTimeKind _GetDateTimeKind(ref string serial)
+        {
+            switch (serial[0])
+            {
+                case 'U':
+                    serial = serial.Substring(1);
+                    return DateTimeKind.Utc;
+                case 'L':
+                    serial = serial.Substring(1);
+                    return DateTimeKind.Local;
+            }
+            return DateTimeKind.Unspecified;
+        }
+        /// <summary>
+        /// Vrátí číslo ze substringu
+        /// </summary>
+        /// <param name="serial"></param>
+        /// <param name="begin"></param>
+        /// <param name="length"></param>
+        /// <param name="defValue"></param>
+        /// <returns></returns>
+        private static int _GetInt(string serial, int begin, int length, int defValue)
+        {
+            if (serial.Length < (begin + length)) return defValue;
+            int value;
+            if (!Int32.TryParse(serial.Substring(begin, length), out value)) return defValue;
+            return value;
+        }
+        /// <summary>
+        /// Konkrétní konvertor
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
         public static string DateTimeOffsetToString(object value)
         {
             DateTimeOffset dateTimeOffset = (DateTimeOffset)value;
@@ -1921,12 +1997,18 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <returns></returns>
         private XmlPersistLoadArgs _CreateLoadArgs(PersistArgs parameters, TypeLibrary.PropInfo propInfo, Type estimatedType, XmElement xmElement, XmAttribute xmAttribute)
         {
-            Type dataType = estimatedType;
+            Type dataType = null;
             if (xmAttribute != null && !String.IsNullOrEmpty(xmAttribute.Type))
             {
                 Type explicitDataType = TypeLibrary.GetTypeFromSerial(xmAttribute.Type, xmAttribute.Assembly);
                 if (explicitDataType != null)
                     dataType = explicitDataType;
+            }
+            if (dataType == null)
+            {
+                dataType = estimatedType;
+                Type innerType = TypeLibrary.GetNullableInnerType(dataType);
+                if (innerType != null) dataType = innerType;
             }
 
             TypeLibrary.TypeInfo dataTypeInfo = null;
@@ -1971,13 +2053,13 @@ namespace Noris.LCS.Base.WorkScheduler
             catch (Exception exc)
             {   // Chyby při deserializaci okomentujeme, aby developer věděl, odkud vítr fouká:
                 string type = args.DataTypeInfo.DataType.Namespace + "." + args.DataTypeInfo.DataType.Name;
-                // zrychlení : string oper = (args.CurrentOperation != null ? args.CurrentOperation : "Null");
-                // zrychlení : string prop = (args.CurrentProperty != null ? args.CurrentProperty : "Null");
+                string oper = (args.CurrentOperation != null ? args.CurrentOperation : "Null");
+                string prop = (args.CurrentProperty != null ? args.CurrentProperty : "Null");
                 string eol = Environment.NewLine;
                 throw new InvalidOperationException("Error on deserialize of object." + eol +
                     "Type: " + type + ";" + eol +
-                    // zrychlení : "Operation: " + oper + ";" + eol +
-                    // zrychlení : "Property: " + prop + ";" + eol +
+                    "Operation: " + oper + ";" + eol +
+                    "Property: " + prop + ";" + eol +
                     "Error: " + exc.Message,
                     exc);
             }
@@ -2065,26 +2147,26 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <param name="args">Kompletní datový balík</param>
         private void SimpleTypeSave(XmlPersistSaveArgs args)
         {
-            // zrychlení : args.CurrentOperation = "NotifyData.Begin";
-            // zrychlení : args.CurrentProperty = null;
+            args.CurrentOperation = "NotifyData.Begin";
+            args.CurrentProperty = null;
             NotifyData(args.Data, XmlPersistState.SaveBegin);
 
-            // zrychlení : args.CurrentOperation = "SerializeValue";
+            args.CurrentOperation = "SerializeValue";
             if (args.DataTypeInfo.TypeConvert == null)
                 throw new InvalidOperationException("Nelze serializovat, typ předaný do metody SimpleTypeSave() neobsahuje TypeConvertor.");
             if (args.DataTypeInfo.TypeConvert.Serializator == null)
                 throw new InvalidOperationException("Nelze serializovat, typ předaný do metody SimpleTypeSave() obsahuje TypeConvertor, který nemá serializátor.");
             string value = args.DataTypeInfo.TypeConvert.Serializator(args.Data);
 
-            // zrychlení : args.CurrentOperation = "SaveType";
+            args.CurrentOperation = "SaveType";
             SaveTypeAttribute(args);
 
-            // zrychlení : args.CurrentOperation = "SaveValues";
-            // zrychlení : args.CurrentProperty = "Value";
+            args.CurrentOperation = "SaveValues";
+            args.CurrentProperty = "Value";
             CreateAttribute(args.ObjectName, value, args.XmlElement);
-            // zrychlení : args.CurrentProperty = null;
+            args.CurrentProperty = null;
 
-            // zrychlení : args.CurrentOperation = "NotifyData.End";
+            args.CurrentOperation = "NotifyData.End";
             NotifyData(args.Data, XmlPersistState.SaveDone);
         }
         /// <summary>
@@ -2094,7 +2176,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <returns></returns>
         private object SimpleTypeCreate(XmlPersistLoadArgs args)
         {
-            // zrychlení : args.CurrentOperation = "DeserializeValue";
+            args.CurrentOperation = "DeserializeValue";
             if (args.DataTypeInfo.TypeConvert == null)
                 throw new InvalidOperationException("Nelze deserializovat, typ předaný do metody SimpleTypeCreate() neobsahuje TypeConvertor.");
             if (args.DataTypeInfo.TypeConvert.Deserializator == null)
@@ -2112,24 +2194,24 @@ namespace Noris.LCS.Base.WorkScheduler
         {
             if (args.HasData)
             {
-                // zrychlení : args.CurrentOperation = "NotifyData.Begin";
-                // zrychlení : args.CurrentProperty = null;
+                args.CurrentOperation = "NotifyData.Begin";
+                args.CurrentProperty = null;
                 NotifyData(args.Data, XmlPersistState.SaveBegin);
 
-                // zrychlení : args.CurrentOperation = "SerializeValue";
+                args.CurrentOperation = "SerializeValue";
                 if (!(args.Data is IXmlSerializer))
                     throw new InvalidOperationException("Nelze serializovat, typ předaný do metody SelfTypeSave() neimplementuje interface IXmlSerializer.");
                 string value = ((IXmlSerializer)args.Data).XmlSerialData;
 
-                // zrychlení : args.CurrentOperation = "SaveType";
+                args.CurrentOperation = "SaveType";
                 SaveTypeAttribute(args);
 
-                // zrychlení : args.CurrentOperation = "SaveValues";
-                // zrychlení : args.CurrentProperty = "SelfValue";
+                args.CurrentOperation = "SaveValues";
+                args.CurrentProperty = "SelfValue";
                 CreateAttribute(args.ObjectName, value, args.XmlElement);
-                // zrychlení : args.CurrentProperty = null;
+                args.CurrentProperty = null;
 
-                // zrychlení : args.CurrentOperation = "NotifyData.End";
+                args.CurrentOperation = "NotifyData.End";
                 NotifyData(args.Data, XmlPersistState.SaveDone);
             }
         }
@@ -2143,18 +2225,18 @@ namespace Noris.LCS.Base.WorkScheduler
             if (xmlData == null)
                 return null;
 
-            // zrychlení : args.CurrentOperation = "CreateInstance";
+            args.CurrentOperation = "CreateInstance";
             object data = _ObjectCreate(args.DataType);
             if (data == null)
                 return null;
 
-            // zrychlení : args.CurrentOperation = "NotifyData.Begin";
+            args.CurrentOperation = "NotifyData.Begin";
             NotifyData(data, XmlPersistState.LoadBegin);
 
-            // zrychlení : args.CurrentOperation = "Deserialize";
+            args.CurrentOperation = "Deserialize";
             ((IXmlSerializer)data).XmlSerialData = xmlData;
 
-            // zrychlení : args.CurrentOperation = "NotifyData.End";
+            args.CurrentOperation = "NotifyData.End";
             NotifyData(data, XmlPersistState.LoadDone);
 
             return data;
@@ -2167,16 +2249,16 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <param name="args">Kompletní datový balík</param>
         private void EnumTypeSave(XmlPersistSaveArgs args)
         {
-            // zrychlení : args.CurrentOperation = "SerializeValue";
+            args.CurrentOperation = "SerializeValue";
             string value = Enum.Format(args.DataType, args.Data, "F");
 
-            // zrychlení : args.CurrentOperation = "SaveType";
+            args.CurrentOperation = "SaveType";
             SaveTypeAttribute(args);
 
-            // zrychlení : args.CurrentOperation = "SaveValues";
-            // zrychlení : args.CurrentProperty = "EnumValue";
+            args.CurrentOperation = "SaveValues";
+            args.CurrentProperty = "EnumValue";
             CreateAttribute(args.ObjectName, value, args.XmlElement);
-            // zrychlení : args.CurrentProperty = null;
+            args.CurrentProperty = null;
         }
         /// <summary>
         /// Z dodaného readeru načte a sestaví objekt uložený jako Enum
@@ -2192,12 +2274,12 @@ namespace Noris.LCS.Base.WorkScheduler
             object data = null;
             try
             {
-                // zrychlení : args.CurrentOperation = "ParseEnum";
+                args.CurrentOperation = "ParseEnum";
                 data = Enum.Parse(args.DataType, xmlData);
             }
             catch
             {
-                // zrychlení : args.CurrentOperation = "DefaultEnum";
+                args.CurrentOperation = "DefaultEnum";
                 data = _ObjectCreate(args.DataType);                  // Vytvoří objekt, prázdný (hodnota = 0)
             }
             return data;
@@ -2214,25 +2296,25 @@ namespace Noris.LCS.Base.WorkScheduler
             XmlElement xmlArrayElement = CreateElement(args.ObjectName, args.XmlElement);
 
             // Pokud se skutečný Type objektu s daty liší od očekávaného typu, vepíšu jeho Type jako atribut:
-            // zrychlení : args.CurrentOperation = "SaveType";
+            args.CurrentOperation = "SaveType";
             SaveTypeAttribute(args, xmlArrayElement);
             Array array = args.Data as Array;
             Type itemType = args.DataTypeInfo.ItemDataType;
 
             // Správce indexů pole:
-            // zrychlení : args.CurrentOperation = "CreateIndices";
+            args.CurrentOperation = "CreateIndices";
             _ArrayIndices arrayIndices = new _ArrayIndices(array);
 
             // Rozměry pole:  [0+2,0+45] :
             CreateAttribute("Array.Range", arrayIndices.Serial, xmlArrayElement);
 
             // Výpis všech Items:
-            // zrychlení : args.CurrentOperation = "EnumerateArray";
+            args.CurrentOperation = "EnumerateArray";
             string itemName = args.GetItemName("Item");
             for (int[] indices = arrayIndices.FirstIndices(); arrayIndices.IsValidIndices(indices); indices = arrayIndices.NextIndices(indices))
             {
-                // zrychlení : args.CurrentOperation = "SaveValue";
-                // zrychlení : args.CurrentProperty = "Item" + _ArrayIndices.ToString(indices);
+                args.CurrentOperation = "SaveValue";
+                args.CurrentProperty = "Item" + _ArrayIndices.ToString(indices);
 
                 XmlElement xmlItemElement = CreateElement(itemName, xmlArrayElement);
                 // Vypíšu indices:
@@ -2243,7 +2325,7 @@ namespace Noris.LCS.Base.WorkScheduler
                 if (item != null)
                     this.SaveObject(new XmlPersistSaveArgs(item, "Value", itemType, xmlItemElement, this._TypeLibrary));
             }
-            // zrychlení : args.CurrentProperty = null;
+            args.CurrentProperty = null;
         }
         /// <summary>
         /// Z dodaného readeru načte a sestaví objekt uložený jako Array
@@ -2255,15 +2337,15 @@ namespace Noris.LCS.Base.WorkScheduler
             XmAttribute xmAtt;
             if (!args.XmElement.TryGetAttribute("Array", out xmAtt)) return null;
 
-            // zrychlení : args.CurrentOperation = "ParseIndices";
+            args.CurrentOperation = "ParseIndices";
             _ArrayIndices arrayIndices = new _ArrayIndices(xmAtt.Range);
             Type itemType = args.DataTypeInfo.ItemDataType;
-            // zrychlení : args.CurrentOperation = "CreateArray";
+            args.CurrentOperation = "CreateArray";
             Array array = arrayIndices.CreateArray(itemType);
             if (array == null) return null;
 
             string itemName = (args.PropInfo != null && !String.IsNullOrEmpty(args.PropInfo.XmlItemName) ? args.PropInfo.XmlItemName : "Item");
-            // zrychlení : args.CurrentOperation = "EnumerateItems";
+            args.CurrentOperation = "EnumerateItems";
             foreach (XmElement xmEle in args.XmElement.XmElements)
             {
                 if (xmEle.Name == itemName)
@@ -2274,8 +2356,8 @@ namespace Noris.LCS.Base.WorkScheduler
                         int[] indices = _ArrayIndices.DeSerialIndices(itemAttribute.Indices);
                         if (indices.Length == arrayIndices.Rank)
                         {   // Deserializované indexy mají správný počet položek pro naše pole:
-                            // zrychlení : args.CurrentOperation = "ReadValue";
-                            // zrychlení : args.CurrentProperty = "Item" + _ArrayIndices.ToString(indices);
+                            args.CurrentOperation = "ReadValue";
+                            args.CurrentProperty = "Item" + _ArrayIndices.ToString(indices);
 
                             object value = null;
                             // Element xmEle: buď obsahuje atribut, nebo podřízený element s názvem "Value":
@@ -2283,7 +2365,7 @@ namespace Noris.LCS.Base.WorkScheduler
                             XmElement elValue;
                             if (_FindAttrElementByName(xmEle, "Value", false, out elValue, out atValue))
                             {
-                                // zrychlení : args.CurrentOperation = "CreateItem";
+                                args.CurrentOperation = "CreateItem";
                                 XmlPersistLoadArgs itemArgs = this._CreateLoadArgs(args.Parameters, null, itemType, elValue, atValue);
                                 value = this._CreateObjectOfType(itemArgs);
                             }
@@ -2575,17 +2657,17 @@ namespace Noris.LCS.Base.WorkScheduler
             XmlElement xmlListElement = CreateElement(args.ObjectName, args.XmlElement);
 
             // Pokud se skutečný Type objektu s daty liší od očekávaného typu, vepíšu jeho Type jako atribut:
-            // zrychlení : args.CurrentOperation = "SaveType";
+            args.CurrentOperation = "SaveType";
             SaveTypeAttribute(args, xmlListElement);
 
             IList iList = args.Data as IList;
             if (iList == null) return;
 
-            // zrychlení : args.CurrentOperation = "Map.IList";
+            args.CurrentOperation = "Map.IList";
             Type itemType = args.DataTypeInfo.GetGenericType(0);
 
             string itemName = args.GetItemName("Item");
-            // zrychlení : args.CurrentOperation = "Enumerate.IList";
+            args.CurrentOperation = "Enumerate.IList";
             foreach (object item in iList)
             {
                 // Element za tento prvek seznamu založíme, protože je třeba zachovávat pořadí položek (tj. ani null položky nelze vynechávat):
@@ -2602,21 +2684,21 @@ namespace Noris.LCS.Base.WorkScheduler
         private object IListTypeCreate(XmlPersistLoadArgs args)
         {
             // Vytvořím objekt s daty odpovídajícími datům persistovaným:
-            // zrychlení : args.CurrentOperation = "Create.IList";
+            args.CurrentOperation = "Create.IList";
             object data = _ObjectCreate(args.DataType);
             IList iList = data as IList;
             if (iList == null) return null;
 
-            // zrychlení : args.CurrentOperation = "GetGenerics";
+            args.CurrentOperation = "GetGenerics";
             args.DataTypeInfo = this._TypeLibrary.GetInfo(data.GetType());           // Reálný Type + jeho property
             Type itemType = args.DataTypeInfo.ItemDataType;
             if (itemType == null)
                 itemType = args.DataTypeInfo.GetGenericType(0);
 
-            // zrychlení : args.CurrentOperation = "NotifyData.Begin";
+            args.CurrentOperation = "NotifyData.Begin";
             NotifyData(data, XmlPersistState.LoadBegin);
 
-            // zrychlení : args.CurrentOperation = "EnumerateItems";
+            args.CurrentOperation = "EnumerateItems";
             string itemName = (args.PropInfo != null && !String.IsNullOrEmpty(args.PropInfo.XmlItemName) ? args.PropInfo.XmlItemName : "Item");
             foreach (XmElement xmEle in args.XmElement.XmElements)
             {
@@ -2628,7 +2710,7 @@ namespace Noris.LCS.Base.WorkScheduler
                     XmElement elValue;
                     if (_FindAttrElementByName(xmEle, "Value", false, out elValue, out atValue))
                     {
-                        // zrychlení : args.CurrentOperation = "CreateItem";
+                        args.CurrentOperation = "CreateItem";
                         XmlPersistLoadArgs itemArgs = this._CreateLoadArgs(args.Parameters, null, itemType, elValue, atValue);
                         value = this._CreateObjectOfType(itemArgs);
                     }
@@ -2636,7 +2718,7 @@ namespace Noris.LCS.Base.WorkScheduler
                 }
             }
 
-            // zrychlení : args.CurrentOperation = "NotifyData.End";
+            args.CurrentOperation = "NotifyData.End";
             NotifyData(data, XmlPersistState.LoadDone);
 
             return data;
@@ -2652,18 +2734,18 @@ namespace Noris.LCS.Base.WorkScheduler
             XmlElement xmlDictElement = CreateElement(args.ObjectName, args.XmlElement);  // Zavedu element za celý List,například <ItemList ...>...</ItemList>
 
             // Pokud se skutečný Type objektu s daty liší od očekávaného typu, vepíšu jeho Type jako atribut:
-            // zrychlení : args.CurrentOperation = "SaveType";
+            args.CurrentOperation = "SaveType";
             SaveTypeAttribute(args, xmlDictElement);
 
             IDictionary iDict = args.Data as IDictionary;
             if (iDict == null) return;
 
-            // zrychlení : args.CurrentOperation = "Map.IDictionary";
+            args.CurrentOperation = "Map.IDictionary";
             Type keyType = args.DataTypeInfo.GetGenericType(0);
             Type valueType = args.DataTypeInfo.GetGenericType(1);
 
             string itemName = args.GetItemName("Entry");
-            // zrychlení : args.CurrentOperation = "Enumerate.IDictionary";
+            args.CurrentOperation = "Enumerate.IDictionary";
             foreach (DictionaryEntry entry in iDict)
             {
                 // Element za tento prvek seznamu založíme, protože je třeba zachovávat pořadí položek (tj. ani null položky nelze vynechávat):
@@ -2680,20 +2762,20 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <returns></returns>
         private object IDictionaryTypeCreate(XmlPersistLoadArgs args)
         {
-            // zrychlení : args.CurrentOperation = "Create.IDictionary";
+            args.CurrentOperation = "Create.IDictionary";
             object data = _ObjectCreate(args.DataType);
             IDictionary iDict = data as IDictionary;
             if (iDict == null) return null;
 
-            // zrychlení : args.CurrentOperation = "GetGenerics";
+            args.CurrentOperation = "GetGenerics";
             args.DataTypeInfo = this._TypeLibrary.GetInfo(data.GetType());           // Reálný Type + jeho property
             Type keyType = args.DataTypeInfo.GetGenericType(0);
             Type valueType = args.DataTypeInfo.GetGenericType(1);
 
-            // zrychlení : args.CurrentOperation = "NotifyData.Begin";
+            args.CurrentOperation = "NotifyData.Begin";
             NotifyData(data, XmlPersistState.LoadBegin);
 
-            // zrychlení : args.CurrentOperation = "EnumerateItems";
+            args.CurrentOperation = "EnumerateItems";
             string itemName = (args.PropInfo != null && !String.IsNullOrEmpty(args.PropInfo.XmlItemName) ? args.PropInfo.XmlItemName : "Entry");
             foreach (XmElement xmEle in args.XmElement.XmElements)
             {
@@ -2706,25 +2788,25 @@ namespace Noris.LCS.Base.WorkScheduler
                     XmElement elValue;
                     if (_FindAttrElementByName(xmEle, "Key", false, out elValue, out atValue))
                     {
-                        // zrychlení : args.CurrentOperation = "CreateKey";
+                        args.CurrentOperation = "CreateKey";
                         XmlPersistLoadArgs itemArgs = this._CreateLoadArgs(args.Parameters, null, keyType, elValue, atValue);
                         key = this._CreateObjectOfType(itemArgs);
                     }
                     if (_FindAttrElementByName(xmEle, "Value", false, out elValue, out atValue))
                     {
-                        // zrychlení : args.CurrentOperation = "CreateValue";
+                        args.CurrentOperation = "CreateValue";
                         XmlPersistLoadArgs itemArgs = this._CreateLoadArgs(args.Parameters, null, valueType, elValue, atValue);
                         value = this._CreateObjectOfType(itemArgs);
                     }
                     if (key != null)
                     {
-                        // zrychlení : args.CurrentOperation = "AddItem.IDictionary";
+                        args.CurrentOperation = "AddItem.IDictionary";
                         iDict.Add(key, value);
                     }
                 }
             }
 
-            // zrychlení : args.CurrentOperation = "NotifyData.End";
+            args.CurrentOperation = "NotifyData.End";
             NotifyData(data, XmlPersistState.LoadDone);
 
             return iDict;
@@ -2737,27 +2819,24 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <param name="args">Kompletní datový balík</param>
         private void CompoundTypeSave(XmlPersistSaveArgs args)
         {
-            // zrychlení : args.CurrentOperation = "NotifyData.Begin";
-            // zrychlení : args.CurrentProperty = null;
+            args.CurrentOperation = "NotifyData.Begin";
+            args.CurrentProperty = null;
             NotifyData(args.Data, XmlPersistState.SaveBegin);
 
-            // zrychlení : args.CurrentOperation = "SaveType";
+            args.CurrentOperation = "SaveType";
             XmlElement xmlCurrElement = CreateElement(args.ObjectName, args.XmlElement);
             SaveTypeAttribute(args, xmlCurrElement);
 
-            // zrychlení : args.CurrentOperation = "SaveValues";
+            args.CurrentOperation = "SaveValues";
             foreach (TypeLibrary.PropInfo propInfo in args.DataTypeInfo.PropertyList)
             {
-                if (args.DataType == typeof(GuiDataRow) && propInfo.Name == "Item")
-                { }
-
-                // zrychlení : args.CurrentProperty = propInfo.Name;
+                args.CurrentProperty = propInfo.Name;
                 object value = propInfo.Property.GetValue(args.Data, null);
                 this.SaveObject(new XmlPersistSaveArgs(value, propInfo.XmlName, propInfo.PropertyType, propInfo.XmlItemName, xmlCurrElement, this._TypeLibrary));
             }
-            // zrychlení : args.CurrentProperty = null;
+            args.CurrentProperty = null;
 
-            // zrychlení : args.CurrentOperation = "NotifyData.End";
+            args.CurrentOperation = "NotifyData.End";
             NotifyData(args.Data, XmlPersistState.SaveDone);
         }
         /// <summary>
@@ -2768,21 +2847,21 @@ namespace Noris.LCS.Base.WorkScheduler
 		private object CompoundTypeCreate(XmlPersistLoadArgs args)
         {
             // Vytvořím objekt s daty odpovídajícími datům persistovaným:
-            // zrychlení : args.CurrentOperation = "Create.Compound";
+            args.CurrentOperation = "Create.Compound";
             object data = _ObjectCreate(args.DataType);
 
-            // zrychlení : args.CurrentOperation = "NotifyData.Begin";
+            args.CurrentOperation = "NotifyData.Begin";
             NotifyData(data, XmlPersistState.LoadBegin);
             args.DataTypeInfo = this._TypeLibrary.GetInfo(data.GetType());             // Reálný Type + jeho property
 
             // 1. Projdeme atributy, ty obsahují jednoduché datové typy. Uložíme je do property našeho objektu:
-            // zrychlení : args.CurrentOperation = "ReadAttributes";
+            args.CurrentOperation = "ReadAttributes";
             foreach (XmAttribute xmAtt in args.XmElement.XmAttributes)
             {
                 TypeLibrary.PropInfo propInfo = args.DataTypeInfo.FindPropertyByXmlName(xmAtt.Name);
                 if (propInfo != null)
                 {
-                    // zrychlení : args.CurrentProperty = propInfo.Name;
+                    args.CurrentProperty = propInfo.Name;
                     XmlPersistLoadArgs propArgs = this._CreateLoadArgs(args.Parameters, propInfo, propInfo.PropertyType, args.XmElement, xmAtt);
                     object value = this._CreateObjectOfType(propArgs);
                     propInfo.Property.SetValue(data, value, null);
@@ -2790,13 +2869,13 @@ namespace Noris.LCS.Base.WorkScheduler
             }
 
             // 2. Projdeme si sub-elementy našeho elementu. pro každý z nich určím zda máme cílovou property, a pak načtu hodnotu:
-            // zrychlení : args.CurrentOperation = "ReadElements";
+            args.CurrentOperation = "ReadElements";
             foreach (XmElement xmEle in args.XmElement.XmElements)
             {
                 TypeLibrary.PropInfo propInfo = args.DataTypeInfo.FindPropertyByXmlName(xmEle.Name);
                 if (propInfo != null)
                 {
-                    // zrychlení : args.CurrentProperty = propInfo.Name;
+                    args.CurrentProperty = propInfo.Name;
                     XmAttribute xmAte;
                     xmEle.TryGetAttribute(xmEle.Name, out xmAte);            // Pokud je v elementu uložen obraz objektu, který je jiného typu než je očekáván v property, pak je zde uložen i konkrétní Type
                     XmlPersistLoadArgs propArgs = this._CreateLoadArgs(args.Parameters, propInfo, propInfo.PropertyType, xmEle, xmAte);
@@ -2805,7 +2884,7 @@ namespace Noris.LCS.Base.WorkScheduler
                 }
             }
 
-            // zrychlení : args.CurrentOperation = "NotifyData.End";
+            args.CurrentOperation = "NotifyData.End";
             NotifyData(data, XmlPersistState.LoadDone);
             return data;
         }
@@ -2869,8 +2948,8 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         private static void SaveTypeAttribute(XmlPersistSaveArgs args, XmlElement xmlElement)
         {
-            // Neliší se typ reálný a očekávaný? OK, žádný atribut s typem se neuloží.
-            if (Type.Equals(args.DataType, args.EstimatedType)) return;
+            // Pokud se očekávaný typ a reálný typ neliší, pak do atributu nebudeme vepisovat explicitní typ pro aktuální objekt:
+            if (TypeLibrary.IsEqualType(args.EstimatedType, args.DataType)) return;
 
             // Získám serializovatelné hodnoty o typu:
             string serialType, serialAssembly;
@@ -3174,8 +3253,6 @@ namespace Noris.LCS.Base.WorkScheduler
             internal TypeLibrary.TypeInfo DataTypeInfo { get; set; }
             internal XmElement XmElement { get; private set; }
             internal XmAttribute XmAttribute { get; private set; }
-
-            /*
             /// <summary>
             /// Informace o aktuální operaci, pro případ chyby - do textu chybové hlášky
             /// </summary>
@@ -3184,7 +3261,7 @@ namespace Noris.LCS.Base.WorkScheduler
             /// Informace o aktuální operaci, pro případ chyby - do textu chybové hlášky
             /// </summary>
             internal string CurrentProperty { get; set; }
-            */
+
         }
         #endregion
         #region enum XmlPersistenceType
@@ -3452,8 +3529,10 @@ anebo neprázdný objekt:
         /// <returns></returns>
         internal XmlPersistenceType GetPersistenceType(Type type, out TypeConvertor typeConvertor)
         {
-            if (type.Name == "Boolean?")
-            { }
+            // Pokud dodaný Type je Nullable, pak v dalším algoritmu budeme řešit jeho vnitřní typ, a nikoli typ Nullable:
+            Type innerType = GetNullableInnerType(type);
+            if (innerType != null) type = innerType;
+
             // Předdefinovaný Type?
             if (this._PresetTypes.TryGetValue(type, out typeConvertor))
                 return typeConvertor.PersistenceType;
@@ -3597,6 +3676,55 @@ anebo neprázdný objekt:
         }
         #endregion
         #region Static Type.Assembly podpora
+        /// <summary>
+        /// Metoda vrací true, pokud daný typ je nullable
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        internal static bool IsNullableType(Type type)
+        {
+            Type innerType = GetNullableInnerType(type);
+            return (innerType != null);
+        }
+        /// <summary>
+        /// Metoda zjistí, zda daný Type je Nullable, a pokud ano pak vrací vnitřní datový typ.
+        /// Jinak vrací null.
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        internal static Type GetNullableInnerType(Type type)
+        {
+            if (type != null && type.IsValueType && type.IsGenericType &&
+                type.Namespace == "System" && type.Name == "Nullable`1" &&
+                type.GenericTypeArguments != null && type.GenericTypeArguments.Length == 1)
+            {
+                Type innerType = type.GenericTypeArguments[0];
+                return innerType;
+            }
+            return null;
+        }
+        /// <summary>
+        /// Metoda vrací true, pokud aktuální typ (currentType) je odpovídající očekávanému typu (estimatedType).
+        /// </summary>
+        /// <param name="estimatedType"></param>
+        /// <param name="currentType"></param>
+        /// <returns></returns>
+        internal static bool IsEqualType(Type estimatedType, Type currentType)
+        {
+            // Pokud je některý typ null, pak nejsou shodné. To se vyskytne pouze u root typu, kdy estimated == null (a do serial dat se vepisuje full type root objektu).
+            if (estimatedType == null || currentType == null) return false;
+
+            // Neliší se typ reálný a očekávaný? OK, žádný atribut s typem se neuloží.
+            if (Type.Equals(estimatedType, currentType)) return true;
+
+            // Pokud očekávaný typ je nějaký Nullable, pak budeme testovat jeho interní typ.
+            // Protože pokud máme někde použitou propetry typu: public Color? BackColor { get; set; }
+            //  a ta má hodnotu Color.Black, pak v serializovaném tvaru nepotřebujeme mít přidaný atribut: BackColor.Type="System.Drawing.Color" ... BackColor="Black".
+            Type innerType = GetNullableInnerType(estimatedType);
+            if (innerType != null && Type.Equals(innerType, currentType)) return true;
+
+            return false;
+        }
         /// <summary>
         /// Určí text do atributu Type a Assembly pro daný Type.
         /// Pro některé typy není Assembly zapotřebí.

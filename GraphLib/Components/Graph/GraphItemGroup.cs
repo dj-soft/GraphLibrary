@@ -569,7 +569,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         {
             if (timeNew == null) return;
             TimeRange timeOld = this.Time;
-            if (timeNew == timeOld) return;                                    // Beze změny hodnoty
+            if (timeNew == timeOld) return;                                         // Beze změny hodnoty
 
             // Mít prvky v Items je téměř povinnost. Ale pojistka je jistota :-) :
             if (this._Items != null && this._Items.Length > 0)
@@ -588,18 +588,18 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
                     long tickOld = timeOld.Size.Value.Ticks;
 
                     // Varianty kombinací:
-                    if (tickNew == tickOld) this._SetTimeShift(timeNew);           // Shift = přesun intervalu na jiné místo beze změny jeho délky
-                    else if (tickNew > tickOld)                                    // Prodloužení času
+                    if (tickNew == tickOld) this._SetTimeShift(timeNew);            // Shift = přesun intervalu na jiné místo beze změny jeho délky
+                    else if (tickNew > tickOld)                                     // Prodloužení času
                     {
-                        if (beginNew == beginOld) this._SetTimeAddEnd(timeNew);    // Begin se nemění, End se zvyšuje
-                        else if (endNew == endOld) this._SetTimeAddBegin(timeNew); // End se nemění, Begin se snižuje (délka se zvyšuje)
-                        else this._SetTimeAddBooth(timeNew);                       // Mění se Begin i End, délka se zvyšuje
+                        if (beginNew == beginOld) this._SetTimeAddEnd(timeNew);     // Begin se nemění, End se zvyšuje
+                        else if (endNew == endOld) this._SetTimeAddBegin(timeNew);  // End se nemění, Begin se snižuje (délka se zvyšuje)
+                        else this._SetTimeAddBooth(timeNew);                        // Mění se Begin i End, délka se zvyšuje
                     }
-                    else                                                           // Zkrácení času
+                    else                                                            // Zkrácení času
                     {
-                        if (beginNew == beginOld) this._SetTimeSubEnd(timeNew);    // Begin se nemění, End se snižuje (délka se snižuje)
-                        else if (endNew == endOld) this._SetTimeSubBegin(timeNew); // End se nemění, Begin se zvyšuje (délka se snižuje)
-                        else this._SetTimeSubBooth(timeNew);                       // Mění se Begin i End, délka se snižuje
+                        if (beginNew == beginOld) this._SetTimeSubEnd(timeNew);     // Begin se nemění, End se snižuje (délka se snižuje)
+                        else if (endNew == endOld) this._SetTimeSubBegin(timeNew);  // End se nemění, Begin se zvyšuje (délka se snižuje)
+                        else this._SetTimeSubBooth(timeNew);                        // Mění se Begin i End, délka se snižuje
                     }
                 }
             }

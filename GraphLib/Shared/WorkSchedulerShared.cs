@@ -2829,6 +2829,7 @@ namespace Noris.LCS.Base.WorkScheduler
     /// </summary>
     public abstract class GuiGraphBaseItem : GuiBase
     {
+        #region Standardní public properties a konstruktor
         /// <summary>
         /// Konstruktor
         /// </summary>
@@ -2881,11 +2882,18 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiTimeRange Time { get; set; }
         /// <summary>
+        /// Režim chování položky grafu (editovatelnost, texty, atd).
+        /// Tato hodnota se nenačítá z SQL SELECTU, musí se naplnit ručně.
+        /// </summary>
+        [PersistingEnabled(false)]       // Serializaci zajišťuje property Specification
+        public GraphItemBehaviorMode BehaviorMode { get; set; }
+        /// <summary>
         /// Layer: Vizuální vrstva. Prvky z různých vrstev jsou kresleny "přes sebe" = mohou se překrývat.
         /// Nižší hodnota je kreslena dříve.
         /// Například: záporná hodnota Layer reprezentuje "podklad" který se needituje.
         /// Z databáze se načítá ze sloupce: "layer", je NEPOVINNÝ.
         /// </summary>
+        [PersistingEnabled(false)]       // Serializaci zajišťuje property Specification
         public int Layer { get; set; }
         /// <summary>
         /// Level: Vizuální hladina. Prvky v jedné hladině jsou kresleny do společného vodorovného pásu, 
@@ -2893,12 +2901,14 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Nespadnou do prvků nižšího pásu i když by v něm bylo volné místo.
         /// Z databáze se načítá ze sloupce: "level", je NEPOVINNÝ.
         /// </summary>
+        [PersistingEnabled(false)]       // Serializaci zajišťuje property Specification
         public int Level { get; set; }
         /// <summary>
         /// Order: pořadí prvku při výpočtech souřadnic Y před vykreslováním. 
         /// Prvky se stejným Order budou tříděny vzestupně podle data počátku <see cref="Time"/>.Begin.
         /// Z databáze se načítá ze sloupce: "order", je NEPOVINNÝ.
         /// </summary>
+        [PersistingEnabled(false)]       // Serializaci zajišťuje property Specification
         public int Order { get; set; }
         /// <summary>
         /// Relativní výška tohoto prvku. Standardní hodnota = 1.0F. Fyzická výška (v pixelech) jednoho prvku je dána součinem 
@@ -2906,6 +2916,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Prvky s výškou 0 a menší nebudou vykresleny.
         /// Z databáze se načítá ze sloupce: "height", je NEPOVINNÝ.
         /// </summary>
+        [PersistingEnabled(false)]       // Serializaci zajišťuje property Specification
         public float Height { get; set; }
         /// <summary>
         /// Text pro zobrazení uvnitř tohoto prvku.
@@ -3028,11 +3039,49 @@ namespace Noris.LCS.Base.WorkScheduler
         /// pak se jako <see cref="ImageEnd"/> má vložit <see cref="GuiImage.Empty"/>
         /// </summary>
         public GuiImage ImageEnd { get; set; }
+        #endregion
+        #region Optimalizace pro persistenci dat : protected properties s menší velikosti v serializaci, nahrazující standardní serializaci některých public properties
         /// <summary>
-        /// Režim chování položky grafu (editovatelnost, texty, atd).
-        /// Tato hodnota se nenačítá z SQL SELECTU, musí se naplnit ručně.
+        /// Property která slouží k serializaci hodnot z <see cref="BehaviorMode"/>, <see cref="Layer"/>, 
+        /// <see cref="Level"/>, <see cref="Order"/>, <see cref="Height"/>
         /// </summary>
-        public GraphItemBehaviorMode BehaviorMode { get; set; }
+        protected string Specification
+        {
+            get
+            {
+                string result = ((int)this.BehaviorMode).ToString() + ";" +
+                                (((this.Height % 1f) == 0f) ? ((int)this.Height).ToString() : this.Height.ToString()) + ";" +
+                                this.Layer.ToString() + ";" +
+                                this.Level.ToString() + ";" +
+                                this.Order.ToString();
+                return result;
+            }
+            set
+            {
+                GraphItemBehaviorMode behaviorMode = GraphItemBehaviorMode.None;
+                float height = 1f;
+                int layer = 0;
+                int level = 0;
+                int order = 0;
+
+                if (!String.IsNullOrEmpty(value))
+                {
+                    string[] items = value.Split(';');
+                    behaviorMode = (GraphItemBehaviorMode)ConvertToInt32(items, 0);
+                    height = ConvertToSingle(items, 1);
+                    layer = ConvertToInt32(items, 2);
+                    level = ConvertToInt32(items, 3);
+                    order = ConvertToInt32(items, 4);
+                }
+
+                this.BehaviorMode = behaviorMode;
+                this.Height = height;
+                this.Layer = layer;
+                this.Level = level;
+                this.Order = order;
+            }
+        }
+        #endregion
     }
     #endregion
     #region GuiGraphLinks + GuiGraphLink : propojovací linky mezi prvky grafů GuiGraphItem
@@ -3106,6 +3155,7 @@ namespace Noris.LCS.Base.WorkScheduler
     /// </summary>
     public class GuiGraphLink : GuiBase
     {
+        #region Standardní public properties a konstruktor
         /// <summary>
         /// Konstruktor
         /// </summary>
@@ -3141,16 +3191,19 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Nezadáno = tento vztah se nemá vizualizovat.
         /// Pokud je link předáván jako součást response (v <see cref="GuiResponse.ChangeLinks"/>), pak null hodnota značí "Stávající Link odebrat".
         /// </summary>
+        [PersistingEnabled(false)]       // Serializaci zajišťuje property Specification
         public GuiGraphItemLinkRelation? RelationType { get; set; }
         /// <summary>
         /// Typ vztahu grafický.
         /// Nezadáno = tento vztah se nemá vizualizovat.
         /// Pokud je link předáván jako součást response (v <see cref="GuiResponse.ChangeLinks"/>), pak null hodnota značí "Stávající Link odebrat".
         /// </summary>
+        [PersistingEnabled(false)]       // Serializaci zajišťuje property Specification
         public GuiGraphItemLinkType? LinkType { get; set; }
         /// <summary>
         /// Šířka linky, nezadáno = 1
         /// </summary>
+        [PersistingEnabled(false)]       // Serializaci zajišťuje property Specification
         public int? LinkWidth { get; set; }
         /// <summary>
         /// Barva linky základní.
@@ -3176,6 +3229,44 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Pokud bude null, převezme se barva z definice vlastností grafu <see cref="GuiGraphProperties.LinkColorError"/>.
         /// </summary>
         public Color? LinkColorError { get; set; }
+        #endregion
+        #region Optimalizace pro persistenci dat : protected properties s menší velikosti v serializaci, nahrazující standardní serializaci některých public properties
+        /// <summary>
+        /// Property která slouží k serializaci hodnot z <see cref="RelationType"/>, <see cref="LinkType"/>, <see cref="LinkWidth"/>
+        /// </summary>
+        protected string Specification
+        {
+            get
+            {
+                string result = (this.RelationType.HasValue ? ((int)this.RelationType.Value).ToString() : "N") + ";" +
+                                (this.LinkType.HasValue ? ((int)this.LinkType.Value).ToString() : "N") + ";" +
+                                (this.LinkWidth.HasValue ? ((int)this.LinkWidth.Value).ToString() : "N");
+                return result;
+            }
+            set
+            {
+                GuiGraphItemLinkRelation? relationType = null;
+                GuiGraphItemLinkType? linkType = null;
+                int? linkWidth = null;
+
+                if (!String.IsNullOrEmpty(value))
+                {
+                    string[] items = value.Split(';');
+                    int? num;
+                    num = ConvertToInt32N(items, 0);
+                    if (num.HasValue) relationType = (GuiGraphItemLinkRelation)num.Value;
+                    num = ConvertToInt32N(items, 1);
+                    if (num.HasValue) linkType = (GuiGraphItemLinkType)num.Value;
+                    num = ConvertToInt32N(items, 2);
+                    if (num.HasValue) linkWidth = num.Value;
+                }
+
+                this.RelationType = relationType;
+                this.LinkType = linkType;
+                this.LinkWidth = linkWidth;
+            }
+        }
+        #endregion
     }
     /// <summary>
     /// Typ spojovací vztahu, který popisuje link <see cref="GuiGraphLink"/> mezi dvěma prvky.
@@ -3722,6 +3813,61 @@ namespace Noris.LCS.Base.WorkScheduler
             return result;
         }
         #endregion
+        #region Support pro serializaci
+        /// <summary>
+        /// Metoda vrací Int32 hodnotu z dané buňky daného pole
+        /// </summary>
+        /// <param name="items"></param>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        public static int ConvertToInt32(string[] items, int index)
+        {
+            if (items == null || index < 0 || index >= items.Length || String.IsNullOrEmpty(items[index])) return 0;
+            int value;
+            if (!Int32.TryParse(items[index], out value)) return 0;
+            return value;
+        }
+        /// <summary>
+        /// Metoda vrací Int32? hodnotu z dané buňky daného pole
+        /// </summary>
+        /// <param name="items"></param>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        public static int? ConvertToInt32N(string[] items, int index)
+        {
+            if (items == null || index < 0 || index >= items.Length || String.IsNullOrEmpty(items[index])) return null;
+            int value;
+            if (!Int32.TryParse(items[index], out value)) return null;
+            return value;
+        }
+        /// <summary>
+        /// Metoda vrací Single hodnotu z dané buňky daného pole
+        /// </summary>
+        /// <param name="items"></param>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        public static float ConvertToSingle(string[] items, int index)
+        {
+            if (items == null || index < 0 || index >= items.Length || String.IsNullOrEmpty(items[index])) return 0f;
+            float value;
+            if (!Single.TryParse(items[index], out value)) return 0f;
+            return value;
+        }
+        /// <summary>
+        /// Metoda vrací Single? hodnotu z dané buňky daného pole
+        /// </summary>
+        /// <param name="items"></param>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        public static float? ConvertToSingleN(string[] items, int index)
+        {
+            if (items == null || index < 0 || index >= items.Length || String.IsNullOrEmpty(items[index])) return null;
+            float value;
+            if (!Single.TryParse(items[index], out value)) return null;
+            return value;
+        }
+
+        #endregion
         #region Implementace IGuiBase
         /// <summary>
         /// Member of interface IGuiBase : Klíčové jméno, používané v aplikaci jako strojový název prvku
@@ -3955,6 +4101,9 @@ namespace Noris.LCS.Base.WorkScheduler
         public static implicit operator GuiImage(System.Byte[] imageContent) { return (imageContent != null ? new GuiImage() { ImageContent = imageContent } : null); }
         #endregion
     }
+    #endregion
+    #region GuiColorN : Třída pro zkrácené předávání nullable barvy
+
     #endregion
     #region GuiIdText : třída pro předání odkazu na záznam (GuiId) plus vizuální text
     /// <summary>
@@ -4373,13 +4522,13 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        protected override string GetSerial(DateTime value) { return Convertor.DateTimeToString(value); }
+        protected override string GetSerial(DateTime value) { return Convertor.DateTimeToSerial(value); }
         /// <summary>
         /// Vrátí deserializovanou typovou hodnotu ze serializované formy
         /// </summary>
         /// <param name="serial"></param>
         /// <returns></returns>
-        protected override DateTime GetValue(string serial) { return (DateTime)Convertor.StringToDateTime(serial); }
+        protected override DateTime GetValue(string serial) { return (DateTime)Convertor.SerialToDateTime(serial); }
         #endregion
     }
     /// <summary>
