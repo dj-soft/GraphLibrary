@@ -1971,13 +1971,13 @@ namespace Noris.LCS.Base.WorkScheduler
             catch (Exception exc)
             {   // Chyby při deserializaci okomentujeme, aby developer věděl, odkud vítr fouká:
                 string type = args.DataTypeInfo.DataType.Namespace + "." + args.DataTypeInfo.DataType.Name;
-                string oper = (args.CurrentOperation != null ? args.CurrentOperation : "Null");
-                string prop = (args.CurrentProperty != null ? args.CurrentProperty : "Null");
+                // zrychlení : string oper = (args.CurrentOperation != null ? args.CurrentOperation : "Null");
+                // zrychlení : string prop = (args.CurrentProperty != null ? args.CurrentProperty : "Null");
                 string eol = Environment.NewLine;
                 throw new InvalidOperationException("Error on deserialize of object." + eol +
                     "Type: " + type + ";" + eol +
-                    "Operation: " + oper + ";" + eol +
-                    "Property: " + prop + ";" + eol +
+                    // zrychlení : "Operation: " + oper + ";" + eol +
+                    // zrychlení : "Property: " + prop + ";" + eol +
                     "Error: " + exc.Message,
                     exc);
             }
@@ -3174,6 +3174,8 @@ namespace Noris.LCS.Base.WorkScheduler
             internal TypeLibrary.TypeInfo DataTypeInfo { get; set; }
             internal XmElement XmElement { get; private set; }
             internal XmAttribute XmAttribute { get; private set; }
+
+            /*
             /// <summary>
             /// Informace o aktuální operaci, pro případ chyby - do textu chybové hlášky
             /// </summary>
@@ -3182,7 +3184,7 @@ namespace Noris.LCS.Base.WorkScheduler
             /// Informace o aktuální operaci, pro případ chyby - do textu chybové hlášky
             /// </summary>
             internal string CurrentProperty { get; set; }
-
+            */
         }
         #endregion
         #region enum XmlPersistenceType
