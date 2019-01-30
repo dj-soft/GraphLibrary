@@ -1931,7 +1931,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         protected int TreeViewNodeOffset
         {
             get
-            { return 12; }
+            { qqq; return 12; }
         }
         /// <summary>
         /// Souřadnice ikony TreeView (ekvivalent [+] nebo [-], rozbalí/sbalí node).
