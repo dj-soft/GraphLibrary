@@ -3137,6 +3137,87 @@ namespace Asol.Tools.WorkScheduler.Data
         #endregion
     }
     #endregion
+    #region KeyValueArray<TKey, TValue> : Třída, která pro určitý klíč ukládá / vrací hodnotu, interně řeší tvorbu nového klíče
+    /// <summary>
+    /// KeyValueArray : Třída, která pro určitý klíč ukládá / vrací hodnotu, interně řeší tvorbu nového klíče.
+    /// </summary>
+    /// <typeparam name="TKey"></typeparam>
+    /// <typeparam name="TValue"></typeparam>
+    public class KeyValueArray<TKey, TValue>
+    {
+        /// <summary>
+        /// Načte nebo uloží hodnotu pro daný klíč
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        [Noris.LCS.Base.WorkScheduler.PersistingEnabled(false)]
+        public TValue this[TKey key]
+        {
+            get
+            {
+                Dictionary<TKey, TValue> valueDict = this._GetValueDict();
+                if (key == null || !valueDict.ContainsKey(key)) return this.DefaultValue;
+                return valueDict[key];
+            }
+            set
+            {
+                if (key != null)
+                {
+                    Dictionary<TKey, TValue> valueDict = this._GetValueDict();
+                    if (valueDict.ContainsKey(key))
+                        valueDict[key] = value;
+                    else
+                        valueDict.Add(key, value);
+                }
+            }
+        }
+        /// <summary>
+        /// Odebere hodnotu pro daný klíč
+        /// </summary>
+        /// <param name="key"></param>
+        public void Remove(TKey key)
+        {
+            if (key != null)
+            {
+                Dictionary<TKey, TValue> valueDict = this._GetValueDict();
+                if (valueDict.ContainsKey(key))
+                    valueDict.Remove(key);
+            }
+        }
+        /// <summary>
+        /// Odebere všechny hodnoty
+        /// </summary>
+        public void Clear()
+        {
+            this._ValueDict = null;
+        }
+        /// <summary>
+        /// Počet prvků v úložišti
+        /// </summary>
+        [Noris.LCS.Base.WorkScheduler.PersistingEnabled(false)]
+        public int Count { get { return (this._ValueDict != null ? this._ValueDict.Count : 0); } }
+        /// <summary>
+        /// Defaultní hodnota, vracená v případě kdy je požadován dosud nezadaný klíč
+        /// </summary>
+        public TValue DefaultValue { get { return this._DefaultValue; } set { this._DefaultValue = value; } }
+        private TValue _DefaultValue;
+        /// <summary>
+        /// Property obsahující Dictionary s hodnotami, pro persistenci
+        /// </summary>
+        private Dictionary<TKey, TValue> ValueDict { get { return this._ValueDict; } set { this._ValueDict = value; } }
+        private Dictionary<TKey, TValue> _ValueDict;
+        /// <summary>
+        /// Vrací not null Dictionary
+        /// </summary>
+        /// <returns></returns>
+        private Dictionary<TKey, TValue> _GetValueDict()
+        {
+            if (this._ValueDict == null)
+                this._ValueDict = new Dictionary<TKey, TValue>();
+            return this._ValueDict;
+        }
+    }
+    #endregion
     #region Collection : Předek pro typové kolekce, read-only
     /// <summary>
     /// Collection : Ancestor for typed, public read-only collections.
