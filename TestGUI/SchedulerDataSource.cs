@@ -1301,10 +1301,16 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         /// <returns></returns>
         public static GuiData SerialDeserialData(GuiData guiData)
         {
-            // GuiData guiDataP = SerialDeserialData(guiData, XmlCompressMode.None);
-            GuiData guiDataC = SerialDeserialData(guiData, XmlCompressMode.Compress);
-            return guiDataC;
+            GuiData guiDataP = SerialDeserialData(guiData, XmlCompressMode.None);
+            // GuiData guiDataC = SerialDeserialData(guiData, XmlCompressMode.Compress);
+            return guiDataP;
         }
+        /// <summary>
+        /// Metoda provede test serializace v daném režimu komprese
+        /// </summary>
+        /// <param name="guiData"></param>
+        /// <param name="mode"></param>
+        /// <returns></returns>
         private static GuiData SerialDeserialData(GuiData guiData, XmlCompressMode mode)
         {
             string serial = null;
