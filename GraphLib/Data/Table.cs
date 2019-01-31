@@ -119,11 +119,11 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// Číslo třídy, z níž pochází data šablony
         /// </summary>
-        public int? ClassId { get { return this._ClassId; } } private int? _ClassId;
+        public int? ClassId { get { return this._ClassId; } private set { this._ClassId = value; } } private int? _ClassId;
         /// <summary>
         /// Číslo šablony
         /// </summary>
-        public int? TemplateId { get { return this._TemplateId; } } private int? _TemplateId;
+        public int? TemplateId { get { return this._TemplateId; } private set { this._TemplateId = value; } } private int? _TemplateId;
         #endregion
         #region GTable - Linkování datové tabulky do grafické tabulky
         /// <summary>
@@ -859,6 +859,23 @@ namespace Asol.Tools.WorkScheduler.Data
             }
             return treeList;
         }
+        /// <summary>
+        /// Posun jednotlivých úrovní v TreeView, v pixelech. Nezadáno = 14 pixelů. Minimální hodnota = 10px, maximální hodnota = 40px.
+        /// </summary>
+        public int? TreeViewNodeOffset
+        {
+            get { return this._TreeViewNodeOffset; }
+            set { this._TreeViewNodeOffset = (value.HasValue ? (int?)(value.Value < 10 ? 10 : (value.Value > 40 ? 40 : value.Value)) : (int?)null); }
+        }
+        private int? _TreeViewNodeOffset;
+        /// <summary>
+        /// Styl kreslení linky mezi Root nodem a jeho Child nody. Default = Dot.
+        /// </summary>
+        public TreeViewLinkMode? TreeViewLinkMode { get; set; }
+        /// <summary>
+        /// Barva linky mezi Root nodem a jeho Child nody. Může obsahovat Alpha kanál. Může být null.
+        /// </summary>
+        public Color? TreeViewLinkColor { get; set; }
         #endregion
         #region TagItems = štítky náležející k řádku, podpora pro filtrování
         /// <summary>
@@ -3148,7 +3165,7 @@ namespace Asol.Tools.WorkScheduler.Data
         #endregion
     }
     #endregion
-    #region Importy z GuiDataTable a z Import z System.Data.DataTable
+    #region Table, Column, Row: Importy z GuiDataTable a z Import z System.Data.DataTable
     public partial class Table
     {
         /// <summary>
@@ -3160,6 +3177,12 @@ namespace Asol.Tools.WorkScheduler.Data
         {
             if (guiTable == null) return null;
             Table table = new Table(guiTable.TableName);
+            table.ClassId = guiTable.ClassId;
+            table.TemplateId = guiTable.TemplateId;
+            table.TreeViewNodeOffset = guiTable.TreeViewNodeOffset;
+            table.TreeViewLinkMode = _ConvertLinkMode(guiTable.TreeViewLinkMode);
+            table.TreeViewLinkColor = guiTable.TreeViewLinkColor;
+
             table.Columns.AddRange(Column.CreateFrom(guiTable.Columns));      // Přidávat prvky musím včetně logiky AddItemAfter, kvůli navazujícím algoritmům (indexy, owner)
             table.Rows.AddRange(Row.CreateFrom(guiTable.Rows));               // Vytvoří řádky
             return table;
@@ -3177,6 +3200,25 @@ namespace Asol.Tools.WorkScheduler.Data
             table.Columns.AddRange(Column.CreateFrom(dataTable.Columns));      // Přidávat prvky musím včetně logiky AddItemAfter, kvůli navazujícím algoritmům (indexy, owner)
             table.Rows.AddRange(Row.CreateFrom(dataTable.Rows, table.ClassId, tagItems));     // Vytvoří řádky, a současně do nich vloží TagItems
             return table;
+        }
+        /// <summary>
+        /// Konvertuje hodnotu <see cref="GuiTreeViewLinkMode"/> na hodnotu <see cref="Data.TreeViewLinkMode"/>
+        /// </summary>
+        /// <param name="guiMode"></param>
+        /// <returns></returns>
+        private static TreeViewLinkMode? _ConvertLinkMode(GuiTreeViewLinkMode? guiMode)
+        {
+            if (guiMode.HasValue)
+            {
+                switch (guiMode.Value)
+                {
+                    case GuiTreeViewLinkMode.None: return Data.TreeViewLinkMode.None;
+                    case GuiTreeViewLinkMode.Dot: return Data.TreeViewLinkMode.Dot;
+                    case GuiTreeViewLinkMode.Line: return Data.TreeViewLinkMode.Line;
+                    case GuiTreeViewLinkMode.Line2px: return Data.TreeViewLinkMode.Line2px;
+                }
+            }
+            return null;
         }
     }
     public partial class Column
@@ -3553,7 +3595,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         public bool IsDynamicChild { get { return (this._ParentRecordGId != null && this._ParentRecordGId.IsEmpty); } }
         #endregion
-        #region Child prvky tohoto nodu + vlastnosti nodu Level, Order
+        #region Child prvky tohoto nodu + vlastnosti nodu Level, Order, CurrentParentNode
         /// <summary>
         /// Obsahuje Childs řádky tohoto Parent řádku. Může být null nebo může obsahovat 0 prvků.
         /// Setování vyvolá invalidaci řádků tabulky.
@@ -3577,7 +3619,6 @@ namespace Asol.Tools.WorkScheduler.Data
                 return this._ChildList;
             }
         }
-        
         /// <summary>
         /// Obsahuje true, pokud this řádek obsahuje nějaké <see cref="Childs"/> řádky
         /// </summary>
@@ -3600,6 +3641,10 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         internal TreeNodeOrderType Order { get; private set; }
         /// <summary>
+        /// Aktuální Parent, pod kterým this je Child.
+        /// </summary>
+        internal TreeNode CurrentParentNode { get; private set; }
+        /// <summary>
         /// Metoda přidá daný řádek jako Static Child
         /// </summary>
         /// <param name="row"></param>
@@ -3608,6 +3653,7 @@ namespace Asol.Tools.WorkScheduler.Data
             if (this._StaticChildDict == null)
                 this._StaticChildDict = new Dictionary<int, Row>();
             this._StaticChildDict.AddRefresh(row.RowId, row);
+            row.TreeNode.CurrentParentNode = this;
             this._ChildsInvalidate();
         }
         /// <summary>
@@ -3619,6 +3665,7 @@ namespace Asol.Tools.WorkScheduler.Data
             if (this._StaticChildDict != null && this._StaticChildDict.ContainsKey(row.RowId))
             {
                 this._StaticChildDict.Remove(row.RowId);
+                row.TreeNode.CurrentParentNode = null;
                 this._ChildsInvalidate();
             }
         }
@@ -3633,6 +3680,7 @@ namespace Asol.Tools.WorkScheduler.Data
             if (this._DynamicChildList.Count == 0 || !this._DynamicChildList.Any(r => Object.ReferenceEquals(r, row)))
             {
                 this._DynamicChildList.Add(row);
+                row.TreeNode.CurrentParentNode = this;
                 this._ChildsInvalidate();
             }
         }
@@ -3645,7 +3693,10 @@ namespace Asol.Tools.WorkScheduler.Data
             if (this._DynamicChildList != null)
             {
                 if (this._DynamicChildList.RemoveAll(r => Object.ReferenceEquals(r, row)) > 0)
+                {
+                    row.TreeNode.CurrentParentNode = null;
                     this._ChildsInvalidate();
+                }
             }
         }
         /// <summary>
@@ -3653,10 +3704,13 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         internal IEnumerable<Row> DynamicChilds
         {
-            get { return this._DynamicChildList; }
+            get { return (this._DynamicChildList != null ? this._DynamicChildList.ToArray() : null); }
             set
             {
-                this._DynamicChildList = (value != null ? new List<Row>(value) : null);
+                List<Row> list = (value != null ? new List<Row>(value) : null);
+                if (list != null)
+                    list.ForEach(r => r.TreeNode.CurrentParentNode = this);
+                this._DynamicChildList = list;
                 this._ChildsInvalidate();
             }
         }
@@ -3780,6 +3834,75 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         private bool _IsExpanded;
         #endregion
+        #region GetTreeLines
+        /// <summary>
+        /// Metoda vrací pole hodnot <see cref="TreeNodeLineType"/>, které představují spojovací linky (TreeLine) kreslené v řádku tohoto nodu, počínaje zleva doprava.
+        /// Pole obsahuje vždy nejméně jeden prvek, který reprezentuje TreeLine za this node, pokud tento je Root.
+        /// Pokud např. this je Child node pod Root nodem, pak pole obshauje dva prvky: prvek [0] vyjadřuje TreeLine v úrovni Root, a prvek [1] TreeLine za this Child prvek.
+        /// TreeLine reprezentující this prvek (tj. na poslední pozici pole) může být buď <see cref="TreeNodeLineType.None"/> (to když prvek nemá Childs nebo je Collapsed),
+        /// anebo to může být <see cref="TreeNodeLineType.First"/> = čárka dolů pod Expanded ikonkou.
+        /// </summary>
+        /// <returns></returns>
+        internal TreeNodeLineType[] GetTreeLines()
+        {
+            List<TreeNodeLineType> result = new List<TreeNodeLineType>();
+
+            // TreeLine za this prvek = přímo v místě ikony:
+            result.Add((this.HasChilds && this.IsExpanded) ? TreeNodeLineType.First : TreeNodeLineType.None);
+            if (this.IsRoot) return result.ToArray();
+
+            // Protože this není Root, pak pak přidám TreeLine podle jeho vlastního Order:
+            result.Add(_ConvertOrderToLine(this.Order, true));
+
+            // A přidáme linky za parenty podle jejich Order:
+
+            // TreeLine za parenty (prvky doleva) = tyto linky pro current řádek mohou být buď None nebo Line, protože nikdy nevedou do this řádku:
+            TreeNode node = this.CurrentParentNode;
+            while (node != null)
+            {
+                if (node.IsRoot) break;
+                result.Add(_ConvertOrderToLine(node.Order, false));
+                node = node.CurrentParentNode;
+            }
+
+            // Protože máme víc než 1 prvek, musíme pole převrátit aby bylo řazeno zleva doprava (protože vytvářeno bylo zprava doleva):
+            result.Reverse();
+
+            return result.ToArray();
+        }
+        /// <summary>
+        /// Vrací typ čáry <see cref="TreeNodeLineType"/> podle pořadí prvku
+        /// </summary>
+        /// <param name="order"></param>
+        /// <param name="isCurrentItem"></param>
+        /// <returns></returns>
+        private static TreeNodeLineType _ConvertOrderToLine(TreeNodeOrderType order, bool isCurrentItem)
+        {
+            if (isCurrentItem)
+            {   // Linka, která musí vést doprava do this prvku:
+                switch (order)
+                {
+                    case TreeNodeOrderType.None: return TreeNodeLineType.None;           // NodeOrder neurčen
+                    case TreeNodeOrderType.Single: return TreeNodeLineType.LineLast;     // Single = první a jediný    => LineLast   = svislá čára do poloviny a odbočka doprava
+                    case TreeNodeOrderType.First: return TreeNodeLineType.LineBranch;    // First = první z několika   => LineBranch = svislá čára celá a odbočka doprava
+                    case TreeNodeOrderType.Inner: return TreeNodeLineType.LineBranch;    // Inner = vnitřní z několika => LineBranch = svislá čára celá a odbočka doprava
+                    case TreeNodeOrderType.Last: return TreeNodeLineType.LineLast;       // Last = poslední, dál nic   => LineLast   = svislá čára do poloviny a odbočka doprava
+                }
+            }
+            else
+            {   // Linka, která nikdy nevede doprava do prvku, může být jen Line nebo None:
+                switch (order)
+                {
+                    case TreeNodeOrderType.None: return TreeNodeLineType.None;           // NodeOrder neurčen
+                    case TreeNodeOrderType.Single: return TreeNodeLineType.None;         // Single = první a jediný    => None = žádná čára
+                    case TreeNodeOrderType.First: return TreeNodeLineType.Line;          // First = první z několika   => Line = svislá čára celá bez odbočky
+                    case TreeNodeOrderType.Inner: return TreeNodeLineType.Line;          // Inner = vnitřní z několika => Line = svislá čára celá bez odbočky
+                    case TreeNodeOrderType.Last: return TreeNodeLineType.None;           // Last = poslední, dál nic   => None = žádná čára
+                }
+            }
+            return TreeNodeLineType.None;
+        }
+        #endregion
         #region Table + TreeView : vkládání Childs řádků do lineární sekvence; scanování Childs řádků
         /// <summary>
         /// Do daného seznamu řádků přidá svoje Child řádky
@@ -3805,11 +3928,13 @@ namespace Asol.Tools.WorkScheduler.Data
             {
                 Row child = childs[i];
                 child.TreeNode.Level = level;
-                child.TreeNode.Order = (i == 0 ? (count > 1 ? TreeNodeOrderType.First : TreeNodeOrderType.Single) : (i < (count - 1) ? TreeNodeOrderType.Inner : TreeNodeOrderType.Last));
+                child.TreeNode.Order = (i == 0 ? 
+                           (count == 1 ? TreeNodeOrderType.Single : TreeNodeOrderType.First) :     // Order pro první prvek v řadě: Single nebo First
+                           (i < (count - 1) ? TreeNodeOrderType.Inner : TreeNodeOrderType.Last));  // Order pro další prvek = Inner, pro poslední prvek = Last
                 allRowList.Add(child);
                 child.Visible = true;            // Viditelnost pro Child řádky nastavuji výhradně zde.
 
-                // Rekurzivně:
+                // Rekurzivně = ihned, a teprve po všech SubChilds budou následovat Next prvky z this.Childs:
                 child.TreeNode.StoreChildsTo(allRowList, level);
             }
         }
@@ -3952,7 +4077,36 @@ namespace Asol.Tools.WorkScheduler.Data
     /// <summary>
     /// Druh pořadí TreeNode v kolekci (první, vnitřní, poslední, jediný)
     /// </summary>
-    internal enum TreeNodeOrderType { None, First, Inner, Last, Single }
+    internal enum TreeNodeOrderType { None, Single, First, Inner, Last}
+    /// <summary>
+    /// Druh vykreslované linky ve vizuálním řádku, reprezentuje stromovou strukturu vykreslovanou do jednotlivém čtverečku v oblasti TreeLines
+    /// </summary>
+    internal enum TreeNodeLineType
+    {
+        /// <summary>
+        /// Žádná linie
+        /// </summary>
+        None,
+        /// <summary>
+        /// První čárka dolů, vykresluje se přímo pod ikonkou šipky když šipka je Expanded:
+        /// navazuje na dolní okraj šipky dolů a vede dolů ke konci řádky
+        /// </summary>
+        First,
+        /// <summary>
+        /// Prostá průběžná linie směrem dolů, bez odbočky:
+        /// vede od horního okraje po dolní okraj
+        /// </summary>
+        Line,
+        /// <summary>
+        /// Prostá průběžná linie směrem dolů, s odbočkou doprava v tomto řádku:
+        /// vede od horního okraje po dolní okraj, a ve výšce ikony z této linky odbočuje doprava vodorovná linie
+        /// </summary>
+        LineBranch,
+        /// <summary>
+        /// Poslední linie ve směru dolů s odbočkou doprava, ale již nepokračuje dolů na další řádek.
+        /// </summary>
+        LineLast
+    }
     #endregion
     #region TagItem : Data pro jeden vizuální tag
     /// <summary>
@@ -4870,6 +5024,28 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Value je typu <see cref="GuiIdText"/>.
         /// </summary>
         TextRelation
+    }
+    /// <summary>
+    /// Styl kreslení linky mezi Root nodem a jeho Child nody
+    /// </summary>
+    public enum TreeViewLinkMode
+    {
+        /// <summary>
+        /// Nekreslit
+        /// </summary>
+        None,
+        /// <summary>
+        /// Tečkovaná čára
+        /// </summary>
+        Dot,
+        /// <summary>
+        /// Plná čára
+        /// </summary>
+        Line,
+        /// <summary>
+        /// Plná čára 2 pixely
+        /// </summary>
+        Line2px
     }
     #endregion
 }

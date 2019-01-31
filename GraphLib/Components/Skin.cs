@@ -1287,6 +1287,7 @@ namespace Asol.Tools.WorkScheduler.Components
         public Image SortAscendingImage { get { return this._Owner.GetValue(this._SkinSetKey, "SortAscendingImage", DefaultSortAscendingImage); } set { this._Owner.SetValue(this._SkinSetKey, "SortAscendingImage", value); } }
         public Image SortDescendingImage { get { return this._Owner.GetValue(this._SkinSetKey, "SortDescendingImage", DefaultSortDescendingImage); } set { this._Owner.SetValue(this._SkinSetKey, "SortDescendingImage", value); } }
         public Image RowSelectedImage { get { return this._Owner.GetValue(this._SkinSetKey, "RowSelectedImage", DefaultRowSelectedImage); } set { this._Owner.SetValue(this._SkinSetKey, "RowSelectedImage", value); } }
+        public Color TreeViewLineColor { get { return this._Owner.GetValue(this._SkinSetKey, "TreeViewLineColor", DefaultTreeViewLineColor); } set { this._Owner.SetValue(this._SkinSetKey, "TreeViewLineColor", value); } }
         #endregion
         #region Default colors
         protected virtual Color DefaultHeaderBackColor { get { return Color.LightSkyBlue.Morph(Color.White, 0.33f); } }
@@ -1309,6 +1310,7 @@ namespace Asol.Tools.WorkScheduler.Components
         protected virtual Image DefaultSortAscendingImage { get { return IconStandard.SortAsc; } }
         protected virtual Image DefaultSortDescendingImage { get { return IconStandard.SortDesc; } }
         protected virtual Image DefaultRowSelectedImage { get { return IconStandard.RowSelected; } }
+        protected virtual Color DefaultTreeViewLineColor { get { return Color.DimGray; } }
         #endregion
         #region Další metody
         /// <summary>

@@ -1756,48 +1756,127 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         private ISequenceLayout _ISequenceLayout { get { return (ISequenceLayout)this._SequenceLayout; } }
         private SequenceLayout _SequenceLayout;
         #endregion
-        #region TreeView - řízení
+        #region TreeView - řízení a kreslení
         /// <summary>
         /// true pokud this tabulka může zobrazovat stromovou strukturu prvků
         /// </summary>
         internal bool IsTreeView { get { return this._IsTreeView; } } private bool _IsTreeView;
         /// <summary>
         /// Metoda vykreslí všechny prvky související s TreeView.
-        /// Vrátí souřadnici prostoru, který má být interaktivní - zde je vykreslena ikona pro Expand/Collapse nodu daného řádku.
+        /// Do argumentu vloží souřadnici prostoru, který má být interaktivní - zde je vykreslena ikona pro Expand/Collapse nodu daného řádku.
         /// Pokud řádek nemá tuto ikonu, vrací null.
         /// Nastavuje out parametr offsetX, který posouvá vykreslovaný textový obsah doprava.
         /// </summary>
         /// <param name="e"></param>
-        /// <param name="ownerCell"></param>
-        /// <param name="iconOffsetX"></param>
-        /// <param name="boundsAbsolute"></param>
-        /// <param name="iconIsHot"></param>
-        /// <param name="iconIsDown"></param>
+        /// <param name="drawArgs"></param>
         /// <returns></returns>
-        internal Rectangle? DrawTreeView(GInteractiveDrawArgs e, Cell ownerCell, int iconOffsetX, Rectangle boundsAbsolute, bool iconIsHot, bool iconIsDown)
+        internal void DrawTreeView(GInteractiveDrawArgs e, TreeViewDrawArgs drawArgs)
         {
-            Rectangle? interactiveBounds = null;
-            if (!this.HasMouse) return interactiveBounds;
-            Row row = ownerCell.Row;
+            if (drawArgs == null || !drawArgs.IsValid) return;
+
+            drawArgs.CellValueBounds = drawArgs.BoundsAbsolute;
+            drawArgs.LastLineBounds = null;
+            drawArgs.IconActiveBounds = null;
+            drawArgs.IconImageBounds = null;
+            if (!this.DataTable.IsTreeViewTable) return;
+
+            this.DrawTreeViewLines(e, drawArgs);
+            this.DrawTreeViewIcon(e, drawArgs);
+        }
+        private void DrawTreeViewLines(GInteractiveDrawArgs e, TreeViewDrawArgs drawArgs)
+        {
+            drawArgs.TreeNodeLines = drawArgs.OwnerCell.Row.TreeNode.GetTreeLines();
+
+            Rectangle boundsCell = drawArgs.CellValueBounds;
+            int x = boundsCell.X + 1;
+            int n = x;
+            int y = boundsCell.Y;
+            int h = boundsCell.Height;
+            int w = drawArgs.TreeViewNodeOffset;
+            Rectangle? lastLineBounds = null;
+            foreach (TreeNodeLineType line in drawArgs.TreeNodeLines)
+            {
+                x = n;
+                Rectangle bounds = new Rectangle(x, y, w, h);
+                this.DrawTreeViewLine(e, drawArgs, line, bounds);
+                n = bounds.Right;
+                lastLineBounds = bounds;
+            }
+            drawArgs.LastLineBounds = lastLineBounds;
+            drawArgs.CellValueBounds = new Rectangle(x, boundsCell.Y, boundsCell.Right - x, boundsCell.Height);
+        }
+        private void DrawTreeViewLine(GInteractiveDrawArgs e, TreeViewDrawArgs drawArgs, TreeNodeLineType line, Rectangle bounds)
+        {
+            if (line == TreeNodeLineType.None) return;
+
+            Pen pen = DrawTreeViewGetPen(drawArgs);
+
+            int x1 = bounds.X + 9;
+            int x2 = x1 + 1;
+            int x9 = bounds.Right;
+            int y0 = bounds.Y;
+            int y1 = bounds.Bottom - 12;
+            int y2 = bounds.Bottom - 4;
+            int y9 = bounds.Bottom;
+
+            switch (line)
+            {
+                case TreeNodeLineType.First:
+                    e.Graphics.DrawLine(pen, x1, y2, x1, y9);
+                    break;
+                case TreeNodeLineType.Line:
+                    e.Graphics.DrawLine(pen, x1, y0, x1, y9);
+                    break;
+                case TreeNodeLineType.LineBranch:
+                    e.Graphics.DrawLine(pen, x1, y0, x1, y9);
+                    e.Graphics.DrawLine(pen, x2, y1, x9, y1);
+                    break;
+                case TreeNodeLineType.LineLast:
+                    e.Graphics.DrawLine(pen, x1, y0, x1, y1);
+                    e.Graphics.DrawLine(pen, x2, y1, x9, y1);
+                    break;
+            }
+        }
+        private Pen DrawTreeViewGetPen(TreeViewDrawArgs drawArgs)
+        {
+            Color color = (drawArgs.TreeViewLinkColor.HasValue ? drawArgs.TreeViewLinkColor.Value : Skin.Grid.TreeViewLineColor);
+            float width = (drawArgs.TreeViewLinkMode == TreeViewLinkMode.Line2px ? 2f : 1f);
+            System.Drawing.Drawing2D.DashStyle dashStyle = (drawArgs.TreeViewLinkMode == TreeViewLinkMode.Dot ? System.Drawing.Drawing2D.DashStyle.Dot : System.Drawing.Drawing2D.DashStyle.Solid);
+            Pen pen = Skin.Pen(color, width, dashStyle: dashStyle);
+            return pen;
+        }
+        /// <summary>
+        /// Metoda vykreslí ikonu TreeNode, reaguje na stav Expanded, Mouse, MouseHot a MouseDown.
+        /// Metoda vrací absolutní souřadnice ikony, kvůli následnému řešení interaktivity ikony.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="drawArgs"></param>
+        /// <returns></returns>
+        private void DrawTreeViewIcon(GInteractiveDrawArgs e, TreeViewDrawArgs drawArgs)
+        {
+            Row row = drawArgs.OwnerCell.Row;
             bool nodeHasChilds = row.TreeNode.HasChilds;
+            bool isExpanded = (nodeHasChilds && row.TreeNode.IsExpanded);
+            if (!this.HasMouse && !isExpanded) return;
+
             if (nodeHasChilds)
             {
-                bool isExpanded = row.TreeNode.IsExpanded;
-                Image image = DrawTreeViewGetIcon(isExpanded, iconIsHot, iconIsDown);
+                Image image = DrawTreeViewGetIcon(isExpanded, drawArgs.IconIsHot, drawArgs.IconIsDown);
                 if (image != null)
                 {
                     bool rowHasMouse = (row.Control.HasMouse);
-                    float opacityRatio = DrawTreeViewGetOpacity(isExpanded, rowHasMouse, iconIsHot, iconIsDown);
+                    float opacityRatio = DrawTreeViewGetOpacity(isExpanded, rowHasMouse, drawArgs.IconIsHot, drawArgs.IconIsDown);
                     if (opacityRatio > 0f)
                     {
-                        Rectangle outerBounds = new Rectangle(boundsAbsolute.X + 1 + iconOffsetX, boundsAbsolute.Bottom - 2 - 20, 20, 26);
-                        Rectangle imageBounds = new Rectangle(outerBounds.X + 2, outerBounds.Y + 2, 16, 16);
+                        Rectangle cellBounds = drawArgs.CellValueBounds;
+                        Rectangle outerBounds = new Rectangle(cellBounds.X, cellBounds.Bottom - 2 - 20, 20, 26);
+                        Rectangle imageBounds = new Rectangle(cellBounds.X + 2, outerBounds.Y + 2, 16, 16);
                         GPainter.DrawImage(e.Graphics, imageBounds, image, opacityRatio);
-                        interactiveBounds = outerBounds;
+                        drawArgs.IconActiveBounds = outerBounds;
+                        drawArgs.IconImageBounds = imageBounds;
                     }
                 }
             }
-            return interactiveBounds;
         }
         /// <summary>
         /// Vrátí Image pro vykreslení ikony nodu TreeView
@@ -2748,6 +2827,75 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         }
         #endregion
     }
+    #region class TreeViewDrawArgs : Argumenty pro kreslení TreeView struktury
+    /// <summary>
+    /// TreeViewDrawArgs : Argumenty pro kreslení TreeView struktury
+    /// </summary>
+    public class TreeViewDrawArgs
+    {
+        /// <summary>
+        /// Buňka, kde se bude TreeView vykreslovat
+        /// </summary>
+        public Cell OwnerCell { get; set; }
+        /// <summary>
+        /// Absolutní souřadnice buňky
+        /// </summary>
+        public Rectangle BoundsAbsolute { get; set; }
+
+        /// <summary>
+        /// Obsahuje offset pro posun nodů.
+        /// </summary>
+        public int TreeViewNodeOffset { get; set; }
+        /// <summary>
+        /// Styl kreslení linky mezi Root nodem a jeho Child nody.
+        /// </summary>
+        public TreeViewLinkMode TreeViewLinkMode { get; set; }
+        /// <summary>
+        /// Barva linky mezi Root nodem a jeho Child nody. Může obsahovat Alpha kanál. Může být null.
+        /// </summary>
+        public Color? TreeViewLinkColor { get; set; }
+
+        /// <summary>
+        /// Ikona je Hot = je na ní najetá myš
+        /// </summary>
+        public bool IconIsHot { get; set; }
+        /// <summary>
+        /// Ikona je stisknutá
+        /// </summary>
+        public bool IconIsDown { get; set; }
+
+        /// <summary>
+        /// Výsledné pole vykreslených TreeLine
+        /// </summary>
+        internal TreeNodeLineType[] TreeNodeLines { get; set; }
+
+        /// <summary>
+        /// Výsledná absolutní souřadnice prostoru, kam může být vepsán obsah buňky (tj. až za TreeLines a ikonu)
+        /// </summary>
+        public Rectangle CellValueBounds { get; set; }
+        /// <summary>
+        /// Výsledná absolutní souřadnice ikony, kde by měla být vykreslena
+        /// </summary>
+        public Rectangle? IconTargetBounds { get; set; }
+        /// <summary>
+        /// Výsledná absolutní souřadnice ikony, kde je interaktivní
+        /// </summary>
+        public Rectangle? IconActiveBounds { get; set; }
+        /// <summary>
+        /// Výsledná absolutní souřadnice ikony, kde je vykreslena
+        /// </summary>
+        public Rectangle? IconImageBounds { get; set; }
+        /// <summary>
+        /// Souřadnice prostoru TreeLine nejvíce vpravo
+        /// </summary>
+        public Rectangle? LastLineBounds { get; set; }
+
+        /// <summary>
+        /// Obsahuje true, pokud this objekt obsahuje data, podle kterých je možno kreslit
+        /// </summary>
+        public bool IsValid { get { return (this.OwnerCell != null && this.BoundsAbsolute.HasPixels()); } }
+    }
+    #endregion
     #region Interface IGTable, který dává přístup k interním metodám GTable
     /// <summary>
     /// Interface pro <see cref="GTable"/>, aby interní metody nebyly veřejně viditelné

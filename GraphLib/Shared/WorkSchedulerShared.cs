@@ -1195,6 +1195,18 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Výchozí hodnota je null.
         /// </summary>
         public List<GuiGraphLink> GraphLinks { get; set; }
+        /// <summary>
+        /// Posun jednotlivých úrovní v TreeView, v pixelech. Nezadáno = 14 pixelů. Minimální hodnota = 10px. Maximální hodnota = 40px.
+        /// </summary>
+        public int? TreeViewNodeOffset { get; set; }
+        /// <summary>
+        /// Styl kreslení linky mezi Root nodem a jeho Child nody. Default = Dot.
+        /// </summary>
+        public GuiTreeViewLinkMode? TreeViewLinkMode { get; set; }
+        /// <summary>
+        /// Barva linky mezi Root nodem a jeho Child nody. Může obsahovat Alpha kanál.
+        /// </summary>
+        public Color? TreeViewLinkColor { get; set; }
         #endregion
         #region Vytvoření instance GuiDataTable z System.Data.DataTable
         /// <summary>
@@ -2073,6 +2085,28 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Neprovádí se persistence.
         /// </summary>
         GuiDataTable Table { get; set; }
+    }
+    /// <summary>
+    /// Styl kreslení linky mezi Root nodem a jeho Child nody
+    /// </summary>
+    public enum GuiTreeViewLinkMode
+    {
+        /// <summary>
+        /// Nekreslit
+        /// </summary>
+        None,
+        /// <summary>
+        /// Tečkovaná čára
+        /// </summary>
+        Dot,
+        /// <summary>
+        /// Plná čára
+        /// </summary>
+        Line,
+        /// <summary>
+        /// Plná čára 2 pixely
+        /// </summary>
+        Line2px
     }
     #endregion
     #region GuiTable : Jedna fyzická tabulka (ekvivalent DataTable, s podporou serializace a implicitní konverze z/na DataTable)

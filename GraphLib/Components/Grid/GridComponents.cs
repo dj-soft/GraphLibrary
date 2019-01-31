@@ -1921,21 +1921,69 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         protected void TreeViewDraw(GInteractiveDrawArgs e, Cell ownerCell, Rectangle boundsAbsolute, ref Rectangle boundsValue)
         {
             if (!this.IsTreeViewCell) return;
+
             bool iconIsHot = this.TreeViewIconIsHot;
-            bool iconIsDown = iconIsHot && this.InteractiveState.HasFlag(GInteractiveState.FlagDown);
-            int nodeLevel = this.OwnerRow.TreeNode.Level;
-            int iconOffsetX = this.TreeViewNodeOffset * nodeLevel;
-            this.TreeViewIconBounds = this.OwnerGTable.DrawTreeView(e, this.OwnerCell, iconOffsetX, boundsAbsolute, iconIsHot, iconIsDown);
-            boundsValue = new Rectangle(boundsAbsolute.X + iconOffsetX, boundsAbsolute.Y, boundsAbsolute.Width - iconOffsetX, boundsAbsolute.Height);
+            TreeViewDrawArgs drawArgs = new TreeViewDrawArgs()
+            {
+                OwnerCell = this.OwnerCell,
+                BoundsAbsolute = boundsAbsolute,
+                IconIsHot = iconIsHot,
+                IconIsDown = iconIsHot && this.InteractiveState.HasFlag(GInteractiveState.FlagDown),
+                TreeViewLinkMode = this.TreeViewLinkMode,
+                TreeViewNodeOffset = this.TreeViewNodeOffset,
+                TreeViewLinkColor = this.TreeViewLinkColor,
+                CellValueBounds = boundsAbsolute
+            };
+            this.OwnerGTable.DrawTreeView(e, drawArgs);
+            this.TreeViewIconBounds = drawArgs.IconActiveBounds;
+            boundsValue = drawArgs.CellValueBounds;
         }
+        /// <summary>
+        /// Obsahuje offset pro posun nodů. Offset může být zadán v tabulce, nebo může být defaultních 12px.
+        /// </summary>
         protected int TreeViewNodeOffset
         {
             get
-            { qqq; return 12; }
+            {
+                int offset = 14;
+                Table table = this.OwnerTable;
+                if (table != null && table.TreeViewNodeOffset.HasValue)
+                    offset = table.TreeViewNodeOffset.Value;
+                return offset;
+            }
+        }
+        /// <summary>
+        /// Styl kreslení linky mezi Root nodem a jeho Child nody. Default = Dot.
+        /// </summary>
+        protected TreeViewLinkMode TreeViewLinkMode
+        {
+            get
+            {
+                TreeViewLinkMode mode = TreeViewLinkMode.Dot;
+                Table table = this.OwnerTable;
+                if (table != null && table.TreeViewLinkMode.HasValue)
+                    mode = table.TreeViewLinkMode.Value;
+                return mode;
+            }
+        }
+        /// <summary>
+        /// Barva linky mezi Root nodem a jeho Child nody. Může obsahovat Alpha kanál. Může být null.
+        /// </summary>
+        protected Color? TreeViewLinkColor
+        {
+            get
+            {
+                Color? color = null;
+                Table table = this.OwnerTable;
+                if (table != null)
+                    color = table.TreeViewLinkColor;
+                return color;
+            }
         }
         /// <summary>
         /// Souřadnice ikony TreeView (ekvivalent [+] nebo [-], rozbalí/sbalí node).
-        /// Souřadnice je absolutní, a určuje ji <see cref="GTable"/> v metodě <see cref="GTable.DrawTreeView(GInteractiveDrawArgs, Cell, int, Rectangle, bool, bool)"/>.
+        /// Souřadnice je null, když buňka nemá vykreslenou ikonu (tj. není vizuálně aktivní node)¨.
+        /// Souřadnice je absolutní, a určuje ji <see cref="GTable"/> v metodě <see cref="GTable.DrawTreeView(GInteractiveDrawArgs, Cell, int, int, Rectangle, bool, bool, TreeViewLinkMode, Color?)"/>.
         /// </summary>
         protected Rectangle? TreeViewIconBounds { get; set; }
         /// <summary>
