@@ -214,9 +214,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             {
                 case ProductTpv.Simple:
                     operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.GreenYellow, "Řez tvaru", "Přeříznout", WP_PILA, qty, "D", false, 30, 20, 45, Pbb(60)));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DarkOrange, "Šroubovat", "Nasadit šrouby a sešroubovat", WP_DILN, qty, "ŠPM", false, 0, 15, 0));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DarkOrange, "Šroubovat", "Nasadit šrouby a sešroubovat", WP_DILN, qty, "Š", false, 0, 15, 0));
                     operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.ForestGreen, "Lakovat", "Lakování základní", WP_LAKO, qty, "L", true, 30, 30, 240));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DimGray, "Kontrola", "Kontrola finální", WP_KONT, qty, "", false, 30, 15, 0));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DimGray, "Kontrola", "Kontrola finální", WP_KONT, qty, "OZ", false, 30, 15, 0));
                     break;
 
                 case ProductTpv.Standard:
@@ -226,7 +226,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                     operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DarkOrange, "Nasadit čepy", "Nasadit a vlepit čepy", WP_DILN, qty, "Č", false, 0, 30, 0));
                     operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DarkRed, "Klížit", "Sklížit díly", WP_DILN, qty, "K", false, 30, 20, 360));
                     operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.ForestGreen, "Lakovat", "Lakování základní", WP_LAKO, qty, "L", true, 30, 45, 240));
-                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DimGray, "Kontrola", "Kontrola finální", WP_KONT, qty, "", false, 30, 20, 0));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DimGray, "Kontrola", "Kontrola finální", WP_KONT, qty, "O", false, 30, 20, 0));
                     break;
 
                 case ProductTpv.Luxus:
@@ -242,11 +242,13 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                     operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.Blue, "Brousit lak", "Zabrousit", WP_DILN, qty, "", false, 0, 30, 5));
                     operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DarkGreen, "Lakovat lesk", "Lakování lesklé", WP_LAKO, qty, "l", true, 60, 60, 240));
                     operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DimGray, "Kontrola celku", "Kontrolovat lakování", WP_KONT, qty, "", false, 0, 30, 0));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DimGray, "Kontrola", "Kontrola finální", WP_KONT, qty, "O", false, 30, 20, 0));
                     break;
 
                 case ProductTpv.Cooperation:
                     operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.Gray, "Kooperace", "Udělá to někdo jiný", WP_KOOP, qty, "B", false, 360, 30, 1440));
                     operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DimGray, "Kontrola", "Kontrolovat kooperaci", WP_KONT, qty, "", false, 1440, 30, 60));
+                    operations.Add(CreateProductOperation(++recordId, productOrder, ++line, Color.DimGray, "Kontrola", "Kontrola finální", WP_KONT, qty, "OZ", false, 30, 20, 0));
                     break;
 
             }
@@ -315,31 +317,37 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             switch (component)
             {
                 case 'D':
-                    structure = new ProductStructure() { RecordId = recordId, ProductOperation = operation, Refer = "DTD", Name = "Dřevo", Qty = 0.25m * qty };
+                    operation.StructureList.Add(new ProductStructure() { RecordId = recordId, ProductOperation = operation, Refer = "DTD", Name = "Dřevo", Qty = 0.25m * qty });
                     break;
                 case 'Š':
-                    structure = new ProductStructure() { RecordId = recordId, ProductOperation = operation, Refer = "M6š", Name = "Šroub M6", Qty = 6m * qty };
-                    break;
-                case 'P':
-                    structure = new ProductStructure() { RecordId = recordId, ProductOperation = operation, Refer = "M6p", Name = "Podložka M6", Qty = 12m * qty };
-                    break;
-                case 'M':
-                    structure = new ProductStructure() { RecordId = recordId, ProductOperation = operation, Refer = "M6m", Name = "Matka M6", Qty = 6m * qty };
+                    operation.StructureList.Add(new ProductStructure() { RecordId = recordId, ProductOperation = operation, Refer = "M6š", Name = "Šroub M6", Qty = 6m * qty });
+                    operation.StructureList.Add(new ProductStructure() { RecordId = recordId, ProductOperation = operation, Refer = "M6p", Name = "Podložka M6", Qty = 12m * qty });
+                    operation.StructureList.Add(new ProductStructure() { RecordId = recordId, ProductOperation = operation, Refer = "M6m", Name = "Matka M6", Qty = 6m * qty });
                     break;
                 case 'L':
-                    structure = new ProductStructure() { RecordId = recordId, ProductOperation = operation, Refer = "Cx1000", Name = "Lak Celox 1000", Qty = 0.1m * qty };
+                    operation.StructureList.Add(new ProductStructure() { RecordId = recordId, ProductOperation = operation, Refer = "Cx1000", Name = "Lak Celox 1000", Qty = 0.1m * qty });
+                    operation.StructureList.Add(new ProductStructure() { RecordId = recordId, ProductOperation = operation, Refer = "C006", Name = "Nitroředidlo", Qty = 0.1m * qty });
                     break;
                 case 'Č':
-                    structure = new ProductStructure() { RecordId = recordId, ProductOperation = operation, Refer = "Č6x20", Name = "Čep dřevo 6 x 20", Qty = 6m * qty };
+                    operation.StructureList.Add(new ProductStructure() { RecordId = recordId, ProductOperation = operation, Refer = "Č6x20", Name = "Čep dřevo 6 x 20", Qty = 6m * qty });
                     break;
                 case 'K':
-                    structure = new ProductStructure() { RecordId = recordId, ProductOperation = operation, Refer = "Kh12", Name = "Klíh 12MPa", Qty = 0.1m * qty };
+                    operation.StructureList.Add(new ProductStructure() { RecordId = recordId, ProductOperation = operation, Refer = "Kh12", Name = "Klíh 12MPa", Qty = 0.1m * qty });
                     break;
                 case 'l':
-                    structure = new ProductStructure() { RecordId = recordId, ProductOperation = operation, Refer = "Cx1050", Name = "Lak Nitro 1050", Qty = 0.1m * qty };
+                    operation.StructureList.Add(new ProductStructure() { RecordId = recordId, ProductOperation = operation, Refer = "Sx1050", Name = "Lak syntetic 1050", Qty = 0.1m * qty });
+                    operation.StructureList.Add(new ProductStructure() { RecordId = recordId, ProductOperation = operation, Refer = "S006", Name = "Syntetické ředidlo", Qty = 0.1m * qty });
                     break;
                 case 'B':
-                    structure = new ProductStructure() { RecordId = recordId, ProductOperation = operation, Refer = "BA95", Name = "Benzin Natural95", Qty = 0.04m * qty };
+                    operation.StructureList.Add(new ProductStructure() { RecordId = recordId, ProductOperation = operation, Refer = "BA95", Name = "Benzin Natural95", Qty = 0.04m * qty });
+                    break;
+                case 'O':
+                    operation.StructureList.Add(new ProductStructure() { RecordId = recordId, ProductOperation = operation, Refer = "Kt6", Name = "Karton 6\"", Qty = 1.00m * qty });
+                    operation.StructureList.Add(new ProductStructure() { RecordId = recordId, ProductOperation = operation, Refer = "Fb2", Name = "Folie bublinková", Qty = 0.10m * qty });
+                    break;
+                case 'Z':
+                    operation.StructureList.Add(new ProductStructure() { RecordId = recordId, ProductOperation = operation, Refer = "ZL", Name = "Záruční list 2roky", Qty = 1.00m * qty });
+                    operation.StructureList.Add(new ProductStructure() { RecordId = recordId, ProductOperation = operation, Refer = "Nobs", Name = "Návod k použití", Qty = 0.10m * qty });
                     break;
             }
             if (structure != null)
@@ -878,6 +886,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             gridLeft.GraphProperties.UpperSpaceLogical = 1f;
 
             GuiDataTable guiTable = new GuiDataTable() { ClassId = ProductOrder.ClassNumber };
+            guiTable.ClassId = 1188;
+            guiTable.TreeViewNodeOffset = 14;
+            guiTable.TreeViewLinkMode = GuiTreeViewLinkMode.Dot;
+            guiTable.TreeViewLinkColor = Color.DarkViolet;
             guiTable.AddColumn(new GuiDataColumn() { Name = "record_gid", BrowseColumnType = BrowseColumnType.RecordId, TableClassId = ProductOrder.ClassNumber });
             guiTable.AddColumn(new GuiDataColumn() { Name = "reference_subjektu", Title = "Číslo", Width = 85 });
             guiTable.AddColumn(new GuiDataColumn() { Name = "nazev_subjektu", Title = "Dílec", Width = 200 });
