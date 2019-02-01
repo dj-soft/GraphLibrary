@@ -5,6 +5,9 @@ using System.Text;
 
 namespace Asol.Tools.WorkScheduler.Rtf
 {
+    /// <summary>
+    /// Pokusná třída
+    /// </summary>
     public class RtfPaint
     {
     }

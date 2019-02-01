@@ -2012,318 +2012,124 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="match"> The System.Predicate&lt;T&gt; delegate that defines the conditions of the element to search for.</param>
         /// <returns></returns>
         public T Find(Predicate<T> match) { return this.List.Find(match); }
-        //
-        // Summary:
-        //     Retrieves all the elements that match the conditions defined by the specified
-        //     predicate.
-        //
-        // Parameters:
-        //   match:
-        //     The System.Predicate&lt;T&gt; delegate that defines the conditions of the elements
-        //     to search for.
-        //
-        // Returns:
-        //     A System.Collections.Generic.List&lt;T&gt; containing all the elements that match
-        //     the conditions defined by the specified predicate, if found; otherwise, an
-        //     empty System.Collections.Generic.List&lt;T&gt;.
-        //
-        // Exceptions:
-        //   System.ArgumentNullException:
-        //     match is null.
+        /// <summary>
+        /// Retrieves all the elements that match the conditions defined by the specified predicate.
+        /// </summary>
+        /// <param name="match">The System.Predicate&lt;T&gt; delegate that defines the conditions of the elements to search for.</param>
+        /// <returns></returns>
         public List<T> FindAll(Predicate<T> match) { return this.List.FindAll(match); }
-        //
-        // Summary:
-        //     Searches for an element that matches the conditions defined by the specified
-        //     predicate, and returns the zero-based index of the first occurrence within
-        //     the entire System.Collections.Generic.List&lt;T&gt;.
-        //
-        // Parameters:
-        //   match:
-        //     The System.Predicate&lt;T&gt; delegate that defines the conditions of the element
-        //     to search for.
-        //
-        // Returns:
-        //     The zero-based index of the first occurrence of an element that matches the
-        //     conditions defined by match, if found; otherwise, –1.
-        //
-        // Exceptions:
-        //   System.ArgumentNullException:
-        //     match is null.
+        /// <summary>
+        /// Searches for an element that matches the conditions defined by the specified predicate, and returns the zero-based index of the first occurrence within
+        /// the entire <see cref="System.Collections.Generic.List{T}"/>.
+        /// </summary>
+        /// <param name="match">The System.Predicate&lt;T&gt; delegate that defines the conditions of the element to search for.</param>
+        /// <returns>The zero-based index of the first occurrence of an element that matches the conditions defined by match, if found; otherwise, –1.</returns>
         public int FindIndex(Predicate<T> match) { return this.List.FindIndex(match); }
-        //
-        // Summary:
-        //     Searches for an element that matches the conditions defined by the specified
-        //     predicate, and returns the zero-based index of the first occurrence within
-        //     the range of elements in the System.Collections.Generic.List&lt;T&gt; that extends
-        //     from the specified index to the last element.
-        //
-        // Parameters:
-        //   startIndex:
-        //     The zero-based starting index of the search.
-        //
-        //   match:
-        //     The System.Predicate&lt;T&gt; delegate that defines the conditions of the element
-        //     to search for.
-        //
-        // Returns:
-        //     The zero-based index of the first occurrence of an element that matches the
-        //     conditions defined by match, if found; otherwise, –1.
-        //
-        // Exceptions:
-        //   System.ArgumentNullException:
-        //     match is null.
-        //
-        //   System.ArgumentOutOfRangeException:
-        //     startIndex is outside the range of valid indexes for the System.Collections.Generic.List&lt;T&gt;.
+        /// <summary>
+        /// Searches for an element that matches the conditions defined by the specified
+        /// predicate, and returns the zero-based index of the first occurrence within
+        /// the range of elements in the System.Collections.Generic.List&lt;T&gt; that extends
+        /// from the specified index to the last element.
+        /// </summary>
+        /// <param name="startIndex"></param>
+        /// <param name="match"></param>
+        /// <returns></returns>
         public int FindIndex(int startIndex, Predicate<T> match) { return this.List.FindIndex(startIndex, match); }
-        //
-        // Summary:
-        //     Searches for an element that matches the conditions defined by the specified
-        //     predicate, and returns the zero-based index of the first occurrence within
-        //     the range of elements in the System.Collections.Generic.List&lt;T&gt; that starts
-        //     at the specified index and contains the specified number of elements.
-        //
-        // Parameters:
-        //   startIndex:
-        //     The zero-based starting index of the search.
-        //
-        //   count:
-        //     The number of elements in the section to search.
-        //
-        //   match:
-        //     The System.Predicate&lt;T&gt; delegate that defines the conditions of the element
-        //     to search for.
-        //
-        // Returns:
-        //     The zero-based index of the first occurrence of an element that matches the
-        //     conditions defined by match, if found; otherwise, –1.
-        //
-        // Exceptions:
-        //   System.ArgumentNullException:
-        //     match is null.
-        //
-        //   System.ArgumentOutOfRangeException:
-        //     startIndex is outside the range of valid indexes for the System.Collections.Generic.List&lt;T&gt;.-or-count
-        //     is less than 0.-or-startIndex and count do not specify a valid section in
-        //     the System.Collections.Generic.List&lt;T&gt;.
+        /// <summary>
+        /// Searches for an element that matches the conditions defined by the specified
+        ///     predicate, and returns the zero-based index of the first occurrence within
+        ///     the range of elements in the System.Collections.Generic.List&lt;T&gt; that starts
+        ///     at the specified index and contains the specified number of elements.
+        /// </summary>
+        /// <param name="startIndex"></param>
+        /// <param name="count"></param>
+        /// <param name="match"></param>
+        /// <returns></returns>
         public int FindIndex(int startIndex, int count, Predicate<T> match) { return this.List.FindIndex(startIndex, count, match); }
-        //
-        // Summary:
-        //     Searches for an element that matches the conditions defined by the specified
-        //     predicate, and returns the last occurrence within the entire System.Collections.Generic.List&lt;T&gt;.
-        //
-        // Parameters:
-        //   match:
-        //     The System.Predicate&lt;T&gt; delegate that defines the conditions of the element
-        //     to search for.
-        //
-        // Returns:
-        //     The last element that matches the conditions defined by the specified predicate,
-        //     if found; otherwise, the default value for type T.
-        //
-        // Exceptions:
-        //   System.ArgumentNullException:
-        //     match is null.
+        /// <summary>
+        /// Searches for an element that matches the conditions defined by the specified
+        ///     predicate, and returns the last occurrence within the entire System.Collections.Generic.List&lt;T&gt;.
+        /// </summary>
+        /// <param name="match"></param>
+        /// <returns></returns>
         public T FindLast(Predicate<T> match) { return this.List.FindLast(match); }
-        //
-        // Summary:
-        //     Searches for an element that matches the conditions defined by the specified
-        //     predicate, and returns the zero-based index of the last occurrence within
-        //     the entire System.Collections.Generic.List&lt;T&gt;.
-        //
-        // Parameters:
-        //   match:
-        //     The System.Predicate&lt;T&gt; delegate that defines the conditions of the element
-        //     to search for.
-        //
-        // Returns:
-        //     The zero-based index of the last occurrence of an element that matches the
-        //     conditions defined by match, if found; otherwise, –1.
-        //
-        // Exceptions:
-        //   System.ArgumentNullException:
-        //     match is null.
+        /// <summary>
+        /// Searches for an element that matches the conditions defined by the specified
+        ///     predicate, and returns the zero-based index of the last occurrence within
+        ///     the entire System.Collections.Generic.List&lt;T&gt;.
+        /// </summary>
+        /// <param name="match"></param>
+        /// <returns></returns>
         public int FindLastIndex(Predicate<T> match) { return this.List.FindLastIndex(match); }
-        //
-        // Summary:
-        //     Searches for an element that matches the conditions defined by the specified
-        //     predicate, and returns the zero-based index of the last occurrence within
-        //     the range of elements in the System.Collections.Generic.List&lt;T&gt; that extends
-        //     from the first element to the specified index.
-        //
-        // Parameters:
-        //   startIndex:
-        //     The zero-based starting index of the backward search.
-        //
-        //   match:
-        //     The System.Predicate&lt;T&gt; delegate that defines the conditions of the element
-        //     to search for.
-        //
-        // Returns:
-        //     The zero-based index of the last occurrence of an element that matches the
-        //     conditions defined by match, if found; otherwise, –1.
-        //
-        // Exceptions:
-        //   System.ArgumentNullException:
-        //     match is null.
-        //
-        //   System.ArgumentOutOfRangeException:
-        //     startIndex is outside the range of valid indexes for the System.Collections.Generic.List&lt;T&gt;.
+        /// <summary>
+        /// Searches for an element that matches the conditions defined by the specified
+        ///     predicate, and returns the zero-based index of the last occurrence within
+        ///     the range of elements in the System.Collections.Generic.List&lt;T&gt; that extends
+        ///     from the first element to the specified index.
+        /// </summary>
+        /// <param name="startIndex"></param>
+        /// <param name="match"></param>
+        /// <returns></returns>
         public int FindLastIndex(int startIndex, Predicate<T> match) { return this.List.FindLastIndex(startIndex, match); }
-        //
-        // Summary:
-        //     Searches for an element that matches the conditions defined by the specified
-        //     predicate, and returns the zero-based index of the last occurrence within
-        //     the range of elements in the System.Collections.Generic.List&lt;T&gt; that contains
-        //     the specified number of elements and ends at the specified index.
-        //
-        // Parameters:
-        //   startIndex:
-        //     The zero-based starting index of the backward search.
-        //
-        //   count:
-        //     The number of elements in the section to search.
-        //
-        //   match:
-        //     The System.Predicate&lt;T&gt; delegate that defines the conditions of the element
-        //     to search for.
-        //
-        // Returns:
-        //     The zero-based index of the last occurrence of an element that matches the
-        //     conditions defined by match, if found; otherwise, –1.
-        //
-        // Exceptions:
-        //   System.ArgumentNullException:
-        //     match is null.
-        //
-        //   System.ArgumentOutOfRangeException:
-        //     startIndex is outside the range of valid indexes for the System.Collections.Generic.List&lt;T&gt;.-or-count
-        //     is less than 0.-or-startIndex and count do not specify a valid section in
-        //     the System.Collections.Generic.List&lt;T&gt;.
+        /// <summary>
+        ///     Searches for an element that matches the conditions defined by the specified
+        ///     predicate, and returns the zero-based index of the last occurrence within
+        ///     the range of elements in the System.Collections.Generic.List&lt;T&gt; that contains
+        ///     the specified number of elements and ends at the specified index.
+        /// </summary>
+        /// <param name="startIndex"></param>
+        /// <param name="count"></param>
+        /// <param name="match"></param>
+        /// <returns></returns>
         public int FindLastIndex(int startIndex, int count, Predicate<T> match) { return this.List.FindLastIndex(startIndex, count, match); }
-        //
-        // Summary:
-        //     Performs the specified action on each element of the System.Collections.Generic.List&lt;T&gt;.
-        //
-        // Parameters:
-        //   action:
-        //     The System.Action&lt;T&gt; delegate to perform on each element of the System.Collections.Generic.List&lt;T&gt;.
-        //
-        // Exceptions:
-        //   System.ArgumentNullException:
-        //     action is null.
+        /// <summary>
+        /// Performs the specified action on each element of the System.Collections.Generic.List&lt;T&gt;.
+        /// </summary>
+        /// <param name="action"></param>
         public void ForEach(Action<T> action) { this.List.ForEach(action); }
-        //
-        // Summary:
-        //     Returns an enumerator that iterates through the System.Collections.Generic.List&lt;T&gt;.
-        //
-        // Returns:
-        //     A System.Collections.Generic.List&lt;T&gt;.Enumerator for the System.Collections.Generic.List&lt;T&gt;.
+        /// <summary>
+        /// Returns an enumerator that iterates through the System.Collections.Generic.List&lt;T&gt;.
+        /// </summary>
+        /// <returns></returns>
         public List<T>.Enumerator GetEnumerator() { return this.List.GetEnumerator(); }
-        //
-        // Summary:
-        //     Creates a shallow copy of a range of elements in the source System.Collections.Generic.List&lt;T&gt;.
-        //
-        // Parameters:
-        //   index:
-        //     The zero-based System.Collections.Generic.List&lt;T&gt; index at which the range
-        //     starts.
-        //
-        //   count:
-        //     The number of elements in the range.
-        //
-        // Returns:
-        //     A shallow copy of a range of elements in the source System.Collections.Generic.List&lt;T&gt;.
-        //
-        // Exceptions:
-        //   System.ArgumentOutOfRangeException:
-        //     index is less than 0.-or-count is less than 0.
-        //
-        //   System.ArgumentException:
-        //     index and count do not denote a valid range of elements in the System.Collections.Generic.List&lt;T&gt;.
+        /// <summary>
+        /// Creates a shallow copy of a range of elements in the source System.Collections.Generic.List&lt;T&gt;.
+        /// </summary>
+        /// <param name="index"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
         public List<T> GetRange(int index, int count) { return this.List.GetRange(index, count); }
-        //
-        // Summary:
-        //     Searches for the specified object and returns the zero-based index of the
-        //     first occurrence within the entire System.Collections.Generic.List&lt;T&gt;.
-        //
-        // Parameters:
-        //   item:
-        //     The object to locate in the System.Collections.Generic.List&lt;T&gt;. The value
-        //     can be null for reference types.
-        //
-        // Returns:
-        //     The zero-based index of the first occurrence of item within the entire System.Collections.Generic.List&lt;T&gt;,
-        //     if found; otherwise, –1.
+        /// <summary>
+        ///     Searches for the specified object and returns the zero-based index of the
+        ///     first occurrence within the entire System.Collections.Generic.List&lt;T&gt;.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
         public int IndexOf(T item) { return this.List.IndexOf(item); }
-        //
-        // Summary:
-        //     Searches for the specified object and returns the zero-based index of the
-        //     first occurrence within the range of elements in the System.Collections.Generic.List&lt;T&gt;
-        //     that extends from the specified index to the last element.
-        //
-        // Parameters:
-        //   item:
-        //     The object to locate in the System.Collections.Generic.List&lt;T&gt;. The value
-        //     can be null for reference types.
-        //
-        //   index:
-        //     The zero-based starting index of the search. 0 (zero) is valid in an empty
-        //     list.
-        //
-        // Returns:
-        //     The zero-based index of the first occurrence of item within the range of
-        //     elements in the System.Collections.Generic.List&lt;T&gt; that extends from index
-        //     to the last element, if found; otherwise, –1.
-        //
-        // Exceptions:
-        //   System.ArgumentOutOfRangeException:
-        //     index is outside the range of valid indexes for the System.Collections.Generic.List&lt;T&gt;.
+        /// <summary>
+        ///     Searches for the specified object and returns the zero-based index of the
+        ///     first occurrence within the range of elements in the System.Collections.Generic.List&lt;T&gt;
+        ///     that extends from the specified index to the last element.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="index"></param>
+        /// <returns></returns>
         public int IndexOf(T item, int index) { return this.List.IndexOf(item, index); }
-        //
-        // Summary:
-        //     Searches for the specified object and returns the zero-based index of the
-        //     first occurrence within the range of elements in the System.Collections.Generic.List&lt;T&gt;
-        //     that starts at the specified index and contains the specified number of elements.
-        //
-        // Parameters:
-        //   item:
-        //     The object to locate in the System.Collections.Generic.List&lt;T&gt;. The value
-        //     can be null for reference types.
-        //
-        //   index:
-        //     The zero-based starting index of the search. 0 (zero) is valid in an empty
-        //     list.
-        //
-        //   count:
-        //     The number of elements in the section to search.
-        //
-        // Returns:
-        //     The zero-based index of the first occurrence of item within the range of
-        //     elements in the System.Collections.Generic.List&lt;T&gt; that starts at index and
-        //     contains count number of elements, if found; otherwise, –1.
-        //
-        // Exceptions:
-        //   System.ArgumentOutOfRangeException:
-        //     index is outside the range of valid indexes for the System.Collections.Generic.List&lt;T&gt;.-or-count
-        //     is less than 0.-or-index and count do not specify a valid section in the
-        //     System.Collections.Generic.List&lt;T&gt;.
+        /// <summary>
+        ///     Searches for the specified object and returns the zero-based index of the
+        ///     first occurrence within the range of elements in the System.Collections.Generic.List&lt;T&gt;
+        ///     that starts at the specified index and contains the specified number of elements.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="index"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
         public int IndexOf(T item, int index, int count) { return this.List.IndexOf(item, index, count); }
-        //
-        // Summary:
-        //     Inserts an element into the System.Collections.Generic.List&lt;T&gt; at the specified
-        //     index.
-        //
-        // Parameters:
-        //   index:
-        //     The zero-based index at which item should be inserted.
-        //
-        //   item:
-        //     The object to insert. The value can be null for reference types.
-        //
-        // Exceptions:
-        //   System.ArgumentOutOfRangeException:
-        //     index is less than 0.-or-index is greater than System.Collections.Generic.List&lt;T&gt;.Count.
+        /// <summary>
+        /// Inserts an element into the System.Collections.Generic.List&lt;T&gt; at the specified index.
+        /// </summary>
+        /// <param name="index"></param>
+        /// <param name="item"></param>
         public void Insert(int index, T item)
         {
             if (this.CanAddItem(item, index))
@@ -2332,26 +2138,11 @@ namespace Asol.Tools.WorkScheduler.Data
                 this.OnAddItemAfter(item, index);
             }
         }
-        //
-        // Summary:
-        //     Inserts the elements of a collection into the System.Collections.Generic.List&lt;T&gt;
-        //     at the specified index.
-        //
-        // Parameters:
-        //   index:
-        //     The zero-based index at which the new elements should be inserted.
-        //
-        //   collection:
-        //     The collection whose elements should be inserted into the System.Collections.Generic.List&lt;T&gt;.
-        //     The collection itself cannot be null, but it can contain elements that are
-        //     null, if type T is a reference type.
-        //
-        // Exceptions:
-        //   System.ArgumentNullException:
-        //     collection is null.
-        //
-        //   System.ArgumentOutOfRangeException:
-        //     index is less than 0.-or-index is greater than System.Collections.Generic.List&lt;T&gt;.Count.
+        /// <summary>
+        /// Inserts the elements of a collection into the System.Collections.Generic.List&lt;T&gt; at the specified index.
+        /// </summary>
+        /// <param name="index"></param>
+        /// <param name="collection"></param>
         public void InsertRange(int index, IEnumerable<T> collection)
         {
             if (this.CanChangeList(CollectionChangeType.AddRange, default(T), index))
@@ -2360,84 +2151,37 @@ namespace Asol.Tools.WorkScheduler.Data
                 this.OnChangeListAfter(CollectionChangeType.AddRange, default(T), index);
             }
         }
-        //
-        // Summary:
-        //     Searches for the specified object and returns the zero-based index of the
-        //     last occurrence within the entire System.Collections.Generic.List&lt;T&gt;.
-        //
-        // Parameters:
-        //   item:
-        //     The object to locate in the System.Collections.Generic.List&lt;T&gt;. The value
-        //     can be null for reference types.
-        //
-        // Returns:
-        //     The zero-based index of the last occurrence of item within the entire the
-        //     System.Collections.Generic.List&lt;T&gt;, if found; otherwise, –1.
+        /// <summary>
+        /// Searches for the specified object and returns the zero-based index of the last occurrence within the entire System.Collections.Generic.List&lt;T&gt;.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
         public int LastIndexOf(T item) { return this.List.LastIndexOf(item); }
-        //
-        // Summary:
-        //     Searches for the specified object and returns the zero-based index of the
-        //     last occurrence within the range of elements in the System.Collections.Generic.List&lt;T&gt;
-        //     that extends from the first element to the specified index.
-        //
-        // Parameters:
-        //   item:
-        //     The object to locate in the System.Collections.Generic.List&lt;T&gt;. The value
-        //     can be null for reference types.
-        //
-        //   index:
-        //     The zero-based starting index of the backward search.
-        //
-        // Returns:
-        //     The zero-based index of the last occurrence of item within the range of elements
-        //     in the System.Collections.Generic.List&lt;T&gt; that extends from the first element
-        //     to index, if found; otherwise, –1.
-        //
-        // Exceptions:
-        //   System.ArgumentOutOfRangeException:
-        //     index is outside the range of valid indexes for the System.Collections.Generic.List&lt;T&gt;.
+        /// <summary>
+        ///  Searches for the specified object and returns the zero-based index of the
+        ///     last occurrence within the range of elements in the System.Collections.Generic.List&lt;T&gt;
+        ///     that extends from the first element to the specified index.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="index"></param>
+        /// <returns></returns>
         public int LastIndexOf(T item, int index) { return this.List.LastIndexOf(item, index); }
-        //
-        // Summary:
-        //     Searches for the specified object and returns the zero-based index of the
-        //     last occurrence within the range of elements in the System.Collections.Generic.List&lt;T&gt;
-        //     that contains the specified number of elements and ends at the specified
-        //     index.
-        //
-        // Parameters:
-        //   item:
-        //     The object to locate in the System.Collections.Generic.List&lt;T&gt;. The value
-        //     can be null for reference types.
-        //
-        //   index:
-        //     The zero-based starting index of the backward search.
-        //
-        //   count:
-        //     The number of elements in the section to search.
-        //
-        // Returns:
-        //     The zero-based index of the last occurrence of item within the range of elements
-        //     in the System.Collections.Generic.List&lt;T&gt; that contains count number of elements
-        //     and ends at index, if found; otherwise, –1.
-        //
-        // Exceptions:
-        //   System.ArgumentOutOfRangeException:
-        //     index is outside the range of valid indexes for the System.Collections.Generic.List&lt;T&gt;.-or-count
-        //     is less than 0.-or-index and count do not specify a valid section in the
-        //     System.Collections.Generic.List&lt;T&gt;.
+        /// <summary>
+        ///     Searches for the specified object and returns the zero-based index of the
+        ///     last occurrence within the range of elements in the System.Collections.Generic.List&lt;T&gt;
+        ///     that contains the specified number of elements and ends at the specified
+        ///     index.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="index"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
         public int LastIndexOf(T item, int index, int count) { return this.List.LastIndexOf(item, index, count); }
-        //
-        // Summary:
-        //     Removes the first occurrence of a specific object from the System.Collections.Generic.List&lt;T&gt;.
-        //
-        // Parameters:
-        //   item:
-        //     The object to remove from the System.Collections.Generic.List&lt;T&gt;. The value
-        //     can be null for reference types.
-        //
-        // Returns:
-        //     true if item is successfully removed; otherwise, false. This method also
-        //     returns false if item was not found in the System.Collections.Generic.List&lt;T&gt;.
+        /// <summary>
+        /// Removes the first occurrence of a specific object from the System.Collections.Generic.List&lt;T&gt;.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
         public bool Remove(T item)
         {
             bool result = false;
@@ -2448,23 +2192,11 @@ namespace Asol.Tools.WorkScheduler.Data
             }
             return result;
         }
-        //
-        // Summary:
-        //     Removes the all the elements that match the conditions defined by the specified
-        //     predicate.
-        //
-        // Parameters:
-        //   match:
-        //     The System.Predicate&lt;T&gt; delegate that defines the conditions of the elements
-        //     to remove.
-        //
-        // Returns:
-        //     The number of elements removed from the System.Collections.Generic.List&lt;T&gt;
-        //     .
-        //
-        // Exceptions:
-        //   System.ArgumentNullException:
-        //     match is null.
+        /// <summary>
+        /// Removes the all the elements that match the conditions defined by the specified predicate.
+        /// </summary>
+        /// <param name="match"></param>
+        /// <returns></returns>
         public int RemoveAll(Predicate<T> match)
         {
             int result = -1;
@@ -2475,38 +2207,19 @@ namespace Asol.Tools.WorkScheduler.Data
             }
             return result;
         }
-        //
-        // Summary:
-        //     Removes the element at the specified index of the System.Collections.Generic.List&lt;T&gt;.
-        //
-        // Parameters:
-        //   index:
-        //     The zero-based index of the element to remove.
-        //
-        // Exceptions:
-        //   System.ArgumentOutOfRangeException:
-        //     index is less than 0.-or-index is equal to or greater than System.Collections.Generic.List&lt;T&gt;.Count.
+        /// <summary>
+        /// Removes the element at the specified index of the System.Collections.Generic.List&lt;T&gt;.
+        /// </summary>
+        /// <param name="index"></param>
         public void RemoveAt(int index)
         {
             this._RemoveOnRange(index, 1, null);
         }
-        //
-        // Summary:
-        //     Removes a range of elements from the System.Collections.Generic.List&lt;T&gt;.
-        //
-        // Parameters:
-        //   index:
-        //     The zero-based starting index of the range of elements to remove.
-        //
-        //   count:
-        //     The number of elements to remove.
-        //
-        // Exceptions:
-        //   System.ArgumentOutOfRangeException:
-        //     index is less than 0.-or-count is less than 0.
-        //
-        //   System.ArgumentException:
-        //     index and count do not denote a valid range of elements in the System.Collections.Generic.List&lt;T&gt;.
+        /// <summary>
+        /// Removes a range of elements from the System.Collections.Generic.List&lt;T&gt;.
+        /// </summary>
+        /// <param name="index"></param>
+        /// <param name="count"></param>
         public void RemoveRange(int index, int count)
         {
             if (this.CanChangeList(CollectionChangeType.RemoveAll))
@@ -2515,23 +2228,12 @@ namespace Asol.Tools.WorkScheduler.Data
                 this.OnChangeListAfter(CollectionChangeType.RemoveAll);
             }
         }
-        //
-        // Summary:
-        //     Removes a range of elements from the System.Collections.Generic.List&lt;T&gt;.
-        //
-        // Parameters:
-        //   index:
-        //     The zero-based starting index of the range of elements to remove.
-        //
-        //   count:
-        //     The number of elements to remove.
-        //
-        // Exceptions:
-        //   System.ArgumentOutOfRangeException:
-        //     index is less than 0.-or-count is less than 0.
-        //
-        //   System.ArgumentException:
-        //     index and count do not denote a valid range of elements in the System.Collections.Generic.List&lt;T&gt;.
+        /// <summary>
+        /// Removes a range of elements from the System.Collections.Generic.List&lt;T&gt;.
+        /// </summary>
+        /// <param name="index"></param>
+        /// <param name="count"></param>
+        /// <param name="match"></param>
         public void RemoveRange(int index, int count, Predicate<T> match)
         {
             if (this.CanChangeList(CollectionChangeType.RemoveAll))
@@ -2568,9 +2270,9 @@ namespace Asol.Tools.WorkScheduler.Data
                 i--;
             }
         }
-        //
-        // Summary:
-        //     Reverses the order of the elements in the entire System.Collections.Generic.List&lt;T&gt;.
+        /// <summary>
+        /// Reverses the order of the elements in the entire System.Collections.Generic.List&lt;T&gt;.
+        /// </summary>
         public void Reverse()
         {
             if (this.CanChangeList(CollectionChangeType.ChangeOrder))
@@ -2579,23 +2281,11 @@ namespace Asol.Tools.WorkScheduler.Data
                 this.OnChangeListAfter(CollectionChangeType.ChangeOrder);
             }
         }
-        //
-        // Summary:
-        //     Reverses the order of the elements in the specified range.
-        //
-        // Parameters:
-        //   index:
-        //     The zero-based starting index of the range to reverse.
-        //
-        //   count:
-        //     The number of elements in the range to reverse.
-        //
-        // Exceptions:
-        //   System.ArgumentOutOfRangeException:
-        //     index is less than 0.-or-count is less than 0.
-        //
-        //   System.ArgumentException:
-        //     index and count do not denote a valid range of elements in the System.Collections.Generic.List&lt;T&gt;.
+        /// <summary>
+        /// Reverses the order of the elements in the specified range.
+        /// </summary>
+        /// <param name="index"></param>
+        /// <param name="count"></param>
         public void Reverse(int index, int count)
         {
             if (this.CanChangeList(CollectionChangeType.ChangeOrder))
@@ -2604,16 +2294,9 @@ namespace Asol.Tools.WorkScheduler.Data
                 this.OnChangeListAfter(CollectionChangeType.ChangeOrder);
             }
         }
-        //
-        // Summary:
-        //     Sorts the elements in the entire System.Collections.Generic.List&lt;T&gt; using
-        //     the default comparer.
-        //
-        // Exceptions:
-        //   System.InvalidOperationException:
-        //     The default comparer System.Collections.Generic.Comparer&lt;T&gt;.Default cannot
-        //     find an implementation of the System.IComparable&lt;T&gt; generic interface or
-        //     the System.IComparable interface for type T.
+        /// <summary>
+        /// Sorts the elements in the entire System.Collections.Generic.List&lt;T&gt; using the default comparer.
+        /// </summary>
         public void Sort()
         {
             if (this.CanChangeList(CollectionChangeType.ChangeOrder))
@@ -2622,22 +2305,10 @@ namespace Asol.Tools.WorkScheduler.Data
                 this.OnChangeListAfter(CollectionChangeType.ChangeOrder);
             }
         }
-        //
-        // Summary:
-        //     Sorts the elements in the entire System.Collections.Generic.List&lt;T&gt; using
-        //     the specified System.Comparison&lt;T&gt;.
-        //
-        // Parameters:
-        //   comparison:
-        //     The System.Comparison&lt;T&gt; to use when comparing elements.
-        //
-        // Exceptions:
-        //   System.ArgumentNullException:
-        //     comparison is null.
-        //
-        //   System.ArgumentException:
-        //     The implementation of comparison caused an error during the sort. For example,
-        //     comparison might not return 0 when comparing an item with itself.
+        /// <summary>
+        /// Sorts the elements in the entire System.Collections.Generic.List&lt;T&gt; using the specified System.Comparison&lt;T&gt;.
+        /// </summary>
+        /// <param name="comparison"></param>
         public void Sort(Comparison<T> comparison)
         {
             if (this.CanChangeList(CollectionChangeType.ChangeOrder))
@@ -2646,25 +2317,10 @@ namespace Asol.Tools.WorkScheduler.Data
                 this.OnChangeListAfter(CollectionChangeType.ChangeOrder);
             }
         }
-        //
-        // Summary:
-        //     Sorts the elements in the entire System.Collections.Generic.List&lt;T&gt; using
-        //     the specified comparer.
-        //
-        // Parameters:
-        //   comparer:
-        //     The System.Collections.Generic.IComparer&lt;T&gt; implementation to use when comparing
-        //     elements, or null to use the default comparer System.Collections.Generic.Comparer&lt;T&gt;.Default.
-        //
-        // Exceptions:
-        //   System.InvalidOperationException:
-        //     comparer is null, and the default comparer System.Collections.Generic.Comparer&lt;T&gt;.Default
-        //     cannot find implementation of the System.IComparable&lt;T&gt; generic interface
-        //     or the System.IComparable interface for type T.
-        //
-        //   System.ArgumentException:
-        //     The implementation of comparer caused an error during the sort. For example,
-        //     comparer might not return 0 when comparing an item with itself.
+        /// <summary>
+        /// Sorts the elements in the entire System.Collections.Generic.List&lt;T&gt; using the specified comparer.
+        /// </summary>
+        /// <param name="comparer"></param>
         public void Sort(IComparer<T> comparer)
         {
             if (this.CanChangeList(CollectionChangeType.ChangeOrder))
@@ -2673,35 +2329,12 @@ namespace Asol.Tools.WorkScheduler.Data
                 this.OnChangeListAfter(CollectionChangeType.ChangeOrder);
             }
         }
-        //
-        // Summary:
-        //     Sorts the elements in a range of elements in System.Collections.Generic.List&lt;T&gt;
-        //     using the specified comparer.
-        //
-        // Parameters:
-        //   index:
-        //     The zero-based starting index of the range to sort.
-        //
-        //   count:
-        //     The length of the range to sort.
-        //
-        //   comparer:
-        //     The System.Collections.Generic.IComparer&lt;T&gt; implementation to use when comparing
-        //     elements, or null to use the default comparer System.Collections.Generic.Comparer&lt;T&gt;.Default.
-        //
-        // Exceptions:
-        //   System.ArgumentOutOfRangeException:
-        //     index is less than 0.-or-count is less than 0.
-        //
-        //   System.ArgumentException:
-        //     index and count do not specify a valid range in the System.Collections.Generic.List&lt;T&gt;.-or-The
-        //     implementation of comparer caused an error during the sort. For example,
-        //     comparer might not return 0 when comparing an item with itself.
-        //
-        //   System.InvalidOperationException:
-        //     comparer is null, and the default comparer System.Collections.Generic.Comparer&lt;T&gt;.Default
-        //     cannot find implementation of the System.IComparable&lt;T&gt; generic interface
-        //     or the System.IComparable interface for type T.
+        /// <summary>
+        /// Sorts the elements in a range of elements in System.Collections.Generic.List&lt;T&gt; using the specified comparer.
+        /// </summary>
+        /// <param name="index"></param>
+        /// <param name="count"></param>
+        /// <param name="comparer"></param>
         public void Sort(int index, int count, IComparer<T> comparer)
         {
             if (this.CanChangeList(CollectionChangeType.ChangeOrder))
@@ -2710,36 +2343,20 @@ namespace Asol.Tools.WorkScheduler.Data
                 this.OnChangeListAfter(CollectionChangeType.ChangeOrder);
             }
         }
-        //
-        // Summary:
-        //     Copies the elements of the System.Collections.Generic.List&lt;T&gt; to a new array.
-        //
-        // Returns:
-        //     An array containing copies of the elements of the System.Collections.Generic.List&lt;T&gt;.
+        /// <summary>
+        /// Copies the elements of the System.Collections.Generic.List&lt;T&gt; to a new array.
+        /// </summary>
+        /// <returns></returns>
         public T[] ToArray() { return this.List.ToArray(); }
-        //
-        // Summary:
-        //     Sets the capacity to the actual number of elements in the System.Collections.Generic.List&lt;T&gt;,
-        //     if that number is less than a threshold value.
+        /// <summary>
+        /// Sets the capacity to the actual number of elements in the System.Collections.Generic.List&lt;T&gt;, if that number is less than a threshold value.
+        /// </summary>
         public void TrimExcess() { this.List.TrimExcess(); }
-        //
-        // Summary:
-        //     Determines whether every element in the System.Collections.Generic.List&lt;T&gt;
-        //     matches the conditions defined by the specified predicate.
-        //
-        // Parameters:
-        //   match:
-        //     The System.Predicate&lt;T&gt; delegate that defines the conditions to check against
-        //     the elements.
-        //
-        // Returns:
-        //     true if every element in the System.Collections.Generic.List&lt;T&gt; matches the
-        //     conditions defined by the specified predicate; otherwise, false. If the list
-        //     has no elements, the return value is true.
-        //
-        // Exceptions:
-        //   System.ArgumentNullException:
-        //     match is null.
+        /// <summary>
+        /// Determines whether every element in the System.Collections.Generic.List&lt;T&gt; matches the conditions defined by the specified predicate.
+        /// </summary>
+        /// <param name="match"></param>
+        /// <returns></returns>
         public bool TrueForAll(Predicate<T> match) { return this.List.TrueForAll(match); }
         #endregion
         #region Silent methods (does not call any events)

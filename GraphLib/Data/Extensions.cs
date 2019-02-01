@@ -750,7 +750,6 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <summary>
         /// Vrací danou kolekci sestavenou do jednoho stringu
         /// </summary>
-        /// <typeparam name="T"></typeparam>
         /// <param name="collection"></param>
         /// <param name="delimiter"></param>
         /// <returns></returns>

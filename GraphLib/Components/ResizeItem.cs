@@ -541,7 +541,7 @@ namespace Asol.Tools.WorkScheduler.Components
     #region interface IResizeObject + class ResizeObjectArgs
     /// <summary>
     /// Interface pro objekt, který dovoluje být resizován pomocí <see cref="ResizeControl"/>, a chce dostávat rozšíření informace o procesu Resize.
-    /// Objekt musí implementovat metodu <see cref="SetBoundsResized(Rectangle, RectangleSide, DragActionType)"/>
+    /// Objekt musí implementovat metodu <see cref="SetBoundsResized(ResizeObjectArgs)"/>
     /// </summary>
     public interface IResizeObject
     {

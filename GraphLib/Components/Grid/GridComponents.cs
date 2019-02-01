@@ -1983,7 +1983,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grid
         /// <summary>
         /// Souřadnice ikony TreeView (ekvivalent [+] nebo [-], rozbalí/sbalí node).
         /// Souřadnice je null, když buňka nemá vykreslenou ikonu (tj. není vizuálně aktivní node)¨.
-        /// Souřadnice je absolutní, a určuje ji <see cref="GTable"/> v metodě <see cref="GTable.DrawTreeView(GInteractiveDrawArgs, Cell, int, int, Rectangle, bool, bool, TreeViewLinkMode, Color?)"/>.
+        /// Souřadnice je absolutní, a určuje ji <see cref="GTable"/> v metodě <see cref="GTable.DrawTreeView(GInteractiveDrawArgs, TreeViewDrawArgs)"/>.
         /// </summary>
         protected Rectangle? TreeViewIconBounds { get; set; }
         /// <summary>
