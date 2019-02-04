@@ -877,13 +877,13 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 case GInteractiveChangeState.MouseEnter:
                     e.RequiredCursorType = (_IsHorizontal ? SysCursorType.HSplit : SysCursorType.VSplit);
-                    this.RepaintToLayers = GInteractiveDrawLayer.Standard;
+                    this.Repaint();
                     break;
 
                 case GInteractiveChangeState.LeftDragMoveBegin:
                     this._LocationOriginal = this.Value;
                     e.UserDragPoint = new Point(this.Value, this.Value);
-                    this.RepaintToLayers = GInteractiveDrawLayer.Standard;
+                    this.Repaint();
                     break;
                 case GInteractiveChangeState.LeftDragMoveStep:
                     if (e.UserDragPoint.HasValue)
@@ -912,7 +912,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     break;
                 case GInteractiveChangeState.MouseLeave:
                     e.RequiredCursorType = SysCursorType.Default;
-                    this.RepaintToLayers = GInteractiveDrawLayer.Standard;
+                    this.Repaint();
                     break;
             }
 

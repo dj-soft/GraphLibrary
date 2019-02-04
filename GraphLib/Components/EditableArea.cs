@@ -545,28 +545,28 @@ namespace Asol.Tools.WorkScheduler.Components
                 case GInteractiveChangeState.MouseEnter:
                     // Mouse can Enter to main item = this (childItem != null), or to child item (childItem != null):
                     this.ActiveChild = childItem;
-                    this.RepaintToLayers = GInteractiveDrawLayer.Standard;
+                    this.Repaint();
                     if (childItem != null)
                         e.RequiredCursorType = childItem.OverCursorType;
                     break;
                 case GInteractiveChangeState.MouseLeave:
                     // Mouse can Leave from main item = this (childItem != null), or from child item (childItem != null):
                     this.ActiveChild = null;
-                    this.RepaintToLayers = GInteractiveDrawLayer.Standard;
+                    this.Repaint();
                     if (childItem != null)
                         e.RequiredCursorType = SysCursorType.Default;
                     else
                         e.RepaintAllItems = true;
                     break;
                 case GInteractiveChangeState.MouseOver:
-                    this.RepaintToLayers = GInteractiveDrawLayer.Standard;
+                    this.Repaint();
                     break;
                 case GInteractiveChangeState.LeftDragMoveBegin:
                     if (childItem != null && childItem.CanDrag)
                     {
                         this.BoundsDragOrigin = this.Bounds;
                         this.ActiveChild = childItem;
-                        this.RepaintToLayers = GInteractiveDrawLayer.Standard | GInteractiveDrawLayer.Interactive;
+                        this.Repaint(GInteractiveDrawLayer.Standard | GInteractiveDrawLayer.Interactive);
                         e.RepaintAllItems = true;
                         e.RequiredCursorType = childItem.DragCursorType;
                         e.UserDragPoint = this.Bounds.Location.Add(childItem.ActivePoint);
@@ -575,7 +575,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 case GInteractiveChangeState.LeftDragMoveStep:
                     if (this.ActiveChild != null && this.ActiveChild.CanDrag && e.UserDragPoint.HasValue)
                     {
-                        this.RepaintToLayers |= GInteractiveDrawLayer.Interactive;
+                        this.Repaint(GInteractiveDrawLayer.Standard | GInteractiveDrawLayer.Interactive);
                         Point currentPoint = e.UserDragPoint.Value;
                         this.CalculateNewBounds(this.ActiveChild, e.UserDragPoint.Value);
                         
@@ -591,7 +591,7 @@ namespace Asol.Tools.WorkScheduler.Components
                         Rectangle oldBounds = this.Bounds;
                         Rectangle newBounds = this.BoundsDragOrigin.Value;
                         this.SetBounds(newBounds, ProcessAction.PrepareInnerItems, EventSourceType.InteractiveChanged);
-                        this.RepaintToLayers = GInteractiveDrawLayer.Standard;
+                        this.Repaint();
                     }
                     break;
                 case GInteractiveChangeState.LeftDragMoveDone:
@@ -600,7 +600,7 @@ namespace Asol.Tools.WorkScheduler.Components
                         Rectangle newBounds = this.Bounds;
                         Rectangle oldBounds = (this.BoundsDragOrigin.HasValue ? this.BoundsDragOrigin.Value : newBounds);
                         this.CallBoundsChanged(oldBounds, newBounds, EventSourceType.InteractiveChanged | EventSourceType.BoundsChange);
-                        this.RepaintToLayers = GInteractiveDrawLayer.Standard;
+                        this.Repaint();
                     }
                     break;
                 case GInteractiveChangeState.LeftDragMoveEnd:

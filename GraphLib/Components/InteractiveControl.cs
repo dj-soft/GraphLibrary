@@ -1790,6 +1790,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Zajistí překreslení všech prvků
         /// </summary>
+        /// <param name="repaintLayers"></param>
+        protected virtual void Repaint(GInteractiveDrawLayer repaintLayers)
+        {
+            this.Repaint();
+        }
+        /// <summary>
+        /// Zajistí překreslení všech prvků
+        /// </summary>
         protected virtual void Repaint()
         {
             this._RepaintAllItems = true;
@@ -3245,6 +3253,7 @@ namespace Asol.Tools.WorkScheduler.Components
         IInteractiveParent IInteractiveParent.Parent { get { return null; } set { } }
         Size IInteractiveParent.ClientSize { get { return this.ClientSize; } }
         void IInteractiveParent.Repaint() { this.Repaint(); }
+        void IInteractiveParent.Repaint(GInteractiveDrawLayer repaintLayers) { this.Repaint(repaintLayers); }
         #endregion
     }
     #endregion

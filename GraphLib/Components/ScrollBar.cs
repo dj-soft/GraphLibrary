@@ -1040,36 +1040,36 @@ namespace Asol.Tools.WorkScheduler.Components
                 case GInteractiveChangeState.MouseEnter:
                     // Mouse can Enter to main item = this (childItem != null), or to child item (childItem != null):
                     this.ActiveChild = childItem;
-                    this.RepaintToLayers = GInteractiveDrawLayer.Standard;
+                    this.Repaint();
                     if (childItem != null)
                         e.RequiredCursorType = childItem.OverCursorType;
                     break;
                 case GInteractiveChangeState.MouseLeave:
                     // Mouse can Leave from main item = this (childItem != null), or from child item (childItem != null):
                     this.ActiveChild = null;
-                    this.RepaintToLayers = GInteractiveDrawLayer.Standard;
+                    this.Repaint();
                     if (childItem != null)
                         e.RequiredCursorType = SysCursorType.Default;
                     break;
                 case GInteractiveChangeState.MouseOver:
-                    this.RepaintToLayers = GInteractiveDrawLayer.Standard;
+                    this.Repaint();
                     break;
                 case GInteractiveChangeState.LeftDown:
                     if (childItem != null && childItem.Is.Enabled && (itemType == ChildItemType.MinArrow || itemType == ChildItemType.MinArea || itemType == ChildItemType.MaxArea || itemType == ChildItemType.MaxArrow))
                         this.CalculateBoundsInteractiveClick(childItem);
-                    this.RepaintToLayers = GInteractiveDrawLayer.Standard;
+                    this.Repaint();
                     break;
                 case GInteractiveChangeState.LeftUp:
-                    this.RepaintToLayers = GInteractiveDrawLayer.Standard;
+                    this.Repaint();
                     break;
                 case GInteractiveChangeState.LeftClick:
-                    this.RepaintToLayers = GInteractiveDrawLayer.Standard;
+                    this.Repaint();
                     break;
                 case GInteractiveChangeState.LeftDragMoveBegin:
                     if (childItem != null && childItem.CanDrag)
                     {
                         this.ActiveChild = childItem;
-                        this.RepaintToLayers = GInteractiveDrawLayer.Standard;
+                        this.Repaint();
                         e.RequiredCursorType = childItem.DragCursorType;
                         e.UserDragPoint = childItem.Bounds.Location;
                     }
@@ -1129,7 +1129,7 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 bounds.X = x;
                 subItem.Bounds = bounds;
-                this.RepaintToLayers = GInteractiveDrawLayer.Standard;
+                this.Repaint();
             }
         }
         /// <summary>
@@ -1145,7 +1145,7 @@ namespace Asol.Tools.WorkScheduler.Components
             {
                 bounds.Y = y;
                 subItem.Bounds = bounds;
-                this.RepaintToLayers = GInteractiveDrawLayer.Standard;
+                this.Repaint();
             }
         }
         /// <summary>

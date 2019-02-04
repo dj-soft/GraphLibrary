@@ -157,9 +157,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         Size ClientSize { get; }
         /// <summary>
-        /// Zajistí vykreslení sebe a svých Childs
+        /// Zajistí vykreslení sebe a svých Childs, volitelně i svého parenta, do svých standardních vrstev
         /// </summary>
         void Repaint();
+        /// <summary>
+        /// Zajistí vykreslení sebe a svých Childs, volitelně i svého parenta, do dané vrstvy
+        /// </summary>
+        /// <param name="repaintLayers">Dané vrstvy ke kreslení</param>
+        void Repaint(GInteractiveDrawLayer repaintLayers);
     }
     /// <summary>
     /// Interface, který umožní child prvku číst a měnit rozměry některého svého hostitele.

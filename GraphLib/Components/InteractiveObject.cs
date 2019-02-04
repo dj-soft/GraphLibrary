@@ -331,7 +331,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected void CallDrawRequest(EventSourceType eventSource)
         {
-            this.RepaintToLayers = this.StandardDrawToLayer;
+            this.Repaint();
             this.OnDrawRequest();
             if (!this.IsSuppressedEvent && this.DrawRequest != null)
                 this.DrawRequest(this, EventArgs.Empty);
@@ -360,7 +360,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         /// <summary>
         /// Vrstvy, do nichž se běžně má vykreslovat tento objekt.
-        /// Tato hodnota se v metodě <see cref="InteractiveObject.Repaint()"/> vepíše do <see cref="InteractiveObject.RepaintToLayers"/>.
+        /// Tato hodnota se v metodě <see cref="InteractiveObject.Repaint()"/> použije jako informace, do kterých vrstev se má prvek překreslit.
         /// Vrstva <see cref="GInteractiveDrawLayer.Standard"/> je běžná pro normální kreslení;
         /// vrstva <see cref="GInteractiveDrawLayer.Interactive"/> se používá při Drag and Drop;
         /// vrstva <see cref="GInteractiveDrawLayer.Dynamic"/> se používá pro kreslení linek mezi prvky nad vrstvou při přetahování.
@@ -379,20 +379,34 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected virtual bool NeedDrawOverChilds { get; set; }
         /// <summary>
-        /// Zajistí, že this prvek bude standardně vykreslen včetně všech svých <see cref="Childs"/>.
+        /// Zajistí, že this prvek bude standardně vykreslen do své standardní vrstvy <see cref="StandardDrawToLayer"/>,
+        /// včetně všech svých <see cref="Childs"/>, 
+        /// volitelně bude provedeno vykreslení Parent objektu.
         /// </summary>
         protected virtual void Repaint()
         {
-            this.RepaintToLayers = this.StandardDrawToLayer;
+            this.Repaint(this.StandardDrawToLayer);
+        }
+        /// <summary>
+        /// Zajistí, že this prvek bude standardně vykreslen do daných vrstev, 
+        /// včetně všech svých <see cref="Childs"/>, 
+        /// volitelně bude provedeno vykreslení Parent objektu.
+        /// </summary>
+        /// <param name="repaintLayers"></param>
+        protected virtual void Repaint(GInteractiveDrawLayer repaintLayers)
+        {
+            if (repaintLayers == GInteractiveDrawLayer.None) return;
+
+            this.RepaintToLayers = repaintLayers;
             if (this.HasParent)
             {
                 RepaintParentMode repaintParent = this.RepaintParent;
-                if ((repaintParent == RepaintParentMode.OnBackColorAlpha && this.BackColor.A < 255) || repaintParent == RepaintParentMode.Always)
-                    this.Parent.Repaint();
+                if (repaintParent == RepaintParentMode.Always || (repaintParent == RepaintParentMode.OnBackColorAlpha && this.BackColor.A < 255))
+                    this.Parent.Repaint(repaintLayers);
             }
         }
         /// <summary>
-        /// Volba, zda metoda <see cref="Repaint()"/> způsobí i vyvolání metody <see cref="Parent"/>.<see cref="IInteractiveParent.Repaint"/>.
+        /// Volba, zda metoda <see cref="Repaint()"/> způsobí i vyvolání metody <see cref="Parent"/>.<see cref="IInteractiveParent.Repaint()"/>.
         /// </summary>
         protected virtual RepaintParentMode RepaintParent { get { return RepaintParentMode.None; } }
         /// <summary>
@@ -1131,6 +1145,7 @@ namespace Asol.Tools.WorkScheduler.Components
         IInteractiveParent IInteractiveParent.Parent { get { return this.Parent; } set { this.Parent = value; } }
         Size IInteractiveParent.ClientSize { get { return this.ClientSize; } }
         void IInteractiveParent.Repaint() { this.Repaint(); }
+        void IInteractiveParent.Repaint(GInteractiveDrawLayer repaintLayers) { this.Repaint(repaintLayers); }
         #endregion
         #region Basic members
         /// <summary>
@@ -1234,7 +1249,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     {
                         this.BoundsDragOrigin = this.Bounds;
                         this.DragThisStart(e, this.Bounds);
-                        this.RepaintToLayers = this.DragDrawToLayers;
+                        this.Repaint(this.DragDrawToLayers);
                     }
                     break;
                 case DragActionType.DragThisMove:
@@ -1242,21 +1257,21 @@ namespace Asol.Tools.WorkScheduler.Components
                     {
                         this.BoundsDragTarget = e.DragToRelativeBounds.Value;
                         this.DragThisOverPoint(e, e.DragToRelativeBounds.Value);
-                        this.RepaintToLayers = this.DragDrawToLayers;
+                        this.Repaint(this.DragDrawToLayers);
                     }
                     break;
                 case DragActionType.DragThisCancel:
                     if (this._IsDragEnabledCurrent && this.BoundsDragOrigin.HasValue && this.BoundsDragOrigin.Value != this.Bounds)
                     {
                         this.SetBounds(e.DragToRelativeBounds.Value, ProcessAction.DragValueActions, EventSourceType.InteractiveChanging | EventSourceType.BoundsChange);
-                        this.RepaintToLayers = this.DragDrawToLayers;
+                        this.Repaint(this.DragDrawToLayers);
                     }
                     break;
                 case DragActionType.DragThisDrop:
                     if (this._IsDragEnabledCurrent && this.BoundsDragTarget.HasValue)
                     {
                         this.DragThisDropToPoint(e, this.BoundsDragTarget.Value);
-                        this.RepaintToLayers = this.DragDrawToLayers;
+                        this.Repaint(this.DragDrawToLayers);
                     }
                     break;
                 case DragActionType.DragThisEnd:

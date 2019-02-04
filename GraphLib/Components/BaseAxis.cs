@@ -2087,7 +2087,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 case GInteractiveChangeState.MouseOver:
                     this._AxisState = AxisInteractiveState.MouseOver;
                     this.MouseOverRelativePoint = e.MouseRelativePoint;
-                    this.RepaintToLayers = GInteractiveDrawLayer.Standard;   // Can not draw only "Interactive" layer, because _MouseOverPoint is drawed under Ticks, thus after draw "only" MousePoint is necessary draw ticks too...
+                    this.Repaint();
                     e.ToolTipData.InfoText = this._CreateToolTip(e.MouseRelativePoint);
                     this.PrepareToolTip(e);
                     break;
@@ -2103,7 +2103,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     {   // Může být Shift nebo Zoom:
                         this.MouseOverRelativePoint = null;
                         this.MouseDownRelativePoint = e.MouseRelativePoint;
-                        this.RepaintToLayers = GInteractiveDrawLayer.Standard;
+                        this.Repaint();
                         e.ToolTipData.InfoText = this._CreateToolTip(e.MouseRelativePoint);
                         this.PrepareToolTip(e);
                     }
@@ -2161,7 +2161,7 @@ namespace Asol.Tools.WorkScheduler.Components
                             if (shiftValue != this._Value)
                             {
                                 this.SetValue(shiftValue, ProcessAction.PrepareInnerItems | ProcessAction.CallDraw | ProcessAction.CallChangedEvents | ProcessAction.CallSynchronizeSlave, EventSourceType.InteractiveChanging | EventSourceType.InteractiveChanged | EventSourceType.ValueChange);
-                                this.RepaintToLayers = GInteractiveDrawLayer.Standard;
+                                this.Repaint();
                                 addToolTip = eol + "ShiftOrigin = " + this._InteractiveShiftOrigin.ToString() + "; ShiftSize = " + shiftSize.ToString() + "; NewBegin = " + shiftBegin.ToString() + "; NewValue = " + shiftValue.ToString();
                             }
                             if (this.MouseDownRelativePoint.HasValue)
@@ -2191,7 +2191,7 @@ namespace Asol.Tools.WorkScheduler.Components
                             if (zoomValue != this._Value)
                             {
                                 this.SetValue(zoomValue, ProcessAction.RecalcScale | ProcessAction.RecalcInnerData | ProcessAction.PrepareInnerItems | ProcessAction.CallDraw | ProcessAction.CallChangedEvents | ProcessAction.CallSynchronizeSlave, EventSourceType.InteractiveChanging | EventSourceType.InteractiveChanged | EventSourceType.ValueChange);
-                                this.RepaintToLayers = GInteractiveDrawLayer.Standard;
+                                this.Repaint();
                                 addToolTip += "; SetValue()";
                             }
                             isSolved = true;
@@ -2205,7 +2205,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     if (!isSolved)
                     {   // Neproběhl ani Shift, ani Drag => budu se chovat, jako by to bylo MouseOver:
                         this.MouseOverRelativePoint = e.MouseRelativePoint;
-                        this.RepaintToLayers = GInteractiveDrawLayer.Standard;   // Can not draw only "Interactive" layer, because _MouseOverPoint is drawed under Ticks, thus after draw "only" MousePoint is necessary draw ticks too...
+                        this.Repaint();
                         e.ToolTipData.InfoText = this._CreateToolTip(e.MouseRelativePoint);
                         this.PrepareToolTip(e);
                     }
@@ -2213,7 +2213,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 case GInteractiveChangeState.LeftDragMoveCancel:
                     TValue originalValue = this._InteractiveOriginalValue;
                     this.SetValue(originalValue, ProcessAction.RecalcScale | ProcessAction.RecalcInnerData | ProcessAction.PrepareInnerItems | ProcessAction.CallDraw | ProcessAction.CallChangedEvents | ProcessAction.CallSynchronizeSlave, EventSourceType.InteractiveChanging | EventSourceType.InteractiveChanged | EventSourceType.ValueChange);
-                    this.RepaintToLayers = GInteractiveDrawLayer.Standard;
+                    this.Repaint();
                     break;
                 case GInteractiveChangeState.LeftDragMoveDone:
                     this._AxisState = AxisInteractiveState.MouseOver;
@@ -2231,7 +2231,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     this._AxisState = AxisInteractiveState.MouseOver;
                     this.MouseDownRelativePoint = null;
                     this.MouseOverRelativePoint = e.MouseRelativePoint;
-                    this.RepaintToLayers = GInteractiveDrawLayer.Standard;
+                    this.Repaint();
                     e.ToolTipData.InfoText = this._CreateToolTip(e.MouseRelativePoint);
                     this.PrepareToolTip(e);
                     break;
@@ -2240,7 +2240,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     if (this.ValueLimit != null && this.ValueLimit.IsFilled && this.ValueLimit != this.Value)
                     {
                         this.SetValue(this.ValueLimit, ProcessAction.RecalcScale | ProcessAction.RecalcInnerData | ProcessAction.PrepareInnerItems | ProcessAction.CallDraw | ProcessAction.CallChangedEvents | ProcessAction.CallSynchronizeSlave, EventSourceType.InteractiveChanged | EventSourceType.ValueChange);
-                        this.RepaintToLayers = GInteractiveDrawLayer.Standard;
+                        this.Repaint();
                     }
                     break;
 
@@ -2262,7 +2262,7 @@ namespace Asol.Tools.WorkScheduler.Components
                             if (shiftValue != this._Value)
                             {
                                 this.SetValue(shiftValue, ProcessAction.PrepareInnerItems | ProcessAction.CallDraw | ProcessAction.CallChangedEvents | ProcessAction.CallSynchronizeSlave, EventSourceType.InteractiveChanged | EventSourceType.ValueChange);
-                                this.RepaintToLayers = GInteractiveDrawLayer.Standard;
+                                this.Repaint();
                                 e.ToolTipData.InfoText = this._CreateToolTip(valueOld);
                                 this.PrepareToolTip(e);
                             }
@@ -2282,7 +2282,7 @@ namespace Asol.Tools.WorkScheduler.Components
                             if (zoomValue != this._Value)
                             {
                                 this.SetValue(zoomValue, ProcessAction.RecalcScale | ProcessAction.RecalcInnerData | ProcessAction.PrepareInnerItems | ProcessAction.CallDraw | ProcessAction.CallChangedEvents | ProcessAction.CallSynchronizeSlave, EventSourceType.InteractiveChanged | EventSourceType.ValueChange);
-                                this.RepaintToLayers = GInteractiveDrawLayer.Standard;
+                                this.Repaint();
                                 e.ToolTipData.InfoText = this._CreateToolTip(valueOld);
                                 this.PrepareToolTip(e);
                             }
@@ -2295,7 +2295,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 case GInteractiveChangeState.MouseLeave:
                     this._AxisState = AxisInteractiveState.None;
                     this.MouseOverRelativePoint = null;
-                    this.RepaintToLayers = GInteractiveDrawLayer.Standard;
+                    this.Repaint();
                     break;
             }
         }
