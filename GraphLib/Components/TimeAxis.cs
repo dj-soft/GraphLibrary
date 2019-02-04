@@ -121,27 +121,6 @@ namespace Asol.Tools.WorkScheduler.Components
             return (value.HasValue && interval.HasValue ? (DateTime?)TimeRange.RoundDateTime(value.Value, interval.Value, roundMode) : (DateTime?)null);
         }
         /// <summary>
-        /// Explicitly round tick of one TickType of one Arrangement to real value on axis.
-        /// Descendant can apply an logical rounding for specified tick (for example, when intervalSize is 2 days, then rounding is to day of month: 1,3,5,7,9... and not to 2,4,6,8...
-        /// Base class returns tick without a rounding.
-        /// </summary>
-        /// <param name="tick">Tick, already rounded from method RoundTickToInterval()</param>
-        /// <param name="arrangementOne">Current arrangement of axis (=definition for all ticks type)</param>
-        /// <param name="axisTickType">Current tick type on Current arrangement</param>
-        /// <param name="axisValue">Value on whole axis</param>
-        /// <param name="intervalSize">Size of interval on current arrangement for current tick type</param>
-        /// <returns></returns>
-        protected override DateTime? RoundTickToLine(DateTime? tick, GBaseAxis<DateTime?, TimeSpan?, TimeRange>.ArrangementOne arrangementOne, AxisTickType axisTickType, TimeRange axisValue, TimeSpan? intervalSize)
-        {
-            if (arrangementOne.BigLabelItem.Interval.Value.TotalDays == 2d && axisTickType == AxisTickType.BigLabel)
-            {
-                int dayInMonth = tick.Value.Day;
-                if ((dayInMonth % 2) == 0)
-                    tick = tick.Value.AddDays(1d);
-            }
-            return tick;
-        }
-        /// <summary>
         /// Metoda vrátí dané datum zaokrouhlené na dané jednotky na aktuální časové ose.
         /// </summary>
         /// <param name="time">Daný čas</param>
@@ -152,7 +131,7 @@ namespace Asol.Tools.WorkScheduler.Components
             return this.ArrangementCurrent.RoundValueToTick(time, tickType);
         }
         #endregion
-        #region Příprava měřítek pro časovou osu
+        #region Příprava měřítek pro časovou osu, podpora pro specifickou tvorbu Ticků v závislosti na kalendáři
         /// <summary>
         /// Axis class here declared items (ArrangementOne) for use in Axis.
         /// Each individual ArrangementOne contains specification for range of scale on axis, declare distance of axis ticks by tick types (pixel, small, standard, big...) 
@@ -174,8 +153,13 @@ namespace Asol.Tools.WorkScheduler.Components
          // string y = "yy";
             string yy = "yyyy";
             string dmyy = "d.M.yyyy";
+            string wdmyy = "ddd d.M.yyyy";
+            string w = "ddd";
+            string d = "d.";
             string dm = "d.M.";
+            string wdm = "ddd d.M.";
             string dmh = "d.M. H:mm";
+            string wdmh = "ddd d.M. H:mm";
             string hms = "H:mm:ss";
             string hm = "H:mm";
             string ms = "m:ss";
@@ -186,49 +170,107 @@ namespace Asol.Tools.WorkScheduler.Components
             string sff = "s.ff";
             string sfff = "s.fff";
 
-            // TimeSpan specified in order (as unit on standard ruler) for:
-            //                                                   pixel,                          milimeters,                     5milimeters,                    centimeter,                         10centimeter:
-            //                                          pixelTickSize                   regularTickSize                 significantTickSize             subTitleSize          subTitleFormat  titleSize                titleFormat initialFormat axisCycle
-            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.Zero,                  TimeSpan.Zero,                  TimeSpan.FromMilliseconds(1),   TimeSpan.FromMilliseconds(2),   sfff, TimeSpan.FromMilliseconds(10), msfff, dmyyhm, AxisCycle_Day, this));
-            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.Zero,                  TimeSpan.Zero,                  TimeSpan.FromMilliseconds(1),   TimeSpan.FromMilliseconds(5),   sfff, TimeSpan.FromMilliseconds(10), msfff, dmyyhm, AxisCycle_Day, this));
+            // Definice různých aranžmá pro pravítko časové osy:
+            //   - Definují se časové vzdálenosti mezi zobrazovanými údaji
+            //   - Jeden řádek definice odpovídá jedné konfiguraci, pro určitý rozsah měřítka
+            //   - Měřítko osy je dáno tím, jaký časový úsek lze zobrazit na 100 pixelů
+            //   - Osa si sama vybírá vhodné aranžmá tak, aby pro aktuální měřítko osy byla vzdálenost mezi dvěma ticky typu StdLabel 
+            //      byla rovna nebo větší než this.Arrangements.SubTitleDistance, což je defaultně 65 pixelů.
+            //      Metoda prochází jednotlivá aranžmá (zde definovaná), vypočítá počet pixelů pro časový interval StdLabelItem.Interval, 
+            //      a pokud je >= SubTitleDistance, tak toto aranžmá použije.
+            //   - Tento postup zaručí, že dva sousední popisky na ose (StdLabel) budou od sebe vzdáleny nejméně 65 pixelů (nebo jinou hodnotu SubTitleDistance).
+            //   - Velké popisky budou vzdáleny více, přiměřeně svému intervalu.
+            // Různé varianty popisků:
+            //   - Když máme aranžmá "W", které je korektní hodnotově z hlediska intervalů (např. StdLabel = 1 den a BigLabel = 7 dní),
+            //      a přitom další vhodné aranžmá "M" je až o hodně větší (např. StdLabel = 7 dní a BigLabel = 31 dní),
+            //      pak je možné použít řešení, kdy je vytvořeno aranžmá "W2", které má shodné časové intervaly, ale kratší textové popisky.
+            //      Např aranžmá "W" vypisuje datum: "Po 16.1.2019", pak aranžmá "W2" může vypsat jen "Po 16.1.", atd.
+            //   - Pak je aranžmá "W2" definováno s předáním explicitní hodnoty selectDistanceRatio menší než 1.
+            //   - Stejný postup lze použít i když je aranžmá zadané jen jedenkrát, ale má obecně kratší popisky takže jej lze použít i pro hustší Ticky.
 
-            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromMilliseconds(1),   TimeSpan.FromMilliseconds(1),   TimeSpan.FromMilliseconds(5),   TimeSpan.FromMilliseconds(10),  sff, TimeSpan.FromMilliseconds(100), msf, dmyyhm, AxisCycle_Day, this));
-            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromMilliseconds(1),   TimeSpan.FromMilliseconds(2),   TimeSpan.FromMilliseconds(10),  TimeSpan.FromMilliseconds(20),  sff, TimeSpan.FromMilliseconds(100), msf, dmyyhm, AxisCycle_Day, this));
-            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromMilliseconds(1),   TimeSpan.FromMilliseconds(5),   TimeSpan.FromMilliseconds(10),  TimeSpan.FromMilliseconds(50),  sff, TimeSpan.FromMilliseconds(100), msf, dmyyhm, AxisCycle_Day, this));
-            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromMilliseconds(1),   TimeSpan.FromMilliseconds(10),  TimeSpan.FromMilliseconds(50),  TimeSpan.FromMilliseconds(100), sf, TimeSpan.FromSeconds(1), hms, dmyyhm, AxisCycle_Day, this));
-            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromMilliseconds(10),  TimeSpan.FromMilliseconds(20),  TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(200), sf, TimeSpan.FromSeconds(1), hms, dmyyhm, AxisCycle_Day, this));
-            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromMilliseconds(10),  TimeSpan.FromMilliseconds(50),  TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(500), sf, TimeSpan.FromSeconds(1), hms, dmyyhm, AxisCycle_Day, this));
+            // Jednotlivá aranžmá:
+            //  Ekvivalent na milimetrovém pravítku :   není                            milimetr                        5 milimetrů                     centimetr                           10 centimetrů                      první + poslední
+            //                         Definice pro :   jeden pixel                     StdTick = malá čárka            BigTick = velká čárka           StdLabel = malý text      + formát  BigLabel = velký text        + formát initialFormat axisCycle
+            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.Zero,                  TimeSpan.Zero,                  TimeSpan.FromMilliseconds(1),   TimeSpan.FromMilliseconds(2), sfff, TimeSpan.FromMilliseconds(10), msfff,   dmyyhm, AxisCycle_Day,   this));
+            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.Zero,                  TimeSpan.Zero,                  TimeSpan.FromMilliseconds(1),   TimeSpan.FromMilliseconds(5), sfff, TimeSpan.FromMilliseconds(10), msfff,   dmyyhm, AxisCycle_Day,   this));
 
-            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromMilliseconds(10),  TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(500), TimeSpan.FromSeconds(1),        ms, TimeSpan.FromSeconds(10), hms, dmyyhm, AxisCycle_Day, this));
-            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromMilliseconds(10),  TimeSpan.FromMilliseconds(250), TimeSpan.FromSeconds(1),        TimeSpan.FromSeconds(2),        ms, TimeSpan.FromSeconds(10), hms, dmyyhm, AxisCycle_Day, this));
-            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromMilliseconds(10),  TimeSpan.FromMilliseconds(500), TimeSpan.FromSeconds(1),        TimeSpan.FromSeconds(5),        ms, TimeSpan.FromSeconds(30), hms, dmyyhm, AxisCycle_Day, this));
-            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(1),        TimeSpan.FromSeconds(5),        TimeSpan.FromSeconds(10),       ms, TimeSpan.FromMinutes(1), hm, dmyyhm, AxisCycle_Day, this));
-            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(2),        TimeSpan.FromSeconds(10),       TimeSpan.FromSeconds(15),       ms, TimeSpan.FromMinutes(1), hm, dmyyhm, AxisCycle_Day, this));
-            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(5),        TimeSpan.FromSeconds(10),       TimeSpan.FromSeconds(30),       ms, TimeSpan.FromMinutes(2), hm, dmyyhm, AxisCycle_Day, this));
+            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromMilliseconds(1),   TimeSpan.FromMilliseconds(1),   TimeSpan.FromMilliseconds(5),   TimeSpan.FromMilliseconds(10), sff, TimeSpan.FromMilliseconds(100),  msf,   dmyyhm, AxisCycle_Day,   this));
+            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromMilliseconds(1),   TimeSpan.FromMilliseconds(2),   TimeSpan.FromMilliseconds(10),  TimeSpan.FromMilliseconds(20), sff, TimeSpan.FromMilliseconds(100),  msf,   dmyyhm, AxisCycle_Day,   this));
+            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromMilliseconds(1),   TimeSpan.FromMilliseconds(5),   TimeSpan.FromMilliseconds(10),  TimeSpan.FromMilliseconds(50), sff, TimeSpan.FromMilliseconds(100),  msf,   dmyyhm, AxisCycle_Day,   this));
+            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromMilliseconds(1),   TimeSpan.FromMilliseconds(10),  TimeSpan.FromMilliseconds(50),  TimeSpan.FromMilliseconds(100), sf, TimeSpan.FromSeconds(1),         hms,   dmyyhm, AxisCycle_Day,   this));
+            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromMilliseconds(10),  TimeSpan.FromMilliseconds(20),  TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(200), sf, TimeSpan.FromSeconds(1),         hms,   dmyyhm, AxisCycle_Day,   this));
+            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromMilliseconds(10),  TimeSpan.FromMilliseconds(50),  TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(500), sf, TimeSpan.FromSeconds(1),         hms,   dmyyhm, AxisCycle_Day,   this));
 
-            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(5),        TimeSpan.FromSeconds(15),       TimeSpan.FromMinutes(1),        hm, TimeSpan.FromMinutes(5), hm, dmyy, AxisCycle_Day, this));
-            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromSeconds(1),        TimeSpan.FromSeconds(10),       TimeSpan.FromMinutes(1),        TimeSpan.FromMinutes(2),        hm, TimeSpan.FromMinutes(10), hm, dmyy, AxisCycle_Day, this));
-            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromSeconds(1),        TimeSpan.FromSeconds(30),       TimeSpan.FromMinutes(1),        TimeSpan.FromMinutes(5),        hm, TimeSpan.FromMinutes(10), hm, dmyy, AxisCycle_Day, this));
-            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromSeconds(1),        TimeSpan.FromSeconds(60),       TimeSpan.FromMinutes(5),        TimeSpan.FromMinutes(10),       hm, TimeSpan.FromHours(1), hm, dmyy, AxisCycle_Day, this));
-            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromSeconds(10),       TimeSpan.FromMinutes(1),        TimeSpan.FromMinutes(5),        TimeSpan.FromMinutes(15),       hm, TimeSpan.FromHours(1), hm, dmyy, AxisCycle_Day, this));
-            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromSeconds(10),       TimeSpan.FromMinutes(5),        TimeSpan.FromMinutes(10),       TimeSpan.FromMinutes(30),       hm, TimeSpan.FromHours(1), hm, dmyy, AxisCycle_Day, this));
+            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromMilliseconds(10),  TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(500), TimeSpan.FromSeconds(1),        ms, TimeSpan.FromSeconds(10),        hms,   dmyyhm, AxisCycle_Day,   this));
+            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromMilliseconds(10),  TimeSpan.FromMilliseconds(250), TimeSpan.FromSeconds(1),        TimeSpan.FromSeconds(2),        ms, TimeSpan.FromSeconds(10),        hms,   dmyyhm, AxisCycle_Day,   this));
+            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromMilliseconds(10),  TimeSpan.FromMilliseconds(500), TimeSpan.FromSeconds(1),        TimeSpan.FromSeconds(5),        ms, TimeSpan.FromSeconds(30),        hms,   dmyyhm, AxisCycle_Day,   this));
+            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(1),        TimeSpan.FromSeconds(5),        TimeSpan.FromSeconds(10),       ms, TimeSpan.FromMinutes(1),         hm,    dmyyhm, AxisCycle_Day,   this));
+            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(2),        TimeSpan.FromSeconds(10),       TimeSpan.FromSeconds(15),       ms, TimeSpan.FromMinutes(1),         hm,    dmyyhm, AxisCycle_Day,   this));
+            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(5),        TimeSpan.FromSeconds(10),       TimeSpan.FromSeconds(30),       ms, TimeSpan.FromMinutes(2),         hm,    dmyyhm, AxisCycle_Day,   this));
 
-            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromSeconds(10),       TimeSpan.FromMinutes(5),        TimeSpan.FromMinutes(15),       TimeSpan.FromHours(1),          hm, TimeSpan.FromHours(6), dmh, dmyy, AxisCycle_Day, this));
-            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromSeconds(10),       TimeSpan.FromMinutes(10),       TimeSpan.FromMinutes(30),       TimeSpan.FromHours(2),          hm, TimeSpan.FromHours(12), dmh, dmyy, AxisCycle_Day, this));
-            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromMinutes(1),        TimeSpan.FromMinutes(15),       TimeSpan.FromMinutes(60),       TimeSpan.FromHours(3),          hm, TimeSpan.FromDays(1), dmyy, dmyy, AxisCycle_Day, this));
+            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(5),        TimeSpan.FromSeconds(15),       TimeSpan.FromMinutes(1),        hm, TimeSpan.FromMinutes(5),         hm,    wdmyy,  AxisCycle_Day,   this));
+            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromSeconds(1),        TimeSpan.FromSeconds(10),       TimeSpan.FromMinutes(1),        TimeSpan.FromMinutes(2),        hm, TimeSpan.FromMinutes(10),        hm,    wdmyy,  AxisCycle_Day,   this));
+            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromSeconds(1),        TimeSpan.FromSeconds(30),       TimeSpan.FromMinutes(1),        TimeSpan.FromMinutes(5),        hm, TimeSpan.FromMinutes(10),        hm,    wdmyy,  AxisCycle_Day,   this));
+            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromSeconds(1),        TimeSpan.FromSeconds(60),       TimeSpan.FromMinutes(5),        TimeSpan.FromMinutes(10),       hm, TimeSpan.FromHours(1),           hm,    wdmyy,  AxisCycle_Day,   this));
+            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromSeconds(10),       TimeSpan.FromMinutes(1),        TimeSpan.FromMinutes(5),        TimeSpan.FromMinutes(15),       hm, TimeSpan.FromHours(1),           hm,    wdmyy,  AxisCycle_Day,   this));
+            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromSeconds(10),       TimeSpan.FromMinutes(5),        TimeSpan.FromMinutes(10),       TimeSpan.FromMinutes(30),       hm, TimeSpan.FromHours(1),           hm,    wdmyy,  AxisCycle_Day,   this));
 
-            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromMinutes(2),        TimeSpan.FromHours(1),          TimeSpan.FromHours(3),          TimeSpan.FromHours(6),          hm, TimeSpan.FromDays(1), dmyy, dmyy, AxisCycle_Day, this));
-            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromMinutes(5),        TimeSpan.FromHours(1),          TimeSpan.FromHours(6),          TimeSpan.FromHours(12),         dmh, TimeSpan.FromDays(2), dmyy, dmyy, AxisCycle_Week, this));
+            //                         Definice pro :   jeden pixel                     StdTick = malá čárka            BigTick = velká čárka           StdLabel = malý text      + formát  BigLabel = velký text        + formát initialFormat axisCycle
+            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromSeconds(10),       TimeSpan.FromMinutes(5),        TimeSpan.FromMinutes(15),       TimeSpan.FromHours(1),          hm, TimeSpan.FromHours(6),           wdmh,  wdmyy,  AxisCycle_Day,   this));
+            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromSeconds(10),       TimeSpan.FromMinutes(10),       TimeSpan.FromMinutes(30),       TimeSpan.FromHours(2),          hm, TimeSpan.FromHours(12),          wdmh,  wdmyy,  AxisCycle_Day,   this));
+            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromMinutes(1),        TimeSpan.FromMinutes(15),       TimeSpan.FromMinutes(60),       TimeSpan.FromHours(3),          hm, TimeSpan.FromDays(1),            wdm,   wdmyy,  AxisCycle_Day,   this));
 
-            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromMinutes(10),       TimeSpan.FromHours(2),          TimeSpan.FromHours(12),         TimeSpan.FromDays(1),           dm, TimeSpan.FromDays(7), dmyy, dmyy, AxisCycle_Week, this));
-            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromMinutes(15),       TimeSpan.FromHours(3),          TimeSpan.FromHours(24),         TimeSpan.FromDays(2),           dm, TimeSpan.FromDays(14), dmyy, dmyy, AxisCycle_Month, this));
-            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromMinutes(30),       TimeSpan.FromHours(12),         TimeSpan.FromDays(1),           TimeSpan.FromDays(7),           dm, TimeSpan.FromDays(31), dmyy, dmyy, AxisCycle_Month, this));
-            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromHours(1),          TimeSpan.FromHours(12),         TimeSpan.FromDays(2),           TimeSpan.FromDays(14),          dm, TimeSpan.FromDays(31), dmyy, dmyy, AxisCycle_Month, this));
-            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromHours(3),          TimeSpan.FromHours(84),         TimeSpan.FromDays(7),           TimeSpan.FromDays(31),          dm, TimeSpan.FromDays(60), dmyy, dmyy, AxisCycle_Month, this));
+            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromMinutes(2),        TimeSpan.FromHours(1),          TimeSpan.FromHours(3),          TimeSpan.FromHours(6),          hm, TimeSpan.FromDays(1),            wdm,   wdmyy,  AxisCycle_Day,   this));
+            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromMinutes(5),        TimeSpan.FromHours(1),          TimeSpan.FromHours(6),          TimeSpan.FromHours(12),         hm, TimeSpan.FromDays(1),            wdm,   wdmyy,  AxisCycle_Week,  this, 0.85m));   // 0.85 = dokáže zobrazit "hustší" labely
 
-            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromHours(12),         TimeSpan.FromDays(7),           TimeSpan.FromDays(31),          TimeSpan.FromDays(92),          dm, TimeSpan.FromDays(180), dmyy, dmyy, AxisCycle_Month, this));
-            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromDays(2),           TimeSpan.FromDays(31),          TimeSpan.FromDays(91),          TimeSpan.FromDays(183),         dm, TimeSpan.FromDays(366), dmyy, dmyy, AxisCycle_Month, this));
-            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromDays(7),           TimeSpan.FromDays(91),          TimeSpan.FromDays(183),         TimeSpan.FromDays(366),         yy, TimeSpan.FromDays(732), dmyy, dmyy, AxisCycle_Month, this));
+            // DENNÍ A DELŠÍ CYKLY:
+            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromMinutes(10),       TimeSpan.FromHours(2),          TimeSpan.FromHours(12),         TimeSpan.FromDays(1),          wdm, TimeSpan.FromDays(7),           wdmyy,  wdmyy,  AxisCycle_Week,  this));
+            //    Následující aranžmá má shodné intervaly jako předchozí, ale má kratší popisky StdLabel, a je tím použitelné i pro větší měřítko než je běžné. Viz selectDistanceRatio:
+            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromMinutes(10),       TimeSpan.FromHours(2),          TimeSpan.FromHours(12),         TimeSpan.FromDays(1),           dm, TimeSpan.FromDays(7),           wdmyy,  wdmyy,  AxisCycle_Week,  this, 0.65m));
+         // this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromMinutes(15),       TimeSpan.FromHours(3),          TimeSpan.FromHours(24),         TimeSpan.FromDays(2),          wdm, TimeSpan.FromDays(14),           dmyy,  dmyy,   AxisCycle_Month, this));
+            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromMinutes(30),       TimeSpan.FromHours(12),         TimeSpan.FromDays(1),           TimeSpan.FromDays(7),          wdm, TimeSpan.FromDays(31),          wdmyy,  dmyy,   AxisCycle_Month, this));
+            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromHours(3),          TimeSpan.FromHours(12),         TimeSpan.FromDays(1),           TimeSpan.FromDays(7),           dm, TimeSpan.FromDays(31),          wdmyy,  dmyy,   AxisCycle_Month, this, 0.75m));
+            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromHours(6),          TimeSpan.FromHours(24),         TimeSpan.FromDays(1),           TimeSpan.FromDays(7),            d, TimeSpan.FromDays(31),          wdmyy,  dmyy,   AxisCycle_Month, this, 0.50m));
+            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromHours(12),         TimeSpan.FromHours(24),         TimeSpan.FromDays(2),           TimeSpan.FromDays(14),          dm, TimeSpan.FromDays(31),          wdmyy,  dmyy,   AxisCycle_Month, this));
+            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromHours(24),         TimeSpan.FromHours(84),         TimeSpan.FromDays(7),           TimeSpan.FromDays(31),          dm, TimeSpan.FromDays(60),          wdmyy,  dmyy,   AxisCycle_Month, this));
+
+            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromHours(12),         TimeSpan.FromDays(7),           TimeSpan.FromDays(31),          TimeSpan.FromDays(92),          dm, TimeSpan.FromDays(180),          dmyy,  dmyy,   AxisCycle_Month, this));
+            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromDays(2),           TimeSpan.FromDays(31),          TimeSpan.FromDays(91),          TimeSpan.FromDays(183),         dm, TimeSpan.FromDays(366),          dmyy,  dmyy,   AxisCycle_Month, this));
+            this.Arrangements.AddOne(new ArrangementOne(TimeSpan.FromDays(7),           TimeSpan.FromDays(91),          TimeSpan.FromDays(183),         TimeSpan.FromDays(366),         yy, TimeSpan.FromDays(732),          dmyy,  dmyy,   AxisCycle_Month, this));
+        }
+        /// <summary>
+        /// Vrátí hodnotu Ticku zarovnanou pro první pozici daného aranžmá na časové ose.
+        /// Bázová metoda vrátí dodaný Tick zaokrouhlený nahoru na ucelený interval daného aranžmá.
+        /// Potomek může vrátit hodnotu určenou jinak, například TimeAxis může pracovat s týdny i kvartály...
+        /// </summary>
+        /// <param name="tick">Pozice na ose, bez zaokrouhlení</param>
+        /// <param name="item">Položka aranžmá osy a konkrétního Ticku</param>
+        /// <returns></returns>
+        protected override DateTime? RoundFirstTickForArrangement(DateTime? tick, ArrangementItem item)
+        {
+            tick = base.RoundFirstTickForArrangement(tick, item);    // Zaokrouhlí tick na nejbližší patřičný interval nahoru
+
+            // Specifické zaokrouhlení bych řešil zde, například:
+            if (item.Owner.BigLabelItem.Interval.Value.TotalDays == 2d && item.TickType == AxisTickType.BigLabel)
+            {
+                int dayInMonth = tick.Value.Day;
+                if ((dayInMonth % 2) == 0)
+                    tick = tick.Value.AddDays(1d);
+            }
+
+            return tick;
+        }
+        /// <summary>
+        /// Vrátí hodnotu Ticku zarovnanou pro další (=ne první) pozici daného aranžmá na časové ose.
+        /// Bázová metoda vrátí dodaný Tick zaokrouhlený matematicky na ucelený interval daného aranžmá.
+        /// Potomek může vrátit hodnotu určenou jinak, například TimeAxis může pracovat s týdny i kvartály...
+        /// </summary>
+        /// <param name="tick">Pozice na ose, bez zaokrouhlení</param>
+        /// <param name="item">Položka aranžmá osy a konkrétního Ticku</param>
+        /// <returns></returns>
+        protected override DateTime? RoundNextTickForArrangement(DateTime? tick, ArrangementItem item)
+        {
+            return base.RoundNextTickForArrangement(tick, item);
         }
         /// <summary>
         /// Označení cyklu Den

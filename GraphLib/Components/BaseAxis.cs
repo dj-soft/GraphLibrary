@@ -95,12 +95,12 @@ namespace Asol.Tools.WorkScheduler.Components
             return value.ToString();
         }
         #endregion
-        #region Visual public members, events and so on
+        #region Vizuální properties
         /// <summary>
-        /// Prepare visual properties.
-        /// Beware: this is a virtual method, called from constructor.
-        /// There are not initalised any properties and objects.
-        /// Descendant must call base:PrepareVisual();
+        /// Připraví vizuální vlastnosti.
+        /// Pozor, je to virtuální třída volaná z konstruktoru, tedy před provedením konstruktoru potomků.
+        /// Potomek tedy nemá připraveny svoje data.
+        /// Potomek musí volat base:PrepareVisual();
         /// </summary>
         protected virtual void PrepareVisual()
         {
@@ -108,13 +108,15 @@ namespace Asol.Tools.WorkScheduler.Components
             this.BackColor = Skin.Axis.BackColor;
         }
         /// <summary>
-        /// 3D effect on BackColor
+        /// 3D effect pro BackColor
         /// </summary>
         public float BackColor3DEffect { get; set; }
         #endregion
-        #region Orientation, methods and properties derived from Orientation (PixelRelativeRange, PixelFirst, PixelSize, PixelLast, ...)
+        #region Orientace osy, a její podpora (PixelRelativeRange, PixelFirst, PixelSize, PixelLast, ...)
         /// <summary>
-        /// Axis orientation, must comply with Bounds (if not, will be automatically changed)
+        /// Orientace osy. Pokud zadaná orientace nebude odpovídat souřadnicím, bude upravena.
+        /// Vhodný postup pro zadání: nastavte souřadnice (alespoň poměr velikosti) a poté vložte odpovídající orientaci.
+        /// Orientace nese i informace o umístění ticků a o směru osy (zhora dolů/zdola nahoru).
         /// </summary>
         public AxisOrientation Orientation
         {
@@ -122,17 +124,16 @@ namespace Asol.Tools.WorkScheduler.Components
             set { this.OrientationUser = value; this.DetectOrientation(ProcessAction.All, EventSourceType.OrientationChange | EventSourceType.ApplicationCode); }
         }
         /// <summary>
-        /// Current valid orientation, detected from OrientationUser and current Bounds, in method: AutoDetectOrientation()
+        /// Aktuální platná orientace osy detekovaná podle <see cref="OrientationUser"/> a souřadnic, v metodě <see cref="DetectOrientation(ProcessAction, EventSourceType)"/>.
         /// </summary>
         protected AxisOrientation OrientationCurrent { get; set; }
         /// <summary>
-        /// Orientation requested by user (application code).
-        /// Is used when is possible.
+        /// Orientace požadovaná uživatelem, bez ohledu na velikost. Pokud to velikost osy dovolí, bude použita tato orientace.
         /// </summary>
         protected AxisOrientation? OrientationUser { get; set; }
         /// <summary>
-        /// Contains current WinForm Orientation (Horizontal/Vertical) according by this.Orientation.
-        /// Is used for Draw methods (orientation of Gradient background).
+        /// WinForm orientace (Horizontal/Vertical) odvozená od <see cref="Orientation"/>.
+        /// Používá se při kreslení gradientů a tak.
         /// </summary>
         protected System.Windows.Forms.Orientation OrientationDraw
         {
@@ -153,10 +154,10 @@ namespace Asol.Tools.WorkScheduler.Components
             }
         }
         /// <summary>
-        /// SizeRange containing current pixel of axis in VisibleRelativeBounds values, depending by OrientationCurrent.
-        /// Begin = pixel on which axis beginning (X, Top, Bottom);
-        /// End = pixel on which axis beginning (Right, Bottom, Top);
-        /// Size = number of pixels (positive or negative value).
+        /// Rozsah pixelů z Bounds, odpovídající aktuální orientaci. 
+        /// Hodnota DecimalNRange.Begin obsahuje pixel, kde je vykreslena hodnota osy Begin (X, Top, Bottom).
+        /// Hodnota DecimalNRange.End obsahuje pixel, kde je pozice osy End (Right, Bottom, Top);
+        /// Hodnota DecimalNRange.Size = počet pixelů osy (kladné nebo záporné číslo).
         /// </summary>
         protected DecimalNRange PixelRelativeRange
         {
@@ -313,12 +314,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         private TValue _ValueLimit;
         /// <summary>
-        /// Current Scale.
-        /// Scale is decimal positive value, which expresses ratio = number of axis logical units per one visual pixel.
-        /// Value unit on Axis is defined in abstract method GetAxisUnits(TSize size), where descendent returns (decimal) number of units for specified TSize (=logical value).
-        /// Setting a new Scale value create a new Value, from current Value, new Scale and current Bounds (physical size of axis in pixels).
-        /// Setting a non-positive value (zero or negative) is ignored.
-        /// New Scale value is aligned to ScaleRange.
+        /// Aktuální měřítko.
+        /// Měřítko je kladná hodnota, která vyjadřuje poměr = počet logických jednotek osy na jeden zobrazený pixel.
+        /// Logická jednotka na ose je decimal číslo, které vrací metoda <see cref="GetAxisUnits(TSize)"/>.
+        /// Například časová osa vrací celkový počet sekund z dodaného časového úseku <see cref="TimeSpan"/>, což je <typeparamref name="TSize"/> na časové ose.
+        /// Měřítko lze setovat, pouze kladnou hodnotu. Z dodaného měřítka je následně určena hodnota <see cref="Value"/> na této ose.
         /// </summary>
         public decimal Scale
         {
@@ -847,7 +847,7 @@ namespace Asol.Tools.WorkScheduler.Components
 
             // Můžeme využít data o dosavadních pozicích Ticků:
             Dictionary<TTick, BaseTick<TTick>> lastTickDict = this._LastTickPositionDict;
-            int? currentPixelOffset = null;
+            int? currentPixelOffset = null;                          // O kolik se posunuly Ticky od posledního výpočtu
 
             // Do Dictionary naplníme jednotlivé Ticky, počínaje těmi s nejvyšší důležitostí:
             arrangementCurrent.AddInitialTicks(tickDict);
@@ -862,22 +862,8 @@ namespace Asol.Tools.WorkScheduler.Components
 
             // Potlačíme zobrazení labelů na Ticku typu Initialial, pokud jeho text je identický 
             //  jako text na prvním / posledním Ticku typu BigLabel (byly by dva shodné texty poblíž u sebe):
-            int tickCount = newTickList.Count;
-            if (tickCount > 0 && newTickList[0].TickType == AxisTickType.OuterLabel)
-            {
-                BaseTick<TTick> initTick = newTickList[0];
-                BaseTick<TTick> titleTick = newTickList.FirstOrDefault(t => t.TickType == AxisTickType.BigLabel);
-                if (titleTick != null && titleTick.Text == initTick.Text)
-                    initTick.Text = "";
-            }
-            if (tickCount > 0 && newTickList[tickCount - 1].TickType == AxisTickType.OuterLabel)
-            {
-                BaseTick<TTick> initTick = newTickList[tickCount - 1];
-                BaseTick<TTick> titleTick = newTickList.LastOrDefault(t => t.TickType == AxisTickType.BigLabel);
-                if (titleTick != null && titleTick.Text == initTick.Text)
-                    initTick.Text = "";
-            }
-
+            this.ModifyTicksLabels(newTickList, arrangementCurrent);
+           
             // Uložíme aktuálně použité hodnoty jako Last, abychom dokázali příště poznat změnu dat, která má vést k přepočtům na ose:
             this._LastTickArrangement = arrangementCurrent;
             this._LastTickSize = this.PixelSize;
@@ -887,6 +873,58 @@ namespace Asol.Tools.WorkScheduler.Components
             this._LastTickPositionDict = tickDict;
 
             return newTickList.ToArray();
+        }
+        /// <summary>
+        /// Metoda upraví popisky jednotlivých Ticků v dodaném poli tak, aby byly "rozumné".
+        /// Tzn. aby se neopakovaly popisky krajních ticků (=typ Initial) s popisky nejbližších BigLabel ticků.
+        /// </summary>
+        /// <param name="tickList"></param>
+        /// <param name="arrangementCurrent"></param>
+        protected virtual void ModifyTicksLabels(List<BaseTick<TTick>> tickList, ArrangementOne arrangementCurrent)
+        {
+            int tickCount = tickList.Count;
+            if (tickCount > 0)
+            {
+                BaseTick<TTick> firstTick = tickList[0];
+                if (firstTick.TickType == AxisTickType.OuterLabel)
+                {
+                    BaseTick<TTick> titleTick = tickList.FirstOrDefault(t => t.TickType == AxisTickType.BigLabel);
+                    if (titleTick != null && titleTick.Text == firstTick.Text)
+                        firstTick.Text = "";
+                }
+
+                BaseTick<TTick> lastTick = tickList[tickCount - 1];
+                if (lastTick.TickType == AxisTickType.OuterLabel)
+                {
+                    BaseTick<TTick> titleTick = tickList.LastOrDefault(t => t.TickType == AxisTickType.BigLabel);
+                    if (titleTick != null && titleTick.Text == lastTick.Text)
+                        lastTick.Text = "";
+                }
+            }
+        }
+        /// <summary>
+        /// Vrátí hodnotu Ticku zarovnanou pro první pozici daného aranžmá na časové ose.
+        /// Bázová metoda vrátí dodaný Tick zaokrouhlený nahoru na ucelený interval daného aranžmá.
+        /// Potomek může vrátit hodnotu určenou jinak, například TimeAxis může pracovat s týdny i kvartály...
+        /// </summary>
+        /// <param name="tick">Pozice na ose, bez zaokrouhlení</param>
+        /// <param name="item">Položka aranžmá osy a konkrétního Ticku</param>
+        /// <returns></returns>
+        protected virtual TTick RoundFirstTickForArrangement(TTick tick, ArrangementItem item)
+        {
+            return this.RoundTickToInterval(tick, item.Interval, RoundMode.Ceiling);
+        }
+        /// <summary>
+        /// Vrátí hodnotu Ticku zarovnanou pro další (=ne první) pozici daného aranžmá na časové ose.
+        /// Bázová metoda vrátí dodaný Tick zaokrouhlený matematicky na ucelený interval daného aranžmá.
+        /// Potomek může vrátit hodnotu určenou jinak, například TimeAxis může pracovat s týdny i kvartály...
+        /// </summary>
+        /// <param name="tick">Pozice na ose, bez zaokrouhlení</param>
+        /// <param name="item">Položka aranžmá osy a konkrétního Ticku</param>
+        /// <returns></returns>
+        protected virtual TTick RoundNextTickForArrangement(TTick tick, ArrangementItem item)
+        {
+            return this.RoundTickToInterval(tick, item.Interval, RoundMode.Math);
         }
         /// <summary>
         /// Arrangement, pro který byl naposledy generován soupis Ticků
@@ -1424,21 +1462,6 @@ namespace Asol.Tools.WorkScheduler.Components
             this.Arrangements.AddOne(one);
         }
         /// <summary>
-        /// Explicitly round tick of one TickType of one Arrangement to real value on axis.
-        /// Descendant can apply an logical rounding for specified tick (for example, when intervalSize is 2 days, then rounding is to day of month: 1,3,5,7,9... and not to 2,4,6,8...
-        /// Base class returns tick without a rounding.
-        /// </summary>
-        /// <param name="tick">Tick, already rounded from method RoundTickToInterval()</param>
-        /// <param name="arrangementOne">Current arrangement of axis (=definition for all ticks type)</param>
-        /// <param name="axisTickType">Current tick type on Current arrangement</param>
-        /// <param name="axisValue">Value on whole axis</param>
-        /// <param name="intervalSize">Size of interval on current arrangement for current tick type</param>
-        /// <returns></returns>
-        protected virtual TTick RoundTickToLine(TTick tick, ArrangementOne arrangementOne, AxisTickType axisTickType, TValue axisValue, TSize intervalSize)
-        {
-            return tick;
-        }
-        /// <summary>
         /// Current list of all ticks
         /// </summary>
         protected BaseTick<TTick>[] TickList { get; private set; }
@@ -1535,7 +1558,7 @@ namespace Asol.Tools.WorkScheduler.Components
 
                 decimal distance = this.SubTitleDistance;
                 distance = (distance < 25m ? 25m : (distance > 250m ? 250m : distance));
-                ArrangementOne set = this.Items.FirstOrDefault(s => s.GetDistanceSubTitleForScale(scale) >= distance);
+                ArrangementOne set = this.Items.FirstOrDefault(s => s.IsValidForScale(scale, distance));
                 if (set == null)
                     set = this.Items[this.Items.Length - 1];
                 return set;
@@ -1574,6 +1597,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 this.BigLabelItem = new ArrangementItem(AxisTickType.BigLabel, bigLabelSize, bigLabelFormat, this);
                 this.OuterLabelItem = new ArrangementItem(AxisTickType.OuterLabel, default(TSize), outerLabelFormat, this);
                 this.AxisCycle = null;
+                this.SelectDistanceRatio = 1m;
             }
             /// <summary>
             /// Create one Arrangement = definitions of all Ticks for one scale
@@ -1594,12 +1618,63 @@ namespace Asol.Tools.WorkScheduler.Components
                 this.AxisCycle = axisCycle;
             }
             /// <summary>
+            /// Create one Arrangement = definitions of all Ticks for one scale
+            /// </summary>
+            /// <param name="pixelSize">Distance for one pixel. One pixel tick is not drawn, but any Value can be Rounded to Pixel, for example for ToolTip or for InteractiveMove.</param>
+            /// <param name="stdTickSize">Distance for one standard Tick, as one milimeter on standard plastic ruler.</param>
+            /// <param name="bigTickSize">Distance for one big Tick, as 5-milimeter on standard plastic ruler.</param>
+            /// <param name="stdLabelSize">Distance for one standard label Tick, as 1-centimeter on standard plastic ruler.</param>
+            /// <param name="stdLabelFormat">Format string for formatting Value on standard label Tick.</param>
+            /// <param name="bigLabelSize">Distance for one big label Tick, as 10-centimeter on standard plastic ruler.</param>
+            /// <param name="bigLabelFormat">Format string for formatting Value on big label Tick.</param>
+            /// <param name="outerLabelFormat">Format string for formatting Value on outer labels (Begin and End of Axis).</param>
+            /// <param name="axis">Owner Axis</param>
+            /// <param name="selectDistanceRatio">Koeficient vyjadřující velikost popisku StdLabel oproti normálu. Normál = 1, kratší popisky mají hodnotu menší než 1.</param>
+            public ArrangementOne(TSize pixelSize, TSize stdTickSize, TSize bigTickSize, TSize stdLabelSize, string stdLabelFormat, TSize bigLabelSize, string bigLabelFormat, string outerLabelFormat, GBaseAxis<TTick, TSize, TValue> axis, decimal selectDistanceRatio)
+                : this(pixelSize, stdTickSize, bigTickSize, stdLabelSize, stdLabelFormat, bigLabelSize, bigLabelFormat, outerLabelFormat, axis)
+            {
+                this.SelectDistanceRatio = selectDistanceRatio;
+            }
+            /// <summary>
+            /// Create one Arrangement = definitions of all Ticks for one scale
+            /// </summary>
+            /// <param name="pixelSize">Distance for one pixel. One pixel tick is not drawn, but any Value can be Rounded to Pixel, for example for ToolTip or for InteractiveMove.</param>
+            /// <param name="stdTickSize">Distance for one standard Tick, as one milimeter on standard plastic ruler.</param>
+            /// <param name="bigTickSize">Distance for one big Tick, as 5-milimeter on standard plastic ruler.</param>
+            /// <param name="stdLabelSize">Distance for one standard label Tick, as 1-centimeter on standard plastic ruler.</param>
+            /// <param name="stdLabelFormat">Format string for formatting Value on standard label Tick.</param>
+            /// <param name="bigLabelSize">Distance for one big label Tick, as 10-centimeter on standard plastic ruler.</param>
+            /// <param name="bigLabelFormat">Format string for formatting Value on big label Tick.</param>
+            /// <param name="outerLabelFormat">Format string for formatting Value on outer labels (Begin and End of Axis).</param>
+            /// <param name="axisCycle">Any string information for this arrangement (special fo Time axis: Month, Week, and so on).</param>
+            /// <param name="axis">Owner Axis</param>
+            /// <param name="selectDistanceRatio">Koeficient vyjadřující velikost popisku StdLabel oproti normálu. Normál = 1, kratší popisky mají hodnotu menší než 1.</param>
+            public ArrangementOne(TSize pixelSize, TSize stdTickSize, TSize bigTickSize, TSize stdLabelSize, string stdLabelFormat, TSize bigLabelSize, string bigLabelFormat, string outerLabelFormat, string axisCycle, GBaseAxis<TTick, TSize, TValue> axis, decimal selectDistanceRatio)
+                : this(pixelSize, stdTickSize, bigTickSize, stdLabelSize, stdLabelFormat, bigLabelSize, bigLabelFormat, outerLabelFormat, axis)
+            {
+                this.AxisCycle = axisCycle;
+                this.SelectDistanceRatio = selectDistanceRatio;
+            }
+            /// <summary>
             /// Vizualizace
             /// </summary>
             /// <returns></returns>
             public override string ToString()
             {
                 return "Arrangement: " + this.StdLabelItem.ToString() + " (" + this.StdTickItem.ToString() + ")";
+            }
+            /// <summary>
+            /// Textová identifikace do záhlaví osy
+            /// </summary>
+            public string TextId
+            {
+                get
+                {
+                    string text = this.StdLabelItem.Interval.ToString();
+                    if (this.SelectDistanceRatio > 0m && this.SelectDistanceRatio != 1m)
+                        text = text + " [" + Math.Round(this.SelectDistanceRatio, 2).ToString("##0.00") + "]";
+                    return text;
+                }
             }
             /// <summary>
             /// ID number in ArrangementSet, after Sort by PixelTickItem.Interval, beginning with 1 (not 0).
@@ -1638,15 +1713,25 @@ namespace Asol.Tools.WorkScheduler.Components
             /// </summary>
             public string AxisCycle { get; private set; }
             /// <summary>
+            /// Ratio aplikované tímto aranžmá při vyhodnocování jeho vhodnosti pro aktuální měřítko.
+            /// Tato hodnota je aplikována na vypočítanou vzdálenost v pixelech pro interval <see cref="StdLabelItem"/>, hodnota <see cref="ArrangementItem.Interval"/>.
+            /// Hodnota vyjadřuje, že běžný StdLabel tohoto aranžmá je menší než běžně (když <see cref="SelectDistanceRatio"/> je menší než 1) 
+            /// anebo že běžný StdLabel je delší (<see cref="SelectDistanceRatio"/> je větší než 1).
+            /// default = 1.0.
+            /// </summary>
+            public decimal SelectDistanceRatio { get; private set; }
+            /// <summary>
             /// Return distance between two tick of SubTitle type for specified scale (scale = number of unit of TSize per one pixel).
             /// </summary>
             /// <param name="scale"></param>
+            /// <param name="distance"></param>
             /// <returns></returns>
-            internal decimal GetDistanceSubTitleForScale(decimal scale)
+            internal bool IsValidForScale(decimal scale, decimal distance)
             {
                 TSize interval = this.StdLabelItem.Interval;
-                decimal distance = this.StdLabelItem.GetPixelsForScale(scale);
-                return distance;
+                decimal pixels = this.StdLabelItem.GetPixelsForScale(scale);
+                if (this.SelectDistanceRatio > 0m) distance = this.SelectDistanceRatio * distance;
+                return (pixels >= distance);
             }
             /// <summary>
             /// Returns specified Tick value, rounded to specified Tick
@@ -1666,17 +1751,6 @@ namespace Asol.Tools.WorkScheduler.Components
             internal void AddInitialTicks(Dictionary<TTick, BaseTick<TTick>> tickDict)
             {
                 this.OuterLabelItem.AddInitialTicks(tickDict);
-            }
-            /// <summary>
-            /// Prepare Ticks for specified TickType to tick Dictionary
-            /// </summary>
-            /// <param name="tickType"></param>
-            /// <param name="tickDict"></param>
-            internal void CalculateTicksLine(AxisTickType tickType, Dictionary<TTick, BaseTick<TTick>> tickDict)
-            {
-                Dictionary<TTick, BaseTick<TTick>> lastTickDict = null;
-                int? currentPixelOffset = null;
-                this.CalculateTicksLine(tickType, tickDict, lastTickDict, ref currentPixelOffset);
             }
             /// <summary>
             /// Prepare Ticks for specified TickType to tick Dictionary
@@ -1867,18 +1941,6 @@ namespace Asol.Tools.WorkScheduler.Components
             /// Uloží do předané Dictionary všechny ticky pro this položku Arrangement (=jedna řada ticků).
             /// Vygeneruje Ticky pro celý aktuální rozsah osy (this.Axis.Value), jen pro ty Ticky, jejichž hodnota dosud v Dictionary není obsažena.
             /// Při správném postupu se tak osa naplní od Ticků největších (Outer, Title) až po nejmenší (Regular) Ticky.
-            /// </summary>
-            /// <param name="tickDict"></param>
-            internal void CalculateTicksLine(Dictionary<TTick, BaseTick<TTick>> tickDict)
-            {
-                Dictionary<TTick, BaseTick<TTick>> lastTickDict = null;
-                int? currentPixelOffset = null;
-                this.CalculateTicksLine(tickDict, lastTickDict, ref currentPixelOffset);
-            }
-            /// <summary>
-            /// Uloží do předané Dictionary všechny ticky pro this položku Arrangement (=jedna řada ticků).
-            /// Vygeneruje Ticky pro celý aktuální rozsah osy (this.Axis.Value), jen pro ty Ticky, jejichž hodnota dosud v Dictionary není obsažena.
-            /// Při správném postupu se tak osa naplní od Ticků největších (Outer, Title) až po nejmenší (Regular) Ticky.
             /// Tato varianta může využívat informace o dřívějších pozicích Ticků v Dictionary lastTickDict 
             /// a o posunu (offsetu) dřívějších a aktuálních Ticků v ref currentPixelOffset.
             /// </summary>
@@ -1893,16 +1955,22 @@ namespace Asol.Tools.WorkScheduler.Components
                 decimal? tickSize = this.Axis.GetAxisUnits(this.Interval);
                 if (!tickSize.HasValue || tickSize.Value <= 0m) return;
 
-                TTick tick = this.Axis.RoundTickToInterval(value.Begin, this.Interval, RoundMode.Ceiling);
-                tick = this.Axis.RoundTickToLine(tick, this.Owner, this.TickType, value, this.Interval);
+                // První hodnota na ose:
+                TTick tick = this.Axis.RoundFirstTickForArrangement(value.Begin, this);
+
+                // Dokud pozice Ticku leží uvnitř aktuálního rozsahu osy:
                 while (value.Contains(tick))
                 {
                     string text = this.GetTickText(tick);
                     this.AddOneTick(tickDict, tick, text, AxisTickAlignment.Center, lastTickDict, ref currentPixelOffset);
-                    // one step with "tick": tick = Round(tick + this.Interval, Math)
-                    TTick tickNext = this.Axis.RoundTickToInterval(value.Add(tick, this.Interval), this.Interval, RoundMode.Math);
-                    tickNext = this.Axis.RoundTickToLine(tickNext, this.Owner, this.TickType, value, this.Interval);
+
+                    // Jdeme na další Tick:
+                    TTick tickNext = this.Axis.RoundNextTickForArrangement(value.Add(tick, this.Interval), this);
+
+                    // Zabezpečení (překročení počtu ticků celkem, nebo žádný pokrok):
                     if (tickDict.Count >= 1000 || this.Axis._ValueHelper.CompareByEdge(tick, tickNext) == 0) break;
+
+                    // A půjdeme dál s novým tickem:
                     tick = tickNext;
                 }
             }
@@ -2386,7 +2454,7 @@ namespace Asol.Tools.WorkScheduler.Components
             FontInfo fontInfo = new FontInfo() { FontType = FontSetType.DefaultFont, RelativeSize = 75, Italic = true };
             using (StringFormat sf = new StringFormat(StringFormatFlags.NoClip))
             {
-                string text = this.ArrangementCurrent.StdLabelItem.Interval.ToString();
+                string text = this.ArrangementCurrent.TextId;
                 SizeF size = graphics.MeasureString(text, fontInfo.Font);
                 PointF point = new PointF(absoluteBounds.Right - 3, absoluteBounds.Top + 1);
                 RectangleF area = size.AlignTo(absoluteBounds, ContentAlignment.TopCenter);
@@ -2938,12 +3006,13 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <returns></returns>
         protected abstract string GetTickText(TTick tick, string format);
         /// <summary>
-        /// Returns specified value (value on axis, TTick: for example DateTime) rounded to an interval (TSize: for example TimeSpan) with RoundMode.
-        /// For example on TimeAxis: when value is 15.2.2016 14:35:16.165; and interval is 00:15:00.000, then result RoundValue is 15.2.2016 14:30:00 (for RoundMode = Math).
+        /// Zaokrouhlí a vrátí danou hodnotu (value) do daného intervalu v daném směru.
+        /// Například pro TimeAxis: pokud value je 15.2.2016 14:35:16.165; a interval je 00:15:00.000 a roundMode = Math,
+        /// pak výsledek je 15.2.2016 14:30:00
         /// </summary>
-        /// <param name="value">Value (Tick) for round</param>
-        /// <param name="interval">Interval on which will be Tick rounded</param>
-        /// <param name="roundMode">Mode for round</param>
+        /// <param name="value">Hodnota (Tick) k zaokrouhlení</param>
+        /// <param name="interval">Interval, do kterého bude Tick zaokrouhlen</param>
+        /// <param name="roundMode">Režim zaokrouhlení</param>
         /// <returns></returns>
         protected abstract TTick RoundTickToInterval(TTick value, TSize interval, RoundMode roundMode);
         /// <summary>
