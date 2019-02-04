@@ -56,7 +56,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             this.CreateRightPanel();
             this.CreateContextFunctions();
 
-            // Application.App.TracePriority = Application.TracePriority.Priority2_Lowest;
+            Application.App.TracePriority = Application.TracePriority.Priority5_Normal;
 
             return this.MainData;
         }
@@ -67,9 +67,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         {
             DateTime now = DateTime.Now;
             this.DateTimeNow = now.Date;
-            this.DateTimeFirst = new DateTime(now.Year, now.Month, 1);
+            this.DateTimeFirst = new DateTime(now.Year, now.Month, 1).AddMonths(-24);
+            this.DateTimeLast = this.DateTimeFirst.AddMonths(36);
             this.TimeRangeCurrent = new GuiTimeRange(this.DateTimeNow, this.DateTimeNow.AddDays(7d));
-            this.TimeRangeTotal = new GuiTimeRange(this.DateTimeFirst, this.DateTimeFirst.AddMonths(2));
+            this.TimeRangeTotal = new GuiTimeRange(this.DateTimeFirst, this.DateTimeLast);
         }
         #region Vlastní vytvoření dat k zobrazení
         /// <summary>
@@ -1064,7 +1065,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 gridCenterWorkplace.GraphProperties.GraphLineHeight = 20;
                 gridCenterWorkplace.GraphProperties.GraphLinePartialHeight = 40;
                 gridCenterWorkplace.GraphProperties.GraphPosition = DataGraphPositionType.InLastColumn;
-                gridCenterWorkplace.GraphProperties.InteractiveChangeMode = AxisInteractiveChangeMode.Shift;
+                gridCenterWorkplace.GraphProperties.InteractiveChangeMode = AxisInteractiveChangeMode.Shift | AxisInteractiveChangeMode.Zoom;
                 gridCenterWorkplace.GraphProperties.LogarithmicGraphDrawOuterShadow = 0.15f;
                 gridCenterWorkplace.GraphProperties.LogarithmicRatio = 0.60f;
                 gridCenterWorkplace.GraphProperties.Opacity = 255;
@@ -1301,6 +1302,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         protected GuiGrid GridCenterPersons;
         protected DateTime DateTimeNow;
         protected DateTime DateTimeFirst;
+        protected DateTime DateTimeLast;
         protected GuiTimeRange TimeRangeTotal;
         protected GuiTimeRange TimeRangeCurrent;
         #endregion
