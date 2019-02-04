@@ -190,12 +190,12 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             {
                 case GInteractiveChangeState.MouseEnter:
                     this.Angle = 270f;
-                    this.RepaintToLayers = GInteractiveDrawLayer.Standard;
+                    this.Repaint();
                     e.ToolTipData.InfoText = toolText;
                     break;
                 case GInteractiveChangeState.MouseOver:
                     this.MouseCenter = e.MouseRelativePoint;
-                    this.RepaintToLayers = GInteractiveDrawLayer.Standard;
+                    this.Repaint();
                     e.ToolTipData.InfoText = toolText;
                     break;
                 case GInteractiveChangeState.LeftDragMoveBegin:
@@ -203,13 +203,13 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                     this.Angle = 0f;
                     this.OriginalBounds = this.Bounds;
                     e.RepaintAllItems = true;
-                    this.RepaintToLayers = GInteractiveDrawLayer.Interactive;
+                    this.Repaint();
                     e.RequiredCursorType = SysCursorType.SizeAll;
                     e.ToolTipData.InfoText = toolText;
                     break;
                 case GInteractiveChangeState.LeftDragMoveStep:
                     this.Bounds = e.DragMoveToBounds.Value;
-                    this.RepaintToLayers = GInteractiveDrawLayer.Interactive;
+                    this.Repaint();
                     e.ToolTipData.InfoText = toolText;
                     break;
                 case GInteractiveChangeState.LeftDragMoveCancel:
@@ -218,7 +218,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                         Rectangle oldBounds = this.Bounds;
                         Rectangle newBounds = this.OriginalBounds.Value;
                         this.SetBounds(newBounds, ProcessAction.PrepareInnerItems, EventSourceType.InteractiveChanged);
-                        this.RepaintToLayers = GInteractiveDrawLayer.Standard;
+                        this.Repaint();
                     }
                     break;
                 case GInteractiveChangeState.LeftDragMoveDone:
@@ -236,7 +236,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                     break;
                 case GInteractiveChangeState.RightClick:
                     this.Color = Color.Gray;
-                    this.RepaintToLayers = GInteractiveDrawLayer.Standard;
+                    this.Repaint();
                     break;
                 case GInteractiveChangeState.MouseLeave:
                     this.MouseCenter = null;

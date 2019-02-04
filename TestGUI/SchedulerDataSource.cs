@@ -67,8 +67,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         {
             DateTime now = DateTime.Now;
             this.DateTimeNow = now.Date;
-            this.DateTimeFirst = new DateTime(now.Year, now.Month, 1).AddMonths(-24);
-            this.DateTimeLast = this.DateTimeFirst.AddMonths(36);
+            this.DateTimeFirst = new DateTime(now.Year, now.Month, 1).AddMonths(-1);
+            this.DateTimeLast = this.DateTimeFirst.AddMonths(3);
             this.TimeRangeCurrent = new GuiTimeRange(this.DateTimeNow, this.DateTimeNow.AddDays(7d));
             this.TimeRangeTotal = new GuiTimeRange(this.DateTimeFirst, this.DateTimeLast);
         }
