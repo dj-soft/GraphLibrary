@@ -72,6 +72,77 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         private List<IInteractiveItem> _ItemsList;
         #endregion
+        #region Items, přidávání controlů
+        /// <summary>
+        /// Interactive items.
+        /// Any collection can be stored.
+        /// Set of value trigger this.Draw().
+        /// </summary>
+        [Browsable(false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        public IEnumerable<IInteractiveItem> Items
+        {
+            get { return this.ItemsList; }
+            set { this._ItemsList.Clear(); this.AddItems(value); }
+        }
+        /// <summary>
+        /// Přidá jeden interaktivní control do <see cref="Items"/>. Nespouští vykreslení controlu <see cref="GControlLayered.Draw()"/>
+        /// </summary>
+        /// <param name="item"></param>
+        public void AddItem(IInteractiveItem item)
+        {
+            this._AddItem(item);
+        }
+        /// <summary>
+        /// Přidá dané interaktivní controly do <see cref="Items"/>. Nespouští vykreslení controlu <see cref="GControlLayered.Draw()"/>
+        /// </summary>
+        /// <param name="items"></param>
+        public void AddItems(params IInteractiveItem[] items)
+        {
+            foreach (IInteractiveItem item in items)
+                this._AddItem(item);
+        }
+        /// <summary>
+        /// Přidá dané interaktivní controly do <see cref="Items"/>. Nespouští vykreslení controlu <see cref="GControlLayered.Draw()"/>
+        /// </summary>
+        /// <param name="items"></param>
+        public void AddItems(IEnumerable<IInteractiveItem> items)
+        {
+            if (items != null)
+            {
+                foreach (IInteractiveItem item in items)
+                    this._AddItem(item);
+            }
+        }
+        /// <summary>
+        /// Přidá dané interaktivní controly do <see cref="Items"/>. Nespouští vykreslení controlu <see cref="GControlLayered.Draw()"/>
+        /// </summary>
+        /// <param name="item"></param>
+        private void _AddItem(IInteractiveItem item)
+        {
+            if (item != null)
+            {
+                item.Parent = this;
+                this.ItemsList.Add(item);
+            }
+        }
+        private void _CallInteractiveStateChanged(GInteractiveChangeStateArgs e)
+        {
+            this.OnInteractiveStateChanged(e);
+            if (this.InteractiveStateChanged != null)
+                this.InteractiveStateChanged(this, e);
+        }
+        /// <summary>
+        /// Háček volaný při změně stavu, pro potomky
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void OnInteractiveStateChanged(GInteractiveChangeStateArgs e) { }
+        /// <summary>
+        /// Event after change of interactive state
+        /// </summary>
+        public event GInteractiveChangeStateHandler InteractiveStateChanged;
+        #endregion
         #region Focus (Enter, GotFocus, LostFocus, Leave) a Keyboard (PreviewKeyDown, KeyDown, KeyUp, KeyPress)
         private void _KeyboardEventsInit()
         {
@@ -1651,17 +1722,40 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         private Rectangle? _MouseDragFrameCurrentBounds { get; set; }
         #endregion
+        #region DrawItems, zařazování controlů k vykreslení
+        public void AddItemToDraw(IInteractiveItem control, GInteractiveDrawLayer drawToLayers)
+        {
+            if (false)
+            {   // Nemám zatím chuť to předělávat, je toho dost a dost...:
+                if (control == null || drawToLayers == GInteractiveDrawLayer.None) return;
+                if (drawToLayers.HasFlag(GInteractiveDrawLayer.Standard)) this._AddItemToDraw(control, this._DrawItemStandard);
+                if (drawToLayers.HasFlag(GInteractiveDrawLayer.Interactive)) this._AddItemToDraw(control, this._DrawItemInteractive);
+                if (drawToLayers.HasFlag(GInteractiveDrawLayer.Dynamic)) this._AddItemToDraw(control, this._DrawItemDynamic);
+            }
+        }
+        private void _AddItemToDraw(IInteractiveItem control, Dictionary<uint, IInteractiveItem> targetDict)
+        {
+            if (!targetDict.ContainsKey(control.Id))
+                targetDict.Add(control.Id, control);
+        }
+        private Dictionary<uint, IInteractiveItem> _DrawItemStandard;
+        private Dictionary<uint, IInteractiveItem> _DrawItemInteractive;
+        private Dictionary<uint, IInteractiveItem> _DrawItemDynamic;
+        #endregion
         #region Draw
         /// <summary>
         /// true = můžeme kreslit?
         /// </summary>
         protected override bool CanDraw { get { return (this._DrawState == InteractiveDrawState.Standard || this._DrawState == InteractiveDrawState.InteractiveRepaint); } }
         /// <summary>
-        /// Initialize Draw subsystem.
+        /// Inicializuje subsystém Draw
         /// </summary>
         private void _DrawInit()
         {
             this.LayerCount = 4;          // [0] = Standard;  [1] = Dynamic;  [2] = Interactive;  [3] = ToolTip, Progress Window and Animations
+            this._DrawItemStandard = new Dictionary<uint, IInteractiveItem>();
+            this._DrawItemInteractive = new Dictionary<uint, IInteractiveItem>();
+            this._DrawItemDynamic = new Dictionary<uint, IInteractiveItem>();
         }
         /// <summary>
         /// Main paint process (standard and interactive)
@@ -1843,7 +1937,7 @@ namespace Asol.Tools.WorkScheduler.Components
             /// <summary>
             /// Konstruktor
             /// </summary>
-            public DrawRequest()
+            private DrawRequest()
             {
                 this.ProcessedItems = new Dictionary<uint, IInteractiveItem>();
                 this.StandardItems = new List<DrawRequestItem>();
@@ -1866,7 +1960,6 @@ namespace Asol.Tools.WorkScheduler.Components
                 this.DrawToolTip = (toolTipItem != null && toolTipItem.NeedDraw);
                 this.DrawProgress = (progressItem != null && progressItem.Is.Visible);
             }
-
             /// <summary>
             /// Prvky, které jsme již zařadili
             /// </summary>
@@ -1888,19 +1981,19 @@ namespace Asol.Tools.WorkScheduler.Components
             /// </summary>
             public bool DrawAllItems { get; private set; }
             /// <summary>
-            /// Obsahuje true, pokud je požadavek na vykreslení FrameSelect obdélníku (kreslín se do vrstvy Dynamic)
+            /// Obsahuje true, pokud je požadavek na vykreslení FrameSelect obdélníku (kreslí se do vrstvy Dynamic)
             /// </summary>
             public bool DrawFrameSelect { get; private set; }
             /// <summary>
-            /// true when ToolTip need draw
+            /// Obsahuje true, pokud je požadavek na vykreslení ToolTipu
             /// </summary>
             public bool DrawToolTip { get; private set; }
             /// <summary>
-            /// true when Progress need draw
+            /// Obsahuje true, pokud je požadavek na vykreslení Progressu
             /// </summary>
             public bool DrawProgress { get; private set; }
             /// <summary>
-            /// true when draw in Interactive mode
+            /// Obsahuje true, pokud je požadavek na vykreslení v Interactive režimu
             /// </summary>
             public bool InteractiveMode { get; set; }
             /// <summary>
@@ -1934,7 +2027,6 @@ namespace Asol.Tools.WorkScheduler.Components
             /// <param name="interactive">true = provádí se interaktivní vykreslení</param>
             internal void Fill(Size clientSize, IInteractiveParent parent, IEnumerable<IInteractiveItem> items, bool drawAllItems, bool interactive)
             {
-                // Tady se bude používat BoundsSpider !!!
                 BoundsInfo boundsInfo = BoundsInfo.CreateForParent(clientSize);
                 using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "DrawRequest", "Fill", ""))
                 {
@@ -2116,7 +2208,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         #endregion
         #endregion
-        #region Draw support
+        #region Pomocné metody a objekty pro vykreslování, postupně utlumit
         private void _DrawSupportInit()
         {
             this.DefaultBackColor = Color.LightBlue;
@@ -2173,23 +2265,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// které jsou instancované na třídě GInteractiveControl, proto je jejich použití velice rychlé.
         /// </summary>
         /// <param name="graphics">Grafika</param>
-        /// <param name="absoluteBounds">Souřadnice v koordinátech Controlu</param>
-        /// <param name="backColor">Barva pozadí</param>
-        /// <param name="enlargeL">Rozšíření doleva</param>
-        /// <param name="enlargeT">Rozšíření nahoru</param>
-        /// <param name="enlargeR">Rozšíření doprava</param>
-        /// <param name="enlargeB">Rozšíření dolů</param>
-        public void FillRectangle(Graphics graphics, Rectangle absoluteBounds, Color? backColor, int enlargeL, int enlargeT, int enlargeR, int enlargeB)
-        {
-            this._FillRectangle(graphics, absoluteBounds, backColor, true, enlargeL, enlargeT, enlargeR, enlargeB);
-        }
-        /// <summary>
-        /// Vyplní daný prostor (absolutní souřadnice) danou barvou (default = this.DefaultBackColor).
-        /// Dané souřadnice mohou být zvětšené o dané hodnoty pro jednotlivé hrany: kladné číslo zvětší prostor, záporné zmenší.
-        /// Tato metoda (a další metody v této třídě) používají ke kreslení objekty (Pen, Brush), 
-        /// které jsou instancované na třídě GInteractiveControl, proto je jejich použití velice rychlé.
-        /// </summary>
-        /// <param name="graphics">Grafika</param>
         /// <param name="bounds">Souřadnice v koordinátech Controlu</param>
         /// <param name="backColor">Barva pozadí</param>
         /// <param name="enlarge">Použít dané rozšíření</param>
@@ -2204,209 +2279,6 @@ namespace Asol.Tools.WorkScheduler.Components
 
             this.SolidBrush.Color = (backColor.HasValue ? backColor.Value : this.DefaultBackColor);
             graphics.FillRectangle(this.SolidBrush, bounds);
-        }
-        /// <summary>
-        /// Vykreslí ohraničení daného prostoru (absolutní souřadnice) danou barvou (default = this.DefaultBorderColor).
-        /// Tato metoda (a další metody v této třídě) používají ke kreslení objekty (Pen, Brush), 
-        /// které jsou instancované na třídě GInteractiveControl, proto je jejich použití velice rychlé.
-        /// </summary>
-        /// <param name="graphics">Grafika</param>
-        /// <param name="absoluteBounds">Souřadnice v koordinátech Controlu</param>
-        /// <param name="borderColor">Barva okrajů</param>
-        public void BorderRectangle(Graphics graphics, Rectangle absoluteBounds, Color? borderColor)
-        {
-            this._BorderRectangle(graphics, absoluteBounds, borderColor, false, 0, 0, 0, 0);
-        }
-        /// <summary>
-        /// Vykreslí ohraničení daného prostoru (absolutní souřadnice) danou barvou (default = this.DefaultBorderColor).
-        /// Dané souřadnice mohou být zvětšené o dané hodnoty pro jednotlivé hrany: kladné číslo zvětší prostor, záporné zmenší.
-        /// Tato metoda (a další metody v této třídě) používají ke kreslení objekty (Pen, Brush), 
-        /// které jsou instancované na třídě GInteractiveControl, proto je jejich použití velice rychlé.
-        /// </summary>
-        /// <param name="graphics">Grafika</param>
-        /// <param name="absoluteBounds">Souřadnice v koordinátech Controlu</param>
-        /// <param name="borderColor">Barva okrajů</param>
-        /// <param name="enlargeL">Rozšíření doleva</param>
-        /// <param name="enlargeT">Rozšíření nahoru</param>
-        /// <param name="enlargeR">Rozšíření doprava</param>
-        /// <param name="enlargeB">Rozšíření dolů</param>
-        public void BorderRectangle(Graphics graphics, Rectangle absoluteBounds, Color? borderColor, int enlargeL, int enlargeT, int enlargeR, int enlargeB)
-        {
-            this._BorderRectangle(graphics, absoluteBounds, borderColor, true, enlargeL, enlargeT, enlargeR, enlargeB);
-        }
-        private void _BorderRectangle(Graphics graphics, Rectangle bounds, Color? borderColor, bool enlarge, int enlargeL, int enlargeT, int enlargeR, int enlargeB)
-        {
-            bounds = bounds.Enlarge(enlargeL, enlargeT, enlargeR - 1, enlargeB - 1);     // Shrink Width and Height by 1 pixel is standard for draw Border into (!) area.
-            this._ResetPen(borderColor);
-            graphics.DrawRectangle(this.Pen, bounds);
-        }
-        /// <summary>
-        /// Vykreslí čáru mezi danými souřadnicemi, v dané barvě a šířce, s daným stylem.
-        /// Tato metoda (a další metody v této třídě) používají ke kreslení objekty (Pen, Brush), 
-        /// které jsou instancované na třídě GInteractiveControl, proto je jejich použití velice rychlé.
-        /// </summary>
-        /// <param name="graphics"></param>
-        /// <param name="x1"></param>
-        /// <param name="y1"></param>
-        /// <param name="x2"></param>
-        /// <param name="y2"></param>
-        /// <param name="color"></param>
-        /// <param name="width"></param>
-        /// <param name="dashStyle"></param>
-        public void DrawLine(Graphics graphics, int x1, int y1, int x2, int y2, Color color, float width, System.Drawing.Drawing2D.DashStyle dashStyle)
-        {
-            Pen pen = this.Pen;
-            pen.Width = width;
-            pen.Color = color;
-            pen.DashStyle = dashStyle;
-            graphics.DrawLine(pen, x1, y1, x2, y2);
-        }
-        /// <summary>
-        /// Vykreslí ohraničení (Border) okolo daných souřadnic, v dané barvě a stylu.
-        /// Tato metoda (a další metody v této třídě) používají ke kreslení objekty (Pen, Brush), 
-        /// které jsou instancované na třídě GInteractiveControl, proto je jejich použití velice rychlé.
-        /// </summary>
-        /// <param name="graphics">Grafika</param>
-        /// <param name="absoluteBounds">Souřadnice v koordinátech Controlu</param>
-        /// <param name="color">Barva okrajů</param>
-        /// <param name="linesType">Typ vykreslení okrajů</param>
-        public void DrawBorder(Graphics graphics, Rectangle absoluteBounds, Color color, BorderLinesType linesType)
-        {
-            this.DrawBorder(graphics, absoluteBounds, color, linesType, false);
-        }
-        /// <summary>
-        /// Vykreslí ohraničení (Border) okolo daných souřadnic, v dané barvě a stylu. Linka má šířku 1 px.
-        /// Border se kreslí od souřadnice absoluteBounds.X po souřadnici (absoluteBounds.Right - 1), protože to je poslední pixel daného obdélníku.
-        /// Obdobně na ose Y.
-        /// Tato metoda (a další metody v této třídě) používají ke kreslení objekty (Pen, Brush), 
-        /// které jsou instancované na třídě GInteractiveControl, proto je jejich použití velice rychlé.
-        /// </summary>
-        /// <param name="graphics">Grafika</param>
-        /// <param name="absoluteBounds">Souřadnice v koordinátech Controlu</param>
-        /// <param name="color">Barva okrajů</param>
-        /// <param name="linesType">Typ vykreslení okrajů</param>
-        /// <param name="drawAsInnerCell">Vykreslovat border jako vnitřní buňku tabulky = pokud jsou čáry Dotted nebo Solid, pak nekreslit Left a Top hranu. V režimu 3D jsou kresleny všechny hrany. Pokud je false, pak kreslí všechny hrany bez ohledu na typ čáry (kromě None, samosebou).</param>
-        public void DrawBorder(Graphics graphics, Rectangle absoluteBounds, Color color, BorderLinesType linesType, bool drawAsInnerCell)
-        {
-            int x0 = absoluteBounds.X;
-            int x1 = absoluteBounds.Right - 1;
-            int y0 = absoluteBounds.Y;
-            int y1 = absoluteBounds.Bottom - 1;
-
-            // Pořadí kreslení (Right, Bottom, Top, Left) určuje, jakou barvou budou vykresleny rohové pixely v režimu 3D.
-            // Příprava pera DrawBorderPreparePen() zohledňuje stranu a nastavení okrajů, určuje barvu, styl a Dotted offset:
-            if (DrawBorderPreparePen(RectangleSide.Right, absoluteBounds.Location, color, linesType, drawAsInnerCell))
-                graphics.DrawLine(this.Pen, x1, y0, x1, y1);
-            if (DrawBorderPreparePen(RectangleSide.Bottom, absoluteBounds.Location, color, linesType, drawAsInnerCell))
-                graphics.DrawLine(this.Pen, x0, y1, x1, y1);
-            if (DrawBorderPreparePen(RectangleSide.Top, absoluteBounds.Location, color, linesType, drawAsInnerCell))
-                graphics.DrawLine(this.Pen, x0, y0, x1, y0);
-            if (DrawBorderPreparePen(RectangleSide.Left, absoluteBounds.Location, color, linesType, drawAsInnerCell))
-                graphics.DrawLine(this.Pen, x0, y0, x0, y1);
-        }
-        /// <summary>
-        /// Metoda připraví this.Pen pro kreslení borderu, pro danou stranu obdélníku, daný typ borderu, barvu a detaily.
-        /// Vrací true = má se kreslit, false = nemá se kreslit.
-        /// </summary>
-        /// <param name="side">Strana, pro kterou chystáme pero</param>
-        /// <param name="point">Souřadnice počátku prostoru, ovlivní offset (DashOffset) pro pero se stylem DashStyle = DashStyle.Dot;</param>
-        /// <param name="color">Základní barva</param>
-        /// <param name="linesType">Typ ohraničení</param>
-        /// <param name="drawAsInnerCell">Vykreslovat border jako vnitřní buňku tabulky = pokud jsou čáry Dotted nebo Solid, pak nekreslit Left a Top hranu. V režimu 3D jsou kresleny všechny hrany. Pokud je false, pak kreslí všechny hrany bez ohledu na typ čáry (kromě None, samosebou).</param>
-        /// <returns></returns>
-        protected bool DrawBorderPreparePen(RectangleSide side, Point point, Color color, BorderLinesType linesType, bool drawAsInnerCell)
-        {
-            bool isDotted = false;
-            bool isSolid = false;
-            bool is3DSunken = false;
-            bool is3DRisen = false;
-            int offset = 0;
-            switch (side)
-            {
-                case RectangleSide.Top:
-                case RectangleSide.Bottom:
-                    isDotted = linesType.HasFlag(BorderLinesType.HorizontalDotted);
-                    isSolid = linesType.HasFlag(BorderLinesType.HorizontalSolid);
-                    is3DSunken = linesType.HasFlag(BorderLinesType.Horizontal3DSunken);
-                    is3DRisen = linesType.HasFlag(BorderLinesType.Horizontal3DRisen);
-                    offset = point.X;
-                    break;
-                case RectangleSide.Right:
-                case RectangleSide.Left:
-                    isDotted = linesType.HasFlag(BorderLinesType.VerticalDotted);
-                    isSolid = linesType.HasFlag(BorderLinesType.VerticalSolid);
-                    is3DSunken = linesType.HasFlag(BorderLinesType.Vertical3DSunken);
-                    is3DRisen = linesType.HasFlag(BorderLinesType.Vertical3DRisen);
-                    offset = point.Y;
-                    break;
-            }
-
-            // Pokud se border nemá kreslit žádný:
-            if (!(isDotted || isSolid || is3DSunken || is3DRisen)) return false;
-
-            // Pokud border je obyčejný (nikoli 3D), a má se kreslit jako vnitřní buňka tabulky, a zde máme připravit stranu Top nebo Left, pak nekreslíme nic:
-            if ((isDotted || isSolid) && drawAsInnerCell && (side == RectangleSide.Top || side == RectangleSide.Left)) return false;
-
-            // Nastavíme vlastnosti pera:
-            Pen pen = this.Pen;
-            pen.Width = 1f;
-            // Teoreticky mohou být nastaveny všechny flagy, ale prakticky reagujeme jen na první z nich:
-            if (isDotted)
-            {
-                pen.Color = color;
-                pen.DashStyle = DashStyle.Dot;
-                // Tento řádek zajišťuje, že za sebou jdoucí buňky vykreslené tímto perem budou mít korektně navazující tečky 
-                //  bez ohledu na to, zda začínají na sudém nebo lichém pixelu:
-                pen.DashOffset = (offset % 2);
-                return true;
-            }
-            else if (isSolid)
-            {
-                pen.Color = color;
-                pen.DashStyle = DashStyle.Solid;
-                return true;
-            }
-            else if (is3DSunken || is3DRisen)
-            {
-                pen.Color = DrawBorderGet3DColor(side, color, is3DSunken);
-                pen.DashStyle = DashStyle.Solid;
-                return true;
-            }
-
-            return false;
-        }
-        /// <summary>
-        /// Vrací barvu pro linku na okraji (Border), pro 3D zobrazení.
-        /// Simuluje tak 3D efekt pomocí světlejší / tmavší barvy.
-        /// </summary>
-        /// <param name="side"></param>
-        /// <param name="color"></param>
-        /// <param name="is3DSunken">true pokud máme simulovat efekt Sunken (jakoby potopený dolů), false pokud jde o efekt Risen (jakoby vystupující nahoru)</param>
-        /// <returns></returns>
-        protected Color DrawBorderGet3DColor(RectangleSide side, Color color, bool is3DSunken)
-        {
-            float ratio = Skin.Modifiers.Effect3DBorderRatio;
-            Color dark = Skin.Modifiers.Effect3DDark;
-            Color light = Skin.Modifiers.Effect3DLight;
-            switch (side)
-            {
-                case RectangleSide.Left:
-                case RectangleSide.Top:
-                    // Pro Sunken efekt: tmavší, pro Risen efekt: světlejší odstín:
-                    return ((is3DSunken) ? color.Morph(dark, ratio) : color.Morph(light, ratio));
-                case RectangleSide.Right:
-                case RectangleSide.Bottom:
-                    // Pro Sunken efekt: světlejší, pro Risen efekt: tmavší odstín:
-                    return ((is3DSunken) ? color.Morph(light, ratio) : color.Morph(dark, ratio));
-            }
-            return color;
-        }
-        private void _ResetPen(Color? color)
-        {
-            Pen pen = this.Pen;
-            pen.Color = (color.HasValue ? color.Value : this.DefaultBorderColor);
-            if (pen.Width != 1f) pen.Width = 1f;
-            if (pen.DashStyle != DashStyle.Solid) pen.DashStyle = DashStyle.Solid;
         }
         private SolidBrush _SolidBrush;
         private Pen _Pen;
@@ -2627,10 +2499,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         private bool _BackThreadProcess;
         /// <summary>
-        /// Invoke GUI thread, call method for drawing ToolTip: _BackThreadRunDrawGui()
+        /// Vyvolá překreslení tohoto controlu, a to buď kompletně celý objekt anebo pouze vrstu ToolTip, Progress Animace.
+        /// Tato metoda převoává GUI thread, může se tedy spouštět z threadu Background.
         /// </summary>
         /// <param name="drawItems">true = vykreslit i běžné prvky (=naplnit request pro kreslení)</param>
-        /// <remarks>Can run in boot thread (GUI and BackThread)</remarks>
         private void _BackThreadRunDraw(bool drawItems)
         {
             if (this.InvokeRequired)
@@ -2639,10 +2511,10 @@ namespace Asol.Tools.WorkScheduler.Components
                 this._BackThreadRunDrawGui(drawItems);
         }
         /// <summary>
-        /// Call Draw() for this control, for only ToolTip object.
+        /// Vyvolá překreslení tohoto controlu, a to buď kompletně celý objekt anebo pouze vrstu ToolTip, Progress Animace.
+        /// Běží v GUI threadu.
         /// </summary>
         /// <param name="drawItems">true = vykreslit i běžné prvky (=naplnit request pro kreslení)</param>
-        /// <remarks>Run only in GUI thread</remarks>
         private void _BackThreadRunDrawGui(bool drawItems)
         {
             if (this._BackThreadRunDrawGuiProcess) return;
@@ -2665,7 +2537,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// true = právě probíhá výkon v metodě <see cref="_BackThreadRunDrawGui(bool)"/>, nebudeme spouštět její další instanci
         /// </summary>
         private bool _BackThreadRunDrawGuiProcess;
-
         /// <summary>
         /// Thread running in background for this control
         /// </summary>
@@ -2739,81 +2610,6 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Pole aktivních animátorů
         /// </summary>
         private List<Func<AnimationResult>> _AnimatorTickList;
-        #endregion
-        #region Public property and events
-        /// <summary>
-        /// Interactive items.
-        /// Any collection can be stored.
-        /// Set of value trigger this.Draw().
-        /// </summary>
-        [Browsable(false)]
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public IEnumerable<IInteractiveItem> Items
-        {
-            get { return this.ItemsList; }
-            set { this._ItemsList.Clear(); this.AddItems(value); }
-        }
-        /// <summary>
-        /// Add one interactive item.
-        /// Does not trigger Draw().
-        /// </summary>
-        /// <param name="item"></param>
-        public void AddItem(IInteractiveItem item)
-        {
-            this._AddItem(item);
-        }
-        /// <summary>
-        /// Add more interactive items.
-        /// Does not trigger Draw().
-        /// </summary>
-        /// <param name="items"></param>
-        public void AddItems(params IInteractiveItem[] items)
-        {
-            foreach (IInteractiveItem item in items)
-                this._AddItem(item);
-        }
-        /// <summary>
-        /// Add more interactive items.
-        /// Does not trigger Draw().
-        /// </summary>
-        /// <param name="items"></param>
-        public void AddItems(IEnumerable<IInteractiveItem> items)
-        {
-            if (items != null)
-            {
-                foreach (IInteractiveItem item in items)
-                    this._AddItem(item);
-            }
-        }
-        /// <summary>
-        /// Add more interactive items.
-        /// Does not trigger Draw().
-        /// </summary>
-        /// <param name="item"></param>
-        private void _AddItem(IInteractiveItem item)
-        {
-            if (item != null)
-            {
-                item.Parent = this;
-                this.ItemsList.Add(item);
-            }
-        }
-        private void _CallInteractiveStateChanged(GInteractiveChangeStateArgs e)
-        {
-            this.OnInteractiveStateChanged(e);
-            if (this.InteractiveStateChanged != null)
-                this.InteractiveStateChanged(this, e);
-        }
-        /// <summary>
-        /// Háček volaný při změně stavu, pro potomky
-        /// </summary>
-        /// <param name="e"></param>
-        protected virtual void OnInteractiveStateChanged(GInteractiveChangeStateArgs e) { }
-        /// <summary>
-        /// Event after change of interactive state
-        /// </summary>
-        public event GInteractiveChangeStateHandler InteractiveStateChanged;
         #endregion
         #region Blokování GUI, vykreslení blokovaného GUI; podpora pro zavírání okna
         /// <summary>

@@ -576,7 +576,7 @@ namespace Asol.Tools.WorkScheduler.Components
 
                     // Call Draw, when need:
                     anyChange = (boundsChange || locationChanged || orientationChanged || splitterVisibleWidthChanged || moveLinkedItems);
-                    if (anyChange && (IsAction(actions, ProcessAction.CallDraw)))
+                    if (anyChange && this.Host != null && (IsAction(actions, ProcessAction.CallDraw)))
                         this.CallDrawRequest(eventSource);
                 }
             }

@@ -240,7 +240,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 this.SetBoundsPrepareInnerItems(oldBounds, newBounds, ref actions, eventSource);
             if (IsAction(actions, ProcessAction.CallChangedEvents))
                 this.CallBoundsChanged(oldBounds, newBounds, eventSource);
-            if (IsAction(actions, ProcessAction.CallDraw))
+            if (IsAction(actions, ProcessAction.CallDraw) && this.Host != null)
                 this.CallDrawRequest(eventSource);
         }
         /// <summary>
@@ -395,7 +395,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="repaintLayers"></param>
         protected virtual void Repaint(GInteractiveDrawLayer repaintLayers)
         {
-            if (repaintLayers == GInteractiveDrawLayer.None) return;
+            if (repaintLayers == GInteractiveDrawLayer.None || this.Host == null) return;
+
+            // this.Host.AddItemToDraw(this, repaintLayers);
 
             this.RepaintToLayers = repaintLayers;
             if (this.HasParent)
