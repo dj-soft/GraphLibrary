@@ -203,9 +203,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             Row[] checkedRows = this.TableRow.CheckedRows;
             bool isOnlyActivadedRow = (checkedRows.Length == 0);
             SourceActionType sourceAction = isOnlyActivadedRow ? SourceActionType.TableRowActivatedOnly : SourceActionType.TableRowActivatedWithRowsChecked;
-            GuiGridInteraction[] interactions = this.GetInteractions(sourceAction);
-            if (interactions == null) return;
-            this.InteractionThisSource(interactions, activeRow, checkedRows, null, null);
+            GridInteractionRunInfo[] runInteractions = this.GetInteractions(GuiActionType.RunInteractionRowActivated, sourceAction);
+            if (runInteractions == null) return;
+            this.InteractionThisSource(runInteractions, activeRow, checkedRows, null, null);
         }
         /// <summary>
         /// Eventhandler události "Byl označen řádek"
@@ -214,11 +214,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="e"></param>
         private void _TableRowCheckedRowChanged(object sender, GObjectPropertyChangeArgs<Row, bool> e)
         {
-            GuiGridInteraction[] interactions = this.GetInteractions(SourceActionType.TableRowChecked);
-            if (interactions == null) return;
+            GridInteractionRunInfo[] runInteractions = this.GetInteractions(GuiActionType.RunInteractionRowActivated, SourceActionType.TableRowChecked);
+            if (runInteractions == null) return;
             Row checkedRow = e.CurrentObject;
             Row[] checkedRows = this.TableRow.CheckedRows;
-            this.InteractionThisSource(interactions, checkedRow, checkedRows, null, null);
+            this.InteractionThisSource(runInteractions, checkedRow, checkedRows, null, null);
         }
         /// <summary>
         /// Hlídáme interaktivitu GTable = ukládáme aktivní tabulku do <see cref="IMainDataInternal.ActiveDataTable"/>
@@ -1841,17 +1841,17 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Obecná metoda, která má provést všechny nyní aktivní interakce této tabulky.
         /// </summary>
-        internal void RunInteractionThisSource(GridInteractionRunInfo[] interactions, ref bool callRefresh)
+        internal void RunInteractionThisSource(GridInteractionRunInfo[] runInteractions, ref bool callRefresh)
         {
-            if (interactions == null || interactions.Length == 0) return;
-            interactions = this.GetInteractionsForCurrentState(interactions).ToArray();
-            if (interactions == null || interactions.Length == 0) return;
+            if (runInteractions == null || runInteractions.Length == 0) return;
+            runInteractions = this.GetInteractionsForCurrentState(runInteractions).ToArray();
+            if (runInteractions == null || runInteractions.Length == 0) return;
 
             Row activeRow = this.TableRow.ActiveRow;
             Row[] checkedRows = this.TableRow.CheckedRows;
             bool isOnlyActivadedRow = (checkedRows.Length == 0);
 
-            this.InteractionThisSource(interactions, activeRow, checkedRows, null, null);
+            this.InteractionThisSource(runInteractions, activeRow, checkedRows, null, null);
 
             callRefresh = true;
         }
@@ -1864,11 +1864,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Vrácené pole může být null (když neexistuje žádná definice, nebo když žádná existující definice se nehodí pro danou akci).
         /// Pokud vrácené pole není null, pak obsahuje přinejmenším jednu položku.
         /// </summary>
+        /// <param name="guiAction">Typ akce</param>
         /// <param name="sourceAction"></param>
         /// <returns></returns>
-        private GridInteractionRunInfo[] GetInteractions(SourceActionType sourceAction)
+        private GridInteractionRunInfo[] GetInteractions(GuiActionType guiAction, SourceActionType sourceAction)
         {
-            GuiActionType guiAction = ;
             List<GuiGridInteraction> interactionList = this.AllInteractions;
             if (interactionList == null || interactionList.Count == 0) return null;
             GridInteractionRunInfo[] runInteractions = interactionList
@@ -1934,20 +1934,20 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Interakce mezi tabulkami, kde this tabulka je zdrojem interakce = zde došlo k akci Aktivace řádků:
         /// podle definic v this tabulce máme provést nějaké akce v cílových tabulkách.
         /// </summary>
-        /// <param name="interactions">Definice interakcí, které se mají provést s danými řádky</param>
+        /// <param name="runInteractions">Definice interakcí, které se mají provést s danými řádky</param>
         /// <param name="activeRow">Aktivní řádek, kde došlo k akci</param>
         /// <param name="checkedRows">Aktuálně označené řádky v tabulce (Checked)</param>
         /// <param name="activeGraph">Aktivní graf</param>
         /// <param name="graphItems">Aktivní prvky grafů v této tabulce</param>
-        private void InteractionThisSource(GuiGridInteraction[] interactions, Row activeRow, Row[] checkedRows, GTimeGraph activeGraph, DataGraphItem[] graphItems)
+        private void InteractionThisSource(GridInteractionRunInfo[] runInteractions, Row activeRow, Row[] checkedRows, GTimeGraph activeGraph, DataGraphItem[] graphItems)
         {
-            this.InteractionSelectorClear(interactions);
-            this.InteractionRowFiltersPrepare(interactions);
+            this.InteractionSelectorClear(runInteractions);
+            this.InteractionRowFiltersPrepare(runInteractions);
 
             // Zjistíme, zda cílová strana bude vyžadovat znalost prvků grafů na zdrojové straně:
             TargetActionType targetFromSourceGraph = (TargetActionType.SearchSourceItemId | TargetActionType.SearchSourceGroupId | TargetActionType.SearchSourceDataId);
             // Na vstupu máme řadu definic interakcí, projdeme je a provedeme potřebné kroky:
-            foreach (GuiGridInteraction interaction in interactions)
+            foreach (GridInteractionRunInfo interaction in runInteractions)
             {
                 // Pokud interakce nemá definovaný cíl (tabulku) nebo cílovou akci (TargetAction je None), pak tuto interakci přeskočím:
                 if (String.IsNullOrEmpty(interaction.TargetGridFullName) || interaction.TargetAction == TargetActionType.None) continue;
@@ -1968,19 +1968,19 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 targetTable.InteractionThisTarget(args);
             }
 
-            this.InteractionRowFiltersActivate(interactions);
+            this.InteractionRowFiltersActivate(runInteractions);
         }
         /// <summary>
         /// Metoda vrátí dané prvky grafů: buď všechny, anebo pouze ty, které spadají do aktuálního viditelného času.
         /// Řídí to definice interakce, její <see cref="GuiGridInteraction.TargetAction"/>, hodnota <see cref="TargetActionType.SearchSourceVisibleTime"/>.
         /// </summary>
-        /// <param name="interaction"></param>
+        /// <param name="runInteraction"></param>
         /// <param name="graphItems"></param>
         /// <returns></returns>
-        private DataGraphItem[] InteractionThisSourceFilterItems(GuiGridInteraction interaction, DataGraphItem[] graphItems)
+        private DataGraphItem[] InteractionThisSourceFilterItems(GridInteractionRunInfo runInteraction, DataGraphItem[] graphItems)
         {
-            if (interaction == null || graphItems == null || graphItems.Length == 0) return graphItems;
-            bool onlyVisibleTime = interaction.TargetAction.HasFlag(TargetActionType.SearchSourceVisibleTime);
+            if (runInteraction == null || graphItems == null || graphItems.Length == 0) return graphItems;
+            bool onlyVisibleTime = runInteraction.TargetAction.HasFlag(TargetActionType.SearchSourceVisibleTime);
             if (!onlyVisibleTime) return graphItems;
             TimeRange searchInTime = (onlyVisibleTime ? this.SynchronizedTime : null);
             if (searchInTime == null) return graphItems;
@@ -1998,29 +1998,29 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         ///     (její <see cref="GuiGridInteraction.TargetAction"/> obsahuje například <see cref="TargetActionType.SelectTargetItem"/>),
         ///  - a přitom tatáž definice nemá požadavek <see cref="TargetActionType.LeaveCurrentTarget"/> = předpokládá se označování po předešlém odznačení.
         /// </summary>
-        /// <param name="interactions"></param>
-        private void InteractionSelectorClear(GuiGridInteraction[] interactions)
+        /// <param name="runInteractions"></param>
+        private void InteractionSelectorClear(GridInteractionRunInfo[] runInteractions)
         {
-            if (interactions == null || interactions.Length == 0) return;
+            if (runInteractions == null || runInteractions.Length == 0) return;
 
-            bool clearSelected = interactions.Any(i => (i.TargetAction.HasFlag(TargetActionType.SelectTargetItem) && !i.TargetAction.HasFlag(TargetActionType.LeaveCurrentTarget)));
+            bool clearSelected = runInteractions.Any(i => (i.TargetAction.HasFlag(TargetActionType.SelectTargetItem) && !i.TargetAction.HasFlag(TargetActionType.LeaveCurrentTarget)));
             if (clearSelected)
                 this.MainControl.Selector.ClearSelected();
 
-            bool clearActivated = interactions.Any(i => (i.TargetAction.HasFlag(TargetActionType.ActivateTargetItem) && !i.TargetAction.HasFlag(TargetActionType.LeaveCurrentTarget)));
+            bool clearActivated = runInteractions.Any(i => (i.TargetAction.HasFlag(TargetActionType.ActivateTargetItem) && !i.TargetAction.HasFlag(TargetActionType.LeaveCurrentTarget)));
             if (clearActivated)
                 this.MainControl.Selector.ClearActivated();
         }
         /// <summary>
         /// Metoda zjistí, zda některé Target tabulky budou řešit Řádkový filtr, a pokud ano pak jej připraví:
         /// </summary>
-        /// <param name="interactions"></param>
-        private void InteractionRowFiltersPrepare(GuiGridInteraction[] interactions)
+        /// <param name="runInteractions"></param>
+        private void InteractionRowFiltersPrepare(GridInteractionRunInfo[] runInteractions)
         {
-            if (interactions == null || interactions.Length == 0) return;
+            if (runInteractions == null || runInteractions.Length == 0) return;
 
             // Získám Dictionary, obsahující Distinct jména tabulek (TargetGridFullName), které jsou Target a kde akce TargetAction obsahuje FilterTargetRows:
-            Dictionary<string, string> nameDict = interactions
+            Dictionary<string, string> nameDict = runInteractions
                 .Where(i => ((i.TargetAction & TargetActionType.FilterTargetRows) != 0))
                 .Select(i => i.TargetGridFullName)
                 .GetDictionary(s => s, true);
@@ -2037,8 +2037,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Metoda aktivuje Řádkový filtr v těch tabulkách, kde je připraven (=kde je aktivní)
         /// </summary>
-        /// <param name="interactions"></param>
-        private void InteractionRowFiltersActivate(GuiGridInteraction[] interactions)
+        /// <param name="runInteractions"></param>
+        private void InteractionRowFiltersActivate(GridInteractionRunInfo[] runInteractions)
         {
             foreach (MainDataTable table in this.IMainData.DataTables)
                 table.InteractionThisRowFilterActivate();
@@ -2341,23 +2341,27 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             /// <summary>
             /// Konstruktor
             /// </summary>
-            /// <param name="interaction">Definice této jedné interakce</param>
+            /// <param name="runInteraction">Definice této jedné interakce</param>
             /// <param name="sourceActiveRow">Aktuální řádek ve zdrojové tabulce</param>
             /// <param name="sourceCheckedRows">Označené řádky ve zdrojové tabulce</param>
             /// <param name="activeGraph">Aktivní graf</param>
             /// <param name="sourceGraphItems">Aktivní prky grafů ve zdrojové tabulce (podle typu interakce jde o všechny prvky aktivních řádků, nebo o aktivní prvky v určitém grafu)</param>
-            public InteractionArgs(GuiGridInteraction interaction, Row sourceActiveRow, Row[] sourceCheckedRows, GTimeGraph activeGraph, DataGraphItem[] sourceGraphItems)
+            internal InteractionArgs(GridInteractionRunInfo runInteraction, Row sourceActiveRow, Row[] sourceCheckedRows, GTimeGraph activeGraph, DataGraphItem[] sourceGraphItems)
             {
-                this.Interaction = interaction;
+                this.RunInteraction = runInteraction;
                 this.SourceActiveRow = sourceActiveRow;
                 this.SourceCheckedRows = sourceCheckedRows;
                 this.ActiveGraph = activeGraph;
                 this.SourceGraphItems = sourceGraphItems;
             }
             /// <summary>
-            /// Definice této jedné interakce
+            /// Data této jedné interakce
             /// </summary>
-            public GuiGridInteraction Interaction { get; private set; }
+            internal GridInteractionRunInfo RunInteraction { get; private set; }
+            /// <summary>
+            /// Definice interakce
+            /// </summary>
+            public GuiGridInteraction Interaction { get { return this.RunInteraction.GuiGridInteraction; } }
             /// <summary>
             /// Aktuální řádek ve zdrojové tabulce
             /// </summary>
@@ -3566,7 +3570,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Parametry pro běh, předané při spuštění z Toolbaru
         /// </summary>
         public string[] RunParameters { get; private set; }
-
 
         /// <summary>
         /// Zdrojová akce, na kterou je tato interakce navázaná

@@ -859,12 +859,12 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="callRefresh">Nastavit na true v případě potřeby Refreshe</param>
         private void _RunGuiInteractionsByName(GuiActionType guiAction, string interactionNames, ref bool callRefresh)
         {
-            var interactions = this._GetTableInteractions(guiAction, interactionNames);
-            if (interactions == null) return;
+            var runInteractions = this._GetTableInteractions(guiAction, interactionNames);
+            if (runInteractions == null) return;
 
-            foreach (var interaction in interactions)
+            foreach (var runInteraction in runInteractions)
                 // MainDataTable . RunInteractionThisSource( GridInteractionRunInfo[] ):
-                interaction.Item1.RunInteractionThisSource(interaction.Item2.ToArray(), ref callRefresh);
+                runInteraction.Item1.RunInteractionThisSource(runInteraction.Item2.ToArray(), ref callRefresh);
         }
         /// <summary>
         /// Provede znovu aktuálně platné interakce všech tabulek, vyhovující danému filtru akcí SourceActionType a TargetActionType
