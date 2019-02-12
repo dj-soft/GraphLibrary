@@ -406,7 +406,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public List<GuiGrid> Grids { get; set; }
         /// <summary>
-        /// Zobrazovat titulkový řádek nad jednotlivými <see cref="GuiTable"/> vždy = i když je jen jedna?
+        /// Zobrazovat titulkový řádek nad jednotlivými tabulkami vždy = i když je jen jedna?
         /// </summary>
         public bool ShowTableTitleAllways { get; set; }
         /// <summary>
@@ -455,8 +455,8 @@ namespace Noris.LCS.Base.WorkScheduler
     #region GuiGrid : obsahuje veškeré data pro zobrazení jedné tabulky v WorkScheduler pluginu (Rows, Graph, Text).
     /// <summary>
     /// GuiGrid : obsahuje veškeré data pro zobrazení jedné tabulky v WorkScheduler pluginu.
-    /// Obsahuje řádky <see cref="Rows"/>, obsahuje jednotlivé prvky časových grafů <see cref="GraphItems"/>, 
-    /// a obsahuje textové popisky k těmto grafům <see cref="GraphTexts"/> plus tooltipy v <see cref="GraphToolTips"/>.
+    /// Obsahuje tabulku s řádky <see cref="RowTable"/>, ta obsahuje pro každý řádek časový graf v <see cref="GuiDataRow.Graph"/>.
+    /// Popisky prvků grafů a tooltipy mohou být v grafu, nebo v externí tabulce v <see cref="GraphTextTable"/> a <see cref="GraphToolTipTable"/>.
     /// Obsahuje i zadání vlastností grafu <see cref="GraphProperties"/>, a textové popisky tabulky (Name, Title, ToolTip, Image).
     /// Tyto prvky jsou zde uloženy takříkajíc na hromadě, bez nějakého ladu a skladu.
     /// Teprve až WorkScheduler si je probere a poskládá z nich vizuální tabulku a do ní vloží patřičné grafy.
@@ -514,95 +514,6 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Tabulka obsahující ToolTipy pro grafy
         /// </summary>
         public GuiDataTable GraphToolTipTable { get; set; }
-
-
-        /// <summary>
-        /// Tabulka s řádky, typicky načtená dle přehledové šablony
-        /// </summary>
-        [Obsolete("NEPOUŽÍVAT", true)]
-        public GuiTable Rows { get; set; }
-        /// <summary>
-        /// Přidá jeden graf do tabulky <see cref="Graphs"/>
-        /// </summary>
-        /// <param name="graph"></param>
-        [Obsolete("NEPOUŽÍVAT", true)]
-        public void AddGraph(GuiGraph graph)
-        {
-            if (graph != null)
-            {
-                if (this.Graphs == null)
-                    this.Graphs = new List<GuiGraph>();
-                this.Graphs.Add(graph);
-            }
-        }
-        /// <summary>
-        /// Grafy v této tabulce.
-        /// Pokud pro některý řádek tabulky nebude definován graf, vytvoří se nový implicitní.
-        /// Pokud by zde bylo více grafů pro jeden řádek, akceptuje se jen ten první.
-        /// </summary>
-        [Obsolete("NEPOUŽÍVAT", true)]
-        public List<GuiGraph> Graphs { get; set; }
-        /// <summary>
-        /// Přidá jednu tabulku s prvky grafů
-        /// </summary>
-        /// <param name="graphTable"></param>
-        [Obsolete("NEPOUŽÍVAT", true)]
-        public void AddGraphTable(GuiGraphTable graphTable)
-        {
-            if (graphTable != null)
-            {
-                if (this.GraphItems == null)
-                    this.GraphItems = new List<GuiGraphTable>();
-                this.GraphItems.Add(graphTable);
-            }
-        }
-        /// <summary>
-        /// Tabulky s grafickými prvky.
-        /// Jedna vizuální tabulka může v grafech zobrazovat prvky, pocházející z různých zdrojů.
-        /// V této property tak může být více tabulek třídy <see cref="GuiGraphTable"/>, kde každá tabulka obsahuje typicky prvky grafů z jednoho konkrétního zdroje.
-        /// </summary>
-        [Obsolete("NEPOUŽÍVAT", true)]
-        public List<GuiGraphTable> GraphItems { get; set; }
-        /// <summary>
-        /// Tabulky s popisnými texty pro položky grafu, typicky načtená dle přehledové šablony.
-        /// Tabulek je možno vložit více, každá tabulka může obsahovat přehledovou šablonu jiné třídy nebo s jiným filtrem.
-        /// Konkrétní řádek se dohledává podle GuiId grafického prvku, který se vyhledává v těchto tabulkách.
-        /// </summary>
-        [Obsolete("NEPOUŽÍVAT", true)]
-        public List<GuiTable> GraphTexts { get; set; }
-        /// <summary>
-        /// Tabulky s popisnými texty pro ToolTipy grafu, typicky načtená dle přehledové šablony.
-        /// Tabulek je možno vložit více, každá tabulka může obsahovat přehledovou šablonu jiné třídy nebo s jiným filtrem.
-        /// Konkrétní řádek se dohledává podle GuiId grafického prvku, který se vyhledává v těchto tabulkách.
-        /// </summary>
-        [Obsolete("NEPOUŽÍVAT", true)]
-        public List<GuiTable> GraphToolTips { get; set; }
-        /// <summary>
-        /// Tabulky s propojovacími linkami mezi prvky grafů GuiGraphItem.
-        /// </summary>
-        [Obsolete("NEPOUŽÍVAT", true)]
-        public GuiGraphLinks GraphLinks { get; set; }
-        /// <summary>
-        /// Přidá jeden vztah Parent - Child
-        /// </summary>
-        /// <param name="parentChild"></param>
-        [Obsolete("NEPOUŽÍVAT", true)]
-        public void AddParentChild(GuiParentChild parentChild)
-        {
-            if (parentChild != null)
-            {
-                if (this.ParentChilds == null)
-                    this.ParentChilds = new List<GuiParentChild>();
-                this.ParentChilds.Add(parentChild);
-            }
-        }
-        /// <summary>
-        /// Tabulka definující vztah Parent - Child mezi dvěma řádky tabulky <see cref="Rows"/>
-        /// </summary>
-        [Obsolete("NEPOUŽÍVAT", true)]
-        public List<GuiParentChild> ParentChilds { get; set; }
-
-
         /// <summary>
         /// Potomek zde vrací soupis svých Child prvků
         /// </summary>
@@ -652,11 +563,10 @@ namespace Noris.LCS.Base.WorkScheduler
             this.TagFilterEnabled = true;
             this.TagFilterItemHeight = 26;
             this.TagFilterItemMaxCount = 100;
-
         }
         /// <summary>
         /// Obsahuje true, pokud má být zobrazen TagFilter = filtr s jednotlivými štítky.
-        /// Data pro filtr se ukládají do <see cref="GuiTable.RowTags"/>, reprezentují jednoduché pole prvků, 
+        /// Data pro filtr se ukládají do <see cref="GuiDataRow.TagItems"/>, reprezentují jednoduché pole prvků, 
         /// kde prvek obsahuje klíč svého řádku (řádek v dané tabulce) a dále obsahuje text štítku (zobrazuje se uživateli) plus volitelně barvy štítku.
         /// </summary>
         public bool TagFilterEnabled { get; set; }
@@ -744,7 +654,8 @@ namespace Noris.LCS.Base.WorkScheduler
     public enum GuiChildRowsEvaluateMode
     {
         /// <summary>
-        /// Není zadáno Dynamické vyhodnocení. Co je definováno v datech <see cref="GuiGrid.ParentChilds"/>, to bude zobrazováno.
+        /// Není zadáno Dynamické vyhodnocení.
+        /// Řádek v tabulce může mít definovaného svého parenta v <see cref="GuiDataRow.ParentRowGuiId"/>, pak je jeho Childem, jiná cesta není.
         /// </summary>
         Static = 0,
         /// <summary>
@@ -1358,108 +1269,6 @@ namespace Noris.LCS.Base.WorkScheduler
         /// POkud je vztah netypový, pak je zde asi číslo Obecného subjektu.
         /// </summary>
         public int? RelationClassId { get; set; }
-
-
-
-
-        /// <summary>
-        /// Hodnota <see cref="System.Data.DataColumn.ColumnName"/>
-        /// </summary>
-        [Obsolete("Používejme property Name", true)]
-        public string ColumnName { get; set; }
-        /// <summary>
-        /// Hodnota <see cref="System.Data.DataColumn.Caption"/>
-        /// </summary>
-        [Obsolete("Používejme property Title", true)]
-        public string ColumnCaption { get; set; }
-        /// <summary>
-        /// Nadpis sloupce v přehledu
-        /// </summary>
-        [Obsolete("Používejme property Title", true)]
-        public string Label { get; set; }
-        /// <summary>
-        /// Alias sloupce = ColumnName
-        /// </summary>
-        [Obsolete("Používejme property Name", true)]
-        public string Alias { get; set; }
-        /// <summary>
-        /// Číslo třídy, z níž pochází data šablony
-        /// </summary>
-        [Obsolete("Používejme property ClassNumber v tabulce", true)]
-        public int? ClassNumber { get; set; }
-        /// <summary>
-        /// Číslo šablony
-        /// </summary>
-        [Obsolete("Používejme property TemplateNumber v tabulce", true)]
-        public int? TemplateNumber { get; set; }
-
-
-        /// <summary>
-        /// Název sloupce v SQL selectu
-        /// </summary>
-        [Obsolete("Nemá význam, zruší se", true)]
-        public string CodeName_FromSelect { get; set; }
-        /// <summary>
-        /// Název sloupce uvedený v definici šablony
-        /// </summary>
-        [Obsolete("Nemá význam, zruší se", true)]
-        public string CodeName_FromTemplate { get; set; }
-        /// <summary>
-        /// Číslo vztahu, z něhož pochází tento sloupec
-        /// </summary>
-        [Obsolete("Nemá význam, zruší se", true)]
-        public int ColRelNum { get; set; }
-        /// <summary>
-        /// Datový typ sloupce - NrsTypes (může se lišit od Repozitory, upravuje se dle dat, která se načtou do přehledu - DDLB, ...)
-        /// </summary>
-        [Obsolete("Nemá význam, zruší se", true)]
-        public string ColType { get; set; }
-        /// <summary>
-        /// Datový typ sloupce - NrsTypes (definice dle Repozitory - to, co je vidět)
-        /// </summary>
-        [Obsolete("Nemá význam, zruší se", true)]
-        public string DataTypeRepo { get; set; }
-        /// <summary>
-        /// Datový typ sloupce - c# SystemTypes
-        /// </summary>
-        [Obsolete("Nemá význam, zruší se", true)]
-        public string DataTypeSystem { get; set; }
-        /// <summary>
-        /// Číslo třídy vztaženého záznamu v tomto sloupci
-        /// </summary>
-        [Obsolete("Nemá význam, zruší se", true)]
-        public int? RelationClassNumber { get; set; }
-        /// <summary>
-        /// Číslo vztahu v tomto sloupci, je rovno <see cref="ColRelNum"/>
-        /// </summary>
-        [Obsolete("Nemá význam, zruší se", true)]
-        public int? RelationNumber { get; set; }
-        /// <summary>
-        /// Strana vztahu: Undefined, Left, Right
-        /// </summary>
-        [Obsolete("Nemá význam, zruší se", true)]
-        public string RelationSide { get; set; }
-        /// <summary>
-        /// Databáze, kde máme hledat vztah (Product, Archival)
-        /// </summary>
-        [Obsolete("Nemá význam, zruší se", true)]
-        public string RelationVolumeType { get; set; }
-        /// <summary>
-        /// Alias tabulky, která nese číslo záznamu ve vztahu pro jeho rozkliknutí.
-        /// Typický obsah: "TabGS_1_4".
-        /// Jednoduchý návod, kterak vyhledati název sloupce této tabulky, ve kterém jest uloženo číslo záznamu v tomto vztahu:
-        /// $"H_RN_{RelationNumber}_{RelationTableAlias}_RN_H", tedy ve výsledku: "H_RN_102037_TabGS_1_4_RN_H".
-        /// Zcela stačí načíst obsah property <see cref="RelationRecordColumnName"/>.
-        /// </summary>
-        [Obsolete("Nemá význam, zruší se", true)]
-        public string RelationTableAlias { get; set; }
-        /// <summary>
-        /// Název sloupce, který obsahuje číslo záznamu, jehož reference nebo název jsou v aktuálním sloupci zobrazeny.
-        /// </summary>
-        [Obsolete("Nemá význam, zruší se", true)]
-        public string RelationRecordColumnName { get { return (this.RelationNumber != 0 && !String.IsNullOrEmpty(this.RelationTableAlias) ? "H_RN_" + RelationNumber + "_" + RelationTableAlias + "_RN_H" : ""); } }
-
-
 
         #endregion
         #region Vytvoření instance GuiDataColumn z System.Data.DataColumn
@@ -2109,250 +1918,6 @@ namespace Noris.LCS.Base.WorkScheduler
         Line2px
     }
     #endregion
-    #region GuiTable : Jedna fyzická tabulka (ekvivalent DataTable, s podporou serializace a implicitní konverze z/na DataTable)
-    /// <summary>
-    /// GuiTable : Jedna fyzická tabulka (ekvivalent DataTable, s podporou serializace a implicitní konverze z/na DataTable)
-    /// </summary>
-    [Obsolete("NEPOUŽÍVAT", true)]
-    public sealed class GuiTable : GuiBase
-    {
-        #region Standardní public properties
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        public GuiTable()
-        { }
-        /// <summary>
-        /// Vizualiace
-        /// </summary>
-        /// <returns></returns>
-        public override string ToString()
-        {
-            string text = "{ empty table }";
-            System.Data.DataTable table = this.DataTable;
-            if (table != null || table.Columns.Count > 0)
-            {
-                text = "|";
-                foreach (System.Data.DataColumn column in table.Columns)
-                    text += " " + column.ColumnName + " |";
-                text += " ... " + table.Rows.Count.ToString() + " rows";
-            }
-            return text;
-        }
-        /// <summary>
-        /// Serializovaná data tabulky
-        /// </summary>
-        [PersistingEnabled(false)]
-        public string DataSerial
-        {
-            get
-            {
-                if (!this._DataSerialValid && this._DataTableValid)
-                {
-                    this._DataSerial = WorkSchedulerSupport.TableSerialize(this._DataTable);
-                    this._DataSerialValid = true;
-                }
-                return this._DataSerial;
-            }
-            set
-            {
-                this._DataSerial = value;
-                this._DataSerialValid = true;
-                this._DataTableValid = false;
-                this._ColumnsExtendedInfo = null;
-            }
-        }
-        /// <summary>
-        /// Obsahuje serializovaná data tabulky
-        /// </summary>
-        private string _DataSerial = null;
-        /// <summary>
-        /// Obsahuje true, pokud jsou data v <see cref="_DataSerial"/> platná
-        /// </summary>
-        private bool _DataSerialValid = false;
-        /// <summary>
-        /// Nativní data tabulky
-        /// </summary>
-        [PersistingEnabled(false)]
-        public System.Data.DataTable DataTable
-        {
-            get
-            {
-                if (!this._DataTableValid && this._DataSerialValid)
-                {
-                    this._DataTable = WorkSchedulerSupport.TableDeserialize(this._DataSerial);
-                    this._DataTableValid = true;
-                }
-                // Tento krok zajistí, že serializovaný obsah (DataSerial) bude od teď pokládán za neplatný.
-                // Proč? 
-                //   Když už někdo čte obsah DataTable, tak jej následně může modifikovat - přidat/odebrat řádek, změnit hodnotu, atd - a my se to nedozvíme.
-                //   Není ani naším cílem se to dozvědět, to by byla dost zbytečná komplikace.
-                // Takže pokud poté, co si někdo vyzvedl obsah DataTable (a možná ho modifikoval), a někdo pak bude číst serializovaný obsah (DataSerial),
-                //   tak tento DataSerial vytvoříme nový, platný z aktuální DataTable.
-                // Reverzní postup neděláme - že bychom po načtení DataSerial invalidovali DataTable, protože čtením stringu se nemůže nijak změnit jeho obsah.
-                this._DataSerialValid = false;
-                return this._DataTable;
-            }
-            set
-            {
-                this._DataTable = value;
-                this._DataTableValid = true;
-                this._DataSerialValid = false;
-                this._ColumnsExtendedInfo = null;
-            }
-        }
-        /// <summary>
-        /// Obsahuje nativní data tabulky
-        /// </summary>
-        private System.Data.DataTable _DataTable = null;
-        /// <summary>
-        /// Obsahuje true, pokud jsou data v <see cref="_DataTable"/> platná
-        /// </summary>
-        private bool _DataTableValid = false;
-        /// <summary>
-        /// Tato property je zde kvůli persistenci (serializaci).
-        /// { get } vždy vrací platná serializovaná data (primárně z <see cref="DataTable"/> pokud tam jsou, sekundárně z <see cref="DataSerial"/>).
-        /// { set } vloží serializovaná data do <see cref="DataSerial"/>, tím zajistí i jejich on-demand promítnutí do <see cref="DataTable"/>.
-        /// </summary>
-        [PersistingEnabled(true)]
-        [PropertyName("Data")]
-        private string PersistedData
-        {
-            get { return this.DataSerial; }
-            set { this.DataSerial = value; }
-        }
-        /// <summary>
-        /// Obsahuje rozšiřující informace o sloupcích. Pokud <see cref="DataTable"/> je null, pak i <see cref="ColumnsExtendedInfo"/> je null.
-        /// <para/>
-        /// Typický postup používání:
-        /// <para/>
-        /// Pro získání <see cref="GuiTable"/> s daty z SQL SELECTU a následné doplnění dat do <see cref="DataColumnExtendedInfo"/>:
-        /// <para/>
-        /// <code>
-        /// GuiTable guiTable = SqlSelect.
-        /// </code>
-        /// </summary>
-        /// <remarks>
-        /// Třída <see cref="DataColumnExtendedInfo"/> vždycky čte i ukládá data přímo do <see cref="System.Data.DataColumn.ExtendedProperties"/>, 
-        /// do sloupce pro který je konkrétní instance <see cref="DataColumnExtendedInfo"/> vytvořena.
-        /// Pokud uživatel vloží nějakou novou DataTable, pak je <see cref="ColumnsExtendedInfo"/> invalidováno (vloženo null) a znovu bude vytvořeno on demand pro nové sloupce.
-        /// Data vložená do ExtendedProperties se tím neztrácejí.
-        /// </remarks>
-        [PersistingEnabled(false)]
-        public DataColumnsExtendedInfo ColumnsExtendedInfo
-        {
-            get
-            {
-                if (this._ColumnsExtendedInfo == null)
-                {
-                    System.Data.DataTable dataTable = this.DataTable;
-                    if (dataTable != null)
-                        this._ColumnsExtendedInfo = DataColumnsExtendedInfo.CreateForTable(dataTable);
-                }
-                this._DataSerial = null;
-                return this._ColumnsExtendedInfo;
-            }
-        }
-        private DataColumnsExtendedInfo _ColumnsExtendedInfo;
-        /// <summary>
-        /// Tagy k řádkům v této tabulce.
-        /// Tagy řádku dovolují k jednomu řádku připojit { 0 - 1 - mnoho } textových popisků (visačky = Tagy), a následně podle nich zafiltrovat řádky.
-        /// </summary>
-        public GuiTagItems RowTags { get; set; }
-        #endregion
-        #region Implicitní konverze GuiTable <==> System.Data.DataTable
-        /// <summary>
-        /// Implicitní konverze z <see cref="GuiTable"/> na <see cref="System.Data.DataTable"/>.
-        /// Pokud je na vstupu <see cref="GuiTable"/> = null, pak na výstupu je <see cref="System.Data.DataTable"/> == null.
-        /// Výstupem je vždy new instance tabulky, která není provázaná s <see cref="DataTable"/> = jde o různé objekty.
-        /// </summary>
-        /// <param name="guiTable"></param>
-        public static implicit operator System.Data.DataTable(GuiTable guiTable) { return (guiTable != null ? WorkSchedulerSupport.TableDeserialize(guiTable.DataSerial) : null); }
-        /// <summary>
-        /// Implicitní konverze z <see cref="System.Data.DataTable"/> na <see cref="GuiTable"/>.
-        /// Pokud je na vstupu <see cref="System.Data.DataTable"/> = null, pak na výstupu je <see cref="GuiTable"/> == null.
-        /// Výstupem je new instance <see cref="GuiTable"/>, jejíž <see cref="DataTable"/> je new objekt, izolovaný od vstupní tabulky.
-        /// </summary>
-        /// <param name="dataTable"></param>
-        public static implicit operator GuiTable(System.Data.DataTable dataTable) { return (dataTable != null ? new GuiTable() { Name = dataTable.TableName, DataSerial = WorkSchedulerSupport.TableSerialize(dataTable) } : null); }
-        #endregion
-        #region Čtení dat z tabulky
-        /// <summary>
-        /// Metoda načte z tabulky čísla typu int z prvního sloupce (kde se očekává číslo záznamu), doplní číslo třídy z Extended properties (default = parametr),
-        /// a vrátí unique pole těchto čísel záznamů.
-        /// Metoda vrací null, pokud neexistuje tabulka, nebo nemá sloupce anebo první sloupec není Int32.
-        /// </summary>
-        /// <param name="classNumber"></param>
-        /// <returns></returns>
-        public GuiId[] GetRecords(int classNumber = 0)
-        {
-            GuiId[] records, duplicites;
-            this._GetRecords(classNumber, out records, out duplicites);
-            return records;
-        }
-        /// <summary>
-        /// Metoda načte z tabulky čísla typu int z prvního sloupce (kde se očekává číslo záznamu), doplní číslo třídy z Extended properties (default = parametr),
-        /// najde duplicitní výskyty a vrátí jejich soupis.
-        /// Metoda vrací null, pokud neexistuje tabulka, nebo nemá sloupce anebo první sloupec není Int32.
-        /// </summary>
-        /// <param name="classNumber"></param>
-        /// <returns></returns>
-        public GuiId[] GetDuplicities(int classNumber = 0)
-        {
-            GuiId[] records, duplicites;
-            this._GetRecords(classNumber, out records, out duplicites);
-            return duplicites;
-        }
-        /// <summary>
-        /// Metoda načte z tabulky čísla typu int z prvního sloupce (kde se očekává číslo záznamu), doplní číslo třídy z Extended properties (default = parametr),
-        /// a do out parametrů uloží jak pole unique záznamů, tak pole duplicitních záznamů.
-        /// Out pole records obsahuje každý záznam pouze jedenkrát; obsahuje záznamy nonduplicitní (tj. ty, které jsou v tabulce jen jedenkrát), a obsahuje i záznamy, které jsou duplicitní (v tabulce se vyskytují vícekrát).
-        /// Out pole duplicites obsahuje jen takové záznamy, které jsou v tabulce více než jednou. V poli duplicites jsou jen jedenkrát. Tyto záznamy jsou uvedeny i v poli records.
-        /// Metoda vrací null, pokud neexistuje tabulka, nebo nemá sloupce anebo první sloupec není Int32.
-        /// </summary>
-        /// <param name="records"></param>
-        /// <param name="duplicites"></param>
-        /// <param name="classNumber"></param>
-        /// <returns></returns>
-        public void GetDuplicityRecords(out GuiId[] records, out GuiId[] duplicites, int classNumber = 0)
-        {
-            this._GetRecords(classNumber, out records, out duplicites);
-        }
-        /// <summary>
-        /// Metoda najde a vrátí unique pole záznamů a unique pole duplicit záznamů.
-        /// </summary>
-        /// <param name="classNumber"></param>
-        /// <param name="records"></param>
-        /// <param name="duplicites"></param>
-        private void _GetRecords(int classNumber, out GuiId[] records, out GuiId[] duplicites)
-        {
-            records = null;
-            duplicites = null;
-            System.Data.DataTable dataTable = this.DataTable;
-            if (dataTable == null || dataTable.Columns.Count == 0) return;
-            var colInfo0 = this.ColumnsExtendedInfo[0];
-            if (colInfo0.ColumnType != typeof(int)) return;
-
-            int? colClassNumber = colInfo0.ClassNumber;
-            int recClassNumber = (colClassNumber.HasValue ? colClassNumber.Value : classNumber);
-           
-            Dictionary<int, GuiId> recordDict = new Dictionary<int, GuiId>();
-            Dictionary<int, GuiId> duplicityDict = new Dictionary<int, GuiId>();
-
-            foreach (DataRow row in dataTable.Rows)
-            {
-                int recRecordNumber = (int)row[0];         // Máme ověřeno, že sloupec [0] obsahuje typ int !
-                if (!recordDict.ContainsKey(recRecordNumber))
-                    recordDict.Add(recRecordNumber, new GuiId(recClassNumber, recRecordNumber));
-                else if (!duplicityDict.ContainsKey(recRecordNumber))
-                    duplicityDict.Add(recRecordNumber, new GuiId(recClassNumber, recRecordNumber));
-            }
-            records = recordDict.Values.ToArray();
-            duplicites = duplicityDict.Values.ToArray();
-        }
-        #endregion
-    }
-    #endregion
     #region GuiTagItems + GuiTagItem : pole prvků GuiTagItem, reprezentuje Tagy jednoho řádku, z nichž lze sestavit filtr typu "štítky"
     /// <summary>
     /// GuiTagItems : pole prvků GuiTagItem, reprezentuje Tagy jednoho řádku, z nichž lze sestavit filtr typu "štítky"
@@ -2640,7 +2205,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public int GraphLinePartialHeight { get; set; }
         /// <summary>
-        /// Text, který pokud je obsažen v některém sloupci v tabulce textů <see cref="GuiGrid.GraphTexts"/>, je rozpoznán jako zlom na nový řádek textu.
+        /// Text, který pokud je obsažen v některém sloupci v tabulce textů <see cref="GuiGrid.GraphTextTable"/>, je rozpoznán jako zlom na nový řádek textu.
         /// Lze tak definovat Přehledovou šablonu, která definuje více řádků popisku v grafu, s definováním místa začátku nového řádku.
         /// </summary>
         public string GraphTextRowDelimiter { get; set; }
@@ -5087,7 +4652,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public string TableName { get; set; }
         /// <summary>
-        /// <see cref="GuiId"/> řádku tabulky, pochází z prvního sloupce tabulky <see cref="GuiGrid.Rows"/>, v kombinaci s číslem třídy v properties sloupce [0]
+        /// <see cref="GuiId"/> řádku tabulky, pochází z prvního sloupce tabulky <see cref="GuiGrid.RowTable"/>, v kombinaci s číslem třídy v properties sloupce [0]
         /// </summary>
         public GuiId RowId { get; set; }
     }
