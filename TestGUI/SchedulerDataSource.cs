@@ -835,6 +835,64 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             this.MainData.ToolbarItems.Add(new GuiToolbarItem()
             {
+                Name = GuiNameToolbarShowColorSet1,
+                Size = FunctionGlobalItemSize.Half,
+                LayoutHint = LayoutHint.NextItemSkipToNextRow,
+                GroupName = "OZNAČIT OPERACE",
+                Title = "Barva 1",
+                ToolTip = "Aktivuje barvy skupiny 1.",
+                IsCheckable = true,
+                IsChecked = true,
+                CheckedGroupName = "ShowColorGroup",
+                Image = RES.Images.Actions24.FlagBluePng,
+                GuiActions = GuiActionType.RunInteractionToolbar | GuiActionType.SuppressCallAppHost,
+                RunInteractionNames = GuiFullNameGridCenterTop + ":" + GuiNameInteractionShowColorSet
+            });
+            this.MainData.ToolbarItems.Add(new GuiToolbarItem()
+            {
+                Name = GuiNameToolbarShowColorSet2,
+                Size = FunctionGlobalItemSize.Half,
+                LayoutHint = LayoutHint.NextItemSkipToNextTable,
+                GroupName = "OZNAČIT OPERACE",
+                Title = "Barva 2",
+                ToolTip = "Aktivuje barvy skupiny 2.",
+                IsCheckable = true,
+                CheckedGroupName = "ShowColorGroup",
+                Image = RES.Images.Actions24.FlagRedPng,
+                GuiActions = GuiActionType.RunInteractionToolbar | GuiActionType.SuppressCallAppHost,
+                RunInteractionNames = GuiFullNameGridCenterTop + ":" + GuiNameInteractionShowColorSet
+            });
+            this.MainData.ToolbarItems.Add(new GuiToolbarItem()
+            {
+                Name = GuiNameToolbarShowColorSet3,
+                Size = FunctionGlobalItemSize.Half,
+                LayoutHint = LayoutHint.NextItemSkipToNextRow,
+                GroupName = "OZNAČIT OPERACE",
+                Title = "Barva 3",
+                ToolTip = "Aktivuje barvy skupiny 3.",
+                IsCheckable = true,
+                CheckedGroupName = "ShowColorGroup",
+                Image = RES.Images.Actions24.FlagGreenPng,
+                GuiActions = GuiActionType.RunInteractionToolbar | GuiActionType.SuppressCallAppHost,
+                RunInteractionNames = GuiFullNameGridCenterTop + ":" + GuiNameInteractionShowColorSet
+            });
+            this.MainData.ToolbarItems.Add(new GuiToolbarItem()
+            {
+                Name = GuiNameToolbarShowColorSet4,
+                Size = FunctionGlobalItemSize.Half,
+                LayoutHint = LayoutHint.NextItemSkipToNextTable,
+                GroupName = "OZNAČIT OPERACE",
+                Title = "Barva 4",
+                ToolTip = "Aktivuje barvy skupiny 4.",
+                IsCheckable = true,
+                CheckedGroupName = "ShowColorGroup",
+                Image = RES.Images.Actions24.FlagBlackPng,
+                GuiActions = GuiActionType.RunInteractionToolbar | GuiActionType.SuppressCallAppHost,
+                RunInteractionNames = GuiFullNameGridCenterTop + ":" + GuiNameInteractionShowColorSet
+            });
+
+            this.MainData.ToolbarItems.Add(new GuiToolbarItem()
+            {
                 Name = GuiNameToolbarResetFilters,
                 Size = FunctionGlobalItemSize.Half,
                 GroupName = "NASTAVENÍ",
@@ -984,6 +1042,16 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 // Interakce je podmíněna stavem IsChecked = true u tohoto buttonu v ToolBaru:
                 Conditions = GuiNameToolbarFilterLeft
             });
+
+            gridCenterWorkplace.GridProperties.AddInteraction(new GuiGridInteraction()
+            {
+                Name = GuiNameInteractionShowColorSet,
+                SourceAction = SourceActionType.None,
+                TargetAction = TargetActionType.ActivateColorSet
+            });
+
+
+
 
             // Data tabulky = Plánovací jednotky Pracoviště:
             foreach (PlanUnitC planUnitC in this.WorkplaceDict.Values)
@@ -1361,6 +1429,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         protected const string GuiNameToolbarSaveData = "SaveData";
         protected const string GuiNameToolbarFilterLeft = "TlbApplyFilterMainToLeft";
         protected const string GuiNameToolbarResetFilters = "TlbResetAllFilters";
+        protected const string GuiNameToolbarShowColorSet1 = "TlbShowColorSet1";
+        protected const string GuiNameToolbarShowColorSet2 = "TlbShowColorSet2";
+        protected const string GuiNameToolbarShowColorSet3 = "TlbShowColorSet3";
+        protected const string GuiNameToolbarShowColorSet4 = "TlbShowColorSet4";
 
         protected const string GuiNameMainPage = "MainPage";
         protected const string GuiNameGridLeft = "GridLeft";
@@ -1369,6 +1441,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
         protected const string GuiNameInteractionSelectOperations = "InteractionSelectOperations";
         protected const string GuiNameInteractionFilterProductOrder = "InteractionFilterProductOrder";
+        protected const string GuiNameInteractionShowColorSet = "InteractionShowColorSet";
 
         protected const string GuiNameLeftRowTable = "RowsLeft";
         protected const string GuiNameRowsCenterTop = "RowsCenterTop";
