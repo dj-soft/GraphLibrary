@@ -545,6 +545,14 @@ namespace Asol.Tools.WorkScheduler.Components
 
             using (GraphicsUseText(graphics))
             {
+                // graphics.SmoothingMode = SmoothingMode.HighQuality;
+                graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+                // graphics.TextContrast = 6;     nemá vliv
+                //  vcelku OK :  AntiAliasGridFit, ClearTypeGridFit
+                //  nic moc   :  AntiAlias, SystemDefault
+                //  hrozný    :  SingleBitPerPixel, SingleBitPerPixelGridFit
+
+
                 Font font = fontInfo.Font;
                 StringFormat sFormat = new StringFormat(StringFormatFlags.LineLimit);   //   .NoClip);
                 // sFormat = new StringFormat(StringFormatFlags.NoClip);

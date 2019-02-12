@@ -812,8 +812,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (guiActions.HasFlag(GuiActionType.ResetTargetInteractiveFilters))
                 this._RunGuiInteractionsResetTargetInteractiveFilters(ref callRefresh);
 
-            if (guiActions.HasFlag(GuiActionType.RunInteractionRowActivated))
-                this._RunGuiInteractionsByName(guiToolbarItem.RunInteractionNames, ref callRefresh);
+            if (guiActions.HasAnyFlag(GuiActionType.RunInteractionToolbar | GuiActionType.RunInteractionRowActivated))
+                this._RunGuiInteractionsByName(guiActions, guiToolbarItem.RunInteractionNames, ref callRefresh);
 
             if (callRefresh)
                 this._MainControl.Refresh();
@@ -821,13 +821,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Metoda detekuje interakce podle filtru akcí, a provede je.
         /// </summary>
+        /// <param name="guiAction">Aktuální akce</param>
         /// <param name="sourceActions"></param>
         /// <param name="targetActions"></param>
-        internal void RunGuiInteractions(SourceActionType? sourceActions, TargetActionType? targetActions)
+        internal void RunGuiInteractions(GuiActionType guiAction, SourceActionType? sourceActions, TargetActionType? targetActions)
         {
             bool callRefresh = false;
 
-            this._RunGuiInteractionsByActions(sourceActions, targetActions, ref callRefresh);
+            this._RunGuiInteractionsByActions(guiAction, sourceActions, targetActions, ref callRefresh);
 
             if (callRefresh)
                 this._MainControl.Refresh();
@@ -853,30 +854,32 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Provede znovu aktuálně platné interakce všech tabulek
         /// </summary>
+        /// <param name="guiAction">Aktuální aktivita</param>
         /// <param name="interactionNames">Názvy interakcí včetně názvu tabulky, sada párů ve formátu: "GridName1:InteractionNameA;GridName2:InteractionNameB;..."</param>
         /// <param name="callRefresh">Nastavit na true v případě potřeby Refreshe</param>
-        private void _RunGuiInteractionsByName(string interactionNames, ref bool callRefresh)
+        private void _RunGuiInteractionsByName(GuiActionType guiAction, string interactionNames, ref bool callRefresh)
         {
-            var interactions = this._GetTableInteractions(interactionNames);
+            var interactions = this._GetTableInteractions(guiAction, interactionNames);
             if (interactions == null) return;
 
             foreach (var interaction in interactions)
-                // MainDataTable . RunInteractionThisSource( GuiGridInteraction[] ):
+                // MainDataTable . RunInteractionThisSource( GridInteractionRunInfo[] ):
                 interaction.Item1.RunInteractionThisSource(interaction.Item2.ToArray(), ref callRefresh);
         }
         /// <summary>
         /// Provede znovu aktuálně platné interakce všech tabulek, vyhovující danému filtru akcí SourceActionType a TargetActionType
         /// </summary>
+        /// <param name="guiAction">Aktuální akce</param>
         /// <param name="sourceActions">Hodnoty SourceAction: když daná interakce bude mít alespoň jeden Flag, bude zařazena do výstupu</param>
         /// <param name="targetActions">Hodnoty TargetAction: když daná interakce bude mít alespoň jeden Flag, bude zařazena do výstupu</param>
         /// <param name="callRefresh">Nastavit na true v případě potřeby Refreshe</param>
-        private void _RunGuiInteractionsByActions(SourceActionType? sourceActions, TargetActionType? targetActions, ref bool callRefresh)
+        private void _RunGuiInteractionsByActions(GuiActionType guiAction, SourceActionType? sourceActions, TargetActionType? targetActions, ref bool callRefresh)
         {
-            var interactions = this._GetTableInteractions(sourceActions, targetActions);
+            var interactions = this._GetTableInteractions(guiAction, sourceActions, targetActions);
             if (interactions == null) return;
 
             foreach (var interaction in interactions)
-                // MainDataTable . RunInteractionThisSource( GuiGridInteraction[] ):
+                // MainDataTable . RunInteractionThisSource( GridInteractionRunInfo[] ):
                 interaction.Item1.RunInteractionThisSource(interaction.Item2.ToArray(), ref callRefresh);
         }
         /// <summary>
@@ -884,13 +887,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Na vstupu je formát: "GridName1:InteractionNameA;GridName2:InteractionNameB;..."
         /// Výstupem této metody je pole obsahující páry: Tabulka + všechny její Interakce.
         /// </summary>
+        /// <param name="guiAction">Aktuální akce</param>
         /// <param name="interactionNames">Názvy interakcí včetně názvu tabulky, sada párů ve formátu: "GridName1:InteractionNameA;GridName2:InteractionNameB;..."</param>
         /// <returns></returns>
-        protected Tuple<MainDataTable, List<GuiGridInteraction>>[] _GetTableInteractions(string interactionNames)
+        private Tuple<MainDataTable, List<GridInteractionRunInfo>>[] _GetTableInteractions(GuiActionType guiAction, string interactionNames)
         {
             if (String.IsNullOrEmpty(interactionNames)) return null;
 
-            Dictionary<string, Tuple<MainDataTable, List<GuiGridInteraction>>> result = new Dictionary<string, Tuple<MainDataTable, List<GuiGridInteraction>>>();
+            Dictionary<string, Tuple<MainDataTable, List<GridInteractionRunInfo>>> result = new Dictionary<string, Tuple<MainDataTable, List<GridInteractionRunInfo>>>();
 
             var tableDict = this._DataTables.GetDictionary(t => t.TableName, true);
 
@@ -910,13 +914,23 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 GuiGridInteraction interaction = dataTable.Interactions.FirstOrDefault(i => i.Name == interName);
                 if (interaction == null ) continue;
 
-                Tuple<MainDataTable, List<GuiGridInteraction>> tableList;
+                Tuple<MainDataTable, List<GridInteractionRunInfo>> tableList;
                 if (!result.TryGetValue(tableName, out tableList))
                 {
-                    tableList = new Tuple<MainDataTable, List<GuiGridInteraction>>(dataTable, new List<GuiGridInteraction>());
+                    tableList = new Tuple<MainDataTable, List<GridInteractionRunInfo>>(dataTable, new List<GridInteractionRunInfo>());
                     result.Add(tableName, tableList);
                 }
-                tableList.Item2.Add(interaction);
+
+                string[] runParameters = null;
+                int runLength = items.Length - 2;
+                if (runLength > 0)
+                {
+                    runParameters = new string[runLength];
+                    Array.Copy(items, 2, runParameters , 0, runLength);
+                }
+
+                GridInteractionRunInfo runInteraction = new GridInteractionRunInfo(interaction, guiAction, runParameters);
+                tableList.Item2.Add(runInteraction);
             }
 
             return result.Values.ToArray();
@@ -925,16 +939,22 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Metoda vrací soupis tabulek a jejich interakcí, které vyhovují danému zadání.
         /// Výstupem této metody je pole obsahující páry: Tabulka + všechny její Interakce.
         /// </summary>
+        /// <param name="guiAction">Aktuální akce</param>
+        /// <param name="sourceActions"></param>
+        /// <param name="targetActions"></param>
         /// <returns></returns>
-        protected Tuple<MainDataTable, List<GuiGridInteraction>>[] _GetTableInteractions(SourceActionType? sourceActions, TargetActionType? targetActions)
+        private Tuple<MainDataTable, List<GridInteractionRunInfo>>[] _GetTableInteractions(GuiActionType guiAction, SourceActionType? sourceActions, TargetActionType? targetActions)
         {
-            List<Tuple<MainDataTable, List<GuiGridInteraction>>> tableInterList = new List<Tuple<MainDataTable, List<GuiGridInteraction>>>();
+            List<Tuple<MainDataTable, List<GridInteractionRunInfo>>> tableInterList = new List<Tuple<MainDataTable, List<GridInteractionRunInfo>>>();
 
             foreach (MainDataTable dataTable in this._DataTables)
             {
                 List<GuiGridInteraction> interactions = _GetFilteredInteractions(dataTable.Interactions, sourceActions, targetActions);
                 if (interactions != null && interactions.Count > 0)
-                    tableInterList.Add(new Tuple<MainDataTable, List<GuiGridInteraction>>(dataTable, interactions));
+                {
+                    var runInteractions = interactions.Select(i => new GridInteractionRunInfo(i, guiAction, null)).ToList();
+                    tableInterList.Add(new Tuple<MainDataTable, List<GridInteractionRunInfo>>(dataTable, runInteractions));
+                }
             }
 
             return tableInterList.ToArray();
@@ -1208,9 +1228,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="e"></param>
         private void _SynchronizedTimeValueChanging(object sender, GPropertyChangeArgs<TimeRange> e)
         {
+            GuiActionType guiAction = GuiActionType.RunInteractionRowActivated;
             SourceActionType sourceActions = SourceActionType.TableRowActivatedOnly | SourceActionType.TableRowActivatedWithRowsChecked | SourceActionType.TableRowChecked;
             TargetActionType targetActions = TargetActionType.SearchSourceVisibleTime;    // Akce, které jsou podmíněné zobrazeným časovým intervalem
-            this.RunGuiInteractions(sourceActions, targetActions);
+            this.RunGuiInteractions(guiAction, sourceActions, targetActions);
         }
         #endregion
         #region Okno konfigurace - tvorba položky v Toolbaru a celá obsluha

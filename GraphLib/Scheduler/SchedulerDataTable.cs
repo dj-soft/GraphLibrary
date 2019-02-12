@@ -1841,7 +1841,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Obecná metoda, která má provést všechny nyní aktivní interakce této tabulky.
         /// </summary>
-        internal void RunInteractionThisSource(GuiGridInteraction[] interactions, ref bool callRefresh)
+        internal void RunInteractionThisSource(GridInteractionRunInfo[] interactions, ref bool callRefresh)
         {
             if (interactions == null || interactions.Length == 0) return;
             interactions = this.GetInteractionsForCurrentState(interactions).ToArray();
@@ -1866,51 +1866,56 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="sourceAction"></param>
         /// <returns></returns>
-        protected GuiGridInteraction[] GetInteractions(SourceActionType sourceAction)
+        private GridInteractionRunInfo[] GetInteractions(SourceActionType sourceAction)
         {
+            GuiActionType guiAction = ;
             List<GuiGridInteraction> interactionList = this.AllInteractions;
             if (interactionList == null || interactionList.Count == 0) return null;
-            GuiGridInteraction[] interactions = interactionList.Where(i => ((int)(i.SourceAction & sourceAction) != 0)).ToArray();
+            GridInteractionRunInfo[] runInteractions = interactionList
+                .Where(i => ((int)(i.SourceAction & sourceAction) != 0))
+                .Select(i => new GridInteractionRunInfo(i, guiAction, null))
+                .ToArray();
 
             // Podmíněné interakce = takové, které jsou aktivní pouze za určitého stavu ToolBaru:
-            interactions = this.GetInteractionsForCurrentState(interactions).ToArray();
+            runInteractions = this.GetInteractionsForCurrentState(runInteractions).ToArray();
 
-            return (interactions.Length > 0 ? interactions : null);
+            return (runInteractions.Length > 0 ? runInteractions : null);
         }
         /// <summary>
         /// Metoda vrátí interakce platné jen pro aktuální stav dat (=ToolBaru a konfigurace).
         /// Zjistí, zda dané interakce obsahují podmínku, a pokud ano pak ji vyhodnotí.
         /// </summary>
-        /// <param name="interactions"></param>
+        /// <param name="runInteractions"></param>
         /// <returns></returns>
-        protected IEnumerable<GuiGridInteraction> GetInteractionsForCurrentState(IEnumerable<GuiGridInteraction> interactions)
+        private GridInteractionRunInfo[] GetInteractionsForCurrentState(IEnumerable<GridInteractionRunInfo> runInteractions)
         {
-            if (interactions == null || !interactions.Any(i => i.IsConditional)) return interactions;
+            if (runInteractions == null) return null;
+            if (!runInteractions.Any(i => i.GuiGridInteraction.IsConditional)) return runInteractions.ToArray();
 
             Dictionary<string, GuiToolbarItem> toolBarDict = this.IMainData.GuiData.ToolbarItems.Items
                 .Where(t => (t.IsCheckable.HasValue && t.IsCheckable.Value))
                 .GetDictionary(t => t.Name, true);
 
-            List<GuiGridInteraction> interactionList = new List<GuiGridInteraction>();
-            foreach (GuiGridInteraction interaction in interactions)
+            List<GridInteractionRunInfo> runList = new List<GridInteractionRunInfo>();
+            foreach (GridInteractionRunInfo runInfo in runInteractions)
             {
-                if (IsInteractionForCurrentCondition(interaction, toolBarDict))
-                    interactionList.Add(interaction);
+                if (IsInteractionForCurrentCondition(runInfo, toolBarDict))
+                    runList.Add(runInfo);
             }
 
-            return interactionList.ToArray();
+            return runList.ToArray();
         }
         /// <summary>
         /// Metoda vrací true, pokud se daná interakce má použít za stavu, kdy máme v tolbaru zaškrtnuté některé prvky
         /// </summary>
-        /// <param name="interaction"></param>
+        /// <param name="runInfo"></param>
         /// <param name="toolBarDict"></param>
         /// <returns></returns>
-        protected bool IsInteractionForCurrentCondition(GuiGridInteraction interaction, Dictionary<string, GuiToolbarItem> toolBarDict)
+        private bool IsInteractionForCurrentCondition(GridInteractionRunInfo runInfo, Dictionary<string, GuiToolbarItem> toolBarDict)
         {
-            if (!interaction.IsConditional || String.IsNullOrEmpty(interaction.Conditions)) return true;        // Bez podmínky = vyhovuje, použije se.
+            if (!runInfo.IsConditional || String.IsNullOrEmpty(runInfo.Conditions)) return true;        // Bez podmínky = vyhovuje, použije se.
 
-            string[] conditions = interaction.Conditions.Split(";, ".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
+            string[] conditions = runInfo.Conditions.Split(";, ".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
 
             // Pokud daný název podmínky odpovídá některému Toolbaru, a tento existuje a je zaškrtnutý, vrátíme true:
             foreach (string condition in conditions)
@@ -1934,7 +1939,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="checkedRows">Aktuálně označené řádky v tabulce (Checked)</param>
         /// <param name="activeGraph">Aktivní graf</param>
         /// <param name="graphItems">Aktivní prvky grafů v této tabulce</param>
-        protected void InteractionThisSource(GuiGridInteraction[] interactions, Row activeRow, Row[] checkedRows, GTimeGraph activeGraph, DataGraphItem[] graphItems)
+        private void InteractionThisSource(GuiGridInteraction[] interactions, Row activeRow, Row[] checkedRows, GTimeGraph activeGraph, DataGraphItem[] graphItems)
         {
             this.InteractionSelectorClear(interactions);
             this.InteractionRowFiltersPrepare(interactions);
@@ -1947,8 +1952,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 // Pokud interakce nemá definovaný cíl (tabulku) nebo cílovou akci (TargetAction je None), pak tuto interakci přeskočím:
                 if (String.IsNullOrEmpty(interaction.TargetGridFullName) || interaction.TargetAction == TargetActionType.None) continue;
 
-                // Najdeme cílovou tabulku, ale pokud neexistuje, pak tuto interakci přeskočím:
-                MainDataTable targetTable = this.IMainData.SearchTable(interaction.TargetGridFullName);
+                // Najdeme cílovou tabulku, ale pokud neexistuje, pak tuto interakci přeskočím (pokud je jméno target tabulky prázdné, pak target = this):
+                MainDataTable targetTable = (!String.IsNullOrEmpty(interaction.TargetGridFullName) ? this.IMainData.SearchTable(interaction.TargetGridFullName) : this);
                 if (targetTable == null) continue;
                 
                 // Pokud interakce má v cílové akci definovanou nějakou práci se zdrojovými prvky grafů, tak je musíme mít k dispozici:
@@ -1972,7 +1977,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="interaction"></param>
         /// <param name="graphItems"></param>
         /// <returns></returns>
-        protected DataGraphItem[] InteractionThisSourceFilterItems(GuiGridInteraction interaction, DataGraphItem[] graphItems)
+        private DataGraphItem[] InteractionThisSourceFilterItems(GuiGridInteraction interaction, DataGraphItem[] graphItems)
         {
             if (interaction == null || graphItems == null || graphItems.Length == 0) return graphItems;
             bool onlyVisibleTime = interaction.TargetAction.HasFlag(TargetActionType.SearchSourceVisibleTime);
@@ -1994,7 +1999,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         ///  - a přitom tatáž definice nemá požadavek <see cref="TargetActionType.LeaveCurrentTarget"/> = předpokládá se označování po předešlém odznačení.
         /// </summary>
         /// <param name="interactions"></param>
-        protected void InteractionSelectorClear(GuiGridInteraction[] interactions)
+        private void InteractionSelectorClear(GuiGridInteraction[] interactions)
         {
             if (interactions == null || interactions.Length == 0) return;
 
@@ -2010,7 +2015,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Metoda zjistí, zda některé Target tabulky budou řešit Řádkový filtr, a pokud ano pak jej připraví:
         /// </summary>
         /// <param name="interactions"></param>
-        protected void InteractionRowFiltersPrepare(GuiGridInteraction[] interactions)
+        private void InteractionRowFiltersPrepare(GuiGridInteraction[] interactions)
         {
             if (interactions == null || interactions.Length == 0) return;
 
@@ -2033,7 +2038,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Metoda aktivuje Řádkový filtr v těch tabulkách, kde je připraven (=kde je aktivní)
         /// </summary>
         /// <param name="interactions"></param>
-        protected void InteractionRowFiltersActivate(GuiGridInteraction[] interactions)
+        private void InteractionRowFiltersActivate(GuiGridInteraction[] interactions)
         {
             foreach (MainDataTable table in this.IMainData.DataTables)
                 table.InteractionThisRowFilterActivate();
@@ -2044,7 +2049,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="activeRow"></param>
         /// <param name="checkedRows"></param>
         /// <returns></returns>
-        protected DataGraphItem[] InteractionThisSourceGetGraphItems(Row activeRow, Row[] checkedRows)
+        private DataGraphItem[] InteractionThisSourceGetGraphItems(Row activeRow, Row[] checkedRows)
         {
             Dictionary<GId, DataGraphItem> graphItemDict = new Dictionary<GId, DataGraphItem>();
 
@@ -2073,7 +2078,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="row"></param>
         /// <returns></returns>
-        protected GTimeGraph InteractionGetGraphFromRow(Row row)
+        private GTimeGraph InteractionGetGraphFromRow(Row row)
         {
             if (row == null) return null;
             if (row.BackgroundValueType == TableValueType.ITimeInteractiveGraph) return row.BackgroundValue as GTimeGraph;
@@ -3529,6 +3534,65 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             return segments.ToArray();
         }
         #endregion
+    }
+    #endregion
+    #region class GridInteractionRunInfo : informace pro spuštění konkrétní interakce za dané situace
+    /// <summary>
+    /// GridInteractionRunInfo : informace pro spuštění konkrétní interakce za dané situace
+    /// </summary>
+    internal class GridInteractionRunInfo
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="guiGridInteraction"></param>
+        /// <param name="guiAction"></param>
+        /// <param name="runParameters"></param>
+        public GridInteractionRunInfo(GuiGridInteraction guiGridInteraction, GuiActionType guiAction, IEnumerable<string> runParameters)
+        {
+            this.GuiGridInteraction = guiGridInteraction;
+            this.GuiAction = guiAction;
+            this.RunParameters = (runParameters != null ? runParameters.ToArray() : null);
+        }
+        /// <summary>
+        /// Definice interakce
+        /// </summary>
+        public GuiGridInteraction GuiGridInteraction { get; private set; }
+        /// <summary>
+        /// Aktuální akce
+        /// </summary>
+        public GuiActionType GuiAction { get; private set; }
+        /// <summary>
+        /// Parametry pro běh, předané při spuštění z Toolbaru
+        /// </summary>
+        public string[] RunParameters { get; private set; }
+
+
+        /// <summary>
+        /// Zdrojová akce, na kterou je tato interakce navázaná
+        /// </summary>
+        public SourceActionType SourceAction { get { return this.GuiGridInteraction.SourceAction; } }
+        /// <summary>
+        /// Cílová tabulka <see cref="GuiGrid"/>, kam bude akce odeslána.
+        /// Pokud nebude zadáno, pak se buď tato interakce nepoužije, nebo se použije na Source tabulku, podle typu interakce.
+        /// </summary>
+        public string TargetGridFullName { get { return this.GuiGridInteraction.TargetGridFullName; } }
+        /// <summary>
+        /// Akce, kterou má provést cílová tabulka
+        /// </summary>
+        public TargetActionType TargetAction { get { return this.GuiGridInteraction.TargetAction; } }
+        /// <summary>
+        /// Podmínky dle nastavení Toolbaru, za kterých se má tato interakce provést.
+        /// V aktuální verzi se podmínky mohou vázat pouze na stav <see cref="GuiToolbarItem.IsChecked"/> prkvů toolbaru <see cref="GuiToolbarItem"/>.
+        /// Na prvek toolbaru se vážou přes jeho jméno <see cref="GuiBase.Name"/>.
+        /// Pokud některá ze zde vyjmenovaných položek bude zaškrtnutá, bude tato interakce použita, a naopak.
+        /// </summary>
+        public string Conditions { get { return this.GuiGridInteraction.Conditions; } }
+        /// <summary>
+        /// true pokud tato interakce je podmíněná stavem Toolbarů
+        /// </summary>
+        public bool IsConditional { get { return !String.IsNullOrEmpty(this.Conditions); } }
+
     }
     #endregion
 }

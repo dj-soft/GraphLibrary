@@ -732,7 +732,8 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public SourceActionType SourceAction { get; set; }
         /// <summary>
-        /// Cílová tabulka <see cref="GuiGrid"/>, kam bude akce odeslána
+        /// Cílová tabulka <see cref="GuiGrid"/>, kam bude akce odeslána.
+        /// Pokud nebude zadáno, pak se buď tato interakce nepoužije, nebo se použije na Source tabulku, podle typu interakce.
         /// </summary>
         public string TargetGridFullName { get; set; }
         /// <summary>
@@ -855,7 +856,15 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Jinými slovy: pokud bude specifikováno jen <see cref="SelectTargetItem"/>, ale ne <see cref="LeaveCurrentTarget"/>, tak dosavadní stav Selected prvků bude ZRUŠEN.
         /// Pokud ale bude specifikováno jak <see cref="SelectTargetItem"/>, tak současně i <see cref="LeaveCurrentTarget"/>, tak dosavadní stav Selected prvků bude PONECHÁN.
         /// </summary>
-        LeaveCurrentTarget = 0x00100000
+        LeaveCurrentTarget = 0x00100000,
+
+        /// <summary>
+        /// Aktivuje sadu barev ve vybraných/všech prvcích cílové tabulky. 
+        /// Číslo sady barev je dáno parametrem interakce. 
+        /// Tato interakce se volá tlačítkem toolbaru, kde je interakce uváděna v property <see cref="GuiToolbarItem.RunInteractionNames"/>,
+        /// a číslo sady barev je uvedeno v parametru (viz uvedená property).
+        /// </summary>
+        ActivateColorSet = 0x00200000
     }
     #endregion
     #region GuiDataTable + GuiDataColumn + GuiDataRow = tabulka
@@ -3088,6 +3097,8 @@ namespace Noris.LCS.Base.WorkScheduler
         /// a) najde se tabulka (<see cref="GuiGrid"/>) s Name = "GridLeft", a
         /// b) provede se její interakce "SelectOperations".
         /// <para/>
+        /// Za názvem interakce může být středník a parametr dané interakce. například: GridLeft:ShowColor:1,GridCenter:ShowColor:1
+        /// <para/>
         /// Pokud bude požadována akce <see cref="GuiActions"/> : <see cref="GuiActionType.RunInteractionRowActivated"/>, ale <see cref="RunInteractionNames"/>, 
         /// žádná interakce se neprovede.
         /// </summary>
@@ -3100,7 +3111,7 @@ namespace Noris.LCS.Base.WorkScheduler
     public enum GuiActionType : UInt64
     {
         /// <summary>
-        /// GUI nemá provídět žádnou akci, výchozí hodnota.
+        /// GUI nemá provádět žádnou akci, výchozí hodnota.
         /// </summary>
         None = 0,
         /// <summary>
@@ -3112,9 +3123,13 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         ResetTargetInteractiveFilters = 0x0000000000000020,
         /// <summary>
+        /// Zavolá interakce definované toolbarem
+        /// </summary>
+        RunInteractionToolbar = 0x0000000000000100,
+        /// <summary>
         /// Zopakuje provedení interakcí, které se provádějí po aktivaci řádku
         /// </summary>
-        RunInteractionRowActivated = 0x0000000000000100,
+        RunInteractionRowActivated = 0x0000000000000200,
         /// <summary>
         /// Aktivace této funkce NEBUDE volat funkci aplikačního serveru
         /// </summary>
