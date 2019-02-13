@@ -54,10 +54,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private GuiData _GuiData;
         PluginActivity IPlugin.Activity { get { return PluginActivity.Standard; } }
         /// <summary>
-        /// Konfigurace uživatelská
-        /// </summary>
-        private SchedulerConfig _Config;
-        /// <summary>
         /// Protože implementuji IFunctionProvider, stává se ze mě IPlugin.
         /// A jádro systému si vytváří slovník všech pluginů - takže si vygeneruje 
         /// pro každý typ pluginu jednu instanci, aby z ní mohl číst její pluginové vlastnosti.
@@ -116,17 +112,13 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             using (App.Trace.Scope(TracePriority.Priority2_Lowest, "MainControl", ".ctor", ""))
                 this._MainControl = new MainControl(this);
 
-            this._FillMainControlFromGui();
+            this._FillMainControlFromGui();                // Do controlu MainControl vygenerujeme všechny jeho controly
             return this._MainControl;
         }
         /// <summary>
         /// Hlavní objekt s daty <see cref="GuiData"/>
         /// </summary>
         public GuiData GuiData { get { return this._GuiData; } }
-        /// <summary>
-        /// Konfigurace uživatelská
-        /// </summary>
-        public SchedulerConfig Config { get { return this._Config; } }
         #endregion
         #region Vytváření controlu, jeho vložení do Formu
         /// <summary>
@@ -179,6 +171,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             App.TryRun(this._FillMainControlToolbar);
             App.TryRun(this._FillMainControlPagesFromGui);
+            App.TryRun(this._FillMainControlFromConfig);
         }
         /// <summary>
         /// Reference na hlavní GUI control, který je vytvořen v metodě <see cref="CreateControlToForm(Form)"/>
@@ -427,6 +420,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 this._ToolBarItemClickApplication(args.Item, guiToolbarItem);
             else
                 this._ToolBarItemClickSystem(args.Item);
+            this._SaveMainControlToConfig();
         }
         /// <summary>
         /// Obsluha události ItemSelectedChange na Aplikační položce ToolBaru.
@@ -790,6 +784,27 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             public override string CheckedGroupName { get { return (this._HasItem ? this._GuiToolBarItem.CheckedGroupName : base.CheckedGroupName); } set { if (this._HasItem) this._GuiToolBarItem.CheckedGroupName = value; else base.CheckedGroupName = value; } }
             #endregion
         }
+        #endregion
+        #region Config
+        /// <summary>
+        /// Konfigurace uživatelská
+        /// </summary>
+        public SchedulerConfig Config { get { return this._Config; } }
+        private void _FillMainControlFromConfig()
+        {
+            using (App.Trace.Scope(TracePriority.Priority2_Lowest, "MainData", "FillMainControlPagesFromGui", ""))
+            {
+                qqq;
+            }
+        }
+        private void _SaveMainControlToConfig()
+        {
+
+        }
+        /// <summary>
+        /// Konfigurace uživatelská
+        /// </summary>
+        private SchedulerConfig _Config;
         #endregion
         #region Interakce (GuiActions) - provádění interakcí GUI, podle deklarace v toolbaru nebo kdekoliv jinde
         /// <summary>
@@ -1740,9 +1755,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             using (App.Trace.Scope(TracePriority.Priority2_Lowest, "MainData", "PrepareAllTables", ""))
             {
                 foreach (MainDataTable dataTable in this._DataTables)
-                {
                     dataTable.PrepareAfterLoad();
-                }
             }
         }
         /// <summary>
