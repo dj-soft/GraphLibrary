@@ -5468,38 +5468,17 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         TimeAxisAll = TimeAxisZoomAll | TimeAxisGoAll,
         /// <summary>
-        /// Přesouvání prvku: přichytávat k nejbližším prvkům
+        /// Zobrazit tlačítko Nastavení
         /// </summary>
-        MoveItemSnapToNearItems = 0x00010000,
+        ShowSystemConfig = 0x00010000,
         /// <summary>
-        /// Přesouvání prvku: přichytávat k původnímu času
+        /// Suma všech systémových tlačítek, aktuálně jen <see cref="ShowSystemConfig"/>
         /// </summary>
-        MoveItemSnapToOriginalTime = 0x00020000,
+        SystemSettingsAll = ShowSystemConfig,
         /// <summary>
-        /// Přesouvání prvku: přichytávat k zaokrouhlenému času
+        /// Defaultní využití systémových položek: Zoom (Day + WorkWeek + WholeWeek + Month) + GoAll + ShowSystemConfig
         /// </summary>
-        MoveItemSnapToRoundTimeGrid = 0x00040000,
-        /// <summary>
-        /// Zobrazovat Linky mezi prvky grafu pro celou úroveň = prohledávat sousední prvky mých sousedů, dokud jsou propojené typem Linku <see cref="GuiGraphItemLinkRelation.OneLevel"/>.
-        /// </summary>
-        GuiEditShowLinkWholeTask = 0x00100000,
-        /// <summary>
-        /// Zobrazovat Linky mezi prvky grafu jako křivky (true = křivky / false = rovné čáry).
-        /// Toto nastavení de facto stírá rozdíl mezi 
-        /// </summary>
-        GuiEditShowLinkAsSCurve = 0x00200000,
-        /// <summary>
-        /// Přesouvání prvku: všechny akce
-        /// </summary>
-        MoveItemAll = MoveItemSnapToNearItems | MoveItemSnapToOriginalTime | MoveItemSnapToRoundTimeGrid,
-        /// <summary>
-        /// Editace v GUI: všechny akce
-        /// </summary>
-        GuiEditAll = GuiEditShowLinkWholeTask | GuiEditShowLinkAsSCurve,
-        /// <summary>
-        /// Defaultní využití systémových položek: Zoom (Day + WorkWeek + WholeWeek + Month) + GoAll + MoveItemAll
-        /// </summary>
-        Default = TimeAxisZoomDWWM | TimeAxisGoAll | MoveItemAll | GuiEditAll
+        Default = TimeAxisZoomDWWM | TimeAxisGoAll | ShowSystemConfig
     }
     /// <summary>
     /// Režim, jak osa reaguje na změnu velikosti.

@@ -295,7 +295,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Grupa v ToolBaru, obsahující systémové položky pro časovou osu
         /// </summary>
-        private FunctionGlobalGroup _ToolbarSystemGuiEditGroup;
+        private FunctionGlobalGroup _ToolbarSystemSettingsGroup;
         /// <summary>
         /// Z dat v <see cref="_GuiToolbarPanel"/> naplní toolbar
         /// </summary>
@@ -321,17 +321,15 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             // Systémové položky Toolbaru jsou položky třídy FunctionGlobalItem, nemají v sobě instanci GuiToolbarItem.
 
             this._ToolbarSystemTimeAxisGroup = new FunctionGlobalGroup() { Title = "ČASOVÁ OSA", ToolTipTitle = "Posuny časové osy, změna měřítka", Order = "A1" };
-            this._ToolbarSystemGuiEditGroup = new FunctionGlobalGroup() { Title = "EDITACE", ToolTipTitle = "Editace prvků grafu", Order = "A2" };
+            this._ToolbarSystemSettingsGroup = new FunctionGlobalGroup() { Title = "SYSTEM", ToolTipTitle = "Systémové funkce", Order = "A2" };
 
             this._TimeAxisToolBarInit();
-            this._ConfigToolBarInit();
-            this._MoveItemToolBarInit();
-            this._GuiEditToolBarInit();
+            this._SystemSettingsToolBarInit();
 
             if (this._ToolbarSystemTimeAxisGroup.Items.Count > 0)
                 this._MainControl.AddToolBarGroup(this._ToolbarSystemTimeAxisGroup);
-            if (this._ToolbarSystemGuiEditGroup.Items.Count > 0)
-                this._MainControl.AddToolBarGroup(this._ToolbarSystemGuiEditGroup);
+            if (this._ToolbarSystemSettingsGroup.Items.Count > 0)
+                this._MainControl.AddToolBarGroup(this._ToolbarSystemSettingsGroup);
         }
         /// <summary>
         /// Metoda vytvoří a vrátí prvek FunctionGlobalItem pro dané zadání
@@ -502,9 +500,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private void _ToolBarItemClickSystem(FunctionItem item)
         {
             this._TimeAxisToolBarClick(item);
-            this._ConfigToolBarClick(item);
-            this._MoveItemToolBarClick(item);
-            this._GuiEditToolBarClick(item);
+            this._SystemSettingsToolBarClick(item);
         }
         /// <summary>
         /// Metoda vrátí instanci <see cref="GuiToolbarItem"/> pro položku toolbaru z dodaného argumentu.
@@ -1229,24 +1225,25 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.RunGuiInteractions(currentSourceAction, targetActions);
         }
         #endregion
-        #region Okno konfigurace - tvorba položky v Toolbaru a celá obsluha
+        #region Systémové nastavení - tvorba položky v Toolbaru a celá obsluha
         /// <summary>
-        /// Inicializace položek ToolBaru (grupa <see cref="_ToolbarSystemGuiEditGroup"/>) pro hlavní okno konfigurace
+        /// Inicializace položek ToolBaru (grupa <see cref="_ToolbarSystemSettingsGroup"/>) pro hlavní okno konfigurace
         /// </summary>
-        private void _ConfigToolBarInit()
+        private void _SystemSettingsToolBarInit()
         {
             // Pokud v definici (ToolbarShowSystemItems) je uvedena hodnota (MoveItemAll | GuiEditAll), 
             //  pak NEBUDOU zobrazovány jednotlivé buttony, ale místo nich se zobrazí velký button CONFIG:
             ToolbarSystemItem currentItems = this._GuiToolbarPanel.ToolbarShowSystemItems;
-            if (!_SystemItemsIsConfig(currentItems)) return;
+            ToolbarSystemItem items = (ToolbarSystemItem)(currentItems & ToolbarSystemItem.SystemSettingsAll);
+            if (items == ToolbarSystemItem.None) return;
 
             // Oddělovač, pokud v grupě už jsou položky:
-            this._ToolbarSystemGuiEditGroup.AddSeparator(this);
-            
-            this._ToolbarSystemGuiEditGroup.Items.Add(_CreateToolbarItem(_Tlb_SystemSchedulerConfig, R.Images.Actions.RunBuildConfigurePng, 
-                "Nastavení", "Otevře okno kompletního nastavení aplikace", size: FunctionGlobalItemSize.Whole, userData: ToolbarSystemItem.MoveItemAll | ToolbarSystemItem.GuiEditAll));
+            this._ToolbarSystemSettingsGroup.AddSeparator(this);
 
-            this._ToolbarSystemGuiEditGroup.AddSeparator(this, true);
+            if (items.HasFlag(ToolbarSystemItem.ShowSystemConfig))
+                this._ToolbarSystemSettingsGroup.Items.Add(_CreateToolbarItem(_Tlb_SystemSettingsConfig, R.Images.Actions.RunBuildConfigurePng, "Nastavení", "Otevře okno kompletního nastavení aplikace", size: FunctionGlobalItemSize.Whole, userData: ToolbarSystemItem.ShowSystemConfig));
+
+            this._ToolbarSystemSettingsGroup.AddSeparator(this, true);
         }
         /// <summary>
         /// Metoda se volá po akci Click na systémové položce ToolBaru. 
@@ -1254,107 +1251,31 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Pokud se akce nijak netýká konfigurace, pak nic neprovádí (není tedy problém ji zavolat).
         /// </summary>
         /// <param name="item"></param>
-        private void _ConfigToolBarClick(FunctionItem item)
+        private void _SystemSettingsToolBarClick(FunctionItem item)
         {
             if (!(item.UserData is ToolbarSystemItem)) return;               // V UserData je uložena hodnota ToolbarSystemItem, odpovídající konkrétní funkcionalitě.
-            this._ConfigToolBarAction(item, (ToolbarSystemItem)item.UserData);
+            this._SystemSettingsToolBarAction(item, (ToolbarSystemItem)item.UserData);
         }
         /// <summary>
         /// Po kliknutí na systémovou ikonu Toolbaru, řeší akce typu Config
         /// </summary>
         /// <param name="item"></param>
         /// <param name="action"></param>
-        private void _ConfigToolBarAction(FunctionItem item, ToolbarSystemItem action)
+        private void _SystemSettingsToolBarAction(FunctionItem item, ToolbarSystemItem action)
         {
-            // Jako "Povolovací hodnota" akce Config je brána hodnota (MoveItemAll | GuiEditAll),
-            //  pokud tam není, pak se nejedná o Config:
-            if (!_SystemItemsIsConfig(action)) return;
-
-            this._MainControl.RunInGUI(() => SchedulerConfigForm.ShowDialog(this._MainControl.MainForm, this.Config));
-        }
-        private const string _Tlb_SystemSchedulerConfig = "SystemSchedulerConfig";
-        /// <summary>
-        /// Metoda vrátí true, pokud daná hodnota <see cref="ToolbarSystemItem"/> 
-        /// obsahuje všechny hodnoty <see cref="ToolbarSystemItem.MoveItemAll"/> + <see cref="ToolbarSystemItem.GuiEditAll"/>,
-        /// kterážto hodnota má význam "Okno konfigurace".
-        /// </summary>
-        /// <param name="items"></param>
-        /// <returns></returns>
-        private static bool _SystemItemsIsConfig(ToolbarSystemItem items)
-        {
-            ToolbarSystemItem configItem = (ToolbarSystemItem.MoveItemAll | ToolbarSystemItem.GuiEditAll);
-            return (((ToolbarSystemItem)(items & configItem)) == configItem);
-        }
-        #endregion
-        #region Přichytávání prvku grafu při jeho posouvání procesem Drag and Drop - ToolBar (definice i obsluha Clicku), i vlastní provádění příchytu prvků
-        /// <summary>
-        /// Inicializace položek ToolBaru (grupa <see cref="_ToolbarSystemGuiEditGroup"/>) pro řízení pohybu prvků
-        /// </summary>
-        private void _MoveItemToolBarInit()
-        {
-            // Pokud v definici (ToolbarShowSystemItems) je uvedena hodnota (MoveItemAll | GuiEditAll), 
-            //  pak NEBUDOU zobrazovány jednotlivé buttony, ale místo nich se zobrazí velký button CONFIG:
-            ToolbarSystemItem currentItems = this._GuiToolbarPanel.ToolbarShowSystemItems;
-            if (_SystemItemsIsConfig(currentItems)) return;
-
-            ToolbarSystemItem items = (ToolbarSystemItem)(currentItems & ToolbarSystemItem.MoveItemAll);
-            if (App.IsDebugMode)
-                items = ToolbarSystemItem.MoveItemAll;
-
-            if (items == ToolbarSystemItem.None) return;
-
-            // Oddělovač, pokud v grupě už jsou položky:
-            this._ToolbarSystemGuiEditGroup.AddSeparator(this);
-
-            if (items.HasFlag(ToolbarSystemItem.MoveItemSnapToNearItems))
-                this._ToolbarSystemGuiEditGroup.Items.Add(_CreateToolbarItem(_Tlb_MoveItem_SnapNearTime, R.Images.Actions24.AlignHorizontalRightOutPng, null, "Při přesouvání prvku jej přichytávat k sousedním existujícím prvkům v řádku", size: FunctionGlobalItemSize.Small, layoutHint: LayoutHint.NextItemSkipToNextRow, moduleWidth: 1, isSelectable: true, isSelected: this.Config.MoveSnapMouse.OriginalTimeNearActive, userData: ToolbarSystemItem.MoveItemSnapToNearItems));
-            if (items.HasFlag(ToolbarSystemItem.MoveItemSnapToOriginalTime))
-                this._ToolbarSystemGuiEditGroup.Items.Add(_CreateToolbarItem(_Tlb_MoveItem_SnapOriginalTime, R.Images.Actions24.AlignHorizontalLeftPng, null, "Při přesouvání prvku jej přichytávat k původnímu času", size: FunctionGlobalItemSize.Small, layoutHint: LayoutHint.NextItemSkipToNextRow, moduleWidth: 1, isSelectable: true, isSelected: this.Config.MoveSnapMouse.OriginalTimeNearActive, userData: ToolbarSystemItem.MoveItemSnapToOriginalTime));
-            if (items.HasFlag(ToolbarSystemItem.MoveItemSnapToRoundTimeGrid))
-                this._ToolbarSystemGuiEditGroup.Items.Add(_CreateToolbarItem(_Tlb_MoveItem_SnapToRoundTimeGrid, R.Images.Actions24.CodeVariablePng, null, "Při přesouvání prvku jej přichytávat k zaokrouhleným časovým jednotkám", size: FunctionGlobalItemSize.Small, moduleWidth: 1, isSelectable: true, isSelected: this.Config.MoveSnapMouse.GridTickActive, userData: ToolbarSystemItem.MoveItemSnapToRoundTimeGrid));
-        }
-        /// <summary>
-        /// Metoda se volá po akci Click na systémové položce ToolBaru. 
-        /// Metoda zjistí, zda akce se týká přesunu prvků, a pokud ano pak ji vyřeší.
-        /// Pokud se akce nijak netýká přesunu prvků, pak nic neprovádí (není tedy problém ji zavolat).
-        /// </summary>
-        /// <param name="item"></param>
-        private void _MoveItemToolBarClick(FunctionItem item)
-        {
-            if (!(item.UserData is ToolbarSystemItem)) return;               // V UserData je uložena hodnota ToolbarSystemItem, odpovídající konkrétní funkcionalitě.
-            this._MoveItemToolBarAction(item, (ToolbarSystemItem)item.UserData);
-        }
-        /// <summary>
-        /// Po kliknutí na systémovou ikonu Toolbaru, řeší akce typu ItemMove
-        /// </summary>
-        /// <param name="item"></param>
-        /// <param name="action"></param>
-        private void _MoveItemToolBarAction(FunctionItem item, ToolbarSystemItem action)
-        {
-            // Jako "Povolovací hodnota" akce Config je brána hodnota (MoveItemAll | GuiEditAll),
-            //  pokud tam je, pak se jedná o Config a ne o jednotlivou akci:
-            if (_SystemItemsIsConfig(action)) return;
-
-            action = (ToolbarSystemItem)(action & ToolbarSystemItem.MoveItemAll);
+            action = (ToolbarSystemItem)(action & ToolbarSystemItem.SystemSettingsAll);
             if (action == ToolbarSystemItem.None) return;
 
             switch (action)
             {
-                case ToolbarSystemItem.MoveItemSnapToNearItems:
-                    this.Config.MoveSnapMouse.OriginalTimeNearActive = item.IsChecked;
-                    this.Config.Save();
-                    break;
-                case ToolbarSystemItem.MoveItemSnapToOriginalTime:
-                    this.Config.MoveSnapMouse.OriginalTimeNearActive = item.IsChecked;
-                    break;
-                case ToolbarSystemItem.MoveItemSnapToRoundTimeGrid:
-                    this.Config.MoveSnapMouse.GridTickActive = item.IsChecked;
+                case ToolbarSystemItem.ShowSystemConfig:
+                    this._MainControl.RunInGUI(() => SchedulerConfigForm.ShowDialog(this._MainControl.MainForm, this.Config));
                     break;
             }
         }
-        private const string _Tlb_MoveItem_SnapNearTime = "MoveItemSnapNearTime";
-        private const string _Tlb_MoveItem_SnapOriginalTime = "MoveItemSnapOriginalTime";
-        private const string _Tlb_MoveItem_SnapToRoundTimeGrid = "MoveItemSnapToRoundTimeGrid";
+        private const string _Tlb_SystemSettingsConfig = "SystemSettingsConfig";
+        #endregion
+        #region Přichytávání prvku grafu při jeho posouvání procesem Drag and Drop - vlastní provádění příchytu prvků
         /// <summary>
         /// Metoda má za úkol modifikovat data při procesu Drag and Drop pro grafický prvek.
         /// Jde o to, že při přetahování prvků můžeme chtít, aby se prvek "přichytával" 
@@ -1757,70 +1678,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             }
             return alignY;
         }
-        #endregion
-        #region Další detaily chování GUI - ToolBar (definice i obsluha Clicku)
-        /// <summary>
-        /// Inicializace položek ToolBaru (grupa <see cref="_ToolbarSystemGuiEditGroup"/>) pro řízení pohybu prvků
-        /// </summary>
-        private void _GuiEditToolBarInit()
-        {
-            // Pokud v definici (ToolbarShowSystemItems) je uvedena hodnota (MoveItemAll | GuiEditAll), 
-            //  pak NEBUDOU zobrazovány jednotlivé buttony, ale místo nich se zobrazí velký button CONFIG:
-            ToolbarSystemItem currentItems = this._GuiToolbarPanel.ToolbarShowSystemItems;
-            if (_SystemItemsIsConfig(currentItems)) return;
-
-            ToolbarSystemItem items = (ToolbarSystemItem)(currentItems & ToolbarSystemItem.GuiEditAll);
-            if (App.IsDebugMode)
-                items = ToolbarSystemItem.GuiEditAll;
-
-            if (items == ToolbarSystemItem.None) return;
-
-            // Oddělovač, pokud v grupě už jsou položky:
-            this._ToolbarSystemGuiEditGroup.AddSeparator(this);
-
-            if (items.HasFlag(ToolbarSystemItem.GuiEditShowLinkWholeTask))
-                this._ToolbarSystemGuiEditGroup.Items.Add(_CreateToolbarItem(_Tlb_GuiEdit_ShowLinkWholeTask, R.Images.Actions.OfficeChartLinePng, null, "Při najetí myší zobrazovat vztahy v rámci celého postupu, nejen nejbližší sousední položky", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemSkipToNextRow, moduleWidth: 1, isSelectable: true, isSelected: this.Config.GuiEditShowLinkMouseWholeTask, userData: ToolbarSystemItem.GuiEditShowLinkWholeTask));
-            if (items.HasFlag(ToolbarSystemItem.GuiEditShowLinkAsSCurve))
-                this._ToolbarSystemGuiEditGroup.Items.Add(_CreateToolbarItem(_Tlb_GuiEdit_ShowLinkWholeTask, R.Images.Actions.DrawBezierCurvesPng, null, "Vztahy zobrazovat jako křivky (výchozí: zobrazovat jako rovné čáry)", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemSkipToNextRow, moduleWidth: 1, isSelectable: true, isSelected: this.Config.GuiEditShowLinkAsSCurve, userData: ToolbarSystemItem.GuiEditShowLinkAsSCurve));
-        }
-        /// <summary>
-        /// Metoda se volá po akci Click na systémové položce ToolBaru. 
-        /// Metoda zjistí, zda akce se týká přesunu prvků, a pokud ano pak ji vyřeší.
-        /// Pokud se akce nijak netýká přesunu prvků, pak nic neprovádí (není tedy problém ji zavolat).
-        /// </summary>
-        /// <param name="item"></param>
-        private void _GuiEditToolBarClick(FunctionItem item)
-        {
-            if (!(item.UserData is ToolbarSystemItem)) return;               // V UserData je uložena hodnota ToolbarSystemItem, odpovídající konkrétní funkcionalitě.
-            this._GuiEditToolBarAction(item, (ToolbarSystemItem)item.UserData);
-        }
-        /// <summary>
-        /// Po kliknutí na systémovou ikonu Toolbaru, řeší akce typu ItemMove
-        /// </summary>
-        /// <param name="item"></param>
-        /// <param name="action"></param>
-        private void _GuiEditToolBarAction(FunctionItem item, ToolbarSystemItem action)
-        {
-            // Jako "Povolovací hodnota" akce Config je brána hodnota (MoveItemAll | GuiEditAll),
-            //  pokud tam je, pak se jedná o Config a ne o jednotlivou akci:
-            if (_SystemItemsIsConfig(action)) return;
-
-            action = (ToolbarSystemItem)(action & ToolbarSystemItem.GuiEditAll);
-            if (action == ToolbarSystemItem.None) return;
-
-            switch (action)
-            {
-                case ToolbarSystemItem.GuiEditShowLinkWholeTask:
-                    this.Config.GuiEditShowLinkMouseWholeTask = item.IsChecked;
-                    break;
-                case ToolbarSystemItem.GuiEditShowLinkAsSCurve:
-                    this.Config.GuiEditShowLinkAsSCurve = item.IsChecked;
-                    this.Config.Save();
-                    break;
-            }
-        }
-        private const string _Tlb_GuiEdit_ShowLinkWholeTask = "GuiEditShowLinkWholeTask";
-        private const string _Tlb_GuiEdit_ShowLinkAsSCurve = "GuiEditShowLinkAsSCurve";
         #endregion
         #region Datové panely, jednotlivé datové tabulky
         /// <summary>
