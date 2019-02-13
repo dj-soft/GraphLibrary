@@ -154,11 +154,11 @@ namespace Asol.Tools.WorkScheduler.Components
             string yy = "yyyy";
             string dmyy = "d.M.yyyy";
             string wdmyy = "ddd d.M.yyyy";
-            string w = "ddd";
+         // string w = "ddd";
             string d = "d.";
             string dm = "d.M.";
             string wdm = "ddd d.M.";
-            string dmh = "d.M. H:mm";
+         // string dmh = "d.M. H:mm";
             string wdmh = "ddd d.M. H:mm";
             string hms = "H:mm:ss";
             string hm = "H:mm";

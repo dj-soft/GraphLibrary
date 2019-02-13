@@ -484,9 +484,9 @@ namespace Asol.Tools.WorkScheduler.Data
         public static bool HasAnyFlag<T>(this T value, T flags) where T : IConvertible
         {
             IFormatProvider p = System.Globalization.NumberFormatInfo.CurrentInfo;
-            int v = value.ToInt32(p);
-            int f = flags.ToInt32(p);
-            return ((f & v) != 0);
+            long v = value.ToInt64(p);
+            long f = flags.ToInt64(p);
+            return ((f & v) != 0L);
         }
         /// <summary>
         /// Vrátí true, pokud this hodnota (value) obsahuje alespoň jeden nahozený bit z dané hodnoty (flags).

@@ -1723,15 +1723,18 @@ namespace Asol.Tools.WorkScheduler.Components
         private Rectangle? _MouseDragFrameCurrentBounds { get; set; }
         #endregion
         #region DrawItems, zařazování controlů k vykreslení
+        /// <summary>
+        /// Pro budoucí rozvoj
+        /// </summary>
+        /// <param name="control"></param>
+        /// <param name="drawToLayers"></param>
         public void AddItemToDraw(IInteractiveItem control, GInteractiveDrawLayer drawToLayers)
         {
-            if (false)
-            {   // Nemám zatím chuť to předělávat, je toho dost a dost...:
-                if (control == null || drawToLayers == GInteractiveDrawLayer.None) return;
-                if (drawToLayers.HasFlag(GInteractiveDrawLayer.Standard)) this._AddItemToDraw(control, this._DrawItemStandard);
-                if (drawToLayers.HasFlag(GInteractiveDrawLayer.Interactive)) this._AddItemToDraw(control, this._DrawItemInteractive);
-                if (drawToLayers.HasFlag(GInteractiveDrawLayer.Dynamic)) this._AddItemToDraw(control, this._DrawItemDynamic);
-            }
+            // Nemám zatím chuť to předělávat, je toho dost a dost...:
+            //if (control == null || drawToLayers == GInteractiveDrawLayer.None) return;
+            //if (drawToLayers.HasFlag(GInteractiveDrawLayer.Standard)) this._AddItemToDraw(control, this._DrawItemStandard);
+            //if (drawToLayers.HasFlag(GInteractiveDrawLayer.Interactive)) this._AddItemToDraw(control, this._DrawItemInteractive);
+            //if (drawToLayers.HasFlag(GInteractiveDrawLayer.Dynamic)) this._AddItemToDraw(control, this._DrawItemDynamic);
         }
         private void _AddItemToDraw(IInteractiveItem control, Dictionary<uint, IInteractiveItem> targetDict)
         {

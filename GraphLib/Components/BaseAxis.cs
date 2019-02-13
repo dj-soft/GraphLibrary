@@ -687,6 +687,8 @@ namespace Asol.Tools.WorkScheduler.Components
                     this.DetectScale(subActions, eventSource);
                     break;
             }
+
+            this._LastSize = newBounds.Size;
         }
         /// <summary>
         /// Velikost, pro kterou byly naposledy přepočteny vnitřní data. Null = dosud nepřepočteny.

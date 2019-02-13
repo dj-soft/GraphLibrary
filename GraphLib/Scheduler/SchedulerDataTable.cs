@@ -203,7 +203,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             Row[] checkedRows = this.TableRow.CheckedRows;
             bool isOnlyActivadedRow = (checkedRows.Length == 0);
             SourceActionType sourceAction = isOnlyActivadedRow ? SourceActionType.TableRowActivatedOnly : SourceActionType.TableRowActivatedWithRowsChecked;
-            GridInteractionRunInfo[] runInteractions = this.GetInteractions(GuiActionType.RunInteractionRowActivated, sourceAction);
+            GridInteractionRunInfo[] runInteractions = this.GetInteractions(sourceAction);
             if (runInteractions == null) return;
             this.InteractionThisSource(runInteractions, activeRow, checkedRows, null, null);
         }
@@ -214,7 +214,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="e"></param>
         private void _TableRowCheckedRowChanged(object sender, GObjectPropertyChangeArgs<Row, bool> e)
         {
-            GridInteractionRunInfo[] runInteractions = this.GetInteractions(GuiActionType.RunInteractionRowActivated, SourceActionType.TableRowChecked);
+            GridInteractionRunInfo[] runInteractions = this.GetInteractions(SourceActionType.TableRowChecked);
             if (runInteractions == null) return;
             Row checkedRow = e.CurrentObject;
             Row[] checkedRows = this.TableRow.CheckedRows;
@@ -1864,22 +1864,32 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Vrácené pole může být null (když neexistuje žádná definice, nebo když žádná existující definice se nehodí pro danou akci).
         /// Pokud vrácené pole není null, pak obsahuje přinejmenším jednu položku.
         /// </summary>
-        /// <param name="guiAction">Typ akce</param>
-        /// <param name="sourceAction"></param>
+        /// <param name="currentSourceAction">Aktuální akce, která spustila interakce</param>
         /// <returns></returns>
-        private GridInteractionRunInfo[] GetInteractions(GuiActionType guiAction, SourceActionType sourceAction)
+        private GridInteractionRunInfo[] GetInteractions(SourceActionType currentSourceAction)
         {
             List<GuiGridInteraction> interactionList = this.AllInteractions;
             if (interactionList == null || interactionList.Count == 0) return null;
             GridInteractionRunInfo[] runInteractions = interactionList
-                .Where(i => ((int)(i.SourceAction & sourceAction) != 0))
-                .Select(i => new GridInteractionRunInfo(i, guiAction, null))
+                .Where(i => _IsInteractionForAction(i, currentSourceAction))
+                .Select(i => new GridInteractionRunInfo(i, currentSourceAction, null))
                 .ToArray();
 
             // Podmíněné interakce = takové, které jsou aktivní pouze za určitého stavu ToolBaru:
             runInteractions = this.GetInteractionsForCurrentState(runInteractions).ToArray();
 
             return (runInteractions.Length > 0 ? runInteractions : null);
+        }
+        /// <summary>
+        /// Vrátí true, pokud daná interakce má být použita pro danou zdrojovou akci
+        /// </summary>
+        /// <param name="guiGridInteraction"></param>
+        /// <param name="currentSourceAction"></param>
+        /// <returns></returns>
+        private static bool _IsInteractionForAction(GuiGridInteraction guiGridInteraction, SourceActionType currentSourceAction)
+        {
+            if ((guiGridInteraction.SourceAction & currentSourceAction) == 0) return false;
+            return true;
         }
         /// <summary>
         /// Metoda vrátí interakce platné jen pro aktuální stav dat (=ToolBaru a konfigurace).
@@ -1947,24 +1957,24 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             // Zjistíme, zda cílová strana bude vyžadovat znalost prvků grafů na zdrojové straně:
             TargetActionType targetFromSourceGraph = (TargetActionType.SearchSourceItemId | TargetActionType.SearchSourceGroupId | TargetActionType.SearchSourceDataId);
             // Na vstupu máme řadu definic interakcí, projdeme je a provedeme potřebné kroky:
-            foreach (GridInteractionRunInfo interaction in runInteractions)
+            foreach (GridInteractionRunInfo runInteraction in runInteractions)
             {
-                // Pokud interakce nemá definovaný cíl (tabulku) nebo cílovou akci (TargetAction je None), pak tuto interakci přeskočím:
-                if (String.IsNullOrEmpty(interaction.TargetGridFullName) || interaction.TargetAction == TargetActionType.None) continue;
+                // Pokud interakce nemá definovanou cílovou akci (TargetAction je None), pak tuto interakci přeskočím:
+                if (runInteraction.TargetAction == TargetActionType.None) continue;
 
                 // Najdeme cílovou tabulku, ale pokud neexistuje, pak tuto interakci přeskočím (pokud je jméno target tabulky prázdné, pak target = this):
-                MainDataTable targetTable = (!String.IsNullOrEmpty(interaction.TargetGridFullName) ? this.IMainData.SearchTable(interaction.TargetGridFullName) : this);
+                MainDataTable targetTable = (!String.IsNullOrEmpty(runInteraction.TargetGridFullName) ? this.IMainData.SearchTable(runInteraction.TargetGridFullName) : this);
                 if (targetTable == null) continue;
                 
                 // Pokud interakce má v cílové akci definovanou nějakou práci se zdrojovými prvky grafů, tak je musíme mít k dispozici:
-                if (((interaction.TargetAction & targetFromSourceGraph) != 0) && graphItems == null)
+                if (((runInteraction.TargetAction & targetFromSourceGraph) != 0) && graphItems == null)
                     graphItems = this.InteractionThisSourceGetGraphItems(activeRow, checkedRows);
 
                 // Pokud interakce má na vstupu reflektovat pouze prvky grafů ve viditelném intervalu, řešíme to zde:
-                DataGraphItem[] validGraphItems = this.InteractionThisSourceFilterItems(interaction, graphItems);
+                DataGraphItem[] validGraphItems = this.InteractionThisSourceFilterItems(runInteraction, graphItems);
 
                 // Odešleme do cílové tabulky požadavek na interakci:
-                InteractionArgs args = new InteractionArgs(interaction, activeRow, checkedRows, activeGraph, validGraphItems);
+                InteractionArgs args = new InteractionArgs(runInteraction, activeRow, checkedRows, activeGraph, validGraphItems);
                 targetTable.InteractionThisTarget(args);
             }
 
@@ -2105,14 +2115,24 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
             // Jednotlivé zdroje dat a vyhledání jejich cílů, a provedení přiměřené reakce na zdrojovou akci:
             TargetActionType action = args.Interaction.TargetAction;
-            if ((action & TargetActionType.SearchSourceItemId) != 0)
-                this.InteractionThisTargetFrom(args, i => i.ItemGId);
-            if ((action & TargetActionType.SearchSourceGroupId) != 0)
-                this.InteractionThisTargetFrom(args, i => i.GroupGId);
-            if ((action & TargetActionType.SearchSourceDataId) != 0)
-                this.InteractionThisTargetFrom(args, i => i.DataGId);
-            if ((action & TargetActionType.SearchSourceRowId) != 0)
-                this.InteractionThisTargetFrom(args, i => i.RowGId);
+
+            // Interakce s takovou cílovou akcí, která vychází ze zdrojových prvků grafu (které se řeší v metodě InteractionThisTargetFrom())
+            //  lze provést jen tehdy, když v argumentu byly předány prvky grafů (args.SourceGraphItems)!
+            if (args.SourceGraphItems != null)
+            {
+                if ((action & TargetActionType.SearchSourceItemId) != 0)
+                    this.InteractionThisTargetFrom(args, i => i.ItemGId);
+                if ((action & TargetActionType.SearchSourceGroupId) != 0)
+                    this.InteractionThisTargetFrom(args, i => i.GroupGId);
+                if ((action & TargetActionType.SearchSourceDataId) != 0)
+                    this.InteractionThisTargetFrom(args, i => i.DataGId);
+                if ((action & TargetActionType.SearchSourceRowId) != 0)
+                    this.InteractionThisTargetFrom(args, i => i.RowGId);
+            }
+
+            if ((action & TargetActionType.ActivateGraphSkin) != 0)
+                this.InteractionThisProcessActivateGraphSkin(args);
+
         }
         /// <summary>
         /// Metoda najde ve vstupních grafických prvcích <see cref="InteractionArgs.SourceGraphItems"/> 
@@ -2128,6 +2148,22 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             GRow[] targetRows = this.InteractionThisSearchRowBy(args, sourceGIds);                 // Najde řádky podle dodaných klíčů
             GTimeGraphGroup[] targetGroups = this.InteractionThisSearchGroupBy(args, sourceGIds);  // Najde grupy grafických prvků podle dodaných klíčů
             this.InteractionThisProcessAction(args, targetRows, targetGroups);
+        }
+        /// <summary>
+        /// Metoda vrátí pole řádků tabulky <see cref="GRow"/>, které odpovídají vstupním datům.
+        /// </summary>
+        /// <param name="args">Data aktuální interakce</param>
+        /// <param name="sourceGIds">Klíče (GId) ze zdrojových prvků</param>
+        /// <returns></returns>
+        protected GRow[] InteractionThisSearchRowBy(InteractionArgs args, Dictionary<GId, DataGraphItem> sourceGIds)
+        {
+            Dictionary<GId, GRow> rowDict = new Dictionary<GId, GRow>();
+
+            TargetActionType action = args.Interaction.TargetAction;
+            if ((action & TargetActionType.SearchTargetRowId) != 0)
+                this.InteractionThisSearchRowInItems(sourceGIds, rowDict);
+
+            return rowDict.Values.ToArray();
         }
         /// <summary>
         /// Metoda vrátí pole skupin grafických prvků <see cref="GTimeGraphGroup"/>, které odpovídají vstupním datům.
@@ -2148,22 +2184,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 this.InteractionThisSearchGroupInData(sourceGIds, groupDict);
 
             return groupDict.Values.ToArray();
-        }
-        /// <summary>
-        /// Metoda vrátí pole řádků tabulky <see cref="GRow"/>, které odpovídají vstupním datům.
-        /// </summary>
-        /// <param name="args">Data aktuální interakce</param>
-        /// <param name="sourceGIds">Klíče (GId) ze zdrojových prvků</param>
-        /// <returns></returns>
-        protected GRow[] InteractionThisSearchRowBy(InteractionArgs args, Dictionary<GId, DataGraphItem> sourceGIds)
-        {
-            Dictionary<GId, GRow> rowDict = new Dictionary<GId, GRow>();
-
-            TargetActionType action = args.Interaction.TargetAction;
-            if ((action & TargetActionType.SearchTargetRowId) != 0)
-                this.InteractionThisSearchRowInItems(sourceGIds, rowDict);
-
-            return rowDict.Values.ToArray();
         }
         /// <summary>
         /// Metoda se pokusí najít ve své evidenci grupy pro prvky s ItemId odpovídající daným identifikátorům GId, a přidat je do předané Dictionary.
@@ -2271,6 +2291,31 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                     if (isFilterRow) this.InteractionThisRowFilterAdd(targetGroup);
                 }
             }
+        }
+        /// <summary>
+        /// Metoda provede interakci typu <see cref="TargetActionType.ActivateGraphSkin"/> v this tabulce.
+        /// </summary>
+        /// <param name="args"></param>
+        protected void InteractionThisProcessActivateGraphSkin(InteractionArgs args)
+        {
+            int? skinIndex = args.RunInteraction.GetParameterInt32N(0);
+            if (skinIndex.HasValue)
+            {
+                this.TimeGraphDict.Values.ForEachItem(graph => graph.ModifyGraphItems(item => InteractionThisProcessActivateGraphSkin(args, item, skinIndex.Value)));
+                this.GTableRow.Refresh();
+            }
+        }
+        /// <summary>
+        /// Metoda provede interakci typu <see cref="TargetActionType.ActivateGraphSkin"/> v pro daný prvek grafu.
+        /// </summary>
+        /// <param name="args"></param>
+        /// <param name="item"></param>
+        /// <param name="skinIndex"></param>
+        protected void InteractionThisProcessActivateGraphSkin(InteractionArgs args, ITimeGraphItem item, int skinIndex)
+        {
+            DataGraphItem graphItem = item as DataGraphItem;
+            if (graphItem != null)
+                graphItem.SkinCurrentIndex = skinIndex;
         }
         /// <summary>
         /// Metoda v this instanci připraví pracovní řádkový filtr <see cref="InteractionRowFilterDict"/>;
@@ -3273,10 +3318,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         public GuiGraphBaseItem GuiGraphItem { get { return this._GuiGraphItem; } }
         /// <summary>
-        /// Prvek je viditelný?
-        /// </summary>
-        public bool IsVisible { get { return this._IsVisible; } set { this._IsVisible = value; } } private bool _IsVisible = true;
-        /// <summary>
         /// Veřejný identifikátor GRAFICKÉHO PRVKU (obsahuje číslo třídy a číslo záznamu).
         /// Může jít o záznam třídy Stav kapacit, nebo Pracovní jednotka.
         /// </summary>
@@ -3366,6 +3407,53 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             Row
         }
         #endregion
+        #region SkinSet
+        /// <summary>
+        /// Index aktuálního Skinu. Výchozí hodnota = 0, ta odkazuje na defaultní skin.
+        /// Lze setovat libovolnou numerickou hodnotu, tím se aktivuje daný skin. Skin pro novou hodnotu bude automaticky vytvořen jako prázdný.
+        /// Čtení konkrétní hodnoty se provádí z explicitně deklarovaného skinu, a pokud v konkrétní property je null, pak se čte z defaultního skinu.
+        /// Zápis hodnoty se provádí výhradně do aktuálního skinu (explicitní / defaultní).
+        /// Je tak zajištěno, že bude existovat defaultní sada grafických hodnot (=defaultní skin) 
+        /// plus libovolně široká řada explicitních skinů, které mohou přepisovat (tj. definovat vlastní) hodnotu jen u některé property.
+        /// Aplikace deklaruje nejprve kompletní defaultní skin, a poté deklaruje potřebnou sadu skinů.
+        /// <para/>
+        /// Konkrétní skiny si aktivuje uživatel v GUI, typicky nějakým tlačítkem v toolbaru, které má definovanou akci <see cref="TargetActionType.ActivateGraphSkin"/>,
+        /// s parametrem odpovídajícím číslu skinu.
+        /// <para/>
+        /// Skin ovlivňuje hodnoty v těchto properties:
+        /// <see cref="GuiGraphBaseItem.BackColor"/>, <see cref="GuiGraphBaseItem.HatchColor"/>, <see cref="GuiGraphBaseItem.LineColor"/>, 
+        /// <see cref="GuiGraphBaseItem.BackStyle"/>, <see cref="GuiGraphBaseItem.RatioBeginBackColor"/>, <see cref="GuiGraphBaseItem.RatioEndBackColor"/>, 
+        /// <see cref="GuiGraphBaseItem.RatioLineColor"/>, <see cref="GuiGraphBaseItem.RatioLineWidth"/>, 
+        /// <see cref="GuiGraphBaseItem.ImageBegin"/>, <see cref="GuiGraphBaseItem.ImageEnd"/>.
+        /// </summary>
+        public int SkinCurrentIndex
+        {
+            get { return this.GuiGraphItem.SkinCurrentIndex; }
+            set { this.GuiGraphItem.SkinCurrentIndex = value; }
+        }
+        /// <summary>
+        /// Prvek je viditelný?
+        /// Hodnota je mj. setována na true/false v procesu klonování řádků a grafu, při hledání párových prvků grafu 
+        /// v metodě <see cref="MainDataTable.SynchronizeChildGraphItems(Dictionary{GId, TimeRange}, MainDataTable.SearchChildInfo, TimeRange, Row, Row)"/>.
+        /// Hodnota ale pochází i z <see cref="GuiGraphBaseItem.IsVisible"/>
+        /// </summary>
+        public bool IsVisible
+        {
+            get
+            {   // Výsledek IsVisible = (this._IsVisible && (this._GuiGraphItem.IsVisible ?? true))
+                bool isVisible = this._IsVisible;
+                if (isVisible)
+                {
+                    bool? guiVisible = this._GuiGraphItem.IsVisible;
+                    if (guiVisible.HasValue)
+                        isVisible = guiVisible.Value;
+                }
+                return isVisible;
+            }
+            set { this._IsVisible = value; }
+        }
+        private bool _IsVisible = true;
+        #endregion
         #region Podpora pro kreslení a interaktivitu
         /// <summary>
         /// Metoda je volaná pro vykreslení jedné položky grafu.
@@ -3398,20 +3486,22 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         float ITimeGraphItem.Height { get { return this._GuiGraphItem.Height; } }
         string ITimeGraphItem.Text { get { return this._GuiGraphItem.Text; } }
         string ITimeGraphItem.ToolTip { get { return this._GuiGraphItem.ToolTip; } }
+        float? ITimeGraphItem.RatioBegin { get { return this._GuiGraphItem.RatioBegin; } }
+        float? ITimeGraphItem.RatioEnd { get { return this._GuiGraphItem.RatioEnd; } }
+        GraphItemBehaviorMode ITimeGraphItem.BehaviorMode { get { return this.BehaviorMode; } }
+        GTimeGraphItem ITimeGraphItem.GControl { get { this._CheckGControl(); return this._GControl; } set { this._GControl = value; } }
+        // Následující properties se načítají i ze Skinu:
         Color? ITimeGraphItem.BackColor { get { return this._GuiGraphItem.BackColor; } }
         Color? ITimeGraphItem.HatchColor { get { return this._GuiGraphItem.HatchColor; } }
         Color? ITimeGraphItem.LineColor { get { return this._GuiGraphItem.LineColor; } }
         System.Drawing.Drawing2D.HatchStyle? ITimeGraphItem.BackStyle { get { return this._GuiGraphItem.BackStyle; } }
-        float? ITimeGraphItem.RatioBegin { get { return this._GuiGraphItem.RatioBegin; } }
-        float? ITimeGraphItem.RatioEnd { get { return this._GuiGraphItem.RatioEnd; } }
         Color? ITimeGraphItem.RatioBeginBackColor { get { return this._GuiGraphItem.RatioBeginBackColor; } }
         Color? ITimeGraphItem.RatioEndBackColor { get { return this._GuiGraphItem.RatioEndBackColor; } }
         Color? ITimeGraphItem.RatioLineColor { get { return this._GuiGraphItem.RatioLineColor; } }
         int? ITimeGraphItem.RatioLineWidth { get { return this._GuiGraphItem.RatioLineWidth; } }
         Image ITimeGraphItem.ImageBegin { get { return App.Resources.GetImage(this._GuiGraphItem.ImageBegin); } }
         Image ITimeGraphItem.ImageEnd { get { return App.Resources.GetImage(this._GuiGraphItem.ImageEnd); } }
-        GraphItemBehaviorMode ITimeGraphItem.BehaviorMode { get { return this.BehaviorMode; } }
-        GTimeGraphItem ITimeGraphItem.GControl { get { this._CheckGControl(); return this._GControl; } set { this._GControl = value; } }
+        // Kreslení:
         void ITimeGraphItem.Draw(GInteractiveDrawArgs e, Rectangle boundsAbsolute, DrawItemMode drawMode) { this.Draw(e, boundsAbsolute, drawMode); }
         #endregion
     }
@@ -3549,23 +3639,44 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Konstruktor
         /// </summary>
-        /// <param name="guiGridInteraction"></param>
-        /// <param name="guiAction"></param>
-        /// <param name="runParameters"></param>
-        public GridInteractionRunInfo(GuiGridInteraction guiGridInteraction, GuiActionType guiAction, IEnumerable<string> runParameters)
+        /// <param name="guiGridInteraction">Definice interakce</param>
+        /// <param name="currentSourceAction">Aktuální akce, která spustila interakce</param>
+        public GridInteractionRunInfo(GuiGridInteraction guiGridInteraction, SourceActionType currentSourceAction)
         {
             this.GuiGridInteraction = guiGridInteraction;
-            this.GuiAction = guiAction;
+            this.CurrentSourceAction = currentSourceAction;
+            this.RunParameters = null;
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="guiGridInteraction">Definice interakce</param>
+        /// <param name="currentSourceAction">Aktuální akce, která spustila interakce</param>
+        /// <param name="runParameters">Parametry předané z tlačítka toolbaru</param>
+        public GridInteractionRunInfo(GuiGridInteraction guiGridInteraction, SourceActionType currentSourceAction, IEnumerable<string> runParameters)
+        {
+            this.GuiGridInteraction = guiGridInteraction;
+            this.CurrentSourceAction = currentSourceAction;
             this.RunParameters = (runParameters != null ? runParameters.ToArray() : null);
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return "CurrentSourceAction: " + this.CurrentSourceAction.ToString() +
+                "; Name: " + this.GuiGridInteraction.Name +
+                "; Params: " + (this.RunParameters != null ? "(" + this.RunParameters.ToString(",") + ")" : "{Null}");
         }
         /// <summary>
         /// Definice interakce
         /// </summary>
         public GuiGridInteraction GuiGridInteraction { get; private set; }
         /// <summary>
-        /// Aktuální akce
+        /// Aktuální akce, která spustila interakce
         /// </summary>
-        public GuiActionType GuiAction { get; private set; }
+        public SourceActionType CurrentSourceAction { get; private set; }
         /// <summary>
         /// Parametry pro běh, předané při spuštění z Toolbaru
         /// </summary>
@@ -3596,6 +3707,29 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         public bool IsConditional { get { return !String.IsNullOrEmpty(this.Conditions); } }
 
+        /// <summary>
+        /// Vrátí parametr uložený na dané pozici: <see cref="RunParameters"/>[index]
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        public string GetParameterString(int index)
+        {
+            if (this.RunParameters == null || this.RunParameters.Length == 0 || index < 0 || index >= this.RunParameters.Length) return null;
+            return this.RunParameters[index];
+        }
+        /// <summary>
+        /// Vrátí parametr uložený na dané pozici: <see cref="RunParameters"/>[index] převedený na Int32, nebo vrátí null
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        public int? GetParameterInt32N(int index)
+        {
+            string text = this.GetParameterString(index);
+            if (String.IsNullOrEmpty(text)) return null;
+            int value;
+            if (!Int32.TryParse(text, out value)) return null;
+            return value;
+        }
     }
     #endregion
 }

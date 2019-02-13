@@ -2305,6 +2305,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graph
         ITimeInteractiveGraph OwnerGraph { get; set; }
         /// <summary>
         /// Prvek je viditelný?
+        /// Hodnotu nastavuje Graf a Tabulka při procesu klonování řádku a grafu do tabulky, a filtrování řádků podle párových Parent řádků.
         /// </summary>
         bool IsVisible { get; set; }
         /// <summary>

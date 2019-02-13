@@ -304,7 +304,6 @@ namespace Asol.Tools.WorkScheduler.Components
         private Rectangle __Bounds;
         private Padding? __ClientBorder;
         private Padding? __ActivePadding;
-        private Rectangle? __AbsoluteInteractiveBounds;
         #endregion
         #region Events and virtual methods
         /// <summary>
