@@ -829,8 +829,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 ToolTip = "Pokud bude aktivní, budou v levé tabulce zobrazeny jen ty Výrobní příkazy, jejichž některá operace se provádí na aktuálním pracovišti.",
                 IsCheckable = true,
                 Image = RES.Images.Actions24.FormatIndentLess3Png,
-                GuiActions = GuiActionType.ResetAllRowFilters | GuiActionType.RunInteractionRowActivated | GuiActionType.SuppressCallAppHost,
-                RunInteractionNames = GuiFullNameGridCenterTop + ":" + GuiNameInteractionFilterProductOrder
+                GuiActions = GuiActionType.ResetAllRowFilters | GuiActionType.RunInteractions | GuiActionType.SuppressCallAppHost,
+                RunInteractionNames = GuiFullNameGridCenterTop + ":" + GuiNameInteractionFilterProductOrder,
+                RunInteractionSource = SourceActionType.TableRowActivatedOnly | SourceActionType.TableRowChecked
             });
 
             this.MainData.ToolbarItems.Add(new GuiToolbarItem()
@@ -845,8 +846,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 IsChecked = true,
                 CheckedGroupName = "ShowColorGroup",
                 Image = RES.Images.Actions24.FlagBluePng,
-                GuiActions = GuiActionType.RunInteractionToolbar | GuiActionType.SuppressCallAppHost,
-                RunInteractionNames = GuiFullNameGridCenterTop + ":" + GuiNameInteractionShowColorSet
+                GuiActions = GuiActionType.RunInteractions | GuiActionType.SuppressCallAppHost,
+                RunInteractionNames = GuiFullNameGridCenterTop + ":" + GuiNameInteractionShowColorSet + ":0",        // :0 = parametr pro interakci (GuiNameInteractionShowColorSet)
+                RunInteractionSource = SourceActionType.ToolbarClicked
             });
             this.MainData.ToolbarItems.Add(new GuiToolbarItem()
             {
@@ -859,8 +861,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 IsCheckable = true,
                 CheckedGroupName = "ShowColorGroup",
                 Image = RES.Images.Actions24.FlagRedPng,
-                GuiActions = GuiActionType.RunInteractionToolbar | GuiActionType.SuppressCallAppHost,
-                RunInteractionNames = GuiFullNameGridCenterTop + ":" + GuiNameInteractionShowColorSet
+                GuiActions = GuiActionType.RunInteractions | GuiActionType.SuppressCallAppHost,
+                RunInteractionNames = GuiFullNameGridCenterTop + ":" + GuiNameInteractionShowColorSet + ":1",
+                RunInteractionSource = SourceActionType.ToolbarClicked
             });
             this.MainData.ToolbarItems.Add(new GuiToolbarItem()
             {
@@ -873,8 +876,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 IsCheckable = true,
                 CheckedGroupName = "ShowColorGroup",
                 Image = RES.Images.Actions24.FlagGreenPng,
-                GuiActions = GuiActionType.RunInteractionToolbar | GuiActionType.SuppressCallAppHost,
-                RunInteractionNames = GuiFullNameGridCenterTop + ":" + GuiNameInteractionShowColorSet
+                GuiActions = GuiActionType.RunInteractions | GuiActionType.SuppressCallAppHost,
+                RunInteractionNames = GuiFullNameGridCenterTop + ":" + GuiNameInteractionShowColorSet + ":2",
+                RunInteractionSource = SourceActionType.ToolbarClicked
             });
             this.MainData.ToolbarItems.Add(new GuiToolbarItem()
             {
@@ -887,8 +891,9 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 IsCheckable = true,
                 CheckedGroupName = "ShowColorGroup",
                 Image = RES.Images.Actions24.FlagBlackPng,
-                GuiActions = GuiActionType.RunInteractionToolbar | GuiActionType.SuppressCallAppHost,
-                RunInteractionNames = GuiFullNameGridCenterTop + ":" + GuiNameInteractionShowColorSet
+                GuiActions = GuiActionType.RunInteractions | GuiActionType.SuppressCallAppHost,
+                RunInteractionNames = GuiFullNameGridCenterTop + ":" + GuiNameInteractionShowColorSet + ":3",
+                RunInteractionSource = SourceActionType.ToolbarClicked
             });
 
             this.MainData.ToolbarItems.Add(new GuiToolbarItem()
@@ -1032,7 +1037,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             gridCenterWorkplace.GridProperties.AddInteraction(new GuiGridInteraction()
             {
                 Name = GuiNameInteractionFilterProductOrder,
-                SourceAction = (SourceActionType.TableRowActivatedOnly | SourceActionType.TableRowChecked),
+                SourceAction = (SourceActionType.TimeAxisChanged | SourceActionType.TableRowActivatedOnly | SourceActionType.TableRowChecked),
                 TargetGridFullName = GuiFullNameGridLeft,
                 // Hledáme: SearchSourceDataId : ve Zdrojovém grafu načteme DataId (= GID Operace VP),
                 //          SearchSourceVisibleTime : vezmeme pouze prvky ve viditelném čase,
@@ -1046,12 +1051,10 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             gridCenterWorkplace.GridProperties.AddInteraction(new GuiGridInteraction()
             {
                 Name = GuiNameInteractionShowColorSet,
-                SourceAction = SourceActionType.None,
-                TargetAction = TargetActionType.ActivateColorSet
+                // Interakce deklarovaná v GuiGridu CenterTop, která po kliknutí v toolbaru zajistí aktivaci daného skinu.
+                SourceAction = SourceActionType.ToolbarClicked,
+                TargetAction = TargetActionType.ActivateGraphSkin
             });
-
-
-
 
             // Data tabulky = Plánovací jednotky Pracoviště:
             foreach (PlanUnitC planUnitC in this.WorkplaceDict.Values)
@@ -1398,12 +1401,13 @@ namespace Asol.Tools.WorkScheduler.TestGUI
             string serial = null;
             PersistArgs desArgs = null;
             GuiData result = null;
-            string compress = (mode == XmlCompressMode.None ? "Plain" : "Compress");
+            bool isCompress = (mode != XmlCompressMode.None);
+            string compress = (isCompress ? "Compress" : "Plain");
             string runMode = (System.Diagnostics.Debugger.IsAttached ? "Debug" : "Run");
 
             using (var scopeS = Application.App.Trace.Scope("SchedulerDataSource", "SerialDeserialData", "Serialize", compress, runMode))
             {
-                PersistArgs serArgs = new PersistArgs() { CompressMode = mode };
+                PersistArgs serArgs = (isCompress ? PersistArgs.Compressed : PersistArgs.MinimalXml);
                 serial = XmlPersist.Serialize(guiData, serArgs);
                 scopeS.AddItem("SerialLength: " + serial.Length.ToString());
             }
@@ -2135,6 +2139,30 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 guiGraphItem.HatchColor = backColor.Morph(Color.Gray, 0.750f);
                 guiGraphItem.ImageBegin = RES.Images.Actions24.Lock4Png;
             }
+
+
+
+            // Testy Skinů:
+            bool isHidden = ((this.Operation.RecordId % 5) == 0);
+
+            guiGraphItem.SkinCurrentIndex = 1;
+            guiGraphItem.BackColor = Color.LightYellow;
+            if (isHidden)
+            {
+                guiGraphItem.ImageBegin = new GuiImage();
+                guiGraphItem.ImageEnd = RES.Images.Actions24.DialogNo3Png;
+                guiGraphItem.BackColor = Color.PaleTurquoise;
+                guiGraphItem.BackStyle = System.Drawing.Drawing2D.HatchStyle.Percent25;
+                guiGraphItem.HatchColor = Color.Black;
+            }
+
+            guiGraphItem.SkinCurrentIndex = 2;
+            guiGraphItem.BackColor = (isHidden ? Color.DarkGray : Color.DarkBlue);
+
+            guiGraphItem.SkinCurrentIndex = 3;
+            guiGraphItem.BackColor = (isHidden ? Color.DarkGray : Color.DarkBlue);
+            if (isHidden)
+                guiGraphItem.IsVisible = false;
 
             return guiGraphItem;
         }
