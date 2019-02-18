@@ -143,16 +143,24 @@ SET @cislo = 15307;
             if (dateRound != dateExp) throw new AssertFailedException("TestExtensions.RoundTime() error: expected time: " + dateExp.ToString("hh:MM:ss.fff") + ", returned time " + dateRound.ToString("hh:MM:ss.fff") + ".");
         }
         #endregion
-        #region Serializace testy
+        #region Testy serializace
         /// <summary>
         /// Test XML Serializace a Deserializace
         /// </summary>
         [TestMethod]
-        public void TestXmlPersist()
+        public void TestXmlPersistClass()
         {
             TestPersist orig = new TestPersist();
             GuiId guiId = new GuiId(1180, 123456);
             orig.GuiId = guiId;
+
+            orig.Array = new object[6];
+            orig.Array[0] = "Zkouška\r\nřádku";
+            orig.Array[1] = new DateTime(2019, 01, 15, 12, 0, 0);
+            orig.Array[2] = 16.02m;
+            orig.Array[3] = new Rectangle(5, 10, 100, 50);
+            orig.Array[4] = new List<int> { 10, 20, 30 };
+
 
             GuiId guiId0 = new GuiId(21, 1234);
             GuiId guiId5 = new GuiId(26, 6789);
@@ -164,9 +172,9 @@ SET @cislo = 15307;
             orig.GuiIdList.Add(new GuiId(25, 5678));
             orig.GuiIdList.Add(guiId5);
 
-            orig.Tabulka = new string[30, 6];
-            for (int r = 0; r < 30; r++)
-                for (int c = 0; c < 6; c++)
+            orig.Tabulka = new string[3, 2];
+            for (int r = 0; r < 3; r++)
+                for (int c = 0; c < 2; c++)
                     orig.Tabulka[r, c] = "Pozice(" + r + "," + c + ")";
 
             orig.Sachovnice = new TestDictionary();
@@ -196,9 +204,9 @@ SET @cislo = 15307;
 
             if (copy.Tabulka == null) throw new AssertFailedException("TestPersist.Tabulka is null");
             if (copy.Tabulka.Rank != 2) throw new AssertFailedException("TestPersist.Tabulka has Rank != 2");
-            if (copy.Tabulka.GetLength(0) != 30) throw new AssertFailedException("TestPersist.Tabulka has Length(0) != 30");
-            if (copy.Tabulka.GetLength(1) != 6) throw new AssertFailedException("TestPersist.Tabulka has Length(1) != 6");
-            if (copy.Tabulka[12,2] != "Pozice(12,2)") throw new AssertFailedException("TestPersist.Tabulka has bad value in cell [12,2]");
+            if (copy.Tabulka.GetLength(0) != 3) throw new AssertFailedException("TestPersist.Tabulka has Length(0) != 3");
+            if (copy.Tabulka.GetLength(1) != 2) throw new AssertFailedException("TestPersist.Tabulka has Length(1) != 2");
+            if (copy.Tabulka[2,1] != "Pozice(2,1)") throw new AssertFailedException("TestPersist.Tabulka has bad value in cell [2,1]");
 
             if (copy.Sachovnice == null) throw new AssertFailedException("TestPersist.Sachovnice is null");
             if (copy.Sachovnice.Count != 6) throw new AssertFailedException("TestPersist.Sachovnice has bad count");
@@ -211,12 +219,74 @@ SET @cislo = 15307;
         {
             [PropertyName("GuiID_položka")]
             public GuiId GuiId { get; set; }
+            public object[] Array { get; set; }
             public List<GuiId> GuiIdList { get; set; }
             public string[,] Tabulka { get; set; }
             public TestDictionary Sachovnice { get; set; }
         }
         internal class TestDictionary : Dictionary<GuiId, Rectangle>
         { }
+        /// <summary>
+        /// Test XML Serializace a Deserializace
+        /// </summary>
+        [TestMethod]
+        public void TestXmlPersistSimple()
+        {
+            object[] source = new object[3];
+            source[0] = 0;
+            source[1] = "XXX";
+            object[] values = new object[3];
+            TestSimpleClass value0 = new TestSimpleClass() { Name = "Name0", Value = 0 };
+            TestSimpleClass value1 = new TestSimpleClass() { Name = "Name1", Value = "Item1" };
+            TestSimpleClass value2 = new TestSimpleClass() { Name = "Name2" };
+            TestSimpleClass value2a = new TestSimpleClass() { Name = "Name2a", Value = "Item2a" };
+            value2.Value = value2a;
+            values[0] = value0;
+            values[1] = value1;
+            values[2] = value2;
+
+            source[2] = values;
+
+            string xml = Persist.Serialize(source, PersistArgs.Default);
+
+            object result = Persist.Deserialize(xml);
+            if (result == null) throw new AssertFailedException("TestXmlPersistSimple: deserialized = null");
+
+            object[] target = result as object[];
+            if (target == null) throw new AssertFailedException("TestXmlPersistSimple: deserialized is not array object[]");
+            if (target.Length != source.Length) throw new AssertFailedException("TestXmlPersistSimple: deserialized array has wrong length");
+
+            if (!(target[0] is int)) throw new AssertFailedException("TestXmlPersistSimple: deserialized array has wrong type of item[0]");
+            if (((int)(target[0])) != ((int)(source[0]))) throw new AssertFailedException("TestXmlPersistSimple: deserialized array has wrong value of item[0]");
+
+            if (!(target[1] is string)) throw new AssertFailedException("TestXmlPersistSimple: deserialized array has wrong type of item[1]");
+            if (((string)(target[1])) != ((string)(source[1]))) throw new AssertFailedException("TestXmlPersistSimple: deserialized array has wrong value of item[1]");
+
+            if (target[2] == null) throw new AssertFailedException("TestXmlPersistSimple: deserialized array has wrong item[2] == null");
+            object[] clones = target[2] as object[];
+            if (clones == null) throw new AssertFailedException("TestXmlPersistSimple: deserialized array has wrong type item[2], has be object[]");
+            if (clones.Length != values.Length) throw new AssertFailedException("TestXmlPersistSimple: deserialized array in item[2] has wrong length");
+
+            TestSimpleClass clone0 = clones[0] as TestSimpleClass;
+            if (clone0 == null) throw new AssertFailedException("TestXmlPersistSimple: deserialized array in item[2] has wrong item[0]");
+            if (clone0.Name != value0.Name) throw new AssertFailedException("TestXmlPersistSimple: deserialized clone 0 has wrong Name");
+            if (clone0.Value.ToString() != value0.Value.ToString()) throw new AssertFailedException("TestXmlPersistSimple: deserialized clone 0 has wrong Value");
+
+            TestSimpleClass clone1 = clones[1] as TestSimpleClass;
+            if (clone1 == null) throw new AssertFailedException("TestXmlPersistSimple: deserialized array in item[2] has wrong item[1]");
+            if (clone1.Name != value1.Name) throw new AssertFailedException("TestXmlPersistSimple: deserialized clone 1 has wrong Name");
+            if (clone1.Value.ToString() != value1.Value.ToString()) throw new AssertFailedException("TestXmlPersistSimple: deserialized clone 1 has wrong Value");
+
+            TestSimpleClass clone2 = clones[2] as TestSimpleClass;
+            if (clone2 == null) throw new AssertFailedException("TestXmlPersistSimple: deserialized array in item[2] has wrong item[2]");
+            if (clone2.Name != value2.Name) throw new AssertFailedException("TestXmlPersistSimple: deserialized clone 2 has wrong Name");
+
+            TestSimpleClass clone2a = clone2.Value as TestSimpleClass;
+            if (clone2a == null) throw new AssertFailedException("TestXmlPersistSimple: deserialized array in item[2] has wrong item[2].Value");
+            if (clone2a.Name != value2a.Name) throw new AssertFailedException("TestXmlPersistSimple: deserialized clone 2a has wrong Name");
+            if (clone2a.Value.ToString() != value2a.Value.ToString()) throw new AssertFailedException("TestXmlPersistSimple: deserialized clone 2a has wrong Value");
+
+        }
         #endregion
         #region ServiceGate XML response testy
         /// <summary>
@@ -336,5 +406,10 @@ SET @cislo = 15307;
         protected const string Response2 = "<?xml version=\"1.0\" encoding=\"utf-8\"?><RUNRESULT STATE=\"FAIL\" START=\"2018-09-19 15:26:46\" STOP=\"2018-09-19 15:27:08\" DATABASENUMBER=\"0\"><DETAIL LEVEL=\"APPLICATION\" errorMessage=\"Exception of type 'Noris.Srv.StopProcessException' was thrown.\" WHEN=\"2018-09-19 15:27:08\"><TEXT>Noris.Srv.StopProcessException: Exception of type 'Noris.Srv.StopProcessException' was thrown.   at Noris.Message.StopProcess() ....ServiceGate\\Processor.cs:line 398</TEXT></DETAIL></RUNRESULT>";
         protected const string Response3 = "<?xml version=\"1.0\" encoding=\"utf-8\"?><RUNRESULT STATE=\"SUCCESS\" START=\"2018-09-19 15:28:08\" STOP=\"2018-09-19 15:30:31\" DATABASENUMBER=\"999999001\"><DETAIL /><USERDATA Base64Conversion=\"No\">OK</USERDATA><auditlog id=\"198689\" state=\"success\" /></RUNRESULT>";
         #endregion
+    }
+    internal class TestSimpleClass
+    {
+        public string Name { get; set; }
+        public object Value { get; set; }
     }
 }

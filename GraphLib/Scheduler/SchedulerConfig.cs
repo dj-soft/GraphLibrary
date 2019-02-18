@@ -293,6 +293,27 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.UserConfig.Add(item);
             return item;
         }
+        /// <summary>
+        /// Metoda uloží do <see cref="UserConfig"/> objekt (data) daného typu (na tom by nebylo nic složitého).
+        /// Metoda ale daný objekt uloží do první pozice, kde již objekt daného typu je (=přepíše jej), 
+        /// případně použije filtr "selector": metoda projde uložené objekty daného typu, a pokud funkce "selector" pro některý objekt vrátí true, pak použije jeho pozici.
+        /// Pokud nenajde vhodnou pozici, uloží dodaný objekt do nové pozice.
+        /// Tento postup slouží k tomu, že v <see cref="UserConfig"/> může být uložen 0 nebo 1 objekt určitého typu, 
+        /// pak metoda <see cref="UserConfigSearch{T}(Func{T, bool})"/> jej může najít,
+        /// a zdejší metoda <see cref="UserConfigStore{T}(T, Func{T, bool})"/> může objekt daného typu uložit (poprvé i opakovaně).
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="data">Data k vložení</param>
+        /// <param name="selector"></param>
+        public void UserConfigStore<T>(T data, Func<T, bool> selector = null)
+        {
+            bool hasSelector = (selector != null);
+            int index = this.UserConfig.FindIndex(i => ((i is T) && (!hasSelector || (selector((T)i)))));
+            if (index >= 0)
+                this.UserConfig[index] = data;
+            else
+                this.UserConfig.Add(data);
+        }
         #endregion
         #region Ověření hodnoty
         /// <summary>
@@ -516,4 +537,51 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         }
         #endregion
     }
+    #region class SchedulerConfigUserPair : Jeden pár údajů Key - Value, vhodný pro persistenci v rámci Configu
+    /// <summary>
+    /// SchedulerConfigUserPair : Jeden pár údajů Key - Value, vhodný pro persistenci v rámci Configu
+    /// </summary>
+    public class SchedulerConfigUserPair
+    {
+        /// <summary>
+        /// Konstruktor bez parametrů, pro persistenci
+        /// </summary>
+        private SchedulerConfigUserPair()
+        { }
+        /// <summary>
+        /// Konstruktor s klíčem
+        /// </summary>
+        /// <param name="key"></param>
+        public SchedulerConfigUserPair(string key)
+        {
+            this.Key = key;
+        }
+        /// <summary>
+        /// Konstruktor s klíčem a hodnotou
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        public SchedulerConfigUserPair(string key, object value)
+        {
+            this.Key = key;
+            this.Value = value;
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return "[" + this.Key + "] = " + (this.Value != null ? this.Value.ToString() : "{Null}");
+        }
+        /// <summary>
+        /// Klíč
+        /// </summary>
+        public string Key { get; private set; }
+        /// <summary>
+        /// Hodnota
+        /// </summary>
+        public object Value { get; set; }
+    }
+    #endregion
 }

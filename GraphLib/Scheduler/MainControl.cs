@@ -158,6 +158,18 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this._ToolBar.AddGroups(groups);
         }
         /// <summary>
+        /// Aktuální živý stav ToolBaru, pro persistenci do příštího spuštění
+        /// </summary>
+        public ToolBarStatus ToolBarCurrentStatus { get { return this._ToolBar.CurrentStatus; } set { this._ToolBar.CurrentStatus = value; } }
+        /// <summary>
+        /// Souhrn všech grup v toolbaru
+        /// </summary>
+        public FunctionGlobalGroup[] ToolBarFunctionGroups { get { return this._ToolBar.FunctionGroups; } }
+        /// <summary>
+        /// Souhrn všech prvků ve všech grupách toolbaru
+        /// </summary>
+        public FunctionGlobalItem[] ToolBarFunctionItems { get { return this._ToolBar.FunctionItems; } }
+        /// <summary>
         /// Vymaže všechny prvky Toolbaru
         /// </summary>
         public void ClearToolBar()

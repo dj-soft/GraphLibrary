@@ -790,17 +790,37 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Konfigurace uživatelská
         /// </summary>
         public SchedulerConfig Config { get { return this._Config; } }
+        /// <summary>
+        /// Načte z configu hodnoty odpovídající uživatelskému stavu GUI a promítne je do něj.
+        /// Tedy, jak si uživatel naposledy uspořádal GUI (a jak bylo uloženo v metodě <see cref="_SaveMainControlToConfig()"/>), 
+        /// tak se GUI nyní po spuštění uspořádá.
+        /// Tato metoda neřeší vnitřní rozložení jednotlivých panelů s daty, to si řeší panely samy ve své režii, viz metoda: <see cref="SchedulerPanel.ConnectConfigLayout(GuiPage)"/>
+        /// </summary>
         private void _FillMainControlFromConfig()
         {
-            using (App.Trace.Scope(TracePriority.Priority2_Lowest, "MainData", "FillMainControlPagesFromGui", ""))
-            {
-                qqq;
-            }
+            SchedulerConfig config = this.Config;
+            if (config == null) return;
+
+            ToolBarStatus toolBarStatus = config.UserConfigSearch<ToolBarStatus>().FirstOrDefault();
+            if (toolBarStatus != null)
+                this._MainControl.ToolBarCurrentStatus = toolBarStatus;
         }
+        /// <summary>
+        /// Metoda uloží do Configu údaje o uživatelském stavu GUI, volá se po každé jeho změně.
+        /// Metoda posbírá nejrůznější data z Main controlu a vepíše je do Configu. 
+        /// Tato data budou při příštím spuštění Pluginu načtena z Configu a promítnuta do GUI v metodě <see cref="_FillMainControlFromConfig()"/>.
+        /// </summary>
         private void _SaveMainControlToConfig()
         {
+            SchedulerConfig config = this.Config;
+            if (config == null) return;
 
+            ToolBarStatus toolBarStatus = this._MainControl.ToolBarCurrentStatus;
+            config.UserConfigStore<ToolBarStatus>(toolBarStatus);
+            
+            config.Save();
         }
+        private const string _CONFIG_MAIN_CONTROL = "ConfigMainControl";
         /// <summary>
         /// Konfigurace uživatelská
         /// </summary>

@@ -37,7 +37,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             this._TitleFont = FontInfo.CaptionSmallBold;
             this._ItemFont = FontInfo.Menu;
-            this._ToolbarItemList = new List<GToolBarGroup>();
+            this._ToolbarGroupList = new List<GToolBarGroup>();
             this._CreateSettings();
             this._CreateSplitter();
         }
@@ -169,7 +169,7 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         private void _FillFunctionGlobals(Type providerType)
         {
-            this._ToolbarItemList.Clear();
+            this._ToolbarGroupList.Clear();
 
             IEnumerable<object> plugins = Application.App.GetPlugins(providerType);
             List<FunctionGlobalGroup> groupList = new List<FunctionGlobalGroup>();
@@ -249,6 +249,18 @@ namespace Asol.Tools.WorkScheduler.Components
             this._AddGuiGroups(groups);
         }
         /// <summary>
+        /// Souhrn všech grup v toolbaru
+        /// </summary>
+        public FunctionGlobalGroup[] FunctionGroups { get { return this._ToolbarGroupList.Select(g => g.DataGroup).ToArray(); } }
+        /// <summary>
+        /// Souhrn všech grafických grup v toolbaru
+        /// </summary>
+        internal GToolBarGroup[] GFunctionGroups { get { return this._ToolbarGroupList.ToArray(); } }
+        /// <summary>
+        /// Souhrn všech prvků ve všech grupách toolbaru
+        /// </summary>
+        public FunctionGlobalItem[] FunctionItems { get { return this._ToolbarGroupList.SelectMany(g => g.DataGroup.Items).ToArray(); } }
+        /// <summary>
         /// Vymaže všechny prvky Toolbaru
         /// </summary>
         public void ClearToolBar()
@@ -271,9 +283,9 @@ namespace Asol.Tools.WorkScheduler.Components
         private void _AddGToolbarGroup(GToolBarGroup group)
         {
             this.AddItem(group);
-            this._ToolbarItemList.Add(group);
+            this._ToolbarGroupList.Add(group);
         }
-        private List<GToolBarGroup> _ToolbarItemList;
+        private List<GToolBarGroup> _ToolbarGroupList;
         #endregion
         #region Layout of toolbar - Check, Invalidate, Prepare
         /// <summary>
@@ -329,7 +341,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             this._Splitter.SplitterVisibleWidth = this.TBarSetting.SplitterHeight;
             int x = this.TBarSetting.ContentBounds.X;                // Prepare this.TBarSetting for current ToolbarSize, when current item is null or has not valid Size
-            foreach (GToolBarGroup group in this._ToolbarItemList)
+            foreach (GToolBarGroup group in this._ToolbarGroupList)
                 group.PrepareLayout(graphics, ref x);
         }
         #endregion
@@ -366,6 +378,47 @@ namespace Asol.Tools.WorkScheduler.Components
                 this.CallToolbarSizeChanged(sizeOld, sizeNew, eventSource);
         }
         private ComponentSize _ToolbarSize = ComponentSize.Medium;
+        #endregion
+        #region Status ToolBaru
+        /// <summary>
+        /// Aktuální živý stav ToolBaru, pro persistenci do příštího spuštění
+        /// </summary>
+        public ToolBarStatus CurrentStatus { get { return ToolBarStatus.CreateFrom(this); } set { ToolBarStatus.ApplyTo(value, this); } }
+        /// <summary>
+        /// Otisk posledně známého stavu, pro detekci změn.
+        /// Otisk je získán z <see cref="ToolBarStatus.Snapshot"/>
+        /// </summary>
+        private string _LastStatusSnapshot;
+        /// <summary>
+        /// Metoda zjistí, zda v Toolbaru došlo ke změně stavu, a pokud ano tak vyvolá odpovídající událost.
+        /// </summary>
+        protected void TestCurrentStatusChanged()
+        {
+            string oldSnapshot = this._LastStatusSnapshot;
+            string newSnapshot = (oldSnapshot != null ? this.CurrentStatus.Snapshot : "");
+            if (String.Equals(oldSnapshot, newSnapshot)) return;
+            this.CallCurrentStatusChanged(newSnapshot);
+        }
+        /// <summary>
+        /// Vyvolá háček OnCurrentStatusChanged a event CurrentStatusChanged
+        /// </summary>
+        protected void CallCurrentStatusChanged(string newSnapshot)
+        {
+            this._LastStatusSnapshot = newSnapshot;
+            EventArgs args = new EventArgs();
+            this.OnCurrentStatusChanged(args);
+            if (this.CurrentStatusChanged != null)
+                this.CurrentStatusChanged(this, args);
+        }
+        /// <summary>
+        /// Je voláno při každé změně <see cref="CurrentStatus"/>
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnCurrentStatusChanged(EventArgs args) { }
+        /// <summary>
+        /// Událost volaná při každé změně <see cref="CurrentStatus"/>
+        /// </summary>
+        public event EventHandler CurrentStatusChanged;
         #endregion
         #region Public eventy
         /// <summary>
@@ -748,6 +801,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             if (this.ItemCheckedChange != null)
                 this.ItemCheckedChange(this, new FunctionItemEventArgs(activeItem));
+            this.TestCurrentStatusChanged();
         }
         /// <summary>
         /// Tuto metodu volá interaktivní prvek po kliknutí na něj, úkolem je vyvolat event <see cref="GToolBar.ItemClicked"/>.
@@ -758,6 +812,7 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             if (this.ItemClicked != null)
                 this.ItemClicked(this, new FunctionItemEventArgs(activeItem));
+            this.TestCurrentStatusChanged();
         }
         /// <summary>
         /// Tuto metodu volá interaktivní prvek před načtením SubItems do itemu, úkolem je vyvolat event <see cref="GToolBar.ItemSubItemsEnumerateBefore"/>.
@@ -794,7 +849,7 @@ namespace Asol.Tools.WorkScheduler.Components
         internal static GToolBarGroup CreateFrom(GToolBar owner, FunctionGlobalGroup dataGroup)
         {
             GToolBarGroup group = new GToolBarGroup(owner, dataGroup);
-
+            
             if (dataGroup.Items != null)
             {
                 foreach (FunctionGlobalItem item in dataGroup.Items)
@@ -847,6 +902,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         public FunctionGlobalGroup DataGroup { get { return this._DataGroup; } }
         /// <summary>
+        /// Pole grafických položek
+        /// </summary>
+        internal GToolBarItem[] FunctionGItems { get { return this._ToolbarItemList.ToArray(); } }
+        /// <summary>
         /// Toolbar in which is this group located.
         /// </summary>
         internal GToolBar Toolbar { get { return this._Toolbar; } }
@@ -866,6 +925,11 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         #endregion
         #region Data properties
+        /// <summary>
+        /// Libovolný název tohoto controlu. Není povinné jej zadávat. Nemusí být jednoznačný. Nemá žádná pravidla co do obsahu.
+        /// Je na aplikaci, jak jej naplní a jak jej bude vyhodnocovat.
+        /// </summary>
+        public override string Name { get { return this._DataGroup.Title.Text; } set { } }
         /// <summary>
         /// Title of this group
         /// </summary>
@@ -1053,7 +1117,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <param name="selectionGroupName"></param>
         /// <param name="itemFilter"></param>
         /// <returns></returns>
-        internal List<FunctionGlobalItem> GetGroup(string selectionGroupName, Func<FunctionGlobalItem, bool> itemFilter)
+        internal List<FunctionGlobalItem> GetOptionGroup(string selectionGroupName, Func<FunctionGlobalItem, bool> itemFilter)
         {
             if (String.IsNullOrEmpty(selectionGroupName)) return null;
             List<FunctionGlobalItem> result = new List<FunctionGlobalItem>();
@@ -1224,7 +1288,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected void IsCheckedChange()
         {
-            List<FunctionGlobalItem> itemGroup = this._ToolbarGroup.GetGroup(this._DataItem.CheckedGroupName, i => (i.ItemType == FunctionGlobalItemType.Button));
+            List<FunctionGlobalItem> itemGroup = this._ToolbarGroup.GetOptionGroup(this._DataItem.CheckedGroupName, i => (i.ItemType == FunctionGlobalItemType.Button));
             if (itemGroup == null)
             {   // null = není zadána grupa => v tom případě this button je CheckBox:
                 bool newIsChecked = !this.Is.Checked;
@@ -1421,6 +1485,10 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Data from DataItem
         /// <summary>
+        /// Jméno tohoto prvku, prostor pro aplikační identifikátor položky
+        /// </summary>
+        public override string Name { get { return this._DataItem.Name; } set { } }
+        /// <summary>
         /// Vlastní datový prvek, nad kterým je postaven tento prvek Toolbaru
         /// </summary>
         public FunctionGlobalItem DataItem { get { return this._DataItem; } }
@@ -1495,6 +1563,13 @@ namespace Asol.Tools.WorkScheduler.Components
                 return false; 
             }
         }
+        #endregion
+        #region Support pro serializaci hodnoty prvku (IsChecked nebo Value, atd)
+        /// <summary>
+        /// Hodnota, která je pro tento prvek persistována. Pokud je zde null, pak persistence není.
+        /// Potomek může tuto property přepsat, a konvertovat string na svoji hodnotu, pak bude persistována do příštího spuštění aplikace.
+        /// </summary>
+        public virtual string PersistValue { get { return null; } set { } }
         #endregion
         #region Prepare layout of this item in ToolbarGroup. ILayoutItem explicit members
         /// <summary>
@@ -1808,10 +1883,17 @@ namespace Asol.Tools.WorkScheduler.Components
             this._ToolbarGroup.DataGroup.OnSubItemsEnumerateBefore(activeItem);
             this._ToolbarGroup.Toolbar.OnItemSubItemsEnumerateBefore(this._ToolbarGroup.DataGroup, activeItem);
         }
+        /// <summary>
+        /// Kliknutí na this prvek
+        /// </summary>
         protected virtual void CallItemClick()
         {
             this.CallItemClick(this._DataItem);
         }
+        /// <summary>
+        /// Kliknutí na daný prvek (což může být this, nebo jedna z položek v ComboBoxu = tedy moje Sub-Item)
+        /// </summary>
+        /// <param name="activeItem"></param>
         protected virtual void CallItemClick(FunctionItem activeItem)
         {
             this._ToolbarGroup.DataGroup.OnItemClicked(activeItem);
@@ -1820,6 +1902,10 @@ namespace Asol.Tools.WorkScheduler.Components
             activeItem.OnClick();
             this._ToolbarGroup.Toolbar.OnItemClicked(this._ToolbarGroup.DataGroup, activeItem);
         }
+        /// <summary>
+        /// Změna stavu IsChecked
+        /// </summary>
+        /// <param name="activeItem"></param>
         protected virtual void CallItemCheckedChange(FunctionItem activeItem)
         {
             this._ToolbarGroup.DataGroup.OnItemCheckedChange(activeItem);
@@ -1896,6 +1982,96 @@ namespace Asol.Tools.WorkScheduler.Components
                         this.Parent.Repaint();
                     break;
             }
+        }
+        #endregion
+    }
+    #endregion
+    #region class ToolBarStatus : stav celého ToolBaru = velikost, prvky Checked, hodnoty prvků, atd - pro persistenci do příštího spuštění
+    /// <summary>
+    /// ToolBarStatus : stav celého ToolBaru = velikost, prvky Checked, hodnoty prvků, atd - pro persistenci do příštího spuštění
+    /// </summary>
+    public class ToolBarStatus
+    {
+        #region Konstruktor, proměnné, persistované property
+
+        private ToolBarStatus() { }
+        /// <summary>
+        /// Velikost ToolBaru
+        /// </summary>
+        protected ComponentSize? ToolbarSize { get; set; }
+        /// <summary>
+        /// Index obsahující klíče prvků toolbaru a jejich persist hodnotu
+        /// </summary>
+        protected Dictionary<string, string> KeyValueDict { get; set; }
+
+        /// <summary>
+        /// Stringový otisk aktuálního stavu, pro detekci změny
+        /// </summary>
+        [PersistingEnabled(false)]
+        public string Snapshot { get; }
+
+        #endregion
+        #region Tvorba i Aplikace stavu toolbaru z/do dodaných prvků ToolBaru
+        /// <summary>
+        /// Metoda sestaví a vrátí new instanci <see cref="ToolBarStatus"/>, která obsahuje aktuální hodnoty prvků z dodaného ToolBaru.
+        /// </summary>
+        /// <param name="toolBar"></param>
+        /// <returns></returns>
+        public static ToolBarStatus CreateFrom(GToolBar toolBar)
+        {
+            if (toolBar == null) return null;
+
+            ToolBarStatus status = new ToolBarStatus();
+
+            status.ToolbarSize = toolBar.ToolbarSize;
+            status.KeyValueDict = new Dictionary<string, string>();
+            var itemDict = CreateItemDict(toolBar);
+            foreach (var item in itemDict)
+            {
+                if (item.Value.PersistValue != null)
+                    status.KeyValueDict.Add(item.Key, item.Value.PersistValue);
+            }
+
+            return status;
+        }
+        /// <summary>
+        /// Dodaný stav <see cref="ToolBarStatus"/> aplikuje do dodaného objektu <see cref="GToolBar"/>.
+        /// </summary>
+        /// <param name="status"></param>
+        /// <param name="toolBar"></param>
+        public static void ApplyTo(ToolBarStatus status, GToolBar toolBar)
+        {
+            if (status == null || toolBar == null) return;
+
+            if (status.ToolbarSize.HasValue) toolBar.ToolbarSize = status.ToolbarSize.Value;
+
+
+            FunctionGlobalItem[] functionItems = toolBar.FunctionItems;
+
+        }
+        /// <summary>
+        /// Metoda vrátí Dictionary obsahující prvky toolbaru podle jejich klíče; klíčem je <see cref="FunctionGlobalGroup.Title"/>.<see cref="FunctionItem.Name"/>.
+        /// Prvek, jehož <see cref="FunctionItem.Name"/> je Empty, se do výstupu nedostane.
+        /// Pokud stejný klíč bude mít více prvků, do výstupu se dostane jen první.
+        /// </summary>
+        /// <param name="toolBar"></param>
+        /// <returns></returns>
+        internal static Dictionary<string, GToolBarItem> CreateItemDict(GToolBar toolBar)
+        {
+            Dictionary<string, GToolBarItem> result = new Dictionary<string, GToolBarItem>();
+            if (toolBar == null) return result;
+            foreach (GToolBarGroup gGroup in toolBar.GFunctionGroups)
+            {
+                string groupName = (gGroup.Name ?? "_") + ".";
+                foreach (GToolBarItem gItem in gGroup.FunctionGItems)
+                {
+                    string itemName = gItem.Name;
+                    if (String.IsNullOrEmpty(itemName)) continue;
+                    string key = groupName + itemName;
+                    result.AddOnce(key, gItem);
+                }
+            }
+            return result;
         }
         #endregion
     }

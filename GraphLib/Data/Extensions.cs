@@ -896,6 +896,22 @@ namespace Asol.Tools.WorkScheduler.Data
                 dictionary.Add(key, value);
         }
         /// <summary>
+        /// Metoda zajistí, že v this Dictionary bude pod daným klíčem uložena první dodaná hodnota.
+        /// Tedy: if not exists key then add (key, value); if exists key then nothing.
+        /// </summary>
+        /// <typeparam name="TKey">Typ klíče</typeparam>
+        /// <typeparam name="TValue">Typ hodnoty</typeparam>
+        /// <param name="dictionary">Dictionary</param>
+        /// <param name="key">Klíč</param>
+        /// <param name="value">Hodnota</param>
+        public static void AddOnce<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, TKey key, TValue value)
+        {
+            if (dictionary == null || key == null) return;
+
+            if (!dictionary.ContainsKey(key))
+                dictionary.Add(key, value);
+        }
+        /// <summary>
         /// Metoda zajistí, že v this Dictionary bude pod danými klíči uložena daná hodnota.
         /// Tedy: if not exists key then add (key, value); if exists key then update ([key] = value).
         /// </summary>

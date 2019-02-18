@@ -386,32 +386,6 @@ namespace Noris.LCS.Base.WorkScheduler
         public string PropertyName { get; private set; }
     }
     /// <summary>
-    /// Definuje jméno elementu, do něhož se ukládají jednotlivé položky kolekce tohoto seznamu.
-    /// Implicitní název je Item, ale tímto atributem jej lze předefinovat.
-    /// </summary>
-    public class CollectionItemNameAttribute : PersistAttribute
-    {
-        /// <summary>
-        /// Definice jména elementu.
-        /// Pokud nebude specifikováno, jméno bude odvozeno ze jména property.
-        /// </summary>
-        /// <param name="itemName">
-        /// Definuje jméno elementu, do něhož se ukládá hodnota této property.
-        /// Pokud nebude specifikováno, jméno bude odvozeno ze jména property dle těchto příkladů:
-        /// "PropertyName" = "property_name"; "_Ukazatel" = "_ukazatel"; "GID" = "gid", atd
-        /// </param>
-        public CollectionItemNameAttribute(string itemName)
-        {
-            this.ItemName = itemName;
-        }
-        /// <summary>
-        /// Definuje jméno elementu, do něhož se ukládá hodnota této property.
-        /// Pokud nebude specifikováno, jméno bude odvozeno ze jména property dle těchto příkladů:
-        /// "PropertyName" = "property_name"; "_Ukazatel" = "_ukazatel"; "GID" = "gid", atd
-        /// </summary>
-        public string ItemName { get; private set; }
-    }
-    /// <summary>
     /// Umožní potlačit ukládání této property.
     /// Pokud není specifikováno, property se uloží, pokud k ní existuje SET metoda (i kdyby byla privátní).
     /// V některých případech je vhodné hodnotu neukládat (a nenačítat), například pokud property při setování hodnotu ukládá do dalších property.
@@ -1819,21 +1793,23 @@ namespace Noris.LCS.Base.WorkScheduler
         private string _Serialize(object data, PersistArgs parameters)
         {
             XmlDocument xDoc = new System.Xml.XmlDocument();
-            XmlSchema ts = new XmlSchema();
-            ts.TargetNamespace = "http";
-            ts.Id = "id";
-            xDoc.Schemas.Add(ts);
+            xDoc.CreateXmlDeclaration("1.0", "UTF-8", "yes");
 
-            XmlElement xRootElement = xDoc.CreateElement("persistent");
+            XmlElement xRootElement = xDoc.CreateElement(_DocumentNamePersist);
             xDoc.AppendChild(xRootElement);
             CreateAttribute("Version", "1.00", xRootElement);
             CreateAttribute("Created", Convertor.DateTimeToString(DateTime.Now), xRootElement);
             CreateAttribute("Creator", System.Windows.Forms.SystemInformation.UserName, xRootElement);
 
-            XmlElement xDataElement = CreateElement("data", xRootElement);
-            this.SaveObject(new XmlPersistSaveArgs(data, "Value", null, xDataElement, this._TypeLibrary));
+            XmlElement xDataElement = CreateElement(_DocumentNameData, xRootElement);
+            this.SaveObject(new XmlPersistSaveArgs(data, _DocumentNameValue, null, xDataElement, this._TypeLibrary));
 
             StringBuilder sb = new StringBuilder();
+            parameters.WriterSettings.NamespaceHandling = NamespaceHandling.OmitDuplicates;
+            parameters.WriterSettings.ConformanceLevel = ConformanceLevel.Document;
+            parameters.WriterSettings.OmitXmlDeclaration = false;
+            parameters.WriterSettings.WriteEndDocumentOnClose = true;
+
             XmlWriter xw = XmlWriter.Create(sb, parameters.WriterSettings);
             xDoc.WriteTo(xw);
             xw.Flush();
@@ -1922,7 +1898,7 @@ namespace Noris.LCS.Base.WorkScheduler
             }
 
             // Najdu element "persistent", z něj lze načíst číslo verze:
-            XmElement xmPers = xmDoc.FindElement("persistent");          // Element "persistent" je Root
+            XmElement xmPers = xmDoc.FindElement(_DocumentNamePersist);          // Element "persistent" je Root
             if (xmPers == null)
             {
                 parameters.DeserializeStatus = XmlDeserializeStatus.BadFormatPersistent;
@@ -1931,7 +1907,7 @@ namespace Noris.LCS.Base.WorkScheduler
             this.XmlPersistedVersion = xmPers.FindAttributeValue("Version", "");
 
             // Najdu element "data", v něm bude uložen objekt:
-            XmElement elData = xmDoc.FindElement("persistent/data");
+            XmElement elData = xmDoc.FindElement(_DocumentNamePersist + "/" + _DocumentNameData);
             if (elData == null)
             {
                 parameters.DeserializeStatus = XmlDeserializeStatus.BadFormatData;
@@ -1941,7 +1917,7 @@ namespace Noris.LCS.Base.WorkScheduler
             // Element Data bude obsahovat buď atribut nebo sub element Value:
             XmAttribute atValue;
             XmElement elValue;
-            if (!_FindAttrElementByName(elData, "Value", true, out elValue, out atValue))
+            if (!_FindAttrElementByName(elData, _DocumentNameValue, true, out elValue, out atValue))
             {
                 parameters.DeserializeStatus = XmlDeserializeStatus.BadFormatValue;
                 return null;
@@ -2035,19 +2011,19 @@ namespace Noris.LCS.Base.WorkScheduler
                 switch (args.DataTypeInfo.PersistenceType)
                 {
                     case TypeLibrary.XmlPersistenceType.Simple:
-                        return this.SimpleTypeCreate(args);
+                        return this.SimpleTypeLoad(args);
                     case TypeLibrary.XmlPersistenceType.Self:
-                        return this.SelfTypeCreate(args);
+                        return this.SelfTypeLoad(args);
                     case TypeLibrary.XmlPersistenceType.Enum:
-                        return this.EnumTypeCreate(args);
+                        return this.EnumTypeLoad(args);
                     case TypeLibrary.XmlPersistenceType.Array:
-                        return this.ArrayTypeCreate(args);
+                        return this.ArrayTypeLoad(args);
                     case TypeLibrary.XmlPersistenceType.IList:
-                        return this.IListTypeCreate(args);
+                        return this.IListTypeLoad(args);
                     case TypeLibrary.XmlPersistenceType.IDictionary:
-                        return this.IDictionaryTypeCreate(args);
+                        return this.IDictionaryTypeLoad(args);
                     case TypeLibrary.XmlPersistenceType.Compound:
-                        return this.CompoundTypeCreate(args);
+                        return this.CompoundTypeLoad(args);
                 }
             }
             catch (InvalidOperationException)
@@ -2178,7 +2154,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         /// <param name="args"></param>
         /// <returns></returns>
-        private object SimpleTypeCreate(XmlPersistLoadArgs args)
+        private object SimpleTypeLoad(XmlPersistLoadArgs args)
         {
             args.CurrentOperation = "DeserializeValue";
             if (args.DataTypeInfo.TypeConvert == null)
@@ -2223,7 +2199,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Z dodaného readeru načte a sestaví objekt uložený jako Self (tj. deserializaci provádí on sám osobně)
         /// </summary>
         /// <returns></returns>
-        private object SelfTypeCreate(XmlPersistLoadArgs args)
+        private object SelfTypeLoad(XmlPersistLoadArgs args)
         {
             string xmlData = args.XmAttribute.ValueFirstOrDefault;
             if (xmlData == null)
@@ -2269,7 +2245,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         /// <param name="args">Kompletní datový balík</param>
         /// <returns></returns>
-        private object EnumTypeCreate(XmlPersistLoadArgs args)
+        private object EnumTypeLoad(XmlPersistLoadArgs args)
         {
             string xmlData = args.XmAttribute.ValueFirstOrDefault;
             if (xmlData == null)
@@ -2296,13 +2272,15 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <param name="args">Kompletní datový balík</param>
         private void ArrayTypeSave(XmlPersistSaveArgs args)
         {
-            // Zavedu element za celý List,například <Array ...>...</Array>:
+            // Zavedu element pro celé pole Array, pod jménem cíle, kam toto pole je vloženo (nahoru):
             XmlElement xmlArrayElement = CreateElement(args.ObjectName, args.XmlElement);
 
             // Pokud se skutečný Type objektu s daty liší od očekávaného typu, vepíšu jeho Type jako atribut:
             args.CurrentOperation = "SaveType";
-            SaveTypeAttribute(args, xmlArrayElement);
+            SaveTypeAttribute(args, args.ObjectName, xmlArrayElement);
             Array array = args.Data as Array;
+            if (array == null) return;
+
             Type itemType = args.DataTypeInfo.ItemDataType;
 
             // Správce indexů pole:
@@ -2310,24 +2288,26 @@ namespace Noris.LCS.Base.WorkScheduler
             _ArrayIndices arrayIndices = new _ArrayIndices(array);
 
             // Rozměry pole:  [0+2,0+45] :
-            CreateAttribute("Array.Range", arrayIndices.Serial, xmlArrayElement);
+            CreateAttribute(_ArrayNameArrayRange, arrayIndices.Serial, xmlArrayElement);
 
             // Výpis všech Items:
             args.CurrentOperation = "EnumerateArray";
-            string itemName = args.GetItemName("Item");
             for (int[] indices = arrayIndices.FirstIndices(); arrayIndices.IsValidIndices(indices); indices = arrayIndices.NextIndices(indices))
             {
-                args.CurrentOperation = "SaveValue";
-                args.CurrentProperty = "Item" + _ArrayIndices.ToString(indices);
-
-                XmlElement xmlItemElement = CreateElement(itemName, xmlArrayElement);
-                // Vypíšu indices:
-                CreateAttribute(itemName + ".Indices", _ArrayIndices.SerialIndices(indices), xmlItemElement);
-
-                // Vypíšu obsah itemu:
+                // Data:
                 object item = array.GetValue(indices);
                 if (item != null)
-                    this.SaveObject(new XmlPersistSaveArgs(item, "Value", itemType, xmlItemElement, this._TypeLibrary));
+                {   // Pokud data jsou null, můžu je vynechat, protože to je default stav pole Array po jeho vytvoření. Ukládám tedy jen nut null hodnoty:
+                    args.CurrentOperation = "SaveValue";
+                    args.CurrentProperty = "Item" + _ArrayIndices.ToString(indices);
+
+                    // Vytvořím element pro prvek pole, a vepíšu do něj atribut obsahující indexy:
+                    XmlElement xmlItemElement = CreateElement(_ArrayNameItem, xmlArrayElement);
+                    CreateAttribute(_ArrayNameItemIndices, _ArrayIndices.SerialIndices(indices), xmlItemElement);
+
+                    // Do XML elementu pro prvek pole vložím hodnoty z objektu:
+                    this.SaveObject(new XmlPersistSaveArgs(item, _ElementNameValue, itemType, xmlItemElement, this._TypeLibrary));
+                }
             }
             args.CurrentProperty = null;
         }
@@ -2336,10 +2316,10 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         /// <param name="args">Kompletní datový balík</param>
         /// <returns></returns>
-        private object ArrayTypeCreate(XmlPersistLoadArgs args)
+        private object ArrayTypeLoad(XmlPersistLoadArgs args)
         {
             XmAttribute xmAtt;
-            if (!args.XmElement.TryGetAttribute("Array", out xmAtt)) return null;
+            if (!args.XmElement.TryGetAttribute(_ArrayName, out xmAtt)) return null;
 
             args.CurrentOperation = "ParseIndices";
             _ArrayIndices arrayIndices = new _ArrayIndices(xmAtt.Range);
@@ -2348,14 +2328,13 @@ namespace Noris.LCS.Base.WorkScheduler
             Array array = arrayIndices.CreateArray(itemType);
             if (array == null) return null;
 
-            string itemName = (args.PropInfo != null && !String.IsNullOrEmpty(args.PropInfo.XmlItemName) ? args.PropInfo.XmlItemName : "Item");
             args.CurrentOperation = "EnumerateItems";
             foreach (XmElement xmEle in args.XmElement.XmElements)
             {
-                if (xmEle.Name == itemName)
+                if (xmEle.Name == _ArrayNameItem)
                 {   // Element má odpovídající jméno. 
                     XmAttribute itemAttribute;
-                    if (xmEle.TryGetAttribute(itemName, out itemAttribute) && itemAttribute.Indices != null)
+                    if (xmEle.TryGetAttribute(_ArrayNameItem, out itemAttribute) && itemAttribute.Indices != null)
                     {   // V elementu jsme našli atribut: Item.Indices="[0,5,20]" nesoucí indexy aktuálního prvku:
                         int[] indices = _ArrayIndices.DeSerialIndices(itemAttribute.Indices);
                         if (indices.Length == arrayIndices.Rank)
@@ -2367,7 +2346,7 @@ namespace Noris.LCS.Base.WorkScheduler
                             // Element xmEle: buď obsahuje atribut, nebo podřízený element s názvem "Value":
                             XmAttribute atValue;
                             XmElement elValue;
-                            if (_FindAttrElementByName(xmEle, "Value", false, out elValue, out atValue))
+                            if (_FindAttrElementByName(xmEle, _ElementNameValue, false, out elValue, out atValue))
                             {
                                 args.CurrentOperation = "CreateItem";
                                 XmlPersistLoadArgs itemArgs = this._CreateLoadArgs(args.Parameters, null, itemType, elValue, atValue);
@@ -2657,12 +2636,12 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <param name="args">Kompletní datový balík</param>
         private void IListTypeSave(XmlPersistSaveArgs args)
         {
-            // Zavedu element za celý List,například <ItemList ...>...</ItemList>:
+            // Zavedu element pro celý List, pod jménem cíle, kam tento List pole je vložen (nahoru):
             XmlElement xmlListElement = CreateElement(args.ObjectName, args.XmlElement);
 
             // Pokud se skutečný Type objektu s daty liší od očekávaného typu, vepíšu jeho Type jako atribut:
             args.CurrentOperation = "SaveType";
-            SaveTypeAttribute(args, xmlListElement);
+            SaveTypeAttribute(args, args.ObjectName, xmlListElement);
 
             IList iList = args.Data as IList;
             if (iList == null) return;
@@ -2670,14 +2649,19 @@ namespace Noris.LCS.Base.WorkScheduler
             args.CurrentOperation = "Map.IList";
             Type itemType = args.DataTypeInfo.GetGenericType(0);
 
-            string itemName = args.GetItemName("Item");
             args.CurrentOperation = "Enumerate.IList";
+            int index = 0;
             foreach (object item in iList)
             {
+                args.CurrentOperation = "SaveValue";
+                args.CurrentProperty = "Item[" + (index++).ToString() + "]";
+
                 // Element za tento prvek seznamu založíme, protože je třeba zachovávat pořadí položek (tj. ani null položky nelze vynechávat):
-                XmlElement xmlItemElement = CreateElement(itemName, xmlListElement);
-                if (item != null)         // původně chybka: if (args.HasData)
-                    this.SaveObject(new XmlPersistSaveArgs(item, "Value", itemType, xmlItemElement, this._TypeLibrary));
+                XmlElement xmlItemElement = CreateElement(_ArrayNameItem, xmlListElement);
+
+                // Obsah tohoto prvku vepíšeme, jen když obsah prvku pole není null:
+                if (item != null)
+                    this.SaveObject(new XmlPersistSaveArgs(item, _ElementNameValue, itemType, xmlItemElement, this._TypeLibrary));
             }
         }
         /// <summary>
@@ -2685,7 +2669,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         /// <param name="args">Kompletní datový balík</param>
         /// <returns></returns>
-        private object IListTypeCreate(XmlPersistLoadArgs args)
+        private object IListTypeLoad(XmlPersistLoadArgs args)
         {
             // Vytvořím objekt s daty odpovídajícími datům persistovaným:
             args.CurrentOperation = "Create.IList";
@@ -2703,16 +2687,15 @@ namespace Noris.LCS.Base.WorkScheduler
             NotifyData(data, XmlPersistState.LoadBegin);
 
             args.CurrentOperation = "EnumerateItems";
-            string itemName = (args.PropInfo != null && !String.IsNullOrEmpty(args.PropInfo.XmlItemName) ? args.PropInfo.XmlItemName : "Item");
             foreach (XmElement xmEle in args.XmElement.XmElements)
             {
-                if (xmEle.Name == itemName)
+                if (xmEle.Name == _ArrayNameItem)
                 {   // Element má odpovídající jméno. 
                     object value = null;
                     // Buď obsahuje atribut, nebo podřízený element s názvem Value:
                     XmAttribute atValue;
                     XmElement elValue;
-                    if (_FindAttrElementByName(xmEle, "Value", false, out elValue, out atValue))
+                    if (_FindAttrElementByName(xmEle, _ElementNameValue, false, out elValue, out atValue))
                     {
                         args.CurrentOperation = "CreateItem";
                         XmlPersistLoadArgs itemArgs = this._CreateLoadArgs(args.Parameters, null, itemType, elValue, atValue);
@@ -2734,12 +2717,12 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         private void IDictionaryTypeSave(XmlPersistSaveArgs args)
         {
-            // string currentName, string itemName, TypeInfo typeInfo, object data, Type estimatedType, string typeAttributeName, XmlElement xElement)
-            XmlElement xmlDictElement = CreateElement(args.ObjectName, args.XmlElement);  // Zavedu element za celý List,například <ItemList ...>...</ItemList>
+            // Zavedu element pro celý Dictionary, pod jménem cíle, kam tento List pole je vložen (nahoru):
+            XmlElement xmlDictElement = CreateElement(args.ObjectName, args.XmlElement);
 
             // Pokud se skutečný Type objektu s daty liší od očekávaného typu, vepíšu jeho Type jako atribut:
             args.CurrentOperation = "SaveType";
-            SaveTypeAttribute(args, xmlDictElement);
+            SaveTypeAttribute(args, args.ObjectName, xmlDictElement);
 
             IDictionary iDict = args.Data as IDictionary;
             if (iDict == null) return;
@@ -2748,15 +2731,17 @@ namespace Noris.LCS.Base.WorkScheduler
             Type keyType = args.DataTypeInfo.GetGenericType(0);
             Type valueType = args.DataTypeInfo.GetGenericType(1);
 
-            string itemName = args.GetItemName("Entry");
             args.CurrentOperation = "Enumerate.IDictionary";
             foreach (DictionaryEntry entry in iDict)
             {
-                // Element za tento prvek seznamu založíme, protože je třeba zachovávat pořadí položek (tj. ani null položky nelze vynechávat):
-                XmlElement xmlItemElement = CreateElement(itemName, xmlDictElement);
+                args.CurrentOperation = "SaveValue";
+                args.CurrentProperty = "Item[" + entry.Key.ToString() + "]";        // Key v Dictionary nemůže být null !!!
 
-                this.SaveObject(new XmlPersistSaveArgs(entry.Key, "Key", keyType, xmlItemElement, this._TypeLibrary));
-                this.SaveObject(new XmlPersistSaveArgs(entry.Value, "Value", valueType, xmlItemElement, this._TypeLibrary));
+                // Element za tento prvek seznamu založíme, protože je třeba zachovávat pořadí položek (tj. ani null položky nelze vynechávat):
+                XmlElement xmlItemElement = CreateElement(_DictNamePair, xmlDictElement);
+
+                this.SaveObject(new XmlPersistSaveArgs(entry.Key, _DictNameKey, keyType, xmlItemElement, this._TypeLibrary));
+                this.SaveObject(new XmlPersistSaveArgs(entry.Value, _DictNameValue, valueType, xmlItemElement, this._TypeLibrary));
             }
         }
         /// <summary>
@@ -2764,7 +2749,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         /// <param name="args">Kompletní datový balík</param>
         /// <returns></returns>
-        private object IDictionaryTypeCreate(XmlPersistLoadArgs args)
+        private object IDictionaryTypeLoad(XmlPersistLoadArgs args)
         {
             args.CurrentOperation = "Create.IDictionary";
             object data = _ObjectCreate(args.DataType);
@@ -2780,23 +2765,22 @@ namespace Noris.LCS.Base.WorkScheduler
             NotifyData(data, XmlPersistState.LoadBegin);
 
             args.CurrentOperation = "EnumerateItems";
-            string itemName = (args.PropInfo != null && !String.IsNullOrEmpty(args.PropInfo.XmlItemName) ? args.PropInfo.XmlItemName : "Entry");
             foreach (XmElement xmEle in args.XmElement.XmElements)
             {
-                if (xmEle.Name == itemName)
+                if (xmEle.Name == _DictNamePair)
                 {   // Element má odpovídající jméno. 
                     object key = null;
                     object value = null;
                     // Buď obsahuje atribut, nebo podřízený element s názvem Value:
                     XmAttribute atValue;
                     XmElement elValue;
-                    if (_FindAttrElementByName(xmEle, "Key", false, out elValue, out atValue))
+                    if (_FindAttrElementByName(xmEle, _DictNameKey, false, out elValue, out atValue))
                     {
                         args.CurrentOperation = "CreateKey";
                         XmlPersistLoadArgs itemArgs = this._CreateLoadArgs(args.Parameters, null, keyType, elValue, atValue);
                         key = this._CreateObjectOfType(itemArgs);
                     }
-                    if (_FindAttrElementByName(xmEle, "Value", false, out elValue, out atValue))
+                    if (_FindAttrElementByName(xmEle, _DictNameValue, false, out elValue, out atValue))
                     {
                         args.CurrentOperation = "CreateValue";
                         XmlPersistLoadArgs itemArgs = this._CreateLoadArgs(args.Parameters, null, valueType, elValue, atValue);
@@ -2828,15 +2812,18 @@ namespace Noris.LCS.Base.WorkScheduler
             NotifyData(args.Data, XmlPersistState.SaveBegin);
 
             args.CurrentOperation = "SaveType";
-            XmlElement xmlCurrElement = CreateElement(args.ObjectName, args.XmlElement);
-            SaveTypeAttribute(args, xmlCurrElement);
+            XmlElement xmlCurrElement = CreateElement(_ElementNameValue, args.XmlElement);
+            SaveTypeAttribute(args, _ElementNameValue, xmlCurrElement);
 
             args.CurrentOperation = "SaveValues";
-            foreach (TypeLibrary.PropInfo propInfo in args.DataTypeInfo.PropertyList)
-            {
+            if (args.HasObjectName)
+                CreateAttribute(_ElementNameValue + "." + XmAttribute.SuffixNameTarget, args.ObjectName, xmlCurrElement);
+            foreach (TypeLibrary.PropInfo propInfo in args.DataTypeInfo.Properties)
+            {   // V jednom cyklu zapisujeme data z jednoduhých i složitých propeties (tzn. do XmlAtributů i do XmlElementů),
+                //  to řeší až metoda SaveObject() podle typu persistence konkrétního objektu.
                 args.CurrentProperty = propInfo.Name;
                 object value = propInfo.Property.GetValue(args.Data, null);
-                this.SaveObject(new XmlPersistSaveArgs(value, propInfo.XmlName, propInfo.PropertyType, propInfo.XmlItemName, xmlCurrElement, this._TypeLibrary));
+                this.SaveObject(new XmlPersistSaveArgs(value, propInfo.XmlName, propInfo.PropertyType, propInfo.XmlName, xmlCurrElement, this._TypeLibrary));
             }
             args.CurrentProperty = null;
 
@@ -2848,7 +2835,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         /// <param name="args"></param>
         /// <returns></returns>
-		private object CompoundTypeCreate(XmlPersistLoadArgs args)
+		private object CompoundTypeLoad(XmlPersistLoadArgs args)
         {
             // Vytvořím objekt s daty odpovídajícími datům persistovaným:
             args.CurrentOperation = "Create.Compound";
@@ -2862,6 +2849,7 @@ namespace Noris.LCS.Base.WorkScheduler
             args.CurrentOperation = "ReadAttributes";
             foreach (XmAttribute xmAtt in args.XmElement.XmAttributes)
             {
+                if (xmAtt.Values.Count == 0) continue;          // Atribut bez hodnoty = nese jen suffixy, například: Type, Indices, Assembly. Takové nelze zpracovávat zde.
                 TypeLibrary.PropInfo propInfo = args.DataTypeInfo.FindPropertyByXmlName(xmAtt.Name);
                 if (propInfo != null)
                 {
@@ -2872,11 +2860,25 @@ namespace Noris.LCS.Base.WorkScheduler
                 }
             }
 
-            // 2. Projdeme si sub-elementy našeho elementu. pro každý z nich určím zda máme cílovou property, a pak načtu hodnotu:
+            // 2. Projdeme si sub-elementy našeho elementu. Pro každý z nich určíme, zda máme cílovou property, a pak načtu jejich hodnotu do této property:
             args.CurrentOperation = "ReadElements";
             foreach (XmElement xmEle in args.XmElement.XmElements)
             {
-                TypeLibrary.PropInfo propInfo = args.DataTypeInfo.FindPropertyByXmlName(xmEle.Name);
+                string name = xmEle.Name;
+                if (name == _ElementNameValue)
+                {
+                    XmAttribute xmVal;
+                    if (xmEle.TryGetAttribute(_ElementNameValue, out xmVal))
+                        name = xmVal.Target;
+                }
+                /*
+                if (xmEle.Name != _ElementNameValue) continue;  // Všechny elementy mají mít shodný název. Cílová property je uvedena v XmlAtributu:
+                XmAttribute xmVal;
+                if (!xmEle.TryGetAttribute(_ElementNameValue, out xmVal)) continue;
+                TypeLibrary.PropInfo propInfo = args.DataTypeInfo.FindPropertyByXmlName(xmVal.Target);
+                */
+
+                TypeLibrary.PropInfo propInfo = args.DataTypeInfo.FindPropertyByXmlName(name);
                 if (propInfo != null)
                 {
                     args.CurrentProperty = propInfo.Name;
@@ -2892,6 +2894,21 @@ namespace Noris.LCS.Base.WorkScheduler
             NotifyData(data, XmlPersistState.LoadDone);
             return data;
         }
+        #endregion
+        #region Konstanty
+        private const string _DocumentNamePersist = "id-persistent";
+        private const string _DocumentNameData = "id-data";
+        private const string _DocumentNameValue = "id-value";
+        private const string _ElementNameValue = "id-value";
+        private const string _ArrayName = "id-array";
+        private const string _ArrayNameItem = "id-item";
+        private const string _DictNamePair = "id-pair";
+        private const string _DictNameKey = "id-key";
+        private const string _DictNameValue = "id-value";
+        private const string _ArrayNameArrayRange = _ArrayName + "." + XmAttribute.SuffixNameRange;
+        private const string _ArrayNameItemIndices = _ArrayNameItem + "." + XmAttribute.SuffixNameIndices;
+
+
         #endregion
         #region Xml prvky - tvorba, zápisy, nalezení
         /// <summary>
@@ -2944,13 +2961,13 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         private static void SaveTypeAttribute(XmlPersistSaveArgs args)
         {
-            SaveTypeAttribute(args, args.XmlElement);
+            SaveTypeAttribute(args, args.ObjectName, args.XmlElement);
         }
         /// <summary>
         /// V případě potřeby uloží do aktuálního elementu atribut, který ponese aktuální Type.
         /// Případ potřeby je tehdy, když se aktuální Type (currentType) liší od očekávaného (estimatedType).
         /// </summary>
-        private static void SaveTypeAttribute(XmlPersistSaveArgs args, XmlElement xmlElement)
+        private static void SaveTypeAttribute(XmlPersistSaveArgs args, string objectName, XmlElement xmlElement)
         {
             // Pokud se očekávaný typ a reálný typ neliší, pak do atributu nebudeme vepisovat explicitní typ pro aktuální objekt:
             if (TypeLibrary.IsEqualType(args.EstimatedType, args.DataType)) return;
@@ -2961,9 +2978,9 @@ namespace Noris.LCS.Base.WorkScheduler
 
             // Vytvořím atributy pro neprázdné serial hodnoty:
             if (!String.IsNullOrEmpty(serialType))
-                CreateAttribute(args.ObjectName + ".Type", serialType, xmlElement);
+                CreateAttribute(objectName + "." + XmAttribute.SuffixNameType, serialType, xmlElement);
             if (!String.IsNullOrEmpty(serialAssembly))
-                CreateAttribute(args.ObjectName + ".Assembly", serialAssembly, xmlElement);
+                CreateAttribute(objectName + "." + XmAttribute.SuffixNameAssembly, serialAssembly, xmlElement);
         }
         /// <summary>
         /// Najde v daném readeru začátek daného elementu, 
@@ -3156,7 +3173,7 @@ namespace Noris.LCS.Base.WorkScheduler
                 this.Data = data;
                 this.ObjectName = objectName;
                 this.EstimatedType = estimatedType;
-                this.ItemName = null;
+                this.TargetName = null;
                 this.XmlElement = xmlElement;
                 this.DataTypeInfo = (data == null ? null : typeLibrary.GetInfo(data.GetType()));
             }
@@ -3166,15 +3183,15 @@ namespace Noris.LCS.Base.WorkScheduler
             /// <param name="data"></param>
             /// <param name="objectName"></param>
             /// <param name="estimatedType"></param>
-            /// <param name="itemName"></param>
+            /// <param name="targetName"></param>
             /// <param name="xmlElement"></param>
             /// <param name="typeLibrary"></param>
-            internal XmlPersistSaveArgs(object data, string objectName, Type estimatedType, string itemName, XmlElement xmlElement, TypeLibrary typeLibrary)
+            internal XmlPersistSaveArgs(object data, string objectName, Type estimatedType, string targetName, XmlElement xmlElement, TypeLibrary typeLibrary)
             {
                 this.Data = data;
                 this.ObjectName = objectName;
                 this.EstimatedType = estimatedType;
-                this.ItemName = itemName;
+                this.TargetName = targetName;
                 this.XmlElement = xmlElement;
                 this.DataTypeInfo = (data == null ? null : typeLibrary.GetInfo(data.GetType()));
             }
@@ -3187,6 +3204,10 @@ namespace Noris.LCS.Base.WorkScheduler
             /// </summary>
             internal bool HasData { get { return (this.Data != null); } }
             /// <summary>
+            /// true pokud je zadané jméno <see cref="ObjectName"/>
+            /// </summary>
+            internal bool HasObjectName { get { return !String.IsNullOrEmpty(this.ObjectName); } }
+            /// <summary>
             /// Název objektu
             /// </summary>
             internal string ObjectName { get; private set; }
@@ -3194,8 +3215,11 @@ namespace Noris.LCS.Base.WorkScheduler
             /// Očekávaný datový typ
             /// </summary>
             internal Type EstimatedType { get; private set; }
-            internal string ItemName { get; private set; }
+            internal string TargetName { get; private set; }
             internal string TypeAttributeName { get; private set; }
+            /// <summary>
+            /// XML element, do kterého se budou ukládat aktuální data
+            /// </summary>
             internal XmlElement XmlElement { get; private set; }
             /// <summary>
             /// Datový typ
@@ -3213,15 +3237,6 @@ namespace Noris.LCS.Base.WorkScheduler
             /// Informace o aktuální operaci, pro případ chyby - do textu chybové hlášky
             /// </summary>
             internal string CurrentProperty { get; set; }
-            /// <summary>
-            /// Vrátí jméno elementu, který obsahuje jednu položku (listu, dictionary, atd)
-            /// </summary>
-            /// <param name="defaultName"></param>
-            /// <returns></returns>
-            internal string GetItemName(string defaultName)
-            {
-                return (String.IsNullOrEmpty(this.ItemName) ? "Item" : this.ItemName);
-            }
         }
         #endregion
         #region class XmlPersistLoadArgs : sada parametrů předávaných mezi vnitřními metodami XmlPersist při deserializaci objektu
@@ -3913,24 +3928,29 @@ anebo neprázdný objekt:
             /// Soupis property zdejšího typu.
             /// Je naplněn pouze při PersistenceType = XmlPersistenceType.InnerObject.
             /// </summary>
-            internal List<PropInfo> PropertyList { get; private set; }
+            internal PropInfo[] Properties { get { return this._PropertyList.ToArray(); } }
+            private List<PropInfo> _PropertyList;
+            private Dictionary<string, PropInfo> _PropertyDict;
             #region Properties
             /// <summary>
             /// Detekuje PropertyInfo zdejšího typu a vytváří seznam this.PropertyList s prvky třídy PropInfo
             /// </summary>
             private void _DetectProperties()
             {
-                this.PropertyList = new List<PropInfo>();
+                this._PropertyList = new List<PropInfo>();
+                this._PropertyDict = new Dictionary<string, PropInfo>();
                 PropertyInfo[] props = this.DataType.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy);
                 foreach (PropertyInfo prop in props)
                 {
                     PropInfo propData = new PropInfo(this, prop);
                     if (!propData.Enabled) continue;
 
-                    this.PropertyList.Add(propData);
+                    this._PropertyList.Add(propData);
+                    this._PropertyDict.Add(propData.XmlName, propData);
                 }
                 // Seznam setřídit:
-                this.PropertyList.Sort(PropInfo.CompareByName);
+                if (this._PropertyList.Count > 1)
+                    this._PropertyList.Sort(PropInfo.CompareByName);
             }
             #endregion
             #region Generika
@@ -3995,10 +4015,15 @@ anebo neprázdný objekt:
                     this.ItemDataType = null;
             }
             #endregion
+            #region Vyhledání dle názvu
             internal PropInfo FindPropertyByXmlName(string propName)
             {
-                return this.PropertyList.FirstOrDefault(p => String.Equals(p.XmlName, propName));
+                if (String.IsNullOrEmpty(propName)) return null;
+                PropInfo propData;
+                if (!this._PropertyDict.TryGetValue(propName, out propData)) return null;
+                return propData;
             }
+            #endregion
         }
         #endregion
         #region class PropInfo : data o jedné property (jméno property, její typ, její TypeInfo
@@ -4036,14 +4061,6 @@ anebo neprázdný objekt:
                 if (String.IsNullOrEmpty(this.XmlName))
                     this.XmlName = this.Name;
                 this.XmlName = XmlPersist.CreateXmlName(this.XmlName);
-
-                // XmlItemName
-                object attItem = atts.FirstOrDefault(at => at is CollectionItemNameAttribute);
-                if (attItem != null)
-                    this.XmlItemName = (attItem as CollectionItemNameAttribute).ItemName;
-                if (String.IsNullOrEmpty(this.XmlItemName))
-                    this.XmlItemName = "Item";
-                this.XmlItemName = XmlPersist.CreateXmlName(this.XmlItemName);
             }
             /// <summary>
             /// Určí, zda danou property je možno serializovat z hlediska jejich get a set metod a z hlediska datového typu
@@ -4164,10 +4181,6 @@ anebo neprázdný objekt:
             /// Jméno pro persistenci hodnoty této property
             /// </summary>
             internal string XmlName { get; private set; }
-            /// <summary>
-            /// Jméno pro persistenci jednotlivých položek kolekce (Item)
-            /// </summary>
-            internal string XmlItemName { get; private set; }
             #region Vytváření jména elementu - asi zbytečné
             /// <summary>
             /// Ze jména property vytvoří jméno XML elementu/atributu
@@ -4654,21 +4667,25 @@ anebo neprázdný objekt:
         /// </summary>
         internal string Name { get; private set; }
         /// <summary>
+        /// Hodnota atributu se suffixem .Target
+        /// </summary>
+        internal string Target { get { return GetSuffix(SuffixNameTarget); } }
+        /// <summary>
         /// Hodnota atributu se suffixem .Type
         /// </summary>
-        internal string Type { get { return GetSuffix("Type"); } }
+        internal string Type { get { return GetSuffix(SuffixNameType); } }
         /// <summary>
         /// Hodnota atributu se suffixem .Assembly
         /// </summary>
-        internal string Assembly { get { return GetSuffix("Assembly"); } }
+        internal string Assembly { get { return GetSuffix(SuffixNameAssembly); } }
         /// <summary>
         /// Hodnota atributu se suffixem .Range
         /// </summary>
-        internal string Range { get { return GetSuffix("Range"); } }
+        internal string Range { get { return GetSuffix(SuffixNameRange); } }
         /// <summary>
         /// Hodnota atributu se suffixem .Indices
         /// </summary>
-        internal string Indices { get { return GetSuffix("Indices"); } }
+        internal string Indices { get { return GetSuffix(SuffixNameIndices); } }
         /// <summary>
         /// Hodnoty všech atributů daného jména, pokud je to jméno bez suffixu.
         /// Pokud jeden XML element obsahuje více atributů shodného názvu, hodnoty jsou zde, ze všech atributů tohoto názvu.
@@ -4682,7 +4699,6 @@ anebo neprázdný objekt:
         /// Všechny suffixy a jejich hodnoty
         /// </summary>
         internal IEnumerable<KeyValuePair<string, string>> Suffixes { get { return this._SuffixDict; } }
-
         /// <summary>
         /// Index suffixů
         /// </summary>
@@ -4723,7 +4739,7 @@ anebo neprázdný objekt:
             return this._SuffixDict[suffix];
         }
         /// <summary>
-        /// Metoda rozdělí daný text v místě první tečky, a do out parametru name vloží obsah před tečkou a do suffix dá text za touto tečkou.
+        /// Metoda rozdělí daný text v místě poslední tečky, a do out parametru name vloží obsah před tečkou a do suffix dá text za touto tečkou.
         /// </summary>
         /// <param name="attributeName">Typicky Attribute.Name.LocalName</param>
         /// <param name="name">Výstup jména = před první tečkou</param>
@@ -4735,11 +4751,33 @@ anebo neprázdný objekt:
             if (!String.IsNullOrEmpty(name) && name.Contains("."))
             {
                 int len = name.Length;
-                int iDot = name.IndexOf('.');
+                int iDot = name.LastIndexOf('.');
                 suffix = (iDot < (len - 1) ? name.Substring(iDot + 1) : "");   // Text za tečkou   = suffix (určuje property v XmAttribute, do které se uloží hodnota Value)
                 name = (iDot > 0 ? name.Substring(0, iDot) : "");              // Text před tečkou = název logického atributu
             }
         }
+        #endregion
+        #region Konstanty
+        /// <summary>
+        /// Konstanta suffixu Type
+        /// </summary>
+        internal const string SuffixNameType = "Type";
+        /// <summary>
+        /// Konstanta suffixu Assembly
+        /// </summary>
+        internal const string SuffixNameAssembly = "Assembly";
+        /// <summary>
+        /// Konstanta suffixu Range
+        /// </summary>
+        internal const string SuffixNameRange = "Range";
+        /// <summary>
+        /// Konstanta suffixu Indices
+        /// </summary>
+        internal const string SuffixNameIndices = "Indices";
+        /// <summary>
+        /// Konstanta suffixu Target
+        /// </summary>
+        internal const string SuffixNameTarget = "Target";
         #endregion
     }
     #endregion
