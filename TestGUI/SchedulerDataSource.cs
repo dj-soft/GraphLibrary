@@ -1407,7 +1407,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
             using (var scopeS = Application.App.Trace.Scope("SchedulerDataSource", "SerialDeserialData", "Serialize", compress, runMode))
             {
-                PersistArgs serArgs = (isCompress ? PersistArgs.Compressed : PersistArgs.MinimalXml);
+                PersistArgs serArgs = (isCompress ? PersistArgs.Compressed : PersistArgs.Default);
                 serial = XmlPersist.Serialize(guiData, serArgs);
                 scopeS.AddItem("SerialLength: " + serial.Length.ToString());
             }
@@ -1419,8 +1419,39 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 scopeD.AddItem("SerialLength: " + serial.Length.ToString());
             }
 
+            // Prověříme alespoň základní shodu dat:
             if (result == null)
                 throw new FormatException("Serialize and Deserialize of GuiData fail; Deserialize process returns null value.");
+
+            if (result.ContextMenuItems == null && guiData.ContextMenuItems != null)
+                throw new FormatException("Serialize and Deserialize of GuiData.ContextMenuItems fail; Deserialize process of ContextMenuItems returns null value.");
+            if (result.ContextMenuItems != null && guiData.ContextMenuItems != null && result.ContextMenuItems.Count != guiData.ContextMenuItems.Count)
+                throw new FormatException("Serialize and Deserialize of GuiData.ContextMenuItems fail; Deserialize process of ContextMenuItems returns bad Count items.");
+
+            if (result.Pages == null && guiData.Pages != null)
+                throw new FormatException("Serialize and Deserialize of GuiData.Pages fail; Deserialize process of Pages returns null value.");
+            if (result.Pages != null && guiData.Pages != null && result.Pages.Count != guiData.Pages.Count)
+                throw new FormatException("Serialize and Deserialize of GuiData.Pages fail; Deserialize process of Pages returns bad Count items.");
+
+            if (guiData.Pages == null || guiData.Pages.Count == 0) return result;
+
+            GuiPage guiPage = guiData.Pages.Pages[0];
+            GuiPage resPage = result.Pages.Pages[0];
+            if (guiPage.MainPanel.Grids == null || guiPage.MainPanel.Grids.Count == 0) return result;
+            if (resPage.MainPanel.Grids == null || resPage.MainPanel.Grids.Count != guiPage.MainPanel.Grids.Count)
+                throw new FormatException("Serialize and Deserialize of GuiData.Pages fail; Deserialize process of Pages[0] returns bad MainPanel.Grids.Count items.");
+
+            GuiGrid guiGrid = guiPage.MainPanel.Grids[0];
+            GuiGrid resGrid = resPage.MainPanel.Grids[0];
+            if (resGrid == null)
+                throw new FormatException("Serialize and Deserialize of GuiData.Pages fail; Deserialize process of GuiGrid (in Page[0].MainPanel.Grids) returns null.");
+            if (resGrid.RowTable == null || resGrid.RowTable.Columns == null || resGrid.RowTable.Rows == null)
+                throw new FormatException("Serialize and Deserialize of GuiGrid fail; Deserialize process of GuiDataTable (in Page[0].MainPanel.Grids[0].RowTable) returns null (Table or Columns or Rows).");
+            if (resGrid.RowTable.Columns.Length != guiGrid.RowTable.Columns.Length)
+                throw new FormatException("Serialize and Deserialize of GuiGrid fail; Deserialize process of GuiDataTable (in Page[0].MainPanel.Grids[0].RowTable) returns bad Columns count.");
+            if (resGrid.RowTable.Rows.Length != guiGrid.RowTable.Rows.Length)
+                throw new FormatException("Serialize and Deserialize of GuiGrid fail; Deserialize process of GuiDataTable (in Page[0].MainPanel.Grids[0].RowTable) returns bad Rows count.");
+
 
             return result;
         }
