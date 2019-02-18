@@ -422,7 +422,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         private string _LastStatusSnapshot;
         /// <summary>
-        /// POkud je nastaveno na true, pak se neprovede event <see cref="CurrentStatusChanged"/>
+        /// Pokud je nastaveno na true, pak se neprovede event <see cref="CurrentStatusChanged"/>
         /// </summary>
         private bool _SuppressCurrentStatusChanged;
         /// <summary>
