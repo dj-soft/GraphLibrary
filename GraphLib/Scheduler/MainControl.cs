@@ -158,9 +158,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this._ToolBar.AddGroups(groups);
         }
         /// <summary>
-        /// Aktuální živý stav ToolBaru, pro persistenci do příštího spuštění
+        /// Aktuální živý stav ToolBaru, pro persistenci do příštího spuštění.
+        /// Obsahuje názvy prvků Toolbaru a jejich persistované hodnoty.
+        /// Lze číst i setovat. Setování vyvolá aplikační logiku daných prvků.
         /// </summary>
-        public ToolBarStatus ToolBarCurrentStatus { get { return this._ToolBar.CurrentStatus; } set { this._ToolBar.CurrentStatus = value; } }
+        public string ToolBarCurrentStatus { get { return this._ToolBar.CurrentStatus; } set { this._ToolBar.CurrentStatus = value; } }
         /// <summary>
         /// Souhrn všech grup v toolbaru
         /// </summary>
@@ -195,10 +197,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.AddItem(this._ToolBar);
             this._ToolBar.ItemCheckedChange += _ToolBar_ItemSelectedChange;
             this._ToolBar.ItemClicked += _ToolBar_ItemClicked;
+            this._ToolBar.CurrentStatusChanged += _ToolBar_CurrentStatusChanged;
         }
         /// <summary>
-        /// Tuto metodu volá interaktivní prvek (<see cref="GToolBar"/>) po změně IsSelected na některém jeho prvku,
-        /// úkolem je vyvolat event <see cref="MainControl.ToolBarItemSelectedChange"/>.
+        /// Tuto metodu volá interaktivní prvek (<see cref="GToolBar"/>) po změně IsSelected na některém jeho prvku.
+        /// Úkolem je vyvolat event <see cref="MainControl.ToolBarItemSelectedChange"/>.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="args"></param>
@@ -208,8 +211,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 this.ToolBarItemSelectedChange(this, args);
         }
         /// <summary>
-        /// Tuto metodu volá interaktivní prvek (<see cref="GToolBar"/>) po kliknutí na některý z jeho prvků,
-        /// úkolem je vyvolat event <see cref="MainControl.ToolBarItemClicked"/>.
+        /// Tuto metodu volá interaktivní prvek (<see cref="GToolBar"/>) po kliknutí na některý z jeho prvků.
+        /// Úkolem je vyvolat event <see cref="MainControl.ToolBarItemClicked"/>.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="args"></param>
@@ -219,6 +222,17 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 this.ToolBarItemClicked(this, args);
         }
         /// <summary>
+        /// Tuto metodu volá interaktivní prvek (<see cref="GToolBar"/>) po změně stavu některého z jeho prvků, která má být persistována.
+        /// Úkolem je vyvolat event <see cref="MainControl.ToolBarItemClicked"/>.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _ToolBar_CurrentStatusChanged(object sender, GPropertyEventArgs<string> args)
+        {
+            if (this.ToolBarStatusChanged != null)
+                this.ToolBarStatusChanged(this, args);
+        }
+        /// <summary>
         /// Událost vyvolaná po změně IsSelected na určitém prvku ToolBaru
         /// </summary>
         public event FunctionItemEventHandler ToolBarItemSelectedChange;
@@ -226,6 +240,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Událost vyvolaná po kliknutí na určitý prvek ToolBaru
         /// </summary>
         public event FunctionItemEventHandler ToolBarItemClicked;
+        /// <summary>
+        /// Událost vyvolaná po změně persistovaného stavu ToolBaru
+        /// </summary>
+        public event GPropertyEventHandler<string> ToolBarStatusChanged;
         /// <summary>
         /// Po změně velikosti toolbaru přepočítá souřadnice panelu
         /// </summary>

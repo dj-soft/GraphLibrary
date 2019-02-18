@@ -381,22 +381,62 @@ namespace Asol.Tools.WorkScheduler.Components
         #endregion
         #region Status ToolBaru
         /// <summary>
-        /// Aktuální živý stav ToolBaru, pro persistenci do příštího spuštění
+        /// Aktuální živý stav ToolBaru, pro persistenci do příštího spuštění.
+        /// Obsahuje názvy prvků Toolbaru a jejich persistované hodnoty.
+        /// Lze číst i setovat. Setování vyvolá aplikační logiku daných prvků.
         /// </summary>
-        public ToolBarStatus CurrentStatus { get { return ToolBarStatus.CreateFrom(this); } set { ToolBarStatus.ApplyTo(value, this); } }
+        public string CurrentStatus
+        {
+            get
+            {
+                return this._CurrentToolBarStatus.Snapshot;
+            }
+            set
+            {
+                if (value != null)
+                {
+                    try
+                    {
+                        this._SuppressCurrentStatusChanged = true;
+                        string snapshot = value;
+                        this._CurrentToolBarStatus.Snapshot = snapshot;
+                        this._LastStatusSnapshot = snapshot;
+                    }
+                    finally
+                    {
+                        this._SuppressCurrentStatusChanged = false;
+                    }
+                }
+            }
+        }
+        private ToolBarStatus _CurrentToolBarStatus
+        {
+            get
+            {
+                return ToolBarStatus.CreateFrom(this);
+            }
+        }
         /// <summary>
         /// Otisk posledně známého stavu, pro detekci změn.
         /// Otisk je získán z <see cref="ToolBarStatus.Snapshot"/>
         /// </summary>
         private string _LastStatusSnapshot;
         /// <summary>
+        /// POkud je nastaveno na true, pak se neprovede event <see cref="CurrentStatusChanged"/>
+        /// </summary>
+        private bool _SuppressCurrentStatusChanged;
+        /// <summary>
         /// Metoda zjistí, zda v Toolbaru došlo ke změně stavu, a pokud ano tak vyvolá odpovídající událost.
         /// </summary>
         protected void TestCurrentStatusChanged()
         {
+            if (this._SuppressCurrentStatusChanged) return;
+
             string oldSnapshot = this._LastStatusSnapshot;
-            string newSnapshot = (oldSnapshot != null ? this.CurrentStatus.Snapshot : "");
+            ToolBarStatus currentStatus = this._CurrentToolBarStatus;
+            string newSnapshot = currentStatus.Snapshot;
             if (String.Equals(oldSnapshot, newSnapshot)) return;
+            this._LastStatusSnapshot = newSnapshot;
             this.CallCurrentStatusChanged(newSnapshot);
         }
         /// <summary>
@@ -404,8 +444,9 @@ namespace Asol.Tools.WorkScheduler.Components
         /// </summary>
         protected void CallCurrentStatusChanged(string newSnapshot)
         {
-            this._LastStatusSnapshot = newSnapshot;
-            EventArgs args = new EventArgs();
+            if (this._SuppressCurrentStatusChanged) return;
+
+            GPropertyEventArgs<string> args = new GPropertyEventArgs<string>(newSnapshot, EventSourceType.InteractiveChanged);
             this.OnCurrentStatusChanged(args);
             if (this.CurrentStatusChanged != null)
                 this.CurrentStatusChanged(this, args);
@@ -414,11 +455,11 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Je voláno při každé změně <see cref="CurrentStatus"/>
         /// </summary>
         /// <param name="args"></param>
-        protected virtual void OnCurrentStatusChanged(EventArgs args) { }
+        protected virtual void OnCurrentStatusChanged(GPropertyEventArgs<string> args) { }
         /// <summary>
         /// Událost volaná při každé změně <see cref="CurrentStatus"/>
         /// </summary>
-        public event EventHandler CurrentStatusChanged;
+        public event GPropertyEventHandler<string> CurrentStatusChanged;
         #endregion
         #region Public eventy
         /// <summary>
@@ -1325,6 +1366,29 @@ namespace Asol.Tools.WorkScheduler.Components
                 this.CallItemCheckedChange(item);
             }
         }
+        /// <summary>
+        /// Hodnota, která je pro tento prvek persistována. Pokud je zde null, pak persistence není.
+        /// Potomek může tuto property přepsat, a konvertovat string na svoji hodnotu, pak bude persistována do příštího spuštění aplikace.
+        /// </summary>
+        public override string PersistValue
+        {
+            get
+            {
+                if (!this._DataItem.IsCheckable) return null;
+
+                bool isChecked = this.Is.Checked;
+                return (isChecked ? "Checked" : "UnChecked");
+            }
+            set
+            {
+                if (!this._DataItem.IsCheckable) return;
+                if (value == null) return;
+                bool isChecked = (value == "Checked");
+                if (isChecked == this.Is.Checked) return;
+                this.IsCheckedChange();
+                this.CallItemClick();
+            }
+        }
     }
     /// <summary>
     /// Konkrétní položka Toolbaru: ComboBox
@@ -1993,7 +2057,9 @@ namespace Asol.Tools.WorkScheduler.Components
     public class ToolBarStatus
     {
         #region Konstruktor, proměnné, persistované property
-
+        /// <summary>
+        /// Privátní konstruktor
+        /// </summary>
         private ToolBarStatus() { }
         /// <summary>
         /// Velikost ToolBaru
@@ -2002,14 +2068,40 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Index obsahující klíče prvků toolbaru a jejich persist hodnotu
         /// </summary>
-        protected Dictionary<string, string> KeyValueDict { get; set; }
-
+        private Dictionary<string, GToolBarItem> KeyValueDict { get; set; }
+        #endregion
+        #region Snapshot = stringový výraz pro persistenci stavu Toolbaru
         /// <summary>
         /// Stringový otisk aktuálního stavu, pro detekci změny
         /// </summary>
         [PersistingEnabled(false)]
-        public string Snapshot { get; }
-
+        public string Snapshot
+        {
+            get
+            {
+                StringBuilder sb = new StringBuilder();
+                foreach (var item in this.KeyValueDict)
+                {
+                    string value = item.Value.PersistValue;
+                    if (value != null)
+                        sb.Append((sb.Length > 0 ? ";" : "") + item.Key + ":" + value);
+                }
+                return sb.ToString();
+            }
+            set
+            {
+                if (value == null) return;
+                var table = value.ToTable(";", ":", true, true);
+                foreach (var row in table)
+                {
+                    if (row.Length < 2) continue;
+                    string key = row[0];
+                    GToolBarItem item;
+                    if (!String.IsNullOrEmpty(key) && this.KeyValueDict.TryGetValue(key, out item))
+                        item.PersistValue = row[1];
+                }
+            }
+        }
         #endregion
         #region Tvorba i Aplikace stavu toolbaru z/do dodaných prvků ToolBaru
         /// <summary>
@@ -2024,13 +2116,7 @@ namespace Asol.Tools.WorkScheduler.Components
             ToolBarStatus status = new ToolBarStatus();
 
             status.ToolbarSize = toolBar.ToolbarSize;
-            status.KeyValueDict = new Dictionary<string, string>();
-            var itemDict = CreateItemDict(toolBar);
-            foreach (var item in itemDict)
-            {
-                if (item.Value.PersistValue != null)
-                    status.KeyValueDict.Add(item.Key, item.Value.PersistValue);
-            }
+            status.KeyValueDict = CreateItemDict(toolBar);
 
             return status;
         }

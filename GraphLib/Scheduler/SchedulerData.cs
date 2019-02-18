@@ -303,6 +303,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 this._FillMainControlToolbarFromGui();
                 this._MainControl.ToolBarItemClicked += _ToolBarItemClicked;
                 this._MainControl.ToolBarItemSelectedChange += _ToolBarItemSelectedChange;
+                this._MainControl.ToolBarStatusChanged += _ToolBarStatusChanged;
             }
         }
         /// <summary>
@@ -420,7 +421,15 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 this._ToolBarItemClickApplication(args.Item, guiToolbarItem);
             else
                 this._ToolBarItemClickSystem(args.Item);
-            this._SaveMainControlToConfig();
+        }
+        /// <summary>
+        /// Obsluha události StatusChanged na ToolBaru
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ToolBarStatusChanged(object sender, GPropertyEventArgs<string> e)
+        {
+            this._SaveMainControlToConfig(e.Value);
         }
         /// <summary>
         /// Obsluha události ItemSelectedChange na Aplikační položce ToolBaru.
@@ -792,7 +801,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         public SchedulerConfig Config { get { return this._Config; } }
         /// <summary>
         /// Načte z configu hodnoty odpovídající uživatelskému stavu GUI a promítne je do něj.
-        /// Tedy, jak si uživatel naposledy uspořádal GUI (a jak bylo uloženo v metodě <see cref="_SaveMainControlToConfig()"/>), 
+        /// Tedy, jak si uživatel naposledy uspořádal GUI (a jak bylo uloženo v metodě <see cref="_SaveMainControlToConfig(string)"/>), 
         /// tak se GUI nyní po spuštění uspořádá.
         /// Tato metoda neřeší vnitřní rozložení jednotlivých panelů s daty, to si řeší panely samy ve své režii, viz metoda: <see cref="SchedulerPanel.ConnectConfigLayout(GuiPage)"/>
         /// </summary>
@@ -801,9 +810,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             SchedulerConfig config = this.Config;
             if (config == null) return;
 
-            ToolBarStatus toolBarStatus = config.UserConfigSearch<ToolBarStatus>().FirstOrDefault();
-            if (toolBarStatus != null)
-                this._MainControl.ToolBarCurrentStatus = toolBarStatus;
+            SchedulerConfigUserPair toolBarStatusPair = config.UserConfigSearch<SchedulerConfigUserPair>(p => p.Key == _CONFIG_TOOLBAR_STATUS).FirstOrDefault();
+            if (toolBarStatusPair != null && toolBarStatusPair.Value != null && toolBarStatusPair.Value is string)
+                this._MainControl.ToolBarCurrentStatus = toolBarStatusPair.Value as string;
         }
         /// <summary>
         /// Metoda uloží do Configu údaje o uživatelském stavu GUI, volá se po každé jeho změně.
@@ -812,15 +821,26 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         private void _SaveMainControlToConfig()
         {
+            string currentStatus = this._MainControl.ToolBarCurrentStatus;
+            this._SaveMainControlToConfig(currentStatus);
+        }
+        /// <summary>
+        /// Metoda uloží do Configu údaje o uživatelském stavu GUI, volá se po každé jeho změně.
+        /// Metoda posbírá nejrůznější data z Main controlu a vepíše je do Configu. 
+        /// Tato data budou při příštím spuštění Pluginu načtena z Configu a promítnuta do GUI v metodě <see cref="_FillMainControlFromConfig()"/>.
+        /// </summary>
+        private void _SaveMainControlToConfig(string currentStatus)
+        {
             SchedulerConfig config = this.Config;
             if (config == null) return;
 
-            ToolBarStatus toolBarStatus = this._MainControl.ToolBarCurrentStatus;
-            config.UserConfigStore<ToolBarStatus>(toolBarStatus);
+            SchedulerConfigUserPair toolBarStatusPair = new SchedulerConfigUserPair(_CONFIG_TOOLBAR_STATUS, currentStatus);
+            config.UserConfigStore<SchedulerConfigUserPair>(toolBarStatusPair, p => p.Key == toolBarStatusPair.Key);
             
             config.Save();
         }
         private const string _CONFIG_MAIN_CONTROL = "ConfigMainControl";
+        private const string _CONFIG_TOOLBAR_STATUS = "ConfigToolBarStatus";
         /// <summary>
         /// Konfigurace uživatelská
         /// </summary>
