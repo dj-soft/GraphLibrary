@@ -1387,7 +1387,7 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         public static GuiData SerialDeserialData(GuiData guiData)
         {
             GuiData guiDataP = SerialDeserialData(guiData, XmlCompressMode.None);
-            // GuiData guiDataC = SerialDeserialData(guiData, XmlCompressMode.Compress);
+            GuiData guiDataC = SerialDeserialData(guiData, XmlCompressMode.Compress);
             return guiDataP;
         }
         /// <summary>
@@ -1411,6 +1411,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 serial = XmlPersist.Serialize(guiData, serArgs);
                 scopeS.AddItem("SerialLength: " + serial.Length.ToString());
             }
+
+            SerialSaveData(serial, mode);
 
             using (var scopeD = Application.App.Trace.Scope("SchedulerDataSource", "SerialDeserialData", "Deserialize", compress, runMode))
             {
@@ -1454,6 +1456,15 @@ namespace Asol.Tools.WorkScheduler.TestGUI
 
 
             return result;
+        }
+
+        private static void SerialSaveData(string serial, XmlCompressMode mode)
+        {
+            if (String.IsNullOrEmpty(serial)) return;
+            string traceFile = Application.App.Trace.File;
+            if (String.IsNullOrEmpty(traceFile)) return;
+            string saveFile = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(traceFile), "SerialData") + (mode == XmlCompressMode.None ? ".xml" : ".bin");
+            System.IO.File.WriteAllText(saveFile, serial, Encoding.UTF8);
         }
         #endregion
         #region Konstanty, jména GUI prvků
