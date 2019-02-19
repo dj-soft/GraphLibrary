@@ -83,7 +83,6 @@ namespace Asol.Tools.WorkScheduler.Components
             this._Value = SetBitValue(this._Value, mask, value);
             if (setMethod != null)
                 setMethod(value);
-
         }
         /// <summary>
         /// Return a new value for storage, where bit[s] by mask are set/cleared by value.

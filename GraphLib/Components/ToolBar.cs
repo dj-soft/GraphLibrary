@@ -1321,6 +1321,10 @@ namespace Asol.Tools.WorkScheduler.Components
         }
         protected override void AfterStateChangedLeftClick(GInteractiveChangeStateArgs e)
         {
+            this.ExecLeftClick();
+        }
+        protected void ExecLeftClick()
+        {
             if (this._DataItem.IsCheckable)
                 this.IsCheckedChange();
             this.CallItemClick();
@@ -1392,6 +1396,14 @@ namespace Asol.Tools.WorkScheduler.Components
                 this.IsCheckedChange();
                 this.CallItemClick();
             }
+        }
+        /// <summary>
+        /// Provedde stejnou akci, jako když uživatel klikne na prvek
+        /// </summary>
+        public override void DoClick()
+        {
+            this.ExecLeftClick();
+            this.Repaint();
         }
     }
     /// <summary>
@@ -1982,6 +1994,12 @@ namespace Asol.Tools.WorkScheduler.Components
             activeItem.OnCheckedChange();
             this._ToolbarGroup.Toolbar.OnItemCheckedChange(this._ToolbarGroup.DataGroup, activeItem);
         }
+        #endregion
+        #region Podpora pro aplikaci
+        /// <summary>
+        /// Provedde stejnou akci, jako když uživatel klikne na prvek
+        /// </summary>
+        public virtual void DoClick() { }
         #endregion
         #region Draw, Interaktivita
         /// <summary>
